@@ -226,6 +226,9 @@ describe('LoginPage — MFA second factor', () => {
     stubChallengeAccepted();
     const user = userEvent.setup();
     renderLogin();
+    // Seeded so `isInvalidated` is a real signal: on an unseeded key the query
+    // state is undefined and any "not invalidated" assertion passes vacuously.
+    queryClient.setQueryData(['profile'], { user: { id: 'stale', username: 'stale' } });
 
     await submitCredentials(user);
     await user.type(await screen.findByLabelText(/six-digit code/i), '123456');
@@ -233,7 +236,9 @@ describe('LoginPage — MFA second factor', () => {
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/stable', { replace: true }));
     expect(authSessionState.csrfToken).toBe('csrf-from-mfa-challenge');
-    expect(queryClient.getQueryState(['profile'])?.isInvalidated).not.toBe(false);
+    // Same session finalization as an ordinary login: the profile is refetched
+    // from server truth rather than trusted from the pre-login cache.
+    expect(queryClient.getQueryState(['profile'])?.isInvalidated).toBe(true);
   });
 
   it('falls back to the safe default when the redirect target is hostile', async () => {
@@ -288,6 +293,48 @@ describe('LoginPage — MFA second factor', () => {
     expect(refreshCalls, 'there is no session to refresh mid-login').toBe(0);
     // The player stays on the second-factor step and can try again.
     expect(screen.getByLabelText(/six-digit code/i)).toBeInTheDocument();
+  });
+
+  it('offers the way back when the challenge has aged out, and taking it clears the challenge', async () => {
+    // An aged-out challenge and a mistyped code are indistinguishable on the
+    // wire — mfaController.mfaChallenge answers both with a bare 401 — so the
+    // copy must name BOTH remedies and the way back must actually work. This
+    // is the unit-level stand-in for a real expired challenge; the challenge
+    // JWT's 5-minute expiry has no HTTP-reachable clock seam, so the browser
+    // spec cannot age one out without waiting (see the report's limitations).
+    stubLoginRequiresSecondFactor();
+    stubChallengeRejected(401, 'MFA challenge expired or invalid. Please log in again.');
+    const user = userEvent.setup();
+    renderLogin();
+
+    await submitCredentials(user);
+    await user.type(await screen.findByLabelText(/six-digit code/i), '123456');
+    await user.click(screen.getByRole('button', { name: /^enter$/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent ?? '').toMatch(/go back and sign in again/i);
+    expect(alert.textContent ?? '').not.toMatch(/session expired/i);
+    // Raw server wording never reaches the player.
+    expect(alert.textContent ?? '').not.toMatch(/MFA challenge expired or invalid/i);
+    expect(mockNavigate).not.toHaveBeenCalled();
+
+    // Taking the offered remedy returns to the credentials form and drops the
+    // dead challenge, so the next attempt starts from a fresh one.
+    await user.click(screen.getByRole('button', { name: /back to sign in/i }));
+    expect(screen.queryByLabelText(/six-digit code/i)).not.toBeInTheDocument();
+    await screen.findByLabelText(/email address/i);
+
+    await user.click(screen.getByRole('button', { name: /^enter$/i }));
+    await waitFor(() => expect(loginCalls).toBe(2));
+    await screen.findByLabelText(/six-digit code/i);
+    await user.type(screen.getByLabelText(/six-digit code/i), '654321');
+    await user.click(screen.getByRole('button', { name: /^enter$/i }));
+
+    await waitFor(() => expect(challengeCalls).toBe(2));
+    expect(challengeBodies[1].mfaChallengeToken, 'the dead challenge must not be resubmitted').toBe(
+      issuedChallengeTokens[1]
+    );
+    expect(challengeBodies[1].mfaChallengeToken).not.toBe(issuedChallengeTokens[0]);
   });
 
   it('returns to the credentials step and drops the challenge when a lockout revokes it', async () => {
@@ -346,12 +393,15 @@ describe('LoginPage — MFA second factor', () => {
 
     await submitCredentials(user);
     await user.type(await screen.findByLabelText(/six-digit code/i), '123456');
-    const submit = screen.getByRole('button', { name: /^enter|entering/i });
+    const submit = screen.getByRole('button', { name: /^enter$/i });
     await user.click(submit);
     await waitFor(() => expect(challengeCalls).toBe(1));
-    await user.click(submit).catch(() => undefined);
 
-    await waitFor(() => expect(challengeCalls).toBe(1));
+    // The control itself blocks the second activation and says so accessibly,
+    // rather than the test swallowing a rejected click.
+    await waitFor(() => expect(submit).toBeDisabled());
+    expect(submit).toHaveAttribute('aria-busy', 'true');
+    expect(challengeCalls).toBe(1);
   });
 
   it('leaves a non-MFA login working exactly as before', async () => {

@@ -27,34 +27,8 @@ import { safeRedirectTarget } from '../lib/safeRedirect';
 import { AuthLayout, AuthError } from '@/components/auth/AuthLayout';
 import { SecondFactorForm, type SecondFactorSubmission } from '@/components/auth/SecondFactorForm';
 import { FormField, Input, PasswordInput } from '@/components/ui/form';
-import type { ApiError, MfaChallengeCredentials } from '@/lib/api-client';
-
-/**
- * User-safe copy for a failed second factor.
- *
- * The shared `userMessageFor` mapper answers every 401 with "Your session
- * expired" — true for a protected request, wrong here, where the player has no
- * session yet and a 401 means the code was refused. This keeps the taxonomy
- * discipline (no raw server text ever reaches the player) with copy that fits
- * the step. A refused code and an aged-out challenge are indistinguishable on
- * the wire, so the copy names both remedies and the way back stays on screen.
- */
-function secondFactorMessage(error: ApiError | null): string | null {
-  if (!error) return null;
-  switch (error.statusCode) {
-    case 0:
-      return "Can't reach the stable. Check your connection and try again.";
-    case 400:
-      return 'Enter the six digits from your authenticator app, or one of your recovery codes.';
-    case 401:
-      return "That code wasn't accepted. Enter the code showing now — or go back and sign in again if you have been waiting a while.";
-    default:
-      if (error.statusCode >= 500) {
-        return 'Something went wrong on our end. Try again in a moment.';
-      }
-      return "That code wasn't accepted. Try again.";
-  }
-}
+import { credentialsMessage, secondFactorMessage } from '@/lib/http/authErrorMessages';
+import type { MfaChallengeCredentials } from '@/lib/api-client';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -172,9 +146,18 @@ const LoginPage: React.FC = () => {
 
   return (
     <AuthLayout title="Welcome Back" subtitle="Enter your credentials to continue playing">
-      {/* API error — AuthError renders role="alert" with text-role-danger token */}
+      {/* API error — AuthError renders role="alert" with text-role-danger token.
+          FRONTEND_ASYNC_STATE_DOCTRINE §4: AuthError prints `error.message`
+          verbatim, so the transport error is classified here first and the raw
+          server string never reaches the player. */}
       <AuthError
-        error={challengeRevokedMessage ? { message: challengeRevokedMessage } : error}
+        error={
+          challengeRevokedMessage
+            ? { message: challengeRevokedMessage }
+            : error
+              ? { message: credentialsMessage(error) as string }
+              : null
+        }
         fallbackMessage="Login failed. Please try again."
       />
 

@@ -450,6 +450,11 @@ describe('LoginPage', () => {
   });
 
   describe('AC-4: Error Handling', () => {
+    // Finding 7 (Equoria-6p398.7): the login surface now classifies the
+    // transport error before rendering it (lib/http/authErrorMessages.ts).
+    // FRONTEND_ASYNC_STATE_DOCTRINE §4 forbids printing a raw server string,
+    // and AuthError renders `error.message` verbatim — so these cases assert
+    // the mapped, user-safe copy rather than the backend's own wording.
     it('displays invalid credentials error', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
@@ -469,8 +474,10 @@ describe('LoginPage', () => {
       await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
+        expect(screen.getByText(/don't match an account/i)).toBeInTheDocument();
       });
+      // The raw server string must not reach the player.
+      expect(screen.queryByText(/invalid email or password/i)).not.toBeInTheDocument();
     });
 
     it('displays server error message', async () => {
@@ -492,8 +499,10 @@ describe('LoginPage', () => {
       await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/internal server error|login failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/something went wrong on our end/i)).toBeInTheDocument();
       });
+      // A 5xx body can leak internals (Equoria-ot1mo) — never render it.
+      expect(screen.queryByText(/internal server error/i)).not.toBeInTheDocument();
     });
 
     it('displays generic error for network failures', async () => {
@@ -501,10 +510,10 @@ describe('LoginPage', () => {
       const TestWrapper = createTestWrapper();
 
       // Simulate a real transport-level network failure (no HTTP response).
-      // The real api-client surfaces the underlying fetch error message; the
-      // component renders it in the error alert. We assert the alert is shown
-      // (a non-empty error message), which is the user-facing contract — the
-      // exact transport wording is environment-dependent and not the point.
+      // The real api-client normalizes it to statusCode 0, which the login
+      // surface maps to its own network copy (Finding 7). We assert the alert
+      // is shown with non-empty content — the user-facing contract — rather
+      // than pinning environment-dependent transport wording.
       server.use(http.post(LOGIN_URL, () => HttpResponse.error()));
 
       render(
@@ -535,12 +544,12 @@ describe('LoginPage', () => {
 
       // Error status with an empty message body. With the REAL api-client, a
       // message-less error response is coerced to the api-client's own
-      // "An error occurred" default (see fetchWithAuth non-2xx handling), which
-      // the component then renders. (The old vi.mock test asserted the
-      // component's "Login failed" fallback, but that fallback is only reached
-      // when error.message is falsy — unreachable through the real api-client,
-      // which always supplies a non-empty message. Asserting it here would have
-      // verified a branch the real backend boundary cannot produce.)
+      // "An error occurred" default (see fetchWithAuth non-2xx handling).
+      // Since Finding 7 the surface classifies by statusCode instead of
+      // echoing that string, so a 500 — with or without a body — renders the
+      // mapped server-fault copy. (The component's "Login failed" fallback is
+      // only reached when error.message is falsy, which the real api-client
+      // never produces; asserting it would verify an unreachable branch.)
       server.use(
         http.post(LOGIN_URL, () => {
           loginCallCount += 1;
@@ -561,7 +570,7 @@ describe('LoginPage', () => {
       await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/an error occurred|login failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/something went wrong on our end/i)).toBeInTheDocument();
       });
     });
   });

@@ -245,6 +245,25 @@ test('an MFA-enrolled account completes the second factor and enters the game wi
     expect((await preferencesResponse).status()).toBe(200);
     await expect(toggle).toHaveAttribute('aria-checked', 'false');
 
+    // A 200 is not persistence. Re-read the authoritative server state, then
+    // reload so the UI rehydrates from it rather than from React state.
+    const afterMutation = await expectOk(
+      await page.request.get('/api/v1/auth/profile'),
+      'GET /api/v1/auth/profile after the first authenticated mutation'
+    );
+    expect(
+      unwrapData<{ user: { preferences?: Record<string, unknown> } }>(afterMutation).user
+        .preferences?.emailCompetition,
+      'the preference written after MFA login must be persisted server-side'
+    ).toBe(false);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.locator('[data-testid="settings-page"]')).toBeVisible();
+    await page.locator('[data-testid="settings-nav-notifications"]').click();
+    await expect(
+      page.locator('[data-testid="notif-email-competition"]').locator('button[role="switch"]')
+    ).toHaveAttribute('aria-checked', 'false');
+
     guard.assertClean();
   } finally {
     await context.close();
@@ -368,6 +387,80 @@ test('an incorrect code keeps the player out with honest inline feedback', async
     await page.getByRole('button', { name: /^Enter$/ }).click();
     expect((await accepted).status(), 'a valid code after a typo must still work').toBe(200);
     await page.waitForURL((url) => !url.pathname.includes('/login'));
+
+    guard.assertClean();
+  } finally {
+    await context.close();
+  }
+});
+
+test('the real MFA lockout revokes the challenge and returns the player to sign-in', async ({
+  browser,
+}) => {
+  // The backend locks a userId after MAX_FAILURES (5) refused second factors
+  // and answers every later attempt with 429 plus "the challenge has been
+  // revoked — please log in again" (mfaLockoutService, Equoria-kg7i2). This
+  // drives that real counter through the real UI — no clock stub, no bypass —
+  // and proves the client honours the revocation instead of leaving a dead
+  // form on screen.
+  const suffix = `${Date.now()}_lock`;
+  const account = await createMfaPlayer(browser, suffix);
+
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const guard = installProductionParityNetworkGuard(page);
+
+  try {
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    expect((await submitCredentials(page, account)).status()).toBe(200);
+
+    const wrong = wrongTotp(account.secret);
+    await page.getByLabel('Six-Digit Code').fill(wrong);
+
+    // Failures 1..5 are refused with 401 and leave the player on the step.
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      const refused = page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/v1/auth/mfa/challenge') &&
+          response.request().method() === 'POST'
+      );
+      await page.getByRole('button', { name: /^Enter$/ }).click();
+      expect((await refused).status(), `attempt ${attempt} must be refused`).toBe(401);
+      await expect(page.getByLabel('Six-Digit Code')).toBeVisible();
+      await expect(page.getByRole('alert')).toContainText(/wasn't accepted/);
+    }
+
+    // The next attempt finds the account locked: 429, challenge revoked.
+    const locked = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/auth/mfa/challenge') &&
+        response.request().method() === 'POST'
+    );
+    await page.getByRole('button', { name: /^Enter$/ }).click();
+    expect((await locked).status(), 'the sixth attempt must be rate-limited').toBe(429);
+
+    // Honest unauthenticated state with useful local feedback: back to the
+    // credentials form, the dead challenge dropped, nothing authenticated.
+    await expect(page.locator('h2')).toContainText('Welcome Back');
+    await expect(page.getByRole('alert')).toContainText(/Too many attempts/);
+    await expect(page.getByLabel('Six-Digit Code')).toHaveCount(0);
+    expect(new URL(page.url()).pathname).toBe('/login');
+    await expectUnauthenticated(page, 'after the MFA lockout');
+
+    // Even a correct code cannot get in while the lockout stands — the backend
+    // rejects the freshly-issued challenge too, so the client keeps her out.
+    expect((await submitCredentials(page, account)).status()).toBe(200);
+    const stillLocked = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/auth/mfa/challenge') &&
+        response.request().method() === 'POST'
+    );
+    await page
+      .getByLabel('Six-Digit Code')
+      .fill(freshTotp(account.secret, [totpAt(account.secret, 0)]));
+    await page.getByRole('button', { name: /^Enter$/ }).click();
+    expect((await stillLocked).status()).toBe(429);
+    await expectUnauthenticated(page, 'with a correct code during the lockout');
 
     guard.assertClean();
   } finally {
