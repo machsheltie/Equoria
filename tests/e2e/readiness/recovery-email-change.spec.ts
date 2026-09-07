@@ -243,6 +243,16 @@ test.describe('Recovery address — Settings to a moved identity', () => {
     expect(recovery?.to, 'the NEW address must now receive password recovery').toBe(replacement);
     expect(countCapturedEmails('password-reset', replacement)).toBe(1);
 
+    // `passwordController.forgotPassword` dispatches the send WITHOUT awaiting
+    // it, so reading the sink the instant the 200 lands could pass simply
+    // because nothing had been written yet. Re-check the old address now that a
+    // LATER send has been observed all the way into the file: the sink has
+    // demonstrably caught up, and the old address still has nothing.
+    expect(
+      countCapturedEmails('password-reset', player.email),
+      'the OLD address is still silent after the sink has demonstrably caught up'
+    ).toBe(oldBefore);
+
     // The recovery identity is what it claims to be: it signs in.
     const logout = await csrfRequest(page, 'POST', '/api/v1/auth/logout');
     expect(logout.status()).toBe(200);

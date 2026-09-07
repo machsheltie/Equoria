@@ -91,7 +91,12 @@ export const RecoveryAddressSection: React.FC = () => {
         // tells her nothing she does not already know.
         email: staged.pendingEmail,
         expiresAt: staged.expiresAt,
-        resendAvailableAt: null,
+        // The cooldown is not in the staging response, so it is read from the
+        // status query — which `useRequestEmailChange` invalidates on success.
+        // Because `waiting` is derived during render rather than captured at
+        // staging time, the sentence appears as soon as that refetch lands,
+        // instead of only after the player happens to reload the page.
+        resendAvailableAt: status?.pending?.resendAvailableAt ?? null,
         noticeDelivered: staged.noticeDelivered,
       }
     : status?.pending

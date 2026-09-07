@@ -78,6 +78,36 @@ function stubStatus(
   );
 }
 
+/**
+ * Reality's sequence: nothing is pending on the first read, and the row exists
+ * on every read after the change is staged. `useRequestEmailChange` invalidates
+ * the status query on success, so the second read is what the surface sees
+ * without any reload.
+ */
+function stubStatusPendingAfterFirstRead() {
+  server.use(
+    http.get(STATUS_URL, () => {
+      statusCalls += 1;
+      return HttpResponse.json({
+        success: true,
+        data: {
+          email: CONFIRMED,
+          emailVerified: true,
+          secondFactorRequired: false,
+          pending:
+            statusCalls === 1
+              ? null
+              : {
+                  maskedEmail: REPLACEMENT_MASKED,
+                  expiresAt: '2026-09-08T12:00:00.000Z',
+                  resendAvailableAt: RESEND_AT,
+                },
+        },
+      });
+    })
+  );
+}
+
 function stubStatusFails() {
   server.use(
     http.get(STATUS_URL, () => {
@@ -234,6 +264,33 @@ describe('RecoveryAddressSection — the way back in', () => {
     expect(waiting).toHaveTextContent(/still your way back in/i);
     // The password field is gone once the moment is over.
     expect(screen.queryByLabelText(/current password/i)).not.toBeInTheDocument();
+  });
+
+  it('tells her the resend window right after staging, without waiting for a reload', async () => {
+    // The staging response does not carry the cooldown; the invalidated status
+    // read does. Before this was wired the sentence only appeared after a full
+    // page reload, which is the one moment a player has no reason to perform.
+    stubStatusPendingAfterFirstRead();
+    stubRequestAccepted();
+    const user = userEvent.setup();
+    renderSection();
+    await openTheForm(user);
+
+    await user.type(screen.getByLabelText(/new email address/i), REPLACEMENT);
+    await user.type(screen.getByLabelText(/current password/i), 'CorrectHorse1!');
+    await user.click(screen.getByRole('button', { name: /send the confirmation/i }));
+
+    const waiting = await screen.findByTestId('recovery-address-waiting');
+    // The locally staged branch still shows the full address she just typed...
+    expect(waiting).toHaveTextContent(REPLACEMENT);
+    // ...and gains the cooldown as soon as the refetch lands. No reload.
+    await waitFor(() => expect(waiting).toHaveTextContent(/need a new link\?/i));
+    const expected = new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(RESEND_AT));
+    expect(waiting).toHaveTextContent(expected);
+    expect(waiting).toHaveTextContent(/changing your password cancels this move/i);
   });
 
   it('reports a refused password inline, keeps what was typed, and claims nothing was sent', async () => {

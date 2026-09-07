@@ -316,6 +316,26 @@ describe('Finding 9 — maskEmailAddress', () => {
     expect(maskEmailAddress('  Jasmine@Example.COM ')).toBe('j***@example.com');
   });
 
+  it('does not leak a plus-address tag, which often carries the real account name', () => {
+    // `jasmine+equoria@` would otherwise advertise both the identity and what
+    // the address was filed under.
+    expect(maskEmailAddress('jasmine+equoria@example.com')).toBe('j***@example.com');
+    expect(maskEmailAddress('a+b+c@example.com')).toBe('a***@example.com');
+  });
+
+  it('masks a non-ASCII local part by code point, never by UTF-16 unit', () => {
+    // Built from code points so this file stays ASCII and no editor or tool can
+    // silently re-encode the characters under test.
+    const uUmlaut = String.fromCodePoint(0xfc);
+    expect(maskEmailAddress(`${uUmlaut}nicorn@example.com`)).toBe(`${uUmlaut}***@example.com`);
+
+    // Astral plane (U+1F40E HORSE): slicing by UTF-16 unit would emit a lone
+    // surrogate here, which is not a character at all.
+    const horse = String.fromCodePoint(0x1f40e);
+    expect(horse.length).toBe(2); // two UTF-16 units, one code point
+    expect(maskEmailAddress(`${horse}mare@example.com`)).toBe(`${horse}***@example.com`);
+  });
+
   it('reveals nothing for a shape it does not recognise', () => {
     expect(maskEmailAddress('@example.com')).toBe('***');
     expect(maskEmailAddress('jasmine@')).toBe('***');

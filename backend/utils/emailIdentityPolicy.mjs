@@ -80,7 +80,10 @@ export function maskEmailAddress(raw) {
   if (at <= 0 || at === normalized.length - 1) {
     return '***';
   }
-  return `${normalized.slice(0, 1)}***${normalized.slice(at)}`;
+  // Code points, not UTF-16 units: `slice(0, 1)` would cut an astral first
+  // character in half and emit a lone surrogate.
+  const [firstCharacter] = Array.from(normalized.slice(0, at));
+  return `${firstCharacter}***${normalized.slice(at)}`;
 }
 
 /**

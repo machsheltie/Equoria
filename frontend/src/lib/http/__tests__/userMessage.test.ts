@@ -206,6 +206,14 @@ describe('recoveryAddressMessage — every branch', () => {
     expectNoRawLeak(copy);
   });
 
+  it('429 says "1 minute", not "1 minutes", for a sub-minute wait', () => {
+    for (const seconds of [1, 30, 60]) {
+      const copy = recoveryAddressMessage(apiError(429, 'x', { retryAfter: seconds }));
+      expect(copy).toContain('about 1 minute,');
+      expect(copy).not.toContain('minutes');
+    }
+  });
+
   it('429 without a retryAfter still gives an honest, unquantified wait', () => {
     const copy = recoveryAddressMessage(apiError(429));
     expect(copy).toMatch(/too many attempts/i);
