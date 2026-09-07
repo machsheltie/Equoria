@@ -42,13 +42,12 @@ export interface HorseColorResponse {
 }
 
 export const horsesApi = {
-  create: (data: {
-    name: string;
-    breedId: number;
-    sex?: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
-    gender?: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
-    age?: number;
-  }) => apiClient.post<HorseSummary>('/api/v1/horses', data),
+  // NOTE (Equoria-6p398.2, 2026-09-05 audit Finding 2): there is deliberately
+  // no `create` here. `POST /api/v1/horses` handed any authenticated player a
+  // free horse and is now closed (403). Players acquire horses through the
+  // Horse Trader (`marketplaceApi` store purchase), through breeding, or as
+  // the starter horse registration grants them. Do not re-add a generic
+  // create helper; it would only ever receive a 403.
   list: () => apiClient.get<HorseSummary[]>(`/api/v1/horses?t=${Date.now()}`),
   get: (horseId: number) =>
     apiClient.get<HorseSummary>(`/api/v1/horses/${horseId}?t=${Date.now()}`),

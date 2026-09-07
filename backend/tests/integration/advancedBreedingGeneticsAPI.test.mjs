@@ -14,6 +14,7 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../helpers/testAuth.mjs';
+import { createHorseFromRequest } from '../../modules/horses/index.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
@@ -113,81 +114,58 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
   beforeEach(async () => {
     await cleanupUserHorses(testUser?.id);
-    // Create test horses for genetic analysis. POST /api/v1/horses runs the real
-    // createHorse() path, which auto-generates a valid colorGenotype + phenotype —
-    // the enhanced genetic-probability service needs those to compute correctly
-    // (a raw prisma.horse.create would leave phenotype NULL).
-    const stallionResponse = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${authToken}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
-        name: 'Genetic Test Stallion',
-        breedId: testBreed.id,
-        sex: 'stallion',
-        age: 5,
-      });
+    // Create test horses for genetic analysis through the server-owned
+    // createHorseFromRequest service. It runs the real createHorse() path,
+    // which auto-generates a valid colorGenotype + phenotype — the enhanced
+    // genetic-probability service needs those to compute correctly (a raw
+    // prisma.horse.create would leave phenotype NULL).
+    //
+    // Equoria-6p398.2 (2026-09-05 audit, Finding 2): these fixtures used to be
+    // obtained through POST /api/v1/horses. That player-facing entry point is
+    // closed (403) — free horse creation was the finding — so the fixtures now
+    // come from the scoped service call instead. The horses under test are
+    // identical; only the acquisition path changed.
+    const createFixtureHorse = async body => {
+      const response = await createHorseFromRequest(body, testUser.id);
+      if (!response.body.data) {
+        throw new Error(
+          `Horse fixture creation failed. Status: ${response.status}, Body: ${JSON.stringify(response.body)}`,
+        );
+      }
+      return response.body.data;
+    };
 
-    // Check if the response contains the data
-    if (!stallionResponse.body.data) {
-      throw new Error(
-        `Stallion creation failed. Status: ${stallionResponse.status}, Body: ${JSON.stringify(stallionResponse.body)}`,
-      );
-    }
-    testStallion = stallionResponse.body.data;
+    testStallion = await createFixtureHorse({
+      name: 'Genetic Test Stallion',
+      breedId: testBreed.id,
+      sex: 'stallion',
+      age: 5,
+    });
 
-    const mareResponse = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${authToken}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
-        name: 'Genetic Test Mare',
-        breedId: testBreed.id,
-        sex: 'mare',
-        age: 4,
-      });
-
-    // Check if the response contains the data
-    if (!mareResponse.body.data) {
-      throw new Error(
-        `Mare creation failed. Status: ${mareResponse.status}, Body: ${JSON.stringify(mareResponse.body)}`,
-      );
-    }
-    testMare = mareResponse.body.data;
+    testMare = await createFixtureHorse({
+      name: 'Genetic Test Mare',
+      breedId: testBreed.id,
+      sex: 'mare',
+      age: 4,
+    });
 
     // Create additional horses for population analysis
-    const additionalHorses = await Promise.all([
-      request(app)
-        .post('/api/v1/horses')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          name: 'Population Horse 1',
-          breedId: testBreed.id,
-          sex: 'stallion',
-          age: 6,
-        }),
-      request(app)
-        .post('/api/v1/horses')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          name: 'Population Horse 2',
-          breedId: testBreed.id,
-          sex: 'mare',
-          age: 7,
-        }),
-    ]);
+    const additionalHorses = [
+      await createFixtureHorse({
+        name: 'Population Horse 1',
+        breedId: testBreed.id,
+        sex: 'stallion',
+        age: 6,
+      }),
+      await createFixtureHorse({
+        name: 'Population Horse 2',
+        breedId: testBreed.id,
+        sex: 'mare',
+        age: 7,
+      }),
+    ];
 
-    testPopulation = [testStallion, testMare, ...additionalHorses.map(r => r.body.data)];
+    testPopulation = [testStallion, testMare, ...additionalHorses];
   });
 
   afterEach(async () => {

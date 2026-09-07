@@ -28,6 +28,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
+import { createHorseFromRequest } from '../modules/horses/index.mjs';
 
 describe('SQL Injection Attempts Integration Tests', () => {
   let testUser;
@@ -451,20 +452,24 @@ describe('SQL Injection Attempts Integration Tests', () => {
       // Attempt to store malicious data
       const maliciousName = "Horse'; DROP TABLE users; --";
 
-      const createResponse = await request(app)
-        .post('/api/v1/horses')
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
+      // Equoria-6p398.2 (2026-09-05 audit, Finding 2): POST /api/v1/horses is
+      // closed to players (403 for every authenticated caller), so an HTTP
+      // create can no longer reach the storage layer at all. Drive the
+      // surviving server-owned creation service directly instead — otherwise
+      // this second-order claim would pass vacuously on the route's blanket
+      // 403 without ever exercising the parameterised INSERT it is about.
+      const createResponse = await createHorseFromRequest(
+        {
           name: maliciousName,
           breed: 'Thoroughbred',
           gender: 'MARE',
           color: 'Bay',
           age: 5,
-        });
+        },
+        testUser.id,
+      );
 
+      // No numeric breedId -> the service rejects with 400 before any write.
       expectBlocked(createResponse);
 
       // Verify no horse was created with malicious name
@@ -726,45 +731,39 @@ describe('SQL Injection Attempts Integration Tests', () => {
         (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ?? (await prisma.breed.findFirst());
       expect(breed?.id).toBeGreaterThan(0);
 
-      const createResponse = await request(app)
-        .post('/api/v1/horses')
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
+      // Equoria-6p398.2 (2026-09-05 audit, Finding 2): POST /api/v1/horses is
+      // closed to players. Drive the server-owned creation service directly so
+      // the escaping claim below is still genuinely exercised rather than
+      // passing vacuously on the route's blanket 403.
+      const createResponse = await createHorseFromRequest(
+        {
           name: horseName,
           breedId: breed.id,
           sex: 'stallion',
           age: 6,
-        });
+        },
+        testUser.id,
+      );
 
       // A genuinely-valid payload (real breedId, real sex, an apostrophe in the
       // name) MUST be ACCEPTED (201). That is the whole point of this test:
       // proving Prisma's parameterized INSERT stores `O'Malley's Horse` verbatim
-      // rather than choking on / mangling the apostrophe. 403 is tolerated ONLY
-      // for the documented per-test CSRF-binding race (see the describe-level
-      // comment) — it is NOT a pass for the escaping claim. 400 and 500 are
-      // EXCLUDED: if valid special-char data is rejected (400) or crashes the
-      // create path (500) again, the test fails loudly and surfaces the
-      // regression instead of passing vacuously.
-      expect([201, 403]).toContain(createResponse.status);
-      if (createResponse.status === 201 && createResponse.body?.data?.id) {
-        expectOk(createResponse);
-        expect(createResponse.body.data.name).toBe(horseName);
+      // rather than choking on / mangling the apostrophe. The service call has
+      // no CSRF/transport layer, so 201 is now the ONLY acceptable outcome —
+      // 400 and 500 fail loudly and surface the regression.
+      expect(createResponse.status).toBe(201);
+      expectOk(createResponse);
+      expect(createResponse.body.data.name).toBe(horseName);
 
-        // Verify data was stored correctly — round-trips through real Postgres
-        // with the apostrophe intact (no truncation, no escaping artifact).
-        const horse = await prisma.horse.findUnique({
-          where: { id: createResponse.body.data.id },
-        });
-        expect(horse?.name).toBe(horseName);
+      // Verify data was stored correctly — round-trips through real Postgres
+      // with the apostrophe intact (no truncation, no escaping artifact).
+      const horse = await prisma.horse.findUnique({
+        where: { id: createResponse.body.data.id },
+      });
+      expect(horse?.name).toBe(horseName);
 
-        // Cleanup — scoped to the single id this test created.
-        if (horse?.id) {
-          await prisma.horse.deleteMany({ where: { id: horse.id } });
-        }
-      }
+      // Cleanup — scoped to the single id this test created.
+      await prisma.horse.deleteMany({ where: { id: horse.id } });
     });
   });
 });

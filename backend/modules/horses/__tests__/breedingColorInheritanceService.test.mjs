@@ -29,15 +29,11 @@ import {
   isDisallowedCombination,
 } from '../services/breedingColorInheritanceService.mjs';
 import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
+import { createHorseFromRequest } from '../services/createHorseService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import bcrypt from 'bcryptjs';
-import request from 'supertest';
-import jwt from 'jsonwebtoken';
-import config from '../../../config/config.mjs';
 import app from '../../../app.mjs';
-
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // ---------------------------------------------------------------------------
 // Helpers
@@ -86,15 +82,6 @@ function buildGenotype(overrides = {}) {
 // ---------------------------------------------------------------------------
 // splitAlleles
 // ---------------------------------------------------------------------------
-
-// Shared CSRF fixture used by the integration-style tests at the bottom of
-// this file. Declared at module scope, but POPULATED inside the integration
-// `describe`'s beforeAll once `testUserId` exists — the CSRF token must be
-// bound to the same user the mutations authenticate as (Equoria-r2y6z /
-// plw0h per-user CSRF binding). An anonymous fetchCsrf(app) here would mint a
-// token under the CSRF_SESSION_SALT fallback, which the csrf-csrf HMAC then
-// rejects against the authenticated testUserId identifier → 403.
-let __csrf__;
 
 describe('splitAlleles', () => {
   it('splits heterozygous pair E/e → ["E", "e"]', () => {
@@ -717,7 +704,12 @@ describe('inheritColorGenotype — O/n × O/n renormalized distribution (Equoria
 // Integration: POST /api/v1/horses with sireId + damId inherits genotype
 // ---------------------------------------------------------------------------
 
-describe('POST /api/v1/horses — breeding inheritance integration', () => {
+// Equoria-6p398.2 (audit Finding 2): POST /api/v1/horses is closed to players
+// and now answers 403 for every authenticated caller. The Mendelian colour /
+// marking inheritance pipeline and the Equoria-zrbc sire/dam OWNERSHIP guards
+// under test are unchanged — they live in createHorseFromRequest — so these
+// integration tests drive that service directly against the real database.
+describe('createHorseFromRequest — breeding inheritance integration', () => {
   let server;
   let testUserId;
   let sireHorseId;
@@ -759,18 +751,6 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
       },
     });
     testUserId = user.id;
-
-    // Equoria-r2y6z: bind the suite's CSRF token to testUserId. Every
-    // mutation below authenticates as `jwt.sign({ id: testUserId, ... })`,
-    // so resolveSessionIdentifier resolves req.user.id === testUserId at
-    // validation time. The issued token must be minted under the same
-    // identifier — forward an accessToken cookie carrying that id so
-    // getCsrfToken's tryPopulateUserFromAccessCookie binds it, otherwise the
-    // csrf-csrf HMAC mismatch returns 403 on the otherwise-valid mutation.
-    const csrfBindToken = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${csrfBindToken}`] });
 
     // Create sire with a known all-chestnut genotype (e/e)
     // This ensures foal will also be e/e Extension
@@ -850,25 +830,19 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
   });
 
   it('foal created with sireId+damId inherits Extension from parents (e/e × e/e → e/e)', async () => {
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    const response = await createHorseFromRequest(
+      {
         name: `FoalTest_${timestamp}`,
         breedId,
         age: 0,
         sex: 'mare',
         sireId: sireHorseId,
         damId: damHorseId,
-      })
-      .expect(201);
+      },
+      testUserId,
+    );
+
+    expect(response.status).toBe(201);
 
     expect(response.body.success).toBe(true);
     const foal = response.body.data;
@@ -888,23 +862,17 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
   });
 
   it('foal created WITHOUT sireId/damId uses random generation (no inheritance)', async () => {
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    const response = await createHorseFromRequest(
+      {
         name: `RandomHorse_${timestamp}`,
         breedId,
         age: 3,
         sex: 'stallion',
-      })
-      .expect(201);
+      },
+      testUserId,
+    );
+
+    expect(response.status).toBe(201);
 
     expect(response.body.success).toBe(true);
     const horse = response.body.data;
@@ -919,77 +887,59 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
   });
 
   it('returns 400 when sireId points to a mare (wrong sex for sire role)', async () => {
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
     // damHorseId is a mare — using it as a sire should be rejected
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    const response = await createHorseFromRequest(
+      {
         name: `SexValidationTest_${timestamp}`,
         breedId,
         age: 0,
         sex: 'mare',
         sireId: damHorseId, // mare used as sire — invalid
         damId: damHorseId,
-      })
-      .expect(400);
+      },
+      testUserId,
+    );
+
+    expect(response.status).toBe(400);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toMatch(/stallion/i);
   });
 
   it('returns 400 when damId points to a stallion (wrong sex for dam role)', async () => {
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
     // sireHorseId is a stallion — using it as a dam should be rejected
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    const response = await createHorseFromRequest(
+      {
         name: `SexValidationTest2_${timestamp}`,
         breedId,
         age: 0,
         sex: 'mare',
         sireId: sireHorseId,
         damId: sireHorseId, // stallion used as dam — invalid
-      })
-      .expect(400);
+      },
+      testUserId,
+    );
+
+    expect(response.status).toBe(400);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toMatch(/mare/i);
   });
 
   it('returns 404 "Sire not found" when sireId does not exist (CWE-639 disclosure resistance, Equoria-zrbc)', async () => {
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    const response = await createHorseFromRequest(
+      {
         name: `NonExistentSire_${timestamp}`,
         breedId,
         age: 0,
         sex: 'mare',
         sireId: 999999999,
         damId: damHorseId,
-      })
-      .expect(404);
+      },
+      testUserId,
+    );
+
+    expect(response.status).toBe(404);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Sire not found');
@@ -1032,25 +982,19 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     // (Equoria-n7qa3) — the swallowed per-test finally delete is removed.
     crossUserHorseIds.push(otherSire.id);
 
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    const response = await createHorseFromRequest(
+      {
         name: `CrossUserAttack_${timestamp}`,
         breedId,
         age: 0,
         sex: 'mare',
         sireId: otherSire.id, // attacker tries to use another user's stallion
         damId: damHorseId,
-      })
-      .expect(404);
+      },
+      testUserId,
+    );
+
+    expect(response.status).toBe(404);
 
     expect(response.body.success).toBe(false);
     // Byte-identical to "Sire not found" — same as the non-existent case.
@@ -1088,25 +1032,19 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     // (Equoria-n7qa3) — the swallowed per-test finally delete is removed.
     crossUserHorseIds.push(otherDam.id);
 
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    const response = await createHorseFromRequest(
+      {
         name: `CrossUserAttackDam_${timestamp}`,
         breedId,
         age: 0,
         sex: 'mare',
         sireId: sireHorseId,
         damId: otherDam.id, // attacker tries to use another user's mare
-      })
-      .expect(404);
+      },
+      testUserId,
+    );
+
+    expect(response.status).toBe(404);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Dam not found');

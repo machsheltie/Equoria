@@ -88,8 +88,8 @@ describe('System-Wide Data Integrity', () => {
   });
 
   afterAll(async () => {
-    // Equoria-wmy3f: FK-ordered, userId-scoped cleanup. The "Horse creation"
-    // test creates an EXTRA horse via POST /api/v1/horses that is tied to
+    // Equoria-wmy3f: FK-ordered, userId-scoped cleanup. The "Horse acquisition"
+    // test creates an EXTRA horse via the Horse Trader that is tied to
     // testUser but not tracked individually — deleting only testHorse.id left
     // it referencing the user and tripped horses_userId_fkey (RESTRICT) on the
     // user delete. Scope by userId so every horse this suite produced is removed
@@ -111,34 +111,43 @@ describe('System-Wide Data Integrity', () => {
     }
   });
 
-  test('Horse creation increments owner horse count and sets ownership FK', async () => {
+  // Equoria-6p398.2 (2026-09-05 audit, Finding 2): horse acquisition used to be
+  // driven here through POST /api/v1/horses, which handed any authenticated
+  // player a free horse. That entry point is closed (403). The cross-system
+  // invariant this test owns — acquiring a horse increments the owner's horse
+  // count and sets the ownership FK — now runs over the REAL player acquisition
+  // path (the paid Horse Trader purchase), so it also proves the wallet debit
+  // that makes acquisition legitimate.
+  test('Horse acquisition increments owner horse count, sets ownership FK, and debits the wallet', async () => {
+    const STORE_PRICE = 1000; // mirrors marketplaceController.STORE_PRICE
     const initialCount = await prisma.horse.count({ where: { userId: testUser.id } });
-
-    const horseData = {
-      name: 'Consistency Test Horse',
-      age: 3,
-      breedId: testBreed.id,
-      sex: 'mare',
-      dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000),
-      temperament: 'energetic',
-    };
+    const before = await prisma.user.findUnique({
+      where: { id: testUser.id },
+      select: { money: true },
+    });
 
     const horseResponse = await request(app)
-      .post('/api/v1/horses')
+      .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send(horseData)
+      .send({ breedId: testBreed.id, sex: 'Mare' })
       .expect(201);
 
-    const newHorse = horseResponse.body.data;
+    const newHorse = horseResponse.body.data.horse;
 
     const finalCount = await prisma.horse.count({ where: { userId: testUser.id } });
     expect(finalCount).toBe(initialCount + 1);
 
     const created = await prisma.horse.findUnique({ where: { id: newHorse.id } });
     expect(created.userId).toBe(testUser.id);
+
+    const after = await prisma.user.findUnique({
+      where: { id: testUser.id },
+      select: { money: true },
+    });
+    expect(Number(after.money)).toBe(Number(before.money) - STORE_PRICE);
 
     // Cleanup
     await prisma.horse.deleteMany({ where: { id: newHorse.id } });

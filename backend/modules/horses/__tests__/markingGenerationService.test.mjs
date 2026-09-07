@@ -12,11 +12,11 @@
  *   - generateMarkings: full markings object structure
  *   - inheritMarkings: 40/40/20 sire/dam/reroll paths
  *   - Statistical: face marking distribution chi-squared p > 0.001
- *   - Integration: POST /api/v1/horses includes marking fields in phenotype
+ *   - Integration: generic horse creation includes marking fields in phenotype
  *
  * Mocking strategy (balanced):
  *   - Unit tests: no mocking (pure functions)
- *   - Integration test: real DB (prisma) + real HTTP (supertest)
+ *   - Integration: real DB (prisma) through the createHorseFromRequest service
  */
 
 import {
@@ -28,14 +28,10 @@ import {
   generateMarkings,
   inheritMarkings,
 } from '../services/markingGenerationService.mjs';
+import { createHorseFromRequest } from '../services/createHorseService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
-import request from 'supertest';
-import jwt from 'jsonwebtoken';
-import config from '../../../config/config.mjs';
 import app from '../../../app.mjs';
-
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // Deterministic RNG helper
 // ---------------------------------------------------------------------------
@@ -47,11 +43,6 @@ function alwaysReturn(val) {
 // ---------------------------------------------------------------------------
 // sampleWeightedFromMap
 // ---------------------------------------------------------------------------
-
-let __csrf__;
-beforeAll(async () => {
-  __csrf__ = await fetchCsrf(app);
-});
 
 describe('sampleWeightedFromMap', () => {
   it('returns a key from the weight map', () => {
@@ -454,7 +445,7 @@ describe('generateFaceMarking — statistical distribution (chi-squared)', () =>
 // Integration: POST /api/v1/horses includes marking fields
 // ---------------------------------------------------------------------------
 
-describe('POST /api/v1/horses — markings integration', () => {
+describe('createHorseFromRequest — markings integration', () => {
   let server;
   let testUserId;
   let createdHorseId;
@@ -502,24 +493,20 @@ describe('POST /api/v1/horses — markings integration', () => {
   });
 
   it('created horse phenotype includes faceMarking, legMarkings, advancedMarkings, modifiers', async () => {
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    // Equoria-6p398.2 (audit Finding 2): POST /api/v1/horses is closed to
+    // players and now answers 403. The marking-generation pipeline under test
+    // is unchanged; drive it at the service boundary instead of over HTTP.
+    const response = await createHorseFromRequest(
+      {
         name: `MarkingTestHorse_${timestamp}`,
         breedId,
         age: 3,
         sex: 'stallion',
-      })
-      .expect(201);
+      },
+      testUserId,
+    );
 
+    expect(response.status).toBe(201);
     expect(response.body.success).toBe(true);
     const horse = response.body.data;
     const phenotype = horse.phenotype;
