@@ -28,6 +28,7 @@ import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { ALLOWED_PREFERENCE_KEYS } from '../constants/authConstants.mjs';
 import { sanitizeInput } from '../../../utils/securityValidation.mjs';
 
@@ -232,6 +233,12 @@ export const updateProfile = async (req, res, next) => {
     // Merge preferences + bio into existing settings JSON without clobbering
     // onboarding state. bio lives in settings JSONB (the User table has no bio
     // column), alongside notifications + display (Equoria-pnd1z).
+    //
+    // Finding 1 (Equoria-6p398.1): `settingsUpdate` now holds ONLY the keys this
+    // route owns, and they are written by PATH (jsonb_set). The prior form read
+    // the whole settings document and wrote the whole document back, so a
+    // POST /bank/claim that committed in between had its `lastWeeklyClaimDate`
+    // marker erased — letting the player claim the weekly 5,000 coins twice.
     let settingsUpdate;
     if (hasPreferenceUpdate || hasBioUpdate) {
       const currentUser = await prisma.user.findUnique({
@@ -242,7 +249,7 @@ export const updateProfile = async (req, res, next) => {
         typeof currentUser?.settings === 'object' && currentUser.settings !== null
           ? currentUser.settings
           : {};
-      settingsUpdate = { ...currentSettings };
+      settingsUpdate = {};
       if (notifications !== undefined && notifications !== null) {
         settingsUpdate.notifications = {
           ...(currentSettings.notifications ?? {}),
@@ -259,23 +266,35 @@ export const updateProfile = async (req, res, next) => {
       }
     }
 
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        username: username || undefined,
-        email: email || undefined,
-        ...(settingsUpdate ? { settings: settingsUpdate } : {}),
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        createdAt: true,
-        updatedAt: true,
-        settings: true,
-      },
-    });
+    // Update user. The identity columns and the settings paths commit together.
+    const updatedUser = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        if (settingsUpdate) {
+          const affected = await updateUserSettingsPaths(tx, req.user.id, {
+            set: settingsUpdate,
+          });
+          if (affected !== 1) {
+            throw new AppError('User not found', 404);
+          }
+        }
+        return tx.user.update({
+          where: { id: req.user.id },
+          data: {
+            username: username || undefined,
+            email: email || undefined,
+          },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            createdAt: true,
+            updatedAt: true,
+            settings: true,
+          },
+        });
+      }),
+      { message: 'Profile service is busy right now, please retry in a moment.' },
+    );
 
     const updatedSettings =
       typeof updatedUser.settings === 'object' && updatedUser.settings !== null
@@ -368,15 +387,15 @@ export const updateUserPreferences = async (req, res, next) => {
           ...body,
         };
 
-        const updatedSettings = {
-          ...currentSettings,
-          preferences: merged,
-        };
-
-        await tx.user.update({
-          where: { id: req.user.id },
-          data: { settings: updatedSettings },
+        // Finding 1 (Equoria-6p398.1): write ONLY the `preferences` path so a
+        // concurrent bank claim's `lastWeeklyClaimDate` (and inventory,
+        // materials, onboarding state) survive this preference toggle.
+        const affected = await updateUserSettingsPaths(tx, req.user.id, {
+          set: { preferences: merged },
         });
+        if (affected !== 1) {
+          throw new AppError('User not found', 404);
+        }
 
         return merged;
       }),

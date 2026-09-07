@@ -12,6 +12,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 // Equoria-si69u: show money now routes through a named system-account escrow
 // so creator account deletion can never sink entry fees mid-flight. See the
@@ -629,14 +630,9 @@ export async function executeClosedShows(req, res) {
             const settings = user?.settings ?? {};
             const milestones = settings.milestones ?? {};
             if (!milestones.firstWin) {
-              await tx.user.update({
-                where: { id: userId },
-                data: {
-                  settings: {
-                    ...settings,
-                    milestones: { ...milestones, firstWin: now.toISOString() },
-                  },
-                },
+              // Finding 1 (Equoria-6p398.1): `milestones` path only.
+              await updateUserSettingsPaths(tx, userId, {
+                set: { milestones: { ...milestones, firstWin: now.toISOString() } },
               });
             }
           }

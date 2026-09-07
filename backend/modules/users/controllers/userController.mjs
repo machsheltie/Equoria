@@ -42,6 +42,7 @@ import {
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { validateSettingsPayload } from '../services/settingsValidation.mjs';
 // Equoria-oey96.2: shared competition-stats aggregation + bred-foal count.
@@ -581,18 +582,34 @@ export const updateUserController = async (req, res, next) => {
         typeof currentUser.settings === 'object' && currentUser.settings !== null
           ? currentUser.settings
           : {};
-      // Shallow-merge each validated top-level key into existing settings so
-      // server-owned keys (onboarding/milestones/inventory/economy) survive.
-      const mergedSettings = { ...currentSettings };
+      // Shallow-merge each validated top-level key into its existing value so
+      // nested client preferences are additive.
+      //
+      // Finding 1 (Equoria-6p398.1): the merged result is applied by PATH via
+      // updateUserSettingsPaths and REMOVED from `updates`, so only the
+      // client-writable keys are rewritten. The prior form sent a whole
+      // settings document built from a pre-request read, which erased the
+      // weekly bank-claim marker (`lastWeeklyClaimDate`) written by a
+      // concurrent POST /bank/claim and let the reward be claimed twice.
+      const settingsPaths = {};
       for (const [key, value] of Object.entries(validatedSettings)) {
-        mergedSettings[key] = {
+        settingsPaths[key] = {
           ...(typeof currentSettings[key] === 'object' && currentSettings[key] !== null
             ? currentSettings[key]
             : {}),
           ...value,
         };
       }
-      updates.settings = mergedSettings;
+      delete updates.settings;
+      if (Object.keys(settingsPaths).length > 0) {
+        const affected = await updateUserSettingsPaths(prisma, id, { set: settingsPaths });
+        if (affected !== 1) {
+          return res.status(404).json({
+            success: false,
+            message: 'User not found',
+          });
+        }
+      }
     }
 
     // ── Step 3: If email is changing, reset verification flags in same write ─

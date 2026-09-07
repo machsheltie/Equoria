@@ -42,6 +42,7 @@ import { AppError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
@@ -139,13 +140,16 @@ export const completeOnboarding = async (req, res, next) => {
       throw new AppError('User not found', 404);
     }
 
-    const currentSettings =
-      typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { settings: { ...currentSettings, completedOnboarding: true } },
+    // Finding 1 (Equoria-6p398.1): write ONLY `completedOnboarding`. The prior
+    // whole-document write replayed a stale snapshot and could erase the weekly
+    // bank-claim marker committed by a concurrent POST /bank/claim.
+    const affected = await updateUserSettingsPaths(prisma, userId, {
+      set: { completedOnboarding: true },
     });
+
+    if (affected !== 1) {
+      throw new AppError('User not found', 404);
+    }
 
     logger.info(`[onboardingController.completeOnboarding] User ${userId} completed onboarding`);
 
@@ -222,8 +226,9 @@ export const advanceOnboarding = async (req, res, next) => {
     const newStep = hasHorseCustomization ? 10 : currentStep + 1;
     const isComplete = newStep >= 10;
 
+    // Finding 1 (Equoria-6p398.1): only the onboarding keys are written; every
+    // other key keeps whatever the database holds at write time.
     const updatedSettings = {
-      ...currentSettings,
       onboardingStep: newStep,
       ...(isComplete ? { completedOnboarding: true } : {}),
     };
@@ -349,10 +354,12 @@ export const advanceOnboarding = async (req, res, next) => {
           }
         }
 
-        await tx.user.update({
-          where: { id: userId },
-          data: { settings: updatedSettings },
+        const affectedSettings = await updateUserSettingsPaths(tx, userId, {
+          set: updatedSettings,
         });
+        if (affectedSettings !== 1) {
+          throw new AppError('User not found', 404);
+        }
       }),
       { message: 'Onboarding service is busy right now, please retry in a moment.' },
     );

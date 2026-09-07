@@ -349,13 +349,27 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
       expect(FEED_SERVICE_SRC).toMatch(/jsonb_set\(COALESCE\("pregnancyFeedingsByTier"/);
       // The loser (affected === 0) rejects BEFORE the inventory write.
       expect(FEED_SERVICE_SRC).toMatch(/if\s*\(affected\s*===\s*0\)/);
-      // The inventory decrement (user.update settings) comes AFTER the affected===0
-      // guard — i.e. it is gated on a winning claim.
+      // The inventory decrement comes AFTER the affected===0 guard — i.e. it is
+      // gated on a winning claim.
+      //
+      // 2026-09 security audit, Finding 1 (Equoria-6p398.1): the write itself
+      // changed shape. It used to be `data: { settings: { ...settings, inventory } }`
+      // — a WHOLE-DOCUMENT rewrite from this transaction's earlier settings
+      // snapshot, which replayed (and could erase) unrelated keys such as the
+      // weekly bank-claim marker `lastWeeklyClaimDate`. It is now a jsonb_set
+      // path update of the `inventory` key only. The ordering assertion this
+      // sentinel exists for is unchanged and still enforced; the two extra
+      // assertions below pin the NEW contract so the whole-document form cannot
+      // come back.
       const guardIdx = FEED_SERVICE_SRC.search(/if\s*\(affected\s*===\s*0\)/);
-      const invWriteIdx = FEED_SERVICE_SRC.search(/data:\s*\{\s*settings:\s*\{\s*\.\.\.settings,\s*inventory\s*\}/);
+      const invWriteIdx = FEED_SERVICE_SRC.search(
+        /updateUserSettingsPaths\(\s*tx,\s*userId,\s*\{\s*set:\s*\{\s*inventory\s*\}\s*\}\s*\)/,
+      );
       expect(guardIdx).toBeGreaterThan(-1);
       expect(invWriteIdx).toBeGreaterThan(-1);
       expect(invWriteIdx).toBeGreaterThan(guardIdx);
+      // No writer in this service may replace the whole settings document.
+      expect(FEED_SERVICE_SRC).not.toMatch(/data:\s*\{\s*settings:\s*\{\s*\.\.\.settings/);
     });
   });
 });

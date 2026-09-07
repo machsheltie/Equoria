@@ -2,6 +2,7 @@
 // Paths adjusted for the new depth (models→horses→modules→backend→repo).
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import {
   hasGraduated,
   computeAgeStage,
@@ -784,15 +785,13 @@ async function graduateFoal(foalId, userId) {
 
     if (!milestones.firstGraduation) {
       isFirstGraduation = true;
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          settings: {
-            ...settings,
-            milestones: {
-              ...milestones,
-              firstGraduation: new Date().toISOString(),
-            },
+      // Finding 1 (Equoria-6p398.1): `milestones` path only — a whole-document
+      // write here could erase a weekly bank-claim marker committed meanwhile.
+      await updateUserSettingsPaths(prisma, userId, {
+        set: {
+          milestones: {
+            ...milestones,
+            firstGraduation: new Date().toISOString(),
           },
         },
       });
