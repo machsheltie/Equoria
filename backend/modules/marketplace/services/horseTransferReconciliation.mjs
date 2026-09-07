@@ -51,20 +51,52 @@
  * TACK (Equoria-6p398.12 — owner ruling on the Task-1 `unequipItem` residual)
  * Equipment is not a fitting on the horse either: it is stripped on sale and
  * returned to the SELLER's inventory. See `returnTackToSeller` below for the
- * two provenances and why they must be told apart.
+ * two provenances and why they must be told apart, and `BONUS_MIRROR_KEYS` for
+ * why a leftover numeric mirror is a permanent free bonus rather than clutter.
+ *
+ * `reconcileHorseOnTransfer` ends with the test-only `marketplaceRaceBarrier`
+ * seam so a regression can force a failure AFTER these writes and prove they
+ * roll back with the purchase; it is inert outside NODE_ENV === 'test'.
  *
  * @module modules/marketplace/services/horseTransferReconciliation
  */
 
 import { TACK_INVENTORY } from '../../economy/index.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
+// Same-module internal (NOT part of the marketplace public API): the test-only
+// interleaving/abort seam. See `reconcileHorseOnTransfer` for why it is here.
+import { awaitMarketplaceRaceBarrier } from './marketplaceRaceBarrier.mjs';
 
 /**
  * `Horse.tack` mirrors the numeric bonus of the two scored categories beside
- * the item id (`tackShopController.purchaseTackItem`). Those mirrors are
- * derived from the item, so they leave with it.
+ * the item id (`tackShopController.purchaseTackItem`).
+ *
+ * A mirror left behind WITHOUT its item is not merely untidy, it is a
+ * permanent free bonus: `resolveTackBonus` short-circuits on
+ * `typeof tack.saddleBonus === 'number' || typeof tack.bridleBonus === 'number'`
+ * and returns the stored numbers without ever looking at the item ids
+ * (tackShopController.mjs — the `hasDirect` branch). A horse carrying only
+ * `{ saddleBonus: 5 }` therefore scores +5 in every ridden competition
+ * forever. So every mirror whose item key is gone is deleted here — including
+ * one this sale did not create.
  */
 const BONUS_MIRROR_KEYS = Object.freeze({ saddle: 'saddleBonus', bridle: 'bridleBonus' });
+
+/**
+ * The `Horse.tack` keys that name equipment: every non-decorative category in
+ * the catalogue, plus `decorations` for the decorative array.
+ *
+ * Derived from `TACK_INVENTORY` rather than assumed, so a key that is NOT a
+ * known category (a future field, a legacy scribble) is never mistaken for an
+ * item id and swept into the seller's inventory. Such a key is left on the
+ * horse: this code cannot say what it is, and it cannot confer a bonus —
+ * `resolveTackBonus` reads only `saddle`, `bridle`, the two mirrors and
+ * `decorations`.
+ */
+const TACK_CATEGORY_KEYS = Object.freeze(
+  new Set(TACK_INVENTORY.map(item => item.category).filter(category => category !== 'decorative')),
+);
+const DECORATIONS_KEY = 'decorations';
 
 /** Read a Prisma Json value as a plain object (CONTRIBUTING.md JSONB guard). */
 function asObject(raw) {
@@ -81,9 +113,9 @@ function readInventory(settings) {
  * Flatten a `Horse.tack` document into the equipment entries it carries.
  *
  * The document is `{ <category>: <itemId>, decorations: [<itemId>...],
- * saddleBonus: <number>, bridleBonus: <number> }`. Only string-valued category
- * keys and the `decorations` array name an item; the numeric mirrors and any
- * other shape are not equipment and are left for the caller to handle.
+ * saddleBonus: <number>, bridleBonus: <number> }`. Only a string value under a
+ * KNOWN category key, and the `decorations` array, name an item; the numeric
+ * mirrors and every unknown key are not equipment and are left for the caller.
  *
  * @param {object} tack
  * @returns {Array<{ key: string, category: string, itemId: string }>}
@@ -91,7 +123,7 @@ function readInventory(settings) {
 function tackEntries(tack) {
   const entries = [];
   for (const [key, value] of Object.entries(tack)) {
-    if (key === 'decorations') {
+    if (key === DECORATIONS_KEY) {
       if (Array.isArray(value)) {
         for (const itemId of value) {
           if (typeof itemId === 'string' && itemId) {
@@ -101,11 +133,41 @@ function tackEntries(tack) {
       }
       continue;
     }
-    if (typeof value === 'string' && value) {
+    if (TACK_CATEGORY_KEYS.has(key) && typeof value === 'string' && value) {
       entries.push({ key, category: key, itemId: value });
     }
   }
   return entries;
+}
+
+/**
+ * The tack document the buyer should receive: every returned item's key gone,
+ * and every orphaned bonus mirror with it (see `BONUS_MIRROR_KEYS`).
+ *
+ * @param {object} tack
+ * @param {Array<{ key: string }>} entries - the equipment being returned
+ * @returns {{ strippedTack: object, changed: boolean }}
+ */
+function stripReturnedTack(tack, entries) {
+  const strippedTack = { ...tack };
+  let changed = false;
+
+  for (const entry of entries) {
+    if (entry.key in strippedTack) {
+      delete strippedTack[entry.key];
+      changed = true;
+    }
+  }
+
+  for (const [category, mirrorKey] of Object.entries(BONUS_MIRROR_KEYS)) {
+    const itemStillPresent = typeof strippedTack[category] === 'string' && strippedTack[category];
+    if (!itemStillPresent && mirrorKey in strippedTack) {
+      delete strippedTack[mirrorKey];
+      changed = true;
+    }
+  }
+
+  return { strippedTack, changed };
 }
 
 /**
@@ -189,7 +251,7 @@ function deriveReturnedItem(horseId, entry, takenIds) {
  *
  * @param {object} tx - the surrounding interactive Prisma transaction client
  * @param {{ horseId: number, sellerId: string }} params
- * @returns {Promise<{ tackItemsReleased: number, tackItemsDerived: number }>}
+ * @returns {Promise<{ tackItemsReleased: number, tackItemsDerived: number, tackDocumentRewritten: boolean }>}
  */
 export async function returnTackToSeller(tx, { horseId, sellerId }) {
   if (!sellerId) {
@@ -221,38 +283,45 @@ export async function returnTackToSeller(tx, { horseId, sellerId }) {
     .filter(entry => !accountedFor.has(`${entry.category}::${entry.itemId}`))
     .map(entry => deriveReturnedItem(horseId, entry, takenIds));
 
-  if (released.length === 0 && derived.length === 0) {
-    return { tackItemsReleased: 0, tackItemsDerived: 0 };
+  // The two writes are decided INDEPENDENTLY. A horse can need the tack write
+  // with nothing to return — `{ saddleBonus: 5 }` and no saddle, which
+  // `unequipItem` produces — and skipping it there would hand the buyer a
+  // permanent scoring bonus. A horse can equally need the inventory write with
+  // no tack change, when a record points at it that the tack never named.
+  const { strippedTack, changed: tackChanged } = stripReturnedTack(tack, entries);
+  const inventoryChanged = released.length > 0 || derived.length > 0;
+
+  if (!inventoryChanged && !tackChanged) {
+    return { tackItemsReleased: 0, tackItemsDerived: 0, tackDocumentRewritten: false };
   }
 
   // USER row first.
-  const affected = await updateUserSettingsPaths(tx, sellerId, {
-    set: { inventory: [...nextInventory, ...derived] },
-    expect: { inventory: { equals: inventory, whenMissing: [] } },
-  });
-  if (affected !== 1) {
-    throw Object.assign(
-      new Error('The seller’s inventory changed while this purchase was completing. Please retry.'),
-      { statusCode: 409 },
-    );
+  if (inventoryChanged) {
+    const affected = await updateUserSettingsPaths(tx, sellerId, {
+      set: { inventory: [...nextInventory, ...derived] },
+      expect: { inventory: { equals: inventory, whenMissing: [] } },
+    });
+    if (affected !== 1) {
+      throw Object.assign(
+        new Error(
+          'The seller’s inventory changed while this purchase was completing. Please retry.',
+        ),
+        { statusCode: 409 },
+      );
+    }
   }
 
-  // HORSE row second. Only the keys whose items were returned are removed (plus
-  // their derived bonus mirrors), so an unrecognised key this code does not
-  // understand is preserved rather than destroyed.
-  if (entries.length > 0) {
-    const strippedTack = { ...tack };
-    for (const entry of entries) {
-      delete strippedTack[entry.key];
-      const mirrorKey = BONUS_MIRROR_KEYS[entry.category];
-      if (mirrorKey) {
-        delete strippedTack[mirrorKey];
-      }
-    }
+  // HORSE row second. Only returned keys and orphaned mirrors are removed, so a
+  // key this code cannot identify is preserved rather than destroyed.
+  if (tackChanged) {
     await tx.horse.update({ where: { id: horseId }, data: { tack: strippedTack } });
   }
 
-  return { tackItemsReleased: released.length, tackItemsDerived: derived.length };
+  return {
+    tackItemsReleased: released.length,
+    tackItemsDerived: derived.length,
+    tackDocumentRewritten: tackChanged,
+  };
 }
 
 /**
@@ -354,6 +423,15 @@ export async function reconcileStaffOnHorseTransfer(tx, { horseId }) {
 export async function reconcileHorseOnTransfer(tx, { horseId, sellerId }) {
   const tack = await returnTackToSeller(tx, { horseId, sellerId });
   const staff = await reconcileStaffOnHorseTransfer(tx, { horseId });
+
+  // Test-only seam, AFTER every reconciliation write and before the sale record
+  // and ledger rows. A test barrier that throws here proves the tack return and
+  // the staff reconciliation share the purchase's rollback — the one thing an
+  // insufficient-funds rejection cannot prove, because that fails in
+  // `debitBuyer` before the claim and before this ever runs. No-op unless armed,
+  // and `setMarketplaceRaceBarrier` refuses to arm outside NODE_ENV === 'test'.
+  await awaitMarketplaceRaceBarrier('horseTransfer:afterReconciliation', { horseId, sellerId });
+
   return { ...tack, ...staff };
 }
 

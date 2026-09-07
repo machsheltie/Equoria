@@ -43,6 +43,8 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
+// Cross-module: through the economy barrel, never the tackShop internals.
+import { resolveTackBonus } from '../../economy/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-12-tack';
@@ -174,6 +176,21 @@ function armBarrierFor(buyerId) {
   };
 }
 
+/**
+ * Arm the seam to THROW after the reconciliation writes, for one horse. This is
+ * the only way to prove the tack return rolls back: every ordinary rejection
+ * (insufficient funds, stale listing) fails before the claim and before the
+ * reconciliation ever runs.
+ */
+function armAbortAfterReconciliation(horseId, marker) {
+  setMarketplaceRaceBarrier(async (stage, context) => {
+    if (stage !== 'horseTransfer:afterReconciliation' || context?.horseId !== horseId) {
+      return;
+    }
+    throw new Error(marker);
+  });
+}
+
 async function waitFor(promise, label) {
   let timer;
   try {
@@ -193,6 +210,10 @@ async function horseRow(horseId) {
     where: { id: horseId },
     select: { id: true, userId: true, tack: true },
   });
+}
+
+async function userRow(userId) {
+  return prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
 }
 
 /** The SELLER's persisted inventory array, read straight from the database. */
@@ -414,4 +435,116 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     expect(sold.userId).toBe(buyer.id);
     expect(sold.tack.saddle).toBeUndefined();
   }, 120000);
+
+  it('strips an orphaned bonus mirror, so the buyer inherits no free scoring bonus', async () => {
+    // The orphan state, seeded exactly as live rows carry it: `unequipItem`
+    // used to delete the ITEM key and leave the mirror behind (shop-buy a
+    // saddle -> GET /api/inventory seeds the record -> unequip). That is fixed
+    // now, but rows created before the fix still look like this, and
+    // `resolveTackBonus` short-circuits on ANY numeric mirror — a horse holding
+    // only `{ saddleBonus: 5 }` scores +5 in every ridden competition with
+    // nothing on its back.
+    await prisma.horse.update({
+      where: { id: listedHorse.id },
+      data: { tack: { saddleBonus: 5, bridleBonus: 4 } },
+    });
+    expect(resolveTackBonus((await horseRow(listedHorse.id)).tack)).toEqual({
+      saddleBonus: 5,
+      bridleBonus: 4,
+      presenceBonus: 0,
+    });
+    const inventoryBefore = await sellerInventory(seller.id);
+
+    expect((await buyRequest(buyer.token, listedHorse.id)).status).toBe(200);
+
+    // Nothing was released and nothing derived — there were no items — so this
+    // also pins that the horse write is decided independently of the inventory
+    // write. An early return here is what left the mirror on the buyer's horse.
+    const sold = await horseRow(listedHorse.id);
+    expect(sold.userId).toBe(buyer.id);
+    expect(sold.tack.saddleBonus).toBeUndefined();
+    expect(sold.tack.bridleBonus).toBeUndefined();
+    expect(resolveTackBonus(sold.tack)).toEqual({
+      saddleBonus: 0,
+      bridleBonus: 0,
+      presenceBonus: 0,
+    });
+    // A mirror is not an item: nothing is invented in the seller's inventory.
+    expect(await sellerInventory(seller.id)).toEqual(inventoryBefore);
+  }, 90000);
+
+  it('rolls the tack return back when the purchase fails AFTER the reconciliation', async () => {
+    expect((await purchaseTackRequest(seller.token, keptHorse.id, INVENTORY_SADDLE)).status).toBe(200);
+    const seeded = await getInventoryRequest(seller.token);
+    const saddleRecordId = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE).id;
+    expect((await equipRequest(seller.token, saddleRecordId, listedHorse.id)).status).toBe(200);
+    expect((await purchaseTackRequest(seller.token, listedHorse.id, SHOP_HALTER)).status).toBe(200);
+
+    const tackBefore = (await horseRow(listedHorse.id)).tack;
+    const inventoryBefore = await sellerInventory(seller.id);
+    const sellerMoneyBefore = (await userRow(seller.id)).money;
+    const buyerMoneyBefore = (await userRow(buyer.id)).money;
+
+    const marker = `TestFixture-6p398-12-abort-${tag()}`;
+    let bought;
+    try {
+      armAbortAfterReconciliation(listedHorse.id, marker);
+      bought = await buyRequest(buyer.token, listedHorse.id);
+    } finally {
+      setMarketplaceRaceBarrier(null);
+    }
+
+    // An injected fault carries no statusCode, so buyHorse's catch answers 500.
+    // The status is not the point; the persisted state is.
+    expect(bought.status).toBe(500);
+
+    const after = await horseRow(listedHorse.id);
+    expect(after.userId).toBe(seller.id);
+    expect(after.tack).toEqual(tackBefore);
+    expect(await sellerInventory(seller.id)).toEqual(inventoryBefore);
+    expect((await userRow(seller.id)).money).toBe(sellerMoneyBefore);
+    expect((await userRow(buyer.id)).money).toBe(buyerMoneyBefore);
+    expect(await prisma.horseSale.count({ where: { horseId: listedHorse.id } })).toBe(0);
+    expect(
+      await prisma.userTransaction.count({
+        where: {
+          userId: { in: [seller.id, buyer.id] },
+          category: { in: ['marketplace_sale', 'marketplace_purchase'] },
+        },
+      }),
+    ).toBe(0);
+
+    // The listing survives intact, so the sale can simply be retried.
+    const relisted = await prisma.horse.findUnique({
+      where: { id: listedHorse.id },
+      select: { forSale: true, salePrice: true },
+    });
+    expect(relisted.forSale).toBe(true);
+    expect(relisted.salePrice).toBe(LIST_PRICE);
+  }, 90000);
+
+  it('leaves the former owner with nothing to unequip once the sale returned the item', async () => {
+    expect((await purchaseTackRequest(seller.token, keptHorse.id, INVENTORY_SADDLE)).status).toBe(200);
+    const seeded = await getInventoryRequest(seller.token);
+    const saddleRecordId = seeded.body.data.items.find(i => i.itemId === INVENTORY_SADDLE).id;
+    expect((await equipRequest(seller.token, saddleRecordId, listedHorse.id)).status).toBe(200);
+
+    expect((await buyRequest(buyer.token, listedHorse.id)).status).toBe(200);
+
+    const tackAfterSale = (await horseRow(listedHorse.id)).tack;
+    const inventoryAfterSale = await sellerInventory(seller.id);
+
+    // The Task-1 residual: unequip used to be the former owner's only handle on
+    // a sold horse, and it cleared the record while leaving the item on the
+    // stranger's horse. The sale has already returned it, so the two
+    // representations agree and there is nothing left to unequip.
+    const rejected = await unequipRequest(seller.token, saddleRecordId);
+    expect(rejected.status).toBe(400);
+    expect(rejected.body.message).toBe('Item is not currently equipped');
+
+    const settled = await horseRow(listedHorse.id);
+    expect(settled.tack).toEqual(tackAfterSale);
+    expect(settled.userId).toBe(buyer.id);
+    expect(await sellerInventory(seller.id)).toEqual(inventoryAfterSale);
+  }, 90000);
 });

@@ -7,11 +7,19 @@
  * while buyer C buys and relists" therefore needs a way to suspend ONE
  * in-flight request between those two statements.
  *
- * What this seam is allowed to do: DELAY. It receives a stage name and a
- * read-only context and awaits whatever the test hands back. It never supplies
- * a query result, never short-circuits a code path, never fabricates data, and
- * never changes what SQL runs — every read and write in `buyHorse` is the real
- * one, against the real database, in the real transaction.
+ * What this seam is allowed to do: DELAY, or ABORT. It receives a stage name
+ * and a read-only context and awaits whatever the test hands back; if that
+ * throws, the rejection propagates out of the surrounding transaction and rolls
+ * it back. It never supplies a query result, never short-circuits a code path,
+ * never fabricates data, and never changes what SQL runs — every read and write
+ * in `buyHorse` is the real one, against the real database, in the real
+ * transaction.
+ *
+ * The abort form exists for one thing a rejected purchase cannot demonstrate:
+ * that writes made LATE in the transaction (the tack return and staff
+ * reconciliation, `horseTransfer:afterReconciliation`) roll back with it. Every
+ * ordinary rejection — insufficient funds, a stale listing — fails BEFORE those
+ * writes, so it proves nothing about them.
  *
  * Safety:
  *   - `setMarketplaceRaceBarrier` throws outside `NODE_ENV === 'test'`, so the

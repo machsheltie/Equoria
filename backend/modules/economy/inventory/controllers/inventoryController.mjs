@@ -97,6 +97,71 @@ function asObject(raw) {
   return raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
 }
 
+/**
+ * The `Horse.tack` key a category writes to, and the two derived scoring
+ * mirrors `tackShopController.purchaseTackItem` stores beside the item id.
+ *
+ * Decorative items are ADDITIVE and live in the `decorations` array, not in a
+ * `decorative` slot: `resolveTackBonus`'s parade presence bonus and
+ * `tackShopController.unequipDecoration` both read `tack.decorations` and
+ * nothing else. Writing a decoration to `tack.decorative` — which this file did
+ * before Equoria-6p398.12 — produced an item that was equipped, invisible to
+ * scoring, and unreachable by the shop's remove endpoint.
+ */
+const DECORATIVE_CATEGORY = 'decorative';
+const DECORATIONS_KEY = 'decorations';
+const BONUS_MIRROR_KEYS = Object.freeze({ saddle: 'saddleBonus', bridle: 'bridleBonus' });
+
+/** Read `tack.decorations` as an array of item ids. */
+function readDecorations(tack) {
+  return Array.isArray(tack[DECORATIONS_KEY]) ? tack[DECORATIONS_KEY] : [];
+}
+
+/**
+ * Put an item on a horse's tack document.
+ *
+ * @param {object} tack - the horse's current tack (already object-guarded)
+ * @param {{category: string, itemId: string}} item
+ */
+function withTackItem(tack, item) {
+  if (item.category === DECORATIVE_CATEGORY) {
+    const decorations = readDecorations(tack);
+    return decorations.includes(item.itemId)
+      ? { ...tack }
+      : { ...tack, [DECORATIONS_KEY]: [...decorations, item.itemId] };
+  }
+  return { ...tack, [item.category]: item.itemId };
+}
+
+/**
+ * Take an item off a horse's tack document.
+ *
+ * The bonus mirror goes with the item. Leaving it behind is not cosmetic:
+ * `resolveTackBonus` short-circuits on `typeof tack.saddleBonus === 'number' ||
+ * typeof tack.bridleBonus === 'number'` and returns the stored numbers without
+ * looking at any item id, so a horse holding only `{ saddleBonus: 5 }` scored
+ * +5 in every ridden competition with nothing on its back.
+ *
+ * @param {object} tack - the horse's current tack (already object-guarded)
+ * @param {{category: string, itemId: string}} item
+ */
+function withoutTackItem(tack, item) {
+  const next = { ...tack };
+  if (item.category === DECORATIVE_CATEGORY) {
+    next[DECORATIONS_KEY] = readDecorations(tack).filter(id => id !== item.itemId);
+    if (next[DECORATIONS_KEY].length === 0) {
+      delete next[DECORATIONS_KEY];
+    }
+    return next;
+  }
+  delete next[item.category];
+  const mirrorKey = BONUS_MIRROR_KEYS[item.category];
+  if (mirrorKey) {
+    delete next[mirrorKey];
+  }
+  return next;
+}
+
 /** Build an error the catch blocks below turn into a specific HTTP status. */
 function httpError(status, message) {
   const error = new Error(message);
@@ -247,11 +312,17 @@ export async function equipItem(req, res) {
 
         // Update inventory record — set new item, clear any other same-category
         // item that was pointing at the same horse (stale after the swap).
+        // Decorative items are exempt: they stack in `tack.decorations`, so a
+        // second ribbon does not displace the first.
         const updatedInventory = inventory.map((i, idx) => {
           if (idx === itemIndex) {
             return { ...i, equippedToHorseId: horseId };
           }
-          if (i.category === item.category && i.equippedToHorseId === horseId) {
+          if (
+            item.category !== DECORATIVE_CATEGORY &&
+            i.category === item.category &&
+            i.equippedToHorseId === horseId
+          ) {
             return { ...i, equippedToHorseId: null };
           }
           return i;
@@ -276,12 +347,13 @@ export async function equipItem(req, res) {
         if (item.equippedToHorseId && item.equippedToHorseId !== horseId) {
           const prevHorse = user.horses.find(h => h.id === item.equippedToHorseId);
           if (prevHorse) {
-            const newPrevTack = { ...asObject(prevHorse.tack) };
-            delete newPrevTack[item.category];
-            tackChanges.push({ id: prevHorse.id, tack: newPrevTack });
+            tackChanges.push({
+              id: prevHorse.id,
+              tack: withoutTackItem(asObject(prevHorse.tack), item),
+            });
           }
         }
-        const updatedTack = { ...asObject(horse.tack), [item.category]: item.itemId };
+        const updatedTack = withTackItem(asObject(horse.tack), item);
         tackChanges.push({ id: horseId, tack: updatedTack });
         tackChanges.sort((a, b) => a.id - b.id);
 
@@ -384,9 +456,10 @@ export async function unequipItem(req, res) {
         // passed over in silence.
         const horse = user.horses.find(h => h.id === item.equippedToHorseId);
         if (horse) {
-          const newTack = { ...asObject(horse.tack) };
-          delete newTack[item.category];
-          await applyTackChange(tx, userId, { id: horse.id, tack: newTack });
+          await applyTackChange(tx, userId, {
+            id: horse.id,
+            tack: withoutTackItem(asObject(horse.tack), item),
+          });
         } else {
           logger.warn(
             `[inventoryController] User ${userId} unequipped "${inventoryItemId}" from horse ` +
