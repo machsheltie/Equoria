@@ -259,34 +259,52 @@ describe('rider assignment ownership (finding 6)', () => {
   it('a failed assignment write leaves the horse rider untouched (both representations roll back)', async () => {
     const assigned = await assignRiderRequest(seller.token, sellerRider.id, horse.id);
     const assignmentId = assigned.body.data.id;
+    expect((await horseRow(horse.id)).rider.id).toBe(sellerRider.id);
 
-    // A genuine, unmocked in-transaction write failure: `RiderAssignment` is
-    // UNIQUE on (riderId, horseId, isActive), so a pre-existing INACTIVE row
-    // for this exact rider+horse pair makes the deactivation UPDATE violate the
-    // constraint. Nothing about the request is faked — the deactivation is the
-    // real statement, and it really fails.
-    const collidingRow = await prisma.riderAssignment.create({
-      data: {
-        riderId: sellerRider.id,
-        horseId: horse.id,
-        userId: seller.id,
-        isActive: false,
-      },
-    });
-    expect(collidingRow.id).not.toBe(assignmentId);
-
-    const attempted = await unassignRequest(seller.token, assignmentId);
-    // P2002 carries no numeric `status`, so it falls through to the controller's
-    // generic 500 — pinned here so a future change to that mapping is a visible
-    // decision rather than a silent one. (The underlying constraint defect is a
-    // known residual: Equoria-kccmt owns the partial-unique-index migration.)
+    // FORCING MECHANISM CHANGED (Equoria-kccmt) — the invariant is unchanged.
+    // This test used to reach a genuine in-transaction failure by planting a
+    // second INACTIVE row for the same rider+horse pair, which the composite
+    // unique `(riderId, horseId, isActive)` rejected. That constraint WAS the
+    // defect Equoria-kccmt removed: it capped assignment history at one row per
+    // pair. Deactivation can no longer fail that way, so the failure is now
+    // forced on the ASSIGN transaction instead, which writes in the same order
+    // and is the stronger case — `Horse.rider`, then the deactivation, then the
+    // create, three writes of which two must be undone.
+    //
+    // The failure is still genuine and unmocked: a NUL byte is not
+    // representable in a Postgres `text` value ("invalid byte sequence for
+    // encoding UTF8: 0x00"), so `riderAssignment.create` really fails at the
+    // database, after `Horse.rider` has already been written inside the
+    // transaction. Nothing about the request is faked; `notes` passes the
+    // route's own validation (optional, max 500 characters).
+    const poisonNotes = `note${String.fromCharCode(0)}end`;
+    const attempted = await fetchCsrf(app).then(csrf =>
+      request(app)
+        .post('/api/v1/riders/assignments')
+        .set('Authorization', `Bearer ${seller.token}`)
+        .set('Origin', ORIGIN)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ riderId: sellerRiderTwo.id, horseId: horse.id, notes: poisonNotes }),
+    );
+    // The database error carries no numeric `status`, so it falls through to the
+    // controller's generic 500 — pinned here so a future change to that mapping
+    // is a visible decision rather than a silent one.
     expect(attempted.status).toBe(500);
 
-    // The horse's rider must not have been cleared by a transaction that
-    // could not also record the unassignment.
+    // Neither representation moved: the horse still carries the FIRST rider and
+    // the first assignment is still the active one. A non-transactional
+    // controller would have left the horse pointing at sellerRiderTwo with no
+    // assignment row to match, or an inactive first assignment and no
+    // replacement.
     const persistedHorse = await horseRow(horse.id);
     expect(persistedHorse.rider).not.toBeNull();
     expect(persistedHorse.rider.id).toBe(sellerRider.id);
     expect((await assignmentRow(assignmentId)).isActive).toBe(true);
+    expect(
+      await prisma.riderAssignment.count({
+        where: { horseId: horse.id, riderId: sellerRiderTwo.id },
+      }),
+    ).toBe(0);
   }, 60000);
 });

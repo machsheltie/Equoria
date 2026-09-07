@@ -66,7 +66,7 @@ import { CRAFTING_RECIPES } from '../../crafting/index.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 // Same-module internal (NOT part of the marketplace public API): the test-only
 // interleaving/abort seam. See `reconcileHorseOnTransfer` for why it is here.
-import { awaitMarketplaceRaceBarrier } from './marketplaceRaceBarrier.mjs';
+import { __TESTING_ONLY_awaitMarketplaceRaceBarrier } from './marketplaceRaceBarrier.mjs';
 
 /**
  * `Horse.tack` mirrors the numeric bonus of the two scored categories beside
@@ -372,45 +372,34 @@ export async function returnTackToSeller(tx, { horseId, sellerId }) {
 /**
  * End every active assignment on one horse in one assignment table.
  *
- * INTERIM COMPOSITE-UNIQUE GUARD (Equoria-kccmt is the owner-gated fix).
- * All three tables carry a composite unique on (staff, horse, isActive) —
- * `@@unique([riderId, horseId, isActive])`, `@@unique([trainerId, horseId,
- * isActive])`, `@@unique([foalId, groomId, isActive])`. That index makes a
- * plain "flip the active row to inactive" UPDATE fail with P2002 whenever the
- * horse ALREADY holds an inactive row for the same staff member — reachable in
- * four ordinary actions (assign → unassign → assign again → sell). Inside the
- * buy transaction that P2002 would abort a legitimate purchase, so before
- * deactivating we DELETE the superseded inactive row(s) for exactly the pairs
- * about to be deactivated.
+ * A sale ENDS assignments; it never deletes them. One guarded `updateMany` per
+ * table flips every active row to inactive (grooms additionally get their
+ * `endDate`, the way `groomAssignmentService.removeAssignment` writes it), and
+ * every historical row on the horse — including a row superseded earlier by a
+ * re-assignment of the same staff member — survives untouched.
  *
- * History cost, stated plainly: the older assignment ROW for that same
- * staff+horse pair is lost (its `startDate`, `notes`, and for grooms its
- * `endDate`/`bondScore`). The row that survives is the later one — the
- * assignment that was actually in force at the moment of sale. Care history
- * itself is not deleted: `GroomInteraction.assignmentId` is `ON DELETE SET
- * NULL` (migration 20250530230230), so interaction rows survive with their
- * assignment back-link cleared, and rider/trainer assignments have no dependent
- * rows at all. The proper fix — a partial unique index on `isActive = true`,
- * which needs a migration — is owner-gated and deliberately not done here.
+ * HISTORY OF THIS FUNCTION (Equoria-kccmt, closing Equoria-6p398.10)
+ * Until 2026-09-07 all three tables carried a composite unique on
+ * (staff, horse, isActive). Because `isActive` was part of the key it capped
+ * assignment HISTORY for a pair at one inactive row, so deactivating an active
+ * row raised P2002 whenever the horse already held an inactive row for the same
+ * staff member — reachable in four ordinary actions (assign → unassign →
+ * assign again → sell) and, inside the buy transaction, enough to abort a
+ * legitimate purchase. This function therefore carried an interim guard that
+ * read the active rows and DELETED the superseded inactive row(s) first,
+ * destroying one real assignment row per re-assigned pair on every sale.
+ *
+ * Migration `20260907120000_kccmt_partial_unique_active_staff_assignments`
+ * replaced each composite unique with a PARTIAL unique index over
+ * (staff, horse) `WHERE "isActive"`. One active row per pair is still enforced
+ * by the database; unlimited inactive rows are now legal. The interim delete —
+ * and its history cost — is gone with it. Do not reintroduce a delete here.
  *
  * @param {object} delegate - the tx-bound Prisma model delegate
- * @param {{ horseField: string, staffField: string, horseId: number, endData?: object }} params
+ * @param {{ horseField: string, horseId: number, endData?: object }} params
  * @returns {Promise<number>} how many active assignments were ended
  */
-async function endActiveAssignmentsOnHorse(delegate, { horseField, staffField, horseId, endData }) {
-  const active = await delegate.findMany({
-    where: { [horseField]: horseId, isActive: true },
-    select: { [staffField]: true },
-  });
-  if (active.length === 0) {
-    return 0;
-  }
-
-  const staffIds = [...new Set(active.map(row => row[staffField]))];
-  await delegate.deleteMany({
-    where: { [horseField]: horseId, isActive: false, [staffField]: { in: staffIds } },
-  });
-
+async function endActiveAssignmentsOnHorse(delegate, { horseField, horseId, endData }) {
   const { count } = await delegate.updateMany({
     where: { [horseField]: horseId, isActive: true },
     data: { isActive: false, ...endData },
@@ -432,19 +421,16 @@ export async function reconcileStaffOnHorseTransfer(tx, { horseId }) {
 
   const riderAssignmentsEnded = await endActiveAssignmentsOnHorse(tx.riderAssignment, {
     horseField: 'horseId',
-    staffField: 'riderId',
     horseId,
   });
   const trainerAssignmentsEnded = await endActiveAssignmentsOnHorse(tx.trainerAssignment, {
     horseField: 'horseId',
-    staffField: 'trainerId',
     horseId,
   });
   // Grooms carry an explicit `endDate`, written the same way the groom service
   // ends an assignment (groomAssignmentService.removeAssignment).
   const groomAssignmentsEnded = await endActiveAssignmentsOnHorse(tx.groomAssignment, {
     horseField: 'foalId',
-    staffField: 'groomId',
     horseId,
     endData: { endDate: new Date() },
   });
@@ -475,7 +461,10 @@ export async function reconcileHorseOnTransfer(tx, { horseId, sellerId }) {
   // insufficient-funds rejection cannot prove, because that fails in
   // `debitBuyer` before the claim and before this ever runs. No-op unless armed,
   // and `setMarketplaceRaceBarrier` refuses to arm outside NODE_ENV === 'test'.
-  await awaitMarketplaceRaceBarrier('horseTransfer:afterReconciliation', { horseId, sellerId });
+  await __TESTING_ONLY_awaitMarketplaceRaceBarrier('horseTransfer:afterReconciliation', {
+    horseId,
+    sellerId,
+  });
 
   return { ...tack, ...staff };
 }

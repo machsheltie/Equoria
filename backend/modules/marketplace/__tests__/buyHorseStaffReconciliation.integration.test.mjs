@@ -33,7 +33,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
+import { __TESTING_ONLY_setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-6-staff';
@@ -211,7 +211,7 @@ function armBarrierFor(buyerId) {
   const gate = new Promise(resolve => {
     openGate = resolve;
   });
-  setMarketplaceRaceBarrier(async (stage, context) => {
+  __TESTING_ONLY_setMarketplaceRaceBarrier(async (stage, context) => {
     if (stage !== 'buyHorse:afterListingRead' || context?.buyerId !== buyerId) {
       return;
     }
@@ -221,7 +221,7 @@ function armBarrierFor(buyerId) {
   return {
     reached,
     release: () => openGate(),
-    disarm: () => setMarketplaceRaceBarrier(null),
+    disarm: () => __TESTING_ONLY_setMarketplaceRaceBarrier(null),
   };
 }
 
@@ -299,7 +299,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
   }, 60000);
 
   afterEach(async () => {
-    setMarketplaceRaceBarrier(null);
+    __TESTING_ONLY_setMarketplaceRaceBarrier(null);
     await cleanup.run();
   }, 30000);
 
@@ -406,12 +406,14 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
   }, 60000);
 
   it('completes when the horse carries a re-assigned staff pair (composite-unique collision)', async () => {
-    // Four ordinary actions reach the collision the composite uniques
-    // (riderId|trainerId|groomId, horse, isActive) create: assign -> unassign ->
-    // assign the SAME staff member to the SAME horse again leaves an inactive
-    // row beside the active one, so deactivating the active row would violate
-    // the index. Inside the buy transaction that P2002 aborts a legitimate
-    // purchase, which is what this asserts must not happen.
+    // Four ordinary actions reach what used to be a collision: assign ->
+    // unassign -> assign the SAME staff member to the SAME horse again leaves
+    // an inactive row beside the active one. Under the old composite uniques
+    // (riderId|trainerId|groomId, horse, isActive) deactivating the active row
+    // violated the index, and inside the buy transaction that P2002 aborted a
+    // legitimate purchase. Since Equoria-kccmt the uniques are PARTIAL indexes
+    // over active rows only, so the sale simply deactivates and every
+    // historical row survives — which is what this now asserts.
     expect((await unassignRiderRequest(seller.token, riderAssignmentId)).status).toBe(200);
     const riderReassigned = await assignRiderRequest(seller.token, rider.id, listedHorse.id);
     expect(riderReassigned.status).toBe(201);
@@ -455,18 +457,38 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     expect(await prisma.trainerAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
     expect(await prisma.groomAssignment.count({ where: { foalId: listedHorse.id, isActive: true } })).toBe(0);
 
-    // ... the superseded duplicate row is gone (the stated history cost of the
-    // interim guard) ...
-    expect(await prisma.groomAssignment.findUnique({ where: { id: supersededGroom.id } })).toBeNull();
-    expect(await prisma.riderAssignment.findUnique({ where: { id: riderAssignmentId } })).toBeNull();
+    // ... and so does the SUPERSEDED one.
+    //
+    // DELIBERATE CONTRACT INVERSION (Equoria-kccmt, closing Equoria-6p398.10).
+    // Until the partial unique index landed, these two assertions read
+    // `.toBeNull()` — they PROVED that the sale destroyed one assignment row
+    // per re-assigned pair, which was the stated history cost of the interim
+    // delete-superseded guard in `endActiveAssignmentsOnHorse`. The owner
+    // accepted the index, the guard is gone, and the contract is now the
+    // opposite: a sale ends assignments, it never deletes them. This is an
+    // intended contract change, not a weakened assertion — the old expectation
+    // could only have been met by deleting player history.
+    const supersededGroomRow = await prisma.groomAssignment.findUnique({
+      where: { id: supersededGroom.id },
+    });
+    expect(supersededGroomRow).not.toBeNull();
+    expect(supersededGroomRow.isActive).toBe(false);
 
-    // ... but the care history itself is not: the interaction survives with its
-    // assignment back-link set to null (ON DELETE SET NULL).
+    const supersededRiderRow = await prisma.riderAssignment.findUnique({
+      where: { id: riderAssignmentId },
+    });
+    expect(supersededRiderRow).not.toBeNull();
+    expect(supersededRiderRow.isActive).toBe(false);
+
+    // The care history that hung off the superseded groom row keeps its
+    // back-link too, because the row it points at is still there. (Before the
+    // index this survived only with `assignmentId` nulled by ON DELETE SET
+    // NULL — the second half of the same inversion.)
     const persistedInteraction = await prisma.groomInteraction.findUnique({
       where: { id: interaction.id },
     });
     expect(persistedInteraction).not.toBeNull();
-    expect(persistedInteraction.assignmentId).toBeNull();
+    expect(persistedInteraction.assignmentId).toBe(supersededGroom.id);
     expect(persistedInteraction.bondingChange).toBe(2);
   }, 60000);
 });
