@@ -36,6 +36,8 @@ const uid = () => randomBytes(4).toString('hex');
 
 let user;
 let token;
+/** Extra fixture users created inside individual tests. */
+const extraUserIds = [];
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
@@ -67,6 +69,7 @@ beforeAll(async () => {
   // if a horse referenced it.
   cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: extraUserIds } } }), 'extra-users');
 }, 30_000);
 
 afterAll(() => cleanup.run(), 30_000);
@@ -95,6 +98,46 @@ async function doPut(body) {
   const fresh = await prisma.user.findUnique({ where: { id: user.id } });
   return { res, fresh };
 }
+
+describe('PUT /api/v1/users/:id — settings write atomicity (Equoria-6p398.1)', () => {
+  it('leaves settings untouched when the identity update fails on a duplicate email', async () => {
+    // A second account owns the email this request will try to claim, so the
+    // identity write raises Prisma P2002 AFTER the settings paths were written
+    // inside the same transaction.
+    const suffix = `${uid()}${uid()}`;
+    const other = await prisma.user.create({
+      data: {
+        email: `testfixture-settingsatomic-${suffix}@test.com`,
+        username: `TestFixture-settingsatomic-${suffix}`,
+        password: '$2b$12$originalHashThatShouldNeverChange.XXXXXXXXXXXXXXXXXXXXX',
+        firstName: 'Other',
+        lastName: 'User',
+        money: 0,
+        role: 'user',
+        settings: {},
+      },
+    });
+    extraUserIds.push(other.id);
+
+    const before = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(before.settings.preferences.emailSystem).toBe(true);
+
+    const { res, fresh } = await doPut({
+      settings: { preferences: { emailSystem: false } },
+      email: other.email,
+    });
+
+    // The request failed …
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+    // … so NO player state may have moved. Pre-fix the settings write was a
+    // separate statement that had already committed by this point.
+    expect(fresh.settings).toEqual(before.settings);
+    expect(fresh.settings.preferences.emailSystem).toBe(true);
+    expect(fresh.email).toBe(before.email);
+    expect(fresh.emailVerified).toBe(before.emailVerified);
+  });
+});
 
 describe('PUT /api/v1/users/:id — settings shape validation (Equoria-bddjw)', () => {
   // ─── Sentinel-positive: arbitrary nested keys MUST be rejected ──────────────

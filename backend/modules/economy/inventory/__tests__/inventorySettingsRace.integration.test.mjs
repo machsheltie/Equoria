@@ -421,7 +421,12 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
       await barrier.release();
     }
 
-    await Promise.allSettled([aPromise, bPromise]);
+    const [aRes, bRes] = await Promise.all([aPromise, bPromise]);
+
+    // Exactly one equip wins the compare-and-swap; the other is REJECTED
+    // rather than silently overwriting it. (Which one wins is not determined,
+    // hence the sort.)
+    expect([aRes.status, bRes.status].sort()).toEqual([200, 409]);
 
     const tackA = await readTack(horseA.id);
     const tackB = await readTack(horseB.id);
@@ -520,10 +525,10 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
       });
     };
 
-    const expectPreserved = async () => {
+    const expectPreserved = async ({ craftingMaterials = UNRELATED_SETTINGS.craftingMaterials } = {}) => {
       const settings = await readSettings(user.id);
       expect(settings.lastWeeklyClaimDate).toBe(MARKER);
-      expect(settings.craftingMaterials).toEqual(UNRELATED_SETTINGS.craftingMaterials);
+      expect(settings.craftingMaterials).toEqual(craftingMaterials);
       expect(settings.milestones).toEqual(UNRELATED_SETTINGS.milestones);
       return settings;
     };
@@ -577,6 +582,48 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
       const settings = await expectPreserved();
       expect(settings.inventory).toHaveLength(1);
       expect(settings.inventory[0].equippedToHorseId).toBe(horse.id);
+    }, 60000);
+
+    it('the feed shop purchase preserves it', async () => {
+      await seed({});
+      await prisma.user.update({ where: { id: user.id }, data: { money: 1000 } });
+
+      const res = await post('/api/v1/feed-shop/purchase', token, {
+        feedTier: 'basic',
+        packs: 1,
+      });
+      expect(res.status).toBe(200);
+
+      const settings = await expectPreserved();
+      // The purchase's own effect landed …
+      expect(settings.inventory).toEqual([expect.objectContaining({ id: 'feed-basic', quantity: 100 })]);
+      // … and the coins actually left the wallet.
+      const after = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { money: true },
+      });
+      expect(after.money).toBe(900);
+    }, 60000);
+
+    it('crafting preserves it', async () => {
+      await seed({});
+      await prisma.user.update({ where: { id: user.id }, data: { money: 1000 } });
+
+      // Tier-0 recipe: 75 coins, 1 leather. The seeded materials hold 3 leather.
+      const res = await post('/api/v1/crafting/craft', token, { recipeId: 'basic-halter' });
+      expect(res.status).toBe(200);
+
+      // Crafting DOES own craftingMaterials, so that key legitimately changes;
+      // the marker and every key crafting does not own must not.
+      const settings = await expectPreserved({
+        craftingMaterials: { ...UNRELATED_SETTINGS.craftingMaterials, leather: 2 },
+      });
+      expect(settings.inventory).toEqual([expect.objectContaining({ itemId: 'crafted-basic-halter' })]);
+      const after = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { money: true },
+      });
+      expect(after.money).toBe(925);
     }, 60000);
 
     it('PATCH /auth/profile/preferences preserves it', async () => {

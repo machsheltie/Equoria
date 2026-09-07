@@ -124,6 +124,28 @@ describe('updateUserSettingsPaths', () => {
     expect(after.lastWeeklyClaimDate).toBe(MARKER);
   }, 30000);
 
+  it('treats a stored JSON null as `whenMissing` for the compare-and-swap', async () => {
+    // `getInventoryFromSettings` and friends normalise a null/primitive
+    // `inventory` to `[]`, so a caller's precondition is `[]`. Before the
+    // NULLIF hardening, a document holding `"inventory": null` matched neither
+    // the stored-null branch nor `[]`, and every guarded write to that row
+    // failed forever (a permanent 409).
+    await prisma.user.update({
+      where: { id: userId },
+      data: { settings: { lastWeeklyClaimDate: MARKER, inventory: null } },
+    });
+
+    const affected = await updateUserSettingsPaths(prisma, userId, {
+      set: { inventory: [{ id: 'recovered' }] },
+      expect: { inventory: { equals: [], whenMissing: [] } },
+    });
+
+    expect(affected).toBe(1);
+    const after = await settings();
+    expect(after.inventory).toEqual([{ id: 'recovered' }]);
+    expect(after.lastWeeklyClaimDate).toBe(MARKER);
+  }, 30000);
+
   it('affects zero rows for an unknown user instead of throwing', async () => {
     const affected = await updateUserSettingsPaths(prisma, 'no-such-user-id', {
       set: { inventory: [] },

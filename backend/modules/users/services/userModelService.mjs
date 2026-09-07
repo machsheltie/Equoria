@@ -165,7 +165,23 @@ async function getUserByEmail(email) {
   }
 }
 
-async function updateUser(id, updateData) {
+/**
+ * Update a user's own columns.
+ *
+ * @param {string} id
+ * @param {object} updateData
+ * @param {{ user: { update: Function } }} [client] - Prisma client OR an
+ *   interactive transaction client. Finding 1 review (Equoria-6p398.1):
+ *   `updateUserController` writes `User.settings` paths and these identity
+ *   columns in ONE transaction, and it must be able to run this function on
+ *   that transaction so a duplicate email/username (P2002) rolls the settings
+ *   write back instead of leaving it committed on a failed request. The P2025
+ *   -> null and P2002 -> rethrow-with-code contract below is the reason the
+ *   caller threads a client in here rather than reimplementing it.
+ *   The default is the global client: every OTHER call site is non-
+ *   transactional, and the single transactional caller passes `tx` explicitly.
+ */
+async function updateUser(id, updateData, client = prisma) {
   try {
     if (!id) {
       throw new Error('User ID is required.');
@@ -173,7 +189,7 @@ async function updateUser(id, updateData) {
     delete updateData.id;
     delete updateData.createdAt;
 
-    return await prisma.user.update({
+    return await client.user.update({
       where: { id },
       data: updateData,
     });

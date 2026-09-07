@@ -43,6 +43,7 @@ import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs'
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { validateSettingsPayload } from '../services/settingsValidation.mjs';
 // Equoria-oey96.2: shared competition-stats aggregation + bred-foal count.
@@ -524,6 +525,18 @@ const SENSITIVE_BLOCKED_FIELDS = new Set([
 ]);
 
 /**
+ * Marker error for "the user row is gone", thrown INSIDE the Step 4
+ * transaction so the settings-path write rolls back with it. Carries no HTTP
+ * status of its own — the controller maps it to the endpoint's existing 404
+ * envelope.
+ */
+function userMissingError() {
+  const error = new Error('User not found');
+  error.userMissing = true;
+  return error;
+}
+
+/**
  * Update user
  * @route PUT /api/v1/users/:id
  *
@@ -552,6 +565,8 @@ export const updateUserController = async (req, res, next) => {
 
     // ── Step 2: Build the allowlisted update object ──────────────────────────
     const updates = {};
+    // Populated in Step 2b, written in Step 4 inside the transaction.
+    let settingsPaths;
     for (const key of USER_UPDATE_ALLOWLIST) {
       if (Object.prototype.hasOwnProperty.call(rawBody, key)) {
         updates[key] = rawBody[key];
@@ -591,7 +606,7 @@ export const updateUserController = async (req, res, next) => {
       // settings document built from a pre-request read, which erased the
       // weekly bank-claim marker (`lastWeeklyClaimDate`) written by a
       // concurrent POST /bank/claim and let the reward be claimed twice.
-      const settingsPaths = {};
+      settingsPaths = {};
       for (const [key, value] of Object.entries(validatedSettings)) {
         settingsPaths[key] = {
           ...(typeof currentSettings[key] === 'object' && currentSettings[key] !== null
@@ -600,16 +615,9 @@ export const updateUserController = async (req, res, next) => {
           ...value,
         };
       }
+      // The write itself happens in Step 4, in the SAME transaction as the
+      // identity columns — see the note there.
       delete updates.settings;
-      if (Object.keys(settingsPaths).length > 0) {
-        const affected = await updateUserSettingsPaths(prisma, id, { set: settingsPaths });
-        if (affected !== 1) {
-          return res.status(404).json({
-            success: false,
-            message: 'User not found',
-          });
-        }
-      }
     }
 
     // ── Step 3: If email is changing, reset verification flags in same write ─
@@ -628,13 +636,42 @@ export const updateUserController = async (req, res, next) => {
 
     logger.info(`[userController.updateUser] Updating user ${id}`);
 
-    const user = await updateUser(id, updates);
+    // ── Step 4: settings paths + identity columns, in ONE transaction ────────
+    // Finding 1 review (Equoria-6p398.1): these were briefly two independent
+    // statements. A PUT that then failed at the identity write (duplicate
+    // email/username -> P2002, or a vanished row -> 404) had ALREADY committed
+    // the settings change: the request reported failure while player state had
+    // moved. `updateUser` runs on this transaction's client, so its P2002
+    // rethrow now rolls the settings write back with it.
+    let user;
+    try {
+      user = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          if (settingsPaths && Object.keys(settingsPaths).length > 0) {
+            const affected = await updateUserSettingsPaths(tx, id, { set: settingsPaths });
+            if (affected !== 1) {
+              throw userMissingError();
+            }
+          }
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
+          const updated = await updateUser(id, updates, tx);
+          if (!updated) {
+            // P2025 -> null from the model. Throw so the settings write above
+            // rolls back rather than surviving a 404 response.
+            throw userMissingError();
+          }
+          return updated;
+        }),
+        { message: 'User service is busy right now, please retry in a moment.' },
+      );
+    } catch (error) {
+      if (error?.userMissing === true) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+      throw error;
     }
 
     // Invalidate user caches

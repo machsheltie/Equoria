@@ -48,7 +48,10 @@ function read(relPath) {
 const MIGRATED = [
   ['modules/horses/services/horseFeedService.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/bank/controllers/bankController.mjs', { wrapped: 1, totalTx: 1 }],
-  ['modules/auth/controllers/profileController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Finding 1 / Equoria-6p398.1 bumped this to 2: updateProfile now commits its
+  // settings paths and the identity columns in one wrapped transaction,
+  // alongside the pre-existing wrapped updateUserPreferences tx.
+  ['modules/auth/controllers/profileController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/auth/controllers/passwordController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/auth/controllers/onboardingController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/crafting/controllers/craftingController.mjs', { wrapped: 1, totalTx: 1 }],
@@ -87,6 +90,13 @@ const MIGRATED = [
   ['modules/competition/services/conformationShowService.mjs', { wrapped: 1, totalTx: 1 }],
   ['utils/tokenRotationService.mjs', { wrapped: 1, totalTx: 1 }],
   ['utils/emailVerificationService.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-6p398.1 (2026-09 audit, Finding 1) — new wrapped sites. equipItem
+  // and unequipItem became transactional (ownership check + inventory decision
+  // + both horse tack changes + the settings write must commit together), and
+  // updateUserController now commits its settings paths with the identity
+  // columns. Pinned here so a later edit cannot silently un-wrap them.
+  ['modules/economy/inventory/controllers/inventoryController.mjs', { wrapped: 2, totalTx: 2 }],
+  ['modules/users/controllers/userController.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites

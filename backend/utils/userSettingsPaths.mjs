@@ -109,8 +109,15 @@ export async function updateUserSettingsPaths(client, userId, { set, expect } = 
   for (const [key, precondition] of Object.entries(expect ?? {})) {
     assertKey(key);
     const { equals, whenMissing = null } = precondition ?? {};
+    // `NULLIF(…, 'null'::jsonb)` folds a STORED JSON null into SQL NULL so
+    // COALESCE substitutes `whenMissing` for it too. Without that, a settings
+    // document holding `"inventory": null` never matched a caller expecting
+    // `[]` — the JS readers normalise null to `[]`, so the guard would have
+    // rejected every write to such a row forever (a permanent 409).
+    // `IS NOT DISTINCT FROM` rather than `=` so a null-valued expectation
+    // compares as equality instead of evaluating to SQL NULL (no match).
     conditions.push(
-      Prisma.sql`COALESCE("settings" -> ${key}::text, ${toJsonParam(whenMissing)}::jsonb) = ${toJsonParam(equals)}::jsonb`,
+      Prisma.sql`COALESCE(NULLIF("settings" -> ${key}::text, 'null'::jsonb), ${toJsonParam(whenMissing)}::jsonb) IS NOT DISTINCT FROM ${toJsonParam(equals)}::jsonb`,
     );
   }
 
