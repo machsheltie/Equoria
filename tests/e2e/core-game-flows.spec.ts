@@ -10,7 +10,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, type AuthedSession } from './helpers/api';
-import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { readTestCredentials } from './helpers/credentials';
 import { assertValidNextTrainingDate } from './helpers/training';
 
@@ -130,9 +130,7 @@ test.describe('AC4: Training Session', () => {
     // POST /api/v1/horses fixture route handed any player a free horse and is
     // now closed (403). Seed from this process through the real createHorse
     // model function — no player-facing creation route, no bypass header.
-    const userId = await resolveSessionUserId(session);
-    const horse = await seedOwnedHorse({
-      userId,
+    const horse = await seedOwnedHorse(session, {
       breedId,
       name: `Training Horse ${Date.now()}`,
       sex: 'stallion',

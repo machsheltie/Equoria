@@ -16,7 +16,7 @@
 
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
-import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorse } from './fixtures/ownedHorses';
 
 test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)', () => {
   let session: AuthedSession;
@@ -55,9 +55,7 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     // a free horse and is now closed (403). Seed from this process through the
     // real createHorse model function; the equip/feed/notification behaviour
     // this spec asserts still runs over the real HTTP routes.
-    const userId = await resolveSessionUserId(session);
-    const horse = await seedOwnedHorse({
-      userId,
+    const horse = await seedOwnedHorse(session, {
       breedId,
       name: horseName,
       sex: 'mare',

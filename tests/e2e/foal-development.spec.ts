@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
-import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorse } from './fixtures/ownedHorses';
 
 /**
  * Foal Development Lifecycle — real-backend E2E (Equoria-fogeh).
@@ -95,16 +95,13 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     // closed (403). Seed them from this process through the real createHorse
     // model function; the foal itself is still bred over the real HTTP
     // POST /api/v1/horses/foals route below, which is the point of this spec.
-    const userId = await resolveSessionUserId(session);
-    const { id: sireId } = await seedOwnedHorse({
-      userId,
+    const { id: sireId } = await seedOwnedHorse(session, {
       breedId,
       name: stallionName,
       sex: 'stallion',
       age: 5,
     });
-    const { id: damId } = await seedOwnedHorse({
-      userId,
+    const { id: damId } = await seedOwnedHorse(session, {
       breedId,
       name: mareName,
       sex: 'mare',

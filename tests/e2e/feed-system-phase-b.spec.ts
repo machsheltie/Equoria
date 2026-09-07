@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
-import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorse } from './fixtures/ownedHorses';
 
 // Tests must run in order: each test depends on state from the previous.
 // beforeAll creates the test horses + starts the pregnancy so it is committed
@@ -47,10 +47,7 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     // Seed from this process through the real createHorse model function; every
     // behaviour this spec asserts (equip-feed, feed, breed, foal-now) still runs
     // over the real HTTP routes.
-    const userId = await resolveSessionUserId(session);
-
-    const stallion = await seedOwnedHorse({
-      userId,
+    const stallion = await seedOwnedHorse(session, {
       breedId,
       name: stallionName,
       sex: 'stallion',
@@ -59,8 +56,7 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     stallionId = stallion.id;
     console.log('Seeded stallion id:', stallionId);
 
-    const mare = await seedOwnedHorse({
-      userId,
+    const mare = await seedOwnedHorse(session, {
       breedId,
       name: mareName,
       sex: 'mare',

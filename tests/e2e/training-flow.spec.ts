@@ -24,7 +24,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, type AuthedSession } from './helpers/api';
-import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { assertValidNextTrainingDate } from './helpers/training';
 
 test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
@@ -51,9 +51,7 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
     // a free horse and is now closed (403). Seed the fixture from this process
     // through the real createHorse model function instead — no player-facing
     // creation route, no bypass header, no route interception.
-    const userId = await resolveSessionUserId(session);
-    const horse = await seedOwnedHorse({
-      userId,
+    const horse = await seedOwnedHorse(session, {
       breedId,
       name: `Training Flow Horse ${Date.now()}`,
       sex: 'stallion',

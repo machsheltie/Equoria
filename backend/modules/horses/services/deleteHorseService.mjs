@@ -48,7 +48,7 @@ export async function deleteHorseById(horseId, userId) {
   logger.info(`[deleteHorseService] User ${userId} deleted horse ID: ${horseId}`);
 
   // Invalidate horse list caches so deleted horse disappears on next fetch
-  invalidateCachePattern('horses:list:*').catch(() => {
+  invalidateCachePattern('horses_list:*').catch(() => {
     /* non-critical */
   });
 

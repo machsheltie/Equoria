@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { createAuthedSession, type AuthedSession } from './helpers/api';
-import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorse } from './fixtures/ownedHorses';
 
 /**
  * Story 21-4 AC2/AC3/AC5 (Equoria-xxm3): browser console + pageerror
@@ -82,9 +82,8 @@ test.describe('Breeding Loop', () => {
     // and a stallion/mare at or above the 3-game-year breeding minimum, which
     // no player-facing route provides — the Horse Trader names its own horses.
     // Seed from this process through the real createHorse model function.
-    const userId = await resolveSessionUserId(session);
-    await seedOwnedHorse({ userId, breedId, name: stallionName, sex: 'stallion', age: 5 });
-    await seedOwnedHorse({ userId, breedId, name: mareName, sex: 'mare', age: 5 });
+    await seedOwnedHorse(session, { breedId, name: stallionName, sex: 'stallion', age: 5 });
+    await seedOwnedHorse(session, { breedId, name: mareName, sex: 'mare', age: 5 });
   });
 
   test.afterAll(async () => {
