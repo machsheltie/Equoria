@@ -418,11 +418,16 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(confirmButton);
 
       // The real api-client sends the breed payload to the backend boundary.
+      //
+      // Equoria-6w3ur: the payload is the PAIR and nothing else. `userId` used
+      // to ride along and is now deliberately absent — the authenticated
+      // session identifies the owner and the route discards any body-supplied
+      // owner id. `name`/`breedId` are absent too: the server derives the
+      // foal's provisional name and breed from the dam at foaling.
       await waitFor(() => {
         expect(breedBody).toEqual({
           sireId: 1,
           damId: 2,
-          userId: 'test-user-123',
         });
       });
 
@@ -544,6 +549,55 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await waitFor(() => {
         expect(screen.getByText(/Insufficient funds/i)).toBeInTheDocument();
       });
+    });
+
+    // Equoria-6w3ur: the defect this guards was a request-shape rejection —
+    // the backend's express-validator envelope, not a game-rule refusal. The
+    // player must see it inline on the surface that failed (no toast layer),
+    // and the confirmation must close rather than sit there pretending.
+    it('renders a backend request-shape rejection inline on the breeding surface', async () => {
+      const user = userEvent.setup();
+
+      server.use(
+        http.post(`${base}/api/v1/horses/foals`, () =>
+          HttpResponse.json(
+            {
+              success: false,
+              message: 'Validation failed',
+              errors: [{ msg: 'Breed ID must be a positive integer', path: 'breedId' }],
+            },
+            { status: 400 }
+          )
+        )
+      );
+
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Thunder')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByLabelText('Select Thunder'));
+      await user.click(screen.getByLabelText('Select Lightning'));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Initiate Breeding/i })).not.toBeDisabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: /Initiate Breeding/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Confirm Breeding' })).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: /Confirm Breeding/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Validation failed/i)).toBeInTheDocument();
+      });
+      // The failure is on the surface, not in a floating notification, and the
+      // modal has closed so the pair is still selected for a retry.
+      expect(screen.queryByRole('heading', { name: 'Confirm Breeding' })).not.toBeInTheDocument();
     });
   });
 

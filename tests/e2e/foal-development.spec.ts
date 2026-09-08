@@ -14,8 +14,10 @@ import { seedOwnedHorses } from './fixtures/ownedHorses';
  *
  * Fixture strategy:
  *  - createAuthedSession() loads the global-setup user (CSRF + auth cookies).
- *  - We create a stallion + mare via /api/horses, then breed them via
- *    /api/v1/horses/foals to mint a real foal owned by the session user.
+ *  - We seed a stallion + mare through the real createHorse model function,
+ *    breed them via /api/v1/horses/foals (which starts a 7-day pregnancy), then
+ *    skip gestation via the owner-scoped POST /api/v1/horses/:id/foal-now to
+ *    mint a real foal owned by the session user (Equoria-6w3ur).
  *  - The newborn foal starts at currentDay 0 / maxDay 6, no traits, no
  *    completed activities — i.e. the "starting state" the old Vitest mocks
  *    fabricated. We exercise the real lifecycle hooks (reveal-traits,
@@ -123,18 +125,36 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     expect.soft(sireId, 'sireId should be returned from the seeded sire').toBeTruthy();
     expect.soft(damId, 'damId should be returned from the seeded dam').toBeTruthy();
 
+    // Equoria-6w3ur: breeding starts a 7-day PREGNANCY (Phase-B feed-system
+    // redesign, Equoria-q7no) — POST /horses/foals returns
+    // { pregnancyStarted, damId, sireId, foalDueDate } and creates NO foal row.
+    // This beforeAll still read `data.id` off that response, so `foalId` was
+    // undefined even once the request succeeded. Materialise the foal the way
+    // the product does: start the pregnancy, then skip gestation through the
+    // owner-scoped POST /horses/:id/foal-now endpoint that exists for exactly
+    // this (admin/E2E), which runs the real foalingService.
     foalName = `E2E Foal ${suffix}`;
-    const foalRes = await csrfMutate(session, 'POST', '/api/v1/horses/foals', {
+    const pregnancyRes = await csrfMutate(session, 'POST', '/api/v1/horses/foals', {
       sireId,
       damId,
       name: foalName,
     });
+    if (!pregnancyRes.ok()) {
+      throw new Error(`Breeding failed (${pregnancyRes.status()}): ${await pregnancyRes.text()}`);
+    }
+    const pregnancyJson = await pregnancyRes.json();
+    expect(
+      pregnancyJson?.data?.pregnancyStarted,
+      'breeding should start a pregnancy on the dam'
+    ).toBe(true);
+
+    const foalRes = await csrfMutate(session, 'POST', `/api/v1/horses/${damId}/foal-now`, {});
     if (!foalRes.ok()) {
-      throw new Error(`Foal breeding failed (${foalRes.status()}): ${await foalRes.text()}`);
+      throw new Error(`Foaling failed (${foalRes.status()}): ${await foalRes.text()}`);
     }
     const foalJson = await foalRes.json();
-    foalId = foalJson?.data?.id ?? foalJson?.foal?.id ?? foalJson?.id;
-    expect(foalId, 'foalId should be returned from breeding').toBeTruthy();
+    foalId = foalJson?.data?.foalId;
+    expect(foalId, 'foalId should be returned from foaling').toBeTruthy();
   });
 
   test.afterAll(async () => {

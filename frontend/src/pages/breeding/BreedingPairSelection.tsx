@@ -194,10 +194,15 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       if (!selectedSire || !selectedDam || !userId) {
         throw new Error('Missing required data for breeding');
       }
+      // Equoria-6w3ur: the request is the PAIR the player chose, and nothing
+      // else. No owner id — the authenticated session identifies the owner and
+      // the route discards any body-supplied `userId`. No `name`/`breedId`
+      // either: nobody names an unborn foal here, so the server derives the
+      // foal's provisional name and its breed from the dam when the foaling
+      // job materialises it (foalingService.createFoalFromPregnancy).
       const response = await breedingApi.breedFoal({
         sireId: selectedSire.id,
         damId: selectedDam.id,
-        userId: userId != null ? String(userId) : undefined,
       });
 
       // Pregnancy-flow response (current contract): backend started an in-foal

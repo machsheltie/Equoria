@@ -139,7 +139,16 @@ test.describe('Breeding Loop', () => {
     });
   });
 
-  test('select sire and dam, confirm breeding, navigate to foal page', async ({ page }) => {
+  // Equoria-6w3ur: this test previously ended with
+  // `waitForURL(/\/foals\/\d+/)`, which asserted the PRE-Phase-B direct-foal
+  // contract. Breeding has started a 7-day PREGNANCY since the feed-system
+  // redesign (Equoria-q7no) — POST /horses/foals returns
+  // { pregnancyStarted, damId, sireId, foalDueDate } and the surface
+  // deliberately stays put so the player sees the in-foal confirmation; there
+  // is no foal id to navigate to. The assertion is updated to the live
+  // contract, not relaxed: it still requires a 2xx from the real route AND the
+  // player-visible in-foal confirmation on the surface.
+  test('select sire and dam, confirm breeding, mare becomes in foal', async ({ page }) => {
     await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
 
     // Wait for both HorseSelector panels
@@ -176,7 +185,13 @@ test.describe('Breeding Loop', () => {
     const foalResp = await foalPost;
     expect(foalResp.ok(), `POST /api/v1/horses/foals returned ${foalResp.status()}`).toBeTruthy();
 
-    // After success the page navigates to /foals/{id} (2-3.5 s UI delay)
-    await page.waitForURL(/\/foals\/\d+/, { timeout: 10000 });
+    // The pregnancy confirmation is surface-owned (no toast layer): either the
+    // success banner ("<Mare> is now in foal…") for a repeat breeder, or the
+    // CinematicMoment headline ("Your Mare is in Foal!") on a lifetime first.
+    // Both say "in foal", so one assertion covers the real player paths.
+    await expect(page.getByText(/in foal/i).first()).toBeVisible({ timeout: 15000 });
+
+    // And the surface must NOT have navigated to a foal that does not exist yet.
+    expect(page.url()).not.toMatch(/\/foals\/\d+/);
   });
 });

@@ -27,6 +27,26 @@ import logger from '../../../utils/logger.mjs';
 const router = express.Router();
 
 /**
+ * Discard client-supplied ownership fields before ANY handler can read them
+ * (Equoria-6w3ur).
+ *
+ * The route already re-derived the owner from `req.user.id`, so a forged
+ * `userId` was inert — but "inert because a later line overwrites it" is one
+ * refactor away from being trusted, and it is the exact shape the 2026-09
+ * audit closed twice (Findings 2 and 3: client-supplied `userId` on creation
+ * routes). Deleting the key here makes the guarantee structural: no handler
+ * downstream can see a caller-chosen owner, and the ownership middleware below
+ * scopes both parents to the authenticated session.
+ */
+function stripClientOwnerFields(req, _res, next) {
+  if (req.body && typeof req.body === 'object') {
+    delete req.body.userId;
+    delete req.body.ownerId;
+  }
+  next();
+}
+
+/**
  * Validation middleware for foal creation.
  *
  * Kept inline (rather than moved to `_validators.mjs`) because the
@@ -35,10 +55,21 @@ const router = express.Router();
  * the schema constants for no gain.
  */
 const validateFoalCreation = [
+  // Equoria-6w3ur: `name` and `breedId` are OPTIONAL pending intent, not
+  // requirements. Since the Phase-B delayed-foaling redesign the player breeds
+  // a PAIR — the foal itself is materialised 7 days later by the foaling job,
+  // which derives the missing values (`foalingService.createFoalFromPregnancy`:
+  // name -> `${dam.name} Foal`, breed -> dam.breedId). `createFoal` has treated
+  // both as optional since that redesign; this chain had not caught up, so the
+  // real breeding surface — which posts only the chosen sire and dam — got a
+  // hard 400 "Breed ID must be a positive integer" and no player could breed.
+  // Keep the FORMAT rules: a supplied value must still be sane, and the
+  // controller separately verifies a supplied breedId exists.
   body('name')
+    .optional()
     .isLength({ min: 1, max: 100 })
     .withMessage('Name must be between 1 and 100 characters'),
-  body('breedId').isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
+  body('breedId').optional().isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
   body('sireId').isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
   body('damId').isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),
   body('sex')
@@ -51,10 +82,10 @@ const validateFoalCreation = [
       }
       return true;
     }),
-  body('userId')
-    .optional()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('User ID must be between 1 and 50 characters'),
+  // No `userId` validator: the body has no owner field. The owner is the
+  // authenticated session, and any client-supplied `userId` is discarded by
+  // `stripClientOwnerFields` below before validation runs (Equoria-6w3ur;
+  // same shape the audit closed in Findings 2 and 3).
   body('stableId').optional().isInt({ min: 1 }).withMessage('Stable ID must be a positive integer'),
   body('healthStatus')
     .optional()
@@ -82,6 +113,7 @@ router.post(
   '/foals',
   foalRateLimiter,
   authenticateToken,
+  stripClientOwnerFields,
   validateFoalCreation,
   // Dual ownership validation middleware (CWE-284 + CWE-639)
   async (req, res, next) => {
@@ -125,7 +157,9 @@ router.post(
   },
   async (req, res) => {
     try {
-      // Set the owner from the authenticated user
+      // Set the owner from the authenticated session. `stripClientOwnerFields`
+      // already deleted any caller-supplied `userId`, so this assignment is the
+      // ONLY source of the field the controller ever sees.
       req.body.userId = req.user.id;
 
       // Dynamic import for ES module (matches pre-extraction shape; static

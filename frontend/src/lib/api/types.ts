@@ -100,10 +100,10 @@ export interface TrainingResult {
   horseId?: number;
 }
 
+/** POST /horses/foals — the PAIR only; no owner id, the session owns it (Equoria-6w3ur). */
 export interface BreedRequest {
   sireId: number;
   damId: number;
-  userId?: string;
   breedId?: number;
 }
 
