@@ -157,11 +157,13 @@ router.post(
   },
   async (req, res) => {
     try {
-      // Set the owner from the authenticated session. `stripClientOwnerFields`
-      // already deleted any caller-supplied `userId`, so this assignment is the
-      // ONLY source of the field the controller ever sees.
-      req.body.userId = req.user.id;
-
+      // No owner is written into the body: `createFoal` reads only
+      // { name, breedId, sireId, damId } and takes the owner from `req.user`
+      // through the ownership middleware above. The previous
+      // `req.body.userId = req.user.id` line was dead once
+      // `stripClientOwnerFields` guaranteed the field's absence, and leaving a
+      // write of an owner field here would only invite someone to trust it.
+      //
       // Dynamic import for ES module (matches pre-extraction shape; static
       // import here would create a circular path through horseController.mjs).
       const { createFoal } = await import('../controllers/horseController.mjs');

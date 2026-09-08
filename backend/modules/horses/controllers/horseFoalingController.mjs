@@ -7,6 +7,7 @@
  */
 import { GESTATION_MS } from '../../../constants/time.mjs';
 import { getHorseById } from '../services/horseModelService.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
@@ -153,8 +154,27 @@ export async function createFoal(req, res) {
       }
     }
 
-    // Validate breedId if provided — malformed values must not put the mare
-    // into an in-foal state with bad data.
+    // ── BREED PRECONDITION (Equoria-6w3ur) ──────────────────────────────────
+    // Validate the breed the foal will ACTUALLY be born with, not just the one
+    // the caller happened to type. A supplied breedId is optional pending
+    // intent; when it is absent the foaling job derives the breed from the dam
+    // (`foalingService.createFoalFromPregnancy`: options.breedId >
+    // dam.pendingFoalBreedId > dam.breedId — and pendingFoalBreedId is what THIS
+    // request is about to write, so the effective value is
+    // `supplied ?? dam.breedId`).
+    //
+    // Why this has to fail here and not there: `Horse.breedId` is nullable, and
+    // breedless mares genuinely exist in this database (see
+    // backend/seed/backfillStarterHorseBreedId.mjs, which is dry-run unless
+    // --apply, and onboardingService's default-breed path, which logs an error
+    // and proceeds with a NULL breedId). If the derived breed is null, unknown,
+    // or has no breed profile, the foaling job throws SEVEN DAYS LATER, and its
+    // compensation block restores the pregnancy so the job retries forever: the
+    // mare stays permanently in foal, permanently unbreedable, no foal arrives,
+    // and the player has no recovery path. So the derived breed is checked with
+    // exactly the strictness a supplied one gets, synchronously, BEFORE the
+    // guarded claim stamps anything — including lastBredDate, because a refused
+    // breed must not cost the player a seven-day cooldown.
     let normalizedBreedId = null;
     if (breedId !== undefined && breedId !== null && breedId !== '') {
       normalizedBreedId = Number.parseInt(breedId, 10);
@@ -165,17 +185,49 @@ export async function createFoal(req, res) {
           data: null,
         });
       }
-      const breedRecord = await prisma.breed.findUnique({
-        where: { id: normalizedBreedId },
-        select: { name: true },
+    }
+
+    const effectiveBreedId = normalizedBreedId ?? dam.breedId ?? null;
+    if (!Number.isInteger(effectiveBreedId) || effectiveBreedId <= 0) {
+      logger.info(
+        `[horseController.createFoal] Rejected: dam ${damId} has no breed on record and no breedId was supplied`,
+      );
+      return res.status(400).json({
+        success: false,
+        message: `${dam.name} has no breed on record, so her foal's breed cannot be determined. Choose a breed for the foal to breed her.`,
+        data: null,
       });
-      if (!breedRecord?.name) {
-        return res.status(400).json({
-          success: false,
-          message: `No breed found for id ${normalizedBreedId}`,
-          data: null,
-        });
-      }
+    }
+
+    const breedRecord = await prisma.breed.findUnique({
+      where: { id: effectiveBreedId },
+      select: { name: true },
+    });
+    if (!breedRecord?.name) {
+      return res.status(400).json({
+        success: false,
+        message: `No breed found for id ${effectiveBreedId}`,
+        data: null,
+      });
+    }
+
+    // The breed's NAME must have a usable profile: the foaling path feeds it to
+    // `conformationService.generateConformationScores` / the parent-blend path,
+    // both of which throw on a missing profile — the same stuck-pregnancy
+    // outcome. `getBreedProfile` throws rather than returning null, so this is
+    // the honest way to ask "would foaling succeed?" using the very function
+    // foaling will call.
+    try {
+      getBreedProfile(breedRecord.name);
+    } catch (profileError) {
+      logger.error(
+        `[horseController.createFoal] Rejected: breed ${effectiveBreedId} ("${breedRecord.name}") has no usable breed profile — ${profileError.message}`,
+      );
+      return res.status(400).json({
+        success: false,
+        message: `${breedRecord.name} has no breed profile on file, so a foal of that breed cannot be born yet.`,
+        data: null,
+      });
     }
 
     // The mare must not already be in foal.

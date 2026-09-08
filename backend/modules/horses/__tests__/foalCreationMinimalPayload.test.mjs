@@ -22,6 +22,19 @@
  *   stripped before anything can read it, and these tests prove a forged
  *   owner id changes neither the ownership check nor the pregnancy's owner.
  *
+ * THIRD FINDING GUARDED HERE — the one that made this fix dangerous
+ *   Relaxing `breedId` made the DERIVED breed the only value on this route that
+ *   nothing validated. `Horse.breedId` is NULLABLE and breedless mares really
+ *   exist (backend/seed/backfillStarterHorseBreedId.mjs is dry-run unless
+ *   --apply; onboardingService proceeds with a NULL breedId when the default
+ *   breed row cannot be resolved). A breedless dam would be claimed pregnant
+ *   with a 200, then `runFoalingJob` would throw seven days later and its
+ *   compensation block would restore the pregnancy for the next run — forever.
+ *   Permanently in foal, permanently unbreedable, no foal, no recovery path.
+ *   `createFoal` now validates the breed the foal will ACTUALLY be born with
+ *   (supplied ?? dam.breedId), including that its name has a usable breed
+ *   profile, and refuses BEFORE the guarded claim stamps anything.
+ *
  * Real DB, real app, real HTTP. No mocks.
  */
 
@@ -55,6 +68,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
   let breedThoroughbred, breedAbaga;
   let stallion, mare, secondMare, crossBredStallion;
   let otherStallion, otherMare;
+  let breedlessMare, profilelessMare, breedWithoutProfile;
   const createdFoalIds = [];
 
   beforeAll(async () => {
@@ -128,6 +142,30 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       data: adult(`TestFixture-6w3ur-OtherDam_${ts}`, 'Mare', otherPlayer.id, breedThoroughbred.id),
     });
 
+    // A BREEDLESS mare. `Horse.breedId` is nullable and this is not a synthetic
+    // edge case: `backend/seed/backfillStarterHorseBreedId.mjs` exists because
+    // ~3334 registration starter horses were created with a NULL breedId (and
+    // it is dry-run unless `--apply`), and `onboardingService.mjs` still logs an
+    // error and PROCEEDS when the default breed row cannot be resolved. With no
+    // supplied breedId there is nothing for the foaling job to derive from.
+    breedlessMare = await prisma.horse.create({
+      data: adult(`TestFixture-6w3ur-BreedlessDam_${ts}`, 'Mare', player.id, null),
+    });
+
+    // A breed row whose NAME has no entry in backend/data/breedProfiles.json.
+    // The foaling path resolves the breed id to a name and then asks the profile
+    // loader for that name; a missing profile throws inside conformation
+    // generation, which is the same stuck-pregnancy outcome as a null breed.
+    breedWithoutProfile = await prisma.breed.create({
+      data: {
+        name: `TestFixture-6w3ur-NoProfileBreed_${ts}`,
+        description: 'Deliberately absent from breedProfiles.json',
+      },
+    });
+    profilelessMare = await prisma.horse.create({
+      data: adult(`TestFixture-6w3ur-ProfilelessDam_${ts}`, 'Mare', player.id, breedWithoutProfile.id),
+    });
+
     // Scoped, fail-loud cleanup in dependency order. Foal-dependent rows first,
     // then every horse owned by the two fixture users in ONE id-scoped
     // deleteMany (a single multi-row DELETE removes lineage-referencing rows
@@ -152,6 +190,15 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
     const userIds = () => [player?.id, otherPlayer?.id].filter(Boolean);
     cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: userIds() } } }), 'fixtureHorses');
     cleanup.add(() => prisma.groom.deleteMany({ where: { userId: { in: userIds() } } }), 'grooms');
+    // This suite's OWN breed row only (the shared canonical breeds are never
+    // deleted). Must follow the horses that reference it.
+    cleanup.add(
+      () =>
+        prisma.breed.deleteMany({
+          where: { id: { in: [breedWithoutProfile?.id].filter(Boolean) } },
+        }),
+      'noProfileBreed',
+    );
     cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds() } } }), 'users');
   }, 120000);
 
@@ -160,7 +207,11 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
   beforeEach(async () => {
     // Clear pregnancy + cooldown state so each test starts from a breedable mare.
     await prisma.horse.updateMany({
-      where: { id: { in: [mare?.id, secondMare?.id, otherMare?.id].filter(Boolean) } },
+      where: {
+        id: {
+          in: [mare?.id, secondMare?.id, otherMare?.id, breedlessMare?.id, profilelessMare?.id].filter(Boolean),
+        },
+      },
       data: {
         inFoalSinceDate: null,
         pregnancySireId: null,
@@ -356,6 +407,72 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
 
       const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
       expect(dbDam.inFoalSinceDate).toBeNull();
+    });
+  });
+
+  // The derived breed must be validated as strictly as a supplied one, because
+  // an unusable derived breed does NOT fail at breeding time — it fails 7 days
+  // later inside runFoalingJob, whose compensation block restores the dam's
+  // pregnancy so the job retries forever. The mare would be permanently in foal,
+  // permanently unbreedable, with no foal and no player recovery path. Fail
+  // closed at conception, synchronously, where the player can see it.
+  describe('the derived breed is validated before the pregnancy is claimed', () => {
+    it('refuses a dam with no breed on record and claims no pregnancy', async () => {
+      const res = await postFoals({ sireId: stallion.id, damId: breedlessMare.id });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/breed/i);
+
+      // Nothing was claimed: no pregnancy, no sire, and critically no cooldown
+      // stamp — a rejected breed must not cost the player seven days.
+      const dbDam = await prisma.horse.findUnique({ where: { id: breedlessMare.id } });
+      expect(dbDam.inFoalSinceDate).toBeNull();
+      expect(dbDam.pregnancySireId).toBeNull();
+      expect(dbDam.lastBredDate).toBeNull();
+      expect(dbDam.pendingFoalBreedId).toBeNull();
+    });
+
+    it('lets a breedless dam breed when the player supplies a real breedId', async () => {
+      // The check is on the breed that will actually be USED, not on the dam's
+      // own column — so supplying one must still work. This keeps the fix from
+      // being over-broad.
+      const res = await postFoals({
+        sireId: stallion.id,
+        damId: breedlessMare.id,
+        breedId: breedThoroughbred.id,
+      });
+
+      expect(res.status).toBe(200);
+      const dbDam = await prisma.horse.findUnique({ where: { id: breedlessMare.id } });
+      expect(dbDam.inFoalSinceDate).toBeTruthy();
+      expect(dbDam.pendingFoalBreedId).toBe(breedThoroughbred.id);
+    });
+
+    it('refuses a dam whose breed has no breed profile and claims no pregnancy', async () => {
+      const res = await postFoals({ sireId: stallion.id, damId: profilelessMare.id });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/breed/i);
+
+      const dbDam = await prisma.horse.findUnique({ where: { id: profilelessMare.id } });
+      expect(dbDam.inFoalSinceDate).toBeNull();
+      expect(dbDam.pregnancySireId).toBeNull();
+      expect(dbDam.lastBredDate).toBeNull();
+    });
+
+    it('refuses a supplied breedId whose breed has no breed profile', async () => {
+      const res = await postFoals({
+        sireId: stallion.id,
+        damId: mare.id,
+        breedId: breedWithoutProfile.id,
+      });
+
+      expect(res.status).toBe(400);
+      const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
+      expect(dbDam.inFoalSinceDate).toBeNull();
+      expect(dbDam.lastBredDate).toBeNull();
     });
   });
 
