@@ -10,15 +10,16 @@
 --   * energyLevel  — replaced by derived feedHealth (computed from
 --                    lastFedDate). No need to store a runtime energy stat.
 --
--- This historical migration deliberately discarded existing
--- currentFeed/energyLevel/coordination values during the approved 2026-04-30
--- development-data reset.
+-- Data loss is authorized: spec §6 (Decisions Log) approves a wipe of
+-- existing currentFeed/energyLevel/coordination values; the active player
+-- base is one tester with two test horses, no production data.
 --
 -- Adds equippedFeedType (nullable TEXT) as the new feed-equip slot.
--- See: docs/features/feed-system.md.
+-- See: docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md §5.2.
 
 -- AlterTable
 ALTER TABLE "horses" DROP COLUMN "coordination",
 DROP COLUMN "currentFeed",
 DROP COLUMN "energyLevel",
 ADD COLUMN     "equippedFeedType" TEXT;
+
