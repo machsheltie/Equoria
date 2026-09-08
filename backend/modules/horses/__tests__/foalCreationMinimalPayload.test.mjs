@@ -422,7 +422,12 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
-      expect(res.body.message).toMatch(/breed/i);
+      // Pinned to THIS arm's message. A loose /breed/i matched every arm, so a
+      // future change that routed a breedless dam into the "No breed found for
+      // id" or the missing-profile arm would still have passed.
+      expect(res.body.message).toBe(
+        `${breedlessMare.name} has no breed on record, so her foal's breed cannot be determined. Choose a breed for the foal to breed her.`,
+      );
 
       // Nothing was claimed: no pregnancy, no sire, and critically no cooldown
       // stamp — a rejected breed must not cost the player seven days.
@@ -454,7 +459,10 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
-      expect(res.body.message).toMatch(/breed/i);
+      // This arm's own message — names the BREED, not the mare's missing column.
+      expect(res.body.message).toBe(
+        `${breedWithoutProfile.name} has no breed profile on file, so a foal of that breed cannot be born yet.`,
+      );
 
       const dbDam = await prisma.horse.findUnique({ where: { id: profilelessMare.id } });
       expect(dbDam.inFoalSinceDate).toBeNull();
@@ -470,9 +478,38 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       });
 
       expect(res.status).toBe(400);
+      expect(res.body.message).toBe(
+        `${breedWithoutProfile.name} has no breed profile on file, so a foal of that breed cannot be born yet.`,
+      );
       const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
       expect(dbDam.inFoalSinceDate).toBeNull();
       expect(dbDam.lastBredDate).toBeNull();
+    });
+
+    // The controller separates "this breed has no profile" (400, the player's
+    // breed really is missing) from "the profile SOURCE is broken" (500, a server
+    // data outage) by branching on `profileError.cause`. If breedProfiles.json
+    // fails to load and the DB cache is empty, EVERY breed fails the check, so a
+    // 400 blaming the player's mare would be a total outage rendered as a
+    // per-breed refusal.
+    //
+    // This sentinel pins the loader contract that branch depends on: a
+    // GENUINE-ABSENCE throw must carry NO `cause`, so it classifies as 400. If
+    // someone later attached a cause to breedProfileLoader's absence arms, every
+    // missing-profile breeding would silently start returning 500 "breed data is
+    // unavailable" — and this test is what notices.
+    it('a genuine missing-profile error carries no cause, so it classifies as a 400', async () => {
+      const { getBreedProfile } = await import('../data/breedProfileLoader.mjs');
+      let thrown = null;
+      try {
+        getBreedProfile(breedWithoutProfile.name);
+      } catch (err) {
+        thrown = err;
+      }
+      // getBreedProfile must throw for a breed with no profile.
+      expect(thrown).toBeTruthy();
+      expect(thrown.cause).toBeUndefined();
+      expect(thrown.message).toMatch(/no breedprofiles\.json entry|absent from both/i);
     });
   });
 

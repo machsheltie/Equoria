@@ -220,6 +220,30 @@ export async function createFoal(req, res) {
     try {
       getBreedProfile(breedRecord.name);
     } catch (profileError) {
+      // Distinguish "this breed has no profile" from "the profile SOURCE is
+      // broken". The loader's four throw sites make this exact, not a guess:
+      // only its two load-failure arms (breedProfileLoader.mjs:181 and :196)
+      // attach `{ cause: JSON_LOAD_ERROR }`; its two genuine-absence arms
+      // (:189 and :202) throw without a cause.
+      //
+      // The distinction is not cosmetic. If breedProfiles.json fails to load and
+      // the DB cache is empty, EVERY breed fails this check — a total breeding
+      // outage. Reporting that as a 400 saying the player's mare's breed "has no
+      // breed profile on file" would blame her horse for a broken server file
+      // and tell every player the same lie at once. A server-side data outage is
+      // a 500, and the message says so.
+      if (profileError.cause) {
+        logger.error(
+          `[horseController.createFoal] Breed profile source unavailable while checking breed ${effectiveBreedId} ("${breedRecord.name}") — ${profileError.message}`,
+        );
+        return res.status(500).json({
+          success: false,
+          message:
+            'Breed data is unavailable right now, so breeding cannot start. Try again later.',
+          data: null,
+        });
+      }
+
       logger.error(
         `[horseController.createFoal] Rejected: breed ${effectiveBreedId} ("${breedRecord.name}") has no usable breed profile — ${profileError.message}`,
       );
