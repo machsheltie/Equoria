@@ -22,6 +22,13 @@
  * byte-identical to before the split:
  *   weeklySalaries, tokenCleanup, foaling, riderTrainerRetirement,
  *   userRankSnapshot.
+ *
+ * Equoria-m9lz1 APPENDED `groomCareerProgression` after `userRankSnapshot`.
+ * Appending (rather than inserting next to riderTrainerRetirement, which it
+ * resembles) keeps the five pre-existing entries at their original indices, so
+ * the sentinel's ordering assertion changes by one added element and nothing
+ * else. Registration order is NOT execution order — each job fires on its own
+ * cron schedule — so the append costs nothing semantically.
  */
 
 import weeklySalariesJob from './weeklySalariesJob.mjs';
@@ -29,6 +36,7 @@ import tokenCleanupJob from './tokenCleanupJob.mjs';
 import foalingJob from './foalingJob.mjs';
 import riderTrainerRetirementJob from './riderTrainerRetirementJob.mjs';
 import userRankSnapshotJob from './userRankSnapshotJob.mjs';
+import groomCareerProgressionJob from './groomCareerProgressionJob.mjs';
 
 export const CRON_JOB_SERVICE_REGISTRY = Object.freeze([
   weeklySalariesJob,
@@ -36,6 +44,10 @@ export const CRON_JOB_SERVICE_REGISTRY = Object.freeze([
   foalingJob,
   riderTrainerRetirementJob,
   userRankSnapshotJob,
+  // Equoria-m9lz1: Mondays 09:45 UTC, deliberately AFTER weeklySalaries (09:00)
+  // — payroll bills per ACTIVE groom assignment, so retiring a groom first would
+  // silently cost them their final week's wage.
+  groomCareerProgressionJob,
 ]);
 
 export default CRON_JOB_SERVICE_REGISTRY;

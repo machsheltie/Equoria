@@ -52,22 +52,25 @@
  *       inactive rows are untouched; open `GroomAssignmentLog` rows are closed.
  *
  * REMOVED TRIGGERS, AND WHY
- *   The pre-m9lz1 weekly pass ALSO auto-retired on level >= 10
- *   (`EARLY_LEVEL_CAP`) and on 12+ assignment logs (`EARLY_ASSIGNMENT_LIMIT`).
- *   Both contradict the ruling: they retire a groom at any age, and the
- *   assignment-count trigger fires after a dozen re-assignments — long before
- *   age 50 — so leaving it in place would have meant the age rule almost never
- *   fired. The reason strings stay in `RETIREMENT_REASONS` because existing
- *   `Groom.retirementReason` rows carry them and `getRetirementStatistics`
- *   groups by that column; nothing computes them any more. Reinstating a
- *   "master groom graduates" mechanic is a product decision, not a cleanup.
+ *   The pre-m9lz1 weekly pass ALSO auto-retired on level >= 10 and on 12+
+ *   assignment logs. Both contradict the ruling: they retire a groom at any age,
+ *   and the assignment-count one fires after a dozen re-assignments — long before
+ *   age 50 — so leaving it would have meant the age rule almost never fired. The
+ *   reason strings stay in `RETIREMENT_REASONS` because existing
+ *   `Groom.retirementReason` rows carry them and `getRetirementStatistics` groups
+ *   by that column; nothing computes them. Reinstating a "master groom graduates"
+ *   mechanic is a product decision, not a cleanup.
  *
- * NO SCHEDULER YET
- *   `processWeeklyCareerProgression` is in NEITHER cron registry
- *   (backend/services/jobs/index.mjs, backend/services/cron-job-service-jobs/index.mjs),
- *   so nothing calls it in production and no groom's `careerWeeks` advances.
- *   Registering it is a production-behaviour change the Equoria-m9lz1 task did
- *   not authorize; the task report names the exact descriptor to add.
+ * THE SCHEDULER
+ *   `processWeeklyCareerProgression` is driven by
+ *   backend/services/cron-job-service-jobs/groomCareerProgressionJob.mjs —
+ *   Mondays 09:45 UTC, advisory-locked, registered in
+ *   CRON_JOB_SERVICE_REGISTRY. It runs AFTER weeklySalaries (09:00), because
+ *   payroll bills per ACTIVE assignment and retiring a groom first would cost
+ *   them their final week's wage. That registry has no heartbeat and is
+ *   invisible to /api/admin/cron/health (Equoria-cmw85.9 tracks the gap), so a
+ *   silently stopped pass surfaces nowhere: players would simply keep their
+ *   grooms forever. Read the job descriptor's header before relying on it.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';

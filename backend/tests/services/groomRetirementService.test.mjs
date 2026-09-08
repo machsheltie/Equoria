@@ -236,6 +236,11 @@ describe('Groom Retirement Service', () => {
     });
 
     test('12+ assignments is NOT a retirement trigger any more', async () => {
+      // Draw a schedule first, or this groom answers `not_scheduled` and the case
+      // would pass for the wrong reason — isolating the assignment count as the
+      // only variable is the point.
+      await ensureRetirementSchedule(prisma, testGroom.id);
+
       // Create 12 assignment logs
       const assignmentThunks = Array.from(
         { length: 12 },
@@ -399,7 +404,12 @@ describe('Groom Retirement Service', () => {
               skillLevel: 'intermediate',
               speciality: 'general_grooming',
               userId: testUser.id,
-              careerWeeks: 50,
+              // Equoria-m9lz1: was 50, which sits INSIDE the 50..65 retirement
+              // band — a 1-in-16 chance of this groom drawing exactly 50 and
+              // retiring in the pass, which would have made the assertions below
+              // flake. Kept well clear of the band; the two grooms that are meant
+              // to retire are parked on their own ages after creation.
+              careerWeeks: 5,
               level: 5,
               retired: false,
             },
@@ -506,7 +516,11 @@ describe('Groom Retirement Service', () => {
       // it fires exactly when the groom's careerWeeks reach the age drawn for it.
       for (const retired of retiredGrooms) {
         expect(retired.retirementReason).toBe(RETIREMENT_REASONS.AGE);
-        expect(retired.careerWeeks).toBe(retirementAges.get(retired.id));
+        // `>=`, not `===`: the pass increments careerWeeks and THEN tests
+        // `careerWeeks >= retirementAge`, so a groom already at or past its age
+        // when the pass starts retires one tick above it. The two grooms parked
+        // one short land exactly on their age; the assertion holds for both.
+        expect(retired.careerWeeks).toBeGreaterThanOrEqual(retirementAges.get(retired.id));
         expect(retired.isActive).toBe(false);
       }
 

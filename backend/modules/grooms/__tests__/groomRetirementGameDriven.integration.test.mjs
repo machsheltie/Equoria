@@ -17,15 +17,37 @@
  *      all identical — the pre-m9lz1 rule was a single hard-coded 104 for
  *      everybody.
  *
- *   2. THE AGE IS NOT DISCOVERABLE. No player-visible groom response carries a
- *      `retirementAge` or `retirementSchedule` key at any depth. The endpoints
- *      audited here are every authenticated route that returns groom rows or
- *      groom-derived data: the roster list, the groom profile, the assignment
- *      logs, the per-foal assignment read, the assignment collection with
- *      history included, the retirement statistics, and the groom marketplace.
- *      (`GET /:id/retirement/eligibility` is audited in the sibling file,
- *      alongside the two derived fields — `weeksUntilRetirement` and
- *      `noticeRequired` — that used to hand a client the age by subtraction.)
+ *   2. THE AGE IS NOT DISCOVERABLE.
+ *
+ *      WHAT THIS TEST ACTUALLY DRIVES — eight endpoints, each asserted to answer
+ *      200 (so a 4xx cannot make the audit vacuous) and then walked for a
+ *      `retirementAge` / `retirementSchedule` key at any depth:
+ *        GET /api/v1/grooms/user/:userId               (roster list, whole groom rows)
+ *        GET /api/v1/grooms/:id/profile
+ *        GET /api/v1/grooms/:id/assignment-logs
+ *        GET /api/v1/grooms/assignments/:foalId
+ *        GET /api/v1/groom-assignments/?includeInactive=true
+ *        GET /api/v1/grooms/retirement/statistics
+ *        GET /api/v1/groom-marketplace/
+ *        GET /api/v1/groom-handlers/horse/:horseId
+ *      The sibling groomRetirementEndpointClosed suite drives a ninth,
+ *      GET /:id/retirement/eligibility, and additionally asserts the absence of
+ *      the two derived fields — `weeksUntilRetirement` and `noticeRequired` —
+ *      that used to hand a client the age by subtraction.
+ *
+ *      WHAT IS REASONED ABOUT, NOT DRIVEN. Other code reads groom rows —
+ *      gdprAccountService's export, conformationShowController, the enhanced
+ *      groom controller, horseOverviewController — and this file does not
+ *      exercise them. The guarantee for those is STRUCTURAL rather than
+ *      observed: the age is a 1:1 relation on a separate table, and Prisma
+ *      returns a relation only when a caller explicitly `include`s or `select`s
+ *      it. Every one of those reads is a bare `findMany` / `findUnique` or a
+ *      scalar `select`, so none of them can emit it. That argument holds for
+ *      groom reads written in future too, which a per-endpoint assertion could
+ *      not — but it is an argument, not evidence, and it stops being true the
+ *      moment someone adds `include: { retirementSchedule: true }` to a
+ *      player-facing read. A route-table sentinel walking every mounted groom
+ *      read would be the observed version; it is not written.
  *
  *   3. RETIREMENT PRESERVES HISTORY AND IS ATOMIC. A groom that reaches its age
  *      is retired by the weekly game pass: active assignments are ENDED
@@ -52,6 +74,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import request from 'supertest';
 
 import app from '../../../app.mjs';
@@ -133,6 +157,65 @@ async function makeGroom(ownerId, label, extra = {}) {
  * name, and Prisma only ever emits it as `retirementAge` (scalar) or nested
  * under `retirementSchedule` (relation).
  */
+/**
+ * Pure detector over the retirement service's SOURCE TEXT: the whole retirement
+ * must be one transaction, and nothing may delete assignment rows. Pure so the
+ * sibling case can prove it FIRES on planted violations rather than only staying
+ * green (CONTRIBUTING.md: "a doctrine/sentinel test must prove that its detector
+ * fires on a planted violation as well as passes on compliant code").
+ *
+ * Returns human-readable findings; an empty array means compliant.
+ */
+function auditRetirementTransactionBoundary(rawSource) {
+  const findings = [];
+
+  // Scan CODE, not prose. The service's own header explains the pre-m9lz1
+  // defect by quoting `groomAssignment.deleteMany({ where: { groomId } })`, and
+  // an unstripped scan flags that documentation as the violation it warns about
+  // — a false positive that would have forced the fix's own explanation out of
+  // the file. Block comments are removed non-greedily; line comments to EOL.
+  const source = rawSource.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+
+  const txOccurrences = source.match(/prisma\.\$transaction\(/g) ?? [];
+  const hasAssignmentDelete = /groomAssignment\.delete(Many)?\(/.test(source);
+
+  if (hasAssignmentDelete) {
+    findings.push('found a groomAssignment delete — retirement must END rows, never remove them');
+  }
+
+  if (txOccurrences.length !== 1) {
+    findings.push(`expected exactly one prisma.$transaction( in the retirement service, found ${txOccurrences.length}`);
+    // Without a single boundary the "inside the transaction" checks are
+    // meaningless, so report what is known and stop.
+    return findings;
+  }
+
+  // The transaction body: from the single `prisma.$transaction(` to the `});`
+  // that closes the callback at its own indentation.
+  const txStart = source.indexOf('prisma.$transaction(');
+  const txEnd = source.indexOf('\n  });', txStart);
+  const txBody = txEnd === -1 ? source.slice(txStart) : source.slice(txStart, txEnd);
+
+  const required = [
+    ['tx.groom.updateMany(', 'the guarded groom flip'],
+    ['tx.groomAssignment.updateMany(', 'ending the active assignments'],
+    ['tx.groomAssignmentLog.updateMany(', 'closing the open assignment logs'],
+    ['createNotificationTx(', 'the notification (createNotificationTx on the same tx)'],
+  ];
+  for (const [needle, label] of required) {
+    if (!txBody.includes(needle)) {
+      findings.push(`${label} is not inside the retirement transaction (missing ${needle})`);
+    }
+  }
+
+  // The notification must take the transaction client, not the global one.
+  if (txBody.includes('createNotificationTx(') && !/createNotificationTx\(\s*\n?\s*tx,/.test(txBody)) {
+    findings.push('createNotificationTx is not being passed the transaction client as its first argument');
+  }
+
+  return findings;
+}
+
 function collectKeys(node, out = new Set()) {
   if (Array.isArray(node)) {
     for (const item of node) {
@@ -524,71 +607,77 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     expect(await prisma.notification.count({ where: { userId: bystander.id } })).toBe(0);
   }, 120000);
 
-  it('a retirement that fails midway rolls back completely — no half-retired groom, no notification', async () => {
-    await prisma.groom.update({ where: { id: groom.id }, data: { careerWeeks: retirementAge } });
-    expect((await checkRetirementEligibility(groom.id)).eligible).toBe(true);
+  // Equoria-m9lz1 — HOW THE TRANSACTION BOUNDARY IS PROVEN, AND WHAT WAS TRIED.
+  //
+  // The first attempt here was a real mid-flight failure: a second real
+  // `prisma.$transaction` took a row lock on the groom's active GroomAssignment
+  // (the retirement's SECOND write) and held it, so the retirement's FIRST write
+  // — the groom flip — would succeed inside its transaction and the second would
+  // block until Prisma aborted it. That is exactly the "failed midway" shape, and
+  // asserting the groom flip was gone afterwards would have proven all-or-nothing
+  // by observation. It does not work in this harness: holding an interactive
+  // transaction open starves the test Prisma pool of the connection the
+  // retirement transaction needs, and the run ended with "Prisma test client 1
+  // disconnect failed: disconnect timed out after 10000ms" plus a Jest
+  // environment-teardown AggregateError that discarded the whole suite's results
+  // (`Tests: 0 total`), and leaked fixtures. Rather than weaken the claim or
+  // leave a flaky suite behind, the boundary is proven two other ways and the
+  // gap is recorded here:
+  //
+  //   (a) the SOURCE SENTINEL below, which fails on the pre-m9lz1 implementation
+  //       (no `$transaction` at all, plus a `groomAssignment.deleteMany`); and
+  //   (b) the real-database double-retire case that follows, which drives the
+  //       guarded conditional flip and asserts the LOSER wrote nothing — no
+  //       second notification, no re-stamped endDate.
+  //
+  // What is NOT proven by observation: that a failure between writes 2 and 4
+  // rolls write 1 back. That is a property of `prisma.$transaction` itself plus
+  // the sentinel's guarantee that all four writes sit inside it — an argument,
+  // not an observation. A harness that can hold a lock without starving the pool
+  // (a dedicated second connection, or the delay-only race barrier the
+  // marketplace suites use) would let it be observed.
+  it('performs the whole retirement inside ONE transaction (source sentinel)', async () => {
+    const servicePath = fileURLToPath(new URL('../services/groomRetirementService.mjs', import.meta.url));
+    const source = await readFile(servicePath, 'utf8');
 
-    // A REAL second transaction holds a row lock on the active assignment — the
-    // second write the retirement transaction performs. No mock, no stub: the
-    // retirement's first write (the groom flip) therefore succeeds inside its
-    // transaction and the second one blocks until Prisma aborts the transaction,
-    // which is exactly the "failed midway" shape. Under the pre-fix code the
-    // groom flip was a separate autocommit statement and would have survived.
-    let release = () => {};
-    const held = new Promise(resolve => {
-      release = resolve;
-    });
+    expect(auditRetirementTransactionBoundary(source)).toEqual([]);
+  }, 30000);
 
-    const holder = prisma.$transaction(
-      async tx => {
-        await tx.groomAssignment.update({
-          where: { id: activeAssignmentId },
-          data: { notes: 'm9lz1 lock holder' },
-        });
-        await held;
-      },
-      { timeout: 60000, maxWait: 20000 },
+  it('the source sentinel fires on planted violations (it is not vacuous)', () => {
+    // A pre-m9lz1-shaped implementation: no transaction, and the history delete.
+    const preFixShape = [
+      'export async function processRetirement(groomId) {',
+      '  const g = await prisma.groom.update({ where: { id: groomId }, data: { retired: true } });',
+      '  await prisma.groomAssignment.deleteMany({ where: { groomId } });',
+      '  return g;',
+      '}',
+    ].join('\n');
+    const preFixFindings = auditRetirementTransactionBoundary(preFixShape);
+    expect(preFixFindings).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/exactly one prisma/i),
+        expect.stringMatching(/groomAssignment delete/i),
+      ]),
     );
 
-    try {
-      await expect(processRetirement(groom.id)).rejects.toThrow();
-    } finally {
-      // Release the barrier in `finally` so a failed assertion cannot leave the
-      // lock (and the connection) held for the rest of the suite.
-      release();
-      await holder;
-    }
-
-    // Nothing half-done: the groom is NOT retired, and its flags are untouched.
-    const groomRow = await prisma.groom.findUnique({
-      where: { id: groom.id },
-      select: { retired: true, isActive: true, retirementReason: true, retirementTimestamp: true },
-    });
-    expect(groomRow).toEqual({
-      retired: false,
-      isActive: true,
-      retirementReason: null,
-      retirementTimestamp: null,
-    });
-
-    // The assignment kept the holder's write and none of the retirement's.
-    const active = await prisma.groomAssignment.findUnique({
-      where: { id: activeAssignmentId },
-      select: { isActive: true, endDate: true, notes: true },
-    });
-    expect(active).toEqual({ isActive: true, endDate: null, notes: 'm9lz1 lock holder' });
-
-    const log = await prisma.groomAssignmentLog.findUnique({
-      where: { id: logId },
-      select: { unassignedAt: true },
-    });
-    expect(log).toEqual({ unassignedAt: null });
-
-    // And crucially: no notification. A notification written outside the
-    // transaction would have survived this rollback and told the player their
-    // groom had retired when it had not.
-    expect(await prisma.notification.count({ where: { userId: owner.id } })).toBe(0);
-  }, 180000);
+    // A subtler regression: the transaction is there, but the notification was
+    // moved outside it — the player could lose a groom silently.
+    const notificationOutsideTx = [
+      'export async function processRetirement(groomId) {',
+      '  const committed = await prisma.$transaction(async tx => {',
+      '    await tx.groom.updateMany({ where: { id: groomId }, data: { retired: true } });',
+      '    await tx.groomAssignment.updateMany({ where: { groomId }, data: { isActive: false } });',
+      '    await tx.groomAssignmentLog.updateMany({ where: { groomId }, data: {} });',
+      '    return {};',
+      '  });',
+      '  await createNotification(userId, GROOM_RETIRED_NOTIFICATION_TYPE, {});',
+      '  return committed;',
+      '}',
+    ].join('\n');
+    expect(auditRetirementTransactionBoundary(notificationOutsideTx)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/createNotificationTx/i)]),
+    );
+  });
 
   it('refuses to retire the same groom twice, and the loser writes nothing', async () => {
     await prisma.groom.update({ where: { id: groom.id }, data: { careerWeeks: retirementAge } });
