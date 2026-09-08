@@ -14,11 +14,7 @@ import {
   checkBonusEligibility,
   getUserGroomsWithBonusTraits,
 } from '../services/groomBonusTraitService.mjs';
-import {
-  checkRetirementEligibility,
-  getGroomsApproachingRetirement,
-  getRetirementStatistics,
-} from '../services/groomRetirementService.mjs';
+import { checkRetirementEligibility, getRetirementStatistics } from '../services/groomRetirementService.mjs';
 import {
   calculateWeeklySalary,
   getSalaryPaymentHistory,
@@ -144,22 +140,23 @@ describe('checkRetirementEligibility', () => {
     await expect(checkRetirementEligibility(999999999)).rejects.toThrow();
   });
 
-  it('returns not eligible for fresh groom (careerWeeks=0)', async () => {
+  // Equoria-m9lz1: a groom with no drawn retirement schedule is not eligible
+  // and no age is invented for it. `weeksUntilRetirement` is gone — it was
+  // `retirementAge - careerWeeks`, i.e. the hidden age by subtraction.
+  it('returns not eligible, and no countdown, for a fresh groom', async () => {
     const result = await checkRetirementEligibility(groom.id);
     expect(result.eligible).toBe(false);
     expect(typeof result.reason).toBe('string');
-    expect(typeof result.weeksUntilRetirement).toBe('number');
+    expect(result).not.toHaveProperty('weeksUntilRetirement');
+    expect(result).not.toHaveProperty('noticeRequired');
+    expect(result).not.toHaveProperty('retirementAge');
   });
 });
 
-describe('getGroomsApproachingRetirement', () => {
-  it('returns empty array for user whose groom has 0 career weeks', async () => {
-    const result = await getGroomsApproachingRetirement(user.id);
-    expect(Array.isArray(result)).toBe(true);
-    const ids = result.map(g => g.id);
-    expect(ids).not.toContain(groom.id);
-  });
-});
+// Equoria-m9lz1: `getGroomsApproachingRetirement` is deleted. Listing the
+// grooms about to retire IS the disclosure the owner's ruling forbids ("not
+// known until the week they retire"), so there is no successor function to
+// point this describe block at.
 
 describe('getRetirementStatistics', () => {
   it('returns statistics shape for user', async () => {

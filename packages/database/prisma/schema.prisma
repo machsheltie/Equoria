@@ -422,6 +422,16 @@ model Groom {
   groomHorseSynergies GroomHorseSynergy[]
   groomAssignmentLogs GroomAssignmentLog[]
   groomTalentSelections GroomTalentSelections?
+  /// Equoria-m9lz1: the game's HIDDEN retirement schedule for this groom.
+  /// Deliberately a separate table, not a column on `grooms`: the retirement
+  /// age must not be discoverable until the week it takes effect, and a
+  /// scalar column would be returned by every bare
+  /// `prisma.groom.findMany()` / `findUnique()` in the codebase (there are
+  /// ~20 such reads, several of which serialize the whole row to the player).
+  /// As a relation it is structurally absent from every groom response unless
+  /// a caller explicitly `include`s it — which only the retirement service does.
+  /// DO NOT add `include: { retirementSchedule: true }` to a player-facing read.
+  retirementSchedule  GroomRetirementSchedule?
   retiredGroomLegacies GroomLegacyLog[] @relation("RetiredGroomLegacy")
   legacyGroomMentors  GroomLegacyLog[] @relation("LegacyGroomMentor")
   user                User?              @relation(fields: [userId], references: [id])
@@ -433,6 +443,50 @@ model Groom {
   @@index([retired])
   @@index([retired, careerWeeks])
   @@map("grooms")
+}
+
+/// Equoria-m9lz1 — the game's hidden retirement schedule for one groom.
+///
+/// The owner's ruling (2026-09-08): "Grooms retire automatically at a randomly
+/// selected age by the game. They can retire any time between age 50-65 and
+/// that is not known until the week they retire."
+///
+/// WHY A TABLE AND NOT A COLUMN ON `grooms`
+///   The hiding requirement is the whole point. A scalar on `grooms` would be
+///   emitted by every bare `prisma.groom.findMany()` / `findUnique()` in the
+///   repository, and several of those responses are serialized straight to the
+///   player (groomRosterController, groomHandlerController,
+///   horseOverviewController, gdprAccountService, …). A 1:1 relation is absent
+///   from all of them by construction: Prisma returns a relation only when the
+///   caller explicitly `include`s or `select`s it. The single reader is
+///   backend/modules/grooms/services/groomRetirementService.mjs.
+///
+/// WHAT `retirementAge` IS MEASURED IN
+///   The same unit as `Groom.careerWeeks` — one tick per weekly career
+///   progression pass, which on Equoria's clock (1 real week = 1 game-year;
+///   see backend/utils/horseAge.mjs) is one game-year of the groom's working
+///   life. It replaces the old fixed `MANDATORY_RETIREMENT_WEEKS = 104`
+///   threshold with a per-groom value drawn once from 50..65 inclusive.
+///
+/// RANGE ENFORCEMENT
+///   `retirementAge BETWEEN 50 AND 65` is a CHECK constraint created in raw SQL
+///   by migration 20260908180000_m9lz1_groom_retirement_schedule. Prisma cannot
+///   express a CHECK constraint, so it lives only in that migration — the same
+///   posture 20260907120000_kccmt_partial_unique_active_staff_assignments took
+///   for its partial unique indexes. Do not "restore" it here.
+model GroomRetirementSchedule {
+  /// One schedule per groom; the groom id IS the primary key.
+  groomId       Int      @id
+  /// The career age at which the game retires this groom. Drawn once,
+  /// uniformly at random from [50, 65] inclusive, and never recomputed.
+  retirementAge Int
+  /// When the schedule was drawn (at hire for grooms hired after Equoria-m9lz1;
+  /// at the first weekly career pass for grooms that predate it).
+  assignedAt    DateTime @default(now())
+
+  groom         Groom    @relation(fields: [groomId], references: [id], onDelete: Cascade)
+
+  @@map("groom_retirement_schedules")
 }
 
 model GroomAssignment {

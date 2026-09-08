@@ -26,6 +26,10 @@ import {
 } from '../../economy/index.mjs';
 import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
+// Equoria-m9lz1: draw the groom's HIDDEN retirement age at hire, inside the
+// hire transaction, so a hired groom always has a schedule and a rolled-back
+// hire leaves no orphan schedule row.
+import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 
 const STAFF_TYPE = 'groom';
 
@@ -310,6 +314,12 @@ export async function hireFromMarketplace(req, res) {
               hiredDate: new Date(),
             },
           });
+
+          // Equoria-m9lz1: the game draws this groom's retirement age (50-65,
+          // hidden from the player) once, here, in the same transaction as the
+          // hire. Writes to `groom_retirement_schedules`; returns the age, which
+          // is deliberately NOT propagated into the hire response.
+          await ensureRetirementSchedule(tx, groom.id);
 
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const moneyAfter = await debitMoneyOrThrow(tx, {

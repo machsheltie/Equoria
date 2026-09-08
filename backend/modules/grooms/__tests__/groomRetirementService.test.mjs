@@ -1,5 +1,23 @@
 /**
- * groomRetirementService branch-coverage tests (Equoria-jkht coverage sprint).
+ * groomRetirementService branch-coverage tests (Equoria-jkht coverage sprint,
+ * retargeted onto the Equoria-m9lz1 contract).
+ *
+ * WHY THIS FILE CHANGED (Equoria-m9lz1, owner ruling 2026-09-08)
+ *   The contract these cases described no longer exists, and the change is
+ *   deliberate rather than an accommodation of new code. Retirement used to fire
+ *   on three triggers — a fixed 104 career weeks for everybody, level >= 10, and
+ *   12+ assignment logs — and `checkRetirementEligibility` returned a
+ *   `weeksUntilRetirement` countdown plus a `noticeRequired` one-week warning.
+ *   Under the ruling ("Grooms retire automatically at a randomly selected age by
+ *   the game… any time between age 50-65… not known until the week they retire")
+ *   the trigger is ONE per-groom hidden age, and the countdown and the warning
+ *   are exactly the disclosure the ruling forbids: a client that knows
+ *   `careerWeeks` recovers the hidden age from either by subtraction. So the
+ *   fixed threshold, the two early triggers, the countdown and the notice flag
+ *   are all gone, and the cases that asserted them are replaced by cases that
+ *   assert their ABSENCE. The new behaviour is covered end-to-end by
+ *   groomRetirementGameDriven.integration.test.mjs and the closed player surface
+ *   by groomRetirementEndpointClosed.integration.test.mjs.
  *
  * Pure-path tests (non-existent groomId → throws):
  *   incrementCareerWeeks — throws for non-existent groom
@@ -7,11 +25,10 @@
  *
  * DB-fixture branch coverage (checkRetirementEligibility):
  *   retired=true → 'already_retired'
- *   careerWeeks >= 104 → MANDATORY_CAREER_LIMIT (mandatory=true)
- *   level >= 10 → EARLY_LEVEL_CAP
- *   assignmentLogs.length >= 12 → EARLY_ASSIGNMENT_LIMIT
- *   careerWeeks=103 → noticeRequired=true, not_eligible (1 week left)
- *   careerWeeks=0, level=1 → not_eligible (noticeRequired=false)
+ *   no schedule drawn → 'not_scheduled' (and no age is invented)
+ *   careerWeeks >= its own hidden retirementAge → RETIREMENT_REASONS.AGE (mandatory=true)
+ *   careerWeeks one short of it → not_eligible, and NO countdown field
+ *   level >= 10 / 12+ assignment logs → NOT eligible any more (no early triggers)
  *
  * incrementCareerWeeks with real groom → careerWeeks+1
  * processRetirement non-eligible + !voluntary → throws
@@ -24,10 +41,10 @@ import {
   incrementCareerWeeks,
   checkRetirementEligibility,
   processRetirement,
-  getGroomsApproachingRetirement,
   getRetirementStatistics,
   processWeeklyCareerProgression,
 } from '../services/groomRetirementService.mjs';
+import { ensureRetirementSchedule, readRetirementAge } from '../services/groomRetirementScheduleService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -57,11 +74,13 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
   let grsUser;
   let grsHorse; // needed for GroomAssignmentLog (horseId required)
   let grsGroomRetired; // retired=true → already_retired
-  let grsGroomMandatory; // careerWeeks=104 → MANDATORY_CAREER_LIMIT
-  let grsGroomLevelCap; // level=10, careerWeeks=5 → EARLY_LEVEL_CAP
-  let grsGroomAssignmentLimit; // 12 assignment logs → EARLY_ASSIGNMENT_LIMIT
-  let grsGroomNotice; // careerWeeks=103 → noticeRequired=true, not_eligible
-  let grsGroomNormal; // careerWeeks=0, level=1 → not_eligible, noticeRequired=false
+  let grsGroomMandatory; // careerWeeks == its hidden retirementAge → AGE
+  let grsGroomMandatoryAge; // that groom's drawn retirement age
+  let grsGroomLevelCap; // level=10 → NOT eligible any more (Equoria-m9lz1)
+  let grsGroomAssignmentLimit; // 12 assignment logs → NOT eligible any more
+  let grsGroomNotice; // one tick short of its retirementAge → not_eligible, no countdown
+  let grsGroomNoticeAge; // that groom's drawn retirement age
+  let grsGroomNormal; // no schedule drawn → not_scheduled
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -105,9 +124,15 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         name: `TestFixture-GRS-Mandatory-${ts}`,
         speciality: 'general',
         personality: 'gentle',
-        careerWeeks: CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS, // 104
         userId: grsUser.id,
       },
+    });
+    // Equoria-m9lz1: the threshold is this groom's OWN drawn age, not a shared
+    // constant. Draw it, then park the groom exactly on it.
+    grsGroomMandatoryAge = await ensureRetirementSchedule(prisma, grsGroomMandatory.id);
+    await prisma.groom.update({
+      where: { id: grsGroomMandatory.id },
+      data: { careerWeeks: grsGroomMandatoryAge },
     });
 
     grsGroomLevelCap = await prisma.groom.create({
@@ -115,11 +140,12 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         name: `TestFixture-GRS-LevelCap-${ts}`,
         speciality: 'general',
         personality: 'gentle',
-        level: CAREER_CONSTANTS.EARLY_RETIREMENT_LEVEL, // 10
-        careerWeeks: 5, // not at mandatory limit
+        level: 10, // was EARLY_RETIREMENT_LEVEL; no longer a retirement trigger
+        careerWeeks: 5, // far below any retirement age
         userId: grsUser.id,
       },
     });
+    await ensureRetirementSchedule(prisma, grsGroomLevelCap.id);
 
     grsGroomAssignmentLimit = await prisma.groom.create({
       data: {
@@ -132,8 +158,11 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
       },
     });
 
-    // Create 12 GroomAssignmentLogs for the EARLY_ASSIGNMENT_LIMIT branch
-    for (let i = 0; i < CAREER_CONSTANTS.EARLY_RETIREMENT_ASSIGNMENTS; i++) {
+    await ensureRetirementSchedule(prisma, grsGroomAssignmentLimit.id);
+
+    // 12 GroomAssignmentLogs — the count that USED to force early retirement.
+    // Equoria-m9lz1 removed that trigger; the assertion below proves it.
+    for (let i = 0; i < 12; i++) {
       await prisma.groomAssignmentLog.create({
         data: {
           groomId: grsGroomAssignmentLimit.id,
@@ -148,9 +177,14 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         speciality: 'general',
         personality: 'gentle',
         level: 1,
-        careerWeeks: CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS, // 103
         userId: grsUser.id,
       },
+    });
+    // One tick short of its own hidden age: the last week it keeps working.
+    grsGroomNoticeAge = await ensureRetirementSchedule(prisma, grsGroomNotice.id);
+    await prisma.groom.update({
+      where: { id: grsGroomNotice.id },
+      data: { careerWeeks: grsGroomNoticeAge - 1 },
     });
 
     grsGroomNormal = await prisma.groom.create({
@@ -182,6 +216,26 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
       ].filter(Boolean);
       return prisma.groomAssignmentLog.deleteMany({ where: { groomId: { in: groomIds } } });
     }, 'groomAssignmentLog');
+    // Equoria-m9lz1: GroomRetirementSchedule is a Cascade child of groom, and
+    // Notification is a Cascade child of user, but both are deleted explicitly
+    // and narrowly so a leak surfaces here rather than as a mystery row.
+    cleanup.add(() => {
+      const groomIds = [
+        grsGroomRetired?.id,
+        grsGroomMandatory?.id,
+        grsGroomLevelCap?.id,
+        grsGroomAssignmentLimit?.id,
+        grsGroomNotice?.id,
+        grsGroomNormal?.id,
+      ].filter(Boolean);
+      return prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: groomIds } } });
+    }, 'groomRetirementSchedule');
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: grsUser?.id } }), 'notifications');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: grsUser?.id } }), 'groomAssignments');
+    cleanup.add(
+      () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroom: { userId: grsUser?.id } } }),
+      'legacy logs',
+    );
     cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-' } } }), 'grooms');
     cleanup.add(() => prisma.horse.delete({ where: { id: grsHorse?.id } }), 'horse');
     cleanup.add(() => prisma.user.delete({ where: { id: grsUser?.id } }), 'user');
@@ -191,49 +245,51 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
 
   it('checkRetirementEligibility: retired=true → already_retired', async () => {
     const result = await checkRetirementEligibility(grsGroomRetired.id);
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('already_retired');
-    expect(result.weeksUntilRetirement).toBe(0);
-    expect(result.noticeRequired).toBe(false);
+    expect(result).toEqual({ eligible: false, reason: 'already_retired', mandatory: false });
   });
 
-  it('checkRetirementEligibility: careerWeeks=104 → MANDATORY_CAREER_LIMIT', async () => {
+  it('checkRetirementEligibility: careerWeeks at its own hidden age → AGE, mandatory', async () => {
     const result = await checkRetirementEligibility(grsGroomMandatory.id);
-    expect(result.eligible).toBe(true);
-    expect(result.reason).toBe(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT);
-    expect(result.mandatory).toBe(true);
-    expect(result.weeksUntilRetirement).toBe(0);
+    expect(result).toEqual({
+      eligible: true,
+      reason: RETIREMENT_REASONS.AGE,
+      mandatory: true,
+    });
+    // The threshold really was per-groom, drawn in the ruling's band.
+    expect(grsGroomMandatoryAge).toBeGreaterThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MIN);
+    expect(grsGroomMandatoryAge).toBeLessThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MAX);
   });
 
-  it('checkRetirementEligibility: level=10 → EARLY_LEVEL_CAP', async () => {
+  it('checkRetirementEligibility: level=10 is NOT a retirement trigger any more', async () => {
+    // Pre-m9lz1 this returned { eligible: true, reason: 'early_level_cap' }.
+    // The ruling retires grooms by AGE; retiring a level-10 groom at career week
+    // 5 contradicts "any time between age 50-65".
     const result = await checkRetirementEligibility(grsGroomLevelCap.id);
-    expect(result.eligible).toBe(true);
-    expect(result.reason).toBe(RETIREMENT_REASONS.EARLY_LEVEL_CAP);
-    expect(result.mandatory).toBe(false);
+    expect(result).toEqual({ eligible: false, reason: 'not_eligible', mandatory: false });
   });
 
-  it('checkRetirementEligibility: 12 assignment logs → EARLY_ASSIGNMENT_LIMIT', async () => {
+  it('checkRetirementEligibility: 12 assignment logs is NOT a retirement trigger any more', async () => {
+    // Pre-m9lz1 this returned { eligible: true, reason: 'early_assignment_limit' }.
+    // A dozen re-assignments is ordinary play, so this trigger fired long before
+    // age 50 and would have made the ruling's age rule almost never fire.
     const result = await checkRetirementEligibility(grsGroomAssignmentLimit.id);
-    expect(result.eligible).toBe(true);
-    expect(result.reason).toBe(RETIREMENT_REASONS.EARLY_ASSIGNMENT_LIMIT);
-    expect(result.mandatory).toBe(false);
+    expect(result).toEqual({ eligible: false, reason: 'not_eligible', mandatory: false });
   });
 
-  it('checkRetirementEligibility: careerWeeks=103 → noticeRequired=true, not_eligible', async () => {
-    // weeksUntilMandatory = 104-103 = 1 ≤ RETIREMENT_NOTICE_WEEKS (1) → noticeRequired=true
+  it('checkRetirementEligibility: one tick short of its age → not_eligible, and NO countdown', async () => {
     const result = await checkRetirementEligibility(grsGroomNotice.id);
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('not_eligible');
-    expect(result.noticeRequired).toBe(true);
-    expect(result.weeksUntilRetirement).toBe(1);
+    expect(result).toEqual({ eligible: false, reason: 'not_eligible', mandatory: false });
+    // The three fields that WERE the disclosure. A client knows careerWeeks, so
+    // any of them hands it the hidden age by subtraction.
+    expect(result).not.toHaveProperty('weeksUntilRetirement');
+    expect(result).not.toHaveProperty('noticeRequired');
+    expect(result).not.toHaveProperty('retirementAge');
   });
 
-  it('checkRetirementEligibility: normal groom → not_eligible, noticeRequired=false', async () => {
+  it('checkRetirementEligibility: groom with no drawn schedule → not_scheduled', async () => {
+    expect(await readRetirementAge(prisma, grsGroomNormal.id)).toBeNull();
     const result = await checkRetirementEligibility(grsGroomNormal.id);
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe('not_eligible');
-    expect(result.noticeRequired).toBe(false);
-    expect(result.weeksUntilRetirement).toBe(CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS);
+    expect(result).toEqual({ eligible: false, reason: 'not_scheduled', mandatory: false });
   });
 
   it('incrementCareerWeeks: increments careerWeeks by 1', async () => {
@@ -269,32 +325,31 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
   });
 
   it('CAREER_CONSTANTS and RETIREMENT_REASONS exports are correctly shaped', () => {
-    expect(CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS).toBe(104);
-    expect(CAREER_CONSTANTS.EARLY_RETIREMENT_LEVEL).toBe(10);
-    expect(CAREER_CONSTANTS.EARLY_RETIREMENT_ASSIGNMENTS).toBe(12);
+    // Equoria-m9lz1: the fixed thresholds are gone; the band from the owner's
+    // ruling replaces them. The DB CHECK constraint
+    // `groom_retirement_schedules_age_range` enforces the same numbers, so
+    // widening either without the other is a write error, not a silent change.
+    expect(CAREER_CONSTANTS.RETIREMENT_AGE_MIN).toBe(50);
+    expect(CAREER_CONSTANTS.RETIREMENT_AGE_MAX).toBe(65);
+    expect(CAREER_CONSTANTS).not.toHaveProperty('MANDATORY_RETIREMENT_WEEKS');
+    expect(CAREER_CONSTANTS).not.toHaveProperty('RETIREMENT_NOTICE_WEEKS');
+    expect(RETIREMENT_REASONS.AGE).toBe('age');
+    // Retained for historical Groom.retirementReason rows only.
     expect(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT).toBe('mandatory_career_limit');
     expect(RETIREMENT_REASONS.VOLUNTARY).toBe('voluntary');
   });
 
-  it('getGroomsApproachingRetirement: grsGroomNotice (careerWeeks=103) triggers map callback (lines 230-231)', async () => {
-    // noticeThreshold = 104 - 1 = 103, grsGroomNotice.careerWeeks = 103 → appears in result
-    const result = await getGroomsApproachingRetirement(grsUser.id);
-    expect(Array.isArray(result)).toBe(true);
-    const notice = result.find(g => g.id === grsGroomNotice.id);
-    expect(notice).toBeDefined();
-    expect(notice.eligibility).toBeDefined();
-    expect(notice.eligibility.noticeRequired).toBe(true);
-  });
-
-  it('getRetirementStatistics: returns object with required numeric keys', async () => {
+  it('getRetirementStatistics: returns object with required numeric keys and NO approaching count', async () => {
     const result = await getRetirementStatistics(grsUser.id);
     expect(typeof result.activeGrooms).toBe('number');
     expect(typeof result.retiredGrooms).toBe('number');
     expect(typeof result.totalGrooms).toBe('number');
-    expect(typeof result.approachingRetirement).toBe('number');
     expect(typeof result.retirementRate).toBe('number');
     expect(typeof result.averageCareerLength).toBe('number');
     expect(result.totalGrooms).toBe(result.activeGrooms + result.retiredGrooms);
+    // Equoria-m9lz1: a count of grooms about to retire is still a disclosure —
+    // it tells the player one of them goes this week.
+    expect(result).not.toHaveProperty('approachingRetirement');
   });
 });
 
@@ -304,6 +359,7 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
   let wcpUser;
   let wcpGroomNormal;
   let wcpGroomMandatory;
+  let wcpGroomMandatoryAge;
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -338,37 +394,59 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
         name: `TestFixture-GRS-WCP-Mandatory-${ts}`,
         speciality: 'general',
         personality: 'gentle',
-        careerWeeks: CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS,
         level: 1,
         isActive: true,
         userId: wcpUser.id,
       },
     });
+    // Equoria-m9lz1: park this groom one tick short of its OWN hidden retirement
+    // age, so the pass's increment carries it over the line — "the week they
+    // retire". Pre-m9lz1 the fixture used the shared constant 104.
+    wcpGroomMandatoryAge = await ensureRetirementSchedule(prisma, wcpGroomMandatory.id);
+    await prisma.groom.update({
+      where: { id: wcpGroomMandatory.id },
+      data: { careerWeeks: wcpGroomMandatoryAge - 1 },
+    });
 
-    // Equoria-1ohys: fail-loud scoped cleanup. FK order — grooms (children of
-    // user) before the user. Scoped by TestFixture-GRS-WCP- name-prefix / id;
-    // never a bare deleteMany. These grooms own no Horse/AssignmentLog/synergy
-    // fixtures, so no Cascade-child delete precedes them.
+    // Equoria-1ohys: fail-loud scoped cleanup. FK order — schedules and
+    // notifications (Cascade children, deleted explicitly so a leak is loud),
+    // then grooms (children of user), then the user. Scoped by
+    // TestFixture-GRS-WCP- name-prefix / id; never a bare deleteMany. These
+    // grooms own no Horse/AssignmentLog/synergy fixtures.
+    cleanup.add(() => {
+      const groomIds = [wcpGroomNormal?.id, wcpGroomMandatory?.id].filter(Boolean);
+      return prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: groomIds } } });
+    }, 'groomRetirementSchedule');
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: wcpUser?.id } }), 'notifications');
     cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-WCP-' } } }), 'grooms');
     cleanup.add(() => prisma.user.delete({ where: { id: wcpUser?.id } }), 'user');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('processWeeklyCareerProgression: userId scoped — increments normal groom + auto-retires mandatory groom (lines 311-377)', async () => {
+  it('processWeeklyCareerProgression: userId scoped — increments normal groom + auto-retires the groom that reached its age', async () => {
     const result = await processWeeklyCareerProgression(wcpUser.id);
     // Both grooms processed (incremented)
     expect(result.processed).toBeGreaterThanOrEqual(2);
-    // Mandatory groom auto-retired
+    // The groom that reached its hidden age auto-retired
     expect(result.retired).toBeGreaterThanOrEqual(1);
     expect(Array.isArray(result.errors)).toBe(true);
     expect(result.errors).toHaveLength(0);
     expect(Array.isArray(result.retirements)).toBe(true);
     const mandatoryEntry = result.retirements.find(r => r.groomId === wcpGroomMandatory.id);
     expect(mandatoryEntry).toBeDefined();
-    expect(mandatoryEntry.reason).toBe(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT);
-    // Normal groom incremented to careerWeeks=1
+    // Equoria-m9lz1: the reason is AGE, not the retired MANDATORY_CAREER_LIMIT.
+    expect(mandatoryEntry.reason).toBe(RETIREMENT_REASONS.AGE);
+    expect(mandatoryEntry.careerWeeks).toBe(wcpGroomMandatoryAge);
+    // Normal groom incremented to careerWeeks=1 and given a schedule of its own
     const updated = await prisma.groom.findUnique({ where: { id: wcpGroomNormal.id } });
     expect(updated.careerWeeks).toBe(1);
+    expect(updated.retired).toBe(false);
+    const normalAge = await readRetirementAge(prisma, wcpGroomNormal.id);
+    expect(normalAge).toBeGreaterThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MIN);
+    expect(normalAge).toBeLessThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MAX);
+    // The retirement announced itself to the groom's own user, in its own
+    // transaction (see groomRetirementGameDriven.integration.test.mjs).
+    expect(await prisma.notification.count({ where: { userId: wcpUser.id, type: 'groom_retired' } })).toBe(1);
   });
 });

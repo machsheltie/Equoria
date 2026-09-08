@@ -3,9 +3,9 @@
  *
  * The game-notification row family: a shared GameNotifShell (unread dot,
  * avatar, badge, timestamp layout) plus per-type renderers (stat gain,
- * foal born, unknown) and the GameNotifRow dispatcher that selects a
- * renderer by notif.type. Kept together because they form one cohesive
- * notification-rendering unit.
+ * foal born, groom retired, unknown) and the GameNotifRow dispatcher that
+ * selects a renderer by notif.type. Kept together because they form one
+ * cohesive notification-rendering unit.
  *
  * Migrated to canonical primitives (Equoria-o5hub community lane):
  * Surface panel rows (static — no hover lift), GameBadge type badges,
@@ -124,6 +124,49 @@ const FoalBornRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   );
 };
 
+/**
+ * Equoria-m9lz1 — a groom has reached the end of their working years and the
+ * game has retired them. This is the player's ONLY warning: the backend writes
+ * it in the same transaction that ends the groom's assignments, and the player
+ * needs to know which horses are now uncovered so they can take someone new on.
+ *
+ * It stays inside the established GameNotifShell family (same shell, same badge
+ * vocabulary, same role tokens as Stat Gain and Foal Born) rather than inventing
+ * a surface: the row's job is to name the person who left and what it left
+ * uncovered, not to hold a ceremony. `warning`, not `success` or `destructive` —
+ * nothing went wrong and nobody is at fault, but the player has something to do.
+ *
+ * The payload deliberately carries no retirement age. The game's hidden
+ * retirement schedule is not disclosed before the week it takes effect, and this
+ * row is the week it takes effect.
+ */
+const GroomRetiredRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
+  const p = notif.payload ?? {};
+  const groomName = typeof p.groomName === 'string' ? p.groomName : 'One of your grooms';
+  const speciality = typeof p.speciality === 'string' ? p.speciality : null;
+  const horses = typeof p.horsesLeftUnattended === 'number' ? p.horsesLeftUnattended : 0;
+  return (
+    <GameNotifShell
+      notif={notif}
+      iconBg="bg-[var(--role-warning-bg)]"
+      emoji="🕯️"
+      badgeLabel="Groom Retired"
+      badgeVariant="warning"
+      title={groomName}
+      body={
+        <p>
+          {speciality
+            ? `Has hung up their headcollar after a long career in ${speciality}.`
+            : 'Has hung up their headcollar after a long career.'}
+          {horses > 0
+            ? ` ${horses} ${horses === 1 ? 'horse is' : 'horses are'} without a groom — take someone new on when you are ready.`
+            : ' Take someone new on when you are ready.'}
+        </p>
+      }
+    />
+  );
+};
+
 const UnknownNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
   <GameNotifShell
     notif={notif}
@@ -142,6 +185,8 @@ export const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) =
       return <StatGainRow notif={notif} />;
     case 'foal_born':
       return <FoalBornRow notif={notif} />;
+    case 'groom_retired':
+      return <GroomRetiredRow notif={notif} />;
     default:
       return <UnknownNotifRow notif={notif} />;
   }

@@ -138,7 +138,13 @@ describe('Groom Retirement Routes', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('eligible');
-      expect(response.body.data).toHaveProperty('weeksUntilRetirement');
+      // Equoria-m9lz1: `weeksUntilRetirement` is gone. It was
+      // `retirementAge - careerWeeks`, so a client that knows careerWeeks (it
+      // does) recovered the hidden retirement age by subtraction — exactly what
+      // the owner's ruling forbids until the week retirement happens.
+      expect(response.body.data).not.toHaveProperty('weeksUntilRetirement');
+      expect(response.body.data).not.toHaveProperty('noticeRequired');
+      expect(response.body.data).not.toHaveProperty('retirementAge');
     });
 
     test('GET /api/v1/grooms/retirement/statistics should return user stats', async () => {
@@ -154,15 +160,44 @@ describe('Groom Retirement Routes', () => {
       expect(response.body.data).toHaveProperty('retiredGrooms');
     });
 
-    test('GET /api/v1/grooms/retirement/approaching should return approaching retirement grooms', async () => {
+    // Equoria-m9lz1: `GET /api/v1/grooms/retirement/approaching` is DELETED, not
+    // reshaped. Its whole purpose was to list the caller's grooms within a week
+    // of retiring, with a per-groom countdown attached — the disclosure the
+    // owner's ruling forbids. The route now falls through to the router's 404.
+    test('GET /api/v1/grooms/retirement/approaching no longer exists', async () => {
       const response = await request(app)
         .get('/api/v1/grooms/retirement/approaching')
         .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${testToken}`)
-        .expect(200);
+        .set('Authorization', `Bearer ${testToken}`);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeInstanceOf(Array);
+      expect(response.status).toBe(404);
+      expect(JSON.stringify(response.body)).not.toMatch(/retirementAge|weeksUntilRetirement/i);
+    });
+
+    // Equoria-m9lz1: the player-facing retirement trigger is closed. Covered in
+    // full (persisted state, no-oracle, 401, CSRF discrimination, retained game
+    // path) by
+    // backend/modules/grooms/__tests__/groomRetirementEndpointClosed.integration.test.mjs;
+    // asserted here too so this route-level suite cannot go green against a
+    // reopened endpoint.
+    test('POST /api/v1/grooms/:id/retirement/process is closed to players', async () => {
+      const response = await request(app)
+        .post(`/api/v1/grooms/${testGroom.id}/retirement/process`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${testToken}`)
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ force: true });
+
+      expect(response.status).toBe(403);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/cannot be retired/i);
+
+      const persisted = await prisma.groom.findUnique({
+        where: { id: testGroom.id },
+        select: { retired: true },
+      });
+      expect(persisted.retired).toBe(false);
     });
   });
 

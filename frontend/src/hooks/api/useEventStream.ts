@@ -38,6 +38,7 @@ const STREAM_URL = `${API_BASE_URL}/api/v1/events/stream`;
  *   - horse_sold              (marketplaceController — seller side)
  *   - forum_reply             (forumController — reply to a thread the user authored, Equoria-pwwuz/il1e4)
  *   - club_leadership_transferred (clubController — you were promoted to club president, Equoria-pwwuz)
+ *   - groom_retired           (groomRetirementService — a groom reached their hidden retirement age, Equoria-m9lz1)
  *
  * Per the SSE spec, a frame with `event: <name>` dispatches ONLY to
  * addEventListener('<name>') handlers and does NOT fire the generic
@@ -55,6 +56,7 @@ export const SSE_EVENT_NAMES = [
   'horse_sold',
   'forum_reply',
   'club_leadership_transferred',
+  'groom_retired',
 ] as const;
 
 /**

@@ -165,6 +165,9 @@ describe('useEventStream', () => {
       'horse_sold',
       'forum_reply',
       'club_leadership_transferred',
+      // Equoria-m9lz1: groomRetirementService.processRetirement emits this in
+      // the same transaction as the retirement it announces.
+      'groom_retired',
     ]);
   });
 
