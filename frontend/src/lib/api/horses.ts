@@ -48,6 +48,11 @@ export const horsesApi = {
   // Horse Trader (`marketplaceApi` store purchase), through breeding, or as
   // the starter horse registration grants them. Do not re-add a generic
   // create helper; it would only ever receive a 403.
+  // NOTE (Equoria-9tque, owner ruling 2026-09-08): there is deliberately no
+  // `delete` here either — "players are not allowed to delete horses".
+  // `DELETE /api/v1/horses/:id` is closed (403) for every caller. A player parts
+  // with a horse by listing it in the marketplace, never by destroying it. Do not
+  // add a delete helper or a "remove from stable" affordance that calls one.
   list: () => apiClient.get<HorseSummary[]>(`/api/v1/horses?t=${Date.now()}`),
   get: (horseId: number) =>
     apiClient.get<HorseSummary>(`/api/v1/horses/${horseId}?t=${Date.now()}`),

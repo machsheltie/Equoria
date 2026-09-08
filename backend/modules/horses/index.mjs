@@ -38,7 +38,6 @@ export * from './services/breedingColorInheritanceService.mjs';
 export * from './services/breedingColorPredictionService.mjs';
 export * from './services/conformationService.mjs';
 export * from './services/createHorseService.mjs';
-export * from './services/deleteHorseService.mjs';
 export * from './services/developmentalWindowSystem.mjs';
 export * from './services/foalingService.mjs';
 export * from './services/gaitService.mjs';

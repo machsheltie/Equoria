@@ -18,7 +18,6 @@ import {
   validateHorseId,
   validateUserId,
 } from './_validators.mjs';
-import { deleteHorseById } from '../services/deleteHorseService.mjs';
 import {
   listHorses,
   getRecentResultsForHorses,
@@ -487,31 +486,30 @@ router.put(
 );
 
 /**
- * DELETE /horses/:id
- * Delete a horse
- *
- * Security: Validates horse ownership before allowing deletion
+ * DELETE /horses/:id — CLOSED to players (owner ruling 2026-09-08, Equoria-9tque:
+ * "players are not allowed to delete horses"). It ran `validateHorseId` +
+ * `requireOwnership('horse')` then a bare `prisma.horse.delete`; ownership
+ * answers "is this my horse", never "may it be destroyed" — the confusion the
+ * 2026-09-05 audit closed for free creation (Finding 2, `POST /horses` above)
+ * and self-awarded XP (Finding 3) — and cascading children took the horse's
+ * staff assignments, XP events and history too. No live caller existed. 403
+ * follows Finding 2, not Finding 3's 410: `/horses/:id` is not gone, `GET` and
+ * `PUT` still serve the owner; only permission to destroy is withdrawn. It sits
+ * BEHIND `authenticateToken` (anonymous is 401) and BEFORE the validator, so an
+ * owned horse, a stranger's, a missing id and a malformed id share ONE body (no
+ * oracle). Horse rows leave the DB only via `modules/users` `eraseUserAccount`
+ * (which clears the `Restrict` lineage edges first) and the fixture-purge
+ * script; `deleteHorseService` did neither and had no caller, so it was deleted.
+ * Locked by __tests__/horseDeletionEndpointClosed.integration.test.mjs.
  */
-router.delete(
-  '/:id',
-  mutationRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-      const { status, body } = await deleteHorseById(horseId, req.user.id);
-      return res.status(status).json(body);
-    } catch (error) {
-      logger.error(`[horseRoutes] Error deleting horse: ${error.message}`);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
+router.delete('/:id', mutationRateLimiter, authenticateToken, (req, res) => {
+  logger.warn(`[horseRoutes] Rejected horse deletion by user ${req.user?.id} (Equoria-9tque)`);
+  return res.status(403).json({
+    success: false,
+    message:
+      'Horses cannot be deleted. A horse stays in your stable unless you sell it — list it in the marketplace to pass it on to another player.',
+  });
+});
 
 /**
  * GET /horses/trainable/:userId

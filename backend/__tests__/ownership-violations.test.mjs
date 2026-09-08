@@ -201,31 +201,39 @@ describe('Ownership Violation Attempts Integration Tests', () => {
       expect(horse.name).toBe(newName);
     });
 
-    it('blocks cross-user deletes and allows owner deletes', async () => {
-      const blockResponse = await request(app)
+    // Equoria-9tque (owner ruling 2026-09-08: "players are not allowed to
+    // delete horses"): this case used to assert cross-user 404 + owner 200 with
+    // the row gone. Deletion is no longer a player capability at all, so the
+    // contract asserted here changed WITH the implementation — the route now
+    // refuses BOTH callers identically and neither horse row is removed.
+    // Ownership is no longer even consulted on this verb, which is why the two
+    // responses are indistinguishable.
+    it('refuses horse deletion for the owner and for a stranger alike, deleting nothing', async () => {
+      const strangerResponse = await request(app)
         .delete(`/api/v1/horses/${horseB.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(404);
+        .expect(403);
 
-      expect(blockResponse.body.success).toBe(false);
+      expect(strangerResponse.body.success).toBe(false);
+      expect(strangerResponse.body.message).toMatch(/cannot be deleted/i);
 
-      const allowResponse = await request(app)
+      const ownerResponse = await request(app)
         .delete(`/api/v1/horses/${horseA.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(200);
+        .expect(403);
 
-      expect(allowResponse.body.success).toBe(true);
+      expect(ownerResponse.body.success).toBe(false);
+      expect(ownerResponse.body).toEqual(strangerResponse.body);
 
-      const horse = await prisma.horse.findUnique({ where: { id: horseA.id } });
-      expect(horse).toBeNull();
-      // Prevent cleanup from double-deleting the record we just removed
-      horseA = null;
+      // Both rows survive — the owner's included.
+      expect(await prisma.horse.findUnique({ where: { id: horseA.id } })).not.toBeNull();
+      expect(await prisma.horse.findUnique({ where: { id: horseB.id } })).not.toBeNull();
     });
   });
 
