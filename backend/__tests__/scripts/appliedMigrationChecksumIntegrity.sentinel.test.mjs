@@ -134,6 +134,11 @@ async function readAppliedChecksums() {
   const client = new Client({ connectionString });
   await client.connect();
   try {
+    // `rolled_back_at IS NULL` is load-bearing, not defensive noise: Prisma
+    // leaves the row of a failed/rolled-back migration in place with that
+    // column set, and such a row's checksum describes an application that did
+    // NOT stick. Including those rows would report drift for a migration the
+    // database never successfully applied. Do not "simplify" this filter away.
     const { rows } = await client.query(
       'SELECT migration_name, checksum FROM _prisma_migrations WHERE rolled_back_at IS NULL',
     );
@@ -141,6 +146,47 @@ async function readAppliedChecksums() {
   } finally {
     await client.end();
   }
+}
+
+/**
+ * The remedy, printed with the failure. The header of this file explains the
+ * whole incident, but a developer staring at a red suite may never open it, and
+ * the WRONG instinct — the one Prisma itself suggests — destroys the database.
+ *
+ * @param {Array<{migration: string, kind: string, fileChecksum?: string, storedChecksum?: string}>} drift
+ * @returns {string}
+ */
+export function explainDrift(drift) {
+  const lines = [
+    'Applied migration files no longer match the checksums recorded when they were applied.',
+    '',
+    'DO NOT run `prisma migrate reset` or `prisma db push`. Both destroy the database,',
+    'and neither is the fix.',
+    '',
+    'For each migration below, restore its migration.sql to the exact bytes that hash to',
+    'the stored checksum, then re-run. Prisma hashes raw bytes, so comments and even the',
+    'trailing newline are part of the checksum. To find the right version:',
+    '',
+    '  git log --all --oneline -- <path to that migration.sql>',
+    '  # for each candidate commit: git show <commit>:<path> | sha256sum',
+    '  git cat-file blob <matching blob> > <path>      # restore it verbatim',
+    '',
+    'An applied migration file is immutable, comments included. If you reached this by',
+    'reformatting or a documentation sweep, exclude packages/database/prisma/migrations/**',
+    'from it. See Equoria-mxftz.',
+    '',
+  ];
+  for (const entry of drift) {
+    if (entry.kind === 'applied-without-file') {
+      lines.push(
+        `  ${entry.migration}: APPLIED BUT THE FILE IS GONE (stored ${entry.storedChecksum}).` +
+          ' Restore the directory from git; do not delete the row.',
+      );
+    } else {
+      lines.push(`  ${entry.migration}: file hashes to ${entry.fileChecksum} but ${entry.storedChecksum} was applied.`);
+    }
+  }
+  return lines.join('\n');
 }
 
 describe('applied-migration checksum integrity (Equoria-mxftz)', () => {
@@ -154,7 +200,11 @@ describe('applied-migration checksum integrity (Equoria-mxftz)', () => {
     expect(applied.size).toBeGreaterThan(0);
 
     const drift = findChecksumDrift(onDisk, applied);
-    expect(drift).toEqual([]);
+    // Assert on the explained form so the remedy is in the failure output, not
+    // only in this file's header. `toEqual([])` alone would print the drift
+    // objects and leave the developer to guess — and Prisma's own suggestion,
+    // `migrate reset`, is the destructive wrong answer.
+    expect(drift.length === 0 ? '' : explainDrift(drift)).toBe('');
   }, 60_000);
 
   test("reproduces the stored checksum, proving the algorithm is Prisma's own", async () => {
@@ -213,6 +263,28 @@ describe('applied-migration checksum integrity (Equoria-mxftz)', () => {
       ['29991231235959_authored_but_not_yet_applied', 'b'.repeat(64)],
     ]);
     expect(findChecksumDrift(onDisk, applied)).toEqual([]);
+  });
+
+  test('the failure message carries the remedy and refuses the destructive one', () => {
+    const message = explainDrift([
+      {
+        migration: '20260430055822_feed_phase_a',
+        kind: 'modified',
+        fileChecksum: '2886d20fd9242efca2bfd6a275a14700d474d263f71695e9c22ad3a318038327',
+        storedChecksum: '01b3818ddc8414040ce6f0a89fd580b1a28ef22ff9d1cb4a405d2c7dfc9902b8',
+      },
+    ]);
+
+    expect(message).toContain('DO NOT run `prisma migrate reset`');
+    expect(message).toContain('git cat-file blob');
+    expect(message).toContain('20260430055822_feed_phase_a');
+    expect(message).toContain('2886d20fd9242efca2bfd6a275a14700d474d263f71695e9c22ad3a318038327');
+    expect(message).toContain('01b3818ddc8414040ce6f0a89fd580b1a28ef22ff9d1cb4a405d2c7dfc9902b8');
+    // The deleted-file case gets its own instruction, since restoring a file is
+    // a different action from restoring a directory and the row must be left alone.
+    expect(explainDrift([{ migration: 'x', kind: 'applied-without-file', storedChecksum: 'a'.repeat(64) }])).toContain(
+      'do not delete the row',
+    );
   });
 
   test('the hash is over raw bytes: a comment-only change and a line-ending change both move it', () => {

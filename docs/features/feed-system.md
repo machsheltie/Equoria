@@ -96,7 +96,14 @@ beyond the weighted average and cannot make the missed-day count negative.
 - Pregnancy formula: `backend/utils/pregnancyBonus.mjs`
 - Delayed foaling: `backend/modules/horses/services/foalingService.mjs`
 - Schema history: migration `20260430055822_feed_phase_a` and later pregnancy
-  migrations
+  migrations. That migration's comment block cites
+  `docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md`, a spec
+  retired in `fee265d07`; **this document is its successor.** The stale pointer
+  cannot be corrected, because Prisma hashes the migration file's raw bytes and
+  editing it after it was applied is what broke `prisma migrate dev` for three
+  weeks (Equoria-mxftz). Treat the citation as provenance and read this file
+  instead. Never edit a file under `packages/database/prisma/migrations/` once
+  it has been applied — comments included.
 - Frontend formula mirror: `frontend/src/lib/utils/pregnancyChances.ts`
 
 Load this document only when changing or reviewing feed purchase/equipment,
