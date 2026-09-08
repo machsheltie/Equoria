@@ -15,11 +15,9 @@ import {
   handleValidationErrors,
   rejectPollutedRequest,
   validateHorseUpdatePayload,
-  validateHorseCreation,
   validateHorseId,
   validateUserId,
 } from './_validators.mjs';
-import { createHorseFromRequest } from '../services/createHorseService.mjs';
 import { deleteHorseById } from '../services/deleteHorseService.mjs';
 import {
   listHorses,
@@ -290,28 +288,36 @@ router.get(
 );
 
 /**
- * POST /horses
- * Create a new horse
+ * POST /horses — CLOSED to players (2026-09-05 audit, Finding 2 / Equoria-6p398.2).
+ *
+ * This route ran `authenticateToken` + `validateHorseCreation` and handed the
+ * body straight to `createHorseFromRequest`: any zero-coin `role=user` account
+ * could name a breed/sex/age and receive a persisted horse (201) with no payment,
+ * entitlement, onboarding guard or cap — free breeding and sale stock, bypassing
+ * the 1,000-coin Horse Trader entirely.
+ *
+ * No legitimate player caller exists (`horsesApi.create` was an unused client
+ * helper). The REAL acquisition paths are untouched — the registration starter
+ * horse (auth/services/onboardingService.mjs), the paid Horse Trader purchase
+ * (marketplace `buyStoreHorse`: debit + INSERT in one transaction) and
+ * breeding/foaling (services/foalingService.mjs) each call the `createHorse`
+ * model function directly; only this HTTP entry point closes.
+ * The rejection sits BEHIND `authenticateToken` (an anonymous POST is still 401,
+ * per backend/__tests__/auth-bypass-attempts.test.mjs) and is payload-independent
+ * — no validation or body inspection runs first — so a `userId`, a role claim, a
+ * starter-shaped name or half-finished onboarding cannot steer it. Locked by
+ * modules/horses/__tests__/horseCreationEndpointClosed.integration.test.mjs.
  */
-router.post(
-  '/',
-  mutationRateLimiter,
-  authenticateToken,
-  validateHorseCreation,
-  async (req, res) => {
-    try {
-      const { status, body } = await createHorseFromRequest(req.body, req.user.id);
-      return res.status(status).json(body);
-    } catch (error) {
-      logger.error(`[horseRoutes] Error creating horse: ${error.message}`);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
+router.post('/', mutationRateLimiter, authenticateToken, (req, res) => {
+  logger.warn(
+    `[horseRoutes] Rejected direct horse creation attempt by user ${req.user?.id} (Finding 2: player horse creation is closed)`,
+  );
+  return res.status(403).json({
+    success: false,
+    message:
+      'Horses cannot be created directly. Visit the Horse Trader or breed a foal to add a horse to your stable.',
+  });
+});
 
 /**
  * POST /horses/batch-update

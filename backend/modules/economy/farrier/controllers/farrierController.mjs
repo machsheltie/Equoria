@@ -108,7 +108,13 @@ export async function bookFarrierService(req, res) {
     try {
       ({ updatedHorse, updatedUser } = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
-          const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
+          // Equoria-6p398.9 lock ordering: the User row is written BEFORE the
+          // Horse row. Every UPDATE holds its row write-lock until commit, so
+          // the previous Horse-then-User order deadlocked against buyHorse
+          // (which holds User(owner) and waits for Horse) whenever an owner
+          // booked a farrier service on a horse being bought. No data dependency
+          // between the two statements; only the order moved. Guarded by
+          // backend/__tests__/txUserBeforeHorseLockOrder.sentinel.test.mjs.
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
@@ -118,6 +124,7 @@ export async function bookFarrierService(req, res) {
             description: `Farrier fee — ${service.name} for ${horse.name}`,
             metadata: { horseId, serviceId },
           });
+          const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
           const userUpdate = { money: moneyAfter };
           // Equoria-u9mw9: tx-first ledger writer (Equoria-pqp69). Drops the
           // caller-supplied balanceAfter — recordTransactionTx reads the

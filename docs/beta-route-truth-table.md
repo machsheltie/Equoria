@@ -18,6 +18,7 @@ Every currently known route is `beta-live`; unknown paths also resolve to `beta-
 | `/verify-email`             | Authentication      | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/forgot-password`          | Authentication      | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/reset-password`           | Authentication      | `betaRouteScope.ts` | `App.tsx`    | beta-live |
+| `/confirm-email-change`     | Authentication      | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/onboarding`               | New-player flow     | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/`                         | Game entry          | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/stable`                   | Stable              | `betaRouteScope.ts` | `App.tsx`    | beta-live |

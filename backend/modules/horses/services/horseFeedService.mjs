@@ -27,6 +27,7 @@ import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { FEED_CATALOG } from '../../economy/index.mjs';
 import { alreadyFedToday, startOfUtcDay } from '../../../utils/horseHealth.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 
 // 12-stat boost pool. Names match Horse schema fields exactly.
 const STATS = [
@@ -294,10 +295,10 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       // We won the claim: now (and only now) decrement the inventory. Because
       // the horse-row claim already committed-or-conflicted atomically, this
       // user-settings write can never run for a losing feed.
-      await tx.user.update({
-        where: { id: userId },
-        data: { settings: { ...settings, inventory } },
-      });
+      // Finding 1 (Equoria-6p398.1): write ONLY the `inventory` path so the
+      // weekly bank-claim marker, materials and onboarding state are never
+      // replayed from this transaction's earlier settings snapshot.
+      await updateUserSettingsPaths(tx, userId, { set: { inventory } });
 
       // Re-read the horse to return the post-update state (stat boost + counter
       // applied) in the spec shape. Within the same txn this reflects our write.

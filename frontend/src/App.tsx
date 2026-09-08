@@ -28,6 +28,10 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+// Equoria-6p398.11 (Finding 9): the landing page for the recovery-address
+// confirmation link. Public for the same reason /verify-email is — the link is
+// opened from the mailbox of the NEW address, routinely in another browser.
+const ConfirmEmailChangePage = lazy(() => import('./pages/ConfirmEmailChangePage'));
 const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 const HorseEquipPage = lazy(() => import('./pages/horses/HorseEquipPage'));
 const FoalDetailPage = lazy(() => import('./pages/FoalDetailPage'));
@@ -75,6 +79,7 @@ const App = () => (
                   <Route path="/verify-email" element={<VerifyEmailPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
 
                   {/* Authenticated routes — DashboardLayout provides persistent nav */}
                   <Route

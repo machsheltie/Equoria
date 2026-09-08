@@ -86,6 +86,34 @@ router.post(
 // POST /auth/resend-verification
 router.post('/resend-verification', authController.resendVerification);
 
+// ── Recovery-address change (Equoria-6p398.5, Finding 5) ───────────────────
+// The email address IS the account-recovery identity, so this route is gated on
+// FRESH authentication (current password, plus a TOTP step-up when the account
+// has MFA enabled) on top of the session + CSRF this router already enforces.
+// It only STAGES the replacement; the confirmation link mailed to the new
+// address commits it (GET /auth/email-change/confirm, in authRoutes.mjs).
+// The email validator chain matches POST /auth/register exactly so a staged
+// address is normalized the same way a signup address is.
+router.post(
+  '/email-change/request',
+  authRateLimiter,
+  [
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail().trim(),
+    body('password').notEmpty().withMessage('Your current password is required'),
+    body('totpToken').optional().isString().withMessage('TOTP token must be a string'),
+    handleValidationErrors,
+  ],
+  authController.requestEmailChangeController,
+);
+
+// GET /auth/email-change/status — read-only companion to the route above
+// (Equoria-6p398.11, Finding 9). The player-facing surface needs to know
+// whether this account will be asked for a second factor (both refusals are a
+// bare 401, so it cannot be inferred from a failed attempt) and whether a
+// replacement is already staged. Session + CSRF-free because it is a GET that
+// changes nothing; authorization comes from `authenticateToken` on the router.
+router.get('/email-change/status', authController.getEmailChangeStatusController);
+
 // GET /auth/verification-status
 router.get('/verification-status', authController.getVerificationStatus);
 

@@ -18,14 +18,10 @@
  */
 
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
+import { createHorseFromRequest } from '../services/createHorseService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
-import request from 'supertest';
-import jwt from 'jsonwebtoken';
-import config from '../../../config/config.mjs';
 import app from '../../../app.mjs';
-
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // Helpers: minimal genotype builders
 // ---------------------------------------------------------------------------
@@ -659,7 +655,7 @@ describe('calculatePhenotype — null/empty fallback', () => {
 // Integration test: POST /api/v1/horses includes phenotype in response
 // ---------------------------------------------------------------------------
 
-describe('POST /api/v1/horses — phenotype integration', () => {
+describe('createHorseFromRequest — phenotype integration', () => {
   let server;
   let testUserId;
   let createdHorseId;
@@ -707,30 +703,20 @@ describe('POST /api/v1/horses — phenotype integration', () => {
   });
 
   it('created horse includes phenotype with colorName string and all boolean pattern flags', async () => {
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    // Per-user CSRF binding (Equoria-plw0h): POST /api/v1/horses authenticates via
-    // the Bearer token, so its sessionIdentifier resolves to testUserId. Issue the
-    // CSRF token under the same identifier (pass the access cookie) or doubleCsrf
-    // 403s the legitimate create.
-    const __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    // Equoria-6p398.2 (audit Finding 2): POST /api/v1/horses is closed to
+    // players and now answers 403. The phenotype pipeline under test is
+    // unchanged; drive it at the service boundary instead of over HTTP.
+    const response = await createHorseFromRequest(
+      {
         name: `PhenotypeTest_${timestamp}`,
         breedId: arabianBreedId,
         age: 3,
         sex: 'mare',
-      })
-      .expect(201);
+      },
+      testUserId,
+    );
 
+    expect(response.status).toBe(201);
     expect(response.body.success).toBe(true);
     const horse = response.body.data;
 

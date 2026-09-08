@@ -9,7 +9,8 @@
  *  AC5: Competition entry — select horse → confirm → result displayed
  */
 import { test, expect } from '@playwright/test';
-import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { createAuthedSession, type AuthedSession } from './helpers/api';
+import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { readTestCredentials } from './helpers/credentials';
 import { assertValidNextTrainingDate } from './helpers/training';
 
@@ -125,21 +126,25 @@ test.describe('AC4: Training Session', () => {
       }
     }
 
-    // Create a fresh training horse with proper auth + CSRF (no bypass headers)
-    const res = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: `Training Horse ${Date.now()}`,
-      breedId,
-      age: 5,
-      sex: 'stallion',
-    });
-    if (!res.ok()) {
-      throw new Error(`Horse creation for training failed: ${res.status()} ${await res.text()}`);
-    }
-    const json = await res.json();
-    trainingHorseId = json?.data?.id ?? json?.id ?? null;
-    if (!trainingHorseId) {
-      throw new Error(`Horse creation succeeded but returned no id: ${JSON.stringify(json)}`);
-    }
+    // Seed a fresh training horse. Equoria-6p398.2 (audit Finding 2): the old
+    // POST /api/v1/horses fixture route handed any player a free horse and is
+    // now closed (403). Seed from this process through the real createHorse
+    // model function — no player-facing creation route, no bypass header.
+    const horse = await seedOwnedHorse(
+      session,
+      {
+        breedId,
+        name: `Training Horse ${Date.now()}`,
+        sex: 'stallion',
+        age: 5,
+      },
+      // The Training Grounds dashboard reads GET /horses/trainable/:userId,
+      // which is NOT cached, so this horse never needs to be in the cached
+      // horse list. Keeping the shared global-setup account also preserves the
+      // starter horse that AC5's competition entry falls back to.
+      { requireHorseListVisibility: false }
+    );
+    trainingHorseId = horse.id;
     console.log('Created training horse id:', trainingHorseId);
   });
 

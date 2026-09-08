@@ -16,6 +16,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
 import {
   recordTransactionTx,
@@ -224,8 +225,6 @@ export async function craftItem(req, res) {
       thread: materials.thread - (recipe.materials.thread || 0),
     };
 
-    const existingSettings =
-      user.settings && typeof user.settings === 'object' ? user.settings : {};
     const existingInventory = getInventory(user.settings);
 
     const newItem = {
@@ -243,8 +242,12 @@ export async function craftItem(req, res) {
       equippedToHorseName: null,
     };
 
+    // Finding 1 (Equoria-6p398.1): only the two keys this craft owns are
+    // written, by path, so a concurrent bank claim's `lastWeeklyClaimDate`
+    // survives. `existingInventory` is also the compare-and-swap precondition
+    // below — a craft computed from a stale inventory snapshot is rejected
+    // rather than silently discarding the other writer's change.
     const updatedSettings = {
-      ...existingSettings,
       craftingMaterials: newMaterials,
       inventory: [...existingInventory, newItem],
     };
@@ -269,10 +272,17 @@ export async function craftItem(req, res) {
             description: `Crafting fee — ${recipe.resultName}`,
             metadata: { recipeId, result: recipe.result },
           });
-          await tx.user.update({
-            where: { id: userId },
-            data: { settings: updatedSettings },
+          const affectedSettings = await updateUserSettingsPaths(tx, userId, {
+            set: updatedSettings,
+            expect: { inventory: { equals: existingInventory, whenMissing: [] } },
           });
+          if (affectedSettings !== 1) {
+            const conflict = new Error(
+              'Your inventory changed while this craft was in flight. Please retry.',
+            );
+            conflict.status = 409;
+            throw conflict;
+          }
           // Equoria-4539b: tx-first ledger writer (Equoria-pqp69). Drops the
           // caller-supplied balanceAfter — recordTransactionTx reads the
           // authoritative balance from the same tx so the audit row cannot drift

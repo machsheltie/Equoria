@@ -8,7 +8,7 @@
  * - GET /api/horses/:horseId/xp - Get horse XP status
  * - POST /api/horses/:horseId/allocate-stat - Allocate stat point
  * - GET /api/horses/:horseId/xp-history - Get horse XP history
- * - POST /api/horses/:horseId/award-xp - Award XP (admin/system use)
+ * - POST /api/horses/:horseId/award-xp - REMOVED, 410 Gone (Equoria-6p398.3)
  *
  * Security:
  * - All endpoints require authentication
@@ -322,95 +322,19 @@ export async function getHorseXpHistory(req, res) {
 }
 
 /**
- * Award XP to horse (admin/system use)
- * POST /api/horses/:horseId/award-xp
+ * Manual XP award — REMOVED (Equoria-6p398.3, audit Finding 3).
+ *
+ * `awardXpToHorse` used to sit behind `requireOwnership('horse')` only and
+ * forwarded the caller's `req.body.amount` / `req.body.reason` to
+ * `addXpToHorse`. The 2026-09-05 audit reproduced a `role=user` account
+ * granting its own horse 1000 XP and ten stat points with a single POST.
+ *
+ * Its route is now 410 Gone (see routes/horseXpRoutes.mjs) and the handler is
+ * deleted rather than left dormant, so no future router can re-mount an
+ * unauthorized XP faucet by name. Horse XP is written ONLY by the internal
+ * service — `horseXpModelService.addXpToHorseCore` / `addXpToHorse` — from
+ * server-computed competition results. Do not reintroduce a request-supplied
+ * `amount` path here; if a genuine admin grant is ever required, it belongs on
+ * the admin router behind `requireRole('admin') + requireAdminMfa` with an
+ * owner-approved contract.
  */
-export async function awardXpToHorse(req, res) {
-  try {
-    const { horseId } = req.params;
-    const { amount, reason } = req.body;
-    const userId = req.user.id;
-
-    // Validate inputs
-    const horseIdNum = parseInt(horseId);
-    if (isNaN(horseIdNum)) {
-      throw new ValidationError('Invalid horse ID');
-    }
-
-    if (!amount || typeof amount !== 'number' || amount <= 0) {
-      throw new ValidationError('XP amount must be a positive number');
-    }
-
-    if (!reason || typeof reason !== 'string') {
-      throw new ValidationError('Reason is required');
-    }
-
-    // Verify horse ownership
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseIdNum },
-      select: {
-        id: true,
-        name: true,
-        userId: true,
-      },
-    });
-
-    if (!horse) {
-      throw new NotFoundError('Horse');
-    }
-
-    // CWE-639 hardening: ownership is enforced upstream by
-    // requireOwnership('horse') middleware in horseRoutes.mjs:1321, which
-    // returns 404 for both not-found and not-owned. Previous 403 here was
-    // dead code; fall through to 404 in case middleware is ever bypassed.
-    if (horse.userId !== userId) {
-      throw new NotFoundError('Horse');
-    }
-
-    // Award XP using model
-    const result = await horseXpModel.addXpToHorse(horseIdNum, amount, reason);
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
-    // Invalidate caches
-    await invalidateCache(`horse:xp:status:${horseIdNum}`);
-    await invalidateCache(`horse:xp:history:${horseIdNum}*`); // Pattern invalidation for history
-    await invalidateCache(`horse:overview:${horseIdNum}`);
-
-    logger.info(
-      `[horseXpController.awardXpToHorse] Awarded ${amount} XP to horse ${horse.name} (ID: ${horseId})`,
-    );
-
-    res.json({
-      success: true,
-      data: {
-        currentXP: result.currentXP,
-        availableStatPoints: result.availableStatPoints,
-        xpGained: result.xpGained,
-        statPointsGained: result.statPointsGained,
-      },
-    });
-  } catch (error) {
-    logger.error(`[horseXpController.awardXpToHorse] Error: ${error.message}`);
-
-    if (error instanceof ValidationError || error.name === 'ValidationError') {
-      return res.status(400).json({ success: false, error: error.message });
-    }
-    if (error instanceof NotFoundError || error.name === 'NotFoundError') {
-      return res.status(404).json({ success: false, error: error.message });
-    }
-    // CWE-639 hardening (Equoria-9ov8 wave 4): AuthorizationError catch
-    // branch removed — nothing in this controller throws AuthorizationError
-    // anymore (wave-3 converted ownership checks to NotFoundError so cross-
-    // user access surfaces as 404, not 403). The branch was dead code; if a
-    // future change reintroduces AuthorizationError, it would now fall
-    // through to 500 — which is the correct fail-closed default for an
-    // unexpected security-error type.
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error while awarding horse XP',
-    });
-  }
-}

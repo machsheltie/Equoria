@@ -15,7 +15,6 @@ export * from './usePrizeHistory';
 export * from './useHorsePrizeSummary';
 export * from './useHorseLevelInfo';
 export * from './useXpHistory';
-export * from './useAddXp';
 export * from './useLeaderboard';
 export * from './useUserRankSummary';
 export * from './useLeaderboardRefresh';

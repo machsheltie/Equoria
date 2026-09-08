@@ -5,7 +5,7 @@
  * and display settings for the Equoria application.
  *
  * Sections:
- * 1. Account — username, email, password change, delete account
+ * 1. Account — username, recovery address, password change, delete account
  * 2. Notifications — email and in-app notification toggles
  * 3. Display — theme and accessibility preferences
  * 4. Sound — sound-effects master toggle + previews
@@ -64,8 +64,12 @@ const SettingsPage: React.FC = () => {
   const { soundEnabled, setSoundEnabled, playSound } = useSound();
 
   // -------- Account form state (controlled, seeded from user) --------
+  // Equoria-6p398.11 (Finding 9): `email` is gone from this form. The address is
+  // the account's recovery identity and moves only through the staged
+  // request/confirm flow (Finding 5) — `PUT /auth/profile` answers a changed
+  // address with 403, so the old field could no longer succeed. The replacement
+  // surface is `pages/settings/RecoveryAddressSection`, which owns its own state.
   const [username, setUsername] = useState<string>(user?.username ?? '');
-  const [email, setEmail] = useState<string>(user?.email ?? '');
 
   // Equoria-ocn9 review fix: re-sync the local form state from the server
   // ONLY when the local state still matches the value we last seeded.
@@ -79,25 +83,21 @@ const SettingsPage: React.FC = () => {
   // With this pattern: the form is always in sync with the server until
   // the user starts typing; once they type, the form holds their input
   // until they save (or until the user switches identity entirely).
-  const lastSeededRef = useRef<{ username: string; email: string }>({
+  const lastSeededRef = useRef<{ username: string }>({
     username: user?.username ?? '',
-    email: user?.email ?? '',
   });
   useEffect(() => {
     if (!user) return;
     setUsername((prev) => (prev === lastSeededRef.current.username ? (user.username ?? '') : prev));
-    setEmail((prev) => (prev === lastSeededRef.current.email ? (user.email ?? '') : prev));
     lastSeededRef.current = {
       username: user.username ?? '',
-      email: user.email ?? '',
     };
   }, [user]);
 
   const handleSaveAccount = () => {
     if (!user) return;
-    const updates: { username?: string; email?: string } = {};
+    const updates: { username?: string } = {};
     if (username.trim() && username !== user.username) updates.username = username.trim();
-    if (email.trim() && email !== user.email) updates.email = email.trim();
     if (Object.keys(updates).length === 0) {
       toast.info('No changes to save.');
       return;
@@ -351,9 +351,7 @@ const SettingsPage: React.FC = () => {
             {activeSection === 'account' && (
               <AccountSection
                 username={username}
-                email={email}
                 onUsernameChange={setUsername}
-                onEmailChange={setEmail}
                 onSaveAccount={handleSaveAccount}
                 isSavingAccount={updateProfile.isPending}
                 showPasswordForm={showPasswordForm}

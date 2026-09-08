@@ -421,7 +421,11 @@ model GroomAssignment {
   user              User?              @relation(fields: [userId], references: [id])
   groomInteractions GroomInteraction[]
 
-  @@unique([foalId, groomId, isActive])
+  /// Equoria-kccmt: see the RiderAssignment note. The one-active-assignment-
+  /// per-(groom, horse) rule is the partial unique index
+  /// `groom_assignments_active_foalId_groomId_key ... WHERE "isActive"`,
+  /// created in raw SQL by migration
+  /// 20260907120000_kccmt_partial_unique_active_staff_assignments.
   @@index([foalId])
   @@index([groomId])
   @@map("groom_assignments")
@@ -1224,7 +1228,14 @@ model RiderAssignment {
   horse     Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
   user      User?    @relation(fields: [userId], references: [id])
 
-  @@unique([riderId, horseId, isActive])
+  /// Equoria-kccmt: the one-active-assignment-per-(rider, horse) rule is a
+  /// PARTIAL unique index — `rider_assignments_active_riderId_horseId_key ...
+  /// WHERE "isActive"` — created in raw SQL by migration
+  /// 20260907120000_kccmt_partial_unique_active_staff_assignments. Prisma
+  /// cannot express a partial index, so it is deliberately absent here; the
+  /// former `@@unique([riderId, horseId, isActive])` also capped assignment
+  /// HISTORY at one inactive row per pair, which broke re-assignment and forced
+  /// the sale path to delete history. Do not "restore" it.
   @@index([riderId])
   @@index([horseId])
   @@index([userId])
@@ -1297,7 +1308,11 @@ model TrainerAssignment {
   horse     Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
   user      User?    @relation(fields: [userId], references: [id])
 
-  @@unique([trainerId, horseId, isActive])
+  /// Equoria-kccmt: see the RiderAssignment note. The one-active-assignment-
+  /// per-(trainer, horse) rule is the partial unique index
+  /// `trainer_assignments_active_trainerId_horseId_key ... WHERE "isActive"`,
+  /// created in raw SQL by migration
+  /// 20260907120000_kccmt_partial_unique_active_staff_assignments.
   @@index([trainerId])
   @@index([horseId])
   @@index([userId])

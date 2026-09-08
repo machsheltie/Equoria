@@ -28,8 +28,10 @@ import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { ALLOWED_PREFERENCE_KEYS } from '../constants/authConstants.mjs';
 import { sanitizeInput } from '../../../utils/securityValidation.mjs';
+import { assertNoDirectEmailWrite } from '../../../utils/emailIdentityPolicy.mjs';
 
 /**
  * Equoria-pnd1z (XSS/control-char hardening): bio is free-text persisted in
@@ -188,11 +190,30 @@ export const updateProfile = async (req, res, next) => {
       }
     }
 
-    // Check for existing username or email (only if those are being changed)
-    if (username || email) {
+    // Finding 5 (Equoria-6p398.5): the recovery identity is read FIRST and the
+    // shared policy is applied BEFORE any write is planned. `User.email` is the
+    // account-recovery address — a session plus a CSRF token is not authority
+    // to move it (the audit's reproduction changed it and kept
+    // emailVerified/emailVerifiedAt). A same-address request is a no-op and
+    // must not disturb verification; a different address is refused here and
+    // routed to the staged request/confirm flow. `currentUser` doubles as the
+    // settings snapshot the merge below needs, so this costs no extra query on
+    // the preference path.
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { email: true, settings: true },
+    });
+    if (!currentUser) {
+      throw new AppError('User not found', 404);
+    }
+    assertNoDirectEmailWrite({ requestedEmail: email, currentEmail: currentUser.email });
+
+    // Check for an existing username (only if it is being changed). Email is no
+    // longer writable here, so it is no longer part of this conflict probe.
+    if (username) {
       const existingUser = await prisma.user.findFirst({
         where: {
-          OR: [{ email: email || '' }, { username: username || '' }],
+          username,
           NOT: {
             id: req.user.id,
           },
@@ -200,15 +221,9 @@ export const updateProfile = async (req, res, next) => {
       });
 
       if (existingUser) {
-        // Indicate which identifier conflicts. Use canonical phrasing so the
-        // frontend isDuplicate check ("already exists" | "already in use" | "taken")
-        // fires reliably. 409 Conflict matches the resource-conflict semantics and
-        // aligns with other duplicate-resource errors in the app.
-        const emailConflict = email && existingUser.email === email;
-        const conflictMsg = emailConflict
-          ? 'User with this email already exists'
-          : 'User with this username already exists';
-        throw new AppError(conflictMsg, 409);
+        // Canonical phrasing so the frontend isDuplicate check
+        // ("already exists" | "already in use" | "taken") fires reliably.
+        throw new AppError('User with this username already exists', 409);
       }
     }
 
@@ -232,17 +247,19 @@ export const updateProfile = async (req, res, next) => {
     // Merge preferences + bio into existing settings JSON without clobbering
     // onboarding state. bio lives in settings JSONB (the User table has no bio
     // column), alongside notifications + display (Equoria-pnd1z).
+    //
+    // Finding 1 (Equoria-6p398.1): `settingsUpdate` now holds ONLY the keys this
+    // route owns, and they are written by PATH (jsonb_set). The prior form read
+    // the whole settings document and wrote the whole document back, so a
+    // POST /bank/claim that committed in between had its `lastWeeklyClaimDate`
+    // marker erased — letting the player claim the weekly 5,000 coins twice.
     let settingsUpdate;
     if (hasPreferenceUpdate || hasBioUpdate) {
-      const currentUser = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { settings: true },
-      });
       const currentSettings =
-        typeof currentUser?.settings === 'object' && currentUser.settings !== null
+        typeof currentUser.settings === 'object' && currentUser.settings !== null
           ? currentUser.settings
           : {};
-      settingsUpdate = { ...currentSettings };
+      settingsUpdate = {};
       if (notifications !== undefined && notifications !== null) {
         settingsUpdate.notifications = {
           ...(currentSettings.notifications ?? {}),
@@ -259,23 +276,38 @@ export const updateProfile = async (req, res, next) => {
       }
     }
 
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        username: username || undefined,
-        email: email || undefined,
-        ...(settingsUpdate ? { settings: settingsUpdate } : {}),
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        createdAt: true,
-        updatedAt: true,
-        settings: true,
-      },
-    });
+    // Update user. The identity columns and the settings paths commit together.
+    const updatedUser = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        if (settingsUpdate) {
+          const affected = await updateUserSettingsPaths(tx, req.user.id, {
+            set: settingsUpdate,
+          });
+          if (affected !== 1) {
+            throw new AppError('User not found', 404);
+          }
+        }
+        return tx.user.update({
+          where: { id: req.user.id },
+          data: {
+            username: username || undefined,
+            // Finding 5: `email` is deliberately absent. This route can never
+            // write the recovery address — assertNoDirectEmailWrite above has
+            // already refused a change and reduced a same-address request to a
+            // no-op, so nothing here may touch email/emailVerified.
+          },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            createdAt: true,
+            updatedAt: true,
+            settings: true,
+          },
+        });
+      }),
+      { message: 'Profile service is busy right now, please retry in a moment.' },
+    );
 
     const updatedSettings =
       typeof updatedUser.settings === 'object' && updatedUser.settings !== null
@@ -368,15 +400,15 @@ export const updateUserPreferences = async (req, res, next) => {
           ...body,
         };
 
-        const updatedSettings = {
-          ...currentSettings,
-          preferences: merged,
-        };
-
-        await tx.user.update({
-          where: { id: req.user.id },
-          data: { settings: updatedSettings },
+        // Finding 1 (Equoria-6p398.1): write ONLY the `preferences` path so a
+        // concurrent bank claim's `lastWeeklyClaimDate` (and inventory,
+        // materials, onboarding state) survive this preference toggle.
+        const affected = await updateUserSettingsPaths(tx, req.user.id, {
+          set: { preferences: merged },
         });
+        if (affected !== 1) {
+          throw new AppError('User not found', 404);
+        }
 
         return merged;
       }),

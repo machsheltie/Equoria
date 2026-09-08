@@ -1,9 +1,19 @@
 /**
  * createHorseService.mjs
  *
- * Service layer for POST /horses creation. Extracted from horseRoutes.mjs
+ * Server-owned generic horse creation. Extracted from the horseRoutes.mjs
  * inline body (Equoria-y8u2j, AC1) — same logic, lifted verbatim from the
  * route handler so behaviour is byte-equivalent.
+ *
+ * NOT PLAYER-REACHABLE (2026-09-05 audit, Finding 2 / Equoria-6p398.2). The
+ * `POST /api/v1/horses` entry point that used to call this now answers 403 for
+ * every caller: it let any zero-coin player mint horses for free. This service
+ * is retained as the trusted, non-HTTP creation pipeline (breed genetics →
+ * conformation/gait/temperament → genotype/phenotype/markings → createHorse),
+ * exercised by the genetics integration suites. Do NOT mount it on a
+ * player-facing route again; a new acquisition path must consume a payment or
+ * a server-owned entitlement in the same transaction as the insert, the way
+ * marketplace `buyStoreHorse` does.
  *
  * Responsibilities (all of which were previously inline in the router):
  *   - parse + validate the breedId param
@@ -41,9 +51,10 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 /**
  * Create a horse for the given user from a validated request body.
  *
- * The caller (route handler) is responsible for running validateHorseCreation
- * + auth FIRST; this service trusts that the body has already been schema-
- * validated and that req.user.id is real.
+ * The CALLER is responsible for authorization and payment/entitlement: this
+ * service trusts that the supplied userId is real and that the caller has
+ * already earned the horse. It performs no schema validation of its own beyond
+ * breedId and the sire/dam ownership + sex guards (Equoria-zrbc).
  *
  * @param {object} reqBody - the express request body (post-validation)
  * @param {string|number} userId - the authenticated user's id

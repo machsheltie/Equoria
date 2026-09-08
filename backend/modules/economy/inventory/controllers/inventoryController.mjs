@@ -14,6 +14,8 @@
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
+import { updateUserSettingsPaths } from '../../../../utils/userSettingsPaths.mjs';
+import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import { TACK_INVENTORY } from '../../tackShop/controllers/tackShopController.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -35,6 +37,13 @@ function getInventoryFromSettings(settings) {
  * Derive inventory from horses' tack fields when no inventory is recorded.
  * Called on first-ever inventory GET so existing purchases are surfaced.
  * Returns an array of InventoryItem objects.
+ *
+ * This record shape and the `<horseId>-<itemId>` id scheme are also what
+ * `marketplace/services/horseTransferReconciliation.returnTackToSeller` writes
+ * when a sale hands shop-bought tack back to the seller (Equoria-6p398.12).
+ * Keep the two in step: a divergence would give the same physical item two
+ * different records depending on which path surfaced it first.
+ *
  * @param {Array} horses - User's horses with tack field
  */
 function deriveInventoryFromHorseTack(horses) {
@@ -79,6 +88,117 @@ function enrichInventory(inventory, horses) {
   });
 }
 
+/**
+ * Read a Prisma Json value as a plain object (CONTRIBUTING.md JSONB guard).
+ * @param {unknown} raw
+ * @returns {object}
+ */
+function asObject(raw) {
+  return raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+}
+
+/**
+ * The `Horse.tack` key a category writes to, and the two derived scoring
+ * mirrors `tackShopController.purchaseTackItem` stores beside the item id.
+ *
+ * Decorative items are ADDITIVE and live in the `decorations` array, not in a
+ * `decorative` slot: `resolveTackBonus`'s parade presence bonus and
+ * `tackShopController.unequipDecoration` both read `tack.decorations` and
+ * nothing else. Writing a decoration to `tack.decorative` — which this file did
+ * before Equoria-6p398.12 — produced an item that was equipped, invisible to
+ * scoring, and unreachable by the shop's remove endpoint.
+ */
+const DECORATIVE_CATEGORY = 'decorative';
+const DECORATIONS_KEY = 'decorations';
+const BONUS_MIRROR_KEYS = Object.freeze({ saddle: 'saddleBonus', bridle: 'bridleBonus' });
+
+/** Read `tack.decorations` as an array of item ids. */
+function readDecorations(tack) {
+  return Array.isArray(tack[DECORATIONS_KEY]) ? tack[DECORATIONS_KEY] : [];
+}
+
+/**
+ * Put an item on a horse's tack document.
+ *
+ * @param {object} tack - the horse's current tack (already object-guarded)
+ * @param {{category: string, itemId: string}} item
+ */
+function withTackItem(tack, item) {
+  if (item.category === DECORATIVE_CATEGORY) {
+    const decorations = readDecorations(tack);
+    return decorations.includes(item.itemId)
+      ? { ...tack }
+      : { ...tack, [DECORATIONS_KEY]: [...decorations, item.itemId] };
+  }
+  return { ...tack, [item.category]: item.itemId };
+}
+
+/**
+ * Take an item off a horse's tack document.
+ *
+ * The bonus mirror goes with the item. Leaving it behind is not cosmetic:
+ * `resolveTackBonus` short-circuits on `typeof tack.saddleBonus === 'number' ||
+ * typeof tack.bridleBonus === 'number'` and returns the stored numbers without
+ * looking at any item id, so a horse holding only `{ saddleBonus: 5 }` scored
+ * +5 in every ridden competition with nothing on its back.
+ *
+ * @param {object} tack - the horse's current tack (already object-guarded)
+ * @param {{category: string, itemId: string}} item
+ */
+function withoutTackItem(tack, item) {
+  const next = { ...tack };
+  if (item.category === DECORATIVE_CATEGORY) {
+    next[DECORATIONS_KEY] = readDecorations(tack).filter(id => id !== item.itemId);
+    if (next[DECORATIONS_KEY].length === 0) {
+      delete next[DECORATIONS_KEY];
+    }
+    return next;
+  }
+  delete next[item.category];
+  const mirrorKey = BONUS_MIRROR_KEYS[item.category];
+  if (mirrorKey) {
+    delete next[mirrorKey];
+  }
+  return next;
+}
+
+/** Build an error the catch blocks below turn into a specific HTTP status. */
+function httpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+/**
+ * Message used when a concurrent writer changed `settings.inventory` between
+ * this request's read and its write. Rejecting is the only honest outcome:
+ * continuing would silently discard the other writer's change (the Finding 1
+ * defect) — the player simply retries against fresh state.
+ */
+const INVENTORY_CONFLICT = 'Your inventory changed while this request was in flight. Please retry.';
+
+/**
+ * Apply a horse tack change, guarded on CURRENT ownership.
+ *
+ * `req.horse`/an earlier read proves ownership at READ time only. A horse sold
+ * or transferred between the read and this write must not be re-tacked by its
+ * former owner, so ownership is re-asserted in the WHERE clause and an
+ * affected-row count other than 1 aborts the whole transaction.
+ *
+ * @param {object} tx - the surrounding interactive transaction client
+ * @param {string} userId
+ * @param {{id: number, tack: object}} change
+ */
+async function applyTackChange(tx, userId, change) {
+  const { count } = await tx.horse.updateMany({
+    where: { id: change.id, userId },
+    data: { tack: change.tack },
+  });
+  if (count !== 1) {
+    throw httpError(409, 'That horse is no longer yours. Please reload your stable.');
+  }
+}
+
 // ── Controllers ───────────────────────────────────────────────────────────────
 
 /**
@@ -107,15 +227,32 @@ export async function getInventory(req, res) {
     if (inventory.length === 0 && user.horses.some(h => h.tack && Object.keys(h.tack).length > 0)) {
       inventory = deriveInventoryFromHorseTack(user.horses);
 
-      // Persist the derived inventory so equip/unequip work from now on
-      const currentSettings =
-        typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
-      await prisma.user.update({
-        where: { id: userId },
-        data: { settings: { ...currentSettings, inventory } },
+      // Persist the derived inventory so equip/unequip work from now on. The
+      // seed is KEPT (not removed): equip/unequip address items by their
+      // inventory record id, so a legacy account whose only evidence of a tack
+      // purchase is `horse.tack` would otherwise be unable to move that item
+      // ever again. It is made SAFE instead — Finding 1's requirement that an
+      // ordinary read can never undo a completed claim:
+      //   * `jsonb_set` on the `inventory` path only, so `lastWeeklyClaimDate`
+      //     and every other key keep their committed values;
+      //   * a compare-and-swap on `inventory` so this write applies only while
+      //     inventory is still absent/empty. If a concurrent purchase, craft or
+      //     a parallel GET seeded it first, zero rows are affected and this
+      //     request returns what it derived without overwriting anything.
+      const seeded = await updateUserSettingsPaths(prisma, userId, {
+        set: { inventory },
+        expect: { inventory: { equals: [], whenMissing: [] } },
       });
 
-      logger.info(`[inventoryController] Seeded inventory for user ${userId} from horse tack data`);
+      if (seeded === 1) {
+        logger.info(
+          `[inventoryController] Seeded inventory for user ${userId} from horse tack data`,
+        );
+      } else {
+        logger.info(
+          `[inventoryController] Skipped inventory tack-seed for user ${userId}; inventory changed concurrently`,
+        );
+      }
     }
 
     const enriched = enrichInventory(inventory, user.horses);
@@ -141,71 +278,95 @@ export async function equipItem(req, res) {
     const userId = req.user.id;
     const { inventoryItemId, horseId } = req.body;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        settings: true,
-        horses: { select: { id: true, name: true, tack: true } },
-      },
-    });
+    // Equoria-6p398.1 / Equoria-q9nqm: ownership checks, the inventory
+    // decision, the previous-horse tack change, the target-horse tack change
+    // and the persisted item placement all live in ONE transaction, and the
+    // settings write touches only the `inventory` path.
+    const outcome = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: {
+            settings: true,
+            horses: { select: { id: true, name: true, tack: true } },
+          },
+        });
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found', data: null });
-    }
+        if (!user) {
+          throw httpError(404, 'User not found');
+        }
 
-    const inventory = getInventoryFromSettings(user.settings);
-    const itemIndex = inventory.findIndex(i => i.id === inventoryItemId);
+        const inventory = getInventoryFromSettings(user.settings);
+        const itemIndex = inventory.findIndex(i => i.id === inventoryItemId);
 
-    if (itemIndex === -1) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Inventory item not found', data: null });
-    }
+        if (itemIndex === -1) {
+          throw httpError(404, 'Inventory item not found');
+        }
 
-    const horse = user.horses.find(h => h.id === horseId);
-    if (!horse) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Horse not found or not owned', data: null });
-    }
+        const horse = user.horses.find(h => h.id === horseId);
+        if (!horse) {
+          throw httpError(404, 'Horse not found or not owned');
+        }
 
-    const item = inventory[itemIndex];
+        const item = inventory[itemIndex];
 
-    // Unequip from previous horse if already equipped somewhere
-    if (item.equippedToHorseId && item.equippedToHorseId !== horseId) {
-      const prevHorse = user.horses.find(h => h.id === item.equippedToHorseId);
-      if (prevHorse) {
-        const prevTack =
-          typeof prevHorse.tack === 'object' && prevHorse.tack !== null ? prevHorse.tack : {};
-        const newPrevTack = { ...prevTack };
-        delete newPrevTack[item.category];
-        await prisma.horse.update({ where: { id: prevHorse.id }, data: { tack: newPrevTack } });
-      }
-    }
+        // Update inventory record — set new item, clear any other same-category
+        // item that was pointing at the same horse (stale after the swap).
+        // Decorative items are exempt: they stack in `tack.decorations`, so a
+        // second ribbon does not displace the first.
+        const updatedInventory = inventory.map((i, idx) => {
+          if (idx === itemIndex) {
+            return { ...i, equippedToHorseId: horseId };
+          }
+          if (
+            item.category !== DECORATIVE_CATEGORY &&
+            i.category === item.category &&
+            i.equippedToHorseId === horseId
+          ) {
+            return { ...i, equippedToHorseId: null };
+          }
+          return i;
+        });
 
-    // Equip to target horse — merge into horse.tack
-    const currentTack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
-    const updatedTack = { ...currentTack, [item.category]: item.itemId };
-    await prisma.horse.update({ where: { id: horseId }, data: { tack: updatedTack } });
+        // USER row first (repository lock ordering: User -> Horse). The
+        // compare-and-swap on `inventory` is the linearisation point: a
+        // concurrent equip of the SAME item to another horse changed the array,
+        // so exactly one of the two can affect a row. The loser rejects here,
+        // BEFORE any horse tack is written — which is what stops one item from
+        // conferring its bonus on two horses.
+        const affected = await updateUserSettingsPaths(tx, userId, {
+          set: { inventory: updatedInventory },
+          expect: { inventory: { equals: inventory, whenMissing: [] } },
+        });
+        if (affected !== 1) {
+          throw httpError(409, INVENTORY_CONFLICT);
+        }
 
-    // Update inventory record — set new item, clear any other same-category item
-    // that was pointing at the same horse (stale after the saddle/bridle swap).
-    const updatedInventory = inventory.map((i, idx) => {
-      if (idx === itemIndex) {
-        return { ...i, equippedToHorseId: horseId };
-      }
-      if (i.category === item.category && i.equippedToHorseId === horseId) {
-        return { ...i, equippedToHorseId: null };
-      }
-      return i;
-    });
+        // HORSE rows second, in ascending primary-key order.
+        const tackChanges = [];
+        if (item.equippedToHorseId && item.equippedToHorseId !== horseId) {
+          const prevHorse = user.horses.find(h => h.id === item.equippedToHorseId);
+          if (prevHorse) {
+            tackChanges.push({
+              id: prevHorse.id,
+              tack: withoutTackItem(asObject(prevHorse.tack), item),
+            });
+          }
+        }
+        const updatedTack = withTackItem(asObject(horse.tack), item);
+        tackChanges.push({ id: horseId, tack: updatedTack });
+        tackChanges.sort((a, b) => a.id - b.id);
 
-    const currentSettings =
-      typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
-    await prisma.user.update({
-      where: { id: userId },
-      data: { settings: { ...currentSettings, inventory: updatedInventory } },
-    });
+        for (const change of tackChanges) {
+          await applyTackChange(tx, userId, change);
+        }
+
+        return { user, horse, item, itemIndex, updatedInventory, updatedTack };
+      }),
+      { message: 'Inventory is busy right now, please retry in a moment.' },
+    );
+
+    const { user, horse, item, itemIndex, updatedInventory, updatedTack } = outcome;
 
     logger.info(
       `[inventoryController] User ${userId} equipped "${item.name}" (${inventoryItemId}) to horse ${horseId}`,
@@ -221,6 +382,9 @@ export async function equipItem(req, res) {
       data: { items: enriched, equippedItem: enriched[itemIndex] },
     });
   } catch (error) {
+    if (typeof error?.status === 'number') {
+      return res.status(error.status).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[inventoryController] equipItem error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to equip item', data: null });
   }
@@ -236,55 +400,80 @@ export async function unequipItem(req, res) {
     const userId = req.user.id;
     const { inventoryItemId } = req.body;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        settings: true,
-        horses: { select: { id: true, name: true, tack: true } },
-      },
-    });
+    const outcome = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: {
+            settings: true,
+            horses: { select: { id: true, name: true, tack: true } },
+          },
+        });
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found', data: null });
-    }
+        if (!user) {
+          throw httpError(404, 'User not found');
+        }
 
-    const inventory = getInventoryFromSettings(user.settings);
-    const itemIndex = inventory.findIndex(i => i.id === inventoryItemId);
+        const inventory = getInventoryFromSettings(user.settings);
+        const itemIndex = inventory.findIndex(i => i.id === inventoryItemId);
 
-    if (itemIndex === -1) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Inventory item not found', data: null });
-    }
+        if (itemIndex === -1) {
+          throw httpError(404, 'Inventory item not found');
+        }
 
-    const item = inventory[itemIndex];
+        const item = inventory[itemIndex];
 
-    if (!item.equippedToHorseId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Item is not currently equipped', data: null });
-    }
+        if (!item.equippedToHorseId) {
+          throw httpError(400, 'Item is not currently equipped');
+        }
 
-    // Remove from horse.tack
-    const horse = user.horses.find(h => h.id === item.equippedToHorseId);
-    if (horse) {
-      const currentTack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
-      const newTack = { ...currentTack };
-      delete newTack[item.category];
-      await prisma.horse.update({ where: { id: horse.id }, data: { tack: newTack } });
-    }
+        const updatedInventory = inventory.map((i, idx) =>
+          idx === itemIndex ? { ...i, equippedToHorseId: null } : i,
+        );
 
-    // Clear equippedToHorseId in inventory
-    const updatedInventory = inventory.map((i, idx) =>
-      idx === itemIndex ? { ...i, equippedToHorseId: null } : i,
+        // USER row first, `inventory` path only, guarded on the array this
+        // request read (same reasoning as equipItem).
+        const affected = await updateUserSettingsPaths(tx, userId, {
+          set: { inventory: updatedInventory },
+          expect: { inventory: { equals: inventory, whenMissing: [] } },
+        });
+        if (affected !== 1) {
+          throw httpError(409, INVENTORY_CONFLICT);
+        }
+
+        // HORSE row second. A horse the user no longer owns is not in
+        // `user.horses`, so its tack is left alone — the inventory record is
+        // still cleared, but a former owner never writes a stranger's horse.
+        //
+        // Equoria-6p398.12 closed the path that used to make this ordinary: a
+        // SALE now strips the horse's tack and releases the seller's records
+        // inside the buy transaction, so a record can no longer be left
+        // pointing at a horse that changed hands. Reaching this branch means
+        // some OTHER ownership-detaching path (GDPR anonymisation, an admin
+        // move) left the two representations disagreeing. Clearing the record
+        // is still right — it is the only way the player recovers the item —
+        // but the disagreement is real state and is recorded rather than
+        // passed over in silence.
+        const horse = user.horses.find(h => h.id === item.equippedToHorseId);
+        if (horse) {
+          await applyTackChange(tx, userId, {
+            id: horse.id,
+            tack: withoutTackItem(asObject(horse.tack), item),
+          });
+        } else {
+          logger.warn(
+            `[inventoryController] User ${userId} unequipped "${inventoryItemId}" from horse ` +
+              `${item.equippedToHorseId}, which they no longer own; the item stays on that ` +
+              'horse’s tack. Expected only from a non-sale ownership change (Equoria-6p398.12).',
+          );
+        }
+
+        return { user, item, itemIndex, updatedInventory };
+      }),
+      { message: 'Inventory is busy right now, please retry in a moment.' },
     );
 
-    const currentSettings =
-      typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
-    await prisma.user.update({
-      where: { id: userId },
-      data: { settings: { ...currentSettings, inventory: updatedInventory } },
-    });
+    const { user, item, itemIndex, updatedInventory } = outcome;
 
     logger.info(
       `[inventoryController] User ${userId} unequipped "${item.name}" (${inventoryItemId})`,
@@ -298,6 +487,9 @@ export async function unequipItem(req, res) {
       data: { items: enriched, unequippedItem: enriched[itemIndex] },
     });
   } catch (error) {
+    if (typeof error?.status === 'number') {
+      return res.status(error.status).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[inventoryController] unequipItem error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to unequip item', data: null });
   }

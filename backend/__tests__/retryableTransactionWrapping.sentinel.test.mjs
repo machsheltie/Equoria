@@ -48,14 +48,28 @@ function read(relPath) {
 const MIGRATED = [
   ['modules/horses/services/horseFeedService.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/bank/controllers/bankController.mjs', { wrapped: 1, totalTx: 1 }],
-  ['modules/auth/controllers/profileController.mjs', { wrapped: 1, totalTx: 1 }],
-  ['modules/auth/controllers/passwordController.mjs', { wrapped: 2, totalTx: 2 }],
+  // Finding 1 / Equoria-6p398.1 bumped this to 2: updateProfile now commits its
+  // settings paths and the identity columns in one wrapped transaction,
+  // alongside the pre-existing wrapped updateUserPreferences tx.
+  ['modules/auth/controllers/profileController.mjs', { wrapped: 2, totalTx: 2 }],
+  // Equoria-6p398.5 fix round 1 bumped this to 3: changePassword's credential
+  // rotation, refresh-token purge and pending-email-change revocation now
+  // commit as ONE wrapped transaction (they were two unwrapped statements),
+  // alongside the pre-existing forgotPassword + resetPassword transactions.
+  ['modules/auth/controllers/passwordController.mjs', { wrapped: 3, totalTx: 3 }],
   ['modules/auth/controllers/onboardingController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/crafting/controllers/craftingController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/economy/vet/controllers/vetController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/economy/tackShop/controllers/tackShopController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/economy/farrier/controllers/farrierController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/riders/controllers/riderMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
+  // Equoria-6p398.6 (2026-09 audit, Finding 6, commit c96e0354a) made rider
+  // assignment/reassignment/release transactional. All three sites are
+  // client-facing mutations and all three are wrapped — verified by reading the
+  // file at HEAD (3 `prisma.$transaction(` sites at lines 138/246/365, each
+  // directly inside a `withRetryableTxMapping(` call, plus the shared import).
+  // Pinned here so the new boundaries cannot be silently un-wrapped.
+  ['modules/riders/controllers/riderController.mjs', { wrapped: 3, totalTx: 3 }],
   ['modules/trainers/controllers/trainerMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
@@ -87,6 +101,20 @@ const MIGRATED = [
   ['modules/competition/services/conformationShowService.mjs', { wrapped: 1, totalTx: 1 }],
   ['utils/tokenRotationService.mjs', { wrapped: 1, totalTx: 1 }],
   ['utils/emailVerificationService.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-6p398.1 (2026-09 audit, Finding 1) — new wrapped sites. equipItem
+  // and unequipItem became transactional (ownership check + inventory decision
+  // + both horse tack changes + the settings write must commit together), and
+  // updateUserController now commits its settings paths with the identity
+  // columns. Pinned here so a later edit cannot silently un-wrap them.
+  ['modules/economy/inventory/controllers/inventoryController.mjs', { wrapped: 2, totalTx: 2 }],
+  ['modules/users/controllers/userController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-6p398.5 (2026-09 audit, Finding 5) — the staged recovery-address
+  // change. BOTH sites are user-facing mutations that must surface a transient
+  // P2028 as a retryable 503: the request tx (supersede prior pending change +
+  // insert the new pending row) and the confirm tx (guarded one-time token
+  // claim + identity write + revocation of obsolete verification and
+  // password-reset proofs). Pinned so neither can be silently un-wrapped.
+  ['modules/auth/services/emailChangeService.mjs', { wrapped: 2, totalTx: 2 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites

@@ -8,11 +8,11 @@
  *   - generateGenotype: all 19 CORE_LOCI present, extra loci from profile, null-profile fallback
  *   - Allele constraint: only allowed_alleles values are selected
  *   - Statistical test: 1000-sample E_Extension frequency within expected range
- *   - Integration: POST /api/v1/horses response includes colorGenotype
+ *   - Integration: generic horse creation persists a full colorGenotype
  *
  * Mocking strategy (balanced):
  *   - Unit tests: no mocking (pure functions)
- *   - Integration test: real DB (prisma) + real HTTP (supertest)
+ *   - Integration: real DB (prisma) through the createHorseFromRequest service
  */
 
 import {
@@ -23,22 +23,13 @@ import {
   GENERIC_STARTER_WEIGHTS,
 } from '../services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
+import { createHorseFromRequest } from '../services/createHorseService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
-import request from 'supertest';
-import jwt from 'jsonwebtoken';
-import config from '../../../config/config.mjs';
 import app from '../../../app.mjs';
-
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // sampleWeightedAllele — pure function, no mocks needed
 // ---------------------------------------------------------------------------
-
-let __csrf__;
-beforeAll(async () => {
-  __csrf__ = await fetchCsrf(app);
-});
 
 describe('sampleWeightedAllele', () => {
   it('returns the only allele when weights has one entry', () => {
@@ -367,11 +358,12 @@ describe('GENERIC_STARTER_WEIGHTS coherence (Equoria-43cj5)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Integration test: POST /api/v1/horses includes colorGenotype in response
-// Uses real DB (prisma) + real HTTP (supertest)
+// Integration test: generic horse creation includes colorGenotype.
+// Uses the real DB (prisma) through the createHorseFromRequest service - the
+// player-facing POST /api/v1/horses entry point was closed by audit Finding 2.
 // ---------------------------------------------------------------------------
 
-describe('POST /api/v1/horses — colorGenotype integration', () => {
+describe('createHorseFromRequest — colorGenotype integration', () => {
   let server;
   let testUserId;
   let createdHorseId;
@@ -420,24 +412,21 @@ describe('POST /api/v1/horses — colorGenotype integration', () => {
   });
 
   it('created horse includes colorGenotype with all 19 CORE_LOCI', async () => {
-    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    const response = await request(app)
-      .post('/api/v1/horses')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({
+    // Equoria-6p398.2 (audit Finding 2): POST /api/v1/horses is closed to
+    // players and now answers 403 for every authenticated caller. The creation
+    // PIPELINE under test (breed genetics -> generateGenotype -> createHorse)
+    // is unchanged; drive it at the service boundary instead of over HTTP.
+    const response = await createHorseFromRequest(
+      {
         name: `GenotypeTest_${timestamp}`,
         breedId: arabianBreedId, // Arabian — has full allele_weights profile
         age: 3,
         sex: 'mare',
-      })
-      .expect(201);
+      },
+      testUserId,
+    );
 
+    expect(response.status).toBe(201);
     expect(response.body.success).toBe(true);
     const horse = response.body.data;
 

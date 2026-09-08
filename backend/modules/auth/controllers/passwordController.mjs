@@ -53,6 +53,7 @@ import emailService from '../../../utils/emailService.mjs';
 import { CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware/csrf.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
+import { revokePendingEmailChanges } from '../services/emailChangeService.mjs';
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -140,26 +141,50 @@ export const changePassword = async (req, res, next) => {
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-    // Update password in database. Stamp passwordChangedAt so the JWT-verify
-    // middleware (CWE-613) can reject any access tokens issued before now —
-    // closes the residual ≤access-token-TTL window where a stolen token would
-    // otherwise outlive the password rotation.
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { password: hashedPassword, passwordChangedAt: new Date() },
-    });
+    // Rotate the credential and drop everything the OLD credential authorised,
+    // in ONE transaction. Previously these were two independent statements; a
+    // failure between them left the password rotated while the old sessions
+    // and proofs survived — the exact opposite of what a rotation promises.
+    //
+    // - passwordChangedAt is stamped so the JWT-verify middleware (CWE-613)
+    //   rejects access tokens issued before now, closing the residual
+    //   ≤access-token-TTL window.
+    // - CWE-613: ALL refresh tokens die, forcing re-login everywhere.
+    // - Equoria-6p398.5 fix round 1: any PENDING recovery-address change dies
+    //   too. Without this, someone who phished the password could stage an
+    //   email change, and their 24-hour confirmation link would still commit
+    //   AFTER the victim rescued the account by rotating the password — and
+    //   confirmEmailChange would then revoke the victim's own reset proofs.
+    //   Rotating the credential must invalidate what that credential bought.
+    // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503.
+    //
+    // LOCK ORDER — EmailVerificationToken rows BEFORE the User row. Every
+    // UPDATE takes a row write-lock held until commit, so statement order IS
+    // lock-acquisition order. `confirmEmailChange` and `verifyEmailToken` both
+    // take token rows first and the User row after; if this path took the User
+    // row first it would be their deadlock partner (T1: User(u) then token X;
+    // T2: token X then User(u) -> Postgres 40P01 -> Prisma P2034, which
+    // `isRetryableTxError` deliberately does NOT classify, so the loser would
+    // surface as an opaque 500). Do not move the revoke below the user update.
+    await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        await revokePendingEmailChanges(tx, req.user.id, user.email);
+        await tx.user.update({
+          where: { id: req.user.id },
+          data: { password: hashedPassword, passwordChangedAt: new Date() },
+        });
+        await tx.refreshToken.deleteMany({
+          where: { userId: req.user.id },
+        });
+      }),
+      { message: 'Password change service is busy right now, please retry in a moment.' },
+    );
 
     // Equoria-2bbf: evict the per-user passwordChangedAt cache so the next
     // authenticated request reads the fresh DB value immediately rather than
-    // waiting up to ~30s for TTL expiry.
+    // waiting up to ~30s for TTL expiry. After the commit — an aborted
+    // transaction must not evict a cache entry that is still correct.
     evictPasswordChangedAtCache(req.user.id);
-
-    // ✅ CWE-613 MITIGATION: Invalidate ALL refresh tokens across all devices
-    // (access tokens are invalidated separately via the passwordChangedAt
-    // check in authenticateToken). Forces re-login everywhere after rotation.
-    await prisma.refreshToken.deleteMany({
-      where: { userId: req.user.id },
-    });
 
     logger.info('[passwordController.changePassword] Password changed successfully', {
       userId: req.user.id,
@@ -346,15 +371,35 @@ export const resetPassword = async (req, res, next) => {
     // passwordChangedAt is stamped so the JWT-verify middleware (CWE-613) rejects
     // any access tokens issued before this reset — closes the residual window.
     // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503.
+    //
+    // LOCK ORDER — same rule as changePassword: EmailVerificationToken rows
+    // before the User row, so this path can never be the deadlock partner of
+    // `confirmEmailChange` / `verifyEmailToken`. The owner's address is READ
+    // first (a plain SELECT takes no row lock, so it does not affect ordering)
+    // rather than taken from the update's return value, which would force the
+    // User write to come first.
     await withRetryableTxMapping(
       prisma.$transaction(async tx => {
+        const owner = await tx.user.findUnique({
+          where: { id: resetToken.userId },
+          select: { id: true, email: true },
+        });
+        // Equoria-6p398.5 fix round 1: a reset is how a victim rescues a
+        // phished account, so it must also kill any pending recovery-address
+        // change the attacker staged while they held the password. Same
+        // transaction, same shared predicate as changePassword. A vanished
+        // user is left to the update below, which still raises P2025 exactly
+        // as it did before.
+        if (owner) {
+          await revokePendingEmailChanges(tx, owner.id, owner.email);
+        }
+        // Equoria-nz94y: parameterized $executeRaw tagged template (resetToken.id
+        // bound) replaces $executeRawUnsafe.
+        await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id}`;
         await tx.user.update({
           where: { id: resetToken.userId },
           data: { password: hashedPassword, passwordChangedAt: new Date() },
         });
-        // Equoria-nz94y: parameterized $executeRaw tagged template (resetToken.id
-        // bound) replaces $executeRawUnsafe.
-        await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id}`;
         await tx.refreshToken.deleteMany({
           where: { userId: resetToken.userId },
         });

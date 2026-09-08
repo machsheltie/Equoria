@@ -23,7 +23,8 @@
  * separate follow-up (see Equoria-aqa6c notes).
  */
 import { test, expect } from '@playwright/test';
-import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { createAuthedSession, type AuthedSession } from './helpers/api';
+import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { assertValidNextTrainingDate } from './helpers/training';
 
 test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
@@ -46,20 +47,24 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
     }
 
     // Fresh horse — avoids cooldown contamination from prior runs.
-    const res = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: `Training Flow Horse ${Date.now()}`,
-      breedId,
-      age: 5,
-      sex: 'stallion',
-    });
-    if (!res.ok()) {
-      throw new Error(`Horse creation failed: ${res.status()} ${await res.text()}`);
-    }
-    const json = await res.json();
-    trainingHorseId = json?.data?.id ?? json?.id ?? null;
-    if (!trainingHorseId) {
-      throw new Error(`Horse creation returned no id: ${JSON.stringify(json)}`);
-    }
+    // Equoria-6p398.2 (audit Finding 2): POST /api/v1/horses handed any player
+    // a free horse and is now closed (403). Seed the fixture from this process
+    // through the real createHorse model function instead — no player-facing
+    // creation route, no bypass header, no route interception.
+    const horse = await seedOwnedHorse(
+      session,
+      {
+        breedId,
+        name: `Training Flow Horse ${Date.now()}`,
+        sex: 'stallion',
+        age: 5,
+      },
+      // Every assertion runs against the Training Grounds dashboard, which
+      // reads the UNCACHED GET /horses/trainable/:userId. This spec never
+      // renders the cached horse list.
+      { requireHorseListVisibility: false }
+    );
+    trainingHorseId = horse.id;
   });
 
   test.afterAll(async () => {

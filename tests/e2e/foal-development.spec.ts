@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { seedOwnedHorses } from './fixtures/ownedHorses';
 
 /**
  * Foal Development Lifecycle — real-backend E2E (Equoria-fogeh).
@@ -89,34 +90,38 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
       }
     }
 
-    const stallionRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: stallionName,
-      breedId,
-      age: 5,
-      sex: 'stallion',
-    });
-    if (!stallionRes.ok()) {
-      throw new Error(
-        `Stallion creation failed (${stallionRes.status()}): ${await stallionRes.text()}`
-      );
-    }
-    const stallionJson = await stallionRes.json();
-    const sireId = stallionJson?.data?.id ?? stallionJson?.horse?.id ?? stallionJson?.id;
+    // Equoria-6p398.2 (audit Finding 2): the parents used to come from
+    // POST /api/v1/horses, which handed any player a free horse and is now
+    // closed (403). Seed them from this process through the real createHorse
+    // model function; the foal itself is still bred over the real HTTP
+    // POST /api/v1/horses/foals route below, which is the point of this spec.
+    // Seeded in ONE call so the fixture's horse-list visibility wait runs once
+    // for the pair; sequential calls would make the second wait out the list
+    // cache entry the first one just wrote (tests/e2e/fixtures/ownedHorses.ts).
+    const [{ id: sireId }, { id: damId }] = await seedOwnedHorses(
+      session,
+      [
+        {
+          breedId,
+          name: stallionName,
+          sex: 'stallion',
+          age: 5,
+        },
+        {
+          breedId,
+          name: mareName,
+          sex: 'mare',
+          age: 5,
+        },
+      ],
+      // The parents are only ever used as sireId/damId on the real
+      // POST /api/v1/horses/foals call; every assertion happens on /foals/:id.
+      // This spec never renders the cached horse list.
+      { requireHorseListVisibility: false }
+    );
 
-    const mareRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: mareName,
-      breedId,
-      age: 5,
-      sex: 'mare',
-    });
-    if (!mareRes.ok()) {
-      throw new Error(`Mare creation failed (${mareRes.status()}): ${await mareRes.text()}`);
-    }
-    const mareJson = await mareRes.json();
-    const damId = mareJson?.data?.id ?? mareJson?.horse?.id ?? mareJson?.id;
-
-    expect.soft(sireId, 'sireId should be returned from horse creation').toBeTruthy();
-    expect.soft(damId, 'damId should be returned from horse creation').toBeTruthy();
+    expect.soft(sireId, 'sireId should be returned from the seeded sire').toBeTruthy();
+    expect.soft(damId, 'damId should be returned from the seeded dam').toBeTruthy();
 
     foalName = `E2E Foal ${suffix}`;
     const foalRes = await csrfMutate(session, 'POST', '/api/v1/horses/foals', {

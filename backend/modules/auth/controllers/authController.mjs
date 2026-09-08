@@ -495,6 +495,15 @@ export const logout = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────
 export { changePassword, forgotPassword, resetPassword } from './passwordController.mjs';
 
+// Equoria-6p398.5 (Finding 5): staged recovery-address change.
+// Equoria-6p398.11 (Finding 9): the session-gated status read the player-facing
+// recovery-address surface needs.
+export {
+  requestEmailChangeController,
+  confirmEmailChangeController,
+  getEmailChangeStatusController,
+} from './emailChangeController.mjs';
+
 // ─────────────────────────────────────────────────────────────────────────
 // Equoria-vhv3i: email-verification endpoints moved to
 // emailVerificationController.mjs. verifyEmail, resendVerification, and

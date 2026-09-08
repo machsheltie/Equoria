@@ -139,7 +139,14 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(result.current.data).toEqual(mockResponse);
+      // Finding 7 (Equoria-6p398.7): login now resolves to a session-or-challenge
+      // discriminated union. A completed login is the `authenticated` branch and
+      // carries the same user the endpoint returned.
+      expect(result.current.data).toEqual({
+        status: 'authenticated',
+        user: mockResponse.user,
+        csrfToken: undefined,
+      });
 
       // Profile cache should be invalidated.
       const cacheState = queryClient.getQueryState(['profile']);

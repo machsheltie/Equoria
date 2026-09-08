@@ -78,6 +78,32 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Endpoints whose 401 IS the answer to the request, not a stale access token.
+ *
+ * These are the credential-verification steps of the login flow. The caller has
+ * no session yet, so POSTing /auth/refresh-token can only fail — and that
+ * failure calls authSessionState.clear() and replaces the useful authentication
+ * error with "Session expired. Please log in again." (Finding 7,
+ * Equoria-6p398.7). Worse: when a refresh does succeed, the transport REPLAYS
+ * the original request, so a single mistyped second factor is counted twice
+ * against the backend's 5-failure MFA lockout (mfaLockoutService,
+ * Equoria-kg7i2).
+ *
+ * This is deliberately narrow: it names two pre-session endpoints and changes
+ * nothing about protected requests, whose 401 → refresh → retry behavior is the
+ * reason the generic branch exists.
+ */
+const PRE_SESSION_AUTH_ENDPOINTS = ['/api/v1/auth/login', '/api/v1/auth/mfa/challenge'];
+
+/** True when a 401 from `endpoint` means "these credentials are wrong". */
+export function isPreSessionAuthEndpoint(endpoint: string): boolean {
+  const [pathOnly] = endpoint.split(/[?#]/);
+  return PRE_SESSION_AUTH_ENDPOINTS.some(
+    (candidate) => pathOnly === candidate || pathOnly.endsWith(candidate)
+  );
+}
+
 export async function getCsrfToken(): Promise<string> {
   if (authSessionState.csrfToken) return authSessionState.csrfToken;
   if (authSessionState.csrfFetching) return authSessionState.csrfFetching;
@@ -149,8 +175,13 @@ export async function fetchWithAuth<T>(
   try {
     const response = await fetch(url, config);
 
-    // Handle 401 Unauthorized - attempt token refresh once
-    if (response.status === 401 && retryCount === 0) {
+    // Handle 401 Unauthorized - attempt token refresh once.
+    // Skipped for the pre-session authentication endpoints: their 401 is the
+    // operation's own answer ("wrong password" / "wrong second factor"), there
+    // is no session to refresh, and replaying the request would spend another
+    // MFA attempt. Those fall through to the generic non-2xx branch below so
+    // the real authentication failure reaches the caller intact.
+    if (response.status === 401 && retryCount === 0 && !isPreSessionAuthEndpoint(endpoint)) {
       // Don't retry refresh endpoint itself
       if (!endpoint.includes('/refresh')) {
         const refreshed = await refreshAccessToken();

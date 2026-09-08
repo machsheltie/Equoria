@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { seedOwnedHorses } from './fixtures/ownedHorses';
 
 // Tests must run in order: each test depends on state from the previous.
 // beforeAll creates the test horses + starts the pregnancy so it is committed
@@ -39,35 +40,53 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
       }
     }
 
-    // Create the Phase B stallion
-    const stallionRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: stallionName,
-      breedId,
-      age: 5,
-      sex: 'stallion',
-    });
-    if (!stallionRes.ok()) {
-      throw new Error(
-        `Stallion creation failed: ${stallionRes.status()} ${await stallionRes.text()}`
-      );
-    }
-    const stallionJson = (await stallionRes.json()) as { data: { id: number } };
-    stallionId = stallionJson.data.id;
-    console.log('Created stallion id:', stallionId);
-
-    // Create the Phase B mare
-    const mareRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: mareName,
-      breedId,
-      age: 5,
-      sex: 'mare',
-    });
-    if (!mareRes.ok()) {
-      throw new Error(`Mare creation failed: ${mareRes.status()} ${await mareRes.text()}`);
-    }
-    const mareJson = (await mareRes.json()) as { data: { id: number } };
-    mareId = mareJson.data.id;
-    console.log('Created mare id:', mareId);
+    // Equoria-6p398.2 (audit Finding 2): the Phase B pair used to come from
+    // POST /api/v1/horses, which handed any player a free horse and is now
+    // closed (403). The pair needs EXACT names plus a stallion/mare at or above
+    // the 3-game-year breeding minimum, which no player-facing route provides.
+    // Seed from this process through the real createHorse model function; every
+    // behaviour this spec asserts (equip-feed, feed, breed, foal-now) still runs
+    // over the real HTTP routes.
+    // Seeded in ONE call so the fixture's horse-list visibility wait runs once
+    // for the pair; sequential calls would make the second wait out the list
+    // cache entry the first one just wrote (tests/e2e/fixtures/ownedHorses.ts).
+    const [stallion, mare] = await seedOwnedHorses(
+      session,
+      [
+        {
+          breedId,
+          name: stallionName,
+          sex: 'stallion',
+          age: 5,
+        },
+        {
+          breedId,
+          name: mareName,
+          sex: 'mare',
+          age: 5,
+        },
+      ],
+      // READ THE EXCEPTION FIRST: this spec DOES read the cached horse list.
+      // The test 'foal-now endpoint materialises foal — foal appears in horse
+      // list' ends with a GET /api/v1/horses and an expect(foal).toBeDefined()
+      // on the result. That is safe to opt out of only because the foal is not
+      // seeded here: POST /horses/:id/foal-now creates it later, and
+      // foalingService.mjs performs NO cache invalidation at all, so that
+      // assertion already depends on the list key happening to be cold by then.
+      // It is a pre-existing exposure this fixture neither causes nor can fix,
+      // tracked as Equoria-awod4.
+      //
+      // The opt-out therefore covers the SEEDED pair only, and for them it
+      // holds: the stallion and mare are reached exclusively through UNCACHED
+      // routes — the mare detail page (GET /horses/:id) and the equip page — so
+      // they need no cold-key player and this spec stays on the shared
+      // global-setup account.
+      { requireHorseListVisibility: false }
+    );
+    stallionId = stallion.id;
+    mareId = mare.id;
+    console.log('Seeded stallion id:', stallionId);
+    console.log('Seeded mare id:', mareId);
 
     // Buy 1 pack (100 units) of basic feed so the feeding test has inventory
     // and so we can feed both horses prior to breeding (see next block).

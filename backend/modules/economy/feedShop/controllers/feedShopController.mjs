@@ -12,6 +12,7 @@
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
+import { updateUserSettingsPaths } from '../../../../utils/userSettingsPaths.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
@@ -200,10 +201,13 @@ export async function purchaseFeed(req, res) {
             inventory.push(inventoryItem);
           }
 
-          await tx.user.update({
-            where: { id: userId },
-            data: { settings: { ...settings, inventory } },
-          });
+          // Finding 1 (Equoria-6p398.1): write ONLY the `inventory` path. The
+          // authoritative read above is already serialized behind the debit's
+          // row lock, so no compare-and-swap is needed here — but the prior
+          // whole-document write still replayed every OTHER key from that
+          // snapshot, which could erase a bank claim marker committed in
+          // between.
+          await updateUserSettingsPaths(tx, userId, { set: { inventory } });
 
           // Equoria-g5yex: migrated to recordTransactionTx(tx, opts). tx is
           // structurally required (first arg); balanceAfter is read inside

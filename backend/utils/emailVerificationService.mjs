@@ -20,6 +20,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { AppError } from '../errors/index.mjs';
 import { withRetryableTxMapping, RetryableTransactionError } from './retryableTransaction.mjs';
+import { normalizeEmailAddress } from './emailIdentityPolicy.mjs';
 
 // Email verification configuration
 const EMAIL_CONFIG = {
@@ -30,13 +31,67 @@ const EMAIL_CONFIG = {
 };
 
 /**
- * Generate Cryptographically Secure Verification Token
- * Creates a URL-safe token with 256-bit entropy
- *
- * @returns {string} Hex-encoded verification token
+ * The two abuse controls `createVerificationToken` enforces, re-exported as
+ * milliseconds/counts so the email-change flow can apply the SAME ceilings to
+ * its own token rows without duplicating the numbers (Equoria-6p398.5 fix
+ * round 1). Kept here because this module owns the token lifecycle.
  */
-export function generateVerificationToken() {
-  return crypto.randomBytes(EMAIL_CONFIG.TOKEN_LENGTH).toString('hex');
+export const VERIFICATION_RESEND_COOLDOWN_MS = EMAIL_CONFIG.RESEND_COOLDOWN_MINUTES * 60 * 1000;
+export const MAX_PENDING_VERIFICATION_TOKENS = EMAIL_CONFIG.MAX_PENDING_TOKENS;
+
+/**
+ * Purposes a verification token may serve (Equoria-6p398.5, Finding 5).
+ *
+ * `signup` proves control of the address ALREADY stored on the account.
+ * `email_change` proves control of a STAGED replacement recovery address.
+ * The two must never be interchangeable: a signup-verification token must not
+ * be able to move the recovery identity, and an email-change token must not be
+ * redeemable at `GET /auth/verify-email`.
+ */
+export const VERIFICATION_TOKEN_PURPOSE = Object.freeze({
+  SIGNUP: 'signup',
+  EMAIL_CHANGE: 'email_change',
+});
+
+/**
+ * Purpose tag carried INSIDE the raw token value.
+ *
+ * The purpose is part of the secret, so it is covered by the SHA-256 digest we
+ * persist (ADR-006) and cannot be forged: an attacker holding a signup token
+ * cannot produce an `ec1_`-prefixed string that hashes to that token's row.
+ * This keeps purpose binding cryptographic WITHOUT a schema change, so every
+ * `email_verification_tokens` row written before this change keeps working —
+ * a bare hex token is, correctly, a signup token. URL-safe (unreserved
+ * characters only) so it survives the emailed link unescaped.
+ */
+const EMAIL_CHANGE_TOKEN_PREFIX = 'ec1_';
+
+/**
+ * Generate Cryptographically Secure Verification Token
+ * Creates a URL-safe token with 256-bit entropy, tagged with its purpose.
+ *
+ * @param {string} [purpose] - One of VERIFICATION_TOKEN_PURPOSE. Defaults to
+ *   SIGNUP so every existing call site keeps its current behavior.
+ * @returns {string} Purpose-tagged, hex-encoded verification token
+ */
+export function generateVerificationToken(purpose = VERIFICATION_TOKEN_PURPOSE.SIGNUP) {
+  const secret = crypto.randomBytes(EMAIL_CONFIG.TOKEN_LENGTH).toString('hex');
+  return purpose === VERIFICATION_TOKEN_PURPOSE.EMAIL_CHANGE
+    ? `${EMAIL_CHANGE_TOKEN_PREFIX}${secret}`
+    : secret;
+}
+
+/**
+ * Read the purpose a raw token was minted for. Untagged (legacy / signup)
+ * tokens read as SIGNUP.
+ *
+ * @param {unknown} rawToken
+ * @returns {string} A VERIFICATION_TOKEN_PURPOSE value
+ */
+export function readTokenPurpose(rawToken) {
+  return typeof rawToken === 'string' && rawToken.startsWith(EMAIL_CHANGE_TOKEN_PREFIX)
+    ? VERIFICATION_TOKEN_PURPOSE.EMAIL_CHANGE
+    : VERIFICATION_TOKEN_PURPOSE.SIGNUP;
 }
 
 /**
@@ -158,6 +213,21 @@ export async function createVerificationToken(userId, email, metadata = {}) {
  */
 export async function verifyEmailToken(token, metadata = {}) {
   try {
+    // Finding 5 (Equoria-6p398.5) — PURPOSE BINDING. This endpoint verifies the
+    // address ALREADY stored on the account. An email-change token proves
+    // control of a *staged replacement* address and must never be redeemable
+    // here; otherwise "proof of ownership of one address" would verify another.
+    // Checked before the lookup, and folded into the same generic
+    // invalid-token response (with the same timing pad) so it is not an oracle.
+    if (readTokenPurpose(token) !== VERIFICATION_TOKEN_PURPOSE.SIGNUP) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return {
+        success: false,
+        error: 'Invalid or expired verification token',
+        code: 'INVALID_TOKEN',
+      };
+    }
+
     // Look up by hash (Equoria-uy73). The raw token is never persisted.
     const tokenHash = hashVerificationToken(token);
     const tokenRecord = await prisma.emailVerificationToken.findUnique({
@@ -170,6 +240,26 @@ export async function verifyEmailToken(token, metadata = {}) {
       // Simulate database delay to prevent timing attacks
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      return {
+        success: false,
+        error: 'Invalid or expired verification token',
+        code: 'INVALID_TOKEN',
+      };
+    }
+
+    // Finding 5 (Equoria-6p398.5) — ADDRESS BINDING. `verifyEmailToken`
+    // historically marked the account verified by `tokenRecord.userId` alone,
+    // so a token minted for a PREVIOUS address stayed usable after the stored
+    // identity moved and would stamp `emailVerified` on an address its holder
+    // never proved. Require the token's address to still BE the account's
+    // address; anything else is a stale proof and is refused.
+    if (
+      normalizeEmailAddress(tokenRecord.email) !== normalizeEmailAddress(tokenRecord.user?.email)
+    ) {
+      logger.warn('[EmailVerification] Rejected token minted for a different address', {
+        userId: tokenRecord.userId,
+        tokenId: tokenRecord.id,
+      });
       return {
         success: false,
         error: 'Invalid or expired verification token',
