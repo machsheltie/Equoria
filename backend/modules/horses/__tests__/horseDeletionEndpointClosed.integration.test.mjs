@@ -14,11 +14,20 @@
  * economic consequence and no recovery. Same shape as audit Finding 2 (free
  * creation) and Finding 3 (self-awarded XP): ownership mistaken for authority.
  *
- * The invariant this file locks:
- *   There is NO player-facing HTTP entry point that removes a horse row. Horse
- *   rows leave the database only through the server-owned GDPR erasure
- *   transaction (`modules/users/services/gdprAccountService.eraseUserAccount`),
- *   which handles the `Restrict` lineage/owner FKs deliberately.
+ * The invariant this file locks — scoped precisely to what it exercises:
+ *   `DELETE /api/v1/horses/:id` removes no horse row for any caller, and the
+ *   server-owned GDPR erasure path still does. This file does NOT prove the
+ *   broader claim that no player-facing HTTP entry point anywhere removes a
+ *   horse row; it drives one route. That broader guarantee would need a
+ *   route-table sentinel walking the mounted Express stack for horse-scoped
+ *   DELETE handlers — it belongs beside
+ *   `modules/horses/__tests__/horseRoutesMounting.sentinel.test.mjs`, which
+ *   already enumerates this router's mounted routes, and it is not written.
+ *   At the time of this change the caller trace found no other such route:
+ *   the only other horse DELETE is `/:id/stud-listing`, which delists rather
+ *   than destroys, and the only production code that deletes horse rows is
+ *   `modules/users` `eraseUserAccount` (which clears the `Restrict`
+ *   lineage/sale FKs first) plus `scripts/purge-leaked-test-fixtures.mjs`.
  *
  * What the guard is: `DELETE /api/v1/horses/:id` answers 403 for every
  * authenticated caller. The refusal sits BEHIND the authRouter's
@@ -151,6 +160,15 @@ function deleteHorseRequest(token, horseId) {
  * so only the Equoria-9tque guard satisfies it. The negative case
  * ("a CSRF-rejected request produces a DIFFERENT 403") proves this matcher can
  * actually fail.
+ *
+ * COPY EDITORS: the phrase "cannot be deleted" in the route's player-facing
+ * message (horseRoutes.mjs `router.delete('/:id', ...)`) is LOAD-BEARING for
+ * this security regression. It is the only thing that distinguishes the route's
+ * refusal from `csrfProtection`'s 403 on the same router, so a reword that drops
+ * it turns these assertions vacuous while they stay green. Reword freely, but
+ * update this matcher in the same commit — and keep the message free of
+ * existence/ownership wording ("not found", "forbidden"), which the assertions
+ * below also enforce.
  */
 function expectDeletionClosed(res) {
   expect(res.status).toBe(403);

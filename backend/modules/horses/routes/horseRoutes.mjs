@@ -500,7 +500,8 @@ router.put(
  * oracle). Horse rows leave the DB only via `modules/users` `eraseUserAccount`
  * (which clears the `Restrict` lineage edges first) and the fixture-purge
  * script; `deleteHorseService` did neither and had no caller, so it was deleted.
- * Locked by __tests__/horseDeletionEndpointClosed.integration.test.mjs.
+ * Locked by __tests__/horseDeletionEndpointClosed.integration.test.mjs, whose
+ * matcher needs the words "cannot be deleted" — reword the message with it.
  */
 router.delete('/:id', mutationRateLimiter, authenticateToken, (req, res) => {
   logger.warn(`[horseRoutes] Rejected horse deletion by user ${req.user?.id} (Equoria-9tque)`);

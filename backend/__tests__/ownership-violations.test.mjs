@@ -21,7 +21,9 @@ describe('Ownership Violation Attempts Integration Tests', () => {
   // mutations below run on the authRouter (csrfProtection) authenticated as
   // userA. An anonymous fetchCsrf(app) binds the token to CSRF_SESSION_SALT,
   // which HMAC-mismatches req.user.id=userA -> a 403 that would mask the real
-  // ownership-check (cross-user 404) and break the owner-update/delete 200s.
+  // ownership-check (cross-user 404) and break the owner-update 200. Since
+  // Equoria-9tque it would also be indistinguishable from the delete route's own
+  // 403 refusal, which is why the delete case below asserts that route's message.
   // Bound per-test to userA's access cookie in beforeEach (after tokenA is
   // minted), so every mutation reaches the real ownership path.
   let __csrf__;
