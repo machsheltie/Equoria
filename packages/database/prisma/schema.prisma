@@ -323,10 +323,11 @@ model Horse {
   /// stray and WILL put `DROP INDEX` for all sixteen into the migration it
   /// generates — measured twice on a disposable replay of the full chain,
   /// 2026-09-08 (Equoria-mxftz fix round 1). It also proposes
-  /// `DROP INDEX "user_transactions_user_created_idx"` (see UserTransaction)
-  /// and `ALTER TABLE "system_accounts" ALTER COLUMN "updatedAt" DROP DEFAULT`
-  /// (see SystemAccount). **Delete those DROP statements from the generated
-  /// migration before applying it.** Nothing else in the repository will stop
+  /// `DROP INDEX "user_transactions_user_created_idx"` (see UserTransaction —
+  /// that one has a proper one-line fix, and deleting the DROP is only the
+  /// interim) and `ALTER TABLE "system_accounts" ALTER COLUMN "updatedAt" DROP
+  /// DEFAULT` (see SystemAccount). **Delete those DROP statements from the
+  /// generated migration before applying it.** Nothing else in the repository will stop
   /// you: no test asserts that these sixteen indexes exist, so accepting the
   /// proposal silently removes the query plans behind stable, marketplace and
   /// genetics reads.
@@ -868,14 +869,32 @@ model UserTransaction {
   /// runtime. It is NOT redundant with the `@@index` below: that one ascends,
   /// the raw one descends, which is what newest-first ledger reads want.
   ///
+  /// Nothing in the repository guards it. No test asserts this index exists, so
+  /// if it is ever dropped, nothing fails — the newest-first ledger read just
+  /// gets a worse plan. (The three partial unique indexes on the staff-assignment
+  /// tables ARE sentinelled; do not assume the same cover here.)
+  ///
   /// `prisma migrate dev` WILL propose
   /// `DROP INDEX "user_transactions_user_created_idx"` because this file does
-  /// not declare it (measured 2026-09-08, Equoria-mxftz fix round 1). Delete
-  /// that DROP from the generated migration. If the divergence is ever to be
-  /// closed properly, the naming idiom is the one `Show` already uses — pin the
-  /// name with `@@index([...], map: "...")` — but a DESC ordering cannot be
-  /// expressed in `@@index` at all, so closing it needs an owner decision
-  /// rather than a tidy-up.
+  /// not declare it (measured 2026-09-08). Delete that DROP from any generated
+  /// migration — but the real fix is one line, and it is available now:
+  ///
+  ///   @@index([userId, createdAt(sort: Desc)], map: "user_transactions_user_created_idx")
+  ///
+  /// `sort:` has been generally available since Prisma 4.0, needs no
+  /// `previewFeatures`, and this very file already uses it six times — see
+  /// `Notification`, which declares the identical `(userId, createdAt DESC)`
+  /// shape. `map:` pins the existing index name, the idiom `Show` uses.
+  ///
+  /// Measured, not assumed (Equoria-mxftz fix round 2,
+  /// .superpowers/sdd/FINDINGS/task-14-r2-desc-index-declarable.log): adding that
+  /// line changes the migration Prisma generates by exactly one statement — the
+  /// `DROP INDEX` disappears and NOTHING is added. Prisma treats the declaration
+  /// as already satisfied by the index qh6jk created, because the name, columns
+  /// and ordering all match. **So this needs no migration; it is a pure
+  /// declaration catch-up, safe to take on its own.** Round 1 of this task
+  /// claimed a DESC ordering could not be expressed here at all. That was wrong,
+  /// and `Notification` above was the disproof.
   @@index([userId, createdAt])
   @@index([category])
   @@map("user_transactions")
