@@ -7,11 +7,13 @@
 // anywhere else, `retirementSchedule` as a Prisma include/select key is the
 // exact moment a player-facing read could start leaking the hidden age.
 //
-// Detection is a textual match on the object-key form `retirementSchedule:`
-// (colon immediately after the identifier). In this codebase that token has
-// no meaning other than a Prisma include/select key on `Groom` — there is no
-// other field, variable, or type named `retirementSchedule` — so the key form
-// alone is sufficient without parsing brace nesting.
+// Detection is a textual match on the object-key form `retirementSchedule:`,
+// bare OR quoted (`retirementSchedule:`, `'retirementSchedule':`,
+// `"retirementSchedule":`) — colon on the SAME LINE as the identifier. In this
+// codebase that token has no meaning other than a Prisma include/select key
+// on `Groom` — there is no other field, variable, or type named
+// `retirementSchedule` — so the key form alone is sufficient without parsing
+// brace nesting.
 //
 // WHAT THIS DOES NOT CATCH (read this before trusting it as a guarantee):
 //   1. A DYNAMICALLY COMPUTED include/select — e.g. a key built from a
@@ -23,11 +25,25 @@
 //      (e.g. stashing it on `groom.debugRetirementAge`). This check only
 //      guards the Prisma include/select boundary, not what an owner file does
 //      with the value afterward.
+//   3. A key whose colon sits on a FOLLOWING line (e.g. `retirementSchedule\n
+//      : true`). Detection is per line (so violation reports can cite a line
+//      number, matching the convention of the sibling checks this mirrors);
+//      a colon separated from the identifier by a line break is invisible to
+//      this scan.
 // This is a cheap static tripwire, not a full data-flow guarantee.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// Equoria-q7lqz: a walked file/dir can vanish mid-scan (a concurrent Jest
+// sentinel plants and deletes its own scratch files). Tolerate ONLY ENOENT,
+// loudly, via the shared helpers — never a bespoke silent catch. Mirrors
+// check-no-prisma-in-routes.mjs and check-no-unsafe-raw-sql.mjs.
+import {
+  readScannedFileSyncTolerant,
+  readdirSyncTolerant,
+} from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
@@ -44,10 +60,11 @@ const OWNER_FILES = new Set([
   'backend/modules/grooms/services/groomRetirementService.mjs',
 ]);
 
-const KEY_RX = /\bretirementSchedule\s*:/;
+const KEY_RX = /\b['"]?retirementSchedule['"]?\s*:/;
 
 function walkDir(dir, results) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+  const entries = readdirSyncTolerant(dir, { withFileTypes: true }, 'no-retirement-schedule-leak');
+  for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       if (entry.name === 'node_modules' || entry.name === '__tests__' || entry.name === 'tests') {
@@ -73,7 +90,8 @@ for (const file of files) {
   const rel = path.relative(REPO_ROOT, file).replace(/\\/g, '/');
   if (OWNER_FILES.has(rel)) continue;
 
-  const source = fs.readFileSync(file, 'utf8');
+  const source = readScannedFileSyncTolerant(file, 'no-retirement-schedule-leak');
+  if (source === null) continue; // vanished mid-scan (ENOENT) — skip, noticed
   const lines = source
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')) // strip block comments
     .split(/\r?\n/);
