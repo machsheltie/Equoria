@@ -125,6 +125,39 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     expect.soft(sireId, 'sireId should be returned from the seeded sire').toBeTruthy();
     expect.soft(damId, 'damId should be returned from the seeded dam').toBeTruthy();
 
+    // Feed both parents before breeding (Equoria-6w3ur).
+    //
+    // POST /horses/foals refuses a horse in critical health (Equoria-2e7e), and
+    // getDisplayedHealth() = worseOf(feedHealth, vetHealth) makes a never-fed
+    // horse 'critical' regardless of healthStatus. Freshly seeded parents have
+    // never eaten, so this pair was always going to be refused; the old
+    // request-shape 400 simply returned before the gate could say so. Do what a
+    // real player does — buy feed, equip it, feed each horse — mirroring
+    // tests/e2e/feed-system-phase-b.spec.ts. Real routes, no fixture shortcut.
+    const purchase = await csrfMutate(session, 'POST', '/api/v1/feed-shop/purchase', {
+      feedTier: 'basic',
+      packs: 1,
+    });
+    if (!purchase.ok()) {
+      throw new Error(`Feed purchase failed (${purchase.status()}): ${await purchase.text()}`);
+    }
+    for (const horseId of [sireId, damId]) {
+      const equip = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/equip-feed`, {
+        feedType: 'basic',
+      });
+      if (!equip.ok()) {
+        throw new Error(
+          `Equip-feed for horse ${horseId} failed (${equip.status()}): ${await equip.text()}`
+        );
+      }
+      const feed = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/feed`);
+      if (!feed.ok()) {
+        throw new Error(
+          `Feed for horse ${horseId} failed (${feed.status()}): ${await feed.text()}`
+        );
+      }
+    }
+
     // Equoria-6w3ur: breeding starts a 7-day PREGNANCY (Phase-B feed-system
     // redesign, Equoria-q7no) — POST /horses/foals returns
     // { pregnancyStarted, damId, sireId, foalDueDate } and creates NO foal row.

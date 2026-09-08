@@ -1,4 +1,5 @@
 import { test as base, expect } from '@playwright/test';
+import { csrfMutate } from './helpers/api';
 import { seedOwnedHorses } from './fixtures/ownedHorses';
 import { createSeededPlayerSession, type SeededPlayerSession } from './fixtures/seededPlayer';
 
@@ -108,10 +109,46 @@ test.describe('Breeding Loop', () => {
     // in the browser's horse list (BreedingPairSelection reads that list), and
     // seeding sequentially would make the second call wait out the cache entry
     // the first one just wrote. See tests/e2e/fixtures/ownedHorses.ts.
-    await seedOwnedHorses(session, [
+    const [seededStallion, seededMare] = await seedOwnedHorses(session, [
       { breedId, name: stallionName, sex: 'stallion', age: 5 },
       { breedId, name: mareName, sex: 'mare', age: 5 },
     ]);
+
+    // Feed both parents before breeding (Equoria-6w3ur).
+    //
+    // The critical-health gate in POST /horses/foals (Equoria-2e7e) uses
+    // getDisplayedHealth() = worseOf(feedHealth, vetHealth), and a horse with
+    // lastFedDate = null has feedHealth 'critical' no matter what healthStatus
+    // says. Freshly seeded horses have never been fed, so this pair was ALWAYS
+    // going to be refused — the old request-shape 400 just short-circuited the
+    // request before the gate could speak. Fixing the payload made the gate
+    // reachable, so the fixture now has to do what a real player does: buy
+    // feed, equip it, feed each horse. Same sequence as
+    // tests/e2e/feed-system-phase-b.spec.ts and the readiness spec; real routes
+    // throughout, no fixture shortcut into the fed state.
+    const purchase = await csrfMutate(session, 'POST', '/api/v1/feed-shop/purchase', {
+      feedTier: 'basic',
+      packs: 1,
+    });
+    if (!purchase.ok()) {
+      throw new Error(`Feed purchase failed (${purchase.status()}): ${await purchase.text()}`);
+    }
+    for (const horseId of [seededStallion.id, seededMare.id]) {
+      const equip = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/equip-feed`, {
+        feedType: 'basic',
+      });
+      if (!equip.ok()) {
+        throw new Error(
+          `Equip-feed for horse ${horseId} failed (${equip.status()}): ${await equip.text()}`
+        );
+      }
+      const feed = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/feed`);
+      if (!feed.ok()) {
+        throw new Error(
+          `Feed for horse ${horseId} failed (${feed.status()}): ${await feed.text()}`
+        );
+      }
+    }
   });
 
   // No afterAll context close: the worker-scoped `seededPlayer` fixture owns
