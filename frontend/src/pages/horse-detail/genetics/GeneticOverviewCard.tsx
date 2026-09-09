@@ -52,7 +52,7 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
         ? { label: 'Excellent', barClass: 'bg-[var(--status-info)]' }
         : avgScore >= 40
           ? { label: 'Good', barClass: 'bg-[var(--gold-primary)]' }
-          : { label: 'Average', barClass: 'bg-[var(--role-neutral-text)]' };
+          : { label: 'Average', barClass: 'bg-[var(--text-secondary)]' };
 
   // Avg Trait Strength — Equoria-e1ccb honest replacement for the
   // always-zero "Trait Stability" metric.
@@ -76,7 +76,7 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
       ? { label: 'Exceptional', barClass: 'bg-[var(--gold-primary)]' }
       : breedingValue >= 40
         ? { label: 'Good', barClass: 'bg-[var(--status-info)]' }
-        : { label: 'Below Average', barClass: 'bg-[var(--role-neutral-text)]' };
+        : { label: 'Below Average', barClass: 'bg-[var(--text-secondary)]' };
   const rarePlusCount = allTraits.filter((t) => t.rarity !== 'common').length;
 
   // Optimal trait synergies.

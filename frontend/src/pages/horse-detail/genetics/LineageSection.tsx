@@ -55,7 +55,7 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
           >
             {sireTraits > 0 && (
               <div
-                className="bg-[var(--status-info)] flex items-center justify-center min-w-0 px-1 text-[var(--celestial-navy-950)] text-xs font-semibold"
+                className="bg-[var(--status-info)] flex items-center justify-center min-w-0 px-1 text-role-inverse text-xs font-semibold"
                 style={{ width: `${sirePercentage}%` }}
                 title={`Sire: ${sireTraits} traits (${sirePercentage}%)`}
               >
@@ -64,7 +64,7 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
             )}
             {damTraits > 0 && (
               <div
-                className="bg-[var(--status-rare)] flex items-center justify-center min-w-0 px-1 text-[var(--celestial-navy-950)] text-xs font-semibold"
+                className="bg-[var(--status-rare)] flex items-center justify-center min-w-0 px-1 text-role-inverse text-xs font-semibold"
                 style={{ width: `${damPercentage}%` }}
                 title={`Dam: ${damTraits} traits (${damPercentage}%)`}
               >
