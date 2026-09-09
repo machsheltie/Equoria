@@ -201,8 +201,11 @@ async function withBreedProfilesUnreadable(fn) {
   } finally {
     // Unconditional and UNGUARDED on the normal path: if this restore cannot
     // happen the run must fail loudly here, while there is still a stack to
-    // read. `restoreBreedProfilesSync` is the tolerant last resort for a process
-    // that is already dying, not a substitute for this line.
+    // read. There is no exit-handler fallback behind it — see the startup
+    // block below, which measured that a `process.on('exit')` handler never
+    // fires in this Jest environment and dropped that approach. A process
+    // killed inside this window is repaired by that startup block on the
+    // suite's NEXT run, not by anything running during this one.
     renameSync(BACKUP_PATH, PROFILES_PATH);
   }
 }
