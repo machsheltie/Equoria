@@ -6,6 +6,13 @@
  * preserved: Trait Strength replaces the always-zero Trait Stability
  * metric; the metric is the average of trait.strength (the backend's
  * dominance score), not a synthetic genetic-vs-total ratio.
+ *
+ * Palette migration (design exception `palette-classes` retired): the raw
+ * emerald/blue/slate tier gradients are now semantic tokens, and each tier
+ * carries its band as a visible text label beside the figures it explains,
+ * so the band survives for a reader who cannot separate the fill colours. The
+ * bars themselves are now marked decorative — every value and band they encode
+ * is real text. Band thresholds are unchanged.
  */
 
 import React from 'react';
@@ -17,6 +24,19 @@ interface GeneticOverviewCardProps {
   interactions: TraitInteraction[] | undefined;
 }
 
+/**
+ * A metric band. `label` is the non-colour carrier: the band boundaries are
+ * invisible, so without it the tier is legible only to a reader who can tell
+ * the fill colours apart. Band vocabulary follows the existing ladders in
+ * `components/breeding/BreedingInsightsCard.tsx` (Exceptional / Excellent /
+ * Good / Average / Below Average) and `components/trainer/
+ * TrainerDiscoveryPanel.tsx` (Strong / Moderate / Mild) — no new vocabulary.
+ */
+interface Tier {
+  label: string;
+  barClass: string;
+}
+
 const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, interactions }) => {
   if (allTraits.length === 0) return null;
 
@@ -25,38 +45,38 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
     t.rarity === 'legendary' ? 100 : t.rarity === 'rare' ? 70 : 40
   );
   const avgScore = Math.round(rarityScores.reduce((a, b) => a + b, 0) / rarityScores.length);
-  const potentialBarClass =
+  const potentialTier: Tier =
     avgScore >= 80
-      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+      ? { label: 'Exceptional', barClass: 'bg-[var(--status-success)]' }
       : avgScore >= 60
-        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+        ? { label: 'Excellent', barClass: 'bg-[var(--status-info)]' }
         : avgScore >= 40
-          ? 'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]'
-          : 'bg-gradient-to-r from-slate-400/60 to-slate-400/40';
+          ? { label: 'Good', barClass: 'bg-[var(--gold-primary)]' }
+          : { label: 'Average', barClass: 'bg-[var(--role-neutral-text)]' };
 
   // Avg Trait Strength — Equoria-e1ccb honest replacement for the
   // always-zero "Trait Stability" metric.
   const totalCount = allTraits.length;
   const avgStrength =
     totalCount > 0 ? Math.round(allTraits.reduce((sum, t) => sum + t.strength, 0) / totalCount) : 0;
-  const strengthBarClass =
+  const strengthTier: Tier =
     avgStrength >= 75
-      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+      ? { label: 'Strong', barClass: 'bg-[var(--status-success)]' }
       : avgStrength >= 50
-        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-        : 'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]';
+        ? { label: 'Moderate', barClass: 'bg-[var(--status-info)]' }
+        : { label: 'Mild', barClass: 'bg-[var(--gold-primary)]' };
   const dominantCount = allTraits.filter((t) => t.strength >= 60).length;
 
   // Breeding Value — weighted by rarity.
   const legendaryCount = allTraits.filter((t) => t.rarity === 'legendary').length;
   const rareCount = allTraits.filter((t) => t.rarity === 'rare').length;
   const breedingValue = Math.min(100, legendaryCount * 30 + rareCount * 10 + allTraits.length * 2);
-  const breedingBarClass =
+  const breedingTier: Tier =
     breedingValue >= 70
-      ? 'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]'
+      ? { label: 'Exceptional', barClass: 'bg-[var(--gold-primary)]' }
       : breedingValue >= 40
-        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-        : 'bg-gradient-to-r from-slate-400/60 to-slate-400/40';
+        ? { label: 'Good', barClass: 'bg-[var(--status-info)]' }
+        : { label: 'Below Average', barClass: 'bg-[var(--role-neutral-text)]' };
   const rarePlusCount = allTraits.filter((t) => t.rarity !== 'common').length;
 
   // Optimal trait synergies.
@@ -77,11 +97,15 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
             Genetic Potential
           </div>
           <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">{avgScore}/100</div>
-          <div className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden">
-            <div className={`h-full ${potentialBarClass}`} style={{ width: `${avgScore}%` }} />
+          <div
+            className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden"
+            aria-hidden="true"
+          >
+            <div className={`h-full ${potentialTier.barClass}`} style={{ width: `${avgScore}%` }} />
           </div>
           <p className="text-xs text-[rgb(160,175,200)] mt-2">
-            Based on {allTraits.length} trait{allTraits.length !== 1 ? 's' : ''}
+            <span className="font-semibold text-[rgb(220,235,255)]">{potentialTier.label}</span> ·
+            based on {allTraits.length} trait{allTraits.length !== 1 ? 's' : ''}
           </p>
         </div>
 
@@ -92,10 +116,17 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
             Avg Trait Strength
           </div>
           <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">{avgStrength}%</div>
-          <div className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden">
-            <div className={`h-full ${strengthBarClass}`} style={{ width: `${avgStrength}%` }} />
+          <div
+            className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden"
+            aria-hidden="true"
+          >
+            <div
+              className={`h-full ${strengthTier.barClass}`}
+              style={{ width: `${avgStrength}%` }}
+            />
           </div>
           <p className="text-xs text-[rgb(160,175,200)] mt-2">
+            <span className="font-semibold text-[rgb(220,235,255)]">{strengthTier.label}</span> ·{' '}
             {dominantCount} dominant / {allTraits.length} total
           </p>
         </div>
@@ -107,10 +138,19 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
             Breeding Value
           </div>
           <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">{breedingValue}/100</div>
-          <div className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden">
-            <div className={`h-full ${breedingBarClass}`} style={{ width: `${breedingValue}%` }} />
+          <div
+            className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden"
+            aria-hidden="true"
+          >
+            <div
+              className={`h-full ${breedingTier.barClass}`}
+              style={{ width: `${breedingValue}%` }}
+            />
           </div>
-          <p className="text-xs text-[rgb(160,175,200)] mt-2">{rarePlusCount} rare+ traits</p>
+          <p className="text-xs text-[rgb(160,175,200)] mt-2">
+            <span className="font-semibold text-[rgb(220,235,255)]">{breedingTier.label}</span> ·{' '}
+            {rarePlusCount} rare+ traits
+          </p>
         </div>
 
         {/* Optimal Combinations */}
@@ -127,8 +167,8 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
 
       {/* Breeding Recommendations */}
       {optimalCount > 0 && (
-        <div className="mt-4 p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
-          <p className="text-sm text-emerald-400 flex items-center">
+        <div className="mt-4 p-4 bg-[var(--role-success-bg)] rounded-lg border border-[var(--role-success-border)]">
+          <p className="text-sm text-[var(--role-success-text)] flex items-center">
             <Award className="w-4 h-4 mr-2" />
             <strong>Prime Breeding Candidate:</strong>&nbsp;This horse has {optimalCount} optimal
             trait combination

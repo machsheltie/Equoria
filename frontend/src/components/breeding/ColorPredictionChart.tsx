@@ -19,6 +19,16 @@
  *   - All-lethal edge case returns empty `possibleColors[]` — render an
  *     empty-state message rather than crashing.
  *
+ * Palette migration (design exception `palette-classes` retired): this file
+ * never encoded a literal coat colour. Its retired exception justification
+ * ("temporary review of literal coat-color encoding") did not describe the
+ * file — every raw class was generic chrome: red error/all-lethal states, an
+ * amber "prediction unavailable" notice, and one amber accent used identically
+ * for the header icon and every probability bar regardless of which coat colour
+ * the row named. Those are now `--role-danger-*`, `--role-warning-*`, and the
+ * house gold bar gradient. If literal coat swatches are ever wanted here, that
+ * is a new design decision, not a restoration of something removed.
+ *
  * The component intentionally has no recharts dependency for this iteration —
  * a flat row of percentage bars is sufficient and keeps the bundle smaller.
  * Switching to a recharts BarChart is a follow-up if richer interactivity is
@@ -56,8 +66,10 @@ export default function ColorPredictionChart({
         data-testid="color-prediction-loading"
       >
         <div className="flex items-center gap-2 mb-3">
-          <Palette className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-semibold text-[var(--text-primary)]">Offspring Color Forecast</span>
+          <Palette className="h-4 w-4 text-[var(--role-accent-text)]" />
+          <span className="text-sm font-semibold text-[var(--text-primary)]">
+            Offspring Color Forecast
+          </span>
         </div>
         <div className="space-y-2" aria-hidden="true">
           {[0, 1, 2].map((i) => (
@@ -71,15 +83,15 @@ export default function ColorPredictionChart({
   if (error) {
     return (
       <div
-        className="rounded-lg border border-red-500/30 bg-red-500/10 p-4"
+        className="rounded-lg border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] p-4"
         data-testid="color-prediction-error"
         role="alert"
       >
         <div className="flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-4 w-4 text-[var(--role-danger-text)] flex-shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-semibold text-[var(--text-primary)]">Color prediction unavailable</p>
-            <p className="text-red-400 mt-1">
+            <p className="text-[var(--role-danger-text)] mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
@@ -92,14 +104,14 @@ export default function ColorPredictionChart({
   if (data == null) {
     return (
       <div
-        className="rounded-lg border border-amber-400/30 bg-amber-50/40 p-4"
+        className="rounded-lg border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] p-4"
         data-testid="color-prediction-legacy"
       >
         <div className="flex items-start gap-2">
-          <Palette className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <Palette className="h-4 w-4 text-[var(--role-warning-text)] flex-shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-semibold text-[var(--text-primary)]">Offspring Color Forecast</p>
-            <p className="text-amber-700 mt-1">
+            <p className="text-[var(--role-warning-text)] mt-1">
               Color prediction is unavailable for this pair — one or both parents predate the
               coat-genetics system (no genotype recorded).
             </p>
@@ -113,14 +125,14 @@ export default function ColorPredictionChart({
   if (data.possibleColors.length === 0) {
     return (
       <div
-        className="rounded-lg border border-red-500/30 bg-red-500/10 p-4"
+        className="rounded-lg border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] p-4"
         data-testid="color-prediction-all-lethal"
       >
         <div className="flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-4 w-4 text-[var(--role-danger-text)] flex-shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-semibold text-[var(--text-primary)]">No viable offspring colors</p>
-            <p className="text-red-400 mt-1">
+            <p className="text-[var(--role-danger-text)] mt-1">
               All {data.totalCombinations} possible genotype combinations were filtered as lethal.
               Choose a different breeding pair.
             </p>
@@ -136,8 +148,10 @@ export default function ColorPredictionChart({
       data-testid="color-prediction-chart"
     >
       <div className="flex items-center gap-2 mb-3">
-        <Palette className="h-4 w-4 text-amber-500" />
-        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Offspring Color Forecast</h3>
+        <Palette className="h-4 w-4 text-[var(--role-accent-text)]" />
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+          Offspring Color Forecast
+        </h3>
       </div>
       <ul className="space-y-2" aria-label="Possible offspring colors with probability">
         {data.possibleColors.map((entry) => (
@@ -155,7 +169,7 @@ export default function ColorPredictionChart({
               role="presentation"
             >
               <div
-                className="h-full bg-amber-500"
+                className="h-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]"
                 style={{ width: `${Math.min(100, Math.round(entry.probability * 100))}%` }}
               />
             </div>

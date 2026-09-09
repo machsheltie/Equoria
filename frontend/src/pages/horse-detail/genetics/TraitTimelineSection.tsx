@@ -2,9 +2,15 @@
  * TraitTimelineSection — chronological list of trait events
  * (discovery, mutation, interaction, …).
  * Equoria-kdduk: extracted from GeneticsTab.tsx.
+ *
+ * Palette migration (design exception `palette-classes` retired): raw
+ * purple/emerald/blue badge classes are now semantic tokens, and each phase
+ * badge pairs its already-visible phase label with a per-phase icon, so the
+ * phase never depends on badge colour alone.
  */
 
 import React from 'react';
+import { CircleDot, Dna, GitMerge, Sparkles } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
 import type { TraitTimelineEntry } from '../../../hooks/useHorseGenetics';
 
@@ -27,13 +33,29 @@ const TraitTimelineSection: React.FC<TraitTimelineSectionProps> = ({ timeline })
           // shape regression can never crash the whole Genetics tab.
           const eventLabel = entry.eventType ?? 'Event';
           const eventTypeKey = eventLabel.toLowerCase();
-          const badgeClass = eventTypeKey.includes('discover')
-            ? 'bg-purple-500/20 text-purple-400'
+          // Phase presentation. The badge already renders `eventLabel` as text;
+          // `icon` adds a per-phase shape so the phase never depends on badge
+          // colour alone. The icon is decorative — the adjacent label names it.
+          const phase = eventTypeKey.includes('discover')
+            ? {
+                icon: Sparkles,
+                badgeClass: 'bg-[var(--badge-rare-bg)] text-[var(--status-rare)]',
+              }
             : eventTypeKey.includes('interaction')
-              ? 'bg-emerald-500/20 text-emerald-400'
+              ? {
+                  icon: GitMerge,
+                  badgeClass: 'bg-[var(--role-success-bg)] text-[var(--role-success-text)]',
+                }
               : eventTypeKey.includes('mutat')
-                ? 'bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)]'
-                : 'bg-blue-500/20 text-blue-400';
+                ? {
+                    icon: Dna,
+                    badgeClass: 'bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)]',
+                  }
+                : {
+                    icon: CircleDot,
+                    badgeClass: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
+                  };
+          const PhaseIcon = phase.icon;
           return (
             <div
               key={entry.id}
@@ -41,7 +63,10 @@ const TraitTimelineSection: React.FC<TraitTimelineSectionProps> = ({ timeline })
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${badgeClass}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-semibold ${phase.badgeClass}`}
+                  >
+                    <PhaseIcon className="w-3 h-3" aria-hidden="true" />
                     {eventLabel}
                   </span>
                   <span className="text-sm font-semibold text-[rgb(220,235,255)]">
