@@ -63,6 +63,7 @@ import { processRetirement } from '../services/groomRetirementService.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 import { hireGroom } from '../controllers/groomRosterController.mjs';
 import { recordInteraction } from '../controllers/groomInteractionController.mjs';
+import { performEnhancedInteraction } from '../controllers/enhancedGroomController.mjs';
 import { listFreeAgentGrooms, hireFreeAgent } from '../controllers/groomFreeAgentController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-ypb7d-eng';
@@ -414,6 +415,29 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     expect(res.statusCode).toBe(400);
     expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'fee_unpaid' }));
     // No interaction was recorded.
+    expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(0);
+  });
+
+  it('the SECOND care path refuses too — a rule on one of two doors is not a rule', async () => {
+    // `POST /grooms/enhanced/interact` is the other way a groom can work. The gate
+    // is applied in both controllers, so both are driven; asserting only the first
+    // would have left the rule bypassable by changing endpoint.
+    const res = fakeRes();
+    await performEnhancedInteraction(
+      {
+        user: { id: user.id },
+        body: {
+          groomId: groom.id,
+          horseId: horse.id,
+          interactionType: 'daily_care',
+          variation: 'Morning Routine',
+          duration: 30,
+        },
+      },
+      res,
+    );
+    expect(res.statusCode).toBe(400);
+    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'fee_unpaid' }));
     expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(0);
   });
 
