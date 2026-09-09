@@ -332,6 +332,25 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
     return null;
   }
 
+  // Equoria-m9lz1 fix round 3: an OWNERLESS groom has no stable to leave a
+  // legacy to. `Groom.userId` is `String?`, and the protégé query below filters
+  // `userId: retiredGroom.userId` — which Prisma compiles to `WHERE "userId" IS
+  // NULL` when that value is null, so null stops being "this groom's owner" and
+  // becomes a matching key across EVERY ownerless groom in the database (62 of
+  // them locally when this guard was added). The game would then pair two grooms
+  // who share nothing but the absence of an owner as mentor and protégé, and
+  // write a legacy log no player can ever see. A mentorship needs a stable;
+  // without one there is nothing to pass on, so skip — beside the level guard,
+  // and for the same reason: not eligible, not an error.
+  if (!retiredGroom.userId) {
+    logger.info(
+      `[groomLegacyService.autoCreateLegacyOnRetirement] Groom ${retiredGroom.id} has no owner; ` +
+        'no legacy is created (an ownerless groom has no stable to pass a legacy to, and a null ' +
+        'userId would otherwise match every other ownerless groom).',
+    );
+    return null;
+  }
+
   // Don't create a second legacy for a groom that already has one.
   const existingLegacy = await prisma.groomLegacyLog.findFirst({
     where: { retiredGroomId: retiredGroom.id },

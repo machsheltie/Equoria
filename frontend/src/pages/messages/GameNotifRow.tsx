@@ -126,16 +126,68 @@ const FoalBornRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
 };
 
 /**
+ * Reads the horse names out of a groom_retired payload, defensively.
+ *
+ * Returns only entries that actually carry a usable name — a nameless horse
+ * cannot be said out loud, and "and  is without a groom" is worse than falling
+ * back to the count. The caller decides what to do with a short list.
+ */
+const retiredGroomHorseNames = (payload: Record<string, unknown>): string[] => {
+  const raw = payload.horses;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((h) =>
+      h && typeof h === 'object' && typeof (h as { name?: unknown }).name === 'string'
+        ? ((h as { name: string }).name.trim() as string)
+        : ''
+    )
+    .filter((name) => name.length > 0);
+};
+
+/**
+ * "Moonflower", "Moonflower and Halcyon", "Moonflower, Halcyon and Bright Star",
+ * "Moonflower, Halcyon, Bright Star and 2 more".
+ *
+ * Capped at three spoken names: past that the sentence stops being something a
+ * player reads and starts being a list, and the roster is where a list belongs.
+ */
+const MAX_SPOKEN_HORSE_NAMES = 3;
+const speakHorseNames = (names: string[]): string => {
+  if (names.length <= 1) return names[0] ?? '';
+  if (names.length <= MAX_SPOKEN_HORSE_NAMES) {
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  }
+  const spoken = names.slice(0, MAX_SPOKEN_HORSE_NAMES).join(', ');
+  return `${spoken} and ${names.length - MAX_SPOKEN_HORSE_NAMES} more`;
+};
+
+/**
  * Equoria-m9lz1 — a groom has reached the end of their working years and the
- * game has retired them. This is the player's ONLY warning: the backend writes
- * it in the same transaction that ends the groom's assignments, and the player
- * needs to know which horses are now uncovered so they can take someone new on.
+ * game has retired them. This is the player's ONLY notice: the backend writes it
+ * in the same transaction that ends the groom's assignments, so it arrives the
+ * week it happens rather than ahead of it, and the player needs to know which
+ * horses are now uncovered so they can take someone new on.
  *
  * It stays inside the established GameNotifShell family (same shell, same badge
  * vocabulary, same role tokens as Stat Gain and Foal Born) rather than inventing
- * a surface: the row's job is to name the person who left and what it left
- * uncovered, not to hold a ceremony. `warning`, not `success` or `destructive` —
- * nothing went wrong and nobody is at fault, but the player has something to do.
+ * a surface: the row's job is to name the person who left and who they left,
+ * not to hold a ceremony. `warning`, not `success` or `destructive` — nothing
+ * went wrong and nobody is at fault, but the player has something to do.
+ *
+ * THE ICON IS NOT A CANDLE (fix round 3, finding 6). It was 🕯️, and beside the
+ * words "Groom Retired" a candle tells an attached player that someone has died.
+ * Nobody has died; a person the player's stable relied on has finished a long
+ * career. 🏵️ is a rosette — the thing you pin on someone at the end of a good
+ * run — which is warm, unmistakably equestrian, and not funereal. It is also not
+ * already spoken for by another row (🌾 stat gain, 👶 foal born, ✉️ unknown).
+ *
+ * THE HORSES ARE NAMED, not counted (same round). The row used to say "3 horses
+ * are without a groom", which is a sentence about inventory in a game whose
+ * premise is that the player knows all three by name. The backend now sends
+ * `horses: [{ id, name }]`, scoped to this recipient, with
+ * `horsesLeftUnattended` derived from that list's length. The count is still the
+ * fallback — an older stored notification has no `horses` key, and this row must
+ * keep rendering those honestly rather than pretending nobody was uncovered.
  *
  * The payload deliberately carries no retirement age. The game's hidden
  * retirement schedule is not disclosed before the week it takes effect, and this
@@ -156,12 +208,26 @@ const GroomRetiredRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
     typeof p.speciality === 'string' && p.speciality.trim() !== ''
       ? groomSpecialtyLabel(p.speciality)
       : null;
-  const horses = typeof p.horsesLeftUnattended === 'number' ? p.horsesLeftUnattended : 0;
+  const horseNames = retiredGroomHorseNames(p);
+  const horseCount = typeof p.horsesLeftUnattended === 'number' ? p.horsesLeftUnattended : 0;
+
+  // Named horses when the payload carries them; the old count sentence when it
+  // does not (a notification stored before the names existed); and no clause at
+  // all when the retirement left nobody uncovered.
+  let uncovered: string;
+  if (horseNames.length > 0) {
+    uncovered = ` ${speakHorseNames(horseNames)} ${horseNames.length === 1 ? 'is' : 'are'} without a groom — take someone new on when you are ready.`;
+  } else if (horseCount > 0) {
+    uncovered = ` ${horseCount} ${horseCount === 1 ? 'horse is' : 'horses are'} without a groom — take someone new on when you are ready.`;
+  } else {
+    uncovered = ' Take someone new on when you are ready.';
+  }
+
   return (
     <GameNotifShell
       notif={notif}
       iconBg="bg-[var(--role-warning-bg)]"
-      emoji="🕯️"
+      emoji="🏵️"
       badgeLabel="Groom Retired"
       badgeVariant="warning"
       title={groomName}
@@ -170,9 +236,7 @@ const GroomRetiredRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
           {speciality
             ? `Has hung up their headcollar after a long career in ${speciality}.`
             : 'Has hung up their headcollar after a long career.'}
-          {horses > 0
-            ? ` ${horses} ${horses === 1 ? 'horse is' : 'horses are'} without a groom — take someone new on when you are ready.`
-            : ' Take someone new on when you are ready.'}
+          {uncovered}
         </p>
       }
     />

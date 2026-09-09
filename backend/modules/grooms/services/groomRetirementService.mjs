@@ -83,12 +83,14 @@ import { autoCreateLegacyOnRetirement } from './groomLegacyService.mjs';
 import {
   RETIREMENT_AGE_MIN,
   RETIREMENT_AGE_MAX,
-  drawRetirementAge,
   ensureRetirementSchedule,
   readRetirementAge,
 } from './groomRetirementScheduleService.mjs';
 
-export { drawRetirementAge, ensureRetirementSchedule };
+// Fix round 3: nothing from groomRetirementScheduleService.mjs is re-exported here
+// or on the default export. `export { drawRetirementAge, ensureRetirementSchedule }`
+// sat on this line, and index.mjs star-exports this module, so it published the
+// age-RETURNING `ensureRetirementSchedule` to the whole backend. Import by path.
 
 /**
  * Retirement reasons enum.
@@ -261,9 +263,11 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     // Read the assignments about to end BEFORE ending them, because their own
     // `userId` is the fallback notification recipient (see below) and the
     // `updateMany` that follows does not return rows.
+    // The HORSE comes with them (fix round 3): the notice used to carry a bare
+    // count in a game where the player knows all three by name.
     const endingAssignments = await tx.groomAssignment.findMany({
       where: { groomId, isActive: true },
-      select: { userId: true },
+      select: { userId: true, foalId: true, foal: { select: { id: true, name: true } } },
     });
 
     // Equoria-m9lz1 / task-17 §7.1: END the active assignments. The pre-fix
@@ -294,9 +298,12 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     //   a null `userId` but live assignments could retire with nobody told — the
     //   player would lose care on their horse silently, which is exactly the
     //   failure the in-transaction notification exists to prevent. Currently
-    //   unreachable (none of the 56 ownerless non-retired grooms has an active
-    //   assignment) but the owner's "the game should notify a player"
-    //   requirement is absolute, so it does not rely on that staying true.
+    //   unreachable (no ownerless non-retired groom has an active assignment)
+    //   but the owner's "the game should notify a player" requirement is
+    //   absolute, so it does not rely on that staying true. That population's
+    //   SIZE is deliberately not quoted: it moves with ordinary play (56 when
+    //   written, 62 the next day) and only "none has an active assignment" is
+    //   load-bearing. Same reason as commit 6c8672c73.
     //
     //   Preference order: the groom's own owner, then the distinct owners of the
     //   assignments just ended. In the ordinary case those are the same person
@@ -307,43 +314,63 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       ? [retiredGroom.userId]
       : [...new Set(endingAssignments.map(a => a.userId).filter(Boolean))].sort();
 
-    // The player's only warning, written with the retirement it announces.
-    // The payload carries nothing the player could not already see; in
-    // particular it does NOT carry the retirement age (invariant I3).
-    const notificationPayload =
-      recipientIds.length > 0
-        ? {
-            groomId,
-            groomName: retiredGroom.name,
-            speciality: retiredGroom.speciality,
-            skillLevel: retiredGroom.skillLevel,
-            level: retiredGroom.level,
-            careerWeeks: retiredGroom.careerWeeks,
-            reason: retirementReason,
-            horsesLeftUnattended: endedAssignments.count,
-          }
-        : null;
+    // WHICH HORSES, PER RECIPIENT (fix round 3). A shared list of NAMES would show
+    // one player another's horses in the multi-recipient fallback case. So the
+    // groom's own owner gets every ending assignment that is theirs or carries no
+    // `userId` of its own (`GroomAssignment.userId` is `String?`) — identical to the
+    // old count on the ordinary path — and a fallback recipient gets only assignments
+    // naming them. `horsesLeftUnattended` is that list's length, so it cannot lie.
+    const horsesForRecipient = recipientId =>
+      endingAssignments
+        .filter(a =>
+          retiredGroom.userId
+            ? recipientId === retiredGroom.userId && (a.userId === recipientId || !a.userId)
+            : a.userId === recipientId,
+        )
+        .map(a => ({ id: a.foal?.id ?? a.foalId, name: a.foal?.name ?? null }))
+        .sort((x, y) => x.id - y.id);
 
+    // The player's only notice, written with the retirement it announces. It
+    // carries nothing they could not already see — and NOT the age (I3).
     const notificationIds = [];
+    const notificationPayloadsByRecipient = new Map();
     for (const recipientId of recipientIds) {
+      const horses = horsesForRecipient(recipientId);
+      const payload = {
+        groomId,
+        groomName: retiredGroom.name,
+        speciality: retiredGroom.speciality,
+        skillLevel: retiredGroom.skillLevel,
+        level: retiredGroom.level,
+        careerWeeks: retiredGroom.careerWeeks,
+        reason: retirementReason,
+        horsesLeftUnattended: horses.length,
+        horses,
+      };
+      notificationPayloadsByRecipient.set(recipientId, payload);
       const notification = await createNotificationTx(
         tx,
         recipientId,
         GROOM_RETIRED_NOTIFICATION_TYPE,
-        notificationPayload,
+        payload,
       );
       notificationIds.push(notification.id);
     }
 
-    // The genuinely unnotifiable case: assignments ended and not one of them,
-    // nor the groom, names a player. Nothing can be sent, so say so loudly
-    // rather than let it pass as a successful retirement.
-    if (recipientIds.length === 0 && endedAssignments.count > 0) {
+    // A HORSE WHOSE OWNER WAS NOT TOLD, in either shape: nobody could be notified
+    // at all, or an ending assignment landed on no recipient's list. Both are
+    // claims about DATA (`GroomAssignment.userId` vs `Groom.userId`), so both are
+    // checked, and loud — that is what the in-transaction notice exists to prevent.
+    const attributed = [...notificationPayloadsByRecipient.values()].reduce(
+      (n, p) => n + p.horses.length,
+      0,
+    );
+    if (attributed !== endedAssignments.count) {
       logger.error(
-        `[groomRetirementService.processRetirement] Groom ${groomId} retired and ended ` +
-          `${endedAssignments.count} active assignment(s), but neither the groom nor any of those ` +
-          'assignments names a userId — NO player could be notified. Investigate the ownerless ' +
-          'assignment rows; a player may have lost care on a horse with no warning.',
+        `[groomRetirementService.processRetirement] Groom ${groomId} ended ` +
+          `${endedAssignments.count} active assignment(s), but only ${attributed} reached one of ` +
+          `${recipientIds.length} notified player(s). A horse lost its groom with no warning to ` +
+          'its owner. Investigate the userId on those GroomAssignment rows.',
       );
     }
 
@@ -353,7 +380,9 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       closedAssignmentLogCount: closedLogs.count,
       notificationIds,
       notificationRecipientIds: recipientIds,
-      notificationPayload,
+      // Entries, so the post-commit publish sends each recipient EXACTLY the
+      // payload their own stored row carries.
+      notificationPayloadsByRecipient: [...notificationPayloadsByRecipient.entries()],
     };
   });
 
@@ -371,12 +400,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
   // notification can never describe different events. Driven by the RECIPIENT
   // list, not by `retiredGroom.userId`, so a fallback recipient gets its stream
   // nudge and its retention prune too.
-  for (const recipientId of committed.notificationRecipientIds) {
-    finalizeNotificationAfterCommit(
-      recipientId,
-      GROOM_RETIRED_NOTIFICATION_TYPE,
-      committed.notificationPayload,
-    );
+  for (const [recipientId, payload] of committed.notificationPayloadsByRecipient) {
+    finalizeNotificationAfterCommit(recipientId, GROOM_RETIRED_NOTIFICATION_TYPE, payload);
   }
 
   // Equoria-c0vo: auto-create GroomLegacyLog for level-7+ retirees by pairing
@@ -406,6 +431,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     // transaction logs loudly when assignments were ended anyway.
     notificationIds: committed.notificationIds,
     notificationRecipientIds: committed.notificationRecipientIds,
+    // [recipientId, payload] entries; `horses` is scoped to that player.
+    notificationPayloadsByRecipient: committed.notificationPayloadsByRecipient,
     legacyLog,
   };
 }
@@ -560,8 +587,6 @@ export async function processWeeklyCareerProgression(userId = null) {
 }
 
 export default {
-  drawRetirementAge,
-  ensureRetirementSchedule,
   incrementCareerWeeks,
   checkRetirementEligibility,
   processRetirement,

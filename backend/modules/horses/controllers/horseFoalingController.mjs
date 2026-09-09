@@ -192,9 +192,26 @@ export async function createFoal(req, res) {
       logger.info(
         `[horseController.createFoal] Rejected: dam ${damId} has no breed on record and no breedId was supplied`,
       );
+      // COPY EDITORS — this message is REACHABLE and its wording is load-bearing
+      // (Equoria-m9lz1 fix round 3, finding 5). There were 11 owned mares/fillies
+      // with a null `breedId` in the local database when this was rewritten, and
+      // BreedingPairSelection.tsx posts only { sireId, damId } by design and
+      // does not filter breedless mares out of the selector — so a player really
+      // does land here.
+      //
+      // The previous wording ended "Choose a breed for the foal to breed her",
+      // which was wrong twice: it told the player to use a breed picker that the
+      // breeding surface does not have and is not getting on this branch (the
+      // real remedy is an owner decision, filed separately), and its last clause
+      // is a garden path that parses as the FOAL breeding the mare.
+      //
+      // What replaces it says only what is true: the game cannot tell what the
+      // foal would be, and the missing fact is on the mare's record. It promises
+      // no control. Do not re-add an instruction here until a surface exists that
+      // can carry it out.
       return res.status(400).json({
         success: false,
-        message: `${dam.name} has no breed on record, so her foal's breed cannot be determined. Choose a breed for the foal to breed her.`,
+        message: `${dam.name} has no breed on record, so there is no telling what her foal would be. Her breed needs to be on her record before she can be bred.`,
         data: null,
       });
     }
@@ -316,7 +333,22 @@ export async function createFoal(req, res) {
         pregnancyFeedingsByTier: {},
         lastBredDate: now,
         pendingFoalName: name ?? null,
-        pendingFoalBreedId: normalizedBreedId || null,
+        // The VALIDATED EFFECTIVE breed, not the supplied one (Equoria-m9lz1 fix
+        // round 3, finding 7). `effectiveBreedId` is `normalizedBreedId ??
+        // dam.breedId`, and by this line it has passed the integer check, the
+        // `breed.findUnique` existence check and `getBreedProfile`. Storing it
+        // pins the breed the foal will be born with AT CONCEPTION.
+        //
+        // Storing `normalizedBreedId || null` instead made conception-time and
+        // birth-time agreement depend on an absence: with no pending breed,
+        // foalingService.createFoalFromPregnancy falls through to `dam.breedId`
+        // AS IT READS SEVEN DAYS LATER, so a dam whose breed changed mid-
+        // pregnancy would foal a breed nothing ever validated — the stuck-
+        // pregnancy failure this whole precondition exists to prevent. It was
+        // safe only because `breedId` happens not to be in the PUT /horses/:id
+        // allowlist; that is a property of another file's allowlist, not of this
+        // one's logic, and it should not be what holds the invariant up.
+        pendingFoalBreedId: effectiveBreedId,
       },
     });
 

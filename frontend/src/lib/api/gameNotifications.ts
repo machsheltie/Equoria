@@ -21,13 +21,25 @@ export interface FoalBornNotificationPayload {
   sireName: string;
 }
 
+/** One horse this groom was looking after until the retirement ended it. */
+export interface GroomRetiredHorse {
+  id: number;
+  /** Null only if the horse row somehow carries no name; the row falls back. */
+  name: string | null;
+}
+
 /**
  * Equoria-m9lz1 — the game retired one of the player's grooms this week.
  *
  * Deliberately carries NO retirement age: the age at which a groom retires is
  * hidden until the week it takes effect, and this notification IS that week.
- * `horsesLeftUnattended` is how many active assignments the retirement ended, so
- * the row can tell the player what is now uncovered.
+ *
+ * `horses` is the horses the retirement left without a groom, BY NAME, scoped by
+ * the backend to this recipient's own horses. `horsesLeftUnattended` is that
+ * list's length — derived from it, so the number and the names in one row can
+ * never disagree. The count came first and the names were added afterwards
+ * (fix round 3): a bare "3 horses are without a groom" is not something this
+ * game can say to a player who knows all three by name.
  */
 export interface GroomRetiredNotificationPayload {
   groomId: number;
@@ -38,6 +50,7 @@ export interface GroomRetiredNotificationPayload {
   careerWeeks: number;
   reason: string;
   horsesLeftUnattended: number;
+  horses: GroomRetiredHorse[];
 }
 
 export type GameNotificationType = 'stat_gain' | 'foal_born' | 'groom_retired' | string;

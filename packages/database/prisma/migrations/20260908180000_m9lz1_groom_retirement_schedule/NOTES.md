@@ -30,6 +30,30 @@ wrong — I had read the rule in the docs file and broke it here anyway. If a fu
 the docs tree for consistency, move this file and update the pointer in
 `packages/database/prisma/schema.prisma`; nothing depends on it living here.
 
+## The header of `migration.sql` is stale in two places, and cannot be corrected
+
+Read the last comment block of `migration.sql` — "MIGRATION STATUS AT THE TIME THIS FILE WAS
+WRITTEN" — as history, not as instruction. Two of its sentences are false now, and because those
+bytes are inside the applied checksum they can never be fixed in place. That is the whole reason
+this file exists; corrections live here.
+
+1. **"Prepared, NOT applied to any environment."** It *is* applied — to the local development
+   database, on 2026-09-08, after that header was written. The Environment status table at the
+   bottom of this file is the live answer.
+2. **"Whoever applies it should read `.superpowers/sdd/FINDINGS/task-14-report.md` first."** Do not
+   go looking. That path is git-ignored working scratch for one task and is deleted when this branch
+   merges; it will not exist for the operator who needs it.
+
+   The surviving successor for the DROP-hazard detail the header was pointing at is the schema
+   itself: the `///` comment blocks on **`Horse`**, **`UserTransaction`** and **`SystemAccount`** in
+   `packages/database/prisma/schema.prisma`. They record, in tracked source next to the models they
+   are about, exactly which `DROP INDEX` / `ALTER COLUMN … DROP DEFAULT` statements
+   `prisma migrate dev` proposes on this repository and which of them must be deleted from a
+   generated migration before it is applied. The next section repeats the short version.
+
+Nothing else in the header has gone stale: the reasoning about the separate table, the CHECK
+constraint, and the additive-only safety analysis all still describe the migration accurately.
+
 ## Apply this with `migrate deploy`, never `migrate dev`
 
 ```
@@ -40,10 +64,13 @@ node packages/database/node_modules/prisma/build/index.js generate \
 ```
 
 `migrate dev` on this repository proposes DROPping the 17 raw-SQL runtime indexes from `qh6jk`
-(`idx_horses_*`, `user_transactions_user_created_idx`) plus
+(16 × `idx_horses_*`, plus `user_transactions_user_created_idx`) and
 `ALTER COLUMN "system_accounts"."updatedAt" DROP DEFAULT`. Those DROP statements must be deleted
 from any generated migration before it is applied. This migration is hand-written precisely so that
-proposal never has to be accepted.
+proposal never has to be accepted. The authoritative, maintained version of that list is the `///`
+comment blocks on `Horse`, `UserTransaction` and `SystemAccount` in
+`packages/database/prisma/schema.prisma` — check them, not this paragraph, before accepting any
+generated migration.
 
 ## The CHECK constraint is invisible to Prisma
 

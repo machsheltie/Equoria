@@ -176,4 +176,97 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
     });
     expect(legacyRow).toBeNull();
   }, 30000);
+
+  /**
+   * Equoria-m9lz1 fix round 3, finding 2 — `userId: null` is not a matching key.
+   *
+   * `Groom.userId` is `String?`. The protégé query filters
+   * `userId: retiredGroom.userId`, and in Prisma that compiles to
+   * `WHERE "userId" IS NULL` when the value is null — so an OWNERLESS mentor
+   * matched ANY ownerless groom in the database and the game paired two grooms
+   * who have nothing to do with each other (and nothing to do with any player)
+   * as mentor and protégé. There were 62 ownerless non-retired grooms in the
+   * local database when this was written, so the pre-fix query had 62 candidates
+   * to choose from and would have picked the lowest-level one, not the fixture
+   * below.
+   *
+   * The code was MOVED here rather than written here, so this was latent — but
+   * this branch made ownerless retirement a supported path (processRetirement
+   * now falls back to the ended assignments' owners for the notification), so it
+   * became reachable.
+   *
+   * WHY THIS ASSERTION DETECTS THE OLD DEFECT: it asserts no legacy log exists
+   * for the mentor AT ALL, which is a claim about the database rather than about
+   * the fixture pair. Pre-fix the mentor is paired with SOMETHING — the fixture
+   * sibling if it is the lowest-level ownerless groom, otherwise some unrelated
+   * ownerless row — and either way a `GroomLegacyLog` row for this mentor exists
+   * and the assertion fails. Verified RED against the pre-fix service.
+   */
+  it('does NOT pair two OWNERLESS grooms as mentor and protégé', async () => {
+    // Ownerless grooms exist in this database (marketplace stock that no player
+    // has hired). Both of these are ownerless, mutually unrelated, and neither
+    // belongs to `user`.
+    const ownerlessMentor = await prisma.groom.create({
+      data: {
+        name: `${TAG}-OwnerlessMentor`,
+        userId: null,
+        speciality: 'foal_care',
+        skillLevel: 'expert',
+        personality: 'calm',
+        experience: 5000,
+        level: 9,
+        sessionRate: 30,
+        isActive: true,
+      },
+    });
+    const ownerlessStranger = await prisma.groom.create({
+      data: {
+        name: `${TAG}-OwnerlessStranger`,
+        userId: null,
+        speciality: 'foal_care',
+        skillLevel: 'novice',
+        personality: 'patient',
+        experience: 0,
+        level: 1,
+        sessionRate: 10,
+        isActive: true,
+      },
+    });
+
+    // Narrow, id-scoped cleanup: these rows are NOT reachable from `user`, so
+    // the userId-scoped entries registered in beforeEach cannot reclaim them.
+    // Registered before the act so a mid-test failure still cleans up. FK order:
+    // any legacy log first, then the schedules, then the grooms.
+    const ownerlessIds = [ownerlessMentor.id, ownerlessStranger.id];
+    cleanup.add(
+      () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroomId: { in: ownerlessIds } } }),
+      `groomLegacyLog:ownerless:${ownerlessIds.join(',')}`,
+    );
+    cleanup.add(
+      () => prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: ownerlessIds } } }),
+      `groomRetirementSchedule:ownerless:${ownerlessIds.join(',')}`,
+    );
+    cleanup.add(
+      () => prisma.groom.deleteMany({ where: { id: { in: ownerlessIds } } }),
+      `groom:ownerless:${ownerlessIds.join(',')}`,
+    );
+
+    const result = await processRetirement(ownerlessMentor.id, RETIREMENT_REASONS.VOLUNTARY, true);
+
+    // Level 9 clears the mentor threshold, so the ONLY thing standing between
+    // this retirement and a fabricated mentorship is the ownerless guard.
+    expect(result.legacyLog).toBeNull();
+    expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: ownerlessMentor.id } })).toBe(0);
+    // And specifically: the unrelated ownerless groom was not conscripted, from
+    // either side of the relation.
+    expect(await prisma.groomLegacyLog.count({ where: { legacyGroomId: ownerlessStranger.id } })).toBe(0);
+
+    // The retirement itself still happened — the guard skips the legacy, not the
+    // retirement.
+    const retired = await prisma.groom.findUnique({
+      where: { id: ownerlessMentor.id },
+      select: { retired: true, isActive: true },
+    });
+    expect(retired).toEqual({ retired: true, isActive: false });
+  }, 30000);
 });

@@ -304,8 +304,8 @@ model Horse {
   /// Equoria-qh6jk / Equoria-mxftz — READ THIS BEFORE ACCEPTING A
   /// `prisma migrate dev` PROPOSAL ON THIS TABLE.
   ///
-  /// Sixteen further indexes exist on `horses` and are NOT declared here. They
-  /// are created in raw SQL by migration
+  /// Sixteen further indexes exist on `horses` IN MIGRATION HISTORY and are NOT
+  /// declared here. They are created in raw SQL by migration
   /// 20260528120000_qh6jk_align_runtime_indexes, which recorded indexes that
   /// backend/services/databaseOptimizationService.mjs had been creating with
   /// `CREATE INDEX IF NOT EXISTS` outside migration history:
@@ -318,6 +318,21 @@ model Horse {
   ///   idx_horses_stats_gin, idx_horses_ultrararetraits_gin,
   ///   idx_horses_userid_age, idx_horses_userid_age_trainingcooldown,
   ///   idx_horses_userid_breedid, idx_horses_userid_createdat
+  ///
+  /// SIXTEEN IS THE MIGRATION-HISTORY COUNT, NOT THE DATABASE COUNT. The local
+  /// development database has SEVENTEEN `idx_horses_*` indexes: the sixteen
+  /// above plus `idx_horses_user_horse_lookup ("userId")`, which lives in no
+  /// migration at all because
+  /// backend/services/databaseOptimizationService.mjs still creates it at
+  /// RUNTIME with `CREATE INDEX IF NOT EXISTS` (see its
+  /// `user_horse_lookup` entry) — the same drift qh6jk existed to end, for one
+  /// index it did not record. Verified against the local `equoria` database on
+  /// 2026-09-09 with `SELECT indexname FROM pg_indexes WHERE tablename='horses'
+  /// AND indexname LIKE 'idx_horses%'`. The list above is the CHECK-LIST for a
+  /// generated migration, so it is deliberately the migration-history set; a
+  /// runtime-created index is not something Prisma's differ can be reconciled
+  /// against by editing this file. Expect the seventeenth on any environment
+  /// where that service has run, and do not read a count of 17 as corruption.
   ///
   /// Because this file does not declare them, `prisma migrate dev` sees them as
   /// stray and WILL put `DROP INDEX` for all sixteen into the migration it

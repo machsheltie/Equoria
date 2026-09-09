@@ -49,10 +49,34 @@
  *   one HTTP request that will trigger that fresh re-import, and restores it
  *   in a `finally` immediately after the response comes back — the
  *   corruption window is exactly one request's worth of module
- *   (re-)instantiation, not the whole file's run. This worktree is an
- *   isolated git worktree (confirmed via `git worktree list` before writing
- *   this test), so nothing here reaches the main checkout or any other
- *   agent's tree.
+ *   (re-)instantiation, not the whole file's run.
+ *
+ * THE RENAME TOUCHES THE SHARED CHECKOUT — READ THIS BEFORE ADDING A TEST HERE
+ *   This file was authored in a throwaway git worktree, and its first version
+ *   said so: "nothing here reaches the main checkout or any other agent's
+ *   tree." That stopped being true the moment the file was committed. It now
+ *   runs in the main checkout and in CI, and `backend/data/breedProfiles.json`
+ *   is a TRACKED file, so for the duration of each outage window this suite
+ *   renames a tracked source file out of the shared working tree. Two
+ *   consequences that no assertion in this file can cover:
+ *
+ *     1. Any OTHER suite that (re-)imports breedProfileLoader.mjs during that
+ *        window sees a fabricated outage and can fail for a reason that has
+ *        nothing to do with it. The window is short — one HTTP request — but it
+ *        is real, and the repo's rule is that backend suites run one file at a
+ *        time (CONTRIBUTING.md "Test-run resource budget"), which is what keeps
+ *        it safe rather than anything this file does. Do not run this suite
+ *        concurrently with another backend suite.
+ *     2. A hard kill (SIGINT, an OOM, a `taskkill`) INSIDE the window leaves the
+ *        tracked file renamed to a `.equoria-task20-outage-backup` sibling, so
+ *        `git status` shows breedProfiles.json deleted and an untracked backup
+ *        beside it. `withBreedProfilesUnreadable`'s `finally` does not run on a
+ *        process death, and — measured, see the startup block below — neither
+ *        does a `process.on('exit')` handler registered from a Jest test module.
+ *        So the repair happens at the START of the next run of this suite: the
+ *        backup-present/file-absent pair is the kill signature, and the startup
+ *        block restores it and says so. The interval between the kill and that
+ *        next run is the residual risk; it is spelled out there.
  *
  *   IMPORTANT, and the reason the file-level "rename once, import app.mjs
  *   once" approach that was tried FIRST did not work: importing `app.mjs`
@@ -108,17 +132,59 @@ const __dirname = dirname(__filename);
 const PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
 const BACKUP_PATH = `${PROFILES_PATH}.equoria-task20-outage-backup`;
 
+// ── STARTUP SELF-HEAL: recover from a previous run that died mid-window ──────
+//
+// WHY THIS IS THE HEALING MECHANISM AND NOT A `process.on('exit')` HANDLER.
+// The obvious fix for "a hard kill leaves the tracked file renamed" is a
+// synchronous restore on `process.on('exit')` / `('uncaughtException')`. It was
+// written that way first and MEASURED: it does not work under Jest. A test
+// module's `process` is jest-environment-node's per-environment process object,
+// not the real one — its listeners are never invoked. Two probes on
+// 2026-09-09, `--runInBand --forceExit`, each planting a suite that renamed the
+// file aside and then called `process.exit(7)`:
+//   - a handler on the global `process`     → never fired; file left renamed.
+//   - a handler on `import process from 'node:process'` (which is the SAME
+//     object here — the probe asserted `realProcess === process`) → never
+//     fired either.
+// Shipping handlers that provably never run would be a comment claiming a
+// guarantee the code does not provide, so they are not here.
+//
+// What DOES run is this block, at module load, before any window opens. A run
+// killed inside a window leaves exactly one state — backup present, real file
+// absent — which is unambiguous, so it is repaired rather than reported. The
+// next execution of this suite therefore heals the tree by itself. RESIDUAL
+// RISK, stated plainly because no in-process mechanism closes it: between the
+// kill and that next run, `backend/data/breedProfiles.json` is missing from the
+// working tree and `git status` shows it deleted with an untracked
+// `.equoria-task20-outage-backup` beside it. Anything else reading breed
+// profiles in that interval sees the outage. Moving this heal into
+// `backend/tests/setup.mjs` would shrink the interval to "the next backend
+// suite of any kind", and gating the whole suite behind an env var would remove
+// the hazard from ordinary runs entirely; both are owner calls, not this file's.
+if (existsSync(BACKUP_PATH) && !existsSync(PROFILES_PATH)) {
+  console.warn(
+    `[foalCreationBreedDataOutage.test.mjs] Recovering: found ${BACKUP_PATH} with no ` +
+      `${PROFILES_PATH}. A previous run was killed inside an outage window. Restoring the ` +
+      'tracked file and continuing.',
+  );
+  renameSync(BACKUP_PATH, PROFILES_PATH);
+}
+
 if (!existsSync(PROFILES_PATH)) {
   throw new Error(
     `[foalCreationBreedDataOutage.test.mjs] Expected the real breed profile file at ${PROFILES_PATH} ` +
       'before this suite runs (each outage test moves it aside for one request and restores it ' +
-      'immediately). Refusing to start.',
+      'immediately). No recoverable backup was found beside it either. Refusing to start.',
   );
 }
 if (existsSync(BACKUP_PATH)) {
+  // BOTH exist: not the kill signature, so it is not safe to guess which is
+  // authoritative. Refuse and let a human look.
   throw new Error(
-    `[foalCreationBreedDataOutage.test.mjs] Found a leftover backup at ${BACKUP_PATH} from a previous ` +
-      'interrupted run. Restore it to backend/data/breedProfiles.json by hand before re-running.',
+    `[foalCreationBreedDataOutage.test.mjs] Found a leftover backup at ${BACKUP_PATH} ALONGSIDE an ` +
+      'existing backend/data/breedProfiles.json. That is not the interrupted-run signature (which ' +
+      'leaves the backup and no real file), so this suite will not guess which one is current. ' +
+      'Resolve the two files by hand before re-running.',
   );
 }
 
@@ -133,6 +199,10 @@ async function withBreedProfilesUnreadable(fn) {
   try {
     return await fn();
   } finally {
+    // Unconditional and UNGUARDED on the normal path: if this restore cannot
+    // happen the run must fail loudly here, while there is still a stack to
+    // read. `restoreBreedProfilesSync` is the tolerant last resort for a process
+    // that is already dying, not a substitute for this line.
     renameSync(BACKUP_PATH, PROFILES_PATH);
   }
 }

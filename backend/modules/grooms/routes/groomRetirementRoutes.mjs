@@ -38,6 +38,7 @@ import express from 'express';
 import { param } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
+import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import {
   checkRetirementEligibility,
   getRetirementStatistics,
@@ -127,17 +128,33 @@ router.get(
  * `processRetirement`, which retires a groom when it reaches its hidden
  * retirement age and notifies the player in the same transaction.
  *
+ * `mutationRateLimiter` is kept on the closed route, matching the three other
+ * closed/deprecated write routes in this codebase (`POST /horses`,
+ * `DELETE /horses/:id`, and competition's two 410s): a refusal is still a
+ * response, and a route that answers without a limiter is a free amplifier for
+ * anyone hammering it. This was the only one of the four without it
+ * (Equoria-m9lz1 fix round 3, finding 7). It sits before the handler so the 403
+ * carries rate-limit headers like every other mutation on this router.
+ *
  * Locked by __tests__/groomRetirementEndpointClosed.integration.test.mjs, whose
  * matcher needs the words "cannot be retired" — reword the message with it.
+ *
+ * ON THE PROMISE IN THE MESSAGE (Equoria-m9lz1 fix round 3, finding 6): it used
+ * to end "you will hear about it in time to take on someone new", which promised
+ * ADVANCE warning. There is none, by design — `processRetirement` writes the
+ * `groom_retired` notification in the SAME transaction that has already ended
+ * the assignments, so the player hears afterwards, in the week it happens. The
+ * wording now says that, because the alternative is telling a player she will
+ * get notice she is never going to get.
  */
-router.post('/:id/retirement/process', (req, res) => {
+router.post('/:id/retirement/process', mutationRateLimiter, (req, res) => {
   logger.warn(
     `[groomRetirementRoutes] Rejected groom retirement attempt by user ${req.user?.id} (Equoria-m9lz1: retirement belongs to the game)`,
   );
   return res.status(403).json({
     success: false,
     message:
-      'Grooms cannot be retired. A groom retires on their own when their working years are done, and you will hear about it in time to take on someone new.',
+      'Grooms cannot be retired. A groom retires on their own when their working years are done, and you will hear about it the week it happens, along with which of your horses are left needing someone.',
   });
 });
 

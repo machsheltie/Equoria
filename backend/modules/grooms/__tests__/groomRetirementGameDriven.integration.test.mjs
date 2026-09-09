@@ -623,6 +623,14 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
       reason: 'age',
       horsesLeftUnattended: 1,
     });
+    // WHICH horse, not just how many (Equoria-m9lz1 fix round 3, finding 6).
+    // The row's whole job is to tell the player who is now uncovered, and this
+    // game is about knowing these animals by name — a bare count cannot say it.
+    // Pre-change the payload had no `horses` key at all, so this fails loudly on
+    // the old shape.
+    expect(notifications[0].payload.horses).toEqual([{ id: horse.id, name: horse.name }]);
+    // The count is derived from that same list, so the two can never disagree.
+    expect(notifications[0].payload.horses).toHaveLength(notifications[0].payload.horsesLeftUnattended);
     // The announcement must not carry the number it announces the arrival of.
     expect(collectKeys(notifications[0].payload).has('retirementAge')).toBe(false);
     expect(JSON.stringify(notifications[0].payload)).not.toMatch(/retirementAge/i);

@@ -258,9 +258,17 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(dbDam.inFoalSinceDate).toBeTruthy();
       expect(dbDam.pregnancySireId).toBe(stallion.id);
       expect(dbDam.lastBredDate).toBeTruthy();
-      // No pending intent was sent, so none is stored — the foaling job derives both.
+      // No pending NAME was sent, so none is stored — the foaling job derives it.
       expect(dbDam.pendingFoalName).toBeNull();
-      expect(dbDam.pendingFoalBreedId).toBeNull();
+      // The BREED is different, and deliberately so as of Equoria-m9lz1 fix
+      // round 3 (finding 7): the controller now stores the VALIDATED EFFECTIVE
+      // breed it just checked, which with no breedId supplied is the dam's own.
+      // Previously it stored null here and the foaling job re-derived the breed
+      // from `dam.breedId` as it read SEVEN DAYS LATER — so conception-time and
+      // birth-time agreement rested on `breedId` not being in the
+      // PUT /horses/:id allowlist. Pinning it at conception is the point; a null
+      // here is now the regression, not the expectation.
+      expect(dbDam.pendingFoalBreedId).toBe(mare.breedId);
     });
 
     it('derives the foal name and breed from the dam when the player sent neither', async () => {
@@ -426,8 +434,14 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       // future change that routed a breedless dam into the "No breed found for
       // id" or the missing-profile arm would still have passed.
       expect(res.body.message).toBe(
-        `${breedlessMare.name} has no breed on record, so her foal's breed cannot be determined. Choose a breed for the foal to breed her.`,
+        `${breedlessMare.name} has no breed on record, so there is no telling what her foal would be. Her breed needs to be on her record before she can be bred.`,
       );
+      // The old wording told the player to "Choose a breed for the foal to breed
+      // her" — a control BreedingPairSelection.tsx does not have, and a garden
+      // path whose last clause parses as the foal breeding the mare. Pinning its
+      // ABSENCE keeps a future reword from quietly reintroducing an instruction
+      // no surface can carry out (Equoria-m9lz1 fix round 3, finding 5).
+      expect(res.body.message).not.toMatch(/choose a breed/i);
 
       // Nothing was claimed: no pregnancy, no sire, and critically no cooldown
       // stamp — a rejected breed must not cost the player seven days.

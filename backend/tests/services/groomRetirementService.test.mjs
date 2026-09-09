@@ -35,8 +35,12 @@ import {
   processWeeklyCareerProgression,
   RETIREMENT_REASONS,
   CAREER_CONSTANTS,
-  ensureRetirementSchedule,
 } from '../../modules/grooms/index.mjs';
+// Equoria-m9lz1 fix round 3: the schedule module is imported BY PATH, never via
+// the grooms barrel. `ensureRetirementSchedule` returns the hidden retirement
+// age, and the barrel published it to the whole backend
+// (check-no-retirement-schedule-leak.mjs now forbids that).
+import { ensureRetirementSchedule } from '../../modules/grooms/services/groomRetirementScheduleService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
