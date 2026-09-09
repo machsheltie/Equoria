@@ -17,6 +17,18 @@
  *     breed row logs at error level but registration succeeds; the
  *     onboarding breed-selection step (advanceOnboarding) will assign
  *     the player's chosen breed.
+ *   - Equoria-2wjp7 (fail-closed): Equoria-b9zgr resolved the breed but
+ *     still spread it CONDITIONALLY, so an unresolved breed created the
+ *     horse anyway with a NULL breedId. That is the source of the
+ *     breedless-mare population (Equoria-qsp1b.1): breeding now correctly
+ *     refuses conception for a dam with no breed, nothing filters such a
+ *     mare out of the breeding selector, and no surface can set a breed —
+ *     the player meets a dead end. The guard is now fail-CLOSED: if the
+ *     starter breed cannot be resolved, NO horse is created. Registration
+ *     still succeeds (this whole function has always been non-fatal), and
+ *     advanceOnboarding's no-existing-starter-horse branch creates the
+ *     horse from the player's CHOSEN breed — a path that already refuses a
+ *     missing breed with a 400.
  *   - Equoria-b9zgr (Prisma client gotcha): the controller's prisma
  *     client persists FKs via the SCALAR field (breedId), NOT Prisma
  *     relation-connect syntax. `breed: { connect }` throws
@@ -69,39 +81,55 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * the gap is logged at error level so the regression is visible.
  *
  * @param {{ id: string, username: string }} user  The freshly-created user row.
+ * @param {object} [options]
+ * @param {string} [options.breedName]  Name of the breed the starter horse is
+ *   seeded with. Defaults to the canonical DEFAULT_TEMPERAMENT_BREED
+ *   ('Thoroughbred'). Explicit because the fail-closed path (Equoria-2wjp7 —
+ *   breed row absent ⇒ no horse) is only reachable with a breed name that is
+ *   genuinely not in the `breeds` table, and CLAUDE.md forbids mocking an
+ *   Equoria-owned Prisma path to fake that. See
+ *   modules/auth/__tests__/starterHorseBreedFailClosed.integration.test.mjs.
  * @returns {Promise<void>}
  */
-export async function createStarterHorseForNewUser(user) {
+export async function createStarterHorseForNewUser(
+  user,
+  { breedName = DEFAULT_TEMPERAMENT_BREED } = {},
+) {
   try {
     // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
     // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
     // (which the canonical age helper would read as ~156 game-years).
     const dateOfBirth = new Date(Date.now() - STARTER_HORSE_AGE_GAME_YEARS * 7 * MS_PER_DAY);
 
-    // Equoria-b9zgr: resolve the default breed id so the starter horse is
-    // never born with a NULL breedId (the prior behaviour left every
-    // registration starter horse breedless — 0/3334 rows had breedId set).
-    // Non-fatal: if the default breed row is missing the horse is still
-    // created and registration succeeds; the onboarding breed-selection step
-    // will assign a breedId. Logged at error level so the gap is visible.
-    let defaultBreedId = null;
+    // Equoria-b9zgr: resolve the breed id so the starter horse is never born
+    // with a NULL breedId (the prior behaviour left every registration starter
+    // horse breedless — 0/3334 rows had breedId set).
+    // Equoria-2wjp7: FAIL CLOSED. If the breed cannot be resolved we do not
+    // create the horse at all — a breedless mare is a dead end the player
+    // cannot escape (breeding refuses her, the selector still offers her, and
+    // no surface can set her breed). Registration still succeeds; the
+    // onboarding breed-selection step creates the horse from the chosen breed.
+    let starterBreedId = null;
     try {
-      const defaultBreed = await prisma.breed.findUnique({
-        where: { name: DEFAULT_TEMPERAMENT_BREED },
+      const starterBreed = await prisma.breed.findUnique({
+        where: { name: breedName },
         select: { id: true },
       });
-      defaultBreedId = defaultBreed?.id ?? null;
-      if (defaultBreedId === null) {
-        logger.error(
-          `[onboardingService.createStarterHorseForNewUser] Default breed "${DEFAULT_TEMPERAMENT_BREED}" not found — starter horse will be created without a breedId until onboarding assigns one.`,
-          { userId: user.id },
-        );
-      }
+      starterBreedId = starterBreed?.id ?? null;
     } catch (breedLookupError) {
       logger.error(
-        '[onboardingService.createStarterHorseForNewUser] FAILED to resolve default breed for starter horse (horse will have NULL breedId until onboarding/backfill):',
-        { userId: user.id, error: breedLookupError.message },
+        '[onboardingService.createStarterHorseForNewUser] FAILED to resolve the starter breed — NOT creating a starter horse (a breedless horse is worse than none):',
+        { userId: user.id, breedName, error: breedLookupError.message },
       );
+      return;
+    }
+
+    if (starterBreedId === null) {
+      logger.error(
+        `[onboardingService.createStarterHorseForNewUser] Starter breed "${breedName}" not found — NOT creating a starter horse (a breedless horse is worse than none). The onboarding breed-selection step will create it from the player's chosen breed.`,
+        { userId: user.id },
+      );
+      return;
     }
 
     const starterHorse = await prisma.horse.create({
@@ -116,7 +144,9 @@ export async function createStarterHorseForNewUser(user) {
         // `userId` above), NOT Prisma relation-connect syntax — `breed:
         // { connect }` throws "Invalid invocation" here. Use the scalar
         // breedId to mirror the working userId pattern.
-        ...(defaultBreedId !== null && { breedId: defaultBreedId }),
+        // Equoria-2wjp7: unconditional — the guard above already returned if it
+        // could not be resolved, so this is never NULL.
+        breedId: starterBreedId,
         userId: user.id,
         speed: 17,
         stamina: 17,
