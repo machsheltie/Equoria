@@ -26,9 +26,12 @@
  *     09:45  groomCareerProgression            — this job
  *   Running AFTER payroll is deliberate: `processWeeklySalaries` charges the
  *   weekly fee for every groom on a player's staff (Equoria-ypb7d.3 changed the
- *   basis from per-ACTIVE-ASSIGNMENT to per-engagement), so retiring a groom
- *   first would end the engagement before they were paid and silently cost a
- *   groom who worked that week their final wage. Re-verified against BOTH registries when this moved: no job in
+ *   basis from per-ACTIVE-ASSIGNMENT to per-engagement), and its staff read
+ *   carries `retired: false`. Retiring a groom first therefore drops them out of
+ *   that read and silently costs a groom who worked the week their final wage. It
+ *   is that filter that excludes them, NOT the engagement closure (fix round 1,
+ *   F10: the earlier wording named the wrong mechanism, and retirement does not
+ *   clear `Groom.userId` either). Re-verified against BOTH registries when this moved: no job in
  *   backend/services/jobs/index.mjs or cron-job-service-jobs/index.mjs claims
  *   `45 9 * * 1`. One interval job does coincide: `electionStatusTransition` runs
  *   every 15 minutes, so it fires at :00/:15/:30/:45 and therefore shares this

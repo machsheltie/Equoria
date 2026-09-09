@@ -77,16 +77,17 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 import {
   debitMoneyOrThrow,
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
-// Equoria-ypb7d.2: a groom on staff since before `groom_engagements` existed gets
-// its engagement row opened by the fee pass, which is the transaction that proves
-// the engagement is live. The migration backfills none on purpose.
-import { ensureEngagementTx } from './groomEngagementService.mjs';
+// `ensureEngagementTx` (Equoria-ypb7d.2): a groom on staff since before
+// `groom_engagements` existed gets its engagement row opened by the fee pass, which is
+// the transaction that proves the engagement is live. The migration backfills none on
+// purpose. `acquirePayWeekLockTx` (fix round 1, F2): the ONE definition of the
+// per-(user, pay week) advisory lock, shared with the arrears handler.
+import { acquirePayWeekLockTx, ensureEngagementTx } from './groomEngagementService.mjs';
 // Equoria-ypb7d.3: what happens when the money is not there — one week of grace,
 // then release to the grooms-for-hire pool. Replaces the never-working
 // `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
@@ -306,15 +307,11 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
             async tx => {
               // Equoria-icqqm: serialize concurrent runs per (user, payWeek).
               // MUST be the first statement — the idempotency read below is
-              // only race-safe while this xact-scoped lock is held. Blocking
-              // variant (not try_): the loser WAITS for the winner's commit,
-              // then re-reads and skips, instead of failing spuriously.
-              // ($executeRaw, not $queryRaw: pg_advisory_xact_lock returns
-              // `void`, which $queryRaw cannot deserialize as a column.)
-              const lockKey = jobNameToLockKey(
-                `groomSalary:${userId}:${payWeekStart.toISOString()}`,
-              );
-              await tx.$executeRaw`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`;
+              // only race-safe while this xact-scoped lock is held.
+              // Equoria-ypb7d.3 fix round 1 (F2): the key is now built in ONE
+              // place, `acquirePayWeekLockTx`, because the arrears handler has to
+              // take the SAME lock and a restated key string would drift.
+              await acquirePayWeekLockTx(tx, userId, payWeekStart);
 
               // Idempotency predicate: which grooms already have a committed
               // 'paid' weekly-salary row inside this pay week? Per-groom

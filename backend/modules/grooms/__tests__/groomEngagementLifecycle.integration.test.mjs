@@ -163,8 +163,25 @@ function registerUserCleanup(cleanup, getUser, label) {
     await prisma.userTransaction.deleteMany({ where: { userId: user.id } });
     await prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } });
     // A groom this user RELEASED is no longer theirs, so `userId` no longer finds
-    // it. Sweep by the fixture name prefix as well, or a released groom leaks.
+    // it. Fix round 1 (F11): the prefix sweep this comment described was NOT
+    // actually here — cleanup worked only because the "ANOTHER player can hire
+    // them" case's `finally` reassigns the groom back. If that case ever fails or
+    // is skipped, a released fixture groom leaks permanently into the shared
+    // database AND into the free-agent pool. Now the sweep exists. Its engagement
+    // rows go first (FK), and it is narrowly scoped to this file's own prefix.
+    const strays = await prisma.groom.findMany({
+      where: { name: { startsWith: FIXTURE_PREFIX } },
+      select: { id: true },
+    });
+    if (strays.length) {
+      const strayIds = strays.map(g => g.id);
+      await prisma.groomEngagement.deleteMany({ where: { groomId: { in: strayIds } } });
+      await prisma.groomAssignment.deleteMany({ where: { groomId: { in: strayIds } } });
+      await prisma.groomAssignmentLog.deleteMany({ where: { groomId: { in: strayIds } } });
+      await prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: strayIds } } });
+    }
     await prisma.groom.deleteMany({ where: { userId: user.id } });
+    await prisma.groom.deleteMany({ where: { name: { startsWith: FIXTURE_PREFIX } } });
     if (horseIds.length) {
       await prisma.horse.deleteMany({ where: { id: { in: horseIds } } });
     }

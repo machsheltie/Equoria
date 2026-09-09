@@ -19,6 +19,7 @@ import {
   ENGAGEMENT_END_REASONS,
   GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
   GROOM_RELEASED_NOTIFICATION_TYPE,
+  acquirePayWeekLockTx,
   enterFeeGraceTx,
   hasFullUnpaidWeek,
   releaseGroomTx,
@@ -57,6 +58,27 @@ import {
  * other three correctly handled. Per-groom errors are logged and counted, never
  * rethrown, because the caller has already recorded this user as failed.
  *
+ * LOCK AND WRITE ORDER (fix round 1, finding F2 — the first version got both wrong).
+ *   Every transaction below takes `acquirePayWeekLockTx` as its FIRST statement. The
+ *   payment transaction in `processWeeklySalaries` holds that same lock, but it was
+ *   RELEASED when the failed debit's transaction aborted — so this handler ran
+ *   serialized against nothing.
+ *
+ *   And the grace transaction wrote `grooms` before `User`, inverting the campaign's
+ *   User-before-staff order. Together those two facts were a real deadlock: an
+ *   overlapping second pass whose debit succeeded (the player topped up between runs)
+ *   held the `User` row and wanted the `Groom` row, while this handler held the
+ *   `Groom` row and wanted the `User` row. Postgres aborts one side with 40P01, and
+ *   the loss is silent — either the grace entry is swallowed by the per-groom catch
+ *   below (the groom works that week for free and the player is never told) or the
+ *   other pass's whole payroll for that player fails.
+ *
+ *   So: the lock first, and then `User` before `grooms`. The `User` write is now
+ *   unconditional rather than gated on whether THIS groom newly entered grace — it is
+ *   guarded on `groomSalaryGracePeriod: null` so it can never move an existing grace
+ *   start forward, and reaching this handler at all means the player is in arrears
+ *   whichever groom triggered it.
+ *
  * @param {string} userId
  * @param {Array<{groom: Object, salary: number}>} unpaid - the grooms whose fee
  *   this pay week's debit did not cover
@@ -70,6 +92,9 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
     try {
       if (hasFullUnpaidWeek(groom.feeUnpaidSince, payWeekStart)) {
         const released = await prisma.$transaction(async tx => {
+          // F2: the same lock the payment transaction takes, first, so an
+          // overlapping pass for this player cannot interleave with the release.
+          await acquirePayWeekLockTx(tx, userId, payWeekStart);
           const result = await releaseGroomTx(tx, {
             groomId: groom.id,
             userId,
@@ -111,6 +136,19 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
       }
 
       const graced = await prisma.$transaction(async tx => {
+        // F2, in this exact order and for the reason in the docblock above:
+        //   1. the shared per-(user, pay week) advisory lock;
+        //   2. the USER row — the user-level pointer the salary summary renders,
+        //      guarded on `null` so an existing grace start is never pushed forward;
+        //   3. only then the GROOM row.
+        // User before staff. Reversing these two is the deadlock F2 describes.
+        await acquirePayWeekLockTx(tx, userId, payWeekStart);
+
+        await tx.user.updateMany({
+          where: { id: userId, groomSalaryGracePeriod: null },
+          data: { groomSalaryGracePeriod: payWeekStart },
+        });
+
         const entered = await enterFeeGraceTx(tx, {
           groomId: groom.id,
           userId,
@@ -129,14 +167,6 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
             status: entered.entered ? 'missed_insufficient_funds' : 'missed_grace_period',
           },
         });
-        if (entered.entered) {
-          // Keep the user-level pointer the salary summary renders in step. Guarded
-          // on `null` so an existing grace start is never pushed forward.
-          await tx.user.updateMany({
-            where: { id: userId, groomSalaryGracePeriod: null },
-            data: { groomSalaryGracePeriod: payWeekStart },
-          });
-        }
         return entered;
       });
 

@@ -15,6 +15,16 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+// Equoria-ypb7d fix round 1 (F8): a legacy protégé is a THIRD groom-creation path
+// alongside the two hire controllers, and it was left unmigrated. A protégé born with
+// no `startAge` breaks invariant A1 ("drawn once at creation or hire"), and one born
+// with a `userId` but no engagement row breaks invariant E1 ("`Groom.userId IS NOT
+// NULL` <=> an open engagement row exists"). Both self-healed via the weekly
+// backstops, so the damage was bounded to a window rather than permanent — but
+// "self-heals incidentally" is not the same as "is correct at birth", and relying on a
+// backstop without saying so is how an invariant quietly stops being one.
+import { drawStartAge } from './groomAgeService.mjs';
+import { openEngagementTx } from './groomEngagementService.mjs';
 
 /**
  * Legacy system constants
@@ -210,6 +220,14 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
           sessionRate: protegeData.sessionRate || 15.0,
           bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
           availability: protegeData.availability || {},
+          // Equoria-ypb7d.1 (F8): a protégé enters the game at an age like anyone
+          // else, drawn from the same 18..24 band. Deliberately NOT inherited from
+          // or related to the mentor: the owner's addendum forbids anything but
+          // chance influencing retirement timing, and a protégé of an old mentor
+          // starting old would be exactly that. Their retirement age is still drawn
+          // by the weekly pass's `ensureRetirementDrawn` backstop, because this
+          // service must not handle that value at all (the hiding doctrine).
+          startAge: drawStartAge(),
           // Add legacy bonus to bonus trait map
           bonusTraitMap: {
             legacyPerk: selectedPerk.id,
@@ -218,6 +236,12 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
           },
         },
       });
+
+      // Equoria-ypb7d.2 (F8): a protégé arrives ON A PLAYER'S STAFF, so the
+      // engagement that says so is opened here, in the same transaction as the
+      // groom — not left to the fee pass's `ensureEngagementTx` backstop to
+      // discover next Monday. Same rule as both hire paths.
+      await openEngagementTx(prismaTx, protege.id, userId);
 
       // Create legacy log
       const legacyLog = await prismaTx.groomLegacyLog.create({

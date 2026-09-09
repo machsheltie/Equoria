@@ -36,7 +36,11 @@ import {
 import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
-import { listFreeAgents, openEngagementTx } from '../services/groomEngagementService.mjs';
+import {
+  FREE_AGENT_WHERE,
+  listFreeAgents,
+  openEngagementTx,
+} from '../services/groomEngagementService.mjs';
 
 /**
  * Thrown when the guarded claim did not win: the groom was hired by someone else,
@@ -86,18 +90,32 @@ export async function listFreeAgentGrooms(req, res) {
  * exists, with their accumulated experience, level, bond history and interaction
  * record intact, and this opens a NEW engagement on them.
  *
+ * ONE PREDICATE, USED BY BOTH PATHS (Equoria-ypb7d.3 fix round 1, finding F1).
+ *   `FREE_AGENT_WHERE` — imported from groomEngagementService, the same frozen object
+ *   `listFreeAgents` filters the pool with — is spread into BOTH the 404 pre-read and
+ *   the guarded claim below. It is deliberately not restated, because the first
+ *   version restated it and the two copies drifted: the listing required a closed
+ *   engagement while the hire required only `userId: null, retired: false,
+ *   isActive: true`. Measured in the shared development database at the time,
+ *   **65 grooms satisfied the hire predicate and 0 satisfied the pool predicate** —
+ *   leftover fixtures and legacy rows no player ever hired, engageable by anyone who
+ *   supplied an id. "Not in any listing" is not an authorization boundary. Two
+ *   predicates that must agree will drift; one predicate cannot.
+ *
  * ORDER OF WRITES, AND WHY:
  *   1. `debitMoneyOrThrow` — the User row first, per the campaign's lock-ordering
  *      rule (User rows, then Horse rows, then staff rows). It also serializes
  *      concurrent same-user hires, which is what makes step 3's re-count
  *      authoritative.
- *   2. The GUARDED CLAIM on the groom — `updateMany` whose `where` carries the
- *      whole precondition (`userId: null, retired: false, isActive: true`) and
- *      whose affected-row count must be 1. This is the only thing standing between
- *      two players and the same groom, and it is sufficient: the loser's `where`
- *      no longer matches, it sees count 0, throws, and its debit rolls back with
- *      it. Mechanism (2) of the concurrency rule; no `SELECT ... FOR UPDATE`,
- *      because the precondition fits in the WHERE clause.
+ *   2. The GUARDED CLAIM on the groom — `updateMany` whose `where` carries the whole
+ *      pool predicate and whose affected-row count must be 1. This is the only thing
+ *      standing between two players and the same groom, and it is sufficient: the
+ *      loser's `where` no longer matches, it sees count 0, throws, and its debit
+ *      rolls back with it. Mechanism (2) of the concurrency rule; no
+ *      `SELECT ... FOR UPDATE`, because the precondition fits in the WHERE clause —
+ *      including the relation clause, which Prisma 6.8.2 accepts in `updateMany`
+ *      (probed before relying on it). The closed-engagement half is monotone anyway:
+ *      engagement rows are never deleted, so it cannot become false under a race.
  *   3. The authoritative roster-cap re-count, mirroring `hireGroom` and
  *      `hireFromMarketplace` (Equoria-n4m5j / hduc5). The claim ran first, so the
  *      count INCLUDES this hire.
@@ -122,9 +140,10 @@ export async function hireFreeAgent(req, res) {
     // Read the offer to price it and to 404 early. TOCTOU on its own — the
     // authoritative check is the guarded claim inside the transaction — so it is
     // only a friendly pre-reject, exactly like the sibling hire paths' cap
-    // fast-path.
+    // fast-path. The PREDICATE, however, is the pool's own and not a restatement
+    // of it (F1).
     const offer = await prisma.groom.findFirst({
-      where: { id: groomId, userId: null, retired: false, isActive: true },
+      where: { id: groomId, ...FREE_AGENT_WHERE },
       select: { id: true, name: true, sessionRate: true },
     });
     if (!offer) {
@@ -146,7 +165,15 @@ export async function hireFreeAgent(req, res) {
     if (existingGroomCount >= MAX_GROOMS_PER_USER) {
       return res.status(400).json({
         success: false,
-        message: `You have reached the maximum limit of ${MAX_GROOMS_PER_USER} grooms. Please release a groom before hiring a new one.`,
+        // Fix round 1 (F12): the sibling hire paths say "Please release a groom
+        // before hiring a new one", and there is no player-initiated release
+        // anywhere — the only way a groom leaves your staff is the game's own
+        // (retirement, or a full pay week unpaid). Pointing a player at an action
+        // that does not exist is worse than saying nothing, so this message states
+        // the limit and stops. The two older messages are left alone: rewording a
+        // string a player already reads is a copy change belonging to whoever owns
+        // that surface (Equoria-ypb7d.5).
+        message: `You already have the maximum of ${MAX_GROOMS_PER_USER} grooms on your staff.`,
         data: { currentCount: existingGroomCount, maxAllowed: MAX_GROOMS_PER_USER },
       });
     }
@@ -165,7 +192,9 @@ export async function hireFreeAgent(req, res) {
           });
 
           const claimed = await tx.groom.updateMany({
-            where: { id: groomId, userId: null, retired: false, isActive: true },
+            // The SAME predicate the pool lists with, spread from the same frozen
+            // object (F1). Do not restate it here.
+            where: { id: groomId, ...FREE_AGENT_WHERE },
             data: {
               userId,
               // A fresh engagement starts paid up, whatever the last one ended as.

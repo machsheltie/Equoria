@@ -309,6 +309,9 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
   const FIXTURE_START_AGE = 20;
   let user;
   let horse;
+  // A groom this suite RELEASES, so the free-agent pool is provably non-empty when the
+  // hiding audit walks it. See the audit case at the bottom for why that matters.
+  let pooledGroom;
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -325,6 +328,37 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
       },
     });
 
+    // Equoria-ypb7d.3 fix round 1 (F3): a groom in the grooms-for-hire pool — a free
+    // agent (`userId: null`) WITH a closed engagement, which is what
+    // `FREE_AGENT_WHERE` requires. Without it the hiding audit below walked an empty
+    // array and asserted nothing, which is exactly how it stayed green with the
+    // defect restored.
+    pooledGroom = await prisma.groom.create({
+      data: {
+        name: `${FIXTURE_PREFIX}-retire-pooled-${tag()}`,
+        speciality: 'general',
+        personality: 'gentle',
+        skillLevel: 'novice',
+        startAge: FIXTURE_START_AGE,
+        userId: null,
+      },
+    });
+    await prisma.groomEngagement.create({
+      data: {
+        groomId: pooledGroom.id,
+        userId: user.id,
+        endedAt: new Date('2026-03-09T09:00:00.000Z'),
+        endReason: 'fee_unpaid',
+      },
+    });
+
+    // `userId` is NULL on the pooled groom, so the by-user sweep below cannot find it.
+    // Delete it by id, before the user its closed engagement references.
+    cleanup.add(
+      () => prisma.groomEngagement.deleteMany({ where: { groomId: pooledGroom?.id } }),
+      'pooled groom engagement',
+    );
+    cleanup.add(() => prisma.groom.delete({ where: { id: pooledGroom?.id } }), 'pooled groom');
     cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { horseId: horse.id } }), 'assignment logs');
     cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
     cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
@@ -453,8 +487,27 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     // the RETIREMENT age may not. This story added one player-facing read, so this
     // story audits it.
     const res = fakeRes();
-    await listFreeAgentGrooms({ user: { id: user.id }, query: {} }, res);
+    await listFreeAgentGrooms({ user: { id: user.id }, query: { limit: '100' } }, res);
     expect(res.statusCode).toBe(200);
+
+    // Equoria-ypb7d.3 fix round 1 (F3) — THE ASSERTION THAT MAKES THE REST MEAN
+    // ANYTHING. The first version of this case walked `res.body` for forbidden keys
+    // without ever checking there was a groom in it. `FREE_AGENT_WHERE` matched ZERO
+    // rows in the shared database, so it walked
+    // `{ data: { grooms: [], total: 0, … } }` — and adding `retirementSchedule: true`
+    // back to `listFreeAgents`'s select left it green. A key-walk over an empty
+    // collection is not a guard; it is a guard-shaped no-op. So: there must be a
+    // groom, and it must be the one this suite released, or this case fails before it
+    // can pretend to pass.
+    const returned = res.body.data.grooms;
+    expect(Array.isArray(returned)).toBe(true);
+    expect(returned.length).toBeGreaterThan(0);
+    expect(returned.map(g => g.id)).toContain(pooledGroom.id);
+    // And the walked object really is a groom, not just an envelope: the forbidden
+    // keys below are asserted absent from a payload that provably carries groom fields.
+    const mine = returned.find(g => g.id === pooledGroom.id);
+    expect(mine.name).toBe(pooledGroom.name);
+    expect(mine.skillLevel).toBe('novice');
 
     const keys = new Set();
     const walk = value => {

@@ -31,7 +31,7 @@
  *   `Groom.feeUnpaidSince` — non-NULL means the engagement is inside the one-week
  *                     grace period: the groom is still on staff and STILL
  *                     BELONGS TO NOBODY, but may not work. See
- *                     `assertGroomMayWork`.
+ *                     `checkGroomMayWork` below.
  *
  *   The live pointer and the history are written in the SAME transaction by every
  *   function here, so they cannot drift. The invariant, for a non-retired groom:
@@ -58,6 +58,7 @@
  */
 
 import logger from '../../../utils/logger.mjs';
+import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 import { createNotificationTx } from '../../../utils/notificationService.mjs';
 
 /**
@@ -100,6 +101,39 @@ export const FREE_AGENT_WHERE = Object.freeze({
   isActive: true,
   engagements: { some: { endedAt: { not: null } } },
 });
+
+/**
+ * Take the per-(user, pay week) advisory lock. THE ONE DEFINITION of that lock key.
+ *
+ * Equoria-ypb7d.3 fix round 1, finding F2. `processWeeklySalaries` took this lock as
+ * the first statement of its payment transaction (Equoria-icqqm), but the arrears
+ * handler ran AFTER that transaction aborted — so the lock was already released, and
+ * its grace transaction was serialized against nothing. An overlapping second pass
+ * whose debit succeeded held the `User` row and then wanted the `Groom` row, while the
+ * grace transaction held the `Groom` row and then wanted the `User` row: a textbook
+ * deadlock, aborted by Postgres with 40P01, losing either the grace entry (the groom
+ * works that week for free and nobody is told) or the second pass's whole payroll for
+ * that player. Every transaction that touches a player's fee state now takes this lock
+ * FIRST, so the whole class is gone rather than narrowed.
+ *
+ * It lives HERE because it is the only module both `groomSalaryService` and
+ * `groomFeeArrearsService` already import, so sharing one definition costs no import
+ * cycle. Restating the key string in two places is exactly the drift F1 was about.
+ *
+ * MUST be the first statement of the transaction. `$executeRaw`, not `$queryRaw`:
+ * `pg_advisory_xact_lock` returns `void`, which `$queryRaw` cannot deserialize as a
+ * column. The blocking variant, not `try_`: a loser should WAIT for the winner's
+ * commit and then see its committed rows, not fail spuriously.
+ *
+ * @param {Object} tx - Prisma transaction client
+ * @param {string} userId
+ * @param {Date} payWeekStart
+ * @returns {Promise<void>}
+ */
+export async function acquirePayWeekLockTx(tx, userId, payWeekStart) {
+  const lockKey = jobNameToLockKey(`groomSalary:${userId}:${payWeekStart.toISOString()}`);
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`;
+}
 
 /**
  * Open an engagement for a groom who has none. For the two hire paths, where the
@@ -248,9 +282,15 @@ export async function releaseGroomTx(tx, params) {
     data: { unassignedAt: now },
   });
 
-  // Only the releasing player's own horses (and rows carrying no `userId` of
-  // their own — `GroomAssignment.userId` is `String?`) are named, so a
-  // cross-owner assignment cannot show one player another's horses.
+  // Only the releasing player's own horses are named — plus rows carrying no
+  // `userId` of their own, because `GroomAssignment.userId` is `String?` and a
+  // null there is far more likely to be this player's own legacy row than someone
+  // else's. Fix round 1 (F13) withdraws the stronger claim this comment used to
+  // make: a null-`userId` assignment pointing at ANOTHER player's horse would
+  // still be named here. Zero such rows exist today (every active assignment
+  // shares its `userId` with its groom), and the correct fix is upstream — either
+  // make `GroomAssignment.userId` non-null or reject a cross-owner assignment at
+  // creation — which is Equoria-m0w8n's ownership-model call, not this story's.
   const horses = endingAssignments
     .filter(a => a.userId === userId || !a.userId)
     .map(a => ({ id: a.foal?.id ?? a.foalId, name: a.foal?.name ?? null }))
@@ -461,6 +501,7 @@ export async function listFreeAgents(client, options = {}) {
 }
 
 export default {
+  acquirePayWeekLockTx,
   ENGAGEMENT_END_REASONS,
   GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
   GROOM_RELEASED_NOTIFICATION_TYPE,

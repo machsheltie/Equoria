@@ -215,7 +215,11 @@ export async function performEnhancedInteraction(req, res) {
     if (!groom) {
       return res.status(404).json({
         success: false,
-        message: 'Groom not found or not owned by user',
+        // Equoria-ypb7d.2 (fix round 1, F12): players do not own grooms, so the
+        // message no longer says they do. The "not found OR not yours" collapse is
+        // deliberate and preserved — distinguishing the two would make this an
+        // existence oracle (the CWE-639 convention this codebase already holds).
+        message: 'Groom not found or not on your staff',
         data: null,
       });
     }

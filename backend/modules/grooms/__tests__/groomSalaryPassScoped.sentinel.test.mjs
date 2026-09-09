@@ -69,7 +69,16 @@ const GUARDED_FILES = [
  */
 export function auditSalaryPassScoping(rawSource) {
   const findings = [];
-  const source = rawSource.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  // Comments are blanked to SAME-LENGTH whitespace rather than removed, so every
+  // offset — and therefore every reported line number — still refers to the real file.
+  // Fix round 1, finding F14: the first version deleted them, so a call at real line
+  // 214 was reported as "near line 167", off by the 47 lines of header stripped before
+  // it. A guard that misdirects whoever it fires on costs debugging time, which is the
+  // opposite of its job. Same technique as
+  // scripts/doctrine-checks/check-no-retirement-schedule-leak.mjs.
+  const source = rawSource
+    .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
+    .replace(/\/\/[^\n]*/g, m => ' '.repeat(m.length));
 
   const needle = 'processWeeklySalaries(';
   let from = 0;
@@ -112,7 +121,7 @@ export function auditSalaryPassScoping(rawSource) {
     if (!/\buserId\b/.test(args)) {
       const line = source.slice(0, at).split('\n').length;
       findings.push(
-        `unscoped processWeeklySalaries call near line ${line}: \`processWeeklySalaries(${args.trim().slice(0, 60)})\` — ` +
+        `unscoped processWeeklySalaries call at line ${line}: \`processWeeklySalaries(${args.trim().slice(0, 60)})\` — ` +
           'pass { userId: <fixture user>.id }; an unscoped pass releases real players’ grooms',
       );
     }
@@ -158,6 +167,13 @@ describe('Equoria-ypb7d.3 — the weekly fee pass is scoped in every test that c
     // headers do exactly this while explaining the defect.
     expect(auditSalaryPassScoping('// Defect: processWeeklySalaries() debits every user\n')).toEqual([]);
     expect(auditSalaryPassScoping('/**\n * processWeeklySalaries() used to sweep everyone.\n */\n')).toEqual([]);
+
+    // F14: the reported line number must be the REAL file line. Two lines of header
+    // comment, then the call on line 3 — a detector that stripped comments away would
+    // say line 1.
+    expect(auditSalaryPassScoping('// header\n// header\nawait processWeeklySalaries(now);\n')[0]).toMatch(
+      /at line 3\b/,
+    );
 
     // A synthesized declaration is data, not a call.
     expect(auditSalaryPassScoping('const planted = `export async function processWeeklySalaries() {}`;')).toEqual([]);

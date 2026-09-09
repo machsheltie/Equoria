@@ -68,9 +68,12 @@
  * so advisory-locked AND heartbeat-wrapped AND visible at
  * /api/admin/cron/health) — Mondays 09:45 UTC. It runs AFTER weeklySalaries
  * (09:00) because the weekly fee bills every groom ON STAFF (Equoria-ypb7d.3
- * changed the basis from per-ACTIVE-ASSIGNMENT to per-engagement): retiring first
- * would end the engagement before the groom who worked that week was paid. Read
- * that descriptor's header before relying on it.
+ * changed the basis from per-ACTIVE-ASSIGNMENT to per-engagement), and the fee
+ * pass's staff read carries `retired: false` — so a groom retired BEFORE payroll
+ * is skipped and loses the final wage for the week it worked. It is that filter,
+ * not the engagement closure, that does the excluding (fix round 1, F10: the
+ * earlier wording named the wrong mechanism). Read that descriptor's header
+ * before relying on it.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';

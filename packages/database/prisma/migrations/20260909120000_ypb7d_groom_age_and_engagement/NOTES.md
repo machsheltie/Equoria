@@ -70,4 +70,17 @@ that DROP edited out:
 Additive only: two nullable columns, one CHECK, one `CREATE TABLE`, two FKs, one partial unique
 index and two plain indexes. No DELETE, UPDATE or TRUNCATE, no column dropped or retyped, and no
 backfill — existing grooms get a `startAge` from the weekly career pass's idempotent
-`ensureStartAge`, and an engagement row from the weekly fee pass's idempotent `ensureEngagement`.
+`ensureStartAge`, and an engagement row from the weekly fee pass's idempotent
+`ensureEngagementTx`.
+
+## Two identifiers in `migration.sql` are wrong, and cannot be corrected there
+
+Fix round 1, finding F10. The header of the applied `migration.sql` names
+`ensureEngagement`; the function is **`ensureEngagementTx`**. That file's bytes are inside the
+applied checksum, so the name cannot be corrected in place — this note is the correction, which is
+the whole reason this file exists. `ensureStartAge` in the same block is correct as written.
+
+Since Equoria-ypb7d fix round 1, a legacy protégé
+(`groomLegacyService.generateLegacyProtege`) also draws its own `startAge` and opens its own
+engagement inside its creation transaction, so it no longer depends on either backstop. The
+backstops remain for the rows that predate the migration.

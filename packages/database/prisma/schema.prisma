@@ -446,7 +446,7 @@ model Groom {
   /// NULL  = the engagement is paid up.
   /// SET   = the groom is inside the owner's one-week grace period: still on
   ///         that player's staff, but barred from grooming
-  ///         (`assertGroomMayWork` in groomEngagementService.mjs).
+  ///         (`checkGroomMayWork` in groomEngagementService.mjs).
   ///
   /// When a STRICTLY LATER pay week arrives with this still set, a full week
   /// has gone unpaid and the weekly fee pass releases the groom to the
