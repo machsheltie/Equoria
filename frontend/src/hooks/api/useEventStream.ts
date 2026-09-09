@@ -57,6 +57,12 @@ export const SSE_EVENT_NAMES = [
   'forum_reply',
   'club_leadership_transferred',
   'groom_retired',
+  // Equoria-ypb7d.3: the two moments the weekly groom fee creates. Named events
+  // are dropped by EventSource unless a listener is registered for the exact
+  // name, so a producer without an entry here reaches the player only on the 5s
+  // poll — which for "your groom has left" is too slow to be a warning.
+  'groom_fee_unpaid',
+  'groom_released',
 ] as const;
 
 /**
