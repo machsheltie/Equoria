@@ -14,9 +14,7 @@
  *   - the actual `createHorse()` insert
  *   - resetting the dam's pregnancy columns
  *
- * Note: B4 (per-feeding tier counters → epigenetic adjustments) and B5
- * (cron job that fires at +7 days) are pending; this service exposes the
- * function shape so they can call it without further refactoring.
+ * Note: B4 (per-feeding tier counters) and B5 (`runFoalingJob`) both landed here.
  *
  * @module modules/horses/services/foalingService
  */
@@ -43,6 +41,7 @@ import logger from '../../../utils/logger.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
 import { normalizeEpigeneticModifiers } from '../../../utils/epigeneticTraitKeyMap.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
+import { deriveFoalName } from './horseNamePolicy.mjs';
 
 /**
  * Length of an Equoria gestation. Mirrors GESTATION_DAYS in
@@ -436,7 +435,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const resolvedSex = options.sex ? options.sex : rng() < 0.5 ? 'Filly' : 'Colt';
 
   const horseData = {
-    name: options.name || dam.pendingFoalName || `${dam.name} Foal`,
+    // Equoria-qkgfh.1: derived fallback clamped — see horseNamePolicy.deriveFoalName.
+    name: options.name || dam.pendingFoalName || deriveFoalName(dam.name),
     age: 0,
     breedId: requestedBreedId,
     sireId,

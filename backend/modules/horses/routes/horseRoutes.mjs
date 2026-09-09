@@ -11,6 +11,7 @@ import horseXpRoutes from './horseXpRoutes.mjs';
 import horseBreedingRoutes from './horseBreedingRoutes.mjs';
 import horseHistoryRoutes from './horseHistoryRoutes.mjs';
 import horseFoalRoutes from './horseFoalRoutes.mjs';
+import horseIdentityRoutes from './horseIdentityRoutes.mjs';
 import {
   handleValidationErrors,
   rejectPollutedRequest,
@@ -37,10 +38,9 @@ const HORSE_LIST_TTL = 120; // 2 minutes
 
 const router = express.Router();
 
-// Equoria-y8u2j: validators below were inlined here and have been moved to
-// _validators.mjs (already imported above). The parent router now uses the
-// shared module so feed/genetics/xp/breeding sub-routers and the parent
-// route definitions share one source of truth.
+// Equoria-y8u2j: validators once inlined here live in _validators.mjs (imported
+// above), so the parent router and the feed/genetics/xp/breeding/identity
+// sub-routers share one source of truth.
 
 /**
  * GET /horses
@@ -587,13 +587,14 @@ router.get(
 // ---------------------------------------------------------------------------
 // All sub-router routes are either /breeding/<sub> or /:id/<sub-path>
 // (2+ segments) and therefore do NOT conflict with this parent's GET /:id
-// (1 segment). Mount order between sub-routers and the parent's /:id is
-// therefore not load-bearing.
+// (1 segment) — including horseIdentityRoutes' PATCH /:id/name (Equoria-qkgfh.1).
+// Mount order between sub-routers and the parent's /:id is not load-bearing.
 router.use(horseFeedRoutes);
 router.use(horseGeneticsRoutes);
 router.use(horseXpRoutes);
 router.use(horseBreedingRoutes);
 router.use(horseHistoryRoutes);
 router.use(horseFoalRoutes);
+router.use(horseIdentityRoutes);
 
 export default router;

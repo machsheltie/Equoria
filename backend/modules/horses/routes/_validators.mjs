@@ -12,6 +12,12 @@
 
 import { param, body, validationResult } from 'express-validator';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
+// The horse-name rule itself lives one layer down, in services/, because
+// foalingService needs it too and a service must not import from routes/.
+import {
+  horseNameRejectionReason,
+  horseNameRejectionMessage,
+} from '../services/horseNamePolicy.mjs';
 
 /**
  * Common validationResult handler — returns 400 with errors array if any
@@ -51,9 +57,11 @@ export const validateUserId = [
  * Validation middleware for horse creation (POST /horses).
  */
 export const validateHorseCreation = [
-  body('name')
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Name must be between 1 and 100 characters'),
+  // Equoria-qkgfh.1: was `body('name').isLength({ min: 1, max: 100 })`. Four of
+  // the five player-supplied horse-name paths now share one rule; the two-half
+  // account of what this widened, and the fifth ungated path, are in the block
+  // below. `POST /horses` has no frontend caller, so nothing live changed here.
+  horseNameBodyRule(),
   body('breedId').isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
   body('age').optional().isInt({ min: 0, max: 50 }).withMessage('Age must be between 0 and 50'),
   // Sex is canonicalized to Title Case at the Prisma client layer
@@ -136,6 +144,173 @@ export const rejectPollutedRequest = (req, res, next) => {
 };
 
 /**
+ * ── Horse name validation ─ which paths are GATED, and which one is not ────
+ * (Equoria-qkgfh.1)
+ *
+ * The rule itself lives in `../services/horseNamePolicy.mjs` — read it there for
+ * the bounds, their provenance, and the live measurement that justified them.
+ * This module wires it into the request layer.
+ *
+ * Re-derived on this base rather than carried forward (round 3, after rebasing
+ * onto the campaign branch). The count CHANGED: `POST /api/v1/horses` closed
+ * between bases, so there are now FOUR live player-supplied paths, THREE of them
+ * gated. Stating this precisely because a wrong enumeration in this file reads as
+ * a guarantee.
+ *
+ *   1. POST  /api/v1/horses/foals      → `validateFoalCreation`                   GATED
+ *        (horseFoalRoutes.mjs). `name` is OPTIONAL there (Equoria-6w3ur) — absent
+ *        passes, supplied is held to the full policy. It also lands in
+ *        `Horse.pendingFoalName` and later becomes the foal's own name via
+ *        foalingService, so it is a horse-name path twice over.
+ *   2. PUT   /api/v1/horses/:id        → `validateHorseUpdatePayload` (this file)  GATED
+ *   3. PATCH /api/v1/horses/:id/name   → `validateHorseRenamePayload` (this file)  GATED
+ *   4. POST  /api/v1/auth/advance-onboarding                                  NOT GATED
+ *        `onboardingController.advanceOnboarding` reads a player-typed
+ *        `horseName` from the beta-live /onboarding page and writes it to
+ *        `horses.name` — updating the player's EXISTING starter horse where one
+ *        exists, so it is a rename path, not only a creation path. It diverges
+ *        from this rule two ways: it `trim().slice(0, 40)`s, i.e. it SILENTLY
+ *        TRUNCATES where this policy rejects; and it applies NO character check,
+ *        so `Fred <3` is settable there and never settable again by rename.
+ *        Deliberately left alone: routing it through this rule would turn a
+ *        silent truncation into a 400 on the new-player flow, which is a
+ *        behaviour change on beta-live code and the owner's call, not this
+ *        task's. Filed as Equoria-zalyb, and allow-listed by name in
+ *        scripts/doctrine-checks/horse-name-gate-allowlist.json.
+ *
+ *   CLOSED, not gated: `POST /api/v1/horses` returns 403 before any validation
+ *   runs (Finding 2 / Equoria-6p398.2), so `validateHorseCreation` below is DEAD
+ *   CODE on this base. It is kept wired to the shared rule anyway, so that if the
+ *   endpoint is ever reopened it reopens consistent rather than reopening with the
+ *   looser `isLength` counting it had before. `DELETE /horses/:id` is likewise
+ *   403-closed (Equoria-9tque) and never touched `name`.
+ *
+ * Writing `horses.name` WITHOUT a player string: `foalingService`'s derived
+ * `<Dam> Foal` fallback (clamped to the policy by `deriveFoalName`), its
+ * compensation restore of an already-validated `pendingFoalName`,
+ * `onboardingService`'s `<username>'s First Horse`, `marketplaceController`'s
+ * store horses, and `gdprAccountService`'s lineage anonymization. Seeds,
+ * operator scripts, and anything writing the database outside the app are ungated
+ * by construction and no route validator can reach them.
+ *
+ * An enumeration is a claim with a shelf life — this one has now been wrong twice
+ * (missed the foals path, then missed onboarding) and has changed once because a
+ * route closed underneath it. `scripts/doctrine-checks/check-horse-name-gated.mjs`
+ * exists so the NEXT divergence fails a gate instead of waiting for a reviewer.
+ *
+ * WHAT THE UNIFICATION WIDENED ON THE CREATION VALIDATORS — two halves, two
+ * reasons. Eight input classes that `validateHorseCreation` and
+ * `validateFoalCreation` accepted before now get a 400. They are not all the same
+ * change (and on this base only the foals half is reachable, since `POST /horses`
+ * is closed):
+ *
+ *   (a) THE LENGTH HALF — `'   '`, 51 grinning-face emoji (102 UTF-16 units),
+ *       100 red-heart emoji (200 units). Cause: `isLength` counted differently
+ *       (see horseNamePolicy.mjs). Reason for changing it: without a shared
+ *       count, creation could mint a name the rename endpoint would refuse to
+ *       restore, and the cap was bypassable by changing verb. This half is
+ *       load-bearing for the rename endpoint being honestly bounded.
+ *   (b) THE CHARACTER + TYPE HALF — `'<script>Fred'`, a NUL-bearing name, and
+ *       the coercions `42`, `true`, `['Fred']` (express-validator stringified
+ *       them, so they passed validation and then failed at Prisma as a 500).
+ *       Cause: the `<`/NUL rule and the type check had never applied at
+ *       creation. Reason: the asymmetry ran the other way — creation could mint
+ *       a name rename would never restore. Right on the merits, but a DIFFERENT
+ *       justification from (a), and `Fred <3` is a plausible player-chosen name
+ *       rather than a payload. Whether `<` belongs in a horse name is the
+ *       owner's ruling, filed; this half is disclosed here so the next reader
+ *       does not mistake it for a side effect of the counting fix.
+ *
+ * Nothing live was broken by either half: `horsesApi.create` has no caller
+ * anywhere in the frontend, and the sole `POST /horses/foals` client sends no
+ * `name` field at all. The creation rejection text also changed from
+ * 'Name must be between 1 and 100 characters' to 'Horse name must be …'; the
+ * old string has zero references in backend, frontend, e2e or packages.
+ */
+export {
+  HORSE_NAME_MIN_LENGTH,
+  HORSE_NAME_MAX_LENGTH,
+  horseNameRejectionReason,
+  horseNameRejectionMessage,
+} from '../services/horseNamePolicy.mjs';
+
+/**
+ * A fresh express-validator `body('name')` chain enforcing the shared policy,
+ * for the two creation paths (POST /horses, POST /horses/foals). A factory
+ * rather than a shared chain instance so two route arrays never hold the same
+ * object.
+ *
+ * Declared with `function` (not `const`) because `validateHorseCreation` above
+ * calls it while this module is still evaluating — a `const` arrow would be in
+ * its temporal dead zone.
+ *
+ * @param {object} [options]
+ * @param {boolean} [options.optional=false] - when true, an ABSENT `name` passes
+ *   and a PRESENT one is still held to the full policy. No caller on this branch
+ *   passes it; it exists because `POST /horses/foals` has diverged between
+ *   branches — see the MERGE HAZARD note at that call site in
+ *   horseFoalRoutes.mjs — and whoever reconciles them needs `optional: true` to
+ *   be one word rather than a rewrite.
+ * @returns {import('express-validator').ValidationChain}
+ */
+export function horseNameBodyRule({ optional = false } = {}) {
+  const chain = optional ? body('name').optional() : body('name');
+  return chain.custom(value => {
+    const reason = horseNameRejectionReason(value);
+    if (reason !== null) {
+      throw new Error(horseNameRejectionMessage(reason));
+    }
+    return true;
+  });
+}
+
+/**
+ * Validate the body of PATCH /horses/:id/name (Equoria-qkgfh.1).
+ *
+ * Fail-closed and narrow: JSON only, a plain object, `name` the ONLY accepted
+ * key, and the shared name policy above. Anything else is a 400 with a message
+ * that says which rule failed — nothing is truncated or normalised into
+ * acceptability.
+ */
+export const validateHorseRenamePayload = (req, res, next) => {
+  const contentType = (req.headers?.['content-type'] || '').toLowerCase();
+  if (!contentType.startsWith('application/json')) {
+    return res.status(400).json({ success: false, message: 'Invalid rename payload' });
+  }
+
+  const body = req.body;
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return res.status(400).json({ success: false, message: 'Invalid rename payload' });
+  }
+
+  // Prototype-pollution guard, mirroring validateHorseUpdatePayload.
+  if (
+    Object.prototype.hasOwnProperty.call(body, '__proto__') ||
+    Object.prototype.hasOwnProperty.call(body, 'constructor') ||
+    Object.getPrototypeOf(body) !== Object.prototype
+  ) {
+    return res.status(400).json({ success: false, message: 'Invalid rename payload' });
+  }
+
+  // `name` is the whole payload. Refusing extra keys keeps this endpoint from
+  // becoming a second mass-assignment surface the way PUT /horses/:id did.
+  for (const key of Object.keys(body)) {
+    if (key !== 'name') {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid rename payload: unexpected field' });
+    }
+  }
+
+  const reason = horseNameRejectionReason(body.name);
+  if (reason !== null) {
+    return res.status(400).json({ success: false, message: horseNameRejectionMessage(reason) });
+  }
+
+  return next();
+};
+
+/**
  * Validate horse update payload to prevent type coercion / mass assignment
  * (PUT /horses/:id). Allowlist-only fields; rejects nested too-deep payloads,
  * prototype-pollution keys, non-JSON content types, and protected fields.
@@ -212,10 +387,15 @@ export const validateHorseUpdatePayload = (req, res, next) => {
   }
 
   if (body.name !== undefined) {
-    if (typeof body.name !== 'string') {
-      return res.status(400).json({ success: false, message: 'Invalid horse name' });
-    }
-    if (body.name.includes('<') || body.name.includes('\0')) {
+    // Equoria-qkgfh.1: the type + character rules that used to be inlined here
+    // now live in horseNameRejectionReason() so PUT and the dedicated rename
+    // endpoint (PATCH /horses/:id/name) cannot drift apart. The length bound is
+    // NEW on this path: PUT previously accepted a name of any length, so the
+    // 1-100 cap POST /horses already enforces was trivially bypassable and the
+    // rename endpoint's cap would have been decorative. Message text is
+    // deliberately unchanged ('Invalid horse name' for every reason) so this
+    // path's existing responses stay byte-identical.
+    if (horseNameRejectionReason(body.name) !== null) {
       return res.status(400).json({ success: false, message: 'Invalid horse name' });
     }
   }
