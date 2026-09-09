@@ -18,14 +18,18 @@
  *
  * RESPONSE COLLAPSE (CWE-639)
  *   A zero-row update means "no horse with this id belongs to you" and cannot
- *   distinguish a missing horse from someone else's. It returns the SAME 404
- *   message the ownership middleware returns, so the two cases stay
- *   indistinguishable on every path into this endpoint.
+ *   distinguish a missing horse from someone else's. It returns a 404 body
+ *   BYTE-IDENTICAL to the one `requireOwnership` produces — including the
+ *   `status: 'fail'` field that AppError adds for a 4xx — so the two cases stay
+ *   indistinguishable whichever layer refuses. (This layer's 404 is reachable
+ *   only through the time-of-check window, and only by someone who WAS the owner
+ *   at read time, so it was never an enumeration oracle; matching the shape
+ *   makes the claim true rather than nearly true.)
  *
  * NO UNIQUENESS CHECK
  *   Deliberate. The owner ruled 2026-09-09 that horse names need not be unique.
- *   `Horse.name` has no unique index in schema.prisma or in any migration, so
- *   duplicates are legal both within one stable and across stables.
+ *   `Horse.name` has no unique index in schema.prisma, in any migration, or in
+ *   the live catalog, so duplicates are legal within and across stables.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -38,14 +42,12 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
  * @param {number} horseId - the horse to rename (already-parsed integer)
  * @param {string} userId - the authenticated user's id (the ownership guard)
  * @param {string} name - the validated new name, stored verbatim
- * @param {string|null} previousName - the name the ownership middleware read,
- *   echoed back so the caller can report what changed
  * @returns {Promise<{status:number, body:object}>} HTTP response envelope
- *   200 — { success: true, data: { id, name, previousName } }
- *   404 — { success: false, message: 'Horse not found' } when the guarded
- *         update matched no row (missing horse OR not the caller's)
+ *   200 — { success: true, data: { id, name } }
+ *   404 — { success: false, message: 'Horse not found', status: 'fail' } when the
+ *         guarded update matched no row (missing horse OR not the caller's)
  */
-export async function renameHorseById(horseId, userId, name, previousName = null) {
+export async function renameHorseById(horseId, userId, name) {
   // Single transaction: the guarded write and the read-back that reports it are
   // one atomic unit, so the name returned to the player is the name that was
   // committed. Every statement runs on `tx` — none falls back to the global
@@ -72,7 +74,9 @@ export async function renameHorseById(horseId, userId, name, previousName = null
     );
     return {
       status: 404,
-      body: { success: false, message: 'Horse not found' },
+      // Shape matches AppError's 404 serialization in requireOwnership exactly
+      // (success, message, status) so the two refusal paths are indistinguishable.
+      body: { success: false, message: 'Horse not found', status: 'fail' },
     };
   }
 
@@ -89,7 +93,7 @@ export async function renameHorseById(horseId, userId, name, previousName = null
     body: {
       success: true,
       message: 'Horse renamed successfully',
-      data: { id: renamed.id, name: renamed.name, previousName },
+      data: { id: renamed.id, name: renamed.name },
     },
   };
 }

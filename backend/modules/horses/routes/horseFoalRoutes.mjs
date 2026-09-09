@@ -23,6 +23,7 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { foalRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
+import { horseNameBodyRule } from './_validators.mjs';
 
 const router = express.Router();
 
@@ -49,26 +50,44 @@ function stripClientOwnerFields(req, _res, next) {
 /**
  * Validation middleware for foal creation.
  *
- * Kept inline (rather than moved to `_validators.mjs`) because the
- * `isValidHorseSex` / `HORSE_SEX_VALUES` imports are dynamic — moving them to
- * `_validators.mjs` would force every other validator in that file to load
- * the schema constants for no gain.
+ * The chain stays inline (rather than moving wholesale to `_validators.mjs`)
+ * because the `isValidHorseSex` / `HORSE_SEX_VALUES` imports are dynamic —
+ * moving them would force every other validator in that file to load the schema
+ * constants for no gain. The `name` rule alone IS imported from
+ * `_validators.mjs` (Equoria-qkgfh.1), because a horse name must obey one policy
+ * on every path that accepts one.
  */
 const validateFoalCreation = [
   // Equoria-6w3ur: `name` and `breedId` are OPTIONAL pending intent, not
   // requirements. Since the Phase-B delayed-foaling redesign the player breeds
   // a PAIR — the foal itself is materialised 7 days later by the foaling job,
   // which derives the missing values (`foalingService.createFoalFromPregnancy`:
-  // name -> `${dam.name} Foal`, breed -> dam.breedId). `createFoal` has treated
-  // both as optional since that redesign; this chain had not caught up, so the
-  // real breeding surface — which posts only the chosen sire and dam — got a
-  // hard 400 "Breed ID must be a positive integer" and no player could breed.
-  // Keep the FORMAT rules: a supplied value must still be sane, and the
+  // name -> the dam-derived fallback, breed -> dam.breedId). `createFoal` has
+  // treated both as optional since that redesign; this chain had not caught up,
+  // so the real breeding surface — which posts only the chosen sire and dam —
+  // got a hard 400 "Breed ID must be a positive integer" and no player could
+  // breed. Keep the FORMAT rules: a supplied value must still be sane, and the
   // controller separately verifies a supplied breedId exists.
-  body('name')
-    .optional()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Name must be between 1 and 100 characters'),
+  //
+  // Equoria-qkgfh.1: the name's FORMAT rule is now the shared one, so
+  // PUT /horses/:id and PATCH /horses/:id/name cannot diverge from this path on
+  // what a valid horse name is. `optional: true` preserves Equoria-6w3ur's
+  // requiredness contract exactly — absent `name` passes, a supplied one is held
+  // to the full policy. This `name` also lands in `Horse.pendingFoalName` and
+  // later becomes the foal's own name, so it is a horse-name path twice over.
+  //
+  // RESOLVED MERGE HAZARD — kept deliberately, because a hazard that was real
+  // once and is now invisible is how it comes back. Equoria-qkgfh.1 was authored
+  // on a base that PREDATED Equoria-6w3ur, where both fields were still
+  // required. On that branch this region read `horseNameBodyRule(),` with no
+  // `optional`, and a merge resolved in its favour would have deleted
+  // `.optional()` from `name` and `breedId` and broken the beta-live /breeding
+  // page — whose only client posts `{ sireId, damId }` and no name. Two reviewers
+  // reported opposite facts about this exact region because they were reading the
+  // two different trees. Resolved here in favour of Equoria-6w3ur's contract:
+  // both fields stay optional. `foalCreationMinimalPayload.test.mjs` is the
+  // regression guard; if it ever fails, this is the region to look at first.
+  horseNameBodyRule({ optional: true }),
   body('breedId').optional().isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
   body('sireId').isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
   body('damId').isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),

@@ -147,8 +147,27 @@ beforeAll(async () => {
     pregnancyFeedingsByTier: {},
   });
 
+  // An id that provably holds no row. The aggregate only picks a CANDIDATE; the
+  // absence is then read per row, because on a shared database another session
+  // could occupy any id an aggregate suggests. Fails loudly rather than silently
+  // testing the wrong thing.
   const maxId = await prisma.horse.aggregate({ _max: { id: true } });
-  nonExistentHorseId = (maxId._max.id ?? 0) + 5000;
+  let candidate = (maxId._max.id ?? 0) + 5000;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const occupied = await prisma.horse.findUnique({ where: { id: candidate }, select: { id: true } });
+    if (!occupied) {
+      break;
+    }
+    candidate += 5000;
+  }
+  const stillOccupied = await prisma.horse.findUnique({
+    where: { id: candidate },
+    select: { id: true },
+  });
+  if (stillOccupied) {
+    throw new Error(`[rename suite] could not find an unoccupied horse id near ${candidate}`);
+  }
+  nonExistentHorseId = candidate;
 
   ownerToken = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
   intruderToken = generateTestToken({ id: intruder.id, email: intruder.email, role: 'user' });
@@ -173,6 +192,11 @@ beforeAll(async () => {
     'detachParentage',
   );
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+  // Safety net for the POST /horses cases below: if a create the suite EXPECTS to
+  // be rejected ever succeeds, the row would have an id this file never learned.
+  // Scoped to this suite's own two users, so it can only ever remove fixtures
+  // this suite is responsible for.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horsesByFixtureOwner');
   cleanup.add(() => prisma.stable.deleteMany({ where: { id: stable.id } }), 'stable');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
 }, 120000);
@@ -189,8 +213,12 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data).toMatchObject({ id: horseA.id, name: newName });
-    expect(res.body.data.previousName).toBe(`${FIXTURE_PREFIX}-HorseA`);
+    // Exact payload: `data` carries the id and the committed name and nothing
+    // else. `previousName` was removed (Equoria-qkgfh.1 fix round) because it was
+    // read before the write and could echo a superseded name under concurrent
+    // renames; a field that can lie is worse than a field that is absent, and no
+    // client consumes it.
+    expect(res.body.data).toEqual({ id: horseA.id, name: newName });
 
     // Persisted-state assertion on THIS horse's own row.
     expect(await storedName(horseA.id)).toBe(newName);
@@ -229,7 +257,7 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     const res = await rename(foal.id, { name: chosenName }, { token: ownerToken, csrf: ownerCsrf });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.previousName).toBe(`${FIXTURE_PREFIX}-Dam Foal`);
+    expect(res.body.data).toEqual({ id: foal.id, name: chosenName });
     expect(await storedName(foal.id)).toBe(chosenName);
   }, 120000);
 });
@@ -246,6 +274,14 @@ describe('PATCH /api/v1/horses/:id/name — authorization collapses (CWE-639)', 
     // The load-bearing assertion: the two bodies must be indistinguishable, so
     // the endpoint reveals nothing about which horse ids exist.
     expect(notMine.body).toEqual(notReal.body);
+    // And pin the shape itself, so the service's TOCTOU-window 404 (asserted
+    // below) can be compared against a fixed target rather than against whatever
+    // the middleware happens to emit.
+    expect(notMine.body).toEqual({
+      success: false,
+      message: 'Horse not found',
+      status: 'fail',
+    });
 
     // And the refusal was real — HorseB still carries its original name.
     expect(await storedName(horseB.id)).toBe(`${FIXTURE_PREFIX}-HorseB`);
@@ -277,7 +313,14 @@ describe('renameHorseService — the write itself re-asserts ownership', () => {
     const result = await renameHorseById(intruderHorse.id, owner.id, 'Stolen By Service');
 
     expect(result.status).toBe(404);
-    expect(result.body).toEqual({ success: false, message: 'Horse not found' });
+    // Byte-identical to the middleware's 404 asserted in the collapse case above,
+    // `status: 'fail'` included — so the refusal is indistinguishable whichever
+    // layer produces it.
+    expect(result.body).toEqual({
+      success: false,
+      message: 'Horse not found',
+      status: 'fail',
+    });
     expect(await storedName(intruderHorse.id)).toBe(before);
   }, 60000);
 
@@ -285,7 +328,7 @@ describe('renameHorseService — the write itself re-asserts ownership', () => {
     const result = await renameHorseById(horseB.id, owner.id, 'Service Renamed');
 
     expect(result.status).toBe(200);
-    expect(result.body.data).toMatchObject({ id: horseB.id, name: 'Service Renamed' });
+    expect(result.body.data).toEqual({ id: horseB.id, name: 'Service Renamed' });
     expect(await storedName(horseB.id)).toBe('Service Renamed');
   }, 60000);
 });
@@ -332,29 +375,108 @@ describe('PATCH /api/v1/horses/:id/name — validation is fail-closed', () => {
     await prisma.horse.update({ where: { id: horseA.id }, data: { name: settle } });
   }, 60000);
 
+  // The stated policy is "rejected with a message naming the rule", so each case
+  // pins the EXACT message. A refactor collapsing all three into one generic
+  // string would now fail here instead of staying green.
+  const TYPE_MSG = 'Horse name must be a string';
+  const LENGTH_MSG = 'Horse name must be between 1 and 100 characters';
+  const CHAR_MSG = 'Horse name may not contain < or a null character';
+
   const rejected = [
-    ['a non-string name', { name: 42 }],
-    ['a null name', { name: null }],
-    ['a missing name', {}],
-    ['an empty name', { name: '' }],
-    ['a whitespace-only name', { name: '   ' }],
-    ['a name longer than 100 characters', { name: 'L'.repeat(101) }],
-    ['a name containing an angle bracket', { name: '<script>Fred' }],
-    ['a name containing a NUL byte', { name: 'Fred\u0000Bell' }],
-    ['an unexpected extra field', { name: 'Fred', userId: 'someone-else' }],
+    ['a non-string name', { name: 42 }, TYPE_MSG],
+    ['a null name', { name: null }, TYPE_MSG],
+    ['a missing name', {}, TYPE_MSG],
+    ['an empty name', { name: '' }, LENGTH_MSG],
+    ['a whitespace-only name', { name: '   ' }, LENGTH_MSG],
+    ['a name longer than 100 characters', { name: 'L'.repeat(101) }, LENGTH_MSG],
+    ['a name containing an angle bracket', { name: '<script>Fred' }, CHAR_MSG],
+    ['a name containing a NUL byte', { name: 'Fred\u0000Bell' }, CHAR_MSG],
+    ['an unexpected extra field', { name: 'Fred', userId: 'someone-else' }, 'Invalid rename payload: unexpected field'],
   ];
 
   it.each(rejected)(
-    'rejects %s with 400 and leaves the stored name untouched',
-    async (_label, body) => {
+    'rejects %s with 400, the message naming the rule, and the stored name untouched',
+    async (_label, body, expectedMessage) => {
       const res = await rename(horseA.id, body, { token: ownerToken, csrf: ownerCsrf });
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
-      expect(typeof res.body.message).toBe('string');
-      expect(res.body.message.length).toBeGreaterThan(0);
+      expect(res.body.message).toBe(expectedMessage);
       expect(await storedName(horseA.id)).toBe(settle);
     },
     60000,
   );
+
+  it('rejects a non-JSON content type', async () => {
+    const res = await request(app)
+      .patch(`/api/v1/horses/${horseA.id}/name`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', ownerCsrf.cookieHeader)
+      .set('X-CSRF-Token', ownerCsrf.csrfToken)
+      .set('Content-Type', 'text/plain')
+      .send('name=Fred');
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Invalid rename payload');
+    expect(await storedName(horseA.id)).toBe(settle);
+  }, 60000);
+});
+
+describe('one name rule governs every player-supplied horse-name path', () => {
+  /**
+   * Before the fix round, POST /horses used express-validator's `isLength`, which
+   * subtracts surrogate pairs and variation selectors and accepted a
+   * whitespace-only name — so create was LOOSER than rename, and a player could
+   * own a horse whose name the rename endpoint refused. All four paths now share
+   * `horseNameRejectionReason`. These cases pin create and rename agreeing on the
+   * two inputs that used to separate them; revert `validateHorseCreation` to
+   * `isLength` and the create expectations below go green-on-a-lie at 201.
+   */
+  const EMOJI_OVER_CAP = '\u{1F600}'.repeat(51); // 102 UTF-16 units, 51 code points
+
+  function createHorse(name) {
+    return request(app)
+      .post('/api/v1/horses')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', ownerCsrf.cookieHeader)
+      .set('X-CSRF-Token', ownerCsrf.csrfToken)
+      .set('Content-Type', 'application/json')
+      .send({ name, breedId: breed.id, sex: 'Mare' });
+  }
+
+  it('POST /horses refuses a whitespace-only name, as rename does', async () => {
+    const res = await createHorse('   ');
+
+    expect(res.status).toBe(400);
+    // Same rule; this path reports it through express-validator's errors array.
+    expect(JSON.stringify(res.body)).toContain('Horse name must be between 1 and 100');
+
+    // Per-row check that nothing was created, scoped to this suite's owner.
+    expect(await prisma.horse.count({ where: { userId: owner.id, name: '   ' } })).toBe(0);
+  }, 60000);
+
+  it('POST /horses refuses an emoji name over the raw 100-unit cap, as rename does', async () => {
+    const res = await createHorse(EMOJI_OVER_CAP);
+
+    expect(res.status).toBe(400);
+    expect(await prisma.horse.count({ where: { userId: owner.id, name: EMOJI_OVER_CAP } })).toBe(0);
+  }, 60000);
+
+  it('rename refuses that same emoji name, so create can never mint an unrenameable horse', async () => {
+    const res = await rename(horseA.id, { name: EMOJI_OVER_CAP }, { token: ownerToken, csrf: ownerCsrf });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Horse name must be between 1 and 100 characters');
+  }, 60000);
+
+  it('rename still accepts 50 emoji (exactly 100 UTF-16 units, at the cap)', async () => {
+    const fifty = '\u{1F600}'.repeat(50);
+
+    const res = await rename(horseA.id, { name: fifty }, { token: ownerToken, csrf: ownerCsrf });
+
+    expect(res.status).toBe(200);
+    expect(await storedName(horseA.id)).toBe(fifty);
+  }, 60000);
 });

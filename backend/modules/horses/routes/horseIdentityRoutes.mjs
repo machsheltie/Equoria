@@ -71,12 +71,7 @@ router.patch(
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id, 10);
-      const { status, body } = await renameHorseById(
-        horseId,
-        req.user.id,
-        req.body.name,
-        req.horse?.name ?? null,
-      );
+      const { status, body } = await renameHorseById(horseId, req.user.id, req.body.name);
       return res.status(status).json(body);
     } catch (error) {
       logger.error(`[horseIdentityRoutes PATCH /:id/name] Error: ${error.message}`);
