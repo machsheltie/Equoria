@@ -27,6 +27,26 @@
  * Real DB, no mocks, scoped TestFixture-7r67q cleanup.
  */
 
+/**
+ * Equoria-ypb7d.3 — EVERY `processWeeklySalaries` CALL IN THIS FILE IS SCOPED.
+ *
+ * Before Equoria-ypb7d.3 a non-payment was a silent no-op: `terminateGroomsForNonPayment`
+ * wrote `terminationReason` to a column that does not exist and its own catch swallowed
+ * the throw. An unscoped pass against the shared development database was therefore
+ * merely wasteful — it debited real wallets and wrote payment rows, but it could not
+ * take anything away.
+ *
+ * It can now. An unscoped pass puts every underfunded player's grooms into the one-week
+ * grace period, and RELEASES the ones already in it — back to the grooms-for-hire pool,
+ * assignments ended, gone from that player's staff. The shared development database
+ * holds real player data. So every call below passes
+ * `{ userId: <this suite's fixture user> }`, and
+ * `groomSalaryPassScoped.sentinel.test.mjs` fails if one ever loses it again.
+ *
+ * Nothing is weakened by the scope. Assertions that were `>= 1` purely to tolerate other
+ * users' rows became exact, which is stronger.
+ */
+
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -250,10 +270,10 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
     const userBefore = await getUserMoney(user.id);
     const burnBefore = await getBurnBalance();
 
-    const results = await processWeeklySalaries();
+    const results = await processWeeklySalaries(undefined, { userId: user.id });
 
-    // Top-level fn should not have thrown
-    expect(results.successful).toBeGreaterThanOrEqual(1);
+    // Exact, not `>= 1`: the pass is scoped to this suite's own user.
+    expect(results.successful).toBe(1);
 
     const userAfter = await getUserMoney(user.id);
     const burnAfter = await getBurnBalance();
@@ -281,7 +301,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
   }, 60000);
 
   it('writes a paid groomSalaryPayment row inside the same tx', async () => {
-    await processWeeklySalaries();
+    await processWeeklySalaries(undefined, { userId: user.id });
 
     const payments = await prisma.groomSalaryPayment.findMany({
       where: {
@@ -300,7 +320,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
   }, 60000);
 
   it('writes a userTransaction ledger credit row attributed to the user', async () => {
-    await processWeeklySalaries();
+    await processWeeklySalaries(undefined, { userId: user.id });
 
     const ledgerRows = await prisma.userTransaction.findMany({
       where: {
@@ -328,15 +348,16 @@ describe('groomSalaryService.processWeeklySalaries — insufficient funds (Equor
     const userBefore = await getUserMoney(user.id);
 
     // Count user-scoped burn ledger rows BEFORE — we cannot use the global
-    // SystemAccount.burn balance because processWeeklySalaries iterates over
-    // every active assignment in the DB and may legitimately credit burn
-    // for other (well-funded) fixture users from sibling suites. Instead
-    // we assert that NO burn-credit ledger row was attributed to THIS user.
+    // SystemAccount.burn balance because it is a SHARED singleton row that sibling
+    // money-conservation suites credit concurrently. Equoria-ypb7d.3 corrected the
+    // reason: it is NOT because this call sweeps every active assignment in the DB. It
+    // no longer does — the call below is scoped to this fixture user. Instead we assert
+    // that NO burn-credit ledger row was attributed to THIS user.
     const burnRowsBefore = await prisma.userTransaction.count({
       where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
     });
 
-    const results = await processWeeklySalaries();
+    const results = await processWeeklySalaries(undefined, { userId: user.id });
 
     const userAfter = await getUserMoney(user.id);
     const burnRowsAfter = await prisma.userTransaction.count({
@@ -351,7 +372,8 @@ describe('groomSalaryService.processWeeklySalaries — insufficient funds (Equor
     // rows all together)
     expect(burnRowsAfter).toBe(burnRowsBefore);
     // failure recorded
-    expect(results.failed).toBeGreaterThanOrEqual(1);
+    // Exact, not `>= 1`: the pass is scoped to this suite's own user.
+    expect(results.failed).toBe(1);
 
     // The grace-period branch should have been entered (the user gets a
     // missed_insufficient_funds payment row + a groomSalaryGracePeriod stamp).
@@ -386,20 +408,23 @@ describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-
     const userBefore = await getUserMoney(user.id);
     expect(userBefore).toBe(50);
 
-    // Count user-scoped burn-credit ledger rows BEFORE — same reason as
-    // the insufficient-funds test: the global SystemAccount.burn delta
-    // can include credits attributed to OTHER fixture users processed in
-    // the same call. The per-user attribution via linkedUserId is what
-    // we assert here.
+    // Count user-scoped burn-credit ledger rows BEFORE — same reason as the
+    // insufficient-funds test: the global SystemAccount.burn delta can include credits
+    // from sibling suites running concurrently. The per-user attribution via
+    // linkedUserId is what we assert here. Equoria-ypb7d.3: it is no longer because
+    // OTHER users are processed in the same call — the calls below are scoped.
     const burnRowsBefore = await prisma.userTransaction.count({
       where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
     });
 
-    // Fire two parallel passes. Each will iterate over all active
-    // assignments (including ones from OTHER tests if any leaked), but
-    // the per-user $transaction is independent — only THIS user's debit
-    // is contended.
-    const [a, b] = await Promise.all([processWeeklySalaries(), processWeeklySalaries()]);
+    // Fire two parallel passes, both SCOPED to this fixture user (Equoria-ypb7d.3 — an
+    // unscoped pass can now release a real player's groom). The contention this case is
+    // about is the per-(user, pay week) advisory lock and the debitMoneyOrThrow
+    // predicate, neither of which the scope touches.
+    const [a, b] = await Promise.all([
+      processWeeklySalaries(undefined, { userId: user.id }),
+      processWeeklySalaries(undefined, { userId: user.id }),
+    ]);
 
     const userAfter = await getUserMoney(user.id);
     const burnRowsAfter = await prisma.userTransaction.count({

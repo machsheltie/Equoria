@@ -236,13 +236,24 @@ describe('Groom Salary System', () => {
     });
   });
 
+  // Equoria-ypb7d.3 — BOTH CALLS BELOW ARE SCOPED TO `testUser`.
+  //
+  // The coordinator's list named the two suites in modules/grooms/__tests__; this is a
+  // third file with the same hazard, found by grepping every caller. Before
+  // Equoria-ypb7d.3 an unscoped pass was merely wasteful (it debited real wallets;
+  // `terminateGroomsForNonPayment` threw on a non-existent column and swallowed it, so
+  // nothing was taken away). It can now put every underfunded player's grooms into the
+  // one-week grace period and RELEASE the ones already in it, and this database holds
+  // real player data. `groomSalaryPassScoped.sentinel.test.mjs` guards it.
   describe('Salary Processing', () => {
     it('should process weekly salaries successfully', async () => {
-      const results = await processWeeklySalaries();
+      const results = await processWeeklySalaries(undefined, { userId: testUser.id });
 
-      expect(results.processed).toBeGreaterThan(0);
-      expect(results.successful).toBeGreaterThan(0);
-      expect(results.totalAmount).toBeGreaterThan(0);
+      // Exact, not `> 0`: the pass is scoped to this suite's own user, so that user IS
+      // the whole population. The `> 0` existed only to tolerate every other row.
+      expect(results.processed).toBe(1);
+      expect(results.successful).toBe(1);
+      expect(results.totalAmount).toBe(115);
 
       // Check that payment was recorded
       const payments = await prisma.groomSalaryPayment.findMany({
@@ -261,10 +272,10 @@ describe('Groom Salary System', () => {
         data: { money: 50 }, // Less than $115 needed
       });
 
-      const results = await processWeeklySalaries();
+      const results = await processWeeklySalaries(undefined, { userId: testUser.id });
 
-      expect(results.failed).toBeGreaterThan(0);
-      expect(results.errors.length).toBeGreaterThan(0);
+      expect(results.failed).toBe(1);
+      expect(results.errors.length).toBe(1);
 
       // Check that user is in grace period
       const updatedUser = await prisma.user.findUnique({
