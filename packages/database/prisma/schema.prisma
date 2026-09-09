@@ -304,14 +304,11 @@ model Horse {
   @@index([sireId])
   @@index([damId])
   @@index([forSale, salePrice])
-  /// Equoria-qh6jk / Equoria-mxftz — READ THIS BEFORE ACCEPTING A
-  /// `prisma migrate dev` PROPOSAL ON THIS TABLE.
-  ///
-  /// Sixteen further indexes exist on `horses` IN MIGRATION HISTORY and are NOT
-  /// declared here. They are created in raw SQL by migration
-  /// 20260528120000_qh6jk_align_runtime_indexes, which recorded indexes that
-  /// backend/services/databaseOptimizationService.mjs had been creating with
-  /// `CREATE INDEX IF NOT EXISTS` outside migration history:
+  /// Equoria-qh6jk / Equoria-mxftz / Equoria-69gip — the sixteen `idx_horses_*`
+  /// indexes that exist on `horses` IN MIGRATION HISTORY are created in raw SQL
+  /// by migration 20260528120000_qh6jk_align_runtime_indexes, which recorded
+  /// indexes that backend/services/databaseOptimizationService.mjs had been
+  /// creating with `CREATE INDEX IF NOT EXISTS` outside migration history:
   ///
   ///   idx_horses_age_and_training_status, idx_horses_breedid_age,
   ///   idx_horses_discipline_scores_filter, idx_horses_discipline_scores_gin,
@@ -322,44 +319,118 @@ model Horse {
   ///   idx_horses_userid_age, idx_horses_userid_age_trainingcooldown,
   ///   idx_horses_userid_breedid, idx_horses_userid_createdat
   ///
+  /// TWELVE OF THEM ARE NOW DECLARED BELOW, each with `map:` pinning the name
+  /// the migration already created, so Prisma adopts the existing index rather
+  /// than proposing to drop it or to create a differently-named one. The other
+  /// four are covered without a declaration — see DUPLICATE GROUPS below.
+  ///
+  /// DECLARATION IS THE REMEDY, AND IT REPLACES THE OLD ONE. Until 2026-09-09
+  /// this block told the reader to delete the generated `DROP INDEX` statements
+  /// from the migration by hand. That was the wrong remedy and the weakest
+  /// control available: it only works if someone opens a file they have no
+  /// reason to open, it has to be re-performed correctly every single time, it
+  /// rots the moment the index set changes, and nothing checks that it happened.
+  /// Worse, `prisma migrate dev` generates AND applies in one step, so the
+  /// indexes are already gone from the developer's database by the time anyone
+  /// could review the file. Declaring the indexes removes the hazard at its
+  /// source: the destructive statement is never generated, so there is nothing
+  /// to accept and nothing to hand-edit. Do not reintroduce the hand-edit
+  /// instruction.
+  ///
+  /// Measured 2026-09-09, read-only, no migration and no DDL, with
+  /// `prisma migrate diff --from-schema-datasource <schema>
+  /// --to-schema-datamodel <schema> --script` against the local `equoria`
+  /// database. With the twelve declarations below plus
+  /// `user_transactions_user_created_idx` (see UserTransaction) and
+  /// `SystemAccount.updatedAt @default(now())` (see SystemAccount), the whole
+  /// proposal collapses from 17 `DROP INDEX` + 1 `ALTER COLUMN` to
+  /// `-- This is an empty migration.` Nothing is added, because name, columns,
+  /// access method and operator class all match what qh6jk created. All
+  /// fourteen items were then re-planted as defects — deleted one at a time —
+  /// and every one fired: for the eleven declarations that cover a single shape
+  /// (ten below plus the ledger index), exactly its own `DROP INDEX` returned;
+  /// for the two that cover a duplicate group, the group's three returned
+  /// together; and for the `SystemAccount` default, the `ALTER COLUMN`.
+  ///
+  /// DUPLICATE GROUPS — why four names are deliberately NOT declared. The
+  /// database holds three identically-defined GIN indexes on `disciplineScores`
+  /// and three on `epigeneticFlags`. Prisma's differ matches an index by SHAPE
+  /// (table, columns, access method, operator class), NOT one-to-one by name:
+  /// measured across all eight subsets of each group, ONE declaration suppresses
+  /// the `DROP INDEX` for all three whichever name it pins, and zero
+  /// declarations proposes all three. So only each group's surviving name is
+  /// declared — `idx_horses_discipline_scores_filter` and
+  /// `idx_horses_epigenetic_flags_gin`. Declaring all six would reach the same
+  /// empty migration but would make every FRESH database create nine GIN indexes
+  /// on `horses` instead of five, propagating the accident; and it would fight
+  /// Equoria-bebob, whose migration drops the duplicates. The four left
+  /// undeclared are `idx_horses_discipline_scores_gin`,
+  /// `idx_horses_disciplinescores_gin`, `idx_horses_epigenetic_flags_search`
+  /// and `idx_horses_epigeneticflags_gin`. They exist because
+  /// databaseOptimizationService names an index from the caller's LABEL while
+  /// resolving the column through an aliasing map, so two labels for one column
+  /// manufacture two identical indexes. Their coverage depends on the sibling
+  /// declaration staying put: delete `idx_horses_discipline_scores_filter` below
+  /// and all three `disciplineScores` DROPs return together. Shape-matching is
+  /// measured behaviour on Prisma 6.8.2, not a documented guarantee.
+  ///
+  /// ONE DECLARED DELETION CANDIDATE. `idx_horses_userid_age` is a strict
+  /// leading prefix of `idx_horses_userid_age_trainingcooldown`, so it carries no
+  /// query value — but it is a distinct SHAPE, so it is the one redundant index
+  /// the differ does propose dropping, and declaring it is the only way to reach
+  /// an empty proposal. It is declared to stabilise the schema against the
+  /// database and remains a deletion candidate under Equoria-bebob, which needs
+  /// the owner's authorization. Nothing was deleted here.
+  ///
   /// SIXTEEN IS THE MIGRATION-HISTORY COUNT, NOT THE DATABASE COUNT. The local
   /// development database has SEVENTEEN `idx_horses_*` indexes: the sixteen
   /// above plus `idx_horses_user_horse_lookup ("userId")`, which lives in no
   /// migration at all because
   /// backend/services/databaseOptimizationService.mjs still creates it at
-  /// RUNTIME with `CREATE INDEX IF NOT EXISTS` (see its
-  /// `user_horse_lookup` entry) — the same drift qh6jk existed to end, for one
-  /// index it did not record. Verified against the local `equoria` database on
-  /// 2026-09-09 with `SELECT indexname FROM pg_indexes WHERE tablename='horses'
-  /// AND indexname LIKE 'idx_horses%'`. The list above is the CHECK-LIST for a
-  /// generated migration, so it is deliberately the migration-history set; a
-  /// runtime-created index is not something Prisma's differ can be reconciled
-  /// against by editing this file. Expect the seventeenth on any environment
-  /// where that service has run, and do not read a count of 17 as corruption.
+  /// RUNTIME with `CREATE INDEX IF NOT EXISTS` (see its `user_horse_lookup`
+  /// entry) — the same drift qh6jk existed to end, for one index it did not
+  /// record. Verified against the local `equoria` database on 2026-09-09 with
+  /// `SELECT indexname FROM pg_indexes WHERE tablename='horses' AND indexname
+  /// LIKE 'idx_horses%'`. Expect the seventeenth on any environment where that
+  /// service has run, and do not read a count of 17 as corruption.
   ///
-  /// Because this file does not declare them, `prisma migrate dev` sees them as
-  /// stray and WILL put `DROP INDEX` for all sixteen into the migration it
-  /// generates — measured twice on a disposable replay of the full chain,
-  /// 2026-09-08 (Equoria-mxftz fix round 1). It also proposes
-  /// `DROP INDEX "user_transactions_user_created_idx"` (see UserTransaction —
-  /// that one has a proper one-line fix, and deleting the DROP is only the
-  /// interim) and `ALTER TABLE "system_accounts" ALTER COLUMN "updatedAt" DROP
-  /// DEFAULT` (see SystemAccount). **Delete those DROP statements from the
-  /// generated migration before applying it.** Nothing else in the repository will stop
-  /// you: no test asserts that these sixteen indexes exist, so accepting the
-  /// proposal silently removes the query plans behind stable, marketplace and
-  /// genetics reads.
+  /// That seventeenth CANNOT be owned through this file, and the reason is not
+  /// that Prisma is unable to express it. It is structurally identical to
+  /// `@@index([userId])` above, so the differ already considers it accounted
+  /// for: it is never proposed for DROP, and declaring it changes the proposal
+  /// by exactly nothing (measured, Equoria-69gip). Equoria-hgeaj states the
+  /// opposite — that `migrate dev` will propose dropping it alongside the
+  /// others — and that is WRONG; do not chase it. The only lever on it is
+  /// removing the code that creates it. Its importers are all tests, with no
+  /// route, controller, cron or startup caller, so what "created at runtime"
+  /// means concretely is that the test suite issues DDL against the shared
+  /// development database (Equoria-9xa92 / Equoria-hgeaj).
   ///
-  /// This is NOT the same hazard as the three ACTIVE-only PARTIAL unique
-  /// indexes on the staff-assignment tables (Equoria-kccmt; see
-  /// RiderAssignment / TrainerAssignment / GroomAssignment). Prisma's differ
-  /// cannot represent a partial index at all, so it neither creates nor drops
-  /// those three — verified by isolating the single variable: two unique indexes
-  /// on one table differing ONLY in a `WHERE` predicate, where the plain one was
-  /// proposed for DROP and the partial one was ignored. Those three are also
-  /// guarded by backend/__tests__/scripts/freshDbMigrationReplay.sentinel.test.mjs.
-  /// The sixteen here are the unguarded ones. Do not carry the partial-index
-  /// reassurance over to them.
+  /// The ONE index shape Prisma cannot express is a PARTIAL index (`WHERE …`),
+  /// and that limitation is harmless, because the differ cannot see a partial
+  /// index to drop it either. See the three ACTIVE-only partial unique indexes
+  /// on the staff-assignment tables (Equoria-kccmt; see RiderAssignment /
+  /// TrainerAssignment / GroomAssignment) — verified by isolating the single
+  /// variable: two unique indexes on one table differing ONLY in a `WHERE`
+  /// predicate, where the plain one was proposed for DROP and the partial one
+  /// was ignored. Those three are additionally guarded by
+  /// backend/__tests__/scripts/freshDbMigrationReplay.sentinel.test.mjs.
+  /// Everything else in this set IS expressible on Prisma 6.8.2 with no
+  /// `previewFeatures`: GIN access methods (`type: Gin`), array and jsonb
+  /// operator classes, composite column order, `sort: Desc`, and two indexes
+  /// over identical columns under different names.
+  @@index([age, trainingCooldown], map: "idx_horses_age_and_training_status")
+  @@index([breedId, age], map: "idx_horses_breedid_age")
+  @@index([userId, stableId], map: "idx_horses_ownerid_stableid")
+  @@index([userId, age], map: "idx_horses_userid_age")
+  @@index([userId, age, trainingCooldown], map: "idx_horses_userid_age_trainingcooldown")
+  @@index([userId, breedId], map: "idx_horses_userid_breedid")
+  @@index([userId, createdAt], map: "idx_horses_userid_createdat")
+  @@index([disciplineScores], map: "idx_horses_discipline_scores_filter", type: Gin)
+  @@index([epigeneticFlags(ops: ArrayOps)], map: "idx_horses_epigenetic_flags_gin", type: Gin)
+  @@index([epigeneticModifiers], map: "idx_horses_epigeneticmodifiers_gin", type: Gin)
+  @@index([conformationScores], map: "idx_horses_stats_gin", type: Gin)
+  @@index([ultraRareTraits], map: "idx_horses_ultrararetraits_gin", type: Gin)
   @@map("horses")
 }
 
@@ -795,23 +866,30 @@ model SystemAccount {
   /// Current balance. Mutated only through the helper functions.
   balance   Int      @default(0)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  /// Equoria-mxftz: `prisma migrate dev` WILL propose
+  /// Equoria-mxftz / Equoria-69gip: the `@default(now())` here DESCRIBES the
+  /// column migration
+  /// 20260529120000_si69u_add_show_escrow_columns_and_system_accounts already
+  /// created — `NOT NULL DEFAULT CURRENT_TIMESTAMP`. Without it Prisma sees the
+  /// database default as stray and proposes
   /// `ALTER TABLE "system_accounts" ALTER COLUMN "updatedAt" DROP DEFAULT`
-  /// (measured 2026-09-08). Migration
-  /// 20260529120000_si69u_add_show_escrow_columns_and_system_accounts created
-  /// the column `NOT NULL DEFAULT CURRENT_TIMESTAMP`, while `@updatedAt` is
-  /// maintained by the Prisma client — so Prisma sees the database default as
-  /// stray and wants it gone.
+  /// (measured 2026-09-08, re-measured 2026-09-09). Declaring it makes that
+  /// statement stop being generated, and it needs no migration because the
+  /// database already has the default — the schema is being brought into line
+  /// with reality, not the other way round. This is the single NON-INDEX item in
+  /// the Equoria-69gip set; owner ruling 2026-09-09 was to keep it, on the
+  /// grounds that leaving it out would return that one `ALTER COLUMN` to the
+  /// proposal and defeat the point of the task.
   ///
-  /// Verified before writing this: no backend code raw-INSERTs into this table
-  /// (the only `INSERT INTO "system_accounts"` in the tree is inside that
-  /// migration, and it supplies `updatedAt` explicitly), so accepting the DROP
-  /// would not break a current writer. Decline it anyway unless the owner asks
-  /// for it: the column stays `NOT NULL`, so afterwards any future raw seed or
-  /// `$executeRaw` that omits `updatedAt` fails instead of defaulting, and the
-  /// churn buys nothing.
+  /// `@updatedAt` continues to maintain the value on every Prisma-client write;
+  /// the database default only ever covers a raw INSERT that omits the column.
+  /// Verified: no backend code raw-INSERTs into this table (the only
+  /// `INSERT INTO "system_accounts"` in the tree is inside that migration, and it
+  /// supplies `updatedAt` explicitly). Do NOT accept the DROP DEFAULT if some
+  /// future proposal offers it: the column stays `NOT NULL`, so afterwards any
+  /// raw seed or `$executeRaw` that omits `updatedAt` would fail instead of
+  /// defaulting, and the churn buys nothing.
+  updatedAt DateTime @updatedAt @default(now())
+
   @@map("system_accounts")
 }
 
@@ -1048,40 +1126,55 @@ model UserTransaction {
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// Equoria-qh6jk / Equoria-mxftz: a SECOND index on the same two columns
-  /// exists in the database and is not declared here —
+  /// Equoria-qh6jk / Equoria-mxftz / Equoria-69gip: a SECOND index on the same
+  /// two columns exists in the database —
   /// `user_transactions_user_created_idx ("userId", "createdAt" DESC)`, created
   /// in raw SQL by 20260528120000_qh6jk_align_runtime_indexes after
   /// backend/services/financialLedgerService.mjs had been creating it at
-  /// runtime. It is NOT redundant with the `@@index` below: that one ascends,
-  /// the raw one descends, which is what newest-first ledger reads want.
-  ///
-  /// Nothing in the repository guards it. No test asserts this index exists, so
-  /// if it is ever dropped, nothing fails — the newest-first ledger read just
-  /// gets a worse plan. (The three partial unique indexes on the staff-assignment
-  /// tables ARE sentinelled; do not assume the same cover here.)
-  ///
-  /// `prisma migrate dev` WILL propose
-  /// `DROP INDEX "user_transactions_user_created_idx"` because this file does
-  /// not declare it (measured 2026-09-08). Delete that DROP from any generated
-  /// migration — but the real fix is one line, and it is available now:
-  ///
-  ///   @@index([userId, createdAt(sort: Desc)], map: "user_transactions_user_created_idx")
+  /// runtime. It is now DECLARED below, with `map:` pinning that name, so
+  /// `prisma migrate dev` no longer proposes dropping it. Nothing needs deleting
+  /// from a generated migration; the earlier instruction to do that has been
+  /// removed as the wrong remedy (see the `Horse` block).
   ///
   /// `sort:` has been generally available since Prisma 4.0, needs no
   /// `previewFeatures`, and this very file already uses it six times — see
   /// `Notification`, which declares the identical `(userId, createdAt DESC)`
   /// shape. `map:` pins the existing index name, the idiom `Show` uses.
   ///
+  /// WITHDRAWN CLAIM (Equoria-69gip, 2026-09-09). This block previously said the
+  /// DESC index "is NOT redundant with the `@@index` below: that one ascends,
+  /// the raw one descends, which is what newest-first ledger reads want", and
+  /// that dropping it would leave "the newest-first ledger read with a worse
+  /// plan". The two index DEFINITIONS do differ, and that half is true. The
+  /// load-bearing inference does not hold. This table's only reader is
+  /// `getTransactionsForUser`
+  /// (backend/modules/economy/services/financialLedgerService.mjs), which issues
+  /// `WHERE "userId" = ? ORDER BY "createdAt" DESC, id DESC LIMIT n`. Read-only
+  /// `EXPLAIN` inside `BEGIN READ ONLY` with `enable_seqscan` off plans a Bitmap
+  /// Index Scan on this index for the `userId` equality followed by a Sort — the
+  /// DESC ordering is never used, and the identical plan shape appears for
+  /// `ORDER BY "createdAt" ASC`. No index in this schema can satisfy the full
+  /// `createdAt DESC, id DESC` order, so a sort step survives either way.
+  ///
+  /// Caveat, stated because this ticket's history is a lesson in overclaiming:
+  /// that measurement was on 239 rows. At production scale the planner could
+  /// switch to an ordered index scan — though the `id DESC` tiebreaker keeps a
+  /// sort or incremental sort in the plan regardless. So this is grounds to
+  /// DECIDE the index deliberately (Equoria-bebob), NOT grounds to assume it is
+  /// load-bearing and NOT grounds to drop it. It is declared below exactly as it
+  /// exists in the database; the ASC `@@index` was deliberately NOT substituted
+  /// for it, because that would change behaviour.
+  ///
   /// Measured, not assumed (Equoria-mxftz fix round 2,
-  /// .superpowers/sdd/FINDINGS/task-14-r2-desc-index-declarable.log): adding that
-  /// line changes the migration Prisma generates by exactly one statement — the
-  /// `DROP INDEX` disappears and NOTHING is added. Prisma treats the declaration
-  /// as already satisfied by the index qh6jk created, because the name, columns
-  /// and ordering all match. **So this needs no migration; it is a pure
-  /// declaration catch-up, safe to take on its own.** Round 1 of this task
-  /// claimed a DESC ordering could not be expressed here at all. That was wrong,
-  /// and `Notification` above was the disproof.
+  /// .superpowers/sdd/FINDINGS/task-14-r2-desc-index-declarable.log, re-measured
+  /// under Equoria-69gip 2026-09-09): the declaration below changes the migration
+  /// Prisma generates by exactly one statement — the `DROP INDEX` disappears and
+  /// NOTHING is added. Prisma treats the declaration as already satisfied by the
+  /// index qh6jk created, because the name, columns and ordering all match.
+  /// **So this needed no migration; it is a pure declaration catch-up.** Round 1
+  /// of this task claimed a DESC ordering could not be expressed here at all.
+  /// That was wrong, and `Notification` above was the disproof.
+  @@index([userId, createdAt(sort: Desc)], map: "user_transactions_user_created_idx")
   @@index([userId, createdAt])
   @@index([category])
   @@map("user_transactions")
