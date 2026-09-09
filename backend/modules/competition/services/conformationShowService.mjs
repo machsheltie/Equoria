@@ -91,7 +91,8 @@ export class ConformationGroomMissingError extends Error {
  * Rejects if:
  *  - className is not a valid conformation sex/category class
  *  - horse is not owned by userId
- *  - groom is not owned by userId
+ *  - groom is not on userId's staff (Equoria-ypb7d.2: `Groom.userId` is an
+ *    engagement, not ownership — players never own grooms)
  *  - groom is not actively assigned to the horse
  *  - groom assignment is younger than MIN_GROOM_ASSIGNMENT_DAYS
  *  - horse.age < 0 (negative age is invalid)
