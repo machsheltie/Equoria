@@ -14,6 +14,9 @@ import {
   ENHANCED_INTERACTIONS,
 } from '../services/enhancedGroomInteractions.mjs';
 import { updateGroomSynergy } from '../services/groomProgressionService.mjs';
+// Equoria-ypb7d.3: a groom inside the one-week fee grace period stays on staff but
+// cannot groom. Pure check over the groom row this handler already fetches.
+import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
 
@@ -214,6 +217,20 @@ export async function performEnhancedInteraction(req, res) {
         success: false,
         message: 'Groom not found or not owned by user',
         data: null,
+      });
+    }
+
+    // Equoria-ypb7d.3: "The groom can't groom horse until paid for that week"
+    // (owner, 2026-09-09). Applied HERE as well as in
+    // groomInteractionController.recordInteraction, because this is the second
+    // care path and a rule enforced on only one of two doors is not enforced.
+    // Pure check over the groom row already fetched, so no extra query.
+    const workCheck = checkGroomMayWork(groom);
+    if (!workCheck.allowed) {
+      return res.status(400).json({
+        success: false,
+        message: workCheck.reason,
+        data: { groomId: groom.id, groomUnavailable: workCheck.code },
       });
     }
 

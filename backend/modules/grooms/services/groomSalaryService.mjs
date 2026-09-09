@@ -1,8 +1,48 @@
 /**
- * Groom Salary Service
+ * Groom Salary Service — the WEEKLY FEE that sustains an engagement.
  *
- * Handles weekly salary deductions for hired grooms
- * Implements automatic salary processing and payment tracking
+ * Equoria-ypb7d.3, implementing the owner's ruling of 2026-09-09 (Equoria-m0w8n,
+ * answering Equoria-0aybn):
+ *
+ *   "They are HIRED by players and charged a weekly fee. ... A groom is working
+ *    for a player and so long as they pay their weekly fee, they keep the groom
+ *    on their staff. If they fail to pay for a groom for a week, the groom goes
+ *    back to the Grooms for hire section of the marketplace and can be hired by
+ *    other players. So for clarity, a player gets one weeks grace period. The
+ *    groom can't groom horse until paid for that week but they don't officially
+ *    lose the groom once until they fail to pay for a whole week."
+ *
+ * TWO THINGS CHANGED HERE, AND BOTH ARE VISIBLE TO PLAYERS:
+ *
+ *   1. THE FEE BASIS. It used to be charged per ACTIVE `GroomAssignment` — so a
+ *      groom you had hired but not put on a horse cost nothing, and a groom on
+ *      three horses cost three times. The ruling makes the fee what keeps a groom
+ *      ON YOUR STAFF, so it is now charged ONCE per groom you employ, assigned or
+ *      not. The RATES are unchanged (`SALARY_CONFIG` below, 50-165/week); only
+ *      what is counted changed. This is an economy change and is reported as one
+ *      — it is a consequence of the ruling, not a rebalance.
+ *
+ *   2. NON-PAYMENT. `terminateGroomsForNonPayment` is GONE. It had never once
+ *      worked: it wrote `terminationReason` to `GroomAssignment`, which has no
+ *      such column, so Prisma rejected the first statement and the function's own
+ *      catch swallowed the throw — a player who could not pay kept their grooms
+ *      silently, forever (Equoria-0aybn). It is replaced by the ruling's actual
+ *      mechanic, which is per-GROOM and measured in PAY WEEKS:
+ *
+ *        week 1 unpaid  -> `Groom.feeUnpaidSince` = that pay week's Monday.
+ *                          The groom stays on staff and CANNOT GROOM
+ *                          (groomEngagementService.checkGroomMayWork). The player
+ *                          is told, in the same transaction.
+ *        week 2 unpaid  -> a full week has gone by unpaid: the engagement ends,
+ *                          `Groom.userId` is cleared, active assignments are
+ *                          ENDED (never deleted), and the groom joins the
+ *                          grooms-for-hire pool where anyone may hire them. The
+ *                          player is told, in the same transaction.
+ *        paid           -> `feeUnpaidSince` cleared; the groom works again.
+ *
+ *      Grace is measured by comparing PAY WEEKS, not elapsed milliseconds: this
+ *      job runs at 09:00 UTC on Mondays, and a `now > graceStart + 7 days` test
+ *      decided a player's staff on seconds of cron jitter.
  *
  * Equoria-7r67q (hjtys follow-up #3): the per-user payment block in
  * `processWeeklySalaries` was rewritten to:
@@ -22,9 +62,9 @@
  *        sum(User.money) + sum(SystemAccount.balance) = const
  *      that Equoria-si69u / Equoria-en1ab established for the other sinks.
  *
- * The `InsufficientFundsError` path routes to the existing
- * `handleInsufficientFunds(userId, userGroup)` branch — unchanged, but now
- * triggered by the typed exception from `debitMoneyOrThrow` instead of a
+ * The `InsufficientFundsError` path routes to `handleUnpaidFees(userId, unpaid,
+ * payWeekStart)` (Equoria-ypb7d.3 — it replaced `handleInsufficientFunds`),
+ * triggered by the typed exception from `debitMoneyOrThrow` rather than by a
  * stale-read pre-check.
  *
  * Equoria-icqqm: `processWeeklySalaries` is now IDEMPOTENT per pay week.
@@ -43,6 +83,14 @@ import {
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
+// Equoria-ypb7d.2: a groom on staff since before `groom_engagements` existed gets
+// its engagement row opened by the fee pass, which is the transaction that proves
+// the engagement is live. The migration backfills none on purpose.
+import { ensureEngagementTx } from './groomEngagementService.mjs';
+// Equoria-ypb7d.3: what happens when the money is not there — one week of grace,
+// then release to the grooms-for-hire pool. Replaces the never-working
+// `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
+import { handleUnpaidFees } from './groomFeeArrearsService.mjs';
 
 // Salary configuration
 export const SALARY_CONFIG = {
@@ -64,7 +112,12 @@ export const SALARY_CONFIG = {
   // Payment processing day (0 = Sunday, 1 = Monday, etc.)
   PAYMENT_DAY: 1, // Monday
 
-  // Grace period before termination (days)
+  // Equoria-ypb7d.3: the owner's grace period is ONE PAY WEEK, and it is now
+  // measured in pay weeks per groom (`Groom.feeUnpaidSince` vs the pay week being
+  // processed — see `hasFullUnpaidWeek`), not in days from a user-level timestamp.
+  // This constant is retained ONLY because `groomSalaryController.getSalarySummary`
+  // renders `gracePeriodDaysRemaining` from `User.groomSalaryGracePeriod` + 7 days,
+  // which is the same seven days. Nothing in the release decision reads it.
   GRACE_PERIOD_DAYS: 7,
 
   // Minimum balance required to keep grooms
@@ -112,13 +165,23 @@ export function getPayWeekStart(now = new Date()) {
 }
 
 /**
- * Process weekly salary payments for all active grooms.
+ * Process the weekly fee for every groom on a player's staff.
+ *
+ * Equoria-ypb7d.3 — THE BASIS IS THE ENGAGEMENT, NOT THE ASSIGNMENT. The
+ * selection below reads GROOMS with a `userId` (i.e. on someone's staff), not
+ * active `GroomAssignment` rows. A groom you employ but have not put on a horse
+ * is still on your staff and still costs the weekly fee; a groom on three horses
+ * costs it once. That is what "so long as they pay their weekly fee, they keep the
+ * groom on their staff" means. Retired grooms are excluded: `retired: false` — a
+ * retired groom keeps its `userId` so the player can still read their history
+ * (see the field comment in schema.prisma), and billing them would be charging
+ * for a career that has ended.
  *
  * Equoria-icqqm — PAY-WEEK IDEMPOTENCY: a re-run in the same pay week is a
  * no-op for every groom that already has a `status: 'paid'` weekly_salary
  * payment row dated inside the pay week. Grooms without one (fresh run,
  * partial-run recovery, groom hired after the cron fired) are still paid,
- * and ONLY their salaries are debited. A run in a NEW pay week always pays.
+ * and ONLY their fees are debited. A run in a NEW pay week always pays.
  * Guarded users are reported via `results.skipped`.
  *
  * Race safety: the "already paid?" read and the debit share a per-(user,
@@ -133,20 +196,37 @@ export function getPayWeekStart(now = new Date()) {
  *
  * @param {Date} [now] - Injection point for the pay-week clock (tests /
  *   backfills). Production callers pass nothing.
+ * @param {Object} [options]
+ * @param {string|null} [options.userId] - Scope the pass to ONE player.
+ *   Equoria-ypb7d.3 added this, and it is not cosmetic. Before this story a
+ *   non-payment was a silent no-op (`terminateGroomsForNonPayment` threw on a
+ *   column that does not exist and swallowed it), so an unscoped test run against
+ *   the shared development database was harmless. It is not any more: an unscoped
+ *   run now puts every underfunded player's grooms into the grace period and
+ *   RELEASES the ones already in it. Tests must scope to their own fixture user.
+ *   Mirrors `processWeeklyCareerProgression(userId)`. Production passes nothing.
  * @returns {Object} Processing results
  */
-export async function processWeeklySalaries(now = new Date()) {
+export async function processWeeklySalaries(now = new Date(), { userId: scopeUserId = null } = {}) {
   try {
-    logger.info('[groomSalaryService] Starting weekly salary processing...');
+    logger.info('[groomSalaryService] Starting weekly groom fee processing...');
 
-    // Get all active groom assignments
-    const activeAssignments = await prisma.groomAssignment.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        groom: true,
-        user: true,
+    // Every groom currently on a player's staff. See the note above on why this is
+    // a groom read and not an assignment read.
+    const staffWhere = { userId: { not: null }, retired: false, isActive: true };
+    if (scopeUserId) {
+      staffWhere.userId = scopeUserId;
+    }
+    const staff = await prisma.groom.findMany({
+      where: staffWhere,
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        skillLevel: true,
+        speciality: true,
+        feeUnpaidSince: true,
+        user: { select: { id: true, username: true } },
       },
     });
 
@@ -159,36 +239,35 @@ export async function processWeeklySalaries(now = new Date()) {
       successful: 0,
       failed: 0,
       skipped: 0, // Equoria-icqqm: users fully paid for this pay week already
-      terminated: 0,
+      graced: 0, // Equoria-ypb7d.3: grooms that entered the one-week grace period
+      released: 0, // Equoria-ypb7d.3: grooms returned to the grooms-for-hire pool
+      terminated: 0, // retained key name; now counts the same as `released`
       totalAmount: 0,
       errors: [],
     };
 
-    // Group assignments by user to batch process payments
+    // Group by the employing player so one debit covers their whole staff.
     const userGroups = {};
-    for (const assignment of activeAssignments) {
-      const { userId } = assignment;
-      // Defensive: groom assignments may have userId = null per schema
-      // (GroomAssignment.userId is String?). Skip those — they have no
-      // wallet to debit and represent a stale / orphaned assignment that
-      // should be addressed by data-cleanup, not silently double-paid.
+    for (const groom of staff) {
+      const { userId } = groom;
+      // `Groom.userId` is `String?`; the where clause excludes NULL, so this is a
+      // belt-and-braces guard rather than a live branch.
       if (!userId) {
         continue;
       }
       if (!userGroups[userId]) {
         userGroups[userId] = {
-          user: assignment.user,
+          user: groom.user ?? { id: userId, username: userId },
           assignments: [],
           totalSalary: 0,
         };
       }
 
-      const salary = calculateWeeklySalary(assignment.groom);
-      userGroups[userId].assignments.push({
-        assignment,
-        groom: assignment.groom,
-        salary,
-      });
+      const salary = calculateWeeklySalary(groom);
+      // The key stays `assignments` so every existing reader of this shape
+      // (handleUnpaidFees, the tests) keeps working; each entry is now one GROOM
+      // on staff rather than one active assignment.
+      userGroups[userId].assignments.push({ groom, salary });
       userGroups[userId].totalSalary += salary;
     }
 
@@ -288,7 +367,15 @@ export async function processWeeklySalaries(now = new Date()) {
               // the payment rows — no orphan ledger drift. paymentDate uses
               // the run's `now` so the row lands inside the pay-week window
               // the idempotency predicate queries.
-              for (const { assignment: _assignment, groom, salary } of unpaidAssignments) {
+              for (const { groom, salary } of unpaidAssignments) {
+                // Equoria-ypb7d.2 backstop: a groom on staff since before
+                // `groom_engagements` existed has no engagement row, and the
+                // migration deliberately backfills none. Open one now, inside the
+                // fee transaction that proves the engagement is live. Idempotent,
+                // and the partial unique index means a concurrent second attempt
+                // aborts this transaction rather than creating a second open row.
+                await ensureEngagementTx(tx, groom.id, userId);
+
                 await tx.groomSalaryPayment.create({
                   data: {
                     groomId: groom.id,
@@ -301,8 +388,31 @@ export async function processWeeklySalaries(now = new Date()) {
                 });
 
                 logger.info(
-                  `[groomSalaryService] Paid $${salary} salary to groom ${groom.name} for user ${user.username}`,
+                  `[groomSalaryService] Paid $${salary} weekly fee for groom ${groom.name} (user ${user.username})`,
                 );
+              }
+
+              // Equoria-ypb7d.3: paying clears the grace marker, so a groom who
+              // could not work last week works again this week. Guarded on
+              // `not: null` so the statement is a no-op in the ordinary case.
+              await tx.groom.updateMany({
+                where: {
+                  id: { in: unpaidAssignments.map(entry => entry.groom.id) },
+                  feeUnpaidSince: { not: null },
+                },
+                data: { feeUnpaidSince: null },
+              });
+
+              // And the user-level pointer the salary summary renders
+              // (`inGracePeriod`) is cleared once NOTHING of theirs is in arrears.
+              const stillUnpaid = await tx.groom.count({
+                where: { userId, retired: false, feeUnpaidSince: { not: null } },
+              });
+              if (stillUnpaid === 0) {
+                await tx.user.updateMany({
+                  where: { id: userId, groomSalaryGracePeriod: { not: null } },
+                  data: { groomSalaryGracePeriod: null },
+                });
               }
 
               return { skipped: false, amount: unpaidTotal };
@@ -311,20 +421,26 @@ export async function processWeeklySalaries(now = new Date()) {
           );
         } catch (txError) {
           if (txError instanceof InsufficientFundsError) {
-            // Insufficient funds — start grace period or terminate.
-            // The handler operates OUTSIDE the tx (using the autocommit
-            // client) because the tx already aborted; its own writes are
-            // independent and idempotent w.r.t. the rolled-back debit.
-            // Equoria-icqqm: report only the UNPAID subset — grooms already
-            // paid this week were not part of the failed debit and must not
-            // be logged as missed.
-            await handleInsufficientFunds(userId, {
-              ...userGroup,
-              assignments: unpaidAssignments,
-              totalSalary: unpaidTotal,
-            });
+            // Insufficient funds — enter grace, or release after a full week.
+            // The handler operates OUTSIDE the aborted tx and opens its own
+            // per-groom transactions; its writes are independent of, and
+            // idempotent with respect to, the rolled-back debit.
+            // Equoria-icqqm: only the UNPAID subset — grooms already paid this
+            // week were not part of the failed debit and must not be logged as
+            // missed.
+            //
+            // NOTE, because it is a real product consequence and not a bug: the
+            // debit is ONE total for the player's whole staff, so a player who
+            // cannot afford ALL their grooms pays for NONE of them and every one
+            // enters grace together. That is the pre-existing behaviour, kept
+            // deliberately; paying for as many as affordable would be a new rule
+            // and is the owner's to make.
+            const outcome = await handleUnpaidFees(userId, unpaidAssignments, payWeekStart);
+            results.graced += outcome.graced;
+            results.released += outcome.released;
+            results.terminated += outcome.released;
             results.failed++;
-            results.errors.push(`User ${user.username} has insufficient funds for groom salaries`);
+            results.errors.push(`User ${user.username} could not pay this week's groom fees`);
             continue;
           }
           // Any non-InsufficientFunds error propagates to the outer catch
@@ -376,141 +492,6 @@ export async function processWeeklySalaries(now = new Date()) {
 }
 
 /**
- * Handle insufficient funds for groom salaries
- * @param {string} userId - User ID
- * @param {Object} userGroup - User group with assignments and total salary
- */
-async function handleInsufficientFunds(userId, userGroup) {
-  try {
-    // Re-read the user row to get the current grace-period state. The
-    // userGroup.user snapshot from the top-of-function findMany may be
-    // stale by the time we get here (especially in the InsufficientFunds
-    // branch where a concurrent op drained the wallet).
-    const freshUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, username: true, groomSalaryGracePeriod: true },
-    });
-    const user = freshUser ?? userGroup.user;
-    const gracePeriodStart = user?.groomSalaryGracePeriod ?? null;
-
-    if (!gracePeriodStart) {
-      // Start grace period
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          groomSalaryGracePeriod: new Date(),
-        },
-      });
-
-      logger.warn(
-        `[groomSalaryService] Started grace period for user ${user.username} - insufficient funds for groom salaries`,
-      );
-
-      // Log missed payment
-      for (const { groom, salary } of userGroup.assignments) {
-        await prisma.groomSalaryPayment.create({
-          data: {
-            groomId: groom.id,
-            userId,
-            amount: salary,
-            paymentDate: new Date(),
-            paymentType: 'weekly_salary',
-            status: 'missed_insufficient_funds',
-          },
-        });
-      }
-    } else {
-      // Check if grace period has expired
-      const gracePeriodEnd = new Date(gracePeriodStart);
-      gracePeriodEnd.setDate(gracePeriodEnd.getDate() + SALARY_CONFIG.GRACE_PERIOD_DAYS);
-
-      if (new Date() > gracePeriodEnd) {
-        // Grace period expired - terminate all groom assignments
-        await terminateGroomsForNonPayment(userId, userGroup);
-        logger.warn(
-          `[groomSalaryService] Terminated all grooms for user ${user.username} - grace period expired`,
-        );
-      } else {
-        // Still in grace period
-        logger.warn(
-          `[groomSalaryService] User ${user.username} still in grace period for groom salary payments`,
-        );
-
-        // Log missed payment
-        for (const { groom, salary } of userGroup.assignments) {
-          await prisma.groomSalaryPayment.create({
-            data: {
-              groomId: groom.id,
-              userId,
-              amount: salary,
-              paymentDate: new Date(),
-              paymentType: 'weekly_salary',
-              status: 'missed_grace_period',
-            },
-          });
-        }
-      }
-    }
-  } catch (error) {
-    logger.error(
-      `[groomSalaryService] Error handling insufficient funds for user ${userId}: ${error.message}`,
-    );
-  }
-}
-
-/**
- * Terminate all groom assignments for a user due to non-payment
- * @param {string} userId - User ID
- * @param {Object} userGroup - User group with assignments
- */
-async function terminateGroomsForNonPayment(userId, userGroup) {
-  try {
-    // Deactivate all groom assignments
-    await prisma.groomAssignment.updateMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-      data: {
-        isActive: false,
-        endDate: new Date(),
-        terminationReason: 'non_payment',
-      },
-    });
-
-    // Clear grace period
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        groomSalaryGracePeriod: null,
-      },
-    });
-
-    // Log termination payments
-    for (const { groom, salary } of userGroup.assignments) {
-      await prisma.groomSalaryPayment.create({
-        data: {
-          groomId: groom.id,
-          userId,
-          amount: salary,
-          paymentDate: new Date(),
-          paymentType: 'weekly_salary',
-          status: 'terminated_non_payment',
-        },
-      });
-    }
-
-    logger.info(
-      `[groomSalaryService] Terminated ${userGroup.assignments.length} groom assignments for user ${userId} due to non-payment`,
-    );
-  } catch (error) {
-    logger.error(
-      `[groomSalaryService] Error terminating grooms for user ${userId}: ${error.message}`,
-    );
-  }
-}
-
-/**
  * Get salary payment history for a user
  * @param {string} userId - User ID
  * @param {number} limit - Number of records to return (default: 50)
@@ -548,41 +529,56 @@ export async function getSalaryPaymentHistory(userId, limit = 50) {
 }
 
 /**
- * Calculate total weekly salary cost for a user
+ * Calculate the total weekly fee a user owes for their groom staff.
+ *
+ * Equoria-ypb7d.3: this MUST match what `processWeeklySalaries` actually charges,
+ * or the salary summary lies to the player about `weeksAffordable` — which
+ * PRODUCT.md principle 7 forbids. So it counts the same thing the pass counts:
+ * every groom on the player's staff (`Groom.userId`, not retired), assigned or
+ * not, once each. It previously counted active `GroomAssignment` rows, which after
+ * the basis change would have under-reported an unassigned groom as free and
+ * over-reported a groom on three horses as triple.
+ *
+ * `feeUnpaidSince` is included in the breakdown because a groom in arrears still
+ * costs the fee — that is what "one week of grace" means — and because the surface
+ * needs to be able to say which groom cannot work.
+ *
  * @param {string} userId - User ID
- * @returns {Object} Salary cost breakdown
+ * @returns {Object} Weekly fee breakdown
  */
 export async function calculateUserSalaryCost(userId) {
   try {
-    const activeAssignments = await prisma.groomAssignment.findMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-      include: {
-        groom: true,
+    const staff = await prisma.groom.findMany({
+      where: { userId, retired: false, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        skillLevel: true,
+        speciality: true,
+        feeUnpaidSince: true,
       },
     });
 
     let totalWeeklyCost = 0;
     const breakdown = [];
 
-    for (const assignment of activeAssignments) {
-      const salary = calculateWeeklySalary(assignment.groom);
+    for (const groom of staff) {
+      const salary = calculateWeeklySalary(groom);
       totalWeeklyCost += salary;
 
       breakdown.push({
-        groomId: assignment.groom.id,
-        groomName: assignment.groom.name,
-        skillLevel: assignment.groom.skillLevel,
-        speciality: assignment.groom.speciality,
+        groomId: groom.id,
+        groomName: groom.name,
+        skillLevel: groom.skillLevel,
+        speciality: groom.speciality,
         weeklySalary: salary,
+        feeUnpaid: groom.feeUnpaidSince !== null,
       });
     }
 
     return {
       totalWeeklyCost,
-      groomCount: activeAssignments.length,
+      groomCount: staff.length,
       breakdown,
     };
   } catch (error) {

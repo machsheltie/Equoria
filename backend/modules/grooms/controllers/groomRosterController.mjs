@@ -42,6 +42,10 @@ import { CapExceededError } from '../groomErrors.mjs';
 // hire transaction, so a hired groom always has a schedule and a rolled-back
 // hire leaves no orphan schedule row.
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
+// Equoria-ypb7d.1: every groom enters the game with an age drawn from 18-24.
+import { drawStartAge } from '../services/groomAgeService.mjs';
+// Equoria-ypb7d.2: hiring OPENS AN ENGAGEMENT. Players never own grooms.
+import { openEngagementTx } from '../services/groomEngagementService.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -266,6 +270,13 @@ export async function hireGroom(req, res) {
               bio,
               availability: availability || {},
               userId,
+              // Equoria-ypb7d.1: the groom's age when they entered the game,
+              // drawn uniformly from 18..24 and never recomputed. Their age
+              // thereafter is `startAge + careerWeeks`, which the weekly career
+              // pass advances — see services/groomAgeService.mjs. Unlike the
+              // retirement age below this value is not secret; it simply has no
+              // player-facing surface yet (Equoria-ypb7d.5 owns that).
+              startAge: drawStartAge(),
               // Note: hiringCost is not stored in groom model, only used for transaction
             },
           });
@@ -275,6 +286,12 @@ export async function hireGroom(req, res) {
           // hire. Writes to `groom_retirement_schedules`; returns the age, which
           // is deliberately NOT propagated into the hire response.
           await ensureRetirementSchedule(prismaTx, groom.id);
+
+          // Equoria-ypb7d.2: hiring opens an ENGAGEMENT, not an ownership. In the
+          // same transaction so a rolled-back hire leaves no orphan row. The groom
+          // was created one statement ago, so it cannot already have an open one
+          // and the partial unique index cannot fire here.
+          await openEngagementTx(prismaTx, groom.id, userId);
 
           // Equoria-otii0: atomic debit + paired burn credit (conservation).
           // Throws InsufficientFundsError (statusCode 400) when the wallet no

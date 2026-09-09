@@ -21,13 +21,14 @@
  *
  * WHY MONDAY 09:45 UTC
  *   Unchanged from the original placement, and the ordering is the point:
- *     09:00  weeklySalaries (cronJobService)   — bills per ACTIVE groom assignment
+ *     09:00  weeklySalaries (cronJobService)   — bills every groom ON STAFF
  *     09:30  riderTrainerRetirement            — sibling staff-retirement pass
  *     09:45  groomCareerProgression            — this job
- *   Running AFTER payroll is deliberate: `processWeeklySalaries` charges per
- *   active assignment, so retiring a groom first would end their assignments
- *   before they were paid and silently cost a groom who worked that week their
- *   final wage. Re-verified against BOTH registries when this moved: no job in
+ *   Running AFTER payroll is deliberate: `processWeeklySalaries` charges the
+ *   weekly fee for every groom on a player's staff (Equoria-ypb7d.3 changed the
+ *   basis from per-ACTIVE-ASSIGNMENT to per-engagement), so retiring a groom
+ *   first would end the engagement before they were paid and silently cost a
+ *   groom who worked that week their final wage. Re-verified against BOTH registries when this moved: no job in
  *   backend/services/jobs/index.mjs or cron-job-service-jobs/index.mjs claims
  *   `45 9 * * 1`. One interval job does coincide: `electionStatusTransition` runs
  *   every 15 minutes, so it fires at :00/:15/:30/:45 and therefore shares this

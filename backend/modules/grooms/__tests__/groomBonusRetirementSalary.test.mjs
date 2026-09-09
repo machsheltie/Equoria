@@ -196,10 +196,48 @@ describe('getSalaryPaymentHistory', () => {
 });
 
 describe('calculateUserSalaryCost', () => {
-  it('returns zero cost for user with no active assignments', async () => {
+  // Equoria-ypb7d.3 — THE CONTRACT CHANGED HERE, DELIBERATELY, AND THIS CASE IS
+  // THE STATEMENT OF IT.
+  //
+  // This case previously read "returns zero cost for user with no active
+  // assignments" and asserted `totalWeeklyCost === 0` for exactly this fixture: a
+  // user with ONE groom on their staff and no `GroomAssignment` row. Under the
+  // owner's ruling of 2026-09-09 the weekly fee is what keeps a groom ON YOUR
+  // STAFF — "so long as they pay their weekly fee, they keep the groom on their
+  // staff" — so an unassigned groom is no longer free. The fixture groom is a
+  // novice (the schema default) with speciality `foal_care`, which
+  // `SPECIALTY_BONUSES` does not key (it keys the camelCase `foalCare`), so the
+  // fee is the bare novice base of 50.
+  //
+  // The old assertion is not weakened; it is inverted, because it asserted the
+  // absence of the charge the ruling requires.
+  it('charges the weekly fee for a groom ON STAFF even with no active assignment', async () => {
     const result = await calculateUserSalaryCost(user.id);
-    expect(result.totalWeeklyCost).toBe(0);
-    expect(result.groomCount).toBe(0);
-    expect(Array.isArray(result.breakdown)).toBe(true);
+    expect(result.totalWeeklyCost).toBe(50);
+    expect(result.groomCount).toBe(1);
+    expect(result.breakdown).toEqual([
+      expect.objectContaining({ groomId: groom.id, weeklySalary: 50, feeUnpaid: false }),
+    ]);
+  });
+
+  it('returns zero for a user with no grooms at all', async () => {
+    const stranger = await prisma.user.create({
+      data: {
+        email: `groombonus-none-${randomBytes(4).toString('hex')}@test.com`,
+        username: `groombonusnone${randomBytes(4).toString('hex')}`,
+        password: 'irrelevant-hash',
+        firstName: 'GroomBonus',
+        lastName: 'NoStaff',
+        money: 1000,
+      },
+    });
+    try {
+      const result = await calculateUserSalaryCost(stranger.id);
+      expect(result.totalWeeklyCost).toBe(0);
+      expect(result.groomCount).toBe(0);
+      expect(result.breakdown).toEqual([]);
+    } finally {
+      await prisma.user.delete({ where: { id: stranger.id } });
+    }
   });
 });

@@ -17,13 +17,17 @@
  *       routes/groomRetirementRoutes.mjs and its regression
  *       __tests__/groomRetirementEndpointClosed.integration.test.mjs. The only
  *       production caller of `processRetirement` is
- *       `processWeeklyCareerProgression` below.
+ *       `processWeeklyCareerProgression`, which Equoria-ypb7d.1 moved to
+ *       services/groomCareerProgressionService.mjs.
  *
  *   I2  AGE-DRIVEN, AT A HIDDEN PER-GROOM AGE IN [50, 65]. Drawn once and
  *       persisted in `GroomRetirementSchedule`, never recomputed, so it cannot
- *       drift between reads. The unit is the same weekly tick as
- *       `Groom.careerWeeks` (Equoria's clock is 1 real week = 1 game-year, see
- *       backend/utils/horseAge.mjs), so the test is a direct age comparison.
+ *       drift between reads. Equoria-ypb7d.1 gave the comparison its missing
+ *       origin: a groom's age is `startAge + careerWeeks`, where `startAge` is
+ *       drawn from 18..24 at hire and `careerWeeks` still ticks once per weekly
+ *       pass — one game-year on Equoria's clock (1 real week = 1 game-year, see
+ *       backend/utils/horseAge.mjs). Pre-ypb7d the age WAS `careerWeeks` alone,
+ *       so a groom hired today was age 0. See services/groomAgeService.mjs.
  *
  *   I3  THE AGE IS NOT DISCOVERABLE BEFORE IT TAKES EFFECT. It lives in its own
  *       table so no groom read path can return it (see the schema comment on
@@ -62,9 +66,11 @@
  *
  * THE SCHEDULER: backend/services/jobs/groomCareerProgressionJob.mjs (registry A,
  * so advisory-locked AND heartbeat-wrapped AND visible at
- * /api/admin/cron/health) — Mondays 09:45 UTC. It runs AFTER weeklySalaries (09:00) because payroll
- * bills per ACTIVE assignment: retiring first would cost a groom who worked that
- * week their final wage. Read that descriptor's header before relying on it.
+ * /api/admin/cron/health) — Mondays 09:45 UTC. It runs AFTER weeklySalaries
+ * (09:00) because the weekly fee bills every groom ON STAFF (Equoria-ypb7d.3
+ * changed the basis from per-ACTIVE-ASSIGNMENT to per-engagement): retiring first
+ * would end the engagement before the groom who worked that week was paid. Read
+ * that descriptor's header before relying on it.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -86,6 +92,18 @@ import {
   ensureRetirementSchedule,
   readRetirementAge,
 } from './groomRetirementScheduleService.mjs';
+// Equoria-ypb7d.1: the groom's ORDINARY age — `startAge + careerWeeks`, on the
+// same 1-week-is-1-game-year clock horses use (backend/utils/horseAge.mjs). Not
+// secret, unlike the retirement age above; see groomAgeService.mjs.
+import { groomAgeYears } from './groomAgeService.mjs';
+// Equoria-ypb7d.2: retirement CLOSES the engagement (players never own grooms).
+import { ENGAGEMENT_END_REASONS, endEngagementTx } from './groomEngagementService.mjs';
+// Equoria-ypb7d.1: a reporting read over rows retirement already wrote, split out
+// so the age model fits under the 600-line cap. Re-exported so the route and every
+// existing importer are unchanged.
+import { getRetirementStatistics } from './groomRetirementStatsService.mjs';
+
+export { getRetirementStatistics };
 
 // Fix round 3: nothing from groomRetirementScheduleService.mjs is re-exported here
 // or on the default export. `export { drawRetirementAge, ensureRetirementSchedule }`
@@ -160,10 +178,49 @@ export async function incrementCareerWeeks(groomId) {
 }
 
 /**
+ * Make sure this groom has a retirement age drawn, and say only WHETHER one had
+ * to be drawn. The safe accessor the weekly pass uses.
+ *
+ * WHY IT EXISTS HERE AND NOT IN THE PASS (Equoria-ypb7d.1). The pass moved to
+ * groomCareerProgressionService.mjs when this file hit its 600-line cap, and it
+ * needs the backstop that draws a schedule for grooms predating Equoria-m9lz1.
+ * Calling `readRetirementAge` / `ensureRetirementSchedule` from there would be a
+ * doctrine violation, correctly: this file and groomRetirementScheduleService.mjs
+ * are the only two allowed to handle the hidden age, and
+ * scripts/doctrine-checks/check-no-retirement-schedule-leak.mjs enforces it. Its
+ * own failure message names the remedy — "expose a safe accessor from them" —
+ * and this is that accessor. It returns a BOOLEAN. It never returns, logs or
+ * interpolates the age, so no caller can obtain it through this door.
+ *
+ * @param {number} groomId
+ * @returns {Promise<boolean>} true when a schedule was drawn on this call
+ */
+export async function ensureRetirementDrawn(groomId) {
+  if ((await readRetirementAge(prisma, groomId)) !== null) {
+    return false;
+  }
+  await ensureRetirementSchedule(prisma, groomId);
+  return true;
+}
+
+/**
  * Check whether the game will retire this groom.
  *
- * The ONLY rule is age: `careerWeeks >= retirementAge`, where `retirementAge`
- * is the groom's hidden, once-drawn schedule value.
+ * The ONLY rule is age: `age >= retirementAge`, where `age` is the groom's real
+ * age — `startAge + careerWeeks` (Equoria-ypb7d.1) — and `retirementAge` is the
+ * groom's hidden, once-drawn schedule value in 50..65.
+ *
+ * WHY THE COMPARISON CHANGED. Pre-ypb7d it was `careerWeeks >= retirementAge`, so
+ * a groom hired today was age 0 and retired after 50-65 weekly passes — a
+ * real-world year, effectively retiring at about 75-90 (Equoria-maeba). The owner
+ * ruled: "grooms should have a built in start age. Anywhere from 18-24 years old."
+ * With that origin the wait is 26 to 47 weekly passes — still months of real time,
+ * which is inherent to a year-per-week clock and is stated, not hidden.
+ *
+ * NOTHING BUT CHANCE DECIDES THE TIMING: two independent uniform draws (18..24 and
+ * 50..65) and no other input. "Math.random determines when they retire between
+ * 50-65 years old. That is all." — owner, 2026-09-09. Do not reintroduce level,
+ * experience, assignment-count or performance influence under any name.
  *
  * WHAT THIS DELIBERATELY DOES NOT RETURN (Equoria-m9lz1, invariant I3): the
  * retirement age, a countdown to it (`weeksUntilRetirement`), or a
@@ -179,7 +236,13 @@ export async function incrementCareerWeeks(groomId) {
 export async function checkRetirementEligibility(groomId) {
   const groom = await prisma.groom.findUnique({
     where: { id: groomId },
-    select: { id: true, retired: true, careerWeeks: true, retirementSchedule: true },
+    select: {
+      id: true,
+      retired: true,
+      careerWeeks: true,
+      startAge: true,
+      retirementSchedule: true,
+    },
   });
 
   if (!groom) {
@@ -200,7 +263,17 @@ export async function checkRetirementEligibility(groomId) {
     return { eligible: false, reason: 'not_scheduled', mandatory: false };
   }
 
-  if (groom.careerWeeks >= retirementAge) {
+  // No start age drawn yet (a groom that predates Equoria-ypb7d and whose first
+  // weekly pass has not run). Its age is UNKNOWN, and unknown is not 0: treating
+  // it as 0 would postpone retirement by up to 24 game-years, and treating it as
+  // anything else would be inventing an age. Refuse to decide; the weekly pass
+  // draws one via `ensureStartAge` before it asks again.
+  const age = groomAgeYears(groom);
+  if (age === null) {
+    return { eligible: false, reason: 'age_unknown', mandatory: false };
+  }
+
+  if (age >= retirementAge) {
     return { eligible: true, reason: RETIREMENT_REASONS.AGE, mandatory: true };
   }
 
@@ -283,6 +356,22 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       where: { groomId, unassignedAt: null },
       data: { unassignedAt: retirementTimestamp },
     });
+
+    // Equoria-ypb7d.2: a career ending also ends the ENGAGEMENT — players never own
+    // grooms, so what retirement terminates is a working relationship, and the
+    // GroomEngagement row records why. Zero closed is normal (engagements predating
+    // that table have no row) and must not stop the retirement.
+    //
+    // `Groom.userId` is deliberately NOT cleared, unlike a non-payment release:
+    // `retired` already bars work and the hire pool, and keeping the pointer is what
+    // lets the player still read their retired grooms (invariant I5). See the
+    // field's comment in schema.prisma.
+    const closedEngagements = await endEngagementTx(
+      tx,
+      groomId,
+      ENGAGEMENT_END_REASONS.RETIREMENT,
+      retirementTimestamp,
+    );
 
     const retiredGroom = await tx.groom.findUnique({
       where: { id: groomId },
@@ -378,6 +467,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       retiredGroom,
       endedAssignmentCount: endedAssignments.count,
       closedAssignmentLogCount: closedLogs.count,
+      closedEngagementCount: closedEngagements,
       notificationIds,
       notificationRecipientIds: recipientIds,
       // Entries, so the post-commit publish sends each recipient EXACTLY the
@@ -426,6 +516,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     synergyRecords: retiredGroom.groomHorseSynergies.length,
     endedAssignmentCount: committed.endedAssignmentCount,
     closedAssignmentLogCount: committed.closedAssignmentLogCount,
+    closedEngagementCount: committed.closedEngagementCount,
     // Plural: one per notified player. Normally length 1 (the groom's own
     // owner); length 0 only when nobody could be notified, which the
     // transaction logs loudly when assignments were ended anyway.
@@ -437,161 +528,12 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
   };
 }
 
-/**
- * Get retirement statistics for a user.
- *
- * Equoria-m9lz1: the former `approachingRetirement` key is GONE. It counted the
- * user's grooms within one week of retiring, which is exactly the disclosure the
- * owner's ruling forbids (invariant I3). Do not reinstate it.
- *
- * `retirementReasons` groups over `Groom.retirementReason` and therefore still
- * reports historical `mandatory_career_limit` / `early_level_cap` /
- * `early_assignment_limit` rows alongside the current `age`.
- *
- * @param {string} userId - User ID
- * @returns {Promise<Object>} Retirement statistics
- */
-export async function getRetirementStatistics(userId) {
-  const [activeGrooms, retiredGrooms] = await Promise.all([
-    prisma.groom.count({
-      where: { userId, retired: false },
-    }),
-    prisma.groom.count({
-      where: { userId, retired: true },
-    }),
-  ]);
-
-  // Get retirement reasons breakdown
-  const retirementReasons = await prisma.groom.groupBy({
-    by: ['retirementReason'],
-    where: { userId, retired: true },
-    _count: { retirementReason: true },
-  });
-
-  // Calculate average career length for retired grooms
-  const retiredGroomsData = await prisma.groom.findMany({
-    where: { userId, retired: true },
-    select: { careerWeeks: true },
-  });
-
-  const averageCareerLength =
-    retiredGroomsData.length > 0
-      ? retiredGroomsData.reduce((sum, groom) => sum + groom.careerWeeks, 0) /
-        retiredGroomsData.length
-      : 0;
-
-  return {
-    activeGrooms,
-    retiredGrooms,
-    totalGrooms: activeGrooms + retiredGrooms,
-    retirementRate: retiredGrooms / (activeGrooms + retiredGrooms) || 0,
-    retirementReasons: retirementReasons.reduce((acc, reason) => {
-      acc[reason.retirementReason] = reason._count.retirementReason;
-      return acc;
-    }, {}),
-    averageCareerLength: Math.round(averageCareerLength * 100) / 100,
-  };
-}
-
-/**
- * Process weekly career progression for all active grooms — THE game path.
- *
- * Per groom, in order:
- *   - draw and persist the hidden retirement age if it has none yet;
- *   - advance `careerWeeks` by one (one game-year of career);
- *   - retire the groom if it has reached its retirement age, notifying the
- *     player inside the retirement transaction.
- *
- * Age is the only retirement trigger (see the module header for why the
- * level-cap and assignment-count triggers were removed).
- *
- * Per-groom failures are collected rather than aborting the pass: one groom
- * with bad data must not stop every other player's week. A failed retirement
- * leaves that groom entirely untouched, because the retirement is one
- * transaction.
- *
- * @param {string|null} userId - Optional user ID to scope processing (used in tests for isolation)
- * @returns {Promise<Object>} Processing results with statistics
- */
-export async function processWeeklyCareerProgression(userId = null) {
-  try {
-    logger.info('Starting weekly career progression processing');
-
-    // Get all active (non-retired) grooms, optionally scoped to a specific user
-    const whereClause = { retired: false, isActive: true };
-    if (userId) {
-      whereClause.userId = userId;
-    }
-    const activeGrooms = await prisma.groom.findMany({
-      where: whereClause,
-      select: { id: true, name: true, careerWeeks: true, level: true },
-    });
-
-    const results = {
-      processed: 0,
-      retired: 0,
-      scheduled: 0,
-      errors: [],
-      retirements: [],
-    };
-
-    // Process each groom
-    for (const groom of activeGrooms) {
-      try {
-        // Backstop for grooms that predate Equoria-m9lz1, legacy protégés, and
-        // fixtures. Idempotent: a groom that already has a schedule keeps it, and
-        // the common (already-scheduled) case costs exactly one read.
-        if ((await readRetirementAge(prisma, groom.id)) === null) {
-          await ensureRetirementSchedule(prisma, groom.id);
-          results.scheduled++;
-        }
-
-        // Increment career weeks (the groom ages one game-year)
-        await incrementCareerWeeks(groom.id);
-        results.processed++;
-
-        // Retire if the groom has reached its hidden retirement age
-        const eligibility = await checkRetirementEligibility(groom.id);
-        if (eligibility.eligible) {
-          await processRetirement(groom.id, eligibility.reason);
-          results.retired++;
-          results.retirements.push({
-            groomId: groom.id,
-            groomName: groom.name,
-            reason: eligibility.reason,
-            careerWeeks: groom.careerWeeks + 1,
-            level: groom.level,
-          });
-
-          logger.info(`Groom ${groom.name} (ID: ${groom.id}) retired: ${eligibility.reason}`);
-        }
-      } catch (error) {
-        logger.error(`Error processing groom ${groom.id}:`, error);
-        results.errors.push({
-          groomId: groom.id,
-          groomName: groom.name,
-          error: error.message,
-        });
-      }
-    }
-
-    logger.info(
-      `Weekly career progression completed: ${results.processed} processed, ${results.retired} retired, ${results.errors.length} errors`,
-    );
-
-    return results;
-  } catch (error) {
-    logger.error(`Error in weekly career progression: ${error.message}`);
-    throw new Error('Failed to process weekly career progression', { cause: error });
-  }
-}
-
 export default {
   incrementCareerWeeks,
+  ensureRetirementDrawn,
   checkRetirementEligibility,
   processRetirement,
   getRetirementStatistics,
-  processWeeklyCareerProgression,
   RETIREMENT_REASONS,
   CAREER_CONSTANTS,
   GROOM_RETIRED_NOTIFICATION_TYPE,

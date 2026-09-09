@@ -25,6 +25,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
 import { awardGroomXP, updateGroomSynergy } from '../services/groomProgressionService.mjs';
+// Equoria-ypb7d.3: a groom inside the one-week fee grace period stays on staff but
+// cannot groom. Pure check over the groom row this handler already fetches.
+import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { getTemperamentGroomSynergy } from '../../horses/index.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
@@ -139,6 +142,21 @@ export async function recordInteraction(req, res) {
         success: false,
         message: 'Horse not found',
         data: null,
+      });
+    }
+
+    // Equoria-ypb7d.3: "The groom can't groom horse until paid for that week"
+    // (owner, 2026-09-09). A groom whose weekly fee went unpaid is still on the
+    // player's staff — they keep the assignment, the bond, the history — but they
+    // do not work. The check is PURE and reads the groom row already fetched above,
+    // so it costs no extra query. It also covers a retired or deactivated groom,
+    // which this endpoint previously did not check at all.
+    const workCheck = checkGroomMayWork(groom);
+    if (!workCheck.allowed) {
+      return res.status(400).json({
+        success: false,
+        message: workCheck.reason,
+        data: { groomId: groom.id, groomUnavailable: workCheck.code },
       });
     }
 

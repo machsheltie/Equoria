@@ -30,6 +30,10 @@ import { CapExceededError } from '../groomErrors.mjs';
 // hire transaction, so a hired groom always has a schedule and a rolled-back
 // hire leaves no orphan schedule row.
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
+// Equoria-ypb7d.1: every groom enters the game with an age drawn from 18-24.
+import { drawStartAge } from '../services/groomAgeService.mjs';
+// Equoria-ypb7d.2: hiring OPENS AN ENGAGEMENT. Players never own grooms.
+import { openEngagementTx } from '../services/groomEngagementService.mjs';
 
 const STAFF_TYPE = 'groom';
 
@@ -312,6 +316,15 @@ export async function hireFromMarketplace(req, res) {
               bio: groomData.bio,
               availability: JSON.stringify({ available: true }),
               hiredDate: new Date(),
+              // Equoria-ypb7d.1: the age this groom entered the game at, drawn
+              // uniformly from 18..24 and never recomputed. Note it is INDEPENDENT
+              // of `groomData.experience` (which the generator emits in years by
+              // skill tier): the owner's ruling is a flat 18-24 band, and tying
+              // the draw to the tier would make a master groom systematically
+              // older and so systematically closer to retiring — a merit-based
+              // influence on retirement timing, which the owner's addendum
+              // forbids outright.
+              startAge: drawStartAge(),
             },
           });
 
@@ -320,6 +333,10 @@ export async function hireFromMarketplace(req, res) {
           // hire. Writes to `groom_retirement_schedules`; returns the age, which
           // is deliberately NOT propagated into the hire response.
           await ensureRetirementSchedule(tx, groom.id);
+
+          // Equoria-ypb7d.2: hiring opens an ENGAGEMENT, not an ownership. Same
+          // transaction, so a rolled-back hire leaves no orphan row.
+          await openEngagementTx(tx, groom.id, userId);
 
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const moneyAfter = await debitMoneyOrThrow(tx, {

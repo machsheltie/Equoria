@@ -92,8 +92,9 @@ import {
   GROOM_RETIRED_NOTIFICATION_TYPE,
   checkRetirementEligibility,
   processRetirement,
-  processWeeklyCareerProgression,
 } from '../services/groomRetirementService.mjs';
+// ypb7d.1: the weekly pass moved to its own service (600-line cap); same behaviour.
+import { processWeeklyCareerProgression } from '../services/groomCareerProgressionService.mjs';
 import {
   drawRetirementAge,
   ensureRetirementSchedule,
@@ -138,6 +139,10 @@ async function makeHorse(ownerId, label) {
   });
 }
 
+// ypb7d.1: age is `startAge + careerWeeks`; fixtures fix the start age (20, inside
+// the 18..24 band the `grooms_start_age_range` CHECK enforces) rather than draw it.
+const FIXTURE_START_AGE = 20;
+
 async function makeGroom(ownerId, label, extra = {}) {
   return prisma.groom.create({
     data: {
@@ -147,6 +152,7 @@ async function makeGroom(ownerId, label, extra = {}) {
       skillLevel: 'intermediate',
       level: 3,
       careerWeeks: 5,
+      startAge: FIXTURE_START_AGE,
       userId: ownerId,
       ...extra,
     },
@@ -476,7 +482,8 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     // retire".
     await prisma.groom.update({
       where: { id: groom.id },
-      data: { careerWeeks: retirementAge - 1 },
+      // ypb7d.1: one tick short in AGE (`startAge + careerWeeks`).
+      data: { careerWeeks: retirementAge - FIXTURE_START_AGE - 1 },
     });
 
     const historical = await prisma.groomAssignment.create({
@@ -553,7 +560,7 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     expect(result.processed).toBe(2);
     expect(result.retired).toBe(1);
     expect(result.retirements).toEqual([
-      expect.objectContaining({ groomId: groom.id, reason: 'age', careerWeeks: retirementAge }),
+      expect.objectContaining({ groomId: groom.id, reason: 'age', careerWeeks: retirementAge - FIXTURE_START_AGE }),
     ]);
 
     const retiredRow = await prisma.groom.findUnique({
@@ -564,7 +571,7 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
       retired: true,
       isActive: false,
       retirementReason: 'age',
-      careerWeeks: retirementAge,
+      careerWeeks: retirementAge - FIXTURE_START_AGE,
     });
 
     // The young groom simply aged a year and kept working.
@@ -730,7 +737,11 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
   });
 
   it('refuses to retire the same groom twice, and the loser writes nothing', async () => {
-    await prisma.groom.update({ where: { id: groom.id }, data: { careerWeeks: retirementAge } });
+    // ypb7d.1: exactly ON its hidden age (`startAge + careerWeeks`).
+    await prisma.groom.update({
+      where: { id: groom.id },
+      data: { careerWeeks: retirementAge - FIXTURE_START_AGE },
+    });
 
     const first = await processRetirement(groom.id);
     expect(first.groom.retired).toBe(true);
