@@ -27,6 +27,11 @@
  * SCOPE
  *   Backend only. Where the rename control lives in the interface is the
  *   owner's decision and is deliberately absent from this change.
+ *
+ *   Five live paths let a player put a string into `horses.name`; four are gated
+ *   by the shared rule and this suite covers them. The fifth,
+ *   POST /api/v1/auth/advance-onboarding, is deliberately NOT gated and is NOT
+ *   covered here — see the enumeration in routes/_validators.mjs.
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
@@ -41,6 +46,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { renameHorseById } from '../services/renameHorseService.mjs';
+import { deriveFoalName, horseNameRejectionReason } from '../services/horseNamePolicy.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-qkgfh1';
@@ -213,11 +219,11 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    // Exact payload: `data` carries the id and the committed name and nothing
-    // else. `previousName` was removed (Equoria-qkgfh.1 fix round) because it was
-    // read before the write and could echo a superseded name under concurrent
-    // renames; a field that can lie is worse than a field that is absent, and no
-    // client consumes it.
+    // Exact payload: `data` carries the id and the committed name and NOTHING
+    // else. `toEqual` (not `toMatchObject`) is the point — it fails if any extra
+    // field is added back, including the pre-write echo field this endpoint
+    // deliberately does not have (Equoria-qkgfh.1 fix round: a field read before
+    // the write can report a superseded name, and no client consumed it).
     expect(res.body.data).toEqual({ id: horseA.id, name: newName });
 
     // Persisted-state assertion on THIS horse's own row.
@@ -260,6 +266,61 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     expect(res.body.data).toEqual({ id: foal.id, name: chosenName });
     expect(await storedName(foal.id)).toBe(chosenName);
   }, 120000);
+
+  it('derives a foal name that obeys the policy even when `<Dam> Foal` would overflow', async () => {
+    // A dam named at the cap makes `${dam.name} Foal` 105 UTF-16 units — longer
+    // than the bound the four gated paths enforce. Before the clamp, the game
+    // minted a name its own validators would refuse. Remove the clamp in
+    // horseNamePolicy.deriveFoalName and this case fails at the length assertion.
+    const longDamName = `${FIXTURE_PREFIX}-LongDam-`.padEnd(100, 'X');
+    expect(longDamName.length).toBe(100);
+    expect(`${longDamName} Foal`.length).toBe(105);
+
+    const longDam = await makeHorse(owner, longDamName, {
+      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      pregnancySireId: sire.id,
+      pregnancyFeedingsByTier: {},
+    });
+
+    const { foal } = await createFoalFromPregnancy({
+      damId: longDam.id,
+      sireId: sire.id,
+      options: { userId: owner.id },
+    });
+    createdHorseIds.push(foal.id);
+
+    const persisted = await storedName(foal.id);
+
+    // Within the bound, and the ` Foal` signal survives — it is what tells the
+    // player this horse still needs a name, so the dam-name prefix is what gives
+    // way rather than the suffix.
+    expect(persisted.length).toBeLessThanOrEqual(100);
+    expect(persisted.endsWith(' Foal')).toBe(true);
+    expect(persisted).toBe(`${longDamName.slice(0, 95)} Foal`);
+
+    // And the derived name is one the rename endpoint would itself accept, which
+    // is the invariant the clamp exists to make true rather than lucky.
+    const reRename = await rename(foal.id, { name: persisted }, { token: ownerToken, csrf: ownerCsrf });
+    expect(reRename.status).toBe(200);
+    expect(await storedName(foal.id)).toBe(persisted);
+  }, 120000);
+
+  it('never splits a surrogate pair when clamping a derived foal name', () => {
+    // A slice at the raw budget can land between the halves of an astral
+    // character, leaving a lone surrogate — invalid UTF-16 that Postgres will
+    // mangle or reject. 48 grinning-face emoji is 96 units, so a naive
+    // slice(0, 95) would cut the 48th in half.
+    const damName = '\u{1F600}'.repeat(48);
+    expect(damName.length).toBe(96);
+
+    const derived = deriveFoalName(damName);
+
+    expect(derived).toBe(`${'\u{1F600}'.repeat(47)} Foal`);
+    expect(derived.length).toBeLessThanOrEqual(100);
+    // No lone surrogate anywhere: every code unit pairs up.
+    expect([...derived].every(ch => ch.length === 1 || ch.length === 2)).toBe(true);
+    expect(horseNameRejectionReason(derived)).toBeNull();
+  });
 });
 
 describe('PATCH /api/v1/horses/:id/name — authorization collapses (CWE-639)', () => {
@@ -423,12 +484,13 @@ describe('PATCH /api/v1/horses/:id/name — validation is fail-closed', () => {
   }, 60000);
 });
 
-describe('one name rule governs every player-supplied horse-name path', () => {
+describe('one name rule governs every GATED horse-name path', () => {
   /**
    * Before the fix round, POST /horses used express-validator's `isLength`, which
    * subtracts surrogate pairs and variation selectors and accepted a
    * whitespace-only name — so create was LOOSER than rename, and a player could
-   * own a horse whose name the rename endpoint refused. All four paths now share
+   * own a horse whose name the rename endpoint refused. Four of the FIVE
+   * player-supplied horse-name paths now share
    * `horseNameRejectionReason`. These cases pin create and rename agreeing on the
    * two inputs that used to separate them; revert `validateHorseCreation` to
    * `isLength` and the create expectations below go green-on-a-lie at 201.

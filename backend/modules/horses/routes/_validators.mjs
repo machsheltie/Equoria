@@ -12,6 +12,12 @@
 
 import { param, body, validationResult } from 'express-validator';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
+// The horse-name rule itself lives one layer down, in services/, because
+// foalingService needs it too and a service must not import from routes/.
+import {
+  horseNameRejectionReason,
+  horseNameRejectionMessage,
+} from '../services/horseNamePolicy.mjs';
 
 /**
  * Common validationResult handler — returns 400 with errors array if any
@@ -51,12 +57,10 @@ export const validateUserId = [
  * Validation middleware for horse creation (POST /horses).
  */
 export const validateHorseCreation = [
-  // Equoria-qkgfh.1: was `body('name').isLength({ min: 1, max: 100 })`. That
-  // used validator.js counting, which subtracts surrogate pairs and variation
-  // selectors and accepted a whitespace-only name — so create was LOOSER than
-  // the rename endpoint for emoji-heavy and padded names, and a player could
-  // own a horse the rename path would refuse. All four horse-name paths now
-  // share one rule. See the horse name policy block below.
+  // Equoria-qkgfh.1: was `body('name').isLength({ min: 1, max: 100 })`. Four of
+  // the five player-supplied horse-name paths now share one rule; the two-half
+  // account of what this widened, and the fifth ungated path, are in the block
+  // below. `POST /horses` has no frontend caller, so nothing live changed here.
   horseNameBodyRule(),
   body('breedId').isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
   body('age').optional().isInt({ min: 0, max: 50 }).withMessage('Age must be between 0 and 50'),
@@ -140,112 +144,78 @@ export const rejectPollutedRequest = (req, res, next) => {
 };
 
 /**
- * ── Horse name policy — ONE rule for every player-supplied horse name ───────
+ * ── Horse name validation ─ which paths are GATED, and which one is not ────
  * (Equoria-qkgfh.1)
  *
- * Every live path on which a PLAYER supplies a horse name routes through
- * `horseNameRejectionReason` below, so the four cannot drift apart:
+ * The rule itself lives in `../services/horseNamePolicy.mjs` — read it there for
+ * the bounds, their provenance, and the live measurement that justified them.
+ * This module wires it into the request layer.
  *
- *   1. POST  /api/v1/horses        → `validateHorseCreation` (this file)
- *   2. POST  /api/v1/horses/foals  → `validateFoalCreation` (horseFoalRoutes.mjs);
- *      its `name` also becomes `Horse.pendingFoalName` and then the foal's own
- *      name via foalingService, so it is a horse-name path twice over.
- *   3. PUT   /api/v1/horses/:id    → `validateHorseUpdatePayload` (this file)
- *   4. PATCH /api/v1/horses/:id/name → `validateHorseRenamePayload` (this file)
+ * FIVE live paths let a PLAYER put a string into `horses.name`. FOUR route
+ * through `horseNameRejectionReason`; the fifth does not, and saying otherwise
+ * would be a false guarantee in the one file a future reader trusts most:
  *
- * The rule: a string, raw length <= 100, non-empty after trimming, containing
- * neither `<` nor NUL. Stored VERBATIM — no trim, no truncation, no case
- * folding; a violating name is rejected, never quietly repaired.
+ *   1. POST  /api/v1/horses            → `validateHorseCreation` (this file)      GATED
+ *   2. POST  /api/v1/horses/foals      → `validateFoalCreation`                   GATED
+ *        (horseFoalRoutes.mjs). Its `name` also lands in `Horse.pendingFoalName`
+ *        and later becomes the foal's own name via foalingService, so it is a
+ *        horse-name path twice over.
+ *   3. PUT   /api/v1/horses/:id        → `validateHorseUpdatePayload` (this file)  GATED
+ *   4. PATCH /api/v1/horses/:id/name   → `validateHorseRenamePayload` (this file)  GATED
+ *   5. POST  /api/v1/auth/advance-onboarding                                  NOT GATED
+ *        `onboardingController.advanceOnboarding` reads a player-typed
+ *        `horseName` from the beta-live /onboarding page and writes it to
+ *        `horses.name` — updating the player's EXISTING starter horse where one
+ *        exists, so it is a rename path, not only a creation path. It diverges
+ *        from this rule two ways: it `trim().slice(0, 40)`s, i.e. it SILENTLY
+ *        TRUNCATES where this policy rejects; and it applies NO character check,
+ *        so `Fred <3` is settable there and never settable again by rename.
+ *        Deliberately left alone: routing it through this rule would turn a
+ *        silent truncation into a 400 on the new-player flow, which is a
+ *        behaviour change on beta-live code and the owner's call, not this
+ *        task's. Filed rather than fixed.
  *
- * WHERE THE BOUNDS COME FROM (found, not invented):
- *   - length 1-100 — the bound `validateHorseCreation` and `validateFoalCreation`
- *     already enforced via `body('name').isLength({ min: 1, max: 100 })`.
- *   - characters — the rule `validateHorseUpdatePayload` already enforced:
- *     reject `<` and NUL, nothing else. No allow-list regex: apostrophes and
- *     non-ASCII letters are REQUIRED to round-trip
- *     (backend/__tests__/sql-injection-attempts.test.mjs asserts
- *     `O'Malley's Horse` must be accepted verbatim, 201, and excludes 400).
+ * Also writing `horses.name` without a player string: `foalingService`'s derived
+ * `<Dam> Foal` fallback (clamped to the policy by `deriveFoalName`), its
+ * compensation restore of an already-validated `pendingFoalName`,
+ * `onboardingService`'s `<username>'s First Horse`, `marketplaceController`'s
+ * store horses, and `gdprAccountService`'s lineage anonymization. Seeds,
+ * operator scripts, and anything writing the database outside the app are
+ * ungated by construction and no route validator can reach them.
  *
- * WHY RAW `.length` RATHER THAN express-validator's `isLength`, and why that is
- * a tightening the four paths now share:
- *   `isLength` is validator.js `isLength`, which subtracts surrogate pairs and
- *   variation selectors — so it counted 51 grinning-face emoji (102 UTF-16
- *   units) and 100 red-heart emoji (200 units) as within 100, and accepted a
- *   whitespace-only name. Raw `.length` is what Postgres actually stores, so it
- *   is the honest bound. Adopting the stricter rule everywhere was checked
- *   against the live data first, not assumed: all 515 horse rows were measured
- *   (longest name 48 UTF-16 units) and ZERO fail any part of this rule — no
- *   over-100, no whitespace-only, no `<`, no NUL, none even padded. So no
- *   existing horse becomes unrenameable, which is the harm that would have
- *   forced the permissive rule instead.
+ * WHAT THE FIX ROUND WIDENED ON THE TWO CREATION PATHS — two halves, two reasons.
+ * Eight input classes that `POST /horses` and `POST /horses/foals` accepted
+ * before now get a 400. They are not all the same change:
  *
- * NOT enforced on purpose:
- *   - Uniqueness. The owner ruled 2026-09-09 that names need not be unique
- *     ("if 20 players want to name their horse Fred, they can do so"), and
- *     `Horse.name` carries no unique index in schema.prisma, in any migration,
- *     or in the live catalog. There is deliberately no duplicate check.
- *   - Leading/trailing whitespace. `'  Fred  '` is accepted and stored with its
- *     padding. Rejecting it would be a rule with no precedent anywhere in the
- *     codebase, and trimming it would be the normalisation this policy refuses;
- *     the measurement above found zero padded names, so it is theoretical.
+ *   (a) THE LENGTH HALF — `'   '`, 51 grinning-face emoji (102 UTF-16 units),
+ *       100 red-heart emoji (200 units). Cause: `isLength` counted differently
+ *       (see horseNamePolicy.mjs). Reason for changing it: without a shared
+ *       count, creation could mint a name the rename endpoint would refuse to
+ *       restore, and the cap was bypassable by changing verb. This half is
+ *       load-bearing for the rename endpoint being honestly bounded.
+ *   (b) THE CHARACTER + TYPE HALF — `'<script>Fred'`, a NUL-bearing name, and
+ *       the coercions `42`, `true`, `['Fred']` (express-validator stringified
+ *       them, so they passed validation and then failed at Prisma as a 500).
+ *       Cause: the `<`/NUL rule and the type check had never applied at
+ *       creation. Reason: the asymmetry ran the other way — creation could mint
+ *       a name rename would never restore. Right on the merits, but a DIFFERENT
+ *       justification from (a), and `Fred <3` is a plausible player-chosen name
+ *       rather than a payload. Whether `<` belongs in a horse name is the
+ *       owner's ruling, filed; this half is disclosed here so the next reader
+ *       does not mistake it for a side effect of the counting fix.
  *
- * `backend/utils/securityValidation.mjs#validateHorseData` claims a 2-50 range
- * plus an ASCII-only allow-list, but no route imports it (only its own unit
- * tests do) — it is not enforced behaviour and is not the precedent followed.
+ * Nothing live was broken by either half: `horsesApi.create` has no caller
+ * anywhere in the frontend, and the sole `POST /horses/foals` client sends no
+ * `name` field at all. The creation rejection text also changed from
+ * 'Name must be between 1 and 100 characters' to 'Horse name must be …'; the
+ * old string has zero references in backend, frontend, e2e or packages.
  */
-export const HORSE_NAME_MIN_LENGTH = 1;
-export const HORSE_NAME_MAX_LENGTH = 100;
-
-/**
- * Why a candidate horse name is unacceptable, or null when it is acceptable.
- *
- * Returning a reason (rather than a message) lets `PUT /horses/:id` keep its
- * historical single 'Invalid horse name' wording — so its responses stay
- * byte-identical — while the create/foal-create/rename paths report which rule
- * failed via `horseNameRejectionMessage`.
- *
- * @param {unknown} name - candidate name, exactly as it arrived on the request
- * @returns {'type'|'length'|'characters'|null}
- */
-export function horseNameRejectionReason(name) {
-  if (typeof name !== 'string') {
-    return 'type';
-  }
-  // Bound the RAW value — the stored string is the raw string, so measuring
-  // anything else (as validator.js isLength does) would let an over-long name
-  // through on a technicality.
-  if (name.length > HORSE_NAME_MAX_LENGTH) {
-    return 'length';
-  }
-  if (name.trim().length < HORSE_NAME_MIN_LENGTH) {
-    return 'length';
-  }
-  if (name.includes('<') || name.includes('\0')) {
-    return 'characters';
-  }
-  return null;
-}
-
-/**
- * The player-facing message for a rejection reason. One wording per rule, so
- * "rejected with a message naming the rule" is a checkable claim rather than an
- * aspiration — the rename suite asserts these exact strings.
- *
- * @param {'type'|'length'|'characters'} reason
- * @returns {string}
- */
-export function horseNameRejectionMessage(reason) {
-  switch (reason) {
-    case 'type':
-      return 'Horse name must be a string';
-    case 'length':
-      return `Horse name must be between ${HORSE_NAME_MIN_LENGTH} and ${HORSE_NAME_MAX_LENGTH} characters`;
-    case 'characters':
-      return 'Horse name may not contain < or a null character';
-    default:
-      return 'Invalid horse name';
-  }
-}
+export {
+  HORSE_NAME_MIN_LENGTH,
+  HORSE_NAME_MAX_LENGTH,
+  horseNameRejectionReason,
+  horseNameRejectionMessage,
+} from '../services/horseNamePolicy.mjs';
 
 /**
  * A fresh express-validator `body('name')` chain enforcing the shared policy,
@@ -257,10 +227,18 @@ export function horseNameRejectionMessage(reason) {
  * calls it while this module is still evaluating — a `const` arrow would be in
  * its temporal dead zone.
  *
+ * @param {object} [options]
+ * @param {boolean} [options.optional=false] - when true, an ABSENT `name` passes
+ *   and a PRESENT one is still held to the full policy. No caller on this branch
+ *   passes it; it exists because `POST /horses/foals` has diverged between
+ *   branches — see the MERGE HAZARD note at that call site in
+ *   horseFoalRoutes.mjs — and whoever reconciles them needs `optional: true` to
+ *   be one word rather than a rewrite.
  * @returns {import('express-validator').ValidationChain}
  */
-export function horseNameBodyRule() {
-  return body('name').custom(value => {
+export function horseNameBodyRule({ optional = false } = {}) {
+  const chain = optional ? body('name').optional() : body('name');
+  return chain.custom(value => {
     const reason = horseNameRejectionReason(value);
     if (reason !== null) {
       throw new Error(horseNameRejectionMessage(reason));
