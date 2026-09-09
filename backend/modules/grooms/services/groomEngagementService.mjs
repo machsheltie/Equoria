@@ -113,8 +113,20 @@ export const FREE_AGENT_WHERE = Object.freeze({
  * grace transaction held the `Groom` row and then wanted the `User` row: a textbook
  * deadlock, aborted by Postgres with 40P01, losing either the grace entry (the groom
  * works that week for free and nobody is told) or the second pass's whole payroll for
- * that player. Every transaction that touches a player's fee state now takes this lock
- * FIRST, so the whole class is gone rather than narrowed.
+ * that player.
+ *
+ * WHAT NOW TAKES IT, precisely — fix round 2 corrected an overstatement here. Every
+ * transaction OF THE WEEKLY FEE PASS takes this lock first: the payment transaction in
+ * `processWeeklySalaries`, and both arrears transactions (grace and release) in
+ * `groomFeeArrearsService`. That closes the deadlock class between them.
+ *
+ * `hireFreeAgent` does NOT take it, and deliberately: it writes `feeUnpaidSince: null`
+ * as part of claiming a free agent, which is fee state, but it cannot contend with the
+ * pass over the same groom. `releaseGroomTx` clears `feeUnpaidSince` when it releases,
+ * so a free agent always has it NULL already; and a groom in grace has a non-NULL
+ * `userId`, so it fails `FREE_AGENT_WHERE` and the claim's guarded `updateMany` matches
+ * nothing. It is the ORDER, not this lock, that keeps `hireFreeAgent` out of a cycle
+ * with the grace transaction: both write `User` before any staff row.
  *
  * It lives HERE because it is the only module both `groomSalaryService` and
  * `groomFeeArrearsService` already import, so sharing one definition costs no import

@@ -135,19 +135,45 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
         continue;
       }
 
+      // Fix round 2, residual B. Round 1's reordering for F2 made the `User` write
+      // UNCONDITIONAL, where before it was gated on `entered.entered`. That was a
+      // behaviour change riding along with a lock-order fix, described only by a comment
+      // and pinned by no test — so it is decided here, and pinned by the
+      // "already in grace" case in groomEngagementLifecycle.integration.
+      //
+      // THE DECISION: restore the condition, but decide it BEFORE the write so the
+      // User-before-staff order survives. `groom.feeUnpaidSince` comes from the same
+      // snapshot that chose the grace branch over the release branch two lines up, so
+      // "this groom is not yet in grace" is known without reading anything new: null
+      // means grace is about to BEGIN and the player-level pointer belongs with it,
+      // non-null means grace began in an earlier run and the pointer was set then.
+      //
+      // Why not keep it unconditional: the pointer is what
+      // `groomSalaryController.getSalarySummary` renders as `inGracePeriod` and
+      // `gracePeriodDaysRemaining`. Setting it when no groom actually entered grace
+      // would tell a player they are inside a grace period they are not in — a lie
+      // about state, which PRODUCT.md principle 7 forbids, and the reachable case is
+      // real: a groom whose row stopped matching between the snapshot and the write.
+      const graceBeginsForThisGroom = groom.feeUnpaidSince === null;
+
       const graced = await prisma.$transaction(async tx => {
         // F2, in this exact order and for the reason in the docblock above:
         //   1. the shared per-(user, pay week) advisory lock;
         //   2. the USER row — the user-level pointer the salary summary renders,
         //      guarded on `null` so an existing grace start is never pushed forward;
         //   3. only then the GROOM row.
-        // User before staff. Reversing these two is the deadlock F2 describes.
+        // User before staff. Reversing these two is the deadlock F2 describes, and the
+        // advisory lock alone does not make the order safe: `hireFreeAgent` debits the
+        // User row and then claims a Groom row WITHOUT this lock, so a staff-then-User
+        // grace transaction could still cycle against it.
         await acquirePayWeekLockTx(tx, userId, payWeekStart);
 
-        await tx.user.updateMany({
-          where: { id: userId, groomSalaryGracePeriod: null },
-          data: { groomSalaryGracePeriod: payWeekStart },
-        });
+        if (graceBeginsForThisGroom) {
+          await tx.user.updateMany({
+            where: { id: userId, groomSalaryGracePeriod: null },
+            data: { groomSalaryGracePeriod: payWeekStart },
+          });
+        }
 
         const entered = await enterFeeGraceTx(tx, {
           groomId: groom.id,

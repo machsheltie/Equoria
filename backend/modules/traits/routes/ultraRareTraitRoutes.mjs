@@ -296,7 +296,7 @@ router.get(
         logger.error('[ultraRareTraitRoutes.perks] Groom not found in validated resources');
         return res.status(404).json({
           success: false,
-          message: 'Groom not found or you do not own this groom',
+          message: 'Groom not found or not on your staff',
         });
       }
 

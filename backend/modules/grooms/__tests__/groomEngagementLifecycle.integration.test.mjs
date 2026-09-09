@@ -41,6 +41,16 @@
  *   9. Retirement closes the engagement but KEEPS `userId`, so the player can still
  *      read their retired grooms
  *
+ *
+ * SPLIT (fix round 2). This file and `groomFeeArrears.integration.test.mjs` were one
+ * suite until the residual-B case pushed it past the 800-line test cap. The boundary is
+ * the service boundary, not an arbitrary cut: this file covers what
+ * `groomEngagementService` owns — an engagement opened, two players unable to both win
+ * one, an engagement closed by retirement — and the sibling covers what
+ * `groomFeeArrearsService` owns: the fee basis, the week of grace, the release, and what
+ * paying clears. Raising the size baseline was not an option (it may only shrink) and
+ * would have been the wrong answer anyway.
+ *
  * Real DB, no mocks. `processWeeklySalaries` is called SCOPED to the fixture user:
  * unscoped it would put every underfunded player on the shared development database
  * into the grace period and release the ones already in it.
@@ -49,30 +59,15 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { processWeeklySalaries, getPayWeekStart, calculateWeeklySalary } from '../services/groomSalaryService.mjs';
-import {
-  ENGAGEMENT_END_REASONS,
-  GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
-  GROOM_RELEASED_NOTIFICATION_TYPE,
-  checkGroomMayWork,
-  hasFullUnpaidWeek,
-} from '../services/groomEngagementService.mjs';
+import { ENGAGEMENT_END_REASONS, FREE_AGENT_WHERE } from '../services/groomEngagementService.mjs';
 import { processRetirement } from '../services/groomRetirementService.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 import { hireGroom } from '../controllers/groomRosterController.mjs';
-import { recordInteraction } from '../controllers/groomInteractionController.mjs';
-import { performEnhancedInteraction } from '../controllers/enhancedGroomController.mjs';
 import { listFreeAgentGrooms, hireFreeAgent } from '../controllers/groomFreeAgentController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-ypb7d-eng';
 const tag = () => randomBytes(6).toString('hex');
-
-// Two consecutive pay weeks, both safely in the past so they cannot collide with a
-// real cron run's pay week. Mondays, per SALARY_CONFIG.PAYMENT_DAY.
-const WEEK_ONE = new Date('2026-03-02T09:00:00.000Z'); // a Monday
-const WEEK_TWO = new Date('2026-03-09T09:00:00.000Z'); // the next Monday
 
 function fakeRes() {
   const res = {
@@ -101,20 +96,6 @@ async function makeUser(label, money) {
       lastName: label,
       money,
       settings: {},
-    },
-  });
-}
-
-async function makeHorse(userId, label) {
-  return prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
-      sex: 'Filly',
-      dateOfBirth: new Date('2024-06-15'),
-      age: 1,
-      userId,
-      healthStatus: 'Excellent',
     },
   });
 }
@@ -175,6 +156,14 @@ function registerUserCleanup(cleanup, getUser, label) {
     });
     if (strays.length) {
       const strayIds = strays.map(g => g.id);
+      // Fix round 2: `groomInteraction` and `groomSalaryPayment` were missing. Neither
+      // was live — zero stray rows have ever been observed, and the tracker is
+      // fail-loud so an FK refusal would surface rather than pass — but a sweep that
+      // covers only some child tables of `Groom` is a sweep that will one day fail
+      // loudly for a reason nobody expects. Dependency order: rows that reference a
+      // groom before the groom itself.
+      await prisma.groomInteraction.deleteMany({ where: { groomId: { in: strayIds } } });
+      await prisma.groomSalaryPayment.deleteMany({ where: { groomId: { in: strayIds } } });
       await prisma.groomEngagement.deleteMany({ where: { groomId: { in: strayIds } } });
       await prisma.groomAssignment.deleteMany({ where: { groomId: { in: strayIds } } });
       await prisma.groomAssignmentLog.deleteMany({ where: { groomId: { in: strayIds } } });
@@ -254,371 +243,6 @@ describe('Equoria-ypb7d.2 — hiring opens an engagement, never an ownership', (
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Equoria-ypb7d.3 — the fee is per groom ON STAFF, not per assignment', () => {
-  let user;
-  let horses;
-  let unassigned;
-  let busy;
-  const cleanup = createCleanupTracker();
-
-  beforeAll(async () => {
-    user = await makeUser('basis', 20000);
-    horses = await Promise.all([
-      makeHorse(user.id, 'basis-h1'),
-      makeHorse(user.id, 'basis-h2'),
-      makeHorse(user.id, 'basis-h3'),
-    ]);
-    // One groom with NO assignment at all — free under the old basis.
-    unassigned = await makeGroom(user.id, 'basis-unassigned');
-    // One groom on three horses — charged three times under the old basis.
-    busy = await makeGroom(user.id, 'basis-busy');
-    for (const horse of horses) {
-      await prisma.groomAssignment.create({
-        data: { groomId: busy.id, foalId: horse.id, userId: user.id, isActive: true },
-      });
-    }
-    registerUserCleanup(cleanup, () => user, 'basis');
-  }, 30000);
-
-  afterAll(() => cleanup.run(), 30000);
-
-  it('charges each groom exactly once — the unassigned one included', async () => {
-    const expectedUnassigned = calculateWeeklySalary(unassigned);
-    const expectedBusy = calculateWeeklySalary(busy);
-
-    const before = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
-
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
-    expect(result.errors).toEqual([]);
-    expect(result.successful).toBe(1);
-    expect(result.totalAmount).toBe(expectedUnassigned + expectedBusy);
-
-    const after = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
-    expect(before - after).toBe(expectedUnassigned + expectedBusy);
-
-    // Exactly one payment row per groom. Three under the old per-assignment basis
-    // for `busy`, and none at all for `unassigned`.
-    const rows = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, status: 'paid' },
-      select: { groomId: true, amount: true },
-    });
-    expect(rows).toHaveLength(2);
-    expect(rows.filter(r => r.groomId === busy.id)).toHaveLength(1);
-    expect(rows.filter(r => r.groomId === unassigned.id)).toHaveLength(1);
-  });
-
-  it('a re-run in the same pay week is a no-op (Equoria-icqqm idempotency holds)', async () => {
-    const before = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
-    expect(result.skipped).toBe(1);
-    expect(result.totalAmount).toBe(0);
-    const after = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
-    expect(after).toBe(before);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () => {
-  let user;
-  let horse;
-  let groom;
-  let activeAssignmentId;
-  let historicalAssignmentId;
-  let logId;
-  const cleanup = createCleanupTracker();
-
-  beforeAll(async () => {
-    // No money at all: the fee cannot be paid.
-    user = await makeUser('arrears', 0);
-    horse = await makeHorse(user.id, 'arrears-horse');
-    groom = await makeGroom(user.id, 'arrears-groom', { experience: 250, level: 4 });
-
-    const historical = await prisma.groomAssignment.create({
-      data: {
-        groomId: groom.id,
-        foalId: horse.id,
-        userId: user.id,
-        isActive: false,
-        endDate: new Date('2026-01-05T00:00:00.000Z'),
-      },
-    });
-    historicalAssignmentId = historical.id;
-    const active = await prisma.groomAssignment.create({
-      data: { groomId: groom.id, foalId: horse.id, userId: user.id, isActive: true },
-    });
-    activeAssignmentId = active.id;
-    const log = await prisma.groomAssignmentLog.create({
-      data: { groomId: groom.id, horseId: horse.id },
-    });
-    logId = log.id;
-
-    registerUserCleanup(cleanup, () => user, 'arrears');
-  }, 30000);
-
-  afterAll(() => cleanup.run(), 30000);
-
-  it('week one unpaid: grace begins, the groom stays on staff, and the player is told', async () => {
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
-    expect(result.failed).toBe(1);
-    expect(result.graced).toBe(1);
-    expect(result.released).toBe(0);
-
-    const row = await prisma.groom.findUnique({
-      where: { id: groom.id },
-      select: { userId: true, feeUnpaidSince: true, retired: true },
-    });
-    // Still on staff. "they don't officially lose the groom once until they fail to
-    // pay for a whole week."
-    expect(row.userId).toBe(user.id);
-    expect(row.retired).toBe(false);
-    // Marked with the pay week that went unpaid, not with "now".
-    expect(row.feeUnpaidSince?.getTime()).toBe(getPayWeekStart(WEEK_ONE).getTime());
-
-    // The engagement is still open.
-    const open = await prisma.groomEngagement.findFirst({
-      where: { groomId: groom.id, endedAt: null },
-    });
-    expect(open).not.toBeNull();
-
-    // The assignment is untouched — grace does not end the working relationship.
-    const active = await prisma.groomAssignment.findUnique({
-      where: { id: activeAssignmentId },
-      select: { isActive: true, endDate: true },
-    });
-    expect(active).toEqual({ isActive: true, endDate: null });
-
-    // The player was told, and the notice says the groom cannot work.
-    const notices = await prisma.notification.findMany({
-      where: { userId: user.id, type: GROOM_FEE_UNPAID_NOTIFICATION_TYPE },
-    });
-    expect(notices).toHaveLength(1);
-    expect(notices[0].payload).toEqual(expect.objectContaining({ groomId: groom.id, canWork: false, graceWeeks: 1 }));
-
-    // And the audit row exists, with the status the existing vocabulary uses.
-    const missed = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: 'missed_insufficient_funds' },
-    });
-    expect(missed).toHaveLength(1);
-
-    // The user-level pointer the salary summary renders is in step.
-    const userRow = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { groomSalaryGracePeriod: true },
-    });
-    expect(userRow.groomSalaryGracePeriod).not.toBeNull();
-  });
-
-  it('during grace the groom CANNOT groom a horse', async () => {
-    // "The groom can't groom horse until paid for that week."
-    const stored = await prisma.groom.findUnique({ where: { id: groom.id } });
-    const check = checkGroomMayWork(stored);
-    expect(check.allowed).toBe(false);
-    expect(check.code).toBe('fee_unpaid');
-
-    // And the care endpoint refuses, which is where it matters.
-    const res = fakeRes();
-    await recordInteraction(
-      {
-        user: { id: user.id },
-        body: {
-          foalId: horse.id,
-          groomId: groom.id,
-          interactionType: 'brushing',
-          duration: 30,
-        },
-      },
-      res,
-    );
-    expect(res.statusCode).toBe(400);
-    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'fee_unpaid' }));
-    // No interaction was recorded.
-    expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(0);
-  });
-
-  it('the SECOND care path refuses too — a rule on one of two doors is not a rule', async () => {
-    // `POST /grooms/enhanced/interact` is the other way a groom can work. The gate
-    // is applied in both controllers, so both are driven; asserting only the first
-    // would have left the rule bypassable by changing endpoint.
-    const res = fakeRes();
-    await performEnhancedInteraction(
-      {
-        user: { id: user.id },
-        body: {
-          groomId: groom.id,
-          horseId: horse.id,
-          interactionType: 'daily_care',
-          variation: 'Morning Routine',
-          duration: 30,
-        },
-      },
-      res,
-    );
-    expect(res.statusCode).toBe(400);
-    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'fee_unpaid' }));
-    expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(0);
-  });
-
-  it('week two unpaid: released to the pool, history ended and never deleted', async () => {
-    // A full pay week has now gone by unpaid. The predicate is pay-week based, not
-    // millisecond based — the reason the release cannot turn on cron jitter.
-    expect(hasFullUnpaidWeek(getPayWeekStart(WEEK_ONE), getPayWeekStart(WEEK_TWO))).toBe(true);
-
-    const result = await processWeeklySalaries(WEEK_TWO, { userId: user.id });
-    expect(result.released).toBe(1);
-    expect(result.terminated).toBe(1);
-
-    const row = await prisma.groom.findUnique({
-      where: { id: groom.id },
-      select: { userId: true, feeUnpaidSince: true, retired: true, experience: true, level: true },
-    });
-    // A free agent again — this is the whole ruling: "the groom goes back to the
-    // Grooms for hire section of the marketplace".
-    expect(row.userId).toBeNull();
-    expect(row.feeUnpaidSince).toBeNull();
-    expect(row.retired).toBe(false);
-    // Nothing about the groom was reset. Preserving is the reversible choice; what
-    // SHOULD happen to accumulated experience and bond history on release is an
-    // open question for the owner, and this asserts the current answer plainly.
-    expect(row.experience).toBe(250);
-    expect(row.level).toBe(4);
-
-    // The engagement is closed, with the reason recorded.
-    const engagements = await prisma.groomEngagement.findMany({ where: { groomId: groom.id } });
-    expect(engagements).toHaveLength(1);
-    expect(engagements[0].endedAt).not.toBeNull();
-    expect(engagements[0].endReason).toBe(ENGAGEMENT_END_REASONS.FEE_UNPAID);
-
-    // The ACTIVE assignment is ENDED. The INACTIVE one is untouched. Both rows
-    // survive — a release must never destroy history, the Equoria-m9lz1 invariant.
-    const active = await prisma.groomAssignment.findUnique({
-      where: { id: activeAssignmentId },
-      select: { isActive: true, endDate: true },
-    });
-    expect(active.isActive).toBe(false);
-    expect(active.endDate).not.toBeNull();
-    const historical = await prisma.groomAssignment.findUnique({
-      where: { id: historicalAssignmentId },
-      select: { isActive: true, endDate: true },
-    });
-    expect(historical.isActive).toBe(false);
-    expect(historical.endDate?.toISOString()).toBe('2026-01-05T00:00:00.000Z');
-    expect(await prisma.groomAssignment.count({ where: { groomId: groom.id } })).toBe(2);
-
-    // The open assignment log was closed.
-    const log = await prisma.groomAssignmentLog.findUnique({
-      where: { id: logId },
-      select: { unassignedAt: true },
-    });
-    expect(log.unassignedAt).not.toBeNull();
-
-    // The player was told they lost the groom, and which horse is uncovered.
-    const notices = await prisma.notification.findMany({
-      where: { userId: user.id, type: GROOM_RELEASED_NOTIFICATION_TYPE },
-    });
-    expect(notices).toHaveLength(1);
-    expect(notices[0].payload).toEqual(
-      expect.objectContaining({
-        groomId: groom.id,
-        reason: ENGAGEMENT_END_REASONS.FEE_UNPAID,
-        horsesLeftUnattended: 1,
-        horses: [{ id: horse.id, name: expect.any(String) }],
-      }),
-    );
-
-    // And the audit row the pre-fix code could never write.
-    const terminated = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: 'terminated_non_payment' },
-    });
-    expect(terminated).toHaveLength(1);
-  });
-
-  it('the released groom is in the grooms-for-hire pool', async () => {
-    const res = fakeRes();
-    await listFreeAgentGrooms({ user: { id: user.id }, query: { limit: 100 } }, res);
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data.grooms.map(g => g.id)).toContain(groom.id);
-  });
-
-  it('ANOTHER player can hire them, with their history intact', async () => {
-    const newEmployer = await makeUser('arrears-newboss', 20000);
-    try {
-      const res = fakeRes();
-      await hireFreeAgent({ user: { id: newEmployer.id }, body: { groomId: groom.id } }, res);
-      expect(res.statusCode).toBe(201);
-      expect(res.body.data.groom.id).toBe(groom.id);
-
-      const row = await prisma.groom.findUnique({
-        where: { id: groom.id },
-        select: { userId: true, experience: true, level: true, startAge: true },
-      });
-      expect(row.userId).toBe(newEmployer.id);
-      // The same groom, not a copy: experience, level and start age all carried over.
-      expect(row.experience).toBe(250);
-      expect(row.level).toBe(4);
-      expect(row.startAge).toBe(20);
-
-      // A second engagement row, open; the first stays closed as history.
-      const engagements = await prisma.groomEngagement.findMany({
-        where: { groomId: groom.id },
-        orderBy: { id: 'asc' },
-      });
-      expect(engagements).toHaveLength(2);
-      expect(engagements[0].endReason).toBe(ENGAGEMENT_END_REASONS.FEE_UNPAID);
-      expect(engagements[1].userId).toBe(newEmployer.id);
-      expect(engagements[1].endedAt).toBeNull();
-    } finally {
-      await prisma.groom.updateMany({ where: { id: groom.id }, data: { userId: user.id } });
-      await prisma.groomEngagement.deleteMany({ where: { userId: newEmployer.id } });
-      await prisma.userTransaction.deleteMany({ where: { userId: newEmployer.id } });
-      await prisma.user.delete({ where: { id: newEmployer.id } });
-    }
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-describe('Equoria-ypb7d.3 — paying clears the arrears', () => {
-  let user;
-  let groom;
-  const cleanup = createCleanupTracker();
-
-  beforeAll(async () => {
-    user = await makeUser('cleared', 20000);
-    groom = await makeGroom(user.id, 'cleared-groom', {
-      // Already in grace for week one, and the user now has money.
-      feeUnpaidSince: getPayWeekStart(WEEK_ONE),
-    });
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { groomSalaryGracePeriod: getPayWeekStart(WEEK_ONE) },
-    });
-    registerUserCleanup(cleanup, () => user, 'cleared');
-  }, 30000);
-
-  afterAll(() => cleanup.run(), 30000);
-
-  it('a paid pay week clears feeUnpaidSince, the user pointer, and lets the groom work', async () => {
-    const result = await processWeeklySalaries(WEEK_TWO, { userId: user.id });
-    expect(result.errors).toEqual([]);
-    expect(result.successful).toBe(1);
-    expect(result.released).toBe(0);
-
-    const row = await prisma.groom.findUnique({
-      where: { id: groom.id },
-      select: { userId: true, feeUnpaidSince: true },
-    });
-    expect(row.userId).toBe(user.id);
-    expect(row.feeUnpaidSince).toBeNull();
-    expect(checkGroomMayWork(row).allowed).toBe(true);
-
-    const userRow = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { groomSalaryGracePeriod: true },
-    });
-    expect(userRow.groomSalaryGracePeriod).toBeNull();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
 describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () => {
   let owner;
   let bidderA;
@@ -664,7 +288,7 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('exactly one wins with 201, the other gets 409, and one engagement is open', async () => {
+  it('exactly one wins, the loser is refused, and one engagement is open', async () => {
     const resA = fakeRes();
     const resB = fakeRes();
     await Promise.all([
@@ -673,10 +297,21 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
     ]);
 
     const codes = [resA.statusCode, resB.statusCode].sort();
-    // The guarded claim is the only thing stopping a double hire, so this is the
-    // assertion that proves it works. 409 rather than 404: the groom exists and the
-    // request was well formed; someone else got there first.
-    expect(codes).toEqual([201, 409]);
+    // EXACTLY ONE winner. That half is the invariant and is asserted exactly.
+    expect(codes.filter(c => c === 201)).toHaveLength(1);
+
+    // The LOSER's status is 409 or 404, and which one is a timing detail rather than a
+    // contract — fix round 2 loosened this from a flat `[201, 409]` after the F1 fix
+    // made it observably both. Both are honest refusals of the same fact:
+    //   409 — the loser reached the transaction and its GUARDED CLAIM found no row;
+    //   404 — the loser's pre-read ran after the winner's commit, so by then the groom
+    //         genuinely was not in the pool.
+    // Asserting 409 specifically was asserting an interleaving, and this suite must not
+    // fail because two coroutines resolved in the other order. The MECHANISM is pinned
+    // deterministically at the end of this case instead, and the pre-read refusal is
+    // pinned deterministically in groomFreeAgentEndpoint.integration.
+    const loserCode = codes.find(c => c !== 201);
+    expect([404, 409]).toContain(loserCode);
 
     const open = await prisma.groomEngagement.findMany({
       where: { groomId: groom.id, endedAt: null },
@@ -696,6 +331,23 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
       where: { userId: loserId, category: 'groom_hire' },
     });
     expect(loserLedger).toBe(0);
+
+    // THE MECHANISM, pinned deterministically rather than left to the interleaving
+    // above: the guarded claim is a conditional `updateMany` on the pool predicate, and
+    // against a groom that is now claimed it must affect ZERO rows. That is precisely
+    // what makes `claimed.count !== 1` reachable and the second hire impossible. Real
+    // DB, no mocks — the same statement the controller runs, with the same predicate
+    // object, against the state the race just produced.
+    const secondClaim = await prisma.groom.updateMany({
+      where: { id: groom.id, ...FREE_AGENT_WHERE },
+      data: { userId: loserId },
+    });
+    expect(secondClaim.count).toBe(0);
+
+    // And the winner still holds them, so the probe above changed nothing.
+    expect((await prisma.groom.findUnique({ where: { id: groom.id }, select: { userId: true } })).userId).toBe(
+      row.userId,
+    );
   });
 });
 
@@ -742,16 +394,5 @@ describe('Equoria-ypb7d.2 — retirement closes the engagement but keeps the his
     const res = fakeRes();
     await listFreeAgentGrooms({ user: { id: user.id }, query: { limit: 100 } }, res);
     expect(res.body.data.grooms.map(g => g.id)).not.toContain(groom.id);
-  });
-
-  it('a retired groom is no longer billed the weekly fee', async () => {
-    const before = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
-    const result = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
-    // No staff left to bill: the retired groom keeps its `userId` but is excluded by
-    // `retired: false`. Billing a career that has ended would be a charge for
-    // nothing.
-    expect(result.processed).toBe(0);
-    const after = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
-    expect(after).toBe(before);
   });
 });

@@ -113,9 +113,17 @@ export async function listFreeAgentGrooms(req, res) {
  *      loser's `where` no longer matches, it sees count 0, throws, and its debit
  *      rolls back with it. Mechanism (2) of the concurrency rule; no
  *      `SELECT ... FOR UPDATE`, because the precondition fits in the WHERE clause —
- *      including the relation clause, which Prisma 6.8.2 accepts in `updateMany`
- *      (probed before relying on it). The closed-engagement half is monotone anyway:
- *      engagement rows are never deleted, so it cannot become false under a race.
+ *      including the relation clause, which Prisma 6.8.2 genuinely APPLIES in
+ *      `updateMany` rather than ignoring. That is worth stating precisely, because fix
+ *      round 1 asserted it from an observation that could not establish it (`count: 0`
+ *      against a non-existent id, which is what you get whether or not the filter is
+ *      applied — consistent with the conclusion, but not evidence for it). The
+ *      discriminating probe needs rows differing ONLY in the relation clause: inside a
+ *      rolled-back transaction, three free agents gave never-engaged 0, closed
+ *      engagement 1, open-engagement-only 0, and the pre-fix narrow predicate 1 against
+ *      the never-engaged groom — the hole itself, at the SQL level. The
+ *      closed-engagement half is monotone anyway: engagement rows are never deleted, so
+ *      it cannot become false under a race.
  *   3. The authoritative roster-cap re-count, mirroring `hireGroom` and
  *      `hireFromMarketplace` (Equoria-n4m5j / hduc5). The claim ran first, so the
  *      count INCLUDES this hire.

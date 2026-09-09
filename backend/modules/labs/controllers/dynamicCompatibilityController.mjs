@@ -50,7 +50,7 @@ export async function calculateCompatibility(req, res) {
     if (!groom) {
       return res.status(404).json({
         success: false,
-        message: 'Groom not found or you do not own this groom',
+        message: 'Groom not found or not on your staff',
       });
     }
 
@@ -144,7 +144,7 @@ export async function predictOutcome(req, res) {
     if (!groom) {
       return res.status(404).json({
         success: false,
-        message: 'Groom not found or you do not own this groom',
+        message: 'Groom not found or not on your staff',
       });
     }
 
@@ -288,7 +288,7 @@ export async function updateHistory(req, res) {
     if (!groom) {
       return res.status(404).json({
         success: false,
-        message: 'Groom not found or you do not own this groom',
+        message: 'Groom not found or not on your staff',
       });
     }
 
