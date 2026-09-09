@@ -42,7 +42,8 @@ async function resolveOwnedHorse(req, horseId, userId) {
  *
  * Body: { horseId, groomId, showId, className }
  * - horseId: must be owned by the authenticated user
- * - groomId: must be owned by the authenticated user
+ * - groomId: must be on the authenticated user's STAFF (Equoria-ypb7d.2: players
+ *   engage grooms, they never own them)
  * - showId: must reference a show with showType === 'conformation'
  * - className: valid conformation sex/category class (e.g. 'Mares', 'Stallions')
  *

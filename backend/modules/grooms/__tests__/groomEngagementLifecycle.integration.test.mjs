@@ -58,6 +58,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { prismaRejectionOf } from '../../../__tests__/helpers/expectPrismaRejection.mjs';
 import { ENGAGEMENT_END_REASONS, FREE_AGENT_WHERE } from '../services/groomEngagementService.mjs';
 import { processRetirement } from '../services/groomRetirementService.mjs';
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
@@ -217,10 +218,44 @@ describe('Equoria-ypb7d.2 — hiring opens an engagement, never an ownership', (
     // The partial unique index `groom_engagements_active_groomId_key ... WHERE
     // "endedAt" IS NULL` from migration 20260909120000. It is the schema's
     // statement that a groom works for at most one player at a time.
+    //
+    // FIX ROUND 4 — WHY THIS IS NOT `.rejects.toThrow()` ANY MORE. Two reasons, and
+    // they are worth separating because only one of them was reproducible here.
+    //
+    // 1. THE REALM DEFECT (Equoria-wl6ln), measured by the round-3 reviewer, NOT by
+    //    me. On their machine this case was red 4 runs in 4 under `--runInBand` and
+    //    green 3 in 3 under `--maxWorkers=2`, with byte-identical test text, because
+    //    jest's `.rejects.toThrow()` decides "is this an error" with
+    //    `instanceof Error` — constructor identity — and Prisma's
+    //    `PrismaClientKnownRequestError` came from a different module realm, so the
+    //    check was false and jest reported "did not throw" for a promise that really
+    //    did reject with P2002. Same root cause as the `toBeInstanceOf(Date)`
+    //    failure `expectRealDate.mjs` exists for.
+    //
+    //    IT DOES NOT REPRODUCE ON MY MACHINE. An in-suite probe under BOTH
+    //    invocations printed `instanceof Error = true`, `code = P2002`,
+    //    `target = ["groomId"]`, and the old assertion passed both ways. So I did
+    //    not fix a failure I had seen; I removed an identity dependence that is
+    //    environment-sensitive, which is the right response either way — a case
+    //    that means one thing on one machine and another on the next is not
+    //    evidence about the index on either.
+    //
+    // 2. THE DEFECT THAT IS PRESENT EVERYWHERE, INCLUDING HERE, and the one this
+    //    change was actually proven against: `.rejects.toThrow()` passes on ANY
+    //    rejection. A foreign key, a missing column, a renamed model would all have
+    //    satisfied it. This case's subject is ONE constraint, so it asserts that
+    //    constraint's own signature — the P2002 code and the `groomId` target, both
+    //    plain properties of the value, nothing asked about where it came from.
+    //    Proven by plant: pointing the create at a non-existent groomId makes the
+    //    write fail on the FOREIGN KEY instead, and this assertion fails in both
+    //    invocations (`Expected "P2002 on groomId", Received "P2003"`) where
+    //    `.rejects.toThrow()` would have passed.
     const groom = await makeGroom(user.id, 'open-unique');
     const other = await makeUser('open-unique-other', 5000);
     try {
-      await expect(prisma.groomEngagement.create({ data: { groomId: groom.id, userId: other.id } })).rejects.toThrow();
+      expect(
+        await prismaRejectionOf(prisma.groomEngagement.create({ data: { groomId: groom.id, userId: other.id } })),
+      ).toBe('P2002 on groomId');
 
       // A CLOSED engagement alongside the open one is fine — history must be free
       // to hold many rows for the same groom. That is why the index is partial.

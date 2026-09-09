@@ -356,21 +356,26 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
     return null;
   }
 
-  // Equoria-m9lz1 fix round 3: an OWNERLESS groom has no stable to leave a
-  // legacy to. `Groom.userId` is `String?`, and the protégé query below filters
-  // `userId: retiredGroom.userId` — which Prisma compiles to `WHERE "userId" IS
-  // NULL` when that value is null, so null stops being "this groom's owner" and
-  // becomes a matching key across EVERY ownerless groom in the database (62 of
-  // them locally when this guard was added). The game would then pair two grooms
-  // who share nothing but the absence of an owner as mentor and protégé, and
-  // write a legacy log no player can ever see. A mentorship needs a stable;
-  // without one there is nothing to pass on, so skip — beside the level guard,
-  // and for the same reason: not eligible, not an error.
+  // Equoria-m9lz1 fix round 3: a groom with NO ENGAGEMENT — a free agent — has no
+  // stable to leave a legacy to. `Groom.userId` is `String?`, and the protégé query
+  // below filters `userId: retiredGroom.userId` — which Prisma compiles to
+  // `WHERE "userId" IS NULL` when that value is null, so null stops identifying
+  // ONE player's staff and becomes a matching key across EVERY free agent in the
+  // database (62 of them locally when this guard was added). The game would then
+  // pair two grooms who share nothing but the absence of an engagement as mentor
+  // and protégé, and write a legacy log no player can ever see. A mentorship needs
+  // a stable; without one there is nothing to pass on, so skip — beside the level
+  // guard, and for the same reason: not eligible, not an error.
+  //
+  // Equoria-ypb7d.2 corrected the vocabulary here: this comment said "OWNERLESS",
+  // "this groom's owner" and "ownerless groom", five ownership words for a relation
+  // that is an ENGAGEMENT. Players never own grooms. The guard itself is unchanged —
+  // `!retiredGroom.userId` is still exactly "this groom is on nobody's staff".
   if (!retiredGroom.userId) {
     logger.info(
-      `[groomLegacyService.autoCreateLegacyOnRetirement] Groom ${retiredGroom.id} has no owner; ` +
-        'no legacy is created (an ownerless groom has no stable to pass a legacy to, and a null ' +
-        'userId would otherwise match every other ownerless groom).',
+      `[groomLegacyService.autoCreateLegacyOnRetirement] Groom ${retiredGroom.id} is on nobody's ` +
+        'staff; no legacy is created (a free agent has no stable to pass a legacy to, and a null ' +
+        'userId would otherwise match every other free agent).',
     );
     return null;
   }

@@ -425,7 +425,9 @@ export async function getRelationshipDetails(req, res) {
     // requireOwnership('groom', { idParam: 'groomId' }) and
     // requireOwnership('horse', { idParam: 'horseId' }) in
     // enhancedGroomRoutes.mjs:101-102. By the time we reach this handler,
-    // both groom and horse are guaranteed to exist AND be owned by req.user.
+    // the horse is guaranteed to exist AND be OWNED by req.user, and the groom to
+    // exist AND be ON req.user's STAFF (Equoria-ypb7d.2 — the two relations are
+    // different: horses are owned, grooms are engaged).
     // The previous defensive 'Horse not found or not owned by user' branch
     // was dead code; we keep a defense-in-depth 404 fall-through (without
     // the 'or not owned' wording) in case middleware is ever bypassed.

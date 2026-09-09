@@ -347,7 +347,7 @@ export async function releaseGroomTx(tx, params) {
 }
 
 /**
- * Enter the owner's one-week grace period for one groom: the fee for `payWeekStart`
+ * Enter the player's one-week grace period for one groom: the fee for `payWeekStart`
  * went unpaid, so the groom stays on staff but may not groom.
  *
  * Guarded, and the guard is the whole mechanic: the `where` carries
@@ -438,7 +438,7 @@ export function hasFullUnpaidWeek(feeUnpaidSince, payWeekStart) {
  * should report them:
  *   - retired      — the game ended their career (Equoria-m9lz1).
  *   - inactive     — `isActive: false`.
- *   - fee unpaid   — the owner's grace period: "The groom can't groom horse until
+ *   - fee unpaid   — the player's grace period: "The groom can't groom horse until
  *                    paid for that week but they don't officially lose the groom
  *                    once until they fail to pay for a whole week."
  *

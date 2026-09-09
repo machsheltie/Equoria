@@ -444,7 +444,7 @@ model Groom {
   /// could not pay.
   ///
   /// NULL  = the engagement is paid up.
-  /// SET   = the groom is inside the owner's one-week grace period: still on
+  /// SET   = the groom is inside the player's one-week grace period: still on
   ///         that player's staff, but barred from grooming
   ///         (`checkGroomMayWork` in groomEngagementService.mjs).
   ///
@@ -1140,7 +1140,11 @@ model GroomPerformanceRecord {
   id               Int      @id @default(autoincrement())
   /// Groom being evaluated
   groomId          Int
-  /// User who owns the groom
+  /// Equoria-ypb7d.2: the player whose STAFF this record belongs to. This said
+  /// "User who owns the groom", which contradicted lines 463 and 570 of this same
+  /// file — the schema disagreeing with itself about its own model. Players never
+  /// own grooms; they engage them. `///` comments are emitted into the generated
+  /// client, so this was the most visible copy of the false claim in the tree.
   userId           String
   /// Horse involved in the interaction
   horseId          Int?

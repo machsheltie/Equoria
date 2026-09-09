@@ -390,7 +390,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     //   a null `userId` but live assignments could retire with nobody told — the
     //   player would lose care on their horse silently, which is exactly the
     //   failure the in-transaction notification exists to prevent. Currently
-    //   unreachable (no ownerless non-retired groom has an active assignment)
+    //   unreachable (no unengaged non-retired groom has an active assignment —
+    //   Equoria-ypb7d.2: "ownerless", a word `owner` cannot match)
     //   but the owner's "the game should notify a player" requirement is
     //   absolute, so it does not rely on that staying true. That population's
     //   SIZE is deliberately not quoted: it moves with ordinary play (56 when
@@ -520,8 +521,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     endedAssignmentCount: committed.endedAssignmentCount,
     closedAssignmentLogCount: committed.closedAssignmentLogCount,
     closedEngagementCount: committed.closedEngagementCount,
-    // Plural: one per notified player. Normally length 1 (the groom's own
-    // owner); length 0 only when nobody could be notified, which the
+    // Plural: one per notified player. Normally length 1 (the player whose staff
+    // the groom was on); length 0 only when nobody could be notified, which the
     // transaction logs loudly when assignments were ended anyway.
     notificationIds: committed.notificationIds,
     notificationRecipientIds: committed.notificationRecipientIds,
