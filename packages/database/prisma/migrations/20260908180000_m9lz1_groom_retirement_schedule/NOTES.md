@@ -20,7 +20,15 @@ migration and left `prisma migrate dev` refusing to run for three weeks. During 
 round 1 I then reintroduced the same defect in *this* migration by rewriting its header after
 applying it — caught by the checksum sentinel that Equoria-mxftz built for the purpose, and repaired
 by restoring the exact bytes from commit `e024e964f`. The lesson survives here rather than in the
-file it is about. See `docs/features/feed-system.md` for the same rule stated at its origin.
+file it is about.
+
+**On this file's location.** Equoria-mxftz stated the same rule in the docs tree
+(`docs/features/feed-system.md`), and its own migration directory holds only `migration.sql`. Putting
+the note *here* instead is a deliberate deviation, not that precedent: the warning belongs where
+someone about to edit the migration is already looking, which is exactly where my round-1 edit went
+wrong — I had read the rule in the docs file and broke it here anyway. If a future maintainer prefers
+the docs tree for consistency, move this file and update the pointer in
+`packages/database/prisma/schema.prisma`; nothing depends on it living here.
 
 ## Apply this with `migrate deploy`, never `migrate dev`
 

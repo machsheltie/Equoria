@@ -18,12 +18,20 @@
  *      and leaving the other wrong.
  *
  *   3. Both spellings are live in real data, which a single regex cannot
- *      reconcile. Measured on the local database and in source on 2026-09-08:
- *      `grooms.speciality` holds `foal_care` (58 rows), `general` (17) and
- *      `training` (17); source carries 81 `'foal_care'` literals AND 35
- *      `'foalCare'` ones (the marketplace generator emits camelCase, the
- *      `GROOM_SPECIALTIES` constants in backend/constants/schema.mjs emit
- *      snake_case). Both spellings therefore map to the same label here.
+ *      reconcile. The `GROOM_SPECIALTIES` constants in
+ *      backend/constants/schema.mjs define the snake_case values (`foal_care`);
+ *      the marketplace groom generator emits camelCase (`foalCare`). Both reach
+ *      `grooms.speciality`, and a row's spelling depends on which path created
+ *      it, so both map to the same label here.
+ *
+ *      No occurrence counts are quoted on purpose. An earlier version of this
+ *      docblock asserted "81 `'foal_care'` literals AND 35 `'foalCare'` ones"
+ *      and a database distribution, and none of it survived checking: the source
+ *      figures came from a grep scoped to four directories, and the database is
+ *      shared, so its distribution moved twice in one day while this was being
+ *      written. The constants file and the generator are the durable facts; the
+ *      map below records the one count that decides anything (which camelCase
+ *      spellings actually exist), with the command that produced it.
  *
  * COVERAGE
  *   Every value in `backend/constants/schema.mjs` `GROOM_SPECIALTIES`
