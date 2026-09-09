@@ -25,13 +25,49 @@ node packages/database/node_modules/prisma/build/index.js generate \
   --schema packages/database/prisma/schema.prisma
 ```
 
-`migrate dev` on this repository proposes DROPping the 17 raw-SQL runtime indexes from `qh6jk`
-(16 × `idx_horses_*`, plus `user_transactions_user_created_idx`) and
-`ALTER COLUMN "system_accounts"."updatedAt" DROP DEFAULT`. Those DROP statements must be deleted
-from any generated migration before it is applied. The authoritative, maintained version of that
-list is the `///` comment blocks on `Horse`, `UserTransaction` and `SystemAccount` in
-`packages/database/prisma/schema.prisma` — check them, not this paragraph, before accepting any
-generated migration.
+Still use `migrate deploy`: this migration is hand-written, and `migrate dev` would generate its own
+migration rather than apply this one.
+
+**Corrected 2026-09-09 (Equoria-69gip).** This paragraph used to say that `migrate dev` proposes
+DROPping the 17 raw-SQL runtime indexes from `qh6jk` (16 × `idx_horses_*`, plus
+`user_transactions_user_created_idx`) plus
+`ALTER COLUMN "system_accounts"."updatedAt" DROP DEFAULT`, and that those DROP statements had to be
+deleted from any generated migration before applying it. **That is no longer true, and the deletion
+instruction was the wrong remedy in the first place.** Those indexes are now DECLARED in
+`packages/database/prisma/schema.prisma` with `map:` pinning each existing name, and
+`SystemAccount.updatedAt` declares `@default(now())`. Measured against the local `equoria` database:
+the proposal is `-- This is an empty migration.` Nothing is generated, so nothing needs deleting.
+
+If a generated proposal ever again contains `DROP INDEX` for one of those names, treat it as an
+ALARM rather than as routine noise to edit out: it means a declaration was removed from
+`schema.prisma`, and the fix is to restore the declaration. The authoritative, maintained record is
+the `///` comment blocks on `Horse`, `UserTransaction` and `SystemAccount` in
+`packages/database/prisma/schema.prisma` — check them, not this paragraph.
+
+## The header of `migration.sql` asserts something now false, and cannot be corrected
+
+`migration.sql` lines 81–85, inside its `MIGRATION STATUS` comment block (lines 78–89), repeat the
+claim corrected just above: that `migrate dev` proposes DROPping the 17 `qh6jk` runtime indexes plus
+the `system_accounts.updatedAt` default, and that **"those DROP statements must be deleted from any
+generated migration before it is applied."**
+
+That block's *other* instructions are still correct and should be followed: apply with
+`migrate deploy` and never `migrate dev`, and never edit the file again now that it is applied. Only
+the DROP-deletion sentence has gone false. Its pointer to
+`.superpowers/sdd/FINDINGS/task-14-report.md` is also a dead end — that path is git-ignored task
+scratch and does not survive the branch merge.
+
+**Both halves are false as of Equoria-69gip (2026-09-09), and those bytes can never be fixed.** They
+are inside the hash stored in `_prisma_migrations`, so editing them — comments included — would break
+`prisma migrate dev` for every database that applied the old bytes and would trip
+`backend/__tests__/scripts/appliedMigrationChecksumIntegrity.sentinel.test.mjs`. The line numbers
+above are therefore permanently stable, and this note is the only available correction. Read that
+block as history, not as instruction.
+
+**Do not follow it.** Hand-editing generated SQL is the specific practice that caused the checksum
+breakage this repository has already paid for twice (see the sibling
+`20260908180000_m9lz1_groom_retirement_schedule/NOTES.md`). The indexes are declared; there is no
+proposal to edit.
 
 ## Two objects in here are invisible to Prisma
 
