@@ -57,12 +57,17 @@
 // be grandfathered and then quietly forgotten. Mirrors the ratchet in
 // check-no-unsafe-raw-sql.mjs (Equoria-pc042).
 //
+// The allow-list's OWN contract is enforced too: an entry without a real `reason`
+// and a tracker `issue` fails as loudly as an ungated write. Documenting that
+// requirement in the JSON's `_doc` was not enough — a bare `{}` entry silenced
+// this gate and still exited 0, which is a guard that can be switched off more
+// cheaply than the thing it guards can be fixed.
+//
 // Per-line exemption marker (for a genuinely non-horse-name write the signals
 // misread):
 //   // doctrine-allow: horse-name-ungated
 //
 // Run: `node scripts/doctrine-checks/check-horse-name-gated.mjs`
-// Optional argv[2]: alternate allow-list path (sentinel/plant hook only).
 // Auto-runs via scripts/doctrine-checks/run-all.sh.
 
 import fs from 'node:fs';
@@ -75,9 +80,17 @@ const CHECK_ID = 'horse-name-gated';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
 
-const ALLOWLIST_PATH = process.argv[2]
-  ? path.resolve(process.cwd(), process.argv[2])
-  : path.join(SCRIPT_DIR, 'horse-name-gate-allowlist.json');
+// One fixed path, deliberately not overridable. An earlier revision accepted an
+// alternate allow-list path as argv[2] so a reviewer could re-run the check
+// against an empty list. That is a bypass seam in the one kind of program whose
+// entire job is to catch bypasses, and the usual mitigation does not work here:
+// `NODE_ENV === 'test'` gates a test-only seam meaningfully in a long-running
+// server (a deployed process is never 'test'), but this is a CLI script anyone
+// can prefix with `NODE_ENV=test`, so the gate would be theatre. No committed
+// test needed the override, so it is gone rather than gated. Verifying the list
+// by temporarily emptying this file in a scratch worktree costs the same and
+// leaves no permanent door.
+const ALLOWLIST_PATH = path.join(SCRIPT_DIR, 'horse-name-gate-allowlist.json');
 
 // Request-reachable backend app code only. `seed/` and `scripts/` are excluded
 // deliberately (see "what it cannot see" above), as are test trees.
@@ -302,6 +315,49 @@ function importsPolicy(source) {
   return false;
 }
 
+// The allow-list's own contract, ENFORCED rather than merely documented.
+//
+// The `_doc` block says every entry MUST carry a reason and an issue. Until this
+// existed, nothing checked that: a bare `{}` entry silenced the gate and the
+// check still exited 0. That is how an allow-list rots — the next person under
+// time pressure adds an empty entry, the gate goes green, and the divergence is
+// invisible again. A guard must not be silenceable more cheaply than the thing it
+// guards can be fixed.
+//
+// `reason` must actually explain: a minimum length is crude but it defeats 'n/a',
+// 'legacy' and 'TODO', which is the whole failure mode. `issue` must name a real
+// tracker id in this repository's convention, so the divergence is traceable to a
+// decision instead of to a shrug.
+const MIN_REASON_LENGTH = 40;
+const ISSUE_REF_RE = /^Equoria-[A-Za-z0-9._-]+$/;
+
+function findAllowlistContractViolations(byPath) {
+  const problems = [];
+  for (const [rel, entry] of Object.entries(byPath)) {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+      problems.push({ rel, missing: 'an object with { reason, issue } — got ' + typeof entry });
+      continue;
+    }
+    const reason = typeof entry.reason === 'string' ? entry.reason.trim() : '';
+    const issue = typeof entry.issue === 'string' ? entry.issue.trim() : '';
+    const missing = [];
+    if (reason.length === 0) {
+      missing.push('a `reason`');
+    } else if (reason.length < MIN_REASON_LENGTH) {
+      missing.push(`a real \`reason\` (has ${reason.length} chars, needs >= ${MIN_REASON_LENGTH})`);
+    }
+    if (issue.length === 0) {
+      missing.push('an `issue`');
+    } else if (!ISSUE_REF_RE.test(issue)) {
+      missing.push(`a valid \`issue\` reference (got ${JSON.stringify(entry.issue)})`);
+    }
+    if (missing.length > 0) {
+      problems.push({ rel, missing: missing.join(' and ') });
+    }
+  }
+  return problems;
+}
+
 function loadAllowlist() {
   if (!fs.existsSync(ALLOWLIST_PATH)) {
     return { entries: [], byPath: {} };
@@ -313,6 +369,7 @@ function loadAllowlist() {
 
 const { entries: allowlistEntries, byPath: allowlistByPath } = loadAllowlist();
 const allowlist = new Set(allowlistEntries);
+const contractViolations = findAllowlistContractViolations(allowlistByPath);
 
 const violations = [];
 const flaggedRelPaths = new Set();
@@ -349,8 +406,23 @@ for (const rel of allowlistEntries) {
   }
 }
 
-if (violations.length > 0 || staleEntries.length > 0) {
+if (violations.length > 0 || staleEntries.length > 0 || contractViolations.length > 0) {
   console.error(`[${CHECK_ID}] DOCTRINE VIOLATION\n`);
+
+  if (contractViolations.length > 0) {
+    // Reported as loudly as an ungated write, and first, because a malformed
+    // entry means the gate is currently silent about a real divergence.
+    console.error('Allow-list entr(ies) do not meet the contract the list itself states:');
+    for (const c of contractViolations) {
+      console.error(`  ${c.rel} — missing ${c.missing}`);
+    }
+    console.error(
+      '\nEvery entry MUST carry a `reason` that explains why the divergence is' +
+        '\nacceptable and an `issue` naming the decision (e.g. "Equoria-zalyb").' +
+        '\nAn entry without them silences this gate while recording nothing, which' +
+        '\nis how an allow-list rots. Write the reason or remove the entry.'
+    );
+  }
 
   if (violations.length > 0) {
     console.error('Request-reachable file(s) write horses.name without the shared policy:');

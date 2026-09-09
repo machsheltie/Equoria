@@ -389,8 +389,14 @@ describe('renameHorseService — the write itself re-asserts ownership', () => {
     // Defence in depth: the route validates first, so this is unreachable over
     // HTTP. It matters because the service is the write site, and
     // check-horse-name-gated.mjs flagged that this file wrote horses.name while
-    // knowing nothing about the rule. Delete the service-layer guard and this
-    // case fails — and the doctrine check goes red too.
+    // knowing nothing about the rule.
+    //
+    // Deleting the service-layer guard fails THIS case. It does NOT redden the
+    // doctrine check unless the `horseNamePolicy` import goes with it — measured,
+    // not assumed: with the guard removed and the import left in place the check
+    // still reports OK and exits 0. That is the check's file-level limit showing
+    // up in this suite's own subject, and it is why this test exists rather than
+    // leaning on the gate.
     const before = await storedName(horseB.id);
 
     const result = await renameHorseById(horseB.id, owner.id, 'L'.repeat(101));
