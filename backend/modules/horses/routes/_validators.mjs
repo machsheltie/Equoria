@@ -136,6 +136,124 @@ export const rejectPollutedRequest = (req, res, next) => {
 };
 
 /**
+ * ── Horse name policy (Equoria-qkgfh.1) ────────────────────────────────────
+ *
+ * ONE source of truth for "is this an acceptable horse name", shared by the
+ * generic update path (PUT /horses/:id) and the dedicated rename endpoint
+ * (PATCH /horses/:id/name).
+ *
+ * The bounds are NOT invented — they are the bounds this codebase already
+ * enforces on a player-supplied horse name:
+ *   - length 1-100: `validateHorseCreation` above (POST /api/v1/horses,
+ *     `body('name').isLength({ min: 1, max: 100 })`) — the only live,
+ *     request-rejecting horse-name length rule in the backend.
+ *   - characters: `validateHorseUpdatePayload` below rejects `<` and NUL and
+ *     nothing else. Apostrophes and non-ASCII letters are explicitly REQUIRED
+ *     to round-trip (backend/__tests__/sql-injection-attempts.test.mjs asserts
+ *     `O'Malley's Horse` must be accepted verbatim), so no allow-list regex is
+ *     applied here.
+ *
+ * NOT enforced on purpose:
+ *   - Uniqueness. The owner ruled 2026-09-09 that names need not be unique
+ *     ("if 20 players want to name their horse Fred, they can do so"), and
+ *     `Horse.name` carries no unique index in schema.prisma or in any
+ *     migration. There is deliberately no duplicate check.
+ *   - Normalisation. The value is stored verbatim: no trim, no truncation, no
+ *     case folding. A name that violates the policy is REJECTED, never
+ *     quietly repaired. Whitespace-only is rejected because it is not a name.
+ *
+ * `backend/utils/securityValidation.mjs#validateHorseData` claims a 2-50 range
+ * plus an ASCII-only allow-list, but no route imports it (only its own unit
+ * tests do) — it is not enforced behaviour and is not the precedent followed.
+ */
+export const HORSE_NAME_MIN_LENGTH = 1;
+export const HORSE_NAME_MAX_LENGTH = 100;
+
+/**
+ * Why a candidate horse name is unacceptable, or null when it is acceptable.
+ *
+ * Returning a reason (rather than a message) lets each caller keep its own
+ * response wording: PUT collapses every reason to its historical
+ * 'Invalid horse name', while the rename endpoint reports a specific one.
+ *
+ * @param {unknown} name - candidate name, exactly as it arrived on the request
+ * @returns {'type'|'length'|'characters'|null}
+ */
+export function horseNameRejectionReason(name) {
+  if (typeof name !== 'string') {
+    return 'type';
+  }
+  // Bound the RAW value — the stored string is the raw string, so measuring
+  // anything else would let an over-long name through on a technicality.
+  if (name.length > HORSE_NAME_MAX_LENGTH) {
+    return 'length';
+  }
+  if (name.trim().length < HORSE_NAME_MIN_LENGTH) {
+    return 'length';
+  }
+  if (name.includes('<') || name.includes('\0')) {
+    return 'characters';
+  }
+  return null;
+}
+
+/**
+ * Validate the body of PATCH /horses/:id/name (Equoria-qkgfh.1).
+ *
+ * Fail-closed and narrow: JSON only, a plain object, `name` the ONLY accepted
+ * key, and the shared name policy above. Anything else is a 400 with a message
+ * that says which rule failed — nothing is truncated or normalised into
+ * acceptability.
+ */
+export const validateHorseRenamePayload = (req, res, next) => {
+  const contentType = (req.headers?.['content-type'] || '').toLowerCase();
+  if (!contentType.startsWith('application/json')) {
+    return res.status(400).json({ success: false, message: 'Invalid rename payload' });
+  }
+
+  const body = req.body;
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return res.status(400).json({ success: false, message: 'Invalid rename payload' });
+  }
+
+  // Prototype-pollution guard, mirroring validateHorseUpdatePayload.
+  if (
+    Object.prototype.hasOwnProperty.call(body, '__proto__') ||
+    Object.prototype.hasOwnProperty.call(body, 'constructor') ||
+    Object.getPrototypeOf(body) !== Object.prototype
+  ) {
+    return res.status(400).json({ success: false, message: 'Invalid rename payload' });
+  }
+
+  // `name` is the whole payload. Refusing extra keys keeps this endpoint from
+  // becoming a second mass-assignment surface the way PUT /horses/:id did.
+  for (const key of Object.keys(body)) {
+    if (key !== 'name') {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid rename payload: unexpected field' });
+    }
+  }
+
+  switch (horseNameRejectionReason(body.name)) {
+    case 'type':
+      return res.status(400).json({ success: false, message: 'Horse name must be a string' });
+    case 'length':
+      return res.status(400).json({
+        success: false,
+        message: `Horse name must be between ${HORSE_NAME_MIN_LENGTH} and ${HORSE_NAME_MAX_LENGTH} characters`,
+      });
+    case 'characters':
+      return res.status(400).json({
+        success: false,
+        message: 'Horse name may not contain < or a null character',
+      });
+    default:
+      return next();
+  }
+};
+
+/**
  * Validate horse update payload to prevent type coercion / mass assignment
  * (PUT /horses/:id). Allowlist-only fields; rejects nested too-deep payloads,
  * prototype-pollution keys, non-JSON content types, and protected fields.
@@ -212,10 +330,15 @@ export const validateHorseUpdatePayload = (req, res, next) => {
   }
 
   if (body.name !== undefined) {
-    if (typeof body.name !== 'string') {
-      return res.status(400).json({ success: false, message: 'Invalid horse name' });
-    }
-    if (body.name.includes('<') || body.name.includes('\0')) {
+    // Equoria-qkgfh.1: the type + character rules that used to be inlined here
+    // now live in horseNameRejectionReason() so PUT and the dedicated rename
+    // endpoint (PATCH /horses/:id/name) cannot drift apart. The length bound is
+    // NEW on this path: PUT previously accepted a name of any length, so the
+    // 1-100 cap POST /horses already enforces was trivially bypassable and the
+    // rename endpoint's cap would have been decorative. Message text is
+    // deliberately unchanged ('Invalid horse name' for every reason) so this
+    // path's existing responses stay byte-identical.
+    if (horseNameRejectionReason(body.name) !== null) {
       return res.status(400).json({ success: false, message: 'Invalid horse name' });
     }
   }

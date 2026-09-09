@@ -11,6 +11,7 @@ import horseXpRoutes from './horseXpRoutes.mjs';
 import horseBreedingRoutes from './horseBreedingRoutes.mjs';
 import horseHistoryRoutes from './horseHistoryRoutes.mjs';
 import horseFoalRoutes from './horseFoalRoutes.mjs';
+import horseIdentityRoutes from './horseIdentityRoutes.mjs';
 import {
   handleValidationErrors,
   rejectPollutedRequest,
@@ -595,5 +596,8 @@ router.use(horseXpRoutes);
 router.use(horseBreedingRoutes);
 router.use(horseHistoryRoutes);
 router.use(horseFoalRoutes);
+// Equoria-qkgfh.1: PATCH /:id/name (rename). 2 segments, so it cannot collide
+// with this parent's GET /:id.
+router.use(horseIdentityRoutes);
 
 export default router;
