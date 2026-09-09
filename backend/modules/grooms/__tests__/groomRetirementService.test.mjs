@@ -54,6 +54,28 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // fixture surfaces at the source instead of tripping a canonical sentinel later.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
+/**
+ * Equoria-m9lz1 fix round 1 — a scoped-delete guard.
+ *
+ * `where: { userId: someUser?.id }` looks safe and is not: when the fixture
+ * variable is undefined (a failed `beforeAll`, a reordered hook), Prisma DROPS an
+ * `undefined` filter rather than matching nothing, so the cleanup silently becomes
+ * a TABLE-WIDE `deleteMany()` — the exact thing CONTRIBUTING.md forbids, arriving
+ * by accident at the moment the suite is already broken. Every id used in a
+ * cleanup filter goes through this instead, so a missing fixture fails the
+ * cleanup loudly (createCleanupTracker surfaces the throw) rather than deleting
+ * another suite's rows.
+ */
+function requireFixtureId(value, label) {
+  if (value === undefined || value === null || value === '') {
+    throw new Error(
+      `[groomRetirementService.test] refusing to run a cleanup with no ${label} — an undefined ` +
+        'filter would widen this delete to the whole table',
+    );
+  }
+  return value;
+}
+
 // ── Pure-path tests — non-existent groom ─────────────────────────────────────
 
 describe('incrementCareerWeeks — non-existent groom', () => {
@@ -230,10 +252,25 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
       ].filter(Boolean);
       return prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: groomIds } } });
     }, 'groomRetirementSchedule');
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: grsUser?.id } }), 'notifications');
-    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: grsUser?.id } }), 'groomAssignments');
     cleanup.add(
-      () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroom: { userId: grsUser?.id } } }),
+      () =>
+        prisma.notification.deleteMany({
+          where: { userId: requireFixtureId(grsUser?.id, 'grsUser.id') },
+        }),
+      'notifications',
+    );
+    cleanup.add(
+      () =>
+        prisma.groomAssignment.deleteMany({
+          where: { userId: requireFixtureId(grsUser?.id, 'grsUser.id') },
+        }),
+      'groomAssignments',
+    );
+    cleanup.add(
+      () =>
+        prisma.groomLegacyLog.deleteMany({
+          where: { retiredGroom: { userId: requireFixtureId(grsUser?.id, 'grsUser.id') } },
+        }),
       'legacy logs',
     );
     cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-' } } }), 'grooms');
@@ -417,7 +454,13 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
       const groomIds = [wcpGroomNormal?.id, wcpGroomMandatory?.id].filter(Boolean);
       return prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: groomIds } } });
     }, 'groomRetirementSchedule');
-    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: wcpUser?.id } }), 'notifications');
+    cleanup.add(
+      () =>
+        prisma.notification.deleteMany({
+          where: { userId: requireFixtureId(wcpUser?.id, 'wcpUser.id') },
+        }),
+      'notifications',
+    );
     cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-WCP-' } } }), 'grooms');
     cleanup.add(() => prisma.user.delete({ where: { id: wcpUser?.id } }), 'user');
   }, 30000);

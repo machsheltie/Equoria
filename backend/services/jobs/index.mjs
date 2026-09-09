@@ -39,6 +39,7 @@ import temporaryFlagExpiryJob from './temporaryFlagExpiryJob.mjs';
 import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
 import cronRunLogRetentionJob from './cronRunLogRetentionJob.mjs';
 import showExecutionReaperJob from './showExecutionReaperJob.mjs';
+import groomCareerProgressionJob from './groomCareerProgressionJob.mjs';
 
 /**
  * Ordered registry. The first ten entries match the original `this.jobs.set(...)`
@@ -52,6 +53,13 @@ import showExecutionReaperJob from './showExecutionReaperJob.mjs';
  * job order — and therefore getStatus()/getHealth() iteration order for those
  * ten jobs — is unchanged. cronRunLogRetention (Equoria-2tx16) is appended after
  * it for the same order-preserving reason.
+ *
+ * groomCareerProgression (Equoria-m9lz1) is appended last, after
+ * showExecutionReaper, for the same reason — it reorders nothing. It lives in
+ * THIS registry rather than the function-based cronJobService because it is the
+ * one job whose silent failure has no external symptom (grooms simply never age
+ * out), so it needs runWithHeartbeat, a CronRunLog row and visibility at
+ * /api/admin/cron/health. See its descriptor header.
  */
 export const CRON_JOB_REGISTRY = Object.freeze([
   dailyTraitJob,
@@ -67,6 +75,7 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   docCoverageSnapshotJob,
   cronRunLogRetentionJob,
   showExecutionReaperJob,
+  groomCareerProgressionJob,
 ]);
 
 export default CRON_JOB_REGISTRY;

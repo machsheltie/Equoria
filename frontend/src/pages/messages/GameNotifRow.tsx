@@ -18,6 +18,7 @@ import { Circle, CheckCircle2, Clock } from 'lucide-react';
 import { Surface } from '@/components/ui/Surface';
 import { GameBadge, type GameBadgeProps } from '@/components/ui/game';
 import type { GameNotification } from '@/lib/api-client';
+import { groomSpecialtyLabel } from '@/lib/groomSpecialtyLabels';
 import { relativeTime } from './constants';
 
 // Row shell shared across notification renderers — keeps unread dot, layout,
@@ -139,11 +140,22 @@ const FoalBornRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
  * The payload deliberately carries no retirement age. The game's hidden
  * retirement schedule is not disclosed before the week it takes effect, and this
  * row is the week it takes effect.
+ *
+ * The specialty goes through `groomSpecialtyLabel` and never reaches the
+ * sentence raw. The first version of this row interpolated `p.speciality`
+ * directly, so a player read "a long career in foal_care" — a database enum in
+ * the one new sentence this feature added. See lib/groomSpecialtyLabels.ts for
+ * why that is a label map rather than a formatter.
  */
 const GroomRetiredRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   const p = notif.payload ?? {};
   const groomName = typeof p.groomName === 'string' ? p.groomName : 'One of your grooms';
-  const speciality = typeof p.speciality === 'string' ? p.speciality : null;
+  // `null` when the payload carries no specialty, so the sentence drops the
+  // clause entirely rather than reaching for a filler phrase.
+  const speciality =
+    typeof p.speciality === 'string' && p.speciality.trim() !== ''
+      ? groomSpecialtyLabel(p.speciality)
+      : null;
   const horses = typeof p.horsesLeftUnattended === 'number' ? p.horsesLeftUnattended : 0;
   return (
     <GameNotifShell

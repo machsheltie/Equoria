@@ -60,11 +60,11 @@
  *   4. THE NOTIFICATION IS PART OF THE RETIREMENT. Exactly one `groom_retired`
  *      Notification reaches the groom's own user and nobody else, its payload
  *      names the groom and how many horses were left uncovered, and it carries no
- *      retirement age. And when the retirement transaction fails MIDWAY — proved
- *      here with a real row lock held by a second real transaction, not a mock —
- *      the rollback is total: the groom is not retired, the assignment is
- *      untouched, and no notification exists. Under the pre-fix code the groom
- *      flip was a separate autocommit statement, so it survived independently.
+ *      retirement age. That it is written INSIDE the retirement transaction is
+ *      proven by the source sentinel plus the double-retire case rather than by an
+ *      injected mid-flight failure — see the long comment above the sentinel for
+ *      what was tried, why it was dropped, and exactly what is therefore argued
+ *      rather than observed.
  *
  * Real database. No mocks of any Equoria-owned path. Fixtures are uniquely named
  * and cleaned up by id in FK order.
@@ -150,14 +150,6 @@ async function makeGroom(ownerId, label, extra = {}) {
 }
 
 /**
- * Walk a decoded JSON body and collect every key name at every depth. Asserting
- * on key NAMES rather than on the age's numeric value is deliberate: a bare
- * integer in 50..65 could coincide with `careerWeeks`, `level` or a price, so a
- * value scan would be both flaky and weak. A leaked age has to arrive under a
- * name, and Prisma only ever emits it as `retirementAge` (scalar) or nested
- * under `retirementSchedule` (relation).
- */
-/**
  * Pure detector over the retirement service's SOURCE TEXT: the whole retirement
  * must be one transaction, and nothing may delete assignment rows. Pure so the
  * sibling case can prove it FIRES on planted violations rather than only staying
@@ -192,9 +184,24 @@ function auditRetirementTransactionBoundary(rawSource) {
 
   // The transaction body: from the single `prisma.$transaction(` to the `});`
   // that closes the callback at its own indentation.
+  //
+  // FAIL CLOSED when that literal is absent. The first version fell back to
+  // `source.slice(txStart)` — the rest of the FILE — so a reformat that changed
+  // the closing indentation would have silently widened the body to include every
+  // later function, and the four "is it inside the transaction" checks below would
+  // then pass on code that had moved OUT of it. A detector that breaks toward
+  // green is worse than no detector, so an unlocatable body is a finding.
   const txStart = source.indexOf('prisma.$transaction(');
   const txEnd = source.indexOf('\n  });', txStart);
-  const txBody = txEnd === -1 ? source.slice(txStart) : source.slice(txStart, txEnd);
+  if (txEnd === -1) {
+    findings.push(
+      'could not locate the end of the retirement transaction body (expected a "\\n  });" ' +
+        'closing the callback) — the boundary checks below cannot be trusted, so this is a ' +
+        'failure rather than a pass. If the file was reformatted, update this extraction.',
+    );
+    return findings;
+  }
+  const txBody = source.slice(txStart, txEnd);
 
   const required = [
     ['tx.groom.updateMany(', 'the guarded groom flip'],
@@ -216,6 +223,14 @@ function auditRetirementTransactionBoundary(rawSource) {
   return findings;
 }
 
+/**
+ * Walk a decoded JSON body and collect every key name at every depth. Asserting
+ * on key NAMES rather than on the age's numeric value is deliberate: a bare
+ * integer in 50..65 could coincide with `careerWeeks`, `level` or a price, so a
+ * value scan would be both flaky and weak. A leaked age has to arrive under a
+ * name, and Prisma only ever emits it as `retirementAge` (scalar) or nested
+ * under `retirementSchedule` (relation).
+ */
 function collectKeys(node, out = new Set()) {
   if (Array.isArray(node)) {
     for (const item of node) {
@@ -676,6 +691,25 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     ].join('\n');
     expect(auditRetirementTransactionBoundary(notificationOutsideTx)).toEqual(
       expect.arrayContaining([expect.stringMatching(/createNotificationTx/i)]),
+    );
+
+    // A reformat that moves the callback's closing brace off two-space
+    // indentation. The detector must FAIL here, not silently widen the body to
+    // the rest of the file and then pass — the fail-open bug this branch fixes.
+    const unlocatableBody = [
+      'export async function processRetirement(groomId) {',
+      '  const committed = await prisma.$transaction(async tx => {',
+      '      await tx.groom.updateMany({ where: { id: groomId }, data: { retired: true } });',
+      '      await tx.groomAssignment.updateMany({ where: { groomId }, data: {} });',
+      '      await tx.groomAssignmentLog.updateMany({ where: { groomId }, data: {} });',
+      '      await createNotificationTx(tx, userId, T, {});',
+      '      return {};',
+      '    });',
+      '  return committed;',
+      '}',
+    ].join('\n');
+    expect(auditRetirementTransactionBoundary(unlocatableBody)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/could not locate the end/i)]),
     );
   });
 

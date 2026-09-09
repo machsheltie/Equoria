@@ -111,26 +111,18 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
       // userRankSnapshot). Assert the EXACT set of canonical job names
       // instead. Adding/removing a job now requires an intentional edit
       // to this list (a deliberate signal), not an opaque count bump.
-      //
-      // WHY THIS LIST GREW TO SIX (Equoria-m9lz1, owner ruling 2026-09-08):
-      // "Grooms retire automatically at a randomly selected age by the game."
-      // `groomCareerProgression` is the job that makes that true — it is the ONLY
-      // thing that advances a groom's career age and therefore the only thing
-      // that can ever retire one. Before it existed,
-      // `processWeeklyCareerProgression` sat in neither cron registry, so no
-      // groom's `careerWeeks` advanced and no groom ever retired; the ruling
-      // would have shipped as a dormant promise. The player-facing retirement
-      // trigger is closed (403) precisely because this job is meant to be the
-      // whole mechanism, so this entry is load-bearing, not incidental. Mondays
-      // 09:45 UTC, after weeklySalaries (09:00) — payroll bills per ACTIVE groom
-      // assignment, so retiring first would cost the groom their final wage.
+      // Equoria-m9lz1: `groomCareerProgression` briefly appeared in this list.
+      // It moved to registry A (backend/services/jobs/) because this registry has
+      // no heartbeat and is invisible to /api/admin/cron/health, and that pass is
+      // the one whose silent failure has no external symptom. It is asserted by
+      // __tests__/cronJobRegistry.structure.test.mjs instead, so this list is
+      // back to five.
       const CANONICAL_CRON_JOBS = [
         'weeklySalaries',
         'tokenCleanup',
         'foaling',
         'riderTrainerRetirement',
         'userRankSnapshot',
-        'groomCareerProgression',
       ];
 
       initializeCronJobs();

@@ -12,65 +12,59 @@
  *
  * The invariants this module owns:
  *
- *   I1  ONLY THE GAME RETIRES A GROOM. No HTTP request flips `Groom.retired`.
+ *   I1  ONLY THE GAME RETIRES A GROOM. No HTTP request flips `Groom.retired`;
  *       `POST /grooms/:id/retirement/process` is closed (403) — see
- *       routes/groomRetirementRoutes.mjs and the regression
+ *       routes/groomRetirementRoutes.mjs and its regression
  *       __tests__/groomRetirementEndpointClosed.integration.test.mjs. The only
  *       production caller of `processRetirement` is
  *       `processWeeklyCareerProgression` below.
  *
- *   I2  RETIREMENT IS AGE-DRIVEN, AT A HIDDEN PER-GROOM AGE IN [50, 65]. Drawn
- *       once and persisted in `GroomRetirementSchedule`, never recomputed, so it
- *       cannot drift between reads. The unit is the same weekly tick as
- *       `Groom.careerWeeks` (Equoria's clock is 1 real week = 1 game-year — see
- *       backend/utils/horseAge.mjs), so `careerWeeks` IS the groom's career age
- *       in game-years and the test is a direct age comparison.
+ *   I2  AGE-DRIVEN, AT A HIDDEN PER-GROOM AGE IN [50, 65]. Drawn once and
+ *       persisted in `GroomRetirementSchedule`, never recomputed, so it cannot
+ *       drift between reads. The unit is the same weekly tick as
+ *       `Groom.careerWeeks` (Equoria's clock is 1 real week = 1 game-year, see
+ *       backend/utils/horseAge.mjs), so the test is a direct age comparison.
  *
  *   I3  THE AGE IS NOT DISCOVERABLE BEFORE IT TAKES EFFECT. It lives in its own
  *       table so no groom read path can return it (see the schema comment on
  *       `GroomRetirementSchedule`), and nothing here returns it, a countdown to
- *       it, or any value a client could invert to obtain it. That is why
- *       `checkRetirementEligibility` no longer returns `weeksUntilRetirement` /
- *       `noticeRequired`, and why `getGroomsApproachingRetirement` and
+ *       it, or a value a client could invert to obtain it. Hence
+ *       `checkRetirementEligibility` returns no `weeksUntilRetirement` /
+ *       `noticeRequired`, and `getGroomsApproachingRetirement` and
  *       `statistics.approachingRetirement` are gone: each WAS the disclosure.
  *
- *   I4  THE NOTIFICATION IS ATOMIC WITH THE RETIREMENT. The Notification row is
- *       written by the same transaction that flips `retired` and ends the
- *       assignments (`createNotificationTx`). The notification is the player's
- *       only warning; if it could fail independently the player would lose a
- *       groom silently.
+ *   I4  THE NOTIFICATION IS ATOMIC WITH THE RETIREMENT, and reaches SOMEONE.
+ *       Written by the same transaction that flips `retired` and ends the
+ *       assignments (`createNotificationTx`) — it is the player's only warning,
+ *       so it must not be able to fail independently. Recipient is the groom's
+ *       own `userId`, falling back to the distinct owners of the assignments just
+ *       ended, because `Groom.userId` is nullable while `GroomAssignment` carries
+ *       its own; if neither names anyone the transaction logs loudly.
  *
  *   I5  RETIREMENT ENDS ASSIGNMENTS; IT NEVER DESTROYS HISTORY. Pre-m9lz1 this
- *       service ran `prisma.groomAssignment.deleteMany({ where: { groomId } })`
- *       under a comment claiming it removed "active assignments" — the `where`
- *       matched EVERY row, so one retirement destroyed that groom's whole
- *       assignment history, and because `groom_interactions.assignmentId` is
- *       `ON DELETE SET NULL`, every past interaction was detached from the
- *       assignment that produced it. Irreversibly. Now active rows are ENDED
+ *       ran `prisma.groomAssignment.deleteMany({ where: { groomId } })` under a
+ *       comment claiming it removed "active" assignments — the `where` matched
+ *       EVERY row, so one retirement destroyed the groom's whole assignment
+ *       history and, because `groom_interactions.assignmentId` is
+ *       `ON DELETE SET NULL`, detached every past interaction from the assignment
+ *       that produced it. Irreversibly. Now active rows are ENDED
  *       (`isActive: false` + `endDate`), mirroring
  *       marketplace/services/horseTransferReconciliation.endActiveAssignmentsOnHorse;
  *       inactive rows are untouched; open `GroomAssignmentLog` rows are closed.
  *
- * REMOVED TRIGGERS, AND WHY
- *   The pre-m9lz1 weekly pass ALSO auto-retired on level >= 10 and on 12+
- *   assignment logs. Both contradict the ruling: they retire a groom at any age,
- *   and the assignment-count one fires after a dozen re-assignments — long before
- *   age 50 — so leaving it would have meant the age rule almost never fired. The
- *   reason strings stay in `RETIREMENT_REASONS` because existing
- *   `Groom.retirementReason` rows carry them and `getRetirementStatistics` groups
- *   by that column; nothing computes them. Reinstating a "master groom graduates"
- *   mechanic is a product decision, not a cleanup.
+ * REMOVED TRIGGERS: the pre-m9lz1 pass also retired on level >= 10 and on 12+
+ * assignment logs. Both retire a groom at any age, and the assignment-count one
+ * fires after a dozen ordinary re-assignments — long before age 50 — so keeping
+ * it would have meant the age rule almost never fired. The reason strings stay in
+ * `RETIREMENT_REASONS` for existing `Groom.retirementReason` rows, which
+ * `getRetirementStatistics` groups by; nothing computes them. Reinstating a
+ * "master groom graduates" mechanic is a product decision (Equoria-8l6lg).
  *
- * THE SCHEDULER
- *   `processWeeklyCareerProgression` is driven by
- *   backend/services/cron-job-service-jobs/groomCareerProgressionJob.mjs —
- *   Mondays 09:45 UTC, advisory-locked, registered in
- *   CRON_JOB_SERVICE_REGISTRY. It runs AFTER weeklySalaries (09:00), because
- *   payroll bills per ACTIVE assignment and retiring a groom first would cost
- *   them their final week's wage. That registry has no heartbeat and is
- *   invisible to /api/admin/cron/health (Equoria-cmw85.9 tracks the gap), so a
- *   silently stopped pass surfaces nowhere: players would simply keep their
- *   grooms forever. Read the job descriptor's header before relying on it.
+ * THE SCHEDULER: backend/services/jobs/groomCareerProgressionJob.mjs (registry A,
+ * so advisory-locked AND heartbeat-wrapped AND visible at
+ * /api/admin/cron/health) — Mondays 09:45 UTC. It runs AFTER weeklySalaries (09:00) because payroll
+ * bills per ACTIVE assignment: retiring first would cost a groom who worked that
+ * week their final wage. Read that descriptor's header before relying on it.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -79,7 +73,11 @@ import {
   createNotificationTx,
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
-import { LEGACY_CONSTANTS, LEGACY_PERKS, createLegacyLog } from './groomLegacyService.mjs';
+// Equoria-m9lz1 fix round 1: `autoCreateLegacyOnRetirement` moved to
+// groomLegacyService.mjs, where its constants, perk pool and `createLegacyLog`
+// already live. It is a legacy-log concern that retirement happens to trigger,
+// not retirement mechanics, and nothing outside this file called it.
+import { autoCreateLegacyOnRetirement } from './groomLegacyService.mjs';
 // The hidden retirement age lives in its own module so that every read or draw
 // of it is one grep away (Equoria-m9lz1 invariant I3).
 import {
@@ -208,78 +206,6 @@ export async function checkRetirementEligibility(groomId) {
 }
 
 /**
- * Equoria-c0vo: Auto-create a GroomLegacyLog when a mentor-eligible groom retires.
- *
- * Eligibility: retiring groom level >= LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL (7).
- * Protégé selection: lowest-level active (non-retired) groom of the same user,
- * excluding the retiring groom itself, that is not already a legacy protégé.
- * If no eligible protégé exists yet, returns null and logs an info message —
- * the user can still trigger generateLegacyProtege manually when they hire a
- * new groom.
- *
- * Runs AFTER the retirement transaction commits, not inside it: a legacy log is
- * a bonus, and a failure to create one must not undo a retirement the player has
- * already been notified of.
- *
- * @param {Object} retiredGroom - The freshly retired groom record (must include id, userId, level, personality)
- * @returns {Promise<Object|null>} The created legacy log, or null if not eligible / no protégé.
- */
-export async function autoCreateLegacyOnRetirement(retiredGroom) {
-  if (!retiredGroom || retiredGroom.level < LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL) {
-    return null;
-  }
-
-  // Don't create a second legacy for a groom that already has one.
-  const existingLegacy = await prisma.groomLegacyLog.findFirst({
-    where: { retiredGroomId: retiredGroom.id },
-  });
-  if (existingLegacy) {
-    return null;
-  }
-
-  // Find the lowest-level active groom of the same user, not already a legacy protégé.
-  const protegeCandidate = await prisma.groom.findFirst({
-    where: {
-      userId: retiredGroom.userId,
-      retired: false,
-      isActive: true,
-      id: { not: retiredGroom.id },
-      legacyGroomMentors: { none: {} }, // not already a protégé in any legacy log
-    },
-    orderBy: [{ level: 'asc' }, { experience: 'asc' }],
-  });
-
-  if (!protegeCandidate) {
-    logger.info(
-      `[groomRetirementService.autoCreateLegacyOnRetirement] No eligible protégé for retired mentor groom ${retiredGroom.id} (level ${retiredGroom.level}); legacy deferred.`,
-    );
-    return null;
-  }
-
-  // Select a random perk from the mentor's personality pool.
-  const perkPool = LEGACY_PERKS[retiredGroom.personality] || [];
-  if (perkPool.length === 0) {
-    logger.warn(
-      `[groomRetirementService.autoCreateLegacyOnRetirement] No legacy perks defined for personality '${retiredGroom.personality}'; skipping auto-legacy for groom ${retiredGroom.id}.`,
-    );
-    return null;
-  }
-  const perk = perkPool[Math.floor(Math.random() * perkPool.length)];
-
-  const legacyLog = await createLegacyLog(
-    retiredGroom.id,
-    protegeCandidate.id,
-    perk.id,
-    retiredGroom.level,
-  );
-
-  logger.info(
-    `[groomRetirementService.autoCreateLegacyOnRetirement] Auto-created legacy log ${legacyLog.id}: retired mentor ${retiredGroom.id} (lvl ${retiredGroom.level}) → protégé ${protegeCandidate.id} (lvl ${protegeCandidate.level}), perk ${perk.id}.`,
-  );
-  return legacyLog;
-}
-
-/**
  * Retire a groom. GAME-INTERNAL — no HTTP route reaches this (invariant I1).
  *
  * Everything the player can observe about the retirement happens in ONE
@@ -332,6 +258,14 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       throw new Error(`Groom ${groomId} was already retired by a concurrent pass`);
     }
 
+    // Read the assignments about to end BEFORE ending them, because their own
+    // `userId` is the fallback notification recipient (see below) and the
+    // `updateMany` that follows does not return rows.
+    const endingAssignments = await tx.groomAssignment.findMany({
+      where: { groomId, isActive: true },
+      select: { id: true, userId: true },
+    });
+
     // Equoria-m9lz1 / task-17 §7.1: END the active assignments. The pre-fix
     // `deleteMany({ where: { groomId } })` matched every row for the groom and
     // destroyed its whole assignment history (and detached every past
@@ -354,36 +288,71 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       },
     });
 
+    // WHO GETS TOLD (Equoria-m9lz1 fix round 1).
+    //   `Groom.userId` is `String?`, and `GroomAssignment` carries its OWN
+    //   `userId`. Gating the notification on the groom's alone meant a groom with
+    //   a null `userId` but live assignments could retire with nobody told — the
+    //   player would lose care on their horse silently, which is exactly the
+    //   failure the in-transaction notification exists to prevent. Currently
+    //   unreachable (none of the 56 ownerless non-retired grooms has an active
+    //   assignment) but the owner's "the game should notify a player"
+    //   requirement is absolute, so it does not rely on that staying true.
+    //
+    //   Preference order: the groom's own owner, then the distinct owners of the
+    //   assignments just ended. In the ordinary case those are the same person
+    //   and this writes exactly ONE notification, so the normal path is
+    //   unchanged. Ids are sorted so a multi-recipient write order is
+    //   deterministic.
+    const recipientIds = retiredGroom.userId
+      ? [retiredGroom.userId]
+      : [...new Set(endingAssignments.map(a => a.userId).filter(Boolean))].sort();
+
     // The player's only warning, written with the retirement it announces.
     // The payload carries nothing the player could not already see; in
     // particular it does NOT carry the retirement age (invariant I3).
-    let notificationId = null;
-    let notificationPayload = null;
-    if (retiredGroom.userId) {
-      notificationPayload = {
-        groomId,
-        groomName: retiredGroom.name,
-        speciality: retiredGroom.speciality,
-        skillLevel: retiredGroom.skillLevel,
-        level: retiredGroom.level,
-        careerWeeks: retiredGroom.careerWeeks,
-        reason: retirementReason,
-        horsesLeftUnattended: endedAssignments.count,
-      };
+    const notificationPayload =
+      recipientIds.length > 0
+        ? {
+            groomId,
+            groomName: retiredGroom.name,
+            speciality: retiredGroom.speciality,
+            skillLevel: retiredGroom.skillLevel,
+            level: retiredGroom.level,
+            careerWeeks: retiredGroom.careerWeeks,
+            reason: retirementReason,
+            horsesLeftUnattended: endedAssignments.count,
+          }
+        : null;
+
+    const notificationIds = [];
+    for (const recipientId of recipientIds) {
       const notification = await createNotificationTx(
         tx,
-        retiredGroom.userId,
+        recipientId,
         GROOM_RETIRED_NOTIFICATION_TYPE,
         notificationPayload,
       );
-      notificationId = notification.id;
+      notificationIds.push(notification.id);
+    }
+
+    // The genuinely unnotifiable case: assignments ended and not one of them,
+    // nor the groom, names a player. Nothing can be sent, so say so loudly
+    // rather than let it pass as a successful retirement.
+    if (recipientIds.length === 0 && endedAssignments.count > 0) {
+      logger.error(
+        `[groomRetirementService.processRetirement] Groom ${groomId} retired and ended ` +
+          `${endedAssignments.count} active assignment(s), but neither the groom nor any of those ` +
+          'assignments names a userId — NO player could be notified. Investigate the ownerless ' +
+          'assignment rows; a player may have lost care on a horse with no warning.',
+      );
     }
 
     return {
       retiredGroom,
       endedAssignmentCount: endedAssignments.count,
       closedAssignmentLogCount: closedLogs.count,
-      notificationId,
+      notificationIds,
+      notificationRecipientIds: recipientIds,
       notificationPayload,
     };
   });
@@ -397,12 +366,14 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
   );
 
   // Post-commit, in ADR-011 / ADR-007 order: the real-time nudge and the
-  // retention prune follow the durable write. Never throws. The SAME payload the
-  // row carries is published, so the stream and the stored notification can
-  // never describe different events.
-  if (committed.notificationId) {
+  // retention prune follow the durable write, once per recipient. Never throws.
+  // The SAME payload each row carries is published, so the stream and the stored
+  // notification can never describe different events. Driven by the RECIPIENT
+  // list, not by `retiredGroom.userId`, so a fallback recipient gets its stream
+  // nudge and its retention prune too.
+  for (const recipientId of committed.notificationRecipientIds) {
     finalizeNotificationAfterCommit(
-      retiredGroom.userId,
+      recipientId,
       GROOM_RETIRED_NOTIFICATION_TYPE,
       committed.notificationPayload,
     );
@@ -430,7 +401,11 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     synergyRecords: retiredGroom.groomHorseSynergies.length,
     endedAssignmentCount: committed.endedAssignmentCount,
     closedAssignmentLogCount: committed.closedAssignmentLogCount,
-    notificationId: committed.notificationId,
+    // Plural: one per notified player. Normally length 1 (the groom's own
+    // owner); length 0 only when nobody could be notified, which the
+    // transaction logs loudly when assignments were ended anyway.
+    notificationIds: committed.notificationIds,
+    notificationRecipientIds: committed.notificationRecipientIds,
     legacyLog,
   };
 }

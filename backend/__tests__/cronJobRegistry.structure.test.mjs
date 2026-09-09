@@ -45,6 +45,16 @@ const EXPECTED_JOBS = [
   { jobName: 'cronRunLogRetention', schedule: '15 4 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   // Equoria-c7mx0: show-execution reaper, appended last (does not reorder prior jobs).
   { jobName: 'showExecutionReaper', schedule: '*/30 * * * *', staleAfterMs: 60 * 60 * 1000 },
+  // Equoria-m9lz1: the weekly groom career/auto-retirement pass, appended last
+  // (reorders nothing). It is in THIS registry, not the function-based
+  // cronJobService, because it is the one job whose silent failure has no external
+  // symptom — grooms simply never age out and no player action fails — so it needs
+  // the heartbeat, the CronRunLog row and cron-health visibility that only this
+  // registry provides. Monday 09:45 UTC, after weeklySalaries (09:00): payroll
+  // bills per ACTIVE assignment, so retiring first would cost a groom who worked
+  // that week their final wage. 192h staleness = 168h period + 24h tolerance,
+  // matching the other weekly jobs.
+  { jobName: 'groomCareerProgression', schedule: '45 9 * * 1', staleAfterMs: 192 * 60 * 60 * 1000 },
 ];
 
 afterEach(() => {
@@ -103,6 +113,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       docCoverageSnapshot: 'recordDocCoverageSnapshot',
       cronRunLogRetention: 'purgeExpiredCronRunLogs',
       showExecutionReaper: 'reapStaleExecutingShows',
+      groomCareerProgression: 'runGroomCareerProgression',
     };
 
     for (const job of CRON_JOB_REGISTRY) {

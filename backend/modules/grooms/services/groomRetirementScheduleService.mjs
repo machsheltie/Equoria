@@ -73,8 +73,20 @@ export async function readRetirementAge(client, groomId) {
  * between two reads and the groom's retirement week would drift.
  *
  * `groomId` is the table's primary key, so two concurrent callers cannot create
- * two schedules: the loser gets P2002 and re-reads the winner's row rather than
- * drawing a second age.
+ * two schedules.
+ *
+ * THE P2002 RECOVERY BELOW ONLY WORKS ON AN AUTOCOMMIT CLIENT. When two callers
+ * race on the module-level `prisma`, the loser catches P2002 and re-reads the
+ * winner's row. When `client` is a TRANSACTION client it does NOT: in PostgreSQL a
+ * unique violation aborts the enclosing transaction, so every subsequent statement
+ * on that `tx` — including the re-read — fails with "current transaction is
+ * aborted", and the catch cannot rescue anything. That is correct behaviour for
+ * the two callers that pass a `tx`: both hire paths create the groom in the SAME
+ * transaction, so no concurrent writer can have inserted a schedule for a groom id
+ * that did not exist a moment ago, the P2002 branch is unreachable there, and if
+ * it ever did fire the right outcome is the hire rolling back rather than a
+ * half-recovered one. The recovery exists for the weekly-pass backstop, which
+ * passes the autocommit client and is the only caller that can genuinely race.
  *
  * Called at hire from both hire paths (groomRosterController.hireGroom,
  * groomMarketplaceController.hireFromMarketplace) inside their existing

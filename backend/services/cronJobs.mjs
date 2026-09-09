@@ -15,6 +15,7 @@ import * as flagEvaluationImpl from './jobs/impl/flagEvaluation.mjs';
 // rider/trainer career tick, overnight show execution).
 import * as retentionMaintenanceImpl from './jobs/impl/retentionMaintenance.mjs';
 import * as showExecutionReaperImpl from './jobs/impl/showExecutionReaper.mjs';
+import * as groomCareerProgressionImpl from './jobs/impl/groomCareerProgression.mjs';
 // Equoria-fx4e7: per-job descriptors (schedule + lock policy + staleness budget
 // + run thunk) live in backend/services/jobs/. start() iterates this registry
 // instead of carrying ten inline cron.schedule(...) blocks.
@@ -285,6 +286,22 @@ class CronJobService {
    */
   async tickRiderTrainerCareerWeeks() {
     return retentionMaintenanceImpl.tickRiderTrainerCareerWeeks();
+  }
+
+  /**
+   * Weekly groom career-progression + auto-retirement pass (Equoria-m9lz1).
+   *
+   * The ONLY thing that advances a groom's career age, and therefore the only
+   * thing that can ever retire one — the player-facing retirement trigger is
+   * closed (403) because this pass is meant to be the whole mechanism. It sits in
+   * this registry rather than the function-based cronJobService specifically so
+   * that runWithHeartbeat records it and /api/admin/cron/health can report a pass
+   * that has stopped running; its failure has no other external symptom.
+   *
+   * @returns {Promise<Object>} { processed, retired, scheduled, errors, retirements }
+   */
+  async runGroomCareerProgression() {
+    return groomCareerProgressionImpl.runGroomCareerProgression();
   }
 
   /**
