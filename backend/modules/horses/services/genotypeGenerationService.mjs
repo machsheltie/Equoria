@@ -105,9 +105,15 @@ export const GENERIC_DEFAULTS = {
  *   The follow-up suggestion was to derive starter color from a chosen/default
  *   breed profile for more game-coherent colors. Evaluated and DELIBERATELY NOT
  *   adopted wholesale, because:
- *     (a) The starter horse is breedless by design (no breedId on the
- *         registration mint), so "which breed profile" is a product decision
- *         (player-chosen breed? a fixed 'GenericHorse'?), not an engine default.
+ *     (a) At the time, the starter horse was breedless at the registration mint,
+ *         so "which breed profile" was a product decision (player-chosen breed?
+ *         a fixed 'GenericHorse'?), not an engine default.
+ *         NO LONGER TRUE (Equoria-b9zgr, then Equoria-2wjp7): the registration
+ *         mint now assigns the canonical default breed, and refuses to create
+ *         the horse at all if that breed cannot be resolved — there is no
+ *         breedless starter horse any more. The reasoning in (b) is what still
+ *         holds these weights in place; (a) is retained only as history so
+ *         nobody re-derives "starters are breedless" from it.
  *     (b) The GenericHorse profile carries HIGH pattern frequencies (Tobiano
  *         ~30%, broad dominant-white spread). Sourcing starter color from it
  *         would spawn rare pinto/dominant-white starters — the exact regression
