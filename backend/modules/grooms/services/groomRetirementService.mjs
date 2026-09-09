@@ -263,7 +263,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     // `updateMany` that follows does not return rows.
     const endingAssignments = await tx.groomAssignment.findMany({
       where: { groomId, isActive: true },
-      select: { id: true, userId: true },
+      select: { userId: true },
     });
 
     // Equoria-m9lz1 / task-17 §7.1: END the active assignments. The pre-fix

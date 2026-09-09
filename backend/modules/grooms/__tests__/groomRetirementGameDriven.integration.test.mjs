@@ -83,6 +83,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+// Equoria-m9lz1 fix round 2: realm-safe date assertion. `toBeInstanceOf(Date)`
+// fails across the module realms --experimental-vm-modules creates, which is
+// load-order dependent (green alone, red in a shard).
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 import {
   CAREER_CONSTANTS,
   GROOM_RETIRED_NOTIFICATION_TYPE,
@@ -586,7 +590,11 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
 
     const active = rows.find(r => r.id === activeAssignmentId);
     expect(active.isActive).toBe(false);
-    expect(active.endDate).toBeInstanceOf(Date);
+    // Realm-independent: `toBeInstanceOf(Date)` compares CONSTRUCTOR IDENTITY,
+    // which fails across the module realms `--experimental-vm-modules` can create
+    // — it passes single-file and fails in a shard. See
+    // __tests__/helpers/expectRealDate.mjs. Do not "fix" this back.
+    expect(realDateOrReason(active.endDate)).toBe('valid date');
 
     // Care history is still linked to the assignment that produced it. The
     // assignmentId FK is ON DELETE SET NULL, so the pre-fix delete nulled this.
@@ -601,7 +609,7 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
       where: { id: logId },
       select: { unassignedAt: true },
     });
-    expect(log.unassignedAt).toBeInstanceOf(Date);
+    expect(realDateOrReason(log.unassignedAt)).toBe('valid date');
 
     // Exactly one notification, to the groom's own user and nobody else.
     const notifications = await prisma.notification.findMany({

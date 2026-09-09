@@ -47,20 +47,15 @@
 --   performed here. Until that pass runs a groom simply has no scheduled
 --   retirement, which is the pre-existing behaviour.
 --
--- APPLY THIS WITH `migrate deploy`, NEVER `migrate dev`
---   Applied to the local development database on 2026-09-08 (Equoria-m9lz1) via
---   `prisma migrate deploy`; no other environment has had it. Every remaining
---   environment needs the same `migrate deploy` plus `prisma generate`.
---
---   Use `deploy`, not `dev`, and the reason is specific rather than stylistic:
---   per .superpowers/sdd/FINDINGS/task-14-report.md §4.2, `prisma migrate dev` on
---   this repository proposes DROPping the 17 raw-SQL runtime indexes from `qh6jk`
---   plus `ALTER COLUMN "system_accounts"."updatedAt" DROP DEFAULT`. Those DROP
---   statements must be deleted from any generated migration before it is applied.
---   This file is hand-written precisely so that proposal never has to be
---   accepted, and the CHECK constraint below is invisible to Prisma for the same
---   reason the qh6jk indexes are — if a future generated migration proposes
---   dropping it, edit that DROP out.
+-- MIGRATION STATUS AT THE TIME THIS FILE WAS WRITTEN
+--   Prepared, NOT applied to any environment (Equoria-m9lz1 task authorization
+--   did not include applying it). Whoever applies it should read
+--   .superpowers/sdd/FINDINGS/task-14-report.md first: `prisma migrate dev` on
+--   this repository proposes DROPping the 17 raw-SQL runtime indexes from
+--   `qh6jk` plus `ALTER COLUMN "system_accounts"."updatedAt" DROP DEFAULT`, and
+--   those DROP statements must be deleted from any generated migration before
+--   it is applied. This file is hand-written precisely so that proposal never
+--   has to be accepted.
 
 CREATE TABLE "groom_retirement_schedules" (
     "groomId" INTEGER NOT NULL,

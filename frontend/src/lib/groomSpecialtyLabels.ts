@@ -46,6 +46,10 @@
  * Authored, sentence-ready labels. Lowercase on purpose: every current consumer
  * drops these into running prose ("a long career in raising foals"), so casing
  * belongs to the sentence, not the label.
+ *
+ * Keys are only the spellings that actually occur — a specialty whose value is a
+ * single word needs no camelCase variant, and an invented `labelShaped` key is
+ * dead weight that reads as coverage without being any.
  */
 const GROOM_SPECIALTY_LABELS: Readonly<Record<string, string>> = Object.freeze({
   // GROOM_SPECIALTIES.FOAL_CARE, both spellings.
@@ -53,17 +57,20 @@ const GROOM_SPECIALTY_LABELS: Readonly<Record<string, string>> = Object.freeze({
   foalCare: 'raising foals',
   // GROOM_SPECIALTIES.GENERAL.
   general: 'everyday care',
-  // GROOM_SPECIALTIES.TRAINING.
+  // GROOM_SPECIALTIES.TRAINING and .MEDICAL are single words, so they have no
+  // distinct camelCase spelling to cover.
   training: 'training support',
-  trainingSupport: 'training support',
-  // GROOM_SPECIALTIES.MEDICAL.
   medical: 'medical care',
-  medicalCare: 'medical care',
-  // Legacy fixture-only strings, mapped so they cannot surface raw.
+  // Legacy strings that appear in older test fixtures, mapped so they cannot
+  // surface raw. `generalGrooming` is included because it really does occur in
+  // source; `specializedDisciplines` is NOT, because only the snake_case form
+  // does. Verified rather than assumed — a grep for each camelCase spelling
+  // returned 44 files for `foalCare`, 2 for `generalGrooming`, and 0 for
+  // `trainingSupport`, `medicalCare` and `specializedDisciplines`, which is why
+  // those three label-shaped keys were removed as dead entries.
   general_grooming: 'grooming',
   generalGrooming: 'grooming',
   specialized_disciplines: 'specialist disciplines',
-  specializedDisciplines: 'specialist disciplines',
 });
 
 /**

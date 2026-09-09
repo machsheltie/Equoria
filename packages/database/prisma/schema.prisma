@@ -474,6 +474,14 @@ model Groom {
 ///   express a CHECK constraint, so it lives only in that migration — the same
 ///   posture 20260907120000_kccmt_partial_unique_active_staff_assignments took
 ///   for its partial unique indexes. Do not "restore" it here.
+///
+/// OPERATOR NOTES, AND WHY THEY ARE NOT IN THE MIGRATION
+///   That migration has been applied, so its bytes are load-bearing: Prisma
+///   hashes the raw file and editing it — comments included — breaks
+///   `prisma migrate dev` for every database that applied the old bytes. Apply
+///   instructions, the per-environment status and the "never edit this" rule
+///   therefore live in the migration directory's sibling `NOTES.md`, which
+///   Prisma does not read. Read that before touching the migration.
 model GroomRetirementSchedule {
   /// One schedule per groom; the groom id IS the primary key.
   groomId       Int      @id

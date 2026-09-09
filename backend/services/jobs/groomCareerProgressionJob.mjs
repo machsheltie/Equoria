@@ -29,10 +29,11 @@
  *   before they were paid and silently cost a groom who worked that week their
  *   final wage. Re-verified against BOTH registries when this moved: no job in
  *   backend/services/jobs/index.mjs or cron-job-service-jobs/index.mjs claims
- *   `45 9 * * 1`. Two interval jobs — `electionStatusTransition` (every 15
- *   minutes) and `showExecutionReaper` (every 30) — do fire at :45 past every
- *   hour, but they coincide with every slot by construction; that is inherent, not
- *   a contention this schedule introduces.
+ *   `45 9 * * 1`. One interval job does coincide: `electionStatusTransition` runs
+ *   every 15 minutes, so it fires at :00/:15/:30/:45 and therefore shares this
+ *   slot — inherent to an interval job, not contention this schedule introduces.
+ *   (`showExecutionReaper` runs every 30 minutes, so it fires at :00 and :30 and
+ *   never at :45; an earlier version of this comment wrongly listed it.)
  *
  * STALENESS BUDGET
  *   192h = the 168h weekly period plus 24h tolerance, matching

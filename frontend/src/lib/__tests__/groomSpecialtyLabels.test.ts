@@ -28,8 +28,13 @@ const BACKEND_SPECIALTY_VALUES = ['foal_care', 'general', 'training', 'medical']
 /** The camelCase spellings the marketplace generator and older rows use. */
 const CAMEL_SPECIALTY_VALUES = ['foalCare', 'general', 'training', 'medical'];
 
-/** Legacy strings that appear in older fixtures and could still reach a payload. */
-const LEGACY_SPECIALTY_VALUES = ['general_grooming', 'specialized_disciplines'];
+/**
+ * Legacy strings that appear in older fixtures and could still reach a payload.
+ * Only spellings that actually occur in source are listed: `generalGrooming` does,
+ * `specializedDisciplines` does not (only its snake_case form), so inventing a key
+ * for it would assert coverage of something nothing emits.
+ */
+const LEGACY_SPECIALTY_VALUES = ['general_grooming', 'generalGrooming', 'specialized_disciplines'];
 
 describe('groomSpecialtyLabel — every backend specialty has an authored label', () => {
   it.each([...BACKEND_SPECIALTY_VALUES, ...CAMEL_SPECIALTY_VALUES, ...LEGACY_SPECIALTY_VALUES])(

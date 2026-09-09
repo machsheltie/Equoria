@@ -53,6 +53,10 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // fail the suite (not be swallowed by a silent no-op catch arm) so a leaked
 // fixture surfaces at the source instead of tripping a canonical sentinel later.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+// Equoria-m9lz1 fix round 2: realm-safe date assertion. `toBeInstanceOf(Date)`
+// fails across the module realms --experimental-vm-modules creates, which is
+// load-order dependent (green alone, red in a shard).
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 /**
  * Equoria-m9lz1 fix round 1 — a scoped-delete guard.
@@ -355,7 +359,9 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     const result = await processRetirement(tempGroom.id, RETIREMENT_REASONS.VOLUNTARY, true);
     expect(result.groom.retired).toBe(true);
     expect(result.retirementReason).toBe(RETIREMENT_REASONS.VOLUNTARY);
-    expect(result.retirementTimestamp).toBeInstanceOf(Date);
+    // Realm-independent — see __tests__/helpers/expectRealDate.mjs. Do not
+    // replace with toBeInstanceOf(Date).
+    expect(realDateOrReason(result.retirementTimestamp)).toBe('valid date');
     expect(typeof result.assignmentCount).toBe('number');
     expect(typeof result.synergyRecords).toBe('number');
     // cleanup handled by afterAll groom.deleteMany startsWith 'TestFixture-GRS-'

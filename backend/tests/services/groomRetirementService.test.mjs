@@ -42,6 +42,10 @@ import {
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 import { createSequentially } from '../helpers/createSequentially.mjs';
+// Equoria-m9lz1 fix round 2: realm-safe date assertion. `toBeInstanceOf(Date)`
+// fails across the module realms --experimental-vm-modules creates, which is
+// load-order dependent (green alone, red in a shard).
+import { realDateOrReason } from '../../__tests__/helpers/expectRealDate.mjs';
 
 describe('Groom Retirement Service', () => {
   let testUser;
@@ -294,7 +298,11 @@ describe('Groom Retirement Service', () => {
       expect(result.groom.retired).toBe(true);
       expect(result.groom.isActive).toBe(false);
       expect(result.retirementReason).toBe(RETIREMENT_REASONS.AGE);
-      expect(result.retirementTimestamp).toBeInstanceOf(Date);
+      // Realm-independent: `toBeInstanceOf(Date)` compares CONSTRUCTOR IDENTITY, which
+      // fails across the module realms `--experimental-vm-modules` can create — it
+      // passes single-file and fails in a shard. See
+      // __tests__/helpers/expectRealDate.mjs. Do not "fix" this back.
+      expect(realDateOrReason(result.retirementTimestamp)).toBe('valid date');
 
       // Verify database was updated
       const updatedGroom = await prisma.groom.findUnique({
@@ -368,7 +376,11 @@ describe('Groom Retirement Service', () => {
 
       const activeAfter = assignments.find(a => a.id === active.id);
       expect(activeAfter.isActive).toBe(false);
-      expect(activeAfter.endDate).toBeInstanceOf(Date);
+      // Realm-independent: `toBeInstanceOf(Date)` compares CONSTRUCTOR IDENTITY, which
+      // fails across the module realms `--experimental-vm-modules` can create — it
+      // passes single-file and fails in a shard. See
+      // __tests__/helpers/expectRealDate.mjs. Do not "fix" this back.
+      expect(realDateOrReason(activeAfter.endDate)).toBe('valid date');
     });
 
     test('should reject retirement for ineligible groom', async () => {
