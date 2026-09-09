@@ -73,11 +73,16 @@ import {
  *   below (the groom works that week for free and the player is never told) or the
  *   other pass's whole payroll for that player fails.
  *
- *   So: the lock first, and then `User` before `grooms`. The `User` write is now
- *   unconditional rather than gated on whether THIS groom newly entered grace — it is
- *   guarded on `groomSalaryGracePeriod: null` so it can never move an existing grace
- *   start forward, and reaching this handler at all means the player is in arrears
- *   whichever groom triggered it.
+ *   So: the lock first, and then `User` before `grooms`.
+ *
+ *   ROUND 1 ALSO MADE THAT `User` WRITE UNCONDITIONAL, and this docblock argued for it.
+ *   Round 2 reversed that, and round 3 is deleting the argument, because it survived the
+ *   code it described by sixty lines — the tenth claim in this campaign to outlive its
+ *   fact, and the second time in this task that a corrected behaviour left its own
+ *   explanation standing. What the code does now: the write is gated on
+ *   `graceBeginsForThisGroom`, taken from the same snapshot that chose the grace branch,
+ *   so it is decided BEFORE the write and the User-before-staff order still holds. The
+ *   reason is at that line and not repeated here — one explanation, next to the code.
  *
  * @param {string} userId
  * @param {Array<{groom: Object, salary: number}>} unpaid - the grooms whose fee
@@ -138,8 +143,11 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
       // Fix round 2, residual B. Round 1's reordering for F2 made the `User` write
       // UNCONDITIONAL, where before it was gated on `entered.entered`. That was a
       // behaviour change riding along with a lock-order fix, described only by a comment
-      // and pinned by no test — so it is decided here, and pinned by the
-      // "already in grace" case in groomEngagementLifecycle.integration.
+      // and pinned by no test — so it is decided here, and pinned by
+      // groomFeeArrears.integration's case "a SECOND failure in the SAME pay week: no
+      // second notice, no moved marker, no new pointer". (Round 3 corrected this
+      // reference: it named a file the split had moved the case out of, and a case title
+      // that never existed.)
       //
       // THE DECISION: restore the condition, but decide it BEFORE the write so the
       // User-before-staff order survives. `groom.feeUnpaidSince` comes from the same

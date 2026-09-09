@@ -114,6 +114,19 @@ const PERMITTED_TEST_ONLY_IMPORTS = new Map([
         'test can prove late writes roll back with the purchase; same runtime guard as above.',
     },
   ],
+  [
+    'backend/modules/grooms/controllers/groomFreeAgentController.mjs',
+    {
+      bindings: new Set(['__TESTING_ONLY_awaitGroomHireRaceBarrier']),
+      reason:
+        "Awaits groomHireRaceBarrier.mjs's delay seam once in hireFreeAgent, between the " +
+        'pool pre-read and the transaction (Equoria-ypb7d.2 fix round 3). Production cannot ' +
+        "reach it: the awaiter no-ops unless armed, and arming throws outside NODE_ENV === 'test'. " +
+        "It exists because the guarded claim's count !== 1 -> 409 refusal was otherwise only " +
+        'assertable by a two-caller race whose loser took the 404 pre-read branch about three ' +
+        'times in five, which left the 409 mapping covered by nothing.',
+    },
+  ],
 ]);
 
 function* walkFiles(dir) {

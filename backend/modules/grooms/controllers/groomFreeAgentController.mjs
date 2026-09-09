@@ -41,6 +41,12 @@ import {
   listFreeAgents,
   openEngagementTx,
 } from '../services/groomEngagementService.mjs';
+// Fix round 3: the interleaving seam that makes the guarded claim's 409 refusal provable
+// without racing. No-op unless a test has armed it, and arming throws outside
+// NODE_ENV === 'test'. See groomHireRaceBarrier.mjs for why the pause sits OUTSIDE the
+// transaction, and scripts/doctrine-checks/check-no-test-only-imports.mjs for the
+// allow-list entry that keeps this import visible.
+import { __TESTING_ONLY_awaitGroomHireRaceBarrier as awaitHireRaceBarrier } from '../services/groomHireRaceBarrier.mjs';
 
 /**
  * Thrown when the guarded claim did not win: the groom was hired by someone else,
@@ -185,6 +191,15 @@ export async function hireFreeAgent(req, res) {
         data: { currentCount: existingGroomCount, maxAllowed: MAX_GROOMS_PER_USER },
       });
     }
+
+    // THE SEAM (fix round 3). Between the pre-read that found the groom in the pool and
+    // the transaction whose guarded claim decides whether this request gets them. A test
+    // arms it, lets this request reach here, hands the groom to someone else, then
+    // releases — so `claimed.count !== 1` is reached deterministically and the 409 is
+    // asserted every run instead of three times in five. Outside the transaction, so a
+    // suspended request holds no row lock and no pooled connection. Unarmed in
+    // production, where it returns before touching anything.
+    await awaitHireRaceBarrier('hireFreeAgent:afterPoolPreRead', { groomId, userId });
 
     let result;
     try {

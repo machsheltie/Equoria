@@ -21,6 +21,14 @@
  *   Registering a handler on a router is not the same as it being reachable, and a
  *   404 from a missing route looks exactly like a 404 from a refused hire.
  *
+ * THE GUARDED CLAIM'S 409 (fix round 3). The controller's double-hire refusal —
+ *   `claimed.count !== 1` -> `FreeAgentUnavailableError` -> 409 — was asserted only by a
+ *   two-caller race whose loser took the 404 pre-read branch about three times in five,
+ *   so loosening that race's status assertion left the mapping covered by nothing. A
+ *   re-review proved it by deleting the guard and watching the race case pass four runs
+ *   in six. The case below imposes the ordering with the `groomHireRaceBarrier` seam
+ *   instead of hoping for it, so the 409 is asserted on EVERY run.
+ *
  * Real DB, no mocks, id-scoped fail-loud cleanup.
  */
 
@@ -34,11 +42,13 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { ENGAGEMENT_END_REASONS } from '../services/groomEngagementService.mjs';
+import { __TESTING_ONLY_setGroomHireRaceBarrier } from '../services/groomHireRaceBarrier.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-ypb7d-http';
 const SESSION_RATE = 20; // → hire cost 140
 const HIRE_COST = SESSION_RATE * 7;
+const BARRIER_TIMEOUT_MS = 20000;
 
 const tag = () => randomBytes(6).toString('hex');
 
@@ -84,6 +94,54 @@ async function makeFreeGroom(label, { withClosedEngagement, formerEmployerId }) 
     });
   }
   return groom;
+}
+
+/**
+ * Suspend ONE `hireFreeAgent` request between its pool pre-read and its transaction.
+ *
+ * Mirrors `buyHorseStaleListing.integration`'s use of the marketplace seam
+ * (Equoria-6p398.4): resolve `reached` when the target request arrives, then hold it on
+ * `gate` until the test calls `release()`. Targeted by BOTH `groomId` and `userId` so a
+ * concurrent request from anyone else passes straight through.
+ */
+function armHireBarrier({ groomId, userId }) {
+  let markReached;
+  let openGate;
+  const reached = new Promise(resolve => {
+    markReached = resolve;
+  });
+  const gate = new Promise(resolve => {
+    openGate = resolve;
+  });
+  __TESTING_ONLY_setGroomHireRaceBarrier(async (stage, context) => {
+    if (stage !== 'hireFreeAgent:afterPoolPreRead') {
+      return;
+    }
+    if (context?.groomId !== groomId || context?.userId !== userId) {
+      return;
+    }
+    markReached();
+    await gate;
+  });
+  return {
+    reached,
+    release: () => openGate(),
+    disarm: () => __TESTING_ONLY_setGroomHireRaceBarrier(null),
+  };
+}
+
+async function waitFor(promise, label) {
+  let timer;
+  try {
+    await Promise.race([
+      promise,
+      new Promise((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`Timed out waiting for ${label}`)), BARRIER_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function hireRequest(token, body) {
@@ -228,6 +286,77 @@ describe('Equoria-ypb7d.2 — GET/POST /api/v1/groom-marketplace/free-agents ove
     });
     expect(row.userId).toBeNull();
   }, 30000);
+
+  // ── THE GUARDED CLAIM'S 409, DETERMINISTICALLY ──────────────────────────────
+  it('POST answers 409 when the groom is claimed between the pre-read and the claim', async () => {
+    // Fix round 3. This is the case the tolerant `404 or 409` on the race case does NOT
+    // provide, and the re-review proved the cost of that: with
+    // `if (claimed.count !== 1) throw` deleted from the controller, the two-caller race
+    // still passed four runs in six, because the loser usually took the 404 pre-read
+    // branch and never reached the guard at all. Nothing in the tree asserted
+    // `claimed.count !== 1` -> FreeAgentUnavailableError -> 409.
+    //
+    // So stop racing. The seam suspends THIS request after its pool pre-read has
+    // succeeded — so it is committed to the claim — while the test hands the groom to
+    // someone else. On release, the claim's `where` no longer matches, `count` is 0, and
+    // the controller must refuse with 409. There is no interleaving left to be lucky
+    // about: the ordering is imposed, so this either passes every run or the guard is
+    // gone.
+    const barrier = armHireBarrier({ groomId: released.id, userId: hirer.id });
+    try {
+      // Fire the hire that will be suspended. Do NOT await it yet.
+      const suspended = hireRequest(hirer.token, { groomId: released.id });
+      await waitFor(barrier.reached, 'the hire to reach the seam after its pool pre-read');
+
+      // Its pre-read has already succeeded, so the 404 branch is behind it. Now let
+      // someone else take the groom — sequentially, with nothing racing.
+      const stealer = await makeUser('stealer');
+      cleanup.add(() => prisma.groomEngagement.deleteMany({ where: { userId: stealer.id } }), 'stealer engagements');
+      cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: stealer.id } }), 'stealer ledger rows');
+      cleanup.add(() => prisma.user.delete({ where: { id: stealer.id } }), 'stealer');
+
+      const stolen = await hireRequest(stealer.token, { groomId: released.id });
+      expect(stolen.status).toBe(201);
+
+      barrier.release();
+      const res = await suspended;
+
+      // THE ASSERTION. 409, from the controller, through the real middleware chain.
+      expect(res.status).toBe(409);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/hired by someone else/i);
+
+      // And the refusal rolled everything back: the debit ran BEFORE the claim inside
+      // that transaction, so a 409 that left the loser poorer would be a worse defect
+      // than the double hire.
+      const wallet = await prisma.user.findUnique({
+        where: { id: hirer.id },
+        select: { money: true },
+      });
+      expect(Number(wallet.money)).toBe(20000);
+      expect(
+        await prisma.userTransaction.count({
+          where: { userId: hirer.id, category: 'groom_hire' },
+        }),
+      ).toBe(0);
+
+      // The groom belongs to the stealer, and to exactly one open engagement.
+      const row = await prisma.groom.findUnique({
+        where: { id: released.id },
+        select: { userId: true },
+      });
+      expect(row.userId).toBe(stealer.id);
+      const open = await prisma.groomEngagement.findMany({
+        where: { groomId: released.id, endedAt: null },
+      });
+      expect(open).toHaveLength(1);
+      expect(open[0].userId).toBe(stealer.id);
+    } finally {
+      // Never leave a later suite suspended, even if an assertion above threw.
+      barrier.release();
+      barrier.disarm();
+    }
+  }, 60000);
 
   it('POST rejects a malformed groomId with 400 and no state change', async () => {
     const res = await hireRequest(hirer.token, { groomId: 'not-a-number' });

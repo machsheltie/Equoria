@@ -19,27 +19,24 @@
  * deactivated, the grace period was never cleared, and no `terminated_non_payment`
  * row was written. A player who could not pay kept every groom, silently, forever.
  *
- * WHAT IS ASSERTED, AND WHY EACH FAILS ON THE PRE-FIX CODE:
+ * WHAT THIS FILE ASSERTS, AND WHY EACH FAILS ON THE PRE-FIX CODE. Renumbered in fix
+ * round 3: the list still described the whole pre-split suite, including six cases that
+ * moved to the sibling and a "one 201, one 409" that is no longer what the race case
+ * asserts.
  *   1. Hiring opens a `GroomEngagement`               -> the table did not exist
- *   2. The fee is per groom ON STAFF, not per active assignment
- *                                                     -> an unassigned groom was
- *                                                        free; a groom on three
- *                                                        horses cost triple
- *   3. One unpaid pay week -> grace: still on staff, CANNOT groom, player told
- *                                                     -> nothing happened at all
- *   4. A full unpaid week -> released to the pool: `userId` cleared, engagement
- *      closed `fee_unpaid`, ACTIVE assignments ENDED (never deleted), inactive
- *      history untouched, assignment logs closed, player told, audit row written
- *                                                     -> the whole path threw and
- *                                                        was swallowed
- *   5. Paying clears the arrears and the groom works again
- *   6. A released groom is in the pool and ANOTHER player can hire them, with
- *      experience, level and interaction history intact
- *   7. Two players racing for the same free agent: one 201, one 409, exactly one
- *      open engagement
- *   8. The database refuses two open engagements for one groom (partial unique)
- *   9. Retirement closes the engagement but KEEPS `userId`, so the player can still
- *      read their retired grooms
+ *   2. The database refuses two open engagements for one groom (partial unique index),
+ *      while accepting a CLOSED one alongside the open one — history must stay free
+ *   3. Two players cannot both hire one free agent: exactly ONE 201, the loser refused
+ *      with 404 or 409 (which one is an interleaving detail, not a contract — see the
+ *      case), exactly one open engagement, and no ledger row for the loser. The
+ *      controller's `count !== 1` -> 409 refusal itself is asserted deterministically in
+ *      groomFreeAgentEndpoint.integration, not here
+ *   4. Retirement closes the engagement but KEEPS `userId`, so the player can still
+ *      read their retired grooms, and a retired groom is not in the hire pool
+ *
+ * The fee basis, the week of grace, the second failure inside it, the release, the
+ * re-hire by another player, and what paying clears all live in
+ * `groomFeeArrears.integration.test.mjs`.
  *
  *
  * SPLIT (fix round 2). This file and `groomFeeArrears.integration.test.mjs` were one
@@ -51,9 +48,10 @@
  * paying clears. Raising the size baseline was not an option (it may only shrink) and
  * would have been the wrong answer anyway.
  *
- * Real DB, no mocks. `processWeeklySalaries` is called SCOPED to the fixture user:
- * unscoped it would put every underfunded player on the shared development database
- * into the grace period and release the ones already in it.
+ * Real DB, no mocks. This file does not call `processWeeklySalaries` at all any more —
+ * the split moved every fee call to the sibling, which carries the scoping note and is
+ * the file `groomSalaryPassScoped.sentinel` guards. (Round 3: that sentence was left
+ * here describing a call this file no longer makes.)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -301,15 +299,26 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
     expect(codes.filter(c => c === 201)).toHaveLength(1);
 
     // The LOSER's status is 409 or 404, and which one is a timing detail rather than a
-    // contract — fix round 2 loosened this from a flat `[201, 409]` after the F1 fix
-    // made it observably both. Both are honest refusals of the same fact:
+    // contract. Both are honest refusals of the same fact:
     //   409 — the loser reached the transaction and its GUARDED CLAIM found no row;
     //   404 — the loser's pre-read ran after the winner's commit, so by then the groom
     //         genuinely was not in the pool.
-    // Asserting 409 specifically was asserting an interleaving, and this suite must not
-    // fail because two coroutines resolved in the other order. The MECHANISM is pinned
-    // deterministically at the end of this case instead, and the pre-read refusal is
-    // pinned deterministically in groomFreeAgentEndpoint.integration.
+    // Asserting 409 specifically was asserting an interleaving: a flat `toBe(409)` here
+    // failed three whole-file runs in three when the re-review tried it.
+    //
+    // ROUND 3 CORRECTS THE REASON THIS COMMENT USED TO GIVE. It said fix round 2 loosened
+    // the pair "after the F1 fix made it observably both". That was false and the reviewer
+    // disproved it: at bf63e3d10, BEFORE F1, the pre-read was already
+    // `{ id, userId: null, retired: false, isActive: true }`, and `userId: null` alone is
+    // falsified by the winner's commit — so the 404 branch was exactly as reachable then as
+    // now. F1's added relation clause is monotone and changed nothing here. The flake is
+    // real; the cause was ordinary interleaving, not this task's change.
+    //
+    // Loosening it did cost coverage, though, and that cost is now paid elsewhere rather
+    // than argued away: the `count !== 1` -> 409 mapping is asserted DETERMINISTICALLY in
+    // groomFreeAgentEndpoint.integration, which imposes the ordering with the
+    // `groomHireRaceBarrier` seam instead of racing for it. Deleting the controller's
+    // guard fails that case on every run; it passed four runs in six against this one.
     const loserCode = codes.find(c => c !== 201);
     expect([404, 409]).toContain(loserCode);
 
