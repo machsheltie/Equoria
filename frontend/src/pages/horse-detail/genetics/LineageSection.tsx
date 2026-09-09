@@ -2,6 +2,13 @@
  * LineageSection — sire/dam parent links plus a contribution bar
  * showing % traits inherited from each parent + any mutations.
  * Equoria-kdduk: extracted from GeneticsTab.tsx.
+ *
+ * Palette migration (design exception `palette-classes` retired): raw
+ * blue/purple gradients are now `--status-info` (sire) and `--status-rare`
+ * (dam), and each bar segment states its parent in words with an accessible
+ * name on the bar, so the split no longer rests on hue alone. The exception's
+ * other half — "migrate to a purpose-built family tree" — is a redesign and
+ * is NOT done here; it remains open for the owner's direction.
  */
 
 import React from 'react';
@@ -35,22 +42,33 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
             Genetic Contribution
           </h4>
 
-          {/* Contribution Bar */}
-          <div className="flex h-8 rounded-lg overflow-hidden border border-[rgba(37,99,235,0.3)] mb-3">
+          {/* Contribution Bar — each segment names its parent in text, so the
+              sire/dam split does not rest on colour alone. */}
+          <div
+            className="flex h-8 rounded-lg overflow-hidden border border-[rgba(37,99,235,0.3)] mb-3"
+            role="img"
+            aria-label={`Genetic contribution: sire ${sireTraits} trait${
+              sireTraits === 1 ? '' : 's'
+            } (${sirePercentage}%), dam ${damTraits} trait${
+              damTraits === 1 ? '' : 's'
+            } (${damPercentage}%)`}
+          >
             {sireTraits > 0 && (
               <div
-                className="bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold"
+                className="bg-[var(--status-info)] flex items-center justify-center min-w-0 px-1 text-role-inverse text-xs font-semibold"
                 style={{ width: `${sirePercentage}%` }}
+                title={`Sire: ${sireTraits} traits (${sirePercentage}%)`}
               >
-                {sirePercentage}%
+                <span className="truncate">Sire {sirePercentage}%</span>
               </div>
             )}
             {damTraits > 0 && (
               <div
-                className="bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold"
+                className="bg-[var(--status-rare)] flex items-center justify-center min-w-0 px-1 text-role-inverse text-xs font-semibold"
                 style={{ width: `${damPercentage}%` }}
+                title={`Dam: ${damTraits} traits (${damPercentage}%)`}
               >
-                {damPercentage}%
+                <span className="truncate">Dam {damPercentage}%</span>
               </div>
             )}
           </div>
@@ -58,20 +76,23 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
           {/* Legend */}
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-500 to-blue-600"></div>
+              <div className="w-3 h-3 rounded bg-[var(--status-info)]" aria-hidden="true"></div>
               <span className="text-[rgb(220,235,255)]">
                 Sire: <strong>{sireTraits}</strong> ({sirePercentage}%)
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-gradient-to-r from-purple-500 to-purple-600"></div>
+              <div className="w-3 h-3 rounded bg-[var(--status-rare)]" aria-hidden="true"></div>
               <span className="text-[rgb(220,235,255)]">
                 Dam: <strong>{damTraits}</strong> ({damPercentage}%)
               </span>
             </div>
             {mutationTraits > 0 && (
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]"></div>
+                <div
+                  className="w-3 h-3 rounded bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]"
+                  aria-hidden="true"
+                ></div>
                 <span className="text-[rgb(220,235,255)]">
                   Mutations: <strong>{mutationTraits}</strong>
                 </span>
