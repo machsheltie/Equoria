@@ -1,0 +1,46 @@
+{
+  "_doc": [
+    "NARROW allowlist for request-reachable backend files that write horses.name",
+    "WITHOUT importing the shared horse-name policy",
+    "(backend/modules/horses/services/horseNamePolicy.mjs). Equoria-qkgfh.1.",
+    "",
+    "check-horse-name-gated.mjs FAILS on any such file that is not listed here.",
+    "Every entry MUST carry a reason that says WHY the divergence is acceptable —",
+    "either the value written is system-derived and provably inside the policy, or",
+    "the divergence is a known behaviour question that belongs to the owner. A new",
+    "entry is a decision, not a convenience: prefer routing the write through",
+    "horseNameRejectionReason (a supplied name) or deriveFoalName (a generated one).",
+    "",
+    "This list may only SHRINK. An entry naming a file that no longer exists, or",
+    "that no longer writes horses.name, FAILS the check — so a divergence cannot be",
+    "grandfathered and then quietly forgotten.",
+    "",
+    "Keys are repo-relative POSIX paths. Format: { reason, issue }."
+  ],
+  "allowlist": {
+    "backend/modules/auth/controllers/onboardingController.mjs": {
+      "reason": "THE ONE REAL DIVERGENCE, and it is the owner's to settle. POST /api/v1/auth/advance-onboarding takes a player-typed `horseName` from the beta-live /onboarding page and writes it to horses.name — updating the player's EXISTING starter horse where one exists, so it is a rename path, not only a creation path. It does `trim().slice(0, 40)`, i.e. it SILENTLY TRUNCATES where the policy rejects, and it applies NO character check, so `Fred <3` is settable here and never settable again through PUT /horses/:id or PATCH /horses/:id/name. Gating it would turn a silent truncation into a 400 on the new-player flow — a behaviour change on shipping beta code — so it is filed rather than fixed. Remove this entry when the owner rules.",
+      "issue": "Equoria-zalyb"
+    },
+    "backend/modules/auth/services/onboardingService.mjs": {
+      "reason": "System-derived, no player string: writes `<username>'s First Horse` for the registration starter horse. Provably inside the policy — username is validated 3-30 characters matching ^[a-zA-Z0-9_]+$ (authRoutes.mjs), so the longest possible result is 46 UTF-16 units with no `<` and no NUL.",
+      "issue": "Equoria-qkgfh.1"
+    },
+    "backend/modules/marketplace/controllers/marketplaceController.mjs": {
+      "reason": "System-derived, no player string: store horses are named `<Breed> #NNNNNN`. Breed names are DB-controlled (Breed.name is admin-created and uniquely indexed), not player input on this path.",
+      "issue": "Equoria-qkgfh.1"
+    },
+    "backend/modules/users/services/gdprAccountService.mjs": {
+      "reason": "System-derived, no player string: lineage anonymization rewrites a horse's name to `Anonymized Horse #<id>` during GDPR erasure. Always inside the policy by construction.",
+      "issue": "Equoria-qkgfh.1"
+    },
+    "backend/modules/horses/services/horseModelService.mjs": {
+      "reason": "The model-level insert (`createHorse`) that every acquisition path funnels through. It checks only `!name` and caps nothing itself, which is precisely the open door this check exists to keep visible: its callers are gated (or allow-listed) today, but a NEW caller could reach horses.name without meeting the policy. Deliberately left as an allow-list entry rather than gated in place, because clamping here would silently reshape a name a player supplied through a gated path — the normalisation the policy refuses. If this file is ever changed to validate, delete this entry.",
+      "issue": "Equoria-qkgfh.1"
+    },
+    "backend/modules/horses/services/createHorseService.mjs": {
+      "reason": "Service behind POST /api/v1/horses, which is CLOSED to players — the route returns 403 before any validation or body inspection runs (Finding 2 / Equoria-6p398.2). Not request-reachable today; its validator (validateHorseCreation) is gated on the shared rule anyway, so if the endpoint is ever reopened it reopens consistent. Delete this entry if the service is deleted with the route.",
+      "issue": "Equoria-6p398.2"
+    }
+  }
+}

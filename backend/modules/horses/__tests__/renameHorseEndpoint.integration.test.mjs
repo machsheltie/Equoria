@@ -385,6 +385,21 @@ describe('renameHorseService — the write itself re-asserts ownership', () => {
     expect(await storedName(intruderHorse.id)).toBe(before);
   }, 60000);
 
+  it('refuses a policy-violating name at the WRITE site, not only at the route', async () => {
+    // Defence in depth: the route validates first, so this is unreachable over
+    // HTTP. It matters because the service is the write site, and
+    // check-horse-name-gated.mjs flagged that this file wrote horses.name while
+    // knowing nothing about the rule. Delete the service-layer guard and this
+    // case fails — and the doctrine check goes red too.
+    const before = await storedName(horseB.id);
+
+    const result = await renameHorseById(horseB.id, owner.id, 'L'.repeat(101));
+
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Horse name must be between 1 and 100 characters');
+    expect(await storedName(horseB.id)).toBe(before);
+  }, 60000);
+
   it('renames when the user does own the horse', async () => {
     const result = await renameHorseById(horseB.id, owner.id, 'Service Renamed');
 
@@ -486,47 +501,65 @@ describe('PATCH /api/v1/horses/:id/name — validation is fail-closed', () => {
 
 describe('one name rule governs every GATED horse-name path', () => {
   /**
-   * Before the fix round, POST /horses used express-validator's `isLength`, which
-   * subtracts surrogate pairs and variation selectors and accepted a
-   * whitespace-only name — so create was LOOSER than rename, and a player could
-   * own a horse whose name the rename endpoint refused. Four of the FIVE
-   * player-supplied horse-name paths now share
-   * `horseNameRejectionReason`. These cases pin create and rename agreeing on the
-   * two inputs that used to separate them; revert `validateHorseCreation` to
-   * `isLength` and the create expectations below go green-on-a-lie at 201.
+   * The parity property: no live path may accept a name the rename endpoint would
+   * refuse, or a player could own a horse they cannot rename to anything
+   * resembling what it is.
+   *
+   * REBASE NOTE (Equoria-qkgfh.1, round 3). These cases used to drive
+   * `POST /api/v1/horses`. On this base that endpoint is CLOSED — it returns 403
+   * before any validation runs (Finding 2 / Equoria-6p398.2), so
+   * `validateHorseCreation` is dead code and asserting a 400 there would have been
+   * asserting against a route no player can reach. The live gated creation path is
+   * `POST /api/v1/horses/foals`, so parity is proved there instead. Its `name` is
+   * OPTIONAL (Equoria-6w3ur) — absent passes, supplied is held to the full policy —
+   * which is exactly the contract these cases pin.
    */
   const EMOJI_OVER_CAP = '\u{1F600}'.repeat(51); // 102 UTF-16 units, 51 code points
 
-  function createHorse(name) {
+  /** Breed with a supplied name. Validation runs before ownership/eligibility. */
+  function breedWithName(name) {
     return request(app)
-      .post('/api/v1/horses')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${ownerToken}`)
       .set('Origin', ORIGIN)
       .set('Cookie', ownerCsrf.cookieHeader)
       .set('X-CSRF-Token', ownerCsrf.csrfToken)
       .set('Content-Type', 'application/json')
-      .send({ name, breedId: breed.id, sex: 'Mare' });
+      .send({ sireId: sire.id, damId: horseB.id, name });
   }
 
-  it('POST /horses refuses a whitespace-only name, as rename does', async () => {
-    const res = await createHorse('   ');
+  /** Read the mare's own row — never an aggregate — to prove nothing happened. */
+  async function pregnancyStateOf(horseId) {
+    return prisma.horse.findUnique({
+      where: { id: horseId },
+      select: { inFoalSinceDate: true, pendingFoalName: true },
+    });
+  }
+
+  it('POST /horses/foals refuses a whitespace-only name, as rename does', async () => {
+    const res = await breedWithName('   ');
 
     expect(res.status).toBe(400);
     // Same rule; this path reports it through express-validator's errors array.
     expect(JSON.stringify(res.body)).toContain('Horse name must be between 1 and 100');
 
-    // Per-row check that nothing was created, scoped to this suite's owner.
+    // Per-row: no pregnancy claimed on the mare, and no such horse exists.
+    const mare = await pregnancyStateOf(horseB.id);
+    expect(mare.inFoalSinceDate).toBeNull();
+    expect(mare.pendingFoalName).toBeNull();
     expect(await prisma.horse.count({ where: { userId: owner.id, name: '   ' } })).toBe(0);
   }, 60000);
 
-  it('POST /horses refuses an emoji name over the raw 100-unit cap, as rename does', async () => {
-    const res = await createHorse(EMOJI_OVER_CAP);
+  it('POST /horses/foals refuses an emoji name over the raw 100-unit cap, as rename does', async () => {
+    const res = await breedWithName(EMOJI_OVER_CAP);
 
     expect(res.status).toBe(400);
-    expect(await prisma.horse.count({ where: { userId: owner.id, name: EMOJI_OVER_CAP } })).toBe(0);
+    const mare = await pregnancyStateOf(horseB.id);
+    expect(mare.inFoalSinceDate).toBeNull();
+    expect(mare.pendingFoalName).toBeNull();
   }, 60000);
 
-  it('rename refuses that same emoji name, so create can never mint an unrenameable horse', async () => {
+  it('rename refuses that same emoji name, so no gated path can mint an unrenameable horse', async () => {
     const res = await rename(horseA.id, { name: EMOJI_OVER_CAP }, { token: ownerToken, csrf: ownerCsrf });
 
     expect(res.status).toBe(400);
@@ -540,5 +573,21 @@ describe('one name rule governs every GATED horse-name path', () => {
 
     expect(res.status).toBe(200);
     expect(await storedName(horseA.id)).toBe(fifty);
+  }, 60000);
+
+  it('POST /api/v1/horses is closed, so its validator is dead code on this base', async () => {
+    // Pinned so a future reopening of that endpoint has to confront the parity
+    // question deliberately, rather than silently restoring an ungated creation
+    // path while this suite still claims every gated path agrees.
+    const res = await request(app)
+      .post('/api/v1/horses')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', ownerCsrf.cookieHeader)
+      .set('X-CSRF-Token', ownerCsrf.csrfToken)
+      .set('Content-Type', 'application/json')
+      .send({ name: '   ', breedId: breed.id, sex: 'Mare' });
+
+    expect(res.status).toBe(403);
   }, 60000);
 });

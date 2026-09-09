@@ -151,18 +151,20 @@ export const rejectPollutedRequest = (req, res, next) => {
  * the bounds, their provenance, and the live measurement that justified them.
  * This module wires it into the request layer.
  *
- * FIVE live paths let a PLAYER put a string into `horses.name`. FOUR route
- * through `horseNameRejectionReason`; the fifth does not, and saying otherwise
- * would be a false guarantee in the one file a future reader trusts most:
+ * Re-derived on this base rather than carried forward (round 3, after rebasing
+ * onto the campaign branch). The count CHANGED: `POST /api/v1/horses` closed
+ * between bases, so there are now FOUR live player-supplied paths, THREE of them
+ * gated. Stating this precisely because a wrong enumeration in this file reads as
+ * a guarantee.
  *
- *   1. POST  /api/v1/horses            → `validateHorseCreation` (this file)      GATED
- *   2. POST  /api/v1/horses/foals      → `validateFoalCreation`                   GATED
- *        (horseFoalRoutes.mjs). Its `name` also lands in `Horse.pendingFoalName`
- *        and later becomes the foal's own name via foalingService, so it is a
- *        horse-name path twice over.
- *   3. PUT   /api/v1/horses/:id        → `validateHorseUpdatePayload` (this file)  GATED
- *   4. PATCH /api/v1/horses/:id/name   → `validateHorseRenamePayload` (this file)  GATED
- *   5. POST  /api/v1/auth/advance-onboarding                                  NOT GATED
+ *   1. POST  /api/v1/horses/foals      → `validateFoalCreation`                   GATED
+ *        (horseFoalRoutes.mjs). `name` is OPTIONAL there (Equoria-6w3ur) — absent
+ *        passes, supplied is held to the full policy. It also lands in
+ *        `Horse.pendingFoalName` and later becomes the foal's own name via
+ *        foalingService, so it is a horse-name path twice over.
+ *   2. PUT   /api/v1/horses/:id        → `validateHorseUpdatePayload` (this file)  GATED
+ *   3. PATCH /api/v1/horses/:id/name   → `validateHorseRenamePayload` (this file)  GATED
+ *   4. POST  /api/v1/auth/advance-onboarding                                  NOT GATED
  *        `onboardingController.advanceOnboarding` reads a player-typed
  *        `horseName` from the beta-live /onboarding page and writes it to
  *        `horses.name` — updating the player's EXISTING starter horse where one
@@ -173,19 +175,34 @@ export const rejectPollutedRequest = (req, res, next) => {
  *        Deliberately left alone: routing it through this rule would turn a
  *        silent truncation into a 400 on the new-player flow, which is a
  *        behaviour change on beta-live code and the owner's call, not this
- *        task's. Filed rather than fixed.
+ *        task's. Filed as Equoria-zalyb, and allow-listed by name in
+ *        scripts/doctrine-checks/horse-name-gate-allowlist.json.
  *
- * Also writing `horses.name` without a player string: `foalingService`'s derived
+ *   CLOSED, not gated: `POST /api/v1/horses` returns 403 before any validation
+ *   runs (Finding 2 / Equoria-6p398.2), so `validateHorseCreation` below is DEAD
+ *   CODE on this base. It is kept wired to the shared rule anyway, so that if the
+ *   endpoint is ever reopened it reopens consistent rather than reopening with the
+ *   looser `isLength` counting it had before. `DELETE /horses/:id` is likewise
+ *   403-closed (Equoria-9tque) and never touched `name`.
+ *
+ * Writing `horses.name` WITHOUT a player string: `foalingService`'s derived
  * `<Dam> Foal` fallback (clamped to the policy by `deriveFoalName`), its
  * compensation restore of an already-validated `pendingFoalName`,
  * `onboardingService`'s `<username>'s First Horse`, `marketplaceController`'s
  * store horses, and `gdprAccountService`'s lineage anonymization. Seeds,
- * operator scripts, and anything writing the database outside the app are
- * ungated by construction and no route validator can reach them.
+ * operator scripts, and anything writing the database outside the app are ungated
+ * by construction and no route validator can reach them.
  *
- * WHAT THE FIX ROUND WIDENED ON THE TWO CREATION PATHS — two halves, two reasons.
- * Eight input classes that `POST /horses` and `POST /horses/foals` accepted
- * before now get a 400. They are not all the same change:
+ * An enumeration is a claim with a shelf life — this one has now been wrong twice
+ * (missed the foals path, then missed onboarding) and has changed once because a
+ * route closed underneath it. `scripts/doctrine-checks/check-horse-name-gated.mjs`
+ * exists so the NEXT divergence fails a gate instead of waiting for a reviewer.
+ *
+ * WHAT THE UNIFICATION WIDENED ON THE CREATION VALIDATORS — two halves, two
+ * reasons. Eight input classes that `validateHorseCreation` and
+ * `validateFoalCreation` accepted before now get a 400. They are not all the same
+ * change (and on this base only the foals half is reachable, since `POST /horses`
+ * is closed):
  *
  *   (a) THE LENGTH HALF — `'   '`, 51 grinning-face emoji (102 UTF-16 units),
  *       100 red-heart emoji (200 units). Cause: `isLength` counted differently

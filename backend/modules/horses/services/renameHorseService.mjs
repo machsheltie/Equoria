@@ -35,6 +35,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+import { horseNameRejectionReason, horseNameRejectionMessage } from './horseNamePolicy.mjs';
 
 /**
  * Rename a horse on behalf of its owner.
@@ -46,8 +47,30 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
  *   200 — { success: true, data: { id, name } }
  *   404 — { success: false, message: 'Horse not found', status: 'fail' } when the
  *         guarded update matched no row (missing horse OR not the caller's)
+ *   400 — { success: false, message: <which rule failed> } if the name does not
+ *         satisfy the policy. Unreachable through the route, which validates
+ *         first; see the defence-in-depth note below.
  */
 export async function renameHorseById(horseId, userId, name) {
+  // Defence in depth on the NAME, mirroring the defence in depth on OWNERSHIP
+  // below: the route validates the payload before this runs, so on the live path
+  // this branch never fires. It exists because this function is the write site,
+  // and a write site that trusts its caller is how the four gated paths came to
+  // disagree in the first place. `check-horse-name-gated.mjs` found this exact
+  // gap in this exact file — the service wrote `horses.name` while knowing
+  // nothing about the rule — and closing it is cheaper and more honest than
+  // allow-listing the file that the whole task is about.
+  const rejection = horseNameRejectionReason(name);
+  if (rejection !== null) {
+    logger.warn(
+      `[renameHorseService] Rejected name for horse ${horseId}: ${rejection} (service-layer guard)`,
+    );
+    return {
+      status: 400,
+      body: { success: false, message: horseNameRejectionMessage(rejection) },
+    };
+  }
+
   // Single transaction: the guarded write and the read-back that reports it are
   // one atomic unit, so the name returned to the player is the name that was
   // committed. Every statement runs on `tx` — none falls back to the global

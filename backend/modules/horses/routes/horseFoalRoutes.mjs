@@ -76,17 +76,21 @@ const validateFoalCreation = [
   // to the full policy. This `name` also lands in `Horse.pendingFoalName` and
   // later becomes the foal's own name, so it is a horse-name path twice over.
   //
-  // RESOLVED MERGE HAZARD — kept deliberately, because a hazard that was real
-  // once and is now invisible is how it comes back. Equoria-qkgfh.1 was authored
-  // on a base that PREDATED Equoria-6w3ur, where both fields were still
-  // required. On that branch this region read `horseNameBodyRule(),` with no
-  // `optional`, and a merge resolved in its favour would have deleted
-  // `.optional()` from `name` and `breedId` and broken the beta-live /breeding
-  // page — whose only client posts `{ sireId, damId }` and no name. Two reviewers
-  // reported opposite facts about this exact region because they were reading the
-  // two different trees. Resolved here in favour of Equoria-6w3ur's contract:
-  // both fields stay optional. `foalCreationMinimalPayload.test.mjs` is the
-  // regression guard; if it ever fails, this is the region to look at first.
+  // RESOLVED MERGE HAZARD — kept deliberately in past tense, because a hazard
+  // that was real once and is now invisible is how it comes back.
+  //   WHAT IT WAS. Equoria-qkgfh.1 was authored on a base PREDATING
+  //   Equoria-6w3ur, where `name` and `breedId` were both still required. On that
+  //   branch this exact region read `horseNameBodyRule(),` with no `optional`, so
+  //   a merge resolved in its favour would have deleted `.optional()` from both
+  //   fields and broken the beta-live /breeding page — whose only client posts
+  //   `{ sireId, damId }` and no name. Two reviewers reported opposite facts
+  //   about these lines, and both were right: they were reading the two trees.
+  //   HOW IT WAS RESOLVED. Rebased onto the campaign branch and resolved in
+  //   favour of Equoria-6w3ur's contract — both fields stay optional — with the
+  //   shared name rule applied to a SUPPLIED value only.
+  //   HOW WE KNOW. `foalCreationMinimalPayload.test.mjs` is the regression guard,
+  //   and it was proved non-inert by re-planting the hazard: dropping `optional`
+  //   here fails 12 of its cases. If it ever goes red, start in this region.
   horseNameBodyRule({ optional: true }),
   body('breedId').optional().isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
   body('sireId').isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
