@@ -13,6 +13,8 @@
 export * from './controllers/enhancedGroomController.mjs';
 export * from './controllers/groomAssignmentController.mjs';
 export * from './controllers/groomController.mjs';
+// Equoria-ypb7d.2: the grooms-for-hire pool handlers.
+export * from './controllers/groomFreeAgentController.mjs';
 export * from './controllers/groomHandlerController.mjs';
 export * from './controllers/groomMarketplaceController.mjs';
 export * from './controllers/groomPerformanceController.mjs';
@@ -27,6 +29,10 @@ export * from './routes/groomSalaryRoutes.mjs';
 export * from './services/enhancedGroomInteractions.mjs';
 export * from './services/groomAssignmentService.mjs';
 export * from './services/groomBonusTraitService.mjs';
+// Equoria-ypb7d.1: the weekly game pass, split out of groomRetirementService.mjs.
+// backend/services/jobs/impl/groomCareerProgression.mjs imports it through this
+// barrel, so the split is invisible to the scheduler.
+export * from './services/groomCareerProgressionService.mjs';
 export * from './services/groomHandlerService.mjs';
 export * from './services/groomLegacyService.mjs';
 export * from './services/groomMarketplace.mjs';

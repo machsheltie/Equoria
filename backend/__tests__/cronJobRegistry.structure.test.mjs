@@ -50,9 +50,10 @@ const EXPECTED_JOBS = [
   // cronJobService, because it is the one job whose silent failure has no external
   // symptom — grooms simply never age out and no player action fails — so it needs
   // the heartbeat, the CronRunLog row and cron-health visibility that only this
-  // registry provides. Monday 09:45 UTC, after weeklySalaries (09:00): payroll
-  // bills per ACTIVE assignment, so retiring first would cost a groom who worked
-  // that week their final wage. 192h staleness = 168h period + 24h tolerance,
+  // registry provides. Monday 09:45 UTC, after weeklySalaries (09:00): the weekly
+  // fee bills every groom ON STAFF (Equoria-ypb7d.3 changed the basis from
+  // per-ACTIVE-ASSIGNMENT to per-engagement), so retiring first would cost a
+  // groom who worked that week their final wage. 192h staleness = 168h period + 24h tolerance,
   // matching the other weekly jobs.
   { jobName: 'groomCareerProgression', schedule: '45 9 * * 1', staleAfterMs: 192 * 60 * 60 * 1000 },
 ];

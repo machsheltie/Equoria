@@ -15,6 +15,16 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+// Equoria-ypb7d fix round 1 (F8): a legacy protégé is a THIRD groom-creation path
+// alongside the two hire controllers, and it was left unmigrated. A protégé born with
+// no `startAge` breaks invariant A1 ("drawn once at creation or hire"), and one born
+// with a `userId` but no engagement row breaks invariant E1 ("`Groom.userId IS NOT
+// NULL` <=> an open engagement row exists"). Both self-healed via the weekly
+// backstops, so the damage was bounded to a window rather than permanent — but
+// "self-heals incidentally" is not the same as "is correct at birth", and relying on a
+// backstop without saying so is how an invariant quietly stops being one.
+import { drawStartAge } from './groomAgeService.mjs';
+import { openEngagementTx } from './groomEngagementService.mjs';
 
 /**
  * Legacy system constants
@@ -210,6 +220,14 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
           sessionRate: protegeData.sessionRate || 15.0,
           bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
           availability: protegeData.availability || {},
+          // Equoria-ypb7d.1 (F8): a protégé enters the game at an age like anyone
+          // else, drawn from the same 18..24 band. Deliberately NOT inherited from
+          // or related to the mentor: the owner's addendum forbids anything but
+          // chance influencing retirement timing, and a protégé of an old mentor
+          // starting old would be exactly that. Their retirement age is still drawn
+          // by the weekly pass's `ensureRetirementDrawn` backstop, because this
+          // service must not handle that value at all (the hiding doctrine).
+          startAge: drawStartAge(),
           // Add legacy bonus to bonus trait map
           bonusTraitMap: {
             legacyPerk: selectedPerk.id,
@@ -218,6 +236,12 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
           },
         },
       });
+
+      // Equoria-ypb7d.2 (F8): a protégé arrives ON A PLAYER'S STAFF, so the
+      // engagement that says so is opened here, in the same transaction as the
+      // groom — not left to the fee pass's `ensureEngagementTx` backstop to
+      // discover next Monday. Same rule as both hire paths.
+      await openEngagementTx(prismaTx, protege.id, userId);
 
       // Create legacy log
       const legacyLog = await prismaTx.groomLegacyLog.create({
@@ -332,21 +356,26 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
     return null;
   }
 
-  // Equoria-m9lz1 fix round 3: an OWNERLESS groom has no stable to leave a
-  // legacy to. `Groom.userId` is `String?`, and the protégé query below filters
-  // `userId: retiredGroom.userId` — which Prisma compiles to `WHERE "userId" IS
-  // NULL` when that value is null, so null stops being "this groom's owner" and
-  // becomes a matching key across EVERY ownerless groom in the database (62 of
-  // them locally when this guard was added). The game would then pair two grooms
-  // who share nothing but the absence of an owner as mentor and protégé, and
-  // write a legacy log no player can ever see. A mentorship needs a stable;
-  // without one there is nothing to pass on, so skip — beside the level guard,
-  // and for the same reason: not eligible, not an error.
+  // Equoria-m9lz1 fix round 3: a groom with NO ENGAGEMENT — a free agent — has no
+  // stable to leave a legacy to. `Groom.userId` is `String?`, and the protégé query
+  // below filters `userId: retiredGroom.userId` — which Prisma compiles to
+  // `WHERE "userId" IS NULL` when that value is null, so null stops identifying
+  // ONE player's staff and becomes a matching key across EVERY free agent in the
+  // database (62 of them locally when this guard was added). The game would then
+  // pair two grooms who share nothing but the absence of an engagement as mentor
+  // and protégé, and write a legacy log no player can ever see. A mentorship needs
+  // a stable; without one there is nothing to pass on, so skip — beside the level
+  // guard, and for the same reason: not eligible, not an error.
+  //
+  // Equoria-ypb7d.2 corrected the vocabulary here: this comment said "OWNERLESS",
+  // "this groom's owner" and "ownerless groom", five ownership words for a relation
+  // that is an ENGAGEMENT. Players never own grooms. The guard itself is unchanged —
+  // `!retiredGroom.userId` is still exactly "this groom is on nobody's staff".
   if (!retiredGroom.userId) {
     logger.info(
-      `[groomLegacyService.autoCreateLegacyOnRetirement] Groom ${retiredGroom.id} has no owner; ` +
-        'no legacy is created (an ownerless groom has no stable to pass a legacy to, and a null ' +
-        'userId would otherwise match every other ownerless groom).',
+      `[groomLegacyService.autoCreateLegacyOnRetirement] Groom ${retiredGroom.id} is on nobody's ` +
+        'staff; no legacy is created (a free agent has no stable to pass a legacy to, and a null ' +
+        'userId would otherwise match every other free agent).',
     );
     return null;
   }

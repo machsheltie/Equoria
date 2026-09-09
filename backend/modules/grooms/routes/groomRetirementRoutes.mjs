@@ -17,7 +17,7 @@
  *   groom's retirement age "is not known until the week they retire". Two of
  *   this router's four routes existed to do exactly the opposite:
  *
- *   1. `POST /:id/retirement/process` let any owner retire any of their grooms,
+ *   1. `POST /:id/retirement/process` let any player retire any groom on their staff,
  *      with a `force` flag that skipped the eligibility check entirely. It is
  *      now a 403 (see below).
  *   2. `GET /retirement/approaching` returned the caller's grooms within one
@@ -119,9 +119,11 @@ router.get(
  * permission to end a career is withdrawn. The rejection sits BEHIND the
  * authRouter's `authenticateToken` (so an anonymous POST is still 401) and
  * BEFORE the validators and `requireOwnership`, so it is payload- and
- * id-independent: a groom you own, a groom another player owns, an id that does
- * not exist and a malformed id all produce byte-identical responses, and the
- * route cannot be used as an existence or ownership oracle.
+ * id-independent: a groom on your staff, a groom on another player's staff, an id
+ * that does not exist and a malformed id all produce byte-identical responses, and
+ * the route cannot be used as an existence or engagement oracle.
+ * (Equoria-ypb7d.2: this said "a groom you own, a groom another player owns".
+ * Players never own grooms. The oracle property being described is unaffected.)
  *
  * The retained legitimate path is the game's own:
  * `groomRetirementService.processWeeklyCareerProgression` →

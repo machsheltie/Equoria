@@ -311,7 +311,7 @@ async function executeScopedPurge(userIds, horseIds) {
       await tx.horse.deleteMany({ where: { id: { in: horseIds } } });
     }
 
-    // ── Grooms owned by the matched users (groom children cascade) ───────────
+    // ── Grooms on the matched users' staff (groom children cascade) ──────────
     await tx.groom.deleteMany({ where: { userId: { in: userIds } } });
 
     // ── Remaining directly-keyed rows (most Cascade, explicit for intent) ────

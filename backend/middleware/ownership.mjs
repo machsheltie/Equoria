@@ -154,7 +154,11 @@ export const requireOwnership = (resourceType, options = {}) => {
         }
 
         logger.warn(
-          `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${req.user.id}`,
+          // Equoria-ypb7d.2: "not owned by" was false for a groom — players engage
+          // grooms, they do not own them — and this log is generic over resourceType.
+          // "not accessible to" is true for every type this middleware guards. Log only;
+          // the RESPONSE already says just "<Resource> not found" (CWE-639 collapse).
+          `[ownership] ${resourceType} ${resourceId} not found or not accessible to user ${req.user.id}`,
         );
         throw new AppError(
           `${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} not found`,
@@ -251,7 +255,9 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
     logger.info(`[ownership] Found owned ${resourceType} ${resourceId} for user ${userId}`);
   } else {
     logger.warn(
-      `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${userId}`,
+      // Equoria-ypb7d.2: see the note on the sibling log above — generic over
+      // resourceType, so it must not assert ownership of a groom.
+      `[ownership] ${resourceType} ${resourceId} not found or not accessible to user ${userId}`,
     );
   }
 

@@ -26,6 +26,9 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
+
+// Equoria-ypb7d.1: see the note on the testGroom fixture below.
+const FIXTURE_START_AGE = 20;
 import { randomBytes } from 'node:crypto';
 import {
   incrementCareerWeeks,
@@ -92,6 +95,11 @@ describe('Groom Retirement Service', () => {
         speciality: 'foal_care',
         userId: testUser.id,
         careerWeeks: 0,
+        // Equoria-ypb7d.1: a groom's age is `startAge + careerWeeks`, so a fixture
+        // that wants a groom OF A GIVEN AGE must set both. Fixed rather than drawn
+        // so `careerWeeks = targetAge - FIXTURE_START_AGE` is exact; 20 sits inside
+        // the 18..24 band the `grooms_start_age_range` CHECK enforces.
+        startAge: FIXTURE_START_AGE,
         level: 1,
         experience: 0,
       },
@@ -199,7 +207,8 @@ describe('Groom Retirement Service', () => {
 
       await prisma.groom.update({
         where: { id: testGroom.id },
-        data: { careerWeeks: retirementAge - 1 },
+        // Equoria-ypb7d.1: one short in AGE, and age is startAge + careerWeeks.
+        data: { careerWeeks: retirementAge - FIXTURE_START_AGE - 1 },
       });
 
       const eligibility = await checkRetirementEligibility(testGroom.id);
@@ -217,7 +226,8 @@ describe('Groom Retirement Service', () => {
       const retirementAge = await ensureRetirementSchedule(prisma, testGroom.id);
       await prisma.groom.update({
         where: { id: testGroom.id },
-        data: { careerWeeks: retirementAge },
+        // Equoria-ypb7d.1: exactly ON its hidden age; age is startAge + careerWeeks.
+        data: { careerWeeks: retirementAge - FIXTURE_START_AGE },
       });
 
       const eligibility = await checkRetirementEligibility(testGroom.id);
@@ -234,6 +244,7 @@ describe('Groom Retirement Service', () => {
       await ensureRetirementSchedule(prisma, testGroom.id);
       await prisma.groom.update({
         where: { id: testGroom.id },
+        // age 25 with startAge 20 — nowhere near any drawn retirement age.
         data: { level: 10, careerWeeks: 5 },
       });
 
@@ -294,7 +305,8 @@ describe('Groom Retirement Service', () => {
       const retirementAge = await ensureRetirementSchedule(prisma, testGroom.id);
       await prisma.groom.update({
         where: { id: testGroom.id },
-        data: { careerWeeks: retirementAge },
+        // Equoria-ypb7d.1: exactly ON its hidden age; age is startAge + careerWeeks.
+        data: { careerWeeks: retirementAge - FIXTURE_START_AGE },
       });
 
       const result = await processRetirement(testGroom.id);
@@ -408,6 +420,10 @@ describe('Groom Retirement Service', () => {
               speciality: 'foal_care',
               userId: testUser.id,
               careerWeeks: 10,
+              // Equoria-ypb7d.1: fixed start age so this groom's AGE is 30 — well
+              // clear of every drawn retirement age — rather than depending on the
+              // pass's backstop draw.
+              startAge: FIXTURE_START_AGE,
               level: 2,
               retired: false,
             },
@@ -426,6 +442,7 @@ describe('Groom Retirement Service', () => {
               // flake. Kept well clear of the band; the two grooms that are meant
               // to retire are parked on their own ages after creation.
               careerWeeks: 5,
+              startAge: FIXTURE_START_AGE,
               level: 5,
               retired: false,
             },
@@ -441,6 +458,7 @@ describe('Groom Retirement Service', () => {
               // Equoria-m9lz1: parked one tick short of its own hidden age by the
               // post-create step below, so the pass carries it over the line.
               careerWeeks: 0,
+              startAge: FIXTURE_START_AGE,
               level: 8,
               retired: false,
             },
@@ -457,6 +475,7 @@ describe('Groom Retirement Service', () => {
               // this groom now retires for the same reason as every other: it
               // reaches its own hidden age during the pass.
               careerWeeks: 0,
+              startAge: FIXTURE_START_AGE,
               level: 10,
               retired: false,
             },
@@ -473,11 +492,14 @@ describe('Groom Retirement Service', () => {
       }
       for (const groom of testGrooms.slice(2)) {
         const age = retirementAges.get(groom.id);
+        // Equoria-ypb7d.1: one tick short in AGE. Age is `startAge + careerWeeks`,
+        // and every fixture above fixes startAge at FIXTURE_START_AGE.
+        const careerWeeks = age - FIXTURE_START_AGE - 1;
         await prisma.groom.update({
           where: { id: groom.id },
-          data: { careerWeeks: age - 1 },
+          data: { careerWeeks },
         });
-        groom.careerWeeks = age - 1;
+        groom.careerWeeks = careerWeeks;
       }
     });
 
@@ -533,10 +555,12 @@ describe('Groom Retirement Service', () => {
       for (const retired of retiredGrooms) {
         expect(retired.retirementReason).toBe(RETIREMENT_REASONS.AGE);
         // `>=`, not `===`: the pass increments careerWeeks and THEN tests
-        // `careerWeeks >= retirementAge`, so a groom already at or past its age
-        // when the pass starts retires one tick above it. The two grooms parked
-        // one short land exactly on their age; the assertion holds for both.
-        expect(retired.careerWeeks).toBeGreaterThanOrEqual(retirementAges.get(retired.id));
+        // `age >= retirementAge`, so a groom already at or past its age when the
+        // pass starts retires one tick above it. The two grooms parked one short
+        // land exactly on their age; the assertion holds for both.
+        // Equoria-ypb7d.1: the comparison is on AGE (`startAge + careerWeeks`), not
+        // on careerWeeks alone — that WAS the defect Equoria-maeba raised.
+        expect(retired.startAge + retired.careerWeeks).toBeGreaterThanOrEqual(retirementAges.get(retired.id));
         expect(retired.isActive).toBe(false);
       }
 

@@ -14,6 +14,9 @@ import {
   ENHANCED_INTERACTIONS,
 } from '../services/enhancedGroomInteractions.mjs';
 import { updateGroomSynergy } from '../services/groomProgressionService.mjs';
+// Equoria-ypb7d.3: a groom inside the one-week fee grace period stays on staff but
+// cannot groom. Pure check over the groom row this handler already fetches.
+import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
 
@@ -212,8 +215,26 @@ export async function performEnhancedInteraction(req, res) {
     if (!groom) {
       return res.status(404).json({
         success: false,
-        message: 'Groom not found or not owned by user',
+        // Equoria-ypb7d.2 (fix round 1, F12): players do not own grooms, so the
+        // message no longer says they do. The "not found OR not yours" collapse is
+        // deliberate and preserved — distinguishing the two would make this an
+        // existence oracle (the CWE-639 convention this codebase already holds).
+        message: 'Groom not found or not on your staff',
         data: null,
+      });
+    }
+
+    // Equoria-ypb7d.3: "The groom can't groom horse until paid for that week"
+    // (owner, 2026-09-09). Applied HERE as well as in
+    // groomInteractionController.recordInteraction, because this is the second
+    // care path and a rule enforced on only one of two doors is not enforced.
+    // Pure check over the groom row already fetched, so no extra query.
+    const workCheck = checkGroomMayWork(groom);
+    if (!workCheck.allowed) {
+      return res.status(400).json({
+        success: false,
+        message: workCheck.reason,
+        data: { groomId: groom.id, groomUnavailable: workCheck.code },
       });
     }
 
@@ -404,7 +425,9 @@ export async function getRelationshipDetails(req, res) {
     // requireOwnership('groom', { idParam: 'groomId' }) and
     // requireOwnership('horse', { idParam: 'horseId' }) in
     // enhancedGroomRoutes.mjs:101-102. By the time we reach this handler,
-    // both groom and horse are guaranteed to exist AND be owned by req.user.
+    // the horse is guaranteed to exist AND be OWNED by req.user, and the groom to
+    // exist AND be ON req.user's STAFF (Equoria-ypb7d.2 — the two relations are
+    // different: horses are owned, grooms are engaged).
     // The previous defensive 'Horse not found or not owned by user' branch
     // was dead code; we keep a defense-in-depth 404 fall-through (without
     // the 'or not owned' wording) in case middleware is ever bypassed.

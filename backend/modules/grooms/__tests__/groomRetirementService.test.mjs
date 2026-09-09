@@ -42,10 +42,19 @@ import {
   checkRetirementEligibility,
   processRetirement,
   getRetirementStatistics,
-  processWeeklyCareerProgression,
 } from '../services/groomRetirementService.mjs';
+// Equoria-ypb7d.1: the weekly pass moved to its own service when the age model
+// pushed groomRetirementService.mjs past the 600-line cap. Same function, same
+// behaviour; only its file changed.
+import { processWeeklyCareerProgression } from '../services/groomCareerProgressionService.mjs';
 import { ensureRetirementSchedule, readRetirementAge } from '../services/groomRetirementScheduleService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+
+// Equoria-ypb7d.1: a groom's age is `startAge + careerWeeks`. Fixtures that need a
+// groom of a known age fix the start age here rather than drawing one, so
+// `careerWeeks = targetAge - FIXTURE_START_AGE` is exact. 20 sits inside the
+// 18..24 band the `grooms_start_age_range` CHECK constraint enforces.
+const FIXTURE_START_AGE = 20;
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -150,15 +159,21 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         name: `TestFixture-GRS-Mandatory-${ts}`,
         speciality: 'general',
         personality: 'gentle',
+        // Equoria-ypb7d.1: a groom's age is `startAge + careerWeeks`, so a fixture
+        // that wants a groom OF A GIVEN AGE must set both. FIXTURE_START_AGE is a
+        // fixed value inside the 18..24 band the CHECK constraint enforces, so the
+        // arithmetic below is deterministic rather than depending on a draw.
+        startAge: FIXTURE_START_AGE,
         userId: grsUser.id,
       },
     });
     // Equoria-m9lz1: the threshold is this groom's OWN drawn age, not a shared
-    // constant. Draw it, then park the groom exactly on it.
+    // constant. Draw it, then park the groom exactly ON it — which after
+    // Equoria-ypb7d.1 means `startAge + careerWeeks === retirementAge`.
     grsGroomMandatoryAge = await ensureRetirementSchedule(prisma, grsGroomMandatory.id);
     await prisma.groom.update({
       where: { id: grsGroomMandatory.id },
-      data: { careerWeeks: grsGroomMandatoryAge },
+      data: { careerWeeks: grsGroomMandatoryAge - FIXTURE_START_AGE },
     });
 
     grsGroomLevelCap = await prisma.groom.create({
@@ -167,7 +182,8 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         speciality: 'general',
         personality: 'gentle',
         level: 10, // was EARLY_RETIREMENT_LEVEL; no longer a retirement trigger
-        careerWeeks: 5, // far below any retirement age
+        startAge: FIXTURE_START_AGE,
+        careerWeeks: 5, // age 25 — far below any retirement age
         userId: grsUser.id,
       },
     });
@@ -179,7 +195,8 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         speciality: 'general',
         personality: 'gentle',
         level: 1,
-        careerWeeks: 10, // below mandatory and level cap
+        startAge: FIXTURE_START_AGE,
+        careerWeeks: 10, // age 30 — below every drawn retirement age
         userId: grsUser.id,
       },
     });
@@ -203,6 +220,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         speciality: 'general',
         personality: 'gentle',
         level: 1,
+        startAge: FIXTURE_START_AGE,
         userId: grsUser.id,
       },
     });
@@ -210,7 +228,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     grsGroomNoticeAge = await ensureRetirementSchedule(prisma, grsGroomNotice.id);
     await prisma.groom.update({
       where: { id: grsGroomNotice.id },
-      data: { careerWeeks: grsGroomNoticeAge - 1 },
+      data: { careerWeeks: grsGroomNoticeAge - FIXTURE_START_AGE - 1 },
     });
 
     grsGroomNormal = await prisma.groom.create({
@@ -439,16 +457,22 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
         personality: 'gentle',
         level: 1,
         isActive: true,
+        // Equoria-ypb7d.1: fixed so the arithmetic below is exact. wcpGroomNormal
+        // deliberately leaves it NULL, which exercises the pass's `ensureStartAge`
+        // backstop for grooms that predate this story.
+        startAge: FIXTURE_START_AGE,
         userId: wcpUser.id,
       },
     });
     // Equoria-m9lz1: park this groom one tick short of its OWN hidden retirement
     // age, so the pass's increment carries it over the line — "the week they
     // retire". Pre-m9lz1 the fixture used the shared constant 104.
+    // Equoria-ypb7d.1: "one tick short" is now one tick short in AGE, and age is
+    // `startAge + careerWeeks`.
     wcpGroomMandatoryAge = await ensureRetirementSchedule(prisma, wcpGroomMandatory.id);
     await prisma.groom.update({
       where: { id: wcpGroomMandatory.id },
-      data: { careerWeeks: wcpGroomMandatoryAge - 1 },
+      data: { careerWeeks: wcpGroomMandatoryAge - FIXTURE_START_AGE - 1 },
     });
 
     // Equoria-1ohys: fail-loud scoped cleanup. FK order — schedules and
@@ -486,10 +510,16 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
     expect(mandatoryEntry).toBeDefined();
     // Equoria-m9lz1: the reason is AGE, not the retired MANDATORY_CAREER_LIMIT.
     expect(mandatoryEntry.reason).toBe(RETIREMENT_REASONS.AGE);
-    expect(mandatoryEntry.careerWeeks).toBe(wcpGroomMandatoryAge);
+    expect(mandatoryEntry.careerWeeks).toBe(wcpGroomMandatoryAge - FIXTURE_START_AGE);
     // Normal groom incremented to careerWeeks=1 and given a schedule of its own
     const updated = await prisma.groom.findUnique({ where: { id: wcpGroomNormal.id } });
     expect(updated.careerWeeks).toBe(1);
+    // Equoria-ypb7d.1: the pass also drew this groom's START AGE, because it had
+    // none — the backstop that lets the migration ship with no backfill. The value
+    // is inside the ruling's band, and the groom's age is now startAge + 1.
+    expect(updated.startAge).toBeGreaterThanOrEqual(18);
+    expect(updated.startAge).toBeLessThanOrEqual(24);
+    expect(result.aged).toBeGreaterThanOrEqual(1);
     expect(updated.retired).toBe(false);
     const normalAge = await readRetirementAge(prisma, wcpGroomNormal.id);
     expect(normalAge).toBeGreaterThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MIN);

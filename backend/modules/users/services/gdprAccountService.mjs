@@ -191,12 +191,15 @@ export async function eraseUserAccount(userId) {
       });
       const horseIds = ownedHorses.map(h => h.id);
 
-      // Ids of grooms owned by THIS user (groom-dependent cleanup scope).
-      const ownedGrooms = await tx.groom.findMany({
+      // Ids of the grooms on THIS user's staff (groom-dependent cleanup scope).
+      // Equoria-ypb7d.2: said "grooms owned by THIS user". Players engage grooms,
+      // they never own them — and unlike the horses above, which really are owned.
+      // Found by the round-4 population audit, not by any ownership pattern.
+      const staffGrooms = await tx.groom.findMany({
         where: { userId },
         select: { id: true },
       });
-      const groomIds = ownedGrooms.map(g => g.id);
+      const groomIds = staffGrooms.map(g => g.id);
 
       // ── Club election artifacts authored by the user ──────────────────────
       await tx.clubBallot.deleteMany({ where: { voterId: userId } });
@@ -558,7 +561,7 @@ export async function eraseUserAccount(userId) {
         }
       }
 
-      // ── Grooms owned by the user ──────────────────────────────────────────
+      // ── Grooms on the user's staff (Equoria-ypb7d.2: engaged, never owned) ──
       // Groom children (assignments, interactions, synergies, logs,
       // salary/performance) are onDelete: Cascade on the groom.
       if (groomIds.length > 0) {

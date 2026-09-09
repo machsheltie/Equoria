@@ -16,11 +16,33 @@
  * were not already paid this week), and a NEW pay week still debits
  * (idempotency must not become never-pays-again).
  *
- * Real DB, no mocks, scoped TestFixture-icqqm cleanup.
+ * Real DB, no mocks, scoped TestFixture-icqqm cleanup. Note that "debits every user"
+ * above describes the SERVICE's production behaviour, not these tests: every call below
+ * is scoped to this suite's own fixture user (see the block after the imports).
  *
  * NOTE: the pay-week oracle below is deliberately test-local (NOT imported
  * from the service) so the test checks the service against an independent
  * definition of "pay week" rather than the code under test's own helper.
+ */
+
+/**
+ * Equoria-ypb7d.3 — EVERY `processWeeklySalaries` CALL IN THIS FILE IS SCOPED.
+ *
+ * Before Equoria-ypb7d.3 a non-payment was a silent no-op: `terminateGroomsForNonPayment`
+ * wrote `terminationReason` to a column that does not exist and its own catch swallowed
+ * the throw. An unscoped pass against the shared development database was therefore
+ * merely wasteful — it debited real wallets and wrote payment rows, but it could not
+ * take anything away.
+ *
+ * It can now. An unscoped pass puts every underfunded player's grooms into the one-week
+ * grace period, and RELEASES the ones already in it — back to the grooms-for-hire pool,
+ * assignments ended, gone from that player's staff. The shared development database
+ * holds real player data. So every call below passes
+ * `{ userId: <this suite's fixture user> }`, and
+ * `groomSalaryPassScoped.sentinel.test.mjs` fails if one ever loses it again.
+ *
+ * Nothing is weakened by the scope. Assertions that were `>= 1` purely to tolerate other
+ * users' rows became exact, which is stronger.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -189,15 +211,18 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
       speciality: 'showHandling', // +15 → 115/week
     });
 
-    const run1 = await processWeeklySalaries(now);
-    expect(run1.successful).toBeGreaterThanOrEqual(1);
+    const run1 = await processWeeklySalaries(now, { userId: user.id });
+    // Exact, not `>= 1`: the pass is scoped to this suite's own user, so one successful
+    // payer is the whole population. The old `>= 1` existed only to tolerate every
+    // other row in the table.
+    expect(run1.successful).toBe(1);
 
     const afterRun1 = await getUserMoney(user.id);
     expect(afterRun1).toBe(1000 - 115);
 
     // THE DEFECT: this second run, same pay week, must be a no-op for
     // this user. Pre-fix it double-debits (wallet → 770, 2 paid rows).
-    const run2 = await processWeeklySalaries(now);
+    const run2 = await processWeeklySalaries(now, { userId: user.id });
 
     const afterRun2 = await getUserMoney(user.id);
     expect(afterRun2).toBe(1000 - 115); // debited exactly ONCE
@@ -206,7 +231,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
     expect(paidRows.length).toBe(1); // exactly one 'paid' row for the pay week
 
     // Run 2 reports the user as skipped, not re-paid and not failed.
-    expect(run2.skipped).toBeGreaterThanOrEqual(1);
+    expect(run2.skipped).toBe(1);
 
     // Exactly ONE burn-credit ledger row attributed to this user.
     const burnRows = await prisma.userTransaction.count({
@@ -227,11 +252,11 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
       speciality: 'showHandling',
     });
 
-    await processWeeklySalaries(now);
+    await processWeeklySalaries(now, { userId: user.id });
     expect(await getUserMoney(user.id)).toBe(1000 - 115);
 
     // NEW pay week → the guard must NOT suppress this debit.
-    await processWeeklySalaries(nextWeekNow);
+    await processWeeklySalaries(nextWeekNow, { userId: user.id });
     expect(await getUserMoney(user.id)).toBe(1000 - 115 - 115);
 
     // One paid row per groom per pay week, each dated inside its own window.
@@ -268,7 +293,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
       },
     });
 
-    await processWeeklySalaries(now);
+    await processWeeklySalaries(now, { userId: user.id });
 
     // Only groom B's salary (115) may be debited — NOT the full 165.
     expect(await getUserMoney(user.id)).toBe(1000 - 115);
@@ -295,7 +320,12 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
       speciality: 'general',
     });
 
-    await Promise.all([processWeeklySalaries(now), processWeeklySalaries(now)]);
+    // Both runs scoped to the same fixture user: the contention this case is about is
+    // per-(user, pay week) on the advisory lock, which the scope does not touch.
+    await Promise.all([
+      processWeeklySalaries(now, { userId: user.id }),
+      processWeeklySalaries(now, { userId: user.id }),
+    ]);
 
     expect(await getUserMoney(user.id)).toBe(1000 - 50); // exactly one debit
 

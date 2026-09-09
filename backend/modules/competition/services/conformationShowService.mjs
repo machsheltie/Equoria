@@ -91,7 +91,8 @@ export class ConformationGroomMissingError extends Error {
  * Rejects if:
  *  - className is not a valid conformation sex/category class
  *  - horse is not owned by userId
- *  - groom is not owned by userId
+ *  - groom is not on userId's staff (Equoria-ypb7d.2: `Groom.userId` is an
+ *    engagement, not ownership — players never own grooms)
  *  - groom is not actively assigned to the horse
  *  - groom assignment is younger than MIN_GROOM_ASSIGNMENT_DAYS
  *  - horse.age < 0 (negative age is invalid)
@@ -127,7 +128,9 @@ export async function validateConformationEntry(horse, groom, className, userId)
 
     // Ownership validated upstream by the controller via findOwnedResource
     // (conformationShowController.mjs:enterConformationShow). The horse and
-    // groom passed here always belong to userId — these branches were
+    // groom passed here are always the caller's own horse and a groom on the caller's
+    // own STAFF (Equoria-ypb7d.2: engagement, not ownership — this said the groom
+    // "always belong to userId") — these branches were
     // dead-code defence-in-depth and were removed for CWE-639 cleanup
     // (Equoria-fspi). Tests covering 'You do not own this horse' / groom
     // strings still pass because they call validateConformationEntry directly

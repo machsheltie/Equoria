@@ -65,6 +65,9 @@ model User {
   groomSalaryPayments     GroomSalaryPayment[]
   groomPerformanceRecords GroomPerformanceRecord[]
   grooms                  Groom[]
+  /// Equoria-ypb7d: this player's groom engagements, open and closed. `grooms`
+  /// above is the LIVE staff (Groom.userId); this is the history.
+  groomEngagements        GroomEngagement[]
   horses                  Horse[]
   riders                  Rider[]
   riderAssignments        RiderAssignment[]
@@ -415,13 +418,60 @@ model Groom {
   hiredDate         DateTime           @default(now())
   /// Career progression tracking
   careerWeeks       Int                @default(0)
+  /// Equoria-ypb7d — the age this groom was when they entered the game, drawn
+  /// once, uniformly from 18..24 inclusive, and never recomputed.
+  ///
+  /// The groom's CURRENT age is `startAge + careerWeeks`. `careerWeeks` already
+  /// advances by one per weekly career pass, and one weekly pass is one
+  /// game-year on Equoria's clock (1 real week = 1 game-year — see
+  /// backend/utils/horseAge.mjs, which horses age on). So this column supplies
+  /// the offset that counter was missing; it does NOT introduce a second age
+  /// counter or a second clock. Read it through
+  /// `groomAgeService.groomAgeYears()` rather than adding the two by hand.
+  ///
+  /// NULLABLE because migration 20260909120000_ypb7d_groom_age_and_engagement
+  /// performs no backfill; the weekly career pass draws one idempotently
+  /// (`ensureStartAge`). A groom with a NULL startAge has no known age and is
+  /// therefore NOT retired by the age rule until that pass has run.
+  ///
+  /// NOT SECRET — unlike `retirementSchedule` below. This is a character
+  /// attribute like `personality` or `bio`; only the RETIREMENT age is hidden.
+  /// The range 18..24 is also enforced by the `grooms_start_age_range` CHECK
+  /// constraint, which Prisma cannot express — see that migration's NOTES.md.
+  startAge          Int?
+  /// Equoria-ypb7d — the start of the pay week (Monday 00:00 UTC, see
+  /// groomSalaryService.getPayWeekStart) whose weekly fee the engaging player
+  /// could not pay.
+  ///
+  /// NULL  = the engagement is paid up.
+  /// SET   = the groom is inside the player's one-week grace period: still on
+  ///         that player's staff, but barred from grooming
+  ///         (`checkGroomMayWork` in groomEngagementService.mjs).
+  ///
+  /// When a STRICTLY LATER pay week arrives with this still set, a full week
+  /// has gone unpaid and the weekly fee pass releases the groom to the
+  /// grooms-for-hire pool. Cleared the moment the fee is paid.
+  feeUnpaidSince    DateTime?
   /// Retirement status
   retired           Boolean            @default(false)
   /// Reason for retirement
   retirementReason  String?
   /// When the groom retired
   retirementTimestamp DateTime?
-  /// User association
+  /// Equoria-ypb7d — the player whose STAFF this groom is currently on. This is
+  /// an ENGAGEMENT, not ownership: per the owner's ruling of 2026-09-09,
+  /// "players never own grooms. If anyone owns them, Equoria does. They are free
+  /// agents." NULL therefore means free agent, and a groom released for
+  /// non-payment has this set back to NULL so any player may hire them.
+  ///
+  /// It stays the LIVE pointer (the roster cap counts it, `requireOwnership`
+  /// resolves it, and ~20 reads select it); `GroomEngagement` is its HISTORY, in
+  /// the same relationship `GroomAssignmentLog` has to `GroomAssignment`.
+  ///
+  /// Retirement deliberately does NOT clear it — a retired groom is excluded
+  /// from work and from the hire pool by `retired`, and keeping the pointer is
+  /// what lets a player still read their retired grooms
+  /// (`getRetirementStatistics`, `getUserGrooms`).
   userId            String?
   /// Timestamps
   createdAt         DateTime           @default(now())
@@ -447,6 +497,9 @@ model Groom {
   /// a caller explicitly `include`s it — which only the retirement service does.
   /// DO NOT add `include: { retirementSchedule: true }` to a player-facing read.
   retirementSchedule  GroomRetirementSchedule?
+  /// Equoria-ypb7d: the record of every player who has hired this groom. At most
+  /// one row has `endedAt = null` (partial unique index).
+  engagements         GroomEngagement[]
   retiredGroomLegacies GroomLegacyLog[] @relation("RetiredGroomLegacy")
   legacyGroomMentors  GroomLegacyLog[] @relation("LegacyGroomMentor")
   user                User?              @relation(fields: [userId], references: [id])
@@ -510,6 +563,63 @@ model GroomRetirementSchedule {
   groom         Groom    @relation(fields: [groomId], references: [id], onDelete: Cascade)
 
   @@map("groom_retirement_schedules")
+}
+
+/// Equoria-ypb7d — one player's engagement of one groom.
+///
+/// The owner's ruling (2026-09-09): "players never own grooms. If anyone owns
+/// them, Equoria does. They are free agents. They are HIRED by players and
+/// charged a weekly fee. ... If they fail to pay for a groom for a week, the
+/// groom goes back to the Grooms for hire section of the marketplace and can be
+/// hired by other players."
+///
+/// WHAT THIS TABLE IS, AND WHAT IT IS NOT
+///   It is the HISTORY of who has hired whom — the same relationship
+///   `GroomAssignmentLog` has to `GroomAssignment`. It is NOT the live pointer:
+///   that stays `Groom.userId`, because the roster cap counts it,
+///   `requireOwnership('groom')` resolves it, and roughly twenty reads select
+///   it. Splitting the live state would have created a dual-write obligation on
+///   every hire and release, which is a defect this repository has paid for
+///   before. So: `Groom.userId` says who the groom works for now; this table
+///   says who they have worked for, and why each engagement ended.
+///
+/// THE INVARIANT
+///   A groom works for at most ONE player at a time, enforced by the partial
+///   unique index `groom_engagements_active_groomId_key ... WHERE "endedAt" IS
+///   NULL` in migration 20260909120000_ypb7d_groom_age_and_engagement. Prisma
+///   cannot express a partial unique index, so it lives only in that raw SQL —
+///   the same posture 20260907120000_kccmt_partial_unique_active_staff_assignments
+///   took. Do not "restore" it here.
+///
+///   Alongside it, for a groom that is not retired:
+///     `Groom.userId IS NOT NULL`  <=>  an open engagement row exists.
+///   Retirement is the deliberate exception: it closes the engagement but leaves
+///   `Groom.userId` set, so the player can still read their retired grooms.
+///
+/// NO BACKFILL
+///   The 101 grooms that predate this table have none. `ensureEngagement` opens
+///   one idempotently the first time the weekly fee pass bills a groom that
+///   already carries a `userId`, exactly as `ensureRetirementSchedule` does for
+///   the retirement age.
+model GroomEngagement {
+  id        Int       @id @default(autoincrement())
+  groomId   Int
+  userId    String
+  /// When this player hired the groom.
+  startedAt DateTime  @default(now())
+  /// NULL while the engagement is live. Set when the groom leaves this player.
+  endedAt   DateTime?
+  /// Why it ended. Written by the game, never by a request:
+  ///   'fee_unpaid' — a full pay week went unpaid; released to the hire pool.
+  ///   'retirement' — the groom aged out (see groomRetirementService).
+  endReason String?
+
+  groom     Groom     @relation(fields: [groomId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([groomId])
+  @@index([userId])
+  @@map("groom_engagements")
 }
 
 model GroomAssignment {
@@ -1030,7 +1140,11 @@ model GroomPerformanceRecord {
   id               Int      @id @default(autoincrement())
   /// Groom being evaluated
   groomId          Int
-  /// User who owns the groom
+  /// Equoria-ypb7d.2: the player whose STAFF this record belongs to. This said
+  /// "User who owns the groom", which contradicted lines 463 and 570 of this same
+  /// file — the schema disagreeing with itself about its own model. Players never
+  /// own grooms; they engage them. `///` comments are emitted into the generated
+  /// client, so this was the most visible copy of the false claim in the tree.
   userId           String
   /// Horse involved in the interaction
   horseId          Int?

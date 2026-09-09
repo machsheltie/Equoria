@@ -42,7 +42,8 @@ async function resolveOwnedHorse(req, horseId, userId) {
  *
  * Body: { horseId, groomId, showId, className }
  * - horseId: must be owned by the authenticated user
- * - groomId: must be owned by the authenticated user
+ * - groomId: must be on the authenticated user's STAFF (Equoria-ypb7d.2: players
+ *   engage grooms, they never own them)
  * - showId: must reference a show with showType === 'conformation'
  * - className: valid conformation sex/category class (e.g. 'Mares', 'Stallions')
  *
@@ -99,9 +100,12 @@ export async function enterConformationShow(req, res) {
     // Verify groom ownership
     const groom = await prisma.groom.findFirst({ where: { id: groomId, userId } });
     if (!groom) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Groom not found or not owned by user' });
+      return (
+        res
+          .status(400)
+          // Equoria-ypb7d.2: players do not own grooms — they engage them. The not-found/not-yours collapse is deliberate and preserved (CWE-639).
+          .json({ success: false, message: 'Groom not found or not on your staff' })
+      );
     }
 
     // Load show and check it exists — AC1: missing show is a 400, not 404

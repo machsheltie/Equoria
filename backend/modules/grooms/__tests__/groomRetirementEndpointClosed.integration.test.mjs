@@ -123,6 +123,9 @@ async function makeHorse(ownerId, label) {
   });
 }
 
+// Equoria-ypb7d.1: see the note on `startAge` in makeGroom below.
+const FIXTURE_START_AGE = 20;
+
 async function makeGroom(ownerId, label, extra = {}) {
   return prisma.groom.create({
     data: {
@@ -132,6 +135,11 @@ async function makeGroom(ownerId, label, extra = {}) {
       skillLevel: 'intermediate',
       level: 3,
       careerWeeks: 12,
+      // Equoria-ypb7d.1: a groom's age is `startAge + careerWeeks`, so a fixture
+      // that parks a groom on a target age must set both. Fixed at 20 (inside the
+      // 18..24 band the `grooms_start_age_range` CHECK enforces) so the arithmetic
+      // in the game-path case below is exact rather than depending on a draw.
+      startAge: FIXTURE_START_AGE,
       userId: ownerId,
       ...extra,
     },
@@ -414,7 +422,10 @@ describe('Equoria-m9lz1 — POST /api/v1/grooms/:id/retirement/process is closed
     const retirementAge = await ensureRetirementSchedule(prisma, groom.id);
     await prisma.groom.update({
       where: { id: groom.id },
-      data: { careerWeeks: retirementAge },
+      // Equoria-ypb7d.1: exactly ON its hidden age, and age is
+      // `startAge + careerWeeks` — not `careerWeeks` alone, which was the defect
+      // Equoria-maeba raised.
+      data: { careerWeeks: retirementAge - FIXTURE_START_AGE },
     });
 
     const result = await processRetirement(groom.id);

@@ -25,6 +25,28 @@ import {
 } from '../../horses/index.mjs';
 
 /**
+ * The 404 body for "this entity is not yours", correct for BOTH entity types.
+ *
+ * Equoria-ypb7d.2 fix round 3. These four responses interpolated
+ * `"... not found or you do not own this ${entityType}"`, which is right for a horse and
+ * wrong for a groom: players never own grooms, they engage them. Four copies of a string
+ * that must agree is the same shape as the drift finding F1 was about, so the wording has
+ * ONE definition here rather than four.
+ *
+ * The not-found / not-yours COLLAPSE is preserved deliberately: one message per branch,
+ * distinguishing nothing, so the endpoint cannot be used as an existence oracle
+ * (CWE-639, the convention this codebase already holds).
+ *
+ * @param {'groom'|'horse'} entityType — already validated by the caller
+ * @returns {string}
+ */
+function notFoundOrNotYours(entityType) {
+  return entityType === 'groom'
+    ? 'Groom not found or not on your staff'
+    : 'Horse not found or you do not own this horse';
+}
+
+/**
  * Evolve groom personality based on interaction patterns
  * POST /api/personality-evolution/groom/:groomId/evolve
  */
@@ -115,7 +137,7 @@ export async function getEvolutionTriggersController(req, res) {
     if (!entity) {
       return res.status(404).json({
         success: false,
-        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found or you do not own this ${entityType}`,
+        message: notFoundOrNotYours(entityType),
       });
     }
 
@@ -163,7 +185,7 @@ export async function getPersonalityStabilityController(req, res) {
     if (!entity) {
       return res.status(404).json({
         success: false,
-        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found or you do not own this ${entityType}`,
+        message: notFoundOrNotYours(entityType),
       });
     }
 
@@ -220,7 +242,7 @@ export async function predictPersonalityEvolutionController(req, res) {
     if (!entity) {
       return res.status(404).json({
         success: false,
-        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found or you do not own this ${entityType}`,
+        message: notFoundOrNotYours(entityType),
       });
     }
 
@@ -268,7 +290,7 @@ export async function getPersonalityEvolutionHistoryController(req, res) {
     if (!entity) {
       return res.status(404).json({
         success: false,
-        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found or you do not own this ${entityType}`,
+        message: notFoundOrNotYours(entityType),
       });
     }
 
