@@ -98,12 +98,8 @@ import { createCompressionMiddleware } from './services/apiResponseOptimizationS
 import {
   createResourceManagementMiddleware,
   memoryMonitoringMiddleware,
-  databaseConnectionMiddleware,
   requestTimeoutMiddleware,
 } from './middleware/resourceManagement.mjs';
-
-// Service imports
-import prisma from '../packages/database/prismaClient.mjs';
 
 // Sentry error tracking and monitoring
 import { initializeSentry, attachSentryErrorHandler } from './config/sentry.mjs';
@@ -305,7 +301,6 @@ app.use(
     enableGC: process.env.NODE_ENV === 'production',
   }),
 );
-app.use(databaseConnectionMiddleware(prisma));
 app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
 
 /**

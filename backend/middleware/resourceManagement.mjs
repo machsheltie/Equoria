@@ -322,79 +322,6 @@ export function memoryMonitoringMiddleware(options = {}) {
 }
 
 /**
- * Database connection monitoring middleware
- */
-export function databaseConnectionMiddleware(prisma) {
-  return (req, res, next) => {
-    const originalQuery = prisma.$queryRaw;
-    const originalExecute = prisma.$executeRaw;
-
-    let queryCount = 0;
-    const startTime = Date.now();
-
-    // Track database queries.
-    //
-    // 2026-09 security audit, Finding 1: these wrappers MUST forward their own
-    // `this`. An interactive transaction client (`tx`) reaches `$queryRaw` /
-    // `$executeRaw` through the shared client these properties live on, so the
-    // wrapper runs with `this === tx`. The previous form re-bound the call to
-    // the ROOT client (`.apply(prisma, args)`), which sent every raw statement
-    // issued inside a transaction down the root client instead — outside the
-    // transaction. Proven with `txid_current()`: two raw statements in ONE
-    // `prisma.$transaction` reported DIFFERENT transaction ids when the request
-    // passed through this middleware (350622 / 350625) and the SAME id when it
-    // did not (350613 / 350613), and a raw write that should have rolled back
-    // with its transaction stayed committed. That silently un-did the atomicity
-    // of every guarded raw statement reached over HTTP — the bank weekly-claim
-    // UPDATE, the feed race guard, and the inventory settings write.
-    // Arrow functions cannot carry a caller's `this`, so these are `function`s.
-    prisma.$queryRaw = function trackedQueryRaw(...args) {
-      queryCount++;
-      return originalQuery.apply(this, args);
-    };
-
-    prisma.$executeRaw = function trackedExecuteRaw(...args) {
-      queryCount++;
-      return originalExecute.apply(this, args);
-    };
-
-    // Override res.end to add DB headers before response is sent.
-    // IMPORTANT: originalEnd.apply is called unconditionally OUTSIDE the try-catch
-    // so the response is always sent even if header-setting throws.
-    const originalEnd = res.end;
-    res.end = function (...args) {
-      try {
-        const duration = Date.now() - startTime;
-        if (queryCount > 0 && !res.headersSent) {
-          res.setHeader('X-DB-Queries', queryCount.toString());
-          res.setHeader('X-DB-Time', `${duration}ms`);
-        }
-      } catch {
-        // Header-setting failed — proceed to send response anyway
-      }
-      return originalEnd.apply(this, args);
-    };
-
-    // Restore original methods and log stats on response
-    res.on('finish', () => {
-      const duration = Date.now() - startTime;
-
-      if (queryCount > 10) {
-        logger.warn(
-          `[DatabaseMonitoring] High query count: ${queryCount} queries in ${duration}ms for ${req.method} ${req.url}`,
-        );
-      }
-
-      // Restore original methods
-      prisma.$queryRaw = originalQuery;
-      prisma.$executeRaw = originalExecute;
-    });
-
-    next();
-  };
-}
-
-/**
  * Request timeout middleware with resource cleanup
  */
 export function requestTimeoutMiddleware(timeout = 30000) {
@@ -436,6 +363,5 @@ export function requestTimeoutMiddleware(timeout = 30000) {
 export default {
   createResourceManagementMiddleware,
   memoryMonitoringMiddleware,
-  databaseConnectionMiddleware,
   requestTimeoutMiddleware,
 };

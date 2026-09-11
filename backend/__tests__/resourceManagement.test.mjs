@@ -17,11 +17,9 @@
 
 import request from 'supertest';
 import express from 'express';
-import prisma from '../../packages/database/prismaClient.mjs';
 import {
   createResourceManagementMiddleware,
   memoryMonitoringMiddleware,
-  databaseConnectionMiddleware,
   requestTimeoutMiddleware,
 } from '../middleware/resourceManagement.mjs';
 
@@ -239,58 +237,6 @@ describe('Resource Management Middleware', () => {
 
       expect(gcCalled).toBe(true);
       global.gc = originalGC;
-    });
-  });
-
-  describe('Database Connection Middleware', () => {
-    test('tracks database queries', async () => {
-      testApp.use(databaseConnectionMiddleware(prisma));
-
-      testApp.get('/test-db', async (req, res) => {
-        await prisma.$queryRaw`SELECT 1`;
-        await prisma.$queryRaw`SELECT 2`;
-        res.json({ success: true });
-      });
-
-      const response = await request(testApp).get('/test-db').expect(200);
-
-      expect(response.headers['x-db-queries']).toBe('2');
-      expect(response.headers['x-db-time']).toBeDefined();
-    });
-
-    test('warns about high query counts', async () => {
-      testApp.use(databaseConnectionMiddleware(prisma));
-
-      testApp.get('/test-many-queries', async (req, res) => {
-        for (let i = 0; i < 15; i++) {
-          await prisma.$queryRaw`SELECT 1`;
-        }
-        res.json({ success: true });
-      });
-
-      const response = await request(testApp).get('/test-many-queries').expect(200);
-
-      expect(response.headers['x-db-queries']).toBe('15');
-    });
-
-    test('restores original methods after request', async () => {
-      const originalQueryRaw = prisma.$queryRaw;
-      const originalExecuteRaw = prisma.$executeRaw;
-
-      testApp.use(databaseConnectionMiddleware(prisma));
-
-      testApp.get('/test-restore', async (req, res) => {
-        await prisma.$queryRaw`SELECT 1`;
-        res.json({ success: true });
-      });
-
-      await request(testApp).get('/test-restore').expect(200);
-
-      // Wait for the finish event to fire and restore methods
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      expect(prisma.$queryRaw).toBe(originalQueryRaw);
-      expect(prisma.$executeRaw).toBe(originalExecuteRaw);
     });
   });
 
