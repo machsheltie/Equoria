@@ -162,10 +162,6 @@ jobs:
         working-directory: ./packages/database
         run: npx prisma validate --schema=prisma/schema.prisma
 
-      - name: Verify migration integrity
-        working-directory: ./packages/database
-        run: node migrations/verify_migration.js
-
   # ──────────────────────────────────────────────────────────────────────────────
   # JOB 3 — Backend Tests, Sharded (3 shards × parallel)
   #

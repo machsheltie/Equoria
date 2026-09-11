@@ -77,8 +77,16 @@ jobs:
           FIELD_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
         # --forceExit prevents jest from waiting on lingering handles (scheduler,
         # rate-limit cleanup intervals, Prisma pool) which was hanging this job
-        # for 2h+. --runInBand avoids parallel-worker DB contention in CI.
-        run: npm test -- modules/auth/__tests__/auth-cookies.test.mjs --verbose --runInBand --forceExit
+        # for 2h+.
+        #
+        # --maxWorkers=1, NOT --runInBand: the `test` script this delegates to
+        # already passes --maxWorkers=2, and Jest refuses to start when both
+        # flags are present ("Both --runInBand and --maxWorkers were specified,
+        # only one is allowed"), so this job failed before running a single
+        # test. A later --maxWorkers wins, so =1 overrides the script's =2 and
+        # keeps the serial execution that avoids parallel-worker DB contention
+        # in CI, which is what --runInBand was here for.
+        run: npm test -- modules/auth/__tests__/auth-cookies.test.mjs --verbose --maxWorkers=1 --forceExit
 
       - name: Upload backend test results
         if: always()
