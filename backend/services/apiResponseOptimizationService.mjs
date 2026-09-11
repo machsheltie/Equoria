@@ -264,8 +264,47 @@ export class SerializationService {
         .filter(item => item !== null && item !== undefined);
     }
 
-    // Preserve Date objects — they serialize to ISO strings via toJSON()
-    if (data instanceof Date) {
+    // Preserve Date objects — they serialize to ISO strings via toJSON().
+    //
+    // Equoria-oeg8k (2026-09-11): the brand check, NOT `data instanceof Date`.
+    // `instanceof` is constructor IDENTITY, so it is false for a Date minted in
+    // another JS module realm. Such a Date failed this guard, fell into the
+    // object branch below, and — because a Date has no own enumerable
+    // properties — came out as `{}`.
+    //
+    // SCOPE, MEASURED, AND NOT WIDER THAN THIS: the realm split is a property of
+    // the Jest `--experimental-vm-modules` harness, NOT of the server.
+    //   * Under `backend/jest.config.mjs` a Prisma `DateTime` has
+    //     `instanceof Date === false` with brand `[object Date]`, and
+    //     `GET /api/v1/auth/email-change/status` put `"expiresAt":{}` on the wire
+    //     while its sibling `resendAvailableAt` (built with this realm's
+    //     `new Date()`) serialized correctly.
+    //   * In a plain `node` process — the production shape — the same code,
+    //     database and client give `instanceof Date === true`, and the OLD guard
+    //     preserved the value correctly. Backend production code creates no
+    //     second realm: no `node:vm`, `worker_threads`, `isolated-vm` or
+    //     `new Worker(`. So no player-facing response was ever affected, and
+    //     this is not a record of a shipped defect.
+    // It is still worth fixing: a guard on constructor identity is wrong on its
+    // own terms, and while it was in place every timestamp in every
+    // test-visible response was `{}` — which makes them all unassertable and is
+    // a false-negative generator for the whole suite.
+    //
+    // `Object.prototype.toString` tag-checking is realm-independent and is the
+    // guard this repository already settled on in
+    // `services/jobs/cronJobMonitor.mjs` (`toIsoStringSafe`). Take that file's
+    // guard, not its cause story: it attributes the split to `@prisma/client`
+    // resolving through a different `node_modules` tree, and a plain-`node` run
+    // THROUGH exactly such a junction resolves `instanceof` correctly, so module
+    // duplication is not what creates a realm. The trigger is unestablished.
+    //
+    // No value that serialized correctly before changes: a same-realm Date is
+    // still returned as-is. Two inputs do change branch, neither reachable here
+    // and neither previously working — a `Proxy`-wrapped Date (was preserved,
+    // then threw inside `JSON.stringify`) and an object forging
+    // `Symbol.toStringTag === 'Date'` (was compressed; wire-identical either
+    // way).
+    if (Object.prototype.toString.call(data) === '[object Date]') {
       return data;
     }
 
