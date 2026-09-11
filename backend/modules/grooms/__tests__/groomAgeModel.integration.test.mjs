@@ -38,6 +38,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { prismaRejectionOf } from '../../../__tests__/helpers/expectPrismaRejection.mjs';
 import {
   START_AGE_MIN,
   START_AGE_MAX,
@@ -212,8 +213,34 @@ describe('Equoria-ypb7d.1 — the start age is persisted, bounded and idempotent
     // 20260909120000_ypb7d_groom_age_and_engagement. Enforced in the database and
     // not only in the draw, so widening the band in one place without the other
     // produces a write error rather than a silently wider distribution.
-    await expect(prisma.groom.update({ where: { id: groom.id }, data: { startAge: 17 } })).rejects.toThrow();
-    await expect(prisma.groom.update({ where: { id: groom.id }, data: { startAge: 25 } })).rejects.toThrow();
+    //
+    // WHY NOT `.rejects.toThrow()` (it was that until 2026-09-11, task 27):
+    //   1. It reported "Received function did not throw" for a promise that DID
+    //      reject. Measured under `backend/jest.config.mjs` — the config the
+    //      authoritative sharded profile runs — as the FIRST file in a fresh
+    //      process, so no neighbouring suite is involved: the rejection arrives
+    //      with `instanceof Error === false` and `@jest/expect-utils`'s
+    //      `isError()` false, because `packages/database` evaluates in a
+    //      different V8 realm from this file and Prisma's own
+    //      `Symbol.toStringTag` denies `isError` its `[object Error]` fast path.
+    //      `createMatcher` then leaves `thrown = null` and prints DID_NOT_THROW.
+    //   2. It accepted ANY rejection, so it would have passed if the update had
+    //      failed for a reason that has nothing to do with this constraint.
+    // Both are fixed by asserting the refusal's own data. See
+    // `backend/__tests__/helpers/expectPrismaRejection.mjs`. SQLSTATE 23514 is
+    // PostgreSQL's check_violation; Prisma 6.8.2 maps it to no P-code, so the
+    // helper reads the connector's passthrough of Postgres's own text.
+    // Proven by plant: pointing either update at a non-existent groom id makes it
+    // fail on P2025 instead, and this assertion fails
+    // (`Expected "23514 on grooms_start_age_range", Received "P2025"`) where
+    // `.rejects.toThrow()` would have passed.
+    const refusedOutsideBand = '23514 on grooms_start_age_range';
+    expect(await prismaRejectionOf(prisma.groom.update({ where: { id: groom.id }, data: { startAge: 17 } }))).toBe(
+      refusedOutsideBand,
+    );
+    expect(await prismaRejectionOf(prisma.groom.update({ where: { id: groom.id }, data: { startAge: 25 } }))).toBe(
+      refusedOutsideBand,
+    );
     // The ends of the band are accepted, so the constraint is inclusive.
     await prisma.groom.update({ where: { id: groom.id }, data: { startAge: 18 } });
     await prisma.groom.update({ where: { id: groom.id }, data: { startAge: 24 } });
