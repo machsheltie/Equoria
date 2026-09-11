@@ -1,4 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
+import { runInNewContext } from 'node:vm';
 import {
   PaginationService,
   SerializationService,
@@ -299,6 +300,32 @@ describe('SerializationService.compressDataStructure', () => {
     const d = new Date('2025-01-01');
     const result = SerializationService.compressDataStructure({ created: d });
     expect(result.created).toBe(d);
+  });
+
+  it('preserves a Date from ANOTHER MODULE REALM, which is how Prisma timestamps arrive', () => {
+    // Equoria-s20o / Equoria-oeg8k. The case above cannot catch the defect this
+    // guards: a same-realm Date satisfies `instanceof Date` too, so it passed
+    // both before and after the fix. The realm-foreign Date is the state where
+    // broken and fixed differ.
+    //
+    // Why `vm` rather than the Prisma client: a real cross-realm Prisma Date only
+    // appears under some module-resolution layouts (a worktree-junctioned
+    // `node_modules`, for one), so a test that depended on it would prove nothing
+    // on the machines where it does not split. `runInNewContext` produces the
+    // same condition deterministically everywhere — `instanceof Date` false,
+    // brand `[object Date]`, `toJSON` intact.
+    const foreign = runInNewContext('new Date(1767225600000)');
+    expect(foreign instanceof Date).toBe(false);
+    expect(Object.prototype.toString.call(foreign)).toBe('[object Date]');
+
+    const result = SerializationService.compressDataStructure({ expiresAt: foreign });
+
+    // The identity of the value must survive, not merely something Date-shaped.
+    expect(result.expiresAt).toBe(foreign);
+    // And the reason it matters: this is what `res.json()` puts on the wire. On
+    // the pre-fix guard this serialized to `{"expiresAt":{}}` — a timestamp
+    // silently replaced by an empty object.
+    expect(JSON.stringify(result)).toBe('{"expiresAt":"2026-01-01T00:00:00.000Z"}');
   });
 
   it('removes null and undefined items from arrays', () => {
