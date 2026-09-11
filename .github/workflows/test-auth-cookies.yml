@@ -75,18 +75,31 @@ jobs:
           PORT: '3000'
           # MFA at-rest encryption test key (Equoria-fefh2.36)
           FIELD_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+          # Supplies what the `test` npm script used to pass on its own argv.
+          # --experimental-vm-modules is REQUIRED: without it the ESM suites do
+          # not load at all. 1536 matches the script (and the global
+          # serial-or-two-workers, 1536MB budget) — deliberately NOT ci-cd.yml's
+          # 4096, which is that job's own figure and not a precedent for this one.
+          NODE_OPTIONS: '--max-old-space-size=1536 --experimental-vm-modules'
         # --forceExit prevents jest from waiting on lingering handles (scheduler,
         # rate-limit cleanup intervals, Prisma pool) which was hanging this job
         # for 2h+.
         #
-        # --maxWorkers=1, NOT --runInBand: the `test` script this delegates to
-        # already passes --maxWorkers=2, and Jest refuses to start when both
-        # flags are present ("Both --runInBand and --maxWorkers were specified,
-        # only one is allowed"), so this job failed before running a single
-        # test. A later --maxWorkers wins, so =1 overrides the script's =2 and
-        # keeps the serial execution that avoids parallel-worker DB contention
-        # in CI, which is what --runInBand was here for.
-        run: npm test -- modules/auth/__tests__/auth-cookies.test.mjs --verbose --maxWorkers=1 --forceExit
+        # Calls jest DIRECTLY rather than through `npm test`, because that script
+        # hardcodes --maxWorkers=2 and Jest refuses to start when --runInBand is
+        # also present ("Both --runInBand and --maxWorkers were specified, only
+        # one is allowed") — so this job failed before running a single test.
+        #
+        # The fix deliberately does NOT swap in --maxWorkers=1. That is serial
+        # too, but it is serial in a CHILD WORKER rather than in-process, and
+        # that process boundary is the axis Equoria-wl6ln's cross-realm matcher
+        # defect lives on. This suite has never once run in CI, so a first run
+        # under a changed execution model could not distinguish "the flag
+        # changed behaviour" from "never exercised here". Going direct keeps
+        # --runInBand's in-process semantics exactly as intended and changes
+        # nothing but the path to the binary. Same shape as ci-cd.yml's
+        # session-lifetime step. (Equoria-plsq4, Equoria-axyem.3)
+        run: npx jest modules/auth/__tests__/auth-cookies.test.mjs --verbose --runInBand --forceExit
 
       - name: Upload backend test results
         if: always()
