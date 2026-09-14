@@ -51,16 +51,19 @@ export function calculateGroomLevel(experience) {
  * @param {number} groomId - ID of the groom
  * @param {string} source - Source of XP (milestone_completion, trait_shaped, show_win)
  * @param {number} amount - Amount of XP to award
+ * @param {object} [client] - Prisma client or interactive-transaction client.
+ *   Pass a `tx` to enlist this write in the caller's transaction (Equoria-po1fl);
+ *   when a tx is passed, failures are RETHROWN instead of fail-softed.
  * @returns {Object} Result with XP gained, new experience, level info
  */
-export async function awardGroomXP(groomId, source, amount) {
+export async function awardGroomXP(groomId, source, amount, client = prisma) {
   try {
     logger.info(
       `[groomProgressionService.awardGroomXP] Awarding ${amount} XP to groom ${groomId} for ${source}`,
     );
 
     // Get current groom data
-    const groom = await prisma.groom.findUnique({
+    const groom = await client.groom.findUnique({
       where: { id: groomId },
       select: { experience: true, level: true },
     });
@@ -76,7 +79,7 @@ export async function awardGroomXP(groomId, source, amount) {
     const levelUp = newLevel > oldLevel;
 
     // Update groom with new experience and level
-    await prisma.groom.update({
+    await client.groom.update({
       where: { id: groomId },
       data: {
         experience: newExperience,
@@ -102,6 +105,16 @@ export async function awardGroomXP(groomId, source, amount) {
       `[groomProgressionService.awardGroomXP] Error awarding XP to groom ${groomId}:`,
       error,
     );
+    // Equoria-po1fl: when a CALLER supplied a transaction client, the failed
+    // statement has already aborted that transaction inside Postgres. Returning
+    // `{ success: false }` here would let the caller carry on and "commit" a set
+    // that the database will refuse — or, worse, commit the other writes while
+    // silently dropping this one. Rethrow so the caller's `$transaction` rolls
+    // the whole set back. The standalone (`client === prisma`) call sites keep
+    // their historical fail-soft contract.
+    if (client !== prisma) {
+      throw error;
+    }
     return {
       success: false,
       error: error.message,
@@ -115,9 +128,12 @@ export async function awardGroomXP(groomId, source, amount) {
  * @param {number} horseId - ID of the horse
  * @param {string} action - Action type (milestone_completed, trait_shaped, rare_trait_influenced, reassigned_early)
  * @param {number} sessions - Number of sessions to add
+ * @param {object} [client] - Prisma client or interactive-transaction client.
+ *   Pass a `tx` to enlist this write in the caller's transaction (Equoria-po1fl);
+ *   when a tx is passed, failures are RETHROWN instead of fail-softed.
  * @returns {Object} Result with synergy changes
  */
-export async function updateGroomSynergy(groomId, horseId, action, sessions = 1) {
+export async function updateGroomSynergy(groomId, horseId, action, sessions = 1, client = prisma) {
   try {
     logger.info(
       `[groomProgressionService.updateGroomSynergy] Updating synergy for groom ${groomId} and horse ${horseId}: ${action}`,
@@ -137,7 +153,7 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
     let synergyGain = synergyGains[action] || 0;
 
     // Find or create synergy record
-    let synergyRecord = await prisma.groomHorseSynergy.findFirst({
+    let synergyRecord = await client.groomHorseSynergy.findFirst({
       where: { groomId, horseId },
     });
 
@@ -151,7 +167,7 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
     }
 
     if (!synergyRecord) {
-      synergyRecord = await prisma.groomHorseSynergy.create({
+      synergyRecord = await client.groomHorseSynergy.create({
         data: {
           groomId,
           horseId,
@@ -162,7 +178,7 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
       });
     } else {
       const newSynergyScore = Math.max(0, synergyRecord.synergyScore + synergyGain);
-      synergyRecord = await prisma.groomHorseSynergy.update({
+      synergyRecord = await client.groomHorseSynergy.update({
         where: { id: synergyRecord.id },
         data: {
           synergyScore: newSynergyScore,
@@ -184,6 +200,11 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
     };
   } catch (error) {
     logger.error('[groomProgressionService.updateGroomSynergy] Error updating synergy:', error);
+    // Equoria-po1fl: see awardGroomXP — inside a caller's transaction a
+    // swallowed error is a half-written player state. Propagate.
+    if (client !== prisma) {
+      throw error;
+    }
     return {
       success: false,
       error: error.message,

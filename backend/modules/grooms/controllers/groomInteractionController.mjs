@@ -31,6 +31,10 @@ import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { getTemperamentGroomSynergy } from '../../horses/index.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
+// Equoria-po1fl: the five player-state writes below commit as ONE transaction,
+// so a pool-acquire / interactive-timeout P2028 must surface as a retryable 503
+// rather than a permanent 500.
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 
 /**
  * Determine the current milestone window for a horse based on age
@@ -227,32 +231,11 @@ export async function recordInteraction(req, res) {
             ? 0.5
             : 0.25;
 
-    // Record the interaction
-    const interaction = await prisma.groomInteraction.create({
-      data: {
-        foalId,
-        groomId,
-        assignmentId,
-        interactionType,
-        duration,
-        bondingChange: effects.bondingChange,
-        stressChange: effects.stressChange,
-        quality: effects.quality,
-        cost: effects.cost,
-        notes,
-        taskType,
-        qualityScore,
-        milestoneWindowId,
-        // 31D-4 (Equoria-gi9o): persist temperament-groom synergy modifier for analytics
-        synergyModifier: effects.synergyModifier ?? 0,
-      },
-    });
-
     // Apply epigenetic FLAG influence to the bonding change (Equoria-yzqhj.1).
     // Flags like affectionate (bondingRate+) / aloof (bondingResistance+)
     // earned from 0-3yr foal care now bias how much bond a grooming session
     // produces. This is the single live groom-bonding consumer of the
-    // flag-influence module.
+    // flag-influence module. Pure - computed before the transaction opens.
     const flagBonding = applyFlagInfluencesToBonding(
       effects.bondingChange,
       Array.isArray(foal.epigeneticFlags) ? foal.epigeneticFlags : [],
@@ -264,7 +247,7 @@ export async function recordInteraction(req, res) {
       );
     }
 
-    // Update foal's bond score, stress level, task log, and streak tracking
+    // New foal bond score / stress level (pure, from the values read above).
     const newBondScore = Math.max(
       0,
       Math.min(100, (foal.bondScore || 50) + effectiveBondingChange),
@@ -277,56 +260,108 @@ export async function recordInteraction(req, res) {
     // Calculate burnout immunity status based on consecutive days
     const immunityCheck = checkBurnoutImmunity(streakUpdate.consecutiveDays);
 
-    await prisma.horse.update({
-      where: { id: foalId },
-      data: {
-        bondScore: newBondScore,
-        stressLevel: newStressLevel,
-        taskLog: taskLogUpdate.taskLog,
-        lastGroomed: streakUpdate.lastGroomed,
-        daysGroomedInARow: streakUpdate.consecutiveDays,
-        burnoutStatus: immunityCheck.status,
-      },
-    });
+    // -------------------------------------------------------------------------
+    // Equoria-po1fl: ONE grooming session is ONE player-state change.
+    //
+    // Before this fix the handler issued five independent writes with no
+    // transaction: GroomInteraction.create, Horse.update (bond, stress,
+    // taskLog, lastGroomed, streak, burnout), FoalActivity.create, the groom's
+    // +2 XP, and the GroomHorseSynergy row - the last three wrapped in
+    // fail-soft try/catch arms that logged and continued. Any failure partway
+    // through left state that never legally existed: an interaction row with no
+    // bond change, or a bonded horse with no interaction row. The daily-limit
+    // check (validateFoalInteractionLimits) keys off the interaction row, so a
+    // partial failure could spend the player's one interaction for that horse
+    // that day and give them nothing back for it.
+    //
+    // The fail-soft arms could not survive the fix and are deliberately gone:
+    // inside a Postgres transaction a failed statement aborts the whole
+    // transaction, so "log it and keep going" is not an option that produces a
+    // committable result - it only produces a caller that thinks it succeeded.
+    // Rolling the session back is also the outcome the fail-soft comments
+    // actually wanted: a dropped FoalActivity row breaks the Equoria-2emg
+    // invariant count(FoalActivity) == taskLog[task], and the player keeps
+    // their interaction instead of paying for a broken one.
+    //
+    // WRITE ORDER - Horse row first, staff rows (Groom, GroomHorseSynergy)
+    // second, matching the repository lock-ordering ruling recorded in
+    // Equoria-6p398.9 (User -> Horse -> staff, ascending ids) and the same order
+    // riderController uses. There is no User row on this path (grooming costs
+    // no money here; the fee/salary path is a separate service). The two child
+    // inserts take only FK FOR KEY SHARE locks on their parents, which do not
+    // conflict with another transaction's plain row UPDATE, so they are safe
+    // between the Horse write and the staff writes.
+    // -------------------------------------------------------------------------
+    const interaction = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        // 1. Horse row - bond, stress, task log, streak, burnout.
+        await tx.horse.update({
+          where: { id: foalId },
+          data: {
+            bondScore: newBondScore,
+            stressLevel: newStressLevel,
+            taskLog: taskLogUpdate.taskLog,
+            lastGroomed: streakUpdate.lastGroomed,
+            daysGroomedInARow: streakUpdate.consecutiveDays,
+            burnoutStatus: immunityCheck.status,
+          },
+        });
 
-    // Equoria-2emg: FoalActivity is the canonical foal-activity event log.
-    // The groom-interaction path mutates the Horse.taskLog count cache; that
-    // cache MUST be derivable from the canonical event log. Historically this
-    // path wrote ONLY GroomInteraction + the taskLog JSONB counter, so
-    // groom-task events were invisible in FoalActivity (the queryable, ordered
-    // source of truth). Emit the canonical FoalActivity row here so that
-    // count(FoalActivity where activityType = task) == taskLog[task] for every
-    // event going forward. taskLog stays as an O(1) derived cache (it is NOT
-    // dropped — its consumers, the trait/milestone/streak evaluators, need a
-    // cheap count and cannot afford an aggregate query per check; see
-    // Equoria-2emg bd notes for the full game-design rationale and why literal
-    // "rebuild taskLog from FoalActivity" was rejected as data-corrupting).
-    // Fail-soft: the canonical-log write must never 500 the interaction; a
-    // missed row is reconcilable via the scoped backfill script.
-    try {
-      await prisma.foalActivity.create({
-        data: {
-          foalId,
-          day: ageInDays,
-          activityType: interactionType,
-          outcome: effects.quality || 'good',
-          bondingChange: effects.bondingChange,
-          stressChange: effects.stressChange,
-          description: `Groom interaction (${interactionType}) recorded via groom system`,
-          // Equoria-8yhe3: tag this as the taskLog-driving groom stream so the
-          // count derivation only ever aggregates these rows (enrichment rows
-          // carry a different source and are excluded by construction).
-          source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION,
-        },
-      });
-    } catch (foalActivityError) {
-      logger.error(
-        `[groomController.recordInteraction] Failed to write canonical FoalActivity row for foal ${foalId}: ${foalActivityError.message}`,
-      );
-    }
+        // 2. The interaction row. This is the row the daily-limit check reads,
+        // so it must not exist unless the bond change above also committed.
+        const created = await tx.groomInteraction.create({
+          data: {
+            foalId,
+            groomId,
+            assignmentId,
+            interactionType,
+            duration,
+            bondingChange: effects.bondingChange,
+            stressChange: effects.stressChange,
+            quality: effects.quality,
+            cost: effects.cost,
+            notes,
+            taskType,
+            qualityScore,
+            milestoneWindowId,
+            // 31D-4 (Equoria-gi9o): persist temperament-groom synergy modifier for analytics
+            synergyModifier: effects.synergyModifier ?? 0,
+          },
+        });
+
+        // 3. Equoria-2emg: FoalActivity is the canonical foal-activity event
+        // log. The Horse.taskLog JSONB written above is an O(1) derived cache of
+        // it, so count(FoalActivity where activityType = task) must equal
+        // taskLog[task] - which is only true if the two commit together.
+        await tx.foalActivity.create({
+          data: {
+            foalId,
+            day: ageInDays,
+            activityType: interactionType,
+            outcome: effects.quality || 'good',
+            bondingChange: effects.bondingChange,
+            stressChange: effects.stressChange,
+            description: `Groom interaction (${interactionType}) recorded via groom system`,
+            // Equoria-8yhe3: tag this as the taskLog-driving groom stream so the
+            // count derivation only ever aggregates these rows (enrichment rows
+            // carry a different source and are excluded by construction).
+            source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION,
+          },
+        });
+
+        // 4. Staff row: the groom's 2 XP for the session (consistent with
+        // groomPersonalityTraits.mjs). Enlisted on `tx`, so it rethrows.
+        await awardGroomXP(groomId, 'interaction_completed', 2, tx);
+
+        // 5. Staff row: Equoria-5v6g - GroomHorseSynergy tracks sessionsTogether
+        // on every interaction and grows synergyScore every 4th session.
+        await updateGroomSynergy(groomId, foalId, 'interaction_completed', 1, tx);
+
+        return created;
+      }),
+    );
 
     logger.info(
-      `[groomController.recordInteraction] Interaction recorded: ${effects.bondingChange} bonding, ${effects.stressChange} stress`,
       `[groomController.recordInteraction] Interaction recorded: ${effects.bondingChange} bonding, ${effects.stressChange} stress, task: ${interactionType} (count: ${taskLogUpdate.taskCount})`,
     );
 
@@ -335,32 +370,6 @@ export async function recordInteraction(req, res) {
       logger.info(
         `[groomController.recordInteraction] Personality effects applied (${groom.personality}): ${effects.personalityEffects.bonusesApplied.join(', ')} - ${effects.personalityEffects.description}`,
       );
-    }
-
-    // Award experience to the groom for the interaction
-    try {
-      const experienceGain = 2; // 2 XP per interaction (consistent with groomPersonalityTraits.mjs)
-      await awardGroomXP(groomId, 'interaction_completed', experienceGain);
-      logger.info(
-        `[groomController.recordInteraction] Awarded ${experienceGain} XP to groom ${groomId} for interaction`,
-      );
-    } catch (xpError) {
-      logger.error(
-        `[groomController.recordInteraction] Failed to award XP to groom ${groomId}: ${xpError.message}`,
-      );
-      // Don't fail the interaction if XP awarding fails
-    }
-
-    // Equoria-5v6g: update GroomHorseSynergy on every interaction so sessionsTogether
-    // increments and synergyScore grows gradually (every 4th session). Without this,
-    // synergy is only adjusted on milestone/trait-shaping events.
-    try {
-      await updateGroomSynergy(groomId, foalId, 'interaction_completed');
-    } catch (synergyError) {
-      logger.error(
-        `[groomController.recordInteraction] Failed to update synergy for groom ${groomId} / horse ${foalId}: ${synergyError.message}`,
-      );
-      // Don't fail the interaction if synergy update fails
     }
 
     res.status(200).json({
@@ -399,6 +408,18 @@ export async function recordInteraction(req, res) {
     return null;
   } catch (error) {
     logger.error(`[groomController.recordInteraction] Error: ${error.message}`);
+    // Equoria-po1fl: this catch hardcodes 500, so the retryable-transaction
+    // mapping above would be swallowed without this guard (see
+    // utils/retryableTransaction.mjs). A P2028 pool-acquire / interactive
+    // timeout is "busy, retry shortly", not a permanent fault.
+    if (error?.statusCode === 503 || error?.status === 503) {
+      res.status(503).json({
+        success: false,
+        message: 'Service busy, please retry',
+        error: error.message,
+      });
+      return null;
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to record interaction',
