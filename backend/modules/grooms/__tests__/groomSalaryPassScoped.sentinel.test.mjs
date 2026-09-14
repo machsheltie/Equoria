@@ -68,6 +68,11 @@ const GUARDED_FILES = [
   // what caught the rename — the discovery half doing its job on real work rather than
   // on a fixture.
   'modules/grooms/__tests__/groomFeeArrears.integration.test.mjs',
+  // Equoria-2ti1j: the fail-closed case for a non-funds throw. It calls the pass
+  // scoped to its own fixture user for exactly the reason this list exists — it
+  // blocks the debit on a row lock, and an unscoped run would do that to the pass
+  // for every player on the shared development database.
+  'modules/grooms/__tests__/groomFeeUncollected.integration.test.mjs',
   'tests/integration/groomSalarySystem.test.mjs',
 ];
 

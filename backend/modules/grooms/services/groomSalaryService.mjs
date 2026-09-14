@@ -91,7 +91,7 @@ import { acquirePayWeekLockTx, ensureEngagementTx } from './groomEngagementServi
 // Equoria-ypb7d.3: what happens when the money is not there — one week of grace,
 // then release to the grooms-for-hire pool. Replaces the never-working
 // `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
-import { handleUnpaidFees } from './groomFeeArrearsService.mjs';
+import { handleUnpaidFees, recordUncollectedFees } from './groomFeeArrearsService.mjs';
 
 // Salary configuration
 export const SALARY_CONFIG = {
@@ -241,6 +241,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
       failed: 0,
       skipped: 0, // Equoria-icqqm: users fully paid for this pay week already
       graced: 0, // Equoria-ypb7d.3: grooms that entered the one-week grace period
+      uncollected: 0, // Equoria-2ti1j: grooms whose fee a THROW (not lack of funds) left uncollected
       released: 0, // Equoria-ypb7d.3: grooms returned to the grooms-for-hire pool
       terminated: 0, // retained key name; now counts the same as `released`
       totalAmount: 0,
@@ -440,10 +441,17 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
             results.errors.push(`User ${user.username} could not pay this week's groom fees`);
             continue;
           }
-          // Any non-InsufficientFunds error propagates to the outer catch
-          // so the caller sees a clean per-user failure with the original
-          // message preserved.
-          throw txError;
+          // Equoria-2ti1j: any OTHER throw used to propagate to the outer catch,
+          // which counted a per-user failure and did nothing else — the week passed
+          // as though it had been paid. Fail CLOSED instead: record it as uncollected
+          // so the groom stops working and the week is on the record. Release is
+          // deliberately NOT escalated here; see recordUncollectedFees.
+          const out = await recordUncollectedFees(userId, unpaidAssignments, payWeekStart, txError);
+          results.uncollected += out.recorded;
+          results.graced += out.graced;
+          results.failed++;
+          results.errors.push(`User ${user.username}: fees uncollected — ${txError.message}`);
+          continue;
         }
 
         if (txOutcome.skipped) {
@@ -481,6 +489,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
       successful: 0,
       failed: 0,
       skipped: 0,
+      uncollected: 0,
       terminated: 0,
       totalAmount: 0,
       errors: [error.message],

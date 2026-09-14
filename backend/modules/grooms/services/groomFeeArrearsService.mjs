@@ -230,4 +230,121 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
   return outcome;
 }
 
-export default { handleUnpaidFees };
+/**
+ * Equoria-2ti1j — THE WEEK WAS NOT COLLECTED, AND THE FAULT WAS OURS.
+ *
+ * `handleUnpaidFees` above is the consequence of a player having no money. This is
+ * the consequence of the fee transaction throwing for ANY OTHER reason: a dropped
+ * connection, a deadlock, a constraint the code did not expect, a transaction
+ * timeout. Before this function existed, that throw was counted as a per-user
+ * failure and nothing else happened — the player was neither charged nor put into
+ * grace, their grooms worked the whole week, and the next pass is a NEW pay week so
+ * the missed one was never revisited. An infrastructure fault produced a strictly
+ * better outcome for the player than paying would have. That is failing open on a
+ * revenue path, and the campaign's standing principle is fail closed.
+ *
+ * WHAT THIS COMMITS TO, deliberately narrow:
+ *   - The pay week is RECORDED as uncollected: one `missed_collection_error` audit
+ *     row per groom, so the week is visible to a human and to any later pass rather
+ *     than vanishing.
+ *   - The groom ENTERS GRACE (`feeUnpaidSince` = this pay week) and therefore stops
+ *     working, because the player did not in fact pay. Same marker, same guard, same
+ *     player notice as the insufficient-funds path — the player-visible fact ("this
+ *     week's fee is unpaid, this groom cannot work") is true either way.
+ *
+ * WHAT THIS DELIBERATELY DOES NOT COMMIT TO:
+ *   - RELEASE. Even when the groom is already in grace from a strictly earlier pay
+ *     week — the state that makes `handleUnpaidFees` release them — this path never
+ *     releases. Losing a groom is the penalty for a player not paying for a whole
+ *     week; it is not a penalty to hand out because our own transaction threw. The
+ *     groom stays on staff, cannot work, and the audit row records the week.
+ *   - ARREARS vs FORGIVENESS. Whether the uncollected week is later owed or written
+ *     off is Equoria-bgdfb, an OPEN OWNER DECISION, and nothing here presupposes it:
+ *     no debt is recorded and no future debit is enlarged. Whichever way bgdfb is
+ *     ruled, the uncollected week is on the record for that ruling to act on.
+ *
+ * The knock-on this path DOES accept, stated rather than hidden: a groom put into
+ * grace by a collection error in week 1 whose week 2 fee then genuinely cannot be
+ * paid is released by `handleUnpaidFees` in week 2, one week earlier than if week 1
+ * had been collected cleanly. Softening that would mean recording WHY a week went
+ * unpaid on the groom row, which is a schema change and a ruling; it is not smuggled
+ * in here.
+ *
+ * @param {string} userId
+ * @param {Array<{groom: Object, salary: number}>} unpaid - the grooms whose fee this
+ *   pay week's transaction failed to take
+ * @param {Date} payWeekStart
+ * @param {Error} cause - the throw that aborted the fee transaction, for the log
+ * @returns {Promise<{recorded: number, graced: number}>} `recorded` counts grooms
+ *   whose uncollected week was written down; `graced` counts the subset that newly
+ *   stopped working because of it.
+ */
+export async function recordUncollectedFees(userId, unpaid, payWeekStart, cause) {
+  const outcome = { recorded: 0, graced: 0 };
+
+  for (const { groom, salary } of unpaid) {
+    try {
+      const marked = await prisma.$transaction(async tx => {
+        // The same lock and the same User-before-staff write order as the grace path
+        // above, for the reasons in that docblock's LOCK AND WRITE ORDER section.
+        await acquirePayWeekLockTx(tx, userId, payWeekStart);
+
+        if (groom.feeUnpaidSince === null || groom.feeUnpaidSince === undefined) {
+          await tx.user.updateMany({
+            where: { id: userId, groomSalaryGracePeriod: null },
+            data: { groomSalaryGracePeriod: payWeekStart },
+          });
+        }
+
+        const entered = await enterFeeGraceTx(tx, {
+          groomId: groom.id,
+          userId,
+          payWeekStart,
+          fee: salary,
+        });
+        await tx.groomSalaryPayment.create({
+          data: {
+            groomId: groom.id,
+            userId,
+            amount: salary,
+            paymentDate: new Date(),
+            paymentType: 'weekly_salary',
+            // A status of its own, because "we could not take the money" is not the
+            // same event as "the player did not have it", and a reader of this table
+            // has to be able to tell them apart.
+            status: 'missed_collection_error',
+          },
+        });
+        return entered;
+      });
+
+      outcome.recorded++;
+      if (marked.entered) {
+        finalizeNotificationAfterCommit(
+          userId,
+          GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
+          marked.notificationPayload,
+        );
+        outcome.graced++;
+      }
+      logger.error(
+        `[groomSalaryService] Groom ${groom.name} (${groom.id}) fee of $${salary} for user ` +
+          `${userId} could NOT be collected for pay week ${payWeekStart.toISOString()}: ` +
+          `${cause?.message ?? 'unknown error'}. The week is recorded as uncollected and the ` +
+          "groom cannot work; not released, because the fault was not the player's.",
+      );
+    } catch (error) {
+      // The caller has already recorded this user as failed. Naming the groom whose
+      // week could not even be written down is the most this level can honestly do;
+      // one groom must not stop the rest of the staff being recorded.
+      logger.error(
+        `[groomSalaryService] Failed to record the uncollected fee for groom ${groom.id} ` +
+          `(user ${userId}): ${error.message}`,
+      );
+    }
+  }
+
+  return outcome;
+}
+
+export default { handleUnpaidFees, recordUncollectedFees };
