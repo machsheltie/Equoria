@@ -164,8 +164,18 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     // This beforeAll still read `data.id` off that response, so `foalId` was
     // undefined even once the request succeeded. Materialise the foal the way
     // the product does: start the pregnancy, then skip gestation through the
-    // owner-scoped POST /horses/:id/foal-now endpoint that exists for exactly
-    // this (admin/E2E), which runs the real foalingService.
+    // POST /horses/:id/foal-now endpoint that exists for exactly this, which
+    // runs the real foalingService.
+    //
+    // DEPENDENCY NOTE (Equoria-bhf6n): foal-now is a GATED test-harness route,
+    // not a player capability. It is enabled only when NODE_ENV is one of
+    // test | beta | beta-readiness (see the FOAL_NOW_ALLOWED_ENVS allowlist in
+    // backend/modules/horses/routes/horseBreedingRoutes.mjs) and returns 403 to
+    // every other environment — including an unset NODE_ENV, which is what a
+    // real deploy has. This spec works because playwright.config.ts starts the
+    // backend with NODE_ENV=beta. If that ever changes, this beforeAll fails
+    // with "Foaling failed (403)": do NOT widen the allowlist to fix it —
+    // materialise the foal through the foaling cron instead.
     foalName = `E2E Foal ${suffix}`;
     const pregnancyRes = await csrfMutate(session, 'POST', '/api/v1/horses/foals', {
       sireId,

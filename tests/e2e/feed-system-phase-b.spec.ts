@@ -214,6 +214,15 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     // POST /api/v1/horses/:id/foal-now bypasses the 7-day gestation wait and
     // calls createFoalFromPregnancy directly, which applies the same epigenetic
     // pipeline as the production foaling cron job.
+    //
+    // DEPENDENCY NOTE (Equoria-bhf6n): foal-now is a GATED test-harness route,
+    // not a player capability. It is enabled only when NODE_ENV is one of
+    // test | beta | beta-readiness (see the FOAL_NOW_ALLOWED_ENVS allowlist in
+    // backend/modules/horses/routes/horseBreedingRoutes.mjs) and returns 403 to
+    // every other environment — including an unset NODE_ENV, which is what a
+    // real deploy has. This test works because playwright.config.ts starts the
+    // backend with NODE_ENV=beta. If that ever changes, the assertion below
+    // fails on a 403: do NOT widen the allowlist to fix it.
 
     // The horse routes live on the authRouter (has csrfProtection). Fetch a
     // fresh CSRF token first so the POST is accepted.
