@@ -162,6 +162,20 @@ jobs:
         working-directory: ./packages/database
         run: npx prisma validate --schema=prisma/schema.prisma
 
+      # Equoria-axyem.2 — restores, at the exact point the dead
+      # `node migrations/verify_migration.js` step ran (removed by a22ac438f),
+      # the coverage that deletion lost: a claim about the LIVE database rather
+      # than about schema.prisma. `prisma validate` above checks the schema file
+      # parses; this reads information_schema/pg_indexes/pg_constraint from the
+      # database the step before just migrated, and compares them against the
+      # catalog a fresh replay of the migration chain produces — failing on
+      # drift in EITHER direction, across every table in `public`. It resolves
+      # @prisma/client from packages/database, the only workspace this job
+      # installs. See scripts/preflight/schema-drift.mjs and its sentinel,
+      # backend/__tests__/scripts/liveSchemaDrift.sentinel.test.mjs.
+      - name: Verify live schema matches the migration-applied structure
+        run: node scripts/preflight/schema-drift.mjs
+
   # ──────────────────────────────────────────────────────────────────────────────
   # JOB 3 — Backend Tests, Sharded (3 shards × parallel)
   #
