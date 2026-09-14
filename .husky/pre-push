@@ -16,12 +16,12 @@
 #   Equoria-l052p). Each shard is a fresh
 #   `node ... jest --runInBand --shard=i/N` process.
 #
-#   --max-old-space-size=4096 (passed DIRECTLY to node, per shard)
-#     Per-shard V8 old-space cap. Each shard's heap starts at baseline and
-#     peaks ~1.7 GB (the per-suite leak only accumulates within a single
-#     shard, then the process exits and frees everything), so 4 GB is
-#     ample headroom. Passed on node's argv because NODE_OPTIONS is silently
-#     dropped in the `git push` hook context.
+#   --max-old-space-size=1536 (passed DIRECTLY to node, per shard)
+#     Per-shard V8 old-space cap at the ordinary budget. It was 4096 while
+#     every finished suite's context stayed resident; since 2026-09-14
+#     (Equoria-k09r9) the custom environment releases each context, so a
+#     shard's heap stays flat between files. Passed on node's argv because
+#     NODE_OPTIONS is silently dropped in the `git push` hook context.
 #
 #   --runInBand (within each shard)
 #     Tests in a shard run sequentially in the SAME process. Combined with
@@ -36,8 +36,9 @@
 #     parallelism; the canonical runner executes shards sequentially.
 #
 #   --retryTimes=1
-#     Handles flaky order-dependent tests that pass in isolation. Retries
-#     happen within the same shard process, preserving in-process state.
+#     Passed by the runner but a NO-OP: Jest 30's CLI accepts the flag and
+#     nothing consumes it (measured 2026-09-14, Equoria-bu9c4). Retries only
+#     exist via jest.retryTimes() inside a file. Do not rely on it.
 #
 # ---------------- preflight checks ----------------
 #
@@ -153,8 +154,8 @@ fi
 # produces non-deterministic FK / test-isolation flakes (see git history).
 #
 # Fix: the canonical full profile runs N sequential SHARDS, each a FRESH Jest
-# process. The heap resets to baseline between shards, so memory stays bounded (~1.7 GB
-# per shard, well under the 4 GB cap) and never thrashes. Execution stays
+# process. Since Equoria-k09r9 each file's context is released as it finishes, so
+# heap stays flat within a shard at the 1536MB budget and never thrashes. Execution stays
 # strictly serial — one shard process at a time, --runInBand within each —
 # so there is NO parallel DB contention and NO mid-run worker recycle.
 # Verified: shard 1/8 = 80 suites / 1471 tests in ~79s, heap peak 1.7 GB.

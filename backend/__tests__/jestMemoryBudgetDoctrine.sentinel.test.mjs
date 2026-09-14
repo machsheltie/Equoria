@@ -222,8 +222,9 @@ describe('jest memory-budget doctrine check (sentinel)', () => {
 
   // Equoria-tdbx9: --heap=N smuggling — package.json scripts can feed a
   // spawner script's own heap flag, which the literal --max-old-space-size
-  // scan never sees. The check bounds --heap args at the 4096MB
-  // sequential-envelope cap (one fresh --runInBand process at a time).
+  // scan never sees. The check bounds --heap args at the ordinary 1536MB
+  // budget; the former 4096 sequential-envelope exception was retired on
+  // 2026-09-14 (Equoria-k09r9), so the old canonical value must now FIRE.
   describe('--heap spawner args in package.json scripts (Equoria-tdbx9)', () => {
     test('FIRES on a PLANTED package.json script passing an over-cap --heap to a scripts/*.mjs runner', () => {
       const planted = path.join(scratchDir, 'planted-overcap-heap-package.json');
@@ -250,7 +251,31 @@ describe('jest memory-budget doctrine check (sentinel)', () => {
       expect(stderr).toContain('sequential-envelope cap');
     });
 
-    test('PASSES on a planted package.json script at the canonical --heap=4096 (detector not vacuously red)', () => {
+    test('FIRES on a PLANTED package.json script at the RETIRED --heap=4096 exception', () => {
+      const planted = path.join(scratchDir, 'planted-retired-heap-package.json');
+      // PLANTED VIOLATION (sentinel-positive): the exact value the runner
+      // carried until 2026-09-14. Never copy into a real package.json.
+      writeFileSync(
+        planted,
+        JSON.stringify(
+          {
+            name: 'planted-retired-heap',
+            scripts: {
+              'test:backend:full': 'node scripts/run-suite-sharded.mjs --jest-shards=8 --timeout=600 --heap=4096',
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const { status, stderr } = runCheck(['--package', planted]);
+      expect(status).toBe(1);
+      expect(stderr).toContain('--heap=4096');
+      expect(stderr).toContain('sequential-envelope cap');
+    });
+
+    test('PASSES on a planted package.json script at the canonical --heap=1536 (detector not vacuously red)', () => {
       const planted = path.join(scratchDir, 'planted-canonical-heap-package.json');
       writeFileSync(
         planted,
@@ -258,7 +283,7 @@ describe('jest memory-budget doctrine check (sentinel)', () => {
           {
             name: 'planted-canonical-heap',
             scripts: {
-              'test:backend:full': 'node scripts/run-suite-sharded.mjs --jest-shards=8 --timeout=600 --heap=4096',
+              'test:backend:full': 'node scripts/run-suite-sharded.mjs --jest-shards=8 --timeout=600 --heap=1536',
             },
           },
           null,

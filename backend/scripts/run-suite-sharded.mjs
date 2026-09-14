@@ -23,40 +23,33 @@
  * pathological file can never stall the machine for hours.
  *
  * Usage:
- *   node scripts/run-suite-sharded.mjs [--jest-shards=8] [--timeout=600] [--heap=4096]
- *   node scripts/run-suite-sharded.mjs [--batch-size=25] [--timeout=600] [--heap=4096] [pattern]
+ *   node scripts/run-suite-sharded.mjs [--jest-shards=8] [--timeout=600] [--heap=1536]
+ *   node scripts/run-suite-sharded.mjs [--batch-size=25] [--timeout=600] [--heap=1536] [pattern]
  *     --jest-shards Jest hash shards, run sequentially in fresh processes
  *     --batch-size  test files per fresh process (default 25)
  *     --timeout     hard per-batch wall-clock cap in seconds (default 600)
  *     --heap        --max-old-space-size for each batch process in MB
- *                   (default 4096, hard max 4096 — see HEAP EXCEPTION below)
- *     pattern       optional jest testPathPattern to subset the run
+ *                   (default 1536, hard max 1536 — the ordinary budget)
  *
- * HEAP EXCEPTION (Equoria-tdbx9, sequential-envelope rationale):
- * Each batch is ONE fresh `--runInBand` process, run SEQUENTIALLY — at no
- * point do two jest processes hold heap concurrently, so the machine's
- * resident test heap never exceeds a single process's cap. Under that
- * envelope the user-reconciled canonical heap is 4096MB (2026-08-18,
- * commit 34ceadc; the canonical test:backend:full invocation is bounded at
- * 4096 by check-jest-memory-budget.mjs's --heap arg scan and pinned exactly
- * by check-backend-test-profiles.mjs). This is why the file carries the
- * doctrine-allow marker below instead of the 1536MB per-process budget that
- * binds parallel-worker configs. Runtime defense-in-depth (Equoria-5iggk):
- * parseIntegerOption refuses any --heap (or drifted internal default) above
- * HEAP_MB_MAX = 4096 — larger diagnostic headroom must go through
- * diagnose-full-suite.mjs, never through this runner. The Equoria-y8yrm
- * profiling (2026-08-18) settled the deferred can-the-default-drop question:
- * NO. A fresh serial jest process under the 1536MB budget cap OOM-aborted
- * (exit 134) after only 21 test files (heap 1421MB and climbing at a
- * measured mean of ~68MB retained per file — vm-modules registry retention
- * that resetModules does not release). A --jest-shards=8 shard is ~108
- * files and even the 25-file batch mode exceeds that 21-file capacity, so
- * the 4096MB default stands; do not lower it without new structural-fix
- * data (see Equoria-k09r9 / Equoria-fusxf).
+ * HEAP (history): from 2026-08-18 to 2026-09-14 this runner carried a
+ * user-reconciled 4096MB sequential-envelope exception (Equoria-tdbx9)
+ * because every finished test file's VM context stayed resident (~68MB per
+ * file measured pre-teardown), so a ~110-file shard could not fit 1536MB.
+ * Equoria-k09r9 root-caused that retention to two roots (app host timers and
+ * V8's compilation cache pinning vm module registries) and fixed both in
+ * tests/config/PrismaCleanupEnvironment.mjs; a full shard then ran at 1536MB
+ * with heap flat between files (shard 1/8: 113 suites / 1646 tests / 156s).
+ * The exception is retired: parseIntegerOption refuses any --heap above
+ * HEAP_MB_MAX = 1536, matching check-jest-memory-budget.mjs, and the
+ * canonical invocation is pinned by check-backend-test-profiles.mjs. Larger
+ * diagnostic headroom goes through diagnose-full-suite.mjs, never here.
+ *
+ * --retryTimes=1 below is accepted by the Jest 30 CLI but consumed by nothing
+ * (measured 2026-09-14, Equoria-bu9c4): it is a no-op kept only until the
+ * runner's result accounting is reworked. Do not rely on it for retries.
  *
  * Exit code: 0 if every batch passed; 1 if any batch failed or timed out.
  */
-// doctrine-allow: jest-heap-exception Equoria-tdbx9 sequential fresh-process envelope — one --runInBand batch at a time at <=4096MB, runtime-refused above HEAP_MB_MAX (see header)
 import { spawnSync, execSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -89,11 +82,11 @@ function parseIntegerOption(
 
 const BATCH_SIZE = parseIntegerOption('batch-size', '25');
 const BATCH_TIMEOUT_MS = parseIntegerOption('timeout', '600') * 1000;
-// Sequential-envelope heap ceiling (Equoria-tdbx9 / Equoria-5iggk): refuse
-// any --heap — or a drifted internal default — above the user-reconciled
-// 4096MB canonical (commit 34ceadc). See the HEAP EXCEPTION header block.
-const HEAP_MB_MAX = 4096;
-const HEAP_MB = parseIntegerOption('heap', '4096', { max: HEAP_MB_MAX });
+// Heap ceiling (Equoria-5iggk, lowered to the budget 2026-09-14 under
+// Equoria-k09r9): refuse any --heap — or a drifted internal default — above
+// the ordinary 1536MB budget. See the HEAP (history) header block.
+const HEAP_MB_MAX = 1536;
+const HEAP_MB = parseIntegerOption('heap', '1536', { max: HEAP_MB_MAX });
 const JEST_SHARDS = parseIntegerOption('jest-shards', '0', { allowZero: true, max: 100 });
 const pattern = args.find(x => !x.startsWith('--'));
 

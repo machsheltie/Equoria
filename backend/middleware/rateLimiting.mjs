@@ -219,17 +219,16 @@ export function emitDegradationAlert(keyPrefix) {
 // when Redis IS reachable (the common case in beta/prod/E2E) we wait the
 // few hundred ms it takes to connect and limiters bind to RedisStore.
 const REDIS_BOOT_TIMEOUT_MS = parseInt(process.env.REDIS_BOOT_TIMEOUT_MS || '5000', 10);
+let redisBootTimeoutHandle;
 await Promise.race([
   initializeRedis().catch(error => {
     // initializeRedis itself catches and logs internally; this is defensive.
     logger.error('[Redis] Failed to initialize on startup, falling back to in-memory:', error);
   }),
   new Promise(resolve => {
-    setTimeout(() => {
-      // If we hit this branch, Redis didn't connect within the budget.
-      // Limiters created below will see isRedisAvailable=false and fall
-      // back to in-memory. Redis client may still connect later in the
-      // background — but the boot-race window is closed by then.
+    redisBootTimeoutHandle = setTimeout(() => {
+      // Redis didn't connect within the budget: limiters below fall back to
+      // in-memory; a later background connect no longer changes them.
       if (!isRedisAvailable) {
         logger.warn(
           `[Redis] Boot-time connect did not complete within ${REDIS_BOOT_TIMEOUT_MS}ms — limiters will use in-memory fallback`,
@@ -238,7 +237,8 @@ await Promise.race([
       resolve();
     }, REDIS_BOOT_TIMEOUT_MS);
   }),
-]);
+  // Equoria-k09r9: clear the fallback timer once the race settles; pending, it pins this module.
+]).finally(() => clearTimeout(redisBootTimeoutHandle));
 
 // ─── Startup fail-fast: refuse to boot if Redis is REQUIRED but unreachable ──
 // (Equoria-4kfbh, CWE-636 fail-open)

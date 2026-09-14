@@ -49,19 +49,16 @@
  *       // doctrine-allow: jest-heap-exception Equoria-<id> <reason>
  *     Current holders: backend/scripts/diagnose-full-suite.mjs (8192MB
  *     diagnostic headroom for whole-suite footprint measurement,
- *     manual-run-only — Equoria-5mtzl) and
- *     backend/scripts/run-suite-sharded.mjs (sequential fresh-process
- *     envelope, one --runInBand batch at a time at <=4096MB, with a
- *     runtime refusal above 4096 — Equoria-tdbx9).
+ *     manual-run-only — Equoria-5mtzl). run-suite-sharded.mjs carried one
+ *     until 2026-09-14; it now runs at the 1536MB budget with no marker.
  *
  *   --heap spawner args (Equoria-tdbx9 — package.json scripts that invoke
  *   a scripts/*.mjs runner with a `--heap=N` flag, e.g. test:backend:full
- *   feeding run-suite-sharded.mjs): any --heap above 4096 fails. 4096 is
- *   the sequential-envelope cap — the sharded runner launches ONE fresh
- *   --runInBand process at a time (never concurrent workers), and 4096 is
- *   the user-reconciled canonical heap for that envelope (2026-08-18,
- *   commit 34ceadc, also pinned by check-backend-test-profiles.mjs).
- *   Larger diagnostic headroom goes through diagnose-full-suite.mjs.
+ *   feeding run-suite-sharded.mjs): any --heap above 1536 fails. The former
+ *   4096 sequential-envelope exception (Equoria-tdbx9) was retired on
+ *   2026-09-14 once per-file context release (Equoria-k09r9) let a whole
+ *   shard run inside the budget. Larger diagnostic headroom goes through
+ *   diagnose-full-suite.mjs only.
  *
  * Sentinel hooks: pass a config path as argv[2] to validate ONLY that file;
  * pass `--spawner <path>` to validate ONLY that spawner script; pass
@@ -129,14 +126,16 @@ export function validateJestConfig(name, config, failures = []) {
   return failures;
 }
 
-// Sequential-envelope cap for --heap spawner args (Equoria-tdbx9): the
-// sharded runner launches ONE fresh --runInBand process at a time, and 4096
-// is the user-reconciled canonical heap for that envelope (2026-08-18,
-// commit 34ceadc; the exact canonical command is pinned separately by
-// check-backend-test-profiles.mjs). This cap closes the smuggling path where
+// Cap for --heap spawner args (Equoria-tdbx9, retired to the budget on
+// 2026-09-14 under Equoria-k09r9): the sharded runner launches ONE fresh
+// --runInBand process at a time. It once needed 4096 because every finished
+// file's context stayed resident; with per-file release fixed a whole shard
+// runs inside the 1536MB budget (shard 1/8: 113 suites, peak heap < 80MB
+// between files), so the sequential envelope no longer earns an exception.
+// The exact canonical command is pinned by check-backend-test-profiles.mjs. This cap closes the smuggling path where
 // a package.json script raises jest's heap via the runner's own flag, which
 // the literal --max-old-space-size scan cannot see.
-const SHARDED_HEAP_ARG_CAP_MB = 4096;
+const SHARDED_HEAP_ARG_CAP_MB = 1536;
 
 export function validateJestScripts(pkgLabel, scripts, failures = []) {
   for (const [scriptName, command] of Object.entries(scripts ?? {})) {
