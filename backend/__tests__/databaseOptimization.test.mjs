@@ -344,10 +344,16 @@ describe('Database Query Optimization', () => {
         useCache: true,
       });
 
-      // Update horse data (updateMany is idempotent — no-op if horse was concurrently removed)
+      // Update horse data (updateMany is idempotent — no-op if horse was concurrently removed).
+      // bondScore 95 is the semantic update; `name` carries the same update in a
+      // field the service actually returns. executeHorseEpigeneticAnalysis selects
+      // only { id, name, epigeneticFlags, epigeneticModifiers }, so bondScore is NOT
+      // observable through optimizeEpigeneticQueries' return shape and cannot be
+      // asserted on without changing the service (recorded on Equoria-9xa92).
+      const updatedName = `TestHorse0_updated_${testRunId}`;
       await prisma.horse.updateMany({
         where: { id: testHorseIds[0] },
-        data: { bondScore: 95 },
+        data: { bondScore: 95, name: updatedName },
       });
 
       // Get updated data
@@ -358,7 +364,20 @@ describe('Database Query Optimization', () => {
 
       expect(result1.data).toBeDefined();
       expect(result2.data).toBeDefined();
-      expect(result2.executionTime).toBeGreaterThan(0);
+
+      // Equoria-axyem.1 / Equoria-9xa92: this case previously asserted only
+      // expect(result2.executionTime).toBeGreaterThan(0), which never tested the
+      // behaviour its name promises and was inverted relative to its intent: on a
+      // cache HIT the service hardcodes `executionTime: 5`, so the assertion
+      // PASSED in exactly the failure it existed to detect, and its only route to
+      // red was a genuine post-invalidation query completing sub-millisecond at
+      // Date.now() resolution. Replaced with the real invariant — a data update
+      // must never be served from a stale cache.
+      expect(result2.fromCache).toBe(false);
+      expect(result2.data.horse.name).toBe(updatedName);
+      expect(result2.data.horse.name).not.toBe(result1.data.horse.name);
+      // Type sanity only; timing is not the invariant and must not stand in for it.
+      expect(typeof result2.executionTime).toBe('number');
     });
   });
 
