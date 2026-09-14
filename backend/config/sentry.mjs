@@ -14,8 +14,14 @@
  * @module config/sentry
  */
 
-import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
+// Equoria-k09r9 (2026-09-14): the SDK is loaded on demand. `@sentry/node` and
+// `@sentry/profiling-node` cost ~0.6s to import, and this module sits in the
+// shared core of every app-importing test file (through rateLimiting.mjs and
+// auditLog.mjs), which paid that price ~280 times per gate without ever
+// initializing Sentry. Without a DSN nothing here needs the SDK: every capture
+// below is a no-op until initializeSentry() has loaded it, which is exactly
+// what an uninitialized SDK did before (captures were dropped).
+let sdk = null;
 import logger from '../utils/logger.mjs';
 
 /**
@@ -23,7 +29,9 @@ import logger from '../utils/logger.mjs';
  *
  * @param {Object} app - Express app instance
  */
-export function initializeSentry(app) {
+// The app argument is retained for the call-site contract; @sentry/node >= 8
+// instruments Express itself after init() rather than through app.use().
+export async function initializeSentry(_app) {
   // Only initialize Sentry in production or if explicitly enabled
   const sentryDsn = process.env.SENTRY_DSN;
   const environment = process.env.NODE_ENV || 'development';
@@ -32,6 +40,12 @@ export function initializeSentry(app) {
     logger.info('[Sentry] Sentry DSN not configured. Skipping initialization.');
     return;
   }
+
+  const [Sentry, { nodeProfilingIntegration }] = await Promise.all([
+    import('@sentry/node'),
+    import('@sentry/profiling-node'),
+  ]);
+  sdk = Sentry;
 
   Sentry.init({
     dsn: sentryDsn,
@@ -68,11 +82,10 @@ export function initializeSentry(app) {
     ignoreErrors: ['AbortError', 'Network request failed', 'Failed to fetch', 'NetworkError'],
   });
 
-  // Attach Sentry request handler as the first middleware
-  app.use(Sentry.Handlers.requestHandler());
-
-  // Attach Sentry tracing middleware
-  app.use(Sentry.Handlers.tracingHandler());
+  // @sentry/node >= 8 removed Handlers.requestHandler/tracingHandler (absent in
+  // the installed 10.x, so both calls threw here whenever a DSN was set); the
+  // SDK now instruments Express through its default integrations once init()
+  // has run, and the error handler is attached by attachSentryErrorHandler().
 
   logger.info(`[Sentry] Initialized for environment: ${environment}`);
 }
@@ -92,14 +105,18 @@ export function attachSentryErrorHandler(app) {
   }
 
   // Sentry error handler must be before any other error middleware
-  app.use(
-    Sentry.Handlers.errorHandler({
-      shouldHandleError(error) {
-        // Capture 4xx and 5xx errors
-        return error.status >= 400;
-      },
-    }),
-  );
+  if (!sdk) {
+    logger.warn('[Sentry] Error handler not attached: initializeSentry() has not loaded the SDK.');
+    return;
+  }
+  // @sentry/node >= 8 replaced Handlers.errorHandler (absent in the installed
+  // 10.x, so the old call threw at boot whenever a DSN was set) with
+  // setupExpressErrorHandler, which registers the middleware on the app itself.
+  sdk.setupExpressErrorHandler(app, {
+    shouldHandleError(error) {
+      return error.status >= 400;
+    },
+  });
 
   logger.info('[Sentry] Error handler attached successfully.');
 }
@@ -112,7 +129,7 @@ export function attachSentryErrorHandler(app) {
  * @param {string} severity - Event severity ('info', 'warning', 'error', 'critical')
  */
 export function trackSecurityEvent(eventType, context = {}, severity = 'warning') {
-  Sentry.withScope(scope => {
+  sdk?.withScope(scope => {
     // Set security event tags
     scope.setTag('event_type', 'security');
     scope.setTag('security_event', eventType);
@@ -138,9 +155,9 @@ export function trackSecurityEvent(eventType, context = {}, severity = 'warning'
 
     // Send to Sentry based on severity
     if (severity === 'error' || severity === 'critical') {
-      Sentry.captureException(new Error(message));
+      sdk.captureException(new Error(message));
     } else {
-      Sentry.captureMessage(message, severity);
+      sdk.captureMessage(message, severity);
     }
   });
 
@@ -284,10 +301,10 @@ export function trackSecurityEventWithThreshold(eventType, context, identifier) 
  * @param {Object} securityContext - Security-related context
  */
 export function captureSecurityException(error, securityContext = {}) {
-  Sentry.withScope(scope => {
+  sdk?.withScope(scope => {
     scope.setContext('security', securityContext);
     scope.setTag('event_type', 'security');
-    Sentry.captureException(error);
+    sdk.captureException(error);
   });
 
   logger.error('[Sentry] Captured security exception', {
@@ -297,4 +314,16 @@ export function captureSecurityException(error, securityContext = {}) {
 }
 
 // Export Sentry for direct access if needed
-export { Sentry };
+// Facade for callers that alert through Sentry directly (cron monitor, show
+// reaper). Each method is a no-op until initializeSentry() has loaded the SDK.
+export const Sentry = {
+  withScope(callback) {
+    return sdk ? sdk.withScope(callback) : undefined;
+  },
+  captureMessage(...args) {
+    return sdk ? sdk.captureMessage(...args) : undefined;
+  },
+  captureException(...args) {
+    return sdk ? sdk.captureException(...args) : undefined;
+  },
+};

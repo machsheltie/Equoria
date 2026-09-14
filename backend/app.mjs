@@ -107,7 +107,7 @@ import { initializeSentry, attachSentryErrorHandler } from './config/sentry.mjs'
 const app = express();
 
 // Initialize Sentry (must be before any other middleware)
-initializeSentry(app);
+await initializeSentry(app);
 
 // Trust proxy for accurate IP addresses behind reverse proxies
 app.set('trust proxy', 1);

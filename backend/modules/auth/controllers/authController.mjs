@@ -9,15 +9,26 @@ import { AppError, ValidationError } from '../../../errors/index.mjs';
 // password path. Without this, an attacker can enumerate registered emails by
 // measuring response time (no-user ~ instant, real-user ~ 80–150ms).
 //
-// The placeholder is a real bcrypt hash of a random ~16-byte secret generated
-// at module import. It is NEVER comparable to any real password (the
-// passphrase is never persisted and only the hash is retained), so a
-// successful compare here is structurally impossible. Cost is fixed to 12 to
-// match the production `BCRYPT_SALT_ROUNDS` default (see lines 151, 853, 993)
-// — the env override is intentionally NOT read here, because the timing
-// envelope must depend only on the static-cost-12 path and not vary with
-// per-deploy configuration changes that could re-introduce the oracle.
-const FAKE_BCRYPT_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 12);
+// The placeholder is a real bcrypt hash of a random ~32-byte secret. It is
+// NEVER comparable to any real password (the passphrase is never persisted
+// and only the hash is retained), so a successful compare here is
+// structurally impossible. Cost is fixed to 12 to match the production
+// `BCRYPT_SALT_ROUNDS` default — the env override is intentionally NOT read
+// here, because the timing envelope must depend only on the static-cost-12
+// path and not vary with per-deploy configuration changes that could
+// re-introduce the oracle.
+//
+// Equoria-k09r9 (2026-09-14): generated on first use, not at import. A
+// synchronous cost-12 hash at module load cost ~210ms in every one of the
+// ~280 test files that import the app graph (~1 min of the gate) for a
+// value only the login handler reads. The getter is awaited on BOTH
+// branches before the compare, so even the first request pays the one-time
+// generation equally whether or not the email is registered.
+let FAKE_BCRYPT_HASH = null;
+function getFakeBcryptHash() {
+  FAKE_BCRYPT_HASH ??= bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+  return FAKE_BCRYPT_HASH;
+}
 // Equoria-vhv3i: mfaService / mfaLockoutService / mfaReplayProtectionService /
 // fieldEncryption imports moved to mfaController.mjs with the MFA endpoints.
 // Only the login handler below still touches MFA (it issues the short-lived
@@ -297,7 +308,8 @@ export const login = async (req, res, next) => {
     // the compare against FAKE_BCRYPT_HASH (a hash of a random secret that
     // no submitted password can match) before returning the same 401. Do NOT
     // short-circuit on !user — that re-introduces the enumeration oracle.
-    const hashToCompare = user ? user.password : FAKE_BCRYPT_HASH;
+    const fakeBcryptHash = await getFakeBcryptHash();
+    const hashToCompare = user ? user.password : fakeBcryptHash;
     const isPasswordValid = await bcrypt.compare(password, hashToCompare);
 
     if (!user || !isPasswordValid) {

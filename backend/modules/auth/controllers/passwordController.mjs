@@ -66,12 +66,23 @@ const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 // branch, which the prior SQL-sleep no-op failed to mirror. This mirrors the
 // login handler's FAKE_BCRYPT_HASH approach (authController.mjs, Equoria-gm4fg).
 //
-// The placeholder hashes a random ~32-byte secret generated at module import;
-// the passphrase is never persisted, so a successful compare here is
-// structurally impossible. Cost is pinned to 12 (NOT read from
-// BCRYPT_SALT_ROUNDS) so the timing envelope cannot drift with per-deploy
-// config — identical rationale to the login handler.
-const FAKE_BCRYPT_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 12);
+// The placeholder hashes a random ~32-byte secret; the passphrase is never
+// persisted, so a successful compare here is structurally impossible. Cost is
+// pinned to 12 (NOT read from BCRYPT_SALT_ROUNDS) so the timing envelope
+// cannot drift with per-deploy config — identical rationale to the login
+// handler.
+//
+// Equoria-k09r9 (2026-09-14): generated on first use, not at import. A
+// synchronous cost-12 hash at module load cost ~210ms in every one of the
+// ~280 test files that import the app graph (~1 min of the gate) for a
+// value only the forgotPassword handler reads. The getter is awaited on
+// BOTH branches before the compare, so even the first request pays the
+// one-time generation equally regardless of registration state.
+let FAKE_BCRYPT_HASH = null;
+function getFakeBcryptHash() {
+  FAKE_BCRYPT_HASH ??= bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+  return FAKE_BCRYPT_HASH;
+}
 // Fixed input fed to the constant-time compare. Static so the compare cost is
 // data-independent and identical on every request, on both branches.
 const TIMING_ANCHOR_INPUT = 'forgot-password-timing-anchor';
@@ -84,7 +95,7 @@ const TIMING_ANCHOR_INPUT = 'forgot-password-timing-anchor';
  * cost is identical regardless of registration state (Equoria-54sk7).
  */
 async function runTimingAnchorCompare() {
-  return bcrypt.compare(TIMING_ANCHOR_INPUT, FAKE_BCRYPT_HASH);
+  return bcrypt.compare(TIMING_ANCHOR_INPUT, await getFakeBcryptHash());
 }
 
 /**
