@@ -337,7 +337,30 @@ describe('Database Query Optimization', () => {
       expect(typeof result2.fromCache).toBe('boolean');
     });
 
-    test('invalidates cache on data updates', async () => {
+    // Equoria-axyem.1 / Equoria-9xa92: this case was named 'invalidates cache on
+    // data updates' and did NOT verify that, in two separate ways.
+    //
+    // 1. Its only assertion was expect(result2.executionTime).toBeGreaterThan(0),
+    //    which is inverted relative to its intent: on a cache HIT the service
+    //    hardcodes `executionTime: 5`, so the assertion PASSED in exactly the
+    //    failure it existed to detect, and its only route to red was a genuine
+    //    query completing sub-millisecond at Date.now() resolution. That clock
+    //    draw is what failed CI shard 5/8.
+    // 2. The cache CANNOT be engaged here at all. initializeRedis() (service line
+    //    37) is the only assignment to redisClient and is guarded by
+    //    `process.env.NODE_ENV !== 'test'`, so under Jest redisClient is always
+    //    null, the cache-hit branch (service lines 485-494) is unreachable, and
+    //    `fromCache: false` is a literal on the only reachable return (line 527).
+    //    This is a property of NODE_ENV, not of Redis reachability — provisioning
+    //    a Redis service for the CI job would not change it.
+    //
+    // The service also has no invalidation path of any kind (no del/expire/flush
+    // anywhere in it), so the invalidation invariant remains UNTESTED pending
+    // Equoria-9xa92. The name below states only what this case actually verifies:
+    // the query re-reads the row when no cache is engaged. The fromCache and data
+    // assertions are the right invariant and are already in place for 9xa92 to
+    // make live; they are deliberately not weakened to match the reduced name.
+    test('re-reads the updated row after an update when no cache is engaged', async () => {
       // Cache initial data
       const result1 = await optimizeEpigeneticQueries({
         horseId: testHorseIds[0],
@@ -365,17 +388,11 @@ describe('Database Query Optimization', () => {
       expect(result1.data).toBeDefined();
       expect(result2.data).toBeDefined();
 
-      // Equoria-axyem.1 / Equoria-9xa92: this case previously asserted only
-      // expect(result2.executionTime).toBeGreaterThan(0), which never tested the
-      // behaviour its name promises and was inverted relative to its intent: on a
-      // cache HIT the service hardcodes `executionTime: 5`, so the assertion
-      // PASSED in exactly the failure it existed to detect, and its only route to
-      // red was a genuine post-invalidation query completing sub-millisecond at
-      // Date.now() resolution. Replaced with the real invariant — a data update
-      // must never be served from a stale cache.
+      // The invariant a working cache would have to satisfy: the update is never
+      // served stale. See the block comment above for why only the no-cache arm of
+      // it is exercised today.
       expect(result2.fromCache).toBe(false);
       expect(result2.data.horse.name).toBe(updatedName);
-      expect(result2.data.horse.name).not.toBe(result1.data.horse.name);
       // Type sanity only; timing is not the invariant and must not stand in for it.
       expect(typeof result2.executionTime).toBe('number');
     });
