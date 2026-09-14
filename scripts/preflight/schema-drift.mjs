@@ -26,22 +26,30 @@
  * migrations do not produce is also drift. A definition that differs on
  * either side is drift. Every finding names the object.
  *
- * SCOPE. Every table in `public`, not one. The floor the old script covered —
- * `horses.bondScore`, `horses.stressLevel`, the eight `foal_training_history`
- * columns and the five `foal_training_history` indexes including
- * `foal_training_history_pkey` — is a strict subset of what is compared here.
+ * SCOPE, AND IT IS A FLOOR. Every table in `public`, not one. The floor the old
+ * script covered — `horses.bondScore`, `horses.stressLevel`, the eight
+ * `foal_training_history` columns and the five `foal_training_history` indexes
+ * including `foal_training_history_pkey` — is a strict subset of what is
+ * compared here.
  *
- * THE ONE TOLERATED CLASS, AND WHY IT CANNOT GO STALE. Extra indexes are
- * tolerated ONLY when their name is one that
- * `backend/services/databaseOptimizationService.mjs` creates at RUNTIME with
- * `CREATE INDEX IF NOT EXISTS` (see `QUERY_PATTERN_INDEX` there, and the long
- * note above `model Horse` in schema.prisma recording
- * `idx_horses_user_horse_lookup` on the local `equoria` database). The
- * tolerated set is DERIVED from that file on every run, not copied: if the
- * service stops creating an index, the tolerance disappears with it. Missing
- * objects are never tolerated, and an index that the reference database also
- * has is compared normally — the tolerance can only ever excuse a name that
- * the migration chain does not produce at all.
+ * WHAT IS **NOT** COMPARED, so nobody reads a passing run as total schema
+ * coverage: enum TYPES and their LABELS (columns record only `udt_name`, so
+ * adding or dropping an enum value is invisible — six `enum` blocks exist in
+ * schema.prisma); view BODIES (a view's presence shows in `tables`, its
+ * definition does not); triggers; functions and procedures; sequence
+ * parameters (only the `nextval(...)` default text is seen); extensions;
+ * collations and domains; ownership, grants and RLS policies; column ORDINAL
+ * POSITION (a reordered table compares equal); and every schema other than
+ * `public`. Each of those is a real drift class this check would sit through.
+ * Adding one means adding a section to CATALOG_SECTIONS — the diff and the
+ * reporting need no change.
+ *
+ * THE ONE TOLERATED CLASS. Extra indexes are tolerated only when the name is on
+ * the hardcoded RUNTIME_CREATED_INDEX_ALLOWLIST below — today, one name, with
+ * its reason spelled out beside it. Tolerance applies to EXTRA indexes only:
+ * missing and redefined objects are never tolerated, in any section, and an
+ * index the reference database also has is compared normally, so the tolerance
+ * can only ever excuse a name the migration chain does not produce at all.
  *
  * USAGE
  *   DATABASE_URL=... node scripts/preflight/schema-drift.mjs
@@ -62,7 +70,7 @@
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -146,27 +154,72 @@ export async function readCatalog(query) {
 }
 
 /**
- * Index names `databaseOptimizationService.mjs` creates at runtime.
+ * THE ENTIRE TOLERANCE. One index name, spelled out, with its reason.
  *
- * Derived from the file, so it cannot describe a tolerance the service no
- * longer needs. Returns an empty set if the file is unreadable — failing
- * closed (reporting the extra index) rather than silently excusing it.
+ * An earlier revision derived this set by scanning
+ * `databaseOptimizationService.mjs` for `CREATE INDEX`. That was wrong twice
+ * over: the scan harvested prose from comments and fragments from template
+ * literals (`against`, `statement`, `IF`, `idx_horses_`), and — worse — it made
+ * the tolerance invisible to review. A comment in that service reading
+ * "we used to CREATE INDEX idx_horses_orphan here" would have silently excused
+ * a real stray `idx_horses_orphan`, with nothing in any diff to notice. A
+ * hardcoded list widens only by an edit a reviewer can see, and its staleness
+ * mode is loud and benign: if the service stops creating the index, the check
+ * reports it and someone deletes one line here.
+ *
+ * `serviceCreateIndexNames()` below cross-checks this list against the service
+ * source. It is a cross-check, not the source of truth.
+ */
+export const RUNTIME_CREATED_INDEX_ALLOWLIST = Object.freeze([
+  Object.freeze({
+    index: 'idx_horses_user_horse_lookup',
+    // Created at RUNTIME by databaseOptimizationService.mjs
+    // (`QUERY_PATTERN_INDEX.user_horse_lookup`, `CREATE INDEX IF NOT EXISTS`),
+    // so it appears on any database where that service has run and in no
+    // migration at all — see the note above `model Horse` in schema.prisma,
+    // verified against the local `equoria` database on 2026-09-09 by
+    // Equoria-69gip. Ending the runtime DDL is Equoria-9xa92 / Equoria-bebob,
+    // not this check; delete this entry when they land.
+    reason: 'runtime-created by databaseOptimizationService (Equoria-9xa92 / Equoria-bebob)',
+  }),
+]);
+
+/**
+ * The allow-listed names as a set, for `diffCatalog`.
+ *
+ * @returns {Set<string>}
+ */
+export function toleratedExtraIndexNames() {
+  return new Set(RUNTIME_CREATED_INDEX_ALLOWLIST.map((entry) => entry.index));
+}
+
+/**
+ * CROSS-CHECK ONLY — never the source of truth for the allow-list.
+ *
+ * Static index names in `databaseOptimizationService.mjs`'s
+ * `QUERY_PATTERN_INDEX` object literal. Anchored to that literal (so comments
+ * elsewhere in the file cannot contribute) and to the full
+ * `CREATE INDEX IF NOT EXISTS <name> ON` shape with a literal identifier (so a
+ * `${...}` interpolation contributes nothing rather than a truncated prefix).
+ * The sentinel uses it to prove every allow-listed name is one the service
+ * really creates; it is not consulted at check time.
  *
  * @param {string} [servicePath]
  * @returns {Set<string>}
  */
-export function runtimeCreatedIndexNames(servicePath = OPTIMIZATION_SERVICE) {
+export function serviceCreateIndexNames(servicePath = OPTIMIZATION_SERVICE) {
   let source;
   try {
     source = readFileSync(servicePath, 'utf8');
   } catch {
     return new Set();
   }
+  const literal = /const\s+QUERY_PATTERN_INDEX\s*=\s*\{([\s\S]*?)\n\};/.exec(source);
+  if (!literal) return new Set();
   const names = new Set();
-  const pattern =
-    /CREATE\s+INDEX\s+(?:CONCURRENTLY\s+)?(?:IF\s+NOT\s+EXISTS\s+)?"?([A-Za-z0-9_]+)"?/gi;
+  const pattern = /CREATE INDEX IF NOT EXISTS ([A-Za-z0-9_]+) ON /g;
   let match;
-  while ((match = pattern.exec(source)) !== null) {
+  while ((match = pattern.exec(literal[1])) !== null) {
     names.add(match[1]);
   }
   return names;
@@ -201,9 +254,13 @@ export function diffCatalog(expected, actual, options = {}) {
 
     for (const name of Object.keys(have).sort()) {
       if (Object.hasOwn(want, name)) continue;
-      // The only tolerance in this file, and it can only reach a name the
-      // reference database does not contain at all (this branch).
-      if (section === 'indexes' && tolerated.has(name)) continue;
+      // The only tolerance in this file. Three constraints, all enforced here:
+      // it applies to the `indexes` section only; it applies to EXTRA only
+      // (this is the extra branch — `missing` and `changed` are emitted above
+      // and never consult `tolerated`); and the redundant `!Object.hasOwn(want,
+      // name)` re-states that a migration-produced name can never be excused,
+      // so the invariant survives anyone reordering this loop.
+      if (section === 'indexes' && tolerated.has(name) && !Object.hasOwn(want, name)) continue;
       findings.push({ section, kind: 'extra', name, actual: have[name] });
     }
   }
@@ -281,6 +338,10 @@ export function deployMigrations(databaseUrl) {
       cwd: DB_PACKAGE,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
+      // execFileSync blocks the event loop, so a Jest hook timeout cannot fire
+      // while it runs and a hung `migrate deploy` would only be caught by the
+      // 10-minute CI job timeout. Fail locally and legibly instead.
+      timeout: 240_000,
     }
   );
 }
@@ -317,7 +378,7 @@ async function main() {
         const expected = await readCatalog(queryWith(referenceClient));
         const actual = await readCatalog(queryWith(liveClient));
         findings = diffCatalog(expected, actual, {
-          toleratedExtraIndexes: runtimeCreatedIndexNames(),
+          toleratedExtraIndexes: toleratedExtraIndexNames(),
         });
         console.log(
           `[schema-drift] compared ${Object.values(expected).reduce((n, s) => n + Object.keys(s).length, 0)} ` +
@@ -340,7 +401,25 @@ async function main() {
   process.exit(findings.length === 0 ? 0 : 1);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+/**
+ * True when this module is the process entry point.
+ *
+ * `realpathSync` on BOTH sides: a plain `path.resolve` comparison returns false
+ * for an invocation through a symlink or a wrapper path, and this file would
+ * then exit 0 having asserted nothing — a silent pass, in a file whose whole
+ * contract is never to pass silently.
+ */
+function invokedAsScript() {
+  if (!process.argv[1]) return false;
+  const here = fileURLToPath(import.meta.url);
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(here);
+  } catch {
+    return path.resolve(process.argv[1]) === path.resolve(here);
+  }
+}
+
+if (invokedAsScript()) {
   main().catch((error) => {
     console.error('[schema-drift] failed:', error?.message ?? error);
     process.exit(3);

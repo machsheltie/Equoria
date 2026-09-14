@@ -20,6 +20,16 @@
  * and `pg_constraint`. `schema.prisma` is never parsed. Every table in
  * `public` is in scope, not one.
  *
+ * WHAT IS COMPARED IS A FLOOR. Tables (`table_type`), columns (type, udt,
+ * nullability, default, maxlen, precision, scale), indexes (the full
+ * `indexdef`, so a silently redefined index is caught) and constraints
+ * (`contype` + `pg_get_constraintdef`). NOT compared, and so not guarded here:
+ * enum TYPES and their LABELS (a column records only `udt_name`, so a dropped
+ * enum value is invisible), view BODIES, triggers, functions, sequence
+ * parameters, extensions, collations, domains, ownership/grants/RLS, column
+ * ORDINAL POSITION, and any schema other than `public`. A green run means no
+ * drift in the four compared sections — not that the schema is identical.
+ *
  * WHAT THIS FILE PROVES.
  *  1. GREEN — the real test database matches the migration-applied structure.
  *  2. SENTINEL-POSITIVE, ABSENCE — dropping `horses.bondScore`,
@@ -30,10 +40,12 @@
  *  3. SENTINEL-POSITIVE, EXCESS — a column or index the migrations do not
  *     produce is reported too. Drift has two directions; a one-directional
  *     check is how an undeclared runtime index survives for months.
- *  4. The one tolerated class (extra indexes that
- *     `databaseOptimizationService.mjs` creates at runtime) is narrow: it
- *     cannot excuse an unrelated extra index, and it cannot excuse a MISSING
- *     index even when the name is in the tolerated set.
+ *  4. The one tolerated class — extra indexes on the hardcoded
+ *     RUNTIME_CREATED_INDEX_ALLOWLIST — is narrow: the set is exactly one name,
+ *     an unrelated extra index and two near-miss spellings of that name still
+ *     fail, and a MISSING index fails even when its name IS the allow-listed
+ *     one. A cross-check proves the allow-listed name is one
+ *     `databaseOptimizationService.mjs` actually creates.
  *
  * SAFETY. The database named by DATABASE_URL is only ever READ. Every planted
  * defect is applied to a freshly created `equoria_schema_ref_*` database,
@@ -55,8 +67,10 @@ import {
   formatFindings,
   newReferenceDbName,
   readCatalog,
-  runtimeCreatedIndexNames,
+  RUNTIME_CREATED_INDEX_ALLOWLIST,
+  serviceCreateIndexNames,
   siblingUrlFrom,
+  toleratedExtraIndexNames,
 } from '../../../scripts/preflight/schema-drift.mjs';
 
 const { Client } = pg;
@@ -158,7 +172,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
   test('GREEN: the live database matches the migration-applied structure', async () => {
     const actual = await withClient(liveUrl(), client => readCatalog(rowsOf(client)));
     const findings = diffCatalog(pristine, actual, {
-      toleratedExtraIndexes: runtimeCreatedIndexNames(),
+      toleratedExtraIndexes: toleratedExtraIndexNames(),
     });
     // formatFindings in the message so a real drift names itself in the failure.
     expect(formatFindings(findings)).toBe('No drift: the live database matches the migration-applied structure.');
@@ -170,7 +184,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
       'ALTER TABLE "horses" DROP COLUMN "stressLevel"',
     ]);
     const findings = diffCatalog(pristine, drifted, {
-      toleratedExtraIndexes: runtimeCreatedIndexNames(),
+      toleratedExtraIndexes: toleratedExtraIndexNames(),
     });
     expect(namesOf(findings, 'columns', 'missing')).toEqual(
       expect.arrayContaining(['horses.bondScore', 'horses.stressLevel']),
@@ -184,7 +198,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
       'ALTER TABLE "foal_training_history" DROP CONSTRAINT "foal_training_history_pkey" CASCADE',
     ]);
     const findings = diffCatalog(pristine, drifted, {
-      toleratedExtraIndexes: runtimeCreatedIndexNames(),
+      toleratedExtraIndexes: toleratedExtraIndexNames(),
     });
     expect(namesOf(findings, 'indexes', 'missing')).toEqual(
       expect.arrayContaining(['foal_training_history_horseId_day_idx', 'foal_training_history_pkey']),
@@ -200,7 +214,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
       'CREATE INDEX "idx_axyem_planted_undeclared" ON "horses" ("name")',
     ]);
     const findings = diffCatalog(pristine, drifted, {
-      toleratedExtraIndexes: runtimeCreatedIndexNames(),
+      toleratedExtraIndexes: toleratedExtraIndexNames(),
     });
     expect(namesOf(findings, 'columns', 'extra')).toEqual(expect.arrayContaining(['horses.axyemPlantedColumn']));
     expect(namesOf(findings, 'indexes', 'extra')).toEqual(expect.arrayContaining(['idx_axyem_planted_undeclared']));
@@ -210,7 +224,7 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
   test('SENTINEL-POSITIVE: a redefined column is reported as CHANGED, not silently accepted', async () => {
     const drifted = await catalogAfterPlantedDdl(['ALTER TABLE "horses" ALTER COLUMN "bondScore" DROP NOT NULL']);
     const findings = diffCatalog(pristine, drifted, {
-      toleratedExtraIndexes: runtimeCreatedIndexNames(),
+      toleratedExtraIndexes: toleratedExtraIndexNames(),
     });
     const changed = findings.filter(f => f.kind === 'changed' && f.name === 'horses.bondScore');
     expect(changed).toHaveLength(1);
@@ -218,33 +232,66 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
     expect(changed[0].actual).toMatch(/nullable=YES/);
   }, 120_000);
 
-  test('the runtime-index tolerance is derived from the service and is narrow', async () => {
-    const tolerated = runtimeCreatedIndexNames();
-    // Derived, not copied: this is the index schema.prisma documents as living
-    // in no migration because databaseOptimizationService creates it at runtime.
-    expect(tolerated.has('idx_horses_user_horse_lookup')).toBe(true);
+  test('the tolerated set is exactly the hardcoded allow-list, and an extra index off it still FAILS', async () => {
+    const tolerated = toleratedExtraIndexNames();
+    // Hardcoded, not scraped. An earlier revision derived this by scanning
+    // databaseOptimizationService.mjs for `CREATE INDEX` and harvested prose
+    // from comments ('against', 'statement') and fragments from template
+    // literals ('IF', 'idx_horses_') — a tolerance that could widen by
+    // someone editing a COMMENT, with nothing in the diff to show it.
+    expect([...tolerated].sort()).toEqual(['idx_horses_user_horse_lookup']);
+    for (const entry of RUNTIME_CREATED_INDEX_ALLOWLIST) {
+      expect(typeof entry.reason).toBe('string');
+      expect(entry.reason.length).toBeGreaterThan(0);
+    }
 
     const drifted = await catalogAfterPlantedDdl([
       'CREATE INDEX "idx_horses_user_horse_lookup" ON "horses" ("userId")',
+      // Three ways an extra index can try to slip through: an unrelated name,
+      // a near-miss suffix, and a near-miss prefix of the allow-listed name.
       'CREATE INDEX "idx_axyem_not_tolerated" ON "horses" ("userId")',
+      'CREATE INDEX "idx_horses_user_horse_lookup_2" ON "horses" ("userId")',
+      'CREATE INDEX "idx_horses_user_horse" ON "horses" ("userId")',
     ]);
     const findings = diffCatalog(pristine, drifted, { toleratedExtraIndexes: tolerated });
     const extras = namesOf(findings, 'indexes', 'extra');
-    expect(extras).toContain('idx_axyem_not_tolerated');
+    expect(extras).toEqual(
+      expect.arrayContaining(['idx_axyem_not_tolerated', 'idx_horses_user_horse_lookup_2', 'idx_horses_user_horse']),
+    );
     expect(extras).not.toContain('idx_horses_user_horse_lookup');
   }, 120_000);
 
-  test('the tolerance cannot excuse a MISSING index even when the name is tolerated', async () => {
-    const tolerated = runtimeCreatedIndexNames();
-    // This one IS produced by the migration chain (Equoria-69gip declared it),
-    // and its name is also in the runtime set — the exact overlap where a
-    // name-based allowlist would quietly stop guarding.
-    const victim = 'idx_horses_age_and_training_status';
-    expect(tolerated.has(victim)).toBe(true);
-    expect(pristine.indexes[victim]).toBeDefined();
+  test('CROSS-CHECK: every allow-listed name is one the service really creates', () => {
+    // A cross-check against the service source, NOT the source of truth for the
+    // allow-list. It exists so an entry cannot outlive the runtime DDL that
+    // justifies it: when Equoria-9xa92 / Equoria-bebob stop the service creating
+    // these indexes, this fails and the entry gets deleted.
+    const created = serviceCreateIndexNames();
+    expect(created.size).toBeGreaterThan(0);
+    // Anchored parse, so the junk the old scrape produced is absent.
+    for (const junk of ['against', 'statement', 'IF', 'idx_horses_']) {
+      expect(created.has(junk)).toBe(false);
+    }
+    for (const entry of RUNTIME_CREATED_INDEX_ALLOWLIST) {
+      expect([...created]).toContain(entry.index);
+    }
+  });
 
-    const drifted = await catalogAfterPlantedDdl([`DROP INDEX "${victim}"`]);
-    const findings = diffCatalog(pristine, drifted, { toleratedExtraIndexes: tolerated });
+  test('the tolerance cannot excuse a MISSING index even when the name is allow-listed', async () => {
+    const tolerated = toleratedExtraIndexNames();
+    const victim = 'idx_horses_user_horse_lookup';
+    expect(tolerated.has(victim)).toBe(true);
+
+    // Both catalogs below are real reads from the reference database. The
+    // EXPECTED side is one where the allow-listed index exists (what the world
+    // looks like if a migration ever adopts it); the ACTUAL side is the
+    // pristine catalog, which lacks it. A name-based allow-list that forgot to
+    // scope itself to the `extra` branch would stay silent here.
+    const withVictim = await catalogAfterPlantedDdl([`CREATE INDEX "${victim}" ON "horses" ("userId")`]);
+    expect(withVictim.indexes[victim]).toBeDefined();
+    expect(pristine.indexes[victim]).toBeUndefined();
+
+    const findings = diffCatalog(withVictim, pristine, { toleratedExtraIndexes: tolerated });
     expect(namesOf(findings, 'indexes', 'missing')).toContain(victim);
   }, 120_000);
 });
