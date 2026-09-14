@@ -12,23 +12,30 @@
 # ---------------- node + Jest flags ----------------
 #
 #   The hook calls the canonical `test:backend:full` package profile. That
-#   profile runs N sequential SHARDS (see the full rationale below —
-#   Equoria-l052p). Each shard is a fresh
-#   `node ... jest --runInBand --shard=i/N` process.
+#   profile runs 8 hash SHARDS as fresh `node ... jest --runInBand --shard=i/8`
+#   processes, split across TWO LANES (Equoria-bu9c4.1, 2026-09-14). Each
+#   lane is strictly serial and owns a disposable database built from
+#   migrations + canonical seeds (scripts/test-lane-db.mjs), so the two lanes
+#   never share a database; a short canonical-DB pass runs the few
+#   live-population sentinels afterwards. Measured: 6.7 min wall, 906/906
+#   suites, peak process-tree RSS 1.67GB, versus 20.7 min serial on
+#   2026-09-14 morning.
 #
-#   --max-old-space-size=1536 (passed DIRECTLY to node, per shard)
-#     Per-shard V8 old-space cap at the ordinary budget. It was 4096 while
-#     every finished suite's context stayed resident; since 2026-09-14
-#     (Equoria-k09r9) the custom environment releases each context, so a
-#     shard's heap stays flat between files. Passed on node's argv because
-#     NODE_OPTIONS is silently dropped in the `git push` hook context.
+#   --max-old-space-size=768 (passed DIRECTLY to node, per shard)
+#     Per-shard V8 old-space cap: two lanes at 768 keep the combined cap at
+#     the ordinary 1536 budget (the runner refuses --heap * --lanes above
+#     it). It was 4096 while every finished suite's context stayed resident;
+#     since 2026-09-14 (Equoria-k09r9) the custom environment releases each
+#     context, so a shard's heap stays flat between files. Passed on node's
+#     argv because NODE_OPTIONS is silently dropped in the `git push` hook.
 #
 #   --runInBand (within each shard)
-#     Tests in a shard run sequentially in the SAME process. Combined with
-#     running shards one-at-a-time, the ENTIRE suite executes serially:
-#     no parallel DB contention, and no mid-run worker recycling (the
-#     --maxWorkers=1 --workerIdleMemoryLimit=2048MB approach was tried and
-#     reverted 2026-04-29 for non-deterministic FK / Prisma-pool flakes).
+#     Tests in a shard run sequentially in the SAME process, and each lane
+#     runs its shards one-at-a-time, so every database sees strictly serial
+#     access: no parallel contention on any one DB, and no mid-run worker
+#     recycling (the --maxWorkers=1 --workerIdleMemoryLimit=2048MB approach
+#     was tried and reverted 2026-04-29 for non-deterministic FK / Prisma-pool
+#     flakes — the cause was ONE shared database, which lanes remove).
 #
 #   --shard=i/N
 #     Jest's deterministic hash partition of the test files. Sharding is

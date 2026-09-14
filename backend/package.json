@@ -13,7 +13,7 @@
     "build": "echo 'Backend build completed - ES modules ready for production'",
     "migrate:production": "cd ../packages/database && npx prisma migrate deploy",
     "test": "node --experimental-vm-modules --max-old-space-size=1536 node_modules/jest/bin/jest.js --maxWorkers=2",
-    "test:backend:full": "node scripts/run-suite-sharded.mjs --jest-shards=8 --timeout=600 --heap=1536",
+    "test:backend:full": "node scripts/run-suite-sharded.mjs --jest-shards=8 --lanes=2 --heap=768 --timeout=600",
     "pretest:backend:ci": "node -e \"require('node:fs').mkdirSync('test-results', { recursive: true })\"",
     "test:backend:ci": "node --experimental-vm-modules --max-old-space-size=4096 node_modules/jest/bin/jest.js --maxWorkers=2 --workerIdleMemoryLimit=1500MB --ci --forceExit --json --outputFile=test-results/jest-results.json",
     "test:backend:targeted": "node --experimental-vm-modules --max-old-space-size=1536 node_modules/jest/bin/jest.js --runInBand",

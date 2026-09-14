@@ -213,6 +213,18 @@ async function ensureReferencedRecordsExist() {
   } catch (e) {
     logger.warn(`[seed] Could not ensure Stable ID 2. Error: ${e.message}`);
   }
+  // Equoria-bu9c4.1: the two upserts above insert explicit ids, which does not
+  // advance stables_id_seq. On a fresh database the next autoincrement
+  // stable.create() would then collide on id 1 (renameHorseEndpoint saw
+  // exactly that inside a test lane; the live database hides it because its
+  // sequence is far ahead). Move the sequence past the highest explicit id.
+  try {
+    await prisma.$executeRawUnsafe(
+      "SELECT setval(pg_get_serial_sequence('stables', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM stables), 1))",
+    );
+  } catch (e) {
+    logger.warn(`[seed] Could not advance stables_id_seq. Error: ${e.message}`);
+  }
 }
 
 // Seed horses function

@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const EXPECTED = {
-  full: 'node scripts/run-suite-sharded.mjs --jest-shards=8 --timeout=600 --heap=1536',
+  full: 'node scripts/run-suite-sharded.mjs --jest-shards=8 --lanes=2 --heap=768 --timeout=600',
   ciPre: "node -e \"require('node:fs').mkdirSync('test-results', { recursive: true })\"",
   // Per-environment heap sizing (2026-08-18 user directive): CI keeps 4096 —
   // its 1500MB recycle limit needs ceiling headroom on the 7GB runners —

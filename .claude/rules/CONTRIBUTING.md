@@ -34,7 +34,12 @@ copy a command, threshold, path, or pattern without checking its current source.
   `npm run test:backend` is intentionally serial. Do not invent a different
   full-suite shape from an old rule or diary.
 - Never run backend, frontend, or E2E suites concurrently. They share machine
-  headroom, and backend suites also share the real database.
+  headroom, and backend suites also share the real database. The one
+  sanctioned exception is inside the canonical `test:backend:full` profile:
+  its runner executes two strictly serial lanes, each against a disposable
+  database it creates from migrations and seeds and drops afterwards, so no
+  two Jest processes ever share a database. Do not start a second run of any
+  kind beside it.
 - If a run is interrupted, use the current `test:reap` package script when
   applicable and verify that no orphaned Jest workers remain.
 - `scripts/doctrine-checks/check-jest-memory-budget.mjs`,
