@@ -339,7 +339,6 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
     variation: variationData.name,
     specialEvent: specialEvent || null,
     duration,
-    cost: calculateInteractionCost(groom, duration),
   };
 
   logger.info(
@@ -374,17 +373,6 @@ function calculateInteractionQuality(bonding, stress) {
 }
 
 /**
- * Calculate cost of interaction based on groom and duration
- * @param {Object} groom - Groom performing interaction
- * @param {number} duration - Duration in minutes
- * @returns {number} Cost in currency
- */
-function calculateInteractionCost(groom, duration) {
-  const hourlyRate = groom.sessionRate || 20;
-  return Math.round((duration / 60) * hourlyRate * 100) / 100; // Round to 2 decimal places
-}
-
-/**
  * Get available interaction variations for a groom and horse
  * @param {Object} groom - Groom object
  * @param {Object} horse - Horse object
@@ -401,10 +389,10 @@ export function getAvailableInteractions(groom, horse) {
         name: interaction.name,
         category: interaction.category,
         baseTime: interaction.baseTime,
-        variations: interaction.variations.map(variation => ({
-          ...variation,
-          estimatedCost: calculateInteractionCost(groom, interaction.baseTime),
-        })),
+        // Equoria-tfo3c (owner ruling, 2026-09-14): care costs nothing, so the menu
+        // quotes no price. `estimatedCost` was computed from the groom's session
+        // rate and never charged to anyone.
+        variations: interaction.variations.map(variation => ({ ...variation })),
       };
 
       available.push(interactionData);

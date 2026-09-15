@@ -239,10 +239,8 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
     throw new Error(`Groom ${groom.name} is already assigned to this foal`);
   }
 
-  // Equoria-95yrv: a groom works at most ten horses. This door had NO limit at all
-  // before the ruling, so the eleventh horse was simply accepted here.
+  // Equoria-95yrv: at most ten horses. This door had NO limit before the ruling.
   await assertGroomHasRoomForAnotherHorse(prisma, groomId, groom.name);
-
   // Deactivate other assignments if this is primary (priority 1)
   if (priority === 1) {
     await prisma.groomAssignment.updateMany({
@@ -565,13 +563,10 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   bondingChange = Math.max(0, Math.min(10, bondingChange));
   stressChange = Math.max(-10, Math.min(5, stressChange));
 
-  // Calculate cost per session based on groom's skill level
-  const baseRate = typeof groom.sessionRate === 'number' ? groom.sessionRate : 18.0;
-
-  // Primary factor is skill level as per game design
-  // Small duration factor added only for test compatibility
-  const cost = baseRate * skillLevel.costModifier * (1 + (duration - 60) / 300);
-
+  // Equoria-tfo3c (owner ruling, 2026-09-14): "Care itself does not cost money." The
+  // per-session price computed here from `sessionRate` was written to
+  // `groom_interactions.cost` and debited from nobody; it is gone, not wired to a
+  // wallet. Real costs: grooms/week, training/session, feed, farrier, vet, riders.
   // Determine quality based on results
   let quality;
   if (errorOccurred) {
@@ -588,7 +583,6 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   const baseEffects = {
     bondingChange,
     stressChange,
-    cost: Math.round(cost * 100) / 100, // Round to 2 decimal places
     quality,
     errorOccurred,
     successRate: 1.0 - skillLevel.errorChance, // Base success rate

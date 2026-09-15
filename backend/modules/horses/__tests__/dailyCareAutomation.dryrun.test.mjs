@@ -170,14 +170,17 @@ describe('runDailyCareAutomation — dryRun with available groom (lines 148-170)
     expect(result.summary.totalInteractions).toBe(result.interactions.length);
   });
 
-  it('summary totalCost is a number (may be 0 or positive)', async () => {
+  it('the summary reports no cost at all (Equoria-tfo3c)', async () => {
+    // Owner ruling 2026-09-14: "Care itself does not cost money." This case used to
+    // assert a `totalCost` number, summed from a per-session price that was written
+    // to `groom_interactions.cost` and charged to nobody. The key is gone with it.
     const result = await runDailyCareAutomation({
       specificFoalId: foal.id,
       dryRun: true,
     });
 
-    expect(typeof result.summary.totalCost).toBe('number');
-    expect(result.summary.totalCost).toBeGreaterThanOrEqual(0);
+    expect(result.summary).not.toHaveProperty('totalCost');
+    expect(typeof result.summary.totalInteractions).toBe('number');
   });
 });
 

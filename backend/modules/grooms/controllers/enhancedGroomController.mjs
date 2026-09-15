@@ -285,7 +285,8 @@ export async function performEnhancedInteraction(req, res) {
         bondingChange: effects.bondingChange,
         stressChange: effects.stressChange,
         quality: effects.quality,
-        cost: effects.cost,
+        // Equoria-tfo3c: no `cost` — care costs nothing, so the column keeps its
+        // 0.0 default rather than recording a price nobody is charged.
         notes:
           notes ||
           `Enhanced ${interactionType}: ${variation}${effects.specialEvent ? ` - ${effects.specialEvent.name}!` : ''}`,
@@ -364,7 +365,6 @@ export async function performEnhancedInteraction(req, res) {
           variation: effects.variation,
           quality: effects.quality,
           duration,
-          cost: effects.cost,
         },
         effects: {
           bondingChange: effects.bondingChange,

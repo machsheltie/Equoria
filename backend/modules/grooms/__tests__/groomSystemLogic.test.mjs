@@ -68,7 +68,8 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
 
       expect(effects).toHaveProperty('bondingChange');
       expect(effects).toHaveProperty('stressChange');
-      expect(effects).toHaveProperty('cost');
+      // Equoria-tfo3c: care costs nothing, so there is no `cost` to have.
+      expect(effects).not.toHaveProperty('cost');
       expect(effects).toHaveProperty('quality');
       expect(effects).toHaveProperty('modifiers');
 
@@ -80,8 +81,8 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       expect(effects.stressChange).toBeGreaterThanOrEqual(-10);
       expect(effects.stressChange).toBeLessThanOrEqual(5);
 
-      // Cost should be positive
-      expect(effects.cost).toBeGreaterThan(0);
+      // Equoria-tfo3c: care costs nothing, so the effects carry no price at all.
+      expect(effects).not.toHaveProperty('cost');
 
       // Quality should be valid
       expect(['poor', 'fair', 'good', 'excellent']).toContain(effects.quality);
@@ -111,9 +112,6 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       expect(expertEffects.modifiers.skillLevel).toBe(1.3);
       expect(noviceEffects.modifiers.skillLevel).toBe(0.8);
       expect(expertEffects.modifiers.skillLevel).toBeGreaterThan(noviceEffects.modifiers.skillLevel);
-
-      // Expert should cost more
-      expect(expertEffects.cost).toBeGreaterThan(noviceEffects.cost);
     });
 
     it('should apply personality modifiers correctly', () => {
@@ -142,18 +140,11 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       expect(experiencedEffects.modifiers.experience).toBeGreaterThan(newGroomEffects.modifiers.experience);
     });
 
-    it('should scale cost with duration and session rate', () => {
-      const shortEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 30);
-      const longEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 120);
-
-      // Longer duration should cost more
-      expect(longEffects.cost).toBeGreaterThan(shortEffects.cost);
-
-      // Cost should be based on sessionRate with skill modifier and duration scaling
-      // Note: The actual calculation uses sessionRate * skillModifier * duration scaling
-      expect(shortEffects.cost).toBeGreaterThan(0);
-      expect(longEffects.cost).toBeGreaterThan(shortEffects.cost);
-    });
+    // Equoria-tfo3c (owner ruling, 2026-09-14): "Care itself does not cost money."
+    // The case that stood here asserted a per-session price scaling with duration and
+    // session rate — a price written to `groom_interactions.cost` and charged to
+    // nobody. It is deleted with the computation rather than re-pointed at zero; the
+    // absence is asserted in groomCareIsFree.integration.test.mjs.
 
     it('should handle different interaction types', () => {
       const dailyCareEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 60);
@@ -165,21 +156,20 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       expect(feedingEffects.bondingChange).toBeGreaterThanOrEqual(0);
       expect(groomingEffects.bondingChange).toBeGreaterThanOrEqual(0);
 
-      // All should have same cost for same duration and groom
-      expect(dailyCareEffects.cost).toBeCloseTo(feedingEffects.cost, 2);
-      expect(feedingEffects.cost).toBeCloseTo(groomingEffects.cost, 2);
+      // And none of them quotes a price (Equoria-tfo3c).
+      expect(dailyCareEffects).not.toHaveProperty('cost');
+      expect(feedingEffects).not.toHaveProperty('cost');
+      expect(groomingEffects).not.toHaveProperty('cost');
     });
 
     it('should handle edge cases gracefully', () => {
       // Very short duration
       const shortEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 5);
       expect(shortEffects.bondingChange).toBeGreaterThanOrEqual(0);
-      expect(shortEffects.cost).toBeGreaterThan(0);
 
       // Very long duration
       const longEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 480);
       expect(longEffects.bondingChange).toBeLessThanOrEqual(10);
-      expect(longEffects.cost).toBeGreaterThan(0);
 
       // High experience groom
       const masterGroom = { ...mockGroom, experience: 20, skillLevel: 'master' };
@@ -349,7 +339,8 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
 
       expect(effects).toHaveProperty('bondingChange');
       expect(effects).toHaveProperty('stressChange');
-      expect(effects).toHaveProperty('cost');
+      // Equoria-tfo3c: care costs nothing, so there is no `cost` to have.
+      expect(effects).not.toHaveProperty('cost');
       expect(effects.bondingChange).toBeGreaterThanOrEqual(0);
     });
   });

@@ -171,7 +171,8 @@ describe('runDailyCareAutomation — assignment exists, groom not available', ()
     const result = await runDailyCareAutomation({ specificFoalId: foal.id });
 
     expect(typeof result.summary.totalInteractions).toBe('number');
-    expect(typeof result.summary.totalCost).toBe('number');
+    // Equoria-tfo3c: care costs nothing, so the summary reports no total cost.
+    expect(result.summary).not.toHaveProperty('totalCost');
   });
 });
 

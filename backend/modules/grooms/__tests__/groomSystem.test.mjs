@@ -160,7 +160,8 @@ describe('calculateGroomInteractionEffects()', () => {
     const result = calculateGroomInteractionEffects(makeGroom(), foal, 'grooming', 60);
     expect(result).toHaveProperty('bondingChange');
     expect(result).toHaveProperty('stressChange');
-    expect(result).toHaveProperty('cost');
+    // Equoria-tfo3c: no `cost` — care costs nothing.
+    expect(result).not.toHaveProperty('cost');
     expect(result).toHaveProperty('quality');
     expect(result).toHaveProperty('errorOccurred');
     expect(result).toHaveProperty('successRate');
@@ -226,28 +227,16 @@ describe('calculateGroomInteractionEffects()', () => {
     expect(result.modifiers.personality).toBe(PERSONALITY_TRAITS.strict.bondingModifier);
   });
 
-  // ── sessionRate type branch ─────────────────────────────────────────────────
-
-  it('uses numeric sessionRate when provided', () => {
-    const groom = makeGroom({ sessionRate: 30, skillLevel: 'intermediate', experience: 0 });
-    const result = calculateGroomInteractionEffects(groom, foal, 'grooming', 60);
-    // cost = 30 * intermediate.costModifier * (1 + (60-60)/300) = 30 * 1 * 1 = 30
-    expect(result.cost).toBeCloseTo(30, 1);
-  });
-
-  it('defaults sessionRate to 18.0 when not a number (string)', () => {
-    const groom = makeGroom({ sessionRate: 'free', skillLevel: 'intermediate', experience: 0 });
-    const result = calculateGroomInteractionEffects(groom, foal, 'grooming', 60);
-    // cost = 18 * intermediate.costModifier * 1 = 18
-    expect(result.cost).toBeCloseTo(18, 1);
-  });
-
-  it('defaults sessionRate to 18.0 when undefined', () => {
-    const groom = makeGroom({ skillLevel: 'intermediate', experience: 0 });
-    delete groom.sessionRate;
-    const result = calculateGroomInteractionEffects(groom, foal, 'grooming', 60);
-    expect(result.cost).toBeCloseTo(18, 1);
-  });
+  // ── the per-session price: DELETED, not relaxed ─────────────────────────────
+  //
+  // Equoria-tfo3c (owner ruling, 2026-09-14): "Care itself does not cost money."
+  // Three cases stood here walking the `sessionRate` branches of a price that was
+  // written to `groom_interactions.cost` and charged to nobody (30 for a numeric
+  // rate, 18 for a string, 18 for undefined). The price is gone, so they go with
+  // it — `sessionRate` no longer reaches this calculator at all. What replaces
+  // them is the absence itself, asserted in
+  // groomCareIsFree.integration.test.mjs alongside the real interaction that
+  // proves the column keeps its 0.0 default.
 
   // ── experience bonus branch ─────────────────────────────────────────────────
 
@@ -663,7 +652,6 @@ describe('groomSystem — constants & comparative effects (merged from legacy ba
         60,
       );
       expect(expert.modifiers.skillLevel).toBeGreaterThan(novice.modifiers.skillLevel);
-      expect(expert.cost).toBeGreaterThan(novice.cost);
     });
 
     it('experienced groom modifier exceeds new groom', () => {
@@ -672,10 +660,12 @@ describe('groomSystem — constants & comparative effects (merged from legacy ba
       expect(experienced.modifiers.experience).toBeGreaterThan(newGroom.modifiers.experience);
     });
 
-    it('longer duration produces higher cost', () => {
+    it('a longer session bonds more — and still costs nothing (Equoria-tfo3c)', () => {
       const short = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 30);
       const long = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 120);
-      expect(long.cost).toBeGreaterThan(short.cost);
+      expect(long.bondingChange).toBeGreaterThanOrEqual(short.bondingChange);
+      expect(short).not.toHaveProperty('cost');
+      expect(long).not.toHaveProperty('cost');
     });
   });
 });
