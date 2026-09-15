@@ -271,7 +271,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(dbDam.pendingFoalBreedId).toBe(mare.breedId);
     });
 
-    it('derives the foal name and breed from the dam when the player sent neither', async () => {
+    it('names the foal `unnamed` and takes the breed from the dam when the player sent neither', async () => {
       const bred = await postFoals({ sireId: stallion.id, damId: mare.id });
       expect(bred.status).toBe(200);
 
@@ -282,13 +282,15 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       createdFoalIds.push(foalId);
 
       const foal = await prisma.horse.findUnique({ where: { id: foalId } });
-      expect(foal.name).toBe(`${mare.name} Foal`);
+      // Equoria-4fnro (OWNER RULING 2026-09-14): a foal nobody named is born
+      // 'unnamed'. This asserted `<Dam> Foal` before the ruling.
+      expect(foal.name).toBe('unnamed');
       expect(foal.breedId).toBe(mare.breedId);
       expect(foal.userId).toBe(player.id);
     });
 
     it('still honours an explicit name and breedId when one is supplied', async () => {
-      const explicitName = `TestFixture-6w3ur-Named_${ts}`;
+      const explicitName = `6w3ur-Named_${ts}`;
       const res = await postFoals({
         sireId: stallion.id,
         damId: secondMare.id,
@@ -386,11 +388,12 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(afterSecond.lastBredDate?.toISOString()).toBe(afterFirst.lastBredDate?.toISOString());
     });
 
-    it('rejects a name longer than 100 characters', async () => {
+    it('rejects a name longer than 40 characters', async () => {
+      // Equoria-zalyb (OWNER RULING 2026-09-14): the cap is 40, not 100.
       const res = await postFoals({
         sireId: stallion.id,
         damId: mare.id,
-        name: 'x'.repeat(101),
+        name: 'x'.repeat(41),
       });
       expect(res.status).toBe(400);
       expect(res.body.message).toBe('Validation failed');

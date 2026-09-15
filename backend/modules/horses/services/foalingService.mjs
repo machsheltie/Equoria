@@ -41,7 +41,7 @@ import logger from '../../../utils/logger.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
 import { normalizeEpigeneticModifiers } from '../../../utils/epigeneticTraitKeyMap.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
-import { deriveFoalName } from './horseNamePolicy.mjs';
+import { UNNAMED_HORSE_NAME } from './horseNamePolicy.mjs';
 
 /**
  * Length of an Equoria gestation. Mirrors GESTATION_DAYS in
@@ -435,8 +435,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const resolvedSex = options.sex ? options.sex : rng() < 0.5 ? 'Filly' : 'Colt';
 
   const horseData = {
-    // Equoria-qkgfh.1: derived fallback clamped — see horseNamePolicy.deriveFoalName.
-    name: options.name || dam.pendingFoalName || deriveFoalName(dam.name),
+    // Equoria-4fnro (ruling 2026-09-14): unnamed at birth — see horseNamePolicy.
+    name: options.name || dam.pendingFoalName || UNNAMED_HORSE_NAME,
     age: 0,
     breedId: requestedBreedId,
     sireId,

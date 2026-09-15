@@ -311,7 +311,14 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
   }, 30000);
 
   it('leaves the neighbouring owner mutation PUT /:id working', async () => {
-    const newName = `${FIXTURE_PREFIX}-renamed-${tag()}`;
+    // Equoria-4fnro (OWNER RULING 2026-09-14): this case used to prove PUT still
+    // worked by renaming the horse. PUT no longer sets a name — renaming is
+    // PATCH /horses/:id/name — so it proves the same thing with `sex`, the field
+    // PUT still owns, and asserts the name did not move.
+    const before = await prisma.horse.findUnique({
+      where: { id: horse.id },
+      select: { name: true },
+    });
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -319,15 +326,16 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ name: newName });
+      .send({ sex: 'mare' });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     const persisted = await prisma.horse.findUnique({
       where: { id: horse.id },
-      select: { name: true },
+      select: { name: true, sex: true },
     });
-    expect(persisted.name).toBe(newName);
+    expect(persisted.sex).toBe('Mare');
+    expect(persisted.name).toBe(before.name);
   }, 60000);
 });
 

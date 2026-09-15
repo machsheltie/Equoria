@@ -46,7 +46,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { renameHorseById } from '../services/renameHorseService.mjs';
-import { deriveFoalName, horseNameRejectionReason } from '../services/horseNamePolicy.mjs';
+import { horseNameRejectionReason, unnamedNameIsAcceptable, UNNAMED_HORSE_NAME } from '../services/horseNamePolicy.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-qkgfh1';
@@ -230,8 +230,11 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     expect(await storedName(horseA.id)).toBe(newName);
   }, 60000);
 
-  it('accepts a name at the 100-character maximum and stores it verbatim', async () => {
-    const maxName = 'M'.repeat(100);
+  it('accepts a name at the 40-character maximum and stores it verbatim', async () => {
+    // OWNER RULING 2026-09-14 (Equoria-zalyb): "Limit: 40 characters for horse
+    // names". This asserted 100 before; the bound moved, so the proof moved with
+    // it rather than being left asserting a rule the system no longer has.
+    const maxName = 'M'.repeat(40);
 
     const res = await rename(horseA.id, { name: maxName }, { token: ownerToken, csrf: ownerCsrf });
 
@@ -261,7 +264,7 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     expect(res.status).toBe(200);
     expect(await storedName(horseA.id)).toBe(withGt);
   }, 60000);
-  it('replaces the derived `<Dam> Foal` name produced by the real foaling service', async () => {
+  it('replaces the `unnamed` name the real foaling service gives a newborn foal', async () => {
     const { foal } = await createFoalFromPregnancy({
       damId: dam.id,
       sireId: sire.id,
@@ -269,8 +272,11 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     });
     createdHorseIds.push(foal.id);
 
-    // The whole reason this task exists: the name arrives derived, not chosen.
-    expect(foal.name).toBe(`${FIXTURE_PREFIX}-Dam Foal`);
+    // OWNER RULING 2026-09-14 (Equoria-4fnro): a foal nobody named is born
+    // 'unnamed' and stays so until the player names her. This asserted
+    // `<Dam> Foal` before — a generated name that read like a choice.
+    expect(foal.name).toBe(UNNAMED_HORSE_NAME);
+    expect(foal.name).toBe('unnamed');
 
     const chosenName = 'Fred';
     const res = await rename(foal.id, { name: chosenName }, { token: ownerToken, csrf: ownerCsrf });
@@ -280,60 +286,48 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     expect(await storedName(foal.id)).toBe(chosenName);
   }, 120000);
 
-  it('derives a foal name that obeys the policy even when `<Dam> Foal` would overflow', async () => {
-    // A dam named at the cap makes `${dam.name} Foal` 105 UTF-16 units — longer
-    // than the bound the four gated paths enforce. Before the clamp, the game
-    // minted a name its own validators would refuse. Remove the clamp in
-    // horseNamePolicy.deriveFoalName and this case fails at the length assertion.
-    const longDamName = `${FIXTURE_PREFIX}-LongDam-`.padEnd(100, 'X');
-    expect(longDamName.length).toBe(100);
-    expect(`${longDamName} Foal`.length).toBe(105);
+  it("the birth name is one the game's own rule accepts, and a second unnamed foal is not a collision", async () => {
+    // Two claims the birth name depends on, neither of them safe to leave as a
+    // comment. (1) 'unnamed' satisfies the policy, so the game never mints a
+    // name it would refuse on the way in. (2) names are not unique, so a second
+    // unnamed foal in the same stable is simply a second horse waiting for a
+    // name — if a unique index or a name lookup ever appeared, this fails.
+    expect(unnamedNameIsAcceptable()).toBe(true);
+    expect(horseNameRejectionReason(UNNAMED_HORSE_NAME)).toBeNull();
 
-    const longDam = await makeHorse(owner, longDamName, {
+    // Two dams of this case's own — the shared `dam` fixture's pregnancy is
+    // consumed by whichever foaling case runs first.
+    const inFoal = () => ({
       inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
       pregnancySireId: sire.id,
       pregnancyFeedingsByTier: {},
     });
+    const firstDam = await makeHorse(owner, `${FIXTURE_PREFIX}-DamA`, inFoal());
+    const secondDam = await makeHorse(owner, `${FIXTURE_PREFIX}-DamB`, inFoal());
 
-    const { foal } = await createFoalFromPregnancy({
-      damId: longDam.id,
+    const { foal: firstFoal } = await createFoalFromPregnancy({
+      damId: firstDam.id,
       sireId: sire.id,
       options: { userId: owner.id },
     });
-    createdHorseIds.push(foal.id);
+    createdHorseIds.push(firstFoal.id);
 
-    const persisted = await storedName(foal.id);
+    const { foal: secondFoal } = await createFoalFromPregnancy({
+      damId: secondDam.id,
+      sireId: sire.id,
+      options: { userId: owner.id },
+    });
+    createdHorseIds.push(secondFoal.id);
 
-    // Within the bound, and the ` Foal` signal survives — it is what tells the
-    // player this horse still needs a name, so the dam-name prefix is what gives
-    // way rather than the suffix.
-    expect(persisted.length).toBeLessThanOrEqual(100);
-    expect(persisted.endsWith(' Foal')).toBe(true);
-    expect(persisted).toBe(`${longDamName.slice(0, 95)} Foal`);
+    expect(firstFoal.name).toBe(UNNAMED_HORSE_NAME);
+    expect(secondFoal.name).toBe(UNNAMED_HORSE_NAME);
+    expect(secondFoal.id).not.toBe(firstFoal.id);
 
-    // And the derived name is one the rename endpoint would itself accept, which
-    // is the invariant the clamp exists to make true rather than lucky.
-    const reRename = await rename(foal.id, { name: persisted }, { token: ownerToken, csrf: ownerCsrf });
-    expect(reRename.status).toBe(200);
-    expect(await storedName(foal.id)).toBe(persisted);
+    // And naming one leaves the other exactly as she was.
+    const res = await rename(firstFoal.id, { name: `${FIXTURE_PREFIX}-Named` }, { token: ownerToken, csrf: ownerCsrf });
+    expect(res.status).toBe(200);
+    expect(await storedName(secondFoal.id)).toBe(UNNAMED_HORSE_NAME);
   }, 120000);
-
-  it('never splits a surrogate pair when clamping a derived foal name', () => {
-    // A slice at the raw budget can land between the halves of an astral
-    // character, leaving a lone surrogate — invalid UTF-16 that Postgres will
-    // mangle or reject. 48 grinning-face emoji is 96 units, so a naive
-    // slice(0, 95) would cut the 48th in half.
-    const damName = '\u{1F600}'.repeat(48);
-    expect(damName.length).toBe(96);
-
-    const derived = deriveFoalName(damName);
-
-    expect(derived).toBe(`${'\u{1F600}'.repeat(47)} Foal`);
-    expect(derived.length).toBeLessThanOrEqual(100);
-    // No lone surrogate anywhere: every code unit pairs up.
-    expect([...derived].every(ch => ch.length === 1 || ch.length === 2)).toBe(true);
-    expect(horseNameRejectionReason(derived)).toBeNull();
-  });
 });
 
 describe('PATCH /api/v1/horses/:id/name — authorization collapses (CWE-639)', () => {
@@ -412,10 +406,10 @@ describe('renameHorseService — the write itself re-asserts ownership', () => {
     // leaning on the gate.
     const before = await storedName(horseB.id);
 
-    const result = await renameHorseById(horseB.id, owner.id, 'L'.repeat(101));
+    const result = await renameHorseById(horseB.id, owner.id, 'L'.repeat(41));
 
     expect(result.status).toBe(400);
-    expect(result.body.message).toBe('Horse name must be between 1 and 100 characters');
+    expect(result.body.message).toBe('Horse name must be between 1 and 40 characters');
     expect(await storedName(horseB.id)).toBe(before);
   }, 60000);
 
@@ -474,7 +468,7 @@ describe('PATCH /api/v1/horses/:id/name — validation is fail-closed', () => {
   // pins the EXACT message. A refactor collapsing all three into one generic
   // string would now fail here instead of staying green.
   const TYPE_MSG = 'Horse name must be a string';
-  const LENGTH_MSG = 'Horse name must be between 1 and 100 characters';
+  const LENGTH_MSG = 'Horse name must be between 1 and 40 characters';
   const CHAR_MSG = 'Horse name may not contain < or a null character';
 
   const rejected = [
@@ -483,7 +477,7 @@ describe('PATCH /api/v1/horses/:id/name — validation is fail-closed', () => {
     ['a missing name', {}, TYPE_MSG],
     ['an empty name', { name: '' }, LENGTH_MSG],
     ['a whitespace-only name', { name: '   ' }, LENGTH_MSG],
-    ['a name longer than 100 characters', { name: 'L'.repeat(101) }, LENGTH_MSG],
+    ['a name longer than 40 characters', { name: 'L'.repeat(41) }, LENGTH_MSG],
     // Boundary hygiene, not a naming rule: '<' is refused so a name can never be
     // interpreted as markup by a surface that renders it unescaped. Ratified by the
     // owner 2026-09-14 (Equoria-du5qe); see horseNamePolicy.mjs for why, and do not
@@ -541,7 +535,11 @@ describe('one name rule governs every GATED horse-name path', () => {
    * OPTIONAL (Equoria-6w3ur) — absent passes, supplied is held to the full policy —
    * which is exactly the contract these cases pin.
    */
-  const EMOJI_OVER_CAP = '\u{1F600}'.repeat(51); // 102 UTF-16 units, 51 code points
+  // 42 UTF-16 units, 21 code points - over the 40-unit cap by the RAW count the
+  // policy uses, and under it by validator.js's code-point count. That gap is why
+  // the policy measures raw `.length` (Equoria-zalyb moved the bound from 100 to
+  // 40; the arithmetic it guards is unchanged).
+  const EMOJI_OVER_CAP = '\u{1F600}'.repeat(21);
 
   /** Breed with a supplied name. Validation runs before ownership/eligibility. */
   function breedWithName(name) {
@@ -568,7 +566,7 @@ describe('one name rule governs every GATED horse-name path', () => {
 
     expect(res.status).toBe(400);
     // Same rule; this path reports it through express-validator's errors array.
-    expect(JSON.stringify(res.body)).toContain('Horse name must be between 1 and 100');
+    expect(JSON.stringify(res.body)).toContain('Horse name must be between 1 and 40');
 
     // Per-row: no pregnancy claimed on the mare, and no such horse exists.
     const mare = await pregnancyStateOf(horseB.id);
@@ -577,7 +575,7 @@ describe('one name rule governs every GATED horse-name path', () => {
     expect(await prisma.horse.count({ where: { userId: owner.id, name: '   ' } })).toBe(0);
   }, 60000);
 
-  it('POST /horses/foals refuses an emoji name over the raw 100-unit cap, as rename does', async () => {
+  it('POST /horses/foals refuses an emoji name over the raw 40-unit cap, as rename does', async () => {
     const res = await breedWithName(EMOJI_OVER_CAP);
 
     expect(res.status).toBe(400);
@@ -590,16 +588,17 @@ describe('one name rule governs every GATED horse-name path', () => {
     const res = await rename(horseA.id, { name: EMOJI_OVER_CAP }, { token: ownerToken, csrf: ownerCsrf });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Horse name must be between 1 and 100 characters');
+    expect(res.body.message).toBe('Horse name must be between 1 and 40 characters');
   }, 60000);
 
-  it('rename still accepts 50 emoji (exactly 100 UTF-16 units, at the cap)', async () => {
-    const fifty = '\u{1F600}'.repeat(50);
+  it('rename still accepts 20 emoji (exactly 40 UTF-16 units, at the cap)', async () => {
+    const twenty = '\u{1F600}'.repeat(20);
+    expect(twenty.length).toBe(40);
 
-    const res = await rename(horseA.id, { name: fifty }, { token: ownerToken, csrf: ownerCsrf });
+    const res = await rename(horseA.id, { name: twenty }, { token: ownerToken, csrf: ownerCsrf });
 
     expect(res.status).toBe(200);
-    expect(await storedName(horseA.id)).toBe(fifty);
+    expect(await storedName(horseA.id)).toBe(twenty);
   }, 60000);
 
   it('POST /api/v1/horses is closed, so its validator is dead code on this base', async () => {

@@ -57,6 +57,7 @@ import { useHorseCompetitionHistory } from '@/hooks/api/useHorseCompetitionHisto
 import { useHorseUltraRareTraits } from '@/hooks/api/useUltraRareTraits';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { hasSeenEvent, markEventSeen } from '@/lib/traitEventSeen';
+import { isUnnamed } from '@/lib/horseNamePolicy';
 // Shared types for page + lazy tabs
 import type { Horse, HorseStats } from './horse-detail/HorseDetailPageTypes';
 // Equoria-kdduk — small per-tab components extracted to keep this page <600 lines
@@ -436,7 +437,8 @@ const HorseDetailPage: React.FC = () => {
             isEditing={isEditing}
             editName={editName}
             onStartEdit={() => {
-              setEditName(horse.name);
+              // Equoria-4fnro: an unnamed horse opens an EMPTY field.
+              setEditName(isUnnamed(horse.name) ? '' : horse.name);
               setIsEditing(true);
             }}
             onCancelEdit={() => setIsEditing(false)}

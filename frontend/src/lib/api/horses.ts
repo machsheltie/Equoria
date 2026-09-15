@@ -76,8 +76,20 @@ export const horsesApi = {
     apiClient.get<StatHistory>(`/api/v1/horses/${horseId}/stats/history?range=${timeRange}`),
   getRecentGains: (horseId: number, days = 30) =>
     apiClient.get<RecentGains>(`/api/v1/horses/${horseId}/gains/recent?days=${days}`),
-  update: (horseId: number, data: { name?: string }) =>
+  // NOTE (Equoria-4fnro, owner ruling 2026-09-14): `update` no longer carries a
+  // `name`. Renaming has its own endpoint (`rename` below) and the PUT route now
+  // REFUSES any body containing `name`, so sending one here is a 400, not a
+  // rename. Do not re-add `name` to this signature.
+  update: (horseId: number, data: { sex?: string; dateOfBirth?: string }) =>
     apiClient.put<HorseSummary>(`/api/v1/horses/${horseId}`, data),
+  /**
+   * Rename a horse — the ONE way a player's chosen name reaches `horses.name`
+   * after birth (Equoria-4fnro). PATCH /api/v1/horses/:id/name accepts exactly
+   * `{ name }`, holds it to the shared name policy (1-40 characters, no `<`),
+   * and answers `{ id, name }` with the name that was actually committed.
+   */
+  rename: (horseId: number, name: string) =>
+    apiClient.patch<{ id: number; name: string }>(`/api/v1/horses/${horseId}/name`, { name }),
   /** List a stallion at stud (Equoria-q072). POST /api/v1/horses/:id/stud-listing */
   listAtStud: (horseId: number, studFee: number) =>
     apiClient.post<{

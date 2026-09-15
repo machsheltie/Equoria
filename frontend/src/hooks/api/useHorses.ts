@@ -39,8 +39,37 @@ export const useHorseTrainingHistory = (horseId: number) =>
 
 export const useUpdateHorse = () => {
   const queryClient = useQueryClient();
-  return useMutation<HorseSummary, ApiError, { horseId: number; data: { name?: string } }>({
+  return useMutation<
+    HorseSummary,
+    ApiError,
+    { horseId: number; data: { sex?: string; dateOfBirth?: string } }
+  >({
     mutationFn: ({ horseId, data }) => horsesApi.update(horseId, data),
+    onSuccess: (_result, { horseId }) => {
+      queryClient.invalidateQueries({ queryKey: horseKeys.detail(horseId) });
+      queryClient.invalidateQueries({ queryKey: horseKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['next-actions'] });
+    },
+  });
+};
+
+/**
+ * Rename a horse through the dedicated endpoint (Equoria-4fnro).
+ *
+ * WHY NOT `useUpdateHorse`: renaming used to ride on PUT /horses/:id, a
+ * mass-assignment route that also takes sex, dateOfBirth and parentage. The
+ * owner ruled that the form uses the dedicated rename endpoint and the older
+ * route stops renaming, so this is the only mutation in the frontend that can
+ * change a horse's name.
+ *
+ * Every surface that shows a horse's name is invalidated, because the name is
+ * on all of them — the horse's own page, the roster, and the next-actions
+ * prompts that call horses by name.
+ */
+export const useRenameHorse = () => {
+  const queryClient = useQueryClient();
+  return useMutation<{ id: number; name: string }, ApiError, { horseId: number; name: string }>({
+    mutationFn: ({ horseId, name }) => horsesApi.rename(horseId, name),
     onSuccess: (_result, { horseId }) => {
       queryClient.invalidateQueries({ queryKey: horseKeys.detail(horseId) });
       queryClient.invalidateQueries({ queryKey: horseKeys.all });
