@@ -62,7 +62,7 @@
   "frontend/src/components/competition/PerformanceBreakdown.tsx": 630,
   "frontend/src/components/competition/PrizeTransactionHistory.tsx": 824,
   "frontend/src/components/foal/DevelopmentTracker.tsx": 703,
-  "frontend/src/components/onboarding/BreedSelector.tsx": 767,
+  "frontend/src/components/onboarding/BreedSelector.tsx": 746,
   "frontend/src/lib/api/types.ts": 750,
   "frontend/src/lib/utils/__tests__/training-utils.test.ts": 904,
   "frontend/src/pages/__tests__/RegisterPage.test.tsx": 1226,

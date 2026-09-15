@@ -15,6 +15,7 @@ import { LayoutGrid, List, Search, Star, X } from 'lucide-react';
 import { type Breed, type BreedStatTendencies } from '@/hooks/api/useBreeds';
 import { getBreedCategoryPlaceholder } from '@/lib/breed-images';
 import { Input } from '@/components/ui/form';
+import { HorseNameField } from './HorseNameField';
 import { topBreedDisciplines } from './breedDisciplineStrength';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -724,38 +725,15 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
         </div>
       </div>
 
-      {/* ── Name input ── */}
-      <div>
-        <label
-          htmlFor="horse-name-input"
-          className="block text-xs text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-widest mb-2"
-        >
-          Name Your Horse
-        </label>
-        <Input
-          id="horse-name-input"
-          type="text"
-          value={value.horseName ?? ''}
-          onChange={setHorseName}
-          placeholder="e.g. Midnight Comet"
-          maxLength={40}
-          data-testid="horse-name-input"
-        />
-
-        {/* Live preview chip */}
-        {(value.horseName ?? '').length > 0 && (
-          <div className="mt-2 flex items-center gap-2">
-            <span className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
-              Preview:
-            </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[var(--alpha-gold-primary-12)] border border-[var(--alpha-gold-ember-30)] text-[var(--gold-primary)] font-[var(--font-heading)]">
-              {value.horseName}
-              {value.breedName ? ` · ${value.breedName}` : ''}
-              {value.gender ? ` · ${value.gender}` : ''}
-            </span>
-          </div>
-        )}
-      </div>
+      {/* ── Name input ── (extracted to HorseNameField for Equoria-zalyb: the
+          field now carries the 40-character rule, its counter and its own
+          rejection copy, and BreedSelector was already at its size ceiling.) */}
+      <HorseNameField
+        name={value.horseName ?? ''}
+        onChange={setHorseName}
+        breedName={value.breedName}
+        gender={value.gender}
+      />
     </div>
   );
 }

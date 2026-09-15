@@ -31,6 +31,9 @@ import {
 } from '@/components/onboarding/BreedSelector';
 import { getHorseImage } from '@/lib/breed-images';
 import { useBreeds } from '@/hooks/api/useBreeds';
+import { InlineError } from '@/components/ui/state/InlineError';
+import { horseNameRejection, horseNameRejectionCopy } from '@/lib/horseNamePolicy';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 // ── Step definitions ───────────────────────────────────────────────────────────
 
@@ -245,6 +248,11 @@ const OnboardingPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(loadSavedStep);
   const [horseSelection, setHorseSelection] =
     useState<Partial<BreedSelectionValue>>(loadSavedHorse);
+  // Equoria-zalyb: the starter horse's name now meets the shared name policy, so
+  // a refusal is a thing this page has to SAY. It says it here, beside the
+  // control that failed — not in a toast that disappears while she is still
+  // reading it (FRONTEND_ASYNC_STATE_DOCTRINE §3).
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Persist step and horse selection to sessionStorage
   function advanceStep(nextStep: number) {
@@ -310,11 +318,22 @@ const OnboardingPage: React.FC = () => {
       navigate('/stable', { replace: true });
     },
     onError: (error) => {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'We could not save your starter horse. Please try again.';
-      toast.error(message);
+      // A 400 on this request is the name (breed and gender are chosen from
+      // fixed controls), so say the name rule in Equoria's own words. Anything
+      // else goes through the shared taxonomy. The server's own string is never
+      // rendered — §4 of the async-state doctrine.
+      const statusCode =
+        typeof error === 'object' && error !== null && 'statusCode' in error
+          ? (error as { statusCode?: number }).statusCode
+          : undefined;
+      setSubmitError(
+        statusCode === 400
+          ? horseNameRejectionCopy(
+              horseNameRejection(horseSelection.horseName ?? '') ?? 'characters',
+              horseSelection.horseName ?? ''
+            )
+          : userMessageFor(error).message
+      );
     },
   });
 
@@ -330,6 +349,18 @@ const OnboardingPage: React.FC = () => {
 
   function handleNext() {
     if (!canProceed) return;
+
+    // Hold her at the step where the name lives rather than letting her walk two
+    // screens forward and be refused at the end of onboarding.
+    if (currentStep === 1) {
+      const rejection = horseNameRejection((horseSelection.horseName ?? '').trim());
+      if (rejection !== null) {
+        setSubmitError(horseNameRejectionCopy(rejection, (horseSelection.horseName ?? '').trim()));
+        return;
+      }
+    }
+
+    setSubmitError(null);
     if (isLastStep) {
       completeMutation.mutate();
     } else {
@@ -439,6 +470,12 @@ const OnboardingPage: React.FC = () => {
               </>
             )}
           </Button>
+
+          {submitError && (
+            <p className="mt-3 flex justify-center">
+              <InlineError message={submitError} />
+            </p>
+          )}
 
           {/* Skip intro link — skips the welcome step and goes directly to horse selection */}
           {currentStep === 0 && (

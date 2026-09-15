@@ -125,6 +125,11 @@ describe('validateCreateHorse', () => {
   });
 
   it('rejects name that is too long (> 100 chars)', async () => {
+    // NOTE (Equoria-zalyb): 100 here is THIS middleware's own bound, not the
+    // game's. `backend/middleware/validateHorse.mjs` has no route consumer — only
+    // this file imports it — so it is not the shared horse-name policy and was
+    // deliberately left alone when the owner set the real limit to 40. See the
+    // "not enforced behaviour" note in horses/services/horseNamePolicy.mjs.
     const req = makeReq({ body: { ...VALID_BODY, name: 'A'.repeat(101) } });
     const { nextCalled, statusCode } = await runChain(validateCreateHorse, req);
     expect(nextCalled).toBe(false);

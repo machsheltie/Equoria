@@ -2,10 +2,12 @@
 // Doctrine: request-reachable code that writes `horses.name` must know about the
 // shared horse-name policy.
 //
-// Source: Equoria-qkgfh.1. The horse-name rule (length 1-100 raw UTF-16 units,
+// Source: Equoria-qkgfh.1. The horse-name rule (length 1-40 raw UTF-16 units,
 // non-empty after trim, no `<` or NUL) lives in
-// `backend/modules/horses/services/horseNamePolicy.mjs`. Four request paths
-// enforce it; a fifth (onboarding) deliberately does not.
+// `backend/modules/horses/services/horseNamePolicy.mjs`. Since the 2026-09-14
+// owner rulings, EVERY live player-supplied path enforces it — onboarding
+// included (Equoria-zalyb), and PUT /horses/:id no longer sets a name at all
+// (Equoria-4fnro).
 //
 // WHY A GATE INSTEAD OF ANOTHER SWEEP
 //   The set of paths that write a player's string into `horses.name` was
@@ -21,7 +23,7 @@
 //   that writes `horses.name` imports the policy module (so its author met the
 //   rule) or is explicitly allow-listed with a reason. It does NOT prove every
 //   write inside such a file is clamped or validated — e.g. `foalingService`
-//   clamps its DERIVED fallback via `deriveFoalName` while deliberately passing
+//   writes the shared birth name `UNNAMED_HORSE_NAME` while deliberately passing
 //   an already-validated `options.name` through untouched.
 //
 // WHAT IT CANNOT SEE (stated, not implied)
@@ -435,7 +437,7 @@ if (violations.length > 0 || staleEntries.length > 0 || contractViolations.lengt
     console.error(
       '\nFix (preferred): validate the name through' +
         '\n  backend/modules/horses/services/horseNamePolicy.mjs' +
-        '\n  (horseNameRejectionReason for a supplied name; deriveFoalName for a generated one),' +
+        '\n  (horseNameRejectionReason for a supplied name; UNNAMED_HORSE_NAME for a newborn foal),' +
         '\n  or import the shared rule via routes/_validators.mjs on a request path.' +
         '\nIf the divergence is deliberate and owner-approved, add the file to' +
         `\n  ${path.relative(REPO_ROOT, ALLOWLIST_PATH).split(path.sep).join('/')}` +

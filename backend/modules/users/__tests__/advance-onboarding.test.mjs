@@ -365,6 +365,70 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     expect(horse.phenotype.colorName.length).toBeGreaterThan(0);
   });
 
+  // ── Equoria-zalyb (OWNER RULING 2026-09-14): the starter horse's name goes
+  // through the SHARED horse-name policy, and an over-long name is REJECTED
+  // rather than silently truncated. Before this ruling the controller did
+  // `trim().slice(0, 40)`, so a 41-character name was quietly shortened on the
+  // first thing a new player ever does, and `Fred <3` was settable here and
+  // never settable again through any other path. The limit is 40 characters,
+  // which is now the whole system's limit (horseNamePolicy.mjs).
+  describe('starter horse name policy (Equoria-zalyb)', () => {
+    const nameFor = length => `Z${'a'.repeat(length - 1)}`;
+
+    async function postName(horseName) {
+      const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+      expect(breed).toBeTruthy();
+      return request(app)
+        .post('/api/v1/auth/advance-onboarding')
+        .set('Origin', 'http://localhost:3000')
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', cookieHeader)
+        .set('X-Test-Email', testUserData.email)
+        .set(rateLimitBypassHeader)
+        .send({ horseName, breedId: breed.id, gender: 'Mare' });
+    }
+
+    it('accepts a name at the 40-character limit and stores it verbatim', async () => {
+      const atLimit = nameFor(40);
+      expect(atLimit.length).toBe(40);
+
+      const response = await postName(atLimit);
+      expect(response.status).toBe(200);
+      expect(response.body.data.horse.name).toBe(atLimit);
+
+      const horses = await prisma.horse.findMany({ where: { userId: testUser.id } });
+      expect(horses.some(h => h.name === atLimit)).toBe(true);
+    });
+
+    it('REJECTS a 41-character name instead of truncating it, and says what to do', async () => {
+      const overLimit = nameFor(41);
+      expect(overLimit.length).toBe(41);
+      const truncated = overLimit.slice(0, 40);
+
+      const response = await postName(overLimit);
+      expect(response.status).toBe(400);
+      // The message is a new player's first failure — it must name the limit
+      // and tell her what to do, not read as a validator dump.
+      expect(response.body.message).toContain('40');
+      expect(response.body.message.length).toBeGreaterThan(40);
+
+      // The old behaviour is the thing being forbidden: nothing truncated, and
+      // no horse named either the long name or its first 40 characters.
+      const horses = await prisma.horse.findMany({ where: { userId: testUser.id } });
+      expect(horses.some(h => h.name === truncated)).toBe(false);
+      expect(horses.some(h => h.name === overLimit)).toBe(false);
+    });
+
+    it('REJECTS a name containing < (the character rule the shared policy enforces)', async () => {
+      const response = await postName('Fred <3');
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('<');
+
+      const horses = await prisma.horse.findMany({ where: { userId: testUser.id } });
+      expect(horses.some(h => h.name === 'Fred <3')).toBe(false);
+    });
+  });
+
   it('should return 401 when not authenticated', async () => {
     await request(app)
       .post('/api/v1/auth/advance-onboarding')

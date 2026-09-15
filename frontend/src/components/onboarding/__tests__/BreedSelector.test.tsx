@@ -173,6 +173,49 @@ describe('BreedSelector', () => {
       render(<BreedSelector breeds={mockBreeds} value={{ horseName: '' }} onChange={onChange} />);
       expect(screen.queryByText('Preview:')).not.toBeInTheDocument();
     });
+
+    // Equoria-zalyb (OWNER RULING 2026-09-14): the starter horse's name now
+    // meets the shared 40-character rule on the server and is REJECTED rather
+    // than silently truncated. The field's job is to make that rejection rare
+    // and, when it happens, legible.
+    describe('the 40-character rule (Equoria-zalyb)', () => {
+      it('stops the field at 40 characters, the same limit the server enforces', () => {
+        render(<BreedSelector breeds={mockBreeds} value={{ horseName: '' }} onChange={onChange} />);
+        expect(screen.getByTestId('horse-name-input')).toHaveAttribute('maxLength', '40');
+      });
+
+      it('shows how much room is left, and reaches zero at the limit', () => {
+        const { rerender } = render(
+          <BreedSelector breeds={mockBreeds} value={{ horseName: '' }} onChange={onChange} />
+        );
+        expect(screen.getByTestId('horse-name-counter')).toHaveTextContent(
+          '40 of 40 characters left'
+        );
+
+        const atLimit = 'M'.repeat(40);
+        rerender(
+          <BreedSelector breeds={mockBreeds} value={{ horseName: atLimit }} onChange={onChange} />
+        );
+        expect(screen.getByTestId('horse-name-counter')).toHaveTextContent(
+          '0 of 40 characters left'
+        );
+        // A name AT the limit is accepted, so nothing is announced.
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
+
+      it('explains a refused character beside the field rather than in a toast', () => {
+        render(
+          <BreedSelector breeds={mockBreeds} value={{ horseName: 'Fred <3' }} onChange={onChange} />
+        );
+        const alert = screen.getByRole('alert');
+        expect(alert).toHaveTextContent('<');
+      });
+
+      it('says nothing about an untouched field', () => {
+        render(<BreedSelector breeds={mockBreeds} value={{ horseName: '' }} onChange={onChange} />);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
+    });
   });
 
   it('shows lore blurb when a breed is selected', () => {
