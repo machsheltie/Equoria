@@ -76,6 +76,11 @@ fi
 # checkout — the 2026-09-11 near-miss, where one session's 80-commit push to
 # master had another session's half-finished revert inside it. Prints the
 # offending commits. ~0.2s, no-op in CI, override EQUORIA_SESSION_OVERRIDE=1.
+#
+# It CONSUMES this hook's stdin (the "<local ref> <local sha> <remote ref>
+# <remote sha>" lines git feeds a pre-push hook) so it judges the refs actually
+# being pushed rather than assuming @{upstream}..HEAD. Nothing below reads
+# stdin; if that ever changes, tee it instead of piping it here.
 sh "$REPO_ROOT/scripts/session/session-guard.sh" prepush || exit 1
 
 # Equoria-ocy3 (B2): run doctrine-checks BEFORE the slow backend test suite.

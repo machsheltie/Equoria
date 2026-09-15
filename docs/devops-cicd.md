@@ -58,11 +58,19 @@ detected it, an unrelated `git merge` refusal did.
 The owner's ruling was to DETECT, not prevent. `scripts/session/session-guard.sh`
 implements it:
 
-| When          | Entry point                      | Behavior                                                                                                                  |
-| ------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Session start | `bash scripts/session/claim.sh`  | Claims the checkout. Reports a live foreign claim with its age and tells you to use a worktree. Always exits 0.           |
-| Commit        | `.husky/pre-commit` (first line) | Refuses when the claim belongs to another live session and this commit stages paths that session's snapshot did not have. |
-| Push          | `.husky/pre-push` (first check)  | Refuses when the push carries commits made in another session's claim, or mixes author/committer identities. Prints them. |
+| When          | Entry point                      | Behavior                                                                                                                                                                                                                        |
+| ------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session start | `bash scripts/session/claim.sh`  | Claims the checkout. Reports a live foreign claim with its age and tells you to use a worktree. Always exits 0.                                                                                                                 |
+| Commit        | `.husky/pre-commit` (first line) | Refuses when the claim belongs to another live session **and** this commit stages paths that session's snapshot did not contain. Staged paths that were all in its snapshot produce a warning instead.                          |
+| Push          | `.husky/pre-push` (first check)  | Judges the refs on stdin, not `HEAD`. Refuses when the claim is foreign and live **and** the pushed commits touch paths that session never had dirty, or when the pushed commits carry more than one author/committer identity. |
+
+**It catches one direction, not two.** The guard bites at the non-holder's
+pre-commit and at the non-holder's push. A push by the session that _holds_ the
+claim is checked only for differing author/committer identities — and every
+session here commits as the same git user — so the holder pushing a branch that
+already contains another session's commit is **not** caught at push. It is
+caught earlier, when that other session tried to commit into the tree. The two
+hooks are not two layers over the same direction.
 
 The claim lives in `"$(git rev-parse --git-dir)"/equoria-session.json` — inside
 the git directory, so it is never tracked and never appears in the working
@@ -71,15 +79,25 @@ each worktree carries its own claim. That is the point: separate worktrees are
 the fix, not the failure.
 
 - Session identity comes from `EQUORIA_SESSION_ID`, else `CLAUDE_CODE_SESSION_ID`
-  (Claude Code exports it into hook processes), else a parent pid and start
-  time. The last is weak and the guard says so when it uses it.
-- A claim older than 8 hours is stale and is taken over with a warning, so a
-  crashed session does not block the next one.
-- Every refusal is overridable with `EQUORIA_SESSION_OVERRIDE=1` and prints
-  what it found first. It is never silent, and it never blocks without naming
-  the other session.
+  (Claude Code exports it into hook processes), else `CLAUDE_PID`. With none of
+  them the token falls back to a parent pid, which git changes on every hook
+  run — so that case is marked **weak** and the guard only warns, never
+  refuses. A plain `git commit` by a human with no Claude environment is never
+  blocked, and a claim written weakly is taken over silently.
+- A claim is stale when the process that made it (`CLAUDE_PID`, recorded in the
+  claim) is gone, so a restarted session takes the tree over automatically
+  rather than being locked out. When liveness cannot be determined the claim
+  expires after 2h; a claim whose process is provably alive expires after 8h.
+  Takeover is always a warning, never a refusal.
+- A corrupt, empty or truncated claim file is reported by name, rewritten, and
+  the operation proceeds. It never refuses on behalf of a session it cannot
+  name.
+- Every refusal is overridable with `EQUORIA_SESSION_OVERRIDE=1` and prints what
+  it found first. It is never silent.
 - No-op under `CI=true` or `GITHUB_ACTIONS`. Cost measured on Windows Git Bash:
   ~0.5s pre-commit, ~0.2s pre-push.
+- `sh scripts/session/session-guard.sh status` prints the current claim, whether
+  it is yours, and whether it is stale.
 
 To claim automatically, add this alongside the existing `SessionStart` hooks in
 `.claude/settings.json`:
@@ -92,10 +110,12 @@ To claim automatically, add this alongside the existing `SessionStart` hooks in
 }
 ```
 
-What it cannot see: two sessions that share one session token, a session that
-never commits or pushes (a `reset --hard` or `stash` still destroys work
-silently — the guard watches commits and pushes, not the index), and work
-already committed before the first claim existed.
+What it cannot see: a push by the claim holder carrying another session's commit
+(above); work committed before any claim existed; two sessions that share one
+session token; any session with no identity in its environment; and destruction
+rather than creation — `git reset --hard`, `git checkout --`, `git stash` and a
+branch force still discard the other session's uncommitted work silently, and
+no hook exists for them.
 
 ## Railway invariant
 
