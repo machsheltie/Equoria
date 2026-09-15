@@ -319,10 +319,15 @@ model Horse {
   ///   idx_horses_userid_age, idx_horses_userid_age_trainingcooldown,
   ///   idx_horses_userid_breedid, idx_horses_userid_createdat
   ///
-  /// TWELVE OF THEM ARE NOW DECLARED BELOW, each with `map:` pinning the name
-  /// the migration already created, so Prisma adopts the existing index rather
-  /// than proposing to drop it or to create a differently-named one. The other
-  /// four are covered without a declaration — see DUPLICATE GROUPS below.
+  /// SIX OF THOSE SIXTEEN ARE GONE AS OF Equoria-bebob. Migration
+  /// 20260915120000_bebob_drop_redundant_horse_indexes drops five exact
+  /// duplicates and one prefix-redundant index under the owner's ruling of
+  /// 2026-09-14 — see that file for the measured before/after and the surviving
+  /// twin of each dropped name. ELEVEN OF THE SURVIVORS ARE DECLARED BELOW,
+  /// each with `map:` pinning the name the migration already created, so Prisma
+  /// adopts the existing index rather than proposing to drop it or to create a
+  /// differently-named one. The counts in this block are stated as of that
+  /// migration; the raw list above is the qh6jk history, which is not rewritten.
   ///
   /// DECLARATION IS THE REMEDY, AND IT REPLACES THE OLD ONE. Until 2026-09-09
   /// this block told the reader to delete the generated `DROP INDEX` statements
@@ -337,7 +342,8 @@ model Horse {
   /// to accept and nothing to hand-edit. Do not reintroduce the hand-edit
   /// instruction.
   ///
-  /// Measured 2026-09-09, read-only, no migration and no DDL, with
+  /// Measured 2026-09-09, read-only, no migration and no DDL, BEFORE the
+  /// Equoria-bebob drops, with
   /// `prisma migrate diff --from-schema-datasource <schema>
   /// --to-schema-datamodel <schema> --script` against the local `equoria`
   /// database. With the twelve declarations below plus
@@ -374,25 +380,37 @@ model Horse {
   /// and all three `disciplineScores` DROPs return together. Shape-matching is
   /// measured behaviour on Prisma 6.8.2, not a documented guarantee.
   ///
-  /// ONE DECLARED DELETION CANDIDATE. `idx_horses_userid_age` is a strict
-  /// leading prefix of `idx_horses_userid_age_trainingcooldown`, so it carries no
-  /// query value — but it is a distinct SHAPE, so it is the one redundant index
-  /// the differ does propose dropping, and declaring it is the only way to reach
-  /// an empty proposal. It is declared to stabilise the schema against the
-  /// database and remains a deletion candidate under Equoria-bebob, which needs
-  /// the owner's authorization. Nothing was deleted here.
+  /// AS OF Equoria-bebob all four of those undeclared duplicates are DROPPED,
+  /// so each group is now one index — the declared survivor. The declarations
+  /// that remain are still load-bearing for the differ; do not delete them.
   ///
-  /// SIXTEEN IS THE MIGRATION-HISTORY COUNT, NOT THE DATABASE COUNT. The local
-  /// development database has SEVENTEEN `idx_horses_*` indexes: the sixteen
-  /// above plus `idx_horses_user_horse_lookup ("userId")`, which lives in no
-  /// migration at all because
+  /// THE ONE DECLARED DELETION CANDIDATE HAS BEEN DELETED.
+  /// `idx_horses_userid_age` was a strict leading prefix of
+  /// `idx_horses_userid_age_trainingcooldown`, so it carried no query value —
+  /// but it was a distinct SHAPE, so it was the one redundant index the differ
+  /// did propose dropping, and declaring it was the only way to reach an empty
+  /// proposal while it still existed. Equoria-bebob dropped it in the migration
+  /// and removed its `@@index([userId, age], map: "idx_horses_userid_age")`
+  /// declaration in the same commit, which is why neither appears below. Do not
+  /// re-add the declaration: it would propose recreating the index.
+  ///
+  /// SIXTEEN WAS THE MIGRATION-HISTORY COUNT, NOT THE DATABASE COUNT, and both
+  /// counts moved with Equoria-bebob: history now produces TEN of the sixteen
+  /// (the migration's six DROPs run after qh6jk's CREATEs), and a database the
+  /// runtime service has never touched carries those ten. Before the drops the
+  /// local development database had SEVENTEEN `idx_horses_*` indexes: the
+  /// sixteen above plus `idx_horses_user_horse_lookup ("userId")`, which lived
+  /// in no migration at all because
   /// backend/services/databaseOptimizationService.mjs still creates it at
   /// RUNTIME with `CREATE INDEX IF NOT EXISTS` (see its `user_horse_lookup`
   /// entry) — the same drift qh6jk existed to end, for one index it did not
   /// record. Verified against the local `equoria` database on 2026-09-09 with
   /// `SELECT indexname FROM pg_indexes WHERE tablename='horses' AND indexname
   /// LIKE 'idx_horses%'`. Expect the seventeenth on any environment where that
-  /// service has run, and do not read a count of 17 as corruption.
+  /// service has run, and do not read an inflated count as corruption. That
+  /// seventeenth is now dropped by the Equoria-bebob migration too, but the
+  /// service will recreate it — and four of the other five dropped names — the
+  /// next time one of its test callers runs. Ending that is Equoria-9xa92.
   ///
   /// That seventeenth CANNOT be owned through this file, and the reason is not
   /// that Prisma is unable to express it. It is structurally identical to
@@ -422,7 +440,6 @@ model Horse {
   @@index([age, trainingCooldown], map: "idx_horses_age_and_training_status")
   @@index([breedId, age], map: "idx_horses_breedid_age")
   @@index([userId, stableId], map: "idx_horses_ownerid_stableid")
-  @@index([userId, age], map: "idx_horses_userid_age")
   @@index([userId, age, trainingCooldown], map: "idx_horses_userid_age_trainingcooldown")
   @@index([userId, breedId], map: "idx_horses_userid_breedid")
   @@index([userId, createdAt], map: "idx_horses_userid_createdat")
