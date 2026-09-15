@@ -1,4 +1,5 @@
 import { chromium, expect, type FullConfig } from '@playwright/test';
+import { startSessionKeepAlive } from './helpers/sessionKeepAlive';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -29,6 +30,15 @@ async function getPrisma(): Promise<Record<string, unknown>> {
 // Playwright forks test workers AFTER globalSetup returns, so env mutations
 // here propagate to every worker. Tests must read via the helper in
 // tests/e2e/helpers/credentials.ts (or process.env directly).
+
+// Kept at module scope so globalTeardown (or a setup failure) can stop the
+// renewal timer. The timer is unref'd, so leaving it running never blocks exit.
+let stopSessionKeepAlive: (() => void) | null = null;
+
+export function stopGlobalSessionKeepAlive(): void {
+  stopSessionKeepAlive?.();
+  stopSessionKeepAlive = null;
+}
 
 async function globalSetup(config: FullConfig) {
   const { baseURL, storageState } = config.projects[0].use;
@@ -156,6 +166,18 @@ async function globalSetup(config: FullConfig) {
     process.env.E2E_TEST_PASSWORD = password;
     process.env.E2E_TEST_USERNAME = username;
     console.log('Credentials saved to process.env (E2E_TEST_*).');
+
+    // ── 4b. Keep the shared session live for the whole run (Equoria-oye1a) ───
+    // The accessToken cookie just captured expires in 15 minutes
+    // (ACCESS_TOKEN_TTL_MS) but the suite runs for ~22, so every context
+    // created after T+15m used to start logged out. Renew through the real
+    // login route on a timer and rewrite storageState.json atomically.
+    stopSessionKeepAlive = startSessionKeepAlive({
+      baseURL: baseURL as string,
+      storageStatePath: storageState as string,
+      email,
+      password,
+    });
 
     // ── 5. Reuse the real starter horse created by registration/onboarding ───
     // Equoria-f6wfa: the horses collection is versioned at /api/v1/horses. The
@@ -409,6 +431,7 @@ async function globalSetup(config: FullConfig) {
     console.log('Global setup complete.');
   } catch (error) {
     console.error('Global setup failed:', error);
+    stopGlobalSessionKeepAlive();
     throw error;
   } finally {
     await browser.close();
