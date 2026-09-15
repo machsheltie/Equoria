@@ -43,6 +43,53 @@
 # the dead migration step through.
 # ─────────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────
+# NEEDS GRAPH AND THE SKIP SENTINEL (Equoria-axyem.7 / Equoria-gvslq)
+# ─────────────────────────────────────────────────────────────────────────
+# BEFORE (owner ruling 2026-09-14 changed one edge):
+#   security-gate: needs [lint, db-preflight]
+# AFTER:
+#   security-gate: needs [lint]
+# Everything else is unchanged:
+#   lint, db-preflight, burn-in         -> (no needs)
+#   backend-tests                       -> [lint, db-preflight]   (kept)
+#   frontend-tests, performance-tests,
+#   load-contention                     -> [lint]
+#   coverage-gate                       -> [backend-tests]
+#   e2e-tests                           -> [backend-tests, frontend-tests]
+#   docker-build                        -> [coverage-gate, frontend-tests]
+#   beta-readiness-gate                 -> [coverage-gate, security-gate,
+#                                           frontend-tests]
+#   deployment-gate                     -> [coverage-gate, security-gate,
+#                                           beta-readiness-gate, e2e-tests,
+#                                           docker-build]
+#   critical-jobs-ran (NEW)             -> all ten critical jobs, if: always()
+#
+# The `critical-jobs-ran` job ("Critical Jobs Ran") is the skip sentinel. A
+# skipped job satisfies a required status check and renders grey, so a cascade
+# of skips reads as "nothing to do". The sentinel FAILS, naming the jobs, when
+# any critical job concluded `skipped` or `cancelled` on a run where its own
+# `if:` said it should have executed. It does NOT fail merely because an
+# upstream job failed — that is already red.
+#
+# HONEST LIMITATIONS — what the sentinel cannot see:
+#   * `needs.backend-tests.result` is the matrix result AS A WHOLE. It reads
+#     `skipped` only if the entire matrix was skipped. One shard skipped inside
+#     a `fail-fast: false` matrix is invisible here.
+#   * A job that never entered the graph at all (deleted, renamed, or typo'd
+#     out of a `needs:` list) is not a skip and cannot be detected here;
+#     `scripts/doctrine-checks/check-needs-references.mjs` covers that class.
+#   * A step skipped INSIDE a job is invisible; only job-level results are read.
+#   * Branch protection's list of required checks is repository configuration,
+#     not workflow YAML. Adding "Critical Jobs Ran" to the required list is a
+#     separate, owner-controlled action.
+#
+# The EXPECT_* mirrors are NOT self-enforcing YAML; they are kept honest by
+# scripts/doctrine-checks/check-critical-jobs-mirrors.mjs, which fails if a
+# mirror ever stops being character-identical to the `if:` it mirrors, or if a
+# job checked as unconditional grows an `if:`.
+# ─────────────────────────────────────────────────────────────────────────
+
 name: 'Equoria Quality Gate'
 
 on:
@@ -950,7 +997,16 @@ jobs:
     name: 'Security Gate'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint, db-preflight]
+    # Equoria-axyem.7 (owner ruling 2026-09-14): needs [lint] ONLY, no longer
+    # [lint, db-preflight]. This job provisions its own postgres service and
+    # runs its own `prisma migrate deploy` + seed below, so it never consumed
+    # anything db-preflight produced — the edge was pure ordering. Its cost was
+    # that a migration-check failure silently SKIPPED the security gate, so a
+    # database problem hid a security problem for 18 days. Accepted trade-off:
+    # the security gate now spends a few minutes on runs that are already
+    # failing. backend-tests deliberately KEEPS `needs: [lint, db-preflight]` —
+    # testing against an unmigrated database is wasted time, not hidden signal.
+    needs: [lint]
 
     services:
       postgres:
@@ -1097,7 +1153,13 @@ jobs:
               echo 'Frontend shell and required image assets embedded'"
 
   # ──────────────────────────────────────────────────────────────────────────────
-  # JOB 9.5 — Beta Readiness Gate (master only)
+  # JOB 9.5 — Beta Readiness Gate (runs on EVERY event)
+  #
+  # Equoria-axyem.7: this header said "master only" for a long time and was
+  # simply wrong — the job has no `if:` and never has. The skip sentinel
+  # (`critical-jobs-ran`) therefore treats it as unconditional, and
+  # scripts/doctrine-checks/check-critical-jobs-mirrors.mjs FAILS if it ever
+  # gains an `if:` without a matching EXPECT_* mirror in the sentinel.
   #
   # CI-runnable production-parity readiness lane:
   # - static scans (cleanup routes, DB mocks, frontend mocks, bypass headers)
@@ -1403,6 +1465,126 @@ jobs:
             playwright-report/
             backend/test-results/
           retention-days: 30
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # JOB 12 — Critical Jobs Ran (skip sentinel; Equoria-axyem.7 / Equoria-gvslq)
+  #
+  # A skipped job satisfies a required status check and renders as a grey box,
+  # so a cascade of skips downstream of one failure looked, for 18 days, like a
+  # pipeline that simply had nothing to do. This job makes non-execution RED.
+  #
+  # Contract:
+  # - Runs with `if: always()`, so it reports even when upstream jobs failed.
+  # - FAILS only when a critical job concluded `skipped` or `cancelled` on a run
+  #   where that job was supposed to execute. It does NOT fail merely because an
+  #   upstream job failed — a failure is already red and already blocks.
+  # - Conditionally-gated jobs (e2e-tests on master/PR only; docker-build and
+  #   deployment-gate on master only) are exempt on runs where their own `if:`
+  #   legitimately excludes them. The EXPECT_* expressions below MUST be kept
+  #   identical to those jobs' `if:` conditions —
+  #   scripts/doctrine-checks/check-critical-jobs-mirrors.mjs enforces that.
+  # - Advisory jobs (performance-tests, load-contention) and the schedule-only
+  #   burn-in are deliberately NOT critical: the workflow already declares them
+  #   non-blocking and the Deployment Gate does not block on them.
+  # ──────────────────────────────────────────────────────────────────────────────
+  critical-jobs-ran:
+    name: 'Critical Jobs Ran'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs:
+      - lint
+      - db-preflight
+      - backend-tests
+      - coverage-gate
+      - frontend-tests
+      - security-gate
+      - beta-readiness-gate
+      - e2e-tests
+      - docker-build
+      - deployment-gate
+
+    steps:
+      - name: Fail loudly if a critical job did not run
+        env:
+          R_LINT: ${{ needs.lint.result }}
+          R_DB_PREFLIGHT: ${{ needs.db-preflight.result }}
+          R_BACKEND_TESTS: ${{ needs.backend-tests.result }}
+          R_COVERAGE_GATE: ${{ needs.coverage-gate.result }}
+          R_FRONTEND_TESTS: ${{ needs.frontend-tests.result }}
+          R_SECURITY_GATE: ${{ needs.security-gate.result }}
+          R_BETA_READINESS: ${{ needs.beta-readiness-gate.result }}
+          R_E2E: ${{ needs.e2e-tests.result }}
+          R_DOCKER_BUILD: ${{ needs.docker-build.result }}
+          R_DEPLOYMENT_GATE: ${{ needs.deployment-gate.result }}
+          # Mirrors of the conditional jobs' own `if:` expressions.
+          EXPECT_E2E: ${{ github.ref == 'refs/heads/master' || github.event_name == 'pull_request' }}
+          EXPECT_MASTER_ONLY: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          set -uo pipefail
+
+          MISSING=''
+          ROWS="$RUNNER_TEMP/critical-jobs-rows.md"
+          : > "$ROWS"
+
+          check() {
+            name="$1"
+            result="$2"
+            expected="$3"
+            if [ "$expected" != 'true' ]; then
+              echo "  $name: $result (exempt on this run by its own if: condition)"
+              printf '| %s | %s | not required on this run |\n' "$name" "$result" >> "$ROWS"
+              return 0
+            fi
+            case "$result" in
+              skipped | cancelled)
+                echo "  $name: $result   <-- CRITICAL JOB DID NOT RUN"
+                printf '| %s | **%s** | DID NOT RUN |\n' "$name" "$result" >> "$ROWS"
+                MISSING="${MISSING}${MISSING:+, }${name} (${result})"
+                ;;
+              *)
+                echo "  $name: $result"
+                printf '| %s | %s | ran |\n' "$name" "$result" >> "$ROWS"
+                ;;
+            esac
+          }
+
+          echo 'Critical job results for this run:'
+          check lint                "$R_LINT"            true
+          check db-preflight        "$R_DB_PREFLIGHT"    true
+          check backend-tests       "$R_BACKEND_TESTS"   true
+          check coverage-gate       "$R_COVERAGE_GATE"   true
+          check frontend-tests      "$R_FRONTEND_TESTS"  true
+          check security-gate       "$R_SECURITY_GATE"   true
+          check beta-readiness-gate "$R_BETA_READINESS"  true
+          check e2e-tests           "$R_E2E"             "$EXPECT_E2E"
+          check docker-build        "$R_DOCKER_BUILD"    "$EXPECT_MASTER_ONLY"
+          check deployment-gate     "$R_DEPLOYMENT_GATE" "$EXPECT_MASTER_ONLY"
+
+          {
+            echo '## Critical Jobs Ran'
+            echo ''
+            echo '| Job | Result | Verdict |'
+            echo '|---|---|---|'
+            cat "$ROWS"
+            echo ''
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -n "$MISSING" ]; then
+            {
+              echo "**FAILED - critical jobs did not run:** $MISSING"
+              echo ''
+              echo 'A skipped required job is not a pass. Fix the upstream failure that'
+              echo 'caused the cascade, or change the gating if the skip was intended.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=Critical jobs did not run::$MISSING"
+            echo "CRITICAL JOBS DID NOT RUN: $MISSING"
+            exit 1
+          fi
+
+          echo '**All critical jobs executed.**' >> "$GITHUB_STEP_SUMMARY"
+          echo 'All critical jobs executed (pass or fail, none skipped).'
+
 # ============================================================================
 # EXTENSION PATTERNS — Script Injection Prevention
 # ============================================================================

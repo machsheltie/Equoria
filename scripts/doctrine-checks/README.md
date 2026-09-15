@@ -31,6 +31,15 @@ to fix the underlying problem. It is not a license to weaken the check.
   uses `--audit-level=moderate` or stricter (`low`).
 - `check-gates-run-on-prs.sh` — every job named `*-gate` (except those in
   `gates-allowlist.txt`) must run on PRs, not just master.
+- `check-critical-jobs-mirrors.mjs` — the `critical-jobs-ran` skip sentinel in
+  `.github/workflows/test.yml` (Equoria-axyem.7) decides whether a `skipped`
+  job is a defect or a legitimate exclusion by comparing against `EXPECT_*`
+  env values that mirror each conditional job's own `if:`. Nothing in YAML ties
+  a mirror to what it mirrors. This check asserts each mirror is character-
+  identical to its job's `if:`, that every job checked as unconditional really
+  has no `if:`, and that the sentinel's `needs:` list and its `check` lines are
+  the same set. Optional argv[2] points it at an alternate workflow copy, which
+  is how the drift cases were proven RED without editing the tree.
 - `check-no-skips-in-readiness.sh` — no `it.skip` / `test.skip` /
   `describe.skip` / `test.fixme` in any beta-readiness Playwright spec.
 - `check-railway-migrate-failfast.mjs` — `railway.toml`'s `[deploy]`
