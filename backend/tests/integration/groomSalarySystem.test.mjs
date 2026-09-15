@@ -9,7 +9,7 @@ import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
-import { calculateWeeklySalary, processWeeklySalaries, calculateUserSalaryCost } from '../../modules/grooms/index.mjs';
+import { calculateWeeklyFee, processWeeklySalaries, calculateUserSalaryCost } from '../../modules/grooms/index.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -101,33 +101,28 @@ describe('Groom Salary System', () => {
   });
 
   describe('Salary Calculation', () => {
-    it('should calculate correct weekly salary for expert groom with specialty', () => {
-      const salary = calculateWeeklySalary(testGroom);
-
-      // Expert: $100 base + $15 showHandling specialty = $115
-      expect(salary).toBe(115);
+    // Equoria-95yrv (owner, 2026-09-14): $70 per horse assigned, per week. Skill
+    // and specialty no longer price the fee, so the two rate-table cases that
+    // stood here (expert+showHandling=115, novice+general=50) went with it.
+    it('should charge $70 for each horse the groom is working', () => {
+      expect(calculateWeeklyFee(1)).toBe(70);
+      expect(calculateWeeklyFee(3)).toBe(210);
     });
 
-    it('should calculate correct salary for novice groom', () => {
-      const noviceGroom = {
-        skillLevel: 'novice',
-        speciality: 'general',
-      };
-
-      const salary = calculateWeeklySalary(noviceGroom);
-
-      // Novice: $50 base + $0 general = $50
-      expect(salary).toBe(50);
+    it('should charge nothing for a groom on no horses', () => {
+      expect(calculateWeeklyFee(0)).toBe(0);
     });
 
     it('should calculate user total salary cost', async () => {
       const salaryCost = await calculateUserSalaryCost(testUser.id);
 
-      expect(salaryCost.totalWeeklyCost).toBe(115);
+      // Equoria-95yrv: one groom on one horse = $70/week.
+      expect(salaryCost.totalWeeklyCost).toBe(70);
       expect(salaryCost.groomCount).toBe(1);
       expect(salaryCost.breakdown).toHaveLength(1);
       expect(salaryCost.breakdown[0].groomName).toBe(groomName);
-      expect(salaryCost.breakdown[0].weeklySalary).toBe(115);
+      expect(salaryCost.breakdown[0].assignedHorses).toBe(1);
+      expect(salaryCost.breakdown[0].weeklyFee).toBe(70);
     });
   });
 
@@ -140,8 +135,10 @@ describe('Groom Salary System', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.totalWeeklyCost).toBe(115);
+      expect(response.body.data.totalWeeklyCost).toBe(70);
       expect(response.body.data.groomCount).toBe(1);
+      expect(response.body.data.feePerHorsePerWeek).toBe(70);
+      expect(response.body.data.maxHorsesPerGroom).toBe(10);
     });
 
     it('should get salary summary', async () => {
@@ -157,8 +154,8 @@ describe('Groom Salary System', () => {
       expect(response.body.data).toHaveProperty('weeksAffordable');
       expect(response.body.data).toHaveProperty('nextPaymentDate');
 
-      // User has $1000, weekly cost is $115, so can afford 8 weeks
-      expect(response.body.data.weeksAffordable).toBe(8);
+      // 1000 coins against a weekly cost of 70 (one groom, one horse) = 14 weeks.
+      expect(response.body.data.weeksAffordable).toBe(14);
     });
 
     it('should get groom salary', async () => {
@@ -169,7 +166,8 @@ describe('Groom Salary System', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.weeklySalary).toBe(115);
+      expect(response.body.data.weeklySalary).toBe(70);
+      expect(response.body.data.assignedHorses).toBe(1);
       expect(response.body.data.groom.name).toBe(groomName);
     });
 
@@ -253,7 +251,7 @@ describe('Groom Salary System', () => {
       // the whole population. The `> 0` existed only to tolerate every other row.
       expect(results.processed).toBe(1);
       expect(results.successful).toBe(1);
-      expect(results.totalAmount).toBe(115);
+      expect(results.totalAmount).toBe(70);
 
       // Check that payment was recorded
       const payments = await prisma.groomSalaryPayment.findMany({
@@ -261,7 +259,7 @@ describe('Groom Salary System', () => {
       });
 
       expect(payments.length).toBeGreaterThan(0);
-      expect(payments[0].amount).toBe(115);
+      expect(payments[0].amount).toBe(70);
       expect(payments[0].status).toBe('paid');
     });
 
@@ -269,7 +267,7 @@ describe('Groom Salary System', () => {
       // Set user money to insufficient amount
       await prisma.user.update({
         where: { id: testUser.id },
-        data: { money: 50 }, // Less than $115 needed
+        data: { money: 50 }, // Less than the 70-coin weekly fee
       });
 
       const results = await processWeeklySalaries(undefined, { userId: testUser.id });

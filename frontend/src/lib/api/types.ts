@@ -549,6 +549,10 @@ export interface MarketplaceData {
   refreshCost: number;
   canRefreshFree: boolean;
   refreshCount: number;
+  /** Equoria-95yrv — what each horse in a groom's care costs per week. */
+  feePerHorsePerWeek: number;
+  /** Equoria-95yrv — the most horses one groom can take. */
+  maxHorsesPerGroom: number;
 }
 
 export interface MarketplaceStats {
@@ -564,15 +568,27 @@ export interface MarketplaceStats {
   };
 }
 
+/**
+ * GET /api/v1/groom-salaries/cost — Equoria-95yrv.
+ *
+ * The weekly fee is `feePerHorsePerWeek` for every horse a groom is caring for,
+ * up to `maxHorsesPerGroom`. The rate travels with the payload so a surface can
+ * explain the rule without keeping its own copy of the number. `totalMonthlyCost`
+ * is gone: the backend never sent it, so anything rendering it rendered nothing.
+ */
 export interface SalarySummary {
-  totalMonthlyCost: number;
   totalWeeklyCost: number;
   groomCount: number;
+  feePerHorsePerWeek: number;
+  maxHorsesPerGroom: number;
   breakdown: Array<{
     groomId: number;
     groomName: string;
-    weeklyCost: number;
-    assignmentCount: number;
+    skillLevel: string;
+    speciality: string;
+    assignedHorses: number;
+    weeklyFee: number;
+    feeUnpaid: boolean;
   }>;
 }
 

@@ -55,6 +55,15 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 const FIXTURE_PREFIX = 'TestFixture-icqqm';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * Equoria-95yrv (owner, 2026-09-14): the weekly fee is $70 per horse assigned.
+ * Every `makeGroomAssignment` fixture below puts one groom on one horse, so one
+ * groom costs exactly this much a week — whatever their skill, which no longer
+ * prices anything. The literals this file used to carry (115 for an
+ * expert+showHandling groom, 50 for a novice) were the retired rate table.
+ */
+const FEE_ONE_HORSE = 70;
+
 const createdAssignmentIds = [];
 const createdGroomIds = [];
 const createdHorseIds = [];
@@ -207,8 +216,8 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
 
     const user = await makeUser(1000);
     const { groom } = await makeGroomAssignment(user, {
-      skillLevel: 'expert', // 100
-      speciality: 'showHandling', // +15 → 115/week
+      skillLevel: 'expert',
+      speciality: 'showHandling',
     });
 
     const run1 = await processWeeklySalaries(now, { userId: user.id });
@@ -218,14 +227,14 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
     expect(run1.successful).toBe(1);
 
     const afterRun1 = await getUserMoney(user.id);
-    expect(afterRun1).toBe(1000 - 115);
+    expect(afterRun1).toBe(1000 - FEE_ONE_HORSE);
 
     // THE DEFECT: this second run, same pay week, must be a no-op for
-    // this user. Pre-fix it double-debits (wallet → 770, 2 paid rows).
+    // this user. Pre-fix it double-debits (two debits, 2 paid rows).
     const run2 = await processWeeklySalaries(now, { userId: user.id });
 
     const afterRun2 = await getUserMoney(user.id);
-    expect(afterRun2).toBe(1000 - 115); // debited exactly ONCE
+    expect(afterRun2).toBe(1000 - FEE_ONE_HORSE); // debited exactly ONCE
 
     const paidRows = await paidRowsInWindow(user.id, groom.id, window);
     expect(paidRows.length).toBe(1); // exactly one 'paid' row for the pay week
@@ -253,11 +262,11 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
     });
 
     await processWeeklySalaries(now, { userId: user.id });
-    expect(await getUserMoney(user.id)).toBe(1000 - 115);
+    expect(await getUserMoney(user.id)).toBe(1000 - FEE_ONE_HORSE);
 
     // NEW pay week → the guard must NOT suppress this debit.
     await processWeeklySalaries(nextWeekNow, { userId: user.id });
-    expect(await getUserMoney(user.id)).toBe(1000 - 115 - 115);
+    expect(await getUserMoney(user.id)).toBe(1000 - FEE_ONE_HORSE - FEE_ONE_HORSE);
 
     // One paid row per groom per pay week, each dated inside its own window.
     const rowsWeekA = await paidRowsInWindow(user.id, groom.id, weekA);
@@ -272,11 +281,11 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
 
     const user = await makeUser(1000);
     const { groom: groomA } = await makeGroomAssignment(user, {
-      skillLevel: 'novice', // 50
+      skillLevel: 'novice',
       speciality: 'general',
     });
     const { groom: groomB } = await makeGroomAssignment(user, {
-      skillLevel: 'expert', // 115
+      skillLevel: 'expert',
       speciality: 'showHandling',
     });
 
@@ -286,7 +295,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
       data: {
         groomId: groomA.id,
         userId: user.id,
-        amount: 50,
+        amount: FEE_ONE_HORSE,
         paymentDate: now,
         paymentType: 'weekly_salary',
         status: 'paid',
@@ -295,8 +304,8 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
 
     await processWeeklySalaries(now, { userId: user.id });
 
-    // Only groom B's salary (115) may be debited — NOT the full 165.
-    expect(await getUserMoney(user.id)).toBe(1000 - 115);
+    // Only groom B's fee may be debited — NOT both grooms'.
+    expect(await getUserMoney(user.id)).toBe(1000 - FEE_ONE_HORSE);
 
     // Groom A still has exactly the one (pre-planted) paid row; groom B one.
     const rowsA = await paidRowsInWindow(user.id, groomA.id, window);
@@ -316,7 +325,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
 
     const user = await makeUser(1000);
     const { groom } = await makeGroomAssignment(user, {
-      skillLevel: 'novice', // 50
+      skillLevel: 'novice',
       speciality: 'general',
     });
 
@@ -327,7 +336,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
       processWeeklySalaries(now, { userId: user.id }),
     ]);
 
-    expect(await getUserMoney(user.id)).toBe(1000 - 50); // exactly one debit
+    expect(await getUserMoney(user.id)).toBe(1000 - FEE_ONE_HORSE); // exactly one debit
 
     const paidRows = await paidRowsInWindow(user.id, groom.id, window);
     expect(paidRows.length).toBe(1);

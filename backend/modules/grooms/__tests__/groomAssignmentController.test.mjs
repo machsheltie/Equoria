@@ -121,8 +121,12 @@ describe('GET /api/groom-assignments/config', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('maxAssignmentsBySkill');
-    expect(res.body.data).toHaveProperty('weeklySalaryBySkill');
+    // Equoria-95yrv: one cap and one rate for every groom; the per-skill caps and
+    // the never-charged per-skill pay table are gone.
+    expect(res.body.data.maxHorsesPerGroom).toBe(10);
+    expect(res.body.data.feePerHorsePerWeek).toBe(70);
+    expect(res.body.data).not.toHaveProperty('maxAssignmentsBySkill');
+    expect(res.body.data).not.toHaveProperty('weeklySalaryBySkill');
   });
 
   it('returns 401 without auth', async () => {

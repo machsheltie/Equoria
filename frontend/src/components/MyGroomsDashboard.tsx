@@ -14,7 +14,7 @@
 import React, { useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { Users, Coins, AlertCircle, Calendar, Trash2 } from 'lucide-react';
+import { Users, Coins, AlertCircle, Heart, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
 import { Surface } from '@/components/ui/Surface';
@@ -51,16 +51,14 @@ interface MyGroomsDashboardProps {
   onBrowseMarketplace?: () => void;
 }
 
-// Helper function to get max assignments by skill level
-const getMaxAssignments = (skillLevel: string | undefined): number => {
-  const maxAssignments: Record<string, number> = {
-    novice: 2,
-    intermediate: 3,
-    expert: 4,
-    master: 5,
-  };
-  return maxAssignments[(skillLevel ?? '').toLowerCase()] || 2;
-};
+/**
+ * Equoria-95yrv (owner ruling, 2026-09-14): one groom cares for at most ten
+ * horses, whatever their skill, and each of those horses costs the weekly fee.
+ * The per-skill ladder that stood here (2/3/4/5) was never the game's rule and
+ * contradicted the ten-horse ruling the fee is priced against. The server
+ * publishes the cap; this is the fallback for a summary that has not loaded.
+ */
+const DEFAULT_MAX_HORSES_PER_GROOM = 10;
 
 // Helper function to format specialty display (null-safe — Equoria-j2a51)
 const formatSpecialty = (specialty: string | undefined): string => {
@@ -134,10 +132,22 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const finalSalaryCosts = salaryCostsData ||
     salaryCostsFromAPI || {
       totalWeeklyCost: 0,
-      totalMonthlyCost: 0,
       groomCount: 0,
+      feePerHorsePerWeek: 0,
+      maxHorsesPerGroom: DEFAULT_MAX_HORSES_PER_GROOM,
       breakdown: [],
     };
+
+  // Equoria-95yrv: the fee a groom actually costs this week, as the server
+  // computed it — 70 per horse in their care. Read from the summary rather than
+  // recomputed here, so the card and the wallet can never disagree.
+  const feeForGroom = (groomId: number): number | null =>
+    finalSalaryCosts.breakdown.find((entry) => entry.groomId === groomId)?.weeklyFee ?? null;
+  const maxHorses = finalSalaryCosts.maxHorsesPerGroom || DEFAULT_MAX_HORSES_PER_GROOM;
+  const horsesInCare = finalSalaryCosts.breakdown.reduce(
+    (total, entry) => total + entry.assignedHorses,
+    0
+  );
 
   // Loading state — skeleton rows
   if (!groomsData && (groomsLoading || assignmentsLoading || salaryCostsLoading)) {
@@ -167,9 +177,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   // like the loading gate): a props-injecting parent owns the states. Retry
   // refetches all three; copy comes from userMessageFor so no raw body leaks (§3).
   if (!groomsData && (groomsIsError || assignmentsIsError || salaryIsError)) {
-    const { message, retryable } = userMessageFor(
-      groomsError ?? assignmentsError ?? salaryError
-    );
+    const { message, retryable } = userMessageFor(groomsError ?? assignmentsError ?? salaryError);
     return (
       <ErrorState
         title="Couldn't load your grooms"
@@ -268,11 +276,13 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
         return a.name.localeCompare(b.name);
       }
       if (sortBy === 'salary') {
-        return b.sessionRate - a.sessionRate;
+        // Equoria-95yrv: sort by what the groom actually costs this week — the
+        // fee is per horse in their care, not a per-groom wage.
+        return (feeForGroom(b.id) ?? 0) - (feeForGroom(a.id) ?? 0);
       }
       if (sortBy === 'slots') {
-        const aSlots = getMaxAssignments(a.skillLevel) - getGroomAssignments(a.id).length;
-        const bSlots = getMaxAssignments(b.skillLevel) - getGroomAssignments(b.id).length;
+        const aSlots = maxHorses - getGroomAssignments(a.id).length;
+        const bSlots = maxHorses - getGroomAssignments(b.id).length;
         return bSlots - aSlots;
       }
       return 0;
@@ -305,15 +315,14 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
           <Surface variant="panel" className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="type-label text-[var(--text-secondary)] mb-1">Monthly Cost</p>
-                <Currency
-                  amount={finalSalaryCosts.totalMonthlyCost}
-                  variant="balance"
-                  className="text-2xl"
-                />
+                {/* Equoria-95yrv: what the weekly cost is made of. The tile here
+                    used to read "Monthly Cost" from a field the API has never
+                    sent, so it rendered nothing at all. */}
+                <p className="type-label text-[var(--text-secondary)] mb-1">Horses in Care</p>
+                <p className="text-2xl font-semibold text-[var(--text-primary)]">{horsesInCare}</p>
               </div>
               <div className="p-3 rounded-full bg-[var(--role-success-bg)] border border-[var(--role-success-border)]">
-                <Calendar className="w-8 h-8 text-[var(--role-success-text)]" aria-hidden="true" />
+                <Heart className="w-8 h-8 text-[var(--role-success-text)]" aria-hidden="true" />
               </div>
             </div>
           </Surface>
@@ -407,8 +416,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
               className="w-full"
             >
               <option value="name">Name</option>
-              <option value="salary">Salary</option>
-              <option value="slots">Available Slots</option>
+              <option value="salary">Weekly fee</option>
+              <option value="slots">Room for horses</option>
             </Select>
           </div>
         </Surface>
@@ -421,7 +430,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
       >
         {filteredAndSortedGrooms.map((groom) => {
           const groomAssignments = getGroomAssignments(groom.id);
-          const maxAssignments = getMaxAssignments(groom.skillLevel);
+          const maxAssignments = maxHorses;
+          const weeklyFee = feeForGroom(groom.id);
           const availableSlots = maxAssignments - groomAssignments.length;
           const isFullyAssigned = availableSlots === 0;
 
@@ -466,15 +476,23 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   <GroomPersonalityBadge personality={groom.personality} />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="type-label text-xs text-[var(--text-secondary)]">Salary</span>
+                  <span className="type-label text-xs text-[var(--text-secondary)]">
+                    Weekly fee
+                  </span>
+                  {/* Equoria-95yrv: the fee is per horse in the groom's care, so a
+                      groom on no horses costs nothing. An em dash while the
+                      summary is still loading — never a reassuring zero. */}
                   <span className="font-bold inline-flex items-center gap-1">
-                    <Currency amount={groom.sessionRate} />
-                    /week
+                    {weeklyFee === null ? (
+                      <span aria-label="Weekly fee unknown">—</span>
+                    ) : (
+                      <Currency amount={weeklyFee} />
+                    )}
                   </span>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-xs type-label text-[var(--text-secondary)]">
-                    <span>Assignments</span>
+                    <span>Horses</span>
                     <span>
                       {groomAssignments.length} / {maxAssignments}
                     </span>
@@ -598,7 +616,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 variant={isFullyAssigned ? 'secondary' : 'default'}
                 className="w-full"
               >
-                {isFullyAssigned ? 'Max Assignments' : 'Assign to Horse'}
+                {isFullyAssigned ? `Caring for ${maxAssignments} horses` : 'Assign to Horse'}
               </Button>
             </Surface>
           );

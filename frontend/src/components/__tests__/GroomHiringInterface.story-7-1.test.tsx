@@ -84,6 +84,9 @@ const marketplaceData = {
   refreshCost: 0,
   canRefreshFree: true,
   refreshCount: 0,
+  // Equoria-95yrv: the fee rule travels with the offer list.
+  feePerHorsePerWeek: 70,
+  maxHorsesPerGroom: 10,
 };
 
 const createWrapper = () => {
@@ -325,7 +328,7 @@ describe('Story 7-1: Groom Hiring Interface', () => {
       expect(screen.getByTestId('hire-modal')).toBeInTheDocument();
     });
 
-    it('hire confirmation modal shows weekly salary cost', async () => {
+    it('hire confirmation modal states the weekly fee rule before committing', async () => {
       const user = userEvent.setup();
       render(<GroomList userId={1} marketplaceData={marketplaceData} />, {
         wrapper: createWrapper(),
@@ -334,8 +337,11 @@ describe('Story 7-1: Groom Hiring Interface', () => {
       const hireButtons = screen.getAllByRole('button', { name: /hire/i });
       await user.click(hireButtons[0]);
 
+      // Equoria-95yrv: what hiring costs weekly is 70 per horse you put them on,
+      // up to ten — not a flat wage. The player sees the rule before committing.
       const modal = screen.getByTestId('hire-modal');
-      expect(within(modal).getByText(/weekly salary/i)).toBeInTheDocument();
+      expect(within(modal).getByText(/weekly fee/i)).toBeInTheDocument();
+      expect(modal).toHaveTextContent(/per horse, up to 10/i);
     });
 
     it('hire confirmation modal shows total upfront cost', async () => {
@@ -408,9 +414,20 @@ describe('Story 7-1: Groom Hiring Interface', () => {
 
     const salaryCosts = {
       totalWeeklyCost: 210,
-      totalMonthlyCost: 840,
+      feePerHorsePerWeek: 70,
+      maxHorsesPerGroom: 10,
       groomCount: 1,
-      breakdown: [{ groomId: 1, groomName: 'Tom Fields', weeklyCost: 210, assignmentCount: 0 }],
+      breakdown: [
+        {
+          groomId: 1,
+          groomName: 'Tom Fields',
+          skillLevel: 'expert',
+          speciality: 'foalCare',
+          assignedHorses: 3,
+          weeklyFee: 210,
+          feeUnpaid: false,
+        },
+      ],
     };
 
     it('renders the stable dashboard with hired grooms', () => {
@@ -457,8 +474,11 @@ describe('Story 7-1: Groom Hiring Interface', () => {
         { wrapper: createWrapper() }
       );
 
-      // Weekly cost of 210 displayed in the dashboard
-      expect(screen.getByText(/210/)).toBeInTheDocument();
+      // Equoria-95yrv: the same 210 appears twice now — as the stable's weekly
+      // cost and as this groom's own fee (three horses at 70) — so assert on the
+      // summary tile rather than on the first match anywhere.
+      const weeklyTile = screen.getByText(/weekly cost/i).closest('div');
+      expect(weeklyTile).toHaveTextContent('210');
     });
 
     it('shows no Tom Fields when no grooms hired', () => {
@@ -469,7 +489,8 @@ describe('Story 7-1: Groom Hiring Interface', () => {
           assignmentsData={[]}
           salaryCostsData={{
             totalWeeklyCost: 0,
-            totalMonthlyCost: 0,
+            feePerHorsePerWeek: 70,
+            maxHorsesPerGroom: 10,
             groomCount: 0,
             breakdown: [],
           }}

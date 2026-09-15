@@ -72,12 +72,23 @@ export const v1MirrorHandlers = [
   http.get(`${base}/api/v1/groom-salaries/summary`, () =>
     HttpResponse.json({
       success: true,
+      // Equoria-95yrv: mirrors the real payload — 70 per horse in a groom's care,
+      // up to ten, and no `totalMonthlyCost` (the API has never sent one).
       data: {
-        totalMonthlyCost: 600,
-        totalWeeklyCost: 150,
+        totalWeeklyCost: 140,
         groomCount: 1,
+        feePerHorsePerWeek: 70,
+        maxHorsesPerGroom: 10,
         breakdown: [
-          { groomId: 10, groomName: 'Alice Thornton', weeklyCost: 150, assignmentCount: 1 },
+          {
+            groomId: 10,
+            groomName: 'Alice Thornton',
+            skillLevel: 'expert',
+            speciality: 'foalCare',
+            assignedHorses: 2,
+            weeklyFee: 140,
+            feeUnpaid: false,
+          },
         ],
       },
     })

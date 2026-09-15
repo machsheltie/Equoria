@@ -73,6 +73,9 @@ const mockMarketplaceData = {
   ],
   lastRefresh: new Date().toISOString(),
   nextFreeRefresh: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  // Equoria-95yrv: the fee rule travels with the offer list.
+  feePerHorsePerWeek: 70,
+  maxHorsesPerGroom: 10,
   refreshCost: 0,
   canRefreshFree: true,
   refreshCount: 0,
@@ -185,9 +188,11 @@ describe('GroomList Component', () => {
         expect(specialtyElement).toBeInTheDocument();
         expect(within(sarahCard).getByText(/expert/i)).toBeInTheDocument();
         expect(within(sarahCard).getByText(/8.*years/i)).toBeInTheDocument();
-        // Weekly salary renders via the canonical Currency component (coin icon +
-        // Intl-formatted number) followed by "/week" — assert on combined text.
-        expect(sarahCard).toHaveTextContent(/100\/week/);
+        // Equoria-95yrv (owner ruling, 2026-09-14): the offer states the RULE —
+        // the weekly fee is charged per horse in the groom's care — rather than a
+        // flat weekly wage, which is no longer a thing a groom has.
+        expect(sarahCard).toHaveTextContent(/Weekly fee/);
+        expect(sarahCard).toHaveTextContent(/70per horse/);
       });
     });
 
@@ -322,7 +327,7 @@ describe('GroomList Component', () => {
       );
 
       await waitFor(() => {
-        // Click on Sarah Johnson's hire button (she's groom-1, $100/week)
+        // Click on Sarah Johnson's hire button (she's groom-1)
         const sarahButton = screen.getByRole('button', { name: /hire sarah johnson/i });
         fireEvent.click(sarahButton);
       });

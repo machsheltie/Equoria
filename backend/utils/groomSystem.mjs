@@ -8,6 +8,8 @@ import logger from './logger.mjs';
 import { calculatePersonalityEffects } from './groomPersonalityEffects.mjs';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
 import { getTemperamentGroomSynergy } from '../modules/horses/index.mjs';
+// Equoria-95yrv: the ten-horse cap is the FEE's cap, defined once with the fee.
+import { MAX_HORSES_PER_GROOM } from '../modules/grooms/services/groomSalaryService.mjs';
 
 /**
  * Groom specialties and their bonding modifiers
@@ -235,6 +237,20 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
 
   if (existingAssignment) {
     throw new Error(`Groom ${groom.name} is already assigned to this foal`);
+  }
+
+  // Equoria-95yrv, owner ruling 2026-09-14: a groom works at most ten horses, and
+  // the weekly fee is priced against that cap ($70 per horse). This door had NO
+  // assignment limit at all before the ruling — the other door
+  // (groomAssignmentService.validateAssignmentEligibility) had per-skill ones — so
+  // the eleventh horse was simply accepted here.
+  const activeAssignments = await prisma.groomAssignment.count({
+    where: { groomId, isActive: true },
+  });
+  if (activeAssignments >= MAX_HORSES_PER_GROOM) {
+    throw new Error(
+      `${groom.name} is already caring for ${MAX_HORSES_PER_GROOM} horses, which is as many as one groom can take. Free up a horse or assign a different groom.`,
+    );
   }
 
   // Deactivate other assignments if this is primary (priority 1)

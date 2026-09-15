@@ -2,7 +2,11 @@
  * groomSalaryService branch-coverage tests (Equoria-jkht coverage sprint).
  *
  * Pure-function tests (no DB):
- *   calculateWeeklySalary — all skill levels, specialty bonuses, unknown-key fallbacks, catch-block
+ *   calculateWeeklyFee — $70 per assigned horse (Equoria-95yrv, owner ruling
+ *   2026-09-14). The skill/specialty rate table these tests used to walk
+ *   (50/75/100/150 + 0/10/15) no longer exists: the fee is priced per horse and
+ *   no longer depends on who the groom is, so those branches were deleted with
+ *   the code they covered rather than re-pointed at a number nobody charges.
  *
  * DB-path tests (no fixture — non-existent IDs return empty / zero):
  *   getSalaryPaymentHistory — returns [] for non-existent user
@@ -14,8 +18,9 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
-  SALARY_CONFIG,
-  calculateWeeklySalary,
+  FEE_PER_HORSE_PER_WEEK,
+  MAX_HORSES_PER_GROOM,
+  calculateWeeklyFee,
   getSalaryPaymentHistory,
   calculateUserSalaryCost,
 } from '../services/groomSalaryService.mjs';
@@ -25,74 +30,25 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-// ── calculateWeeklySalary — pure branches ─────────────────────────────────────
+// ── calculateWeeklyFee — pure branches (Equoria-95yrv) ───────────────────────
 
-describe('calculateWeeklySalary — all skill-level branches', () => {
-  it('novice → 50', () => {
-    expect(calculateWeeklySalary({ skillLevel: 'novice', speciality: 'general' })).toBe(50);
+describe('calculateWeeklyFee — $70 per horse assigned', () => {
+  it('charges the flat per-horse rate, whatever the groom is', () => {
+    expect(FEE_PER_HORSE_PER_WEEK).toBe(70);
+    expect(calculateWeeklyFee(1)).toBe(70);
+    expect(calculateWeeklyFee(4)).toBe(280);
+    expect(calculateWeeklyFee(MAX_HORSES_PER_GROOM)).toBe(700);
   });
 
-  it('intermediate → 75', () => {
-    expect(calculateWeeklySalary({ skillLevel: 'intermediate', speciality: 'general' })).toBe(75);
+  it('a groom on no horses costs nothing', () => {
+    expect(calculateWeeklyFee(0)).toBe(0);
   });
 
-  it('expert → 100', () => {
-    expect(calculateWeeklySalary({ skillLevel: 'expert', speciality: 'general' })).toBe(100);
-  });
-
-  it('master → 150', () => {
-    expect(calculateWeeklySalary({ skillLevel: 'master', speciality: 'general' })).toBe(150);
-  });
-
-  it('unknown skillLevel falls back to novice (50)', () => {
-    // SALARY_CONFIG.WEEKLY_SALARIES['unknown'] = undefined → || novice branch
-    expect(calculateWeeklySalary({ skillLevel: 'unknown', speciality: 'general' })).toBe(50);
-  });
-});
-
-describe('calculateWeeklySalary — specialty bonus branches', () => {
-  it('foalCare specialty adds 10', () => {
-    expect(calculateWeeklySalary({ skillLevel: 'novice', speciality: 'foalCare' })).toBe(
-      SALARY_CONFIG.WEEKLY_SALARIES.novice + SALARY_CONFIG.SPECIALTY_BONUSES.foalCare,
-    );
-    expect(calculateWeeklySalary({ skillLevel: 'novice', speciality: 'foalCare' })).toBe(60);
-  });
-
-  it('showHandling specialty adds 15', () => {
-    expect(calculateWeeklySalary({ skillLevel: 'novice', speciality: 'showHandling' })).toBe(65);
-  });
-
-  it('general specialty adds 0 (falsy path of || 0)', () => {
-    // SPECIALTY_BONUSES.general = 0 → falsy → || 0 branch taken
-    expect(calculateWeeklySalary({ skillLevel: 'novice', speciality: 'general' })).toBe(50);
-  });
-
-  it('unknown specialty falls back to 0 (|| 0 branch)', () => {
-    expect(calculateWeeklySalary({ skillLevel: 'novice', speciality: 'unknown' })).toBe(50);
-  });
-
-  it('master + showHandling combination = 165', () => {
-    expect(calculateWeeklySalary({ skillLevel: 'master', speciality: 'showHandling' })).toBe(165);
-  });
-});
-
-describe('calculateWeeklySalary — catch-block branch', () => {
-  it('returns novice salary when skillLevel access throws (catch block at line 50)', () => {
-    // Proxy: id is accessible (for logger in catch), but skillLevel throws
-    // → try block fails → catch branch taken → returns WEEKLY_SALARIES.novice
-    const throwingGroom = new Proxy(
-      { id: 'test-groom-id' },
-      {
-        get(target, prop) {
-          if (prop === 'skillLevel') {
-            throw new Error('skillLevel access bomb');
-          }
-          return target[prop];
-        },
-      },
-    );
-    expect(calculateWeeklySalary(throwingGroom)).toBe(SALARY_CONFIG.WEEKLY_SALARIES.novice);
-    expect(calculateWeeklySalary(throwingGroom)).toBe(50);
+  it('treats a missing or nonsense count as no horses rather than inventing a fee', () => {
+    expect(calculateWeeklyFee(undefined)).toBe(0);
+    expect(calculateWeeklyFee(null)).toBe(0);
+    expect(calculateWeeklyFee(-3)).toBe(0);
+    expect(calculateWeeklyFee('not a number')).toBe(0);
   });
 });
 
@@ -186,16 +142,18 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('returns non-zero totalWeeklyCost and one breakdown entry for expert+showHandling', async () => {
+  it('charges one horse at the per-horse rate, whatever the skill of the groom', async () => {
     const result = await calculateUserSalaryCost(gssUser.id);
-    // expert(100) + showHandling(15) = 115
-    expect(result.totalWeeklyCost).toBe(115);
+    // Equoria-95yrv: one assigned horse = $70. It used to be expert(100) +
+    // showHandling(15) = 115; skill and specialty no longer price the fee.
+    expect(result.totalWeeklyCost).toBe(70);
     expect(result.groomCount).toBe(1);
     expect(result.breakdown).toHaveLength(1);
     expect(result.breakdown[0].groomId).toBe(gssGroom.id);
     expect(result.breakdown[0].groomName).toBe(gssGroom.name);
     expect(result.breakdown[0].skillLevel).toBe('expert');
     expect(result.breakdown[0].speciality).toBe('showHandling');
-    expect(result.breakdown[0].weeklySalary).toBe(115);
+    expect(result.breakdown[0].assignedHorses).toBe(1);
+    expect(result.breakdown[0].weeklyFee).toBe(70);
   });
 });

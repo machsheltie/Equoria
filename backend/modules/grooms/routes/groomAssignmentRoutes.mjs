@@ -154,17 +154,15 @@ router.get('/config', async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Assignment configuration retrieved successfully',
+      // Equoria-95yrv: one cap and one rate, the same for every groom. The
+      // per-skill caps and the never-charged per-skill pay table are gone with
+      // the basis they belonged to.
       data: {
-        maxAssignmentsBySkill: ASSIGNMENT_CONFIG.MAX_ASSIGNMENTS_BY_SKILL,
-        weeklySalaryBySkill: ASSIGNMENT_CONFIG.WEEKLY_SALARY_BY_SKILL,
-        salaryMultipliers: ASSIGNMENT_CONFIG.SALARY_MULTIPLIERS,
-        skillLevels: Object.keys(ASSIGNMENT_CONFIG.MAX_ASSIGNMENTS_BY_SKILL),
+        maxHorsesPerGroom: ASSIGNMENT_CONFIG.MAX_HORSES_PER_GROOM,
+        feePerHorsePerWeek: ASSIGNMENT_CONFIG.FEE_PER_HORSE_PER_WEEK,
         description: {
-          maxAssignments:
-            'Maximum number of horses a groom can be assigned to based on skill level',
-          weeklySalary: 'Base weekly salary for grooms by skill level',
-          salaryMultipliers:
-            'Salary multipliers based on number of assignments (efficiency bonus/penalty)',
+          maxHorsesPerGroom: 'The most horses one groom can be caring for at a time',
+          feePerHorsePerWeek: "What each horse in a groom's care costs the player per week",
         },
       },
     });

@@ -9,7 +9,8 @@ import logger from '../../../utils/logger.mjs';
 import {
   calculateUserSalaryCost,
   getSalaryPaymentHistory,
-  calculateWeeklySalary,
+  calculateWeeklyFee,
+  countActiveAssignments,
 } from '../services/groomSalaryService.mjs';
 import { triggerSalaryProcessing, getCronJobStatus } from '../../../services/cronJobService.mjs';
 
@@ -105,7 +106,10 @@ export async function getGroomSalary(req, res) {
     // req.groom is the validated, owned record (full fields from middleware).
     const groom = req.groom;
 
-    const weeklySalary = calculateWeeklySalary(groom);
+    // Equoria-95yrv: $70 per horse the groom is working, so the fee needs the
+    // horse count — it is no longer a property of the groom alone.
+    const assignedHorses = (await countActiveAssignments(prisma, [groom.id])).get(groom.id) ?? 0;
+    const weeklySalary = calculateWeeklyFee(assignedHorses);
 
     res.json({
       success: true,
@@ -117,6 +121,7 @@ export async function getGroomSalary(req, res) {
           skillLevel: groom.skillLevel,
           speciality: groom.speciality,
         },
+        assignedHorses,
         weeklySalary,
       },
     });

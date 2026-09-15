@@ -38,7 +38,8 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { processWeeklySalaries, getPayWeekStart, calculateWeeklySalary } from '../services/groomSalaryService.mjs';
+import { processWeeklySalaries, getPayWeekStart, calculateWeeklyFee } from '../services/groomSalaryService.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { recordUncollectedFees } from '../services/groomFeeArrearsService.mjs';
 import { GROOM_FEE_UNPAID_NOTIFICATION_TYPE, checkGroomMayWork } from '../services/groomEngagementService.mjs';
 
@@ -79,6 +80,23 @@ async function makeGroom(userId, label, extra = {}) {
     },
   });
   await prisma.groomEngagement.create({ data: { groomId: groom.id, userId } });
+  // Equoria-95yrv: the weekly fee is $70 per horse assigned, so a groom on NO
+  // horses costs nothing — and a zero fee is no debit at all, which would take
+  // this suite's whole mechanism (a contended debit) off the table. One horse.
+  const horse = await prisma.horse.create({
+    data: {
+      ...fixtureColor(),
+      name: `${FIXTURE_PREFIX}-horse-${tag()}`,
+      sex: 'Filly',
+      dateOfBirth: new Date('2023-05-01'),
+      age: 3,
+      userId,
+      healthStatus: 'Excellent',
+    },
+  });
+  await prisma.groomAssignment.create({
+    data: { groomId: groom.id, foalId: horse.id, userId, isActive: true },
+  });
   return groom;
 }
 
@@ -102,6 +120,7 @@ function registerUserCleanup(cleanup, getUser, label) {
     await prisma.notification.deleteMany({ where: { userId: user.id } });
     await prisma.userTransaction.deleteMany({ where: { userId: user.id } });
     await prisma.groom.deleteMany({ where: { userId: user.id } });
+    await prisma.horse.deleteMany({ where: { userId: user.id } });
     await prisma.user.delete({ where: { id: user.id } });
   }, `${label} user and dependents`);
 }
@@ -119,7 +138,7 @@ describe('Equoria-2ti1j — a non-funds throw must not grant a free week of staf
     user = await makeUser('rich', 100000);
     registerUserCleanup(cleanup, () => user, 'rich');
     groom = await makeGroom(user.id, 'groom');
-    salary = calculateWeeklySalary(groom);
+    salary = calculateWeeklyFee(1);
   }, 60000);
 
   afterAll(async () => {
@@ -204,7 +223,7 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
     // Already in grace since the EARLIER pay week — the exact state in which
     // `handleUnpaidFees` releases a groom for non-payment.
     groom = await makeGroom(user.id, 'in-grace', { feeUnpaidSince: getPayWeekStart(WEEK_ONE) });
-    salary = calculateWeeklySalary(groom);
+    salary = calculateWeeklyFee(1);
   }, 60000);
 
   afterAll(async () => {

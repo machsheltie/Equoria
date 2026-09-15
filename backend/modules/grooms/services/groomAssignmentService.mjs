@@ -6,33 +6,33 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import NotFoundError from '../../../errors/NotFoundError.mjs';
+// Equoria-95yrv: the cap and the rate are the fee's, so they are DEFINED with the
+// fee (groomSalaryService) and imported here. Two copies would drift.
+import { FEE_PER_HORSE_PER_WEEK, MAX_HORSES_PER_GROOM } from './groomSalaryService.mjs';
 
-// Assignment configuration
+/**
+ * Assignment configuration.
+ *
+ * Equoria-95yrv, owner ruling 2026-09-14 10:23: "$70 per horse per week, up to 10
+ * horses per groom." ONE cap, the same for every groom, and it is the ruling's.
+ *
+ * WHAT WENT, AND WHY:
+ *   - `MAX_ASSIGNMENTS_BY_SKILL` (2/3/4/5 by skill) contradicted the owner's
+ *     ten-horse rule outright: no groom could reach ten, so the cap the fee is
+ *     priced against was unreachable. Skill decides how WELL a groom works, not
+ *     how many horses they may hold.
+ *   - `WEEKLY_SALARY_BY_SKILL` (100/200/350/500) and `SALARY_MULTIPLIERS` were a
+ *     second, never-charged pay table — nothing computed a fee from them; the real
+ *     one lives in groomSalaryService, and it is now 70 per horse with no
+ *     multipliers. A published rate nobody charges is a lie to whoever reads
+ *     GET /api/groom-assignments/config.
+ */
 export const ASSIGNMENT_CONFIG = {
-  // Maximum assignments per groom based on skill level
-  MAX_ASSIGNMENTS_BY_SKILL: {
-    novice: 2,
-    intermediate: 3,
-    expert: 4,
-    master: 5,
-  },
+  // The most horses one groom may be working at a time.
+  MAX_HORSES_PER_GROOM,
 
-  // Base weekly salary by skill level (in currency units)
-  WEEKLY_SALARY_BY_SKILL: {
-    novice: 100,
-    intermediate: 200,
-    expert: 350,
-    master: 500,
-  },
-
-  // Salary multipliers based on assignment count
-  SALARY_MULTIPLIERS: {
-    1: 1.0, // Base rate for 1 assignment
-    2: 1.8, // 80% of base rate per assignment for 2 assignments
-    3: 2.4, // 80% of base rate per assignment for 3 assignments
-    4: 2.8, // 70% of base rate per assignment for 4 assignments
-    5: 3.0, // 60% of base rate per assignment for 5 assignments
-  },
+  // What each of those horses costs the player per week.
+  FEE_PER_HORSE_PER_WEEK,
 };
 
 /**
@@ -41,7 +41,8 @@ export const ASSIGNMENT_CONFIG = {
  * @returns {Object} Assignment limits and current status
  */
 export async function getGroomAssignmentLimits(groom) {
-  const maxAssignments = ASSIGNMENT_CONFIG.MAX_ASSIGNMENTS_BY_SKILL[groom.skillLevel] || 2;
+  // Equoria-95yrv: one cap for every groom, whatever their skill.
+  const maxAssignments = MAX_HORSES_PER_GROOM;
 
   // Count current active assignments
   const currentAssignments = await prisma.groomAssignment.count({
@@ -108,7 +109,11 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
   if (groom && errors.length === 0) {
     const limits = await getGroomAssignmentLimits(groom);
     if (!limits.canTakeMore) {
-      errors.push(`Groom ${groom.name} has reached maximum assignments (${limits.maxAssignments})`);
+      // Equoria-95yrv: said to the player, in the player's terms — horses, not
+      // "assignments", and the number they can count on their own roster.
+      errors.push(
+        `${groom.name} is already caring for ${limits.maxAssignments} horses, which is as many as one groom can take. Free up a horse or assign a different groom.`,
+      );
     }
   }
 
@@ -360,9 +365,17 @@ export async function getUserAssignments(userId, filters = {}) {
 }
 
 /**
- * Calculate weekly salary costs for all groom assignments
+ * Calculate weekly fee costs for all of a user's groom assignments.
+ *
+ * Equoria-95yrv: $70 per horse per week. The old shape multiplied a per-skill base
+ * salary (100/200/350/500) by an assignment-count "efficiency" multiplier — a pay
+ * table nothing ever charged, sitting on the assignment dashboard next to the real
+ * fee. Both keys are kept (`baseSalary` is now the per-horse rate, `totalSalary`
+ * the groom's fee) so the dashboard reader is unchanged; the numbers are the ones
+ * the player is actually billed.
+ *
  * @param {string} userId - User ID
- * @returns {Object} Salary calculation
+ * @returns {Object} Fee calculation
  */
 export async function calculateWeeklySalaryCosts(userId) {
   // Get all active assignments with groom data
@@ -392,17 +405,16 @@ export async function calculateWeeklySalaryCosts(userId) {
       groomCosts[groomId] = {
         groom: assignment.groom,
         assignmentCount: 0,
-        baseSalary: ASSIGNMENT_CONFIG.WEEKLY_SALARY_BY_SKILL[assignment.groom.skillLevel] || 100,
+        baseSalary: FEE_PER_HORSE_PER_WEEK,
         totalSalary: 0,
       };
     }
     groomCosts[groomId].assignmentCount++;
   });
 
-  // Calculate final salaries with multipliers
+  // Equoria-95yrv: 70 per horse, no multipliers.
   Object.values(groomCosts).forEach(groomCost => {
-    const multiplier = ASSIGNMENT_CONFIG.SALARY_MULTIPLIERS[groomCost.assignmentCount] || 1.0;
-    groomCost.totalSalary = Math.round(groomCost.baseSalary * multiplier);
+    groomCost.totalSalary = groomCost.assignmentCount * FEE_PER_HORSE_PER_WEEK;
     totalWeeklyCost += groomCost.totalSalary;
   });
 

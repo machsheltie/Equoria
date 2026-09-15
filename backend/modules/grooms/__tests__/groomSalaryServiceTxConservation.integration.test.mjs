@@ -53,7 +53,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { processWeeklySalaries, calculateWeeklySalary } from '../services/groomSalaryService.mjs';
+import { processWeeklySalaries, calculateWeeklyFee } from '../services/groomSalaryService.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
@@ -254,18 +254,15 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
   beforeEach(async () => {
     user = await makeUser(500);
     const made = await makeGroomAssignment(user, {
-      skillLevel: 'expert', // 100
-      speciality: 'showHandling', // +15 → 115/week
-    });
+      skillLevel: 'expert',
+      speciality: 'showHandling',
+    }); // Equoria-95yrv: one assigned horse = $70/week, whatever the skill.
     groom = made.groom;
   });
 
   it('preserves conservation: user.money delta + SystemAccount.burn delta = 0', async () => {
-    const expectedSalary = calculateWeeklySalary({
-      skillLevel: 'expert',
-      speciality: 'showHandling',
-    });
-    expect(expectedSalary).toBe(115);
+    const expectedSalary = calculateWeeklyFee(1);
+    expect(expectedSalary).toBe(70);
 
     const userBefore = await getUserMoney(user.id);
     const burnBefore = await getBurnBalance();
@@ -312,7 +309,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
       },
     });
     expect(payments.length).toBeGreaterThanOrEqual(1);
-    expect(Number(payments[0].amount)).toBe(115);
+    expect(Number(payments[0].amount)).toBe(70);
     // capture id for cleanup
     for (const p of payments) {
       createdPaymentIds.push(p.id);
@@ -330,7 +327,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
       },
     });
     expect(ledgerRows.length).toBeGreaterThanOrEqual(1);
-    expect(Number(ledgerRows[0].amount)).toBe(115);
+    expect(Number(ledgerRows[0].amount)).toBe(70);
     expect(ledgerRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
     expect(ledgerRows[0].metadata?.systemAccountSide).toBe('credit');
   }, 60000);
@@ -342,7 +339,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
 
 describe('groomSalaryService.processWeeklySalaries — insufficient funds (Equoria-7r67q)', () => {
   it('thin wallet does NOT debit, does NOT credit burn (for this user), and routes to grace-period branch', async () => {
-    const user = await makeUser(10); // far less than 50 novice salary
+    const user = await makeUser(10); // far less than the $70 one-horse fee
     await makeGroomAssignment(user, { skillLevel: 'novice', speciality: 'general' });
 
     const userBefore = await getUserMoney(user.id);
@@ -396,17 +393,18 @@ describe('groomSalaryService.processWeeklySalaries — insufficient funds (Equor
 
 describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-7r67q)', () => {
   it('two concurrent processWeeklySalaries runs on a wallet sized for one debit yield exactly one debit', async () => {
-    // Fund the wallet to exactly the novice salary so two parallel
-    // processWeeklySalaries calls would, under the legacy TOCTOU shape,
-    // both pass the stale `if (user.money < totalSalary)` check and both
-    // decrement — taking the wallet to -50. Under the 7r67q rewrite, only
-    // one debitMoneyOrThrow predicate wins; the other throws
-    // InsufficientFundsError and routes to the grace-period branch.
-    const user = await makeUser(50);
+    // Fund the wallet to exactly ONE groom-week (Equoria-95yrv: $70 for the one
+    // horse this fixture assigns) so two parallel processWeeklySalaries calls
+    // would, under the legacy TOCTOU shape, both pass the stale
+    // `if (user.money < totalSalary)` check and both decrement — taking the
+    // wallet negative. Under the 7r67q rewrite only one debitMoneyOrThrow
+    // predicate wins; the other throws InsufficientFundsError and routes to the
+    // grace-period branch.
+    const user = await makeUser(70);
     await makeGroomAssignment(user, { skillLevel: 'novice', speciality: 'general' });
 
     const userBefore = await getUserMoney(user.id);
-    expect(userBefore).toBe(50);
+    expect(userBefore).toBe(70);
 
     // Count user-scoped burn-credit ledger rows BEFORE — same reason as the
     // insufficient-funds test: the global SystemAccount.burn delta can include credits
@@ -450,7 +448,7 @@ describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-
       orderBy: { createdAt: 'desc' },
       take: 1,
     });
-    expect(Number(burnRows[0].amount)).toBe(50);
+    expect(Number(burnRows[0].amount)).toBe(70);
 
     // Sum of successful + failed should reflect at least the two attempts on
     // this user — though either pass may have processed other users too.
