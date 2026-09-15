@@ -78,6 +78,37 @@ export function horseNameRejectionReason(name) {
   if (name.trim().length < HORSE_NAME_MIN_LENGTH) {
     return 'length';
   }
+  // ── THE CHARACTER RULE IS A DELIBERATE BOUNDARY DECISION ──────────────────
+  // OWNER RULING 2026-09-14 (Equoria-du5qe): the refusal of the angle bracket is
+  // RATIFIED. It is recorded here rather than left to read as an arbitrary
+  // blacklist, because the next person to meet it will otherwise widen it into a
+  // naming rule or delete it as paranoia. Do neither without an owner ruling.
+  //
+  // WHY IT EXISTS: boundary hygiene, NOT a naming rule. Nothing about `<` makes
+  // it a bad name for a horse; the game's naming stance is otherwise
+  // unrestricted (any time, any reason, no uniqueness — owner rulings 2026-09-08
+  // and 2026-09-09). The bracket is refused at the boundary so that no surface
+  // which ever renders a horse name WITHOUT escaping can be made to interpret
+  // one as markup. React escapes by default, so the realistic exposure is a
+  // future non-React surface: an email, a PDF, a CSV, a log viewer, an admin
+  // tool. Refusing the one character that opens a tag is cheap here and removes
+  // that whole class of worry from every such surface at once.
+  //
+  // SCOPE, STATED EXACTLY: `<` is refused; `>` is not, because a lone `>` cannot
+  // open a tag and refusing it would cost a player a legitimate character for
+  // nothing. NUL is refused for a different and simpler reason — it has no
+  // legitimate place in a name and breaks C-style string handling downstream.
+  //
+  // MEASURED, NOT ASSUMED (2026-09-11): across 515 live horse rows and 6
+  // `pendingFoalName` rows, ZERO contain an angle bracket and ZERO contain a
+  // NUL. So this rule refuses nothing any player has actually chosen; it is a
+  // boundary that has never yet been reached.
+  //
+  // IF YOU ARE HERE TO CHANGE IT: widening (adding characters) turns a targeted
+  // boundary defence into the naming blacklist this game does not want, and
+  // deleting it shifts the obligation onto every present and future rendering
+  // surface — which then has to be audited. Either direction is the owner's
+  // call, not an implementer's.
   if (name.includes('<') || name.includes('\0')) {
     return 'characters';
   }

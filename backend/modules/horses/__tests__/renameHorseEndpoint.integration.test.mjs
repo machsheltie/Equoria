@@ -471,7 +471,15 @@ describe('PATCH /api/v1/horses/:id/name — validation is fail-closed', () => {
     ['an empty name', { name: '' }, LENGTH_MSG],
     ['a whitespace-only name', { name: '   ' }, LENGTH_MSG],
     ['a name longer than 100 characters', { name: 'L'.repeat(101) }, LENGTH_MSG],
-    ['a name containing an angle bracket', { name: '<script>Fred' }, CHAR_MSG],
+    // Boundary hygiene, not a naming rule: '<' is refused so a name can never be
+    // interpreted as markup by a surface that renders it unescaped. Ratified by the
+    // owner 2026-09-14 (Equoria-du5qe); see horseNamePolicy.mjs for why, and do not
+    // widen or delete the rule without an owner ruling.
+    [
+      'a name containing an angle bracket (boundary hygiene against unescaped rendering surfaces)',
+      { name: '<script>Fred' },
+      CHAR_MSG,
+    ],
     ['a name containing a NUL byte', { name: 'Fred\u0000Bell' }, CHAR_MSG],
     ['an unexpected extra field', { name: 'Fred', userId: 'someone-else' }, 'Invalid rename payload: unexpected field'],
   ];
