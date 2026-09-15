@@ -71,6 +71,13 @@ if [ -z "$REPO_ROOT" ]; then
   exit 1
 fi
 
+# Equoria-9ai5g: shared-working-tree detector, before everything else.
+# Refuses a push that carries commits made by a DIFFERENT session in this
+# checkout — the 2026-09-11 near-miss, where one session's 80-commit push to
+# master had another session's half-finished revert inside it. Prints the
+# offending commits. ~0.2s, no-op in CI, override EQUORIA_SESSION_OVERRIDE=1.
+sh "$REPO_ROOT/scripts/session/session-guard.sh" prepush || exit 1
+
 # Equoria-ocy3 (B2): run doctrine-checks BEFORE the slow backend test suite.
 # Mirror what CI's doctrine-gate workflow runs on the merge commit, so a
 # --no-verify push still gets caught at the gate (CI catches what the local

@@ -20,6 +20,7 @@ Load this file only when changing or diagnosing CI workflows, hooks, Docker pack
 | Workflow dependency actions       | `.github/dependabot.yml`                                              |
 | Doctrine enforcement              | `scripts/doctrine-checks/run-all.sh` and its scripts                  |
 | Local Git hooks                   | `.husky/`                                                             |
+| Shared-checkout detection         | `scripts/session/session-guard.sh`, `scripts/session/claim.sh`        |
 | Build image                       | `Dockerfile` and `.dockerignore`                                      |
 | Railway build/start/health policy | `railway.toml`                                                        |
 | Commands and runtime floor        | root and package `package.json` files                                 |
@@ -44,6 +45,57 @@ bash scripts/doctrine-checks/run-all.sh
 ```
 
 Select additional focused checks from the touched workflow/configuration and current package scripts. Never introduce `continue-on-error`, skip flags, bypass headers, failure-swallowing shell syntax, or relaxed assertions to manufacture a passing gate.
+
+## One session per checkout (Equoria-9ai5g)
+
+Two Claude sessions in one working tree is a fourth shared mutable resource,
+and the worst of them: one session's `reset`, `checkout --`, `stash` or branch
+move destroys the other's unpushed work, and one session's in-progress commit
+silently becomes an ancestor of the other's push. On 2026-09-11 that nearly
+sent a half-finished revert to `master` inside an 80-commit push; nothing
+detected it, an unrelated `git merge` refusal did.
+
+The owner's ruling was to DETECT, not prevent. `scripts/session/session-guard.sh`
+implements it:
+
+| When          | Entry point                      | Behavior                                                                                                                  |
+| ------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Session start | `bash scripts/session/claim.sh`  | Claims the checkout. Reports a live foreign claim with its age and tells you to use a worktree. Always exits 0.           |
+| Commit        | `.husky/pre-commit` (first line) | Refuses when the claim belongs to another live session and this commit stages paths that session's snapshot did not have. |
+| Push          | `.husky/pre-push` (first check)  | Refuses when the push carries commits made in another session's claim, or mixes author/committer identities. Prints them. |
+
+The claim lives in `"$(git rev-parse --git-dir)"/equoria-session.json` — inside
+the git directory, so it is never tracked and never appears in the working
+tree. For a linked worktree that path is the worktree's own private gitdir, so
+each worktree carries its own claim. That is the point: separate worktrees are
+the fix, not the failure.
+
+- Session identity comes from `EQUORIA_SESSION_ID`, else `CLAUDE_CODE_SESSION_ID`
+  (Claude Code exports it into hook processes), else a parent pid and start
+  time. The last is weak and the guard says so when it uses it.
+- A claim older than 8 hours is stale and is taken over with a warning, so a
+  crashed session does not block the next one.
+- Every refusal is overridable with `EQUORIA_SESSION_OVERRIDE=1` and prints
+  what it found first. It is never silent, and it never blocks without naming
+  the other session.
+- No-op under `CI=true` or `GITHUB_ACTIONS`. Cost measured on Windows Git Bash:
+  ~0.5s pre-commit, ~0.2s pre-push.
+
+To claim automatically, add this alongside the existing `SessionStart` hooks in
+`.claude/settings.json`:
+
+```json
+{
+  "hooks": [
+    { "command": "bash \"$CLAUDE_PROJECT_DIR\"/scripts/session/claim.sh", "type": "command" }
+  ]
+}
+```
+
+What it cannot see: two sessions that share one session token, a session that
+never commits or pushes (a `reset --hard` or `stash` still destroys work
+silently — the guard watches commits and pushes, not the index), and work
+already committed before the first claim existed.
 
 ## Railway invariant
 
