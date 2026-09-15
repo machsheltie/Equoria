@@ -79,6 +79,7 @@ const REQUIRED_MODULE_CONTROL_TESTS = [
   'modules/horses/__tests__/horseDeletionEndpointClosed.integration.test.mjs',
   'modules/horses/__tests__/horseListIdorScope.integration.test.mjs',
   'modules/horses/__tests__/horsePersonalityImpactIdor.integration.test.mjs',
+  'modules/horses/__tests__/horseUpdateBreedMassAssign.sentinel.test.mjs',
   'modules/horses/__tests__/horseUpdateParentageHijack.integration.test.mjs',
   'modules/horses/__tests__/horseXpAwardServerAuthoritative.integration.test.mjs',
   'modules/labs/__tests__/memoryAdminGuard.integration.test.mjs',

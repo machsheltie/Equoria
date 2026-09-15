@@ -54,8 +54,9 @@ integration, per `.claude/rules/CONTRIBUTING.md`) and `backend/modules/auth/__te
 
 **2 — Naming convention for module-resident control tests.** Control tests are not
 filed by control source. IDOR, authz, admin-MFA, ownership, admin-guard and per-route
-rate-limit suites live with the domain module whose route they guard. Any test under
-`backend/modules/*/__tests__/` whose **file name** contains one of these
+rate-limit suites live with the domain module whose route they guard. Any `.test.mjs` or
+`.spec.mjs` file under `backend/modules/**/__tests__/**` (any depth, any module except
+`auth`, which layer 1 already covers in full) whose **file name** contains one of these
 **case-sensitive** tokens is in the gate:
 
 | Token                 | Control class                                              |
@@ -75,9 +76,12 @@ exactly as above. Add a token to this table and to `MODULE_CONTROL_TOKENS` in th
 in the same commit.
 
 **3 — Explicit list.** `EXPLICIT_MODULE_CONTROL_TESTS` in the config, for control suites
-the convention cannot name (parentage hijack, mass assignment, deliberately closed
-endpoints, an environment-gated bypass route). Add to it rather than renaming a suite
-whose name already means something.
+the convention cannot name (parentage hijack, the two mass-assignment sentinels,
+deliberately closed endpoints, an environment-gated bypass route). Add to it rather than
+renaming a suite whose name already means something — `horseUpdateBreedMassAssign` is
+spelled `MassAssign`, its sibling `userUpdateMassAssignment` is not, and neither spelling
+is a token. Add the file to `REQUIRED_MODULE_CONTROL_TESTS` in the sentinel at the same
+time, or the list is unguarded.
 
 `backend/__tests__/securitySuiteScope.sentinel.test.mjs` pins all three. It asks Jest
 itself (`--listTests`) what the config selects, and fails if the selection is empty, if a

@@ -109,6 +109,10 @@ export const EXPLICIT_MODULE_CONTROL_TESTS = [
   '<rootDir>/modules/horses/__tests__/horseUpdateParentageHijack.integration.test.mjs',
   // CWE-915/CWE-269 mass assignment / self-privilege-escalation (Equoria-qia4j).
   '<rootDir>/modules/users/__tests__/userUpdateMassAssignment.integration.test.mjs',
+  // breedId mass assignment on PUT /horses/:id (Equoria-tmyd2). Same class as
+  // the entry above; the file is spelled "MassAssign", not "MassAssignment",
+  // so no token reaches it. Exactly what this list exists for.
+  '<rootDir>/modules/horses/__tests__/horseUpdateBreedMassAssign.sentinel.test.mjs',
   // Attack surface closed: free horse creation (2026-09-05 audit finding 2).
   '<rootDir>/modules/horses/__tests__/horseCreationEndpointClosed.integration.test.mjs',
   // Attack surface closed: player horse deletion (Equoria-9tque).
