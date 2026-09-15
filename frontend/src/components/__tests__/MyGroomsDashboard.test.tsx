@@ -39,6 +39,7 @@ const mockGroomsData = [
     skillLevel: 'expert',
     personality: 'gentle',
     experience: 8,
+    ageYears: 34, // Equoria-fby1t — a groom's age is part of their identity
     sessionRate: 100,
     bio: 'Experienced foal care specialist',
     isActive: true,
@@ -54,6 +55,7 @@ const mockGroomsData = [
     skillLevel: 'intermediate',
     personality: 'energetic',
     experience: 5,
+    ageYears: null, // predates the age model: unknown, not zero
     sessionRate: 75,
     bio: 'General care expert',
     isActive: true,
@@ -69,6 +71,7 @@ const mockGroomsData = [
     skillLevel: 'master',
     personality: 'patient',
     experience: 12,
+    ageYears: 51,
     sessionRate: 150,
     bio: 'Master training specialist',
     isActive: true,
@@ -232,6 +235,41 @@ describe('MyGroomsDashboard Component', () => {
       // 70 per horse, so 140 for Sarah's two — not a per-groom wage.
       expect(within(groomCard).getByText('Weekly fee')).toBeInTheDocument();
       expect(groomCard).toHaveTextContent(/140/);
+    });
+
+    it("shows the groom's age beside their name (Equoria-fby1t)", () => {
+      // Owner ruling 2026-09-14: "Show a groom's age always." Age sits with the
+      // other identity facts — skill and specialty — in the same chip treatment.
+      const Wrapper = createTestWrapper();
+      render(
+        <MyGroomsDashboard
+          userId={1}
+          groomsData={mockGroomsData}
+          assignmentsData={mockAssignmentsData}
+          salaryCostsData={mockSalaryCostsData}
+        />,
+        { wrapper: Wrapper }
+      );
+
+      expect(within(screen.getByTestId('groom-card-1')).getByText('34 years')).toBeInTheDocument();
+      expect(within(screen.getByTestId('groom-card-3')).getByText('51 years')).toBeInTheDocument();
+    });
+
+    it('says an unknown age is unknown rather than showing a zero', () => {
+      const Wrapper = createTestWrapper();
+      render(
+        <MyGroomsDashboard
+          userId={1}
+          groomsData={mockGroomsData}
+          assignmentsData={mockAssignmentsData}
+          salaryCostsData={mockSalaryCostsData}
+        />,
+        { wrapper: Wrapper }
+      );
+
+      const mikeCard = screen.getByTestId('groom-card-2');
+      expect(within(mikeCard).getByText(/age unknown/i)).toBeInTheDocument();
+      expect(within(mikeCard).queryByText('0 years')).not.toBeInTheDocument();
     });
 
     it('displays available slots for each groom', () => {

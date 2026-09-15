@@ -14,6 +14,8 @@ import type { GroomMetrics } from './types';
 export interface GroomProfile {
   id: number;
   name: string;
+  /** Equoria-fby1t — the groom's age in game-years; null when not yet known. */
+  ageYears?: number | null;
   speciality: string;
   experience: number;
   skillLevel: string;

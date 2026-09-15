@@ -431,6 +431,13 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-success-bg)] text-[var(--role-success-text)] border border-[var(--role-success-border)]">
                     {formatSpecialty(groom.specialty)}
                   </span>
+                  {/* Equoria-fby1t (owner ruling, 2026-09-14): "Show a groom's age
+                      always." It belongs with the other things a player knows about
+                      who this groom IS — skill and specialty — in the same chip, not
+                      in a readout of its own. Unknown says so; it never shows 0. */}
+                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)] border border-[var(--role-neutral-border)]">
+                    {typeof groom.ageYears === 'number' ? `${groom.ageYears} years` : 'Age unknown'}
+                  </span>
                 </div>
               </div>
 

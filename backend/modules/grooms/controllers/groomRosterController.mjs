@@ -43,13 +43,20 @@ import { CapExceededError } from '../groomErrors.mjs';
 // hire leaves no orphan schedule row.
 import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 // Equoria-ypb7d.1: every groom enters the game with an age drawn from 18-24.
-import { drawStartAge } from '../services/groomAgeService.mjs';
+// Equoria-fby1t (owner, 2026-09-14): and the player may SEE it — `groomAgeYears`
+// turns the stored `startAge` + `careerWeeks` into the one number a player reads.
+import { drawStartAge, groomAgeYears } from '../services/groomAgeService.mjs';
 // Equoria-ypb7d.2: hiring OPENS AN ENGAGEMENT. Players never own grooms.
 import { openEngagementTx } from '../services/groomEngagementService.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
   name: true,
+  // Equoria-fby1t: selected so the age can be COMPUTED; both are stripped from the
+  // response by `withAgeYears` below, because a player reads an age in years, not
+  // two counters to add up (Equoria-maeba retired the career-weeks reading).
+  startAge: true,
+  careerWeeks: true,
   speciality: true,
   experience: true,
   level: true,
@@ -60,6 +67,20 @@ const GROOM_LIST_SELECT = {
   imageUrl: true,
   userId: true,
 };
+
+/**
+ * Replace the two stored counters with the one number the player reads.
+ *
+ * Equoria-fby1t: the age is NOT the secret field — the RETIREMENT age is, and it
+ * lives in its own table so no groom read can return it (Equoria-m9lz1, I3). This
+ * one is a character attribute like `personality`. `null` means the age is not yet
+ * known (a groom predating Equoria-ypb7d whose first weekly pass has not run); the
+ * surface shows an em dash rather than pretending they are newborn.
+ */
+function withAgeYears(groom) {
+  const { startAge: _startAge, careerWeeks: _careerWeeks, ...rest } = groom;
+  return { ...rest, ageYears: groomAgeYears(groom) };
+}
 
 /**
  * GET /api/grooms/user/:userId
@@ -96,12 +117,15 @@ export async function getUserGrooms(req, res) {
       prisma.groom.count({ where }),
     ]);
 
+    // Equoria-fby1t: every groom's identity carries their age.
+    const groomsWithAge = grooms.map(withAgeYears);
+
     res.status(200).json({
       success: true,
       message: `Retrieved ${grooms.length} grooms for user`,
       userId,
-      grooms,
-      activeGrooms: grooms.filter(g => g.isActive),
+      grooms: groomsWithAge,
+      activeGrooms: groomsWithAge.filter(g => g.isActive),
       totalGrooms,
       pagination: { total: totalGrooms, limit, offset: skip, hasMore: skip + limit < totalGrooms },
     });
@@ -517,6 +541,10 @@ export async function getGroomProfile(req, res) {
       experience: groom.experience,
       skillLevel: groom.skillLevel,
       personality: groom.personality,
+      // Equoria-fby1t: the groom's age, in the same breath as the rest of who they
+      // are. Not the hidden retirement age, which is absent from this read by
+      // construction — `findUnique` does not `include` the schedule relation.
+      ageYears: groomAgeYears(groom),
       epigeneticInfluenceType: groom.epigeneticInfluenceType,
       sessionRate: groom.sessionRate,
       bio: groom.bio,
