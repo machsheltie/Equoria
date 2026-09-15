@@ -560,7 +560,8 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
     expect(result.processed).toBe(2);
     expect(result.retired).toBe(1);
     expect(result.retirements).toEqual([
-      expect.objectContaining({ groomId: groom.id, reason: 'age', careerWeeks: retirementAge - FIXTURE_START_AGE }),
+      // Equoria-maeba: the pass reports the AGE retired at, not weeks worked.
+      expect.objectContaining({ groomId: groom.id, reason: 'age', ageYears: retirementAge }),
     ]);
 
     const retiredRow = await prisma.groom.findUnique({

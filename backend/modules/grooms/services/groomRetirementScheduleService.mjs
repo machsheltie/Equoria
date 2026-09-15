@@ -12,11 +12,20 @@
  * such call sites outside `groomRetirementService.mjs` and the two hire paths
  * (which write, never return, the value).
  *
- * THE UNIT
- *   `retirementAge` is measured in the same weekly tick as `Groom.careerWeeks`.
- *   On Equoria's clock one real week is one game-year (backend/utils/horseAge.mjs),
- *   so `careerWeeks` is the groom's career age in game-years and the retirement
- *   test is a direct age comparison: `careerWeeks >= retirementAge`.
+ * THE UNIT: GAME-YEARS OF AGE, NOT WEEKS OF CAREER
+ *   Equoria-maeba, owner ruling 2026-09-14: "I am confirming the new specified
+ *   aging criteria. Retire any reference to the old system." `retirementAge` is
+ *   an AGE in game-years, and the retirement test is
+ *
+ *       groomAgeYears(groom) >= retirementAge      i.e.
+ *       startAge + careerWeeks >= retirementAge
+ *
+ *   (see groomAgeService.mjs and checkRetirementEligibility). One real week is
+ *   one game-year (backend/utils/horseAge.mjs), so `Groom.careerWeeks` is the
+ *   number of years the groom has WORKED — the offset from `startAge`, never the
+ *   age itself. This docblock used to state the test as
+ *   `careerWeeks >= retirementAge`; that was the retired reading, under which a
+ *   groom hired today was age 0 and retired at an effective 75-90.
  *
  * THE RANGE
  *   Enforced twice on purpose. Here, by the draw; and in the database, by the

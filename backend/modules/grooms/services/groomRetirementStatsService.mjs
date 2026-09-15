@@ -54,13 +54,16 @@ export async function getRetirementStatistics(userId) {
     _count: { retirementReason: true },
   });
 
-  // Calculate average career length for retired grooms
+  // Average career length, IN GAME-YEARS. Equoria-maeba (owner, 2026-09-14):
+  // one weekly pass is one game-year, so the counter behind this column measures
+  // years served — the key is named for the unit rather than for the tick, which
+  // is the last place the retired career-weeks vocabulary reached a player.
   const retiredGroomsData = await prisma.groom.findMany({
     where: { userId, retired: true },
     select: { careerWeeks: true },
   });
 
-  const averageCareerLength =
+  const averageCareerYears =
     retiredGroomsData.length > 0
       ? retiredGroomsData.reduce((sum, groom) => sum + groom.careerWeeks, 0) /
         retiredGroomsData.length
@@ -75,7 +78,7 @@ export async function getRetirementStatistics(userId) {
       acc[reason.retirementReason] = reason._count.retirementReason;
       return acc;
     }, {}),
-    averageCareerLength: Math.round(averageCareerLength * 100) / 100,
+    averageCareerYears: Math.round(averageCareerYears * 100) / 100,
   };
 }
 

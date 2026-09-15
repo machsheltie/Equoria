@@ -50,7 +50,6 @@ export type {
 
 // Groom and rider domain types — no known cross-file collisions.
 export * from './groomBonusTrait';
-export * from './groomCareer';
 export * from './groomLegacy';
 export * from './groomPersonality';
 export * from './groomShowHandler';

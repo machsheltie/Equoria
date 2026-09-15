@@ -47,7 +47,12 @@ export interface GroomRetiredNotificationPayload {
   speciality: string;
   skillLevel: string;
   level: number;
-  careerWeeks: number;
+  /**
+   * The groom's age in game-years at retirement (Equoria-maeba, owner ruling
+   * 2026-09-14). Replaces `careerWeeks`, which was the retired career-weeks
+   * reading of a groom's age.
+   */
+  ageYears: number;
   reason: string;
   horsesLeftUnattended: number;
   horses: GroomRetiredHorse[];

@@ -90,8 +90,9 @@ export async function processWeeklyCareerProgression(userId = null) {
         // the already-drawn case. Migration
         // 20260909120000_ypb7d_groom_age_and_engagement performs no backfill
         // precisely because this exists — the posture Equoria-m9lz1 took.
-        if (groom.startAge === null) {
-          await ensureStartAge(prisma, groom.id);
+        let startAge = groom.startAge;
+        if (startAge === null) {
+          startAge = await ensureStartAge(prisma, groom.id);
           results.aged++;
         }
 
@@ -115,7 +116,10 @@ export async function processWeeklyCareerProgression(userId = null) {
             groomId: groom.id,
             groomName: groom.name,
             reason: eligibility.reason,
-            careerWeeks: groom.careerWeeks + 1,
+            // Equoria-maeba (owner, 2026-09-14): the pass reports the AGE the
+            // groom retired at, in game-years. `careerWeeks + 1` — years WORKED
+            // since hire — was the retired career-weeks reading of that age.
+            ageYears: startAge + groom.careerWeeks + 1,
             level: groom.level,
           });
 

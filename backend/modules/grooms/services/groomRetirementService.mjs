@@ -435,7 +435,14 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
         speciality: retiredGroom.speciality,
         skillLevel: retiredGroom.skillLevel,
         level: retiredGroom.level,
-        careerWeeks: retiredGroom.careerWeeks,
+        // Equoria-maeba (owner, 2026-09-14): the notice speaks in YEARS. It used
+        // to carry `careerWeeks`, which under the RETIRED career-weeks reading
+        // was the groom's age and under the confirmed one is a bare count of
+        // weekly passes — a number with no meaning to a player. The age is not
+        // the hidden value (I3): that is the RETIREMENT age, and this notice is
+        // sent in the same transaction that retires the groom, so it discloses
+        // nothing ahead of the event.
+        ageYears: groomAgeYears(retiredGroom),
         reason: retirementReason,
         horsesLeftUnattended: horses.length,
         horses,
