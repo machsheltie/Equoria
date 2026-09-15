@@ -11,8 +11,13 @@ import NotFoundError from '../../../errors/NotFoundError.mjs';
 import {
   FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
+  acquireGroomRosterLockTx,
+  assertGroomHasRoomForAnotherHorse,
   atCapacityMessage,
 } from './groomFeeBasisService.mjs';
+// Equoria-95yrv fix round 1 (F1): the assignment is now a transaction, and a
+// client-facing mutation's transient timeout must surface as a retryable 503.
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 
 /**
  * Assignment configuration.
@@ -163,52 +168,73 @@ export async function createAssignment(groomId, horseId, userId, options = {}) {
     throw new Error(validation.errors.join(', '));
   }
 
-  // If this is a primary assignment (priority 1) and replacePrimary is true,
-  // deactivate existing primary assignments for this horse
-  if (priority === 1 && replacePrimary) {
-    await prisma.groomAssignment.updateMany({
-      where: {
-        foalId: horseId,
-        priority: 1,
-        isActive: true,
-      },
-      data: {
-        isActive: false,
-        endDate: new Date(),
-      },
-    });
-  }
+  // Equoria-95yrv fix round 1 (F1) — THE CAP AND THE CREATE ARE ONE ACT.
+  //
+  // The eligibility read above still reports the cap, but it cannot ENFORCE it: it
+  // is a count on the autocommit client whose answer is stale the moment it returns.
+  // Two requests for a groom at nine horses both passed it and both created — eleven
+  // active assignments, billed at 11 x 70 with no path back, because the over-cap
+  // fee is deliberately unclamped.
+  //
+  // So the roster lock, the re-count and the create commit together. The lock is the
+  // FIRST statement (see acquireGroomRosterLockTx for why a guarded
+  // `INSERT ... SELECT ... WHERE (COUNT) < 10` does not hold under READ COMMITTED),
+  // and the optional primary-assignment retirement joins them rather than standing
+  // as its own uncommitted statement.
+  const assignment = await withRetryableTxMapping(
+    prisma.$transaction(async tx => {
+      await acquireGroomRosterLockTx(tx, groomId);
+      await assertGroomHasRoomForAnotherHorse(tx, groomId, validation.groom.name);
 
-  // Create the assignment
-  const assignment = await prisma.groomAssignment.create({
-    data: {
-      groomId,
-      foalId: horseId,
-      userId,
-      priority,
-      notes,
-      isActive: true,
-    },
-    include: {
-      groom: {
-        select: {
-          id: true,
-          name: true,
-          skillLevel: true,
-          speciality: true,
-          personality: true,
+      // If this is a primary assignment (priority 1) and replacePrimary is true,
+      // deactivate existing primary assignments for this horse
+      if (priority === 1 && replacePrimary) {
+        await tx.groomAssignment.updateMany({
+          where: {
+            foalId: horseId,
+            priority: 1,
+            isActive: true,
+          },
+          data: {
+            isActive: false,
+            endDate: new Date(),
+          },
+        });
+      }
+
+      // Create the assignment
+      return tx.groomAssignment.create({
+        data: {
+          groomId,
+          foalId: horseId,
+          userId,
+          priority,
+          notes,
+          isActive: true,
         },
-      },
-      foal: {
-        select: {
-          id: true,
-          name: true,
-          bondScore: true,
-          stressLevel: true,
+        include: {
+          groom: {
+            select: {
+              id: true,
+              name: true,
+              skillLevel: true,
+              speciality: true,
+              personality: true,
+            },
+          },
+          foal: {
+            select: {
+              id: true,
+              name: true,
+              bondScore: true,
+              stressLevel: true,
+            },
+          },
         },
-      },
-    },
-  });
+      });
+    }),
+    { message: 'Could not assign the groom just now. Please try again.' },
+  );
 
   logger.info(
     `[groomAssignmentService] Created assignment: ${validation.groom.name} -> ${validation.horse.name}`,

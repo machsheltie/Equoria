@@ -9,6 +9,10 @@
  * every existing importer is unchanged.
  */
 
+// Equoria-95yrv fix round 1 (F1): the ten-horse cap is enforced under the same
+// transaction-scoped advisory lock the weekly fee pass uses.
+import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
+
 /**
  * Equoria-95yrv, owner ruling 2026-09-14 10:23: "Charge the player per horse
  * assigned to a groom per week: $70 per horse per week, up to 10 horses per
@@ -105,13 +109,59 @@ export async function countActiveAssignments(client, groomIds) {
 }
 
 /**
+ * Serialize every writer that is about to seat a horse with THIS groom.
+ *
+ * Equoria-95yrv fix round 1 (F1). The cap was a count followed by a create, with
+ * nothing between them: two `POST /api/grooms/assign` requests for a groom at nine
+ * horses both counted nine, both passed, and both created — eleven active
+ * assignments, billed at 11 x 70, and the over-cap path is deliberately unclamped
+ * so nothing ever brought it back. The guard and the write it guards must be one
+ * atomic act.
+ *
+ * WHY AN ADVISORY LOCK AND NOT A GUARDED `INSERT ... SELECT ... WHERE (COUNT) < 10`.
+ * That shape is the first thing to reach for, and it does NOT hold here. The
+ * campaign's atomic-path rule works because a conditional UPDATE takes a row lock on
+ * the row it tests, so a second writer blocks on it. A COUNT over sibling rows takes
+ * no lock and, under READ COMMITTED, cannot see an uncommitted sibling INSERT: two
+ * transactions racing at nine would BOTH count nine inside their own snapshots and
+ * both insert. It is the classic phantom, and a single statement does not cure it —
+ * only SERIALIZABLE (which the app does not run) or a real lock does. There is no
+ * row to guard and no unique constraint to lean on: expressing "at most ten rows in
+ * this set" declaratively would need a slot column and a unique index, i.e. a schema
+ * change.
+ *
+ * So: the same `pg_advisory_xact_lock` idiom the weekly fee pass already uses
+ * (`groomEngagementService.acquirePayWeekLockTx`), keyed on the GROOM. The loser
+ * WAITS for the winner's commit and then counts ten, so it refuses rather than
+ * failing spuriously. Held for the length of the transaction, released by commit or
+ * rollback. Different grooms take different keys and never contend.
+ *
+ * MUST be the first statement of the assignment transaction — the count below is
+ * only race-safe while it is held.
+ *
+ * @param {Object} tx - Prisma transaction client
+ * @param {number} groomId
+ * @returns {Promise<void>}
+ */
+export async function acquireGroomRosterLockTx(tx, groomId) {
+  const lockKey = jobNameToLockKey(`groomRoster:${groomId}`);
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`;
+}
+
+/**
  * Refuse an eleventh horse. Equoria-95yrv.
  *
  * Both doors that create a `GroomAssignment` call this — the service path
- * (groomAssignmentService.validateAssignmentEligibility, which collects the message
- * as a validation error) and groomSystem.assignGroomToFoal, which had no limit at
- * all. The message is written for a player: horses, not "assignments", and a number
- * they can count on their own roster.
+ * (groomAssignmentService.createAssignment) and groomSystem.assignGroomToFoal, which
+ * had no limit at all. The message is written for a player: horses, not
+ * "assignments", and a number they can count on their own roster.
+ *
+ * CALL IT ON A TRANSACTION CLIENT, AFTER `acquireGroomRosterLockTx`, AND CREATE THE
+ * ASSIGNMENT ON THAT SAME CLIENT. On the autocommit client this is a read whose
+ * answer is stale the moment it returns (fix round 1, F1). It is still called on the
+ * autocommit client in ONE place — `validateAssignmentEligibility`, which reports
+ * eligibility to a caller that is not writing anything — and that is a report, not a
+ * guard: the guard is the in-transaction call in `createAssignment`.
  *
  * @param {Object} client - Prisma client or transaction client
  * @param {number} groomId
@@ -136,6 +186,7 @@ export function atCapacityMessage(groomName) {
 }
 
 export default {
+  acquireGroomRosterLockTx,
   FEE_PER_HORSE_PER_WEEK,
   MAX_HORSES_PER_GROOM,
   ARREARS_OWED_STATUSES,

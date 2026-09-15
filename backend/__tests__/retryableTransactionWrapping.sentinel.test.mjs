@@ -92,6 +92,14 @@ const MIGRATED = [
   ['modules/users/services/gdprAccountService.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/competition/services/competitionRouteQueries.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/services/groomLegacyService.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-95yrv fix round 1 (F1) added these two: BOTH assignment doors became
+  // transactional, because the ten-horse cap and the create it guards have to be one
+  // atomic act (they were a count and a create with nothing between them, so two
+  // requests could seat eleven). Both are client-facing mutations — POST
+  // /api/groom-assignments and POST /api/grooms/assign — so a transient timeout must
+  // surface as a retryable 503, and both are wrapped.
+  ['modules/grooms/services/groomAssignmentService.mjs', { wrapped: 1, totalTx: 1 }],
+  ['modules/grooms/services/groomFoalAssignmentService.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-2ksil — the three deferred-from-7x9po sites, now migrated:
   // conformation show-execute tx (sole caller is the client-facing /execute
   // handler; controller got a 503 guard added). The auth /refresh + email
