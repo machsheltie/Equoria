@@ -21,6 +21,20 @@
  *      groom is the penalty for not paying, and a debt attached to a groom the
  *      player no longer has would be charged for nothing
  *                                                    -> no debt existed either way
+ *   4. THIS WEEK FIRST, THEN THE DEBT (fix round 1, review F2). A player who can
+ *      afford this week but not the debt pays THIS WEEK: the groom keeps working,
+ *      grace clears, and the arrears stay owed for a later week
+ *                                                    -> the first implementation of
+ *                                                       this ruling charged both or
+ *                                                       nothing, so that player paid
+ *                                                       nothing and lost the groom on
+ *                                                       the next pass
+ *
+ * PARTIAL FUNDS. The debt never blocks the current week. Both are attempted as ONE
+ * debit (so a week cannot be marked settled without the money moving), and when the
+ * wallet cannot cover both the pass falls back to the current week alone. Losing the
+ * groom therefore still requires missing a CURRENT week while already in grace — a
+ * debt alone cannot cost a player their groom.
  *
  * ARREARS AND COMPOUNDING, STATED RATHER THAN IMPLIED. Within a grace episode the
  * missed weeks that can accumulate are bounded by the release rule: a second
@@ -58,6 +72,7 @@ const tag = () => randomBytes(6).toString('hex');
 const WEEK_ONE = new Date('2026-04-06T09:00:00.000Z');
 const WEEK_TWO = new Date('2026-04-13T09:00:00.000Z');
 const WEEK_THREE = new Date('2026-04-20T09:00:00.000Z');
+const WEEK_FOUR = new Date('2026-04-27T09:00:00.000Z');
 
 const ONE_HORSE_FEE = calculateWeeklyFee(1);
 
@@ -278,5 +293,81 @@ describe('Equoria-bgdfb — a debt does not outlive the groom it was owed for', 
     });
     expect(writtenOff).toHaveLength(1);
     expect(writtenOff[0].amount).toBe(ONE_HORSE_FEE);
+  }, 90000);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Equoria-bgdfb F2 — the debt never blocks the current week', () => {
+  let user;
+  let groom;
+  const cleanup = createCleanupTracker();
+
+  beforeAll(async () => {
+    user = await makeUser('partial', 0); // week one cannot be paid
+    ({ groom } = await makeStaffedGroom(user.id, 'partial'));
+    registerUserCleanup(cleanup, () => user, 'partial');
+  }, 60000);
+
+  afterAll(() => cleanup.run(), 60000);
+
+  it('a wallet that covers this week but not the debt pays this week, and the groom works', async () => {
+    const graceRun = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    expect(graceRun.graced).toBe(1);
+
+    // Enough for one week's fee, not for two.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { money: ONE_HORSE_FEE + 10 },
+    });
+    const before = await moneyOf(user.id);
+    expect(before).toBeLessThan(ONE_HORSE_FEE * 2);
+
+    const result = await processWeeklySalaries(WEEK_TWO, { userId: user.id });
+    expect(result.errors).toEqual([]);
+    expect(result.successful).toBe(1);
+    expect(result.graced).toBe(0);
+    expect(result.released).toBe(0);
+
+    // THIS week was taken; the debt was not.
+    expect(await moneyOf(user.id)).toBe(before - ONE_HORSE_FEE);
+    expect(result.arrearsCollected).toBe(0);
+    expect(result.totalAmount).toBe(ONE_HORSE_FEE);
+
+    // The groom is paid up for the week they are working, so they work.
+    const row = await prisma.groom.findUnique({
+      where: { id: groom.id },
+      select: { feeUnpaidSince: true, userId: true },
+    });
+    expect(row.feeUnpaidSince).toBeNull();
+    expect(row.userId).toBe(user.id);
+    expect(checkGroomMayWork(row).allowed).toBe(true);
+
+    // And the debt is still on the books, in the same owed state.
+    const stillOwed = await prisma.groomSalaryPayment.findMany({
+      where: { userId: user.id, groomId: groom.id, status: 'missed_insufficient_funds' },
+    });
+    expect(stillOwed).toHaveLength(1);
+    expect(stillOwed[0].amount).toBe(ONE_HORSE_FEE);
+  }, 90000);
+
+  it('the debt is collected on the first week the player can afford both', async () => {
+    await prisma.user.update({ where: { id: user.id }, data: { money: 1000 } });
+    const before = await moneyOf(user.id);
+
+    const result = await processWeeklySalaries(WEEK_THREE, { userId: user.id });
+    expect(result.errors).toEqual([]);
+    expect(result.arrearsCollected).toBe(ONE_HORSE_FEE);
+    expect(await moneyOf(user.id)).toBe(before - ONE_HORSE_FEE * 2);
+
+    const settled = await prisma.groomSalaryPayment.findMany({
+      where: { userId: user.id, groomId: groom.id, status: ARREARS_SETTLED_STATUS },
+    });
+    expect(settled).toHaveLength(1);
+
+    // And it is not collected a second time on the following week.
+    const afterSettling = await moneyOf(user.id);
+    const nextWeek = await processWeeklySalaries(WEEK_FOUR, { userId: user.id });
+    expect(nextWeek.arrearsCollected).toBe(0);
+    expect(await moneyOf(user.id)).toBe(afterSettling - ONE_HORSE_FEE);
   }, 90000);
 });

@@ -376,37 +376,75 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
               // reflects the move) while the SystemAccount.balance is mutated
               // authoritatively in the same tx. A separate creditSystemAccount
               // call here would double-credit the burn.
-              // Equoria-95yrv: a player whose whole staff is idle owes nothing
-              // this week. `debitMoneyOrThrow` rejects a non-positive amount (by
-              // design — an unpaired zero-debit is meaningless), so the move is
-              // skipped rather than faked. The per-groom rows below are still
-              // written, at 0, so the pay week is recorded and the pass stays
-              // idempotent for those grooms.
-              // ONE debit for the whole move: this week's fees AND the arrears.
-              // Two debits would let the player pay the first and fail the second,
-              // leaving a settled week they were never charged for.
-              const dueNow = unpaidTotal + arrearsTotal;
-              if (dueNow > 0) {
-                await debitMoneyOrThrow(tx, {
-                  userId,
-                  amount: dueNow,
-                  systemAccount: SYSTEM_ACCOUNT_BURN,
-                  category: 'groom_salary_burn',
-                  description: `Groom salary weekly run — user ${user.username}`,
-                  metadata: {
-                    groomCount: unpaidAssignments.length,
-                    totalSalary: unpaidTotal,
-                    arrears: arrearsTotal, // Equoria-bgdfb: owed weeks settled here
-                    paymentType: 'weekly_salary',
-                    payWeekStart: payWeekStart.toISOString(), // Equoria-icqqm audit key
-                  },
-                });
+              //
+              // Equoria-95yrv: a player whose whole staff is idle owes nothing this
+              // week. `debitMoneyOrThrow` rejects a non-positive amount (by design —
+              // an unpaired zero-debit is meaningless), so the move is skipped rather
+              // than faked. The per-groom rows below are still written, at 0, so the
+              // pay week is recorded and the pass stays idempotent for those grooms.
+              //
+              // EQUORIA-BGDFB, FIX ROUND 1 (REVIEW F2) — THIS WEEK FIRST, THEN THE
+              // DEBT. The first implementation charged `week + arrears` as one
+              // all-or-nothing amount, so a player who could afford this week but not
+              // the debt paid NOTHING, stayed in grace, and lost the groom on the next
+              // pass. That is stricter than the ruling, which is "it's owed" and
+              // "collected when funds exist" — not "no work until the debt is cleared".
+              //
+              // So: attempt BOTH in one debit — still the right shape, because one
+              // debit cannot half-succeed and leave a week marked settled that was
+              // never paid. If the wallet cannot cover both, fall back to THIS WEEK
+              // ALONE: the groom keeps working, grace clears, and the arrears stay
+              // recorded in the same owed state for a later week when funds allow.
+              //
+              // The fallback is safe INSIDE this transaction: `debitMoneyOrThrow`
+              // throws on `claim.count === 0`, a JS decision after a zero-row
+              // `updateMany` — no SQL error, so the transaction is not aborted and a
+              // second, smaller attempt is a legal statement on it.
+              const chargeAttempts = [];
+              if (unpaidTotal + arrearsTotal > 0) {
+                chargeAttempts.push({ amount: unpaidTotal + arrearsTotal, withArrears: true });
+              }
+              if (arrearsTotal > 0 && unpaidTotal > 0) {
+                chargeAttempts.push({ amount: unpaidTotal, withArrears: false });
               }
 
+              let arrearsSettledNow = false;
+              for (const [index, attempt] of chargeAttempts.entries()) {
+                try {
+                  await debitMoneyOrThrow(tx, {
+                    userId,
+                    amount: attempt.amount,
+                    systemAccount: SYSTEM_ACCOUNT_BURN,
+                    category: 'groom_salary_burn',
+                    description: `Groom salary weekly run — user ${user.username}`,
+                    metadata: {
+                      groomCount: unpaidAssignments.length,
+                      totalSalary: unpaidTotal,
+                      // Equoria-bgdfb: the owed weeks settled by THIS debit — 0 when
+                      // the wallet only covered the current week.
+                      arrears: attempt.withArrears ? arrearsTotal : 0,
+                      paymentType: 'weekly_salary',
+                      payWeekStart: payWeekStart.toISOString(), // Equoria-icqqm audit key
+                    },
+                  });
+                  arrearsSettledNow = attempt.withArrears;
+                  break;
+                } catch (debitError) {
+                  const isLastAttempt = index === chargeAttempts.length - 1;
+                  if (!(debitError instanceof InsufficientFundsError) || isLastAttempt) {
+                    // Nothing left to fall back to: this week itself is unaffordable,
+                    // which is the grace/release path the caller already handles.
+                    throw debitError;
+                  }
+                }
+              }
+              arrearsTotal = arrearsSettledNow ? arrearsTotal : 0;
+
               // Equoria-bgdfb: the owed weeks are now paid. Marked INSIDE the same
-              // transaction as the debit, so a rollback leaves them owed — a week
-              // can be settled only by money actually having moved.
-              if (owedRows.length > 0) {
+              // transaction as the debit, so a rollback leaves them owed — a week can
+              // be settled only by money actually having moved. Skipped entirely when
+              // only the current week was affordable: those weeks are still owed.
+              if (arrearsSettledNow && owedRows.length > 0) {
                 await tx.groomSalaryPayment.updateMany({
                   where: { id: { in: owedRows.map(row => row.id) } },
                   data: { status: ARREARS_SETTLED_STATUS },
@@ -466,7 +504,11 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
                 });
               }
 
-              return { skipped: false, amount: dueNow, arrears: arrearsTotal };
+              return {
+                skipped: false,
+                amount: unpaidTotal + arrearsTotal,
+                arrears: arrearsTotal,
+              };
             },
             { timeout: 30000 }, // 30s — guard against 5s default under load
           );
