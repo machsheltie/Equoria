@@ -44,9 +44,12 @@
  * Adding one means adding a section to CATALOG_SECTIONS — the diff and the
  * reporting need no change.
  *
- * THE ONE TOLERATED CLASS. Extra indexes are tolerated only when the name is on
- * the hardcoded RUNTIME_CREATED_INDEX_ALLOWLIST below — today, one name, with
- * its reason spelled out beside it. Tolerance applies to EXTRA indexes only:
+ * THERE IS NO LONGER A TOLERATED CLASS. RUNTIME_CREATED_INDEX_ALLOWLIST below
+ * is EMPTY as of Equoria-9xa92: the runtime index-creation path in
+ * databaseOptimizationService.mjs is deleted, so nothing creates an index
+ * outside migration history any more and no name needs excusing. The mechanism
+ * is kept, because the honest way to tolerate a future runtime index is a named
+ * entry a reviewer can see, not a widened match. Tolerance applies to EXTRA indexes only:
  * missing and redefined objects are never tolerated, in any section, and an
  * index the reference database also has is compared normally, so the tolerance
  * can only ever excuse a name the migration chain does not produce at all.
@@ -154,35 +157,31 @@ export async function readCatalog(query) {
 }
 
 /**
- * THE ENTIRE TOLERANCE. One index name, spelled out, with its reason.
+ * THE ENTIRE TOLERANCE, AND IT IS NOW EMPTY (Equoria-9xa92, with
+ * Equoria-bebob).
  *
- * An earlier revision derived this set by scanning
- * `databaseOptimizationService.mjs` for `CREATE INDEX`. That was wrong twice
- * over: the scan harvested prose from comments and fragments from template
- * literals (`against`, `statement`, `IF`, `idx_horses_`), and — worse — it made
- * the tolerance invisible to review. A comment in that service reading
- * "we used to CREATE INDEX idx_horses_orphan here" would have silently excused
- * a real stray `idx_horses_orphan`, with nothing in any diff to notice. A
- * hardcoded list widens only by an edit a reviewer can see, and its staleness
- * mode is loud and benign: if the service stops creating the index, the check
- * reports it and someone deletes one line here.
+ * It held exactly one name, `idx_horses_user_horse_lookup`, created at runtime
+ * by `databaseOptimizationService.mjs` and present in no migration. That
+ * service's `createOptimizedIndexes` -- the only thing in the codebase that
+ * issued index DDL outside a migration, and a function with no production
+ * caller, reached only from two test files -- is deleted, and Equoria-bebob's
+ * migration dropped the index. Nothing creates it now, so the entry is gone.
  *
- * `serviceCreateIndexNames()` below cross-checks this list against the service
- * source. It is a cross-check, not the source of truth.
+ * The list stays as a mechanism rather than being removed, for the reason an
+ * earlier revision learned the hard way. That revision derived this set by
+ * scanning `databaseOptimizationService.mjs` for index DDL: the scan harvested
+ * prose from comments and fragments from template literals (`against`,
+ * `statement`, `IF`, `idx_horses_`), and -- worse -- it made the tolerance
+ * invisible to review. A comment in that service naming `idx_horses_orphan`
+ * would have silently excused a real stray `idx_horses_orphan`, with nothing in
+ * any diff to notice. A hardcoded list widens only by an edit a reviewer can
+ * see.
+ *
+ * An empty list means every extra index in the live database is drift, with no
+ * exceptions. Do not add an entry to make a red run green; the index either
+ * belongs in `schema.prisma` and a migration, or it should not exist.
  */
-export const RUNTIME_CREATED_INDEX_ALLOWLIST = Object.freeze([
-  Object.freeze({
-    index: 'idx_horses_user_horse_lookup',
-    // Created at RUNTIME by databaseOptimizationService.mjs
-    // (`QUERY_PATTERN_INDEX.user_horse_lookup`, `CREATE INDEX IF NOT EXISTS`),
-    // so it appears on any database where that service has run and in no
-    // migration at all — see the note above `model Horse` in schema.prisma,
-    // verified against the local `equoria` database on 2026-09-09 by
-    // Equoria-69gip. Ending the runtime DDL is Equoria-9xa92 / Equoria-bebob,
-    // not this check; delete this entry when they land.
-    reason: 'runtime-created by databaseOptimizationService (Equoria-9xa92 / Equoria-bebob)',
-  }),
-]);
+export const RUNTIME_CREATED_INDEX_ALLOWLIST = Object.freeze([]);
 
 /**
  * The allow-listed names as a set, for `diffCatalog`.
@@ -196,13 +195,23 @@ export function toleratedExtraIndexNames() {
 /**
  * CROSS-CHECK ONLY — never the source of truth for the allow-list.
  *
- * Static index names in `databaseOptimizationService.mjs`'s
- * `QUERY_PATTERN_INDEX` object literal. Anchored to that literal (so comments
- * elsewhere in the file cannot contribute) and to the full
- * `CREATE INDEX IF NOT EXISTS <name> ON` shape with a literal identifier (so a
- * `${...}` interpolation contributes nothing rather than a truncated prefix).
- * The sentinel uses it to prove every allow-listed name is one the service
- * really creates; it is not consulted at check time.
+ * Every complete `CREATE INDEX IF NOT EXISTS <name> ON` statement with a
+ * literal identifier ANYWHERE in `databaseOptimizationService.mjs`. Before
+ * Equoria-9xa92 this was anchored to that file's `QUERY_PATTERN_INDEX` literal
+ * and proved each allow-listed name was one the service really creates. The
+ * allow-list is empty now, so the cross-check runs the other way: it proves the
+ * service issues NO index DDL at all, which is the condition that makes the
+ * empty list correct. Re-adding a runtime index-creation path turns the
+ * sentinel red at the moment it is written, not months later when the
+ * duplicates surface.
+ *
+ * The match requires the full statement shape with a literal name, so a
+ * `${...}` interpolation contributes nothing rather than a truncated prefix.
+ * Prose in a comment that happened to spell a complete statement would produce
+ * a false POSITIVE — the guard fires and someone looks. That is the safe
+ * direction, and the exact opposite of the old scrape's failure mode, where a
+ * comment could silently WIDEN a tolerance. Nothing here is consulted at check
+ * time.
  *
  * @param {string} [servicePath]
  * @returns {Set<string>}
@@ -214,12 +223,10 @@ export function serviceCreateIndexNames(servicePath = OPTIMIZATION_SERVICE) {
   } catch {
     return new Set();
   }
-  const literal = /const\s+QUERY_PATTERN_INDEX\s*=\s*\{([\s\S]*?)\n\};/.exec(source);
-  if (!literal) return new Set();
   const names = new Set();
   const pattern = /CREATE INDEX IF NOT EXISTS ([A-Za-z0-9_]+) ON /g;
   let match;
-  while ((match = pattern.exec(literal[1])) !== null) {
+  while ((match = pattern.exec(source)) !== null) {
     names.add(match[1]);
   }
   return names;

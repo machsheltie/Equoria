@@ -40,12 +40,15 @@
  *  3. SENTINEL-POSITIVE, EXCESS — a column or index the migrations do not
  *     produce is reported too. Drift has two directions; a one-directional
  *     check is how an undeclared runtime index survives for months.
- *  4. The one tolerated class — extra indexes on the hardcoded
- *     RUNTIME_CREATED_INDEX_ALLOWLIST — is narrow: the set is exactly one name,
- *     an unrelated extra index and two near-miss spellings of that name still
- *     fail, and a MISSING index fails even when its name IS the allow-listed
- *     one. A cross-check proves the allow-listed name is one
- *     `databaseOptimizationService.mjs` actually creates.
+ *  4. There is no tolerated class left. The hardcoded
+ *     RUNTIME_CREATED_INDEX_ALLOWLIST is EMPTY as of Equoria-9xa92, which
+ *     deleted the runtime index-creation path in
+ *     databaseOptimizationService.mjs; Equoria-bebob's migration dropped the
+ *     one index that path used to leave behind. Every extra index now fails,
+ *     the allow-listed name included, and a MISSING index fails even when its
+ *     name is passed as tolerated. A cross-check proves the service emits no
+ *     `CREATE INDEX` at all, so a reintroduced runtime path turns this red
+ *     immediately.
  *
  * SAFETY. The database named by DATABASE_URL is only ever READ. Every planted
  * defect is applied to a freshly created `equoria_schema_ref_*` database,
@@ -232,61 +235,78 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
     expect(changed[0].actual).toMatch(/nullable=YES/);
   }, 120_000);
 
-  test('the tolerated set is exactly the hardcoded allow-list, and an extra index off it still FAILS', async () => {
+  test('the tolerated set is EMPTY, so every extra index FAILS', async () => {
     const tolerated = toleratedExtraIndexNames();
-    // Hardcoded, not scraped. An earlier revision derived this by scanning
-    // databaseOptimizationService.mjs for `CREATE INDEX` and harvested prose
+    // Equoria-9xa92 deleted the runtime index-creation path in
+    // databaseOptimizationService.mjs, and Equoria-bebob's migration dropped
+    // the index it used to create, so the allow-list that excused it is empty.
+    // The mechanism is still hardcoded rather than scraped: an earlier revision
+    // derived it by scanning that service for index DDL and harvested prose
     // from comments ('against', 'statement') and fragments from template
-    // literals ('IF', 'idx_horses_') — a tolerance that could widen by
-    // someone editing a COMMENT, with nothing in the diff to show it.
-    expect([...tolerated].sort()).toEqual(['idx_horses_user_horse_lookup']);
-    for (const entry of RUNTIME_CREATED_INDEX_ALLOWLIST) {
-      expect(typeof entry.reason).toBe('string');
-      expect(entry.reason.length).toBeGreaterThan(0);
-    }
+    // literals ('IF', 'idx_horses_') -- a tolerance that could widen by someone
+    // editing a COMMENT, with nothing in the diff to show it.
+    expect([...tolerated]).toEqual([]);
+    expect(RUNTIME_CREATED_INDEX_ALLOWLIST).toHaveLength(0);
 
     const drifted = await catalogAfterPlantedDdl([
+      // The name that used to be tolerated is now drift like any other, and so
+      // are the three near-misses that always were: an unrelated name, a
+      // near-miss suffix, and a near-miss prefix.
       'CREATE INDEX "idx_horses_user_horse_lookup" ON "horses" ("userId")',
-      // Three ways an extra index can try to slip through: an unrelated name,
-      // a near-miss suffix, and a near-miss prefix of the allow-listed name.
       'CREATE INDEX "idx_axyem_not_tolerated" ON "horses" ("userId")',
       'CREATE INDEX "idx_horses_user_horse_lookup_2" ON "horses" ("userId")',
       'CREATE INDEX "idx_horses_user_horse" ON "horses" ("userId")',
     ]);
     const findings = diffCatalog(pristine, drifted, { toleratedExtraIndexes: tolerated });
-    const extras = namesOf(findings, 'indexes', 'extra');
-    expect(extras).toEqual(
-      expect.arrayContaining(['idx_axyem_not_tolerated', 'idx_horses_user_horse_lookup_2', 'idx_horses_user_horse']),
+    expect(namesOf(findings, 'indexes', 'extra')).toEqual(
+      expect.arrayContaining([
+        'idx_horses_user_horse_lookup',
+        'idx_axyem_not_tolerated',
+        'idx_horses_user_horse_lookup_2',
+        'idx_horses_user_horse',
+      ]),
     );
-    expect(extras).not.toContain('idx_horses_user_horse_lookup');
   }, 120_000);
 
-  test('CROSS-CHECK: every allow-listed name is one the service really creates', () => {
-    // A cross-check against the service source, NOT the source of truth for the
-    // allow-list. It exists so an entry cannot outlive the runtime DDL that
-    // justifies it: when Equoria-9xa92 / Equoria-bebob stop the service creating
-    // these indexes, this fails and the entry gets deleted.
-    const created = serviceCreateIndexNames();
-    expect(created.size).toBeGreaterThan(0);
-    // Anchored parse, so the junk the old scrape produced is absent.
-    for (const junk of ['against', 'statement', 'IF', 'idx_horses_']) {
-      expect(created.has(junk)).toBe(false);
-    }
+  test('an entry on the allow-list would still be REQUIRED to carry a reason', () => {
+    // The list is empty today. This keeps the shape contract on it, so a future
+    // entry cannot be a bare string with no justification a reviewer can read.
     for (const entry of RUNTIME_CREATED_INDEX_ALLOWLIST) {
-      expect([...created]).toContain(entry.index);
+      expect(typeof entry.index).toBe('string');
+      expect(typeof entry.reason).toBe('string');
+      expect(entry.reason.length).toBeGreaterThan(0);
     }
   });
 
-  test('the tolerance cannot excuse a MISSING index even when the name is allow-listed', async () => {
-    const tolerated = toleratedExtraIndexNames();
+  test('CROSS-CHECK: the service creates NO indexes at all, which is what makes the empty list correct', () => {
+    // This cross-check used to prove every allow-listed name was one
+    // databaseOptimizationService.mjs really creates, so an entry could not
+    // outlive the DDL that justified it. Equoria-9xa92 removed that DDL, so it
+    // now proves the stronger condition in the other direction: the service
+    // emits no `CREATE INDEX` statement whatsoever. Re-adding a runtime
+    // index-creation path fails HERE, when it is written, instead of surfacing
+    // months later as duplicate indexes nobody can attribute.
+    expect([...serviceCreateIndexNames()]).toEqual([]);
+    // Anchored parse, so the junk the old scrape produced is absent.
+    const created = serviceCreateIndexNames();
+    for (const junk of ['against', 'statement', 'IF', 'idx_horses_']) {
+      expect(created.has(junk)).toBe(false);
+    }
+  });
+
+  test('the tolerance cannot excuse a MISSING index even when the name IS on the tolerated set', async () => {
+    // The production list is empty, so this passes a non-empty set straight to
+    // diffCatalog. The guard being proved is diffCatalog's scoping -- tolerance
+    // applies to the `extra` branch only -- and that has to hold for whatever
+    // the list contains, today's emptiness included.
     const victim = 'idx_horses_user_horse_lookup';
-    expect(tolerated.has(victim)).toBe(true);
+    const tolerated = new Set([victim]);
 
     // Both catalogs below are real reads from the reference database. The
-    // EXPECTED side is one where the allow-listed index exists (what the world
-    // looks like if a migration ever adopts it); the ACTUAL side is the
-    // pristine catalog, which lacks it. A name-based allow-list that forgot to
-    // scope itself to the `extra` branch would stay silent here.
+    // EXPECTED side is one where the index exists (what the world looks like if
+    // a migration ever adopts it); the ACTUAL side is the pristine catalog,
+    // which lacks it. A name-based allow-list that forgot to scope itself to
+    // the `extra` branch would stay silent here.
     const withVictim = await catalogAfterPlantedDdl([`CREATE INDEX "${victim}" ON "horses" ("userId")`]);
     expect(withVictim.indexes[victim]).toBeDefined();
     expect(pristine.indexes[victim]).toBeUndefined();

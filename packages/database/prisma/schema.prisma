@@ -396,33 +396,32 @@ model Horse {
   ///
   /// SIXTEEN WAS THE MIGRATION-HISTORY COUNT, NOT THE DATABASE COUNT, and both
   /// counts moved with Equoria-bebob: history now produces TEN of the sixteen
-  /// (the migration's six DROPs run after qh6jk's CREATEs), and a database the
-  /// runtime service has never touched carries those ten. Before the drops the
-  /// local development database had SEVENTEEN `idx_horses_*` indexes: the
-  /// sixteen above plus `idx_horses_user_horse_lookup ("userId")`, which lived
-  /// in no migration at all because
-  /// backend/services/databaseOptimizationService.mjs still creates it at
-  /// RUNTIME with `CREATE INDEX IF NOT EXISTS` (see its `user_horse_lookup`
-  /// entry) — the same drift qh6jk existed to end, for one index it did not
-  /// record. Verified against the local `equoria` database on 2026-09-09 with
-  /// `SELECT indexname FROM pg_indexes WHERE tablename='horses' AND indexname
-  /// LIKE 'idx_horses%'`. Expect the seventeenth on any environment where that
-  /// service has run, and do not read an inflated count as corruption. That
-  /// seventeenth is now dropped by the Equoria-bebob migration too, but the
-  /// service will recreate it — and four of the other five dropped names — the
-  /// next time one of its test callers runs. Ending that is Equoria-9xa92.
+  /// (the migration's six DROPs run after qh6jk's CREATEs), and every database
+  /// carries exactly those ten. Before the drops the local development database
+  /// had SEVENTEEN `idx_horses_*` indexes: the sixteen above plus
+  /// `idx_horses_user_horse_lookup ("userId")`, which lived in no migration at
+  /// all because backend/services/databaseOptimizationService.mjs created it at
+  /// RUNTIME with `CREATE INDEX IF NOT EXISTS` — the same drift qh6jk existed to
+  /// end, for one index it did not record. Verified against the local `equoria`
+  /// database on 2026-09-09 with `SELECT indexname FROM pg_indexes WHERE
+  /// tablename='horses' AND indexname LIKE 'idx_horses%'`.
   ///
-  /// That seventeenth CANNOT be owned through this file, and the reason is not
-  /// that Prisma is unable to express it. It is structurally identical to
-  /// `@@index([userId])` above, so the differ already considers it accounted
-  /// for: it is never proposed for DROP, and declaring it changes the proposal
+  /// THE SEVENTEENTH IS GONE AND CANNOT COME BACK (Equoria-9xa92). It could
+  /// never be owned through this file: it is structurally identical to
+  /// `@@index([userId])` above, so the differ already considered it accounted
+  /// for — it was never proposed for DROP, and declaring it changed the proposal
   /// by exactly nothing (measured, Equoria-69gip). Equoria-hgeaj states the
   /// opposite — that `migrate dev` will propose dropping it alongside the
-  /// others — and that is WRONG; do not chase it. The only lever on it is
-  /// removing the code that creates it. Its importers are all tests, with no
-  /// route, controller, cron or startup caller, so what "created at runtime"
-  /// means concretely is that the test suite issues DDL against the shared
-  /// development database (Equoria-9xa92 / Equoria-hgeaj).
+  /// others — and that is WRONG; do not chase it. The only lever was removing
+  /// the code that created it, and that is what Equoria-9xa92 did:
+  /// `createOptimizedIndexes` had no route, controller, cron or startup caller,
+  /// so "created at runtime" meant the test suite issuing DDL against the
+  /// shared development database. The function and its label-to-column aliasing
+  /// map — the mechanism that manufactured the duplicate names in the first
+  /// place — are deleted, and the runtime-index allow-list in
+  /// scripts/preflight/schema-drift.mjs is now empty, so any index outside
+  /// migration history is drift with no exception. A count other than ten is
+  /// something to investigate, not to tolerate.
   ///
   /// The ONE index shape Prisma cannot express is a PARTIAL index (`WHERE …`),
   /// and that limitation is harmless, because the differ cannot see a partial
