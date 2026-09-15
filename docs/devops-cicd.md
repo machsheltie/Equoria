@@ -58,8 +58,132 @@ No document authorizes production deployment, rollback, secret changes, database
 3. Preserve least-privilege permissions and pinned/approved action versions.
 4. Use synthetic test secrets only; never print, persist, or upload real secrets.
 5. Ensure failures propagate and required artifacts remain available for diagnosis.
-6. Run YAML/static validation plus the affected local command and doctrine suite.
+6. Run YAML/static validation plus the affected local command and doctrine suite, then verify the change per "Verifying a workflow change before it reaches master" below — both layers, static and dispatch-on-a-branch.
 7. Re-check branch-protection or platform configuration separately when it is part of the authorized scope; repository YAML cannot prove external settings.
+
+## Verifying a workflow change before it reaches master (Equoria-axyem.6)
+
+A workflow file is not compiled, not imported, and covered by no test. Its only
+execution environment is GitHub Actions on a branch that has a matching trigger
+— which, for the push/PR gates, means `master`. That is how the dead
+`verify_migration.js` step (a `run:` referencing a file that had been deleted)
+executed broken on `master` for 18 days without anyone noticing. Every workflow
+edit carries the same exposure. Do both layers below.
+
+### 1. Static — `check-workflows-lint`
+
+`scripts/doctrine-checks/check-workflows-lint.sh` runs
+[actionlint](https://github.com/rhysd/actionlint) over `.github/workflows/`. It
+is auto-discovered by `run-all.sh`, so the pre-push hook and the Doctrine Gate
+job already run it.
+
+**actionlint must be installed. The check fails loudly when it is not** — a
+doctrine check that passes because its tool is absent is the silent-skip class
+this epic exists to remove. Pinned floor: **v1.7.12** (newer is accepted).
+
+| Environment          | Install                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Windows (Git Bash)   | `winget install rhysd.actionlint` or `scoop install actionlint`                                               |
+| macOS                | `brew install actionlint`                                                                                     |
+| Any platform with Go | `go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12`                                               |
+| No package manager   | Release binary into the per-user cache below, from <https://github.com/rhysd/actionlint/releases/tag/v1.7.12> |
+| CI                   | The `Install actionlint` step in `.github/workflows/doctrine-gate.yml` (tag-pinned **and** sha256-verified)   |
+
+**Resolution order: `$ACTIONLINT` -> `actionlint` on `PATH` -> the per-user
+cache.** The cache lives outside the repository, because the repository root is
+a closed enumeration in `docs/REPOSITORY_MAP.md` and a doctrine check is not
+entitled to add a root directory to it:
+
+| Platform | Per-user cache path                                                       |
+| -------- | ------------------------------------------------------------------------- |
+| Windows  | `%LOCALAPPDATA%\equoria\actionlint\<version>\actionlint.exe`              |
+| POSIX    | `${XDG_CACHE_HOME:-$HOME/.cache}/equoria/actionlint/<version>/actionlint` |
+
+```bash
+# Windows Git Bash example
+DEST="$LOCALAPPDATA/equoria/actionlint/1.7.12"
+mkdir -p "$DEST" && cd "$DEST"
+curl -sSL -o al.zip \
+  https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip
+unzip -oj al.zip actionlint.exe && rm al.zip
+```
+
+Several `<version>` directories may coexist; the check picks the highest that
+contains an executable. The version string is parsed as the first `X.Y.Z` in
+`actionlint --version`, and anything unparseable (`(devel)`, empty) is
+**rejected**, never assumed current.
+
+#### Known gap: shell inside `run:` blocks
+
+The check disables actionlint's optional `shellcheck` and `pyflakes`
+integrations (`-shellcheck= -pyflakes=`). Stated, not hidden:
+
+- **Determinism.** `ubuntu-latest` ships shellcheck; Windows Git Bash does not.
+  A gate whose verdict depends on the host's incidental tooling is not a gate.
+- **`SC1083` is a structural false positive** against Actions syntax: every
+  `${{ ... }}` inside a `run:` block reads to shellcheck as a literal brace.
+
+Measured with shellcheck 0.11.0: **69 findings** — 50x SC2086, 7x SC2129, 6x
+SC1083, 3x SC2034, and one each of SC2059, SC2046, SC2044. Do not read that as
+"all cosmetic": SC2086, SC2046 and SC2044 are correctness-capable (unquoted
+expansion, word-splitting over `find` output), and 52 of the 69 fall in those
+codes. The honest statement is narrower — none is the class Equoria-axyem was
+about, and **none has been triaged**. Enabling the integration means pinning
+shellcheck as a second required tool everywhere, triaging all 69, and
+suppressing the SC1083 class; that is its own bead. Until then, shell
+correctness inside `run:` bodies is an **open, untriaged gap**.
+
+actionlint's own workflow, expression, and action checks run at full strength,
+with no allowlist, baseline, or `-ignore` regex. A missing or empty
+`.github/workflows/` fails the check rather than passing it vacuously.
+
+Static lint also cannot see a step that references a file which no longer
+exists. That is precisely the `verify_migration.js` defect — which is why layer
+2 is not optional.
+
+### 2. Dynamic — run the changed workflow off `master` via `workflow_dispatch`
+
+Workflows that declare `workflow_dispatch:` today: `test.yml`, `ci-cd.yml`,
+`codeql.yml`, `security-scan.yml`, `evidence-verification.yml`,
+`update-visual-baselines.yml`.
+
+`gh workflow run --ref <branch>` executes **the workflow file as it exists on
+that branch**, not the copy on `master`. So a feature branch is a real
+execution environment for your edit, with no new tooling, no `act`, and nothing
+merged.
+
+```bash
+# 1. Publish the branch carrying your workflow edit (never master).
+git push origin <your-branch>
+
+# 2. Trigger the edited workflow against that branch.
+gh workflow run <workflow-file>.yml --ref <your-branch>
+
+# 3. Watch it. The run appears within a few seconds.
+gh run list --branch <your-branch> --limit 5
+gh run watch <run-id>            # or poll `gh run list` on an interval
+
+# 4. Read the result, per job.
+gh run view <run-id>
+gh run view <run-id> --log-failed   # only the failing steps' logs
+
+# 5. Clean up when the evidence is recorded.
+git push origin --delete <your-branch>
+```
+
+What you are proving is that **your edited workflow parsed, dispatched, and its
+steps executed**. A red run is still valid evidence of that, as long as the
+failures are pre-existing and you say which. What is _not_ evidence: a green run
+of the `master` copy, or a lint pass alone.
+
+If the workflow you changed has no `workflow_dispatch:` trigger, add one
+minimally (no inputs, or one optional input) as part of the change. It costs
+nothing on push/PR and makes the file verifiable forever after.
+
+### Ordering
+
+Static first (it is seconds and catches most of it), dynamic second, then the
+rest of the workflow-change checklist below.
 
 ## Deployment-change checklist
 

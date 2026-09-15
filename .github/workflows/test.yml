@@ -13,6 +13,36 @@
 # Security: All ${{ inputs.* }} and unsafe ${{ github.event.* }} contexts
 # are routed through env: intermediaries. See EXTENSION PATTERNS below.
 
+# ─────────────────────────────────────────────────────────────────────────
+# VERIFYING A CHANGE TO THIS WORKFLOW BEFORE IT REACHES master
+# (Equoria-axyem.6 — full write-up in docs/devops-cicd.md)
+# ─────────────────────────────────────────────────────────────────────────
+# A workflow edit is not compiled, not imported, and covered by no test. The
+# `verify_migration.js` step that referenced a deleted file ran broken on
+# master for 18 days for exactly that reason. Two layers close it:
+#
+# 1. STATIC — `bash scripts/doctrine-checks/check-workflows-lint.sh` runs
+#    actionlint over .github/workflows/. It is part of run-all.sh, so the
+#    pre-push hook already runs it. It catches syntax errors, bad `${{ }}`
+#    expressions, unknown step keys, and broken `needs:`/`runs-on:` refs.
+#    It cannot catch a step that references a file which no longer exists.
+#
+# 2. DYNAMIC — actually run the edited workflow off master. This workflow
+#    declares `workflow_dispatch:` above precisely so it can be:
+#
+#      git push origin <your-branch>
+#      gh workflow run test.yml --ref <your-branch>
+#      gh run list --branch <your-branch> --limit 5
+#      gh run view <run-id>            # add --log-failed for the failing step
+#
+#    `--ref <your-branch>` runs the workflow FILE AS IT EXISTS ON THAT
+#    BRANCH, so your edit is what executes. Delete the branch when done:
+#      git push origin --delete <your-branch>
+#
+# Do BOTH before merging a workflow change. Static lint alone is what let
+# the dead migration step through.
+# ─────────────────────────────────────────────────────────────────────────
+
 name: 'Equoria Quality Gate'
 
 on:
