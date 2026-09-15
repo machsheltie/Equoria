@@ -37,30 +37,17 @@ export const useHorseTrainingHistory = (horseId: number) =>
     select: (data) => data.trainingHistory, // Extract the array from the analytics object
   });
 
-export const useUpdateHorse = () => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    HorseSummary,
-    ApiError,
-    { horseId: number; data: { sex?: string; dateOfBirth?: string } }
-  >({
-    mutationFn: ({ horseId, data }) => horsesApi.update(horseId, data),
-    onSuccess: (_result, { horseId }) => {
-      queryClient.invalidateQueries({ queryKey: horseKeys.detail(horseId) });
-      queryClient.invalidateQueries({ queryKey: horseKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['next-actions'] });
-    },
-  });
-};
-
 /**
  * Rename a horse through the dedicated endpoint (Equoria-4fnro).
  *
- * WHY NOT `useUpdateHorse`: renaming used to ride on PUT /horses/:id, a
- * mass-assignment route that also takes sex, dateOfBirth and parentage. The
- * owner ruled that the form uses the dedicated rename endpoint and the older
- * route stops renaming, so this is the only mutation in the frontend that can
- * change a horse's name.
+ * WHY THERE IS NO `useUpdateHorse` BESIDE IT: renaming used to ride on
+ * PUT /horses/:id, a mass-assignment route that also takes sex, dateOfBirth and
+ * parentage. The owner ruled that the form uses the dedicated rename endpoint
+ * and the older route stops renaming (Equoria-4fnro) — which left the update
+ * hook with no caller at all, so it is gone rather than left as dead code for
+ * someone to wire a name back through. PUT /horses/:id still exists on the
+ * server; if the frontend ever needs it (sex, dateOfBirth, parentage), add the
+ * hook back then, without `name`.
  *
  * Every surface that shows a horse's name is invalidated, because the name is
  * on all of them — the horse's own page, the roster, and the next-actions

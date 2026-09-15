@@ -318,20 +318,21 @@ const OnboardingPage: React.FC = () => {
       navigate('/stable', { replace: true });
     },
     onError: (error) => {
-      // A 400 on this request is the name (breed and gender are chosen from
-      // fixed controls), so say the name rule in Equoria's own words. Anything
-      // else goes through the shared taxonomy. The server's own string is never
-      // rendered — §4 of the async-state doctrine.
+      // A 400 is attributed to the NAME only when the name we are about to send
+      // actually breaks the rule. The endpoint has other 400s (a breed that no
+      // longer exists, a missing gender), and telling her about the "<"
+      // character when the breed lookup failed would be a worse lie than the
+      // silent truncation this ruling removed. Everything else goes through the
+      // shared taxonomy; the server's own string is never rendered (§4).
       const statusCode =
         typeof error === 'object' && error !== null && 'statusCode' in error
           ? (error as { statusCode?: number }).statusCode
           : undefined;
+      const typedName = (horseSelection.horseName ?? '').trim();
+      const nameRejection = horseNameRejection(typedName);
       setSubmitError(
-        statusCode === 400
-          ? horseNameRejectionCopy(
-              horseNameRejection(horseSelection.horseName ?? '') ?? 'characters',
-              horseSelection.horseName ?? ''
-            )
+        statusCode === 400 && nameRejection !== null
+          ? horseNameRejectionCopy(nameRejection, typedName)
           : userMessageFor(error).message
       );
     },

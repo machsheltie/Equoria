@@ -7,21 +7,25 @@
  *   PATCH /:id/name   — rename a horse
  *
  * WHY A DEDICATED ENDPOINT
- *   Breeding derives a foal's name server-side as `<Dam> Foal`
- *   (foalingService.mjs) because the client had no honest way to supply one.
- *   The owner ruled 2026-09-08 that "foals can be renamed at any time for any
- *   reasons" — no cooldown, no once-only limit, no justification — and
- *   2026-09-09 that names need not be unique. `PUT /horses/:id` does accept a
- *   `name` today, but it is a mass-assignment path that also takes sex,
- *   dateOfBirth, sireId and damId, and it enforced no length bound at all.
- *   Naming a horse is its own player intent and gets its own narrow, bounded,
- *   transactional route — the same reasoning `_validators.mjs` records for
- *   keeping breedId off the PUT allow-list.
+ *   A foal is born `unnamed` (owner ruling 2026-09-14, Equoria-4fnro:
+ *   `UNNAMED_HORSE_NAME` in services/horseNamePolicy.mjs) and stays so until her
+ *   player names her — so naming is a thing the player does, not a field the
+ *   server fills in. The owner also ruled 2026-09-08 that "foals can be renamed
+ *   at any time for any reasons" — no cooldown, no once-only limit, no
+ *   justification — and 2026-09-09 that names need not be unique.
  *
- * SCOPE BOUNDARY
- *   Backend capability ONLY. Where the rename control appears in the interface
- *   is the owner's open question and is deliberately not answered here: no
- *   surface, no copy, no placement decision.
+ *   THIS IS NOW THE ONLY WAY TO RENAME A HORSE. `PUT /horses/:id` used to accept
+ *   a `name`; as of Equoria-4fnro it REFUSES any body containing one and says so
+ *   ("rename a horse with PATCH /horses/:id/name"). That route is a
+ *   mass-assignment path that also takes sex, dateOfBirth, sireId and damId, and
+ *   it enforced no length bound at all — the same reasoning `_validators.mjs`
+ *   records for keeping breedId off its allow-list. Do not re-add `name` there.
+ *
+ * WHERE IT IS CALLED FROM
+ *   The pencil beside the horse's name on the horse-detail header
+ *   (frontend/src/pages/horse-detail/HorseProfileCard.tsx, via `useRenameHorse`).
+ *   No age gate, by ruling. Failure is reported at the field; success is the
+ *   header re-rendering with the committed name.
  *
  * Mounting: mounted at the SAME path as the parent (`router.use(...)` in
  * horseRoutes.mjs). `/:id/name` is 2 segments and so cannot collide with the

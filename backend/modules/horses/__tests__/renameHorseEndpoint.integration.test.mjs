@@ -2,36 +2,41 @@
  * PATCH /api/v1/horses/:id/name — owner-scoped rename endpoint (Equoria-qkgfh.1)
  *
  * WHY THIS SUITE EXISTS
- *   Breeding derives a foal's name server-side as `<Dam> Foal`
- *   (foalingService.mjs `options.name || dam.pendingFoalName || `${dam.name} Foal``)
- *   because the client had no honest way to supply one. The owner ruled
- *   (2026-09-08) that a horse may be renamed at any time for any reason, and
- *   (2026-09-09) that names need NOT be unique — "if 20 players want to name
- *   their horse Fred, they can do so".
+ *   A foal is born `unnamed` and stays so until her player names her (owner
+ *   ruling 2026-09-14, Equoria-4fnro; `UNNAMED_HORSE_NAME` in
+ *   services/horseNamePolicy.mjs). Before that ruling the foaling service
+ *   DERIVED a name, `<Dam> Foal` — that is history, not current behaviour, and
+ *   the cases below assert the birth name is now the shared constant. The owner
+ *   also ruled (2026-09-08) that a horse may be renamed at any time for any
+ *   reason, and (2026-09-09) that names need NOT be unique — "if 20 players want
+ *   to name their horse Fred, they can do so".
  *
- *   This suite pins the four properties that ruling implies, against the real
+ *   This suite pins the properties those rulings imply, against the real
  *   database and the real Express app (no mocks anywhere):
  *
  *     1. An owner can rename their horse and the new name PERSISTS.
  *     2. Authorization collapses (CWE-639): a horse that does not exist and a
  *        horse owned by someone else must produce BYTE-IDENTICAL responses, so
  *        the endpoint cannot be used to enumerate other players' horse ids.
- *     3. Duplicate names are legal — within one stable and across stables.
+ *     3. Duplicate names are legal — within one stable and across stables,
+ *        including two newborn foals who are both `unnamed`.
  *     4. Validation is fail-closed: rejected names are rejected with a clear
  *        error and the stored name is left untouched (no truncation, no
- *        silent normalisation).
+ *        silent normalisation). The bound is 1-40 characters (Equoria-zalyb).
  *
- *   Plus the point of the whole task: a derived `<Dam> Foal` name produced by
- *   the REAL foaling service can actually be replaced.
+ *   Plus the point of the whole task: the `unnamed` name the REAL foaling
+ *   service gives a newborn can actually be replaced, through this endpoint.
  *
  * SCOPE
- *   Backend only. Where the rename control lives in the interface is the
- *   owner's decision and is deliberately absent from this change.
+ *   Backend only; the surface that calls it is the pencil on the horse-detail
+ *   header (HorseProfileCard.tsx, Equoria-4fnro).
  *
- *   Five live paths let a player put a string into `horses.name`; four are gated
- *   by the shared rule and this suite covers them. The fifth,
- *   POST /api/v1/auth/advance-onboarding, is deliberately NOT gated and is NOT
- *   covered here — see the enumeration in routes/_validators.mjs.
+ *   THREE live paths let a player put a string into `horses.name` and all three
+ *   are now gated by the shared rule: POST /horses/foals, this endpoint, and
+ *   POST /api/v1/auth/advance-onboarding (gated by Equoria-zalyb, covered by
+ *   modules/users/__tests__/advance-onboarding.test.mjs). PUT /horses/:id is no
+ *   longer one of them — it refuses a `name` outright. See the enumeration in
+ *   routes/_validators.mjs.
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';

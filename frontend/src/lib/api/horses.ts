@@ -76,12 +76,14 @@ export const horsesApi = {
     apiClient.get<StatHistory>(`/api/v1/horses/${horseId}/stats/history?range=${timeRange}`),
   getRecentGains: (horseId: number, days = 30) =>
     apiClient.get<RecentGains>(`/api/v1/horses/${horseId}/gains/recent?days=${days}`),
-  // NOTE (Equoria-4fnro, owner ruling 2026-09-14): `update` no longer carries a
-  // `name`. Renaming has its own endpoint (`rename` below) and the PUT route now
-  // REFUSES any body containing `name`, so sending one here is a 400, not a
-  // rename. Do not re-add `name` to this signature.
-  update: (horseId: number, data: { sex?: string; dateOfBirth?: string }) =>
-    apiClient.put<HorseSummary>(`/api/v1/horses/${horseId}`, data),
+  // NOTE (Equoria-4fnro, owner ruling 2026-09-14): there is deliberately no
+  // `update` here any more. It existed to carry `{ name }` to PUT
+  // /api/v1/horses/:id; renaming now has its own endpoint (`rename` below) and
+  // the PUT route REFUSES any body containing `name`, which left this helper —
+  // and the `useUpdateHorse` hook above it — with no caller. PUT /horses/:id
+  // still accepts sex, gender, dateOfBirth, sireId and damId on the server; if a
+  // surface ever needs one of those, add a helper for THAT, never one that takes
+  // a name.
   /**
    * Rename a horse — the ONE way a player's chosen name reaches `horses.name`
    * after birth (Equoria-4fnro). PATCH /api/v1/horses/:id/name accepts exactly

@@ -19,8 +19,8 @@
   ],
   "allowlist": {
     "backend/modules/auth/services/onboardingService.mjs": {
-      "reason": "System-derived, no player string: writes `<username>'s First Horse` for the registration starter horse. Provably inside the policy — username is validated 3-30 characters matching ^[a-zA-Z0-9_]+$ (authRoutes.mjs), so the longest possible result is 46 UTF-16 units with no `<` and no NUL.",
-      "issue": "Equoria-qkgfh.1"
+      "reason": "System-derived, no player string: writes `<username>'s First Horse` for the registration starter horse at REGISTRATION time. It can EXCEED the policy: username is validated 3-30 characters matching ^[a-zA-Z0-9_]+$ (authRoutes.mjs), so the result is 17-44 UTF-16 units and anything above a 26-character username is longer than the 40-character limit the owner set on 2026-09-14 (Equoria-zalyb). What IS guaranteed: no `<` and no NUL, and no player-typed string on this path. What is NOT: the length bound. Nothing breaks today — the bound is checked on input and this write never passes through a validator, the name is immediately renameable, and the onboarding form does not prefill it (OnboardingPage starts the field empty), so no new player can be rejected because of it. But the game does mint a name here that its own rule would refuse to accept back, and whether to shorten the generated name or widen nothing is the OWNER's call, not an implementer's (originally allow-listed under Equoria-qkgfh.1; the length gap was opened by the 40-character ruling). Do not read this entry as a guarantee that system-derived names satisfy the policy.",
+      "issue": "Equoria-zalyb"
     },
     "backend/modules/marketplace/controllers/marketplaceController.mjs": {
       "reason": "System-derived, no player string: store horses are named `<Breed> #NNNNNN`. Breed names are DB-controlled (Breed.name is admin-created and uniquely indexed), not player input on this path.",

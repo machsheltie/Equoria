@@ -60,6 +60,20 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
   const renameHorseMutation = useRenameHorse();
   const [renameError, setRenameError] = React.useState<string | null>(null);
 
+  // Focus goes back to the pencil when the form closes, whether she saved or
+  // cancelled. The pencil unmounts while editing, so this restores focus on the
+  // render where it comes back — without it a keyboard user is dropped at the
+  // top of the document after naming her horse (DECISIONS.md §10: focus
+  // restoration is part of the accessibility floor, not a dialog-only courtesy).
+  const pencilRef = React.useRef<HTMLButtonElement>(null);
+  const wasEditing = React.useRef(false);
+  React.useEffect(() => {
+    if (wasEditing.current && !isEditing) {
+      pencilRef.current?.focus();
+    }
+    wasEditing.current = isEditing;
+  }, [isEditing]);
+
   const horseIsUnnamed = isUnnamed(horse.name);
   // The player's own count, so she is never surprised by the cap.
   const nameCharactersLeft = HORSE_NAME_MAX_LENGTH - editName.length;
@@ -298,6 +312,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
         actions={
           isEditing ? undefined : (
             <IconButton
+              ref={pencilRef}
               type="button"
               /* No age gate: the owner ruled a horse may be renamed at will.
                  The label changes for a horse who has never been named, because
