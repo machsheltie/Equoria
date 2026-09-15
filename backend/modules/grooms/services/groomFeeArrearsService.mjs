@@ -15,6 +15,8 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
+// Equoria-bgdfb: what an unpaid week becomes, and the two ways it stops being owed.
+import { ARREARS_OWED_STATUSES, ARREARS_WRITTEN_OFF_STATUS } from './groomFeeBasisService.mjs';
 import {
   ENGAGEMENT_END_REASONS,
   GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
@@ -116,10 +118,26 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
               groomId: groom.id,
               userId,
               amount: salary,
-              paymentDate: new Date(),
+              paymentDate: payWeekStart,
               paymentType: 'weekly_salary',
               status: 'terminated_non_payment',
             },
+          });
+          // Equoria-bgdfb: the debt does not outlive the groom. Losing them to the
+          // grooms-for-hire pool IS the penalty for a full unpaid week; carrying the
+          // owed weeks forward would charge the player for a groom they no longer
+          // have, and the next player to hire this groom owes nothing for the last
+          // player's arrears. Written off rather than deleted, so the weeks stay on
+          // the record. In the same transaction as the release, so a rollback leaves
+          // both the engagement and the debt exactly as they were.
+          await tx.groomSalaryPayment.updateMany({
+            where: {
+              groomId: groom.id,
+              userId,
+              paymentType: 'weekly_salary',
+              status: { in: [...ARREARS_OWED_STATUSES] },
+            },
+            data: { status: ARREARS_WRITTEN_OFF_STATUS },
           });
           return result;
         });
@@ -194,7 +212,12 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
             groomId: groom.id,
             userId,
             amount: salary,
-            paymentDate: new Date(),
+            // Equoria-bgdfb: dated with the PAY WEEK this row records, not with the
+            // moment it was written. The next collection settles the weeks strictly
+            // BEFORE the one it is charging, and that test is only exact if the row
+            // says which week it is. (A `missed_grace_period` row is not owed — its
+            // week is already recorded by the `missed_insufficient_funds` row.)
+            paymentDate: payWeekStart,
             paymentType: 'weekly_salary',
             // The distinction the existing vocabulary already draws: the week the
             // fee was first missed, versus a later failure inside the same week.
@@ -258,10 +281,11 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
  *     releases. Losing a groom is the penalty for a player not paying for a whole
  *     week; it is not a penalty to hand out because our own transaction threw. The
  *     groom stays on staff, cannot work, and the audit row records the week.
- *   - ARREARS vs FORGIVENESS. Whether the uncollected week is later owed or written
- *     off is Equoria-bgdfb, an OPEN OWNER DECISION, and nothing here presupposes it:
- *     no debt is recorded and no future debit is enlarged. Whichever way bgdfb is
- *     ruled, the uncollected week is on the record for that ruling to act on.
+ *   - RELEASE, as above. (ARREARS is no longer open: Equoria-bgdfb was ruled on
+ *     2026-09-14 — "It's owed." The `missed_collection_error` row this writes is in
+ *     `ARREARS_OWED_STATUSES`, so the next successful collection takes it along with
+ *     that week's fee. Because this path never releases, its uncollected weeks can
+ *     accumulate across weeks — each owed once and settled once, never doubled.)
  *
  * The knock-on this path DOES accept, stated rather than hidden: a groom put into
  * grace by a collection error in week 1 whose week 2 fee then genuinely cannot be
@@ -307,7 +331,9 @@ export async function recordUncollectedFees(userId, unpaid, payWeekStart, cause)
             groomId: groom.id,
             userId,
             amount: salary,
-            paymentDate: new Date(),
+            // Equoria-bgdfb: the pay week this row records — see the note in
+            // handleUnpaidFees. This week is OWED, and a later collection settles it.
+            paymentDate: payWeekStart,
             paymentType: 'weekly_salary',
             // A status of its own, because "we could not take the money" is not the
             // same event as "the player did not have it", and a reader of this table

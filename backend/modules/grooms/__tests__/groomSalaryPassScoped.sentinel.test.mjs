@@ -76,6 +76,9 @@ const GUARDED_FILES = [
   // Equoria-95yrv: the per-horse fee basis. It runs the pass against a fixture
   // stable of one working groom and one idle one, scoped to its own user.
   'modules/grooms/__tests__/groomFeePerHorse.integration.test.mjs',
+  // Equoria-bgdfb: the arrears cases. They drive a player into grace and then pay,
+  // both scoped to this suite's own fixture user.
+  'modules/grooms/__tests__/groomFeeArrearsOwed.integration.test.mjs',
   'tests/integration/groomSalarySystem.test.mjs',
 ];
 

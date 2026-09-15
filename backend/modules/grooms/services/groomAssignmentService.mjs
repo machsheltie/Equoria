@@ -6,9 +6,13 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import NotFoundError from '../../../errors/NotFoundError.mjs';
-// Equoria-95yrv: the cap and the rate are the fee's, so they are DEFINED with the
-// fee (groomSalaryService) and imported here. Two copies would drift.
-import { FEE_PER_HORSE_PER_WEEK, MAX_HORSES_PER_GROOM } from './groomSalaryService.mjs';
+// Equoria-95yrv: the cap, the rate and the refusal wording are the fee's, so they
+// are DEFINED with the fee and imported here. Two copies would drift.
+import {
+  FEE_PER_HORSE_PER_WEEK,
+  MAX_HORSES_PER_GROOM,
+  atCapacityMessage,
+} from './groomFeeBasisService.mjs';
 
 /**
  * Assignment configuration.
@@ -111,9 +115,7 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
     if (!limits.canTakeMore) {
       // Equoria-95yrv: said to the player, in the player's terms — horses, not
       // "assignments", and the number they can count on their own roster.
-      errors.push(
-        `${groom.name} is already caring for ${limits.maxAssignments} horses, which is as many as one groom can take. Free up a horse or assign a different groom.`,
-      );
+      errors.push(atCapacityMessage(groom.name));
     }
   }
 
