@@ -1,6 +1,9 @@
 ---
 paths:
   - "backend/modules/*/services/*RaceBarrier.mjs"
+  - "backend/modules/marketplace/controllers/marketplaceController.mjs"
+  - "backend/modules/marketplace/services/horseTransferReconciliation.mjs"
+  - "backend/modules/grooms/controllers/groomFreeAgentController.mjs"
   - "scripts/doctrine-checks/check-no-test-only-imports.mjs"
 ---
 
@@ -9,7 +12,7 @@ paths:
 **Status:** Active rule
 **Owner:** Project owner
 **Last verified:** 2026-09-14
-**Load only when:** An interleaving seam module, a production call site that awaits one, or the allow-list in `check-no-test-only-imports.mjs` is read or changed
+**Load only when:** An interleaving seam module, one of the three production call sites that await one (the globs list them by exact path — they are the keys of `PERMITTED_TEST_ONLY_IMPORTS`), or the allow-list in `check-no-test-only-imports.mjs` is read or changed
 **Do not load for:** Ordinary backend, service, controller, or test work that does not touch a seam
 **Live sources:** `backend/modules/marketplace/services/marketplaceRaceBarrier.mjs`, `backend/modules/grooms/services/groomHireRaceBarrier.mjs`, `scripts/doctrine-checks/check-no-test-only-imports.mjs`
 **Retire when:** The owner rules that interleaving seams are no longer permitted, or replaces the pattern
@@ -98,7 +101,19 @@ Two further obligations on the call site and the test:
 
 ## Known limitation of the executable cap
 
-The cap detects a seam by its `__TESTING_ONLY_set*` arming export. A future
-seam that armed itself some other way (a setter named differently, a mutable
-exported object) would not be counted. That is a detector gap, not a licence:
-the ruling caps the pattern, not the spelling.
+WHAT IS DETECTED, exactly: a production file under `backend/` or
+`frontend/src/` containing an export of an identifier that begins
+`__TESTING_ONLY_set`, in either spelling — the declaration form
+(`export function` / `export const` / `export let` / `export var`) or the
+specifier form (`export { __TESTING_ONLY_setX }`). The declaration keyword is
+not what is matched; the name is.
+
+WHAT IS NOT DETECTED: an arming function whose name does not begin
+`__TESTING_ONLY_set` — a setter called something else, a mutable exported
+object, a barrier armed through a method on an exported instance, or a seam
+reached by any route other than an export. A seam spelled that way also
+breaks contract clause 4 (the `__TESTING_ONLY_` prefix exists so the detector
+sees every consumer), so it is already a contract violation before it is a
+detector gap — but nothing executable will say so. The ruling caps the
+pattern, not the spelling: do not read a green gate as permission for a third
+seam the gate cannot see.

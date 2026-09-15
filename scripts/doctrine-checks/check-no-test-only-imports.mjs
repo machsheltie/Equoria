@@ -146,10 +146,28 @@ const KNOWN_INTERLEAVING_SEAM_MODULES = new Set([
   'backend/modules/grooms/services/groomHireRaceBarrier.mjs',
 ]);
 
-// Matches the arming export that defines a seam, e.g.
-// `export function __TESTING_ONLY_setGroomHireRaceBarrier(barrier) {`.
-const SEAM_ARMING_EXPORT_PATTERN =
-  /export\s+(?:async\s+)?function\s+__TESTING_ONLY_set[A-Za-z0-9_]*/g;
+// Matches the arming export that defines a seam. BOTH export spellings count,
+// because the name is the signal and the declaration keyword is not:
+//   export function __TESTING_ONLY_setGroomHireRaceBarrier(barrier) { … }
+//   export const    __TESTING_ONLY_setGroomHireRaceBarrier = (barrier) => { … }
+//   export { __TESTING_ONLY_setGroomHireRaceBarrier }
+// The `const` form is not hypothetical: backend/middleware/requestBodySecurity.mjs
+// already exports its (non-seam) test-only bindings that way, so it is the
+// spelling an author is most likely to reach for. Its own bindings still do not
+// match — `__TESTING_ONLY_JsonScanner` / `__TESTING_ONLY_assertNoPollutingKeys`
+// are internal-function exports for unit tests, not arming functions, and carry
+// no `set` after the prefix.
+const SEAM_ARMING_EXPORT_PATTERNS = [
+  /export\s+(?:async\s+)?(?:function|const|let|var)\s+__TESTING_ONLY_set[A-Za-z0-9_]*/g,
+  /export\s*\{[^{}]*__TESTING_ONLY_set[A-Za-z0-9_]*[^{}]*\}/gs,
+];
+
+function declaresArmingExport(content) {
+  return SEAM_ARMING_EXPORT_PATTERNS.some((pattern) => {
+    pattern.lastIndex = 0;
+    return pattern.test(content);
+  });
+}
 
 function* walkFiles(dir) {
   // Equoria-8nq7i: ENOENT-only-tolerant readdir. A vanished directory yields
@@ -207,8 +225,7 @@ for (const productionPath of PRODUCTION_PATHS) {
     const rel = relative(REPO_ROOT, absPath).replace(/\\/g, '/');
     // Seam cap (Equoria-dqzpi): record any production module that declares an
     // arming export, so a third interleaving seam cannot arrive by precedent.
-    SEAM_ARMING_EXPORT_PATTERN.lastIndex = 0;
-    if (SEAM_ARMING_EXPORT_PATTERN.test(content)) {
+    if (declaresArmingExport(content)) {
       seamModulesFound.add(rel);
     }
 
