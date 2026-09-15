@@ -18,6 +18,9 @@ export default defineConfig({
   // drift between the two configs from showing as broader-suite failures.
   testIgnore: ['**/readiness/**'],
   globalSetup: './tests/e2e/global-setup.ts',
+  // Equoria-oye1a: stops the shared-session keep-alive timer and FAILS the run
+  // if any renewal failed — see tests/e2e/global-teardown.ts.
+  globalTeardown: './tests/e2e/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,

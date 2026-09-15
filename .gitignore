@@ -159,6 +159,9 @@ test-breeding-performance.mjs
 # === Playwright / E2E Artifacts ===
 playwright-report/
 storageState.json
+# Equoria-oye1a: the shared-session keep-alive publishes its renewal status next
+# to the storageState it renews (tests/e2e/helpers/sessionKeepAlive.ts).
+.storageState.json.keepalive-status.json
 setup-failure.png
 tests/e2e/test-credentials.json
 

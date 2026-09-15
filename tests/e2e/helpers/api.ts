@@ -7,6 +7,7 @@ import {
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readTestCredentials } from './credentials';
+import { assertSharedSessionHealthy } from './sessionKeepAlive';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,6 +59,12 @@ async function ensureLiveSession(request: APIRequestContext): Promise<void> {
 //
 // Caller MUST `await session.context.close()` in afterAll to free the context.
 export async function createAuthedSession(browser: Browser): Promise<AuthedSession> {
+  // Fail for the REAL reason if the keep-alive is not renewing the shared
+  // session: a stale storageState would otherwise surface as a generic 401 or,
+  // worse, as a logged-out page. global-teardown.ts applies the same check to
+  // the whole run for the specs that only use the plain page fixture.
+  assertSharedSessionHealthy(STORAGE_STATE_PATH);
+
   const context = await browser.newContext({ storageState: STORAGE_STATE_PATH });
   const request = context.request;
 

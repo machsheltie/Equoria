@@ -113,6 +113,11 @@ confirm that the target is the intended disposable test database.
 ## Live source map
 
 - Main E2E orchestration: `playwright.config.ts`
+- Main-profile shared session: `tests/e2e/global-setup.ts` registers one player and
+  writes one `storageState.json`; `tests/e2e/helpers/sessionKeepAlive.ts` re-logs in on a
+  timer because the access-token cookie lives 15 minutes and the suite runs longer, and
+  `tests/e2e/global-teardown.ts` fails the run if a renewal failed. Each login revokes the
+  user's earlier refresh tokens (CWE-384), so only the newest state is valid.
 - Readiness orchestration: `playwright.beta-readiness.config.ts`
 - Backend environment loading: `backend/config/config.mjs`
 - Safe templates: `backend/env.beta.example` and
