@@ -248,6 +248,19 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     expect(await storedName(horseA.id)).toBe(fancy);
   }, 60000);
 
+  // The ratified scope is narrow ON PURPOSE (Equoria-du5qe, owner 2026-09-14):
+  // '<' is refused as boundary hygiene because it opens a tag; a lone '>' cannot,
+  // so it stays a legal character in a horse's name. Without this case, widening
+  // the policy to `name.includes('>')` would pass every test in the tree and only
+  // the comment in horseNamePolicy.mjs would contradict it.
+  it("accepts a closing angle bracket — only '<' is refused, and only as boundary hygiene", async () => {
+    const withGt = 'Fred > Barney';
+
+    const res = await rename(horseA.id, { name: withGt }, { token: ownerToken, csrf: ownerCsrf });
+
+    expect(res.status).toBe(200);
+    expect(await storedName(horseA.id)).toBe(withGt);
+  }, 60000);
   it('replaces the derived `<Dam> Foal` name produced by the real foaling service', async () => {
     const { foal } = await createFoalFromPregnancy({
       damId: dam.id,
