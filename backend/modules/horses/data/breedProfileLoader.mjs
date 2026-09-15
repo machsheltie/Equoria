@@ -55,7 +55,29 @@ import logger from '../../../utils/logger.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
+// Where the JSON fallback lives. Ordinary configuration, read the same way in
+// every environment: `BREED_PROFILES_PATH` if it is set, otherwise the file
+// shipped in the repository. Same shape as DATABASE_URL — a deployment names the
+// resource, the code does not hard-code it. No environment gate and no test-only
+// behaviour: whatever the variable names is what every process reads, and if it
+// is unset (the normal case, including production) the constant below wins.
+//
+// It exists because backend/modules/horses/__tests__/foalCreationBreedDataOutage.test.mjs
+// must make this read genuinely fail to prove the 500 arm (JSON_LOAD_ERROR is
+// captured once, right here, at module init, and mocking an Equoria-owned module
+// is forbidden). That suite used to rename the TRACKED backend/data/breedProfiles.json
+// aside for one request — so a run killed inside the window left the tracked file
+// missing from the shared working tree and every breed-dependent path 500ing for
+// no visible reason. OWNER RULING 2026-09-14 10:23 (Equoria-rlvgn): "Tests may not
+// rename tracked data files at all; the affected suite works on a copy." Pointing
+// this variable at a disposable copy is how the suite gets one.
+//
+// Set it in the process environment, or in the env file config.mjs loads for the
+// current NODE_ENV. A relative value resolves against the process working directory.
+const DEFAULT_PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
+const PROFILES_PATH = process.env.BREED_PROFILES_PATH
+  ? resolve(process.env.BREED_PROFILES_PATH)
+  : DEFAULT_PROFILES_PATH;
 
 // ── JSON fallback (transition mechanism) ──────────────────────────────────────
 // Loaded once at module init with readFileSync so the loader is usable in
