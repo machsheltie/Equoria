@@ -32,8 +32,41 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
 
-  // Test patterns
-  testMatch: ['**/__tests__/**/*.test.mjs', '**/__tests__/**/*.spec.mjs'],
+  // Test patterns — the SECURITY-CONTROL surface, not the whole backend.
+  //
+  // Equoria-ugxuc: this was `**/__tests__/**`, i.e. every backend test file.
+  // The Security Gate therefore re-ran the entire suite (828 suites / ~12.4k
+  // tests) in ONE Jest process. The rate limiter is in-process under
+  // NODE_ENV=test (backend/middleware/rateLimiting.mjs: no Redis, in-memory
+  // store), so the global apiLimiter counter accumulated across ~12k requests
+  // in two long-lived workers and tripped before
+  // modules/horses/__tests__/foalCreationMinimalPayload.test.mjs ran — five
+  // cases got 429 where they assert 400/200. The same file passes in Backend
+  // Tests (Shard 1-3) and in the 8-shard pre-push run because each shard is a
+  // fresh process with a fresh counter. Raising the cap, disabling the
+  // limiter, or adding a bypass header are all forbidden (and would destroy
+  // what this gate proves); the defect was the selection.
+  //
+  // The scope below is docs/SECURITY_TESTING.md's own statement of the
+  // security surface — "Middleware and controls | backend/middleware/,
+  // backend/modules/auth/, backend/config/" — projected onto the path
+  // convention in .claude/rules/CONTRIBUTING.md: middleware sentinels and
+  // cross-module integration live in backend/__tests__/, and the auth module's
+  // tests live in backend/modules/auth/__tests__/. Every file this suite's
+  // coverageThreshold block names a control for (middleware/security.mjs,
+  // middleware/sessionManagement.mjs, middleware/validationErrorHandler.mjs,
+  // utils/validateEnvironment.mjs) has its tests inside that scope, so the
+  // 100%-per-file thresholds still bind and still fail the job.
+  //
+  // Nothing is skipped or weakened: the domain suites dropped here
+  // (horses, breeding, competition, grooms, …) are not security-control
+  // tests and still run, blocking, in the Backend Tests shard matrix.
+  testMatch: [
+    '<rootDir>/__tests__/**/*.test.mjs',
+    '<rootDir>/__tests__/**/*.spec.mjs',
+    '<rootDir>/modules/auth/__tests__/**/*.test.mjs',
+    '<rootDir>/modules/auth/__tests__/**/*.spec.mjs',
+  ],
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.mjs'],
