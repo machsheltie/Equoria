@@ -54,16 +54,46 @@ const CANONICAL_DB_NAMES = new Set(['equoria', 'postgres', 'template0', 'templat
 const NAME_PATTERN = /^equoria_lane_[a-z0-9]{6,32}_[0-9]{1,2}$/;
 
 /**
+ * Parse an env file if it is there. backend/.env.test is gitignored and only
+ * ever exists on a developer machine: CI checks the repository out without it
+ * and supplies DATABASE_URL through the job environment instead (Equoria-dwicn
+ * — the unconditional read this replaces made every lane-backed case on the
+ * GitHub runner fail with ENOENT, red since Equoria-bu9c4.1). Absence is
+ * therefore normal and is reported once; any OTHER read failure still throws,
+ * so a genuinely unreadable file is never silently ignored.
+ */
+const announcedMissing = new Set();
+export function parseEnvFile(file) {
+  try {
+    return dotenv.parse(readFileSync(file));
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+    if (!announcedMissing.has(file)) {
+      announcedMissing.add(file);
+      // console.error appends the newline; the notice goes to stderr so the
+      // `create` CLI's stdout stays exactly the lane name.
+      console.error(`[lane] ${file} is absent (normal in CI); using the process environment`);
+    }
+    return {};
+  }
+}
+
+export const DEFAULT_ENV_FILE = path.join(BACKEND, '.env.test');
+
+/**
  * Resolve the base DATABASE_URL the suite itself would use: process env first
  * (CI and lane children set it), then backend/.env.test without override —
- * the same precedence as tests/setup.mjs and prismaClient.mjs.
+ * the same precedence as tests/setup.mjs and prismaClient.mjs. The env file is
+ * consulted only when the environment did not already answer, so a runner that
+ * has no such file never reads it at all. `envFile` exists for the sentinel.
  */
-export function baseDatabaseUrl(env = process.env) {
+export function baseDatabaseUrl(env = process.env, envFile = DEFAULT_ENV_FILE) {
   if (env.EQUORIA_LANE_BASE_URL) {
     return env.EQUORIA_LANE_BASE_URL;
   }
-  const parsed = dotenv.parse(readFileSync(path.join(BACKEND, '.env.test')));
-  const url = env.DATABASE_URL || parsed.DATABASE_URL;
+  const url = env.DATABASE_URL || parseEnvFile(envFile).DATABASE_URL;
   if (!url) {
     throw new Error('DATABASE_URL is not set in the environment or backend/.env.test');
   }

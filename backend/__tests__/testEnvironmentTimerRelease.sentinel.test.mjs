@@ -9,11 +9,18 @@
  * own post-teardown oracle (jest-leak-detector, the `--detectLeaks` engine):
  * the bare Node environment retains the context (the planted violation fires)
  * and the custom environment releases it.
+ *
+ * The oracle runs the detector over several forced collections (Equoria-dwicn):
+ * jest-leak-detector forces one, which observes the release on Node 24 but not
+ * on the Node 22 CI pins, where a released context needs a second cycle. Both
+ * directions use the same oracle, so the planted violation — which no number
+ * of collections can free — still fires.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import v8 from 'node:v8';
 import vm from 'node:vm';
 import LeakDetector from 'jest-leak-detector';
 import { TestEnvironment as NodeEnvironment } from 'jest-environment-node';
@@ -38,6 +45,31 @@ const LEAKY_SANDBOX_CODE = `
   globalThis.__sweep.unref();
 `;
 
+const tick = promisify(setImmediate);
+
+/**
+ * Force one full garbage collection, the way jest-leak-detector does.
+ */
+function forceGarbageCollection() {
+  const hidden = globalThis.gc === undefined || globalThis.gc === null;
+  v8.setFlagsFromString('--expose-gc');
+  vm.runInNewContext('gc')();
+  if (hidden) {
+    v8.setFlagsFromString('--no-expose-gc');
+  }
+}
+
+// How many extra collections a released context is allowed to need before the
+// oracle calls it retained. jest-leak-detector forces ONE collection plus one
+// heap snapshot, which is enough on Node 24 but not on Node 22 — the version
+// CI pins (NODE_VERSION 22.x in .github/workflows/test.yml) — where the
+// released context needs a second cycle and the sentinel therefore failed on
+// the runner while passing locally (Equoria-dwicn; measured 2026-09-15:
+// released on the 1st extra round, planted violation still retained after 5).
+// This does not soften the guard: a context something really holds survives
+// every round, and the planted violation below proves that in the same run.
+const GC_ROUNDS = 6;
+
 async function environmentRetainedAfterTeardown(EnvironmentClass, sandboxCode) {
   let environment = new EnvironmentClass({ globalConfig: {}, projectConfig }, environmentContext);
   await environment.setup();
@@ -51,7 +83,15 @@ async function environmentRetainedAfterTeardown(EnvironmentClass, sandboxCode) {
   // anything else still holds the context.
   // eslint-disable-next-line no-useless-assignment
   environment = null;
-  return detector.isLeaking();
+  let retained = await detector.isLeaking();
+  for (let round = 0; retained && round < GC_ROUNDS; round += 1) {
+    forceGarbageCollection();
+    for (let i = 0; i < 10; i += 1) {
+      await tick();
+    }
+    retained = await detector.isLeaking();
+  }
+  return retained;
 }
 
 describe('sandbox timer release sentinel', () => {
