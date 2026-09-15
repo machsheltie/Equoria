@@ -47,6 +47,7 @@ import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
 import {
   DEFAULT_MAX_HORSES_PER_GROOM,
   activeAssignmentsFor,
+  ageLabel,
   feeForGroom as feeForGroomIn,
   filterAndSortGrooms,
   formatSpecialty,
@@ -431,12 +432,10 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-success-bg)] text-[var(--role-success-text)] border border-[var(--role-success-border)]">
                     {formatSpecialty(groom.specialty)}
                   </span>
-                  {/* Equoria-fby1t (owner ruling, 2026-09-14): "Show a groom's age
-                      always." It belongs with the other things a player knows about
-                      who this groom IS — skill and specialty — in the same chip, not
-                      in a readout of its own. Unknown says so; it never shows 0. */}
+                  {/* Equoria-fby1t: "Show a groom's age always" — with the other facts
+                      a player knows about who this groom IS, in the same chip. */}
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)] border border-[var(--role-neutral-border)]">
-                    {typeof groom.ageYears === 'number' ? `${groom.ageYears} years` : 'Age unknown'}
+                    {ageLabel(groom.ageYears)}
                   </span>
                 </div>
               </div>

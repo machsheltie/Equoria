@@ -33,6 +33,16 @@ export function feeForGroom(salary: SalarySummary, groomId: number): number | nu
   return salary.breakdown.find((entry) => entry.groomId === groomId)?.weeklyFee ?? null;
 }
 
+/**
+ * How old this groom is, for the identity chip. Equoria-fby1t, and review F5: "yrs
+ * old" rather than "years", because the card's Experience row reads "8 years" a few
+ * pixels below and two adjacent year-counts must not read as the same kind of thing.
+ * An unknown age says so — it is never rendered as 0.
+ */
+export function ageLabel(ageYears?: number | null): string {
+  return typeof ageYears === 'number' ? `${ageYears} yrs old` : 'Age unknown';
+}
+
 /** Specialty display, null-safe (Equoria-j2a51). */
 export function formatSpecialty(specialty: string | undefined): string {
   return (specialty ?? '').replace(/([A-Z])/g, ' $1').trim();

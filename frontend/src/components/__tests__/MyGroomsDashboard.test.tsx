@@ -251,8 +251,14 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      expect(within(screen.getByTestId('groom-card-1')).getByText('34 years')).toBeInTheDocument();
-      expect(within(screen.getByTestId('groom-card-3')).getByText('51 years')).toBeInTheDocument();
+      // "yrs old", not "years" (review F5): the Experience row on the same card
+      // reads "8 years", and two adjacent year-counts must not read as one thing.
+      expect(
+        within(screen.getByTestId('groom-card-1')).getByText('34 yrs old')
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('groom-card-3')).getByText('51 yrs old')
+      ).toBeInTheDocument();
     });
 
     it('says an unknown age is unknown rather than showing a zero', () => {
@@ -269,7 +275,7 @@ describe('MyGroomsDashboard Component', () => {
 
       const mikeCard = screen.getByTestId('groom-card-2');
       expect(within(mikeCard).getByText(/age unknown/i)).toBeInTheDocument();
-      expect(within(mikeCard).queryByText('0 years')).not.toBeInTheDocument();
+      expect(within(mikeCard).queryByText('0 yrs old')).not.toBeInTheDocument();
     });
 
     it('displays available slots for each groom', () => {

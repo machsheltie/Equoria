@@ -62,6 +62,8 @@ import {
   ARREARS_WRITTEN_OFF_STATUS,
 } from '../services/groomSalaryService.mjs';
 import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
+import { processRetirement } from '../services/groomRetirementService.mjs';
+import { ensureRetirementSchedule } from '../services/groomRetirementScheduleService.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-bgdfb-owed';
@@ -369,5 +371,57 @@ describe('Equoria-bgdfb F2 — the debt never blocks the current week', () => {
     const nextWeek = await processWeeklySalaries(WEEK_FOUR, { userId: user.id });
     expect(nextWeek.arrearsCollected).toBe(0);
     expect(await moneyOf(user.id)).toBe(afterSettling - ONE_HORSE_FEE);
+  }, 90000);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Equoria-bgdfb F3 — a debt does not outlive the career either', () => {
+  let user;
+  let groom;
+  const cleanup = createCleanupTracker();
+
+  beforeAll(async () => {
+    user = await makeUser('retire', 0); // the week cannot be paid
+    ({ groom } = await makeStaffedGroom(user.id, 'retire'));
+    registerUserCleanup(cleanup, () => user, 'retire');
+  }, 60000);
+
+  afterAll(() => cleanup.run(), 60000);
+
+  it('retirement writes the owed week off, as a release does', async () => {
+    const graceRun = await processWeeklySalaries(WEEK_ONE, { userId: user.id });
+    expect(graceRun.graced).toBe(1);
+
+    // Age the groom exactly onto its hidden retirement age, so the GAME retires it.
+    const retirementAge = await ensureRetirementSchedule(prisma, groom.id);
+    const row = await prisma.groom.findUnique({
+      where: { id: groom.id },
+      select: { startAge: true },
+    });
+    await prisma.groom.update({
+      where: { id: groom.id },
+      data: { careerWeeks: retirementAge - row.startAge },
+    });
+
+    const result = await processRetirement(groom.id);
+    expect(result.groom.retired).toBe(true);
+    expect(result.writtenOffArrearsCount).toBe(1);
+
+    // Nothing collectable is left: the weekly pass skips retired grooms, so an owed
+    // row here would be a debt nobody could ever settle.
+    const owed = await prisma.groomSalaryPayment.count({
+      where: {
+        userId: user.id,
+        groomId: groom.id,
+        status: { in: ['missed_insufficient_funds', 'missed_collection_error'] },
+      },
+    });
+    expect(owed).toBe(0);
+
+    const writtenOff = await prisma.groomSalaryPayment.findMany({
+      where: { userId: user.id, groomId: groom.id, status: ARREARS_WRITTEN_OFF_STATUS },
+    });
+    expect(writtenOff).toHaveLength(1);
+    expect(writtenOff[0].amount).toBe(ONE_HORSE_FEE);
   }, 90000);
 });

@@ -99,6 +99,8 @@ import {
 // same 1-week-is-1-game-year clock horses use (backend/utils/horseAge.mjs). Not
 // secret, unlike the retirement age above; see groomAgeService.mjs.
 import { groomAgeYears } from './groomAgeService.mjs';
+// Equoria-bgdfb (F3): the arrears vocabulary, so a career ending also ends the debt.
+import { ARREARS_OWED_STATUSES, ARREARS_WRITTEN_OFF_STATUS } from './groomFeeBasisService.mjs';
 // Equoria-ypb7d.2: retirement CLOSES the engagement (players never own grooms).
 import { ENGAGEMENT_END_REASONS, endEngagementTx } from './groomEngagementService.mjs';
 // Equoria-ypb7d.1: a reporting read over rows retirement already wrote, split out
@@ -147,14 +149,19 @@ export const CAREER_CONSTANTS = {
 export const GROOM_RETIRED_NOTIFICATION_TYPE = 'groom_retired';
 
 /**
- * Increment career weeks for a groom.
+ * Advance the groom's age by one game-year.
  *
- * One tick per weekly career pass. On Equoria's clock this is one game-year of
- * the groom's working life, so `careerWeeks` is the groom's career age and is
- * what `checkRetirementEligibility` compares against the hidden retirement age.
+ * One tick per weekly career pass; on Equoria's clock one real week is one
+ * game-year. `careerWeeks` counts the YEARS WORKED since hire — it is the offset
+ * from `startAge`, never the age itself. What `checkRetirementEligibility`
+ * compares against the hidden retirement age is the AGE,
+ * `groomAgeYears(groom) = startAge + careerWeeks` (Equoria-maeba, owner ruling
+ * 2026-09-14). This docblock claimed `careerWeeks` WAS the career age, which is
+ * the retired reading the ruling asked to be removed — the same claim its own
+ * file already contradicts at `checkRetirementEligibility`.
  *
  * @param {number} groomId - The groom ID
- * @returns {Promise<Object>} Updated groom with new career weeks
+ * @returns {Promise<Object>} Updated groom, one game-year older
  */
 export async function incrementCareerWeeks(groomId) {
   // Explicit existence check — prisma.update() may not throw P2025 reliably
@@ -376,6 +383,23 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       retirementTimestamp,
     );
 
+    // Equoria-bgdfb fix round 1 (review F3): a debt does not outlive the career it
+    // was owed for. The weekly fee pass selects `retired: false`, so an unpaid week
+    // on a groom who then ages out could never be collected — and a
+    // `missed_insufficient_funds` row that will never be collected is a row whose
+    // status misstates its state, which any later "what is outstanding?" reader over
+    // this table would count. Written off for the same reason a non-payment release
+    // writes it off (groomFeeArrearsService), in the same transaction as the
+    // retirement, and never deleted: the week stays on the record.
+    const writtenOffArrears = await tx.groomSalaryPayment.updateMany({
+      where: {
+        groomId,
+        paymentType: 'weekly_salary',
+        status: { in: [...ARREARS_OWED_STATUSES] },
+      },
+      data: { status: ARREARS_WRITTEN_OFF_STATUS },
+    });
+
     const retiredGroom = await tx.groom.findUnique({
       where: { id: groomId },
       include: {
@@ -479,6 +503,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       endedAssignmentCount: endedAssignments.count,
       closedAssignmentLogCount: closedLogs.count,
       closedEngagementCount: closedEngagements,
+      writtenOffArrearsCount: writtenOffArrears.count,
       notificationIds,
       notificationRecipientIds: recipientIds,
       // Entries, so the post-commit publish sends each recipient EXACTLY the
@@ -528,6 +553,9 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     endedAssignmentCount: committed.endedAssignmentCount,
     closedAssignmentLogCount: committed.closedAssignmentLogCount,
     closedEngagementCount: committed.closedEngagementCount,
+    // Equoria-bgdfb (F3): unpaid weeks this retirement wrote off, so the caller can
+    // see a debt ended with the career rather than vanishing unremarked.
+    writtenOffArrearsCount: committed.writtenOffArrearsCount,
     // Plural: one per notified player. Normally length 1 (the player whose staff
     // the groom was on); length 0 only when nobody could be notified, which the
     // transaction logs loudly when assignments were ended anyway.
