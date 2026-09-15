@@ -41,10 +41,20 @@ export async function initializeSentry(_app) {
     return;
   }
 
-  const [Sentry, { nodeProfilingIntegration }] = await Promise.all([
-    import('@sentry/node'),
-    import('@sentry/profiling-node'),
-  ]);
+  // Equoria-y7vjp (2026-09-15): these two dynamic imports are awaited in
+  // sequence, NOT through Promise.all. Both packages share the @sentry/core
+  // module graph, and two overlapping ESM link operations over that shared
+  // graph make Node 22's vm module linker (which Jest's
+  // --experimental-vm-modules runtime drives) throw
+  //   "request for './tracing/errors.js' is from a module not been linked"
+  // for whichever request arrives while @sentry/core is still mid-link. Node 24
+  // tolerates the overlap, which is why sentryDsnBoot.integration.test.mjs
+  // passed locally and failed every CI shard on Node 22.x. Sequencing them
+  // changes nothing about the init below — both modules are loaded before
+  // Sentry.init() either way — and costs one extra serialized import, once, at
+  // boot, only when a DSN is configured.
+  const Sentry = await import('@sentry/node');
+  const { nodeProfilingIntegration } = await import('@sentry/profiling-node');
   sdk = Sentry;
 
   Sentry.init({
