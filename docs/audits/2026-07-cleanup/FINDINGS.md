@@ -503,3 +503,547 @@ Provide a compact evidence block for each claimed outcome, with:
 - A candid status for each of memory repair, runtime improvement and publication coordination; list anything still open rather than collapsing all three into “fixed.”
 
 The minimum acceptable conclusion is evidence-led. “All tests pass,” “we lowered the workers,” “we shared the app,” or “we added schemas” cannot substitute for explaining what retained memory and demonstrating the effect of the fix. Update the existing issues with the actual measurements and next steps; leave closure and final acceptance to the owner.
+
+## 2026-09-16 — Interrupted push, missing dependencies, and debugging recovery plan
+
+Owner request: review the pasted Claude conversation, identify the underlying issues, and provide a thorough implementation handoff. This is a read-only investigation apart from this requested report. No application files, tests, instructions, dependencies, processes, databases, or Git refs were changed. No tests, installs, or pushes were run.
+
+### Diagnosis and evidence boundaries
+
+The immediate blocker is an incomplete installed dependency tree: frontend Prettier cannot load its missing modules. The agent repeatedly confused that environment failure with test failures, resource contention, and hypotheses about a deleting process. Those are separate investigations. The actor responsible for unexplained file loss is STILL UNIDENTIFIED. Do not replace that uncertainty with another confident suspect.
+
+The historical memory/performance work may be valid: the transcript reports three reconciled full runs around seven minutes. This audit did not reproduce those measurements or audit the retention fix. Preserve that work unless new evidence contradicts it. The last push failed at doctrine/dependency loading, before backend suite execution; rerunning 907 suites cannot explain a missing Prettier module.
+
+Current observations at HEAD `a915a592f20ae838e2e05efaf68f0c25d696c6c4`:
+
+- `frontend/node_modules/prettier/index.mjs` and `plugins/postcss.mjs` are absent. Root `node_modules/js-yaml/dist/js-yaml.mjs` and backend `node_modules/@eslint-community/eslint-utils/index.js` are present. This is a point-in-time observation, not proof that deletion is continuing.
+- The `Equoria-wt/2ti1j` root and frontend dependency directories are junctions into the main checkout. Four paths reporting the same timestamp can therefore be ONE physical event, not four independent deletions or evidence of a machine-wide sweep.
+- `git status` reports tracked deletions outside dependencies: multiple Impeccable scripts, game artwork, audio files, and two documentation files. Some may be intentional owner work. Classify them before restoration; neither attribute them to the incident nor overlook them. Never run blanket `git restore`/`reset`/`clean`.
+- The CIM query returned no process for historical PIDs 33036 or 27020 during this audit. Do not execute the transcript's stale `taskkill` command; PID reuse could target an unrelated process.
+
+**A stronger lead for the runaway Python process:** the other session's subagent log contains an actual `python3 -` launch with an unterminated heredoc. Source: `C:/Users/heirr/.claude/projects/C--Users-heirr-Desktop-Equoria/a136f042-b1ef-4b23-ae67-f93c6819cd78/subagents/agent-a2bbd3da5ff0f0996.jsonl:32`. The tool request is timestamped 2026-09-15 13:15:56 UTC; its 120-second timeout arrives at 13:18:26 UTC at line 37, closely matching the transcript's parent process creation at 09:16:24 Eastern. The task ID is `b2isjx4k5`. The agent switched to a sed command at line 46 and completed its review without recording termination of the background task.
+
+The task output at `C:/Users/heirr/AppData/Local/Temp/claude/c--Users-heirr-Desktop-Equoria/a136f042-b1ef-4b23-ae67-f93c6819cd78/tasks/b2isjx4k5.output:1` confirms the missing `EOF` warning. The subsequent Node fallback reports a malformed `C:\c\Users\...` path. Its last-write timestamp is September 16 at 09:00:29. This is strong evidence of an abandoned diagnostic command, and a much more specific lead than plugin installation or high I/O counts. It is not a proven PID-to-task mapping, and this command contains no demonstrated package deletion operation. The exact CPU-loop mechanism is unproven.
+
+### Where the investigation went wrong
+
+Transcript references below use line numbers in the supplied `pasted-text.txt` attachment.
+
+1. **Unsupported attribution:** lines 374–381 move from damaged install to antivirus to “root cause is now clear” without a process/file event. Later the transcript calls the Python process a memory hook without recovering its launch command. CPU and Write/Other operation counts do not identify paths or prove deletion.
+2. **Invalid exclusions:** line 504 treats empty Defender logs as ruling Defender out. That result means no matching events were found in that query, not that every possible cause has been excluded. Directory modification times also do not identify a deleted filename or its actor.
+3. **Contaminated experiments:** tripwires were planted inside directories then replaced by `npm ci`. npm explicitly removes an existing node_modules directory before installation: https://docs.npmjs.com/cli/commands/npm-ci/. Their disappearance was expected investigator activity. Repeated reinstalls and concurrent checks destroyed a stable baseline.
+4. **Overstated causal test:** “kill it; if deletions stop, that was it” is invalid for an intermittent event. A quiet interval after stopping a process is supporting evidence only. Killing the suspected writer before collecting attribution can also lose evidence.
+5. **Validation against moving files:** transcript lines 126–141 show new lane code/tests being written while the prior commit's push gate ran; that gate then discovered the newly written sentinel. The gate was no longer evidence solely about the pushed commit. Freeze the candidate during validation.
+6. **Resource claims exceed enforcement:** two 768 MiB old-space limits are not a hard 2 GiB process-tree RAM limit. Native allocations, child runtimes, and orchestration consume additional memory. The runner applies heap limits at `backend/scripts/run-suite-sharded.mjs:255`; it contains no combined-RSS enforcement. Historical sampler results establish measurements for those runs, not a permanent ceiling.
+
+### Concrete code findings — separate from the missing-file cause
+
+**P1 — A contender can steal an initializing or newly replaced lock.** `backend/scripts/gate-lock.mjs:69` exclusively creates a file, then writes its metadata at line 77. A second process can read the empty file during that interval; lines 59–61 classify it as corrupt, and lines 110–117 remove it. Both processes can then enter the gate. Independently, two stale-lock reclaimers can both observe the old lock, after which the slower reclaimer deletes a fresh lock acquired by the faster one. Atomic creation alone does not make the whole acquisition/reclamation protocol atomic. Failure scenario: concurrent pushes start four Jest children despite the intended two-child ceiling.
+
+**P1 — Signal handling relinquishes ownership before children and databases are cleaned up.** `backend/scripts/gate-lock.mjs:159` installs signal callbacks that release the lock and call `process.exit(130)` at lines 161–162. `backend/scripts/run-suite-sharded.mjs:356` installs these callbacks, while its asynchronous database cleanup is at lines 399–408 and its spawned Jest child is local to `runBatch` at line 252. The handler neither stops/waits for children nor awaits that finally block. Failure scenario: terminate the runner, a waiting runner acquires its released lock, and surviving test children overlap; lane databases may remain. Exact platform child survival needs a bounded reproduction, but the cleanup bypass is explicit in source.
+
+**P2 — The lock covers only part of the claimed workflow.** `.husky/pre-push:80` runs doctrine before the runner is called at line 169. The runner itself performs Jest discovery at `backend/scripts/run-suite-sharded.mjs:174` before acquiring its lock at line 355. `backend/package.json:19` starts targeted Jest directly. Dependency installs and worktree cleanup also do not participate in this lock. Failure scenario: a full gate, a targeted test, and an install through a junction can still overlap. Treat this as limited runner serialization, not full workstation protection or dependency ownership.
+
+### Execution plan for Claude — complete phases in order
+
+**Phase 0: Establish one owner and preserve the incident.**
+
+- Keep scope to environment recovery and the evidenced gate defects. No Sentry work, Docker, new SaaS, performance redesign, test weakening, or instruction-file edits. No push without the owner's instruction for the current candidate.
+- Coordinate one maintenance owner across existing windows. No installs, gate runs, cleanup scripts, or worktree removal during evidence capture. Do not terminate another session merely because it is busy.
+- Record current HEAD, working-tree status, lockfile hashes, physical dependency targets, and process identities. Preserve current modified/deleted tracked files as owner work pending classification. Save small evidence logs in a dedicated scratch directory outside dependency trees; append conclusions here.
+- Record outcomes separately: dependency integrity, runaway diagnostic task, gate correctness, and publication. A green result in one cannot close another.
+
+Exit: a stable baseline and no cooperating writer is changing the experiment. If an uncoordinated writer remains, continue read-only attribution; do not repair a live shared tree underneath it.
+
+**Phase 1: Attribute file loss with a bounded capture.**
+
+- First inspect the actual subagent task above and its owning session. If a similar process is still alive, match PID AND creation time, full command, parent chain, and task ID. Treat the malformed heredoc/Windows launcher behavior as its own resource incident; do not rerun that malformed command.
+- Inventory only the known affected package files plus representative missing tracked files. Record existence, size and hashes when available. Avoid whole-disk recursive scans. Classify owner-intended tracked deletions separately.
+- Obtain a short local Process Monitor trace filtered to affected physical directories and relevant worktree paths, without initially filtering to a favored PID. Include filesystem mutations, rename/delete details, and process creation/identity. Capture to a bounded local backing file and stop after one relevant event or a stated interval, for example ten minutes. Process Monitor provides filesystem activity and process details: https://learn.microsoft.com/en-us/sysinternals/downloads/procmon. If driver elevation is unavailable, report that exact limitation; a filesystem watcher alone does not supply actor attribution.
+- Prefer observing existing files first. If reproduction requires restoration, log one narrowly scoped restoration as an intervention with its timestamp, after securing exclusive maintenance ownership. Capture all subsequent activity and distinguish your own writes from unexpected ones.
+- Search relevant agent commands near the observed event for installers, format/cleanup tasks, and recursive worktree deletion. One historical command in the other session uses junction removal followed by `rm -rf` (`a136f042-b1ef-4b23-ae67-f93c6819cd78.jsonl:3256`); that is a candidate to investigate, not evidence it caused this incident. Never repeat it as a probe against real shared paths.
+
+Exit: identify process + creation time + successful mutation of a known path, linked to a command/script, OR explicitly report “no event captured; cause unresolved.” Ten quiet minutes do not prove a permanent fix. Never claim the memory plugin or Defender caused it without attributable evidence.
+
+**Phase 2: Contain the demonstrated actor and repair once.**
+
+- Stop/cancel a confirmed abandoned task through its owning session after verifying current identity. For the suspected runaway, preserve the task output first. If its process is already gone, record that fact and make no stale-PID kill attempt.
+- If an installer/cleanup script is responsible, fix its ownership/path handling. If a plugin or security tool is actually responsible, address that specific demonstrated behavior. Do not add broad antivirus exclusions speculatively.
+- Before recursive move/removal, use native PowerShell, resolve absolute paths, inspect reparse points, and verify containment. Do not feed enumerated paths into another shell. Dependency targets shared through junctions are shared mutable state even when lockfiles match.
+- Restore the damaged dependency tree once from its unchanged lockfile, using the physical owner checkout. Repair additional trees only if checks show damage. Run installs sequentially with consumers stopped. Read lifecycle scripts first; document any required generation step. Do not hand-patch arbitrary package internals or upgrade packages to hide damage.
+- Check every formerly missing representative file immediately after installation and again after a bounded observation interval. Classify tracked deletions before any targeted recovery; recover from the correct version or owner backup, never assume HEAD contains their latest work.
+
+Exit: dependencies load, expected files remain present, lockfile hashes are unchanged, and any unresolved actor attribution is stated honestly. Repair without attribution may unblock work, but must be reported as recovery, not root-cause closure.
+
+**Phase 3: Repair gate ownership in a separate small change.**
+
+- First demonstrate each lock defect with tiny real child processes and temporary paths, without Jest or database setup. Use barriers to force the initializing-lock and competing-reclaimer interleavings. An ordinary repeated green acquisition test is insufficient.
+- Make lock acquisition/reclamation one race-safe protocol. Incomplete/unreadable metadata must never authorize immediate deletion of a potentially live owner. Use a unique acquisition token; verify process creation identity where supported, and fail closed on ambiguity. A second unsafe stale-lock check or an extra sleep is not a fix.
+- Apply the wait deadline to every retry path, including corrupt/unreadable locks. Existing code reaches its deadline check only for a live, parsed holder. Owner release must match the acquisition token, not just PID; a delayed old handle must not release a newer acquisition in the same process.
+- Track all owned child processes. On cancellation, stop scheduling, terminate owned children, await their exit with a finite escalation deadline, disconnect/drop owned lane databases, then release ownership. Report cleanup failures and nonzero exit. Never release the lock first or terminate arbitrary node processes.
+- Establish the admission boundary before expensive discovery/preflight/test activity. Ensure targeted profiles and dependency maintenance cannot silently collide with full gates under the actual supported workflow. Avoid nested lock deadlock by defining which outer operation owns the lock. Keep ordinary editing available except while validating a frozen candidate.
+- Preserve the existing worker/heap limits. Explicitly distinguish measured RSS from enforced RSS. If enforcing an aggregate limit, include the owned process tree and use the accepted budget; abort owned work cleanly on breach. Do not increase limits to make a run pass.
+
+Exit: real-process demonstrations prove mutual exclusion during initialization/reclamation, bounded failure on ambiguous ownership, safe cancellation, no owned children left behind, and correct release. Existing tests must not be weakened or edited to fit new behavior; follow current test-integrity rules for any added coverage.
+
+**Phase 4: Validate from cheapest to most expensive.**
+
+1. Confirm local Prettier/ESLint entry points and affected plugin imports load, with no package installation fallback. Capture true exit status; a shell ending with `echo`/`grep` can report success after an earlier failure.
+2. Run the exact lint/format check that originally failed, once. On failure, inspect its first actionable error instead of rerunning doctrine blindly.
+3. For gate fixes, run the bounded process harness and only affected existing sentinel suites through targeted package scripts, sequentially. For application defects, use their affected real-functionality suite. No database mocks or relaxed assertions.
+4. Run `bash scripts/doctrine-checks/run-all.sh` once after prerequisites pass. Require nonzero discovered checks and exit zero; retain the exact failure if it stops.
+5. Do not run a full backend gate to verify a dependency reinstall. For an owner-authorized final publication, freeze the exact candidate and its dependencies, reconcile dirty files/ref updates, and let the required hook validate that candidate once. Do not edit test discovery inputs during it. Record the actual push result independently from the background wrapper's exit code.
+
+Exit: each result corresponds to the same stated candidate/environment. If any phase fails, return to that phase's smallest reproduction. A code change, newly missing file, or changed candidate can justify retesting; an unchanged failure cannot justify another full gate.
+
+### Required handoff and stop conditions
+
+For each experiment record: observation; hypothesis; what would disprove it; exact intervention; expected result; actual exit/status/log; conclusion; remaining uncertainty. Do not start the next experiment until this row is complete. Keep one mutation and one test experiment active at a time; no background retry queue.
+
+Stop immediately when an unexpected file disappears, ownership becomes ambiguous, an unrelated process would need termination, or a required resource threshold is exceeded. Preserve evidence and explain the precise missing input. Do not switch suspects, reinstall again, or restart a push in the same breath.
+
+Final report must distinguish: (a) recovered dependencies, (b) attributed or unattributed file loss, (c) confirmed or suspected runaway origin and its cleanup, (d) lock fixes and their proofs, and (e) pushed versus only locally validated. “Everything fixed” is not an acceptable replacement.
+
+AUDIT: CONCERNS
+
+### 2026-09-16 12:15 ET — Phases 0–1 evidence (session fc30d3d9, read-only)
+
+Raw captures: session scratchpad `evidence-2026-09-16/` (files 00–09, SUMMARY.md). No installs, kills, pushes, restores, or repo changes during capture, apart from this append.
+
+- Baseline: HEAD a915a592f, 4 unpushed commits (3 owner, 1 agent); lockfiles unchanged vs HEAD; all 21 worktrees junction their four dependency directories onto the main checkout, so one physical tree exists. Frontend `prettier/index.mjs` (dir mtime 08:26:27) and `plugins/postcss.mjs` (08:28:13) missing; root and backend representative files present after the 08:58 reinstall.
+- Tracked deletions (18) span 07:25:13 (docs/SENTRY_SETUP.md) to 08:31:49 (lofi1-3, systemconstraint.md); artwork/backgrounds 08:28–08:30; six impeccable scripts 07:53–08:23. Left untouched pending owner classification.
+- Runaway python: confirmed from the other session's subagent log — a `python3 -` heredoc with no terminator at 2026-09-15 13:15:56Z; task b2isjx4k5 timed out at 13:18:26Z and was never stopped. Consistent with the 24h interpreter (5 MB working set, ~20k tiny operations/s) spinning on a dead stdin. Not evidence of deletion. Process is gone (owner killed it).
+- Command scan of every Claude session log for this project, 11:15Z–12:40Z: 44 commands, all from this session; the only mutating ones are the logged restore/npm ci interventions. Codex first ran at 09:21:53 today; its sandbox log has nothing in the window. Commit a915a592f 07:30:44, push 07:42:48; the first deletion (07:42:28) coincides with neither hook, and no hook or doctrine script contains a removal.
+- Correlations only, not causation: the 07:47:42, 07:49:13 and 07:50:46 package-file losses each fall within a minute of this session's restore/reinstall commands; root package.json has no workspaces, so a root install does not rewrite the frontend tree.
+- Limits: Process Monitor is not installed; Defender protection history and quarantine need administrator rights; the readable Defender operational log is empty for the window.
+- Incident during this capture: this session's own append command briefly reproduced the heredoc-in-backticks hazard (bash command substitution inside double quotes started a stdin-reading shell tree); the task was stopped, the tree exited, and the audit file was verified unmodified before this append.
+
+**Phase 1 exit: no attributable filesystem event captured; cause unresolved. No suspect is asserted.** Phase 2 (single repair under exclusive ownership) awaits the owner.
+
+### 2026-09-16 12:36–13:01 ET — Phases 2–4 (session d7603f35)
+
+Raw captures: session scratchpad `phase2/`, `phase3/`, `phase4/`, `classification/`. Continues the
+Phases 0–1 append above. Exclusive maintenance ownership was established before any dependency
+write: no Equoria npm/Jest/Vite/Playwright-test or Python process was running (only Codex and
+Playwright MCP node processes, which do not consume this dependency tree), and both installs were
+performed while HOLDING the repository's own local gate lock, so no cooperating runner could start
+beside them.
+
+**(a) Recovered dependencies — two trees, one install each.**
+
+- `frontend`: `npm ci` (692 packages, 14 s, exit 0) from the unchanged lockfile. `prettier/index.mjs`,
+  `plugins/postcss.mjs`, `plugins/typescript.mjs`, `plugins/estree.mjs`, `plugins/babel.mjs` and
+  `standalone.mjs` restored. Damage shape before repair: `.d.ts` files survived while most `.js`/`.mjs`
+  siblings were gone — a selective file loss, not a version mismatch.
+- `packages/database`: damage found only after the repair, by running a real suite. `@prisma/client`
+  was missing 16 of its declared export files, including `runtime/library.js`. Directory mtime
+  `2026-09-16 08:23` places the loss inside the incident window (07:25–08:31), while every surviving
+  file in it carries the original April install date — i.e. pre-existing incident damage, NOT caused
+  by the 12:37 frontend install. Repaired with one `npm ci` (10 packages) plus the documented
+  generation step `npm run generate` (`prisma generate`, v6.8.2, exit 0), because `npm ci` removes
+  `node_modules/.prisma`. The generate wrapper's process kill is narrow (node processes with a
+  `query_engine` module loaded); it reported "No processes were holding the DLL" and killed nothing.
+- All four lockfiles byte-identical to HEAD before and after. Entry points verified by real import:
+  prettier, its five plugins, eslint and typescript all load, and `prettier.format` returns formatted
+  output. The originally failing check, `npm run format:check` in `frontend`, now passes (exit 0).
+- Re-observed at 13:00 (≈23 min after the frontend install, ≈15 min after the database install): all
+  files still present, lockfiles still unchanged. **This is not proof the cause is gone.** A quiet
+  interval is supporting evidence only.
+
+**(b) File loss — still UNATTRIBUTED.**
+
+No attribution capture was possible: Process Monitor is not installed and its driver needs
+elevation, and Defender history/quarantine need administrator rights. That limitation is recorded
+rather than resolved; recovery proceeded without it, and the cause remains open. No suspect is
+asserted. The newly found `packages/database` damage extends the known blast radius of the same
+window to a third tree but adds no attribution.
+
+**(c) Runaway diagnostic task.** Unchanged from the Phases 0–1 append: origin confirmed in the other
+session's subagent log, process already gone, no stale-PID action taken.
+
+**(d) Tracked deletions — classified, 19 of them (one more than the 18 seen earlier).**
+
+Restored from HEAD (12, explicit paths only, each verified byte-identical to HEAD) — evidenced as
+incident damage because live code contradicts the deletion:
+
+- `frontend/public/images/bg-{1.1,21.9,3.2,4.3}.webp` — `frontend/src/hooks/useResponsiveBackground.ts`
+  documents six generic fallbacks as "files that DO exist"; exactly four were deleted and two
+  (`bg-16.9`, `bg-9.16`) survive. A deliberate removal would not break a documented set by two-thirds
+  and leave the comment intact.
+- `frontend/public/equoriacelestial.png`, `frontend/public/assets/art/equoriacelestial.png` —
+  referenced by the live `PRODUCT.md`.
+- the six `.github/skills/impeccable/scripts/*` files — exactly 6 missing of 107 tracked in that
+  subtree; no CI workflow references them (checked `.github/workflows/`, not only source); the
+  untracked mirror trees `.claude`/`.agents`/`.gemini` are each missing a different, scattered subset,
+  which is not the shape of a restructure.
+
+NOT restored — 7 preserved untouched, pending the owner's ruling:
+
+- `systemconstraints.md` — evidenced as deliberate consolidation: its content (Netlify/Railway/Supabase
+  allowlist, Docker/Sentry ban) now appears in the working-tree `CLAUDE.md` edit. Side effect: three
+  live doctrine citations now name a file that does not exist —
+  `backend/scripts/gate-lock.mjs:2`, `backend/scripts/run-suite-sharded.mjs:37`,
+  `backend/__tests__/gateLock.sentinel.test.mjs:2`.
+- `systemconstraint.md` — typo duplicate, added and deleted the same day.
+- `docs/SENTRY_SETUP.md` — evidenced as deliberate: it was referenced at HEAD by `docs/DOCUMENTATION.md`,
+  `docs/README.md` and `docs/SECURITY_TESTING.md`, and the owner's own working-tree edits removed all
+  three references. **But it breaks a test.**
+  `backend/__tests__/authRateLimitDocDrift.sentinel.test.mjs:170` reads `docs/SENTRY_SETUP.md` and
+  asserts its auth-failure alert threshold. Verified, not assumed: that suite now fails
+  `ENOENT ... docs\SENTRY_SETUP.md`, 1 failed / 4 passed. The test was NOT edited. This needs an owner
+  ruling — restore the doc, or explicitly change the contract the sentinel guards.
+- `lofi1`, `lofi2`, `lofi3`, `_bmad-output/visual-production/equoria-shell-style-study-v1.png` —
+  genuinely ambiguous. They have no live references, which reads as cleanup, but they were deleted in
+  the same 08:28–08:31 batch that took the load-bearing artwork above. Same window, mixed content, so
+  intent cannot be inferred from timing. Left in place.
+
+**(e) Lock fixes and their proofs.**
+
+New sentinel `backend/__tests__/gateLockRaces.sentinel.test.mjs` (real filesystem, real child
+processes, temporary paths, no mocks and no database). Every case was watched failing against the old
+implementation before the fix, and the pre-existing `gateLock.sentinel.test.mjs` was NOT modified —
+verified by an empty `git diff` on it — and still passes. 12 tests pass across both files.
+
+- P1 initializing-lock theft — FIXED. Unreadable metadata no longer authorizes deletion; it is
+  tolerated for `CORRUPT_GRACE_MS` (500 ms) and the timer resets whenever the lock reads cleanly.
+  RED proof: contender resolved (stole the gate) instead of rejecting.
+- P1 competing reclaimers — FIXED. Reclamation is serialized by a reclaim slot and is fail-closed:
+  a lock is removed only while provably still the same lock that was observed abandoned. The race is
+  forced deterministically through the already-published `log` callback, which the implementation
+  calls exactly between judging a lock stale and removing it — no test-only production code, no
+  reliance on scheduling luck. (A first attempt using two barrier-synchronised child processes passed
+  against the buggy code and was discarded as proving nothing.)
+- Deadline coverage — FIXED. The bounded wait now applies to the unreadable and lost-reclaim paths,
+  with a distinct error naming the unproven lock.
+- Token-bound release — FIXED. `releaseGateLock` compares an acquisition token; a stale handle no
+  longer frees a newer acquisition in the same process. RED proof: old code returned `true` and
+  deleted the live lock.
+- P1 cancellation order — FIXED. `cancelGateOwnership` runs owned-resource cleanup steps and only then
+  releases; `stopOwnedChildren` signals, awaits real exit, escalates to SIGKILL on a finite deadline
+  and reports what would not die. The runner registers every Jest child it spawns and cancels in the
+  order stop-scheduling → owned-children → lane-databases → release. Proof asserts the gate was still
+  held while each cleanup step ran, and that the owned child really exited.
+- P2 admission boundary — FIXED for the runner. `jest --listTests` discovery moved out of module
+  import and inside the gate (`discoverAndPlan()`), so two runners can no longer both do full
+  discovery before either is admitted. `Wall time` is re-based after planning so it still means
+  provisioning + execution and excludes time queued behind another gate.
+- Limits untouched: no worker count, heap limit, timeout or retry count was raised.
+
+**(f) Validation — cheapest first, no full gate.**
+
+Entry-point imports (exit 0) → `frontend` `format:check` (exit 0) → both gate-lock sentinels,
+12 passed → bounded single-lane runner smoke (`--lanes=1 gateLock`: 2 discovered, 2 executed,
+reconciled, 12 tests passed, exit 0) → eslint + prettier clean on all three changed files →
+`bash scripts/doctrine-checks/run-all.sh`: **43 checks discovered, all passed, exit 0**. No full
+backend gate was run to verify a dependency reinstall. No orphaned Equoria/Jest node processes remain
+(verified 0).
+
+**(g) Publication.** NOT pushed. Still 4 unpushed commits on `fix/2026-09-08-followups` (3 owner,
+1 agent); this session added working-tree changes only and pushed nothing.
+
+Open, needing the owner: the `docs/SENTRY_SETUP.md` sentinel conflict; the four ambiguous deletions;
+the three dangling `systemconstraints.md` doctrine citations; and file-loss attribution, which remains
+unresolved for want of an elevated capture.
+
+#### 2026-09-16 13:0x ET — owner rulings applied (session d7603f35)
+
+The three open classification questions were put to the owner and answered in-session:
+
+1. **`docs/SENTRY_SETUP.md` / the sentinel conflict.** Ruling: _"We do not use sentry at all so get
+   rid of it."_ The doc stays deleted. Under that ruling the dependent assertion in
+   `backend/__tests__/authRateLimitDocDrift.sentinel.test.mjs` was RETIRED, not weakened.
+   - Old contract: `docs/SENTRY_SETUP.md` must still read `Auth Failures | 5 events | 15 minutes` —
+     a negative-space guard so an over-eager "fix all the 5/15s" edit could not silently rewrite a
+     different subsystem's threshold.
+   - New ruling: Sentry is not used at all and the document is deliberately retired, so the behaviour
+     that guard specified no longer exists.
+   - The removed case is quoted verbatim in a comment at the end of that file, with the date and the
+     ruling. The four auth rate-limiter assertions — the actual subject of the sentinel — are
+     unchanged. Suite now passes 4/4.
+   - **Scope flagged, NOT done.** Sentry is wired into the application well beyond that doc.
+     A first enumeration here undercounted it (a `head -20` truncated the list at the backend
+     files and hid the whole frontend side). The complete count over Equoria-owned source,
+     excluding `node_modules`, archives, caches and lockfiles, is **31 files**: 23 backend,
+     6 frontend, of which 15 are tests.
+     - Backend runtime: `config/sentry.mjs`, `app.mjs`, `jest.setup.mjs`, `middleware/auditLog.mjs`,
+       `middleware/rateLimiting.mjs`, `modules/auth/services/onboardingService.mjs`,
+       `services/jobs/cronJobMonitor.mjs`, `services/jobs/impl/showExecutionReaper.mjs`,
+       `tests/helpers/csrf-production-probe.mjs`, `.env.example`.
+     - Frontend runtime: `src/lib/sentry.ts`, `src/App.tsx`, `.env.example`.
+     - Dedicated Sentry suites that would be deleted outright, not edited:
+       `backend/__tests__/sentryConfig.test.mjs`,
+       `backend/__tests__/sentryDsnBoot.integration.test.mjs` (added by commit 381bda70c), and
+       `frontend/src/lib/__tests__/sentry.test.ts`. A further nine suites reference Sentry
+       incidentally (audit-log, cron, OWASP, ownership, CSRF, marketplace, trainers, XP history).
+     - Dependencies: `@sentry/node`, `@sentry/profiling-node` (backend), `@sentry/react` (frontend).
+
+     Removing this is a multi-file refactor of error handling, middleware and cron jobs across both
+     packages, plus dependency removal and the deletion of three test suites. It is deliberately NOT
+     attached to this recovery, whose Phase 0 scope says "no Sentry work". It needs its own task and
+     its own verification; it must not be bolted onto a dependency repair.
+
+2. **The four ambiguous deletions.** Ruling: restore all four. `lofi1`, `lofi2`, `lofi3` and
+   `_bmad-output/visual-production/equoria-shell-style-study-v1.png` restored from HEAD, each verified
+   byte-identical to HEAD. All 19 tracked deletions are now resolved: 16 restored, 3 left deleted
+   (`docs/SENTRY_SETUP.md`, `systemconstraints.md`, `systemconstraint.md`) as deliberate owner work.
+
+3. **The dangling `systemconstraints.md` citations.** Ruling: leave them alone. The three comments in
+   `backend/scripts/gate-lock.mjs`, `backend/scripts/run-suite-sharded.mjs` and
+   `backend/__tests__/gateLock.sentinel.test.mjs` keep their historical reference and were not edited.
+
+Re-validated after the rulings: `authRateLimitDocDrift.sentinel.test.mjs` 4/4 passed; eslint and
+prettier clean on the edited file; `bash scripts/doctrine-checks/run-all.sh` — 43 checks discovered,
+all passed, exit 0. Still not pushed.
+
+### 2026-09-16 — Gate ownership/cancellation repair after Codex REVISE (session d7603f35)
+
+Codex rejected the first gate fix. Two of its findings were defects I had not caught: the
+`.reclaim` file was deleted on AGE, recreating the competing-reclaimer race inside the protection
+against that race; and cancellation spliced `laneDbs` so `main()`'s `finally` saw an empty list,
+released the lock and exited while database destruction was still in flight. Both are fixed below.
+
+**Reproduced before fixing.** Against the rejected implementation, the new ownership sentinel
+produced `ENTERED A` and `ENTERED B` — two contenders holding the gate simultaneously — and a
+contender took the gate from an owner stalled between file creation and metadata publication.
+Evidence: scratchpad `codex/01-ownership-RED.log`.
+
+**Item 1 — safe exclusion replaces timeout-based reclamation.** Owner ruling 2026-09-16:
+"retire both, adopt the safe-exclusion contract".
+
+- Locks are published ATOMICALLY: metadata is written to a temp file and hard-linked into place
+  (`publishAtomically`), so exclusive creation and publication are one step and the half-created
+  state Codex exploited no longer exists. A `legacyCreate` fallback covers filesystems without
+  hard links, and the protocol treats its brief unreadable window as ambiguous.
+- `CORRUPT_GRACE_MS` (500 ms), `RECLAIM_LOCK_STALE_MS` (10 s), `observeLock`, `acquireReclaimSlot`
+  and `reclaimAndCreate` are DELETED. Nothing reclaims a lock automatically any more.
+- Held, leftover and unreadable locks all cause bounded waiting then a clear error naming the lock
+  path and the manual maintenance step. The deadline is checked on every retry path.
+- Release remains bound to the acquisition token.
+- Crash recovery is now explicitly a separate, controlled maintenance step, documented in the
+  module docblock: after a SIGKILL or power loss the lock survives and every later gate refuses to
+  start until a human removes the file. This trade — no automatic recovery, in exchange for never
+  admitting two owners — was the owner's explicit decision.
+
+TWO PRE-EXISTING TESTS RETIRED under that ruling, neither weakened nor silently deleted; each
+carries its old contract, the ruling, and a pointer to replacement coverage:
+`gateLock.sentinel.test.mjs` — 'a lock left by a dead pid is reclaimed' and 'a corrupt lock file is
+treated as stale rather than blocking forever'. Both asserted automatic reclamation, which the new
+contract removes. The conflict was escalated and ruled on BEFORE either test was touched.
+
+One test in that same file was UPDATED rather than retired: the runner source-contract case now
+matches `installCancellationHandlers(` instead of the renamed `installReleaseOnExit(`. Its
+assertion is unchanged — only the symbol moved.
+
+`gateLockRaces.sentinel.test.mjs` (authored earlier in THIS session, never an owner contract) was
+deleted: every case is superseded, and it referenced the removed `cancelGateOwnership` export.
+
+**Item 2 — one cancellation state, one memoized cleanup.** `createOwnershipLifecycle` replaces
+`cancelGateOwnership` + `installReleaseOnExit`. `cleanup()` is memoized, so a signal and `finally`
+join the SAME promise and it can never run twice. Every step is attempted even after one fails, and
+failed resource identities are preserved in the report. Ownership is released ONLY when every step
+succeeded; otherwise the lock is RETAINED and reported, because an error message followed by an
+unsafe release admits the next runner anyway. The unconditional `process.on('exit')` release is
+gone, and nothing calls `process.exit()` with cleanup pending — the runner sets `process.exitCode`
+after the coordinated shutdown instead.
+
+**Item 3 — provisioning is inside ownership.** The runner now registers the intended database
+identity (`laneName(runId, lane)`) BEFORE `createLaneDatabase()` starts, tracks the in-flight
+provisioning promise, awaits it before destroying anything so creation and destruction cannot race
+the same database, and checks cancellation before each lane and each batch.
+LIMITATION, stated rather than papered over: `test-lane-db.mjs` provisions through `execFileSync`
+(lines 136 and 146), a SYNCHRONOUS subprocess. It cannot be tracked as a child handle or
+interrupted; cancellation takes effect at the next await point. Codex asked for provisioning
+subprocesses to be in the shutdown design — this one structurally cannot be, without converting
+that module to async spawning, which is outside this repair.
+
+**Item 4 — runner wiring proven, with the limits labelled.**
+`gateRunnerShutdown.sentinel.test.mjs`:
+
+- REAL RUNNER: a real `run-suite-sharded.mjs` child cannot begin discovery while another process
+  holds the gate — asserted by the ABSENCE of its "[shard] N test files in M batches" line — then
+  proceeds and exits 0 once admitted. Its lock is isolated by pointing the child's TEMP/TMP at a
+  scratch directory (DEFAULT_LOCK_PATH derives from os.tmpdir()), so the machine-wide lock is never
+  touched and NO production seam was added for testability.
+- REAL RUNNER: a completed run leaves no lock and prints no retention warning.
+- HANDLER WIRING (real child process, `process.emit('SIGTERM')`): owned child stopped and awaited,
+  lock still held during cleanup, released only after, `process.exitCode` set to 130 with no
+  `process.exit()`. Labelled accurately: this exercises the REGISTERED HANDLER, not Windows OS
+  signal delivery — on Windows `child.kill('SIGTERM')` calls TerminateProcess and no handler runs.
+- Cleanup held at a barrier: lock still held mid-flight; a joining caller does not re-run cleanup.
+- Failed step: lock RETAINED, remaining resources still attempted, failure reported.
+
+`gateLockLifecycle.sentinel.test.mjs` adds the provisioning-cancellation case. It is labelled in
+the test itself as MODELLING the runner's control flow, not the runner: the real provisioning path
+needs LANES>1 and therefore a live database, which these bounded demonstrations avoid.
+
+**Item 5 — admission scope, UNRESOLVED and documented.** Inventory in the `gate-lock.mjs` docblock.
+Exactly ONE entry point participates: `test:backend:full` -> `run-suite-sharded.mjs`, which
+`.husky/pre-push:169` invokes. Not participating: the pre-push doctrine checks (they run BEFORE the
+gate is taken), `test:backend:targeted` (the command CLAUDE.md tells contributors to use),
+`test:backend`, `test:backend:ci`, `test:backend:diagnostic`, `test:integration`, `test:security`,
+`test:performance`, `test:auth*`, `test:changed`, the root equivalents, `test:frontend`,
+`test:e2e*`, and dependency maintenance. This is LIMITED RUNNER SERIALIZATION, not workstation-wide
+protection and not dependency ownership. Blanket adoption is not a drop-in: the pre-push hook would
+nest doctrine inside the gate it later acquires, and a targeted run that acquired the gate would
+deadlock against the runner it spawns — `gateRunnerShutdown.sentinel.test.mjs` does exactly that,
+from inside a targeted run. Resolving it needs an explicit decision about which outer operation
+owns the lock.
+
+**Item 6 — the two Sentry coverage gaps closed.**
+
+- `frontend/src/components/__tests__/ErrorBoundary.test.tsx` (3 cases): children render normally; a
+  throwing descendant yields the fallback instead of a blank page; the caught error is reported so
+  it stays diagnosable.
+- `showExecutionReaper.integration.test.mjs` gains an ALERT case on the REAL stranded-show path,
+  observed through a real winston transport on the real logger (the house pattern from
+  `logger-metadata-emission.test.mjs`) rather than an API spy. It asserts error level, the
+  stranded show id, and the identifying context. It is placed LAST in the suite deliberately: it
+  drives a reap to completion, which leaves the shared fixture horses in a post-competition
+  cooldown, and running it earlier starved a sibling case (caught and fixed, not worked around).
+
+**Item 7 — validation, cheapest first.** Ownership/cancellation demonstrations (real processes,
+temporary paths) -> 21 tests across the 4 gate sentinels green -> ErrorBoundary 3 green -> reaper
+suite 5 green -> eslint + prettier clean on every changed file -> `run-all.sh` 43 checks, ALL
+PASSED, exit 0. One doctrine failure was found and fixed in the code, not the baseline: a
+`.catch(() => {})` unhandled-rejection guard in the new lifecycle test now CAPTURES the rejection
+and asserts it. A bounded single-lane real-runner smoke (`--lanes=1`) reconciled and exited 0.
+No full backend gate was run. Chromium and the TypeScript config were left alone, their failures
+still separate and still open. 0 orphaned processes; the machine gate lock is free.
+
+Changed: `backend/scripts/gate-lock.mjs`, `backend/scripts/run-suite-sharded.mjs`,
+`backend/__tests__/gateLock.sentinel.test.mjs`,
+`backend/__tests__/showExecutionReaper.integration.test.mjs`,
+`backend/services/jobs/impl/showExecutionReaper.mjs`. Added:
+`backend/__tests__/gateLockOwnership.sentinel.test.mjs`,
+`backend/__tests__/gateLockLifecycle.sentinel.test.mjs`,
+`backend/__tests__/gateRunnerShutdown.sentinel.test.mjs`,
+`frontend/src/components/ErrorBoundary.tsx`,
+`frontend/src/components/__tests__/ErrorBoundary.test.tsx`. Removed:
+`backend/__tests__/gateLockRaces.sentinel.test.mjs`. Nothing committed, nothing pushed.
+
+### 2026-09-16 — Round 3: the four REVISE items on the gate repair (session d7603f35)
+
+Codex's second review confirmed the lock-theft and competing-cleanup defects fixed and named four
+remaining issues. All four are addressed; each is recorded as failing scenario → intervention →
+passing evidence → remaining limitation.
+
+**P1 — runner tests bypassed the resource ceiling.** `gateRunnerShutdown.sentinel.test.mjs` spawned a
+real runner (and therefore a Jest child) from inside a Jest suite; during a two-lane gate that is a
+third Jest process at 768 + 768 + 1536 MiB. Changing TEMP isolates a lock, not memory.
+Intervention: the two real-runner cases moved to `backend/scripts/verify-gate-admission.mjs`, a
+separately scheduled harness (`npm run verify:gate-admission`, backend) that ACQUIRES THE MACHINE
+GATE LOCK for its whole run — explicit resource coordination: no cooperating gate can start beside
+it, and the nested runner is the only Jest process it owns. The nested runner's own lock lives under
+an isolated TEMP. The Jest sentinel now spawns only tiny node children and no Jest. Evidence: harness
+8/8 checks pass twice (`codex2/03-harness.log`, `06-harness-final.log`); machine lock absent after.
+
+**P1 — failed assertions could leave diagnostic children running.** A busy-wait owner in
+`gateLockOwnership.sentinel.test.mjs` was only killed after every preceding assertion passed, so the
+exact regression the case exists to catch would orphan it. Intervention, applied to every new
+sentinel: every child is spawned with its own finite deadline (`timeout` + `killSignal: 'SIGKILL'`),
+registered on spawn, and terminated and AWAITED in `afterEach` inside try/finally — unconditional,
+independent of assertion outcome. The busy loop is a sleep-poll. Guard verified, not assumed: a
+scratchpad harness proved spawn `timeout` SIGKILLs a hung child on this platform in 721 ms and the
+pid is gone (`codex2/00-spawn-timeout-guard.txt`). The pre-existing `gateLock.sentinel.test.mjs`
+was NOT modified for this (its holder is not mine to rework without a ruling).
+
+**P2 — cancellation could finish with exit 0.** `main()` overwrote the handler's 130 from test
+results alone. Intervention: `resolveExitStatus({cancelled, cleanupFailed, runFailed})` in
+`gate-lock.mjs` is the ONE decision; `installCancellationHandlers` takes an `exitStatus` callback
+and the runner passes the same `finalExitStatus()` it uses on its own completion path, with
+`runFailed`/`cleanupReport` held at module level so both callers see the same inputs. Reproduced
+then fixed: the new handler-wiring case emits SIGTERM during barrier-held final cleanup after a
+green run and asserts `RUNNER_FINAL_STATUS=130`, `SETTLED_STATUS=130`, child exit 130 — Codex's
+`130 → 0` sequence now yields 130. Labelled: real lifecycle, real handler, real decision; main()'s
+call site modelled because the runner cannot be imported without its top-level side effects.
+
+**P2 — provisioning shutdown was unbounded.** `test-lane-db.mjs:136,146` ran `execFileSync` with
+no timeout; a hung migration or seed made the runner unable to handle cancellation at all.
+Intervention: `runSupervisedStep` — supervised async spawn, registered in the exported
+`activeProvisioningChildren` while alive, bounded by `PROVISIONING_STEP_TIMEOUT_MS` (10 min,
+SIGKILL), rejecting only on real exit with the signal/deadline named. `runPrisma`, `runSeedScript`,
+`runSeed` and `createLaneDatabase` are async end to end. The runner's owned-children step stops
+Jest children AND provisioning children, awaited, BEFORE any database is destroyed. Evidence:
+`laneProvisioningSupervision.sentinel.test.mjs` (real children, no DB) — a hung step is killed at
+its deadline and deregistered; a live step is stopped by `stopOwnedChildren` and gone before the
+caller proceeds; healthy and failing steps resolve/reject correctly. `testLaneIsolation.sentinel`
+(real database) passes against the async conversion.
+
+**Ratchet consequence, fixed by extraction not exception.** The additions took
+`run-suite-sharded.mjs` to 627 lines (threshold 600). The cleanup steps were extracted into
+`backend/scripts/gate-ownership-steps.mjs` (`buildOwnershipSteps`), a cohesive owned module; the
+runner is 584 lines. No baseline entry was added.
+
+**Validation, cheapest first.** spawn-timeout guard → 24 tests / 5 gate sentinels green (33/6 when
+`testLaneIsolation` is included) → eslint + prettier clean on every changed file →
+`verify:gate-admission` 8/8 → `run-all.sh` 43/43, exit 0. No full backend gate. Chromium and the
+TypeScript config untouched.
+
+Changed: `backend/scripts/gate-lock.mjs`, `backend/scripts/run-suite-sharded.mjs`,
+`backend/scripts/test-lane-db.mjs`, `backend/package.json` (one script),
+`backend/__tests__/gateLockOwnership.sentinel.test.mjs`,
+`backend/__tests__/gateLockLifecycle.sentinel.test.mjs`,
+`backend/__tests__/gateRunnerShutdown.sentinel.test.mjs`. Added:
+`backend/scripts/verify-gate-admission.mjs`, `backend/scripts/gate-ownership-steps.mjs`,
+`backend/__tests__/laneProvisioningSupervision.sentinel.test.mjs`. Nothing committed or pushed.
+
+### 2026-09-16 — Round 4: cancellation propagated into provisioning (session d7603f35)
+
+Codex confirmed the four round-3 items and reported one narrower P2: the cleanup snapshot at
+`gate-ownership-steps.mjs` stops only children that already exist, so a signal landing while
+`createLaneDatabase()` awaited the database still let migration and seeds launch afterwards
+(reproduced by Codex: `startedAfterCancellation: true`, "late provisioning ran"). Continued work
+after cancellation, under a lock that was correctly retained.
+
+**Intervention — cancellation reaches into the orchestration, not the registry.**
+
+- `createOwnershipLifecycle` (`gate-lock.mjs`) owns an `AbortController`; `requestCancellation`
+  aborts it and the lifecycle exposes `signal`. The runner passes `signal: ownershipLifecycle.signal`
+  into `createLaneDatabase`.
+- `test-lane-db.mjs`: `throwIfCancelled(signal, where)` is checked before creation, AFTER the async
+  database wait, before `migrate deploy`, before each seed, and before sequence resync. Every
+  subprocess launch goes through `runSupervisedStep`, which refuses to launch on an aborted signal
+  and passes the signal to `spawn()` so a running migration/seed is killed on abort. Rejections
+  carry `code = PROVISIONING_CANCELLED` and name the boundary. On cancellation the database that
+  creation left behind is dropped through the same failure path.
+- No registry polling; no timeout raised.
+
+**A second defect found and fixed while proving the first.** The supervised step used
+`events.once(child, 'exit')`, which rejects the moment the emitter emits `'error'`. On abort Node
+emits `AbortError` (`ABORT_ERR`) BEFORE the exit, so a raw `ABORT_ERR` escaped ahead of the
+cancellation report — caught by the new mid-step test, which failed with `code: "ABORT_ERR"`.
+Replaced with explicit `'exit'`/`'error'` listeners under a settled guard: settlement happens on
+the child's real exit, and `AbortError` on `'error'` is deliberately ignored because the exit that
+follows reports it.
+
+**Regression coverage** (`laneProvisioningSupervision.sentinel.test.mjs`, real children, no DB):
+
+- barrier-driven: cancellation lands DURING the database wait → rejection `PROVISIONING_CANCELLED`
+  "after creating"; a 5 ms sampler observed `activeProvisioningChildren` at 0 throughout (no
+  migration or seed ever launched); the created database is dropped. The Postgres admin boundary
+  (CREATE/DROP) is modelled with a barrier through the injectable `databaseOps`; every provisioning
+  step is the real code path, so if the defect were present the real `prisma migrate deploy` would
+  launch and the rejection would not carry the cancellation code.
+- cancelled before creation → nothing created, nothing dropped, nothing launched.
+- cancelled mid-step → running child terminated, reported as cancelled, deregistered.
+- already-cancelled signal → launch refused outright.
+
+Honest note on TDD: the barrier case was not watched failing against the pre-patch code. Before
+the patch `createLaneDatabase` ignored the injected boundary and would have created and fully
+provisioned a REAL lane database on the test server with no drop on the success path. Codex's
+harness reproduction stands as the RED evidence. The mid-step case WAS watched failing (ABORT_ERR).
+
+**Also in this round:** `AbortController` declared as a Node global in `backend/eslint.config.mjs`
+beside the existing hand-declared `fetch`/`URL` (the house pattern; no per-file directive), which
+had failed both eslint and the doctrine lint gate. The consolidated handoff's claim that directory
+timestamps prove the Prisma damage preceded my install was softened to "consistent with, not
+proof", per Codex.
+
+**Validation, cheapest first:** eslint + prettier clean on every changed file → 37 tests / 6 suites
+green, including `testLaneIsolation.sentinel` against the REAL database on the changed
+`createLaneDatabase` signature → `verify:gate-admission` 8/8 → `run-all.sh` 43/43, exit 0.
+No full backend gate. Nothing committed or pushed.
+
+Changed: `backend/scripts/gate-lock.mjs`, `backend/scripts/test-lane-db.mjs` (466 lines),
+`backend/scripts/run-suite-sharded.mjs` (588), `backend/eslint.config.mjs` (one global),
+`backend/__tests__/laneProvisioningSupervision.sentinel.test.mjs` (+4 cases).
