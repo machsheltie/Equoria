@@ -2,7 +2,7 @@
 
 **Status:** Active governance
 **Owner:** Project owner
-**Last reviewed:** 2026-08-19
+**Last reviewed:** 2026-09-16
 
 This file governs every tracked document in `docs/` and every Markdown file an
 agent proposes to add elsewhere in the repository. Read it before creating,
@@ -130,10 +130,9 @@ wholesale.
 | Ordinary implementation or debugging                        | Source, tests, config, current issue; no broad docs preload                                            |
 | Test commands                                               | `AGENTS.md`, package scripts, and live test config                                                     |
 | Playwright beta profiles                                    | `docs/testing/BETA_PROFILE.md`                                                                         |
-| CI, Railway, Docker, release, or scaling                    | `docs/devops-cicd.md` and live configuration                                                           |
+| CI, Netlify, Railway, release, or scaling                   | `docs/devops-cicd.md` and live configuration                                                           |
 | Schema, data, dependency-major, or auth-sensitive migration | `docs/migration-deploy-checklist.md`, live schema/history/config, and current official vendor guidance |
 | Security testing                                            | `docs/SECURITY_TESTING.md` and live tests/doctrine                                                     |
-| Sentry/telemetry                                            | `docs/SENTRY_SETUP.md` and live configuration                                                          |
 | Local onboarding                                            | `docs/development-guide.md` and package/config sources                                                 |
 | Documentation work                                          | This file and `docs/README.md`                                                                         |
 

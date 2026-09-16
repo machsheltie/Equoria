@@ -2,15 +2,22 @@
 
 **Status:** Active source-first runbook
 **Owner:** Runtime and deployment configuration
-**Last verified:** 2026-08-19
-**Load only when:** changing or diagnosing CI, hooks, Docker, Railway, deployment gates, release operations, database-pool sizing, process/replica count, or cross-process runtime behavior
+**Last verified:** 2026-09-16
+**Load only when:** changing or diagnosing CI, hooks, Netlify, Railway, deployment gates, release operations, database-pool sizing, process/replica count, or cross-process runtime behavior
 **Do not load for:** ordinary feature implementation or testing command discovery
 
-Equoria uses GitHub Actions, repository doctrine checks, Husky hooks, a Docker build, and Railway deployment. This file routes operators to live configuration; it does not copy workflow status, job counts, issue state, or historical incident conclusions.
+Equoria uses GitHub Actions, repository doctrine checks, Husky hooks, Netlify,
+Railway, and Supabase. This is a small, pre-revenue game operated by one owner;
+do not introduce enterprise deployment layers, paid observability, or another
+hosted service. This file routes operators to live configuration; it does not
+copy workflow status, job counts, issue state, or historical incident conclusions.
 
 ## Loading rule
 
-Load this file only when changing or diagnosing CI workflows, hooks, Docker packaging, Railway configuration, deployment gates, or release operations. For ordinary implementation and testing, use the commands in `AGENTS.md` without loading this file.
+Load this file only when changing or diagnosing CI workflows, hooks, Netlify or
+Railway configuration, deployment gates, or release operations. For ordinary
+implementation and testing, use the commands in `AGENTS.md` without loading
+this file.
 
 ## Live sources
 
@@ -20,7 +27,7 @@ Load this file only when changing or diagnosing CI workflows, hooks, Docker pack
 | Workflow dependency actions       | `.github/dependabot.yml`                                              |
 | Doctrine enforcement              | `scripts/doctrine-checks/run-all.sh` and its scripts                  |
 | Local Git hooks                   | `.husky/`                                                             |
-| Build image                       | `Dockerfile` and `.dockerignore`                                      |
+| Frontend hosting/build            | Netlify project configuration and live platform settings              |
 | Railway build/start/health policy | `railway.toml`                                                        |
 | Commands and runtime floor        | root and package `package.json` files                                 |
 | Beta E2E orchestration            | `playwright.beta-readiness.config.ts`, `docs/testing/BETA_PROFILE.md` |
@@ -63,7 +70,7 @@ No document authorizes production deployment, rollback, secret changes, database
 
 ## Deployment-change checklist
 
-1. Read `Dockerfile`, `railway.toml`, health/readiness routes, and affected environment templates.
+1. Read `railway.toml`, Netlify configuration, health/readiness routes, and affected environment templates.
 2. Determine whether the change is backward compatible across old/new application instances and database schema.
 3. Apply `docs/migration-deploy-checklist.md` for every dependency-major,
    schema, or data migration, including its additional authentication-sensitive

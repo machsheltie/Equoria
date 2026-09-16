@@ -1,286 +1,175 @@
-# Equoria — Claude Code Constitution
+# Equoria — Claude Code Instructions
 
-**Status:** Active project instructions
-**Owner:** Project owner
-**Last reviewed:** 2026-08-19
-**Project:** Browser-based horse breeding and simulation game
+@AGENTS.md
 
-Equoria is a magical horse game for horsewomen who never grew up and never
-wanted to. It is not a fintech dashboard, admin console, CRM, tax product, or
-generic SaaS shell. Technical correctness is necessary; preserving the game's
-identity, attachment, wonder, and tactile world is also correctness.
+Equoria is a browser-based horse breeding and simulation game built by one
+person. It is pre-revenue, has no public traffic, and runs on a limited personal
+budget and a single Windows development laptop. Choose solutions proportionate
+to that reality.
 
-## Role and authority
+## Product identity
 
-Claude Code is Equoria's implementer. Work like a senior engineer responsible
-for the players who will live with the result: inspect before editing, follow a
-failure to its cause, preserve real data, verify claims, and report uncertainty
-honestly. Closing a ticket is not the objective; solving the player's or
-owner's actual problem is.
+- Equoria is a game world for adult horse enthusiasts. It is not SaaS, fintech,
+  tax software, a CRM, an admin console, or an enterprise platform.
+- Player-facing work must feel like an authored horse game: horses, places,
+  lineage, care, competition, discovery, and atmosphere lead. Dashboards, KPI
+  strips, bento grids, generic card walls, and business-software language fail
+  the product even when technically functional.
+- Do not invent enterprise requirements, multi-tenant architecture, billing,
+  subscriptions, analytics programs, compliance programs, growth tooling, or
+  operational complexity without an explicit current request.
 
-When sources disagree, use this order:
+For player-facing product or UI work, read `PRODUCT.md` and `DESIGN.md` before
+planning. They are deliberately not imported into every session.
 
-1. the owner's current instruction or ruling;
-2. `PRODUCT.md` for product identity, player promise, and rejected structures;
-3. `DESIGN.md` for visual and interaction direction;
-4. this file, `AGENTS.md`, and applicable path-scoped `.claude/rules/`;
-5. the smallest active decision, contract, or runbook whose load trigger
-   matches the task;
-6. live source, schema, configuration, tests, and executable gates for current
-   behavior;
-7. the current issue/task system for work status and sequencing.
-8. `GAME_UI_ART_DIRECTION.md` for art direction;
+## Scale, infrastructure, and cost
 
-An installed dependency, repeated component, old screenshot, test comment,
-completed plan, archived document, or polished implementation report never
-outranks that order.
+- Existing approved external services are Netlify, Railway, and Supabase.
+- Do not add, recommend, configure, or require Docker, virtual machines,
+  Kubernetes, Sentry, Datadog, New Relic, external telemetry, or another hosted
+  service unless the owner explicitly asks for that named product in the
+  current conversation.
+- “Free tier” is not approval. Before proposing any new dependency or service,
+  state the problem it solves, the local or already-owned alternative, present
+  and plausible future cost, data sent off-machine, lock-in, and removal path.
+  Wait for explicit approval before installation, signup, configuration, or
+  code integration.
+- Prefer the smallest native Node/npm solution that fits the current load. Do
+  not design for hypothetical scale, teams, visitors, or revenue.
+- Do not create agent teams or spawn parallel subagents for routine work. Use a
+  separate reviewer only when the task is complex or high-risk enough to repay
+  its context, time, and cost.
 
-## Operating rules
+## Authority and scope
 
-- Read the surrounding implementation, configuration, and relevant tests
-  before writing. Do not infer behavior from filenames or documentation alone.
-- Fix causes, not signals. Do not weaken assertions, skip paths, add a bypass,
-  swallow an error, or fabricate data merely to make a gate green.
-- Never claim an audit, test, build, migration, deployment, or feature passed
-  unless it actually ran and the cited output supports the claim.
-- Never invent product scope, prices, rewards, payment behavior, player data,
-  metrics, launch status, or implementation completeness.
-- Keep changes bounded to the owner's task. If adjacent work is genuinely
-  needed, explain it; do not smuggle in a redesign, major dependency change,
-  production operation, or broad refactor.
-- The owner controls destructive or outward-facing actions: production data,
-  migrations against an environment, deployments, secret rotation, force
-  pushes, history rewrites, new external services, and issue closure. Current
-  task authorization is required; stale instructions never grant it.
-- Never use `--no-verify`, bypass a hook/gate, or assume a branch/push workflow
-  without explicit current authorization. There are no standing Git bypasses
-  or temporary fleet exceptions in this file.
-- Record real unfinished work in the current issue/task system with enough
-  context for a cold reader. Do not create a Markdown handoff, completion
-  report, or vague “later” note as a substitute.
-- “Simpler” is not automatically better. Any proposal that reduces visual distinctiveness must identify a concrete measurable benefit that justifies the loss. The concrete measurable benefit can't be 'for maintainability' or 'for measuring metrics'. This is a GAME.
+Use this order when instructions disagree:
 
-## Product and visual non-negotiables
+1. The owner's current message and current-session rulings.
+2. `PRODUCT.md` for product identity and scope.
+3. `DESIGN.md` for player-facing visual and interaction direction.
+4. This file, `AGENTS.md`, and a matching path-scoped `.claude/rules/` file.
+5. Narrow active contracts or runbooks whose documented trigger matches.
+6. Live source, schema, configuration, tests, and executable checks.
+7. The current issue/task record for status.
 
-Before planning or changing any player-facing UI, read `PRODUCT.md` and
-`DESIGN.md` in full. Then load only the additional design-system documents
-whose triggers match the task. Existing code is migration evidence, not design
-approval.
+Historical reports, archived documents, generated plans, old issue text,
+installed packages, and existing repetition are evidence, not authority.
 
-### Visual-change gate
+Keep changes inside the requested outcome. Do not attach a platform redesign,
+large refactor, dependency migration, new service, or speculative hardening to
+an ordinary bug or feature.
 
-Answer the eight questions in `PRODUCT.md` before writing player-facing code.
-At minimum, be able to state:
+Do not edit `CLAUDE.md`, `AGENTS.md`, `PRODUCT.md`, `DESIGN.md`, or files under
+`.claude/rules/` unless the owner explicitly authorizes instruction or product
+documentation changes in the current conversation.
 
-- the route's one-sentence experiential concept;
-- its emotional subject before its data;
-- how its silhouette avoids the generic header/tabs/cards template;
-- how real scene, horse, location, and brand artwork participates in the
-  experience rather than sitting behind a dashboard;
-- which existing pattern is being retained, replaced, or deliberately refused;
-- how the mobile composition remains a game rather than a collapsed admin UI.
+## Work method
 
-If those answers are missing, stop before code and bring a specific direction
-to the owner. A technically functional screen that reads as a dashboard, CRM,
-admin console, or tax SaaS is a product failure.
+1. Inspect the relevant source, configuration, and existing tests.
+2. For a bug, capture the actual failure and form one falsifiable hypothesis.
+   Separate observation, hypothesis, intervention, and conclusion.
+3. Make the smallest complete production fix.
+4. Verify the affected real behavior with the narrowest meaningful command.
+5. Review the diff for unrelated changes and report exact evidence.
 
-### Dependency and component policy
+Do not promote a plausible cause to “root cause” without evidence that names
+the failing owner or mechanism. Do not stack several interventions into one
+experiment. If two attempts fail to distinguish the cause, stop, preserve the
+evidence, and reassess instead of repeating increasingly broad commands.
 
-Installed means present, not approved.
+Use plan mode for uncertain, multi-file, destructive, schema, deployment, or
+product-direction work. Skip ceremonial plans for a small obvious change.
 
-- **shadcn/ui and Radix UI:** rejected as Equoria's component strategy and
-  visual default. Do not add, copy, reinstall, or extend them.
-- **`sonner`:** rejected as feedback architecture. Do not add imports or new
-  `toast()` calls. Use Surface-Owned + Stable Log: local failure through
-  `InlineError`, success through the surface's changed state plus the stable
-  log, and ceremony through `CinematicMoment`. Load
-  `.claude/rules/FRONTEND_ASYNC_STATE_DOCTRINE.md` for applicable frontend
-  async-state work.
-- **Recharts, Chart.js, and `react-chartjs-2`:** rejected for player-facing
-  visualization. Use purpose-built semantic HTML, accessible tables, CSS Grid,
-  timelines, ledgers, gauges, pedigrees, or authored inline SVG.
-- **Lucide:** utility vocabulary only. An icon may clarify a control; it may not
-  supply a route's identity.
-- **Tailwind:** implementation syntax, never art direction. Default utility
-  habits, arbitrary slate/zinc palettes, generic cards, pill badges, and stock
-  app-shell composition have no authority.
+## Test integrity
 
-Do not replace one generic library pattern with another on your own. When a
-rejected component needs a successor, use the `/impeccable` workflow to present
-the behavioral and visual direction to the owner before implementing a new
-shared pattern. The owner chooses what arrives in its place.
+- Fix production code, data flow, configuration, or schema. Never change an
+  existing test merely to make it green; never weaken an assertion, widen a
+  tolerance, add a skip, swallow an error, reduce coverage, or update a snapshot
+  to conceal a regression.
+- Change an existing test only when the owner has explicitly changed the
+  behavior it specifies. State the old contract and new ruling before editing.
+- Test Equoria-owned behavior through real code. Backend integration tests use
+  the real test database and narrowly owned fixtures. Do not mock Prisma,
+  internal services, repositories, application state, or the primary API to
+  bypass behavior.
+- Mock only a genuine third-party network boundary when no safe sandbox is
+  available. Keep the real Equoria request, validation, persistence, and error
+  path on both sides of that boundary.
+- A passing mock is not integration, readiness, or proof that the game works.
+  Prefer a regression test that fails for the original defect and passes after
+  the production fix.
 
-Legacy sidebar dimensions, container widths, header families,
-`PageHeader + Tabs + Surface/Card grid`, universal frosted panels, and repeated
-glass-card layouts are migration state. Repetition is the defect the design
-audit found; do not cite repetition as approval.
+## Laptop and process budget
 
-Use real artwork and fonts already in the repository before generating or
-fabricating substitutes. Product data must come from the real API and runtime
-sources. Loading, empty, unavailable, and error states must be honest.
+- During development run only the affected test file or smallest relevant
+  suite. For backend work use
+  `npm run test:backend:targeted -- <path-to-test>`.
+- Never start backend, frontend, Playwright, doctrine, build, or dependency
+  installation jobs concurrently. Before a resource-heavy run, check for an
+  existing Equoria test/build process in another window.
+- Do not run `npm run test:backend:full`, the beta E2E gate, or push merely to
+  check an incremental edit. One final full gate is appropriate only when the
+  completed candidate requires it or the owner authorizes a push.
+- Do not leave background monitors, servers, test runners, or shell tasks
+  running casually. Record every background task's purpose and identity when
+  started, stop it when its observation is complete, and verify exit.
+- Never raise worker counts, heap limits, timeouts, retry counts, or memory
+  budgets to get a pass. Never use `--no-verify` or disable a gate.
+- On interruption or timeout, stop only processes owned by the current task,
+  wait for them to exit, run the repository's current orphan check/reaper when
+  applicable, and verify cleanup. Never kill by a stale PID or broad process
+  name.
+- Do not install dependencies while another worktree or process is using a
+  shared or junctioned `node_modules` tree.
 
-## Engineering invariants
+## Files, worktrees, and completion
 
-- Backend code is ESM. Use `import`/`export`; never introduce `require()`.
-- All player-state mutations belong inside Prisma transactions. Authorization,
-  ownership, validation, economic transfer, state change, and dependent writes
-  must remain atomic where the operation requires them.
-- Never run broad cleanup against player data. Test fixtures need unique IDs or
-  unmistakable prefixes and narrowly scoped cleanup. A bare `deleteMany()` is
-  forbidden.
-- Do not use mocks for Equoria-owned database, service, or primary API paths.
-  Prefer real-DB integration coverage or real Playwright behavior. Isolation is
-  acceptable only at a third-party boundary Equoria does not control, ideally
-  through that provider's sandbox.
-- Existing mock-heavy frontend tests are legacy, not permission for more.
-  Never change a test merely to make current code pass. If the contract is
-  intentionally changing, prove the new contract and update implementation and
-  verification together under the task's authority.
-- Backend module tests live in
-  `backend/modules/<domain>/__tests__/`. Top-level `backend/__tests__/` is for
-  cross-module integration and middleware sentinels. Read
-  `.claude/rules/CONTRIBUTING.md` for the complete path-scoped convention.
-- Beta/readiness evidence must exercise real UI, authentication, backend, and
-  database behavior. Skips, `fixme`, bypass headers, route interception,
-  placeholder actions, and mocked primary paths are not readiness evidence.
-- Dependency maintenance starts from current manifests, lockfiles, official
-  advisories, and release notes. Do not run `npm audit fix`, perform a major
-  upgrade, or add/change a player-facing dependency as incidental work.
+- Preserve unrelated user changes. Never reset, restore, clean, move, or delete
+  them to simplify the task.
+- Put code, tests, scripts, and durable documentation in the existing owning
+  subsystem. Before creating or moving a path, consult
+  `docs/REPOSITORY_MAP.md`. Before creating, moving, or retiring Markdown, read
+  `docs/DOCUMENTATION.md`.
+- Do not create root-level plans, reports, handoffs, logs, screenshots, scratch
+  scripts, or alternate implementations. Temporary artifacts belong in an OS
+  temporary directory and must be removed when the task ends.
+- Create a worktree only when isolation is necessary. Record its purpose and
+  branch, do not share mutable dependency output unsafely, and remove the
+  worktree after its changes are integrated or abandoned.
+- Keep one current implementation plan and one issue/status owner. Update the
+  existing record instead of creating parallel plans. When acceptance criteria
+  and required verification are complete, mark the work complete; do not leave
+  finished tasks described as pending. Do not claim completion while cleanup,
+  verification, or an owned process remains.
+- For a long or degraded session, write a compact structured handoff into the
+  existing issue or an ignored temporary artifact and recommend a fresh
+  session. Repeated compaction is not a reason to keep accumulating guesses.
 
-Use the commands in `AGENTS.md` and live package scripts. Do not copy command
-lists into new documents. The doctrine gate is
-`bash scripts/doctrine-checks/run-all.sh`; it must genuinely run and exit zero
-when the task requires it.
+## Conditional context
 
-## Documentation and context loading
+Read only when the trigger applies:
 
-Do not preload `docs/`, `.claude/`, or any documentation directory. Open only
-the smallest source whose trigger matches the current work. A document never
-proves current implementation; verify its named live sources.
+| Trigger                                           | Read                                                                          |
+| ------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Player-facing feature or UI                       | `PRODUCT.md`, `DESIGN.md`, then the matching file under `docs/design-system/` |
+| Backend, scripts, packages, or test configuration | `.claude/rules/CONTRIBUTING.md`                                               |
+| Security control or security test                 | `docs/SECURITY_TESTING.md` and live implementation                            |
+| Documentation lifecycle                           | `docs/DOCUMENTATION.md`                                                       |
+| Creating, moving, or locating files/directories   | `docs/REPOSITORY_MAP.md`                                                      |
+| CI, hooks, Railway, Netlify, or release work      | `docs/devops-cicd.md` and live configuration                                  |
+| Migration or dependency-major work                | `docs/migration-deploy-checklist.md`                                          |
 
-## Constraints & Testing Standards
+Do not preload `docs/`, `.claude/`, archives, audit history, or generated
+planning output. Retrieve the smallest relevant source when needed.
 
-Before proposing architecture, adding dependencies, configuring gates, or writing tests, review and adhere to `systemconstraints.md`:
+## Commands
 
-- Allowed infra: Netlify, Railway, Supabase only.
-- FORBIDDEN: Docker, Sentry, and unapproved SaaS subscriptions.
-- Real tests over excessive mocks: test actual logic and database state, not artificial stubs.
-- Local gates must use local synchronization (locks/files), never external DSNs or telemetry.
+- Targeted backend: `npm run test:backend:targeted -- <path-to-test>`
+- Frontend: `npm run test:frontend`
+- Types: `npm run typecheck`
+- Lint: `npm run lint`
+- Doctrine: `bash scripts/doctrine-checks/run-all.sh`
+- Orphan cleanup/check: `npm run test:reap`
 
-### Governance and discovery
-
-| Trigger                                                                                                                                                               | Load                                                                          |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Creating, moving, merging, splitting, reviving, or retiring documentation; deciding whether an unfamiliar document has authority                                      | `docs/DOCUMENTATION.md`, then `docs/README.md` only if discovery is needed    |
-| Locating an unfamiliar subsystem; deciding where a file belongs; creating, moving, renaming, consolidating, or retiring any non-document path or repository directory | `docs/REPOSITORY_MAP.md`                                                      |
-| Design-system cleanup spanning multiple families or choosing an inventory                                                                                             | `docs/design-system/inventory/README.md`, then only the matching family files |
-| Performing, consuming, or retiring the exact audit required by `AGENTS.md`                                                                                            | `docs/audits/README.md` and the exact current findings file                   |
-| Creating, auditing, superseding, or retiring an ADR                                                                                                                   | `docs/architecture/README.md`, then only the matching ADR                     |
-
-After `docs/REPOSITORY_MAP.md` identifies the owner, stop loading repository-map
-context and inspect only that owner, its consumers, tests, and applicable
-narrow documents. Never read every listed folder to “understand the project.”
-
-The repository root is deliberately small. Root Markdown is limited to
-`AGENTS.md`, `CLAUDE.md`, `GAME_UI_ART_DIRECTION.md`, `PRODUCT.md`, `DESIGN.md`, and `README.md`. Root code
-or data is limited to live manifests, tool/deployment configuration, and local
-state consumed from that exact path. Reusable scripts belong in `scripts/`;
-runtime data belongs with its owning subsystem; generated output belongs in an
-ignored tool-output location. Use `docs/REPOSITORY_MAP.md` for exact placement.
-
-Do not create root plans, prompt packs, audits, reports, handoffs, copied
-catalogs, screenshots, logs, temporary JSON, alternate environment templates,
-or manual migration helpers. New tracked documentation must pass the creation
-gate in `docs/DOCUMENTATION.md`; temporary reasoning and completion evidence
-belong in the current task.
-
-### Product and design implementation
-
-| Trigger                                                                                                                                             | Load                                                              |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Any player-facing product or UI work                                                                                                                | `PRODUCT.md`, `GAME_UI_ART_DIRECTION.md`, and `DESIGN.md` in full |
-| Route composition, shell/navigation, headers, tabs, surfaces, dialogs, feedback architecture, shared form/state behavior, or reusable UI primitives | `docs/design-system/DECISIONS.md`                                 |
-| CSS, Tailwind classes, colors, typography, spacing, radii, borders, shadows, blur, z-index, or visual variants                                      | `docs/design-system/TOKENS.md`                                    |
-| Animation, transitions, loading motion, reveals, overlays, celebrations, reduced motion, or event choreography                                      | `docs/design-system/MOTION.md`                                    |
-| A named audit violation, touched exception path, baseline change, or proposed/renewed/removed exception                                             | `docs/design-system/EXCEPTIONS.md`                                |
-| Layout/shared UI/global navigation/background/design-audit tooling                                                                                  | `docs/design-system/inventory/foundation.md`                      |
-| World Hub, Veterinarian, Farrier, Feed/Tack Shops, Crafting, Grooms, Riders, or Trainers                                                            | `docs/design-system/inventory/world-services.md`                  |
-| Stable, horse/foal detail, equipment, lineage, genetics, traits, care history, or horse identity                                                    | `docs/design-system/inventory/stable-entity.md`                   |
-| Breeding, Training, Competition Browser/Results, Conformation Shows, or Leaderboards                                                                | `docs/design-system/inventory/workflow-pages.md`                  |
-
-For one family, load at most that family inventory; add `foundation.md` only if
-shared foundation code is also changing. Inventories record implementation and
-debt. They do not override the owner, `PRODUCT.md`, `DESIGN.md`, or
-`DECISIONS.md`.
-
-### Features, operations, tests, and contracts
-
-| Trigger                                                                                                                | Load                                                                                         |
-| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Feed purchase/equipment, daily feeding, health gates, pregnancy feeding, delayed foaling, or pregnancy bonus           | `docs/features/feed-system.md` plus live source/schema/tests                                 |
-| Public/private stud listings, cross-owner breeding, requests, fee transfer, or shared stud eligibility                 | `docs/features/stud-service-economy.md` plus live source/schema/tests                        |
-| Beta route classification or its drift test                                                                            | `docs/beta-route-truth-table.md`                                                             |
-| Local onboarding, environment setup, or command discovery                                                              | `docs/development-guide.md`                                                                  |
-| GitHub Actions, hooks, Docker, Railway, release operations, pool/replica sizing, or cross-process runtime behavior     | `docs/devops-cicd.md`                                                                        |
-| Dependency-major, Prisma/schema/data, or authentication-sensitive migration                                            | `docs/migration-deploy-checklist.md` plus current official vendor guidance                   |
-| Security-control tests, security CI, or security-coverage claims                                                       | `docs/SECURITY_TESTING.md`                                                                   |
-| Sentry, telemetry, alert thresholds, or monitoring privacy                                                             | `docs/SENTRY_SETUP.md`                                                                       |
-| Main Playwright beta profile, beta-readiness profile, environment precedence, Redis posture, or full readiness signoff | `docs/testing/BETA_PROFILE.md`                                                               |
-| Creating, changing, auditing, or retiring a durable backend API contract                                               | `docs/api-contracts-backend/README.md`; load `rate-limiting.md` only for rate-limit behavior |
-
-Architecture triggers are narrow:
-
-- `adr-005-csrf-doublecsrfprotection.md`: CSRF enforcement and token/cookie/
-  header/session behavior.
-- `adr-006-refresh-token-hash-at-rest.md`: refresh/email-verification token
-  persistence, hashing, lookup, revocation, schema, or migrations.
-- `adr-007-notification-retention-policy.md`: notification storage, pruning,
-  retention, ordering, indexes, or read caps.
-- `adr-009-jwt-secret-rotation-keyring.md`: JWT signing/verification secrets,
-  key rotation, token lifetimes, or related environment variables.
-- `adr-010-ci-inline-beta-readiness-scans.md`: readiness scan definitions,
-  consumers, parity checks, or sentinel fixtures.
-- `adr-011-realtime-event-transport-sse.md`: SSE, event bus, authenticated
-  stream, reconnect/polling fallback, or multi-instance fan-out.
-- `adr-013-cron-distributed-lock.md`: cron scheduling, advisory locks, lock
-  identities, multi-replica execution, or cron health.
-
-ADRs cannot authorize product scope, visual direction, a dependency, a chart,
-or a generic component pattern.
-
-### Context that is never active
-
-- Never load `docs/.archive/**` unless the owner explicitly requests a named
-  historical artifact. Archived material cannot fill a requirement gap.
-- Never recreate or load the retired `.claude/architecture/**`,
-  `.claude/docs/**`, `.claude/guides/**`, `.claude/processes/**`,
-  `.claude/tmp/**`, or `backend/.claude/**` documentation systems.
-- `.claude/rules/` is an automatically discovered instruction surface, not a
-  document shelf. Only add a rule when an exact file glob makes future work
-  materially safer; global conduct belongs here.
-- Do not load `docs/architecture.md`, `docs/project_context.md`,
-  `docs/SECURITY_ASSESSMENT_REPORT.md`, or the compatibility stubs under
-  `docs/product/` for ordinary work. They exist only for executable legacy
-  consumers and have no substantive authority.
-- Citations in tests, retired task artifacts, source comments, or issue history are
-  provenance only. They do not reactivate a retired document or status claim.
-- Never recreate the retired `_bmad-output/`, `.ab-method/`, `.backups/`,
-  `claude/`, `Fonts/`, `SequentialThinking/`, `design-artifacts/`, or
-  `game_plans/` roots. Use the active owner in `docs/REPOSITORY_MAP.md`.
-
-## Completion and evidence
-
-Before calling work complete:
-
-1. Re-read the changed files and the affected live configuration.
-2. Verify every acceptance criterion against the actual implementation.
-3. Run the smallest relevant tests/checks, then the required broader gates in
-   proportion to risk.
-4. Confirm the proof would detect the regression it claims to guard against.
-5. Report what changed, what ran, and any remaining limitation truthfully.
-6. Do not mark an issue closed without the owner's explicit approval.
-
-If something still wants doing, place it in the current issue/task system with
-specific scope, reason, and context. If authority, product direction, or a
-destructive/outward action is unclear, stop and ask the owner rather than
-inventing permission.
+Use live package scripts as authority. Run checks sequentially and only in
+proportion to the change.

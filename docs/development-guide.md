@@ -1,7 +1,7 @@
 # Equoria Development Guide
 
 **Status:** active command and local-setup index
-**Last verified:** 2026-08-19
+**Last verified:** 2026-09-16
 
 This guide helps a developer start and verify the repository. It does not define product behavior, player-facing design, architecture, test philosophy, or current project status. `AGENTS.md`, `CLAUDE.md`, package scripts, environment templates, and live configuration take precedence.
 
@@ -68,18 +68,18 @@ The backend suite is serial by design. Use package scripts rather than reconstru
 
 ## Source ownership
 
-| Question                       | Current owner                                   |
-| ------------------------------ | ----------------------------------------------- |
-| Root commands and Node floor   | `package.json`                                  |
-| Backend commands/dependencies  | `backend/package.json`                          |
-| Frontend commands/dependencies | `frontend/package.json`                         |
-| Database schema                | `packages/database/prisma/schema.prisma`        |
-| Database history               | `packages/database/prisma/migrations/`          |
-| Environment variables          | `backend/.env.example`, `frontend/.env.example` |
-| CI                             | `.github/workflows/`                            |
-| Railway deployment             | `railway.toml`, `Dockerfile`                    |
-| Test doctrine                  | `AGENTS.md`, `CLAUDE.md`, `.claude/rules/`      |
-| Product and visual direction   | `PRODUCT.md`, `DESIGN.md`                       |
+| Question                       | Current owner                                     |
+| ------------------------------ | ------------------------------------------------- |
+| Root commands and Node floor   | `package.json`                                    |
+| Backend commands/dependencies  | `backend/package.json`                            |
+| Frontend commands/dependencies | `frontend/package.json`                           |
+| Database schema                | `packages/database/prisma/schema.prisma`          |
+| Database history               | `packages/database/prisma/migrations/`            |
+| Environment variables          | `backend/.env.example`, `frontend/.env.example`   |
+| CI                             | `.github/workflows/`                              |
+| Deployment configuration       | `railway.toml`, Netlify config, platform settings |
+| Test doctrine                  | `AGENTS.md`, `CLAUDE.md`, `.claude/rules/`        |
+| Product and visual direction   | `PRODUCT.md`, `DESIGN.md`                         |
 
 ## Repository invariants
 

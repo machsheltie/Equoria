@@ -84,7 +84,7 @@ Railway's current start sequence lives in `railway.toml`. Read it immediately be
 
 - [ ] Verify login, refresh, logout, verification, MFA, and affected authorization paths as applicable.
 - [ ] Compare expected and actual transformed/purged row counts.
-- [ ] Monitor Sentry and server/audit logs for `SESSION_UPGRADE_REQUIRED`, token-reuse signals, authentication failures, rate-limit saturation, and unexpected authorization failures.
+- [ ] Monitor server and audit logs for `SESSION_UPGRADE_REQUIRED`, token-reuse signals, authentication failures, rate-limit saturation, and unexpected authorization failures.
 - [ ] Confirm no stale application instances remain.
 - [ ] Record actual impact and any forward repair in the migration/issue evidence, not as a permanent status claim in this runbook.
 

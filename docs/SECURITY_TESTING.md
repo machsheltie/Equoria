@@ -1,7 +1,7 @@
 # Security Testing Strategy
 
 **Status:** active source-first index
-**Last verified:** 2026-08-19
+**Last verified:** 2026-09-16
 
 This document routes security-test work to current code and configuration. It does not certify current security posture, freeze coverage totals, or replace a fresh assessment.
 
@@ -19,17 +19,16 @@ Load this file only when changing security controls, security tests, security CI
 
 ## Current sources
 
-| Concern                            | Authority                                                                         |
-| ---------------------------------- | --------------------------------------------------------------------------------- |
-| Security operating rules           | `.claude/rules/SECURITY.md`                                                       |
-| Security test selection/thresholds | `backend/jest.config.security.mjs`                                                |
-| Security test command              | `backend/package.json`                                                            |
-| Security test inventory            | Current files selected by `backend/jest.config.security.mjs`                      |
-| Middleware and controls            | `backend/middleware/`, `backend/modules/auth/`, `backend/config/`                 |
-| Security automation                | `.github/workflows/security-scan.yml`, `.github/workflows/codeql.yml`             |
-| Dependency updates                 | `.github/dependabot.yml`                                                          |
-| Doctrine/evidence gates            | `.github/workflows/` and `scripts/doctrine-checks/`                               |
-| Sentry/telemetry                   | `backend/config/sentry.mjs`, `frontend/src/lib/sentry.ts`, `docs/SENTRY_SETUP.md` |
+| Concern                            | Authority                                                             |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| Security operating rules           | `.claude/rules/SECURITY.md`                                           |
+| Security test selection/thresholds | `backend/jest.config.security.mjs`                                    |
+| Security test command              | `backend/package.json`                                                |
+| Security test inventory            | Current files selected by `backend/jest.config.security.mjs`          |
+| Middleware and controls            | `backend/middleware/`, `backend/modules/auth/`, `backend/config/`     |
+| Security automation                | `.github/workflows/security-scan.yml`, `.github/workflows/codeql.yml` |
+| Dependency updates                 | `.github/dependabot.yml`                                              |
+| Doctrine/evidence gates            | `.github/workflows/` and `scripts/doctrine-checks/`                   |
 
 Before naming a test path, verify it exists; security tests have been relocated more than once.
 

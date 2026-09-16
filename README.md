@@ -19,7 +19,7 @@ Equoria is a strategic horse-breeding simulation focused on realistic genetics, 
 | Backend     | Node.js 22 (ES modules), Express 4, Prisma ORM, PostgreSQL, Redis (rate-limit store) |
 | Frontend    | React 19, Vite, TypeScript, TailwindCSS, React Query (`@tanstack/react-query`)       |
 | Tests       | Jest (backend, real DB), Vitest + Testing Library (frontend), Playwright (E2E)       |
-| Infra       | Railway (single-service deploy), Sentry (errors), GitHub Actions (CI/CD)             |
+| Infra       | Netlify, Railway (single-service deploy), Supabase, GitHub Actions (CI/CD)           |
 | Issue track | [beads](https://github.com/charlespierce/beads) (`bd ready`, `bd show <id>`)         |
 
 ## Quick start
@@ -97,7 +97,7 @@ retiring a repository path.
 | Development guide           | [`docs/development-guide.md`](docs/development-guide.md)                                                                                             |
 | Architecture decisions      | [`docs/architecture/README.md`](docs/architecture/README.md)                                                                                         |
 | DevOps / CI/CD              | [`docs/devops-cicd.md`](docs/devops-cicd.md)                                                                                                         |
-| Deployment (Railway)        | [`railway.toml`](railway.toml), [`Dockerfile`](Dockerfile)                                                                                           |
+| Deployment                  | [`railway.toml`](railway.toml), Netlify configuration, and live platform settings                                                                    |
 | Security rules and testing  | [`docs/SECURITY_TESTING.md`](docs/SECURITY_TESTING.md), [`docs/api-contracts-backend/rate-limiting.md`](docs/api-contracts-backend/rate-limiting.md) |
 | Database schema             | [`packages/database/prisma/schema.prisma`](packages/database/prisma/schema.prisma)                                                                   |
 | Beta route projection       | [`docs/beta-route-truth-table.md`](docs/beta-route-truth-table.md)                                                                                   |

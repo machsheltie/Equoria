@@ -135,8 +135,8 @@ You can permanently delete your account and the personal data tied to it.
 - All traffic is expected to be served over HTTPS in production.
 - Access to your data through the API is gated by JWT authentication,
   CSRF protection, rate limiting, and strict per-user ownership checks.
-- Server-side security logging and optional Sentry telemetry monitor selected
-  sensitive actions; their coverage and retention are implementation-specific.
+- Server-side security logging records selected sensitive actions; its coverage
+  and retention are implementation-specific.
 
 Current technical detail is in `.claude/rules/SECURITY.md`, live security
 source/tests, and `docs/SECURITY_TESTING.md`.

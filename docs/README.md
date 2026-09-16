@@ -1,7 +1,7 @@
 # Equoria Documentation Map
 
 **Status:** Active index
-**Last reviewed:** 2026-08-19
+**Last reviewed:** 2026-09-16
 
 `docs/` is deliberately small and routed. Read
 [`DOCUMENTATION.md`](DOCUMENTATION.md) before creating, moving, merging, or
@@ -32,15 +32,14 @@ context.
 
 ## Cross-cutting operational references
 
-| File                                                             | Load only when                                                                           |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [`REPOSITORY_MAP.md`](REPOSITORY_MAP.md)                         | Locating an unfamiliar subsystem or creating, moving, consolidating, or retiring a path  |
-| [`development-guide.md`](development-guide.md)                   | Local onboarding, environment setup, or command discovery                                |
-| [`devops-cicd.md`](devops-cicd.md)                               | CI, hooks, Docker, Railway, release operations, database-pool or process/replica scaling |
-| [`migration-deploy-checklist.md`](migration-deploy-checklist.md) | Dependency-major, Prisma/schema/data, or authentication-sensitive migration work         |
-| [`SECURITY_TESTING.md`](SECURITY_TESTING.md)                     | Security-control tests, security CI, or security-coverage claims                         |
-| [`SENTRY_SETUP.md`](SENTRY_SETUP.md)                             | Sentry, telemetry, alert thresholds, or monitoring privacy                               |
-| [`beta-route-truth-table.md`](beta-route-truth-table.md)         | Beta route classification and its machine-read drift test                                |
+| File                                                             | Load only when                                                                            |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [`REPOSITORY_MAP.md`](REPOSITORY_MAP.md)                         | Locating an unfamiliar subsystem or creating, moving, consolidating, or retiring a path   |
+| [`development-guide.md`](development-guide.md)                   | Local onboarding, environment setup, or command discovery                                 |
+| [`devops-cicd.md`](devops-cicd.md)                               | CI, hooks, Netlify, Railway, release operations, database-pool or process/replica scaling |
+| [`migration-deploy-checklist.md`](migration-deploy-checklist.md) | Dependency-major, Prisma/schema/data, or authentication-sensitive migration work          |
+| [`SECURITY_TESTING.md`](SECURITY_TESTING.md)                     | Security-control tests, security CI, or security-coverage claims                          |
+| [`beta-route-truth-table.md`](beta-route-truth-table.md)         | Beta route classification and its machine-read drift test                                 |
 
 `beta-signoff.yaml` is an executable-process record maintained by the beta
 readiness workflow. It is not a product roadmap or a standing claim that beta

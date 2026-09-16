@@ -2,7 +2,7 @@
 
 - **Status:** Active contract
 - **Owner:** Project owner
-- **Last verified:** 2026-08-19
+- **Last verified:** 2026-09-16
 - **Load only when:** locating an unfamiliar subsystem; deciding where a file or
   directory belongs; or creating, moving, renaming, consolidating, or retiring
   a repository path
@@ -47,7 +47,7 @@ The root is an integration boundary, not a workspace for miscellaneous files.
 | `AGENTS.md`                                                      | Cross-agent roles, commands, and repository invariants.                                                                                                                               |
 | `README.md`                                                      | Human entry point, setup summary, and compact repository overview.                                                                                                                    |
 | `package.json`, lockfile, Jest/Playwright/ESLint/Prettier config | Monorepo commands and root tool configuration. Keep a file here only when the tool consumes it from this exact location.                                                              |
-| `Dockerfile`, `railway.toml`, `.github/`, `.husky/`              | Deployment, CI, ownership, dependency automation, and Git hooks.                                                                                                                      |
+| `railway.toml`, Netlify config, `.github/`, `.husky/`            | Deployment, CI, ownership, dependency automation, and Git hooks.                                                                                                                      |
 | `storageState.json`                                              | Ignored Playwright authentication state consumed from this exact path. It is generated local state, may contain credentials, and must never be committed or treated as documentation. |
 | `.mcp.json`, `skills-lock.json`, editor/agent config             | Tool-owned integration configuration. It has no product or design authority.                                                                                                          |
 
