@@ -35,3 +35,16 @@
 ## 5. Self-Modification Forbidden
 
 - Claude Code is strictly prohibited from editing, modifying, removing, or appending to `CLAUDE.md`, `systemconstraints.md`, or any repo-level instruction/rule files without explicit, typed user permission in that specific prompt.
+
+## 6. Sentry & Issue Equoria-9al2s Hard Closure
+
+- Sentry is strictly optional and disabled in local dev and automated tests.
+- Equoria-9al2s was verified via local mock transport in `sentryDsnBoot.integration.test.mjs`. Do NOT require or instruct signing up for sentry.io or configuring live DSNs. Mark Equoria-9al2s as satisfied locally and ignore external telemetry verification.
+
+## 7. Fast Test Workflow & Pre-Push Hook Discipline
+
+- NEVER run `npm run test:backend:full` or push to trigger the full 7+ minute pre-push gate for routine code edits or single-bug verification.
+- Test ONLY the affected file during development using targeted commands:
+  `npm run test:backend:targeted -- <path-to-test>`
+- Do NOT run tests in parallel across worktrees or multiple terminal sessions.
+- If a test gate fails due to machine load or concurrency contention (such as `databaseOptimization.test.mjs`), DO NOT trigger a full gate rerun. Stop, check running processes with `test:reap`, and inspect the specific failure.
