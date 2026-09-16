@@ -71,6 +71,9 @@ These are explicit owner decisions, not suggestions inferred from an old balance
 - Do not invent a system conception fee, horse-market listing fee, sale commission, or stud-fee house cut. A horse's sale cost is the seller's chosen price. Cross-owner breeding uses the player's chosen stud fee when that system is available; breeding horses already owned by the same stable remains free.
 - A show creator may enter her own horses. This is intended play, not an abuse condition to “correct.”
 - Show brackets use the horse's XP level, `floor(horseXp / 100) + 1`, and are enforced by the server. Do not replace this with a stat-composite level formula without a new owner decision.
+- Equoria has no single active horse, companion relationship meter, chapter structure, or Stable quest progression. A player may concurrently manage 5–200+ horses.
+- A horse may enter as many qualifying shows as its owner chooses, and a player may manually enter hundreds of shows in a night. Competition eligibility belongs to the selected show's discipline, level, age range, and rules.
+- Organization may accelerate discovery, but meaningful horse work remains player-performed. Do not add batch feeding, grooming, shoeing, veterinary care, training, breeding, selling, or show entry.
 - Detailed old proposals about re-pricing, new gates, bound currency, salaries, marketplace expiry, scoring pipelines, or alternate progression curves are not approved merely because they appear in an audit or formula document.
 
 ## The Returning-Player Ritual
@@ -78,6 +81,8 @@ These are explicit owner decisions, not suggestions inferred from an old balance
 Equoria is checked into for 15+ minute sessions several times a week. The opening question is not “which module do you want?” It is “what happened to my horses while I was away, and who needs me now?”
 
 Changes such as aging, care, completed training, show results, foaling, trait discovery, and payroll should be presented as events in the player's stable life. Do not turn the arrival experience into a KPI strip, notification center, or right-hand business-intelligence rail.
+
+For Stable specifically, the returning-player ritual is intentionally bounded: atmosphere first; the separate Horse Roster gateway second; Last Night's Standouts as a three-horse celebration; then one integrated Stable Rounds marker for Requires Care, Can Train, and Breedable Mares. Stable Home does not attempt to summarize every system.
 
 ## Experience Architecture
 
@@ -87,11 +92,11 @@ Stable, Arena, Breeding Hall, marketplace, shops, clinic, farrier, and World are
 
 ### Horses before records
 
-The horse is the visual and emotional subject. Portrait, name, condition, relationship, and current story lead. Lineage, genotype/phenotype, care history, training, and competition records remain available, but completeness of the dossier must not dominate identity.
+The horse is the visual and emotional subject. Portrait, name, condition, identity, and current state lead. Lineage, genotype/phenotype, care history, training, and competition records remain available, but completeness of the dossier must not dominate identity. Attachment comes from ownership, history, artwork, lineage, and player choices—not from an invented relationship meter.
 
 ### Story before summary metrics
 
-Prefer “Moonflower placed second at Halcyon Downs” to “Podiums: 1.” Prefer a lineage, season record, care journal, stable activity, or recent chapter to anonymous KPI tiles. Summary numbers may support a composition; they may not become the composition.
+Prefer “Moonflower placed second at Halcyon Downs” to “Podiums: 1.” Prefer a lineage, season record, care journal, stable activity, or recent event to anonymous KPI tiles. Summary numbers may support a composition; they may not become the composition.
 
 ### Context before global surveillance
 
@@ -100,6 +105,17 @@ Surface urgent care, cooldowns, risks, and costs beside the relevant horse or de
 ### Artwork as composition
 
 Environment artwork is not wallpaper beneath generic software. Respect its focal regions and compose content around buildings, paths, paddocks, horses, open sky, warm windows, and safe reading zones. Deliberately open, beautiful space is useful space.
+
+### Approved global navigation
+
+The persistent primary navigation is a five-realm bottom travel ribbon: **HOME, WORLD, COMMUNITY, MARKETPLACE, and COMPETE**. These are category controls that reveal labeled destination menus, not five placeholder pages. Selecting a destination travels in one step and dismisses the submenu.
+
+- HOME is a submenu title—not a page and not Stable—and contains Profile, Avatar, Stable, Inventory, and Bank.
+- WORLD begins with the optional clickable Equoria Town map and also provides direct travel to Veterinarian, Feed Shop, Tack Shop, Training Center, Breeding Specialist, and Leathersmith. **Training Center is where players actively train horses.**
+- MARKETPLACE contains Horse Trader, Horse Marketplace, Grooms for Hire, Riders, and **Trainers for Hire**. Trainers are hireable staff with different skillsets; they are not the Training Center and must not be merged with it.
+- The centered EQUORIA wordmark is noninteractive.
+- Coins/Bank, the labeled Equoria Chronicle, notifications, settings, and logout belong to the compact top HUD.
+- No sidebar, hamburger, all-purpose drawer, or disguised mobile menu replaces this model.
 
 ## Structural Anti-SaaS Rules
 
@@ -125,15 +141,16 @@ Reusable primitives are allowed; reusable page sameness is not. A shared accessi
 
 These are steering examples, not complete wireframes:
 
-- **Stable / home:** an inhabited arrival with a current companion, recent stable events, and a visual roster or paddock rhythm—not welcome text, action tiles, horse-card grid, and a summary aside.
-- **Horse detail:** a horse-led portrait or environmental composition with a few meaningful chapters such as Companion, Career, Bloodline, and Care—not a CRM header, six stat tiles, and thirteen peer tabs.
-- **Breeding:** a pairing tableau with mare and stallion in relationship, lineage and predicted inheritance revealed between them, then risk and cost at commitment—not two selector cards plus compatibility tabs and a cost modal.
+- **Stable Home:** the approved **Lantern Honors Yard** direction—an inhabited scenic arrival with a luminous doorway into the separate Horse Roster, exactly three recent nightly standouts, and one integrated Stable Rounds marker. It has no active companion, relationship system, chapters, action-tile grid, horse-card dashboard, or summary aside.
+- **Horse Roster:** a separate collection surface. Portrait mode is the new-player default and protects horse art, identity, sex, age, breed, and concise Care/Training/Breeding states. Player-selected Ledger mode owns dense sortable comparison. Automatic barns and a compact sticky barn rail keep 5–200+ horses navigable without bulk action.
+- **Horse detail:** a horse-led portrait or environmental composition with distinct information sections such as Career, Bloodline, Genetics, and Care—not a CRM header, six stat tiles, and thirteen peer tabs.
+- **Breeding:** a pairing tableau with mare and stallion presented together, lineage and predicted inheritance revealed between them, then risk and cost at commitment—not two selector cards plus compatibility tabs and a cost modal.
 - **Competition:** an arena program or noticeboard, an entry journey, then a podium/reveal with season records available afterward—not filters, equal event cards, KPI results, and report tabs.
 - **Marketplace:** an illustrated catalogue or sales-ring experience that presents horses with portrait scale, provenance, temperament, lineage, and seller voice—not commerce-admin tabs, inventory rows, transaction history, and a purchase dialog on arrival.
 - **Hall of Fame / achievements:** a commemorative gallery or ceremony—not another repeated card list.
 - **Foal birth, rare traits, championships, and major rewards:** authored, bounded game moments centered on the horse or achievement—not toast pills or an ordinary confirmation dialog.
 
-Do not clone these examples mechanically. Their common lesson is that each feature earns its own experiential metaphor and composition.
+The Stable and Horse Roster bullets above are approved route direction, with full behavior and asset requirements in the [Equoria Stable UX / Visual Brief](_bmad-output/planning-artifacts/equoria-stable-ux-visual-brief.md). The remaining bullets are steering examples. Do not clone them mechanically; their common lesson is that each feature earns its own experiential metaphor and composition.
 
 ## Frontend Dependency Policy
 
@@ -151,7 +168,7 @@ The `sonner`, Recharts, Chart.js, and `react-chartjs-2` dependencies and their c
 
 ## Feedback and Irreversibility
 
-Cooldowns, breeding, retirement, sales, and money moves deserve a clear cost before commitment and a clear receipt afterward. Routine destructive or transactional confirmations may use a restrained accessible dialog. Foal birth, championship results, rare discovery, relationship progress, and major rewards require authored presentation. Emotional importance determines choreography.
+Cooldowns, breeding, retirement, sales, and money moves deserve a clear cost before commitment and a clear receipt afterward. Routine destructive or transactional confirmations may use a restrained accessible dialog. Foal birth, championship results, rare discovery, bloodline milestones, and major rewards require authored presentation. Emotional importance determines choreography.
 
 ## Truth, State, and Accessibility
 
@@ -169,8 +186,9 @@ Use this hierarchy when documents disagree:
 1. The user's explicit current ruling.
 2. `PRODUCT.md` for product identity, player promise, experience architecture, and allowed/rejected product behavior.
 3. `DESIGN.md` for the binding Celestial Night visual language, typography, composition, motion, and component expression.
-4. Current token and motion implementation in `docs/design-system/TOKENS.md` and `MOTION.md`.
-5. Narrow implementation decisions that do not conflict with items 1–4.
+4. Owner-approved route briefs for route-specific hierarchy, interaction, responsive behavior, and asset requirements. For Stable Home and Horse Roster, this is `_bmad-output/planning-artifacts/equoria-stable-ux-visual-brief.md`.
+5. Current token and motion implementation in `docs/design-system/TOKENS.md` and `MOTION.md`.
+6. Narrow implementation decisions that do not conflict with items 1–5.
 
 The following are **historical evidence, not governing design authority**, wherever they prescribe shadcn/Radix, universal FrostedPanel/Card replacement, dashboard shells, standard header/tab/card choreography, aside rails, generic RewardToast, chart libraries, or responsive card grids:
 
@@ -230,4 +248,4 @@ Do not fabricate players, testimonials, reviews, press, prices, app-store availa
 
 ## Product Vocabulary
 
-Use the world's own words: stable, foal, dam, sire, lineage, genotype, phenotype, locus, epigenetic trait, trait discovery, discipline, cooldown, groom, rider, trainer, payroll, show, conformation show, entry fee, prize, care status, World Hub, and club.
+Use the world's own words: Stable Home, Horse Roster, Portrait, Ledger, Stable Rounds, Equoria Town, Chronicle, foal, dam, sire, lineage, genotype, phenotype, locus, epigenetic trait, trait discovery, discipline, cooldown, groom, rider, trainer, payroll, show, conformation show, entry fee, prize, care status, WORLD, and club.

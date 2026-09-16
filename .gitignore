@@ -219,3 +219,7 @@ backend/load-test-*.json
 
 # impeccable design-hook cache (regenerated on every UI edit; never a source of truth)
 **/.impeccable/hook.cache.json
+.bmad-loop/runs/
+.bmad-loop/cache/
+.bmad-loop/policy.toml
+_bmad/render/

@@ -158,6 +158,15 @@ Do not preload `docs/`, `.claude/`, or any documentation directory. Open only
 the smallest source whose trigger matches the current work. A document never
 proves current implementation; verify its named live sources.
 
+## Constraints & Testing Standards
+
+Before proposing architecture, adding dependencies, configuring gates, or writing tests, review and adhere to `systemconstraints.md`:
+
+- Allowed infra: Netlify, Railway, Supabase only.
+- FORBIDDEN: Docker, Sentry, and unapproved SaaS subscriptions.
+- Real tests over excessive mocks: test actual logic and database state, not artificial stubs.
+- Local gates must use local synchronization (locks/files), never external DSNs or telemetry.
+
 ### Governance and discovery
 
 | Trigger                                                                                                                                                               | Load                                                                          |
