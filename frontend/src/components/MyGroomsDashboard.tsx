@@ -14,7 +14,7 @@
 import React, { useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { Users, Coins, AlertCircle, Calendar, Trash2 } from 'lucide-react';
+import { Users, Coins, AlertCircle, Heart, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
 import { Surface } from '@/components/ui/Surface';
@@ -42,6 +42,16 @@ import {
 } from '../hooks/api/useGrooms';
 import { useHorses } from '../hooks/api/useHorses';
 import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
+// Equoria-95yrv: the roster arithmetic — who is caring for what, what that costs this
+// week (70 per horse), and the card order. Pure functions, no composition change.
+import {
+  DEFAULT_MAX_HORSES_PER_GROOM,
+  activeAssignmentsFor,
+  ageLabel,
+  feeForGroom as feeForGroomIn,
+  filterAndSortGrooms,
+  formatSpecialty,
+} from './groom/myGroomsRoster';
 
 interface MyGroomsDashboardProps {
   userId: string | number;
@@ -50,22 +60,6 @@ interface MyGroomsDashboardProps {
   salaryCostsData?: SalarySummary;
   onBrowseMarketplace?: () => void;
 }
-
-// Helper function to get max assignments by skill level
-const getMaxAssignments = (skillLevel: string | undefined): number => {
-  const maxAssignments: Record<string, number> = {
-    novice: 2,
-    intermediate: 3,
-    expert: 4,
-    master: 5,
-  };
-  return maxAssignments[(skillLevel ?? '').toLowerCase()] || 2;
-};
-
-// Helper function to format specialty display (null-safe — Equoria-j2a51)
-const formatSpecialty = (specialty: string | undefined): string => {
-  return (specialty ?? '').replace(/([A-Z])/g, ' $1').trim();
-};
 
 const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   userId,
@@ -134,10 +128,18 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const finalSalaryCosts = salaryCostsData ||
     salaryCostsFromAPI || {
       totalWeeklyCost: 0,
-      totalMonthlyCost: 0,
       groomCount: 0,
+      feePerHorsePerWeek: 0,
+      maxHorsesPerGroom: DEFAULT_MAX_HORSES_PER_GROOM,
       breakdown: [],
     };
+
+  const feeForGroom = (groomId: number): number | null => feeForGroomIn(finalSalaryCosts, groomId);
+  const maxHorses = finalSalaryCosts.maxHorsesPerGroom || DEFAULT_MAX_HORSES_PER_GROOM;
+  const horsesInCare = finalSalaryCosts.breakdown.reduce(
+    (total, entry) => total + entry.assignedHorses,
+    0
+  );
 
   // Loading state — skeleton rows
   if (!groomsData && (groomsLoading || assignmentsLoading || salaryCostsLoading)) {
@@ -167,9 +169,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   // like the loading gate): a props-injecting parent owns the states. Retry
   // refetches all three; copy comes from userMessageFor so no raw body leaks (§3).
   if (!groomsData && (groomsIsError || assignmentsIsError || salaryIsError)) {
-    const { message, retryable } = userMessageFor(
-      groomsError ?? assignmentsError ?? salaryError
-    );
+    const { message, retryable } = userMessageFor(groomsError ?? assignmentsError ?? salaryError);
     return (
       <ErrorState
         title="Couldn't load your grooms"
@@ -208,9 +208,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   }
 
   // Get assignments for a specific groom
-  const getGroomAssignments = (groomId: number): GroomAssignment[] => {
-    return finalAssignments.filter((a) => a.groomId === groomId && a.isActive);
-  };
+  const getGroomAssignments = (groomId: number): GroomAssignment[] =>
+    activeAssignmentsFor(finalAssignments, groomId);
 
   // Calculate unassigned grooms count
   const unassignedGroomsCount = finalGrooms.filter((groom) => {
@@ -257,26 +256,14 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   };
 
   // Filter and sort grooms
-  const filteredAndSortedGrooms = finalGrooms
-    .filter((groom) => {
-      if (skillLevelFilter !== 'all' && groom.skillLevel !== skillLevelFilter) return false;
-      if (specialtyFilter !== 'all' && groom.specialty !== specialtyFilter) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'name') {
-        return a.name.localeCompare(b.name);
-      }
-      if (sortBy === 'salary') {
-        return b.sessionRate - a.sessionRate;
-      }
-      if (sortBy === 'slots') {
-        const aSlots = getMaxAssignments(a.skillLevel) - getGroomAssignments(a.id).length;
-        const bSlots = getMaxAssignments(b.skillLevel) - getGroomAssignments(b.id).length;
-        return bSlots - aSlots;
-      }
-      return 0;
-    });
+  const filteredAndSortedGrooms = filterAndSortGrooms(finalGrooms, {
+    assignments: finalAssignments,
+    salary: finalSalaryCosts,
+    skillLevelFilter,
+    specialtyFilter,
+    sortBy,
+    maxHorses,
+  });
 
   return (
     <div className="py-6">
@@ -305,15 +292,13 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
           <Surface variant="panel" className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="type-label text-[var(--text-secondary)] mb-1">Monthly Cost</p>
-                <Currency
-                  amount={finalSalaryCosts.totalMonthlyCost}
-                  variant="balance"
-                  className="text-2xl"
-                />
+                {/* Equoria-95yrv: what the weekly cost is made of. This tile read
+                    "Monthly Cost" from a field the API has never sent. */}
+                <p className="type-label text-[var(--text-secondary)] mb-1">Horses in Care</p>
+                <p className="text-2xl font-semibold text-[var(--text-primary)]">{horsesInCare}</p>
               </div>
               <div className="p-3 rounded-full bg-[var(--role-success-bg)] border border-[var(--role-success-border)]">
-                <Calendar className="w-8 h-8 text-[var(--role-success-text)]" aria-hidden="true" />
+                <Heart className="w-8 h-8 text-[var(--role-success-text)]" aria-hidden="true" />
               </div>
             </div>
           </Surface>
@@ -407,8 +392,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
               className="w-full"
             >
               <option value="name">Name</option>
-              <option value="salary">Salary</option>
-              <option value="slots">Available Slots</option>
+              <option value="salary">Weekly fee</option>
+              <option value="slots">Room for horses</option>
             </Select>
           </div>
         </Surface>
@@ -421,7 +406,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
       >
         {filteredAndSortedGrooms.map((groom) => {
           const groomAssignments = getGroomAssignments(groom.id);
-          const maxAssignments = getMaxAssignments(groom.skillLevel);
+          const maxAssignments = maxHorses;
+          const weeklyFee = feeForGroom(groom.id);
           const availableSlots = maxAssignments - groomAssignments.length;
           const isFullyAssigned = availableSlots === 0;
 
@@ -446,6 +432,11 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-success-bg)] text-[var(--role-success-text)] border border-[var(--role-success-border)]">
                     {formatSpecialty(groom.specialty)}
                   </span>
+                  {/* Equoria-fby1t: "Show a groom's age always" — with the other facts
+                      a player knows about who this groom IS, in the same chip. */}
+                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)] border border-[var(--role-neutral-border)]">
+                    {ageLabel(groom.ageYears)}
+                  </span>
                 </div>
               </div>
 
@@ -466,15 +457,22 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   <GroomPersonalityBadge personality={groom.personality} />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="type-label text-xs text-[var(--text-secondary)]">Salary</span>
+                  <span className="type-label text-xs text-[var(--text-secondary)]">
+                    Weekly fee
+                  </span>
+                  {/* Equoria-95yrv: per horse in the groom's care, so a groom on none
+                      costs nothing. An em dash while the summary loads — never a zero. */}
                   <span className="font-bold inline-flex items-center gap-1">
-                    <Currency amount={groom.sessionRate} />
-                    /week
+                    {weeklyFee === null ? (
+                      <span aria-label="Weekly fee unknown">—</span>
+                    ) : (
+                      <Currency amount={weeklyFee} />
+                    )}
                   </span>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-xs type-label text-[var(--text-secondary)]">
-                    <span>Assignments</span>
+                    <span>Horses</span>
                     <span>
                       {groomAssignments.length} / {maxAssignments}
                     </span>
@@ -598,7 +596,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 variant={isFullyAssigned ? 'secondary' : 'default'}
                 className="w-full"
               >
-                {isFullyAssigned ? 'Max Assignments' : 'Assign to Horse'}
+                {isFullyAssigned ? `Caring for ${maxAssignments} horses` : 'Assign to Horse'}
               </Button>
             </Surface>
           );

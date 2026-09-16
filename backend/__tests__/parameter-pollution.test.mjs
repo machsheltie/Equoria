@@ -140,36 +140,35 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       expect(response.body.success).toBe(true);
     });
 
+    // Equoria-4fnro: both cases used to PUT a `name` of the wrong TYPE; PUT now
+    // refuses any body with `name` before checking the type, so there they would
+    // pass with the type rule deleted. Repointed at the rename endpoint.
+    const renameAttempt = body =>
+      request(app)
+        .patch(`/api/v1/horses/${testHorse.id}/name`)
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send(body);
+    const storedName = async () =>
+      (await prisma.horse.findUnique({ where: { id: testHorse.id }, select: { name: true } })).name;
     it('should reject array-syntax parameters where not expected', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          name: ['HorseName1', 'HorseName2'], // Array where string expected
-        })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid');
+      const before = await storedName();
+      const res = await renameAttempt({ name: ['HorseName1', 'HorseName2'] });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Horse name must be a string');
+      expect(await storedName()).toBe(before);
     });
-
     it('should reject mixed type parameters', async () => {
-      const response = await request(app)
-        .put(`/api/v1/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          age: '5', // String where number expected
-          name: 123, // Number where string expected
-        })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
+      const before = await storedName();
+      const withStray = await renameAttempt({ age: '5', name: 123 }); // unexpected field
+      const res = await renameAttempt({ name: 123 }); // wrong type
+      expect(withStray.status).toBe(400);
+      expect(withStray.body.message).toBe('Invalid rename payload: unexpected field');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Horse name must be a string');
+      expect(await storedName()).toBe(before);
     });
   });
 

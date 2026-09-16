@@ -1,6 +1,16 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Equoria-9ai5g: shared-working-tree detector. FIRST, because everything below
+# is wasted work if this commit belongs to a different session's checkout, and
+# because a foreign commit landing on a shared branch is the most expensive
+# failure this hook can prevent (2026-09-11: another session's in-progress
+# commit became an ancestor of an 80-commit push to master; only an unrelated
+# `git merge` refusal caught it).
+#
+# ~0.5s. No-op in CI. Override: EQUORIA_SESSION_OVERRIDE=1. Never silent.
+sh "$(git rev-parse --show-toplevel)/scripts/session/session-guard.sh" precommit || exit 1
+
 ./node_modules/.bin/lint-staged --no-stash
 
 # Equoria-64tby: gate-strengthening for the silent-cleanup-catch doctrine

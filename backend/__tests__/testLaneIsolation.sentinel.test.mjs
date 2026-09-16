@@ -8,14 +8,22 @@
  * lane databases of one run and nothing else. Each guard is proved in both
  * directions: the planted violation fires and the compliant path passes.
  *
+ * (4) the runner's own configuration must resolve on a machine that has no
+ * backend/.env.test — the gitignored developer file CI never checks out
+ * (Equoria-dwicn).
+ *
  * Real PostgreSQL, no mocks. Lane databases are created with a random run id,
  * asserted, and dropped in afterAll; the canonical database receives one
  * uniquely-named breed row that is removed by exact id.
  */
-import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
+import { afterAll, beforeAll, describe, expect, jest, test } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import pg from 'pg';
 import {
+  DEFAULT_ENV_FILE,
   LANE_DB_PREFIX,
   assertLaneName,
   baseDatabaseUrl,
@@ -25,6 +33,7 @@ import {
   laneUrlFor,
   listLaneDatabases,
   newRunId,
+  parseEnvFile,
   reclaimRun,
 } from '../scripts/test-lane-db.mjs';
 
@@ -70,6 +79,76 @@ describe('lane naming and routing guards', () => {
     expect(url.password).toBe('secret');
     expect(url.pathname).toBe(`/${LANE_DB_PREFIX}abcdef012345_1`);
     expect(url.searchParams.get('x')).toBe('1');
+  });
+});
+
+describe('base configuration resolves without backend/.env.test (Equoria-dwicn)', () => {
+  // The file is gitignored: it exists on a developer machine and never on the
+  // GitHub runner, where DATABASE_URL arrives through the job environment.
+  // Reproducing that shape needs a path that is absent, NOT a rename of the
+  // real file, so each case points the resolver at a fresh temp directory.
+  let scratch;
+  const absent = () => path.join(scratch, 'no-such.env');
+
+  beforeAll(() => {
+    scratch = mkdtempSync(path.join(tmpdir(), 'equoria-lane-env-'));
+  });
+
+  afterAll(() => {
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  test('the CI shape: no env file, DATABASE_URL from the environment', () => {
+    // This is exactly what was red on the runner: an unconditional read of the
+    // absent file threw ENOENT before the environment was ever consulted.
+    const url = 'postgresql://test:test@localhost:5432/equoria_test';
+    expect(baseDatabaseUrl({ DATABASE_URL: url }, absent())).toBe(url);
+    expect(laneUrlFor(laneName('abcdef012345', 1), { DATABASE_URL: url })).toContain(
+      `/${LANE_DB_PREFIX}abcdef012345_1`,
+    );
+  });
+
+  test('planted violation: an absent file AND no DATABASE_URL fails with the named cause, not ENOENT', () => {
+    expect(() => baseDatabaseUrl({}, absent())).toThrow(/DATABASE_URL is not set/);
+    try {
+      baseDatabaseUrl({}, absent());
+    } catch (error) {
+      expect(error.code).not.toBe('ENOENT');
+    }
+  });
+
+  test('the absence is announced once per path, not silently swallowed', () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const file = path.join(scratch, `announce-${randomBytes(3).toString('hex')}.env`);
+      expect(parseEnvFile(file)).toEqual({});
+      expect(parseEnvFile(file)).toEqual({});
+      const notices = spy.mock.calls.filter(([line]) => String(line).includes(file));
+      expect(notices).toHaveLength(1);
+      expect(notices[0][0]).toMatch(/absent \(normal in CI\)/);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test('planted violation: a non-ENOENT read failure still throws (no blanket catch)', () => {
+    // A directory where the file should be: readable path, unreadable file.
+    expect(() => parseEnvFile(scratch)).toThrow();
+    expect(() => parseEnvFile(scratch)).not.toThrow(/absent/);
+  });
+
+  test('a present env file still supplies DATABASE_URL when the environment does not', () => {
+    const file = path.join(scratch, 'present.env');
+    writeFileSync(file, 'DATABASE_URL="postgresql://dev:dev@localhost:5432/equoria"');
+    expect(baseDatabaseUrl({}, file)).toBe('postgresql://dev:dev@localhost:5432/equoria');
+    // ...and the environment still wins over it.
+    expect(baseDatabaseUrl({ DATABASE_URL: 'postgresql://env:env@localhost:5432/equoria' }, file)).toBe(
+      'postgresql://env:env@localhost:5432/equoria',
+    );
+  });
+
+  test('the default path is backend/.env.test', () => {
+    expect(DEFAULT_ENV_FILE.split(path.sep).slice(-2).join('/')).toBe('backend/.env.test');
   });
 });
 

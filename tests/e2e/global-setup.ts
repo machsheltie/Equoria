@@ -1,4 +1,5 @@
 import { chromium, expect, type FullConfig } from '@playwright/test';
+import { startSessionKeepAlive } from './helpers/sessionKeepAlive';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -29,6 +30,17 @@ async function getPrisma(): Promise<Record<string, unknown>> {
 // Playwright forks test workers AFTER globalSetup returns, so env mutations
 // here propagate to every worker. Tests must read via the helper in
 // tests/e2e/helpers/credentials.ts (or process.env directly).
+
+// Kept at module scope so global-teardown.ts (or a setup failure) can stop the
+// renewal timer. tests/e2e/global-teardown.ts is wired into playwright.config.ts
+// and calls stopGlobalSessionKeepAlive(); the timer is also unref'd, so it never
+// blocks exit even if teardown is skipped.
+let stopSessionKeepAlive: (() => void) | null = null;
+
+export function stopGlobalSessionKeepAlive(): void {
+  stopSessionKeepAlive?.();
+  stopSessionKeepAlive = null;
+}
 
 async function globalSetup(config: FullConfig) {
   const { baseURL, storageState } = config.projects[0].use;
@@ -406,9 +418,28 @@ async function globalSetup(config: FullConfig) {
       console.log('[conformation-seed] conformation-entry preconditions seeded OK.');
     }
 
+    // ── 8. Keep the shared session live for the whole run (Equoria-oye1a) ───
+    // The accessToken cookie captured in step 3 expires in 15 minutes
+    // (ACCESS_TOKEN_TTL_MS) but the suite runs for ~22, so every context
+    // created after T+15m used to start logged out. Renew through the real
+    // login route on a timer and rewrite storageState.json atomically.
+    //
+    // Started AFTER the seeding steps on purpose: the startup renewal is a real
+    // login, and authController.login deletes every refresh token for the user
+    // (CWE-384), so doing it last leaves the freshest possible state on disk and
+    // never disturbs a seeding call mid-flight. It throws on failure, so a
+    // broken credential path fails the run here rather than ten minutes in.
+    stopSessionKeepAlive = await startSessionKeepAlive({
+      baseURL: baseURL as string,
+      storageStatePath: storageState as string,
+      email,
+      password,
+    });
+
     console.log('Global setup complete.');
   } catch (error) {
     console.error('Global setup failed:', error);
+    stopGlobalSessionKeepAlive();
     throw error;
   } finally {
     await browser.close();

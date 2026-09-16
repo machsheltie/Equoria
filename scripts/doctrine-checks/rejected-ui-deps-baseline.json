@@ -23,7 +23,6 @@
   "frontend/src/pages/SettingsPage.tsx": { "sonner": 1 },
   "frontend/src/pages/VeterinarianPage.tsx": { "sonner": 1 },
   "frontend/src/pages/horse-detail/HorseActionBar.tsx": { "sonner": 1 },
-  "frontend/src/pages/horse-detail/HorseProfileCard.tsx": { "sonner": 1 },
   "frontend/src/pages/horse-detail/RiderPickerModal.tsx": { "sonner": 1 },
   "frontend/src/pages/horse-detail/StudSaleTab.tsx": { "sonner": 1 },
   "frontend/src/pages/horses/HorseEquipPage.tsx": { "sonner": 1 },

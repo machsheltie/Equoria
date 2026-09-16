@@ -175,10 +175,10 @@ export async function runDailyCareAutomation(options = {}) {
 
   const totalInteractions = results.length;
   const totalBondingGain = results.reduce((sum, r) => sum + (r.effects?.bondingChange || 0), 0);
-  const totalCost = results.reduce((sum, r) => sum + (r.effects?.cost || 0), 0);
-
+  // Equoria-tfo3c (owner ruling, 2026-09-14): care itself costs nothing, so there is
+  // no per-session total to report. The effects no longer carry a `cost`.
   logger.info(
-    `[dailyCareAutomation.runDailyCareAutomation] Completed: ${totalInteractions} interactions, ${totalBondingGain} total bonding gain, $${totalCost.toFixed(2)} total cost`,
+    `[dailyCareAutomation.runDailyCareAutomation] Completed: ${totalInteractions} interactions, ${totalBondingGain} total bonding gain`,
   );
 
   return {
@@ -189,7 +189,6 @@ export async function runDailyCareAutomation(options = {}) {
     summary: {
       totalInteractions,
       totalBondingGain,
-      totalCost: Math.round(totalCost * 100) / 100,
       errorCount: errors.length,
     },
     message: `Daily care automation completed: ${totalInteractions} interactions performed`,
@@ -222,7 +221,7 @@ async function performAutomaticCare(assignment, routine) {
       bondingChange: effects.bondingChange,
       stressChange: effects.stressChange,
       quality: effects.quality,
-      cost: effects.cost,
+      // Equoria-tfo3c: no `cost` — care costs nothing.
       notes: `Automatic ${routine.name} - ${routine.description}`,
     },
   });

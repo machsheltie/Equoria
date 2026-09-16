@@ -46,6 +46,15 @@ import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
+// Equoria-zalyb: the starter horse's name is a player-typed horse name, so it
+// meets the SAME rule as every other one. Imported from the horses module's
+// published name-policy surface — see the header of that file for why it is not
+// the barrel (the barrel carries the horse routes, and importing it here forms a
+// module cycle) and not a deep import (ESLint refuses one).
+import {
+  horseNameRejectionReason,
+  firstHorseNameRejectionMessage,
+} from '../../horses/horseNamePolicy.mjs';
 // Equoria-hk739: deep-import the LEAF horses services directly, NOT the full
 // horses barrel (../../horses/index.mjs). This module is re-exported by
 // authController.mjs (export { completeOnboarding, advanceOnboarding }), so the
@@ -179,7 +188,14 @@ export const advanceOnboarding = async (req, res, next) => {
     const { horseName, breedId, gender } = req.body || {};
     const hasHorseCustomization =
       typeof horseName === 'string' || breedId !== undefined || typeof gender === 'string';
-    const trimmedHorseName = typeof horseName === 'string' ? horseName.trim().slice(0, 40) : '';
+    // Equoria-zalyb (OWNER RULING 2026-09-14). This used to be
+    // `horseName.trim().slice(0, 40)` — a SILENT TRUNCATION of the first thing a
+    // new player ever types, on the one path that was never routed through the
+    // shared policy. The name is now taken verbatim and validated below, which
+    // is what every other horse-name path does: stored exactly as typed, or
+    // refused with a reason. No trim on the stored value either — the policy
+    // refuses normalisation, and '  Fred  ' is a name a player chose.
+    const suppliedHorseName = typeof horseName === 'string' ? horseName : '';
     const normalizedBreedId =
       breedId !== undefined && Number.isInteger(Number(breedId)) ? Number(breedId) : null;
     // Canonicalize the client-supplied gender to Title Case. The frontend
@@ -199,8 +215,16 @@ export const advanceOnboarding = async (req, res, next) => {
     }
 
     if (hasHorseCustomization) {
-      if (!trimmedHorseName) {
+      // Emptiness keeps its own (older, clearer) message: a player who typed
+      // nothing has not broken a rule, she has not finished. Everything else is
+      // the shared policy, reported in copy written for someone two minutes
+      // into the game.
+      if (suppliedHorseName.trim().length === 0) {
         throw new AppError('Starter horse name is required.', 400);
+      }
+      const nameRejection = horseNameRejectionReason(suppliedHorseName);
+      if (nameRejection !== null) {
+        throw new AppError(firstHorseNameRejectionMessage(nameRejection, suppliedHorseName), 400);
       }
       if (!normalizedBreedId) {
         throw new AppError('Starter horse breed is required.', 400);
@@ -294,7 +318,7 @@ export const advanceOnboarding = async (req, res, next) => {
           }
 
           const updateData = {
-            name: trimmedHorseName,
+            name: suppliedHorseName,
             breedId: breed.id,
             sex: normalizedGender,
             ...generateStarterStats(breed.name),

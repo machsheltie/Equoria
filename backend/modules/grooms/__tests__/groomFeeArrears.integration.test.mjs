@@ -46,7 +46,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { processWeeklySalaries, getPayWeekStart, calculateWeeklySalary } from '../services/groomSalaryService.mjs';
+import { processWeeklySalaries, getPayWeekStart, calculateWeeklyFee } from '../services/groomSalaryService.mjs';
 import {
   ENGAGEMENT_END_REASONS,
   GROOM_FEE_UNPAID_NOTIFICATION_TYPE,
@@ -190,7 +190,7 @@ function registerUserCleanup(cleanup, getUser, label) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe('Equoria-ypb7d.3 — the fee is per groom ON STAFF, not per assignment', () => {
+describe('Equoria-95yrv — the fee is per HORSE ASSIGNED, at $70 each', () => {
   let user;
   let horses;
   let unassigned;
@@ -204,9 +204,10 @@ describe('Equoria-ypb7d.3 — the fee is per groom ON STAFF, not per assignment'
       makeHorse(user.id, 'basis-h2'),
       makeHorse(user.id, 'basis-h3'),
     ]);
-    // One groom with NO assignment at all — free under the old basis.
+    // One groom with NO assignment at all. Charged a flat rate under the
+    // superseded per-groom-on-staff basis (Equoria-ypb7d.3); free again now.
     unassigned = await makeGroom(user.id, 'basis-unassigned');
-    // One groom on three horses — charged three times under the old basis.
+    // One groom on three horses: $210 a week, three times a groom on one.
     busy = await makeGroom(user.id, 'basis-busy');
     for (const horse of horses) {
       await prisma.groomAssignment.create({
@@ -218,9 +219,11 @@ describe('Equoria-ypb7d.3 — the fee is per groom ON STAFF, not per assignment'
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('charges each groom exactly once — the unassigned one included', async () => {
-    const expectedUnassigned = calculateWeeklySalary(unassigned);
-    const expectedBusy = calculateWeeklySalary(busy);
+  it('charges 70 per assigned horse, and nothing for the groom on none', async () => {
+    const expectedUnassigned = calculateWeeklyFee(0);
+    const expectedBusy = calculateWeeklyFee(horses.length);
+    expect(expectedUnassigned).toBe(0);
+    expect(expectedBusy).toBe(210);
 
     const before = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
 
@@ -232,8 +235,8 @@ describe('Equoria-ypb7d.3 — the fee is per groom ON STAFF, not per assignment'
     const after = Number((await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } })).money);
     expect(before - after).toBe(expectedUnassigned + expectedBusy);
 
-    // Exactly one payment row per groom. Three under the old per-assignment basis
-    // for `busy`, and none at all for `unassigned`.
+    // Still exactly one payment row per groom — the pay week is recorded for the
+    // idle groom too, at 0, so a re-run stays a no-op for them.
     const rows = await prisma.groomSalaryPayment.findMany({
       where: { userId: user.id, status: 'paid' },
       select: { groomId: true, amount: true },

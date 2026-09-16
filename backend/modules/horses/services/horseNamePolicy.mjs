@@ -10,14 +10,27 @@
  *   express-validator middleware stay in the routes layer, where they belong.
  *
  * ── THE RULE ────────────────────────────────────────────────────────────────
- * A horse name is a string, raw `.length` <= 100, non-empty after trimming, and
+ * A horse name is a string, raw `.length` <= 40, non-empty after trimming, and
  * contains neither `<` nor NUL. Player-supplied names are stored VERBATIM — no
  * trim, no truncation, no case folding; a violating name is REJECTED, never
  * quietly repaired.
  *
  * WHERE THE BOUNDS COME FROM (found, not invented)
- *   - length 1-100 — the bound `validateHorseCreation` and `validateFoalCreation`
- *     already enforced via `body('name').isLength({ min: 1, max: 100 })`.
+ *   - length 1-40 — OWNER RULING 2026-09-14 (Equoria-zalyb): "Limit: 40
+ *     characters for horse names." This REPLACED the 1-100 bound the creation
+ *     validators had enforced via `body('name').isLength({ min: 1, max: 100 })`.
+ *     40 was already the number the two live surfaces a player actually types
+ *     into used — the onboarding input's `maxLength` — so the ruling makes the
+ *     whole system agree with what the game already showed her, instead of
+ *     accepting 100 in one place and silently cutting at 40 in another.
+ *
+ *     WHAT THE NARROWING COSTS, stated rather than discovered later: 41-100
+ *     character names are now refused everywhere they used to be accepted
+ *     (PATCH /horses/:id/name and POST /horses/foals). The longest name in the
+ *     live data measured for this policy is 48 UTF-16 units, so a handful of
+ *     existing horses carry names that could no longer be RE-typed. Nothing is
+ *     broken by that: the bound is checked on input, never on the stored row,
+ *     so no horse became unrenameable and no read path rejects anything.
  *   - characters — the rule `validateHorseUpdatePayload` already enforced:
  *     reject `<` and NUL, nothing else. No allow-list regex, because
  *     `backend/__tests__/sql-injection-attempts.test.mjs` requires
@@ -25,11 +38,13 @@
  *
  * WHY RAW `.length` AND NOT express-validator's `isLength`
  *   `isLength` is validator.js `isLength`, which computes
- *   `str.length - presentationSequences.length - surrogatePairs.length`. It
- *   therefore counted 51 grinning-face emoji (102 UTF-16 units) and 100
- *   red-heart emoji (200 units) as inside 100, and accepted a whitespace-only
- *   name. Raw `.length` is what Postgres actually stores, so it is the honest
- *   bound. Adopting the stricter count everywhere was checked against the live
+ *   `str.length - presentationSequences.length - surrogatePairs.length`. Under
+ *   the old 100 bound it therefore counted 51 grinning-face emoji (102 UTF-16
+ *   units) and 100 red-heart emoji (200 units) as inside the cap, and accepted
+ *   a whitespace-only name; at 40 the same arithmetic would let 20 emoji (40
+ *   stored units) past a cap of 40 while refusing 40 letters' worth of a name
+ *   the player can see. Raw `.length` is what Postgres actually stores, so it
+ *   is the honest bound. Adopting the stricter count everywhere was checked against the live
  *   data BEFORE it was chosen, not assumed: 515 horse rows measured, longest
  *   name 48 UTF-16 units, ZERO failing any clause — plus the indirect column
  *   `Horse.pendingFoalName`, 6 rows, longest 30, also zero. So no existing horse
@@ -45,15 +60,40 @@
  *     the normalisation this policy refuses; zero live names are padded.
  *
  * `backend/utils/securityValidation.mjs#validateHorseData` claims 2-50 plus an
- * ASCII allow-list, but no route imports it — only its own unit tests do. It is
- * not enforced behaviour and is not the precedent followed.
+ * ASCII allow-list, and `backend/middleware/validateHorse.mjs` claims 2-100, but
+ * no route imports either — only their own unit tests do. Neither is enforced
+ * behaviour, neither is the precedent followed, and neither was updated when the
+ * owner set the limit to 40; if one is ever wired to a route it must adopt this
+ * module's rule rather than reintroduce its own.
  */
 
 export const HORSE_NAME_MIN_LENGTH = 1;
-export const HORSE_NAME_MAX_LENGTH = 100;
+export const HORSE_NAME_MAX_LENGTH = 40;
 
-/** The suffix `foalingService` appends when no name was chosen for a foal. */
-export const DERIVED_FOAL_NAME_SUFFIX = ' Foal';
+/**
+ * The name every foal is born with (Equoria-4fnro, OWNER RULING 2026-09-14:
+ * "At birth a foal is named 'unnamed' and stays so until the player names it").
+ *
+ * IT IS A NAME, NOT A NULL. `Horse.name` is non-nullable and every surface in
+ * the game renders it, so the newborn needs a real string; this is the string
+ * the owner chose. Lower-case and unadorned on purpose — it should read on the
+ * horse's own header as a blank waiting to be filled in, not as a title.
+ *
+ * IT SATISFIES THE POLICY. 7 characters, no `<`, no NUL — so the name the game
+ * mints at birth is one a player could type, and `horseNameRejectionReason`
+ * returns null for it. (`unnamedNameIsAcceptable` below is that claim, checkable.)
+ *
+ * IT IS NOT A COLLISION. Every foal born shares it, and that is fine: the owner
+ * ruled 2026-09-09 that horse names need not be unique, `Horse.name` carries no
+ * unique index in schema.prisma, in any migration, or in the live catalog, and
+ * no lookup anywhere resolves a horse BY name. Two unnamed foals in one stable
+ * are two horses waiting to be named, not a conflict.
+ *
+ * WHAT IT REPLACED. `deriveFoalName()` built `<Dam> Foal` — a generated name
+ * that looked like a choice somebody made, so a player could easily not notice
+ * that no one had named her foal. 'unnamed' cannot be mistaken for a decision.
+ */
+export const UNNAMED_HORSE_NAME = 'unnamed';
 
 /**
  * Why a candidate horse name is unacceptable, or null when it is acceptable.
@@ -78,6 +118,37 @@ export function horseNameRejectionReason(name) {
   if (name.trim().length < HORSE_NAME_MIN_LENGTH) {
     return 'length';
   }
+  // ── THE CHARACTER RULE IS A DELIBERATE BOUNDARY DECISION ──────────────────
+  // OWNER RULING 2026-09-14 (Equoria-du5qe): the refusal of the angle bracket is
+  // RATIFIED. It is recorded here rather than left to read as an arbitrary
+  // blacklist, because the next person to meet it will otherwise widen it into a
+  // naming rule or delete it as paranoia. Do neither without an owner ruling.
+  //
+  // WHY IT EXISTS: boundary hygiene, NOT a naming rule. Nothing about `<` makes
+  // it a bad name for a horse; the game's naming stance is otherwise
+  // unrestricted (any time, any reason, no uniqueness — owner rulings 2026-09-08
+  // and 2026-09-09). The bracket is refused at the boundary so that no surface
+  // which ever renders a horse name WITHOUT escaping can be made to interpret
+  // one as markup. React escapes by default, so the realistic exposure is a
+  // future non-React surface: an email, a PDF, a CSV, a log viewer, an admin
+  // tool. Refusing the one character that opens a tag is cheap here and removes
+  // that whole class of worry from every such surface at once.
+  //
+  // SCOPE, STATED EXACTLY: `<` is refused; `>` is not, because a lone `>` cannot
+  // open a tag and refusing it would cost a player a legitimate character for
+  // nothing. NUL is refused for a different and simpler reason — it has no
+  // legitimate place in a name and breaks C-style string handling downstream.
+  //
+  // MEASURED, NOT ASSUMED (2026-09-11): across 515 live horse rows and 6
+  // `pendingFoalName` rows, ZERO contain an angle bracket and ZERO contain a
+  // NUL. So this rule refuses nothing any player has actually chosen; it is a
+  // boundary that has never yet been reached.
+  //
+  // IF YOU ARE HERE TO CHANGE IT: widening (adding characters) turns a targeted
+  // boundary defence into the naming blacklist this game does not want, and
+  // deleting it shifts the obligation onto every present and future rendering
+  // surface — which then has to be audited. Either direction is the owner's
+  // call, not an implementer's.
   if (name.includes('<') || name.includes('\0')) {
     return 'characters';
   }
@@ -106,73 +177,59 @@ export function horseNameRejectionMessage(reason) {
 }
 
 /**
- * Truncate to at most `max` UTF-16 units WITHOUT splitting a surrogate pair.
+ * The same rejection, said to a player who has never seen this game before
+ * (Equoria-zalyb; OWNER RULING 2026-09-14: "with a rejection message worth
+ * reading since it is a new player's first action").
  *
- * A naive `slice` can cut between the high and low half of an astral character,
- * leaving a lone surrogate — not valid UTF-16, and something Postgres will
- * either reject or store as a replacement character. So if the cut lands on a
- * high surrogate, drop it and return one unit shorter.
+ * WHY A SECOND WORDING RATHER THAN A SECOND RULE
+ *   The rule is one function (`horseNameRejectionReason`) and stays one
+ *   function. Only the COPY differs, and only on the one surface where the
+ *   reader is naming her first horse in the first two minutes of the game:
+ *   'Horse name must be between 1 and 40 characters' is a validator talking to
+ *   a developer. This is the game talking to a player, and it tells her the
+ *   limit, how far over she is, and that nothing she did is lost.
  *
- * @param {string} value
- * @param {number} max
+ *   The PUT path already established the precedent that one rule may have more
+ *   than one wording (it keeps its historical single 'Invalid horse name').
+ *
+ * @param {'type'|'length'|'characters'} reason
+ * @param {unknown} name - the candidate, used only to say how long it was
  * @returns {string}
  */
-function truncateWithoutSplittingSurrogates(value, max) {
-  if (value.length <= max) {
-    return value;
+export function firstHorseNameRejectionMessage(reason, name) {
+  const length = typeof name === 'string' ? name.length : 0;
+  switch (reason) {
+    case 'length':
+      if (length > HORSE_NAME_MAX_LENGTH) {
+        return (
+          `That name is ${length} characters — a horse name can be up to ` +
+          `${HORSE_NAME_MAX_LENGTH}. Trim ${length - HORSE_NAME_MAX_LENGTH} and she is ready to ` +
+          'come home. Nothing else you chose has been lost.'
+        );
+      }
+      return 'Your horse needs a name — even a short one. Type anything and you can change it later.';
+    case 'characters':
+      return (
+        'A horse name cannot contain the "<" character (it confuses the places ' +
+        'her name gets written down). Try it without that one, and everything ' +
+        'else you chose is still here.'
+      );
+    case 'type':
+    default:
+      return 'Your horse needs a name — type one and you can change it any time afterwards.';
   }
-  const cut = value.slice(0, max);
-  const lastCode = cut.charCodeAt(cut.length - 1);
-  const isHighSurrogate = lastCode >= 0xd800 && lastCode <= 0xdbff;
-  return isHighSurrogate ? cut.slice(0, -1) : cut;
 }
 
 /**
- * Build the fallback name for a foal nobody named: `<Dam> Foal`, guaranteed to
- * satisfy the policy.
+ * Is the birth name the game mints acceptable under the rule the game enforces?
  *
- * THE DEFECT THIS CLOSES
- *   `foalingService` built `${dam.name} Foal` with no bound, so a dam named at
- *   the 100-unit cap produced a 105-unit foal name — a name the game itself
- *   minted that its own four gated paths would refuse. The invariant "every
- *   stored horse name satisfies the rule" therefore held only by luck (the
- *   longest live name is 48 units), not by construction. Reachable in practice:
- *   rename a mare to a 100-unit name through PATCH /horses/:id/name, then breed
- *   her. Not a lockout — the foal was always renameable — but the system should
- *   not be able to write a value it would reject on the way in.
+ * A one-line invariant rather than a comment claiming it: `UNNAMED_HORSE_NAME`
+ * is written by `foalingService` at every birth, and the day it stops
+ * satisfying the policy is the day the game mints horses it would refuse to
+ * accept. The rename suite asserts this.
  *
- *   `options.name` and `dam.pendingFoalName` are deliberately NOT clamped here:
- *   both arrive already validated through a gated path, and silently reshaping a
- *   value someone supplied is exactly what this policy refuses.
- *
- * WHY THIS TRUNCATES WHERE THE VALIDATORS REJECT
- *   The policy refuses to silently repair a name a PLAYER wrote, because a
- *   player has an intent worth preserving and a rejection tells them their
- *   intent was not honoured. This string is not a player's intent — the game
- *   generates it precisely BECAUSE nobody chose a name, and it exists to be
- *   replaced. There is nobody to tell and nothing to preserve, so rejecting is
- *   not an option: refusing would mean refusing to record a foal that has
- *   already been born. Truncation is the correct act here, and it is a different
- *   act from truncating what someone typed.
- *
- * WHY THE SUFFIX SURVIVES AND THE DAM'S NAME GIVES WAY
- *   ` Foal` is the load-bearing half: it is the signal to the player that this
- *   horse still needs a name. So the dam-name prefix is what gets shortened, and
- *   the result always ends in ` Foal`.
- *
- * @param {string} damName - the dam's stored name; may itself violate the policy
- *   if it predates the rule, which is why this clamps rather than trusting it
- * @returns {string} a name satisfying `horseNameRejectionReason(...) === null`,
- *   except that a dam whose name is entirely whitespace yields the bare suffix
- *   trimmed to `Foal` rather than a whitespace-led string
+ * @returns {boolean}
  */
-export function deriveFoalName(damName) {
-  const dam = typeof damName === 'string' ? damName : '';
-  const prefixBudget = HORSE_NAME_MAX_LENGTH - DERIVED_FOAL_NAME_SUFFIX.length;
-  const prefix = truncateWithoutSplittingSurrogates(dam, prefixBudget);
-  const derived = `${prefix}${DERIVED_FOAL_NAME_SUFFIX}`;
-  // A dam named '   ' (impossible through any gated path, possible in legacy
-  // data) would otherwise yield '    Foal'. Trim only in that degenerate case,
-  // so the ordinary path keeps the dam's name byte-for-byte.
-  return prefix.trim().length === 0 ? DERIVED_FOAL_NAME_SUFFIX.trim() : derived;
+export function unnamedNameIsAcceptable() {
+  return horseNameRejectionReason(UNNAMED_HORSE_NAME) === null;
 }

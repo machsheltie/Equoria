@@ -224,21 +224,30 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     });
   });
 
-  it('still allows PUT with non-genealogy fields (e.g. name) — no regression', async () => {
-    const newName = `TestFixture-hg62v-renamed-${randomBytes(4).toString('hex')}`;
+  it('still allows PUT with non-genealogy fields (sex) — no regression', async () => {
+    // Equoria-4fnro (OWNER RULING 2026-09-14): `name` used to be the
+    // non-genealogy field this case exercised. PUT no longer sets a name at all
+    // (renaming is PATCH /horses/:id/name), so the case uses `sex` and asserts
+    // the name did not move.
+    const before = await prisma.horse.findUnique({
+      where: { id: horseA.id },
+      select: { name: true },
+    });
+
     const response = await request(app)
       .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
       .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({ name: newName });
+      .send({ sex: 'mare' });
 
     expect(response.status).toBe(200);
     const after = await prisma.horse.findUnique({
       where: { id: horseA.id },
-      select: { name: true },
+      select: { name: true, sex: true },
     });
-    expect(after.name).toBe(newName);
+    expect(after.sex).toBe('Mare');
+    expect(after.name).toBe(before.name);
   });
 });

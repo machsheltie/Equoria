@@ -406,7 +406,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     expect(typeof result.retiredGrooms).toBe('number');
     expect(typeof result.totalGrooms).toBe('number');
     expect(typeof result.retirementRate).toBe('number');
-    expect(typeof result.averageCareerLength).toBe('number');
+    expect(typeof result.averageCareerYears).toBe('number');
     expect(result.totalGrooms).toBe(result.activeGrooms + result.retiredGrooms);
     // Equoria-m9lz1: a count of grooms about to retire is still a disclosure —
     // it tells the player one of them goes this week.
@@ -510,7 +510,8 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
     expect(mandatoryEntry).toBeDefined();
     // Equoria-m9lz1: the reason is AGE, not the retired MANDATORY_CAREER_LIMIT.
     expect(mandatoryEntry.reason).toBe(RETIREMENT_REASONS.AGE);
-    expect(mandatoryEntry.careerWeeks).toBe(wcpGroomMandatoryAge - FIXTURE_START_AGE);
+    // Equoria-maeba: the pass reports the AGE the groom retired at, in years.
+    expect(mandatoryEntry.ageYears).toBe(wcpGroomMandatoryAge);
     // Normal groom incremented to careerWeeks=1 and given a schedule of its own
     const updated = await prisma.groom.findUnique({ where: { id: wcpGroomNormal.id } });
     expect(updated.careerWeeks).toBe(1);

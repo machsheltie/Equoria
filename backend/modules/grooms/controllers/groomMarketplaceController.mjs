@@ -34,6 +34,8 @@ import { ensureRetirementSchedule } from '../services/groomRetirementScheduleSer
 import { drawStartAge } from '../services/groomAgeService.mjs';
 // Equoria-ypb7d.2: hiring OPENS AN ENGAGEMENT. Players never own grooms.
 import { openEngagementTx } from '../services/groomEngagementService.mjs';
+// Equoria-95yrv: the weekly fee's rate and cap, published with the offer list.
+import { FEE_PER_HORSE_PER_WEEK, MAX_HORSES_PER_GROOM } from '../services/groomSalaryService.mjs';
 
 const STAFF_TYPE = 'groom';
 
@@ -100,6 +102,11 @@ export async function getMarketplace(req, res) {
         refreshCost,
         canRefreshFree: refreshCost === 0,
         refreshCount,
+        // Equoria-95yrv: what hiring one of these will actually cost per week —
+        // 70 per horse you put them on, up to ten. The offer itself has no
+        // weekly rate any more, so the rule travels with the list.
+        feePerHorsePerWeek: FEE_PER_HORSE_PER_WEEK,
+        maxHorsesPerGroom: MAX_HORSES_PER_GROOM,
       },
     });
   } catch (error) {

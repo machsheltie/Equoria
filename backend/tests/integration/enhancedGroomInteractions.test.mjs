@@ -283,7 +283,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       expect(interaction.variation).toBe('Morning Routine');
       expect(interaction.duration).toBe(30);
       expect(interaction).toHaveProperty('quality');
-      expect(interaction).toHaveProperty('cost');
+      // Equoria-tfo3c (owner ruling, 2026-09-14): care costs nothing, so the
+      // response quotes no price. It used to carry one that was charged to nobody.
+      expect(interaction).not.toHaveProperty('cost');
 
       // Check effects
       const { effects } = response.body.data;

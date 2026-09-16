@@ -11,13 +11,6 @@
  *   'user_horses_with_results' → analyzeComplexJoinQuery path
  *   unknown queryType → throws 'Unknown query type'
  *
- * createOptimizedIndexes:
- *   queryPatterns only → creates B-tree indexes per pattern
- *   jsonbFields only → creates GIN indexes via fieldMapping
- *   compositePatterns only → creates composite indexes
- *   all three options → all three index types created
- *   empty options → returns empty created array
- *
  * implementConnectionPooling:
  *   action='status' → returns active/idle connection counts
  *   action='lifecycle_test' → returns lifecycle stats
@@ -41,7 +34,6 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   analyzeQueryPerformance,
-  createOptimizedIndexes,
   implementConnectionPooling,
   setupQueryCaching,
   optimizeEpigeneticQueries,
@@ -114,79 +106,29 @@ describe('analyzeQueryPerformance — calculateAverageTime existing-entry branch
   });
 });
 
-// ── createOptimizedIndexes ────────────────────────────────────────────────────
-
-describe('createOptimizedIndexes — queryPatterns branch', () => {
-  it('creates B-tree indexes from queryPatterns', async () => {
-    // Equoria-gyxfd schema-drift fix: queryPatterns are semantic LABELS
-    // mapped (via QUERY_PATTERN_INDEX) to CREATE INDEX statements against
-    // REAL `horses` columns — they are NOT raw column names. `'name'` is
-    // not a mapped label (the old assertion silently produced 0 indexes).
-    // Use `user_horse_lookup`, the canonical B-tree label that targets the
-    // real owning FK column `"userId"`.
-    const result = await createOptimizedIndexes({
-      queryPatterns: ['user_horse_lookup'],
-    });
-    expect(Array.isArray(result.created)).toBe(true);
-    expect(result.created.length).toBeGreaterThanOrEqual(1);
-    const statuses = result.created.map(i => i.status);
-    expect(statuses.every(s => s === 'created' || s === 'failed')).toBe(true);
-    expect(result.queryPatternsCovered).toBe(1);
-  });
-});
-
-describe('createOptimizedIndexes — jsonbFields branch', () => {
-  it('creates GIN indexes from jsonbFields (fieldMapping applied)', async () => {
-    const result = await createOptimizedIndexes({
-      jsonbFields: ['epigenetic_flags', 'discipline_scores'],
-    });
-    const ginIndexes = result.ginIndexes;
-    expect(Array.isArray(ginIndexes)).toBe(true);
-    expect(ginIndexes.length).toBeGreaterThanOrEqual(1);
-    expect(ginIndexes[0].query).toContain('GIN');
-  });
-});
-
-describe('createOptimizedIndexes — compositePatterns branch', () => {
-  it('creates composite indexes from compositePatterns', async () => {
-    const result = await createOptimizedIndexes({
-      compositePatterns: [['userId', 'age']],
-    });
-    const btreeIndexes = result.btreeIndexes;
-    expect(Array.isArray(btreeIndexes)).toBe(true);
-    // Equoria-gyxfd schema-drift fix: the Horse owning FK is `userId`, NOT
-    // `ownerId`. The columnMapping now resolves the `userId`/`ownerId`
-    // label aliases to the REAL quoted column `"userId"`, so the emitted
-    // composite index targets `"userId"` (not the non-existent `ownerId`).
-    const hasComposite = btreeIndexes.some(i => i.query.includes('userId'));
-    expect(hasComposite).toBe(true);
-  });
-});
-
-describe('createOptimizedIndexes — empty options', () => {
-  it('returns empty created array when no options provided', async () => {
-    const result = await createOptimizedIndexes({});
-    expect(result.created).toHaveLength(0);
-    expect(result.queryPatternsCovered).toBe(0);
-  });
-});
-
-describe('createOptimizedIndexes — all three options', () => {
-  it('creates all index types and returns performanceGains', async () => {
-    const result = await createOptimizedIndexes({
-      // Equoria-gyxfd: use a mapped pattern label (not the raw column name
-      // `'name'`, which maps to nothing) so the queryPatterns branch
-      // actually emits an index and the three-types-each ≥3 count holds.
-      queryPatterns: ['user_horse_lookup'],
-      jsonbFields: ['epigenetic_flags'],
-      compositePatterns: [['userId', 'age']],
-    });
-    expect(result.created.length).toBeGreaterThanOrEqual(3);
-    expect(result.performanceImpact).toBeDefined();
-    expect(result.performanceGains).toBeDefined();
-    expect(typeof result.performanceGains.querySpeedup).toBe('string');
-  });
-});
+// ── createOptimizedIndexes: DELETED (Equoria-9xa92, with Equoria-bebob) ───────
+//
+// The five cases that used to sit here — queryPatterns, jsonbFields,
+// compositePatterns, all-three, empty-options — plus the Equoria-qhogt
+// prototype-chain bypass sentinel at the end of this file are gone with the
+// function they exercised. They are NOT replaced.
+//
+// They were not coverage of a product behaviour. `createOptimizedIndexes` had
+// no production caller; these tests were its only callers, and what they
+// asserted was that `CREATE INDEX IF NOT EXISTS` had executed against the
+// shared development database. A test whose pass condition is "DDL ran on the
+// real database" is the hazard, not protection from it: running this file
+// mutated the catalog of a database other suites and other agents share, which
+// is how the six duplicate indexes Equoria-bebob dropped kept coming back, and
+// how a drop would have been silently undone.
+//
+// The Equoria-qhogt sentinel proved prototype-inherited keys ('constructor',
+// '__proto__') could not reach `$executeRawUnsafe` through the label
+// allow-lists. With the whole generation path and its `$executeRawUnsafe` call
+// deleted, that attack surface no longer exists; there is nothing left to
+// guard. The guard against indexes reappearing outside migration history is now
+// scripts/preflight/schema-drift.mjs, which fails on an extra index in either
+// direction and whose runtime-index allow-list is empty.
 
 // ── implementConnectionPooling ────────────────────────────────────────────────
 
@@ -313,168 +255,5 @@ describe('benchmarkDatabaseOperations — default (no options)', () => {
     expect(typeof result.p95QueryTime).toBe('number');
     expect(typeof result.p99QueryTime).toBe('number');
     expect(result.errorRate).toBe(0);
-  });
-});
-
-// == Equoria-qhogt: prototype-chain bypass sentinel (SECURITY) ==
-//
-// These tests prove that prototype-inherited keys ('constructor', '__proto__')
-// can NEVER bypass the allowlist checks and produce injected DDL.
-//
-// Tests operate ENTIRELY on return values -- they NEVER execute malicious
-// SQL against the DB. The fix must skip prototype keys at generation time,
-// before any query is pushed to indexQueries[].
-
-describe('createOptimizedIndexes -- prototype-chain bypass sentinel (Equoria-qhogt)', () => {
-  // compositePatterns path
-  it('compositePatterns: skips constructor key -- no injected function in query string', async () => {
-    const result = await createOptimizedIndexes({
-      compositePatterns: [['constructor']],
-    });
-    const badEntries = result.created.filter(
-      entry =>
-        (entry.query || '').includes('function') ||
-        (entry.query || '').includes('[native code]') ||
-        (entry.query || '').includes('prototype'),
-    );
-    expect(badEntries).toHaveLength(0);
-    expect(result.created).toHaveLength(0);
-  });
-
-  it('compositePatterns: skips __proto__ key -- no injected content in query string', async () => {
-    const result = await createOptimizedIndexes({
-      compositePatterns: [['__proto__']],
-    });
-    const badEntries = result.created.filter(
-      entry =>
-        (entry.query || '').includes('function') ||
-        (entry.query || '').includes('[native code]') ||
-        (entry.query || '').includes('prototype'),
-    );
-    expect(badEntries).toHaveLength(0);
-    expect(result.created).toHaveLength(0);
-  });
-
-  it('compositePatterns: mixed real+prototype -- whole pattern skipped, no injected content', async () => {
-    const result = await createOptimizedIndexes({
-      compositePatterns: [['userId', 'constructor']],
-    });
-    const badEntries = result.created.filter(
-      entry =>
-        (entry.query || '').includes('function') ||
-        (entry.query || '').includes('[native code]') ||
-        (entry.query || '').includes('prototype'),
-    );
-    expect(badEntries).toHaveLength(0);
-    expect(result.created).toHaveLength(0);
-  });
-
-  // jsonbFields path
-  it('jsonbFields: skips constructor key -- no injected function in GIN query string', async () => {
-    const result = await createOptimizedIndexes({
-      jsonbFields: ['constructor'],
-    });
-    const badEntries = result.created.filter(
-      entry =>
-        (entry.query || '').includes('function') ||
-        (entry.query || '').includes('[native code]') ||
-        (entry.query || '').includes('prototype'),
-    );
-    expect(badEntries).toHaveLength(0);
-    expect(result.created).toHaveLength(0);
-  });
-
-  it('jsonbFields: skips __proto__ key -- no injected content in GIN query string', async () => {
-    const result = await createOptimizedIndexes({
-      jsonbFields: ['__proto__'],
-    });
-    const badEntries = result.created.filter(
-      entry =>
-        (entry.query || '').includes('function') ||
-        (entry.query || '').includes('[native code]') ||
-        (entry.query || '').includes('prototype'),
-    );
-    expect(badEntries).toHaveLength(0);
-    expect(result.created).toHaveLength(0);
-  });
-
-  it('jsonbFields: mixed real+prototype -- real field succeeds, prototype key is skipped', async () => {
-    const result = await createOptimizedIndexes({
-      jsonbFields: ['epigeneticFlags', 'constructor'],
-    });
-    const ginEntries = result.created.filter(e => (e.query || '').includes('GIN'));
-    expect(ginEntries.length).toBeGreaterThanOrEqual(1);
-    expect(ginEntries[0].query).toContain('"epigeneticFlags"');
-    const badEntries = result.created.filter(
-      entry =>
-        (entry.query || '').includes('function') ||
-        (entry.query || '').includes('[native code]') ||
-        (entry.query || '').includes('prototype'),
-    );
-    expect(badEntries).toHaveLength(0);
-  });
-
-  // queryPatterns path
-  it('queryPatterns: skips __proto__ key -- no injected object content in query string', async () => {
-    const result = await createOptimizedIndexes({
-      queryPatterns: ['__proto__'],
-    });
-    const badEntries = result.created.filter(
-      entry =>
-        (entry.query || '').includes('function') ||
-        (entry.query || '').includes('[native code]') ||
-        (entry.query || '').includes('prototype') ||
-        (entry.query || '').includes('[object'),
-    );
-    expect(badEntries).toHaveLength(0);
-    expect(result.created).toHaveLength(0);
-  });
-
-  it('queryPatterns: skips constructor key -- no injected function in query string', async () => {
-    const result = await createOptimizedIndexes({
-      queryPatterns: ['constructor'],
-    });
-    const badEntries = result.created.filter(
-      entry =>
-        (entry.query || '').includes('function') ||
-        (entry.query || '').includes('[native code]') ||
-        (entry.query || '').includes('prototype'),
-    );
-    expect(badEntries).toHaveLength(0);
-    expect(result.created).toHaveLength(0);
-  });
-
-  // positive regression: real columns/patterns still work
-  it('positive regression: jsonbFields epigeneticFlags still generates valid GIN index', async () => {
-    const result = await createOptimizedIndexes({
-      jsonbFields: ['epigeneticFlags'],
-    });
-    expect(result.created.length).toBeGreaterThanOrEqual(1);
-    const gin = result.created.find(e => (e.query || '').includes('GIN'));
-    expect(gin).toBeDefined();
-    expect(gin.query).toContain('"epigeneticFlags"');
-    expect(gin.query).not.toMatch(/function|native code|prototype/);
-  });
-
-  it('positive regression: compositePatterns userId+breedId still generates valid composite index', async () => {
-    const result = await createOptimizedIndexes({
-      compositePatterns: [['userId', 'breedId']],
-    });
-    expect(result.created.length).toBeGreaterThanOrEqual(1);
-    const composite = result.created.find(e => (e.query || '').includes('"userId"'));
-    expect(composite).toBeDefined();
-    expect(composite.query).toContain('"breedId"');
-    expect(composite.query).not.toMatch(/function|native code|prototype/);
-  });
-
-  it('positive regression: queryPattern user_horse_lookup still generates valid B-tree index', async () => {
-    const result = await createOptimizedIndexes({
-      queryPatterns: ['user_horse_lookup'],
-    });
-    expect(result.created.length).toBeGreaterThanOrEqual(1);
-    const idx = result.created.find(e => (e.query || '').includes('user_horse_lookup'));
-    expect(idx).toBeDefined();
-    expect(idx.query).toContain('"userId"');
-    expect(idx.query).not.toMatch(/function|native code|prototype/);
   });
 });

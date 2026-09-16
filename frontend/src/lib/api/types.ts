@@ -470,6 +470,13 @@ export interface Groom {
   // Equoria-oey96.6 — progression level (1–10); gates the talent-tree tiers. The
   // list serializer supplies it. Optional so older cached envelopes typecheck.
   level?: number;
+  /**
+   * Equoria-fby1t (owner ruling, 2026-09-14) — the groom's age in game-years, shown
+   * to the player wherever their identity is. `null` when it is not yet known (a
+   * groom predating the age model whose first weekly pass has not run): the surface
+   * shows an em dash, never a zero. Optional so older cached envelopes typecheck.
+   */
+  ageYears?: number | null;
   sessionRate: number;
   isActive: boolean;
   availableSlots: number;
@@ -503,78 +510,10 @@ export interface GroomMetrics {
   lastUpdated: string;
 }
 
-// Equoria-cbkw — GroomProfile response shape from GET /api/v1/grooms/:id/profile.
-export interface GroomProfile {
-  id: number;
-  name: string;
-  speciality: string;
-  experience: number;
-  skillLevel: string;
-  personality: string;
-  sessionRate: number;
-  metrics: GroomMetrics | null;
-  currentAssignments: number;
-}
-
-// Equoria-cbkw — GroomAssignmentLog rows from GET /api/v1/grooms/:id/assignment-logs.
-export interface GroomAssignmentLogEntry {
-  id: number;
-  groomId: number;
-  horseId: number;
-  assignedAt: string;
-  unassignedAt: string | null;
-  milestonesCompleted: number;
-  traitsShaped: string[];
-  xpGained: number;
-  horse: { id: number; name: string };
-}
-
-export interface MarketplaceGroom {
-  marketplaceId: string;
-  firstName: string;
-  lastName: string;
-  specialty: string;
-  skillLevel: string;
-  personality: string;
-  experience: number;
-  sessionRate: number;
-  bio: string;
-  availability: boolean;
-}
-
-export interface MarketplaceData {
-  grooms: MarketplaceGroom[];
-  lastRefresh: string;
-  nextFreeRefresh: string;
-  refreshCost: number;
-  canRefreshFree: boolean;
-  refreshCount: number;
-}
-
-export interface MarketplaceStats {
-  totalGrooms: number;
-  lastRefresh: string | 'never';
-  refreshCount: number;
-  qualityDistribution: Record<string, number>;
-  specialtyDistribution: Record<string, number>;
-  config: {
-    refreshIntervalHours: number;
-    premiumRefreshCost: number;
-    defaultSize: number;
-  };
-}
-
-export interface SalarySummary {
-  totalMonthlyCost: number;
-  totalWeeklyCost: number;
-  groomCount: number;
-  breakdown: Array<{
-    groomId: number;
-    groomName: string;
-    weeklyCost: number;
-    assignmentCount: number;
-  }>;
-}
+// Groom staff shapes (profile, assignment history, marketplace, weekly fee) live in
+// ./groomStaffTypes.ts and are re-exported here, so every existing importer is
+// unchanged. Equoria-95yrv split them out under the file-size ratchet.
+export * from './groomStaffTypes';
 
 /**
  * User Progress interfaces

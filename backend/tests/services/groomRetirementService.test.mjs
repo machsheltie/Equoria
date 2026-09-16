@@ -637,7 +637,7 @@ describe('Groom Retirement Service', () => {
       // owner's ruling forbids.
       expect(stats).not.toHaveProperty('approachingRetirement');
       expect(stats.retirementReasons).toBeDefined();
-      expect(stats.averageCareerLength).toBeGreaterThan(0);
+      expect(stats.averageCareerYears).toBeGreaterThan(0);
     });
   });
 });

@@ -16,7 +16,7 @@ import {
 } from '../services/groomBonusTraitService.mjs';
 import { checkRetirementEligibility, getRetirementStatistics } from '../services/groomRetirementService.mjs';
 import {
-  calculateWeeklySalary,
+  calculateWeeklyFee,
   getSalaryPaymentHistory,
   calculateUserSalaryCost,
 } from '../services/groomSalaryService.mjs';
@@ -170,21 +170,18 @@ describe('getRetirementStatistics', () => {
 
 // ── groomSalaryService ────────────────────────────────────────────────────────
 
-describe('calculateWeeklySalary', () => {
-  it('returns novice base + foal_care bonus = 60', () => {
-    const result = calculateWeeklySalary({ skillLevel: 'novice', speciality: 'foalCare' });
-    expect(result).toBe(60);
+// Equoria-95yrv (owner, 2026-09-14): the fee is $70 per horse assigned, so the
+// skill/specialty rate table these cases walked (novice+foalCare=60,
+// master+showHandling=165) no longer exists. Skill decides how well a groom
+// works, never what they cost.
+describe('calculateWeeklyFee', () => {
+  it('charges 70 for each horse the groom is working', () => {
+    expect(calculateWeeklyFee(1)).toBe(70);
+    expect(calculateWeeklyFee(2)).toBe(140);
   });
 
-  it('returns master base + showHandling bonus = 165', () => {
-    const result = calculateWeeklySalary({ skillLevel: 'master', speciality: 'showHandling' });
-    expect(result).toBe(165);
-  });
-
-  it('returns novice base for unknown skill level', () => {
-    const result = calculateWeeklySalary({ skillLevel: 'unknown', speciality: 'general' });
-    expect(typeof result).toBe('number');
-    expect(result).toBeGreaterThan(0);
+  it('charges nothing for a groom on no horses', () => {
+    expect(calculateWeeklyFee(0)).toBe(0);
   });
 });
 
@@ -196,27 +193,27 @@ describe('getSalaryPaymentHistory', () => {
 });
 
 describe('calculateUserSalaryCost', () => {
-  // Equoria-ypb7d.3 — THE CONTRACT CHANGED HERE, DELIBERATELY, AND THIS CASE IS
-  // THE STATEMENT OF IT.
+  // Equoria-95yrv (owner ruling, 2026-09-14): the weekly fee is $70 per HORSE
+  // ASSIGNED, up to ten horses per groom. This fixture is one groom on staff with
+  // no `GroomAssignment` row, so the fee is 0 again.
   //
-  // This case previously read "returns zero cost for user with no active
-  // assignments" and asserted `totalWeeklyCost === 0` for exactly this fixture: a
-  // user with ONE groom on their staff and no `GroomAssignment` row. Under the
-  // owner's ruling of 2026-09-09 the weekly fee is what keeps a groom ON YOUR
-  // STAFF — "so long as they pay their weekly fee, they keep the groom on their
-  // staff" — so an unassigned groom is no longer free. The fixture groom is a
-  // novice (the schema default) with speciality `foal_care`, which
-  // `SPECIALTY_BONUSES` does not key (it keys the camelCase `foalCare`), so the
-  // fee is the bare novice base of 50.
-  //
-  // The old assertion is not weakened; it is inverted, because it asserted the
-  // absence of the charge the ruling requires.
-  it('charges the weekly fee for a groom ON STAFF even with no active assignment', async () => {
+  // This assertion has now been inverted twice, which is worth saying plainly.
+  // Originally it asserted 0 under the per-active-assignment basis. Equoria-ypb7d.3
+  // read the owner's "so long as they pay their weekly fee, they keep the groom on
+  // their staff" as per-groom-on-staff and made it 50. The owner has now ruled the
+  // basis is the horse, so 0 is right again — for the original reason, not by
+  // reverting anything: an idle groom does no work, and the ruling prices work.
+  it('charges nothing for a groom on staff with no horses to care for', async () => {
     const result = await calculateUserSalaryCost(user.id);
-    expect(result.totalWeeklyCost).toBe(50);
+    expect(result.totalWeeklyCost).toBe(0);
     expect(result.groomCount).toBe(1);
     expect(result.breakdown).toEqual([
-      expect.objectContaining({ groomId: groom.id, weeklySalary: 50, feeUnpaid: false }),
+      expect.objectContaining({
+        groomId: groom.id,
+        assignedHorses: 0,
+        weeklyFee: 0,
+        feeUnpaid: false,
+      }),
     ]);
   });
 

@@ -45,6 +45,8 @@ interface Groom {
   specialty: string;
   personality: string;
   experience: number;
+  /** Equoria-fby1t — the groom's age in game-years; null when not yet known. */
+  ageYears?: number | null;
   sessionRate: number;
   isActive: boolean;
   availableSlots: number;
@@ -293,6 +295,14 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                           <p>
                             <span className="font-medium">Experience:</span> {groom.experience}{' '}
                             years
+                          </p>
+                          {/* Equoria-fby1t: the player picking a groom sees how old
+                              they are, in the same list of identity facts. */}
+                          <p>
+                            <span className="font-medium">Age:</span>{' '}
+                            {typeof groom.ageYears === 'number'
+                              ? `${groom.ageYears} years`
+                              : 'Unknown'}
                           </p>
                           <p>
                             <span className="font-medium">Slots:</span>{' '}

@@ -129,6 +129,46 @@ const PERMITTED_TEST_ONLY_IMPORTS = new Map([
   ],
 ]);
 
+// Equoria-dqzpi — OWNER RULING 2026-09-14 10:23: "Cap it at the two seams that
+// exist and write the safety contract into a rule (.claude/rules), so any future
+// seam must satisfy it rather than merely resemble the last one."
+//
+// The interleaving-seam CAP, made executable. A seam module is a production file
+// that exports a `__TESTING_ONLY_set*` arming function (the arm/disarm shape).
+// backend/middleware/requestBodySecurity.mjs's `__TESTING_ONLY_JsonScanner` and
+// `__TESTING_ONLY_assertNoPollutingKeys` are internal-function exports for unit
+// tests, not interleaving seams, and do not match this shape. Exactly the two
+// files below may declare a seam. A THIRD seam requires an owner ruling recorded
+// in the tracker BEFORE it is written — see .claude/rules/INTERLEAVING_TEST_SEAMS.md
+// for the six-clause safety contract every seam must satisfy.
+const KNOWN_INTERLEAVING_SEAM_MODULES = new Set([
+  'backend/modules/marketplace/services/marketplaceRaceBarrier.mjs',
+  'backend/modules/grooms/services/groomHireRaceBarrier.mjs',
+]);
+
+// Matches the arming export that defines a seam. BOTH export spellings count,
+// because the name is the signal and the declaration keyword is not:
+//   export function __TESTING_ONLY_setGroomHireRaceBarrier(barrier) { … }
+//   export const    __TESTING_ONLY_setGroomHireRaceBarrier = (barrier) => { … }
+//   export { __TESTING_ONLY_setGroomHireRaceBarrier }
+// The `const` form is not hypothetical: backend/middleware/requestBodySecurity.mjs
+// already exports its (non-seam) test-only bindings that way, so it is the
+// spelling an author is most likely to reach for. Its own bindings still do not
+// match — `__TESTING_ONLY_JsonScanner` / `__TESTING_ONLY_assertNoPollutingKeys`
+// are internal-function exports for unit tests, not arming functions, and carry
+// no `set` after the prefix.
+const SEAM_ARMING_EXPORT_PATTERNS = [
+  /export\s+(?:async\s+)?(?:function|const|let|var)\s+__TESTING_ONLY_set[A-Za-z0-9_]*/g,
+  /export\s*\{[^{}]*__TESTING_ONLY_set[A-Za-z0-9_]*[^{}]*\}/gs,
+];
+
+function declaresArmingExport(content) {
+  return SEAM_ARMING_EXPORT_PATTERNS.some((pattern) => {
+    pattern.lastIndex = 0;
+    return pattern.test(content);
+  });
+}
+
 function* walkFiles(dir) {
   // Equoria-8nq7i: ENOENT-only-tolerant readdir. A vanished directory yields
   // [] (zero files, loudly noticed); any other readdir error (EACCES, EMFILE,
@@ -161,6 +201,8 @@ function isExcluded(absPath) {
 
 const violations = [];
 
+const seamModulesFound = new Set();
+
 let scannedCount = 0;
 
 for (const productionPath of PRODUCTION_PATHS) {
@@ -181,6 +223,12 @@ for (const productionPath of PRODUCTION_PATHS) {
 
     scannedCount++;
     const rel = relative(REPO_ROOT, absPath).replace(/\\/g, '/');
+    // Seam cap (Equoria-dqzpi): record any production module that declares an
+    // arming export, so a third interleaving seam cannot arrive by precedent.
+    if (declaresArmingExport(content)) {
+      seamModulesFound.add(rel);
+    }
+
     const permitted = PERMITTED_TEST_ONLY_IMPORTS.get(rel);
     IMPORT_EXPORT_PATTERN.lastIndex = 0;
     let match;
@@ -204,6 +252,47 @@ if (scannedCount === 0) {
       `Working directory: ${process.cwd()}\n`
   );
   process.exit(2);
+}
+
+// Seam cap enforcement (Equoria-dqzpi, owner ruling 2026-09-14 10:23). Reported
+// before the import violations so a new seam is named plainly rather than buried
+// under the import failures it also causes.
+const unruledSeams = [...seamModulesFound].filter(
+  (file) => !KNOWN_INTERLEAVING_SEAM_MODULES.has(file)
+);
+const missingSeams = [...KNOWN_INTERLEAVING_SEAM_MODULES].filter(
+  (file) => !seamModulesFound.has(file)
+);
+
+if (unruledSeams.length > 0 || missingSeams.length > 0) {
+  process.stdout.write('\n');
+  if (unruledSeams.length > 0) {
+    process.stdout.write('Interleaving test seam cap exceeded (owner ruling 2026-09-14 10:23):\n');
+    for (const file of unruledSeams) {
+      process.stdout.write(`  ${file}: declares a __TESTING_ONLY_set* arming export\n`);
+    }
+    process.stdout.write(
+      '\nTwo interleaving seams are ruled acceptable, and no more:\n' +
+        '  backend/modules/marketplace/services/marketplaceRaceBarrier.mjs (Equoria-6p398.4)\n' +
+        '  backend/modules/grooms/services/groomHireRaceBarrier.mjs (Equoria-ypb7d.2)\n' +
+        'A third seam requires an OWNER RULING recorded in the tracker before it is written.\n' +
+        'Resembling the existing two is not authorization. Read\n' +
+        '.claude/rules/INTERLEAVING_TEST_SEAMS.md, then bring the case to the owner.\n'
+    );
+  }
+  if (missingSeams.length > 0) {
+    process.stdout.write(
+      '\nAllow-listed interleaving seam module(s) no longer declare an arming export:\n'
+    );
+    for (const file of missingSeams) {
+      process.stdout.write(`  ${file}\n`);
+    }
+    process.stdout.write(
+      'If a seam was deliberately removed or renamed, update KNOWN_INTERLEAVING_SEAM_MODULES\n' +
+        'in this script and .claude/rules/INTERLEAVING_TEST_SEAMS.md in the same change.\n'
+    );
+  }
+  process.exit(1);
 }
 
 if (violations.length > 0) {

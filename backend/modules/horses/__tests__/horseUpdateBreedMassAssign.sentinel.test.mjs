@@ -142,25 +142,36 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
     expect(after.breedId).toBe(originalBreed.id);
   });
 
-  it('still allows PUT with a permitted field (e.g. name) — sanity', async () => {
+  it('still allows PUT with a permitted field (sex) — sanity', async () => {
     // Regression guard: dropping breedId from the allowlist must not
     // break legitimate updates of other allowlisted fields.
-    const newName = `TestFixture-tmyd2-renamed-${randomBytes(4).toString('hex')}`;
+    //
+    // Equoria-4fnro (OWNER RULING 2026-09-14): this used to send `{ name }`,
+    // because name was the obvious permitted field. It no longer is — renaming
+    // moved to PATCH /horses/:id/name and PUT refuses a name outright — so the
+    // sanity case exercises `sex`, which PUT still owns, and the horse's name is
+    // asserted UNCHANGED to prove the route kept its hands off it.
+    const before = await prisma.horse.findUnique({
+      where: { id: horse.id },
+      select: { name: true, sex: true },
+    });
+
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
       .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({ name: newName });
+      .send({ sex: 'mare' });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
-      select: { name: true, breedId: true },
+      select: { name: true, breedId: true, sex: true },
     });
-    expect(after.name).toBe(newName);
+    expect(after.sex).toBe('Mare');
+    expect(after.name).toBe(before.name);
     expect(after.breedId).toBe(originalBreed.id);
   });
 });

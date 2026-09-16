@@ -55,13 +55,16 @@ describe('getUserAssignments — non-existent user', () => {
   });
 });
 
+// Equoria-95yrv (owner, 2026-09-14): one cap and one rate for every groom. The
+// per-skill caps (2/3/4/5) contradicted the ten-horse ruling outright, and the
+// per-skill pay table they sat beside was never charged by anything.
 describe('ASSIGNMENT_CONFIG export is correctly shaped', () => {
-  it('has expected skill-level keys and salary multipliers', () => {
-    expect(ASSIGNMENT_CONFIG.MAX_ASSIGNMENTS_BY_SKILL.novice).toBe(2);
-    expect(ASSIGNMENT_CONFIG.MAX_ASSIGNMENTS_BY_SKILL.master).toBe(5);
-    expect(ASSIGNMENT_CONFIG.WEEKLY_SALARY_BY_SKILL.novice).toBe(100);
-    expect(ASSIGNMENT_CONFIG.SALARY_MULTIPLIERS[1]).toBe(1.0);
-    expect(ASSIGNMENT_CONFIG.SALARY_MULTIPLIERS[5]).toBe(3.0);
+  it('publishes the ten-horse cap and the per-horse rate, and nothing per-skill', () => {
+    expect(ASSIGNMENT_CONFIG.MAX_HORSES_PER_GROOM).toBe(10);
+    expect(ASSIGNMENT_CONFIG.FEE_PER_HORSE_PER_WEEK).toBe(70);
+    expect(ASSIGNMENT_CONFIG).not.toHaveProperty('MAX_ASSIGNMENTS_BY_SKILL');
+    expect(ASSIGNMENT_CONFIG).not.toHaveProperty('WEEKLY_SALARY_BY_SKILL');
+    expect(ASSIGNMENT_CONFIG).not.toHaveProperty('SALARY_MULTIPLIERS');
   });
 });
 
@@ -179,20 +182,19 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
 
   // ── getGroomAssignmentLimits ──────────────────────────────────────────────
 
-  it('getGroomAssignmentLimits: novice groom has maxAssignments=2, canTakeMore=true', async () => {
+  it('getGroomAssignmentLimits: a novice groom may take ten horses, like every groom', async () => {
     const limits = await getGroomAssignmentLimits(gasGroom);
-    expect(limits.maxAssignments).toBe(2);
+    expect(limits.maxAssignments).toBe(10);
     expect(limits.currentAssignments).toBe(0);
-    expect(limits.availableSlots).toBe(2);
+    expect(limits.availableSlots).toBe(10);
     expect(limits.canTakeMore).toBe(true);
   });
 
-  it('getGroomAssignmentLimits: unknown skillLevel falls back to 2', async () => {
-    // Pass groom object with unknown skillLevel — no DB hit for this
+  it('getGroomAssignmentLimits: an unrecognised skillLevel changes nothing', async () => {
+    // Equoria-95yrv: there is no per-skill table left to fall back through.
     const fakeGroom = { id: 0, skillLevel: 'unknown' };
-    // count returns 0 for non-existent groomId=0
     const limits = await getGroomAssignmentLimits(fakeGroom);
-    expect(limits.maxAssignments).toBe(2); // || 2 fallback branch
+    expect(limits.maxAssignments).toBe(10);
   });
 
   // ── validateAssignmentEligibility ────────────────────────────────────────
@@ -392,7 +394,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
   // ── validateAssignmentEligibility — at-limit branch (line 117, Equoria-rr7) ─
 
   it('validateAssignmentEligibility: canTakeMore=false when groom is at max assignments (line 117)', async () => {
-    // Create a fresh novice groom (max=2) and fill both slots, then validate a 3rd horse
+    // Equoria-95yrv: a fresh groom, ten horses to fill the cap, then an eleventh.
     const ts = Date.now();
     const limitGroom = await prisma.groom.create({
       data: {
@@ -435,14 +437,31 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
       },
     });
 
-    // Fill both slots
-    await createAssignment(limitGroom.id, lh1.id, gasUser.id);
-    await createAssignment(limitGroom.id, lh2.id, gasUser.id);
+    // Equoria-95yrv: the cap is TEN horses for every groom, not two for a novice,
+    // so filling it takes ten. The eleventh is the one that must be refused, and
+    // the refusal is now written for a player rather than for a log.
+    const filler = [lh1, lh2];
+    for (let i = filler.length; i < 10; i++) {
+      const extra = await prisma.horse.create({
+        data: {
+          ...fixtureColor(),
+          name: `TestFixture-GAS-LH-fill-${i}-${ts}`,
+          sex: 'Filly',
+          dateOfBirth: new Date(),
+          age: 0,
+          userId: gasUser.id,
+        },
+      });
+      filler.push(extra);
+    }
+    for (const horse of filler) {
+      await createAssignment(limitGroom.id, horse.id, gasUser.id);
+    }
 
-    // Now validate 3rd assignment — should fail with canTakeMore=false (line 117)
+    // Now validate the ELEVENTH assignment — it must be refused.
     const result = await validateAssignmentEligibility(limitGroom.id, lh3.id, gasUser.id);
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('reached maximum'))).toBe(true);
+    expect(result.errors.some(e => /already caring for 10 horses/i.test(e))).toBe(true);
   });
 
   // ── removeAssignment — ownership mismatch branch (line 271, Equoria-rr7) ────

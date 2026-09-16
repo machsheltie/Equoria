@@ -78,6 +78,12 @@ const GroomList: React.FC<GroomListProps> = ({
   const marketplaceLoading = !propMarketplaceData && marketplaceQuery.isLoading;
   const marketplaceError = !propMarketplaceData ? marketplaceQuery.error : null;
 
+  // Equoria-95yrv: the weekly fee's rate and cap, as the server publishes them
+  // with the offer list. Defaulted only so the card renders while the list is
+  // still arriving; the real numbers come from the API, never from a copy here.
+  const feePerHorse = marketplaceData?.feePerHorsePerWeek ?? 70;
+  const maxHorsesPerGroom = marketplaceData?.maxHorsesPerGroom ?? 10;
+
   // Hire groom mutation
   const hireMutation = useHireGroom();
 
@@ -386,11 +392,14 @@ const GroomList: React.FC<GroomListProps> = ({
                       <span className="text-[var(--text-secondary)]">Personality:</span>
                       <GroomPersonalityBadge personality={groom.personality} />
                     </div>
+                    {/* Equoria-95yrv (owner ruling, 2026-09-14): a groom's weekly
+                        fee is charged per horse in their care, so the card states
+                        the rate rather than a flat wage nobody is charged. */}
                     <div className="flex justify-between">
-                      <span className="text-[var(--text-secondary)]">Weekly Salary:</span>
+                      <span className="text-[var(--text-secondary)]">Weekly fee:</span>
                       <span className="font-bold inline-flex items-center gap-1">
-                        <Currency amount={groom.sessionRate} />
-                        /week
+                        <Currency amount={feePerHorse} />
+                        <span className="font-normal text-[var(--text-secondary)]">per horse</span>
                       </span>
                     </div>
                   </div>
@@ -467,11 +476,16 @@ const GroomList: React.FC<GroomListProps> = ({
 
               <Surface variant="subtle" className="p-5">
                 <div className="flex items-center justify-between mb-3 text-sm">
-                  <span className="text-[var(--text-secondary)]">Weekly Salary:</span>
-                  <Currency
-                    amount={selectedGroom.sessionRate}
-                    className="font-semibold text-[var(--text-primary)]"
-                  />
+                  <span className="text-[var(--text-secondary)]">Weekly fee:</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Currency
+                      amount={feePerHorse}
+                      className="font-semibold text-[var(--text-primary)]"
+                    />
+                    <span className="text-[var(--text-secondary)]">
+                      per horse, up to {maxHorsesPerGroom}
+                    </span>
+                  </span>
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-[var(--glass-border)]">
                   <span className="text-sm font-bold text-[var(--text-secondary)]">

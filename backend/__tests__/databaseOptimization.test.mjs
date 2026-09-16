@@ -3,7 +3,6 @@
  *
  * Tests for database performance optimization including:
  * - Query performance analysis and benchmarking
- * - Index optimization for epigenetic queries
  * - Connection pooling and caching strategy
  * - Complex query optimization (JSONB, joins, aggregations)
  *
@@ -18,7 +17,6 @@ import {
   optimizeEpigeneticQueries,
   implementConnectionPooling,
   setupQueryCaching,
-  createOptimizedIndexes,
   benchmarkDatabaseOperations,
 } from '../services/databaseOptimizationService.mjs';
 import { randomBytes } from 'node:crypto';
@@ -178,74 +176,19 @@ describe('Database Query Optimization', () => {
     });
   });
 
-  describe('Index Optimization', () => {
-    test('creates optimized indexes for epigenetic queries', async () => {
-      const indexResults = await createOptimizedIndexes({
-        tables: ['horses'],
-        queryPatterns: [
-          'epigenetic_flags_search',
-          'discipline_scores_filter',
-          'age_and_training_status',
-          'user_horse_lookup',
-        ],
-      });
-
-      expect(indexResults.created).toBeInstanceOf(Array);
-      expect(indexResults.created.length).toBeGreaterThan(0);
-      expect(indexResults.performanceImpact).toBeDefined();
-
-      // Sentinel (Equoria CI shard-3 fix): every EMITTED index statement must
-      // CREATE successfully against a fresh `equoria_test` built from
-      // migrations. The prior `['created','failed']` tolerance let a
-      // schema-drift defect (query-pattern labels emitted as bogus column
-      // names) ship undetected. A re-introduced bad column ref now fails here.
-      for (const index of indexResults.created) {
-        expect(index.status).toBe('created');
-        expect(index.estimatedSpeedup).toBeGreaterThan(1);
-      }
-    });
-
-    test('optimizes JSONB indexes for trait and score queries', async () => {
-      const jsonbIndexes = await createOptimizedIndexes({
-        tables: ['horses'],
-        jsonbFields: ['epigeneticModifiers', 'disciplineScores', 'stats', 'ultraRareTraits'],
-        indexTypes: ['GIN', 'BTREE'],
-      });
-
-      expect(jsonbIndexes.ginIndexes).toBeInstanceOf(Array);
-      expect(jsonbIndexes.btreeIndexes).toBeInstanceOf(Array);
-      expect(jsonbIndexes.performanceGains).toBeDefined();
-
-      // Sentinel: emitted JSONB GIN indexes must reference real columns and
-      // create successfully (incl. `stats`, which has no column and is mapped
-      // to the real conformationScores JSONB column).
-      for (const index of jsonbIndexes.created) {
-        expect(index.status).toBe('created');
-      }
-    });
-
-    test('creates composite indexes for common query patterns', async () => {
-      const compositeIndexes = await createOptimizedIndexes({
-        compositePatterns: [
-          ['userId', 'age', 'trainingCooldown'],
-          ['breedId', 'age'],
-          ['userId', 'createdAt'],
-          ['ownerId', 'stableId'],
-        ],
-      });
-
-      expect(compositeIndexes.created).toBeInstanceOf(Array);
-      expect(compositeIndexes.created.length).toBeGreaterThan(0);
-      // Query patterns covered depends on successful index creation
-      expect(compositeIndexes.queryPatternsCovered || 0).toBeGreaterThanOrEqual(0);
-
-      // Sentinel: composite indexes must map every column to a real `horses`
-      // column (the owning FK is `userId`, NOT `ownerId`) and create cleanly.
-      for (const index of compositeIndexes.created) {
-        expect(index.status).toBe('created');
-      }
-    });
-  });
+  // 'Index Optimization' DELETED (Equoria-9xa92, with Equoria-bebob).
+  //
+  // Its three cases called createOptimizedIndexes and asserted that every
+  // emitted `CREATE INDEX IF NOT EXISTS` had executed successfully. That
+  // function had no production caller — this file and
+  // databaseOptimizationService.test.mjs were its only importers — so the
+  // block's real effect was to issue DDL against the shared development
+  // database on every run. It manufactured duplicate indexes (one column
+  // reached under two labels became two identically-defined indexes under two
+  // names) and would have silently undone the Equoria-bebob migration that
+  // dropped them. The function is deleted; these cases go with it and are not
+  // replaced. Index coverage belongs in schema.prisma plus a migration, guarded
+  // by scripts/preflight/schema-drift.mjs.
 
   describe('Connection Pooling Optimization', () => {
     test('implements efficient connection pooling strategy', async () => {

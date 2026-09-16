@@ -32,6 +32,66 @@ Load this file only when changing security controls, security tests, security CI
 
 Before naming a test path, verify it exists; security tests have been relocated more than once.
 
+## What the security suite selects
+
+The Security Gate does **not** run the whole backend suite. It did until Equoria-ugxuc,
+and that was a defect: ~12.4k tests in one Jest process, and five foal-creation cases
+failing on HTTP 429. This config does not load `backend/tests/setup.mjs`, so the
+`TEST_RATE_LIMIT_*` knobs are unset and `mutationRateLimiter` runs at its literal
+30-per-60-seconds rather than the 1000/15min the shard matrix uses — a domain suite that
+issues more than 30 mutations a minute fails here and nowhere else. The tighter caps are
+the more honest profile for a security suite and are kept; what was wrong is that the
+security gate was running domain suites at all. `backend/jest.config.security.mjs` now
+selects in three declared layers.
+
+Practical consequence when adding a suite here: budget mutations against
+`mutationRateLimiter`'s 30/60s, not against the shard matrix's 1000/15min.
+
+**1 — Control-source scope.** The test homes of the sources in the "Middleware and
+controls" row above: `backend/__tests__/**` (middleware sentinels and cross-module
+integration, per `.claude/rules/CONTRIBUTING.md`) and `backend/modules/auth/__tests__/**`.
+
+**2 — Naming convention for module-resident control tests.** Control tests are not
+filed by control source. IDOR, authz, admin-MFA, ownership, admin-guard and per-route
+rate-limit suites live with the domain module whose route they guard. Any `.test.mjs` or
+`.spec.mjs` file under `backend/modules/**/__tests__/**` (any depth, any module except
+`auth`, which layer 1 already covers in full) whose **file name** contains one of these
+**case-sensitive** tokens is in the gate:
+
+| Token                 | Control class                                              |
+| --------------------- | ---------------------------------------------------------- |
+| `Idor`                | Insecure direct object reference / cross-owner read scope  |
+| `Authz`               | Route authorization and role gates                         |
+| `Security`            | Route security pipeline, search/query hardening            |
+| `Mfa`                 | Admin second-factor enforcement                            |
+| `Ownership`           | Ownership checks on assignment and mutation                |
+| `AdminGuard`          | Admin-only endpoint guards                                 |
+| `ServerAuthoritative` | Server-authoritative award/economy values the client sends |
+| `-rate-limiting`      | Per-route rate-limit suites (kebab suffix, not a token)    |
+
+**Name a new control test with one of these and it lands in the gate with no config
+edit.** The tokens are case-sensitive because Jest's `testMatch` globs are; spell them
+exactly as above. Add a token to this table and to `MODULE_CONTROL_TOKENS` in the config
+in the same commit.
+
+**3 — Explicit list.** `EXPLICIT_MODULE_CONTROL_TESTS` in the config, for control suites
+the convention cannot name (parentage hijack, the two mass-assignment sentinels,
+deliberately closed endpoints, an environment-gated bypass route). Add to it rather than
+renaming a suite whose name already means something — `horseUpdateBreedMassAssign` is
+spelled `MassAssign`, its sibling `userUpdateMassAssignment` is not, and neither spelling
+is a token. Add the file to `REQUIRED_MODULE_CONTROL_TESTS` in the sentinel at the same
+time, or the list is unguarded.
+
+`backend/__tests__/securitySuiteScope.sentinel.test.mjs` pins all three. It asks Jest
+itself (`--listTests`) what the config selects, and fails if the selection is empty, if a
+pattern escapes the backend test trees, if the `modules/auth` scope is dropped, if a
+pinned control suite or a convention match is not selected, or if the domain suites are
+swept back in. Its list of required control suites is deliberately independent of the
+config, so deleting a token cannot quietly shrink the gate.
+
+Everything outside these three layers is a domain test and still runs, blocking, in the
+`Backend Tests` shard matrix. Selection is a scope, never a way to make a red gate green.
+
 ## Commands
 
 From the repository root:

@@ -39,6 +39,7 @@ const mockGroomsData = [
     skillLevel: 'expert',
     personality: 'gentle',
     experience: 8,
+    ageYears: 34, // Equoria-fby1t — a groom's age is part of their identity
     sessionRate: 100,
     bio: 'Experienced foal care specialist',
     isActive: true,
@@ -54,6 +55,7 @@ const mockGroomsData = [
     skillLevel: 'intermediate',
     personality: 'energetic',
     experience: 5,
+    ageYears: null, // predates the age model: unknown, not zero
     sessionRate: 75,
     bio: 'General care expert',
     isActive: true,
@@ -69,6 +71,7 @@ const mockGroomsData = [
     skillLevel: 'master',
     personality: 'patient',
     experience: 12,
+    ageYears: 51,
     sessionRate: 150,
     bio: 'Master training specialist',
     isActive: true,
@@ -112,14 +115,43 @@ const mockAssignmentsData = [
   },
 ];
 
+// Equoria-95yrv (owner ruling, 2026-09-14): the weekly fee is 70 per horse in a
+// groom's care, up to ten horses. Sarah is on 2 horses (140), Mike on none (0),
+// Emma on 1 (70). The old fixture carried per-groom wages (100/75/150) and a
+// `totalMonthlyCost` the API has never sent.
 const mockSalaryCostsData = {
-  totalWeeklyCost: 325,
-  totalMonthlyCost: 1300,
+  totalWeeklyCost: 210,
   groomCount: 3,
+  feePerHorsePerWeek: 70,
+  maxHorsesPerGroom: 10,
   breakdown: [
-    { groomId: 1, groomName: 'Sarah Johnson', weeklyCost: 100, assignmentCount: 2 },
-    { groomId: 2, groomName: 'Mike Rodriguez', weeklyCost: 75, assignmentCount: 0 },
-    { groomId: 3, groomName: 'Emma Thompson', weeklyCost: 150, assignmentCount: 1 },
+    {
+      groomId: 1,
+      groomName: 'Sarah Johnson',
+      skillLevel: 'expert',
+      speciality: 'foalCare',
+      assignedHorses: 2,
+      weeklyFee: 140,
+      feeUnpaid: false,
+    },
+    {
+      groomId: 2,
+      groomName: 'Mike Rodriguez',
+      skillLevel: 'intermediate',
+      speciality: 'generalCare',
+      assignedHorses: 0,
+      weeklyFee: 0,
+      feeUnpaid: false,
+    },
+    {
+      groomId: 3,
+      groomName: 'Emma Thompson',
+      skillLevel: 'master',
+      speciality: 'training',
+      assignedHorses: 1,
+      weeklyFee: 70,
+      feeUnpaid: false,
+    },
   ],
 };
 
@@ -199,9 +231,51 @@ describe('MyGroomsDashboard Component', () => {
       expect(within(groomCard).getByText(/expert/i)).toBeInTheDocument();
       expect(within(groomCard).getByText(/foal care/i)).toBeInTheDocument();
       expect(within(groomCard).getByText(/8 years/i)).toBeInTheDocument();
-      // Salary renders via the canonical Currency component (coin icon +
-      // Intl-formatted number) followed by "/week" — assert on combined text.
-      expect(groomCard).toHaveTextContent(/100\/week/);
+      // Equoria-95yrv: the card shows the fee the player is actually billed —
+      // 70 per horse, so 140 for Sarah's two — not a per-groom wage.
+      expect(within(groomCard).getByText('Weekly fee')).toBeInTheDocument();
+      expect(groomCard).toHaveTextContent(/140/);
+    });
+
+    it("shows the groom's age beside their name (Equoria-fby1t)", () => {
+      // Owner ruling 2026-09-14: "Show a groom's age always." Age sits with the
+      // other identity facts — skill and specialty — in the same chip treatment.
+      const Wrapper = createTestWrapper();
+      render(
+        <MyGroomsDashboard
+          userId={1}
+          groomsData={mockGroomsData}
+          assignmentsData={mockAssignmentsData}
+          salaryCostsData={mockSalaryCostsData}
+        />,
+        { wrapper: Wrapper }
+      );
+
+      // "yrs old", not "years" (review F5): the Experience row on the same card
+      // reads "8 years", and two adjacent year-counts must not read as one thing.
+      expect(
+        within(screen.getByTestId('groom-card-1')).getByText('34 yrs old')
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('groom-card-3')).getByText('51 yrs old')
+      ).toBeInTheDocument();
+    });
+
+    it('says an unknown age is unknown rather than showing a zero', () => {
+      const Wrapper = createTestWrapper();
+      render(
+        <MyGroomsDashboard
+          userId={1}
+          groomsData={mockGroomsData}
+          assignmentsData={mockAssignmentsData}
+          salaryCostsData={mockSalaryCostsData}
+        />,
+        { wrapper: Wrapper }
+      );
+
+      const mikeCard = screen.getByTestId('groom-card-2');
+      expect(within(mikeCard).getByText(/age unknown/i)).toBeInTheDocument();
+      expect(within(mikeCard).queryByText('0 yrs old')).not.toBeInTheDocument();
     });
 
     it('displays available slots for each groom', () => {
@@ -216,19 +290,16 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // Sarah (expert, 4 max) has 2 assignments = 2/4 slots
+      // Equoria-95yrv: every groom may care for ten horses, whatever their skill.
       const sarahCard = screen.getByTestId('groom-card-1');
-      // Use exact match for the label to avoid matching "Current Assignments"
-      expect(within(sarahCard).getByText('Assignments')).toBeInTheDocument();
-      expect(within(sarahCard).getByText(/2 \/ 4/)).toBeInTheDocument();
+      expect(within(sarahCard).getByText('Horses')).toBeInTheDocument();
+      expect(within(sarahCard).getByText(/2 \/ 10/)).toBeInTheDocument();
 
-      // Mike (intermediate, 3 max) has 0 assignments = 0/3 slots
       const mikeCard = screen.getByTestId('groom-card-2');
-      expect(within(mikeCard).getByText(/0 \/ 3/)).toBeInTheDocument();
+      expect(within(mikeCard).getByText(/0 \/ 10/)).toBeInTheDocument();
 
-      // Emma (master, 5 max) has 1 assignment = 1/5 slots
       const emmaCard = screen.getByTestId('groom-card-3');
-      expect(within(emmaCard).getByText(/1 \/ 5/)).toBeInTheDocument();
+      expect(within(emmaCard).getByText(/1 \/ 10/)).toBeInTheDocument();
     });
   });
 
@@ -385,9 +456,10 @@ describe('MyGroomsDashboard Component', () => {
       expect(screen.getByLabelText(/sort by/i)).toHaveValue('name');
       expect(visibleGroomNames()).toEqual(['Emma Thompson', 'Mike Rodriguez', 'Sarah Johnson']);
 
-      // Switch to salary sort (descending sessionRate): Emma(150), Sarah(100), Mike(75).
+      // Equoria-95yrv: the fee sort is by what each groom COSTS this week —
+      // Sarah's two horses (140), Emma's one (70), Mike's none (0).
       fireEvent.change(screen.getByLabelText(/sort by/i), { target: { value: 'salary' } });
-      expect(visibleGroomNames()).toEqual(['Emma Thompson', 'Sarah Johnson', 'Mike Rodriguez']);
+      expect(visibleGroomNames()).toEqual(['Sarah Johnson', 'Emma Thompson', 'Mike Rodriguez']);
     });
   });
 
@@ -404,12 +476,13 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // "Weekly Cost" label and Currency-rendered "325" live in separate elements
+      // "Weekly Cost" label and the Currency-rendered total live in separate
+      // elements. Equoria-95yrv: 70 x the three horses in this stable's care.
       expect(screen.getByText(/weekly cost/i)).toBeInTheDocument();
-      expect(screen.getByText('325')).toBeInTheDocument();
+      expect(screen.getByText('210')).toBeInTheDocument();
     });
 
-    it('displays total paid amount', () => {
+    it('displays how many horses the weekly cost is made of', () => {
       const Wrapper = createTestWrapper();
       render(
         <MyGroomsDashboard
@@ -421,10 +494,11 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // Component renders "Monthly Cost" instead of "Total Paid" in current implementation.
-      // Value renders via the canonical Currency component (Intl-formatted "1,300").
-      expect(screen.getByText(/monthly cost/i)).toBeInTheDocument();
-      expect(screen.getByText('1,300')).toBeInTheDocument();
+      // Equoria-95yrv: the tile beside Weekly Cost now says what that cost is
+      // made of. It used to read "Monthly Cost" from a field the API never sent,
+      // so it displayed nothing at all.
+      const tile = screen.getByText(/horses in care/i).closest('div');
+      expect(tile).toHaveTextContent('3');
     });
 
     it('highlights unassigned grooms wasting money', () => {
@@ -481,31 +555,21 @@ describe('MyGroomsDashboard Component', () => {
       expect(unassignButtons).toHaveLength(2); // Sarah has 2 assignments
     });
 
-    it('disables assign button when groom has max assignments', () => {
+    it('disables the assign button when the groom is caring for ten horses', () => {
+      // Equoria-95yrv: ten is the cap, so filling it takes ten horses.
       const fullAssignmentsData = [
-        ...mockAssignmentsData,
-        {
-          id: 4,
+        ...mockAssignmentsData.filter((a) => a.groomId !== 1),
+        ...Array.from({ length: 10 }, (_, i) => ({
+          id: 100 + i,
           groomId: 1,
-          foalId: 104,
+          foalId: 200 + i,
           bondScore: 60,
           createdAt: new Date('2025-10-15').toISOString(),
           isActive: true,
-          priority: 3,
+          priority: 1,
           notes: null,
-          horse: { id: 104, name: 'Blaze', age: 2 },
-        },
-        {
-          id: 5,
-          groomId: 1,
-          foalId: 105,
-          bondScore: 55,
-          createdAt: new Date('2025-10-20').toISOString(),
-          isActive: true,
-          priority: 4,
-          notes: null,
-          horse: { id: 105, name: 'Flash', age: 1 },
-        },
+          horse: { id: 200 + i, name: `Horse ${i}`, age: 2 },
+        })),
       ];
 
       const Wrapper = createTestWrapper();
@@ -520,8 +584,10 @@ describe('MyGroomsDashboard Component', () => {
       );
 
       const sarahCard = screen.getByTestId('groom-card-1');
-      // When disabled, the button name changes to "Max Assignments"
-      const assignButton = within(sarahCard).getByRole('button', { name: /max assignments/i });
+      // The disabled button says so in the player's own terms.
+      const assignButton = within(sarahCard).getByRole('button', {
+        name: /caring for 10 horses/i,
+      });
       expect(assignButton).toBeDisabled();
     });
   });

@@ -14,13 +14,20 @@
  *
  * TWO THINGS CHANGED HERE, AND BOTH ARE VISIBLE TO PLAYERS:
  *
- *   1. THE FEE BASIS. It used to be charged per ACTIVE `GroomAssignment` — so a
- *      groom you had hired but not put on a horse cost nothing, and a groom on
- *      three horses cost three times. The ruling makes the fee what keeps a groom
- *      ON YOUR STAFF, so it is now charged ONCE per groom you employ, assigned or
- *      not. The RATES are unchanged (`SALARY_CONFIG` below, 50-165/week); only
- *      what is counted changed. This is an economy change and is reported as one
- *      — it is a consequence of the ruling, not a rebalance.
+ *   1. THE FEE BASIS. Equoria-95yrv, owner ruling 2026-09-14 10:23: "Charge the
+ *      player per horse assigned to a groom per week: $70 per horse per week, up
+ *      to 10 horses per groom."
+ *
+ *        weekly fee for a groom = 70 x their ACTIVE assignments
+ *
+ *      This is the SECOND basis change on this line, and it replaces the first.
+ *      Equoria-ypb7d.3 read the earlier ruling as per-groom-on-staff and priced it
+ *      from the skill/specialty table (50-165/week); the owner has now ruled per
+ *      assigned horse at a flat rate, so that table is gone. A groom on no horses
+ *      costs NOTHING again, a groom on three costs 210, and the ten-horse cap
+ *      (`MAX_HORSES_PER_GROOM`) is enforced where assignments are made. This is an
+ *      economy change and is reported as one — a consequence of the ruling, not a
+ *      rebalance.
  *
  *   2. NON-PAYMENT. `terminateGroomsForNonPayment` is GONE. It had never once
  *      worked: it wrote `terminationReason` to `GroomAssignment`, which has no
@@ -92,23 +99,37 @@ import { acquirePayWeekLockTx, ensureEngagementTx } from './groomEngagementServi
 // then release to the grooms-for-hire pool. Replaces the never-working
 // `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
 import { handleUnpaidFees, recordUncollectedFees } from './groomFeeArrearsService.mjs';
+// Equoria-95yrv / Equoria-bgdfb: WHAT a groom costs, the ten-horse cap, and what an
+// unpaid week becomes. Defined next door so this file stays the COLLECTION of the
+// fee; re-exported below so every existing importer of this module is unchanged.
+import {
+  FEE_PER_HORSE_PER_WEEK,
+  MAX_HORSES_PER_GROOM,
+  ARREARS_OWED_STATUSES,
+  ARREARS_SETTLED_STATUS,
+  ARREARS_WRITTEN_OFF_STATUS,
+  calculateWeeklyFee,
+  countActiveAssignments,
+} from './groomFeeBasisService.mjs';
+
+// Equoria-95yrv: the two reads over the rows this pass writes live next door, for
+// the same reason the retirement statistics do. Re-exported so nothing moves.
+export { getSalaryPaymentHistory, calculateUserSalaryCost } from './groomSalaryReadService.mjs';
+
+export {
+  FEE_PER_HORSE_PER_WEEK,
+  MAX_HORSES_PER_GROOM,
+  ARREARS_OWED_STATUSES,
+  ARREARS_SETTLED_STATUS,
+  ARREARS_WRITTEN_OFF_STATUS,
+  calculateWeeklyFee,
+  countActiveAssignments,
+};
 
 // Salary configuration
 export const SALARY_CONFIG = {
-  // Base weekly salaries by skill level
-  WEEKLY_SALARIES: {
-    novice: 50, // $50/week
-    intermediate: 75, // $75/week
-    expert: 100, // $100/week
-    master: 150, // $150/week
-  },
-
-  // Specialty bonuses (added to base salary)
-  SPECIALTY_BONUSES: {
-    foalCare: 10, // +$10/week for foal care specialty
-    showHandling: 15, // +$15/week for show handling specialty
-    general: 0, // No bonus for general grooms
-  },
+  FEE_PER_HORSE_PER_WEEK,
+  MAX_HORSES_PER_GROOM,
 
   // Payment processing day (0 = Sunday, 1 = Monday, etc.)
   PAYMENT_DAY: 1, // Monday
@@ -124,26 +145,6 @@ export const SALARY_CONFIG = {
   // Minimum balance required to keep grooms
   MINIMUM_BALANCE: 0,
 };
-
-/**
- * Calculate weekly salary for a groom
- * @param {Object} groom - Groom object with skillLevel and speciality
- * @returns {number} Weekly salary amount
- */
-export function calculateWeeklySalary(groom) {
-  try {
-    const baseSalary =
-      SALARY_CONFIG.WEEKLY_SALARIES[groom.skillLevel] || SALARY_CONFIG.WEEKLY_SALARIES.novice;
-    const specialtyBonus = SALARY_CONFIG.SPECIALTY_BONUSES[groom.speciality] || 0;
-
-    return baseSalary + specialtyBonus;
-  } catch (error) {
-    logger.error(
-      `[groomSalaryService] Error calculating salary for groom ${groom.id}: ${error.message}`,
-    );
-    return SALARY_CONFIG.WEEKLY_SALARIES.novice; // Default to novice salary
-  }
-}
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -168,12 +169,12 @@ export function getPayWeekStart(now = new Date()) {
 /**
  * Process the weekly fee for every groom on a player's staff.
  *
- * Equoria-ypb7d.3 — THE BASIS IS THE ENGAGEMENT, NOT THE ASSIGNMENT. The
- * selection below reads GROOMS with a `userId` (i.e. on someone's staff), not
- * active `GroomAssignment` rows. A groom you employ but have not put on a horse
- * is still on your staff and still costs the weekly fee; a groom on three horses
- * costs it once. That is what "so long as they pay their weekly fee, they keep the
- * groom on their staff" means. Retired grooms are excluded: `retired: false` — a
+ * Equoria-95yrv — THE BASIS IS THE HORSE. The selection below still reads GROOMS
+ * with a `userId` (everyone on someone's staff), because staff is who may be
+ * billed and who may enter grace — but each groom's fee is 70 x the horses they
+ * are currently working, so a groom on no horses appears in the pass and is
+ * charged 0. (Equoria-ypb7d.3 charged one flat rate per groom on staff; the owner
+ * replaced that basis on 2026-09-14.) Retired grooms are excluded: `retired: false` — a
  * retired groom keeps its `userId` so the player can still read their history
  * (see the field comment in schema.prisma), and billing them would be charging
  * for a career that has ended.
@@ -241,12 +242,20 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
       failed: 0,
       skipped: 0, // Equoria-icqqm: users fully paid for this pay week already
       graced: 0, // Equoria-ypb7d.3: grooms that entered the one-week grace period
+      arrearsCollected: 0, // Equoria-bgdfb: owed weeks settled by this pass
       uncollected: 0, // Equoria-2ti1j: grooms whose fee a THROW (not lack of funds) left uncollected
       released: 0, // Equoria-ypb7d.3: grooms returned to the grooms-for-hire pool
       terminated: 0, // retained key name; now counts the same as `released`
       totalAmount: 0,
       errors: [],
     };
+
+    // Equoria-95yrv: the fee is 70 x the horses each groom is working, so the
+    // pass needs those counts. One grouped read for the whole staff.
+    const assignmentCounts = await countActiveAssignments(
+      prisma,
+      staff.map(groom => groom.id),
+    );
 
     // Group by the employing player so one debit covers their whole staff.
     const userGroups = {};
@@ -265,11 +274,12 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
         };
       }
 
-      const salary = calculateWeeklySalary(groom);
+      const assignedHorses = assignmentCounts.get(groom.id) ?? 0;
+      const salary = calculateWeeklyFee(assignedHorses);
       // The key stays `assignments` so every existing reader of this shape
-      // (handleUnpaidFees, the tests) keeps working; each entry is now one GROOM
-      // on staff rather than one active assignment.
-      userGroups[userId].assignments.push({ groom, salary });
+      // (handleUnpaidFees, the tests) keeps working; each entry is one GROOM on
+      // staff, carrying the horse count its fee was computed from.
+      userGroups[userId].assignments.push({ groom, salary, assignedHorses });
       userGroups[userId].totalSalary += salary;
     }
 
@@ -301,6 +311,9 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
         // the tx aborted — hoisted here, conservatively covering everything.
         let unpaidAssignments = userGroup.assignments;
         let unpaidTotal = totalSalary;
+        // Equoria-bgdfb: earlier weeks these grooms still owe, computed inside the
+        // transaction (under the advisory lock) and hoisted for the reporting below.
+        let arrearsTotal = 0;
 
         let txOutcome;
         try {
@@ -339,6 +352,23 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
               }
               unpaidTotal = unpaidAssignments.reduce((sum, entry) => sum + entry.salary, 0);
 
+              // Equoria-bgdfb: what these grooms still OWE from earlier pay weeks.
+              // `paymentDate` on a missed row is that week's Monday (see
+              // groomFeeArrearsService), so `lt: payWeekStart` is an exact "an
+              // EARLIER week" test and can never pick up a failure from THIS week —
+              // which would charge the same week twice.
+              const owedRows = await tx.groomSalaryPayment.findMany({
+                where: {
+                  userId,
+                  paymentType: 'weekly_salary',
+                  status: { in: [...ARREARS_OWED_STATUSES] },
+                  groomId: { in: unpaidAssignments.map(entry => entry.groom.id) },
+                  paymentDate: { lt: payWeekStart },
+                },
+                select: { id: true, amount: true },
+              });
+              arrearsTotal = owedRows.reduce((sum, row) => sum + row.amount, 0);
+
               // Equoria-kl16c: the SystemAccount.burn credit is now PAIRED
               // INTERNALLY by debitMoneyOrThrow (systemAccount/category
               // required). supplying linkedUserId via the helper attributes a
@@ -346,19 +376,80 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
               // reflects the move) while the SystemAccount.balance is mutated
               // authoritatively in the same tx. A separate creditSystemAccount
               // call here would double-credit the burn.
-              await debitMoneyOrThrow(tx, {
-                userId,
-                amount: unpaidTotal,
-                systemAccount: SYSTEM_ACCOUNT_BURN,
-                category: 'groom_salary_burn',
-                description: `Groom salary weekly run — user ${user.username}`,
-                metadata: {
-                  groomCount: unpaidAssignments.length,
-                  totalSalary: unpaidTotal,
-                  paymentType: 'weekly_salary',
-                  payWeekStart: payWeekStart.toISOString(), // Equoria-icqqm audit key
-                },
-              });
+              //
+              // Equoria-95yrv: a player whose whole staff is idle owes nothing this
+              // week. `debitMoneyOrThrow` rejects a non-positive amount (by design —
+              // an unpaired zero-debit is meaningless), so the move is skipped rather
+              // than faked. The per-groom rows below are still written, at 0, so the
+              // pay week is recorded and the pass stays idempotent for those grooms.
+              //
+              // EQUORIA-BGDFB, FIX ROUND 1 (REVIEW F2) — THIS WEEK FIRST, THEN THE
+              // DEBT. The first implementation charged `week + arrears` as one
+              // all-or-nothing amount, so a player who could afford this week but not
+              // the debt paid NOTHING, stayed in grace, and lost the groom on the next
+              // pass. That is stricter than the ruling, which is "it's owed" and
+              // "collected when funds exist" — not "no work until the debt is cleared".
+              //
+              // So: attempt BOTH in one debit — still the right shape, because one
+              // debit cannot half-succeed and leave a week marked settled that was
+              // never paid. If the wallet cannot cover both, fall back to THIS WEEK
+              // ALONE: the groom keeps working, grace clears, and the arrears stay
+              // recorded in the same owed state for a later week when funds allow.
+              //
+              // The fallback is safe INSIDE this transaction: `debitMoneyOrThrow`
+              // throws on `claim.count === 0`, a JS decision after a zero-row
+              // `updateMany` — no SQL error, so the transaction is not aborted and a
+              // second, smaller attempt is a legal statement on it.
+              const chargeAttempts = [];
+              if (unpaidTotal + arrearsTotal > 0) {
+                chargeAttempts.push({ amount: unpaidTotal + arrearsTotal, withArrears: true });
+              }
+              if (arrearsTotal > 0 && unpaidTotal > 0) {
+                chargeAttempts.push({ amount: unpaidTotal, withArrears: false });
+              }
+
+              let arrearsSettledNow = false;
+              for (const [index, attempt] of chargeAttempts.entries()) {
+                try {
+                  await debitMoneyOrThrow(tx, {
+                    userId,
+                    amount: attempt.amount,
+                    systemAccount: SYSTEM_ACCOUNT_BURN,
+                    category: 'groom_salary_burn',
+                    description: `Groom salary weekly run — user ${user.username}`,
+                    metadata: {
+                      groomCount: unpaidAssignments.length,
+                      totalSalary: unpaidTotal,
+                      // Equoria-bgdfb: the owed weeks settled by THIS debit — 0 when
+                      // the wallet only covered the current week.
+                      arrears: attempt.withArrears ? arrearsTotal : 0,
+                      paymentType: 'weekly_salary',
+                      payWeekStart: payWeekStart.toISOString(), // Equoria-icqqm audit key
+                    },
+                  });
+                  arrearsSettledNow = attempt.withArrears;
+                  break;
+                } catch (debitError) {
+                  const isLastAttempt = index === chargeAttempts.length - 1;
+                  if (!(debitError instanceof InsufficientFundsError) || isLastAttempt) {
+                    // Nothing left to fall back to: this week itself is unaffordable,
+                    // which is the grace/release path the caller already handles.
+                    throw debitError;
+                  }
+                }
+              }
+              arrearsTotal = arrearsSettledNow ? arrearsTotal : 0;
+
+              // Equoria-bgdfb: the owed weeks are now paid. Marked INSIDE the same
+              // transaction as the debit, so a rollback leaves them owed — a week can
+              // be settled only by money actually having moved. Skipped entirely when
+              // only the current week was affordable: those weeks are still owed.
+              if (arrearsSettledNow && owedRows.length > 0) {
+                await tx.groomSalaryPayment.updateMany({
+                  where: { id: { in: owedRows.map(row => row.id) } },
+                  data: { status: ARREARS_SETTLED_STATUS },
+                });
+              }
 
               // Per-groom payment rows. INSIDE the tx so a partial failure
               // rolls back the debit + SystemAccount credit together with
@@ -413,7 +504,11 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
                 });
               }
 
-              return { skipped: false, amount: unpaidTotal };
+              return {
+                skipped: false,
+                amount: unpaidTotal + arrearsTotal,
+                arrears: arrearsTotal,
+              };
             },
             { timeout: 30000 }, // 30s — guard against 5s default under load
           );
@@ -464,6 +559,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
 
         results.successful++;
         results.totalAmount += txOutcome.amount;
+        results.arrearsCollected += txOutcome.arrears;
 
         logger.info(
           `[groomSalaryService] Processed $${txOutcome.amount} in salaries for user ${user.username}`,
@@ -490,111 +586,10 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
       failed: 0,
       skipped: 0,
       uncollected: 0,
+      arrearsCollected: 0,
       terminated: 0,
       totalAmount: 0,
       errors: [error.message],
-    };
-  }
-}
-
-/**
- * Get salary payment history for a user
- * @param {string} userId - User ID
- * @param {number} limit - Number of records to return (default: 50)
- * @returns {Array} Payment history
- */
-export async function getSalaryPaymentHistory(userId, limit = 50) {
-  try {
-    const payments = await prisma.groomSalaryPayment.findMany({
-      where: {
-        userId,
-      },
-      include: {
-        groom: {
-          select: {
-            id: true,
-            name: true,
-            skillLevel: true,
-            speciality: true,
-          },
-        },
-      },
-      orderBy: {
-        paymentDate: 'desc',
-      },
-      take: limit,
-    });
-
-    return payments;
-  } catch (error) {
-    logger.error(
-      `[groomSalaryService] Error getting salary payment history for user ${userId}: ${error.message}`,
-    );
-    return [];
-  }
-}
-
-/**
- * Calculate the total weekly fee a user owes for their groom staff.
- *
- * Equoria-ypb7d.3: this MUST match what `processWeeklySalaries` actually charges,
- * or the salary summary lies to the player about `weeksAffordable` — which
- * PRODUCT.md principle 7 forbids. So it counts the same thing the pass counts:
- * every groom on the player's staff (`Groom.userId`, not retired), assigned or
- * not, once each. It previously counted active `GroomAssignment` rows, which after
- * the basis change would have under-reported an unassigned groom as free and
- * over-reported a groom on three horses as triple.
- *
- * `feeUnpaidSince` is included in the breakdown because a groom in arrears still
- * costs the fee — that is what "one week of grace" means — and because the surface
- * needs to be able to say which groom cannot work.
- *
- * @param {string} userId - User ID
- * @returns {Object} Weekly fee breakdown
- */
-export async function calculateUserSalaryCost(userId) {
-  try {
-    const staff = await prisma.groom.findMany({
-      where: { userId, retired: false, isActive: true },
-      select: {
-        id: true,
-        name: true,
-        skillLevel: true,
-        speciality: true,
-        feeUnpaidSince: true,
-      },
-    });
-
-    let totalWeeklyCost = 0;
-    const breakdown = [];
-
-    for (const groom of staff) {
-      const salary = calculateWeeklySalary(groom);
-      totalWeeklyCost += salary;
-
-      breakdown.push({
-        groomId: groom.id,
-        groomName: groom.name,
-        skillLevel: groom.skillLevel,
-        speciality: groom.speciality,
-        weeklySalary: salary,
-        feeUnpaid: groom.feeUnpaidSince !== null,
-      });
-    }
-
-    return {
-      totalWeeklyCost,
-      groomCount: staff.length,
-      breakdown,
-    };
-  } catch (error) {
-    logger.error(
-      `[groomSalaryService] Error calculating salary cost for user ${userId}: ${error.message}`,
-    );
-    return {
-      totalWeeklyCost: 0,
-      groomCount: 0,
-      breakdown: [],
     };
   }
 }

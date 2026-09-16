@@ -36,6 +36,9 @@ function dobForAgeYears(ageYears) {
 
 describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
   const cleanup = createCleanupTracker();
+  // Equoria-zalyb: a horse name is capped at 40 characters, and the `name`s below
+  // are PLAYER-SUPPLIED payloads on POST /horses/foals, so they are held to the
+  // same rule a player's name is. The prefix is short for that reason.
   const ts = `${rand()}_${rand()}`;
 
   let authToken, __csrf__, testUser, testBreed;
@@ -66,7 +69,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     adultStallion = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `TestFixture-mhdul-Stallion_${ts}`,
+        name: `TFmhdul-Stallion_${ts}`,
         sex: 'Stallion',
         dateOfBirth: dobForAgeYears(5),
         age: 5,
@@ -79,7 +82,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     adultMare = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `TestFixture-mhdul-Mare_${ts}`,
+        name: `TFmhdul-Mare_${ts}`,
         sex: 'Mare',
         dateOfBirth: dobForAgeYears(5),
         age: 5,
@@ -93,7 +96,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     anotherAdultMare = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `TestFixture-mhdul-Mare2_${ts}`,
+        name: `TFmhdul-Mare2_${ts}`,
         sex: 'Mare',
         dateOfBirth: dobForAgeYears(5),
         age: 5,
@@ -107,7 +110,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     youngHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `TestFixture-mhdul-Young_${ts}`,
+        name: `TFmhdul-Young_${ts}`,
         sex: 'Stallion',
         dateOfBirth: dobForAgeYears(2),
         age: 2,
@@ -153,7 +156,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
 
   it('rejects self-cross (sireId === damId) with 400', async () => {
     const res = await postFoals({
-      name: `TestFixture-mhdul-SelfCross_${ts}`,
+      name: `TFmhdul-SelfCross_${ts}`,
       breedId: testBreed.id,
       sireId: adultMare.id,
       damId: adultMare.id,
@@ -167,7 +170,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
 
   it('rejects when sire is a Mare (not a Stallion) with 400', async () => {
     const res = await postFoals({
-      name: `TestFixture-mhdul-MareAsSire_${ts}`,
+      name: `TFmhdul-MareAsSire_${ts}`,
       breedId: testBreed.id,
       sireId: anotherAdultMare.id,
       damId: adultMare.id,
@@ -181,7 +184,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
 
   it('rejects when dam is not a Mare (Stallion used as dam) with 400', async () => {
     const res = await postFoals({
-      name: `TestFixture-mhdul-StallionAsDam_${ts}`,
+      name: `TFmhdul-StallionAsDam_${ts}`,
       breedId: testBreed.id,
       sireId: adultStallion.id,
       damId: youngHorse.id,
@@ -194,7 +197,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
 
   it('rejects when sire is under 3 game-years with 400', async () => {
     const res = await postFoals({
-      name: `TestFixture-mhdul-YoungSire_${ts}`,
+      name: `TFmhdul-YoungSire_${ts}`,
       breedId: testBreed.id,
       sireId: youngHorse.id,
       damId: adultMare.id,
@@ -210,7 +213,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     const youngMare = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `TestFixture-mhdul-YoungMare_${ts}`,
+        name: `TFmhdul-YoungMare_${ts}`,
         sex: 'Mare',
         dateOfBirth: dobForAgeYears(2),
         age: 2,
@@ -221,7 +224,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     });
     try {
       const res = await postFoals({
-        name: `TestFixture-mhdul-YoungDam_${ts}`,
+        name: `TFmhdul-YoungDam_${ts}`,
         breedId: testBreed.id,
         sireId: adultStallion.id,
         damId: youngMare.id,
@@ -244,7 +247,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
       data: { lastBredDate: utcDaysAgo(3) },
     });
     const res = await postFoals({
-      name: `TestFixture-mhdul-Cooldown_${ts}`,
+      name: `TFmhdul-Cooldown_${ts}`,
       breedId: testBreed.id,
       sireId: adultStallion.id,
       damId: adultMare.id,
@@ -265,7 +268,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
       data: { lastBredDate: sevenDaysAgo },
     });
     const res = await postFoals({
-      name: `TestFixture-mhdul-CooldownExpired_${ts}`,
+      name: `TFmhdul-CdExpired_${ts}`,
       breedId: testBreed.id,
       sireId: adultStallion.id,
       damId: adultMare.id,
@@ -276,7 +279,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
 
   it('allows dam with null lastBredDate (never bred) to breed - null-check trap arm', async () => {
     const res = await postFoals({
-      name: `TestFixture-mhdul-NullCooldown_${ts}`,
+      name: `TFmhdul-NullCooldown_${ts}`,
       breedId: testBreed.id,
       sireId: adultStallion.id,
       damId: adultMare.id,
@@ -288,7 +291,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
 
   it('happy path: adult stallion + adult mare + no cooldown returns 200', async () => {
     const res = await postFoals({
-      name: `TestFixture-mhdul-HappyPath_${ts}`,
+      name: `TFmhdul-HappyPath_${ts}`,
       breedId: testBreed.id,
       sireId: adultStallion.id,
       damId: adultMare.id,

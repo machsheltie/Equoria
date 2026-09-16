@@ -1,6 +1,7 @@
 /**
  * Integration Test: POST /api/v1/horses/foals — breed-data OUTAGE arm
- * (Equoria-6w3ur, task 20 follow-up to commit c38aa0ab5)
+ * (Equoria-6w3ur, task 20 follow-up to commit c38aa0ab5; reworked under
+ * Equoria-rlvgn)
  *
  * THE DEFECT THIS GUARDS
  *   `createFoal`'s breed-profile precondition (horseFoalingController.mjs) calls
@@ -20,97 +21,77 @@
  *
  * WHY THIS IS HARD TO PROVE HONESTLY
  *   `JSON_LOAD_ERROR` (backend/modules/horses/data/breedProfileLoader.mjs) is
- *   captured in a top-level try/catch around `readFileSync(PROFILES_PATH)`
- *   that runs the MOMENT the module is (re)imported. There is no env var, no
- *   injected path, and no Equoria-owned seam to redirect it — reaching the
- *   `cause`-present arm in process requires the real file to genuinely fail
- *   to read at the instant this module is loaded.
+ *   captured in a top-level try/catch around `readFileSync(PROFILES_PATH)` that
+ *   runs the MOMENT the module is (re)imported. Mocking an Equoria-owned module
+ *   is forbidden, so reaching the `cause`-present arm in process requires a real
+ *   file to genuinely fail to read at the instant that module is loaded.
  *
- * HOW THIS TEST GETS THERE WITHOUT MOCKING
- *   Two facts about THIS suite's own Jest project make it possible to hit
- *   that instant honestly, on demand, per test, without mocking anything:
+ * THE FILE THAT FAILS TO READ IS THIS SUITE'S OWN COPY — NEVER THE TRACKED ONE
+ *   OWNER RULING 2026-09-14 10:23 (Equoria-rlvgn): "Tests may not rename tracked
+ *   data files at all; the affected suite works on a copy."
+ *
+ *   Earlier versions of this file renamed the TRACKED
+ *   `backend/data/breedProfiles.json` aside for the duration of one request and
+ *   restored it in a `finally`. That window was short, but a hard kill inside it
+ *   (SIGINT, an OOM, a taskkill) left the tracked file missing from the shared
+ *   working tree, and every breed-dependent path then 500'd with no explanation
+ *   until this same suite ran again and self-healed. This campaign already hit
+ *   one OOM death, so it was not hypothetical.
+ *
+ *   It no longer happens, because the tracked file is now only ever READ, once,
+ *   to make a copy:
+ *     1. At module load this suite copies `backend/data/breedProfiles.json` into
+ *        a fresh `mkdtempSync` directory under the OS temp dir — outside the
+ *        repository entirely, so nothing it does can show up in `git status`.
+ *     2. It sets `BREED_PROFILES_PATH` to that copy. That is the loader's
+ *        ordinary path configuration — read the same way in every environment,
+ *        defaulting to the repository file when unset (see
+ *        breedProfileLoader.mjs) — not a test-only seam. So for every fresh
+ *        re-import in this suite the real `readFileSync` reads the copy instead
+ *        of the tracked file.
+ *     3. An outage window DELETES the copy for exactly one request and restores
+ *        it — by copying the tracked file again — in a `finally`. Nothing is
+ *        renamed and no tracked path is written to, so a kill inside the window
+ *        leaves only an absent file in a temp directory the OS reclaims.
+ *
+ *   What is still real: the read, the parse failure, the captured
+ *   `JSON_LOAD_ERROR`, the cause-bearing throw, the controller's discriminator,
+ *   the route, the app, the HTTP request and the database. The seam changes
+ *   WHERE the file is read from, and nothing else. No Equoria-owned module is
+ *   mocked, no `jest.mock(...)`, no bypass flag.
+ *
+ * WHY A PER-TEST WINDOW STILL WORKS
+ *   Two facts about THIS suite's own Jest project make the outage reproducible
+ *   on demand, per test:
  *     1. `backend/modules/horses/routes/horseFoalRoutes.mjs`'s POST /foals
  *        handler does `const { createFoal } = await import(
- *        '../controllers/horseController.mjs')` INSIDE the request handler
- *        body — not once at route-registration time, but freshly resolved on
- *        every call through Node's ES module cache.
+ *        '../controllers/horseController.mjs')` INSIDE the request handler body
+ *        — freshly resolved on every call through Node's ES module cache.
  *     2. `backend/jest.config.mjs` sets `resetModules: true` (CONTRIBUTING.md
- *        "Test-Run Resource Budget" mandates it repo-wide), which Jest
- *        documents as resetting the module registry before every test. That
- *        was confirmed empirically while building this file: with debug
- *        instrumentation temporarily added to the loader, its module-init
- *        `readFileSync` fired once per `it()` in this suite (plus once for
- *        the initial static-import graph) — i.e. the lazy import in (1) is
- *        NOT served from a stale cache across tests; it re-resolves and
- *        re-executes breedProfileLoader.mjs's top level fresh at the first
- *        request of every test.
- *   So each test that needs the outage renames the REAL
- *   `backend/data/breedProfiles.json` aside immediately before sending the
- *   one HTTP request that will trigger that fresh re-import, and restores it
- *   in a `finally` immediately after the response comes back — the
- *   corruption window is exactly one request's worth of module
- *   (re-)instantiation, not the whole file's run.
- *
- * THE RENAME TOUCHES THE SHARED CHECKOUT — READ THIS BEFORE ADDING A TEST HERE
- *   This file was authored in a throwaway git worktree, and its first version
- *   said so: "nothing here reaches the main checkout or any other agent's
- *   tree." That stopped being true the moment the file was committed. It now
- *   runs in the main checkout and in CI, and `backend/data/breedProfiles.json`
- *   is a TRACKED file, so for the duration of each outage window this suite
- *   renames a tracked source file out of the shared working tree. Two
- *   consequences that no assertion in this file can cover:
- *
- *     1. Any OTHER suite that (re-)imports breedProfileLoader.mjs during that
- *        window sees a fabricated outage and can fail for a reason that has
- *        nothing to do with it. The window is short — one HTTP request — but it
- *        is real, and the repo's rule is that backend suites run one file at a
- *        time (CONTRIBUTING.md "Test-run resource budget"), which is what keeps
- *        it safe rather than anything this file does. Do not run this suite
- *        concurrently with another backend suite.
- *     2. A hard kill (SIGINT, an OOM, a `taskkill`) INSIDE the window leaves the
- *        tracked file renamed to a `.equoria-task20-outage-backup` sibling, so
- *        `git status` shows breedProfiles.json deleted and an untracked backup
- *        beside it. `withBreedProfilesUnreadable`'s `finally` does not run on a
- *        process death, and — measured, see the startup block below — neither
- *        does a `process.on('exit')` handler registered from a Jest test module.
- *        So the repair happens at the START of the next run of this suite: the
- *        backup-present/file-absent pair is the kill signature, and the startup
- *        block restores it and says so. The interval between the kill and that
- *        next run is the residual risk; it is spelled out there.
- *
- *   IMPORTANT, and the reason the file-level "rename once, import app.mjs
- *   once" approach that was tried FIRST did not work: importing `app.mjs`
- *   once at file load time and then restoring the file does NOT keep
- *   `JSON_LOAD_ERROR` set for later requests, precisely because of (1) and
- *   (2) above — the very NEXT request re-imports the controller chain fresh
- *   against whatever the file's *current* on-disk state is. That was caught
- *   by observing the loader's message land on the genuine-absence branch
- *   ("No breedProfiles.json entry…", no cause) instead of the outage branch
- *   during development of this file, which is exactly the kind of
- *   vacuous-test trap this task warned about. The corruption window in the
- *   final version below is deliberately scoped inside each `it()`.
- *
- *   No Equoria-owned module is mocked. No bypass flag. No `jest.mock(...)`.
- *   The DB breed-profile cache is never preloaded in this suite (see
- *   `backend/tests/setup.mjs`), so the JSON fallback is genuinely the only
- *   source `getBreedProfile` has for any breed here — the outage is real for
- *   every breed, matching the production scenario in the commit's rationale.
+ *        "Test-Run Resource Budget" mandates it repo-wide), so the module
+ *        registry is reset before every test and breedProfileLoader.mjs's top
+ *        level re-executes at the first request of each test.
+ *   This is why the "delete once at file load, import app.mjs once" shape does
+ *   NOT work: the very next request re-imports the controller chain fresh
+ *   against whatever the configured path holds at that moment. The window is
+ *   deliberately scoped inside each `it()`.
  *
  * WHAT THIS FILE DOES NOT PROVE
  *   The 400 (genuine-absence) arm. That is proven by the adjacent
- *   `foalCreationMinimalPayload.test.mjs` in this same directory, run against
- *   an UNCORRUPTED `breedProfiles.json` (that file never touches the on-disk
- *   fixture), including a sentinel that pins the loader contract this
- *   discriminator depends on (a genuine-absence throw carries no `cause`).
+ *   `foalCreationMinimalPayload.test.mjs` in this same directory, run against an
+ *   uncorrupted profile source, including a sentinel that pins the loader
+ *   contract this discriminator depends on (a genuine-absence throw carries no
+ *   `cause`).
  *
  * Real DB, real app, real HTTP, the real breedProfileLoader.mjs. No mocks.
  */
 
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { renameSync, existsSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -119,96 +100,63 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
+// Mirrors breedProfileLoader.mjs's own default resolution from
+// backend/modules/horses/data/ -> backend/data/breedProfiles.json. Computed
+// independently (not imported from the loader) so this test never has to import
+// the loader itself to find the file. THIS PATH IS READ ONLY — never renamed,
+// never written, never deleted.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const TRACKED_PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
+
+if (!existsSync(TRACKED_PROFILES_PATH)) {
+  throw new Error(
+    '[foalCreationBreedDataOutage.test.mjs] Expected the tracked breed profile file at ' +
+      `${TRACKED_PROFILES_PATH}. This suite only ever reads it, so its absence is not this ` +
+      "suite's doing. An OLD revision of this file renamed it aside and may have left a " +
+      '".equoria-task20-outage-backup" sibling: restore with ' +
+      '"git checkout -- backend/data/breedProfiles.json" and delete the stray backup. ' +
+      'Refusing to start.',
+  );
+}
+
+// The disposable copy the loader is pointed at, in a fresh OS temp directory —
+// outside the repository, so no state this suite creates can reach the working
+// tree or another agent's checkout.
+const COPY_DIR = mkdtempSync(join(tmpdir(), 'equoria-breed-profiles-'));
+const COPY_PATH = join(COPY_DIR, 'breedProfiles.json');
+copyFileSync(TRACKED_PROFILES_PATH, COPY_PATH);
+process.env.BREED_PROFILES_PATH = COPY_PATH;
+
 const app = (await import('../../../app.mjs')).default;
 const rand = () => randomBytes(4).toString('hex');
 
-// Mirrors backend/modules/horses/data/breedProfileLoader.mjs's own
-// `resolve(__dirname, '../../../data/breedProfiles.json')` from
-// backend/modules/horses/data/ -> backend/data/breedProfiles.json. Computed
-// independently (not imported from the loader) so this test never has to
-// import the loader itself to find the file.
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
-const BACKUP_PATH = `${PROFILES_PATH}.equoria-task20-outage-backup`;
-
-// ── STARTUP SELF-HEAL: recover from a previous run that died mid-window ──────
-//
-// WHY THIS IS THE HEALING MECHANISM AND NOT A `process.on('exit')` HANDLER.
-// The obvious fix for "a hard kill leaves the tracked file renamed" is a
-// synchronous restore on `process.on('exit')` / `('uncaughtException')`. It was
-// written that way first and MEASURED: it does not work under Jest. A test
-// module's `process` is jest-environment-node's per-environment process object,
-// not the real one — its listeners are never invoked. Two probes on
-// 2026-09-09, `--runInBand --forceExit`, each planting a suite that renamed the
-// file aside and then called `process.exit(7)`:
-//   - a handler on the global `process`     → never fired; file left renamed.
-//   - a handler on `import process from 'node:process'` (which is the SAME
-//     object here — the probe asserted `realProcess === process`) → never
-//     fired either.
-// Shipping handlers that provably never run would be a comment claiming a
-// guarantee the code does not provide, so they are not here.
-//
-// What DOES run is this block, at module load, before any window opens. A run
-// killed inside a window leaves exactly one state — backup present, real file
-// absent — which is unambiguous, so it is repaired rather than reported. The
-// next execution of this suite therefore heals the tree by itself. RESIDUAL
-// RISK, stated plainly because no in-process mechanism closes it: between the
-// kill and that next run, `backend/data/breedProfiles.json` is missing from the
-// working tree and `git status` shows it deleted with an untracked
-// `.equoria-task20-outage-backup` beside it. Anything else reading breed
-// profiles in that interval sees the outage. Moving this heal into
-// `backend/tests/setup.mjs` would shrink the interval to "the next backend
-// suite of any kind", and gating the whole suite behind an env var would remove
-// the hazard from ordinary runs entirely; both are owner calls, not this file's.
-if (existsSync(BACKUP_PATH) && !existsSync(PROFILES_PATH)) {
-  console.warn(
-    `[foalCreationBreedDataOutage.test.mjs] Recovering: found ${BACKUP_PATH} with no ` +
-      `${PROFILES_PATH}. A previous run was killed inside an outage window. Restoring the ` +
-      'tracked file and continuing.',
-  );
-  renameSync(BACKUP_PATH, PROFILES_PATH);
-}
-
-if (!existsSync(PROFILES_PATH)) {
-  throw new Error(
-    `[foalCreationBreedDataOutage.test.mjs] Expected the real breed profile file at ${PROFILES_PATH} ` +
-      'before this suite runs (each outage test moves it aside for one request and restores it ' +
-      'immediately). No recoverable backup was found beside it either. Refusing to start.',
-  );
-}
-if (existsSync(BACKUP_PATH)) {
-  // BOTH exist: not the kill signature, so it is not safe to guess which is
-  // authoritative. Refuse and let a human look.
-  throw new Error(
-    `[foalCreationBreedDataOutage.test.mjs] Found a leftover backup at ${BACKUP_PATH} ALONGSIDE an ` +
-      'existing backend/data/breedProfiles.json. That is not the interrupted-run signature (which ' +
-      'leaves the backup and no real file), so this suite will not guess which one is current. ' +
-      'Resolve the two files by hand before re-running.',
-  );
-}
-
 /**
- * Renames the real breedProfiles.json aside, awaits `fn`, then restores it —
- * even if `fn` throws. `fn` must be the thing that triggers the fresh
- * lazy re-import of breedProfileLoader.mjs (see the file banner): one HTTP
- * request through `postFoals` below.
+ * Deletes THIS SUITE'S COPY of the profile source, awaits `fn`, then restores the
+ * copy from the tracked file — even if `fn` throws. `fn` must be the thing that
+ * triggers the fresh lazy re-import of breedProfileLoader.mjs (see the banner):
+ * one HTTP request through `postFoals` below.
+ *
+ * The restore is unconditional and UNGUARDED: if it cannot happen the run must
+ * fail loudly here, while there is still a stack to read. No startup self-heal
+ * sits behind it any more — a process killed inside this window loses only a
+ * file in an OS temp directory, and the tracked tree is untouched either way.
  */
 async function withBreedProfilesUnreadable(fn) {
-  renameSync(PROFILES_PATH, BACKUP_PATH);
+  rmSync(COPY_PATH);
   try {
     return await fn();
   } finally {
-    // Unconditional and UNGUARDED on the normal path: if this restore cannot
-    // happen the run must fail loudly here, while there is still a stack to
-    // read. There is no exit-handler fallback behind it — see the startup
-    // block below, which measured that a `process.on('exit')` handler never
-    // fires in this Jest environment and dropped that approach. A process
-    // killed inside this window is repaired by that startup block on the
-    // suite's NEXT run, not by anything running during this one.
-    renameSync(BACKUP_PATH, PROFILES_PATH);
+    copyFileSync(TRACKED_PROFILES_PATH, COPY_PATH);
   }
 }
+
+// The copy and the env pointer belong to this file alone; drop both when it
+// finishes so no later suite in the same worker inherits a redirected path.
+afterAll(() => {
+  delete process.env.BREED_PROFILES_PATH;
+  rmSync(COPY_DIR, { recursive: true, force: true });
+});
 
 describe("POST /horses/foals — breed-data outage reports 500, not the breed's fault (Equoria-6w3ur)", () => {
   const cleanup = createCleanupTracker();

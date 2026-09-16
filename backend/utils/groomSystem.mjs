@@ -8,6 +8,13 @@ import logger from './logger.mjs';
 import { calculatePersonalityEffects } from './groomPersonalityEffects.mjs';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
 import { getTemperamentGroomSynergy } from '../modules/horses/index.mjs';
+// Equoria-95yrv fix round 1 (F1): the foal-assignment door moved to its own module
+// when it became transactional — see that file's header. Re-exported here so every
+// importer (the handlers, foalController, the suites) is unchanged.
+export {
+  assignGroomToFoal,
+  ensureDefaultGroomAssignment,
+} from '../modules/grooms/services/groomFoalAssignmentService.mjs';
 
 /**
  * Groom specialties and their bonding modifiers
@@ -166,211 +173,6 @@ export const DEFAULT_GROOMS = [
     },
   },
 ];
-
-/**
- * Assign a groom to a foal
- * @param {number} foalId - ID of the foal
- * @param {number} groomId - ID of the groom
- * @param {string} userId - ID of the user
- * @param {Object} options - Assignment options
- * @returns {Object} Assignment result
- */
-export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
-  const { priority = 1, notes = null, isDefault = false } = options;
-
-  logger.info(`[groomSystem.assignGroomToFoal] Assigning groom ${groomId} to foal ${foalId}`);
-
-  // Validate foal exists
-  const foal = await prisma.horse.findUnique({
-    where: { id: foalId },
-    select: { id: true, name: true, age: true },
-  });
-
-  if (!foal) {
-    throw new Error(`Foal with ID ${foalId} not found`);
-  }
-
-  // Validate groom exists and is available
-  const groom = await prisma.groom.findUnique({
-    where: { id: groomId },
-    select: {
-      id: true,
-      name: true,
-      speciality: true,
-      skillLevel: true,
-      isActive: true,
-      availability: true,
-      userId: true, // Correct field name for groom ownership
-    },
-  });
-
-  if (!groom) {
-    throw new Error(`Groom with ID ${groomId} not found`);
-  }
-
-  // CWE-639 (Equoria-a7dy): cross-user access must be indistinguishable
-  // from not-found. Ownership of `groom` is enforced upstream by the
-  // `findOwnedResource('groom')` middleware on POST /api/grooms/assign
-  // (groomRoutes.mjs:170), which 404s before this throw is reachable.
-  // This branch is defense-in-depth — collapse the disclosure-leaky
-  // 'You do not own groom X' string into the same 'Groom not found'
-  // message used by the missing-row case above so a bypass cannot
-  // surface ownership status via error text.
-  if (groom.userId !== userId) {
-    throw new Error(`Groom with ID ${groomId} not found`);
-  }
-
-  if (!groom.isActive) {
-    throw new Error(`Groom ${groom.name} is not currently active`);
-  }
-
-  // Check for existing active assignment
-  const existingAssignment = await prisma.groomAssignment.findFirst({
-    where: {
-      foalId,
-      groomId,
-      isActive: true,
-    },
-  });
-
-  if (existingAssignment) {
-    throw new Error(`Groom ${groom.name} is already assigned to this foal`);
-  }
-
-  // Deactivate other assignments if this is primary (priority 1)
-  if (priority === 1) {
-    await prisma.groomAssignment.updateMany({
-      where: {
-        foalId,
-        priority: 1,
-        isActive: true,
-      },
-      data: {
-        isActive: false,
-        endDate: new Date(),
-      },
-    });
-  }
-
-  // Create new assignment
-  const assignment = await prisma.groomAssignment.create({
-    data: {
-      foalId,
-      groomId,
-      userId,
-      priority,
-      notes,
-      isDefault,
-      isActive: true,
-    },
-    include: {
-      groom: true,
-      foal: {
-        select: { id: true, name: true },
-      },
-    },
-  });
-
-  logger.info(
-    `[groomSystem.assignGroomToFoal] Successfully assigned ${groom.name} to foal ${foal.name}`,
-  );
-
-  return {
-    success: true,
-    assignment,
-    message: `${groom.name} has been assigned to ${foal.name}`,
-  };
-}
-
-/**
- * Get or create default groom assignment for a foal
- * @deprecated This function is disabled to increase player engagement. Players must manually assign grooms.
- * @param {number} foalId - ID of the foal
- * @returns {Object} Assignment result
- */
-export async function ensureDefaultGroomAssignment(foalId, userId) {
-  logger.warn(
-    `[groomSystem.ensureDefaultGroomAssignment] DEPRECATED: Auto-assignment disabled for foal ${foalId}. Players must manually assign grooms.`,
-  );
-
-  // Check if foal already has an active assignment
-  const existingAssignment = await prisma.groomAssignment.findFirst({
-    where: {
-      foalId,
-      isActive: true,
-    },
-    include: {
-      groom: true,
-    },
-  });
-
-  if (existingAssignment) {
-    logger.info(
-      `[groomSystem.ensureDefaultGroomAssignment] Foal ${foalId} already has active assignment`,
-    );
-    return {
-      success: true,
-      assignment: existingAssignment,
-      message: 'Foal already has an assigned groom',
-      isExisting: true,
-    };
-  }
-
-  // For testing purposes, create a default assignment
-  // In production, this would be disabled to increase player engagement
-  if (process.env.NODE_ENV === 'test') {
-    // Create a default groom for testing
-    let groom = await prisma.groom.findFirst({
-      where: {
-        userId,
-        speciality: 'foalCare',
-        isActive: true,
-      },
-    });
-
-    if (!groom) {
-      groom = await prisma.groom.create({
-        data: {
-          name: 'Sarah Johnson',
-          speciality: 'foalCare',
-          skillLevel: 'intermediate',
-          personality: 'gentle',
-          experience: 5,
-          sessionRate: 18.0,
-          userId,
-          isActive: true,
-        },
-      });
-    }
-
-    const assignment = await prisma.groomAssignment.create({
-      data: {
-        foalId,
-        groomId: groom.id,
-        userId,
-        priority: 1,
-        isDefault: true,
-        isActive: true,
-      },
-    });
-
-    return {
-      success: true,
-      assignment,
-      message: 'Default groom assigned to foal',
-      isNew: true,
-    };
-  }
-
-  // Return error - no auto-assignment to increase player engagement
-  return {
-    success: false,
-    message:
-      'No groom assigned to foal. Please hire and assign a groom manually to increase bonding and reduce stress.',
-    requiresManualAssignment: true,
-    foalId,
-  };
-}
 
 /**
  * Get or create a default groom for a user
@@ -559,13 +361,10 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   bondingChange = Math.max(0, Math.min(10, bondingChange));
   stressChange = Math.max(-10, Math.min(5, stressChange));
 
-  // Calculate cost per session based on groom's skill level
-  const baseRate = typeof groom.sessionRate === 'number' ? groom.sessionRate : 18.0;
-
-  // Primary factor is skill level as per game design
-  // Small duration factor added only for test compatibility
-  const cost = baseRate * skillLevel.costModifier * (1 + (duration - 60) / 300);
-
+  // Equoria-tfo3c (owner ruling, 2026-09-14): "Care itself does not cost money." The
+  // per-session price computed here from `sessionRate` was written to
+  // `groom_interactions.cost` and debited from nobody; it is gone, not wired to a
+  // wallet. Real costs: grooms/week, training/session, feed, farrier, vet, riders.
   // Determine quality based on results
   let quality;
   if (errorOccurred) {
@@ -582,7 +381,6 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   const baseEffects = {
     bondingChange,
     stressChange,
-    cost: Math.round(cost * 100) / 100, // Round to 2 decimal places
     quality,
     errorOccurred,
     successRate: 1.0 - skillLevel.errorChance, // Base success rate

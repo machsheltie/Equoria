@@ -53,7 +53,11 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
   let testDam;
   let authToken;
   const createdFoalIds = [];
-  const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
+  // Equoria-zalyb: horse names are capped at 40 characters, and these fixture
+  // names are PLAYER-SUPPLIED payloads on POST /horses/foals, so they must fit
+  // the same rule a player's name does. Two random segments (17 characters) keep
+  // every `<Prefix>_${ts}` below the cap while staying collision-free.
+  const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
   beforeAll(async () => {
     // Create a real user in the database
@@ -444,7 +448,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
   it('should persist pendingFoalName and pendingFoalBreedId on the dam after createFoal', async () => {
     await resetDamPregnancy();
 
-    const pendingName = `TestFixture-PendingFoal_${ts}`;
+    const pendingName = `PendingFoal_${ts}`;
     const response = await request(app)
       .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
@@ -464,7 +468,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
   it('should create foal with name and breedId from pending fields when foaling job runs', async () => {
     await resetDamPregnancy();
 
-    const pendingName = `TestFixture-StarfireFoal_${ts}`;
+    const pendingName = `StarfireFoal_${ts}`;
 
     // Set dam in foal state with pending intent fields (simulates createFoal having been called)
     await prisma.horse.update({
@@ -496,7 +500,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     expect(foal.breedId).toBe(testBreed.id);
   });
 
-  it('should create foal with default name and dam breed when pending fields are null', async () => {
+  it('should create the foal as `unnamed` and with the dam breed when pending fields are null', async () => {
     await resetDamPregnancy();
 
     // Set dam in foal state with no pending intent (nulls)
@@ -525,7 +529,10 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     });
     createdFoalIds.push(foal.id);
 
-    expect(foal.name).toBe(`${testDam.name} Foal`);
+    // Equoria-4fnro (OWNER RULING 2026-09-14): a foal nobody named is born
+    // 'unnamed' and stays so until the player names her. This used to assert
+    // `<Dam> Foal`, a generated name that read like somebody's choice.
+    expect(foal.name).toBe('unnamed');
     expect(foal.breedId).toBe(testDam.breedId);
   });
 });

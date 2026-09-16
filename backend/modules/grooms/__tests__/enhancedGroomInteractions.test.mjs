@@ -196,7 +196,8 @@ describe('calculateEnhancedEffects', () => {
     expect(result).toHaveProperty('variation');
     expect(result).toHaveProperty('specialEvent');
     expect(result).toHaveProperty('duration');
-    expect(result).toHaveProperty('cost');
+    // Equoria-tfo3c: care costs nothing, so no `cost` is quoted.
+    expect(result).not.toHaveProperty('cost');
   });
 
   it('bondingChange is between 1 and 25 (clamped)', () => {
@@ -223,8 +224,10 @@ describe('calculateEnhancedEffects', () => {
 
   it('cost is a positive number', () => {
     const result = calculateEnhancedEffects(gentleGroom, youngHorse, 'daily_care', 'Morning Routine', 60);
-    expect(typeof result.cost).toBe('number');
-    expect(result.cost).toBeGreaterThan(0);
+    // Equoria-tfo3c (owner ruling, 2026-09-14): care costs nothing, so the effects
+    // carry no price. This used to assert a positive per-session cost that was
+    // written to `groom_interactions.cost` and debited from nobody.
+    expect(result).not.toHaveProperty('cost');
   });
 
   it('throws for unknown interaction type', () => {
@@ -314,11 +317,12 @@ describe('getAvailableInteractions', () => {
     }
   });
 
-  it('each variation has estimatedCost added', () => {
+  it('each variation is passed through without a price (Equoria-tfo3c)', () => {
     const result = getAvailableInteractions(gentleGroom, youngHorse);
     for (const interaction of result) {
       for (const variation of interaction.variations) {
-        expect(typeof variation.estimatedCost).toBe('number');
+        expect(variation).not.toHaveProperty('estimatedCost');
+        expect(typeof variation.name).toBe('string');
       }
     }
   });

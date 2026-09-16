@@ -61,5 +61,36 @@ jobs:
         run: npm ci --no-audit --no-fund
         working-directory: frontend
 
+      # Equoria-axyem.6: check-workflows-lint.sh hard-fails when actionlint
+      # is absent (a doctrine check that skips when its tool is missing is the
+      # silent-skip pattern this epic exists to remove), so the gate job must
+      # install it. Pinned to the same version the check enforces as its floor.
+      # Installed from the official release tarball — no new npm dependency and
+      # no third-party action.
+      #
+      # The tarball is verified against the sha256 published in
+      # actionlint_1.7.12_checksums.txt for tag v1.7.12. A release asset is
+      # mutable by its owner, so a tag pin alone would let a replaced asset
+      # execute unchecked on the gate runner. The digest is inlined here
+      # rather than fetched, because fetching the checksum file from the same
+      # mutable release would verify nothing. Bump BOTH values together.
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: '1.7.12'
+          # sha256 of actionlint_1.7.12_linux_amd64.tar.gz
+          ACTIONLINT_SHA256: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8'
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/actionlint"
+          mkdir -p "$dir"
+          asset="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          url="https://github.com/rhysd/actionlint/releases/download"
+          url="$url/v${ACTIONLINT_VERSION}/${asset}"
+          curl -sSfL --retry 3 --retry-delay 5 -o "$dir/$asset" "$url"
+          echo "${ACTIONLINT_SHA256}  $dir/$asset" | sha256sum -c -
+          tar -xzf "$dir/$asset" -C "$dir" actionlint
+          "$dir/actionlint" --version
+          echo "$dir" >> "$GITHUB_PATH"
+
       - name: Run doctrine-checks suite
         run: bash scripts/doctrine-checks/run-all.sh

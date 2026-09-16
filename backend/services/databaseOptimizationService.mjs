@@ -207,177 +207,32 @@ async function analyzeComplexJoinQuery(options) {
 }
 
 /**
- * Create optimized database indexes
- * @param {Object} options - Index creation options
- * @returns {Object} Index creation results
+ * `createOptimizedIndexes` USED TO LIVE HERE, AND IT IS GONE ON PURPOSE
+ * (Equoria-9xa92, with Equoria-bebob).
+ *
+ * It built `CREATE INDEX IF NOT EXISTS` statements from caller-supplied labels
+ * and ran them through `$executeRawUnsafe`. It had NO production caller — no
+ * route, controller, cron or startup path ever invoked it; its only importers
+ * were two test files. So what "indexes are created at runtime" meant in
+ * practice was: the test suite issued DDL against the shared development
+ * database.
+ *
+ * That is how the duplicates arose. The function named an index from the
+ * caller's LABEL while resolving the column through an aliasing map, so two
+ * labels for one column manufactured two byte-identical indexes under two
+ * names (`discipline_scores` and `disciplineScores` both reached
+ * `"disciplineScores"`), and unquoted DDL identifiers folded to lower case on
+ * top of that. Equoria-bebob dropped the six redundant indexes that resulted;
+ * this deletion is what stops them being recreated by the next test run.
+ *
+ * DO NOT REINTRODUCE A RUNTIME `CREATE INDEX` PATH. Indexes belong in
+ * `schema.prisma` and in a migration under
+ * `packages/database/prisma/migrations`, where `scripts/preflight/schema-drift.mjs`
+ * can compare the live catalog against the migration-applied structure. An
+ * index created outside migration history is drift by construction, and the
+ * drift sentinel's runtime-index allow-list is now empty precisely because
+ * nothing creates one any more.
  */
-export async function createOptimizedIndexes(options) {
-  logger.info('[databaseOptimization] Creating optimized indexes');
-
-  const createdIndexes = [];
-  const indexQueries = [];
-
-  if (options.queryPatterns) {
-    // Create indexes based on query patterns
-    for (const pattern of options.queryPatterns) {
-      const indexQuery = generateIndexQuery(pattern);
-      if (indexQuery) {
-        indexQueries.push(indexQuery);
-      }
-    }
-  }
-
-  if (options.jsonbFields) {
-    // Create JSONB indexes with correct column names.
-    //
-    // Schema-drift guard (Equoria CI shard-3 fix): the keys here are the
-    // labels callers may pass; the values are the ACTUAL quoted column
-    // names that exist on the `horses` table per packages/database/
-    // prisma/schema.prisma. A label with no real column is intentionally
-    // omitted so we never emit a CREATE INDEX against a non-existent
-    // column on a fresh `equoria_test` DB built from migrations.
-    const fieldMapping = {
-      epigenetic_flags: '"epigeneticFlags"',
-      epigeneticFlags: '"epigeneticFlags"',
-      discipline_scores: '"disciplineScores"',
-      disciplineScores: '"disciplineScores"',
-      epigeneticModifiers: '"epigeneticModifiers"',
-      ultraRareTraits: '"ultraRareTraits"',
-      conformationScores: '"conformationScores"',
-      gaitScores: '"gaitScores"',
-      // NOTE: `stats` has NO column on `horses` — base stats are scalar
-      // Int columns (speed, stamina, …), not a JSONB blob. The closest
-      // real JSONB aggregate is conformationScores; map `stats` there so
-      // a GIN index targets a column that actually exists.
-      stats: '"conformationScores"',
-    };
-
-    for (const field of options.jsonbFields) {
-      // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
-      // (e.g. 'constructor', '__proto__') are never treated as own entries.
-      // Then verify the resolved value is a plain string before interpolating
-      // it into DDL — even a future map change cannot produce a non-string.
-      if (!Object.hasOwn(fieldMapping, field)) {
-        // Unknown label with no real column — skip with a loud log rather
-        // than emit invalid SQL. This is NOT a silent swallow of a real
-        // error: we never generate the bad statement in the first place.
-        logger.warn(
-          `[databaseOptimization] Skipping GIN index for unknown JSONB field "${field}" (no matching column on horses)`,
-        );
-        continue;
-      }
-      const columnName = fieldMapping[field];
-      if (typeof columnName !== 'string') {
-        // Defence-in-depth: own-property check passed but value is not a
-        // string (should never happen with the static map above, but guards
-        // against future map mutations or prototype-pollution of the map
-        // object itself).
-        logger.warn(
-          `[databaseOptimization] Skipping GIN index for field "${field}" — resolved column name is not a string`,
-        );
-        continue;
-      }
-      const safeName = field.replace(/[^a-zA-Z0-9_]/g, '_');
-      indexQueries.push(
-        `CREATE INDEX IF NOT EXISTS idx_horses_${safeName}_gin ON horses USING GIN (${columnName})`,
-      );
-    }
-  }
-
-  if (options.compositePatterns) {
-    // Create composite indexes with correct column names.
-    //
-    // Schema-drift guard: the Horse model's owning FK is `userId`, NOT
-    // `ownerId`. The previous mapping pointed userId/ownerId at the
-    // non-existent `"ownerId"` column, which failed on a fresh
-    // `equoria_test`. All values below are real `horses` columns.
-    const columnMapping = {
-      userId: '"userId"',
-      user_id: '"userId"',
-      ownerId: '"userId"',
-      breedId: '"breedId"',
-      age: 'age',
-      trainingCooldown: '"trainingCooldown"',
-      createdAt: '"createdAt"',
-      stableId: '"stableId"',
-    };
-
-    for (const pattern of options.compositePatterns) {
-      // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
-      // (e.g. 'constructor', '__proto__') are never treated as known columns.
-      // The previous `col in columnMapping` traversed the prototype chain and
-      // let inherited Object.prototype keys pass through as "known".
-      const unknown = pattern.filter(col => !Object.hasOwn(columnMapping, col));
-      if (unknown.length > 0) {
-        logger.warn(
-          `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — unknown column(s): ${unknown.join(', ')}`,
-        );
-        continue;
-      }
-      const mappedColumns = pattern.map(col => columnMapping[col]);
-      // Defence-in-depth: verify every resolved column value is a string
-      // before interpolating into DDL. Own-property check above makes this
-      // redundant for the static map, but guards against future mutations.
-      if (mappedColumns.some(c => typeof c !== 'string')) {
-        logger.warn(
-          `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — one or more resolved column names are not strings`,
-        );
-        continue;
-      }
-      const safeName = pattern.join('_').replace(/[^a-zA-Z0-9_]/g, '_');
-      const indexName = `idx_horses_${safeName}`;
-      const indexQuery = `CREATE INDEX IF NOT EXISTS ${indexName} ON horses (${mappedColumns.join(', ')})`;
-      indexQueries.push(indexQuery);
-    }
-  }
-
-  // Execute index creation queries
-  for (const query of indexQueries) {
-    try {
-      await prisma.$executeRawUnsafe(query);
-      createdIndexes.push({
-        query,
-        status: 'created',
-        estimatedSpeedup: 2.5, // Estimated performance improvement
-      });
-    } catch (error) {
-      logger.warn(`[databaseOptimization] Index creation failed: ${query}`, error);
-      createdIndexes.push({
-        query,
-        status: 'failed',
-        error: error.message,
-      });
-    }
-  }
-
-  // Equoria-qhogt: guard idx.query with typeof to prevent a .includes()
-  // crash if a non-string ever reaches createdIndexes (defence-in-depth;
-  // the three allowlist fixes above already prevent non-strings from
-  // entering indexQueries, but this makes the return path safe too).
-  // Observability: warn if any entry somehow has a non-string query — that
-  // would mean an upstream guard regressed.  The entries are still excluded
-  // from both arrays (behavior unchanged); the warn makes the regression
-  // visible instead of silently masking it (EDGE_CASE_FIX_DISCIPLINE §3).
-  const nonStringEntries = createdIndexes.filter(idx => typeof idx.query !== 'string');
-  if (nonStringEntries.length > 0) {
-    logger.warn(
-      `[databaseOptimization] ${nonStringEntries.length} createdIndexes entr${nonStringEntries.length === 1 ? 'y' : 'ies'} had a non-string query — upstream allowlist guard may have regressed. Affected statuses: ${nonStringEntries.map(idx => idx.status ?? 'unknown').join(', ')}`,
-    );
-  }
-
-  return {
-    created: createdIndexes,
-    performanceImpact: calculateIndexImpact(createdIndexes),
-    ginIndexes: createdIndexes.filter(
-      idx => typeof idx.query === 'string' && idx.query.includes('GIN'),
-    ),
-    btreeIndexes: createdIndexes.filter(
-      idx => typeof idx.query === 'string' && !idx.query.includes('GIN'),
-    ),
-    queryPatternsCovered: options.queryPatterns?.length || 0,
-    performanceGains: estimatePerformanceGains(createdIndexes),
-  };
-}
 
 /**
  * Implement connection pooling optimization
@@ -572,22 +427,6 @@ function calculateAverageTime(queryType, newTime) {
   return (existing.averageTime + newTime) / 2;
 }
 
-function calculateIndexImpact(indexes) {
-  return {
-    estimatedSpeedup: 2.5,
-    queriesAffected: indexes.length * 3,
-    storageOverhead: '5MB',
-  };
-}
-
-function estimatePerformanceGains() {
-  return {
-    querySpeedup: '60%',
-    throughputIncrease: '40%',
-    resourceReduction: '25%',
-  };
-}
-
 async function benchmarkConcurrentLoad(options) {
   return {
     totalRequests: options.concurrentUsers * options.requestsPerUser,
@@ -620,56 +459,6 @@ async function benchmarkProductionScenario() {
 // Helper functions
 function generateCacheKey(options) {
   return `epigenetic_query_${JSON.stringify(options)}`.replace(/[^a-zA-Z0-9_]/g, '_');
-}
-
-/**
- * Map a semantic query-pattern label to a CREATE INDEX statement against the
- * REAL `horses` columns. The label describes the query a caller wants to
- * optimize ("epigenetic_flags_search") — it is NOT itself a column name. The
- * previous implementation used the label verbatim as a column, producing
- * `ON horses ("epigenetic_flags_search")`, which fails with "column does not
- * exist" on a fresh `equoria_test` DB built from migrations (CI shard-3).
- *
- * Each entry below targets columns that actually exist per
- * packages/database/prisma/schema.prisma. Unknown patterns are skipped (return
- * null) rather than emitting invalid SQL.
- */
-const QUERY_PATTERN_INDEX = {
-  // GIN on the epigeneticFlags String[] column for "has trait" lookups.
-  epigenetic_flags_search:
-    'CREATE INDEX IF NOT EXISTS idx_horses_epigenetic_flags_search ON horses USING GIN ("epigeneticFlags")',
-  // GIN on the disciplineScores JSONB column for score filtering.
-  discipline_scores_filter:
-    'CREATE INDEX IF NOT EXISTS idx_horses_discipline_scores_filter ON horses USING GIN ("disciplineScores")',
-  // BTREE composite covering age + training-cooldown status queries.
-  age_and_training_status:
-    'CREATE INDEX IF NOT EXISTS idx_horses_age_and_training_status ON horses (age, "trainingCooldown")',
-  // BTREE on the owning FK (userId — NOT ownerId) for per-user horse lookups.
-  user_horse_lookup: 'CREATE INDEX IF NOT EXISTS idx_horses_user_horse_lookup ON horses ("userId")',
-};
-
-function generateIndexQuery(pattern) {
-  // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
-  // ('constructor', '__proto__', 'toString', etc.) are never treated as
-  // known patterns. The previous direct bracket access let inherited keys
-  // return a non-string truthy value (e.g. the Object constructor function)
-  // that would be pushed straight into $executeRawUnsafe.
-  if (!Object.hasOwn(QUERY_PATTERN_INDEX, pattern)) {
-    logger.warn(
-      `[databaseOptimization] Skipping index for unknown query pattern "${pattern}" (no mapping to real columns)`,
-    );
-    return null;
-  }
-  const query = QUERY_PATTERN_INDEX[pattern];
-  // Defence-in-depth: own-property check passed but value must be a string.
-  // Catches any future mutation of QUERY_PATTERN_INDEX that stores a non-string.
-  if (typeof query !== 'string') {
-    logger.warn(
-      `[databaseOptimization] Skipping index for pattern "${pattern}" — resolved query is not a string`,
-    );
-    return null;
-  }
-  return query;
 }
 
 function generateOptimizationRecommendations() {
@@ -716,7 +505,6 @@ async function benchmarkSingleOperation(operation, iterations) {
 
 export default {
   analyzeQueryPerformance,
-  createOptimizedIndexes,
   implementConnectionPooling,
   setupQueryCaching,
   optimizeEpigeneticQueries,

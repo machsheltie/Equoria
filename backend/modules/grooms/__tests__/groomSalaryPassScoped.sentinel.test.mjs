@@ -73,6 +73,12 @@ const GUARDED_FILES = [
   // blocks the debit on a row lock, and an unscoped run would do that to the pass
   // for every player on the shared development database.
   'modules/grooms/__tests__/groomFeeUncollected.integration.test.mjs',
+  // Equoria-95yrv: the per-horse fee basis. It runs the pass against a fixture
+  // stable of one working groom and one idle one, scoped to its own user.
+  'modules/grooms/__tests__/groomFeePerHorse.integration.test.mjs',
+  // Equoria-bgdfb: the arrears cases. They drive a player into grace and then pay,
+  // both scoped to this suite's own fixture user.
+  'modules/grooms/__tests__/groomFeeArrearsOwed.integration.test.mjs',
   'tests/integration/groomSalarySystem.test.mjs',
 ];
 

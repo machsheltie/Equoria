@@ -319,7 +319,9 @@ export async function recordInteraction(req, res) {
             bondingChange: effects.bondingChange,
             stressChange: effects.stressChange,
             quality: effects.quality,
-            cost: effects.cost,
+            // Equoria-tfo3c (owner ruling, 2026-09-14): care costs nothing. The
+            // per-session price that used to be written here was charged to nobody;
+            // the column keeps its 0.0 default until a later migration drops it.
             notes,
             taskType,
             qualityScore,

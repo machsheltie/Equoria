@@ -181,8 +181,10 @@ describe('Ownership Violation Attempts Integration Tests', () => {
     });
 
     it('allows owners to update their horse with a valid payload', async () => {
-      const newName = 'Updated Horse Name';
-
+      // Equoria-4fnro (OWNER RULING 2026-09-14): this case used to send
+      // { name, sex, dateOfBirth } and assert the name changed. PUT no longer
+      // renames anything — the contract changed WITH the implementation, and the
+      // case below proves the refusal. What PUT still does is asserted here.
       const response = await request(app)
         .put(`/api/v1/horses/${horseA.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
@@ -190,17 +192,57 @@ describe('Ownership Violation Attempts Integration Tests', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
-          name: newName,
           sex: 'mare',
           dateOfBirth: new Date().toISOString(),
         })
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.name).toBe(newName);
 
       const horse = await prisma.horse.findUnique({ where: { id: horseA.id } });
-      expect(horse.name).toBe(newName);
+      expect(horse.sex).toBe('Mare');
+      expect(horse.name).toBe(horseA.name);
+    });
+
+    it('REFUSES to rename a horse through PUT — renaming lives only on PATCH /horses/:id/name', async () => {
+      // The whole point of Equoria-4fnro's "the older route stops renaming":
+      // before this, a horse could be renamed through the mass-assignment update
+      // path OR the dedicated one, and only the dedicated one is bounded,
+      // single-purpose, and transactional.
+      const before = await prisma.horse.findUnique({ where: { id: horseA.id } });
+
+      const response = await request(app)
+        .put(`/api/v1/horses/${horseA.id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ name: 'Renamed Through The Wrong Door' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      // The message points the caller at the door that IS open.
+      expect(response.body.message).toContain('PATCH /horses/:id/name');
+
+      const after = await prisma.horse.findUnique({ where: { id: horseA.id } });
+      expect(after.name).toBe(before.name);
+    });
+
+    it('REFUSES a PUT that mixes a name in with otherwise valid fields, changing nothing', async () => {
+      const before = await prisma.horse.findUnique({ where: { id: horseA.id } });
+
+      await request(app)
+        .put(`/api/v1/horses/${horseA.id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ name: 'Smuggled Rename', sex: 'stallion' })
+        .expect(400);
+
+      const after = await prisma.horse.findUnique({ where: { id: horseA.id } });
+      expect(after.name).toBe(before.name);
+      expect(after.sex).toBe(before.sex);
     });
 
     // Equoria-9tque (owner ruling 2026-09-08: "players are not allowed to
