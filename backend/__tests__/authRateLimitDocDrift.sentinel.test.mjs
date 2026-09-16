@@ -25,12 +25,11 @@
  *  not expose its `max`/`skipSuccessfulRequests` for runtime
  *  introspection — the configuration lives only in source.
  *
- *  NOTE: Sentry security-alert thresholds ("Auth Failures | 5 events |
- *  15 minutes" in SENTRY_SETUP.md / SECURITY_ASSESSMENT_REPORT.md:299)
- *  are a DIFFERENT subsystem (backend/config/sentry.mjs:185,
- *  SecurityAlertThresholds[AUTH_FAILURE] = { count: 5, windowMinutes:
- *  15 }) and are intentionally NOT asserted here — they correctly
- *  remain 5/15.
+ *  NOTE: security-alert thresholds ("Auth Failures | 5 events | 15
+ *  minutes") belong to a DIFFERENT subsystem from the auth rate
+ *  limiter and are intentionally NOT asserted here. The doc-drift
+ *  guard that used to pin them was retired on 2026-09-16 with Sentry
+ *  itself (see the note at the end of this file).
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -162,12 +161,18 @@ describe('Auth rate-limit code ↔ docs drift sentinel (Equoria-wfz1)', () => {
     expect(prd).toMatch(/Equoria-ftjm[\s\S]*?resolved/i);
   });
 
-  it('SENTRY_SETUP.md auth-failure ALERT threshold is intentionally still 5 events / 15 minutes', () => {
-    // Negative-space guard: proves the wfz1 doc edits did NOT
-    // accidentally rewrite the Sentry alert threshold (a different
-    // subsystem). If a future over-eager "fix all the 5/15s" edit
-    // clobbers this, the sentinel catches the mistake.
-    const sentryDoc = read('docs/SENTRY_SETUP.md');
-    expect(sentryDoc).toMatch(/Auth Failures\s*\|\s*5 events\s*\|\s*15 minutes/);
-  });
+  // RETIRED 2026-09-16 by owner ruling ("we do not use Sentry at all so get rid
+  // of it"). The removed case was:
+  //
+  //   it('SENTRY_SETUP.md auth-failure ALERT threshold is intentionally still
+  //       5 events / 15 minutes')
+  //
+  // a negative-space guard asserting that docs/SENTRY_SETUP.md still read
+  // "Auth Failures | 5 events | 15 minutes", so an over-eager "fix all the
+  // 5/15s" edit could not silently rewrite a DIFFERENT subsystem's threshold.
+  //
+  // That guard protected a document that has now been deliberately retired
+  // along with Sentry itself, so it is removed rather than weakened: the
+  // behaviour it specified no longer exists. The auth rate-limiter assertions
+  // above — the actual subject of this sentinel — are unchanged.
 });

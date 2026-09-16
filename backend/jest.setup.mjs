@@ -155,8 +155,7 @@ async function checkSuspiciousActivity(logEntry) {
         recentActivity: userActivity.slice(-10), // Last 10 activities
       });
 
-      // Security alerting is handled by Sentry integration (config/sentry.mjs)
-      // based on configured event thresholds for different suspicious pattern types.
+      // Suspicious activity is surfaced through the error-level log above.
     }
   } catch (error) {
     logger.error('[audit] Failed to check suspicious activity:', error);

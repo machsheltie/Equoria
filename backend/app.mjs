@@ -15,19 +15,17 @@
  *   - backend/app/routers.mjs           — public/auth/admin router composition
  *
  * 🔧 MIDDLEWARE STACK (ORDER IS BEHAVIOR — DO NOT REORDER CASUALLY):
- *   1. Sentry init (before any other middleware)
- *   2. trust proxy
- *   3. addSecurityHeaders → helmet (headers before helmet's CSP/COEP/HSTS)
- *   4. enforceNoOriginPolicy → cors (no-origin gate before CORS value check)
- *   5. apiLimiter on /api/
- *   6. body parsing (json/urlencoded) → polluted-body → polluted-query guards
- *   7. cookieParser
- *   8. requestLogger → globalAuditTrail (audit after logging, before routes)
- *   9. doc headers → response optimization → resource/memory management
- *  10. routers (public → /api/v1/breeds → /api/v1/performance [admin-only] → admin → auth)
- *  11. static asset dirs → SPA/404 fallback
- *  12. errorRequestLogger → Sentry error handler → CSRF/body-security/global
- *      error handlers
+ *   1. trust proxy
+ *   2. addSecurityHeaders → helmet (headers before helmet's CSP/COEP/HSTS)
+ *   3. enforceNoOriginPolicy → cors (no-origin gate before CORS value check)
+ *   4. apiLimiter on /api/
+ *   5. body parsing (json/urlencoded) → polluted-body → polluted-query guards
+ *   6. cookieParser
+ *   7. requestLogger → globalAuditTrail (audit after logging, before routes)
+ *   8. doc headers → response optimization → resource/memory management
+ *   9. routers (public → /api/v1/breeds → /api/v1/performance [admin-only] → admin → auth)
+ *  10. static asset dirs → SPA/404 fallback
+ *  11. errorRequestLogger → CSRF/body-security/global error handlers
  *
  * 🚀 API ROUTES: see backend/app/routers.mjs for the full route map.
  */
@@ -101,13 +99,7 @@ import {
   requestTimeoutMiddleware,
 } from './middleware/resourceManagement.mjs';
 
-// Sentry error tracking and monitoring
-import { initializeSentry, attachSentryErrorHandler } from './config/sentry.mjs';
-
 const app = express();
-
-// Initialize Sentry (must be before any other middleware)
-await initializeSentry(app);
 
 // Trust proxy for accurate IP addresses behind reverse proxies
 app.set('trust proxy', 1);
@@ -407,9 +399,6 @@ app.use('*', (req, res) => {
 
 // Error request logging
 app.use(errorRequestLogger);
-
-// Sentry error handler (must be after routes, before other error handlers)
-attachSentryErrorHandler(app);
 
 // CSRF error handler (must be before global error handler)
 app.use(csrfErrorHandler);

@@ -36,7 +36,7 @@
  *     userId pattern.
  *   - Equoria-a429: a color/temperament failure is logged at ERROR
  *     level (was: warn). The user is still registered and the horse
- *     still exists, but the gap is visible in production logs + Sentry
+ *     still exists, but the gap is visible in production logs
  *     so the long-term sentinel job (Equoria-fhag) is not the only
  *     line of defense.
  *   - Equoria-f5372: temperament is applied via raw SQL on the existing
@@ -188,7 +188,7 @@ export async function createStarterHorseForNewUser(
       // Equoria-a429: was logger.warn (silent fail-warn-drop pattern that
       // produced 111 NULL-phenotype stragglers in the canonical DB). Now
       // logger.error so the regression is visible in production logs +
-      // Sentry. Still non-fatal at the request level — the user is
+      // the error log. Still non-fatal at the request level — the user is
       // registered and the horse exists; the sentinel job in
       // Equoria-fhag is the long-term guard.
       logger.error(

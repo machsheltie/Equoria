@@ -27,6 +27,9 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
+import { Writable } from 'node:stream';
+import winston from 'winston';
+import logger from '../utils/logger.mjs';
 import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
@@ -414,4 +417,53 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
     // the claim is fresh — the reaper moved nothing.
     expect(await totalMoney(allUserIds)).toBe(conservationBefore - PRIZE - ENTRY_FEE * entrants.length);
   }, 60000);
+  // Placed LAST deliberately: this case drives a real reap to completion,
+  // which leaves the shared fixture horses in a post-competition cooldown.
+  // Running it earlier starved the sibling cases of eligible entries.
+  it('ALERT: a reaper release emits an error-level operational alert naming the stranded show', async () => {
+    // Codex review 2026-09-16 item 6. A reaper release means a crash stranded
+    // REAL escrow, so it must be visible, not silent. Until 2026-09-16 this
+    // alert went to Sentry; Sentry was removed (Equoria-94bix) and the alert
+    // was deliberately kept, routed to the application log at error level.
+    // Nothing asserted it before, so the conversion was exercised but unproven.
+    //
+    // Observed through a real winston transport on the real logger — the same
+    // formatted output production would emit — not a spy on the logger API.
+    const capturedLines = [];
+    const captureStream = new Writable({
+      write(chunk, _encoding, callback) {
+        capturedLines.push(chunk.toString().trimEnd());
+        callback();
+      },
+    });
+    const captureTransport = new winston.transports.Stream({ stream: captureStream });
+
+    const showId = await buildFundedShow();
+    await plantCrash(showId, new Date(Date.now() - STALE_CLAIM_THRESHOLD_MS - 60_000));
+
+    logger.add(captureTransport);
+    try {
+      const summary = await reapStaleExecutingShows({ showIds: [showId] });
+      expect(summary.staleShowsFound).toBe(1);
+    } finally {
+      try {
+        if (logger.transports.includes(captureTransport)) {
+          logger.remove(captureTransport);
+        }
+      } catch {
+        // Teardown must never mask the assertion result.
+      }
+    }
+
+    const alertLines = capturedLines.filter(line => line.includes('ShowExecutionReaper'));
+    expect(alertLines.length).toBeGreaterThan(0);
+
+    const alert = alertLines.join(' | ');
+    // Error level, so it is not lost among ordinary chatter.
+    expect(alert).toMatch(/error/i);
+    // Identifying context: the alert is useless without the stranded show id.
+    expect(alert).toContain(String(showId));
+    expect(alert).toMatch(/reaper fired/i);
+    expect(alert).toMatch(/stranded in 'executing'/);
+  }, 120000);
 });

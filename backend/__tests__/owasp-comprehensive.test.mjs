@@ -575,16 +575,17 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
       });
     });
 
-    describe('Sentry Integration', () => {
-      it('should have Sentry configured for error tracking', () => {
-        // Verify Sentry is available (without DSN it's disabled in test)
-        // Equoria-0ys7m: backend/config/sentry.mjs (one level up from backend/__tests__,
-        // then into config/). sentry.mjs lives only under backend/config — there is no
-        // repo-root config/sentry.mjs — so this must resolve into backend/, not the root.
-        const sentryConfig = path.join(__dirname, '../config/sentry.mjs');
-        expect(fs.existsSync(sentryConfig)).toBe(true);
-      });
-    });
+    // RETIRED 2026-09-16 by owner ruling (Equoria-94bix, "we do not use Sentry
+    // at all so get rid of it"). The removed case was:
+    //
+    //   describe('Sentry Integration') >
+    //     it('should have Sentry configured for error tracking')
+    //
+    // which asserted that backend/config/sentry.mjs existed on disk. That file
+    // was deleted with the Sentry integration, so the contract it pinned no
+    // longer exists. It is removed rather than weakened. Error tracking is no
+    // longer provided by a third party; audit and operational alerts are
+    // emitted at error level to the application log.
   });
 
   // A10 SSRF: the reusable SSRF-guard now EXISTS in production

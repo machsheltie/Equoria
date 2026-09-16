@@ -7,7 +7,7 @@ import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
-import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import GallopingLoader from '@/components/ui/GallopingLoader';
 import { RewardToastProvider } from '@/components/feedback';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
@@ -36,15 +36,10 @@ const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 const HorseEquipPage = lazy(() => import('./pages/horses/HorseEquipPage'));
 const FoalDetailPage = lazy(() => import('./pages/FoalDetailPage'));
 
-// Initialise Sentry once at module load (no-op if VITE_SENTRY_DSN not set)
-initSentry();
-
 const queryClient = new QueryClient();
 
 const App = () => (
-  <SentryErrorBoundary
-    fallback={<p className="text-[var(--text-primary)] p-8">Something went wrong.</p>}
-  >
+  <ErrorBoundary fallback={<p className="text-[var(--text-primary)] p-8">Something went wrong.</p>}>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
@@ -103,7 +98,7 @@ const App = () => (
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
-  </SentryErrorBoundary>
+  </ErrorBoundary>
 );
 
 export default App;

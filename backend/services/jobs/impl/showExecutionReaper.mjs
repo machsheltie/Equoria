@@ -47,7 +47,6 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { Sentry } from '../../../config/sentry.mjs';
 import { executeClosedShows } from '../../../modules/competition/index.mjs';
 
 /** A claim older than this is considered stranded by a crashed executor. */
@@ -67,20 +66,24 @@ function staleClaimPredicate(cutoff) {
 }
 
 /**
- * Operational Sentry alert (issue spec step 4): a reaper release means a
- * crash stranded real escrow — this must be visible, not just logged.
- * Fail-soft and debounce-free by design: firing at most once per 30-min
- * cycle per stuck cohort is acceptable noise for a MONEY defect. No-op when
- * the Sentry DSN is not configured (captureMessage becomes a noop) — same
- * posture as CronJobMonitor.evaluateStaleAlerts.
+ * Operational alert (issue spec step 4): a reaper release means a crash
+ * stranded real escrow — this must be visible, not silent. Fail-soft and
+ * debounce-free by design: firing at most once per 30-min cycle per stuck
+ * cohort is acceptable noise for a MONEY defect.
+ *
+ * Emitted at error level to the application log. This was a Sentry
+ * captureMessage until 2026-09-16, when Sentry was removed from the project
+ * (Equoria-94bix); the alert itself is deliberately kept, because losing
+ * visibility of stranded escrow was never the point of dropping the vendor.
+ * Same posture as CronJobMonitor.evaluateStaleAlerts, which already logged.
  */
 function emitReaperAlert(staleShows, releasedIds) {
   try {
-    Sentry.withScope(scope => {
-      scope.setTag('event_type', 'operational');
-      scope.setTag('alert', 'show_execution_reaper_fired');
-      scope.setLevel('error');
-      scope.setContext('stranded_shows', {
+    logger.error(
+      `[ShowExecutionReaper] ALERT: reaper fired — ${staleShows.length} show(s) stranded in 'executing' > 2h (ids: ${staleShows.map(s => s.id).join(', ')})`,
+      {
+        alertType: 'show_execution_reaper_fired',
+        eventType: 'operational',
         staleShowsFound: staleShows.length,
         releasedCount: releasedIds.length,
         shows: staleShows.map(s => ({
@@ -89,14 +92,10 @@ function emitReaperAlert(staleShows, releasedIds) {
           claimedAt: s.claimedAt ? s.claimedAt.toISOString() : null,
           updatedAt: s.updatedAt.toISOString(),
         })),
-      });
-      Sentry.captureMessage(
-        `Show-execution reaper fired: ${staleShows.length} show(s) stranded in 'executing' > 2h (ids: ${staleShows.map(s => s.id).join(', ')})`,
-        'error',
-      );
-    });
+      },
+    );
   } catch (err) {
-    logger.warn(`[ShowExecutionReaper] Sentry emit failed: ${err?.message ?? err}`);
+    logger.warn(`[ShowExecutionReaper] alert emit failed: ${err?.message ?? err}`);
   }
 }
 

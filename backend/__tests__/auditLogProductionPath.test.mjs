@@ -15,7 +15,7 @@
  * status-code / operationType branch.
  *
  * Pure, no DB, no mocks. The middleware writes to the Winston logger and to
- * the Sentry shim — both are no-op-safe in the absence of a configured
+ * the audit sink — both are no-op-safe in the absence of a configured
  * transport / DSN, so we just verify the orchestration runs to completion
  * (next() invoked, res.send wrapped, no exceptions).
  */
@@ -189,7 +189,7 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
     });
   });
 
-  it('drives the auth-failure Sentry branch (operationType=authentication, status=401)', async () => {
+  it('drives the auth-failure audit branch (operationType=authentication, status=401)', async () => {
     // resetModules (2026-08-18 hygiene set) re-executes the module graph on
     // every dynamic import — importing under the flipped env would trip
     // config.mjs's production secret guard. Import under test env first;
@@ -209,7 +209,7 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
     });
   });
 
-  it('drives the ownership-violation Sentry branch (operationType=ownership_check, status=403)', async () => {
+  it('drives the ownership-violation audit branch (operationType=ownership_check, status=403)', async () => {
     // resetModules (2026-08-18 hygiene set) re-executes the module graph on
     // every dynamic import — importing under the flipped env would trip
     // config.mjs's production secret guard. Import under test env first;
@@ -356,7 +356,7 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
 
 // ─── checkSuspiciousActivity threshold-trigger paths ─────────────────────────
 //
-// To exercise the "patterns detected → trackSecurityEvent" branch we need the
+// To exercise the "patterns detected" branch we need the
 // suspiciousActivityCache for a user to already contain enough entries to
 // trigger detectSuspiciousPatterns. We drive this by calling the middleware
 // repeatedly with the same userId so the cache accumulates.

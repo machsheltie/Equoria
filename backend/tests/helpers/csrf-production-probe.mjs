@@ -3,10 +3,16 @@
  *
  * Run as a child process (see __tests__/integration/csrf-production-cookie.test.mjs).
  * The Jest ESM runtime has a known bug where jest.resetModules() + await
- * import('../../app.mjs') re-imports transitively pull in @sentry/core and
- * crash with "Module cache already has entry". Spawning a fresh Node process
+ * import('../../app.mjs') re-imports transitively pulled in @sentry/core and
+ * crashed with "Module cache already has entry". Spawning a fresh Node process
  * with NODE_ENV=production sidesteps Jest's module registry entirely and
  * reliably exercises the production cookie contract.
+ *
+ * NOTE: @sentry/core was removed from the project on 2026-09-16
+ * (Equoria-94bix), so that specific trigger is gone. The child-process probe
+ * is deliberately KEPT: the underlying Jest ESM module-registry bug is not
+ * Sentry-specific, and collapsing this back into an in-process import is a
+ * behaviour change that belongs to its own task, not to the Sentry removal.
  *
  * Contract:
  *   - Exits 0 on success, 1 on failure.

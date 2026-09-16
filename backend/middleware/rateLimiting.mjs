@@ -30,7 +30,6 @@ import { RedisStore } from 'rate-limit-redis';
 import { createClient } from 'redis';
 import logger from '../utils/logger.mjs';
 import { createRedisCircuitBreaker } from '../utils/redisCircuitBreaker.mjs';
-import { trackSecurityEvent } from '../config/sentry.mjs';
 import { applyE2eRateLimitOverride } from './e2eRateLimitOverride.mjs';
 
 let redisClient = null;
@@ -140,8 +139,8 @@ export function shouldFailStartupWithoutRedis({
 
 /**
  * Emit a throttled degradation alert when Redis is expected but not connected.
- * At most once per ALERT_THROTTLE_MS per keyPrefix to avoid log-spam / Sentry DoS.
- * Logs at error level AND captures a Sentry security event if Sentry is configured.
+ * At most once per ALERT_THROTTLE_MS per keyPrefix to avoid log-spam.
+ * Logs at error level.
  * Exported for white-box testing of the throttle-window gating.
  *
  * @param {string} keyPrefix - The rate limiter's keyPrefix (used as throttle key)
@@ -161,25 +160,6 @@ export function emitDegradationAlert(keyPrefix) {
     throttleWindowMs: ALERT_THROTTLE_MS,
     alertType: 'redis_degradation_fail_closed',
   });
-
-  // Capture via Sentry if it is configured (graceful: trackSecurityEvent is
-  // a no-op when Sentry DSN is not set because Sentry.withScope is a no-op).
-  try {
-    trackSecurityEvent(
-      'rate_limit_exceeded',
-      {
-        details: 'Redis outage — fail-closed economy limiter active',
-        keyPrefix,
-        alertType: 'redis_degradation_fail_closed',
-      },
-      'error',
-    );
-  } catch (sentryErr) {
-    // Sentry reporting must never block or error the rate-limiting path.
-    logger.warn('[RateLimit] Sentry capture failed during degradation alert', {
-      error: sentryErr?.message,
-    });
-  }
 }
 
 /**

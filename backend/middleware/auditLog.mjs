@@ -1,6 +1,5 @@
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { trackSecurityEventWithThreshold, SecurityEventTypes } from '../config/sentry.mjs';
 
 /**
  * Audit Logging Middleware
@@ -20,7 +19,7 @@ import { trackSecurityEventWithThreshold, SecurityEventTypes } from '../config/s
  * Comprehensive audit logging for sensitive operations
  */
 // Equoria-97ikc: cap on the body payload we forward into logOperation /
-// Sentry. 8KB is roughly the size of a paginated API page; anything larger
+// the audit log. 8KB is roughly the size of a paginated API page; anything larger
 // is almost certainly either a list response (no per-row PII surface that
 // the body-redactor handles) or a binary blob we should not be passing
 // through the audit log at all.
@@ -68,11 +67,11 @@ export const auditLog = (operationType, sensitivityLevel = 'medium') => {
       //      defensive — but a future handler that mistakenly mixes the
       //      two would otherwise hand its event stream to the audit log
       //      verbatim, defeating SSE flush semantics and leaking each
-      //      streamed event into Sentry.
+      //      streamed event into the audit log.
       //   2) Success responses (statusCode < 400): the only consumer of
       //      response data in logOperation is the `errorResponse` field
       //      (statusCode >= 400 branch). Capturing successes feeds full
-      //      payloads through sanitizeLogData + the Sentry pipe for no
+      //      payloads through sanitizeLogData + the audit pipe for no
       //      operational gain — pure PII surface for nothing.
       //   3) Oversize: anything past AUDIT_LOG_BODY_CAPTURE_CAP_BYTES gets
       //      truncated. Lists, blobs, or unexpectedly-large failure
@@ -131,36 +130,6 @@ async function logOperation(req, res, operationType, sensitivityLevel, duration,
     // Log to different levels based on sensitivity
     if (sensitivityLevel === 'high' || res.statusCode >= 400) {
       logger.warn('[audit] Sensitive operation:', logEntry);
-
-      // Track authentication failures in Sentry
-      if (operationType === 'authentication' && res.statusCode === 401) {
-        trackSecurityEventWithThreshold(
-          SecurityEventTypes.AUTH_FAILURE,
-          {
-            userId: logEntry.userId,
-            userEmail: logEntry.userEmail,
-            ip: logEntry.ip,
-            path: logEntry.path,
-            statusCode: logEntry.statusCode,
-          },
-          logEntry.ip, // Use IP as identifier for threshold tracking
-        );
-      }
-
-      // Track ownership violations in Sentry
-      if (operationType === 'ownership_check' && res.statusCode === 403) {
-        trackSecurityEventWithThreshold(
-          SecurityEventTypes.OWNERSHIP_VIOLATION,
-          {
-            userId: logEntry.userId,
-            userEmail: logEntry.userEmail,
-            ip: logEntry.ip,
-            path: logEntry.path,
-            statusCode: logEntry.statusCode,
-          },
-          logEntry.userId || logEntry.ip, // Use userId or IP as identifier
-        );
-      }
     } else {
       logger.info('[audit] Operation logged:', {
         userId: logEntry.userId,
@@ -312,20 +281,6 @@ async function checkSuspiciousActivity(logEntry) {
         patterns: suspiciousPatterns,
         recentActivity: userActivity.slice(-10), // Last 10 activities
       });
-
-      // Track security event in Sentry with automatic threshold monitoring
-      trackSecurityEventWithThreshold(
-        SecurityEventTypes.SUSPICIOUS_ACTIVITY,
-        {
-          userId,
-          userEmail: logEntry.userEmail,
-          patterns: suspiciousPatterns,
-          recentActivityCount: userActivity.length,
-          ip: logEntry.ip,
-          userAgent: logEntry.userAgent,
-        },
-        userId, // Use userId as identifier for threshold tracking
-      );
     }
   } catch (error) {
     logger.error('[audit] Failed to check suspicious activity:', error);
