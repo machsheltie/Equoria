@@ -30,7 +30,7 @@
  * Programmatic use (run-suite-sharded.mjs): createLaneDatabase(), laneUrlFor(),
  * destroyLaneDatabase(), listLaneDatabases(). Side effects live in main().
  */
-import { execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -132,23 +132,151 @@ async function withAdmin(env, fn) {
   }
 }
 
-function runPrisma(args, databaseUrl) {
-  return execFileSync(process.execPath, [PRISMA_CLI, ...args, `--schema=${SCHEMA_PATH}`], {
-    cwd: DB_PACKAGE,
-    env: { ...process.env, DATABASE_URL: databaseUrl },
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    maxBuffer: 64 * 1024 * 1024,
+/**
+ * Provisioning subprocesses currently running (migrate deploy, seeds). The
+ * sharded runner stops and awaits these on cancellation BEFORE destroying any
+ * lane database, so a drop can never run underneath a live migration.
+ *
+ * Round 2, P2 (Codex review 2026-09-16): these used to be execFileSync calls —
+ * synchronous, untimed, and invisible to cancellation. A hung migration or
+ * seed made the runner unable to handle a signal at all.
+ */
+export const activeProvisioningChildren = new Set();
+
+/** Hard ceiling for any single provisioning step. A migration or seed that
+ *  exceeds it is killed and provisioning fails loudly. Measured: ~1 s per lane. */
+export const PROVISIONING_STEP_TIMEOUT_MS = 10 * 60 * 1000;
+
+/** Keep only the tail of a stream, so a chatty child cannot grow memory. */
+const OUTPUT_TAIL_BYTES = 64 * 1024;
+
+/**
+ * Cancellation propagated INTO provisioning (Codex round 3, P2). The runner's
+ * cleanup snapshot can only stop children that already exist; if a signal
+ * lands while createLaneDatabase() is awaiting the database, migration and
+ * seeds would otherwise still launch afterwards and cleanup would wait on
+ * them. So every boundary here checks the signal itself: after the async
+ * database wait and before EVERY subprocess launch. A running subprocess is
+ * killed through spawn()'s own `signal` option. No registry polling, no
+ * larger timeouts.
+ */
+export const PROVISIONING_CANCELLED = 'PROVISIONING_CANCELLED';
+
+function cancellationError(where, signal) {
+  const why =
+    signal?.reason instanceof Error ? signal.reason.message : String(signal?.reason ?? 'cancelled');
+  const error = new Error(`[lane] provisioning cancelled ${where} (${why})`);
+  error.code = PROVISIONING_CANCELLED;
+  return error;
+}
+
+function throwIfCancelled(signal, where) {
+  if (signal?.aborted) {
+    throw cancellationError(where, signal);
+  }
+}
+
+/**
+ * Run one provisioning step as a SUPERVISED child: registered while alive,
+ * bounded by its own deadline (SIGKILL on expiry), and resolved/rejected on
+ * real exit — never on signal alone.
+ */
+export function runSupervisedStep({
+  args,
+  cwd,
+  env,
+  label,
+  timeoutMs = PROVISIONING_STEP_TIMEOUT_MS,
+  signal,
+}) {
+  return new Promise((resolve, reject) => {
+    // Never launch after cancellation, even if the caller forgot to check.
+    if (signal?.aborted) {
+      reject(cancellationError(`before launching ${label}`, signal));
+      return;
+    }
+    const child = spawn(process.execPath, args, {
+      cwd,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+      timeout: timeoutMs,
+      killSignal: 'SIGKILL',
+      // Abort -> Node kills the child with killSignal; we settle on its exit.
+      signal,
+    });
+    activeProvisioningChildren.add(child);
+
+    let out = '';
+    let err = '';
+    child.stdout.on('data', chunk => {
+      out = (out + chunk.toString()).slice(-OUTPUT_TAIL_BYTES);
+    });
+    child.stderr.on('data', chunk => {
+      err = (err + chunk.toString()).slice(-OUTPUT_TAIL_BYTES);
+    });
+
+    // Settle exactly once, on the child's REAL exit. Deliberately NOT the
+    // events `once` helper: it rejects as soon as the emitter emits 'error',
+    // and on abort Node emits an AbortError BEFORE the exit — which let a raw
+    // ABORT_ERR escape ahead of the cancellation report.
+    let settled = false;
+    const finish = fn => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      activeProvisioningChildren.delete(child);
+      fn();
+    };
+
+    child.on('exit', (code, exitSignal) => {
+      finish(() => {
+        if (code === 0) {
+          resolve(out);
+          return;
+        }
+        if (signal?.aborted) {
+          reject(cancellationError(`while ${label} was running; it was terminated`, signal));
+          return;
+        }
+        const how = exitSignal ? `was killed by ${exitSignal}` : `exited with code ${code}`;
+        const why = exitSignal === 'SIGKILL' ? ` (deadline ${timeoutMs} ms, or cancellation)` : '';
+        reject(
+          new Error(`[lane] ${label} ${how}${why}: ${err.trim() || out.trim() || '(no output)'}`),
+        );
+      });
+    });
+
+    child.on('error', error => {
+      // On abort, spawn() emits AbortError and then kills the child; the 'exit'
+      // above reports that as a cancellation. Only a launch failure — a child
+      // that never started, so no 'exit' will ever come — settles here.
+      if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') {
+        return;
+      }
+      finish(() => reject(error));
+    });
   });
 }
 
-function runSeedScript(script, databaseUrl) {
-  return execFileSync(process.execPath, [script], {
+function runPrisma(args, databaseUrl, signal) {
+  return runSupervisedStep({
+    args: [PRISMA_CLI, ...args, `--schema=${SCHEMA_PATH}`],
+    cwd: DB_PACKAGE,
+    env: { ...process.env, DATABASE_URL: databaseUrl },
+    label: `prisma ${args.join(' ')}`,
+    signal,
+  });
+}
+
+function runSeedScript(script, databaseUrl, signal) {
+  return runSupervisedStep({
+    args: [script],
     cwd: BACKEND,
     env: { ...process.env, NODE_ENV: 'test', DATABASE_URL: databaseUrl },
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    maxBuffer: 16 * 1024 * 1024,
+    label: `seed ${path.basename(script)}`,
+    signal,
   });
 }
 
@@ -158,9 +286,11 @@ function runSeedScript(script, databaseUrl) {
  * from backend/data/breeds (breedCountSentinel, breedProfileLoader and the
  * renderable-profile suites assert against it). Measured: ~1s per lane.
  */
-function runSeed(databaseUrl) {
-  runSeedScript(SEED_SCRIPT, databaseUrl);
-  runSeedScript(BREEDS_SCRIPT, databaseUrl);
+async function runSeed(databaseUrl, signal) {
+  throwIfCancelled(signal, 'before the canonical seed');
+  await runSeedScript(SEED_SCRIPT, databaseUrl, signal);
+  throwIfCancelled(signal, 'before the breeds seed');
+  await runSeedScript(BREEDS_SCRIPT, databaseUrl, signal);
 }
 
 /**
@@ -208,16 +338,42 @@ export async function listLaneDatabases(env = process.env, runId = null) {
  * On any failure after CREATE the database is dropped again before rethrow,
  * so a half-built lane never survives.
  */
-export async function createLaneDatabase({ runId, lane, env = process.env, log = () => {} }) {
+/**
+ * The Postgres admin boundary used by createLaneDatabase(). Injectable so a
+ * bounded sentinel can model the database wait with a barrier and prove that
+ * cancellation arriving DURING that wait launches no provisioning subprocess.
+ * This is a genuine third-party network boundary with no safe DB-free sandbox;
+ * production always uses the default.
+ */
+export const defaultDatabaseOps = {
+  create: (name, env) => withAdmin(env, client => client.query(`CREATE DATABASE "${name}"`)),
+  drop: (name, env, log) => destroyLaneDatabase({ name, env, log }),
+};
+
+export async function createLaneDatabase({
+  runId,
+  lane,
+  env = process.env,
+  log = () => {},
+  signal,
+  databaseOps = defaultDatabaseOps,
+}) {
   const name = laneName(runId, lane);
   const url = laneUrlFor(name, env);
+  throwIfCancelled(signal, `before creating ${name}`);
   log(`[lane] creating ${name}`);
-  await withAdmin(env, client => client.query(`CREATE DATABASE "${name}"`));
+  await databaseOps.create(name, env);
   try {
+    // The database now EXISTS. If cancellation landed while we were waiting
+    // for it, stop here: launching migration/seeds would be continued work
+    // after cancellation. The catch below drops what was just created.
+    throwIfCancelled(signal, `after creating ${name}`);
     log(`[lane] ${name}: prisma migrate deploy`);
-    runPrisma(['migrate', 'deploy'], url);
+    await runPrisma(['migrate', 'deploy'], url, signal);
+    throwIfCancelled(signal, `before seeding ${name}`);
     log(`[lane] ${name}: seeding canonical data`);
-    runSeed(url);
+    await runSeed(url, signal);
+    throwIfCancelled(signal, `before resyncing ${name}`);
     const sequences = await resyncSequences(url);
     log(`[lane] ${name}: ${sequences} sequences resynced`);
     const client = new Client({ connectionString: url });
@@ -234,8 +390,12 @@ export async function createLaneDatabase({ runId, lane, env = process.env, log =
     log(`[lane] ${name}: ready (${migrations} migrations applied)`);
     return { name, migrations };
   } catch (error) {
-    log(`[lane] ${name}: provisioning failed, dropping`);
-    await destroyLaneDatabase({ name, env, log }).catch(dropError => {
+    log(
+      error?.code === PROVISIONING_CANCELLED
+        ? `[lane] ${name}: provisioning cancelled, dropping`
+        : `[lane] ${name}: provisioning failed, dropping`,
+    );
+    await databaseOps.drop(name, env, log).catch(dropError => {
       log(`[lane] ${name}: cleanup after failure also failed: ${dropError.message}`);
     });
     throw error;

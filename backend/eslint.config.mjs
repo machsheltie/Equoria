@@ -208,6 +208,7 @@ export default [
         setImmediate: 'readonly',
         clearImmediate: 'readonly',
         fetch: 'readonly', // Node.js 18+ global
+        AbortController: 'readonly', // Node.js 15+ global
         URL: 'readonly', // Node.js global
         performance: 'readonly', // Node.js global
       },

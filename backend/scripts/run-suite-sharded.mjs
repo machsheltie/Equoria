@@ -83,8 +83,21 @@ import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createLaneDatabase, destroyLaneDatabase, laneUrlFor, newRunId } from './test-lane-db.mjs';
-import { acquireGateLock, installReleaseOnExit } from './gate-lock.mjs';
+import {
+  activeProvisioningChildren,
+  createLaneDatabase,
+  destroyLaneDatabase,
+  laneName,
+  laneUrlFor,
+  newRunId,
+} from './test-lane-db.mjs';
+import {
+  acquireGateLock,
+  createOwnershipLifecycle,
+  installCancellationHandlers,
+  resolveExitStatus,
+} from './gate-lock.mjs';
+import { buildOwnershipSteps } from './gate-ownership-steps.mjs';
 import jestConfig from '../jest.config.mjs';
 
 const args = process.argv.slice(2);
@@ -197,40 +210,51 @@ function chunk(arr, n) {
 }
 
 // Discovery manifest: the set every batch's executed suites must reconcile to.
-const discovered = listTestFiles();
-if (discovered.length === 0) {
-  console.error('[shard] No test files matched. Aborting.');
-  process.exit(1);
-}
-const discoveredSet = new Set(discovered.map(normalizePath));
+//
+// ADMISSION BOUNDARY (audit 2026-09-16 P2): discovery shells out to
+// `jest --listTests` across the whole backend. That is expensive, and running
+// it at import time meant two runners could both do it before either had been
+// admitted to the gate. Discovery now happens inside the gate, so a run is
+// either admitted or waiting — never doing heavy work beside another gate.
+let discovered = [];
+let discoveredSet = new Set();
+let batches = [];
 
-const batches = JEST_SHARDS
-  ? Array.from({ length: JEST_SHARDS }, (_, index) => ({
-      index,
-      label: `shard ${index + 1}/${JEST_SHARDS}`,
-      jestArgs: [
-        `--shard=${index + 1}/${JEST_SHARDS}`,
-        ...canonicalIgnoreArgs,
-        ...(pattern ? [pattern] : []),
-      ],
-    }))
-  : chunk(discovered, BATCH_SIZE).map((batch, index) => ({
-      index,
-      label: `batch ${index + 1}`,
-      jestArgs: ['--runTestsByPath', ...batch],
-      files: batch,
-    }));
+function discoverAndPlan() {
+  discovered = listTestFiles();
+  if (discovered.length === 0) {
+    throw new Error('[shard] No test files matched. Aborting.');
+  }
+  discoveredSet = new Set(discovered.map(normalizePath));
 
-if (JEST_SHARDS) {
-  console.log(
-    `[shard] ${JEST_SHARDS} Jest hash shards over ${discovered.length} discovered suites, ` +
-      `${LANES} lane(s) of sequential fresh processes (heap ${HEAP_MB}MB each, hard cap ${BATCH_TIMEOUT_MS / 1000}s per shard).`,
-  );
-} else {
-  console.log(
-    `[shard] ${discovered.length} test files in ${batches.length} batches of ${BATCH_SIZE} ` +
-      `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
-  );
+  batches = JEST_SHARDS
+    ? Array.from({ length: JEST_SHARDS }, (_, index) => ({
+        index,
+        label: `shard ${index + 1}/${JEST_SHARDS}`,
+        jestArgs: [
+          `--shard=${index + 1}/${JEST_SHARDS}`,
+          ...canonicalIgnoreArgs,
+          ...(pattern ? [pattern] : []),
+        ],
+      }))
+    : chunk(discovered, BATCH_SIZE).map((batch, index) => ({
+        index,
+        label: `batch ${index + 1}`,
+        jestArgs: ['--runTestsByPath', ...batch],
+        files: batch,
+      }));
+
+  if (JEST_SHARDS) {
+    console.log(
+      `[shard] ${JEST_SHARDS} Jest hash shards over ${discovered.length} discovered suites, ` +
+        `${LANES} lane(s) of sequential fresh processes (heap ${HEAP_MB}MB each, hard cap ${BATCH_TIMEOUT_MS / 1000}s per shard).`,
+    );
+  } else {
+    console.log(
+      `[shard] ${discovered.length} test files in ${batches.length} batches of ${BATCH_SIZE} ` +
+        `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
+    );
+  }
 }
 
 const totals = {
@@ -244,7 +268,44 @@ const totals = {
 const failedSuiteNames = [];
 const problemBatches = [];
 const executedPaths = [];
-const startAll = Date.now();
+// Reset once this run is admitted and planned, so "Wall time" keeps meaning
+// provisioning + execution. Discovery moved inside the gate (admission
+// boundary), and time spent queued behind another gate is not this run's cost.
+let startAll = Date.now();
+
+/**
+ * Every Jest child this runner owns. Cancellation must be able to reach them:
+ * a child that survives cancellation runs beside the next admitted gate.
+ */
+const ownedChildren = new Set();
+/**
+ * The gate-ownership lifecycle for this run, assigned in main(). Schedulers
+ * consult it directly so cancellation stops new work IMMEDIATELY, rather than
+ * waiting for a cleanup step to flip a flag.
+ */
+let ownershipLifecycle = null;
+
+/** Lane databases this run OWNS, registered before creation begins. */
+const ownedLaneDbs = new Set();
+
+/** In-flight provisioning, so cleanup never races database creation. */
+let provisioningInFlight = null;
+
+/**
+ * Inputs to the ONE final-status decision (round 2, P2). Both the signal
+ * handler and main() call finalExitStatus(); whichever runs last cannot turn a
+ * cancelled run into status 0, because the decision is the same function.
+ */
+let runFailed = false;
+let cleanupReport = { failures: [] };
+
+function finalExitStatus(report = cleanupReport) {
+  return resolveExitStatus({
+    cancelled: ownershipLifecycle?.isCancelled() ?? false,
+    cleanupFailed: report.failures.length > 0,
+    runFailed,
+  });
+}
 
 /** Run one batch in a fresh process; resolves with { status, timedOut }. */
 function runBatch(batch, jsonFile, env) {
@@ -263,6 +324,7 @@ function runBatch(batch, jsonFile, env) {
       ],
       { cwd: BACKEND, env, stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true },
     );
+    ownedChildren.add(child);
     let stderrTail = '';
     child.stderr.on('data', chunkData => {
       stderrTail = (stderrTail + chunkData.toString()).slice(-4000);
@@ -274,10 +336,12 @@ function runBatch(batch, jsonFile, env) {
     }, BATCH_TIMEOUT_MS);
     child.on('exit', (status, signal) => {
       clearTimeout(timer);
+      ownedChildren.delete(child);
       resolve({ status, signal, timedOut, stderrTail });
     });
     child.on('error', error => {
       clearTimeout(timer);
+      ownedChildren.delete(child);
       resolve({ status: null, signal: null, timedOut, stderrTail: String(error) });
     });
   });
@@ -334,6 +398,10 @@ function recordBatch(batch, jsonFile, res, secs) {
 /** Run a lane's batches strictly in sequence; stops the lane on a fatal batch. */
 async function runLane(laneBatches, env, laneLabel) {
   for (const batch of laneBatches) {
+    if (ownershipLifecycle?.isCancelled()) {
+      console.error(`[shard] ${laneLabel}: cancelled; not scheduling ${batch.label}.`);
+      break;
+    }
     const jsonFile = path.join(tmp, `batch-${batch.index}.json`);
     const t0 = Date.now();
     const res = await runBatch(batch, jsonFile, env);
@@ -353,16 +421,64 @@ async function main() {
   const runId = newRunId();
   // One gate at a time on this machine, across worktrees (see GATE LOCK above).
   const gateLock = await acquireGateLock({ runId, log: line => console.log(line) });
-  installReleaseOnExit(gateLock);
+
+  // ONE cancellation state, ONE memoized cleanup (Codex review 2026-09-16,
+  // item 2). Signals request cancellation and start this cleanup; the `finally`
+  // below joins the SAME promise. Ownership is released only after every step
+  // has succeeded. The steps themselves live in gate-ownership-steps.mjs.
+  ownershipLifecycle = createOwnershipLifecycle({
+    handle: gateLock,
+    log: line => console.error(line),
+    steps: buildOwnershipSteps({
+      ownedChildren,
+      provisioningChildren: activeProvisioningChildren,
+      ownedLaneDbs,
+      getProvisioningInFlight: () => provisioningInFlight,
+      destroyLaneDatabase,
+      log: line => console.error(line),
+    }),
+  });
+  installCancellationHandlers(ownershipLifecycle, {
+    log: line => console.error(line),
+    exitStatus: report => finalExitStatus(report),
+  });
+
   try {
+    discoverAndPlan();
+    startAll = Date.now();
     if (LANES > 1) {
       for (let lane = 1; lane <= LANES; lane++) {
+        if (ownershipLifecycle.isCancelled()) {
+          console.error('[shard] cancelled; not provisioning further lanes.');
+          break;
+        }
         const t0 = Date.now();
-        const { name, migrations } = await createLaneDatabase({
+        // Register the intended identity BEFORE creation starts (Codex item 3).
+        // Creation can be cancelled, or fail, after the database already exists;
+        // registering afterwards meant cleanup could miss it entirely.
+        const intendedName = laneName(runId, lane);
+        ownedLaneDbs.add(intendedName);
+        provisioningInFlight = createLaneDatabase({
           runId,
           lane,
           log: line => console.log(line),
+          // Cancellation reaches INTO provisioning: checked after the database
+          // wait and before every subprocess launch, and it kills a running
+          // migration/seed (Codex round 3, P2).
+          signal: ownershipLifecycle.signal,
         });
+        let name;
+        let migrations;
+        try {
+          ({ name, migrations } = await provisioningInFlight);
+        } finally {
+          provisioningInFlight = null;
+        }
+        if (name !== intendedName) {
+          // Defensive: keep BOTH identities owned rather than leak the one we
+          // failed to predict.
+          ownedLaneDbs.add(name);
+        }
         laneDbs.push(name);
         laneEnvs.push({
           ...process.env,
@@ -397,15 +513,21 @@ async function main() {
       }
     }
   } finally {
-    for (const name of laneDbs) {
-      try {
-        await destroyLaneDatabase({ name, log: line => console.log(line) });
-      } catch (error) {
-        console.error(`[shard] failed to drop lane database ${name}: ${error.message}`);
-        problemBatches.push({ index: 0, label: `lane cleanup ${name}`, fatal: false });
+    // Join the SAME cleanup a signal would have started. Never release the lock
+    // here directly: the lifecycle releases it, and only once every owned child
+    // and database is confirmed gone.
+    const report = await ownershipLifecycle.cleanup();
+    cleanupReport = report;
+    if (report.failures.length > 0) {
+      for (const failure of report.failures) {
+        console.error(`[shard] cleanup step "${failure.step}" failed: ${failure.message}`);
+        problemBatches.push({ index: 0, label: `cleanup ${failure.step}`, fatal: false });
       }
+      console.error(
+        `[shard] the gate lock at ${gateLock.path} was RETAINED because cleanup did not complete. ` +
+          'Resolve the failures above, confirm no gate is running, then remove that file.',
+      );
     }
-    gateLock.release();
   }
 
   // Accounting: every discovered suite ran exactly once, nothing extra ran.
@@ -451,10 +573,16 @@ async function main() {
   }
   console.log('===========================================');
 
-  process.exit(problemBatches.length || totals.failedSuites || !reconciled ? 1 : 0);
+  // Set the status rather than calling process.exit(): an exit() here would
+  // truncate any shutdown still settling (Codex review 2026-09-16, item 2).
+  // By this point main()'s finally has already awaited the coordinated cleanup.
+  // The decision goes through finalExitStatus(), the same function the signal
+  // handler uses, so a cancellation can never be reported as 0 (round 2, P2).
+  runFailed = Boolean(problemBatches.length || totals.failedSuites || !reconciled);
+  process.exitCode = finalExitStatus();
 }
 
 main().catch(error => {
   console.error('[shard] fatal:', error);
-  process.exit(1);
+  process.exitCode = 1;
 });
