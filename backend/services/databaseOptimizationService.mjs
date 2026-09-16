@@ -67,7 +67,7 @@ async function initializeRedis() {
  * @returns {Object} Performance analysis results
  */
 export async function analyzeQueryPerformance(options) {
-  const startTime = Date.now();
+  const startTime = performance.now();
 
   logger.info(`[databaseOptimization] Analyzing query performance for ${options.queryType}`);
 
@@ -87,7 +87,7 @@ export async function analyzeQueryPerformance(options) {
       throw new Error(`Unknown query type: ${options.queryType}`);
   }
 
-  const executionTime = Date.now() - startTime;
+  const executionTime = performance.now() - startTime;
 
   // Store performance metrics
   performanceMetrics.queryTimes.set(options.queryType, {
@@ -501,7 +501,7 @@ export async function optimizeEpigeneticQueries(options) {
     }
   }
 
-  const startTime = Date.now();
+  const startTime = performance.now();
 
   // Execute the actual query
   let result;
@@ -511,7 +511,7 @@ export async function optimizeEpigeneticQueries(options) {
     result = await executeHorseEpigeneticAnalysis(options);
   }
 
-  const executionTime = Date.now() - startTime;
+  const executionTime = performance.now() - startTime;
 
   // Cache the result
   if (options.useCache && redisClient && result) {
@@ -698,11 +698,11 @@ async function executeHorseEpigeneticAnalysis(options) {
 }
 
 async function benchmarkSingleOperation(operation, iterations) {
-  const startTime = Date.now();
+  const startTime = performance.now();
   for (let i = 0; i < iterations; i++) {
     await prisma.horse.count(); // Simple operation
   }
-  const endTime = Date.now();
+  const endTime = performance.now();
   const totalTime = endTime - startTime;
   return {
     operation,

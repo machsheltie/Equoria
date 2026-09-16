@@ -34,6 +34,13 @@
  * accounting below still requires every discovered suite to have run once.
  * The list is explicit and short by design (CANONICAL_DB_SUITES).
  *
+ * GATE LOCK (Equoria-hqrqk, systemconstraints.md §3): before touching the
+ * database this runner takes a machine-wide LOCAL lock file (scripts/gate-lock.mjs,
+ * under the OS temp dir, shared by every worktree). A second gate started from
+ * another window waits for the first to finish instead of running beside it —
+ * two concurrent gates on 2026-09-15 meant four Jest processes on a two-worker
+ * machine and a contention-sensitive failure. No external service is involved.
+ *
  * Each batch has a hard wall-clock timeout so a single pathological file can
  * never stall the machine for hours.
  *
@@ -77,6 +84,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createLaneDatabase, destroyLaneDatabase, laneUrlFor, newRunId } from './test-lane-db.mjs';
+import { acquireGateLock, installReleaseOnExit } from './gate-lock.mjs';
 import jestConfig from '../jest.config.mjs';
 
 const args = process.argv.slice(2);
@@ -343,6 +351,9 @@ async function main() {
   const laneEnvs = [];
   const laneDbs = [];
   const runId = newRunId();
+  // One gate at a time on this machine, across worktrees (see GATE LOCK above).
+  const gateLock = await acquireGateLock({ runId, log: line => console.log(line) });
+  installReleaseOnExit(gateLock);
   try {
     if (LANES > 1) {
       for (let lane = 1; lane <= LANES; lane++) {
@@ -394,6 +405,7 @@ async function main() {
         problemBatches.push({ index: 0, label: `lane cleanup ${name}`, fatal: false });
       }
     }
+    gateLock.release();
   }
 
   // Accounting: every discovered suite ran exactly once, nothing extra ran.
