@@ -520,7 +520,7 @@ export async function getGroomProfile(req, res) {
           const compatibility = calculatePersonalityCompatibility(
             groom.personality,
             assignment.foal.temperament,
-            assignment.foal.bondScore || 50,
+            assignment.foal.bondScore,
           );
 
           return {

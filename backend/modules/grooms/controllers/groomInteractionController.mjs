@@ -248,14 +248,8 @@ export async function recordInteraction(req, res) {
     }
 
     // New foal bond score / stress level (pure, from the values read above).
-    const newBondScore = Math.max(
-      0,
-      Math.min(100, (foal.bondScore || 50) + effectiveBondingChange),
-    );
-    const newStressLevel = Math.max(
-      0,
-      Math.min(100, (foal.stressLevel || 0) + effects.stressChange),
-    );
+    const newBondScore = Math.max(0, Math.min(100, foal.bondScore + effectiveBondingChange));
+    const newStressLevel = Math.max(0, Math.min(100, foal.stressLevel + effects.stressChange));
 
     // Calculate burnout immunity status based on consecutive days
     const immunityCheck = checkBurnoutImmunity(streakUpdate.consecutiveDays);

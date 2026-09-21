@@ -309,14 +309,8 @@ export async function performEnhancedInteraction(req, res) {
     }
 
     // Update horse's bond score and stress level
-    const newBondScore = Math.max(
-      0,
-      Math.min(100, (horse.bondScore || 50) + effectiveBondingChange),
-    );
-    const newStressLevel = Math.max(
-      0,
-      Math.min(100, (horse.stressLevel || 0) + effects.stressChange),
-    );
+    const newBondScore = Math.max(0, Math.min(100, horse.bondScore + effectiveBondingChange));
+    const newStressLevel = Math.max(0, Math.min(100, horse.stressLevel + effects.stressChange));
 
     await prisma.horse.update({
       where: { id: parseInt(horseId) },
