@@ -161,7 +161,10 @@ describe('FoalMilestoneTimeline Component', () => {
   const mockFoal: Foal = {
     id: 'foal-1',
     name: 'Thunder',
-    sex: 'Male',
+    // Equoria-gxcxs: foalingService assigns 'Colt'/'Filly' directly at
+    // birth — the database and every real API response never store
+    // 'Male'/'Female'.
+    sex: 'Colt',
     ageInDays: 45,
     birthDate: '2026-01-01',
     sireId: 'sire-1',
@@ -234,7 +237,7 @@ describe('FoalMilestoneTimeline Component', () => {
     });
 
     it('should display "Filly" for female foals', () => {
-      const femaleFoal = { ...mockFoal, sex: 'Female' };
+      const femaleFoal = { ...mockFoal, sex: 'Filly' };
       renderWithQueryClient(
         <FoalMilestoneTimeline foal={femaleFoal} milestones={mockMilestones} />
       );

@@ -65,7 +65,7 @@ const createHorse = (overrides: Partial<Horse> = {}): Horse => ({
   id: 1,
   name: 'Test Horse',
   breedName: 'Thoroughbred',
-  sex: 'Male',
+  sex: 'Stallion',
   age: 5,
   healthStatus: 'healthy',
   ...overrides,
@@ -304,7 +304,7 @@ describe('HorseSelector Component', () => {
     id: 1,
     name: 'Thunder',
     breedName: 'Thoroughbred',
-    sex: 'Male',
+    sex: 'Stallion',
     age: 5,
   });
 
@@ -312,7 +312,7 @@ describe('HorseSelector Component', () => {
     id: 2,
     name: 'Lightning',
     breedName: 'Arabian',
-    sex: 'Male',
+    sex: 'Stallion',
     age: 4,
   });
 
@@ -320,7 +320,7 @@ describe('HorseSelector Component', () => {
     id: 3,
     name: 'Starlight',
     breedName: 'Quarter Horse',
-    sex: 'Female',
+    sex: 'Mare',
     age: 6,
   });
 
@@ -328,7 +328,7 @@ describe('HorseSelector Component', () => {
     id: 4,
     name: 'Junior',
     breedName: 'Thoroughbred',
-    sex: 'Male',
+    sex: 'Stallion',
     age: 2,
   });
 
@@ -413,6 +413,51 @@ describe('HorseSelector Component', () => {
       );
       expect(screen.getByText('Starlight')).toBeInTheDocument();
       expect(screen.queryByText('Thunder')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('sex filtering — realistic API vocabulary (Equoria-gxcxs)', () => {
+    // DB never stores 'Male'/'Female' (real: Mare/Filly/Stallion/Colt/Rig); a
+    // filly groups as female and a colt as male (Equoria-di2n5).
+    const realMare = createHorse({ id: 20, name: 'Duchess', sex: 'Mare', age: 6 });
+    const realFilly = createHorse({ id: 21, name: 'Ember', sex: 'Filly', age: 4 });
+    const realStallion = createHorse({ id: 22, name: 'Titan', sex: 'Stallion', age: 6 });
+    const realColt = createHorse({ id: 23, name: 'Rusty', sex: 'Colt', age: 4 });
+    const realHorses = [realMare, realFilly, realStallion, realColt];
+
+    it('female filter returns both Mare and Filly horses, never an empty list', () => {
+      render(
+        <HorseSelector
+          horses={realHorses}
+          selectedHorse={null}
+          onSelect={mockOnSelect}
+          filter="female"
+          title="Select Dam"
+        />
+      );
+      // Non-emptiness first: a guard that walks an empty list passes vacuously.
+      expect(screen.getAllByRole('button', { name: /^Select /i }).length).toBeGreaterThan(0);
+      expect(screen.getByText('Duchess')).toBeInTheDocument();
+      expect(screen.getByText('Ember')).toBeInTheDocument();
+      expect(screen.queryByText('Titan')).not.toBeInTheDocument();
+      expect(screen.queryByText('Rusty')).not.toBeInTheDocument();
+    });
+
+    it('male filter returns both Stallion and Colt horses, never an empty list', () => {
+      render(
+        <HorseSelector
+          horses={realHorses}
+          selectedHorse={null}
+          onSelect={mockOnSelect}
+          filter="male"
+          title="Select Sire"
+        />
+      );
+      expect(screen.getAllByRole('button', { name: /^Select /i }).length).toBeGreaterThan(0);
+      expect(screen.getByText('Titan')).toBeInTheDocument();
+      expect(screen.getByText('Rusty')).toBeInTheDocument();
+      expect(screen.queryByText('Duchess')).not.toBeInTheDocument();
+      expect(screen.queryByText('Ember')).not.toBeInTheDocument();
     });
   });
 
@@ -610,7 +655,7 @@ describe('HorseSelector Component', () => {
       const injuredHorse = createHorse({
         id: 5,
         name: 'Limpy',
-        sex: 'Male',
+        sex: 'Stallion',
         age: 5,
         healthStatus: 'injured',
       });
@@ -636,7 +681,7 @@ describe('HorseSelector Component', () => {
       const cooldownHorse = createHorse({
         id: 6,
         name: 'Resting',
-        sex: 'Male',
+        sex: 'Stallion',
         age: 5,
         breedingCooldownEndsAt: tomorrow.toISOString(),
       });

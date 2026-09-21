@@ -6,6 +6,18 @@
  */
 
 /**
+ * Canonical horse-sex vocabulary (Equoria-gxcxs).
+ *
+ * Mirrors backend/constants/schema.mjs HORSE_SEX /
+ * packages/database/horseSexCanonical.mjs CANONICAL_HORSE_SEX_VALUES — the
+ * database never stores 'Male'/'Female'. 'Filly'/'Colt' are young
+ * mares/stallions, not separate sexes; use isFemaleHorseSex/isMaleHorseSex
+ * from '@/lib/utils' for any breeding-eligibility group check instead of
+ * comparing against a single exact value.
+ */
+export type HorseSex = 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
+
+/**
  * Horse entity for breeding system
  * Comprehensive type covering all properties needed for breeding selection and display
  */
@@ -13,7 +25,7 @@ export interface Horse {
   id: number;
   name: string;
   age: number; // Age in years
-  sex: 'Male' | 'Female';
+  sex: HorseSex;
   breedId?: number;
   breedName?: string;
   healthStatus: string;
@@ -90,7 +102,7 @@ export interface TraitProbability {
 export interface HorseBreedingData {
   horseId: number;
   horseName: string;
-  sex: 'Male' | 'Female';
+  sex: HorseSex;
   traitSummary: {
     totalTraits: number;
     epigeneticTraits: number;
@@ -261,7 +273,7 @@ export interface Foal {
   damId: number;
   dateOfBirth: string;
   ageInDays: number;
-  sex: 'Male' | 'Female';
+  sex: HorseSex;
   userId: string;
 }
 
