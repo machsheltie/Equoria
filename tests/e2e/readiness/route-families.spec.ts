@@ -63,10 +63,21 @@ test('all beta route families execute real read and write flows', async ({ page,
   const buyerGuard = installProductionParityNetworkGuard(buyerPage);
   await registerAndCompleteOnboarding(buyerPage, `${suffix}_buyer`, `Buyer ${suffix}`);
 
+  // Equoria-jhz6r: OLD CONTRACT (this spec, pre-hardening) — the horse-family
+  // write flow renamed a horse via PUT /api/v1/horses/:id with a `name` field.
+  // NEW RULING — the horse-update mass-assignment hardening (Equoria-ugxuc,
+  // sentinelled again by Equoria-tmyd2) removed `name` from the PUT allow-list
+  // on purpose: PUT now 400s any body containing it ("rename a horse with
+  // PATCH /horses/:id/name"), per backend/modules/horses/routes/_validators.mjs
+  // and backend/modules/horses/routes/horseIdentityRoutes.mjs. The real,
+  // production-accepted rename write is PATCH /api/v1/horses/:id/name with a
+  // body whose ONLY key is `name` (backend/modules/horses/routes/_validators.mjs
+  // validateHorseRenamePayload) — this exercises that route instead, keeping
+  // the spec's purpose of a real read + real write per route family.
   const renamed = `Atlas Prime ${suffix}`;
   const editHorseJson = await expectOk(
-    await csrfRequest(page, 'PUT', `/api/v1/horses/${starterHorseId}`, { name: renamed }),
-    'PUT /api/v1/horses/:id'
+    await csrfRequest(page, 'PATCH', `/api/v1/horses/${starterHorseId}/name`, { name: renamed }),
+    'PATCH /api/v1/horses/:id/name'
   );
   expect(unwrapData<Record<string, unknown>>(editHorseJson).name).toBe(renamed);
 
