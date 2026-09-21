@@ -39,7 +39,14 @@ test.describe('Horse Detail — Progression Tab (Equoria-prfgh)', () => {
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 15000 });
 
     // Progression tab was added in Equoria-kdduk.
-    const progressionTab = page.getByRole('button', { name: /^Progression$/ }).first();
+    // Equoria-c2erw: this used to be getByRole('button'). The horse-detail
+    // tab strip migrated to CanonicalTabs (Radix Tabs) in Equoria-o5hub.11,
+    // docs/design-system/DECISIONS.md section 6 — HorseDetailPage.tsx now renders
+    // <TabsList>/<TabsTrigger>, so every trigger carries role="tab", not
+    // role="button". The tab itself, its label and the click-through
+    // assertions below are unchanged; only the ARIA role in the locator moves
+    // to the one the ruled component actually exposes.
+    const progressionTab = page.getByRole('tab', { name: /^Progression$/ }).first();
     await expect(progressionTab).toBeVisible({ timeout: 10000 });
     await progressionTab.click();
 
@@ -68,13 +75,25 @@ test.describe('Horse Detail — Progression Tab (Equoria-prfgh)', () => {
     // TrainingHistoryPanel renders inside TrainingDashboard on /training. Its
     // unit test was deleted along with the ProgressionTab test; this spec
     // confirms the real surface is reachable with real backend data.
-    await page.goto('/training', { waitUntil: 'domcontentloaded' });
+    const creds = readTestCredentials();
+    const horseId = creds.testHorseId;
+    expect(horseId, 'global-setup must seed testHorseId').toBeTruthy();
+    // Equoria-c2erw: this used to open a bare /training and assume the
+    // dashboard auto-selected the first owned horse. It does not — and never
+    // renders Discipline Status until a horse IS selected; with none chosen,
+    // TrainingHistoryPanel.tsx:24-29 renders its authored prompt, "Select a
+    // horse above to view discipline status and training history." The one
+    // shipped way to land on /training with a horse already selected is the
+    // ?horse=<id> deep link (TrainingDashboard.tsx:192-204, Equoria-ocn9), so
+    // the spec now uses that real production path with the seeded horse
+    // instead of a selection the page never performed. No mock, no bypass; the
+    // assertion below is unchanged.
+    await page.goto(`/training?horse=${horseId}`, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('[data-testid="training-page"]')).toBeVisible({ timeout: 20000 });
 
     // The "Discipline Status" heading is the panel's primary tell. It renders
-    // unconditionally once a horse is selected — TrainingDashboard auto-selects
-    // the first owned horse, and global-setup seeds one. The heading text is
-    // hardcoded in TrainingHistoryPanel.tsx and so is a stable real-DB assertion.
+    // unconditionally once a horse is selected. The heading text is hardcoded
+    // in TrainingHistoryPanel.tsx and so is a stable real-DB assertion.
     await expect(page.getByRole('heading', { name: /Discipline Status/i }).first()).toBeVisible({
       timeout: 15000,
     });

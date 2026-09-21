@@ -36,8 +36,20 @@ test.describe('Authentication Flows', () => {
     await page.fill('input[name="password"]', 'WrongPass123!');
     await page.click('button[type="submit"]');
 
-    // Error text uses text-red-400 class
-    await expect(page.locator('.text-red-400')).toBeVisible({ timeout: 10000 });
+    // The rejected login must surface an accessible error region, not just red
+    // text. Equoria-c2erw: this assertion used to pin the Tailwind utility
+    // `.text-red-400`. The Celestial Night token migration (Equoria-o5hub.16,
+    // docs/design-system/DECISIONS.md section 7) replaced that literal with the
+    // `text-role-danger` role token inside AuthError, which has carried
+    // role="alert" throughout (frontend/src/components/auth/AuthLayout.tsx).
+    // Re-pointed at the semantic locator per the issue ruling: assert the alert
+    // region AND the ruled 401 copy from
+    // frontend/src/lib/http/authErrorMessages.ts (deliberately generic, so it
+    // is not an account-enumeration oracle — Equoria-gm4fg). Strictly stronger
+    // than the class check it replaces.
+    const loginError = page.getByRole('alert');
+    await expect(loginError).toBeVisible({ timeout: 10000 });
+    await expect(loginError).toContainText("That email and password don't match an account.");
   });
 
   test('Register Page - Layout', async ({ page }) => {

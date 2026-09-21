@@ -47,7 +47,14 @@ test.describe('Horse Detail — Conformation Tab (Equoria-ffaca)', () => {
 
     // The Conformation tab is registered in HorseDetailPage.tsx with label
     // "Conformation". Click it to load the ConformationTab component.
-    const conformationTab = page.getByRole('button', { name: /^Conformation$/ }).first();
+    // Equoria-c2erw: this used to be getByRole('button'). The horse-detail
+    // tab strip migrated to CanonicalTabs (Radix Tabs) in Equoria-o5hub.11,
+    // docs/design-system/DECISIONS.md section 6 — HorseDetailPage.tsx now renders
+    // <TabsList>/<TabsTrigger>, so every trigger carries role="tab", not
+    // role="button". The tab itself, its label and the click-through
+    // assertions below are unchanged; only the ARIA role in the locator moves
+    // to the one the ruled component actually exposes.
+    const conformationTab = page.getByRole('tab', { name: /^Conformation$/ }).first();
     await expect(conformationTab).toBeVisible({ timeout: 10000 });
     await conformationTab.click();
 

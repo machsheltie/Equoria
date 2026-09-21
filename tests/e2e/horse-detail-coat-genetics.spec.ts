@@ -38,7 +38,14 @@ test.describe('Horse Detail — Coat & Genetics (31E-4)', () => {
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 15000 });
 
     // The Coat tab was added in Equoria-ea3n. Find it by label text.
-    const coatTab = page.getByRole('button', { name: /^Coat$/ }).first();
+    // Equoria-c2erw: this used to be getByRole('button'). The horse-detail
+    // tab strip migrated to CanonicalTabs (Radix Tabs) in Equoria-o5hub.11,
+    // docs/design-system/DECISIONS.md section 6 — HorseDetailPage.tsx now renders
+    // <TabsList>/<TabsTrigger>, so every trigger carries role="tab", not
+    // role="button". The tab itself, its label and the click-through
+    // assertions below are unchanged; only the ARIA role in the locator moves
+    // to the one the ruled component actually exposes.
+    const coatTab = page.getByRole('tab', { name: /^Coat$/ }).first();
     await expect(coatTab).toBeVisible({ timeout: 10000 });
     await coatTab.click();
 

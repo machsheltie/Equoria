@@ -37,6 +37,22 @@ test.describe('Bank transaction history — four-state (Equoria-4hra5)', () => {
   }) => {
     // 1. Land on a DIFFERENT page first (loaded online) so the SPA document and
     //    the cached profile (which feeds the balance) are already in memory.
+    //
+    //    Equoria-c2erw KNOWN-RED (filed separately): this step cannot reach the
+    //    behaviour the test guards on the current stack. BankPage is a lazily
+    //    imported route chunk (route-based code splitting, 8040128ca) and the
+    //    Playwright webServer serves it from `vite dev`, so with the network
+    //    already down the SPA navigation below dies on "Failed to fetch
+    //    dynamically imported module: src/pages/BankPage.tsx" and the app-level
+    //    ErrorBoundary replaces the route with "Something went wrong." —
+    //    BankPage never mounts. Warming the chunk with an online visit first
+    //    does not help either: the transactions query (staleTime 2 min, key
+    //    ['transactions', userId, 1, 20]) then has cached rows, React Query
+    //    keeps isError false on a failed background refetch, and BankPage's
+    //    ERROR branch stays unreachable. There is no pagination or refresh
+    //    affordance to re-query under a cold key the way prize-history uses its
+    //    date-range filter. Left UNMODIFIED on purpose: weakening or skipping it
+    //    would hide a real four-state guard on a financial surface.
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('link', { name: 'Bank' }).first()).toBeVisible({ timeout: 20000 });
 
@@ -97,7 +113,14 @@ test.describe('Bank transaction history — four-state (Equoria-4hra5)', () => {
     );
 
     await page.goto('/bank', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: 'The Vault' })).toBeVisible({ timeout: 20000 });
+    // Equoria-c2erw: `{ name: 'The Vault' }` is substring matching, and the
+    // design-system migration added an "About the Vault" info panel (h3) to
+    // BankPage.tsx, so the bare locator became a strict-mode violation
+    // (2 headings). Pinned to the page's own h1 via exact + level, which is
+    // what this line always meant: the Vault page itself has rendered.
+    await expect(
+      page.getByRole('heading', { name: 'The Vault', exact: true, level: 1 })
+    ).toBeVisible({ timeout: 20000 });
     await transactionsOk;
 
     // No error surfaced on a successful fetch.

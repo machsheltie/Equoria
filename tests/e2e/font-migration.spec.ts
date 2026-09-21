@@ -4,12 +4,27 @@
  * Verifies that the self-hosted font migration is live and no regressions have
  * occurred. Covers the gaps not addressed by 22-7-E2E-010:
  *
- *  22-1-E2E-001 (P1) — AC2:     Body text inherits Inter from body rule
+ *  22-1-E2E-001 (P1) — AC2:     Body text inherits the body font from the body rule
  *  22-1-E2E-002 (P1) — AC6/AC9: No network requests to Google Fonts CDN
  *  22-1-E2E-003 (P2) — AC6:     HTML preload <link> tags reference self-hosted /fonts/
  *
- * NOTE: AC1 (Cinzel on h1-h6) and AC3 (Cinzel Decorative on hero) are already
- * covered by 22-7-E2E-010 in auth-page-chrome.spec.ts. Duplication is avoided.
+ * NOTE: the display/wordmark face is already covered by 22-7-E2E-010 in
+ * auth-page-chrome.spec.ts. Duplication is avoided.
+ *
+ * Equoria-c2erw — OLD CONTRACT (this spec as written): the self-hosted stack
+ * was Inter for body text and Cinzel / Cinzel Decorative for display.
+ * NEW RULING: the Celestial Night type system in DESIGN.md (lines 264-268)
+ * assigns Dragon Tales to the wordmark, Basteleur Bold and Basteleur Moonlight
+ * to the announcer and entity voices, and Proda Sans to all functional UI and
+ * body copy. The live token carries that ruling in its own comment —
+ * frontend/src/styles/tokens.css:333 sets --font-body to
+ * 'Proda Sans', system-ui, sans-serif and notes it replaced Inter under the
+ * user ruling of 2026-08-14. Inter is retired: no inter woff2 remains in
+ * frontend/public/fonts, and frontend/index.html preloads proda-sans-400,
+ * basteleur-moonlight-400 and dragon-tales-400. The tests below keep their
+ * original purpose and strength — the body rule is the single source of the UI
+ * face, every preload is self-hosted, and each ruled family is preloaded —
+ * measured against the ruled families instead of the retired ones.
  *
  * All tests run unauthenticated — /login is a public page.
  */
@@ -20,24 +35,26 @@ import { test, expect } from '@playwright/test';
 test.use({ storageState: { cookies: [], origins: [] } });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AC2: Body text renders in Inter
-// The body element has font-family: var(--font-body) = 'Inter', system-ui, ...
+// AC2: Body text renders in the ruled UI face
+// The body element has font-family: var(--font-body) = 'Proda Sans', system-ui, ...
 // This test asserts the CSS rule applied; it does NOT wait for the font file to
 // be decoded by the browser (that is an AC4 / font-display concern, not AC2).
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('Font stack — body text (AC2)', () => {
-  test('22-1-E2E-001: body element computed font-family begins with Inter', async ({ page }) => {
+  test('22-1-E2E-001: body element computed font-family begins with Proda Sans', async ({
+    page,
+  }) => {
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
     const bodyFontFamily = await page.evaluate(() => {
       return window.getComputedStyle(document.body).fontFamily;
     });
 
-    // The first entry in the stack must be Inter (case-insensitive)
-    expect(bodyFontFamily.toLowerCase()).toMatch(/^["']?inter["']?/);
+    // The first entry in the stack must be Proda Sans (case-insensitive)
+    expect(bodyFontFamily.toLowerCase()).toMatch(/^["']?proda sans["']?/);
   });
 
-  test('22-1-E2E-002: form label inherits Inter from body', async ({ page }) => {
+  test('22-1-E2E-002: form label inherits Proda Sans from body', async ({ page }) => {
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
     // The "Email Address" form label has no explicit font-family — it inherits body
@@ -48,7 +65,7 @@ test.describe('Font stack — body text (AC2)', () => {
       return window.getComputedStyle(el).fontFamily;
     });
 
-    expect(fontFamily.toLowerCase()).toContain('inter');
+    expect(fontFamily.toLowerCase()).toContain('proda sans');
   });
 });
 
@@ -107,7 +124,7 @@ test.describe('Self-hosted preload tags (AC6)', () => {
     }
   });
 
-  test('22-1-E2E-005: preload links cover Inter, Cinzel, and Cinzel Decorative', async ({
+  test('22-1-E2E-005: preload links cover Proda Sans, Basteleur Moonlight, and Dragon Tales', async ({
     page,
   }) => {
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
@@ -121,9 +138,11 @@ test.describe('Self-hosted preload tags (AC6)', () => {
 
     const allHrefs = preloadHrefs.join(' ');
 
-    // Each of the three font families must have at least one preload
-    expect(allHrefs).toContain('inter');
-    expect(allHrefs).toContain('cinzel');
-    expect(allHrefs).toContain('cinzel-decorative');
+    // Each of the three ruled font families must have at least one preload.
+    // These are exactly the three declared in frontend/index.html: the UI face,
+    // the entity voice, and the wordmark.
+    expect(allHrefs).toContain('proda-sans');
+    expect(allHrefs).toContain('basteleur-moonlight');
+    expect(allHrefs).toContain('dragon-tales');
   });
 });
