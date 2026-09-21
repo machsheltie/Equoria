@@ -49,6 +49,17 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       expect(traitAppears(fn, 'peopleTrusting')).toBe(true);
     });
 
+    // Equoria-4maxb: Horse.stressLevel is NOT NULL with default 0 = calm
+    // (Equoria-507mt). When the caller does not override stressLevel, a mare
+    // row with stressLevel 0 must be read as perfectly calm, not promoted to
+    // 50 by a `|| 50` guard (which silently disabled the low-stress branch).
+    it('reads a perfectly calm mare (stressLevel 0) as calm when no override is passed — Equoria-4maxb', () => {
+      const mare = { id: 1, name: 'Calm Mare', stressLevel: 0 };
+      const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 95 });
+      expect(traitAppears(fn, 'resilient')).toBe(true);
+      expect(traitAppears(fn, 'peopleTrusting')).toBe(true);
+    });
+
     it('does not assign positive traits when stress is too high', () => {
       const mare = { id: 1, name: 'Stressed Mare', stressLevel: 50 };
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage: [], feedQuality: 85, stressLevel: 50 });

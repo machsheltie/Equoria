@@ -220,12 +220,16 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
     expect(DISCOVERY_CONDITIONS.EXCELLENT_BOND.condition({ bondScore: 95 })).toBe(true);
   });
 
-  // LOW_STRESS: (stressLevel || 100) <= 20  — note: 0 falls back to 100
-  it('LOW_STRESS uses default 100 when stressLevel missing (100 > 20 → false)', () => {
+  // LOW_STRESS: stressLevel <= 20. Horse.stressLevel is NOT NULL (Equoria-507mt)
+  // with default 0 = calm; a 0 is the calmest legitimate state and MUST satisfy
+  // the condition. The previous `|| 100` guard inverted a calm horse into
+  // max-stress (Equoria-4maxb). A missing field (partial select) compares as
+  // `undefined <= 20` → false, which is the conservative outcome.
+  it('LOW_STRESS returns false when stressLevel is missing (undefined never satisfies <= 20)', () => {
     expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({})).toBe(false);
   });
-  it('LOW_STRESS uses default 100 when stressLevel is 0 (0 || 100 = 100 → false)', () => {
-    expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({ stressLevel: 0 })).toBe(false);
+  it('LOW_STRESS returns true when stressLevel is 0 (calm horse is not read as max-stress) — Equoria-4maxb', () => {
+    expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({ stressLevel: 0 })).toBe(true);
   });
   it('LOW_STRESS returns true when stressLevel <= 20', () => {
     expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({ stressLevel: 15 })).toBe(true);
@@ -234,9 +238,12 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
     expect(DISCOVERY_CONDITIONS.LOW_STRESS.condition({ stressLevel: 21 })).toBe(false);
   });
 
-  // MINIMAL_STRESS: (stressLevel || 100) <= 5
+  // MINIMAL_STRESS: stressLevel <= 5
   it('MINIMAL_STRESS returns true when stressLevel is 3', () => {
     expect(DISCOVERY_CONDITIONS.MINIMAL_STRESS.condition({ stressLevel: 3 })).toBe(true);
+  });
+  it('MINIMAL_STRESS returns true when stressLevel is 0 — Equoria-4maxb', () => {
+    expect(DISCOVERY_CONDITIONS.MINIMAL_STRESS.condition({ stressLevel: 0 })).toBe(true);
   });
   it('MINIMAL_STRESS returns false when stressLevel is 10', () => {
     expect(DISCOVERY_CONDITIONS.MINIMAL_STRESS.condition({ stressLevel: 10 })).toBe(false);
@@ -245,6 +252,9 @@ describe('DISCOVERY_CONDITIONS — structure and synchronous condition branches'
   // PERFECT_CARE: bondScore >= 80 AND stressLevel <= 20
   it('PERFECT_CARE returns true when both criteria met', () => {
     expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 85, stressLevel: 10 })).toBe(true);
+  });
+  it('PERFECT_CARE returns true for a fully bonded, perfectly calm (stressLevel 0) horse — Equoria-4maxb', () => {
+    expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 85, stressLevel: 0 })).toBe(true);
   });
   it('PERFECT_CARE returns false when only bond criterion met', () => {
     expect(DISCOVERY_CONDITIONS.PERFECT_CARE.condition({ bondScore: 85, stressLevel: 50 })).toBe(false);

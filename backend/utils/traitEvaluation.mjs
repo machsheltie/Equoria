@@ -216,8 +216,9 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
     `[traitEvaluation.evaluateTraitRevelation] Evaluating traits for foal ${foal.id} on day ${currentDay}`,
   );
 
-  const bondScore = foal.bondScore || 50;
-  const stressLevel = foal.stressLevel || 0;
+  // Equoria-4maxb: NOT NULL column (Equoria-507mt), 0 is a legitimate value; never promote it.
+  const bondScore = foal.bondScore ?? 0;
+  const stressLevel = foal.stressLevel ?? 0;
   const age = foal.age || 0;
 
   // Convert age in years to development days for young foals

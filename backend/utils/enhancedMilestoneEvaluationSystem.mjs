@@ -148,7 +148,8 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
   const baseScore = 0;
 
   // Calculate bond modifier
-  const bondModifier = calculateBondModifier(groomCareHistory, horse.bondScore || 50);
+  // Equoria-4maxb: NOT NULL column (Equoria-507mt), 0 is a legitimate value; never promote it.
+  const bondModifier = calculateBondModifier(groomCareHistory, horse.bondScore);
 
   // Calculate task consistency modifier
   const taskConsistencyModifier = calculateTaskConsistencyModifier(groomCareHistory);
@@ -168,9 +169,9 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
     personalityEffects = applyPersonalityEffectsToMilestone({
       groomPersonality: currentGroom.personality,
       foalTemperament: horse.temperament,
-      bondScore: horse.bondScore || 50,
+      bondScore: horse.bondScore,
       baseMilestoneScore: baseScoreBeforePersonality,
-      baseStressLevel: horse.stressLevel || 0,
+      baseStressLevel: horse.stressLevel,
       baseBondingRate: 0,
     });
 
