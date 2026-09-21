@@ -63,7 +63,7 @@ export function useGroomAssignments() {
 export function useGroomSalaries() {
   return useQuery<SalarySummary, ApiError>({
     queryKey: groomKeys.salaries(),
-    queryFn: groomsApi.getSalarySummary,
+    queryFn: groomsApi.getSalaryCost,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

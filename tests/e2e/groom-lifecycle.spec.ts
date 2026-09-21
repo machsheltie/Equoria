@@ -69,8 +69,16 @@ test.describe('Groom Lifecycle', () => {
   test('AC3: Manage tab links back from World breadcrumb', async ({ page }) => {
     await page.goto('/grooms', { waitUntil: 'domcontentloaded' });
 
-    // Breadcrumb is "World / Grooms" — the World link routes back to /world
-    const worldLink = page.getByRole('link', { name: 'World' });
+    // Breadcrumb is "World / Grooms" — the World link routes back to /world.
+    // Equoria-c2erw: scoped to the breadcrumb slot. The design-system migration
+    // (Equoria-o5hub) gave every page a persistent sidebar whose nav also
+    // carries a "World" link, so the unscoped role locator became a strict-mode
+    // violation (sidebar-nav + page-header-breadcrumbs). This test's subject is
+    // the BREADCRUMB specifically, so scoping it is what the title always meant
+    // — and it is now the sidebar-independent assertion it claims to be.
+    const worldLink = page
+      .getByTestId('page-header-breadcrumbs')
+      .getByRole('link', { name: 'World' });
     await expect(worldLink).toBeVisible({ timeout: 20000 });
     await worldLink.click();
 
