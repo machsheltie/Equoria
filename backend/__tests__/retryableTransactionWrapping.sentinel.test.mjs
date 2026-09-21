@@ -123,6 +123,12 @@ const MIGRATED = [
   // claim + identity write + revocation of obsolete verification and
   // password-reset proofs). Pinned so neither can be silently un-wrapped.
   ['modules/auth/services/emailChangeService.mjs', { wrapped: 2, totalTx: 2 }],
+  // Equoria-oey96.28 — markUserResultsViewed, the write behind
+  // POST /api/v1/competition/results/viewed. It is a client-facing player-state
+  // mutation (it clears the Hub's check-results nudge), so a transient P2028 has
+  // to reach the player as a retryable 503 rather than a 500 the client would
+  // treat as permanent. Pinned here so a later edit cannot silently un-wrap it.
+  ['modules/competition/services/resultModelService.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites

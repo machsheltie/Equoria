@@ -7,10 +7,15 @@
  *   - `breed` matches Mare AND Stallion, off the real 30-day breeding cooldown
  *   - per-type `metadata` (cooldownEndsAt / showId / foalAge)
  *   - cap of 10 (was 6), with per-entity action emission and priority ordering
+ *   - `check-results` (spec priority 2) off the real CompetitionResult.viewedAt
+ *     column (owner ruling 2026-09-21 approved the migration)
  *
- * `check-results` (spec priority 2) and `claim-prize` (spec priority 1) are NOT
- * exercised here: check-results is blocked on a schema decision (AC1 note on the
- * issue), claim-prize is out of scope for oey96.28.
+ * Arm A is THE full-ordering assertion: one user carrying EVERY action type this
+ * endpoint can emit, asserted as an exact ordered list. Order is the product —
+ * membership-only assertions would pass on a shuffled priority table.
+ *
+ * `claim-prize` (spec priority 1) is NOT exercised here: it is out of scope for
+ * oey96.28 and tracked on Equoria-1e6no.
  *
  * REAL DB, NO MOCKS (Constitution §3). Determinism against the shared canonical
  * DB is achieved by pinning fixture horses to UNREACHABLE XP-bracket levels
@@ -81,12 +86,56 @@ async function makeOpenShow(level, showIds) {
 // Registers scoped cleanups (in FK-safe order: shows → horses → users) that run
 // in afterAll. Called at describe-body time, BEFORE beforeAll seeds — so a
 // mid-seed throw still cleans whatever was created.
-function registerCleanup(cleanup, { showIds, horseIds, userIds }) {
+function registerCleanup(cleanup, { resultIds, showIds, horseIds, userIds }) {
+  if (resultIds) {
+    cleanup.add(() => prisma.competitionResult.deleteMany({ where: { id: { in: resultIds } } }), 'competitionResults');
+  }
   if (showIds) {
     cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
   }
   cleanup.add(() => cleanupTestHorses(prisma, horseIds), 'horses'); // cascades foalDevelopment
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+}
+
+// A show that has already RUN — used to hang a CompetitionResult off. Status is
+// deliberately NOT 'open' and closeDate is in the past, so it can never be
+// picked up by the `compete` open-show scan and pollute the ordering arm.
+async function makeSettledShow(showIds) {
+  const now = new Date();
+  const show = await prisma.show.create({
+    data: {
+      name: `TestFixture-nextact-settled-${rand()}`,
+      discipline: 'Dressage',
+      levelMin: 1,
+      levelMax: 999,
+      entryFee: 100,
+      prize: 1000,
+      runDate: new Date(now.getTime() - 2 * MS_PER_DAY),
+      status: 'completed',
+      openDate: new Date(now.getTime() - 9 * MS_PER_DAY),
+      closeDate: new Date(now.getTime() - 2 * MS_PER_DAY),
+    },
+  });
+  showIds.push(show.id);
+  return show;
+}
+
+async function makeResult(show, horseId, { viewedAt = null } = {}, resultIds) {
+  const result = await prisma.competitionResult.create({
+    data: {
+      horseId,
+      showId: show.id,
+      score: 128.5,
+      placement: '1st',
+      discipline: show.discipline,
+      runDate: show.runDate,
+      showName: show.name,
+      prizeWon: 500,
+      viewedAt,
+    },
+  });
+  resultIds.push(result.id);
+  return result;
 }
 
 function getActions(user) {
@@ -101,13 +150,15 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
   const horseIds = [];
   const showIds = [];
   const userIds = [];
-  registerCleanup(cleanup, { showIds, horseIds, userIds });
+  const resultIds = [];
+  registerCleanup(cleanup, { resultIds, showIds, horseIds, userIds });
 
   let user;
   let stallionId;
   let mareId;
   let foalId;
   let show;
+  let settledShow;
   const now = new Date();
   const cooldownEndedAt = new Date(now.getTime() - 1 * MS_PER_DAY); // trainingCooldown expired yesterday
 
@@ -164,17 +215,27 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
     );
     foalId = foal.id;
     await prisma.foalDevelopment.create({ data: { foalId: foal.id, isActive: true } });
+
+    // One UNVIEWED competition result (viewedAt NULL) on a show that has already
+    // run — the only real source for `check-results` (spec priority 2).
+    settledShow = await makeSettledShow(showIds);
+    await makeResult(settledShow, stallion.id, { viewedAt: null }, resultIds);
   }, 60000);
 
   afterAll(() => cleanup.run(), 60000);
 
-  it('returns train, compete, breed, groom-foal, visit-vet in spec-priority order', async () => {
+  // THE full-ordering assertion (the issue's trap: order IS the product).
+  // Pre-2026-09-21 this list began at 'train' because check-results could not be
+  // sourced — CompetitionResult had no viewed/seen column. The owner approved the
+  // migration on 2026-09-21, so the contract now includes check-results ahead of
+  // every other emitted type, at Story 23.4 spec priority 2.
+  it('returns check-results, train, compete, breed, groom-foal, visit-vet in spec-priority order', async () => {
     const res = await getActions(user);
     expect(res.status).toBe(200);
     const { actions } = res.body.data;
-    expect(actions.map(a => a.type)).toEqual(['train', 'compete', 'breed', 'groom-foal', 'visit-vet']);
+    expect(actions.map(a => a.type)).toEqual(['check-results', 'train', 'compete', 'breed', 'groom-foal', 'visit-vet']);
     // priorities renumbered 1..N ascending (frontend gold-accents priority === 1).
-    expect(actions.map(a => a.priority)).toEqual([1, 2, 3, 4, 5]);
+    expect(actions.map(a => a.priority)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
   it('attaches cooldownEndsAt to train, showId to compete, foalAge to groom-foal', async () => {
@@ -201,6 +262,76 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
 
     // visit-vet — the injured mare (canonical 'Injured' value must be detected).
     expect(byType['visit-vet'].horseId).toBe(mareId);
+
+    // check-results — count + the most recent unviewed result's real show.
+    expect(byType['check-results'].metadata.count).toBe(1);
+    expect(byType['check-results'].metadata.showId).toBe(settledShow.id);
+    expect(byType['check-results'].metadata.showName).toBe(settledShow.name);
+    expect(new Date(byType['check-results'].metadata.runDate).getTime()).toBe(settledShow.runDate.getTime());
+  });
+});
+
+// ─── Arm E: check-results is sourced from CompetitionResult.viewedAt ─────────
+
+describe('GET /api/v1/next-actions — check-results off viewedAt (Equoria-oey96.28)', () => {
+  const cleanup = createCleanupTracker();
+  const horseIds = [];
+  const showIds = [];
+  const userIds = [];
+  const resultIds = [];
+  registerCleanup(cleanup, { resultIds, showIds, horseIds, userIds });
+
+  let unviewedUser;
+  let viewedUser;
+  const now = new Date();
+
+  async function seedHorse(user, label) {
+    return createTestHorse(
+      prisma,
+      {
+        name: `TestFixture-nextact-${label}-${rand()}`,
+        sex: 'Rig',
+        age: 5,
+        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        healthStatus: 'Excellent',
+        // Unreachable bracket level → no compete pollution. Rig → no breed.
+        horseXp: xpForLevel(1900),
+        // Cooldown still running → no train, so check-results stands alone.
+        trainingCooldown: new Date(now.getTime() + 2 * MS_PER_DAY),
+        userId: user.id,
+      },
+      horseIds,
+    );
+  }
+
+  beforeAll(async () => {
+    const settled = await makeSettledShow(showIds);
+
+    unviewedUser = await makeUser(userIds);
+    const unviewedHorse = await seedHorse(unviewedUser, 'unviewed');
+    await makeResult(settled, unviewedHorse.id, { viewedAt: null }, resultIds);
+
+    // Same show, different owner, result already marked viewed.
+    viewedUser = await makeUser(userIds);
+    const viewedHorse = await seedHorse(viewedUser, 'viewed');
+    await makeResult(settled, viewedHorse.id, { viewedAt: new Date(now.getTime() - 1 * MS_PER_DAY) }, resultIds);
+  }, 60000);
+
+  afterAll(() => cleanup.run(), 60000);
+
+  it('emits check-results for a player holding an unviewed result', async () => {
+    const res = await getActions(unviewedUser);
+    expect(res.status).toBe(200);
+    const checkResults = res.body.data.actions.filter(a => a.type === 'check-results');
+    expect(checkResults).toHaveLength(1);
+    expect(checkResults[0].metadata.count).toBe(1);
+  });
+
+  it('does NOT emit check-results once the result carries a viewedAt', async () => {
+    const res = await getActions(viewedUser);
+    expect(res.status).toBe(200);
+    const checkResults = res.body.data.actions.filter(a => a.type === 'check-results');
+    expect(checkResults).toHaveLength(0);
   });
 });
 

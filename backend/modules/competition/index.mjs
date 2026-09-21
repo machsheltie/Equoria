@@ -14,6 +14,7 @@ export * from './controllers/competitionController.mjs';
 export * from './controllers/conformationShowController.mjs';
 export * from './controllers/traitCompetitionController.mjs';
 export * from './routes/competitionRoutes.mjs';
+export * from './routes/competitionResultsRoutes.mjs';
 export * from './routes/conformationShowRoutes.mjs';
 export * from './services/competitionRouteQueries.mjs';
 export * from './services/competitionScoring.mjs';
@@ -35,4 +36,7 @@ export { settleShowFeeEscrow } from './shows/showEscrowTx.mjs';
 // API instead of the retired backend/routes/*.mjs compat shims. `export *`
 // above re-exports NAMED symbols only; a default needs an explicit re-export.
 export { default as competitionRoutes } from './routes/competitionRoutes.mjs';
+// Equoria-oey96.28: the results mark-viewed write, mounted at
+// /competition/results ahead of /competition (see app/routers.mjs).
+export { default as competitionResultsRoutes } from './routes/competitionResultsRoutes.mjs';
 export { default as showRoutes } from './shows/showRoutes.mjs';

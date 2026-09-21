@@ -1,5 +1,12 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+
+// A player cannot meaningfully open more shows' results than this in one visit,
+// and the bound keeps an `IN (...)` list from growing without limit. The route's
+// validator rejects anything longer before this service is reached; the constant
+// lives here so the service is safe for any future caller too.
+const MAX_MARK_VIEWED_SHOWS = 100;
 
 /**
  * Save a competition result to the database
@@ -370,6 +377,65 @@ async function getUserResultsSummary(userId) {
   return Array.from(summariesByShow.values());
 }
 
+/**
+ * Mark the caller's competition results for the given shows as viewed
+ * (Equoria-oey96.28).
+ *
+ * This is the write half of the Story 23.4 `check-results` next-action: the hub
+ * keeps nudging the player while any of their results still has `viewedAt`
+ * NULL, and opening the results surface is what clears it.
+ *
+ * OWNERSHIP. The `where` clause reaches through the horse relation
+ * (`horse: { userId } `), so a caller can only ever stamp results belonging to
+ * horses they own. A show id naming somebody else's result is simply not
+ * matched — there is no id-guessing surface here, and no row is read back.
+ *
+ * ONE-WAY LATCH. `viewedAt: null` is part of the filter, so an already-viewed
+ * result keeps its original timestamp. Calling this repeatedly is idempotent and
+ * reports 0 after the first time.
+ *
+ * TRANSACTION. The update is a player-state mutation, so it commits inside a
+ * transaction and a transient timeout is mapped to a retryable 503 rather than a
+ * 500 (the same treatment every other client-facing mutation gets; pinned by
+ * backend/__tests__/retryableTransactionWrapping.sentinel.test.mjs). It writes
+ * exactly one table, so no lock-ordering question arises.
+ *
+ * @param {string} userId - Owner id, always derived from req.user.id.
+ * @param {number[]} showIds - Shows whose results the player has just seen.
+ * @returns {Promise<number>} How many rows were newly marked viewed.
+ */
+async function markUserResultsViewed(userId, showIds) {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+  if (!Array.isArray(showIds) || showIds.length === 0) {
+    throw new Error('At least one show ID is required');
+  }
+  if (showIds.length > MAX_MARK_VIEWED_SHOWS) {
+    throw new Error(`At most ${MAX_MARK_VIEWED_SHOWS} show IDs may be marked at once`);
+  }
+  if (!showIds.every(id => Number.isInteger(id) && id > 0)) {
+    throw new Error('Show IDs must be positive integers');
+  }
+
+  const uniqueShowIds = Array.from(new Set(showIds));
+
+  return withRetryableTxMapping(
+    prisma.$transaction(async tx => {
+      const { count } = await tx.competitionResult.updateMany({
+        where: {
+          showId: { in: uniqueShowIds },
+          viewedAt: null,
+          horse: { userId },
+        },
+        data: { viewedAt: new Date() },
+      });
+      return count;
+    }),
+    { message: 'Could not mark those results as viewed just now. Please try again.' },
+  );
+}
+
 export {
   saveResult,
   createResult,
@@ -378,4 +444,5 @@ export {
   getResultById,
   getResultsByUser,
   getUserResultsSummary,
+  markUserResultsViewed,
 };

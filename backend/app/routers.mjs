@@ -50,7 +50,11 @@ import {
 // Equoria-rgyv (ADR-011): authenticated SSE real-time event stream.
 import { eventRoutes } from '../modules/events/index.mjs';
 import { trainingRoutes, enhancedMilestoneRoutes } from '../modules/training/index.mjs';
-import { competitionRoutes, showRoutes } from '../modules/competition/index.mjs';
+import {
+  competitionRoutes,
+  competitionResultsRoutes,
+  showRoutes,
+} from '../modules/competition/index.mjs';
 import { foalRoutes, advancedBreedingGeneticsRoutes } from '../modules/breeding/index.mjs';
 import {
   traitRoutes,
@@ -155,6 +159,10 @@ export function buildRouters() {
   authRouter.use('/events', eventRoutes);
   authRouter.use('/account', gdprAccountRoutes);
   authRouter.use('/training', trainingRoutes);
+  // Equoria-oey96.28: the literal /competition/results prefix is mounted
+  // BEFORE the broader /competition router, so route precedence cannot depend
+  // on competitionRoutes happening to have no matching path.
+  authRouter.use('/competition/results', competitionResultsRoutes);
   authRouter.use('/competition', competitionRoutes);
   authRouter.use('/breeds', breedRoutes);
   authRouter.use('/foals', foalRoutes);

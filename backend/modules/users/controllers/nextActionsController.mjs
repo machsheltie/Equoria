@@ -7,7 +7,8 @@
  *
  * Priority contract implemented by this controller (1 = highest):
  *   1. claim-prize    — unclaimed competition prizes            (NOT emitted; out of scope for oey96.28)
- *   2. check-results  — competition results available, unviewed (NOT emitted; blocked on a schema decision, see below)
+ *   2. check-results  — a CompetitionResult on one of the user's horses that
+ *                       still has `viewedAt` NULL
  *   3. train          — a horse whose training cooldown expired
  *   4. compete        — an OPEN show the user has an eligible horse for
  *   5. breed          — a Mare OR Stallion off the 30-day breeding cooldown
@@ -17,22 +18,31 @@
  * Actions are emitted PER real entity (one train per trainable horse, one
  * breed per breedable horse, one visit-vet per injured horse, one groom-foal
  * per active foal). `compete` is a single opportunity action for the
- * most-urgent open show the user can actually enter. The list is sorted by the
- * priority above, capped at 10, then the emitted `priority` is renumbered
- * to a contiguous 1..N rank (the Hub gold-accents the priority===1 card).
+ * most-urgent open show the user can actually enter, and `check-results` is a
+ * single aggregate action carrying the unviewed COUNT plus the most recent
+ * unviewed result's show — the player goes to one results surface regardless
+ * of how many results are waiting, so N cards would be N copies of one errand.
+ *
+ * The list is sorted by the priority above, capped at 10, then the emitted
+ * `priority` is renumbered to a contiguous 1..N rank (the Hub gold-accents the
+ * priority===1 card).
  *
  * NOT emitted (deliberately, sourced-from-real-data rule — Constitution §2):
  *   - `claim-prize`  (spec priority 1): out of scope for Equoria-oey96.28;
  *     unimplemented, tracked in Equoria-1e6no (product question: are prizes
  *     auto-credited, or is there an unclaimed-prize state to source from?).
- *   - `check-results` (spec priority 2): CompetitionResult has no viewed/seen
- *     column (packages/database/prisma/schema.prisma), so "results available,
- *     not yet viewed" cannot be sourced without a schema change. That schema
- *     change is a user decision (proposed on Equoria-oey96.28) and is NOT made
- *     here.
  *
- * Query budget: 3 queries total (horses, active foals, open shows) — no
- * per-horse N+1. Eligibility matching runs in-memory over those result sets.
+ * `check-results` (spec priority 2) WAS in this list until 2026-09-21: it could
+ * not be sourced because CompetitionResult had no viewed/seen column. The owner
+ * approved that migration on 2026-09-21 (Equoria-oey96.28), so it is now emitted
+ * from the real `CompetitionResult.viewedAt` column
+ * (20260921120000_oey9628_add_competition_result_viewed_at). The write that
+ * clears it is POST /api/v1/competition/results/viewed.
+ *
+ * Query budget: 4 round trips total (horses, active foals, open shows, and one
+ * array-form `$transaction` holding the unviewed-results count + most-recent
+ * lookup) — no per-horse N+1. Eligibility matching runs in-memory over those
+ * result sets.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -157,6 +167,49 @@ export async function getNextActions(req, res) {
       logger.warn('nextActionsController: open-shows query failed', {
         userId,
         error: showErr.message,
+      });
+    }
+
+    // Query 4 — unviewed competition results (Equoria-oey96.28). Ownership is
+    // expressed through the horse relation: a result belongs to the player who
+    // owns the horse that ran. The array form of `$transaction` is a single
+    // read-only round trip (the same posture the retryable-transaction sentinel
+    // records for read-only array-form sites — a 503-vs-500 on a hub read is not
+    // meaningful, so it is deliberately not wrapped). The defensive catch keeps
+    // the hub usable on a transient failure, as the foal and show queries do.
+    let unviewedResultCount = 0;
+    let mostRecentUnviewed = null;
+    try {
+      const [count, mostRecent] = await prisma.$transaction([
+        prisma.competitionResult.count({ where: { viewedAt: null, horse: { userId } } }),
+        prisma.competitionResult.findFirst({
+          where: { viewedAt: null, horse: { userId } },
+          orderBy: [{ runDate: 'desc' }, { id: 'desc' }],
+          select: { showId: true, showName: true, runDate: true },
+        }),
+      ]);
+      unviewedResultCount = count;
+      mostRecentUnviewed = mostRecent;
+    } catch (resultErr) {
+      logger.warn('nextActionsController: unviewed-results query failed', {
+        userId,
+        error: resultErr.message,
+      });
+    }
+
+    // ── check-results (priority 2) — one aggregate action ────────────────────
+    if (unviewedResultCount > 0 && mostRecentUnviewed) {
+      actions.push({
+        type: 'check-results',
+        priority: SPEC_PRIORITY['check-results'],
+        metadata: {
+          count: unviewedResultCount,
+          showId: mostRecentUnviewed.showId,
+          showName: mostRecentUnviewed.showName,
+          // Normalised to a controller-owned Date for the same cross-realm
+          // serialisation reason as `train`'s cooldownEndsAt below.
+          runDate: mostRecentUnviewed.runDate ? new Date(mostRecentUnviewed.runDate) : null,
+        },
       });
     }
 
