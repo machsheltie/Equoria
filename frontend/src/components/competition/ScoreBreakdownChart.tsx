@@ -1,36 +1,22 @@
 /**
- * ScoreBreakdownChart Component
+ * ScoreBreakdownChart — the Show Scorecard Ledger (Equoria-d6a47)
  *
- * Visualizes the score breakdown for a horse's competition performance
- * using a horizontal bar chart. Each bar represents a score component
- * with color coding: positive values in green, negative in red,
- * and base score in blue.
+ * Successor to the Recharts bar chart, per the owner ruling on Equoria-ij7ev
+ * (2026-09-11): a show scorecard ledger — signed rows summing to the total.
+ * The base stats open the card unsigned, because they are the score's
+ * foundation; every modifier beneath is written with its sign (+ bonus,
+ * − penalty, 0.0 held) and its provenance (which traits, which tack) in a
+ * quiet note under the row. A gold rule closes the ledger above the final
+ * score as the show recorded it.
  *
- * Features:
- * - Horizontal bar chart showing each score component
- * - Color-coded bars (positive: green, negative: red, base: blue)
- * - Component labels on left with point values on bars
- * - Hover tooltips explaining each component
- * - Responsive sizing
- * - Legend explaining colors (optional)
+ * If the rows do not reconcile with the recorded final score, the ledger says
+ * so in one line rather than replacing the show's number with its own sum.
  *
- * Story 5-2: Competition Results Display - Performance Breakdown
+ * The file keeps its historical name so the barrel, the call site and its
+ * tests are undisturbed. Story 5-2: Competition Results Display.
  */
 
 import React, { memo, useMemo } from 'react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  LabelList,
-  Cell,
-  CartesianGrid,
-  ReferenceLine,
-} from 'recharts';
 
 /**
  * Individual trait bonus in the score breakdown
@@ -76,265 +62,182 @@ export interface ScoreBreakdown {
  * Props for ScoreBreakdownChart component
  */
 export interface ScoreBreakdownChartProps {
-  /** The score breakdown data to visualize */
+  /** The score breakdown data to write into the ledger */
   breakdown: ScoreBreakdown;
-  /** Height of the chart in pixels (default: 300) */
-  height?: number;
-  /** Whether to show the legend (default: false) */
-  showLegend?: boolean;
-  /** Enable tooltips and hover interactions (default: true) */
-  interactive?: boolean;
+  /** Table caption; defaults to "Show scorecard". */
+  caption?: string;
   /** Additional CSS class for the container */
   className?: string;
 }
 
-/**
- * Data structure for each bar in the chart
- */
-interface ChartDataPoint {
-  name: string;
+type Sign = 'base' | 'positive' | 'negative' | 'zero';
+
+interface LedgerRow {
+  key: string;
+  label: string;
   value: number;
-  color: string;
-  description: string;
+  sign: Sign;
+  /** Provenance written beneath the label. */
+  note?: string;
 }
 
-/**
- * Color constants for different score component types
- */
-const COLORS = {
-  base: '#3b82f6', // blue-500
-  positive: '#22c55e', // green-500
-  positiveLight: '#4ade80', // green-400
-  negative: '#ef4444', // red-500
-  negativeLight: '#f87171', // red-400
-  neutral: '#94a3b8', // slate-400
-};
+const MINUS = '−';
+const RECONCILE_TOLERANCE = 0.05;
 
-/**
- * Get color based on value and component type
- * @param value - The numeric value
- * @param isBase - Whether this is the base score component
- * @returns Hex color string
- */
-const getBarColor = (value: number, isBase: boolean = false): string => {
-  if (isBase) return COLORS.base;
-  if (value > 0) return COLORS.positive;
-  if (value < 0) return COLORS.negative;
-  return COLORS.neutral;
-};
-
-/**
- * Custom tooltip component for the bar chart
- * Displays detailed information about each score component
- */
-interface TooltipProps {
-  active?: boolean;
-  payload?: Array<{ payload: ChartDataPoint }>;
+function signOf(value: number): Exclude<Sign, 'base'> {
+  if (value > 0) return 'positive';
+  if (value < 0) return 'negative';
+  return 'zero';
 }
 
-const CustomTooltip = ({ active, payload }: TooltipProps) => {
-  if (active && payload && payload.length > 0) {
-    const data = payload[0].payload as ChartDataPoint;
-    const isPositive = data.value > 0;
-    const valueColor =
-      data.value === 0 ? 'text-slate-400' : isPositive ? 'text-emerald-400' : 'text-red-400';
-
-    return (
-      <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-3 shadow-lg max-w-xs">
-        <p className="font-semibold text-[rgb(220,235,255)] mb-1">{data.name}</p>
-        <p className={`font-medium ${valueColor}`}>
-          {isPositive ? '+' : ''}
-          {data.value.toFixed(1)} points
-        </p>
-        <p className="text-sm text-slate-400 mt-1">{data.description}</p>
-      </div>
-    );
-  }
-  return null;
-};
-
-/**
- * Custom label component for bar values
- */
-interface LabelProps {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  value?: number;
+/** "+15.0", "−2.0", "0.0" — a true minus, never a hyphen. */
+export function formatSigned(value: number, decimals = 1): string {
+  if (value > 0) return `+${value.toFixed(decimals)}`;
+  if (value < 0) return `${MINUS}${Math.abs(value).toFixed(decimals)}`;
+  return (0).toFixed(decimals);
 }
 
-const CustomLabel = (props: LabelProps) => {
-  const { x = 0, y = 0, width = 0, height = 0, value = 0 } = props;
-  const isPositive = value > 0;
-  const displayValue = value === 0 ? '0' : isPositive ? `+${value.toFixed(1)}` : value.toFixed(1);
-
-  // Position label at the end of the bar
-  const labelX = width > 0 ? x + width + 5 : x - 5;
-  const textAnchor = width > 0 ? 'start' : 'end';
-
-  return (
-    <text
-      x={labelX}
-      y={y + height / 2}
-      fill={value > 0 ? COLORS.positive : value < 0 ? COLORS.negative : COLORS.neutral}
-      textAnchor={textAnchor}
-      dominantBaseline="middle"
-      fontSize={12}
-      fontWeight={500}
-    >
-      {displayValue}
-    </text>
-  );
+const SIGN_TONE: Record<Sign, string> = {
+  base: 'text-[var(--text-primary)]',
+  positive: 'text-[var(--role-success-text)]',
+  negative: 'text-[var(--role-danger-text)]',
+  zero: 'text-[var(--text-secondary)]',
 };
 
-/**
- * ScoreBreakdownChart Component
- *
- * Renders a horizontal bar chart showing the breakdown of score components
- * that contribute to a horse's final competition score.
- *
- * @example
- * ```tsx
- * <ScoreBreakdownChart
- *   breakdown={scoreBreakdown}
- *   height={400}
- *   showLegend={true}
- *   interactive={true}
- * />
- * ```
- */
+export function buildLedgerRows(breakdown: ScoreBreakdown): LedgerRow[] {
+  const { baseScore, equipmentBonuses } = breakdown;
+  const traitTotal = breakdown.traitBonuses.reduce((sum, tb) => sum + tb.bonus, 0);
+  const traitNote =
+    breakdown.traitBonuses.length > 0
+      ? breakdown.traitBonuses.map((tb) => `${tb.trait} ${formatSigned(tb.bonus)}`).join(' · ')
+      : 'No trait bonuses';
+
+  return [
+    {
+      key: 'base',
+      label: 'Base stats',
+      value: baseScore.total,
+      sign: 'base',
+      note: `Speed ${baseScore.speed} × 50% · Stamina ${baseScore.stamina} × 30% · Agility ${baseScore.agility} × 20%`,
+    },
+    {
+      key: 'training',
+      label: 'Training',
+      value: breakdown.trainingBonus,
+      sign: signOf(breakdown.trainingBonus),
+      note: 'Discipline training',
+    },
+    {
+      key: 'traits',
+      label: 'Traits',
+      value: traitTotal,
+      sign: signOf(traitTotal),
+      note: traitNote,
+    },
+    {
+      key: 'tack',
+      label: 'Tack',
+      value: equipmentBonuses.total,
+      sign: signOf(equipmentBonuses.total),
+      note: `Saddle ${formatSigned(equipmentBonuses.saddle)} · Bridle ${formatSigned(equipmentBonuses.bridle)}`,
+    },
+    {
+      key: 'rider',
+      label: 'Rider',
+      value: breakdown.riderEffect,
+      sign: signOf(breakdown.riderEffect),
+      note: breakdown.riderEffect < 0 ? 'Rider penalty' : 'Rider bonus',
+    },
+    {
+      key: 'health',
+      label: 'Health',
+      value: breakdown.healthModifier,
+      sign: signOf(breakdown.healthModifier),
+      note: 'Condition on the day',
+    },
+    {
+      key: 'luck',
+      label: 'Luck',
+      value: breakdown.randomLuck,
+      sign: signOf(breakdown.randomLuck),
+      note: 'The day’s fortune, up to ±9%',
+    },
+  ];
+}
+
 const ScoreBreakdownChart: React.FC<ScoreBreakdownChartProps> = ({
   breakdown,
-  height = 300,
-  showLegend = false,
-  interactive = true,
+  caption = 'Show scorecard',
   className = '',
 }) => {
-  // Transform breakdown data into chart format
-  const chartData: ChartDataPoint[] = useMemo(() => {
-    const data: ChartDataPoint[] = [];
-
-    // Base Score (always first, blue color)
-    data.push({
-      name: 'Base Stats',
-      value: breakdown.baseScore.total,
-      color: COLORS.base,
-      description: `Speed (${breakdown.baseScore.speed} x 50%) + Stamina (${breakdown.baseScore.stamina} x 30%) + Agility (${breakdown.baseScore.agility} x 20%)`,
-    });
-
-    // Training Bonus
-    data.push({
-      name: 'Training',
-      value: breakdown.trainingBonus,
-      color: getBarColor(breakdown.trainingBonus),
-      description: 'Bonus from discipline-specific training',
-    });
-
-    // Combined Trait Bonuses
-    const totalTraitBonus = breakdown.traitBonuses.reduce((sum, tb) => sum + tb.bonus, 0);
-    const traitNames = breakdown.traitBonuses.map((tb) => tb.trait).join(', ');
-    data.push({
-      name: 'Traits',
-      value: totalTraitBonus,
-      color: getBarColor(totalTraitBonus),
-      description: traitNames || 'No trait bonuses',
-    });
-
-    // Equipment Bonuses
-    data.push({
-      name: 'Equipment',
-      value: breakdown.equipmentBonuses.total,
-      color: getBarColor(breakdown.equipmentBonuses.total),
-      description: `Saddle (+${breakdown.equipmentBonuses.saddle}) + Bridle (+${breakdown.equipmentBonuses.bridle})`,
-    });
-
-    // Rider Effect
-    data.push({
-      name: 'Rider',
-      value: breakdown.riderEffect,
-      color: getBarColor(breakdown.riderEffect),
-      description:
-        breakdown.riderEffect >= 0 ? 'Rider bonus percentage' : 'Rider penalty percentage',
-    });
-
-    // Health Modifier
-    data.push({
-      name: 'Health',
-      value: breakdown.healthModifier,
-      color: getBarColor(breakdown.healthModifier),
-      description: 'Adjustment based on horse health rating',
-    });
-
-    // Random Luck
-    data.push({
-      name: 'Luck',
-      value: breakdown.randomLuck,
-      color: getBarColor(breakdown.randomLuck),
-      description: 'Random variance factor (max plus/minus 9%)',
-    });
-
-    return data;
-  }, [breakdown]);
-
-  // Calculate min/max for X axis domain
-  const domain = useMemo(() => {
-    const values = chartData.map((d) => d.value);
-    const min = Math.min(...values, 0);
-    const max = Math.max(...values, 0);
-    const padding = Math.max(Math.abs(min), Math.abs(max)) * 0.1;
-    return [Math.floor(min - padding), Math.ceil(max + padding)];
-  }, [chartData]);
-
-  // Hidden description for screen readers
-  const descriptionId = 'breakdown-chart-description';
-  const descriptionText = `Horizontal bar chart showing score breakdown components. Total score: ${breakdown.total.toFixed(1)} points.`;
+  const rows = useMemo(() => buildLedgerRows(breakdown), [breakdown]);
+  const rowSum = useMemo(() => rows.reduce((sum, row) => sum + row.value, 0), [rows]);
+  const reconciles = Math.abs(rowSum - breakdown.total) <= RECONCILE_TOLERANCE;
 
   return (
-    <div className={className} data-testid="score-breakdown-chart-container">
-      {/* Hidden description for accessibility */}
-      <span id={descriptionId} className="sr-only">
-        {descriptionText}
-      </span>
-
-      <ResponsiveContainer width="100%" height={height}>
-        <BarChart
-          data={chartData}
-          layout="vertical"
-          margin={{ top: 10, right: 60, left: 80, bottom: 10 }}
-          aria-label="Score breakdown bar chart"
-          aria-describedby={descriptionId}
-        >
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-          <XAxis
-            type="number"
-            domain={domain}
-            tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'rgba(37,99,235,0.3)' }}
-          />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={70}
-            tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
-            axisLine={{ stroke: 'rgba(37,99,235,0.3)' }}
-          />
-          <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="3 3" />
-          {interactive && (
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{ fill: 'var(--alpha-text-secondary-10)' }}
-            />
+    <div className={className} data-testid="score-breakdown-ledger">
+      <table className="w-full border-collapse font-[var(--font-body)] text-sm">
+        <caption className="type-label mb-2 text-left">{caption}</caption>
+        <thead className="sr-only">
+          <tr>
+            <th scope="col">Score component</th>
+            <th scope="col">Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr
+              key={row.key}
+              data-testid={`ledger-row-${row.key}`}
+              data-value={row.value}
+              data-sign={row.sign}
+              className="border-b border-[var(--glass-border)]"
+            >
+              <th
+                scope="row"
+                className="py-2 pr-4 text-left align-top font-medium text-[var(--text-primary)]"
+              >
+                {row.label}
+                {row.note && (
+                  <span className="mt-0.5 block text-xs font-normal leading-snug text-[var(--text-secondary)]">
+                    {row.note}
+                  </span>
+                )}
+              </th>
+              <td
+                className={`whitespace-nowrap py-2 text-right align-top font-semibold tabular-nums ${SIGN_TONE[row.sign]}`}
+              >
+                {row.sign === 'base' ? row.value.toFixed(1) : formatSigned(row.value)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr
+            data-testid="ledger-total"
+            data-value={breakdown.total}
+            className="border-t border-[var(--alpha-gold-primary-40)]"
+          >
+            <th
+              scope="row"
+              className="pt-3 text-left align-baseline font-semibold text-[var(--text-primary)]"
+            >
+              Final score
+            </th>
+            <td className="whitespace-nowrap pt-3 text-right align-baseline text-xl font-bold tabular-nums text-[var(--gold-light)]">
+              {breakdown.total.toFixed(1)}
+            </td>
+          </tr>
+          {!reconciles && (
+            <tr data-testid="ledger-reconciliation">
+              <td colSpan={2} className="pt-1 text-xs leading-snug text-[var(--text-secondary)]">
+                The rows above sum to {rowSum.toFixed(1)}; the final score is as the show recorded
+                it.
+              </td>
+            </tr>
           )}
-          {showLegend && <Legend wrapperStyle={{ paddingTop: '10px' }} iconType="square" />}
-          <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-            <LabelList dataKey="value" content={<CustomLabel />} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+        </tfoot>
+      </table>
     </div>
   );
 };

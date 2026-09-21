@@ -27,10 +27,7 @@ Rule ids: `palette-classes`, `text-opacity`, `unsupported-radius`,
 `page-local-blur`, `outer-width-wrapper`, `fixed-overlay`, `window-confirm`,
 `deprecated-imports`, `usd-game-currency`, `pagehero-allowlist`.
 
-| rule-id         | file-or-glob                                   | owner       | justification                                                                                                      | expiry     |
-| --------------- | ---------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |
-| palette-classes | components/leaderboard/RankHistoryChart.tsx    | machsheltie | Owner extension 2026-09-11; successor: authored season timeline of rank, not a line chart                          | 2026-10-23 |
-| palette-classes | components/competition/ScoreBreakdownChart.tsx | machsheltie | Owner extension 2026-09-11; successor: show scorecard ledger, signed rows summing to the total                     | 2026-10-23 |
-| palette-classes | components/competition/ScoreBreakdownRadar.tsx | machsheltie | Owner extension 2026-09-11; successor: authored inline SVG stat constellation, also serving predicted foal profile | 2026-10-23 |
+| rule-id | file-or-glob | owner | justification | expiry |
+| ------- | ------------ | ----- | ------------- | ------ |
 
 <!-- Add rows above. file-or-glob is relative to frontend/src and supports * and **. -->

@@ -57,7 +57,7 @@
   "frontend/src/components/competition/CompetitionHistory.tsx": 820,
   "frontend/src/components/competition/CompetitionResultsList.tsx": 606,
   "frontend/src/components/competition/CompetitionResultsModal.tsx": 918,
-  "frontend/src/components/competition/PerformanceBreakdown.tsx": 630,
+  "frontend/src/components/competition/PerformanceBreakdown.tsx": 625,
   "frontend/src/components/competition/PrizeTransactionHistory.tsx": 824,
   "frontend/src/components/foal/DevelopmentTracker.tsx": 703,
   "frontend/src/components/onboarding/BreedSelector.tsx": 746,

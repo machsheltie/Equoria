@@ -15,8 +15,9 @@
  *   - feeds the backend's real scoreBreakdown components into
  *     ScoreBreakdownRadar
  *   - renders a visually-hidden, screen-reader-accessible list of the exact
- *     numeric components + final score (Spec: "values exposed to screen
- *     readers" — Recharts SVG is not SR-navigable on its own)
+ *     numeric components + final score with the competition name (Spec:
+ *     "values exposed to screen readers"; the constellation lists its own
+ *     values too — this block adds the show context)
  *
  * States: loading, error, no-breakdown (legacy/foreign horse), populated.
  */
@@ -125,9 +126,8 @@ const PerformanceBreakdownPanel: React.FC<PerformanceBreakdownPanelProps> = ({
             title={`${participant.horseName} — final score ${participant.finalScore.toFixed(1)}`}
           />
 
-          {/* Screen-reader-accessible exact values. The Recharts SVG is not
-              SR-navigable, so the spec's "values exposed to screen readers"
-              requirement is met by this visually-hidden description. */}
+          {/* Screen-reader-accessible exact values with the competition name,
+              alongside the constellation's own visually-hidden value list. */}
           <div data-testid="score-breakdown-sr" className="sr-only">
             <p>
               Score breakdown for {participant.horseName} in{' '}

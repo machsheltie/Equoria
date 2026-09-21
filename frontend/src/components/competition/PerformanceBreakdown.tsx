@@ -4,7 +4,7 @@
  * Displays detailed score breakdown for a horse's competition performance.
  * Features:
  * - Header with horse/competition info, placement badge, and score
- * - Visual score breakdown chart
+ * - Show scorecard ledger (signed rows summing to the total)
  * - Detailed breakdown list with all components
  * - Comparison section (vs average, vs winner, percentile)
  * - Insights and improvement suggestions
@@ -402,14 +402,9 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
         <div data-testid="breakdown-section">
           <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4 flex items-center gap-2">
             <Award className="h-5 w-5 text-blue-400" aria-hidden="true" />
-            Score Breakdown Chart
+            Show Scorecard
           </h3>
-          <ScoreBreakdownChart
-            breakdown={scoreBreakdown}
-            height={280}
-            showLegend={false}
-            interactive={true}
-          />
+          <ScoreBreakdownChart breakdown={scoreBreakdown} />
         </div>
 
         {/* Right Column: Detailed List */}

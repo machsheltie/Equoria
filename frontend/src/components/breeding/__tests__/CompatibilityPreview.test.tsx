@@ -7,22 +7,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { CompatibilityPreview, type CompatibilityData } from '../CompatibilityPreview';
-
-// Mock recharts to avoid rendering issues
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => (
-    <div data-testid="responsive-container">{children}</div>
-  ),
-  RadarChart: ({ children }: any) => <svg data-testid="radar-chart">{children}</svg>,
-  PolarGrid: () => <g />,
-  PolarAngleAxis: () => <g />,
-  PolarRadiusAxis: () => <g />,
-  Radar: () => <g />,
-  Tooltip: () => <g />,
-  Legend: () => <g />,
-}));
 
 const sampleData: CompatibilityData = {
   statRanges: {
@@ -82,8 +68,9 @@ describe('CompatibilityPreview', () => {
   describe('Tab switching', () => {
     it('shows Stats tab content by default', () => {
       render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
-      // Stats tab should show the radar chart
-      expect(screen.getByTestId('radar-chart')).toBeInTheDocument();
+      // Stats tab opens on the predicted offspring constellation, one star per stat
+      expect(screen.getByTestId('stat-constellation')).toBeInTheDocument();
+      expect(screen.getByTestId('constellation-star-speed')).toHaveAttribute('data-value', '75');
     });
 
     it('switches to Traits tab on click', async () => {

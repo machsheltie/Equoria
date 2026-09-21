@@ -1,11 +1,8 @@
 {
   "frontend/src/components/MyRidersDashboard.tsx": { "sonner": 1 },
-  "frontend/src/components/competition/ScoreBreakdownChart.tsx": { "recharts": 1 },
-  "frontend/src/components/competition/ScoreBreakdownRadar.tsx": { "recharts": 1 },
   "frontend/src/components/foal/FoalMilestoneTimeline.tsx": { "recharts": 1 },
   "frontend/src/components/horse/StatHistoryGraph.tsx": { "chart.js": 1, "react-chartjs-2": 1 },
   "frontend/src/components/horse/StatProgressionChart.tsx": { "chart.js": 1, "react-chartjs-2": 1 },
-  "frontend/src/components/leaderboard/RankHistoryChart.tsx": { "recharts": 1 },
   "frontend/src/components/theme/CelestialThemeProvider.tsx": { "sonner": 1 },
   "frontend/src/components/theme/__tests__/CelestialThemeProvider.test.tsx": { "sonner": 1 },
   "frontend/src/components/training/ScoreRadarChart.tsx": { "recharts": 1 },

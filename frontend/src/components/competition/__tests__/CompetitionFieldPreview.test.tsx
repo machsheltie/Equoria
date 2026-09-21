@@ -6,20 +6,8 @@
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi, describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { CompetitionFieldPreview } from '../CompetitionFieldPreview';
-
-// Mock recharts (used by ScoreBreakdownRadar in scout view)
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  RadarChart: ({ children }: any) => <svg>{children}</svg>,
-  PolarGrid: () => <g />,
-  PolarAngleAxis: () => <g />,
-  PolarRadiusAxis: () => <g />,
-  Radar: () => <g />,
-  Tooltip: () => <g />,
-  Legend: () => <g />,
-}));
 
 const baseShow = {
   id: 1,
