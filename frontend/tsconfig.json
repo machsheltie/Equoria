@@ -21,7 +21,6 @@
     "strictNullChecks": false,
     "types": ["vite/client"],
     "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["./src/*"]
     }
