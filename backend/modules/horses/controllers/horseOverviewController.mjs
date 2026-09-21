@@ -482,7 +482,7 @@ export async function getHorsePersonalityImpact(req, res) {
       const compatibility = calculatePersonalityCompatibility(
         groom.personality,
         horse.temperament,
-        horse.bondScore || 50,
+        horse.bondScore,
       );
 
       return {

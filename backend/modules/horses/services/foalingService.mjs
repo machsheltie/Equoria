@@ -130,7 +130,7 @@ function assessFeedQualityFromMare(mare) {
       default:
         feedQuality = 50;
     }
-    const bondScore = mare.bondScore || 50;
+    const bondScore = mare.bondScore;
     if (bondScore >= 80) {
       feedQuality += 10;
     } else if (bondScore >= 60) {
@@ -282,8 +282,9 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const mareStats = {
     id: dam.id,
     name: dam.name,
-    stressLevel: dam.stressLevel || 50,
-    bondScore: dam.bondScore || 50,
+    // Equoria-4maxb: NOT NULL column (Equoria-507mt), 0 is a legitimate value; never promote it.
+    stressLevel: dam.stressLevel,
+    bondScore: dam.bondScore,
     healthStatus: dam.healthStatus || 'Good',
   };
   const lineage = await gatherLineage(sireId, damId, 3);
