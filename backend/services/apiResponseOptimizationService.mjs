@@ -308,6 +308,49 @@ export class SerializationService {
       return data;
     }
 
+    // Convert Prisma `Decimal` to a JSON number.
+    //
+    // Equoria-6ftvc (2026-09-21): a `Decimal` is `typeof object` and had NO
+    // branch here, so the catch-all below rebuilt it with `Object.entries` into
+    // a plain object — discarding the prototype that carries `toJSON`. Measured
+    // on the wire through `GET /api/v1/grooms/:id/profile`, a `sessionRate` of
+    // 17.50 arrived as `{"s":1,"e":1,"d":[17,5000000]}`.
+    //
+    // UNLIKE the Date case above this needed no realm split to bite: there was
+    // simply no branch, so every environment took the catch-all. `compress`
+    // defaults to true and `responseOptimization()` is mounted app-wide in
+    // app.mjs, so it reached every response carrying any of the schema's seven
+    // `Decimal` columns. The player-facing one is `Groom.sessionRate`:
+    // GroomList.tsx types it `number` and gates hiring on
+    // `(user.money || 0) >= sessionRate * 7`. Object times seven is NaN and
+    // every comparison with NaN is false, so no groom could ever be afforded.
+    //
+    // NUMBER, NOT `Decimal.toJSON()`'S STRING. `toJSON()` yields "17.5", and
+    // every frontend consumer declares these `number` and does arithmetic on
+    // them — `CompetitionResultsList.tsx` totals prizes with `sum + r.prizeWon`,
+    // which CONCATENATES on strings. The backend had already settled this at 16
+    // sites in 9 files (resultModelService, groomFreeAgentController,
+    // groomMarketplaceController, horseOverviewController, userStatsService,
+    // the leaderboards), every one of them `Number(...)`; this makes the
+    // controllers that forgot to coerce agree with the ones that did.
+    //
+    // PRECISION. An IEEE-754 double round-trips any decimal of <= 15 significant
+    // digits. The widest `Decimal` column in the schema is `@db.Decimal(10, 2)`
+    // (sessionRate, cost, score, prizeWon) — ten — and the others are
+    // `Decimal(5, 4)` probabilities, so no column loses information crossing to
+    // Number. What a double cannot promise is exact CENT ARITHMETIC over many
+    // additions; that is acceptable because every authoritative money mutation
+    // happens in the backend against the database inside a Prisma transaction,
+    // and the wire value is read for display and affordability comparison only.
+    //
+    // BRAND CHECK, not `instanceof Prisma.Decimal` — same reasoning as the Date
+    // guard above, and it additionally avoids importing the Prisma client into
+    // a pure serialization service. `Object.prototype.toString` reads the
+    // value's own `Symbol.toStringTag`, which decimal.js sets to 'Decimal'.
+    if (Object.prototype.toString.call(data) === '[object Decimal]') {
+      return Number(data);
+    }
+
     if (data && typeof data === 'object') {
       const compressed = {};
       for (const [key, value] of Object.entries(data)) {
