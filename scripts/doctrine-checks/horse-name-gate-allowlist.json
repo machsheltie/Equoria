@@ -26,8 +26,8 @@
       "reason": "System-derived, no player string: store horses are named `<Breed> #NNNNNN`. Breed names are DB-controlled (Breed.name is admin-created and uniquely indexed), not player input on this path.",
       "issue": "Equoria-qkgfh.1"
     },
-    "backend/modules/users/services/gdprAccountService.mjs": {
-      "reason": "System-derived, no player string: lineage anonymization rewrites a horse's name to `Anonymized Horse #<id>` during GDPR erasure. Always inside the policy by construction.",
+    "backend/modules/users/services/gdprHorseLineageErasure.mjs": {
+      "reason": "System-derived, no player string: lineage anonymization rewrites a horse's name to `Anonymized Horse #<id>` during GDPR erasure. Always inside the policy by construction. MOVED, not added (Equoria-49bc2): this writer was extracted verbatim out of gdprAccountService.mjs into its own module when that file crossed the 600-line threshold, and the write is now the batched parameterized `$executeRaw` that builds the same string in SQL. The list did not grow.",
       "issue": "Equoria-qkgfh.1"
     },
     "backend/modules/horses/services/horseModelService.mjs": {

@@ -22,6 +22,13 @@ export * from './services/conformationShowService.mjs';
 export * from './services/resultModelService.mjs';
 export * from './shows/showController.mjs';
 export * from './shows/showRoutes.mjs';
+// Equoria-hr0jw: the fee-settlement half of the show money lifecycle. Its
+// counterpart (the entry that fills the escrow) already reaches other modules
+// through `enterShow` above; settlement had stayed module-private only because
+// its callers happened to be in-module. Surfaced so a cross-module caller can
+// drain a show's escrow through production code instead of hand-rolling the
+// ledger moves.
+export { settleShowFeeEscrow } from './shows/showEscrowTx.mjs';
 
 // Equoria-v8l96.1: surface route default-exports through the barrel so the
 // app composition root (app/routers.mjs) imports them via the module public

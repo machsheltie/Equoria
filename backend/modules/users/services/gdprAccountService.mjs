@@ -32,12 +32,42 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { eraseOrAnonymizeOwnedHorses } from './gdprHorseLineageErasure.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
   SYSTEM_ACCOUNT_BURN,
   creditSystemAccount,
   debitSystemAccountOrThrow,
 } from '../../economy/index.mjs';
+
+/**
+ * Interactive-transaction options for `eraseUserAccount` (Equoria-49bc2).
+ *
+ * Prisma's DEFAULT interactive-transaction budget is 5000 ms. The erasure body
+ * walks an entire account, so a power user's erasure blew that budget, raised
+ * P2028, and was mapped to a retryable 503 the client could never succeed at —
+ * Article 17 erasure was PERMANENTLY impossible for exactly those accounts.
+ *
+ * A chunked/multi-transaction erasure was considered and REJECTED. This body is
+ * not a bulk row delete, it is a settlement: it refunds money into OTHER
+ * players' wallets, burns escrow, rewrites OTHER players' pedigrees, and ends
+ * with the user row. Split across transactions, a crash between chunks leaves a
+ * half-erased account — refunds paid but the account still present (a retry
+ * double-refunds), or horses gone and the user row surviving as an unusable
+ * ghost. A failed erasure is recoverable; a half-erased one is not. The
+ * atomicity boundary therefore stays at the whole account, or nothing.
+ *
+ * Keeping one transaction means keeping its wall time honest, so the fix is
+ * BOTH this explicit budget AND the removal of the O(N)-round-trip loops below
+ * (the lineage walk and the show-cancel pass). 120 s is a ceiling for the
+ * pathological account, not the expected cost. `maxWait` is the pool-acquire
+ * budget: under contention, wait for a connection rather than fail outright —
+ * and THAT 503 is genuinely actionable, unlike the old one.
+ */
+export const ERASURE_TX_OPTIONS = Object.freeze({
+  timeout: 120_000,
+  maxWait: 10_000,
+});
 
 /**
  * Build a complete, machine-readable export of a user's personal data.
@@ -185,9 +215,15 @@ export async function eraseUserAccount(userId) {
     prisma.$transaction(async tx => {
       // Ids of horses owned by THIS user. Used to scope horse-dependent
       // cleanup precisely — never "all horses".
+      //
+      // Equoria-49bc2: sireId/damId are selected HERE so the lineage fixpoint
+      // walk further down can run entirely in memory off this single read
+      // instead of issuing one findMany per pedigree generation. The owned
+      // pedigree can only ever reference rows in this same result set (the
+      // walk never leaves `horseIdSet`), so one round trip is sufficient.
       const ownedHorses = await tx.horse.findMany({
         where: { userId },
-        select: { id: true },
+        select: { id: true, sireId: true, damId: true },
       });
       const horseIds = ownedHorses.map(h => h.id);
 
@@ -202,6 +238,13 @@ export async function eraseUserAccount(userId) {
       const groomIds = staffGrooms.map(g => g.id);
 
       // ── Club election artifacts authored by the user ──────────────────────
+      // KNOWN GAP, filed as Equoria-8jyiv (reproduced on the real DB while
+      // enumerating RESTRICT FKs for Equoria-hr0jw): this clears ballots the
+      // user CAST, but not ballots OTHER players cast FOR the user's
+      // candidacy. `ClubBallot.candidate` is RESTRICT, so the
+      // `clubCandidate.deleteMany` below then fails with 23001 and the whole
+      // erasure rolls back. Left here rather than fixed in passing because it
+      // needs a retention ruling on what happens to a live election's tally.
       await tx.clubBallot.deleteMany({ where: { voterId: userId } });
       await tx.clubCandidate.deleteMany({ where: { userId } });
       await tx.clubMembership.deleteMany({ where: { userId } });
@@ -379,18 +422,30 @@ export async function eraseUserAccount(userId) {
             description: `Burn prize escrow for cancelled show ${show.id}`,
           });
         }
+      }
+
+      // Equoria-49bc2: the per-show entry delete and the per-show terminal
+      // status write used to sit INSIDE the loop above — two round trips per
+      // cancelled show. Both write identical data for every show in the set,
+      // so they collapse to one statement each, scoped to exactly the show ids
+      // the loop just settled. The per-entrant refund + ledger writes stay
+      // per-row on purpose: each one debits escrow and credits a DIFFERENT
+      // surviving player's wallet with its own audit row, so there is no
+      // correct bulk form.
+      if (cancellableShows.length > 0) {
+        const cancelledShowIds = cancellableShows.map(s => s.id);
 
         // Drop entries (otherwise executeClosedShows would still see them
         // through the status filter being widened, AND the entrant's horse
         // FK keeps the row alive — not our problem to clean up later).
-        await tx.showEntry.deleteMany({ where: { showId: show.id } });
+        await tx.showEntry.deleteMany({ where: { showId: { in: cancelledShowIds } } });
 
-        // Mark the show terminated. status:'completed' + executedAt = now
-        // takes it out of every executor's filter (status:'open' AND
+        // Mark the shows terminated. status:'completed' + executedAt = now
+        // takes them out of every executor's filter (status:'open' AND
         // closeDate<=now). createdByUserId is nulled in the bulk update
         // below for consistency with already-completed shows.
-        await tx.show.update({
-          where: { id: show.id },
+        await tx.show.updateMany({
+          where: { id: { in: cancelledShowIds } },
           data: {
             status: 'completed',
             executedAt: cancelNow,
@@ -399,6 +454,49 @@ export async function eraseUserAccount(userId) {
           },
         });
       }
+
+      // ── The user's OWN entries on OTHER players' shows (Equoria-hr0jw) ────
+      // `ShowEntry.userId` is a REQUIRED relation, so it carries Prisma's
+      // default RESTRICT. Until now the erasure never deleted these rows: the
+      // cancel pass above only clears entries on shows the user CREATED, and
+      // everything else was left to `ShowEntry.horse` (onDelete: Cascade) to
+      // sweep up when the horse was hard-deleted.
+      //
+      // That covered the common case by accident, and broke on the ordinary
+      // one. When the Equoria-cugl9 lineage rule PRESERVES a horse (a
+      // surviving player's horse descends from it), the horse row stays, so
+      // its ShowEntry stays, so the terminal `tx.user.delete` below fails with
+      //   23001 ... violates RESTRICT ... "show_entries_userId_fkey"
+      // and the whole erasure rolls back. The shape is stable, so retrying can
+      // never clear it: a breeder who sold a foal on and had entered that
+      // horse in someone else's show could NEVER be erased.
+      //
+      // RETENTION RULING — the entry is deleted and the fee stays escrowed to
+      // the host:
+      //   • Equoria has no withdraw-from-show path. Once `enterShowAtomicTx`
+      //     moves a fee into SystemAccount[show_escrow] it is the HOST's at
+      //     settlement (`settleShowFeeEscrow`); there is no inverse operation
+      //     and no refund anywhere in the entry lifecycle.
+      //   • This is already what the cascade path does for every other entry
+      //     this erasure touches. Making the delete explicit makes ALL of the
+      //     user's entries behave identically, rather than the outcome hinging
+      //     on whether some other player happened to breed from the horse.
+      //   • Money is conserved because nothing here moves: neither
+      //     SystemAccount[show_escrow] nor the show's prizeEscrow/feeEscrow
+      //     columns are touched, so the si69u invariant
+      //     (escrow.balance == SUM(prizeEscrow + feeEscrow)) still holds and
+      //     the host settles exactly what they were always going to settle.
+      //     Refunding instead would have to burn the money (the entrant's
+      //     wallet is being deleted), which would shrink ANOTHER player's
+      //     payout as a side effect of a stranger's erasure.
+      //   • The other player's show is left defensible: still open, other
+      //     entrants untouched, one horse scratched. A preserved horse is
+      //     ownerless after anonymization, so leaving it entered would stage a
+      //     competitor with nobody to pay a placing to.
+      //
+      // Scoped to this user's own rows only — never `{ showId }` on a show
+      // someone else created.
+      await tx.showEntry.deleteMany({ where: { userId } });
 
       // Show.hostUser / createdByUser are optional (String?) — null them so
       // the show (and other users' results under it) survive, but the
@@ -424,142 +522,9 @@ export async function eraseUserAccount(userId) {
       await tx.trainer.deleteMany({ where: { userId } });
 
       // ── Horses + horse-scoped graph (Equoria-cugl9: lineage anonymization) ─
-      if (horseIds.length > 0) {
-        // A user's horse may be a breeding ANCESTOR of horses owned by OTHER,
-        // surviving users. The pre-cugl9 code nulled damId/sireId on EVERY
-        // descendant pointing at the user's horses, then deleted the user's
-        // horses — that DESTROYED the lineage of descendants the deleted user
-        // never owned (collateral damage to another player's horse graph).
-        //
-        // The senior fix (per the issue + a richer breeding economy): partition
-        // the user's horses into
-        //   (a) ANCESTORS WITH A SURVIVING EXTERNAL DESCENDANT — a horse that
-        //       has at least one offspring whose owner is NOT this user. These
-        //       are ANONYMIZED (detached + PII-scrubbed), NOT deleted, so the
-        //       descendant keeps its damId/sireId pointer and the breeding
-        //       graph survives.
-        //   (b) ALL OTHER owned horses — hard-deleted as before (no external
-        //       graph value to preserve).
-        //
-        // A descendant owned by THIS SAME user is being deleted in this very
-        // transaction, so it does not count as a reason to preserve its parent
-        // — hence the `userId: { not: userId }` (plus null-owner) filter below.
-        // The set we may NOT delete. Seed it with the user's horses that are
-        // DIRECT parents of a surviving external descendant, then expand
-        // transitively UP the ancestry: a preserved horse's own owned ancestors
-        // (grandparents, great-grandparents, ...) must ALSO be preserved, or a
-        // multi-generation lineage would lose its deeper ancestors and the
-        // intermediate preserved horse would be left with a dangling parent edge.
-        const horseIdSet = new Set(horseIds);
-        const preserveIds = new Set();
-
-        // Seed: direct external children of any of the user's horses.
-        const directExternalChildren = await tx.horse.findMany({
-          where: {
-            OR: [{ sireId: { in: horseIds } }, { damId: { in: horseIds } }],
-            // Owned by ANYONE other than the user being deleted (another
-            // surviving user, or an already-unowned/anonymized horse).
-            NOT: { userId },
-          },
-          select: { sireId: true, damId: true },
-        });
-        for (const child of directExternalChildren) {
-          if (child.sireId !== null && horseIdSet.has(child.sireId)) {
-            preserveIds.add(child.sireId);
-          }
-          if (child.damId !== null && horseIdSet.has(child.damId)) {
-            preserveIds.add(child.damId);
-          }
-        }
-
-        // Transitive expansion: walk up. For every horse currently slated for
-        // preservation, pull its sire/dam; if that parent is one of the user's
-        // horses and not yet preserved, preserve it too. Iterate to a fixpoint.
-        // Bounded by horseIds.length (each iteration adds ≥1 id or stops).
-        let frontier = [...preserveIds];
-        while (frontier.length > 0) {
-          const parents = await tx.horse.findMany({
-            where: { id: { in: frontier } },
-            select: { sireId: true, damId: true },
-          });
-          const nextFrontier = [];
-          for (const p of parents) {
-            for (const parentId of [p.sireId, p.damId]) {
-              if (parentId !== null && horseIdSet.has(parentId) && !preserveIds.has(parentId)) {
-                preserveIds.add(parentId);
-                nextFrontier.push(parentId);
-              }
-            }
-          }
-          frontier = nextFrontier;
-        }
-
-        const idsToDelete = horseIds.filter(id => !preserveIds.has(id));
-
-        // (a) Anonymize the ancestors that must survive for the lineage. Detach
-        //     from the deleted user (userId -> null) and scrub user-identifying
-        //     fields. The horse row + the descendants' lineage pointers INTO it
-        //     are left intact (that is the whole point). We deliberately do NOT
-        //     cascade-delete the ancestor's own horse children here — the horse
-        //     survives, so its competition history / logs survive with it (no
-        //     longer attributed to the deleted user).
-        //
-        //     Safety net: clear a preserved ancestor's OWN sireId/damId if it
-        //     somehow references a horse slated for hard-delete in step (b).
-        //     The transitive expansion above already guarantees a preserved
-        //     horse's owned parents are themselves preserved, so this should
-        //     never fire — but if it did, leaving the edge would make the
-        //     deleted horse a referenced parent and the Restrict FK would block
-        //     its deletion. Defensive only; loses no graph value when inert.
-        const fetchedPreserved =
-          preserveIds.size > 0
-            ? await tx.horse.findMany({
-                where: { id: { in: [...preserveIds] } },
-                select: { id: true, sireId: true, damId: true },
-              })
-            : [];
-        const deleteIdSet = new Set(idsToDelete);
-        for (const ancestor of fetchedPreserved) {
-          await tx.horse.update({
-            where: { id: ancestor.id },
-            data: {
-              userId: null,
-              name: `Anonymized Horse #${ancestor.id}`,
-              forSale: false,
-              salePrice: 0,
-              studStatus: 'Not at Stud',
-              studFee: 0,
-              // Drop dangling edges into horses being deleted in step (b).
-              ...(ancestor.sireId !== null && deleteIdSet.has(ancestor.sireId)
-                ? { sireId: null }
-                : {}),
-              ...(ancestor.damId !== null && deleteIdSet.has(ancestor.damId)
-                ? { damId: null }
-                : {}),
-            },
-          });
-        }
-
-        // (b) Hard-delete the remaining owned horses. Their lineage pointers
-        //     into siblings that are ALSO being deleted (or into preserved
-        //     ancestors) must be cleared first so the damId/sireId Restrict FKs
-        //     don't block — but scoped ONLY to deleted-horse → deleted-horse
-        //     edges (never touching a surviving/anonymized horse's pointers).
-        if (idsToDelete.length > 0) {
-          await tx.horse.updateMany({
-            where: { id: { in: idsToDelete }, damId: { in: idsToDelete } },
-            data: { damId: null },
-          });
-          await tx.horse.updateMany({
-            where: { id: { in: idsToDelete }, sireId: { in: idsToDelete } },
-            data: { sireId: null },
-          });
-          // Most horse children (competitionResults, trainingLogs,
-          // foalDevelopment, horseXpEvents, trait logs, groom*) are
-          // onDelete: Cascade — they go automatically.
-          await tx.horse.deleteMany({ where: { id: { in: idsToDelete } } });
-        }
-      }
+      // Owns the "anonymize an ancestor a surviving player descends from,
+      // hard-delete the rest" partition. Runs inside THIS transaction.
+      await eraseOrAnonymizeOwnedHorses(tx, userId, ownedHorses);
 
       // ── Grooms on the user's staff (Equoria-ypb7d.2: engaged, never owned) ──
       // Groom children (assignments, interactions, synergies, logs,
@@ -585,7 +550,7 @@ export async function eraseUserAccount(userId) {
 
       // ── Finally the user row ──────────────────────────────────────────────
       await tx.user.delete({ where: { id: userId } });
-    }),
+    }, ERASURE_TX_OPTIONS),
     { message: 'Account service is busy right now, please retry in a moment.' },
   );
 
