@@ -282,7 +282,6 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const mareStats = {
     id: dam.id,
     name: dam.name,
-    // Equoria-4maxb: NOT NULL column (Equoria-507mt), 0 is a legitimate value; never promote it.
     stressLevel: dam.stressLevel,
     bondScore: dam.bondScore,
     healthStatus: dam.healthStatus || 'Good',

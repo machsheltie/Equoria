@@ -36,7 +36,6 @@ const DISCOVERY_CONDITIONS = {
   // Stress-based discoveries
   LOW_STRESS: {
     name: 'Low Stress',
-    // Equoria-4maxb: NOT NULL column (Equoria-507mt), 0 is a legitimate value; never promote it.
     condition: horse => horse.stressLevel <= 20,
     description: 'Stress levels minimized',
     priority: 'medium',
