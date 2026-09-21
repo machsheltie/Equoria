@@ -126,7 +126,17 @@ test.describe('Community', () => {
     await expect(page.locator('[data-testid="thread-list"]')).toBeVisible({ timeout: 15000 });
 
     // Find the first real thread row, if any. Pattern: data-testid="thread-<id>"
-    const firstThreadRow = page.locator('[data-testid^="thread-"]').first();
+    // Equoria-c2erw: the prefix `thread-` also matches the LIST CONTAINER,
+    // which MessageBoardPage.tsx:193 renders as data-testid="thread-list" and
+    // which precedes every row in document order. `.first()` therefore always
+    // resolved to the container, so the documented "board is empty" branch
+    // below could never be taken: the container is visible even with zero
+    // threads, and clicking it navigates nowhere, leaving the post-list
+    // assertion to time out on /message-board. Excluding the container makes
+    // the locator mean what the comment says — a real thread row.
+    const firstThreadRow = page
+      .locator('[data-testid^="thread-"]:not([data-testid="thread-list"])')
+      .first();
     const threadVisible = await firstThreadRow.isVisible({ timeout: 3000 }).catch(() => false);
 
     if (!threadVisible) {

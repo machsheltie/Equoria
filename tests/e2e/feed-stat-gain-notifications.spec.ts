@@ -149,6 +149,21 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     await expect(page.getByTestId('notification-dot')).toBeVisible({ timeout: 15_000 });
 
     // Step 4 — navigate to Messages, switch to Notifications tab.
+    // Equoria-c2erw: the mark-read PATCH is armed HERE, before the activation
+    // that triggers it. MessagesPage.tsx:124-128 fires markGameReadMutate()
+    // only while `gameUnreadCount > 0`, so the FIRST activation of the
+    // notifications tab consumes the unread batch. The old step 6 listened for
+    // a SECOND PATCH after toggling inbox -> notifications again; by then the
+    // count was already 0 and no request was ever made, so the listener always
+    // timed out. Same contract, same strength — a real read-all PATCH must fire
+    // when the player opens the notifications tab with unread game news — only
+    // now it is observed on the activation that actually causes it.
+    const markReadPromise = page.waitForResponse(
+      (resp) =>
+        resp.url().includes('/api/v1/users/me/game-notifications/read-all') &&
+        resp.request().method() === 'PATCH',
+      { timeout: 20_000 }
+    );
     await page.goto('/messages', { waitUntil: 'load' });
     await page.getByTestId('tab-notifications').click();
     await expect(page.getByTestId('tab-notifications')).toHaveAttribute('aria-selected', 'true');
@@ -161,22 +176,8 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     const matching = page.locator('[data-notif-type="stat_gain"]', { hasText: horseName });
     await expect(matching.first()).toBeVisible({ timeout: 15_000 });
 
-    // Step 6 — assert PATCH /game-notifications/read-all fired and bell clears.
-    // The mark-read mutation fires inside the useEffect at MessagesPage.tsx:96-100
-    // when the user activates the notifications tab with unreadCount > 0.
-    // We wait for the network call AFTER the tab click — but we already clicked
-    // above. So we listen for the response and re-trigger by clicking inbox
-    // then notifications again. Easier: wait for the next read-all PATCH after
-    // we re-trigger via a navigation back-and-forth.
-    const markReadPromise = page.waitForResponse(
-      (resp) =>
-        resp.url().includes('/api/v1/users/me/game-notifications/read-all') &&
-        resp.request().method() === 'PATCH',
-      { timeout: 20_000 }
-    );
-    // Click inbox tab then notifications tab again to ensure the effect runs.
-    await page.getByTestId('tab-inbox').click();
-    await page.getByTestId('tab-notifications').click();
+    // Step 6 — the PATCH /game-notifications/read-all armed in step 4 must have
+    // fired (wired to the tab activation) and must have succeeded.
     const markReadResp = await markReadPromise;
     expect(markReadResp.ok()).toBeTruthy();
 
