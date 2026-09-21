@@ -177,9 +177,24 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
       );
     }
 
-    // Step 1: equip basic feed to the mare via the equip page
+    // Step 1: equip basic feed to the mare via the equip page.
+    //
+    // Equoria-c2erw: this step used to look straight for feed-item-basic and
+    // time out. HorseEquipPage.tsx:141 gives the CURRENTLY EQUIPPED feed card
+    // the testid `equipped-feed-card` and only an unequipped tier gets
+    // `feed-item-<type>` — and beforeAll above already equips basic to the mare
+    // (it has to: Equoria-2e7e rejects breeding while either parent reads
+    // critical health, which a never-fed horse does). So the mare arrives here
+    // with Basic Feed equipped and the card offering Unequip, and
+    // feed-item-basic legitimately does not exist.
+    //
+    // Unequip through the real UI first, so the equip POST asserted below is a
+    // genuine equip rather than a no-op on an already-equipped tier. Net state
+    // afterwards is identical; no assertion is dropped and nothing is mocked.
     await page.goto(`/horses/${mareId}/equip`, { waitUntil: 'load' });
     await expect(page.getByTestId('horse-equip-loading')).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.getByTestId('equipped-feed-card')).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId('unequip-feed-button').click();
     await expect(page.getByTestId('feed-item-basic')).toBeVisible({ timeout: 15_000 });
 
     const equipResp = page.waitForResponse(
