@@ -417,32 +417,26 @@ describe('HorseSelector Component', () => {
   });
 
   describe('sex filtering — realistic API vocabulary (Equoria-gxcxs)', () => {
-    // The database never stores 'Male'/'Female' — real API responses use
-    // Mare/Filly/Stallion/Colt/Rig (backend/constants/schema.mjs HORSE_SEX).
-    // A filly is a young mare and a colt a young stallion (Equoria-di2n5
-    // ruling), so the female/male filters must accept both members of the
-    // group, not just the exact adult label.
+    // DB never stores 'Male'/'Female' (real: Mare/Filly/Stallion/Colt/Rig); a
+    // filly groups as female and a colt as male (Equoria-di2n5).
     const realMare = createHorse({ id: 20, name: 'Duchess', sex: 'Mare', age: 6 });
     const realFilly = createHorse({ id: 21, name: 'Ember', sex: 'Filly', age: 4 });
     const realStallion = createHorse({ id: 22, name: 'Titan', sex: 'Stallion', age: 6 });
     const realColt = createHorse({ id: 23, name: 'Rusty', sex: 'Colt', age: 4 });
+    const realHorses = [realMare, realFilly, realStallion, realColt];
 
     it('female filter returns both Mare and Filly horses, never an empty list', () => {
       render(
         <HorseSelector
-          horses={[realMare, realFilly, realStallion, realColt]}
+          horses={realHorses}
           selectedHorse={null}
           onSelect={mockOnSelect}
           filter="female"
           title="Select Dam"
         />
       );
-
-      // Guard against a vacuous pass: assert the list is non-empty before
-      // asserting on its contents.
-      const results = screen.getAllByRole('button', { name: /^Select /i });
-      expect(results.length).toBeGreaterThan(0);
-
+      // Non-emptiness first: a guard that walks an empty list passes vacuously.
+      expect(screen.getAllByRole('button', { name: /^Select /i }).length).toBeGreaterThan(0);
       expect(screen.getByText('Duchess')).toBeInTheDocument();
       expect(screen.getByText('Ember')).toBeInTheDocument();
       expect(screen.queryByText('Titan')).not.toBeInTheDocument();
@@ -452,17 +446,14 @@ describe('HorseSelector Component', () => {
     it('male filter returns both Stallion and Colt horses, never an empty list', () => {
       render(
         <HorseSelector
-          horses={[realMare, realFilly, realStallion, realColt]}
+          horses={realHorses}
           selectedHorse={null}
           onSelect={mockOnSelect}
           filter="male"
           title="Select Sire"
         />
       );
-
-      const results = screen.getAllByRole('button', { name: /^Select /i });
-      expect(results.length).toBeGreaterThan(0);
-
+      expect(screen.getAllByRole('button', { name: /^Select /i }).length).toBeGreaterThan(0);
       expect(screen.getByText('Titan')).toBeInTheDocument();
       expect(screen.getByText('Rusty')).toBeInTheDocument();
       expect(screen.queryByText('Duchess')).not.toBeInTheDocument();
