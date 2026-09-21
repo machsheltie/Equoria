@@ -926,11 +926,32 @@ model CompetitionResult {
   showId     Int
   /// Timestamps
   createdAt  DateTime @default(now())
+  /// When the owning player opened this result (Equoria-oey96.28, owner ruling
+  /// 2026-09-21). NULL means the player has not seen it yet, which is the only
+  /// real source for the Story 23.4 `check-results` next-action: without this
+  /// column "results available, not yet viewed" cannot be sourced at all.
+  ///
+  /// Written ONLY by the ownership-scoped mark-viewed path
+  /// (`markUserResultsViewed` in
+  /// backend/modules/competition/services/resultModelService.mjs, behind
+  /// POST /api/v1/competition/results/viewed). Nothing else sets it, and it is
+  /// never cleared — viewing a result is a one-way latch.
+  ///
+  /// Rows that existed before the migration were backfilled to the migration
+  /// timestamp, so the hub only ever nudges a player about results produced
+  /// after deployment. See the migration header for the reasoning.
+  viewedAt   DateTime?
   horse      Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
   show       Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
 
   @@unique([showId, horseId])
   @@index([horseId, score])
+  /// Serves the check-results read on every Hub load: the unviewed-results
+  /// lookup filters `horseId IN (<the player's horses>) AND "viewedAt" IS NULL`,
+  /// which this index answers directly. `[horseId, score]` above cannot: its
+  /// second column is the wrong one, so that index leaves the `viewedAt`
+  /// predicate to a heap re-check on every row of every horse.
+  @@index([horseId, viewedAt])
   @@map("competition_results")
 }
 
