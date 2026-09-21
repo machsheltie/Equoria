@@ -6,6 +6,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// The beta-readiness suite (tests/e2e/readiness/**) is excluded from this
+// config at BOTH levels — see the note above `projects` for why the top-level
+// `testIgnore` alone was not enough.
+const READINESS = /[\\/]readiness[\\/]/;
+
 // Read from backend/.env.test to get the test database URL
 dotenv.config({ path: path.resolve(__dirname, 'backend', '.env.test') });
 
@@ -73,6 +78,16 @@ export default defineConfig({
       },
     },
   ],
+  // Equoria-c2erw: a project-level `testIgnore` REPLACES the top-level value —
+  // Playwright does not merge the two. Each browser project below declares its
+  // own `testIgnore` (to keep the a11y and baseline specs out), which silently
+  // dropped the `**/readiness/**` exclusion above, so the beta-readiness suite
+  // ran a SECOND time inside the main E2E lane: with the shared authenticated
+  // storageState (so mfa-login's `expectUnauthenticated` saw 200, not 401) and
+  // without NODE_ENV=beta-readiness / EMAIL_CAPTURE_FILE (so prodParity's
+  // latestCapturedEmail() never found a captured mail). Those specs have their
+  // own gate — playwright.beta-readiness.config.ts — which supplies both. The
+  // exclusion is restated here so every project actually carries it.
   projects: [
     // Equoria-yhg0g: the automated accessibility suite
     // (tests/e2e/accessibility.spec.ts, UX spec 13.4) is its own project so
@@ -103,17 +118,17 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: [/accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
+      testIgnore: [READINESS, /accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
-      testIgnore: [/accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
+      testIgnore: [READINESS, /accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
       use: { ...devices['Desktop Firefox'] },
     },
     {
       name: 'webkit',
-      testIgnore: [/accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
+      testIgnore: [READINESS, /accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
       use: { ...devices['Desktop Safari'] },
     },
   ],
