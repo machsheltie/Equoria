@@ -1,8 +1,10 @@
 /**
- * gdprLargeAccountErasure.integration.test.mjs — Equoria-49bc2
+ * gdprLargeAccountErasure.integration.test.mjs — Equoria-49bc2, Equoria-hr0jw
  *
  * GDPR Article 17 right-to-erasure must work for the accounts that actually
- * have data in them.
+ * have data in them. Two independent lock-outs kept that from being true; this
+ * file covers both, because they share a fixture vocabulary (a breeder whose
+ * horses other players have bred from).
  *
  * ── The defect ───────────────────────────────────────────────────────────────
  * `eraseUserAccount()` ran its whole settlement inside
@@ -13,9 +15,10 @@
  * A long-running breeder blew the 5 s budget, Prisma raised P2028, and
  * `withRetryableTxMapping` mapped it to a 503 "busy, retry in a moment".
  * Retrying never helped — the account was the same size next time — so erasure
- * was PERMANENTLY impossible for exactly those players. Measured on the
- * original code with the fixture below: the transaction was killed at 5004 ms
- * and surfaced as `RetryableTransactionError`.
+ * was PERMANENTLY impossible for exactly those players. Measured against the
+ * ORIGINAL unbatched body with the fixture below: killed at 5004 ms, surfaced
+ * as `RetryableTransactionError`. That measurement cannot be reproduced by
+ * toggling the budget alone — see the note on the wall-time assertion.
  *
  * ── The fix under test ───────────────────────────────────────────────────────
  *   1. ONE transaction still (see the ERASURE_TX_OPTIONS doc comment for why a
@@ -39,6 +42,11 @@
  * contention, a replica lag spike, or a cold cache; `maxWait` covers the first
  * and nothing here exercises the others.
  *
+ * The Equoria-hr0jw block is the SECOND lock-out: a `ShowEntry` on a horse the
+ * lineage rule preserves, which `show_entries_userId_fkey` (RESTRICT) then used
+ * to make un-erasable. That one is fully deterministic — no wall clock in it —
+ * and it fails on the pre-fix service with SQLSTATE 23001.
+ *
  * Real DB, no mocks, strictly id-scoped cleanup (shared dev database).
  */
 
@@ -51,6 +59,7 @@ import bcrypt from 'bcryptjs';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { eraseUserAccount, ERASURE_TX_OPTIONS } from '../services/gdprAccountService.mjs';
+import { enterShow, settleShowFeeEscrow } from '../../competition/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -98,7 +107,7 @@ function horseData(name, ownerId, extra = {}) {
   };
 }
 
-async function makeUser(suffix) {
+async function makeUser(suffix, extra = {}) {
   const user = await prisma.user.create({
     data: {
       username: `${PREFIX}-${suffix}`,
@@ -106,10 +115,34 @@ async function makeUser(suffix) {
       password: passwordHash,
       firstName: 'Erasure',
       lastName: 'Fixture',
+      ...extra,
     },
   });
   created.userIds.push(user.id);
   return user;
+}
+
+/** Minimal Express `res` shim so a controller can be driven directly. */
+function fakeRes() {
+  const res = {
+    statusCode: 200,
+    body: null,
+    status(code) {
+      res.statusCode = code;
+      return res;
+    },
+    json(body) {
+      res.body = body;
+      return res;
+    },
+  };
+  return res;
+}
+
+/** Wallet balance for one suite-owned user (never an aggregate over the table). */
+async function moneyOf(userId) {
+  const row = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
+  return row ? Number(row.money) : null;
 }
 
 async function makeHorse(ownerId, suffix, extra = {}) {
@@ -287,6 +320,23 @@ afterAll(async () => {
     await prisma.club.deleteMany({ where: { id: { in: created.clubIds } } }).catch(warn);
   }
   if (created.showIds.length) {
+    // Drain any escrow a fixture show is still holding BEFORE deleting the row.
+    // Deleting a show with feeEscrow > 0 would strand that money in the shared
+    // SystemAccount[show_escrow] with no show to account for it, breaking the
+    // si69u reconciliation for every suite that runs after this one. The happy
+    // path settles inside the test; this is the failed-test path.
+    const stillEscrowed = await prisma.show
+      .findMany({
+        where: { id: { in: created.showIds }, feeEscrow: { gt: 0 } },
+        select: { id: true },
+      })
+      .catch(err => {
+        warn(err);
+        return [];
+      });
+    for (const { id } of stillEscrowed) {
+      await settleShowFeeEscrow(id).catch(warn);
+    }
     await prisma.show.deleteMany({ where: { id: { in: created.showIds } } }).catch(warn);
   }
   if (created.horseIds.length) {
@@ -351,9 +401,18 @@ describe('INTEGRATION: GDPR erasure of a LARGE account (Equoria-49bc2)', () => {
     expect(result).toEqual({ deleted: true });
     expect(await prisma.user.findUnique({ where: { id: fixture.owner.id } })).toBeNull();
 
-    // Comfortably inside the configured budget (the pre-fix code was KILLED at
-    // the 5000 ms default on this same fixture). Deliberately a loose bound:
+    // Comfortably inside the configured budget. Deliberately a loose bound:
     // the point is "finishes with room to spare", not a latency benchmark.
+    //
+    // MEASURED LIMIT OF THIS ASSERTION (2026-09-21, re-verified on the merged
+    // fix): with the O(N) loops batched away, this fixture now erases in well
+    // under a second, so removing `ERASURE_TX_OPTIONS` from the call site does
+    // NOT turn this `it` red on a localhost Postgres — it still passes inside
+    // the 5000 ms default. The elevated budget's regression guard is therefore
+    // the deterministic describe above (which fails on any hardware), and this
+    // case's job is to prove the batched body produces the RIGHT state at
+    // scale. The combination is what makes a power user erasable; neither half
+    // alone reproduces the original P2028 without also reverting the other.
     expect(elapsedMs).toBeLessThan(ERASURE_TX_OPTIONS.timeout / 2);
   }, 300_000);
 
@@ -461,52 +520,104 @@ describe('INTEGRATION: GDPR erasure of a LARGE account (Equoria-49bc2)', () => {
   }, 120_000);
 });
 
-describe('INTEGRATION: GDPR erasure is ALL-OR-NOTHING under partial failure (Equoria-49bc2)', () => {
-  it('rolls the entire erasure back when a late statement fails, leaving no half-erased account', async () => {
-    // A REAL failure mode, not a contrivance: the erased user entered ANOTHER
-    // player's show with a horse that the lineage rules PRESERVE. The horse
-    // survives, so the ShowEntry does not cascade, and `show_entries_userId_fkey`
-    // (RESTRICT) blocks the final `user.delete` — after the club, forum, message
-    // and pedigree writes have already been issued inside the transaction.
-    //
-    // This is exactly the case the single-transaction boundary exists for: a
-    // chunked erasure would have committed the earlier chunks and left the
-    // player with their horses anonymized, their forum history gone, and their
-    // account still logged-in-able. The underlying erasure gap (such a user can
-    // never complete erasure at all) is filed as Equoria-hr0jw; WHEN THAT IS
-    // FIXED THIS TEST MUST BE RE-POINTED at another forced failure — it will go
-    // red, and that is the intended signal, not a break.
-    const owner = await makeUser('rollback-owner');
-    const other = await makeUser('rollback-other');
+describe('INTEGRATION: erasure survives a PRESERVED horse that carries an entry (Equoria-hr0jw)', () => {
+  // ── The defect this reproduces ────────────────────────────────────────────
+  // `eraseUserAccount()` never deleted the erased user's OWN ShowEntry rows on
+  // shows OTHER players created. That was invisible for years because
+  // `ShowEntry.horse` is `onDelete: Cascade`: the entry went away with the
+  // horse. It stops being invisible the moment the entered horse is PRESERVED
+  // instead of deleted — the Equoria-cugl9 lineage rule keeps (anonymizes) any
+  // of the user's horses a SURVIVING player's horse descends from. The horse
+  // row survives, so the entry survives, `ShowEntry.userId` is a required
+  // relation carrying the default RESTRICT, and the terminal `tx.user.delete`
+  // fails with
+  //     23001 ... violates RESTRICT ... "show_entries_userId_fkey"
+  // rolling the WHOLE erasure back. The shape is stable, so retrying can never
+  // clear it: the account could never be erased at all.
+  //
+  // Nothing exotic is required — a breeder who sold a foal on and entered the
+  // parent in someone else's show is an ordinary account.
+  //
+  // RED-BEFORE PROOF: on the code without the
+  // `tx.showEntry.deleteMany({ where: { userId } })` statement, the first `it`
+  // below fails at `expect(result).toEqual({ deleted: true })` with that 23001,
+  // and every later assertion in the block fails with it too (the user, the
+  // horse, the forum thread and the club membership are all still there). This
+  // fixture is exactly the shape recorded on Equoria-hr0jw from the real DB.
+  //
+  // This block replaces the partial-failure/rollback case the Equoria-49bc2
+  // draft parked here: that case FORCED its late failure with this very bug,
+  // and the bug is now fixed, so the failure it depended on no longer exists.
+  let owner;
+  let other;
+  let ancestor;
+  let foal;
+  let show;
+  let otherMoneyAfterEntries;
+  let thread;
 
-    const ancestor = await makeHorse(owner.id, 'rollback-ancestor', { sex: 'Stallion' });
-    await makeHorse(other.id, 'rollback-foal', { sireId: ancestor.id });
+  it('erases the account instead of dying on show_entries_userId_fkey', async () => {
+    owner = await makeUser('hr0jw-owner', { money: 1000 });
+    other = await makeUser('hr0jw-other', { money: 1000 });
 
-    const show = await prisma.show.create({
+    // The stallion the surviving player's foal descends from — so the lineage
+    // rule PRESERVES it rather than deleting it, and its entry cannot cascade.
+    ancestor = await makeHorse(owner.id, 'hr0jw-ancestor', { sex: 'Stallion' });
+    foal = await makeHorse(other.id, 'hr0jw-foal', { sireId: ancestor.id });
+
+    // A show the OTHER player hosts. Created directly (not via createShow) so
+    // it starts with zero escrow: every coin this fixture puts into
+    // SystemAccount[show_escrow] then arrives through the REAL entry path
+    // below and leaves through the REAL settlement path at the end, which
+    // keeps the si69u invariant (escrow.balance == SUM(prizeEscrow +
+    // feeEscrow)) true at every point a concurrent sibling suite could look.
+    show = await prisma.show.create({
       data: {
-        name: `${PREFIX}-rollback-show`,
+        name: `${PREFIX}-hr0jw-show`,
         discipline: 'Dressage',
         levelMin: 1,
         levelMax: 10,
-        entryFee: 0,
+        entryFee: 50,
         prize: 0,
-        runDate: new Date(Date.now() + 86_400_000),
+        prizeEscrow: 0,
+        feeEscrow: 0,
+        runDate: new Date(Date.now() + 7 * 86_400_000),
+        openDate: new Date(),
+        closeDate: new Date(Date.now() + 6 * 86_400_000),
         status: 'open',
         createdByUserId: other.id,
+        hostUserId: other.id,
       },
     });
     created.showIds.push(show.id);
-    await prisma.showEntry.create({
-      data: { showId: show.id, horseId: ancestor.id, userId: owner.id, feePaid: 0 },
-    });
 
-    const thread = await prisma.forumThread.create({
-      data: { section: 'general', title: `${PREFIX}-rollback-thread`, authorId: owner.id, tags: [] },
+    // Both players enter through the production controller, so the fee legs
+    // are real: wallet -> SystemAccount[show_escrow], show.feeEscrow += fee,
+    // ShowEntry created.
+    for (const [entrant, horse] of [
+      [owner, ancestor],
+      [other, foal],
+    ]) {
+      const res = fakeRes();
+      await enterShow({ user: { id: entrant.id }, params: { id: String(show.id) }, body: { horseId: horse.id } }, res);
+      expect(res.statusCode).toBe(201);
+    }
+
+    const midShow = await prisma.show.findUnique({ where: { id: show.id } });
+    expect(midShow.feeEscrow).toBe(100);
+    expect(await moneyOf(owner.id)).toBe(950);
+    otherMoneyAfterEntries = await moneyOf(other.id);
+    expect(otherMoneyAfterEntries).toBe(950);
+
+    // The rest of the account, so the assertion below that it is GONE is
+    // evidence the whole erasure committed rather than partially ran.
+    thread = await prisma.forumThread.create({
+      data: { section: 'general', title: `${PREFIX}-hr0jw-thread`, authorId: owner.id, tags: [] },
     });
     created.threadIds.push(thread.id);
     const club = await prisma.club.create({
       data: {
-        name: `${PREFIX}-rollback-club`,
+        name: `${PREFIX}-hr0jw-club`,
         type: 'discipline',
         category: 'Dressage',
         description: 'fixture',
@@ -516,39 +627,64 @@ describe('INTEGRATION: GDPR erasure is ALL-OR-NOTHING under partial failure (Equ
     created.clubIds.push(club.id);
     await prisma.clubMembership.create({ data: { clubId: club.id, userId: owner.id } });
 
-    // Explicit try/catch rather than `.rejects.toThrow`: the Prisma error class
-    // crosses Jest's VM-module realm boundary, so the matcher's Error-shape
-    // check does not recognise it and reports a genuine rejection as "did not
-    // throw". Capturing the value directly asserts the real behaviour.
-    let thrown = null;
-    try {
-      await eraseUserAccount(owner.id);
-    } catch (err) {
-      thrown = err;
-    }
-    expect(thrown).not.toBeNull();
-    expect(String(thrown.message)).toMatch(/show_entries_userId_fkey/);
-    // ...and the genuine fault is NOT masked behind the retryable 503 that the
-    // timeout used to produce. Misclassifying it would tell the player to
-    // "retry in a moment" for a condition retrying can never clear.
-    expect(thrown.status).toBeUndefined();
+    // ACT. Pre-fix this throws 23001 and nothing at all is erased.
+    const result = await eraseUserAccount(owner.id);
+    expect(result).toEqual({ deleted: true });
 
-    // NOTHING committed. Every write the transaction had already issued before
-    // the failure is gone, and the account is exactly as it was.
-    const userAfter = await prisma.user.findUnique({ where: { id: owner.id } });
-    expect(userAfter).not.toBeNull();
+    expect(await prisma.user.findUnique({ where: { id: owner.id } })).toBeNull();
+    expect(await prisma.forumThread.findUnique({ where: { id: thread.id } })).toBeNull();
+    expect(await prisma.clubMembership.count({ where: { userId: owner.id } })).toBe(0);
+  }, 120_000);
 
+  it('keeps the preserved ancestor and the descendant lineage it exists for', async () => {
     const ancestorAfter = await prisma.horse.findUnique({ where: { id: ancestor.id } });
     expect(ancestorAfter).not.toBeNull();
-    expect(ancestorAfter.userId).toBe(owner.id); // NOT anonymized
-    expect(ancestorAfter.name).toBe(`${PREFIX}-rollback-ancestor`);
+    expect(ancestorAfter.userId).toBeNull();
+    expect(ancestorAfter.name).toBe(`Anonymized Horse #${ancestor.id}`);
 
-    expect(await prisma.forumThread.findUnique({ where: { id: thread.id } })).not.toBeNull();
-    expect(await prisma.clubMembership.count({ where: { userId: owner.id } })).toBe(1);
+    const foalAfter = await prisma.horse.findUnique({ where: { id: foal.id } });
+    expect(foalAfter.userId).toBe(other.id);
+    expect(foalAfter.sireId).toBe(ancestor.id);
+  }, 120_000);
 
-    // The other player's show is untouched — still open, entry intact.
+  it('scratches ONLY the erased player entry from the other player show', async () => {
+    const entries = await prisma.showEntry.findMany({
+      where: { showId: show.id },
+      select: { horseId: true, userId: true, feePaid: true },
+    });
+    // Exactly one entry left: the host's own. The erased player's entry on the
+    // preserved horse is gone — and it is gone by OWNER, not by show: the
+    // erasure must never reach into a show someone else created and clear
+    // rows that are not the erased user's.
+    expect(entries).toEqual([{ horseId: foal.id, userId: other.id, feePaid: 50 }]);
+
+    // The host's show itself is untouched: still open, still theirs.
     const showAfter = await prisma.show.findUnique({ where: { id: show.id } });
     expect(showAfter.status).toBe('open');
-    expect(await prisma.showEntry.count({ where: { showId: show.id } })).toBe(1);
+    expect(showAfter.createdByUserId).toBe(other.id);
+    expect(showAfter.hostUserId).toBe(other.id);
+    expect(showAfter.executedAt).toBeNull();
+  }, 120_000);
+
+  it('conserves money: the scratched fee stays escrowed and still settles to the host', async () => {
+    // The retention ruling under test. Equoria has no withdraw-from-show path,
+    // so an entry fee is the HOST's from the moment it lands in escrow. The
+    // erasure therefore moves no money at all: it does not refund the erased
+    // player (their wallet is being deleted), and it does not burn the fee
+    // (which would quietly shrink ANOTHER player's settlement because a
+    // stranger exercised Article 17).
+    const showAfter = await prisma.show.findUnique({ where: { id: show.id } });
+    expect(showAfter.feeEscrow).toBe(100); // BOTH fees, erased player's included
+    expect(showAfter.prizeEscrow).toBe(0);
+    expect(await moneyOf(other.id)).toBe(otherMoneyAfterEntries); // host untouched
+
+    // And the host really does collect it: drive the production settlement and
+    // watch all 100 land in their wallet. This is a per-user delta on a
+    // suite-owned wallet plus this show's own escrow columns — never a shared
+    // SystemAccount balance, which sibling suites write concurrently.
+    await settleShowFeeEscrow(show.id);
+    expect(await moneyOf(other.id)).toBe(otherMoneyAfterEntries + 100);
+    const settled = await prisma.show.findUnique({ where: { id: show.id } });
+    expect(settled.feeEscrow).toBe(0);
   }, 120_000);
 });

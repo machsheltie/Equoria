@@ -238,6 +238,13 @@ export async function eraseUserAccount(userId) {
       const groomIds = staffGrooms.map(g => g.id);
 
       // ── Club election artifacts authored by the user ──────────────────────
+      // KNOWN GAP, filed as Equoria-8jyiv (reproduced on the real DB while
+      // enumerating RESTRICT FKs for Equoria-hr0jw): this clears ballots the
+      // user CAST, but not ballots OTHER players cast FOR the user's
+      // candidacy. `ClubBallot.candidate` is RESTRICT, so the
+      // `clubCandidate.deleteMany` below then fails with 23001 and the whole
+      // erasure rolls back. Left here rather than fixed in passing because it
+      // needs a retention ruling on what happens to a live election's tally.
       await tx.clubBallot.deleteMany({ where: { voterId: userId } });
       await tx.clubCandidate.deleteMany({ where: { userId } });
       await tx.clubMembership.deleteMany({ where: { userId } });
@@ -447,6 +454,49 @@ export async function eraseUserAccount(userId) {
           },
         });
       }
+
+      // ── The user's OWN entries on OTHER players' shows (Equoria-hr0jw) ────
+      // `ShowEntry.userId` is a REQUIRED relation, so it carries Prisma's
+      // default RESTRICT. Until now the erasure never deleted these rows: the
+      // cancel pass above only clears entries on shows the user CREATED, and
+      // everything else was left to `ShowEntry.horse` (onDelete: Cascade) to
+      // sweep up when the horse was hard-deleted.
+      //
+      // That covered the common case by accident, and broke on the ordinary
+      // one. When the Equoria-cugl9 lineage rule PRESERVES a horse (a
+      // surviving player's horse descends from it), the horse row stays, so
+      // its ShowEntry stays, so the terminal `tx.user.delete` below fails with
+      //   23001 ... violates RESTRICT ... "show_entries_userId_fkey"
+      // and the whole erasure rolls back. The shape is stable, so retrying can
+      // never clear it: a breeder who sold a foal on and had entered that
+      // horse in someone else's show could NEVER be erased.
+      //
+      // RETENTION RULING — the entry is deleted and the fee stays escrowed to
+      // the host:
+      //   • Equoria has no withdraw-from-show path. Once `enterShowAtomicTx`
+      //     moves a fee into SystemAccount[show_escrow] it is the HOST's at
+      //     settlement (`settleShowFeeEscrow`); there is no inverse operation
+      //     and no refund anywhere in the entry lifecycle.
+      //   • This is already what the cascade path does for every other entry
+      //     this erasure touches. Making the delete explicit makes ALL of the
+      //     user's entries behave identically, rather than the outcome hinging
+      //     on whether some other player happened to breed from the horse.
+      //   • Money is conserved because nothing here moves: neither
+      //     SystemAccount[show_escrow] nor the show's prizeEscrow/feeEscrow
+      //     columns are touched, so the si69u invariant
+      //     (escrow.balance == SUM(prizeEscrow + feeEscrow)) still holds and
+      //     the host settles exactly what they were always going to settle.
+      //     Refunding instead would have to burn the money (the entrant's
+      //     wallet is being deleted), which would shrink ANOTHER player's
+      //     payout as a side effect of a stranger's erasure.
+      //   • The other player's show is left defensible: still open, other
+      //     entrants untouched, one horse scratched. A preserved horse is
+      //     ownerless after anonymization, so leaving it entered would stage a
+      //     competitor with nobody to pay a placing to.
+      //
+      // Scoped to this user's own rows only — never `{ showId }` on a show
+      // someone else created.
+      await tx.showEntry.deleteMany({ where: { userId } });
 
       // Show.hostUser / createdByUser are optional (String?) — null them so
       // the show (and other users' results under it) survive, but the
