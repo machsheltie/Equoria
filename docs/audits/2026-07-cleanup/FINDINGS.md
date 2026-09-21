@@ -1047,3 +1047,27 @@ No full backend gate. Nothing committed or pushed.
 Changed: `backend/scripts/gate-lock.mjs`, `backend/scripts/test-lane-db.mjs` (466 lines),
 `backend/scripts/run-suite-sharded.mjs` (588), `backend/eslint.config.mjs` (one global),
 `backend/__tests__/laneProvisioningSupervision.sentinel.test.mjs` (+4 cases).
+
+## 2026-09-21 — Disposition record for Equoria-av27e (SECURITY.md residual claim sweep)
+
+The 2026-07-06 middleware/doc-drift audit deferred six SECURITY.md sections outside the five
+line-verified middleware areas to Equoria-av27e. The sweep finished the same day and its
+dispositions were recorded on the issue, but the appendix the acceptance criteria asked for was
+never written into the audit report, and that report (`docs/audits/2026-07-06-middleware-doc-drift-audit.md`,
+commit 9a21ad51a) was retired on 2026-08-24 by the "consolidate guidance and retire legacy
+clutter" commit (fee265d07). This section is the durable in-repo record; the issue notes and git
+history carry the same content.
+
+| SECURITY.md claim                                  | Disposition           | Where                                                                                                    |
+| -------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
+| XSS input sanitisation                             | CONFIRMED             | `sanitizeInput()` used in the profile controller                                                         |
+| CORS policy (no-origin gate + allow-list)          | CONFIRMED             | `backend/middleware/corsPolicy.mjs`, mounted in `backend/app.mjs`                                        |
+| Refresh-token rotation                             | CONFIRMED             | `tokenRotationService.mjs`, wired in the auth controller, with tests                                     |
+| IP / suspicious-activity monitoring                | DRIFT                 | detector is dead code — Equoria-hjnrc (doc-drift half kept open 2026-09-21)                              |
+| Data-integrity middleware                          | DRIFT, since resolved | `gameIntegrity.mjs` was unmounted — removed and SECURITY.md corrected under Equoria-oey96.30 (7f3d0c0eb) |
+| Financial transactions (atomic SQL, audit logging) | CONFIRMED             | bank controller                                                                                          |
+
+Stale-issue reconciliation from the same sweep: Equoria-49dzc and Equoria-pey97 are documented in
+SECURITY.md §A03-Injection; Equoria-xbir9 (Bearer CSRF) is documented in the CSRF section.
+
+Owner ruling 2026-09-21: record here and close; the retired report is not resurrected.
