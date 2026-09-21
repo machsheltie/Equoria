@@ -34,6 +34,13 @@
  * accounting below still requires every discovered suite to have run once.
  * The list is explicit and short by design (CANONICAL_DB_SUITES).
  *
+ * Timing sentinels (Equoria-jeci6) belong here too: an ABSOLUTE wall-clock
+ * bound is a machine-load measurement, and under --lanes=2 the other lane's
+ * shard shares CPU/Postgres, so jitter alone can exceed a bound that passes
+ * quiet (forgotPasswordTimingOracle's 20ms bound hit 29.47/30.30ms, rejecting
+ * two pushes). loginTimingOracle moves for the same reason; TimingAnchor
+ * stays in the lanes — it asserts bcrypt.compare invocation, not time.
+ *
  * GATE LOCK (Equoria-hqrqk, systemconstraints.md §3): before touching the
  * database this runner takes a machine-wide LOCAL lock file (scripts/gate-lock.mjs,
  * under the OS temp dir, shared by every worktree). A second gate started from
@@ -156,7 +163,12 @@ function normalizePath(p) {
 
 // Suites that assert against the live population and must run on the canonical
 // database. Paths are backend-relative. Keep this list short and justified.
-const CANONICAL_DB_SUITES = ['__tests__/horseColorDiversitySentinel.test.mjs'];
+const CANONICAL_DB_SUITES = [
+  '__tests__/horseColorDiversitySentinel.test.mjs',
+  // Equoria-jeci6: absolute wall-clock bounds need a quiet machine (see above).
+  'modules/auth/__tests__/forgotPasswordTimingOracle.integration.test.mjs',
+  'modules/auth/__tests__/loginTimingOracle.sentinel.test.mjs',
+];
 const canonicalSet = new Set(
   CANONICAL_DB_SUITES.map(rel => normalizePath(path.join(BACKEND, rel))),
 );
