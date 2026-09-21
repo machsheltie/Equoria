@@ -116,18 +116,8 @@ function calculateGeneticCompatibility(stallion, mare) {
     traitScore = 85; // good balance
   }
 
-  const stallionStats = [
-    stallion.speed || 50,
-    stallion.stamina || 50,
-    stallion.agility || 50,
-    stallion.intelligence || 50,
-  ];
-  const mareStats = [
-    mare.speed || 50,
-    mare.stamina || 50,
-    mare.agility || 50,
-    mare.intelligence || 50,
-  ];
+  const stallionStats = [stallion.speed, stallion.stamina, stallion.agility, stallion.intelligence];
+  const mareStats = [mare.speed, mare.stamina, mare.agility, mare.intelligence];
 
   let statScore = 0;
   for (let i = 0; i < stallionStats.length; i++) {
@@ -175,10 +165,10 @@ function predictOffspringTraits(stallion, mare) {
   const mareTraits = mare.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
 
   const expectedStats = {
-    speed: Math.round(((stallion.speed || 50) + (mare.speed || 50)) / 2),
-    stamina: Math.round(((stallion.stamina || 50) + (mare.stamina || 50)) / 2),
-    agility: Math.round(((stallion.agility || 50) + (mare.agility || 50)) / 2),
-    intelligence: Math.round(((stallion.intelligence || 50) + (mare.intelligence || 50)) / 2),
+    speed: Math.round((stallion.speed + mare.speed) / 2),
+    stamina: Math.round((stallion.stamina + mare.stamina) / 2),
+    agility: Math.round((stallion.agility + mare.agility) / 2),
+    intelligence: Math.round((stallion.intelligence + mare.intelligence) / 2),
   };
 
   const likelyTraits = [...stallionTraits.positive.slice(0, 2), ...mareTraits.positive.slice(0, 2)];

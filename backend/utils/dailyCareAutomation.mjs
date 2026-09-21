@@ -229,11 +229,11 @@ async function performAutomaticCare(assignment, routine) {
   // Update foal's bond score and stress level
   const newBondScore = Math.max(
     0,
-    Math.min(100, (assignment.foal.bondScore || 50) + effects.bondingChange),
+    Math.min(100, assignment.foal.bondScore + effects.bondingChange),
   );
   const newStressLevel = Math.max(
     0,
-    Math.min(100, (assignment.foal.stressLevel || 0) + effects.stressChange),
+    Math.min(100, assignment.foal.stressLevel + effects.stressChange),
   );
 
   await prisma.horse.update({

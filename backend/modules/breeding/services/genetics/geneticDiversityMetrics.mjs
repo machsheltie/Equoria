@@ -57,10 +57,10 @@ export async function calculateAdvancedGeneticDiversity(horseIds) {
     const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
     allTraits.push(...traits.positive, ...traits.negative, ...traits.hidden);
 
-    statValues.speed.push(horse.speed || 50);
-    statValues.stamina.push(horse.stamina || 50);
-    statValues.agility.push(horse.agility || 50);
-    statValues.intelligence.push(horse.intelligence || 50);
+    statValues.speed.push(horse.speed);
+    statValues.stamina.push(horse.stamina);
+    statValues.agility.push(horse.agility);
+    statValues.intelligence.push(horse.intelligence);
   });
 
   const shannonIndex = calculateShannonIndex(allTraits);
@@ -241,8 +241,8 @@ export function calculatePairwiseDistance(horse1, horse2) {
   const stats = ['speed', 'stamina', 'agility', 'intelligence'];
   let statDistance = 0;
   stats.forEach(stat => {
-    const val1 = horse1[stat] || 50;
-    const val2 = horse2[stat] || 50;
+    const val1 = horse1[stat];
+    const val2 = horse2[stat];
     statDistance += Math.abs(val1 - val2) / 100;
   });
 

@@ -163,6 +163,18 @@ describe('applyBondingChange', () => {
     const result = applyBondingChange(horse, 'grooming', { duration: 30 });
     expect(result.oldBondScore).toBe(73);
   });
+
+  // Equoria-4maxb: Horse.bondScore is NOT NULL with default 0 = unbonded
+  // (Equoria-507mt). An unbonded horse must start from 0, not be silently
+  // promoted to neutral-50 by a `|| 50` guard.
+  it('an unbonded horse (bondScore 0) starts from 0, not neutral-50 — Equoria-4maxb', () => {
+    const horse = noTraitHorse({ bondScore: 0 });
+    const result = applyBondingChange(horse, 'grooming', { duration: 30 });
+    expect(result.success).toBe(true);
+    expect(result.oldBondScore).toBe(0);
+    expect(result.newBondScore).toBe(result.bondingChange);
+    expect(result.newBondScore).toBeLessThan(50);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -326,6 +338,14 @@ describe('simulateBondingProgression', () => {
     expect(typeof result.finalBondScore).toBe('number');
     expect(typeof result.totalChange).toBe('number');
     expect(Array.isArray(result.progression)).toBe(true);
+  });
+
+  it('an unbonded horse (bondScore 0) simulates from 0, not neutral-50 — Equoria-4maxb', () => {
+    const horse = noTraitHorse({ bondScore: 0 });
+    const result = simulateBondingProgression(horse, [{ type: 'grooming', data: { duration: 30 } }]);
+    expect(result.initialBondScore).toBe(0);
+    expect(result.finalBondScore).toBe(result.progression[0].bondingChange);
+    expect(result.totalChange).toBe(result.finalBondScore);
   });
 
   it('progression has one entry per activity', () => {

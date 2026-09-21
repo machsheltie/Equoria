@@ -222,7 +222,9 @@ function calculateBaseBondingChange(activity, activityData, baseRate) {
  */
 export function applyBondingChange(horse, activity, activityData = {}) {
   try {
-    const currentBondScore = horse.bondScore || 50;
+    // Equoria-4maxb: bondScore is NOT NULL (Equoria-507mt) and 0 = unbonded.
+    // Only an ABSENT field (partial object) may fall back to neutral 50.
+    const currentBondScore = horse.bondScore ?? 50;
     const bondingResult = calculateBondingChange(horse, activity, activityData);
 
     const newBondScore = Math.min(
@@ -249,8 +251,8 @@ export function applyBondingChange(horse, activity, activityData = {}) {
     return {
       success: false,
       error: error.message,
-      oldBondScore: horse.bondScore || 50,
-      newBondScore: horse.bondScore || 50,
+      oldBondScore: horse.bondScore ?? 50,
+      newBondScore: horse.bondScore ?? 50,
       bondingChange: 0,
     };
   }
@@ -318,7 +320,7 @@ export function getBondingEfficiency(horse) {
  * @returns {Object} Simulation results
  */
 export function simulateBondingProgression(horse, activities) {
-  let currentBondScore = horse.bondScore || 50;
+  let currentBondScore = horse.bondScore ?? 50;
   const progression = [];
 
   activities.forEach((activity, index) => {
@@ -335,9 +337,9 @@ export function simulateBondingProgression(horse, activities) {
   });
 
   return {
-    initialBondScore: horse.bondScore || 50,
+    initialBondScore: horse.bondScore ?? 50,
     finalBondScore: currentBondScore,
-    totalChange: currentBondScore - (horse.bondScore || 50),
+    totalChange: currentBondScore - (horse.bondScore ?? 50),
     progression,
     averageTraitModifier:
       progression.reduce((sum, p) => sum + p.traitModifier, 0) / progression.length,

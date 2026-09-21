@@ -139,7 +139,8 @@ export function applyEpigeneticTraitsAtBirth({
   const addPositive = t => positiveCandidates.add(t);
   const addNegative = t => negativeCandidates.add(t);
 
-  const currentStressLevel = stressLevel !== undefined ? stressLevel : mare.stressLevel || 50;
+  // Equoria-4maxb: NOT NULL column (Equoria-507mt), 0 is a legitimate value; never promote it.
+  const currentStressLevel = stressLevel !== undefined ? stressLevel : (mare.stressLevel ?? 0);
   const currentFeedQuality = feedQuality !== undefined ? feedQuality : 50;
   const damBondScore = typeof mare.bondScore === 'number' ? mare.bondScore : 50;
 

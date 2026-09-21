@@ -107,10 +107,10 @@ function calculateAverageStats(horses) {
   }
   const totals = { speed: 0, stamina: 0, agility: 0, intelligence: 0 };
   horses.forEach(horse => {
-    totals.speed += horse.speed || 50;
-    totals.stamina += horse.stamina || 50;
-    totals.agility += horse.agility || 50;
-    totals.intelligence += horse.intelligence || 50;
+    totals.speed += horse.speed;
+    totals.stamina += horse.stamina;
+    totals.agility += horse.agility;
+    totals.intelligence += horse.intelligence;
   });
   return {
     speed: Math.round(totals.speed / horses.length),

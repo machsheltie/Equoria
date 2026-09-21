@@ -204,6 +204,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
   let tooOldHorse;
   let wrongWindowHorse;
   let freshHorse;
+  let unbondedHorse;
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -255,6 +256,22 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
       },
     });
 
+    // Equoria-4maxb: an explicitly UNBONDED newborn (bondScore 0, the NOT NULL
+    // column default per Equoria-507mt). Planted as 0, not omitted, so the
+    // broken `|| 50` reader and the fixed bare reader produce different scores.
+    unbondedHorse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-EMES-Unbonded-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: fixtureUser.id,
+        bondScore: 0,
+        stressLevel: 0,
+      },
+    });
+
     // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix (cascade
     // deletes milestoneTraitLog rows via onDelete:Cascade) BEFORE the user
     // (Horse.userId onDelete:Restrict, schema:282).
@@ -286,6 +303,20 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
     expect(result.milestoneLog.milestoneType).toBe(MILESTONE_TYPES.IMPRINTING);
     expect(typeof result.finalScore).toBe('number');
     expect(result.traitOutcome).toBeDefined();
+  });
+
+  it('scores an unbonded newborn (bondScore 0) with the lowest bond modifier, not neutral — Equoria-4maxb', async () => {
+    const stored = await prisma.horse.findUnique({
+      where: { id: unbondedHorse.id },
+      select: { bondScore: true },
+    });
+    expect(stored.bondScore).toBe(0);
+
+    const result = await evaluateEnhancedMilestone(unbondedHorse.id, MILESTONE_TYPES.IMPRINTING);
+    expect(result.success).toBe(true);
+    // calculateBondModifier(history, 0) === -2. The defective `horse.bondScore || 50`
+    // reader evaluated this horse as bond 50 and produced 0.
+    expect(result.modifiers.bondModifier).toBe(-2);
   });
 
   it('returns { success:false, reason:/already evaluated/ } on second call (lines 134-140)', async () => {
