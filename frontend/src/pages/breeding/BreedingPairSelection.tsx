@@ -97,12 +97,15 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     queryKey: ['horses', userId],
     queryFn: async () => {
       const response = await horsesApi.list();
-      const MALE_SEX = ['Stallion', 'Colt', 'Rig'] as const;
+      // Equoria-gxcxs: horse.sex from the API is already the canonical
+      // value (Stallion/Mare/Colt/Filly/Rig) HorseSelector's own group
+      // filter (isMaleHorseSex/isFemaleHorseSex) understands directly — no
+      // translation to a synthetic Male/Female binary needed here.
       return response.map((horse) => ({
         id: horse.id,
         name: horse.name,
         age: horse.ageYears || horse.age,
-        sex: (MALE_SEX as readonly string[]).includes(horse.sex ?? '') ? 'Male' : 'Female',
+        sex: horse.sex,
         breedName: getBreedName(horse.breed),
         healthStatus: horse.healthStatus,
         level: horse.level,

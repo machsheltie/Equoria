@@ -30,6 +30,7 @@ import {
   getCurrentMilestone,
   calculateDevelopmentProgress,
 } from '@/types/foal';
+import { isMaleHorseSex } from '@/lib/utils';
 
 export interface FoalMilestoneTimelineProps {
   foal: Foal;
@@ -42,9 +43,16 @@ import { formatDate } from '@/lib/formatDate';
 
 /**
  * Calculate sex display label
+ *
+ * A foal's `sex` field already IS the display label — foalingService
+ * assigns 'Colt'/'Filly' directly at birth, never 'Male'/'Female'
+ * (Equoria-gxcxs). Pass a real value straight through; the Colt/Filly
+ * derivation below only covers a defensive fallback for an unexpected
+ * canonical value (e.g. a raw 'Stallion'/'Mare').
  */
 function getSexLabel(sex: string): string {
-  return sex === 'Male' ? 'Colt' : 'Filly';
+  if (sex === 'Colt' || sex === 'Filly') return sex;
+  return isMaleHorseSex(sex) ? 'Colt' : 'Filly';
 }
 
 /**

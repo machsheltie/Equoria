@@ -31,6 +31,7 @@ import { getHorseImage } from '@/lib/breed-images';
 import { useHorses } from '../hooks/api/useHorses';
 import { useProfile } from '../hooks/useAuth';
 import { getXPProgressPercent } from '@/lib/xp-utils';
+import { isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
 import type { HorseSummary } from '@/lib/api-client';
 
 /** Resolve stat value from flat fields or nested stats object — used by list view's top-stat reducer. */
@@ -42,15 +43,21 @@ function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number
 
 /**
  * Determine horse category from age + sex.
- * Note: Prisma schema only has 'stallion' and 'mare' sex values — no geldings.
+ *
+ * Equoria-gxcxs: the canonical sex vocabulary is Stallion/Mare/Colt/Filly/Rig
+ * (backend/constants/schema.mjs HORSE_SEX) — a horse born via foaling is
+ * never relabeled from Colt/Filly as it ages, so an exact 'stallion'/'mare'
+ * match silently dropped every naturally-bred adult into 'unknown' (invisible
+ * on every tab). Match the sex GROUP instead — a filly is a young mare and a
+ * colt a young stallion.
  */
 function getHorseCategory(horse: HorseSummary): string {
   const age = horse.ageYears ?? horse.age ?? 0;
-  const sex = (horse.sex ?? horse.gender ?? '').toLowerCase();
+  const sex = horse.sex ?? horse.gender;
   if (age >= 21) return 'retired';
   if (age < 3) return 'foal';
-  if (sex === 'stallion') return 'stallion';
-  if (sex === 'mare') return 'mare';
+  if (isMaleHorseSex(sex)) return 'stallion';
+  if (isFemaleHorseSex(sex)) return 'mare';
   return 'unknown';
 }
 

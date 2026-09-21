@@ -12,6 +12,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, AlertCircle, Clock, Heart, SearchX } from 'lucide-react';
 import { Input } from '@/components/ui/form';
 import EmptyState from '@/components/ui/EmptyState';
+import { isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
 import type { Horse } from '@/types/breeding';
 
 export interface HorseSelectorProps {
@@ -79,9 +80,14 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
   // Filter horses by sex and search term
   const filteredHorses = useMemo(() => {
     let filtered = horses.filter((horse) => {
-      // Filter by sex
-      if (filter === 'male' && horse.sex !== 'Male') return false;
-      if (filter === 'female' && horse.sex !== 'Female') return false;
+      // Filter by sex. horse.sex is the canonical value the API/DB actually
+      // stores (Stallion/Mare/Colt/Filly/Rig) — 'Male'/'Female' never occurs
+      // (Equoria-gxcxs). Match the GROUP: a filly is a young mare and a colt
+      // a young stallion, so both must count toward the corresponding
+      // filter; the separate age gate below (canHorseBreed) is what excludes
+      // horses that are too young to breed.
+      if (filter === 'male' && !isMaleHorseSex(horse.sex)) return false;
+      if (filter === 'female' && !isFemaleHorseSex(horse.sex)) return false;
       return true;
     });
 
