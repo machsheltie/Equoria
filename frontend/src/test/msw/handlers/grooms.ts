@@ -10,7 +10,7 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export const groomHandlers = [
   // Groom Management
   // (Equoria-0fw18) Deleted dead unversioned /api/grooms/user/:userId,
-  // /api/groom-assignments (GET+POST), /api/groom-salaries/summary,
+  // /api/groom-assignments (GET+POST), /api/groom-salaries/cost,
   // /api/groom-marketplace (GET), /api/groom-marketplace/hire — all served by
   // the v1 mirrors in the v1-mirror block below (groomsApi.* calls /api/v1/...).
   // /api/groom-marketplace/refresh is kept here, versioned to /api/v1/, because

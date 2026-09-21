@@ -51,7 +51,7 @@ export const v1MirrorHandlers = [
     })
   ),
 
-  // Grooms (mirrors /api/groom-assignments, /api/groom-salaries/summary,
+  // Grooms (mirrors /api/groom-assignments, /api/groom-salaries/cost,
   // /api/groom-marketplace, /api/groom-marketplace/hire)
   http.get(`${base}/api/v1/groom-assignments`, () =>
     HttpResponse.json({
@@ -69,7 +69,18 @@ export const v1MirrorHandlers = [
     })
   ),
   http.post(`${base}/api/v1/groom-assignments`, () => HttpResponse.json({ success: true })),
-  http.get(`${base}/api/v1/groom-salaries/summary`, () =>
+  // Equoria-1bv3i: this body is registered on /cost, not /summary. It mirrors
+  // GET /api/v1/groom-salaries/cost, which is what calculateUserSalaryCost()
+  // returns. /summary answers a different envelope ({ currentCost,
+  // currentMoney, weeksAffordable, ... }) with no top-level `breakdown`.
+  // Registering this payload on /summary is what let the /grooms crash ship:
+  // every unit test stayed green against a /summary that does not exist in that
+  // shape, while the live route threw
+  // "Cannot read properties of undefined (reading 'reduce')" in
+  // MyGroomsDashboard and the app-level ErrorBoundary ate the whole page.
+  // If a surface ever needs the real /summary, add a handler for it that
+  // mirrors the real /summary envelope — do not move this one back.
+  http.get(`${base}/api/v1/groom-salaries/cost`, () =>
     HttpResponse.json({
       success: true,
       // Equoria-95yrv: mirrors the real payload — 70 per horse in a groom's care,
