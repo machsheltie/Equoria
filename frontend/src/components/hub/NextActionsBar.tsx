@@ -11,7 +11,16 @@
  */
 
 import { Link } from 'react-router-dom';
-import { Dumbbell, Trophy, Heart, Star, Coins, Stethoscope, ChevronRight } from 'lucide-react';
+import {
+  Dumbbell,
+  Trophy,
+  Heart,
+  Star,
+  Coins,
+  Medal,
+  Stethoscope,
+  ChevronRight,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNextActions } from '@/hooks/api/useNextActions';
 import type { NextAction } from '@/hooks/api/useNextActions';
@@ -23,7 +32,12 @@ const NARRATIVES: Record<NextAction['type'], (_a: NextAction) => string> = {
   breed: (a) => (a.horseName ? `${a.horseName} is ready to breed` : 'Check breeding pairs'),
   'groom-foal': (a) => (a.horseName ? `${a.horseName} needs enrichment` : 'A foal needs care'),
   'claim-prize': () => 'You have unclaimed prizes!',
-  'check-results': () => 'Competition results are in',
+  // Equoria-oey96.28: the server sends how many results are still unread, so
+  // the card can name what is actually waiting instead of announcing a flat fact.
+  'check-results': (a) => {
+    const count = typeof a.metadata?.count === 'number' ? a.metadata.count : 0;
+    return count > 1 ? `${count} competition results are waiting` : 'Your results are in';
+  },
   'visit-vet': (a) => (a.horseName ? `${a.horseName} needs veterinary care` : 'A horse needs care'),
 };
 
@@ -33,7 +47,9 @@ const ICONS: Record<NextAction['type'], React.ReactNode> = {
   breed: <Heart className="w-5 h-5" />,
   'groom-foal': <Star className="w-5 h-5" />,
   'claim-prize': <Coins className="w-5 h-5" />,
-  'check-results': <Trophy className="w-5 h-5" />,
+  // A ribbon, not the trophy that compete already wears — the two cards can sit
+  // side by side and must not read as the same errand.
+  'check-results': <Medal className="w-5 h-5" />,
   'visit-vet': <Stethoscope className="w-5 h-5" />,
 };
 
@@ -43,7 +59,8 @@ const ACTION_LINKS: Record<NextAction['type'], string> = {
   breed: '/breeding',
   'groom-foal': '/grooms',
   'claim-prize': '/competitions',
-  'check-results': '/competitions',
+  // Equoria-oey96.28: the results surface, not the browse-competitions list.
+  'check-results': '/competition-results',
   'visit-vet': '/vet',
 };
 

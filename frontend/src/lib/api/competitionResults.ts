@@ -238,6 +238,26 @@ export async function fetchUserCompetitionResults(): Promise<UserCompetitionResu
 }
 
 /**
+ * Tell the server the player has now seen the results for these shows
+ * (Equoria-oey96.28).
+ *
+ * The Hub's `check-results` next-action keeps nudging while any of the
+ * player's results still has `viewedAt` NULL; this is the write that clears
+ * it. Ownership is enforced server-side through the horse relation, so the
+ * caller passes show ids only — never a userId.
+ *
+ * @param showIds - Ids of the competitions whose results were just shown.
+ * @returns How many results the server newly marked viewed.
+ */
+export async function markCompetitionResultsViewed(showIds: number[]): Promise<number> {
+  const envelope = await apiClient.post<{ success: boolean; markedCount: number }>(
+    '/api/v1/competition/results/viewed',
+    { showIds }
+  );
+  return envelope?.markedCount ?? 0;
+}
+
+/**
  * Export all types for external use
  * Note: Types are already exported with their interface declarations above
  */

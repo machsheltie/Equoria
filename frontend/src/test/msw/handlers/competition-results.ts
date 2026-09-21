@@ -8,6 +8,14 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * First-match-wins order preserved.
  */
 export const competitionResultsHandlers = [
+  // Equoria-oey96.28 — mark-viewed write. The results page fires this whenever it
+  // renders results, so it must be handled or MSW's onUnhandledRequest: 'error'
+  // fails every suite that mounts the page.
+  http.post(`${base}/api/v1/competition/results/viewed`, async ({ request }) => {
+    const body = (await request.json()) as { showIds?: number[] };
+    return HttpResponse.json({ success: true, markedCount: body?.showIds?.length ?? 0 });
+  }),
+
   // Competition Results System - Competition Results
   http.get(`${base}/api/v1/competitions/:id/results`, ({ params }) => {
     const id = Number(params.id);

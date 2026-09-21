@@ -541,4 +541,83 @@ describe('CompetitionResultsPage', () => {
       expect(statsGrid).toHaveClass('lg:grid-cols-4');
     });
   });
+
+  // =========================================
+  // Mark-viewed write (Equoria-oey96.28)
+  // =========================================
+  describe('marking results as viewed', () => {
+    const VIEWED_PATH = `${base}/api/v1/competition/results/viewed`;
+
+    function summary(competitionId: number) {
+      return {
+        competitionId,
+        competitionName: `Show ${competitionId}`,
+        discipline: 'Dressage',
+        date: '2026-09-01T10:00:00Z',
+        totalParticipants: 4,
+        prizePool: 1000,
+        userResults: [
+          { horseId: 1, horseName: 'Aurora', rank: 1, score: 99, prizeWon: 500, xpGained: 0 },
+        ],
+      };
+    }
+
+    /** Capture every body posted to the mark-viewed boundary. */
+    function captureViewedPosts(): Array<{ showIds: number[] }> {
+      const posted: Array<{ showIds: number[] }> = [];
+      server.use(
+        http.post(VIEWED_PATH, async ({ request }) => {
+          const body = (await request.json()) as { showIds: number[] };
+          posted.push(body);
+          return HttpResponse.json({ success: true, markedCount: body.showIds.length });
+        })
+      );
+      return posted;
+    }
+
+    it('reports the rendered shows to the mark-viewed route exactly once', async () => {
+      stubUserResults([summary(11), summary(12)]);
+      const posted = captureViewedPosts();
+
+      renderPageSimple();
+
+      await waitFor(() => expect(posted).toHaveLength(1));
+      expect(posted[0].showIds).toEqual([11, 12]);
+
+      // A re-render must not re-report the same shows.
+      await waitFor(() =>
+        expect(screen.getByTestId('competition-results-list')).toBeInTheDocument()
+      );
+      expect(posted).toHaveLength(1);
+    });
+
+    it('does not call the mark-viewed route when the player has no results', async () => {
+      stubUserResults([]);
+      const posted = captureViewedPosts();
+
+      renderPageSimple();
+
+      await waitFor(() =>
+        expect(screen.getByTestId('competition-results-list')).toBeInTheDocument()
+      );
+      expect(posted).toHaveLength(0);
+    });
+
+    it('still renders the results when the mark-viewed write fails', async () => {
+      stubUserResults([summary(21)]);
+      server.use(
+        http.post(VIEWED_PATH, () =>
+          HttpResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
+        )
+      );
+
+      renderPageSimple();
+
+      // The write is a background courtesy: its failure must not take the page
+      // down. The Hub simply keeps offering the check-results card.
+      await waitFor(() =>
+        expect(screen.getByTestId('competition-results-list')).toBeInTheDocument()
+      );
+    });
+  });
 });

@@ -26,7 +26,7 @@
  * - Accessibility, responsive design
  */
 
-import React, { type JSX, memo, useCallback, useState, useEffect, useMemo } from 'react';
+import React, { type JSX, memo, useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   Trophy,
@@ -47,6 +47,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCompetitionStats } from '@/hooks/api/useUserCompetitionStats';
 import { useUserCompetitionResults } from '@/hooks/api/useUserCompetitionResults';
+import { useMarkResultsViewed } from '@/hooks/api/useMarkResultsViewed';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 import PerformanceBreakdownPanel from '@/components/competition/PerformanceBreakdownPanel';
@@ -222,6 +223,37 @@ const CompetitionResultsPage = (): JSX.Element => {
     isLoading: resultsLoading,
     error: resultsError,
   } = useUserCompetitionResults(userId);
+
+  // Equoria-oey96.28: reaching this page IS the player seeing their results, so
+  // the shows rendered here are reported to the server and stop feeding the
+  // Hub's `check-results` nudge.
+  //
+  // The ref records what has already been reported for this mount, so a refetch,
+  // a tab switch or a re-render cannot fire the write again for the same shows.
+  // At most 100 ids per call — the route's validator rejects more.
+  //
+  // No error surface on failure, deliberately: the player never asked for this
+  // write, and a failed one already announces itself honestly — the results stay
+  // marked unread and the Hub keeps offering the card until a later visit
+  // succeeds. Nothing is lost and nothing is fabricated, so an alert here would
+  // be noise about an errand the player did not run.
+  const { mutate: markResultsViewed } = useMarkResultsViewed();
+  const reportedShowIds = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (!userResults?.length) {
+      return;
+    }
+    const unreported = userResults
+      .map((summary) => summary.competitionId)
+      .filter((id) => Number.isInteger(id) && id > 0 && !reportedShowIds.current.has(id))
+      .slice(0, 100);
+    if (unreported.length === 0) {
+      return;
+    }
+    unreported.forEach((id) => reportedShowIds.current.add(id));
+    markResultsViewed(unreported);
+  }, [userResults, markResultsViewed]);
 
   // Modal state
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<number | null>(null);

@@ -137,6 +137,30 @@ describe('NextActionsBar', () => {
     expect(prizeLink).toHaveAttribute('href', '/competitions');
   });
 
+  // Equoria-oey96.28 — check-results became emittable once CompetitionResult
+  // gained its `viewedAt` column. The card must reach the RESULTS surface, not
+  // the browse-competitions list, and it must say what is actually waiting.
+  it('links check-results to /competition-results and names a single waiting result', async () => {
+    stubNextActions([
+      {
+        type: 'check-results',
+        priority: 1,
+        metadata: { count: 1, showId: 7, showName: 'Moonlit Cup' },
+      },
+    ]);
+
+    renderBar();
+    const link = await screen.findByLabelText('Your results are in');
+    expect(link).toHaveAttribute('href', '/competition-results');
+  });
+
+  it('counts the waiting results when more than one is unread', async () => {
+    stubNextActions([{ type: 'check-results', priority: 1, metadata: { count: 3 } }]);
+
+    renderBar();
+    expect(await screen.findByText('3 competition results are waiting')).toBeInTheDocument();
+  });
+
   it('links visit-vet action to /vet (not /veterinarian)', async () => {
     stubNextActions([{ type: 'visit-vet', priority: 1, horseId: 5, horseName: 'Blaze' }]);
 
