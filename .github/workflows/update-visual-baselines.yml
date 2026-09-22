@@ -61,6 +61,33 @@ jobs:
         ports:
           - 5432:5432
 
+      # Equoria-pb4sw: this job runs the backend at NODE_ENV=beta (see the
+      # playwright.config.ts webServer command), which takes the REAL
+      # rate-limit middleware path backed by Redis. Without a Redis service the
+      # limiter never connects: the 2026-09-22 dispatch (run 35716891335) spent
+      # its whole window in "[Redis] Reconnection attempt N, waiting 500ms" —
+      # 58+ attempts — and global-setup.ts then failed to register its user,
+      # "page.waitForURL: Timeout 30000ms exceeded". No screenshot is taken if
+      # global setup never completes.
+      #
+      # This mirrors the e2e-tests job in test.yml, whose own comment records
+      # that Redis is the only correct fix here: bypass headers are explicitly
+      # disabled under NODE_ENV=beta (rateLimiting.mjs, Story 21S-2) and the
+      # TEST_RATE_LIMIT_MAX_REQUESTS knobs only apply under NODE_ENV=test.
+      #
+      # No E2E_RATE_LIMIT_MAX override is set: that job needs one because its
+      # ~130 specs run ~27 min from a single CI IP, while this job runs one
+      # spec and takes three screenshots, which is nowhere near the beta cap.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v6
