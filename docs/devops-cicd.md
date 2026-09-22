@@ -30,7 +30,7 @@ this file.
 | Frontend hosting/build            | Netlify project configuration and live platform settings              |
 | Shared-checkout detection         | `scripts/session/session-guard.sh`, `scripts/session/claim.sh`        |
 | Build image                       | `Dockerfile` and `.dockerignore`                                      |
-| Railway build/start/health policy | `railway.toml`                                                        |
+| Railway build/start/health policy | `.railway/railway.ts` (applied with `railway config plan` / `apply`)  |
 | Commands and runtime floor        | root and package `package.json` files                                 |
 | Beta E2E orchestration            | `playwright.beta-readiness.config.ts`, `docs/testing/BETA_PROFILE.md` |
 | Database-pool behavior            | `packages/database/dbPoolConfig.mjs` and focused tests                |
@@ -127,7 +127,7 @@ no hook exists for them.
 
 ## Railway invariant
 
-`railway.toml` owns the production start command. Prisma migration deployment must succeed before the backend starts; a non-zero migration exit must abort deployment. Preserve the direct/pooler URL behavior already encoded there and verify changes against the doctrine check that enforces fail-fast migration startup.
+`.railway/railway.ts` (Railway Infrastructure as Code) owns the production build, start, healthcheck and restart policy. Railway does not read it at deploy time: a change takes effect only after `railway config plan` is reviewed and `railway config apply` is run against the linked project, so an edit without an apply is drift, not a deployment change. Prisma migration deployment must succeed before the backend starts; a non-zero migration exit must abort deployment. Preserve the direct/pooler URL behavior already encoded there and verify changes against the doctrine check that enforces fail-fast migration startup. The former `railway.toml` (Config as Code) is deprecated by Railway and was migrated on 2026-09-22; do not recreate it.
 
 No document authorizes production deployment, rollback, secret changes, database mutation, branch-protection changes, or external service changes. Those actions require the authority implied by the user's request and must target the exact environment.
 

@@ -97,7 +97,7 @@ retiring a repository path.
 | Development guide           | [`docs/development-guide.md`](docs/development-guide.md)                                                                                             |
 | Architecture decisions      | [`docs/architecture/README.md`](docs/architecture/README.md)                                                                                         |
 | DevOps / CI/CD              | [`docs/devops-cicd.md`](docs/devops-cicd.md)                                                                                                         |
-| Deployment                  | [`railway.toml`](railway.toml), Netlify configuration, and live platform settings                                                                    |
+| Deployment                  | [`.railway/railway.ts`](.railway/railway.ts), Netlify configuration, and live platform settings                                                      |
 | Security rules and testing  | [`docs/SECURITY_TESTING.md`](docs/SECURITY_TESTING.md), [`docs/api-contracts-backend/rate-limiting.md`](docs/api-contracts-backend/rate-limiting.md) |
 | Database schema             | [`packages/database/prisma/schema.prisma`](packages/database/prisma/schema.prisma)                                                                   |
 | Beta route projection       | [`docs/beta-route-truth-table.md`](docs/beta-route-truth-table.md)                                                                                   |

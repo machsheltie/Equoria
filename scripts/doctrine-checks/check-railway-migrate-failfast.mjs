@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 /**
- * Equoria-oey96.35 railway.toml migrate fail-fast doctrine check.
+ * Equoria-oey96.35 Railway start-command migrate fail-fast doctrine check.
+ *
+ * Scans the Railway Infrastructure-as-Code file `.railway/railway.ts` (the
+ * canonical owner of the production start command since 2026-09-22, when the
+ * deprecated Config-as-Code `railway.toml` was migrated) and, while a legacy
+ * `railway.toml` still exists at the repo root, that file too.
  *
  * Problem: railway.toml's [deploy] startCommand ran `prisma migrate deploy`
  * with a `|| echo "..."` swallow, so a FAILED migration was masked and the
@@ -35,10 +40,13 @@
  *   - A subshell close `)` between `migrate deploy` and its `&&` is skipped
  *     (`(... migrate deploy) && ...` is fail-fast).
  *
- * Optional argv[2]: alternate railway.toml path (sentinel-test hook) so the
+ * Optional argv[2]: alternate config path (sentinel-test hook) so the
  * planted-violation sentinel can prove detection FIRES without editing the
- * canonical file. Production callers (run-all.sh, CI) pass no argument.
- * Auto-runs via scripts/doctrine-checks/run-all.sh by file-name pattern.
+ * canonical file. The file's extension selects the parser: `.toml` uses the
+ * Config-as-Code `startCommand = ...` extractor, anything else the IaC
+ * `start: "..."` extractor. Production callers (run-all.sh, CI) pass no
+ * argument. Auto-runs via scripts/doctrine-checks/run-all.sh by file-name
+ * pattern.
  */
 
 import fs from 'node:fs';
@@ -48,11 +56,21 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
 
-// argv[2] optionally overrides the scanned file so the sentinel can point the
-// check at a planted fail-open / clean fixture. Production callers pass none.
-const RAILWAY_TOML_PATH = process.argv[2]
-  ? path.resolve(process.argv[2])
-  : path.join(REPO_ROOT, 'railway.toml');
+// Canonical owner of the production start command (Railway IaC).
+const RAILWAY_IAC_PATH = path.join(REPO_ROOT, '.railway', 'railway.ts');
+// Deprecated Config-as-Code file. Scanned only while it still exists, so the
+// guard covers whichever file Railway reads during the migration window.
+const LEGACY_TOML_PATH = path.join(REPO_ROOT, 'railway.toml');
+
+// argv[2] optionally overrides the scanned file(s) so the sentinel can point
+// the check at a planted fail-open / clean fixture. Production callers pass
+// none and get the canonical IaC file plus the legacy TOML if present.
+function resolveTargets() {
+  if (process.argv[2]) return [path.resolve(process.argv[2])];
+  const targets = [RAILWAY_IAC_PATH];
+  if (fs.existsSync(LEGACY_TOML_PATH)) targets.push(LEGACY_TOML_PATH);
+  return targets;
+}
 
 // The migrate command whose failure MUST abort the deploy.
 const MIGRATE_RE = /migrate\s+deploy/gi;
@@ -119,34 +137,72 @@ export function extractStartCommands(tomlContent) {
   return results;
 }
 
+/**
+ * Extract every `start: <string literal>` / `startCommand: <string literal>`
+ * property from a Railway IaC authoring file (`.railway/railway.ts`). The
+ * literal may sit on the line after the key (Prettier wraps long strings that
+ * way). Line comments (`// ...`) and block comments (`/* ... *\/`) are blanked
+ * before matching, with newlines preserved so reported line numbers stay
+ * accurate. Returns [{ value, line }] where `value` is the raw quoted literal.
+ * Pure — exported for the sentinel.
+ */
+export function extractStartCommandsFromIac(tsContent) {
+  const withoutBlockComments = tsContent.replace(/\/\*[\s\S]*?\*\//g, (m) =>
+    m.replace(/[^\n]/g, ' ')
+  );
+  const withoutLineComments = withoutBlockComments
+    .split(/\r?\n/)
+    .map((line) => (/^\s*\/\//.test(line) ? '' : line))
+    .join('\n');
+
+  const results = [];
+  const re =
+    /\b(?:start|startCommand)\s*:\s*("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)/g;
+  let m;
+  while ((m = re.exec(withoutLineComments)) !== null) {
+    const line = withoutLineComments.slice(0, m.index).split('\n').length;
+    results.push({ value: m[1], line });
+  }
+  return results;
+}
+
+function extractForFile(filePath, content) {
+  return path.extname(filePath).toLowerCase() === '.toml'
+    ? extractStartCommands(content)
+    : extractStartCommandsFromIac(content);
+}
+
 function main() {
-  if (!fs.existsSync(RAILWAY_TOML_PATH)) {
-    // No railway.toml means no Railway deploy startCommand to guard. Do not
-    // fabricate a pass for a missing canonical file when running the default
-    // path; a missing file is a configuration error worth surfacing.
-    console.error(
-      `[railway-migrate-failfast] FAIL — railway.toml not found at ${RAILWAY_TOML_PATH}`
-    );
-    process.exit(1);
+  const targets = resolveTargets();
+  const startCommands = [];
+  for (const target of targets) {
+    if (!fs.existsSync(target)) {
+      // A missing canonical file means no Railway start command is guarded.
+      // Do not fabricate a pass; a missing file is a configuration error
+      // worth surfacing.
+      console.error(`[railway-migrate-failfast] FAIL — Railway config not found at ${target}`);
+      process.exit(1);
+    }
+    const content = fs.readFileSync(target, 'utf8');
+    for (const entry of extractForFile(target, content)) {
+      startCommands.push({ ...entry, file: target });
+    }
   }
 
-  const content = fs.readFileSync(RAILWAY_TOML_PATH, 'utf8');
-  const startCommands = extractStartCommands(content);
-
   const violations = [];
-  for (const { value, line } of startCommands) {
+  for (const { value, line, file } of startCommands) {
     for (const v of detectStartCommandFailOpen(value)) {
-      violations.push({ line, operator: v.operator });
+      violations.push({ file, line, operator: v.operator });
     }
   }
 
   if (violations.length > 0) {
     console.error(
-      '[railway-migrate-failfast] FAIL — railway.toml startCommand swallows migration failures (fail-open):'
+      '[railway-migrate-failfast] FAIL — Railway start command swallows migration failures (fail-open):'
     );
     for (const v of violations) {
       console.error(
-        `  ${path.relative(REPO_ROOT, RAILWAY_TOML_PATH)}:${v.line}  ` +
+        `  ${path.relative(REPO_ROOT, v.file)}:${v.line}  ` +
           `\`prisma migrate deploy\` is terminated by \`${v.operator}\` — a failed migration does NOT abort the deploy.`
       );
     }
@@ -164,8 +220,9 @@ function main() {
   }
 
   const migrateCount = startCommands.filter((s) => /migrate\s+deploy/i.test(s.value)).length;
+  const scanned = targets.map((t) => path.relative(REPO_ROOT, t)).join(', ');
   console.log(
-    `[railway-migrate-failfast] OK — ${startCommands.length} startCommand(s) scanned, ` +
+    `[railway-migrate-failfast] OK — ${startCommands.length} start command(s) scanned in ${scanned}, ` +
       `${migrateCount} run \`migrate deploy\`, all fail-fast (abort deploy on migrate failure).`
   );
 }

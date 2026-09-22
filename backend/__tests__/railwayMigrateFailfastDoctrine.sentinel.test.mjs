@@ -1,14 +1,17 @@
 /**
- * Equoria-oey96.35 railway.toml migrate fail-fast doctrine sentinel.
+ * Equoria-oey96.35 Railway start-command migrate fail-fast doctrine sentinel.
  *
  * Proves the fail-fast ratchet (check-railway-migrate-failfast.mjs) actually
  * fires — not just that it passes when the tree is clean:
- *   1. passes on the real railway.toml (post-fix: migrate deploy chained with
- *      `&&`, aborts the deploy on migrate failure);
+ *   1. passes on the real Railway config (`.railway/railway.ts`, the IaC owner
+ *      of the start command since the 2026-09-22 migration off the deprecated
+ *      railway.toml, plus the legacy TOML while it still exists) — migrate
+ *      deploy chained with `&&`, aborts the deploy on migrate failure;
  *   2. SENTINEL-POSITIVE: via the argv[2] alternate-file hook, FAILS on a
- *      planted railway.toml whose startCommand carries the exact `|| echo`
- *      swallow the fix removed — proving the detector catches the real defect
- *      shape, not merely absence-of-string;
+ *      planted railway.toml AND on a planted railway.ts whose start command
+ *      carries the exact `|| echo` swallow the fix removed — proving the
+ *      detector catches the real defect shape in both formats, not merely
+ *      absence-of-string;
  *   3. FAILS on the sibling fail-open reformulations (`|| true`, `; node`,
  *      `| tee`, `& node`) — proving it catches the OPERATOR CLASS, so a future
  *      "fix" that swaps `||` for `;` cannot slip through (OPTIMAL_FIX §1/§2);
@@ -37,6 +40,7 @@ import { fileURLToPath } from 'node:url';
 import {
   detectStartCommandFailOpen,
   extractStartCommands,
+  extractStartCommandsFromIac,
   firstShellOperatorAfter,
 } from '../../scripts/doctrine-checks/check-railway-migrate-failfast.mjs';
 
@@ -65,6 +69,39 @@ function tomlWith(startCommandLine) {
   return ['[build]', 'builder = "DOCKERFILE"', '', '[deploy]', startCommandLine, ''].join('\n');
 }
 
+// The same two shapes as IaC (`.railway/railway.ts`) string literals. The
+// literal sits on the line AFTER `start:` (how Prettier wraps a long string),
+// and a `//` comment carrying a fail-open `startCommand:` literal is planted
+// to prove comments are ignored (a clean fixture must still PASS).
+const IAC_FAIL_OPEN_START =
+  '"sh -c \'cd /app/packages/database && ' +
+  '(DATABASE_URL=${DIRECT_URL:-$DATABASE_URL} npx prisma migrate deploy ' +
+  '|| echo skipped) && cd /app/backend && node server.mjs\'"';
+
+const IAC_FAIL_FAST_START =
+  '"sh -c \'cd /app/packages/database && ' +
+  '(DATABASE_URL=${DIRECT_URL:-$DATABASE_URL} npx prisma migrate deploy) ' +
+  '&& cd /app/backend && node server.mjs\'"';
+
+function iacWith(startLiteral) {
+  return [
+    'import { defineRailway, project, service } from "railway/iac";',
+    '',
+    'export default defineRailway(() => {',
+    '  const Equoria = service("Equoria", {',
+    '    build: { builder: "DOCKERFILE" },',
+    '    // startCommand: "npx prisma migrate deploy || echo ignored-comment"',
+    '    /* start: "npx prisma migrate deploy ; node ignored-block-comment" */',
+    '    start:',
+    `      ${startLiteral},`,
+    '    healthcheck: "/health",',
+    '  });',
+    '  return project("Equoria", { resources: [Equoria] });',
+    '});',
+    '',
+  ].join('\n');
+}
+
 let scratchDir;
 
 afterEach(() => {
@@ -74,9 +111,9 @@ afterEach(() => {
   }
 });
 
-function writeFixture(content) {
+function writeFixture(content, fileName = 'railway.toml') {
   scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oey96-35-railway-PLANTED-'));
-  const p = path.join(scratchDir, 'railway.toml');
+  const p = path.join(scratchDir, fileName);
   fs.writeFileSync(p, content, 'utf8');
   return p;
 }
@@ -86,10 +123,29 @@ function runCheck(args = []) {
 }
 
 describe('check-railway-migrate-failfast.mjs (Equoria-oey96.35)', () => {
-  it('passes on the real railway.toml — migrate deploy is fail-fast (aborts deploy on failure)', () => {
+  it('passes on the real Railway config (.railway/railway.ts) — migrate deploy is fail-fast (aborts deploy on failure)', () => {
     const res = runCheck();
     expect(res.status).toBe(0);
     expect(res.stdout).toMatch(/railway-migrate-failfast.*OK/);
+    expect(res.stdout).toMatch(/\.railway[\\/]railway\.ts/);
+    // The canonical file must actually carry the guarded migrate command.
+    expect(res.stdout).toMatch(/[1-9]\d* run `migrate deploy`/);
+  });
+
+  it('SENTINEL: FAILS on a planted .railway/railway.ts with the exact `|| echo` swallow', () => {
+    const fixture = writeFixture(iacWith(IAC_FAIL_OPEN_START), 'railway.ts');
+    const res = runCheck([fixture]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toMatch(/railway-migrate-failfast.*FAIL/);
+    expect(res.stderr).toMatch(/terminated by `\|\|`/);
+  });
+
+  it('NEGATIVE CONTROL: PASSES on a clean fail-fast (`&&`) railway.ts fixture (fail-open text in comments is ignored)', () => {
+    const fixture = writeFixture(iacWith(IAC_FAIL_FAST_START), 'railway.ts');
+    const res = runCheck([fixture]);
+    expect(res.status).toBe(0);
+    expect(res.stdout).toMatch(/railway-migrate-failfast.*OK/);
+    expect(res.stdout).toMatch(/1 start command\(s\) scanned/);
   });
 
   it('SENTINEL: FAILS on a planted railway.toml with the exact `|| echo` swallow', () => {
@@ -165,5 +221,23 @@ describe('check-railway-migrate-failfast.mjs (Equoria-oey96.35)', () => {
     expect(found).toHaveLength(1);
     expect(found[0].value).toBe('"real value"');
     expect(found[0].line).toBe(2);
+  });
+
+  it('extractStartCommandsFromIac reads `start:` literals wrapped onto the next line, keeps escaped quotes, and ignores comments', () => {
+    const found = extractStartCommandsFromIac(iacWith(IAC_FAIL_FAST_START));
+    expect(found).toHaveLength(1);
+    expect(found[0].value).toBe(IAC_FAIL_FAST_START);
+    expect(found[0].line).toBe(8); // the `start:` key line; the literal itself is wrapped onto line 9
+
+    const escaped =
+      'start: "sh -c \'DATABASE_URL=\\"${DIRECT_URL:-$DATABASE_URL}\\" npx prisma migrate deploy && node x\'"';
+    const withEscapes = extractStartCommandsFromIac(escaped);
+    expect(withEscapes).toHaveLength(1);
+    expect(withEscapes[0].value).toContain('migrate deploy && node x');
+    expect(detectStartCommandFailOpen(withEscapes[0].value)).toHaveLength(0);
+
+    expect(extractStartCommandsFromIac('startCommand: "npx prisma migrate deploy ; node x"')).toHaveLength(1);
+    expect(extractStartCommandsFromIac('// start: "npx prisma migrate deploy ; node x"')).toHaveLength(0);
+    expect(extractStartCommandsFromIac('restart: "not-a-start-key"')).toHaveLength(0);
   });
 });

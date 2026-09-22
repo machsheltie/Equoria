@@ -42,8 +42,10 @@ to fix the underlying problem. It is not a license to weaken the check.
   is how the drift cases were proven RED without editing the tree.
 - `check-no-skips-in-readiness.sh` — no `it.skip` / `test.skip` /
   `describe.skip` / `test.fixme` in any beta-readiness Playwright spec.
-- `check-railway-migrate-failfast.mjs` — `railway.toml`'s `[deploy]`
-  `startCommand` must NOT swallow a failed `prisma migrate deploy` (Equoria-oey96.35).
+- `check-railway-migrate-failfast.mjs` — the Railway start command in
+  `.railway/railway.ts` (`start:` / `startCommand:`; plus a legacy
+  `railway.toml` `startCommand =` while that file exists) must NOT swallow a
+  failed `prisma migrate deploy` (Equoria-oey96.35).
   Fails if the migrate command is terminated by a fail-open shell operator
   (`||`, `;`, a lone `|`, or a lone `&`) that lets the deploy proceed to
   `node server.mjs` despite a non-zero migrate exit. Only `&&` (fail-fast) is

@@ -76,6 +76,7 @@
     "mime": "^3.0.0",
     "nodemon": "^3.1.4",
     "prettier": "3.8.3",
+    "railway": "^3.11.0",
     "react-test-renderer": "^19.1.1",
     "replace-in-files": "^3.0.0",
     "supertest": "^7.0.0",

@@ -5,7 +5,7 @@
 **Last reviewed:** 2026-08-19
 **Load only when:** planning or reviewing a dependency-major, Prisma/schema, data, or authentication/authorization migration
 **Do not load for:** ordinary package use, patch/minor updates, routine Prisma queries, or unrelated implementation
-**Live sources:** manifests/lockfiles, Prisma schema and migration history, `railway.toml`, affected readers/writers/tests, target platform configuration, and current official vendor guidance
+**Live sources:** manifests/lockfiles, Prisma schema and migration history, `.railway/railway.ts`, affected readers/writers/tests, target platform configuration, and current official vendor guidance
 
 ## Trigger
 
@@ -78,7 +78,7 @@ The shared auth limiter currently allows **200 failed** attempts per 15-minute w
 4. Start or release compatible application instances only after the migration success criteria hold.
 5. Keep the operation observable until authentication traffic and error rates stabilize.
 
-Railway's current start sequence lives in `railway.toml`. Read it immediately before planning; this document does not duplicate its shell command or URL-selection details.
+Railway's current start sequence lives in `.railway/railway.ts` and reaches Railway only through `railway config apply`. Read it immediately before planning; this document does not duplicate its shell command or URL-selection details.
 
 ## Postflight
 
