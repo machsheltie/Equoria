@@ -28,6 +28,17 @@ env:
   # beta matches the NODE_ENV the backend server uses in playwright.config.ts
   # webServer command (PORT=3001 NODE_ENV=beta node backend/server.mjs)
   NODE_ENV: 'beta'
+  # config/config.mjs:44 lists PORT among the always-required vars and throws
+  # when it is missing. Under NODE_ENV=beta it loads backend/env.beta, falling
+  # back to backend/env.test — and NEITHER file is tracked, so on a CI runner
+  # nothing supplies PORT and every step that imports config dies before doing
+  # any work. That is what failed the 2026-09-22 dispatch of this workflow at
+  # `npm run seed`: "Problematic required environment variables for beta
+  # environment: PORT (is missing)". Same root cause as the Equoria-fefh2
+  # recovery documented at test.yml:123. The steps that boot the server get
+  # PORT from the playwright.config.ts webServer command; the seed step has no
+  # such wrapper, so the value has to come from here. 3001 matches webServer.
+  PORT: '3001'
 
 jobs:
   update-baselines:
