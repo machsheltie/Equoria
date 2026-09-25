@@ -45,25 +45,11 @@ forum posts, messages, settings).
 
 ## 3. How long we keep it (retention)
 
-- **Account & game data:** retained for as long as your account exists.
-  If we erase your account at your request (Section 5), this data is
-  **permanently erased**, not soft-deleted.
+- **Account & game data:** kept for as long as Equoria operates. Accounts
+  are not deleted, including when you stop playing (see Section 5).
 - **Security audit trail (`AuditLog`):** retained for a rolling window
   (default **90 days**, minimum 7 days) and then automatically purged by a
-  nightly job (`backend/services/auditLogRetentionService.mjs`). Audit
-  rows use a **soft user reference with no foreign key** by design, so a
-  short post-erasure forensic record of _security-relevant actions_ (e.g.
-  logins or a data export) may persist until the retention window
-  expires. This is a deliberate, time-bounded legitimate-interest
-  exception to erasure and is documented here for transparency.
-- **Bilateral records (horse sales):** a horse sale has two parties. When
-  your account is erased, sale rows where you were a party are removed;
-  records that also belong to the other party are not retained in a form
-  that identifies you.
-- **Shows you hosted/created:** the show itself (and other players'
-  results in it) survives, but the link identifying you as
-  host/creator is removed (set to null) so other players' game history is
-  not destroyed by your erasure.
+  nightly job (`backend/services/auditLogRetentionService.mjs`).
 
 ---
 
@@ -88,60 +74,23 @@ personal data we hold about you at any time.
 
 ---
 
-## 5. Your right to erasure ("right to be forgotten")
+## 5. Account deletion
 
-Equoria has no delete-account button. Your stable, horses and lineage are
-shared with other players, so accounts are not removed from inside the
-game. You still have the right to ask us to erase your account and the
-personal data tied to it, and we will do so unless the law allows or
-requires us to keep something (in which case we will tell you what and
-why).
+**Equoria does not delete player accounts** — not from inside the game,
+and not on request. Your horses, their lineage, competition results and
+club history are part of a shared world: other players' horses descend
+from yours, and their records name your horses. Removing an account would
+break their pedigrees and histories, so accounts stay.
 
-- **How to ask:** email **privacy@equoria.com**, ideally from the email
-  address registered to your account, and include your username. We may
-  ask you for a little more information to confirm that the account is
-  yours; we only ask for what we need to confirm that, and we do not act
-  on an erasure request until it is confirmed. This protects you against
-  someone else erasing your account by pretending to be you.
-- **How long it takes:** we respond without undue delay and within one
-  month of receiving your request. If a request is unusually complex we
-  may extend this by up to two further months; if so, we will tell you
-  within the first month and explain why.
-- **Before you ask:** erasure is permanent and cannot be undone. If you
-  want a copy of your data, request the export (Section 4) first.
-- **What happens:** we erase the account with the same audited process
-  the game uses internally. In a single database transaction we delete, in
-  dependency order, all data scoped to your user id — profile, horses
-  (and their cascade-linked competition results, training logs, foal
-  development, trait history, etc.), grooms, riders, trainers,
-  facilities, transactions, notifications, XP events, rank snapshots,
-  forum content, direct messages, club memberships and election ballots,
-  horse-sale records you were a party to, and your authentication tokens.
-  The deletion is **scoped strictly to your account's user id** — never a
-  broad query.
-- **Club elections:** if you are standing as a candidate in a club
-  election, your candidacy is withdrawn, and the votes other players cast
-  for you are removed with it. Other candidates and their votes are not
-  affected.
-- **Anonymisation where integrity requires it:** where deleting a row
-  would destroy _other players'_ game history, we remove the identifying
-  link to you rather than delete the shared record. Two cases:
-  (a) shows you hosted/created — the show survives, your link is removed;
-  (b) a horse you own that is a **breeding ancestor** of another player's
-  horse — the horse row is kept so their descendant's lineage stays
-  intact, but it is detached from you (ownership removed) and its name and
-  commercial/stud attribution are scrubbed to a generic placeholder. Your
-  horses that are NOT ancestors of any other player's horse are fully
-  deleted. See Section 3.
-- **After erasure:** you can no longer log in; the account no longer
-  exists. We confirm to you by email that it is done. The process is
-  fail-closed: if the transaction cannot complete, nothing is deleted and
-  we try again rather than leave a partial account behind.
-- **Implementation:** `gdprAccountService.mjs` (`eraseUserAccount`), run by
-  the operator with `backend/scripts/erase-player-account.mjs`. The
-  in-game routes that used to allow self-service deletion
-  (`POST /api/v1/account/delete`, `DELETE /api/v1/users/:id`) now refuse
-  every request.
+- **If you stop playing,** your account simply stays as it is, and you can
+  log in again whenever you like.
+- **What you can still do:** download a full copy of your data at any
+  time (Section 4), and change your username, password and recovery
+  email address in Settings.
+- **Implementation:** the game offers no deletion control, and the server
+  routes that once allowed self-service deletion
+  (`POST /api/v1/account/delete`, `DELETE /api/v1/users/:id`) refuse every
+  request.
 - **Audit:** data-export requests are recorded in the security audit trail
   (action `account_operation`) for abuse detection; that audit row is
   subject to the retention window in Section 3 and contains no game data.
