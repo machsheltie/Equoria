@@ -26,7 +26,7 @@
  */
 
 import React, { type JSX, memo, useCallback, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { Coins, Trophy, TrendingUp, ChevronRight, Home } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';

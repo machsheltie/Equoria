@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { useFoal, useFoalDevelopment } from '@/hooks/api/useBreeding';
 import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker';
 import { EntityHeader } from '@/components/layout/EntityHeader';

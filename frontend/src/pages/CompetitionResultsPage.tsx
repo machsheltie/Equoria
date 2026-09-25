@@ -27,7 +27,7 @@
  */
 
 import React, { type JSX, memo, useCallback, useState, useEffect, useMemo, useRef } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import {
   Trophy,
   Medal,

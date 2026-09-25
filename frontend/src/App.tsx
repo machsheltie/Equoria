@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { GameTooltipProvider as TooltipProvider } from '@/components/ui/game';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router';
 import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth';
@@ -47,12 +47,7 @@ const App = () => (
           {/* RewardToast trigger layer — meaningful-progress toasts queued
               globally (Equoria-vcar, Spec 11.3.10). */}
           <RewardToastProvider>
-            <BrowserRouter
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true,
-              }}
-            >
+            <BrowserRouter>
               {/* Applies body.celestial class — reads ?theme= URL param + localStorage */}
               <CelestialThemeProvider />
               {/* Return overlay — shown after 4+ hour absence (authenticated users only) */}

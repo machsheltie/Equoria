@@ -20,7 +20,7 @@
 import React, { useState } from 'react';
 import { getBreedName } from '@/lib/utils';
 import { GraduationCap, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { ErrorState } from '@/components/ui/state';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';

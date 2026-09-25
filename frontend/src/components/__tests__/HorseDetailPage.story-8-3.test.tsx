@@ -18,7 +18,7 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import HorseDetailPage from '../../pages/HorseDetailPage';
 import { MockAuthProvider } from '../../test/utils';
 

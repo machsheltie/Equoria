@@ -7,7 +7,7 @@
  * info panel, SectionLoading for the auth-resolution state.
  */
 
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Swords } from 'lucide-react';
 import TrainingDashboard from '@/components/training/TrainingDashboard';
 import { PageContainer } from '@/components/layout/PageContainer';

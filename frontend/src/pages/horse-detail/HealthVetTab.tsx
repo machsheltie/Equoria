@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { formatDate } from '@/lib/formatDate';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Clock, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Horse } from './HorseDetailPageTypes';

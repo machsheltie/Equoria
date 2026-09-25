@@ -23,7 +23,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { Heart, Wrench, Clock, CheckCircle, Leaf } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';

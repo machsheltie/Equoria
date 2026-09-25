@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router';
 import { Lock, CheckCircle, XCircle, Check, X } from 'lucide-react';
 import {
   resetPasswordSchema,

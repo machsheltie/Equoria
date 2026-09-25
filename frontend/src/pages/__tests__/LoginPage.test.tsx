@@ -70,8 +70,8 @@ function mockLoginPending() {
 // Mock useNavigate and useLocation
 const mockNavigate = vi.fn();
 const mockUseLocation = vi.fn(() => ({ pathname: '/login', state: null }));
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual('react-router');
   return {
     ...actual,
     useNavigate: () => mockNavigate,

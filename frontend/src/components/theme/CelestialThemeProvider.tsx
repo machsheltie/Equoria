@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useLayoutEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
 const THEME_KEY = 'equoria-theme';

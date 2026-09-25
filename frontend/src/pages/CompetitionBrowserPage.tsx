@@ -6,7 +6,7 @@
  */
 
 import { type JSX, useState, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trophy } from 'lucide-react';
 import { useCompetitions } from '@/hooks/api/useCompetitions';

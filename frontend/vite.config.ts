@@ -107,10 +107,9 @@ export default defineConfig({
         // by matching the resolved module id (Equoria-rgjdd).
         manualChunks(id) {
           // Core React runtime — smallest possible initial chunk.
-          // Order matters: react-router-dom matches before the bare `react`
-          // substring rule below would, but both resolve to vendor-react.
+          // react-router (v7 folded react-router-dom into it) shares the
+          // vendor-react chunk with react and react-dom.
           if (
-            id.includes('/node_modules/react-router-dom/') ||
             id.includes('/node_modules/react-router/') ||
             id.includes('/node_modules/react-dom/') ||
             id.includes('/node_modules/react/')

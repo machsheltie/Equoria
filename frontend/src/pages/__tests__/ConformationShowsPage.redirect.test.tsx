@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import ConformationShowsPage from '../ConformationShowsPage';
 
 function CompetitionsProbe() {

@@ -23,7 +23,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Mail, Send, PlusCircle, Bell } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';

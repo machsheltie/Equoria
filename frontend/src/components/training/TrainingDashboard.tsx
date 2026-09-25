@@ -19,7 +19,7 @@
  */
 
 import { type JSX, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useTrainableHorses } from '@/hooks/api/useTraining';
 import { useProfile } from '@/hooks/useAuth';
 import type { TrainableHorse } from '@/lib/api-client';

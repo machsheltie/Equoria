@@ -15,7 +15,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdvanceOnboarding, useCompleteOnboarding } from '@/hooks/api/useOnboarding';
 import { Button } from '@/components/ui/button';

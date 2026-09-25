@@ -13,7 +13,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/formatDate';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Coins, Gift, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';

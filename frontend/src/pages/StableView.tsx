@@ -12,7 +12,7 @@
 
 import { useState } from 'react';
 import { Award, Grid3X3, List, Star, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { CanonicalTabs } from '@/components/ui/game';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { CardGrid } from '@/components/ui/CardGrid';

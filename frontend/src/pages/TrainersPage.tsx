@@ -14,7 +14,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { GraduationCap, ShoppingBag } from 'lucide-react';
 import TrainerList from '@/components/TrainerList';
 import MyTrainersDashboard from '@/components/MyTrainersDashboard';

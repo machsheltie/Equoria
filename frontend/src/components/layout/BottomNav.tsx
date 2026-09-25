@@ -6,7 +6,7 @@
  * (NavPanel) instead of navigating.
  */
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 import { BOTTOM_NAV_ITEMS, isRouteActive } from './navItems';
 

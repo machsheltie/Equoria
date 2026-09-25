@@ -17,7 +17,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { formatDate } from '@/lib/formatDate';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import {
   ShoppingCart,
   Search,

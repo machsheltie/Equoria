@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   MessageSquare,

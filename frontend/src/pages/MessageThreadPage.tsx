@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, ArrowLeft, Send, Pin, Clock } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';

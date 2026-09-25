@@ -10,7 +10,7 @@
  */
 
 import React, { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { useSessionGuard } from '../../hooks/useSessionGuard';
 
 export interface ProtectedRouteProps {

@@ -14,7 +14,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 export interface LocationCardProps {
   /** Unique location identifier — used for data-testid and aria */

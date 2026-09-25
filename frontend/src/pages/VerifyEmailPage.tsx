@@ -9,7 +9,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router';
 import { Mail, CheckCircle, XCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { useVerifyEmail, useResendVerification, useVerificationStatus } from '../hooks/useAuth';
 import { useAuth } from '../contexts/AuthContext';

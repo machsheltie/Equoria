@@ -8,7 +8,7 @@
  * All routes are exposed during beta — no feature-flag filtering.
  */
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';

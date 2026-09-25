@@ -9,7 +9,7 @@
  */
 
 import React, { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router';
 import MainNavigation from '../MainNavigation';
 import { AsidePanel } from './AsidePanel';
 import { usePageBackground } from './PageBackground';

@@ -19,7 +19,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 import React from 'react';
 import CompetitionBrowserPage from '../CompetitionBrowserPage';
 import { MockAuthProvider } from '@/test/utils';

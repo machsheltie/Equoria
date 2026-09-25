@@ -10,7 +10,7 @@
  * - Mobile (<768px): collapsed to "< Back" link
  */
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 
 /** Override href for segments that don't have their own route */
 const ROUTE_HREF_OVERRIDE: Record<string, string> = {

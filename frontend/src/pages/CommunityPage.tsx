@@ -21,7 +21,7 @@
  */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { MessageSquare, Users, Mail, Trophy, ArrowRight, Globe } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';

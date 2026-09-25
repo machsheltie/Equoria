@@ -10,7 +10,7 @@
  * Hook: useNextActions()
  */
 
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import {
   Dumbbell,
   Trophy,

@@ -37,8 +37,8 @@ const mockUseLocation = vi.fn(
       state: unknown;
     }
 );
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual('react-router');
   return {
     ...actual,
     useNavigate: () => mockNavigate,

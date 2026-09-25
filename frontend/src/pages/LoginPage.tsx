@@ -18,7 +18,7 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router';
 import { Mail, Lock } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin, useMfaChallenge } from '../hooks/useAuth';

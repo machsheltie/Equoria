@@ -12,7 +12,7 @@
  */
 
 import type { JSX } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 
 const ConformationShowsPage = (): JSX.Element => (
   <Navigate to="/competitions?tab=conformation" replace />

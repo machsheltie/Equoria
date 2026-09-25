@@ -39,7 +39,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { server } from '@/test/msw/server';
 import { RewardToastProvider } from '@/components/feedback';

@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ShoppingBag } from 'lucide-react';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { Button } from '@/components/ui/button';

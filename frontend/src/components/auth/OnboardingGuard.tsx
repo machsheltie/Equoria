@@ -18,7 +18,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 
 const OnboardingGuard: React.FC = () => {

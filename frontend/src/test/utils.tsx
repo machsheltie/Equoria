@@ -8,12 +8,12 @@ import React from 'react';
 import {
   BrowserRouter as RouterBrowserRouter,
   MemoryRouter as RouterMemoryRouter,
-} from 'react-router-dom';
+} from 'react-router';
 import { AuthContext, type AuthContextValue } from '../contexts/AuthContext';
 import type { User, UserRole } from '../hooks/useAuth';
 
 // Re-export everything from react-router-dom for convenience
-export * from 'react-router-dom';
+export * from 'react-router';
 
 /**
  * Default mock user for tests that need an authenticated state but
@@ -89,41 +89,24 @@ export const MockAuthProvider: React.FC<{
 };
 
 /**
- * BrowserRouter configured with v7 future flags
- * Use this in tests to suppress React Router v7 warnings
- *
- * This replaces the standard BrowserRouter from react-router-dom
+ * BrowserRouter for tests. It once carried the v6 → v7 future flags; on
+ * React Router 7 that behaviour is the default, so it is a plain wrapper
+ * kept for the many tests that import it from here.
  */
 export const BrowserRouter: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <RouterBrowserRouter
-    future={{
-      v7_startTransition: true,
-      v7_relativeSplatPath: true,
-    }}
-  >
-    {children}
-  </RouterBrowserRouter>
+  <RouterBrowserRouter>{children}</RouterBrowserRouter>
 );
 
 /**
- * MemoryRouter configured with v7 future flags
- * Use this in tests to suppress React Router v7 warnings
- *
- * This is useful for testing routing behavior without browser navigation
+ * MemoryRouter for tests — routing behaviour without browser navigation.
+ * Plain wrapper for the same reason as BrowserRouter above.
  */
 export const MemoryRouter: React.FC<{
   children: React.ReactNode;
   initialEntries?: string[];
   initialIndex?: number;
 }> = ({ children, initialEntries, initialIndex }) => (
-  <RouterMemoryRouter
-    initialEntries={initialEntries}
-    initialIndex={initialIndex}
-    future={{
-      v7_startTransition: true,
-      v7_relativeSplatPath: true,
-    }}
-  >
+  <RouterMemoryRouter initialEntries={initialEntries} initialIndex={initialIndex}>
     {children}
   </RouterMemoryRouter>
 );

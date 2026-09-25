@@ -10,7 +10,7 @@
  * Story 21R-2: Remove production frontend mocks from beta-facing code
  */
 
-import { matchPath } from 'react-router-dom';
+import { matchPath } from 'react-router';
 
 /** Beta mode switch — reads from VITE_BETA_MODE env var; defaults to false */
 export const isBetaMode = import.meta.env.VITE_BETA_MODE === 'true';

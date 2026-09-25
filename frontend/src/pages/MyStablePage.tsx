@@ -14,7 +14,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Star, Trophy, Heart, Award, Flame, ChevronRight } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import { PageContainer } from '@/components/layout/PageContainer';

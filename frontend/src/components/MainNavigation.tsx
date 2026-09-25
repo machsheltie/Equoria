@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Bell, LogOut, User } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useGameNotifications } from '@/hooks/api/useGameNotifications';

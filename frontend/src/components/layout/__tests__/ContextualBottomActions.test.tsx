@@ -20,7 +20,7 @@ import React, { useState } from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router';
 import { MemoryRouter, MockAuthProvider } from '../../../test/utils';
 import DashboardLayout from '../DashboardLayout';
 import { ContextualBottomActions } from '../ContextualBottomActions';

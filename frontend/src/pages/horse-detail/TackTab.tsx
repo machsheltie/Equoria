@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ShoppingCart } from 'lucide-react';
 import { Surface } from '@/components/ui/Surface';
 import type { Horse } from './HorseDetailPageTypes';

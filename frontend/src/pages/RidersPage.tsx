@@ -14,7 +14,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Users, ShoppingBag, Swords } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import RiderList from '@/components/RiderList';

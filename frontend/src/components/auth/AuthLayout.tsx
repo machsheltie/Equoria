@@ -9,7 +9,7 @@
  */
 
 import React, { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Sparkles } from 'lucide-react';
 import { usePageBackground, PageBackground } from '@/components/layout/PageBackground';
 
