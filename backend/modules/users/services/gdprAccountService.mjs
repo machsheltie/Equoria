@@ -193,9 +193,12 @@ export async function verifyAccountPassword(userId, password) {
  * the user — never an unscoped `deleteMany`.
  *
  * Idempotent: if the user does not exist, returns `{ deleted: false }`
- * without throwing (the caller maps this to 404).
+ * without throwing.
  *
- * @param {string} userId - The authenticated user's own id.
+ * No player-reachable route calls this (Equoria-gfany: players cannot delete
+ * their accounts); it is kept for erasure an operator runs on request.
+ *
+ * @param {string} userId - The id of the account to erase.
  * @returns {Promise<{ deleted: boolean }>}
  */
 export async function eraseUserAccount(userId) {
@@ -238,14 +241,21 @@ export async function eraseUserAccount(userId) {
       const groomIds = staffGrooms.map(g => g.id);
 
       // ── Club election artifacts authored by the user ──────────────────────
-      // KNOWN GAP, filed as Equoria-8jyiv (reproduced on the real DB while
-      // enumerating RESTRICT FKs for Equoria-hr0jw): this clears ballots the
-      // user CAST, but not ballots OTHER players cast FOR the user's
-      // candidacy. `ClubBallot.candidate` is RESTRICT, so the
-      // `clubCandidate.deleteMany` below then fails with 23001 and the whole
-      // erasure rolls back. Left here rather than fixed in passing because it
-      // needs a retention ruling on what happens to a live election's tally.
+      // Equoria-8jyiv (owner ruling 2026-09-25): the user's candidacies are
+      // WITHDRAWN — ballots OTHER players cast FOR them go with them, since
+      // `ClubBallot.candidate` is RESTRICT and would otherwise fail the
+      // candidate delete (23001). Other candidates and their ballots are
+      // untouched; `ClubElection` stores no winner, so no outcome is rewritten.
+      const ownCandidacies = await tx.clubCandidate.findMany({
+        where: { userId },
+        select: { id: true },
+      });
       await tx.clubBallot.deleteMany({ where: { voterId: userId } });
+      if (ownCandidacies.length > 0) {
+        await tx.clubBallot.deleteMany({
+          where: { candidateId: { in: ownCandidacies.map(c => c.id) } },
+        });
+      }
       await tx.clubCandidate.deleteMany({ where: { userId } });
       await tx.clubMembership.deleteMany({ where: { userId } });
 
