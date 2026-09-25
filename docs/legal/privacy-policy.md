@@ -1,6 +1,6 @@
 # Equoria Privacy Policy
 
-**Last updated:** 2026-05-18
+**Last updated:** 2026-09-25
 **Applies to:** the Equoria horse breeding & competition simulation game (web).
 
 This policy describes what personal data Equoria collects, why we collect
@@ -46,18 +46,18 @@ forum posts, messages, settings).
 ## 3. How long we keep it (retention)
 
 - **Account & game data:** retained for as long as your account exists.
-  When you delete your account (Section 5), this data is **permanently
-  erased**, not soft-deleted.
+  If we erase your account at your request (Section 5), this data is
+  **permanently erased**, not soft-deleted.
 - **Security audit trail (`AuditLog`):** retained for a rolling window
   (default **90 days**, minimum 7 days) and then automatically purged by a
   nightly job (`backend/services/auditLogRetentionService.mjs`). Audit
   rows use a **soft user reference with no foreign key** by design, so a
   short post-erasure forensic record of _security-relevant actions_ (e.g.
-  the deletion event itself) may persist until the retention window
+  logins or a data export) may persist until the retention window
   expires. This is a deliberate, time-bounded legitimate-interest
   exception to erasure and is documented here for transparency.
 - **Bilateral records (horse sales):** a horse sale has two parties. When
-  you delete your account, sale rows where you were a party are removed;
+  your account is erased, sale rows where you were a party are removed;
   records that also belong to the other party are not retained in a form
   that identifies you.
 - **Shows you hosted/created:** the show itself (and other players'
@@ -88,22 +88,41 @@ personal data we hold about you at any time.
 
 ---
 
-## 5. Your right to erasure ("delete my account / right to be forgotten")
+## 5. Your right to erasure ("right to be forgotten")
 
-You can permanently delete your account and the personal data tied to it.
+Equoria has no delete-account button. Your stable, horses and lineage are
+shared with other players, so accounts are not removed from inside the
+game. You still have the right to ask us to erase your account and the
+personal data tied to it, and we will do so unless the law allows or
+requires us to keep something (in which case we will tell you what and
+why).
 
-- **How:** authenticated request to `POST /api/v1/account/delete` with
-  your current password in the request body. The password re-confirmation
-  is a safety check against accidental or hijacked-session deletion.
-- **What happens:** in a single database transaction we delete, in
+- **How to ask:** email **privacy@equoria.com**, ideally from the email
+  address registered to your account, and include your username. We may
+  ask you for a little more information to confirm that the account is
+  yours; we only ask for what we need to confirm that, and we do not act
+  on an erasure request until it is confirmed. This protects you against
+  someone else erasing your account by pretending to be you.
+- **How long it takes:** we respond without undue delay and within one
+  month of receiving your request. If a request is unusually complex we
+  may extend this by up to two further months; if so, we will tell you
+  within the first month and explain why.
+- **Before you ask:** erasure is permanent and cannot be undone. If you
+  want a copy of your data, request the export (Section 4) first.
+- **What happens:** we erase the account with the same audited process
+  the game uses internally. In a single database transaction we delete, in
   dependency order, all data scoped to your user id — profile, horses
   (and their cascade-linked competition results, training logs, foal
   development, trait history, etc.), grooms, riders, trainers,
   facilities, transactions, notifications, XP events, rank snapshots,
   forum content, direct messages, club memberships and election ballots,
   horse-sale records you were a party to, and your authentication tokens.
-  The deletion is **scoped strictly to your own user id** — never a broad
-  query.
+  The deletion is **scoped strictly to your account's user id** — never a
+  broad query.
+- **Club elections:** if you are standing as a candidate in a club
+  election, your candidacy is withdrawn, and the votes other players cast
+  for you are removed with it. Other candidates and their votes are not
+  affected.
 - **Anonymisation where integrity requires it:** where deleting a row
   would destroy _other players'_ game history, we remove the identifying
   link to you rather than delete the shared record. Two cases:
@@ -114,16 +133,18 @@ You can permanently delete your account and the personal data tied to it.
   commercial/stud attribution are scrubbed to a generic placeholder. Your
   horses that are NOT ancestors of any other player's horse are fully
   deleted. See Section 3.
-- **After deletion:** you can no longer log in; the account no longer
-  exists. The action is idempotent (a repeat request returns "not found",
-  not an error) and fail-closed (if the transaction cannot complete, no
-  partial deletion occurs).
-- **Implementation:** `gdprAccountService.mjs` (`eraseUserAccount`,
-  `verifyAccountPassword`).
-- **Audit:** the export and deletion actions are themselves recorded in
-  the security audit trail (action `account_operation`) for abuse
-  detection; that audit row is subject to the retention window in
-  Section 3 and contains no game data.
+- **After erasure:** you can no longer log in; the account no longer
+  exists. We confirm to you by email that it is done. The process is
+  fail-closed: if the transaction cannot complete, nothing is deleted and
+  we try again rather than leave a partial account behind.
+- **Implementation:** `gdprAccountService.mjs` (`eraseUserAccount`), run by
+  the operator with `backend/scripts/erase-player-account.mjs`. The
+  in-game routes that used to allow self-service deletion
+  (`POST /api/v1/account/delete`, `DELETE /api/v1/users/:id`) now refuse
+  every request.
+- **Audit:** data-export requests are recorded in the security audit trail
+  (action `account_operation`) for abuse detection; that audit row is
+  subject to the retention window in Section 3 and contains no game data.
 
 ---
 
