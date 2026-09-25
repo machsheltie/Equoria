@@ -280,51 +280,12 @@ export default function (data) {
 }
 
 /**
- * Test Teardown - Clean up test data
+ * No teardown. The fixture users this run registered are NOT deleted here:
+ * players cannot delete their accounts (owner ruling, Equoria-gfany), so there
+ * is no HTTP erasure route any more. Every fixture uses an @example.com
+ * address, which backend/scripts/purge-leaked-test-fixtures.mjs matches — run
+ * it (dry-run first, then --execute) after a local run.
  */
-export function teardown(data) {
-  const { users } = data;
-
-  // Delete all test users. teardown runs in its own k6 isolate, so it re-logins
-  // per user here. Each user gets its OWN jar so cookies don't bleed between users.
-  users.forEach(user => {
-    // Login fresh — the jar captures the accessToken cookie that authenticates
-    // the delete.
-    const jar = http.cookieJar();
-    const loginRes = http.post(
-      `${API_URL}/api/v1/auth/login`,
-      JSON.stringify({
-        email: user.email,
-        password: user.password,
-      }),
-      {
-        headers: { 'Content-Type': 'application/json' },
-        jar,
-      },
-    );
-
-    // A 200 login means the jar holds a valid accessToken cookie. Gate on that
-    // rather than a (non-existent) body token.
-    if (loginRes.status === 200) {
-      // Delete user account via GDPR erasure endpoint (POST + password + CSRF).
-      // The jar carries the accessToken cookie (auth) and the _csrf cookie from
-      // this GET; the X-CSRF-Token header must match that cookie (double-submit).
-      const _delCsrf = http.get(`${API_URL}/api/v1/auth/csrf-token`, { jar });
-      const _delCsrfBody = _delCsrf.json();
-      const _delToken =
-        (_delCsrfBody && _delCsrfBody.csrfToken) ||
-        (_delCsrfBody && _delCsrfBody.data && _delCsrfBody.data.csrfToken) ||
-        '';
-      http.post(`${API_URL}/api/v1/account/delete`, JSON.stringify({ password: user.password }), {
-        jar,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': _delToken,
-        },
-      });
-    }
-  });
-}
 
 /**
  * Custom Summary Output

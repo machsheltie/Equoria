@@ -19,7 +19,7 @@
  * 2. GET /api/v1/users/:id - User lookup by ID
  * 3. POST /api/v1/users - User creation with validation
  * 4. PUT /api/v1/users/:id - User updates with existence checks
- * 5. DELETE /api/v1/users/:id - User deletion with proper responses
+ * 5. (DELETE /api/v1/users/:id — closed by Equoria-gfany, tested elsewhere)
  * 6. POST /api/v1/users/:id/add-xp - XP addition with level progression
  * 7. Input validation: ID constraints, data validation, error responses
  * 8. Error scenarios: Missing users, invalid data, server errors
@@ -478,47 +478,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('DELETE /api/v1/users/:id', () => {
-    it('should delete a user', async () => {
-      // Create a fresh user to delete to avoid affecting other tests
-      const deleteUserResult = await createTestUser({
-        username: `delete_user_${randomUUID().slice(0, 8)}`,
-        email: `delete_${randomUUID().slice(0, 8)}@test.com`,
-      });
-      // Track for id-scoped afterEach cleanup in case the DELETE endpoint fails
-      // (deleteMany on the successfully-deleted id is a harmless no-op).
-      createdUserIds.push(deleteUserResult.user.id);
-
-      const deleteAuthToken = deleteUserResult.token;
-      // Equoria-myfc5: bind CSRF to THIS request's token — the CSRF cookie carries
-      // accessToken and auth.mjs reads it before the Bearer header, so a cookie
-      // bound to a different user would win and requireSelfAccess would 403.
-      const deleteCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${deleteAuthToken}`] });
-
-      const response = await request(app)
-        .delete(`/api/v1/users/${deleteUserResult.user.id}`)
-        .set('Authorization', `Bearer ${deleteAuthToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', deleteCsrf.cookieHeader)
-        .set('X-CSRF-Token', deleteCsrf.csrfToken)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('User deleted successfully');
-    });
-
-    it('should return 403 if user to delete is not authorized', async () => {
-      const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
-      const response = await request(app)
-        .delete(`/api/v1/users/${nonExistentUuid}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(403);
-      expect(response.body.success).toBe(false);
-    });
-  });
+  // DELETE /api/v1/users/:id — closed (Equoria-gfany: players cannot delete
+  // their accounts); locked by accountDeletionClosed.integration.test.mjs.
 
   describe('POST /api/v1/users/:id/add-xp', () => {
     test('should add XP to a user and potentially level them up', async () => {

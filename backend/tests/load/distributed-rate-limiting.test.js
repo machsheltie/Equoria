@@ -306,35 +306,12 @@ export default function (data) {
 }
 
 /**
- * Test Teardown - Clean up test data
+ * No teardown. The fixture users this run registered are NOT deleted here:
+ * players cannot delete their accounts (owner ruling, Equoria-gfany), so there
+ * is no HTTP erasure route any more. Every fixture uses an @example.com
+ * address, which backend/scripts/purge-leaked-test-fixtures.mjs matches — run
+ * it (dry-run first, then --execute) after a local run.
  */
-export function teardown(data) {
-  // teardown runs in its own k6 isolate, so re-login on server 1 with the
-  // fixture credentials. The jar captures server 1's accessToken cookie (auth)
-  // and the _csrf cookie from the token fetch; the X-CSRF-Token header must
-  // match that cookie (double-submit). One server suffices — account/delete
-  // erases the shared user row.
-  const jar = http.cookieJar();
-  http.post(`${API_URL_1}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
-    headers: { 'Content-Type': 'application/json' },
-    jar,
-  });
-
-  // Delete test user via GDPR erasure endpoint (POST + password + CSRF)
-  const _delCsrf = http.get(`${API_URL_1}/api/v1/auth/csrf-token`, { jar });
-  const _delCsrfBody = _delCsrf.json();
-  const _delToken =
-    (_delCsrfBody && _delCsrfBody.csrfToken) ||
-    (_delCsrfBody && _delCsrfBody.data && _delCsrfBody.data.csrfToken) ||
-    '';
-  http.post(`${API_URL_1}/api/v1/account/delete`, JSON.stringify({ password: data.password }), {
-    jar,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': _delToken,
-    },
-  });
-}
 
 /**
  * Custom Summary Output

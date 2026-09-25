@@ -5,7 +5,7 @@
  * and display settings for the Equoria application.
  *
  * Sections:
- * 1. Account — username, recovery address, password change, delete account
+ * 1. Account — username, recovery address, password change
  * 2. Notifications — email and in-app notification toggles
  * 3. Display — theme and accessibility preferences
  * 4. Sound — sound-effects master toggle + previews
@@ -16,15 +16,15 @@
  * - Update Password reveals an inline form and calls useChangePassword()
  *   (POST /api/v1/auth/change-password). On success the server invalidates all
  *   sessions; we sign the user out client-side to match.
- * - Delete Account opens a typed-confirmation modal and calls
- *   useDeleteAccount() (DELETE /api/users/:id). The hook clears React Query
- *   cache and redirects to /login on success.
+ * - Equoria-gfany: there is no Delete Account control. Players cannot delete
+ *   their accounts (owner ruling); the modal, hook and API call were removed
+ *   and the server refuses both deletion routes.
  *
  * Equoria-qk3vi: decomposed under the 600-line cap. This file is now the
  * container — it owns ALL state, hooks, and mutation handlers and passes
  * them as props to presentational section components under `pages/settings/`
- * (AccountSection, NotificationsSection, DisplaySection, SoundSection,
- * DeleteAccountModal). Behavior is unchanged.
+ * (AccountSection, NotificationsSection, DisplaySection, SoundSection).
+ * Behavior is unchanged.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -36,7 +36,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdatePreferences } from '@/hooks/api/useUpdatePreferences';
-import { useUpdateProfile, useChangePassword, useDeleteAccount, useLogout } from '@/hooks/useAuth';
+import { useUpdateProfile, useChangePassword, useLogout } from '@/hooks/useAuth';
 import { useSound } from '@/hooks/useSound';
 import type { UserPreferences } from '@/lib/api-client';
 import {
@@ -49,7 +49,6 @@ import { AccountSection } from './settings/AccountSection';
 import { NotificationsSection } from './settings/NotificationsSection';
 import { DisplaySection } from './settings/DisplaySection';
 import { SoundSection } from './settings/SoundSection';
-import { DeleteAccountModal } from './settings/DeleteAccountModal';
 
 const SettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('account');
@@ -58,7 +57,6 @@ const SettingsPage: React.FC = () => {
   const updatePreferences = useUpdatePreferences();
   const updateProfile = useUpdateProfile();
   const changePassword = useChangePassword();
-  const deleteAccount = useDeleteAccount();
   const logout = useLogout();
   const queryClient = useQueryClient();
   const { soundEnabled, setSoundEnabled, playSound } = useSound();
@@ -195,69 +193,6 @@ const SettingsPage: React.FC = () => {
     );
   };
 
-  // -------- Delete account modal state --------
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-
-  const closeDeleteModal = () => {
-    setShowDeleteModal(false);
-    setDeleteConfirmText('');
-  };
-
-  const handleConfirmDelete = () => {
-    if (!user) return;
-    // Equoria-ocn9 review fix: trim the confirmation input. Browser autofill
-    // may add a trailing space; a literal !== comparison would block delete
-    // for users who typed the right username with whitespace.
-    if (deleteConfirmText.trim() !== user.username) {
-      toast.error('Confirmation text does not match your username.');
-      return;
-    }
-    deleteAccount.mutate(user.id, {
-      onSuccess: () => {
-        // Code-review chunk-A fix: explicitly close the modal on success
-        // BEFORE the hook's redirect kicks in. Without this, the modal
-        // stays mounted during the unmount race and the Confirm button
-        // can re-fire the mutation if the user double-clicks. The hook
-        // also clears cache and redirects, but those are unmount-side;
-        // closing the modal is a render-side concern.
-        closeDeleteModal();
-      },
-      onError: (err) => {
-        // Code-review chunk-A fix: detect CSRF/expiry-class failures and
-        // surface a recovery path. A long-idle session whose CSRF token
-        // rotated out from under the modal would otherwise loop forever
-        // — every retry returns 403 with no UI escape hatch except a
-        // hard reload. Right-to-delete (GDPR) must remain reachable.
-        //
-        // ApiError shape (frontend/src/lib/api-client.ts): { statusCode:number,
-        // status:string, message:string, retryAfter?:number }. We read
-        // `statusCode` (HTTP code) — `status` is the JSON-API status string
-        // (e.g. "error"), not the HTTP status.
-        const statusCode = (err as unknown as { statusCode?: number })?.statusCode;
-        const message = err?.message ?? '';
-        const isCsrfClass =
-          statusCode === 403 || /csrf/i.test(message) || /forbidden/i.test(message);
-        if (isCsrfClass) {
-          toast.error(
-            'Your session expired before this action could complete. Please reload the page and try again.'
-          );
-          // Close the modal so the user can recover; the typed
-          // confirmation is lost intentionally — they will type it again
-          // after a fresh session, which is consistent with the
-          // typed-confirmation security gesture.
-          closeDeleteModal();
-          return;
-        }
-        toast.error(message || 'Could not delete account.');
-      },
-    });
-  };
-
-  // Escape-to-dismiss is owned by the canonical GameDialog (Radix Dialog)
-  // inside DeleteAccountModal — the previous page-local keydown listener
-  // (Equoria-ocn9) is superseded by the primitive (Equoria-o5hub.22).
-
   // -------- Preferences (notifications + display) --------
   const merged: UserPreferences = {
     ...DEFAULT_PREFERENCES,
@@ -365,7 +300,6 @@ const SettingsPage: React.FC = () => {
                 onChangePassword={handleChangePassword}
                 onResetPasswordForm={resetPasswordForm}
                 isChangingPassword={changePassword.isPending}
-                onOpenDeleteModal={() => setShowDeleteModal(true)}
               />
             )}
 
@@ -393,18 +327,6 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
       </PageContainer>
-
-      {/* Delete Account Confirmation Modal */}
-      {showDeleteModal && user && (
-        <DeleteAccountModal
-          username={user.username}
-          confirmText={deleteConfirmText}
-          onConfirmTextChange={setDeleteConfirmText}
-          onClose={closeDeleteModal}
-          onConfirmDelete={handleConfirmDelete}
-          isDeleting={deleteAccount.isPending}
-        />
-      )}
     </div>
   );
 };

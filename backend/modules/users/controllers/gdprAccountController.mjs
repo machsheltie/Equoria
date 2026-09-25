@@ -4,22 +4,16 @@
  * Controllers for the authenticated, self-only GDPR account endpoints
  * (Equoria-s3rf):
  *   - GET  /api/v1/account/export  → Right to Access / Portability
- *   - POST /api/v1/account/delete  → Right to Erasure
+ *   - POST /api/v1/account/delete  → CLOSED (Equoria-gfany), see below
  *
- * Both operate exclusively on `req.user.id` (set by authenticateToken).
- * There is no user-id path/query/body parameter, so cross-user access is
- * structurally impossible — a token can only ever export or erase its own
- * account. Fail-closed: any unexpected error returns a non-2xx and never
- * leaks another user's data or performs a partial delete (the erase runs
- * in a single transaction).
+ * The export operates exclusively on `req.user.id` (set by
+ * authenticateToken). There is no user-id path/query/body parameter, so
+ * cross-user access is structurally impossible — a token can only ever
+ * export its own account.
  */
 
 import logger from '../../../utils/logger.mjs';
-import {
-  buildUserDataExport,
-  verifyAccountPassword,
-  eraseUserAccount,
-} from '../services/gdprAccountService.mjs';
+import { buildUserDataExport } from '../services/gdprAccountService.mjs';
 
 /**
  * GET /api/v1/account/export
@@ -51,57 +45,25 @@ export const exportAccountData = async (req, res) => {
 };
 
 /**
- * POST /api/v1/account/delete
- * Permanently erases the authenticated user's account. Requires the
- * account password in the request body as a destructive-action
- * confirmation.
+ * Refusal for every player-reachable account-deletion route —
+ * `POST /api/v1/account/delete` and `DELETE /api/v1/users/:id`.
+ *
+ * OWNER RULING 2026-09-22 (Equoria-gfany): "Players cannot delete their
+ * accounts." Scope ruled 2026-09-24: remove the Settings control and both
+ * player-reachable routes; keep `eraseUserAccount()` for erasure an operator
+ * runs by hand. Both routes answer with this one body, whatever the id,
+ * password or payload, so neither can be used as an existence or ownership
+ * oracle. It sits behind `authenticateToken` (anonymous is still 401).
+ *
+ * Locked by __tests__/accountDeletionClosed.integration.test.mjs, whose
+ * matcher needs the words "cannot be deleted" — reword the message with it.
  */
-export const deleteAccount = async (req, res) => {
-  try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ success: false, message: 'Authentication required' });
-    }
-
-    const { password } = req.body ?? {};
-    if (!password || typeof password !== 'string') {
-      return res.status(400).json({
-        success: false,
-        message: 'Password confirmation is required to delete your account',
-      });
-    }
-
-    const verification = await verifyAccountPassword(req.user.id, password);
-    if (!verification.ok) {
-      if (verification.reason === 'not_found') {
-        // Account already gone (idempotent path).
-        return res.status(404).json({ success: false, message: 'Account not found' });
-      }
-      // missing_password / bad_password
-      logger.warn(
-        `[gdprAccountController] Failed delete confirmation for user ${req.user.id} (${verification.reason})`,
-      );
-      return res.status(401).json({ success: false, message: 'Password is incorrect' });
-    }
-
-    const result = await eraseUserAccount(req.user.id);
-    if (!result.deleted) {
-      // Race: deleted between verify and erase. Idempotent-safe.
-      return res.status(404).json({ success: false, message: 'Account not found' });
-    }
-
-    logger.info(`[gdprAccountController] Account ${req.user.id} erased (GDPR right-to-erasure)`);
-    return res.status(200).json({
-      success: true,
-      message: 'Your account and associated personal data have been permanently deleted.',
-    });
-  } catch (error) {
-    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
-    if (error?.status === 503) {
-      return res.status(503).json({ success: false, message: error.message });
-    }
-    logger.error(`[gdprAccountController.deleteAccount] Error: ${error.message}`);
-    return res
-      .status(500)
-      .json({ success: false, message: 'Failed to delete account. No data was removed.' });
-  }
+export const refuseAccountDeletion = (req, res) => {
+  logger.warn(
+    `[gdprAccountController] Rejected account deletion by user ${req.user?.id} (Equoria-gfany)`,
+  );
+  return res.status(403).json({
+    success: false,
+    message: 'Accounts cannot be deleted.',
+  });
 };

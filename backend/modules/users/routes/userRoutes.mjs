@@ -12,13 +12,13 @@ import {
   getDashboardData,
   getUser,
   updateUserController,
-  deleteUserController,
   addXpController,
   searchUsers,
   getUserCompetitionStats,
   getGameNotifications,
   markGameNotificationsRead,
 } from '../controllers/userController.mjs';
+import { refuseAccountDeletion } from '../controllers/gdprAccountController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
@@ -361,14 +361,12 @@ router.put(
   requireSelfAccess(),
   updateUserController,
 );
-router.delete(
-  '/:id',
-  mutationRateLimiter,
-  authenticateToken,
-  validateUserId,
-  requireSelfAccess(),
-  deleteUserController,
-);
+// DELETE /api/v1/users/:id — CLOSED (owner ruling, Equoria-gfany: players
+// cannot delete their accounts). It sits BEHIND `authenticateToken` and BEFORE
+// `validateUserId` / `requireSelfAccess`, so the caller's own id, another
+// player's id, a missing id and a malformed id share one 403 body (no oracle).
+// See `refuseAccountDeletion` for the full ruling.
+router.delete('/:id', mutationRateLimiter, authenticateToken, refuseAccountDeletion);
 
 /**
  * GET /api/users/:userId/competition-stats

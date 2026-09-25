@@ -223,11 +223,9 @@ for (const viewport of viewports) {
 //   4. DIALOG-OPEN      /grooms (Hire)  — mock GET /api/v1/groom-marketplace,
 //        click [data-testid="hire-tab"] then a card's [aria-label="Hire …"];
 //        [data-testid="hire-modal"] opens (GroomList.tsx:388-405, 432-439).
-//   5. DESTRUCTIVE      /settings       — click [data-testid="settings-delete-
-//        account"]; [data-testid="settings-delete-modal"] opens
-//        (AccountSection.tsx:184-191, DeleteAccountModal.tsx:67). No seeded
-//        state needed — Account is the default settings section
-//        (SettingsPage.tsx:55, 351-372) and opening the dialog needs no input.
+//   5. (removed) DESTRUCTIVE /settings — its subject, the delete-account
+//        dialog, no longer exists: players cannot delete their accounts
+//        (owner ruling, Equoria-gfany).
 //   6. LONG-CONTENT     /stable         — intercept **/api/v1/horses*, rewrite
 //        data[0].name to a long string; HorseCard renders the name with
 //        `truncate` + `title` (HorseCard.tsx:135-141) — the capture documents
@@ -437,32 +435,8 @@ for (const viewport of viewports) {
       });
     });
 
-    // 5. DESTRUCTIVE-CONFIRM — /settings delete-account confirmation.
-    test('slice 2 — destructive-confirm (settings delete-account)', async ({ page }) => {
-      await page.goto('/settings');
-      await settle(page);
-      assertNotLoginRedirect(page, 'settings-destructive');
-      await assertNotStuckLoading(page, 'settings-destructive');
-
-      // Account is the default section (SettingsPage.tsx:55) so the button is
-      // present on load. Opening the dialog needs NO password/typing — the
-      // username field only ENABLES the confirm button
-      // (DeleteAccountModal.tsx:127), it is not required to display the dialog.
-      const deleteBtn = page.locator('[data-testid="settings-delete-account"]');
-      await deleteBtn.waitFor({ state: 'visible', timeout: 8000 });
-      await deleteBtn.click();
-      await page
-        .locator('[data-testid="settings-delete-modal"]')
-        .waitFor({ state: 'visible', timeout: 8000 });
-      await page.waitForTimeout(250); // dialog enter transition settle
-      await page.screenshot({
-        path: path.join(
-          OUT_DIR,
-          `settings-profile--settings--destructive-confirm--${viewport.name}.png`
-        ),
-        fullPage: true,
-      });
-    });
+    // 5. DESTRUCTIVE-CONFIRM — removed with the delete-account dialog it
+    //    captured (Equoria-gfany).
 
     // 6. LONG-CONTENT — /stable with the first horse's name rewritten to a long
     //    string. We PASS THROUGH the real API and rewrite the response body so

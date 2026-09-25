@@ -384,19 +384,3 @@ export function useConfirmEmailChange(token: string | null | undefined) {
 
   return query;
 }
-
-/**
- * Hook to delete the authenticated user's account.
- * Clears all cached data and redirects to login on success.
- */
-export function useDeleteAccount() {
-  const queryClient = useQueryClient();
-
-  return useMutation<{ message: string }, ApiError, string>({
-    mutationFn: (userId: string) => authApi.deleteAccount(userId),
-    onSuccess: () => {
-      queryClient.clear();
-      window.location.href = '/login';
-    },
-  });
-}

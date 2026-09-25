@@ -1,10 +1,13 @@
 /**
  * AccountSection (extracted from SettingsPage — Equoria-qk3vi)
  *
- * Presentational Account-settings panel: username/email form, inline
- * change-password form, and the Danger-Zone delete trigger. All state and
- * mutation handlers live in the SettingsPage container and are passed in as
- * props, so behavior is identical to the pre-split inline block.
+ * Presentational Account-settings panel: username/email form and inline
+ * change-password form. All state and mutation handlers live in the
+ * SettingsPage container and are passed in as props, so behavior is
+ * identical to the pre-split inline block.
+ *
+ * There is no delete-account control: players cannot delete their accounts
+ * (owner ruling, Equoria-gfany). The former Danger Zone was removed.
  *
  * Design-system migration (Equoria-o5hub.22):
  * - Panel: Surface variant="panel" (was raw .glass-panel div).
@@ -12,10 +15,9 @@
  *   inputs with raw white/NN palette classes).
  * - Action hierarchy (DECISIONS.md §5): ONE gold primary per surface —
  *   "Save Changes". Password reveal/submit are secondary, password Cancel
- *   is outline, and "Delete Account" uses the destructive variant (never
- *   gold for destructive actions).
+ *   is outline.
  * - Headings: type-section-heading for the panel h2; type-label for
- *   subsection h3s; dividers use --glass-border / --role-danger-border.
+ *   subsection h3s; dividers use --glass-border.
  */
 
 import React from 'react';
@@ -41,8 +43,6 @@ export interface AccountSectionProps {
   onChangePassword: (_e: React.FormEvent) => void;
   onResetPasswordForm: () => void;
   isChangingPassword: boolean;
-
-  onOpenDeleteModal: () => void;
 }
 
 export const AccountSection: React.FC<AccountSectionProps> = ({
@@ -61,7 +61,6 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
   onChangePassword,
   onResetPasswordForm,
   isChangingPassword,
-  onOpenDeleteModal,
 }) => (
   <Surface variant="panel" className="space-y-6" data-testid="settings-account">
     <h2 className="type-section-heading">Account Settings</h2>
@@ -168,21 +167,6 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
           </div>
         </form>
       )}
-    </div>
-
-    <div className="border-t border-[var(--role-danger-border)] pt-6">
-      <h3 className="type-label text-[var(--status-danger)] mb-1">Danger Zone</h3>
-      <p className="text-xs text-role-muted mb-3">
-        Permanently delete your account and all data. This cannot be undone.
-      </p>
-      <Button
-        type="button"
-        variant="destructive"
-        onClick={onOpenDeleteModal}
-        data-testid="settings-delete-account"
-      >
-        Delete Account
-      </Button>
     </div>
   </Surface>
 );

@@ -456,12 +456,4 @@ export const authApi = {
       newPassword,
     });
   },
-
-  /**
-   * Delete authenticated user's account.
-   * Requires user ID. Permanently removes all user data.
-   */
-  deleteAccount: (userId: string) => {
-    return apiClient.delete<{ message: string }>(`/api/v1/users/${userId}`);
-  },
 };

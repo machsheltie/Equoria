@@ -299,8 +299,8 @@ DialogOverlay.displayName = 'DialogOverlay';
 
 /**
  * Radix-compatible synthetic events for the Content lifecycle callbacks. Each
- * is cancelable via preventDefault() — consumers (DeleteAccountModal,
- * BreedingConfirmationModal, etc.) call preventDefault() to block close/focus.
+ * is cancelable via preventDefault() — consumers (BreedingConfirmationModal,
+ * etc.) call preventDefault() to block close/focus.
  */
 interface CancelableEvent {
   preventDefault: () => void;
@@ -443,8 +443,8 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     // Outside-interaction dismissal (DismissableLayer parity). A document-level
     // pointerdown whose target is NOT inside the content panel is an "outside"
     // interaction — clicking the overlay backdrop included. Consumers may cancel
-    // via onPointerDownOutside / onInteractOutside (DeleteAccountModal blocks
-    // dismissal while a delete is in flight, etc.).
+    // via onPointerDownOutside / onInteractOutside (e.g. to block dismissal
+    // while a mutation is in flight).
     React.useEffect(() => {
       if (!ctx.open || !ctx.modal) return;
       const node = contentRef.current;

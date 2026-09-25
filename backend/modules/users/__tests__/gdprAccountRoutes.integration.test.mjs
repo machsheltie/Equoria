@@ -1,32 +1,13 @@
 /**
  * gdprAccountRoutes.integration.test.mjs
  *
- * Equoria-s3rf — GDPR Right-to-Access (data export) + Right-to-Erasure
- * (account deletion) endpoints.
+ * Equoria-s3rf — GDPR Right-to-Access (data export) endpoint + the
+ * Right-to-Erasure cascade.
  *
- * Equoria-fefh2.24 — CSRF binding fix (same defect class as
- * Equoria-fefh2.16 in legacyUserDelete.integration.test.mjs): per-user
- * CSRF binding (Equoria-plw0h, backend/middleware/csrf.mjs) derives the
- * sessionIdentifier as req.user.id when the request is authenticated. The
- * authRouter mounts authenticateToken BEFORE csrfProtection
- * (backend/app/routers.mjs — authRouter.use(authenticateToken) then
- * authRouter.use(csrfProtection)), and /account/* lives on that router, so
- * by the time csrfProtection runs on POST /account/delete, req.user.id is
- * populated and the CSRF token MUST have been issued under that same user
- * id. The single anonymous token this suite previously fetched in
- * beforeAll (bound to the CSRF_SESSION_SALT fallback) correctly 403s —
- * that is the middleware doing its job. Every authenticated mutation below
- * therefore fetches its CSRF token bound to the acting identity by
- * forwarding that identity's accessToken cookie to GET /auth/csrf-token
- * (fetchCsrf's extraCookies option → tryPopulateUserFromAccessCookie binds
- * issuance to the decoded user id).
- *
- * Auth source precedence (backend/middleware/auth.mjs): authenticateToken
- * reads req.cookies.accessToken FIRST (primary), then falls back to the
- * Authorization: Bearer header. The mutations below send the SAME JWT in
- * both places (the accessToken cookie rides along in csrf.cookieHeader),
- * so whichever source the middleware picks, the resolved identity — and
- * therefore the CSRF sessionIdentifier — is identical.
+ * Equoria-gfany: players cannot delete their accounts, so the HTTP erasure
+ * route (POST /api/v1/account/delete) is closed and locked by
+ * accountDeletionClosed.integration.test.mjs. The erasure cascade stays for
+ * operator-run erasure and is exercised here through `eraseUserAccount()`.
  *
  * Real-DB integration test — NO mocks. Exercises the live Express app,
  * real auth/CSRF middleware, and the canonical Equoria DB.
@@ -53,12 +34,9 @@
  *      yields its own data (cross-user access is structurally impossible);
  *      an unauthenticated request is rejected (401 by authenticateToken —
  *      no CSRF pair is sent because auth runs before CSRF on this router).
- *   3. POST /api/v1/account/delete requires the correct password in the
- *      body; a wrong password is rejected 401 BY THE CONTROLLER (asserted
- *      on the controller body, NOT a CSRF body) and an absent password is
- *      rejected 400; the account survives both.
- *   4. A correct-password delete removes the user's PII + owned data and
- *      is idempotent (second call → 404/401, never a 500).
+ *   3. (retired with Equoria-gfany — the password-confirmed route is closed.)
+ *   4. `eraseUserAccount()` removes the user's PII + owned data and is
+ *      idempotent (second call → { deleted: false }, never a throw).
  *   5. A deleted user can no longer authenticate (login → 401; login is a
  *      public route with no csrfProtection, so no CSRF pair is sent).
  *      Non-vacuous: the same credentials are proven to log in successfully
@@ -75,20 +53,11 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse } from '../../../tests/helpers/testAuth.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { eraseUserAccount } from '../services/gdprAccountService.mjs';
 
 const PASSWORD = 'TestPassword123!';
 const ORIGIN = 'http://localhost:3000';
-
-/**
- * Fetch a CSRF token bound to a specific authenticated identity.
- * Forwards the identity's JWT as an accessToken cookie on the token GET so
- * csrf.mjs#tryPopulateUserFromAccessCookie resolves the issuance
- * sessionIdentifier to that user's id — matching what authenticateToken →
- * csrfProtection will resolve on the subsequent mutation (Equoria-plw0h).
- */
-const fetchCsrfFor = token => fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
 describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
   const cleanup = createCleanupTracker();
@@ -221,78 +190,14 @@ describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
     }, 120000);
   });
 
-  describe('POST /api/v1/account/delete — Right to Erasure', () => {
-    it('rejects a delete with a wrong password and keeps the account', async () => {
-      const ts = randomBytes(8).toString('hex');
-      const subject = await createTestUser({
-        username: `TestFixture_gdprwpw_${ts}`,
-        email: `testfixture_gdprwpw_${ts}@test.com`,
-        password: PASSWORD,
-      });
-      ids.users.push(subject.user.id);
-
-      // CSRF bound to the SUBJECT's identity (issued after the subject's
-      // token exists) — the salt-bound anonymous token this suite
-      // previously reused is correctly rejected by per-user binding
-      // (Equoria-plw0h).
-      const csrf = await fetchCsrfFor(subject.token);
-
-      const res = await request(app)
-        .post('/api/v1/account/delete')
-        .set('Authorization', `Bearer ${subject.token}`)
-        .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ password: 'WrongPassword999!' });
-
-      // Distinguish the rejecting middleware: this must be the CONTROLLER's
-      // bad-password 401 (gdprAccountController returns
-      // { success:false, message:'Password is incorrect' }), never the CSRF
-      // 403 (code INVALID_CSRF_TOKEN) this suite used to fail on.
-      expect(res.body?.code).not.toBe('INVALID_CSRF_TOKEN');
-      expect(res.status).toBe(401);
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toBe('Password is incorrect');
-
-      // Account must still exist
-      const stillThere = await prisma.user.findUnique({
-        where: { id: subject.user.id },
-      });
-      expect(stillThere).not.toBeNull();
-    }, 120000);
-
-    it('rejects a delete with no password in the body (400)', async () => {
-      const ts = randomBytes(8).toString('hex');
-      const subject = await createTestUser({
-        username: `TestFixture_gdprnpw_${ts}`,
-        email: `testfixture_gdprnpw_${ts}@test.com`,
-        password: PASSWORD,
-      });
-      ids.users.push(subject.user.id);
-
-      const csrf = await fetchCsrfFor(subject.token);
-
-      const res = await request(app)
-        .post('/api/v1/account/delete')
-        .set('Authorization', `Bearer ${subject.token}`)
-        .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({});
-
-      // Must be the controller's missing-password 400, not a CSRF 403.
-      expect(res.body?.code).not.toBe('INVALID_CSRF_TOKEN');
-      expect(res.status).toBe(400);
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toBe('Password confirmation is required to delete your account');
-
-      const stillThere = await prisma.user.findUnique({
-        where: { id: subject.user.id },
-      });
-      expect(stillThere).not.toBeNull();
-    }, 120000);
-
-    it('deletes the user + owned data with the correct password, is idempotent, and blocks future login', async () => {
+  // Equoria-gfany: players cannot delete their accounts, so POST
+  // /api/v1/account/delete is closed (locked by
+  // accountDeletionClosed.integration.test.mjs) and its wrong-/no-password
+  // cases were retired with it. The erasure cascade is kept for operator-run
+  // erasure, so this case now drives `eraseUserAccount()` directly with every
+  // original assertion on the erased graph.
+  describe('eraseUserAccount() — Right to Erasure (operator-run)', () => {
+    it('deletes the user + owned data, is idempotent, and blocks future login', async () => {
       const ts = randomBytes(8).toString('hex');
       const subject = await createTestUser({
         username: `TestFixture_gdprdel_${ts}`,
@@ -423,23 +328,8 @@ describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
         .send({ email: `testfixture_gdprdel_${ts}@test.com`, password: PASSWORD });
       expect(preDeleteLogin.status).toBe(200);
 
-      // CSRF bound to the SUBJECT's identity (Equoria-plw0h binding).
-      const csrf = await fetchCsrfFor(subject.token);
-
-      const res = await request(app)
-        .post('/api/v1/account/delete')
-        .set('Authorization', `Bearer ${subject.token}`)
-        .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ password: PASSWORD });
-
-      // Guard against the wrong-reason failure this suite used to have: a
-      // CSRF rejection must surface as a CSRF defect, not be folded into
-      // the route assertion below.
-      expect(res.body?.code).not.toBe('INVALID_CSRF_TOKEN');
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      const result = await eraseUserAccount(subject.user.id);
+      expect(result).toEqual({ deleted: true });
 
       // User row is gone
       const gone = await prisma.user.findUnique({
@@ -475,21 +365,8 @@ describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
       });
       expect(peerStillThere).not.toBeNull();
 
-      // Idempotent: a second delete must not 500. The JWT is still
-      // cryptographically valid and the CSRF token is still bound to the
-      // (now-deleted) subject id, so the request reaches the controller
-      // (404 idempotent path) unless auth rejects the dangling identity
-      // first (401) — both are acceptable "no crash" outcomes.
-      const res2 = await request(app)
-        .post('/api/v1/account/delete')
-        .set('Authorization', `Bearer ${subject.token}`)
-        .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ password: PASSWORD });
-      expect(res2.body?.code).not.toBe('INVALID_CSRF_TOKEN');
-      expect(res2.status).not.toBe(500);
-      expect([401, 404]).toContain(res2.status);
+      // Idempotent: a second erase of the same id is a no-op, not a throw.
+      await expect(eraseUserAccount(subject.user.id)).resolves.toEqual({ deleted: false });
 
       // Deleted user can no longer authenticate. POST /api/v1/auth/login is
       // a PUBLIC route (backend/app/routers.mjs mounts it on publicRouter

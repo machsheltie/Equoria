@@ -36,7 +36,6 @@ import {
   getUserProgress,
   getUserById,
   updateUser,
-  deleteUser,
   addXpToUser,
 } from '../services/userModelService.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
@@ -727,39 +726,6 @@ export const getUserCompetitionStats = async (req, res, next) => {
   } catch (error) {
     logger.error(`[userController.getUserCompetitionStats] Error: ${error.message}`);
     return next(error);
-  }
-};
-
-/**
- * Delete user
- * @route DELETE /api/user/:id
- */
-export const deleteUserController = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    logger.info(`[userController.deleteUser] Deleting user ${id}`);
-
-    const result = await deleteUser(id);
-
-    if (!result) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
-    // Invalidate user caches
-    await invalidateCache(`user:progress:${id}`);
-    await invalidateCache(`user:dashboard:${id}`);
-
-    res.status(200).json({
-      success: true,
-      message: 'User deleted successfully',
-    });
-  } catch (error) {
-    logger.error(`[userController.deleteUser] Error: ${error.message}`);
-    next(error);
   }
 };
 

@@ -139,9 +139,11 @@ describe('User Routes Rate Limiting Integration Tests', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken);
 
-      // Self-owned non-persisted UUID with CSRF satisfied: reaches the delete
-      // handler, which reports the missing user (404; 500 if the lookup throws).
-      expect([200, 404, 500]).toContain(response.status);
+      // CSRF satisfied: reaches the closed deletion route, which refuses every
+      // caller with 403 (Equoria-gfany — players cannot delete their accounts;
+      // previously 404 for this non-persisted id). The limiter runs first.
+      expect(response.status).toBe(403);
+      expect(response.body.message).toMatch(/cannot be deleted/i);
       expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
     });
   });

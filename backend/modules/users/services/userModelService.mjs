@@ -234,15 +234,16 @@ async function updateUser(id, updateData, client = prisma) {
  * violation (P2003) for any non-empty account because the user owns
  * horses / grooms / forum threads / clubs / etc. whose relations are
  * `onDelete: Restrict` (Equoria-02nos). Reusing `eraseUserAccount` keeps
- * the FK-ordered deletion logic in one place (DRY) — this route is
- * self-scoped via `requireSelfAccess`, matching `eraseUserAccount`'s
- * self-only contract exactly.
+ * the FK-ordered deletion logic in one place (DRY).
  *
- * Idempotent: returns `null` when the user does not exist (the
- * controller maps `null` → 404), matching the prior P2025 behaviour.
+ * No HTTP route reaches this: players cannot delete their accounts (owner
+ * ruling, Equoria-gfany), so `DELETE /api/v1/users/:id` now refuses. It
+ * remains a server-side helper for erasure an operator runs by hand.
  *
- * @param {string} id - The user id (already proven to be the caller's
- *   own id by the route's `requireSelfAccess` middleware).
+ * Idempotent: returns `null` when the user does not exist, matching the
+ * prior P2025 behaviour.
+ *
+ * @param {string} id - The user id to erase.
  * @returns {Promise<{ id: string }|null>} A minimal shape on success,
  *   `null` if the user did not exist.
  */
