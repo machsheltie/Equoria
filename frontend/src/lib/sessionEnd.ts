@@ -10,6 +10,13 @@
 
 import type { QueryClient } from '@tanstack/react-query';
 
+/**
+ * Cross-tab logout signal (Equoria-bvddn.30). SettingsPage writes then removes
+ * this key after a password change; the browser delivers a `storage` event to
+ * every OTHER tab of this origin, and AuthProvider ends the session there.
+ */
+export const FORCE_LOGOUT_STORAGE_KEY = 'equoria:forceLogoutAt';
+
 export type SessionEndReason = 'expired' | 'signed-out-elsewhere';
 
 type SessionEndListener = (reason: SessionEndReason) => void;

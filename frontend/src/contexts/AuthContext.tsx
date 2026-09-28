@@ -13,9 +13,11 @@
  * - Role-based access helpers (hasRole, hasAnyRole, isAdmin, isModerator)
  */
 
-import { createContext, useContext, ReactNode, useMemo, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useMemo, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useProfile, useLogout, useVerificationStatus, User, UserRole } from '../hooks/useAuth';
 import type { ApiError } from '../lib/api-client';
+import { endSession, FORCE_LOGOUT_STORAGE_KEY } from '../lib/sessionEnd';
 
 /**
  * Local-dev auth bypass — isolated + statically tree-shaken from production
@@ -161,6 +163,21 @@ interface AuthProviderProps {
  * Uses React Query for data fetching and caching.
  */
 export function AuthProvider({ children }: AuthProviderProps) {
+  const queryClient = useQueryClient();
+
+  // Equoria-bvddn.30: another tab changed the password, so the server has
+  // revoked this tab's session too. End it through the same path as an expired
+  // session (clear cache + /login). Only the setItem half carries a value; the
+  // removeItem half (newValue === null) is ignored.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== FORCE_LOGOUT_STORAGE_KEY || event.newValue === null) return;
+      endSession(queryClient, 'signed-out-elsewhere');
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [queryClient]);
+
   // Fetch current user profile
   const {
     data: profileData,
