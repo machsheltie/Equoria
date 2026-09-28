@@ -13,10 +13,11 @@
  *     tokens issued before now, and evicts the per-user
  *     passwordChangedAt cache (Equoria-2bbf) so the rejection takes
  *     effect on the next request (not after the 30s TTL).
- *   - Equoria-ie4wc: ASVS L1 password floor is enforced at the route
- *     validator layer; this controller enforces an 8-char minimum as a
- *     defense-in-depth check (the validator catches L1; this catches
- *     direct controller invocations and historical 8-char policy).
+ *   - Equoria-ie4wc / Equoria-bvddn.5: ASVS L1 password floor (12 chars, 4
+ *     classes) is enforced at the route validator layer via
+ *     strongPasswordChain(); this controller enforces a matching 12-char
+ *     minimum as a defense-in-depth check for direct controller
+ *     invocations that bypass the route validator.
  *   - Equoria-dv1lv / Equoria-54sk7: forgotPassword has TWO timing-side-
  *     channel mitigations. (a) BOTH branches run a fixed-cost
  *     bcrypt.compare against FAKE_BCRYPT_HASH (Equoria-54sk7) so the
@@ -122,9 +123,11 @@ export const changePassword = async (req, res, next) => {
       throw new ValidationError('Old password and new password are required');
     }
 
-    // Validate new password strength
-    if (newPassword.length < 8) {
-      throw new ValidationError('New password must be at least 8 characters long');
+    // Validate new password strength (Equoria-bvddn.5: floor raised 8 -> 12
+    // to match the route validator / register / reset-password ASVS L1
+    // policy; see file header note on this defense-in-depth check).
+    if (newPassword.length < 12) {
+      throw new ValidationError('New password must be at least 12 characters long');
     }
 
     // User must be authenticated
@@ -404,9 +407,24 @@ export const resetPassword = async (req, res, next) => {
         if (owner) {
           await revokePendingEmailChanges(tx, owner.id, owner.email);
         }
+        // Equoria-bvddn.9: the SELECT above (outside this transaction) only
+        // proves the token was unused AT READ TIME — two concurrent resets
+        // for the same token can both pass that check and both reach here.
+        // The UPDATE is now CONDITIONAL on "still unused" (WHERE ... AND
+        // "usedAt" IS NULL) so only the request that actually flips the row
+        // wins the row lock; Postgres serializes the two concurrent UPDATEs
+        // on the same row, and the loser's WHERE clause no longer matches
+        // once the winner commits. $executeRaw returns the affected row
+        // count directly — proceed only when it consumed exactly one row.
         // Equoria-nz94y: parameterized $executeRaw tagged template (resetToken.id
         // bound) replaces $executeRawUnsafe.
-        await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id}`;
+        const consumed =
+          await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id} AND "usedAt" IS NULL`;
+        if (consumed !== 1) {
+          // Lost the race — some other request already consumed this token.
+          // Same response as an invalid/expired token; do not reveal timing.
+          throw new AppError('Password reset token is invalid or expired', 400);
+        }
         await tx.user.update({
           where: { id: resetToken.userId },
           data: { password: hashedPassword, passwordChangedAt: new Date() },

@@ -126,14 +126,14 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
             )}
           </FormField>
 
-          <FormField label="New Password (min 8 characters)" htmlFor="settings-new-password">
+          <FormField label="New Password (min 12 characters)" htmlFor="settings-new-password">
             {(fieldProps) => (
               <PasswordInput
                 {...fieldProps}
                 value={newPassword}
                 onChange={(e) => onNewPasswordChange(e.target.value)}
                 autoComplete="new-password"
-                minLength={8}
+                minLength={12}
               />
             )}
           </FormField>
@@ -145,7 +145,7 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
                 value={confirmPassword}
                 onChange={(e) => onConfirmPasswordChange(e.target.value)}
                 autoComplete="new-password"
-                minLength={8}
+                minLength={12}
               />
             )}
           </FormField>

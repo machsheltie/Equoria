@@ -19,6 +19,7 @@ import {
 import { authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
 import * as authController from '../controllers/authController.mjs';
 import { getCsrfToken } from '../../../middleware/csrf.mjs';
+import { strongPasswordChain } from '../validators/strongPasswordChain.mjs';
 
 const router = express.Router();
 
@@ -38,18 +39,11 @@ router.post(
       .withMessage('Username can only contain letters, numbers, and underscores')
       .trim()
       .escape(),
-    body('password')
-      // Equoria-ie4wc: bumped min from 8 → 12 (OWASP ASVS L1). Registration
-      // already required all 4 character classes; this commit only raises
-      // the length floor here so the three password-write sites
-      // (register/reset-password.newPassword/reset-password.password) all
-      // match the same ASVS L1 policy.
-      .isLength({ min: 12, max: 128 })
-      .withMessage('Password must be between 12 and 128 characters long')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
-      .withMessage(
-        'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)',
-      ),
+    // Equoria-ie4wc: OWASP ASVS L1 — 12 char floor, 4 character classes.
+    // Equoria-bvddn.5: this chain is shared with reset-password and
+    // change-password via strongPasswordChain() so all three password-write
+    // sites enforce the identical policy from one place.
+    strongPasswordChain('password', 'Password'),
     body('firstName')
       .trim()
       .isLength({ min: 1, max: 50 })
@@ -134,22 +128,8 @@ router.post(
     // register policy: min length 12, 4 character classes (lower/upper/
     // digit/special). Existing 8-char passwords still log in (bcrypt
     // compare doesn't re-validate); users only hit this on reset.
-    body('newPassword')
-      .optional()
-      .isLength({ min: 12, max: 128 })
-      .withMessage('New password must be between 12 and 128 characters long')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
-      .withMessage(
-        'New password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)',
-      ),
-    body('password')
-      .optional()
-      .isLength({ min: 12, max: 128 })
-      .withMessage('Password must be between 12 and 128 characters long')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
-      .withMessage(
-        'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)',
-      ),
+    strongPasswordChain('newPassword', 'New password', { optional: true }),
+    strongPasswordChain('password', 'Password', { optional: true }),
     // Equoria-zued2: BOTH `newPassword` and `password` were `optional()`
     // above and a request missing both fell through to the controller's
     // "Token and new password are required" check. That's correct

@@ -18,6 +18,7 @@ import {
 import { authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
 import { profileRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import * as authController from '../controllers/authController.mjs';
+import { strongPasswordChain } from '../validators/strongPasswordChain.mjs';
 
 const router = express.Router();
 
@@ -71,13 +72,11 @@ router.post(
   authRateLimiter,
   [
     body('oldPassword').notEmpty().withMessage('Current password is required'),
-    body('newPassword')
-      .isLength({ min: 8 })
-      .withMessage('New password must be at least 8 characters long')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage(
-        'New password must contain at least one lowercase letter, one uppercase letter, and one number',
-      ),
+    // Equoria-bvddn.5: previously 8 chars / 3 classes / no max here, while
+    // register and reset-password required 12 chars / 4 classes — a player
+    // could downgrade below the ASVS L1 floor via change-password. Reuses
+    // the exact register/reset chain instead of a third, weaker copy.
+    strongPasswordChain('newPassword', 'New password'),
     handleValidationErrors,
   ],
   authController.changePassword,
