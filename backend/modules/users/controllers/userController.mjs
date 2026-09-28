@@ -32,12 +32,7 @@
  */
 
 import { getTrainableHorses } from '../../training/index.mjs';
-import {
-  getUserProgress,
-  getUserById,
-  updateUser,
-  addXpToUser,
-} from '../services/userModelService.mjs';
+import { getUserProgress, getUserById, updateUser } from '../services/userModelService.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -730,39 +725,17 @@ export const getUserCompetitionStats = async (req, res, next) => {
 };
 
 /**
- * Add XP to user
- * @route POST /api/user/:id/add-xp
+ * `addXpController` — REMOVED (Equoria-bvddn.1, audit 2026-09-25).
+ *
+ * It forwarded `req.body.amount` straight to `addXpToUser` with no bound,
+ * behind `requireSelfAccess()` only, which is ownership of an account, not
+ * authority to manufacture progression on it. See
+ * `backend/modules/users/routes/userRoutes.mjs` for the closed route (410
+ * Gone) and its full history/reasoning — mirrors the horse-XP closure under
+ * Equoria-6p398.3. `addXpToUser` itself is untouched and still used by
+ * `trainingController.mjs` and `competitionAwards.mjs` for server-computed
+ * awards; do not reintroduce a request-supplied `amount` path here.
  */
-export const addXpController = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { amount } = req.body;
-
-    logger.info(`[userController.addXp] Adding ${amount} XP to user ${id}`);
-
-    const user = await addXpToUser(id, amount);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
-    // Invalidate user caches
-    await invalidateCache(`user:progress:${id}`);
-    await invalidateCache(`user:dashboard:${id}`);
-
-    res.status(200).json({
-      success: true,
-      message: 'XP added successfully',
-      data: user,
-    });
-  } catch (error) {
-    logger.error(`[userController.addXp] Error: ${error.message}`);
-    next(error);
-  }
-};
 
 /**
  * Search users by username prefix (case-insensitive).

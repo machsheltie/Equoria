@@ -588,11 +588,13 @@ describe('PUT /api/v1/users/:id', () => {
   });
 });
 
-// ─── POST /api/v1/users/:id/add-xp — addXpController ─────────────────────────────
-// (covers addXpController lines 700-728)
+// ─── POST /api/v1/users/:id/add-xp — closed, 410 Gone (Equoria-bvddn.1) ───────────
+// `addXpController` is removed; the route now answers 410 for every
+// authenticated caller before running self-access checks. Locked by
+// userXpRouteClosed.integration.test.mjs.
 
 describe('POST /api/v1/users/:id/add-xp', () => {
-  it('returns 200 and adds XP for self', async () => {
+  it('returns 410 and applies no XP for self', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post(`/api/v1/users/${user.id}/add-xp`)
@@ -602,10 +604,8 @@ describe('POST /api/v1/users/:id/add-xp', () => {
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ amount: 50 });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    // Response shape includes either currentXP or xp depending on the addXp path taken
-    expect(res.body.data).toBeDefined();
+    expect(res.status).toBe(410);
+    expect(res.body.success).toBe(false);
   });
 
   it('returns 401 without auth', async () => {

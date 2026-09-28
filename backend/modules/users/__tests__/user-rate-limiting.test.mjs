@@ -127,7 +127,9 @@ describe('User Routes Rate Limiting Integration Tests', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ amount: 10 });
 
-      expect([200, 400, 404, 500]).toContain(response.status);
+      // Route closed 410 Gone for every authenticated caller (Equoria-bvddn.1);
+      // the limiter still runs first and the real assertion is the headers below.
+      expect(response.status).toBe(410);
       expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
     });
 

@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { param, body, validationResult } from 'express-validator';
+import { param, validationResult } from 'express-validator';
 import {
   getUserProgressAPI,
   getUserActivity,
@@ -12,7 +12,6 @@ import {
   getDashboardData,
   getUser,
   updateUserController,
-  addXpController,
   searchUsers,
   getUserCompetitionStats,
   getGameNotifications,
@@ -479,17 +478,53 @@ router.get(
   },
 );
 
-// XP management
-router.post(
-  '/:id/add-xp',
-  mutationRateLimiter,
-  [
-    authenticateToken,
-    ...validateUserId,
-    requireSelfAccess(),
-    body('amount').isInt({ min: 1 }).withMessage('Amount must be a positive integer'),
-  ],
-  addXpController,
-);
+/**
+ * POST /:id/add-xp — REMOVED (Equoria-bvddn.1, audit 2026-09-25, mirrors
+ * Equoria-6p398.3's horse-XP closure).
+ *
+ * This was gated only by `requireSelfAccess()`. The `body('amount')
+ * .isInt({ min: 1 })` rule never actually fired: the validation-result check
+ * lives inside `validateUserId`, which runs BEFORE the `amount` rule is
+ * appended to this array, so it ran against an empty error list every time.
+ * `addXpController` forwarded `req.body.amount` straight to `addXpToUser`
+ * with no bound, so any authenticated player could POST an arbitrary amount
+ * (e.g. `{"amount":2000000000}`) against their own account and have it
+ * applied verbatim — HTTP 200, `User.xp`/`level` raised on demand. User
+ * level/XP feeds public leaderboards (leaderboardService.mjs) and the
+ * trainer roster cap (trainerMarketplaceController.mjs), so this was a
+ * self-serve progression faucet, the same shape as the horse-XP faucet
+ * closed under Equoria-6p398.3.
+ *
+ * Resolution: remove the manual grant from the player API outright, same as
+ * the horse precedent — nothing server-side calls `addXpController` (no
+ * admin route, script, seed, or E2E spec) and the frontend never called this
+ * route either. User XP is SERVER-AUTHORITATIVE: the only writers are
+ * `addXpToUser`/`addXpToUserCore` (`userModelService.mjs`), called from
+ * `trainingController.mjs` for training completion and
+ * `competitionAwards.awardPlacementProgression` for competition placement —
+ * both server-computed. Owners keep `GET /:id/progress` to read XP/level.
+ *
+ * 410 (not 404) mirrors the established hard-deprecation idiom (horse
+ * award-xp, `/enter-show`). Unlike the horse router (which applies
+ * `authenticateToken` at `router.use(...)` router-level), this file applies
+ * it per-route, so `authenticateToken` is kept here — same as this file's
+ * other closed route, `DELETE /:id` (refuseAccountDeletion) — so an
+ * anonymous caller still gets 401. What's removed is `validateUserId`,
+ * `requireSelfAccess()`, and the dead `body('amount')` rule: the refusal
+ * runs before any of that validation, so a malformed id or cross-user id
+ * gets the same closed answer without running UUID or self-access checks
+ * first. `mutationRateLimiter` is kept so the response still carries
+ * standard rate-limit headers.
+ */
+router.post('/:id/add-xp', mutationRateLimiter, authenticateToken, (req, res) => {
+  logger.info(
+    '[userRoutes.POST /:id/add-xp] 410 Gone — manual XP grants removed (Equoria-bvddn.1, audit 2026-09-25)',
+  );
+  return res.status(410).json({
+    success: false,
+    message:
+      'Manual user XP awards have been removed. XP is awarded by the server from training and competition results; read progress at GET /api/v1/users/:id/progress.',
+  });
+});
 
 export default router;

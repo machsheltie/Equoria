@@ -20,7 +20,7 @@
  * 3. POST /api/v1/users - User creation with validation
  * 4. PUT /api/v1/users/:id - User updates with existence checks
  * 5. (DELETE /api/v1/users/:id — closed by Equoria-gfany, tested elsewhere)
- * 6. POST /api/v1/users/:id/add-xp - XP addition with level progression
+ * 6. POST /api/v1/users/:id/add-xp - closed, 410 Gone (Equoria-bvddn.1)
  * 7. Input validation: ID constraints, data validation, error responses
  * 8. Error scenarios: Missing users, invalid data, server errors
  * 9. Response formatting: Data transformation, field filtering, security
@@ -481,48 +481,27 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   // DELETE /api/v1/users/:id — closed (Equoria-gfany: players cannot delete
   // their accounts); locked by accountDeletionClosed.integration.test.mjs.
 
+  // POST /api/v1/users/:id/add-xp — closed (Equoria-bvddn.1: self-service XP
+  // grant was a progression faucet, mirrors the horse-XP closure under
+  // Equoria-6p398.3); locked by userXpRouteClosed.integration.test.mjs.
   describe('POST /api/v1/users/:id/add-xp', () => {
-    test('should add XP to a user and potentially level them up', async () => {
-      const xpData = { amount: 50 };
+    test('answers 410 Gone for a self-service XP grant and applies no XP', async () => {
       const response = await request(app)
         .post(`/api/v1/users/${testUser.id}/add-xp`)
-        .send(xpData)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('XP added successfully');
-      // addXpToUser returns a specific structure (see userModel lines 177-184)
-      expect(response.body.data).toMatchObject({
-        success: true,
-        xpGained: 50,
-      });
-      expect(response.body.data).toHaveProperty('currentXP');
-      expect(response.body.data).toHaveProperty('currentLevel');
-      expect(response.body.data).toHaveProperty('leveledUp');
-      expect(response.body.data).toHaveProperty('levelsGained');
-      expect(typeof response.body.data.currentXP).toBe('number');
-      expect(typeof response.body.data.currentLevel).toBe('number');
-      expect(typeof response.body.data.leveledUp).toBe('boolean');
-    });
-
-    it('should return 404 if user not found for XP addition (matches authorized user check)', async () => {
-      // Trying to add XP to a different user should return 403
-      const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
-      const response = await request(app)
-        .post(`/api/v1/users/${nonExistentUuid}/add-xp`)
         .send({ amount: 50 })
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(403);
+        .expect(410);
 
       expect(response.body.success).toBe(false);
     });
+
+    // Anonymous-caller (401) and cross-user (410) coverage lives in the
+    // dedicated regression suite, userXpRouteClosed.integration.test.mjs —
+    // this file's shared `__csrf__` fixture is bound to `authToken`'s cookie,
+    // so it cannot represent a truly anonymous request.
   });
 
   // Add more tests for other player routes if they were migrated to user routes
