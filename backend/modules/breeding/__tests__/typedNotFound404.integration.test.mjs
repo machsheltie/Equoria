@@ -39,14 +39,19 @@
  *     fires first. That is documented per assertion so a future reader does not
  *     mistake these for handler-branch coverage.
  *
- *   - The "(b) non-404 → 500" test DOES drive a hardened handler's catch with a
- *     REAL, mockless, non-404 error: PUT /grooms/:id/bonus-traits on a groom the
- *     user OWNS (so ownership passes), with a constraint-violating bonus map.
- *     `assignBonusTraits()` throws a plain `Error('Bonus trait constraints
- *     violated: ...')` — not an AppError, statusCode undefined — so the type
- *     check (`AppError.isAppError && statusCode===404`) is false and the handler
- *     correctly returns 500, proving it does not misclassify a non-404 error as
- *     a 404.
+ *   - The "(b) non-404 → 400" test DOES drive a hardened handler's catch with a
+ *     REAL, mockless, non-404 error: POST /foals/:foalId/enrichment on a foal
+ *     the user OWNS (so ownership passes), completing the same day-0 activity
+ *     twice. `completeEnrichmentActivity()`'s anti-farming guard throws a plain
+ *     `Error('Activity "..." already completed for day 0.')` — not an
+ *     AppError, statusCode undefined — so the type check
+ *     (`AppError.isAppError && statusCode===404`) is false and the handler
+ *     correctly returns 400 via its own 'already completed' branch, proving it
+ *     does not misclassify a non-404 error as a 404. (Equoria-bvddn.3, audit
+ *     2026-09-25: this replaces the block's original example, PUT
+ *     /grooms/:id/bonus-traits, which is now a closed 410-Gone route and can
+ *     no longer reach that handler's catch at all — see the (b) block below
+ *     for the full account.)
  *
  * Real DB only (CLAUDE.md Principle 3). Fixtures are name-scoped `TestFixture-*`
  * and cleaned up via the helper's tracked-id scoped delete (FK order: horses &
@@ -72,6 +77,7 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
   let ownerAccessCookie; // accessToken cookie for per-user CSRF binding on mutations
   let ownedHorse; // an adult horse owned by `owner` (used for owned-path probes)
   let ownedGroom; // a groom owned by `owner`
+  let ownedFoal; // a day-0 foal owned by `owner` (used by the (b) non-404 probe)
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -97,6 +103,17 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
         sessionRate: 15.0,
         userId: owner.id,
       },
+    });
+
+    // Equoria-bvddn.3: day-0 foal for the (b) non-404 probe (POST
+    // /foals/:foalId/enrichment, completeFoalEnrichment). dateOfBirth = now
+    // -> getHorseAgeDays() = 0, inside the enrichment window (days 0-6) and
+    // matching the day-0 activity list in foalModel.mjs's getAvailableActivities.
+    ownedFoal = await createTestHorse({
+      name: `TestFixture-pwjs5-foal-${ts}`,
+      userId: owner.id,
+      age: 0,
+      dateOfBirth: new Date(),
     });
   }, 120000);
 
@@ -230,54 +247,73 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
   //     ===404`, which runs FIRST in every hardened catch) must yield control to
   //     the handler's other status branches for any non-AppError error.
   //
-  //     We drive this mocklessly: an OWNED groom (ownership middleware passes) +
-  //     a constraint-violating bonus map. assignBonusTraits() throws a PLAIN
-  //     Error('Bonus trait constraints violated: ...') — NOT an AppError,
-  //     statusCode undefined. updateGroomBonusTraits's catch evaluates the
-  //     type-404 branch (false → does NOT 404), then its dedicated
-  //     'constraints violated' branch → 400. The decisive contract this locks
-  //     in: the type-based 404 branch does not over-match a non-AppError into a
-  //     404; the error is classified by its real (non-404) status.
+  //     Equoria-bvddn.3 (audit 2026-09-25) closed PUT /grooms/:id/bonus-traits
+  //     (410 Gone for every caller — it let any groom owner assign arbitrary
+  //     bonus traits with no earning check, which also unlocked the rare-trait
+  //     booster perk for free; see groomBonusTraitsRouteClosed.integration.
+  //     test.mjs for that regression suite). That route used to be this
+  //     block's only example, but it is now unreachable before
+  //     `updateGroomBonusTraits`'s type-based catch runs at all, so it can no
+  //     longer prove this guarantee. Per CLAUDE.md (never reduce coverage to
+  //     make an unrelated change convenient), the example below replaces it
+  //     with a DIFFERENT still-open, HTTP-reachable Equoria-4xwyi-hardened
+  //     handler that exercises the identical catch shape:
+  //     `foalController.completeFoalEnrichment` (foalController.mjs:257-281).
+  //
+  //     We drive this mocklessly: an OWNED foal (ownership middleware passes,
+  //     day 0 of its enrichment window) completes the SAME day-0 activity
+  //     twice via POST /foals/:foalId/enrichment. The first call succeeds; the
+  //     second reaches completeEnrichmentActivity's anti-farming guard
+  //     (foalModel.mjs:266-278), which throws a PLAIN
+  //     Error('Activity "..." already completed for day 0.') — NOT an
+  //     AppError, statusCode undefined. completeFoalEnrichment's catch
+  //     evaluates the type-404 branch (false → does NOT 404, foalController.mjs
+  //     :265-270), then its dedicated 'already completed' branch → 400
+  //     (:271-278). The decisive contract this locks in: the type-based 404
+  //     branch does not over-match a non-AppError into a 404; the error is
+  //     classified by its real (non-404) status.
   //
   //     NOTE on why this is 400 and not a bare 500: every non-404 error
   //     reachable from REAL DB state on an OWNED resource through these handlers
   //     carries a string one of the retained 400 branches matches (here
-  //     'constraints violated'). The bare-500 fail-closed path requires a truly
+  //     'already completed'). The bare-500 fail-closed path requires a truly
   //     unexpected fault (DB outage / import failure) that cannot be triggered
   //     without injecting one — i.e. a mock, which CLAUDE.md Principle 3 forbids.
   //     Asserting the honest reachable outcome (non-404 → 400, never 404) is the
   //     correct mockless sentinel for "the type-check does not over-match".
-  //
-  //     Equoria-bvddn.3 (audit 2026-09-25): PUT /grooms/:id/bonus-traits is now
-  //     closed (410 Gone) for every authenticated caller — it let any groom
-  //     owner assign arbitrary bonus traits with no earning check, which also
-  //     unlocked the rare-trait booster perk for free. The route now answers
-  //     before `updateGroomBonusTraits` (and therefore its type-based 404
-  //     branch) is ever reached, so this suite can no longer exercise that
-  //     handler's non-404-vs-404 classification over HTTP. The test below
-  //     instead pins the closed-route contract: 410, not 404, for every body —
-  //     the constraint-violating body that used to reach the 400 branch now
-  //     gets the same closed answer as any other. See
-  //     groomBonusTraitsRouteClosed.integration.test.mjs for the full closure
-  //     regression suite.
   // ===================================================================
   describe('(b) non-404 error in a hardened handler is NOT masked as 404', () => {
-    it('PUT /grooms/:id/bonus-traits (owned groom, constraint-violating bonus) → 410, NOT 404 (route closed, Equoria-bvddn.3)', async () => {
-      const csrf = await ownerCsrf();
-      const res = await request(app)
-        .put(`/api/v1/grooms/${ownedGroom.id}/bonus-traits`)
+    it('POST /foals/:foalId/enrichment (owned foal, activity repeated same day) → 400, NOT 404 (completeFoalEnrichment)', async () => {
+      // First completion of the day-0 activity succeeds and records it in
+      // foal_training_history (foalModel.mjs's completeEnrichmentActivity).
+      const firstCsrf = await ownerCsrf();
+      const firstRes = await request(app)
+        .post(`/api/v1/foals/${ownedFoal.id}/enrichment`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${ownerToken}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        // 5 is far above MAX_TRAIT_BONUS (0.3). Under the old (vulnerable)
-        // contract this reached validateBonusTraits() and got 400. Under the
-        // closed contract the route refuses before validation runs at all.
-        .send({ bonusTraits: { TestFixtureTrait: 5 } });
+        .set('Cookie', firstCsrf.cookieHeader)
+        .set('X-CSRF-Token', firstCsrf.csrfToken)
+        .send({ activity: 'gentle_touch' });
+      expect(firstRes.status).toBe(200);
 
+      // Repeating the SAME day-0 activity hits the anti-farming guard: a
+      // plain Error('... already completed for day 0.'), not an AppError.
+      const secondCsrf = await ownerCsrf();
+      const res = await request(app)
+        .post(`/api/v1/foals/${ownedFoal.id}/enrichment`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .set('Cookie', secondCsrf.cookieHeader)
+        .set('X-CSRF-Token', secondCsrf.csrfToken)
+        .send({ activity: 'gentle_touch' });
+
+      // The decisive assertion: a non-AppError error is classified by its real
+      // (non-404) status — here 400 — and is NEVER masked as a 404 by the
+      // type-based branch that runs first.
       expect(res.status).not.toBe(404);
-      expect(res.status).toBe(410);
+      expect(res.status).toBe(400);
       expect(res.body).toMatchObject({ success: false });
+      expect(String(res.body.message)).toContain('already completed');
     });
   });
 });
