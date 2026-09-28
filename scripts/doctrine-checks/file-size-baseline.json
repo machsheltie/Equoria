@@ -47,7 +47,6 @@
   "backend/utils/cacheHelper.mjs": 696,
   "backend/utils/competitionLogic.mjs": 606,
   "backend/utils/fieldSelectionHelper.mjs": 690,
-  "backend/utils/horseAgingSystem.mjs": 615,
   "backend/utils/traitDiscovery.mjs": 610,
   "backend/utils/traitEffects.mjs": 707,
   "backend/utils/traitEvaluation.mjs": 609,

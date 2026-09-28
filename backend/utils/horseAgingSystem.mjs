@@ -32,7 +32,6 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { evaluateEpigeneticTagsFromFoalTasks } from './traitEvaluation.mjs';
-import { evaluateTraitMilestones, checkMilestoneEligibility } from './milestoneTraitEvaluator.mjs';
 import {
   evaluateEnhancedMilestone,
   DEVELOPMENTAL_WINDOWS,
@@ -262,98 +261,21 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
       }
     }
 
-    // Enhanced milestone trait evaluation (ages 2 and 3) - New comprehensive system
-    const additionalMilestoneAges = [14, 21]; // 2, 3 years in days (1 year = 7 days)
-
-    for (const milestoneAge of additionalMilestoneAges) {
-      if (previousAge < milestoneAge && newAge >= milestoneAge) {
-        const milestoneYear = Math.floor(milestoneAge / 7);
-        logger.info(
-          `[horseAgingSystem.checkForMilestones] Horse ${horseId} reached age ${milestoneYear} milestone - evaluating traits`,
-        );
-
-        try {
-          // Get complete horse data for milestone evaluation
-          const horse = await prisma.horse.findUnique({
-            where: { id: horseId },
-            select: {
-              id: true,
-              name: true,
-              age: true,
-              task_log: true,
-              taskLog: true, // Legacy field
-              daysGroomedInARow: true,
-              epigeneticModifiers: true,
-              trait_milestones: true,
-            },
-          });
-
-          if (horse) {
-            // Check eligibility for milestone evaluation
-            const eligibility = checkMilestoneEligibility(horse);
-
-            if (eligibility.eligible) {
-              // Evaluate traits using new milestone system
-              const milestoneResult = evaluateTraitMilestones(horse);
-
-              if (milestoneResult.success) {
-                // Update horse with new traits and milestone completion
-                const updatedModifiers = { ...horse.epigeneticModifiers };
-
-                // Apply new traits from milestone evaluation
-                milestoneResult.traitsApplied.forEach(trait => {
-                  if (trait.epigenetic) {
-                    updatedModifiers.epigenetic = updatedModifiers.epigenetic || [];
-                    updatedModifiers.epigenetic.push({
-                      name: trait.name,
-                      type: trait.type,
-                      source: 'milestone_evaluation',
-                      milestoneAge: milestoneYear,
-                      appliedAt: new Date().toISOString(),
-                    });
-                  } else if (trait.type === 'resistance') {
-                    updatedModifiers.negative = updatedModifiers.negative || [];
-                    updatedModifiers.negative.push(trait.name);
-                  } else {
-                    updatedModifiers.positive = updatedModifiers.positive || [];
-                    updatedModifiers.positive.push(trait.name);
-                  }
-                });
-
-                // Update database with new traits and milestone completion
-                await prisma.horse.update({
-                  where: { id: horseId },
-                  data: {
-                    epigeneticModifiers: updatedModifiers,
-                    trait_milestones: milestoneResult.updatedMilestones,
-                  },
-                });
-
-                traitsAssigned = [...traitsAssigned, ...milestoneResult.traitsApplied];
-                milestonesTriggered.push(`age_${milestoneYear}_trait_evaluation`);
-
-                logger.info(
-                  `[horseAgingSystem.checkForMilestones] Milestone age ${milestoneYear}: Applied ${milestoneResult.traitsApplied.length} traits to horse ${horseId}: ${milestoneResult.traitsApplied.map(t => t.name).join(', ')}`,
-                );
-              } else {
-                logger.info(
-                  `[horseAgingSystem.checkForMilestones] Milestone age ${milestoneYear}: No traits applied to horse ${horseId} (${milestoneResult.reason})`,
-                );
-                milestonesTriggered.push(`age_${milestoneYear}_milestone_checked`);
-              }
-            } else {
-              logger.info(
-                `[horseAgingSystem.checkForMilestones] Horse ${horseId} not eligible for age ${milestoneYear} milestone evaluation`,
-              );
-            }
-          }
-        } catch (error) {
-          logger.error(
-            `[horseAgingSystem.checkForMilestones] Error in age ${milestoneYear} trait evaluation for horse ${horseId}: ${error.message}`,
-          );
-        }
-      }
-    }
+    // Age 2/3 milestone trait evaluation (14/21 real-time days) is NOT handled
+    // here. Equoria-bvddn.16: the code that used to live in this branch called
+    // prisma.horse.findUnique({ select: { task_log, trait_milestones, ... } }) —
+    // neither field exists on the Horse model (schema has `taskLog` and no
+    // `trait_milestones` column at all), so every invocation threw a
+    // PrismaClientValidationError that the surrounding try/catch swallowed
+    // into a log line. The equivalent developmental windows (8-14 real-time
+    // days = age 2, 15-21 real-time days = age 3 — see
+    // enhancedMilestoneEvaluationSystem.DEVELOPMENTAL_WINDOWS
+    // CURIOSITY_PLAY/TRUST_HANDLING) are evaluated for real by the daily
+    // `dailyMilestoneJob` cron (backend/services/jobs/dailyMilestoneJob.mjs ->
+    // processFoalMilestones -> processFoalMilestoneEvaluations below in this
+    // file -> evaluateEnhancedMilestone), which reads real Horse columns
+    // (dateOfBirth, groomAssignments) and persists to the real
+    // MilestoneTraitLog table. That path was deleted rather than repaired.
 
     // Retirement milestone (21 years = 147 days)
     if (previousAge < 147 && newAge >= 147) {

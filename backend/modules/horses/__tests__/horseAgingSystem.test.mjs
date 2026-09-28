@@ -10,14 +10,16 @@
  *   processHorseBirthdays   — horseIds array branch (returns empty when all IDs missing)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
 import {
   calculateAgeFromBirth,
   updateHorseAge,
   checkForMilestones,
   processHorseBirthdays,
+  processFoalMilestoneEvaluations,
 } from '../../../utils/horseAgingSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -307,6 +309,87 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
     expect(Array.isArray(result.milestonesTriggered)).toBe(true);
     expect(result.retirementTriggered).toBe(false);
     expect(Array.isArray(result.traitsAssigned)).toBe(true);
+  });
+});
+
+// ── Equoria-bvddn.16 — age-2/3 milestone path: dead code removed, real ────────
+// coverage lives in the enhanced-milestone cron. Before the fix, crossing the
+// 14/21-day threshold made checkForMilestones() call
+// prisma.horse.findUnique({ select: { task_log, trait_milestones } }) — neither
+// field exists on Horse — which threw a PrismaClientValidationError that the
+// surrounding try/catch swallowed into a single logger.error() call. The
+// horse's age was already persisted before this ran (updateHorseAge, line
+// ~152), so the failure was never retried.
+describe('checkForMilestones() — Equoria-bvddn.16 age-2/3 dead path removal', () => {
+  let bvUser;
+  let bvHorse;
+  const cleanup = createCleanupTracker();
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+    bvUser = await prisma.user.create({
+      data: {
+        email: `bvddn16-${ts}-${rand()}@test.com`,
+        username: `bvddn16${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'BV',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+    bvHorse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-BV16-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+        age: 2,
+        userId: bvUser.id,
+      },
+    });
+
+    cleanup.add(() => prisma.milestoneTraitLog.deleteMany({ where: { horseId: bvHorse.id } }), 'milestoneTraitLog');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-BV16-' } } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: bvUser.id } }), 'user');
+  }, 30000);
+
+  afterAll(() => cleanup.run(), 30000);
+
+  let errorSpy;
+  beforeEach(() => {
+    errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    errorSpy.mockRestore();
+  });
+
+  it('crossing the 14-day (age 2) threshold logs no error — no more swallowed Prisma failure', async () => {
+    const result = await checkForMilestones(bvHorse.id, 13, 14);
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    // The dead path is gone: it never fabricates an age_2 milestone entry.
+    expect(result.milestonesTriggered).not.toContain('age_2_trait_evaluation');
+    expect(result.milestonesTriggered).not.toContain('age_2_milestone_checked');
+  });
+
+  it('crossing the 21-day (age 3) threshold logs no error — no more swallowed Prisma failure', async () => {
+    const result = await checkForMilestones(bvHorse.id, 20, 21);
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(result.milestonesTriggered).not.toContain('age_3_trait_evaluation');
+    expect(result.milestonesTriggered).not.toContain('age_3_milestone_checked');
+  });
+
+  it('real coverage: the equivalent developmental window (8-14 real-time days = age-2) is evaluated by processFoalMilestoneEvaluations and persists a MilestoneTraitLog row', async () => {
+    const result = await processFoalMilestoneEvaluations({ specificHorseId: bvHorse.id });
+
+    expect(result.errors).toBe(0);
+    expect(result.milestonesEvaluated).toBeGreaterThanOrEqual(1);
+
+    const logs = await prisma.milestoneTraitLog.findMany({ where: { horseId: bvHorse.id } });
+    expect(logs.length).toBeGreaterThanOrEqual(1);
+    expect(logs.some(l => l.milestoneType === 'curiosity_play')).toBe(true);
   });
 });
 
