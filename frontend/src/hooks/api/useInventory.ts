@@ -15,6 +15,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi, EquippableResponse } from '@/lib/api-client';
+import { horseQueryKeys } from '@/hooks/api/useHorses';
 
 /** Stale for 60 s — items change only when user equips/unequips */
 const STALE_TIME = 60_000;
@@ -89,7 +90,10 @@ export function useEquipItem() {
     onSettled: (_data, _err, variables) => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['equippable'] });
-      queryClient.invalidateQueries({ queryKey: ['horse', variables.horseId] });
+      // Equoria-bvddn.33: the real horse-detail cache key is ['horses', id]
+      // (horseQueryKeys.detail) — ['horse', horseId] (singular) matches no
+      // cached query, so equipping tack never refreshed the horse detail page.
+      queryClient.invalidateQueries({ queryKey: horseQueryKeys.detail(variables.horseId) });
     },
   });
 }

@@ -40,7 +40,9 @@ export function useHorseGaits(
   horseId: number | string
 ): UseQueryResult<HorseGaitsResponse | null, Error> {
   return useQuery({
-    queryKey: ['horse', String(horseId), 'gaits'],
+    // Equoria-bvddn.33: normalise to Number — sibling horse-scoped keys
+    // (useConformation.ts, useConformationTitles) all key on the numeric id.
+    queryKey: ['horse', Number(horseId), 'gaits'],
     queryFn: () => horsesApi.getGaits(horseId),
     enabled: horseId !== null && horseId !== undefined && horseId !== '',
     staleTime: 5 * 60 * 1000, // 5 minutes — gait scores are permanent attributes

@@ -54,7 +54,11 @@ export function useEnterConformationShow() {
     mutationFn: (payload) => conformationShowsApi.enter(payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['competitions'] });
-      queryClient.invalidateQueries({ queryKey: ['user', 'balance'] });
+      // Equoria-bvddn.33: the balance lives under ['profile'] (useAuth.ts) —
+      // ['user', 'balance'] only matched the dead useUserBalance hook, which
+      // no component reads (see Equoria-bvddn.41). Kept symmetric with
+      // useEnterCompetition's real ['profile'] invalidation.
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({
         queryKey: ['competitions', 'conformation', 'eligibility', variables.horseId],
       });

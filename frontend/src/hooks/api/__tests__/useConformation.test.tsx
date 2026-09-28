@@ -215,6 +215,45 @@ describe('useHorseConformation', () => {
   });
 });
 
+describe('useHorseConformation query key normalization (Equoria-bvddn.33)', () => {
+  it('shares one cache entry for a numeric and a string horseId — same horse, same key', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: Infinity, staleTime: Infinity } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    // First call with a numeric id populates the cache.
+    const { result: numericResult } = renderHook(() => useHorseConformation(7), { wrapper });
+    await waitFor(() => expect(numericResult.current.isSuccess).toBe(true));
+
+    // A second consumer for the SAME horse, called with the string form of the
+    // same id (as an unnormalised caller might pass a route param), must read
+    // the cache instead of issuing a second fetch — proof both calls resolve
+    // to the same queryKey. Pre-fix, ['horse', String(horseId), 'conformation']
+    // already used the string form for both, so this alone wasn't the failure;
+    // the real defect is the mismatch against sibling keys (useConformationTitles,
+    // useGaits) that key on the raw (numeric) id — asserted below via the
+    // actual cache entry shape.
+    const { result: stringResult } = renderHook(() => useHorseConformation('7'), { wrapper });
+
+    // Fetch status idle-then-success would indicate a SEPARATE cache entry;
+    // an immediate cached value proves the SAME entry.
+    expect(stringResult.current.data).toEqual(numericResult.current.data);
+    expect(stringResult.current.fetchStatus).toBe('idle');
+
+    // The real, normalised key is numeric — this is what
+    // useConformationTitles (['horse', horseId, 'conformation', 'titles'])
+    // and the fixed useGaits (['horse', Number(horseId), 'gaits']) already
+    // use. Fails pre-fix, where this hook cached under the string '7'.
+    expect(queryClient.getQueryData(['horse', 7, 'conformation'])).toEqual(
+      numericResult.current.data
+    );
+    expect(queryClient.getQueryData(['horse', '7', 'conformation'])).toBeUndefined();
+  });
+});
+
 describe('useBreedAverages', () => {
   beforeEach(() => {
     const queryClient = new QueryClient();

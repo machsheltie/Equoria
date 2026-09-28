@@ -41,6 +41,7 @@ import {
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { useRewardToast } from '@/components/feedback';
 import type { Horse } from '@/types/breeding';
+import { horseQueryKeys } from '@/hooks/api/useHorses';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,14 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     isLoading: loadingHorses,
     error: horsesError,
   } = useQuery<Horse[]>({
-    queryKey: ['horses', userId],
+    // Equoria-bvddn.33: this reads the same session-scoped horse list every
+    // other list consumer reads (horsesApi.list() takes no userId — the
+    // cookie session determines the owner). The prior ['horses', userId] key
+    // was a cache the horse-mutation invalidations (['horses']) never
+    // touched, so the dam's pregnancy stayed stale here after breeding.
+    // Sharing horseQueryKeys.all keeps this in the same cache entry as
+    // every mutation that already invalidates the horse list.
+    queryKey: horseQueryKeys.all,
     queryFn: async () => {
       const response = await horsesApi.list();
       // Equoria-gxcxs: horse.sex from the API is already the canonical
@@ -189,8 +197,8 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
   // The foal is created 7 days later by the foaling job. We track both response
   // shapes here so older deployments that return `foal` still work.
   type BreedingMutationResult =
-    | { kind: 'pregnancy'; message: string; foalDueDate?: string }
-    | { kind: 'foal'; message: string; foalId: number };
+    | { kind: 'pregnancy'; message: string; foalDueDate?: string; damId: number; sireId: number }
+    | { kind: 'foal'; message: string; foalId: number; damId: number; sireId: number };
 
   const breedingMutation = useMutation<BreedingMutationResult, Error, void>({
     mutationFn: async () => {
@@ -208,6 +216,12 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         damId: selectedDam.id,
       });
 
+      // Carry the pair's ids on the result (not read back off component state
+      // in onSuccess) so cache invalidation always targets the horses that
+      // were actually bred.
+      const damId = selectedDam.id;
+      const sireId = selectedSire.id;
+
       // Pregnancy-flow response (current contract): backend started an in-foal
       // pregnancy on the dam. No foal exists yet.
       if (response.pregnancyStarted) {
@@ -215,6 +229,8 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
           kind: 'pregnancy',
           message: response.message || 'Breeding successful! Your mare is now in foal.',
           foalDueDate: response.foalDueDate,
+          damId,
+          sireId,
         };
       }
 
@@ -224,6 +240,8 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
           kind: 'foal',
           message: response.message || 'Breeding successful!',
           foalId: response.foal?.id ?? response.foalId!,
+          damId,
+          sireId,
         };
       }
 
@@ -233,7 +251,14 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       );
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['horses', userId] });
+      // Equoria-bvddn.33: only the dam's row changes on breed (the backend
+      // guarded UPDATE sets inFoalSinceDate/pregnancySireId on the dam only —
+      // horseFoalingController.mjs never writes the sire). Invalidate the
+      // shared list key plus the dam's own detail cache so her pregnancy
+      // status is no longer stale up to the 2-minute staleTime; the sire's
+      // detail cache is left alone because his row is unchanged.
+      queryClient.invalidateQueries({ queryKey: horseQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: horseQueryKeys.detail(data.damId) });
       queryClient.invalidateQueries({ queryKey: ['foals'] });
 
       // Build the success message — include foal due date when available.

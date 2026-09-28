@@ -38,7 +38,12 @@ export function useHorseConformation(
   horseId: number | string
 ): UseQueryResult<HorseConformation, Error> {
   return useQuery({
-    queryKey: ['horse', String(horseId), 'conformation'],
+    // Equoria-bvddn.33: normalise to Number — every other horse-scoped key in
+    // this module and useConformationShow.ts/useConformationShowExecution.ts
+    // keys on the numeric id, so a String(horseId) id here landed in a
+    // separate cache entry no ['horses']/['horse', id, ...] invalidation
+    // ever reached.
+    queryKey: ['horse', Number(horseId), 'conformation'],
     queryFn: async () => {
       const response = await horsesApi.getConformation(horseId);
       return response.conformationScores;
@@ -75,7 +80,8 @@ export function useConformationAnalysis(
   horseId: number | string
 ): UseQueryResult<ConformationAnalysis, Error> {
   return useQuery({
-    queryKey: ['horse', String(horseId), 'conformation', 'analysis'],
+    // Equoria-bvddn.33: normalise to Number, matching the sibling keys above.
+    queryKey: ['horse', Number(horseId), 'conformation', 'analysis'],
     queryFn: () => horsesApi.getConformationAnalysis(horseId),
     enabled: horseId !== null && horseId !== undefined && horseId !== '',
     staleTime: 5 * 60 * 1000,
