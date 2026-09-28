@@ -247,25 +247,6 @@ export const UI_TEXT = {
 } as const;
 
 // =============================================================================
-// Routes
-// =============================================================================
-
-export const ROUTES = {
-  home: '/',
-  login: '/login',
-  register: '/register',
-  forgotPassword: '/forgot-password',
-  resetPassword: '/reset-password',
-  verifyEmail: '/verify-email',
-  profile: '/profile',
-  horses: '/horses',
-  training: '/training',
-  competitions: '/competitions',
-  breeding: '/breeding',
-  grooms: '/grooms',
-} as const;
-
-// =============================================================================
 // API Endpoints
 // =============================================================================
 
@@ -288,7 +269,6 @@ export const API_ENDPOINTS = {
 // =============================================================================
 
 export type PasswordStrengthLevel = (typeof PASSWORD_STRENGTH.levels)[number];
-export type Route = (typeof ROUTES)[keyof typeof ROUTES];
 
 // =============================================================================
 // Zod Validation Schemas

@@ -9,6 +9,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/lib/http/apiClient';
 
 /**
  * Feature flag types
@@ -41,7 +42,14 @@ export const LOCAL_FLAGS: Record<string, boolean | string> = {
  */
 async function fetchFeatureFlags(): Promise<Record<string, boolean | string>> {
   try {
-    const response = await fetch('/api/internal/feature-flags', {
+    // Equoria-bvddn.41: this used a hardcoded relative URL, so it always hit
+    // the page's own origin — on a split frontend/backend deploy (VITE_API_URL
+    // set to a different origin than the one serving the app) it requested
+    // the wrong origin's /api/internal/feature-flags instead of the API's.
+    // Every other network call goes through apiClient.ts, whose API_BASE_URL
+    // is this same VITE_API_URL (empty string on Railway's monolithic
+    // deploy, so this is a no-op there).
+    const response = await fetch(`${API_BASE_URL}/api/internal/feature-flags`, {
       credentials: 'include',
     });
 
