@@ -66,6 +66,37 @@ export const SSE_EVENT_NAMES = [
 ] as const;
 
 /**
+ * Equoria-bvddn.34: the subset of SSE_EVENT_NAMES that change the player's
+ * balance server-side, so the nav/wallet UI (reads ['profile'] —
+ * useAuth.ts) must refetch alongside the notification list. Determined by
+ * reading each producer, not by guessing from the event name:
+ *
+ *   - horse_purchased      buyer side of marketplaceController's sale tx —
+ *                          the buyer's money decreases.
+ *   - horse_sold           seller side of the SAME tx — the seller's money
+ *                          increases (the scenario this bug was filed for).
+ *   - competition_placement showController debits the prize pool and pays
+ *                          the placing owner (`prizeWon` in the payload).
+ *   - groom_fee_unpaid     groomSalaryService debits the weekly salary from
+ *                          the owner's balance every week it succeeds; this
+ *                          event fires on the one week it does NOT (grace),
+ *                          but it is emitted from the same weekly-fee pass
+ *                          that DOES move money on every other week, so the
+ *                          balance is exactly as likely to be stale here as
+ *                          on any other week's silent debit — refresh it.
+ *
+ * Explicitly NOT included: stat_gain, foal_born, competition_stat_gain,
+ * forum_reply, club_leadership_transferred, groom_retired, groom_released —
+ * none of their producers touch User.money.
+ */
+const MONEY_EVENT_NAMES = new Set<(typeof SSE_EVENT_NAMES)[number]>([
+  'horse_purchased',
+  'horse_sold',
+  'competition_placement',
+  'groom_fee_unpaid',
+]);
+
+/**
  * Subscribe to the live event stream while the calling component is
  * mounted. No return value — its effect is query-cache invalidation.
  */
@@ -88,6 +119,15 @@ export function useEventStream(): void {
       queryClient.invalidateQueries({ queryKey: ['messages', 'unread-count'] });
     };
 
+    // Equoria-bvddn.34: a SEPARATE listener (rather than branching on
+    // event.type inside `invalidate`) so a money event's balance refresh
+    // does not depend on what shape of Event object the browser hands the
+    // callback — addEventListener('<name>', cb) always fires `cb` for that
+    // exact named frame regardless of the Event's own `type` field.
+    const invalidateBalance = () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    };
+
     // Server frames are named events (e.g. `event: stat_gain`). A named
     // EventSource event does NOT fire the generic `message` handler, so we
     // must register a listener for every concrete event type the backend
@@ -97,6 +137,9 @@ export function useEventStream(): void {
     // refetch rather than being silently dropped.
     for (const name of SSE_EVENT_NAMES) {
       source.addEventListener(name, invalidate);
+      if (MONEY_EVENT_NAMES.has(name)) {
+        source.addEventListener(name, invalidateBalance);
+      }
     }
     source.onmessage = invalidate;
 
@@ -110,6 +153,9 @@ export function useEventStream(): void {
     return () => {
       for (const name of SSE_EVENT_NAMES) {
         source.removeEventListener(name, invalidate);
+        if (MONEY_EVENT_NAMES.has(name)) {
+          source.removeEventListener(name, invalidateBalance);
+        }
       }
       source.close();
     };
