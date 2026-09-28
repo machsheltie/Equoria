@@ -71,6 +71,12 @@ const MIGRATED = [
   // Pinned here so the new boundaries cannot be silently un-wrapped.
   ['modules/riders/controllers/riderController.mjs', { wrapped: 3, totalTx: 3 }],
   ['modules/trainers/controllers/trainerMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
+  // Equoria-bvddn.8: assignTrainer and dismissTrainer became transactional —
+  // read-then-write races (both concurrent assign requests passing the
+  // "no active assignment" read) could leave one trainer with two
+  // simultaneously-active assignments. Mirrors riderController.mjs's
+  // Equoria-6p398.6 fix. Pinned so neither can be silently un-wrapped.
+  ['modules/trainers/controllers/trainerController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   // createShow wrapped; executeClosedShows' 1 remaining executor-path
