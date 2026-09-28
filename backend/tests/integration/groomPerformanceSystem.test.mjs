@@ -202,7 +202,18 @@ describe('Groom Performance System', () => {
   });
 
   describe('API Endpoints', () => {
-    it('should record performance via API', async () => {
+    // Equoria-bvddn.6 (audit 2026-09-25): POST /record let any authenticated
+    // owner author fabricated bondGain/taskSuccess/playerRating values,
+    // feeding GET /top's reputationScore ranking with zero real play. OLD
+    // CONTRACT (pre-fix): a well-formed body returned 201 and persisted the
+    // submitted values verbatim. NEW CONTRACT: the route is closed — every
+    // authenticated caller gets 410 Gone and no GroomPerformanceRecord row is
+    // created. See groomPerformanceRouteClosed.integration.test.mjs for the
+    // full regression suite. Real performance recording now happens only via
+    // processInteractionWithPerformance (enhancedGroomInteractions.mjs),
+    // which calls recordGroomPerformance() server-side with server-derived
+    // values, exercised directly above in 'Performance Recording'.
+    it('returns 410 Gone for POST /record (manual recording removed)', async () => {
       const response = await request(app)
         .post('/api/v1/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
@@ -220,10 +231,8 @@ describe('Groom Performance System', () => {
           playerRating: 5,
         });
 
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('id');
-      expect(response.body.data.interactionType).toBe('enrichment');
+      expect(response.status).toBe(410);
+      expect(response.body.success).toBe(false);
     });
 
     it('should get groom performance summary', async () => {
@@ -343,8 +352,14 @@ describe('Groom Performance System', () => {
       await prisma.user.deleteMany({ where: { id: otherUser.id } });
     });
 
-    it('should validate input parameters', async () => {
-      // Test invalid groom ID
+    // Equoria-bvddn.6: this test used to exercise the route's own
+    // express-validator body checks (invalid groomId type, out-of-range
+    // bondGain, out-of-range playerRating), each expecting 400. The route now
+    // closes with 410 before any body validation runs, so every body -
+    // malformed or not - gets the same closed answer. Kept as three cases to
+    // preserve the intent (closure applies regardless of body shape).
+    it('returns 410 Gone for every body shape (route closes before validation)', async () => {
+      // Previously invalid groom ID -> 400 from the shape validator.
       const response1 = await request(app)
         .post('/api/v1/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
@@ -356,10 +371,10 @@ describe('Groom Performance System', () => {
           interactionType: 'grooming',
         });
 
-      expect(response1.status).toBe(400);
+      expect(response1.status).toBe(410);
       expect(response1.body.success).toBe(false);
 
-      // Test invalid bond gain
+      // Previously out-of-range bond gain -> 400 from the shape validator.
       const response2 = await request(app)
         .post('/api/v1/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
@@ -369,13 +384,13 @@ describe('Groom Performance System', () => {
         .send({
           groomId: testGroom.id,
           interactionType: 'grooming',
-          bondGain: 15, // Too high
+          bondGain: 15, // Too high under the old shape validator
         });
 
-      expect(response2.status).toBe(400);
+      expect(response2.status).toBe(410);
       expect(response2.body.success).toBe(false);
 
-      // Test invalid player rating
+      // Previously out-of-range player rating -> 400 from the shape validator.
       const response3 = await request(app)
         .post('/api/v1/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
@@ -385,10 +400,10 @@ describe('Groom Performance System', () => {
         .send({
           groomId: testGroom.id,
           interactionType: 'grooming',
-          playerRating: 6, // Too high (max is 5)
+          playerRating: 6, // Too high under the old shape validator (max was 5)
         });
 
-      expect(response3.status).toBe(400);
+      expect(response3.status).toBe(410);
       expect(response3.body.success).toBe(false);
     });
   });

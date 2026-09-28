@@ -5,15 +5,15 @@
  */
 
 import express from 'express';
-import { body, param, query } from 'express-validator';
+import { param, query } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import {
   requireOwnership,
   findOwnedResource as _findOwnedResource,
 } from '../../../middleware/ownership.mjs';
 import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
+import logger from '../../../utils/logger.mjs';
 import {
-  recordPerformance,
   getGroomPerformance,
   getTopPerformers,
   getPerformanceConfig,
@@ -26,39 +26,45 @@ const router = express.Router();
 router.use(authenticateToken);
 
 /**
- * POST /api/groom-performance/record
- * Record a groom performance interaction
+ * POST /api/groom-performance/record — REMOVED (Equoria-bvddn.6, audit
+ * 2026-09-25, mirrors the Equoria-6p398.3 / Equoria-bvddn.1 / Equoria-bvddn.3
+ * closed-route precedent).
+ *
+ * `recordPerformance` only checked the SHAPE/RANGE of the submitted
+ * bondGain/taskSuccess/wellbeingImpact/playerRating (express-validator
+ * bounds, formerly on this route) — it never checked that the values came
+ * from a real groom/horse interaction. Any authenticated owner of a groom
+ * could POST fabricated performance values straight into
+ * GroomPerformanceRecord, which feeds GET /top's reputationScore ranking
+ * (groomPerformanceService.mjs getTopPerformingGrooms), placing an
+ * unearned groom at the top.
+ *
+ * Resolution: remove the write from the player API outright. No caller
+ * exists to preserve: the frontend never calls this route (frontend/src has
+ * no reference to groom-performance), and the real interaction flow already
+ * writes performance records server-side with server-derived values —
+ * processInteractionWithPerformance (enhancedGroomInteractions.mjs) computes
+ * bondGain/taskSuccess/wellbeingImpact from the actual interaction effects
+ * and calls recordGroomPerformance() directly (the service function, not
+ * this route) fire-and-forget. That real path is untouched by this closure.
+ * GET routes on this router (config, top, groom/:id, analytics/:id) are
+ * read-only and were never part of the exploit, so they are untouched too.
+ *
+ * 410 (not 404) mirrors the established hard-deprecation idiom.
+ * `authenticateToken` runs first (router.use above), so an anonymous caller
+ * still gets 401.
  */
-router.post(
-  '/record',
-  [
-    body('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
-    body('horseId').optional().isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('interactionType')
-      .isString()
-      .isLength({ min: 1, max: 50 })
-      .withMessage('Interaction type must be a valid string'),
-    body('bondGain')
-      .optional()
-      .isFloat({ min: -10, max: 10 })
-      .withMessage('Bond gain must be between -10 and 10'),
-    body('taskSuccess').optional().isBoolean().withMessage('Task success must be a boolean'),
-    body('wellbeingImpact')
-      .optional()
-      .isFloat({ min: -10, max: 10 })
-      .withMessage('Wellbeing impact must be between -10 and 10'),
-    body('duration')
-      .optional()
-      .isInt({ min: 0, max: 1440 })
-      .withMessage('Duration must be between 0 and 1440 minutes'),
-    body('playerRating')
-      .optional()
-      .isInt({ min: 1, max: 5 })
-      .withMessage('Player rating must be between 1 and 5'),
-  ],
-  handleValidationErrors,
-  recordPerformance,
-);
+router.post('/record', (req, res) => {
+  logger.info(
+    '[groomPerformanceRoutes.POST /record] 410 Gone — player-authored performance records removed (Equoria-bvddn.6, audit 2026-09-25)',
+  );
+  return res.status(410).json({
+    success: false,
+    message:
+      'Manual performance recording has been removed. Performance is recorded automatically from real groom interactions.',
+    data: null,
+  });
+});
 
 /**
  * GET /api/groom-performance/groom/:groomId

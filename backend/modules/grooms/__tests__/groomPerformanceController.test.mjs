@@ -184,9 +184,20 @@ describe('GET /api/groom-performance/analytics/:groomId', () => {
 });
 
 // ─── POST /api/groom-performance/record ──────────────────────────────────────
+//
+// Equoria-bvddn.6 (audit 2026-09-25): this route let any authenticated owner
+// POST fabricated bondGain/taskSuccess/playerRating values straight into
+// GroomPerformanceRecord, which feed GET /top's reputationScore ranking. OLD
+// CONTRACT (pre-fix): a well-formed body returned 201 and persisted the
+// submitted values verbatim; a body missing required fields returned 400.
+// NEW CONTRACT: the route is closed — every authenticated caller gets 410
+// Gone before body validation runs, regardless of body content, and no
+// GroomPerformanceRecord row is created. See
+// groomPerformanceRouteClosed.integration.test.mjs for the full regression
+// suite (410 for owner + anonymous 401 + GET /top still 200).
 
 describe('POST /api/groom-performance/record', () => {
-  it('returns 201 when recording valid performance for owned groom', async () => {
+  it('returns 410 Gone for a well-formed body (manual recording removed)', async () => {
     const res = await request(app)
       .post('/api/v1/groom-performance/record')
       .set('Origin', ORIGIN)
@@ -200,11 +211,11 @@ describe('POST /api/groom-performance/record', () => {
         taskSuccess: true,
       });
 
-    expect(res.status).toBe(201);
-    expect(res.body.success).toBe(true);
+    expect(res.status).toBe(410);
+    expect(res.body.success).toBe(false);
   });
 
-  it('returns 400 when groomId is missing', async () => {
+  it('returns 410 Gone even for a body missing required fields (route closes before validation)', async () => {
     const res = await request(app)
       .post('/api/v1/groom-performance/record')
       .set('Origin', ORIGIN)
@@ -213,7 +224,7 @@ describe('POST /api/groom-performance/record', () => {
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ interactionType: 'grooming' });
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(410);
     expect(res.body.success).toBe(false);
   });
 
