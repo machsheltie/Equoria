@@ -34,6 +34,9 @@ vi.mock('./pages/ForgotPasswordPage', () => ({
 vi.mock('./pages/ResetPasswordPage', () => ({
   default: () => <div data-testid="reset-password-page">Reset</div>,
 }));
+vi.mock('./pages/OnboardingPage', () => ({
+  default: () => <div data-testid="onboarding-page">Onboarding</div>,
+}));
 vi.mock('@/components/layout/PageBackground', () => ({
   PageBackground: () => null,
   usePageBackground: () => ({}),
@@ -137,6 +140,16 @@ describe('App Route Protection (Story 8.1)', () => {
       expect(await screen.findByTestId('login-page')).toBeInTheDocument();
       expect(screen.queryByTestId('horse-detail-page')).not.toBeInTheDocument();
     });
+
+    // Equoria-bvddn.36: /onboarding was mounted outside ProtectedRoute, so a
+    // logged-out visitor could walk the whole wizard and only fail with a 401
+    // on submit.
+    it('redirects unauthenticated user from /onboarding to /login', async () => {
+      mockUseAuth.mockReturnValue(makeAuthState({ isAuthenticated: false }));
+      renderApp('/onboarding');
+      expect(await screen.findByTestId('login-page')).toBeInTheDocument();
+      expect(screen.queryByTestId('onboarding-page')).not.toBeInTheDocument();
+    });
   });
 
   describe('Protected routes — render content for authenticated users', () => {
@@ -162,6 +175,22 @@ describe('App Route Protection (Story 8.1)', () => {
       mockUseAuth.mockReturnValue(makeAuthState(authenticatedState));
       renderApp('/horses/42');
       expect(await screen.findByTestId('horse-detail-page')).toBeInTheDocument();
+    });
+
+    // Equoria-bvddn.36: wrapping /onboarding in ProtectedRoute must not break
+    // the post-registration flow — a freshly registered, signed-in player
+    // (completedOnboarding: false, onboardingStep: 0) still lands on the
+    // wizard when OnboardingGuard sends them there.
+    it('renders /onboarding for an authenticated freshly-registered user', async () => {
+      mockUseAuth.mockReturnValue(
+        makeAuthState({
+          ...authenticatedState,
+          user: { ...authenticatedState.user, completedOnboarding: false, onboardingStep: 0 },
+        })
+      );
+      renderApp('/onboarding');
+      expect(await screen.findByTestId('onboarding-page')).toBeInTheDocument();
+      expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
     });
   });
 

@@ -64,8 +64,20 @@ const App = () => (
               </Suspense>
               <Suspense fallback={<GallopingLoader />}>
                 <Routes>
+                  {/* Equoria-bvddn.36: requires auth (no DashboardLayout nav shell) —
+                      a logged-out visitor must not be able to walk the wizard and
+                      only fail with a 401 on submit. OnboardingGuard still does the
+                      post-registration redirect into this route for an already
+                      signed-in player. */}
+                  <Route
+                    path="/onboarding"
+                    element={
+                      <ProtectedRoute>
+                        <OnboardingPage />
+                      </ProtectedRoute>
+                    }
+                  />
                   {/* Public routes — no nav shell */}
-                  <Route path="/onboarding" element={<OnboardingPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/verify-email" element={<VerifyEmailPage />} />

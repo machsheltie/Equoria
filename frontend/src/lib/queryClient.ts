@@ -13,7 +13,22 @@
  */
 
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+import type { ApiError } from './http/types';
 import { endSession, hasCachedSession, isSessionExpiredError } from './sessionEnd';
+
+/**
+ * Equoria-bvddn.37: the default retry (3x for every error, including 4xx)
+ * turned an expired session into a refresh-endpoint storm — each retried 401
+ * fired another refresh attempt, which could also trip the auth rate limit,
+ * and stacked ~7s of retry delay onto the /login redirect. A 4xx is the
+ * server's answer, not a transient failure: retrying it can never succeed.
+ * Network errors and 5xx (statusCode 0 or >= 500) still get up to 3 retries.
+ */
+function shouldRetry(failureCount: number, error: unknown): boolean {
+  const statusCode = (error as ApiError | undefined)?.statusCode;
+  if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) return false;
+  return failureCount < 3;
+}
 
 export function createAppQueryClient(): QueryClient {
   const handleError = (error: unknown) => {
@@ -23,6 +38,9 @@ export function createAppQueryClient(): QueryClient {
   };
 
   const client: QueryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: shouldRetry },
+    },
     queryCache: new QueryCache({ onError: handleError }),
     mutationCache: new MutationCache({ onError: handleError }),
   });
