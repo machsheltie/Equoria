@@ -24,7 +24,11 @@ import {
 // getStableLevel via the users barrel (cross-module); shared roster-cap error.
 import { getRiderRosterCap } from '../config/riderConfig.mjs';
 import { getStableLevel } from '../../users/index.mjs';
-import { RosterCapExceededError } from '../../../errors/index.mjs';
+import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
+// Equoria-bvddn.19: remove the hired offer INSIDE the hire transaction via a
+// compare-and-swap on the persisted offer list, instead of a post-commit
+// read-filter-write against a pre-transaction snapshot.
+import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
 
 const STAFF_TYPE = 'rider';
 
@@ -340,6 +344,27 @@ export async function hireRiderFromMarketplace(req, res) {
             description: `Hired rider ${rider.firstName} ${rider.lastName}`,
             metadata: { riderId: rider.id, marketplaceId },
           });
+
+          // Equoria-bvddn.19: remove the hired offer from the persisted list
+          // INSIDE this transaction, compare-and-swapped against the exact
+          // `offers` snapshot read before the transaction opened. If a
+          // concurrent hire (same offer, a different offer, or a marketplace
+          // refresh) already changed the row, zero rows match and the whole
+          // hire — rider.create, debit, ledger — rolls back rather than
+          // double-charging or resurrecting an already-hired offer.
+          const updatedOffers = offers.filter((_, i) => i !== riderIndex);
+          const offerClaim = await removeMarketplaceOfferCas(tx, {
+            userId,
+            staffType: STAFF_TYPE,
+            expectedOffers: offers,
+            updatedOffers,
+          });
+          if (offerClaim !== 1) {
+            throw new StaleOfferError(
+              'This rider was already hired or the marketplace changed. Please refresh and try again.',
+            );
+          }
+
           const userAfter = { money: moneyAfter };
           return { newRider: rider, updatedUser: userAfter };
         }),
@@ -363,15 +388,15 @@ export async function hireRiderFromMarketplace(req, res) {
           data: null,
         });
       }
+      // Equoria-bvddn.19: the in-tx CAS lost the offer to a concurrent hire or
+      // refresh. rider.create + debit + ledger rolled back atomically (no
+      // orphan rider, no charge). Surface as 409 so the client re-fetches the
+      // marketplace before retrying.
+      if (txErr instanceof StaleOfferError) {
+        return res.status(409).json({ success: false, message: txErr.message, data: null });
+      }
       throw txErr;
     }
-
-    // Remove hired rider from persisted offer list
-    const updatedOffers = offers.filter((_, i) => i !== riderIndex);
-    await prisma.staffMarketplaceState.update({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-      data: { offers: updatedOffers },
-    });
 
     logger.info(`[riderMarketplace] User ${userId} hired rider ${newRider.id} for $${hiringCost}`);
 

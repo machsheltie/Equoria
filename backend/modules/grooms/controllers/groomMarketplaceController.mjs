@@ -26,6 +26,11 @@ import {
 } from '../../economy/index.mjs';
 import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 import { CapExceededError } from '../groomErrors.mjs';
+// Equoria-bvddn.19: remove the hired offer INSIDE the hire transaction via a
+// compare-and-swap on the persisted offer list, instead of a post-commit
+// read-filter-write against a pre-transaction snapshot.
+import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
+import { StaleOfferError } from '../../../errors/index.mjs';
 // Equoria-m9lz1: draw the groom's HIDDEN retirement age at hire, inside the
 // hire transaction, so a hired groom always has a schedule and a rolled-back
 // hire leaves no orphan schedule row.
@@ -375,6 +380,28 @@ export async function hireFromMarketplace(req, res) {
           }
 
           const userUpdate = { money: moneyAfter };
+
+          // Equoria-bvddn.19: remove the hired offer from the persisted list
+          // INSIDE this transaction, compare-and-swapped against the exact
+          // `offers` snapshot read before the transaction opened. If a
+          // concurrent hire (same offer, a different offer, or a marketplace
+          // refresh) already changed the row, zero rows match and the whole
+          // hire — groom.create, retirement schedule, engagement, debit —
+          // rolls back rather than double-charging or resurrecting an
+          // already-hired offer.
+          const updatedOffers = offers.filter((_, i) => i !== groomIndex);
+          const offerClaim = await removeMarketplaceOfferCas(tx, {
+            userId,
+            staffType: STAFF_TYPE,
+            expectedOffers: offers,
+            updatedOffers,
+          });
+          if (offerClaim !== 1) {
+            throw new StaleOfferError(
+              'This groom was already hired or the marketplace changed. Please refresh and try again.',
+            );
+          }
+
           // Equoria-26wuo: migrated to recordTransactionTx(tx, opts). tx is
           // structurally required (first arg); the service reads the
           // authoritative balanceAfter inside the same tx, so the caller no
@@ -413,15 +440,15 @@ export async function hireFromMarketplace(req, res) {
           data: { required: hiringCost },
         });
       }
+      // Equoria-bvddn.19: the in-tx CAS lost the offer to a concurrent hire or
+      // refresh. groom.create + debit + ledger rolled back atomically (no
+      // orphan groom, no charge). Surface as 409 so the client re-fetches the
+      // marketplace before retrying.
+      if (txErr instanceof StaleOfferError) {
+        return res.status(409).json({ success: false, message: txErr.message, data: null });
+      }
       throw txErr;
     }
-
-    // Remove hired groom from persisted offer list
-    const updatedOffers = offers.filter((_, i) => i !== groomIndex);
-    await prisma.staffMarketplaceState.update({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-      data: { offers: updatedOffers },
-    });
 
     logger.info(`[groomMarketplace] User ${userId} hired groom ${newGroom.id} for $${hiringCost}`);
 
