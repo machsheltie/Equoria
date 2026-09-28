@@ -360,8 +360,17 @@ describe('Groom Bonus Traits System', () => {
       });
     });
 
-    it('should update groom bonus traits via API', async () => {
-      const newBonusTraits = {
+    // Equoria-bvddn.3 (audit 2026-09-25): PUT /:id/bonus-traits let any owner
+    // assign arbitrary bonus traits with no earning check (bond/coverage),
+    // which also unlocked the rare-trait booster perk for free. OLD CONTRACT
+    // (pre-fix): a well-formed body returned 200 and persisted the submitted
+    // traits verbatim. NEW CONTRACT: the route is closed — every authenticated
+    // caller gets 410 Gone and Groom.bonusTraitMap is never written by this
+    // route, regardless of body content. See
+    // groomBonusTraitsRouteClosed.integration.test.mjs for the full regression
+    // suite (410 for owner + anonymous 401 + GET still 200).
+    it('returns 410 Gone for PUT (bonus-trait assignment is closed)', async () => {
+      const attemptedBonusTraits = {
         confident: 0.25,
         athletic: 0.15,
       };
@@ -372,24 +381,27 @@ describe('Groom Bonus Traits System', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ bonusTraits: newBonusTraits });
+        .send({ bonusTraits: attemptedBonusTraits });
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.bonusTraits).toEqual(newBonusTraits);
+      expect(response.status).toBe(410);
+      expect(response.body.success).toBe(false);
 
-      // Verify in database
+      // Verify no write occurred — the groom's original bonus traits are unchanged.
       const updatedGroom = await prisma.groom.findUnique({
         where: { id: testGroom.id },
         select: { bonusTraitMap: true },
       });
 
-      expect(updatedGroom.bonusTraitMap).toEqual(newBonusTraits);
+      expect(updatedGroom.bonusTraitMap).toEqual({
+        sensitive: 0.2,
+        noble: 0.1,
+        quick_learner: 0.15,
+      });
     });
 
-    it('should reject invalid bonus trait updates', async () => {
+    it('returns 410 Gone for PUT even with a constraint-violating body (route closes before validation)', async () => {
       const invalidBonusTraits = {
-        trait1: 0.35, // Exceeds 30% limit
+        trait1: 0.35, // Would have exceeded the 30% limit under the old contract
       };
 
       const response = await request(app)
@@ -400,9 +412,8 @@ describe('Groom Bonus Traits System', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ bonusTraits: invalidBonusTraits });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(410);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Bonus trait constraints violated');
     });
 
     it('should require authentication for bonus trait endpoints', async () => {

@@ -247,9 +247,22 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
   //     without injecting one — i.e. a mock, which CLAUDE.md Principle 3 forbids.
   //     Asserting the honest reachable outcome (non-404 → 400, never 404) is the
   //     correct mockless sentinel for "the type-check does not over-match".
+  //
+  //     Equoria-bvddn.3 (audit 2026-09-25): PUT /grooms/:id/bonus-traits is now
+  //     closed (410 Gone) for every authenticated caller — it let any groom
+  //     owner assign arbitrary bonus traits with no earning check, which also
+  //     unlocked the rare-trait booster perk for free. The route now answers
+  //     before `updateGroomBonusTraits` (and therefore its type-based 404
+  //     branch) is ever reached, so this suite can no longer exercise that
+  //     handler's non-404-vs-404 classification over HTTP. The test below
+  //     instead pins the closed-route contract: 410, not 404, for every body —
+  //     the constraint-violating body that used to reach the 400 branch now
+  //     gets the same closed answer as any other. See
+  //     groomBonusTraitsRouteClosed.integration.test.mjs for the full closure
+  //     regression suite.
   // ===================================================================
   describe('(b) non-404 error in a hardened handler is NOT masked as 404', () => {
-    it('PUT /grooms/:id/bonus-traits (owned groom, constraint-violating bonus) → 400, NOT 404 (updateGroomBonusTraits)', async () => {
+    it('PUT /grooms/:id/bonus-traits (owned groom, constraint-violating bonus) → 410, NOT 404 (route closed, Equoria-bvddn.3)', async () => {
       const csrf = await ownerCsrf();
       const res = await request(app)
         .put(`/api/v1/grooms/${ownedGroom.id}/bonus-traits`)
@@ -257,20 +270,14 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
         .set('Authorization', `Bearer ${ownerToken}`)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        // 5 is far above MAX_TRAIT_BONUS (0.3): validateBonusTraits() rejects it,
-        // assignBonusTraits() throws a PLAIN Error('Bonus trait constraints
-        // violated: ...'). The body is a valid object so the route-level
-        // `body('bonusTraits').isObject()` validator passes and we reach the
-        // service throw — the path the type-based catch must NOT widen to 404.
+        // 5 is far above MAX_TRAIT_BONUS (0.3). Under the old (vulnerable)
+        // contract this reached validateBonusTraits() and got 400. Under the
+        // closed contract the route refuses before validation runs at all.
         .send({ bonusTraits: { TestFixtureTrait: 5 } });
 
-      // The decisive assertion: a non-AppError error is classified by its real
-      // (non-404) status — here 400 — and is NEVER masked as a 404 by the
-      // type-based branch that runs first.
       expect(res.status).not.toBe(404);
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(410);
       expect(res.body).toMatchObject({ success: false });
-      expect(String(res.body.message)).toContain('constraints violated');
     });
   });
 });

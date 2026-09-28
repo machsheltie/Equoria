@@ -34,7 +34,6 @@ import {
   getGroomProfile,
   getGroomAssignmentLogs,
   getGroomBonusTraits,
-  updateGroomBonusTraits,
   getGroomHorseSynergyPreview,
 } from '../controllers/groomController.mjs';
 import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
@@ -622,45 +621,51 @@ router.get(
 );
 
 /**
- * @swagger
- * /api/grooms/{id}/bonus-traits:
- *   put:
- *     summary: Update groom bonus traits
- *     tags: [Grooms]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Groom ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               bonusTraits:
- *                 type: object
- *                 description: Object mapping trait names to bonus percentages
- *     responses:
- *       200:
- *         description: Bonus traits updated successfully
- *       400:
- *         description: Invalid bonus traits
- *       404:
- *         description: Groom not found
- *       500:
- *         description: Internal server error
+ * PUT /:id/bonus-traits — REMOVED (Equoria-bvddn.3, audit 2026-09-25, mirrors
+ * Equoria-6p398.3's horse-XP closure and Equoria-bvddn.1's user-XP closure).
+ *
+ * `updateGroomBonusTraits` -> `assignBonusTraits` only checked the SHAPE of
+ * the submitted map (<=3 traits, <=0.3 bonus each,
+ * groomBonusTraitService.mjs:27-28) — it never checked the service's own
+ * earning conditions (bond >= 60, >= 75% assignment window coverage,
+ * groomBonusTraitService.mjs:29-30, enforced only inside
+ * checkBonusEligibility, :236-237). Any authenticated owner of a groom could
+ * PUT arbitrary bonus traits straight into `Groom.bonusTraitMap` with zero
+ * play — including three ultra-rare/exotic trait names at 0.3 each, which
+ * also made the groom immediately eligible for the `any-with-3-rare-bonuses`
+ * rare-trait booster perk (groomRareTraitPerks.mjs:173-181,
+ * evaluatePerkEligibility) without ever earning it.
+ *
+ * Resolution: remove the write from the player API outright. No caller
+ * exists to preserve: the frontend never calls this route (it only reads
+ * `groom.bonusTraitMap` to render GroomBonusTraitPanel), and no server code
+ * calls `assignBonusTraits` either — it is invoked only from
+ * `groomBonusTraitsController.updateGroomBonusTraits`, i.e. only from this
+ * route. The real earned-bonus path (`checkBonusEligibility`, consumed by
+ * `traitAssignmentLogic.mjs`) computes probability bonuses at trait-roll
+ * time and never writes `bonusTraitMap` — it is untouched by this closure.
+ * `assignBonusTraits` and `updateGroomBonusTraits` are left in place (still
+ * exercised directly by groomBonusTraits.test.mjs) since removing dead code
+ * is out of scope for this fix. GET /:id/bonus-traits is read-only and was
+ * never part of the exploit, so it is untouched.
+ *
+ * 410 (not 404) mirrors the established hard-deprecation idiom. `authenticateToken`
+ * is kept (this file has no router-level auth) so an anonymous caller still
+ * gets 401; what's removed is the `param('id')`/`body('bonusTraits')`
+ * validators and `requireOwnership('groom')` — the refusal runs before any
+ * of that, so a malformed id or a groom the caller doesn't own gets the same
+ * closed answer without running ownership checks first.
  */
-router.put(
-  '/:id/bonus-traits',
-  param('id').isInt().withMessage('Groom ID must be an integer'),
-  body('bonusTraits').isObject().withMessage('Bonus traits must be an object'),
-  requireOwnership('groom'),
-  updateGroomBonusTraits,
-);
+router.put('/:id/bonus-traits', authenticateToken, (req, res) => {
+  logger.info(
+    '[groomRoutes.PUT /:id/bonus-traits] 410 Gone — self-service bonus trait assignment removed (Equoria-bvddn.3, audit 2026-09-25)',
+  );
+  return res.status(410).json({
+    success: false,
+    message:
+      'Manual bonus-trait assignment has been removed. Bonus traits are earned through groom care (bond and assignment coverage) and applied automatically during trait rolls.',
+  });
+});
 
 // ===== SUB-DOMAIN SUB-ROUTERS (Equoria-8mdpc god-file split) =====
 // Mounted after the parent's foundational routes so the parent's relative
