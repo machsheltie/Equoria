@@ -1,7 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { GameTooltipProvider as TooltipProvider } from '@/components/ui/game';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createAppQueryClient } from './lib/queryClient';
 import { BrowserRouter, Routes, Route } from 'react-router';
 import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
@@ -36,7 +37,8 @@ const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 const HorseEquipPage = lazy(() => import('./pages/horses/HorseEquipPage'));
 const FoalDetailPage = lazy(() => import('./pages/FoalDetailPage'));
 
-const queryClient = new QueryClient();
+// Equoria-bvddn.29: ends a dead session (clear cache + /login) on a 401 after a failed refresh.
+const queryClient = createAppQueryClient();
 
 const App = () => (
   <ErrorBoundary fallback={<p className="text-[var(--text-primary)] p-8">Something went wrong.</p>}>

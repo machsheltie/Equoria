@@ -74,8 +74,10 @@ export function userMessageFor(error: unknown): UserFacingError {
     };
   }
 
-  // 401 — session expired. apiClient already drives the refresh/redirect flow;
-  // this copy only shows if a consumer renders the error instead of redirecting.
+  // 401 — session expired. apiClient drives the refresh; when it fails, the app
+  // QueryClient (lib/queryClient.ts) clears the cache and ProtectedRoute
+  // redirects to /login. This copy only shows if a consumer renders the error
+  // before that redirect lands.
   if (status === 401) {
     return {
       title: 'Session expired',

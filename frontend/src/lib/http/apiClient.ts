@@ -190,11 +190,13 @@ export async function fetchWithAuth<T>(
           return fetchWithAuth<T>(endpoint, options, retryCount + 1);
         }
       }
-      // Refresh failed, throw 401 error
+      // Refresh failed, throw 401 error. `sessionExpired` tells the app
+      // QueryClient (lib/queryClient.ts) to end the session (Equoria-bvddn.29).
       throw {
         message: 'Session expired. Please log in again.',
         status: 'error',
         statusCode: 401,
+        sessionExpired: true,
       } as ApiError;
     }
 

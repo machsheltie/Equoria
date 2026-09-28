@@ -9,9 +9,11 @@
  * - Redirects to /login (with session-expired message if 401) if not authenticated
  */
 
-import React, { ReactNode } from 'react';
-import { Navigate } from 'react-router';
+import React, { ReactNode, useEffect, useRef } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router';
 import { useSessionGuard } from '../../hooks/useSessionGuard';
+import { subscribeSessionEnd, type SessionEndReason } from '../../lib/sessionEnd';
+import { safeRedirectTarget } from '../../lib/safeRedirect';
 
 export interface ProtectedRouteProps {
   children: ReactNode;
@@ -29,8 +31,44 @@ const DefaultLoading: React.FC = () => (
   </div>
 );
 
+const SESSION_END_MESSAGES: Record<SessionEndReason, string> = {
+  expired: 'Your session has expired. Please log in again.',
+  'signed-out-elsewhere': 'You were signed out in another tab. Please log in again.',
+};
+
+/**
+ * Equoria-bvddn.29: when the session ends (lib/sessionEnd.ts), leave the
+ * protected page for /login and carry a same-origin return path. Only
+ * protected routes subscribe, so /login and the other public pages never
+ * redirect to themselves.
+ */
+function useSessionEndRedirect() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const locationRef = useRef(location);
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
+  useEffect(
+    () =>
+      subscribeSessionEnd((reason) => {
+        const { pathname, search, hash } = locationRef.current;
+        navigate('/login', {
+          replace: true,
+          state: {
+            from: safeRedirectTarget(pathname + search + hash, '/'),
+            message: SESSION_END_MESSAGES[reason],
+          },
+        });
+      }),
+    [navigate]
+  );
+}
+
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isLoading, shouldRedirect, redirectPath, redirectState } = useSessionGuard();
+  useSessionEndRedirect();
 
   if (isLoading) return <DefaultLoading />;
   if (shouldRedirect) return <Navigate to={redirectPath} replace state={redirectState} />;
