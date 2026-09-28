@@ -13,7 +13,7 @@
  */
 
 import logger from '../../../utils/logger.mjs';
-import { findOwnedResource } from '../../../middleware/ownership.mjs';
+import { findOwnedResource, validateBatchOwnership } from '../../../middleware/ownership.mjs';
 import {
   evolveGroomPersonality,
   evolveHorseTemperament,
@@ -21,7 +21,6 @@ import {
   analyzePersonalityStability,
   predictPersonalityEvolution,
   getPersonalityEvolutionHistory,
-  applyPersonalityEvolutionEffects,
 } from '../../horses/index.mjs';
 
 /**
@@ -314,61 +313,34 @@ export async function getPersonalityEvolutionHistoryController(req, res) {
 }
 
 /**
- * Apply personality evolution effects manually (admin function)
- * POST /api/personality-evolution/apply-effects
- */
-export async function applyPersonalityEvolutionEffectsController(req, res) {
-  try {
-    const evolutionData = req.body;
-
-    // Validate required fields
-    const requiredFields = ['entityId', 'entityType', 'evolutionType'];
-    const missingFields = requiredFields.filter(field => !evolutionData[field]);
-
-    if (missingFields.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Missing required fields: ${missingFields.join(', ')}`,
-      });
-    }
-
-    if (!['groom', 'horse'].includes(evolutionData.entityType)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid entity type. Must be "groom" or "horse"',
-      });
-    }
-
-    logger.info(
-      `[personalityEvolutionController.applyPersonalityEvolutionEffectsController] Applying evolution effects for ${evolutionData.entityType} ID: ${evolutionData.entityId}`,
-    );
-
-    const result = await applyPersonalityEvolutionEffects(evolutionData);
-
-    res.status(200).json({
-      success: true,
-      message: 'Personality evolution effects applied successfully',
-      data: result,
-    });
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionController.applyPersonalityEvolutionEffectsController] Error: ${error.message}`,
-    );
-    res.status(500).json({
-      success: false,
-      message: 'Failed to apply personality evolution effects',
-      error: error.message,
-    });
-  }
-}
-
-/**
  * Batch process personality evolution for multiple entities
  * POST /api/personality-evolution/batch-evolve
+ *
+ * Equoria-bvddn.4 (audit 2026-09-25): this previously evolved ANY entityId
+ * the caller passed with no ownership check at all — the single-horse/groom
+ * `/evolve` routes gate through `requireOwnership`, but batch-evolve called
+ * `evolveGroomPersonality`/`evolveHorseTemperament` directly. Those functions
+ * persist unconditionally (personalityEvolutionSystem.mjs:201 writes
+ * `horse.temperament` with no owner filter), so a player could rewrite a
+ * victim horse's temperament (or read a victim groom's care-quality data via
+ * the returned `result`) by naming any id they didn't own.
+ *
+ * Fix mirrors the batch-ownership pattern already used by
+ * traitDiscoveryRoutes.mjs POST /discover/batch: validate ownership for both
+ * entity types up front with `validateBatchOwnership` (one IN-clause query
+ * per type instead of N `requireOwnership` round trips), then only evolve
+ * entities the caller owns. A foreign or nonexistent id is never evolved and
+ * gets the SAME generic message this controller already uses for the
+ * single-entity 404s (`notFoundOrNotYours`) — CWE-639: it cannot be told
+ * apart from "doesn't exist", so batch-evolve cannot be used as an ownership
+ * oracle. An invalid `entityType` (defense in depth; the route's
+ * express-validator `isIn(['groom','horse'])` already rejects this over
+ * HTTP) keeps its original per-item "Invalid entity type" result untouched.
  */
 export async function batchEvolvePersonalitiesController(req, res) {
   try {
     const { entities } = req.body;
+    const userId = req.user?.id;
 
     if (!Array.isArray(entities) || entities.length === 0) {
       return res.status(400).json({
@@ -381,18 +353,60 @@ export async function batchEvolvePersonalitiesController(req, res) {
       `[personalityEvolutionController.batchEvolvePersonalitiesController] Processing batch evolution for ${entities.length} entities`,
     );
 
+    const groomIds = [
+      ...new Set(
+        entities
+          .filter(e => e.entityType === 'groom')
+          .map(e => parseInt(e.entityId, 10))
+          .filter(id => !Number.isNaN(id)),
+      ),
+    ];
+    const horseIds = [
+      ...new Set(
+        entities
+          .filter(e => e.entityType === 'horse')
+          .map(e => parseInt(e.entityId, 10))
+          .filter(id => !Number.isNaN(id)),
+      ),
+    ];
+
+    const [ownedGrooms, ownedHorses] = await Promise.all([
+      groomIds.length ? validateBatchOwnership('groom', groomIds, userId) : [],
+      horseIds.length ? validateBatchOwnership('horse', horseIds, userId) : [],
+    ]);
+    const ownedGroomIds = new Set(ownedGrooms.map(g => g.id));
+    const ownedHorseIds = new Set(ownedHorses.map(h => h.id));
+
     const results = [];
 
     for (const entity of entities) {
+      if (entity.entityType !== 'groom' && entity.entityType !== 'horse') {
+        results.push({
+          entityId: entity.entityId,
+          entityType: entity.entityType,
+          result: { success: false, error: 'Invalid entity type' },
+        });
+        continue;
+      }
+
+      const entityId = parseInt(entity.entityId, 10);
+      const owned =
+        entity.entityType === 'groom' ? ownedGroomIds.has(entityId) : ownedHorseIds.has(entityId);
+
+      if (!owned) {
+        results.push({
+          entityId: entity.entityId,
+          entityType: entity.entityType,
+          result: { success: false, error: notFoundOrNotYours(entity.entityType) },
+        });
+        continue;
+      }
+
       try {
-        let result;
-        if (entity.entityType === 'groom') {
-          result = await evolveGroomPersonality(entity.entityId);
-        } else if (entity.entityType === 'horse') {
-          result = await evolveHorseTemperament(entity.entityId);
-        } else {
-          result = { success: false, error: 'Invalid entity type' };
-        }
+        const result =
+          entity.entityType === 'groom'
+            ? await evolveGroomPersonality(entityId)
+            : await evolveHorseTemperament(entityId);
 
         results.push({
           entityId: entity.entityId,

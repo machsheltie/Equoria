@@ -11,8 +11,8 @@
  * - GET /:entityType/:entityId/stability - Analyze personality stability
  * - GET /:entityType/:entityId/predict - Predict future evolution
  * - GET /:entityType/:entityId/history - Get evolution history
- * - POST /apply-effects - Apply evolution effects (admin)
- * - POST /batch-evolve - Batch process multiple entities
+ * - POST /apply-effects - REMOVED, answers 410 (Equoria-bvddn.4: unauthorized no-op stub)
+ * - POST /batch-evolve - Batch process multiple entities (ownership-checked per entity)
  */
 
 import express from 'express';
@@ -27,7 +27,6 @@ import {
   getPersonalityStabilityController,
   predictPersonalityEvolutionController,
   getPersonalityEvolutionHistoryController,
-  applyPersonalityEvolutionEffectsController,
   batchEvolvePersonalitiesController,
 } from '../controllers/personalityEvolutionController.mjs';
 
@@ -147,53 +146,36 @@ router.get(
 );
 
 /**
- * Apply personality evolution effects manually (admin function)
- * POST /api/personality-evolution/apply-effects
+ * POST /api/personality-evolution/apply-effects — REMOVED (Equoria-bvddn.4,
+ * audit 2026-09-25).
+ *
+ * This was commented "admin function" but carried no `requireRole('admin')`
+ * (or any authorization beyond the router-level `authenticateToken`), so any
+ * authenticated player could call it directly. In practice it was already a
+ * no-op stub: `applyPersonalityEvolutionEffects`
+ * (personalityEvolutionSystem.mjs:387-423) only builds a text summary array
+ * ("Added traits: ...", "Evolution event logged") and returns
+ * `personalityUpdated: true` — it never writes to the database. Grepping the
+ * repo (source, tests, frontend) turns up no caller of this route besides its
+ * own now-removed test coverage; the two real evolution paths
+ * (`evolveGroomPersonality`/`evolveHorseTemperament`) call the same
+ * `applyPersonalityEvolutionEffects` helper function directly as an internal
+ * step, not through HTTP, so closing the route does not touch them.
+ *
+ * 410 (not 404) mirrors the established hard-deprecation idiom used for
+ * other closed no-op/dead routes in this codebase (e.g. `POST
+ * /api/v1/users/:id/add-xp`, Equoria-bvddn.1).
  */
-router.post(
-  '/apply-effects',
-  [
-    body('entityId').isInt({ min: 1 }).withMessage('Entity ID must be a positive integer'),
-    body('entityType')
-      .isIn(['groom', 'horse'])
-      .withMessage('Entity type must be either "groom" or "horse"'),
-    body('evolutionType')
-      .isIn([
-        'trait_strengthening',
-        'personality_shift',
-        'trait_acquisition',
-        'temperament_stabilization',
-        'convergence',
-      ])
-      .withMessage('Invalid evolution type'),
-    body('newTraits').optional().isArray().withMessage('New traits must be an array'),
-    body('newTraits.*')
-      .optional()
-      .isString()
-      .isLength({ min: 1, max: 100 })
-      .withMessage('Each trait must be a string between 1 and 100 characters'),
-    body('oldPersonality')
-      .optional()
-      .isString()
-      .isLength({ min: 1, max: 50 })
-      .withMessage('Old personality must be a string between 1 and 50 characters'),
-    body('newPersonality')
-      .optional()
-      .isString()
-      .isLength({ min: 1, max: 50 })
-      .withMessage('New personality must be a string between 1 and 50 characters'),
-    body('stabilityPeriod')
-      .optional()
-      .isInt({ min: 1, max: 365 })
-      .withMessage('Stability period must be between 1 and 365 days'),
-    body('effectStrength')
-      .optional()
-      .isFloat({ min: 0, max: 1 })
-      .withMessage('Effect strength must be between 0 and 1'),
-  ],
-  validateRequest,
-  applyPersonalityEvolutionEffectsController,
-);
+router.post('/apply-effects', (req, res) => {
+  logger.info(
+    '[personalityEvolutionRoutes.POST /apply-effects] 410 Gone — unauthorized no-op stub removed (Equoria-bvddn.4, audit 2026-09-25)',
+  );
+  return res.status(410).json({
+    success: false,
+    message:
+      'Manual personality evolution effect application has been removed. Evolution effects are applied automatically by the server during groom/horse evolution.',
+  });
+});
 
 /**
  * Batch process personality evolution for multiple entities

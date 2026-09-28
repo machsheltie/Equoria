@@ -19,7 +19,6 @@ import {
   getPersonalityStabilityController,
   predictPersonalityEvolutionController,
   getPersonalityEvolutionHistoryController,
-  applyPersonalityEvolutionEffectsController,
   batchEvolvePersonalitiesController,
 } from '../controllers/personalityEvolutionController.mjs';
 
@@ -291,79 +290,12 @@ describe('getPersonalityEvolutionHistoryController', () => {
   });
 });
 
-// ─── applyPersonalityEvolutionEffectsController ───────────────────────────────
-
-describe('applyPersonalityEvolutionEffectsController', () => {
-  it('returns 400 when entityId is missing', async () => {
-    const req = {
-      body: { entityType: 'groom', evolutionType: 'positive' },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await applyPersonalityEvolutionEffectsController(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-    expect(res.bodyValue.message).toMatch(/missing required fields/i);
-    expect(res.bodyValue.message).toMatch(/entityId/);
-  });
-
-  it('returns 400 when entityType is missing', async () => {
-    const req = {
-      body: { entityId: 1, evolutionType: 'positive' },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await applyPersonalityEvolutionEffectsController(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-    expect(res.bodyValue.message).toMatch(/entityType/);
-  });
-
-  it('returns 400 when evolutionType is missing', async () => {
-    const req = {
-      body: { entityId: 1, entityType: 'groom' },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await applyPersonalityEvolutionEffectsController(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-    expect(res.bodyValue.message).toMatch(/evolutionType/);
-  });
-
-  it('returns 400 when all three required fields are missing', async () => {
-    const req = {
-      body: {},
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await applyPersonalityEvolutionEffectsController(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 400 when entityType is invalid (not groom or horse)', async () => {
-    const req = {
-      body: { entityId: 1, entityType: 'dragon', evolutionType: 'positive' },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await applyPersonalityEvolutionEffectsController(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-    expect(res.bodyValue.message).toMatch(/invalid entity type/i);
-  });
-});
+// applyPersonalityEvolutionEffectsController was removed under Equoria-bvddn.4
+// (audit 2026-09-25): the route it backed answered 410 — it was commented
+// "admin function" but had no role check, and the function it called
+// (applyPersonalityEvolutionEffects) never wrote to the database anyway. See
+// backend/modules/labs/__tests__/personalityEvolutionController.integration.test.mjs
+// for the route-closure regression coverage.
 
 // ─── batchEvolvePersonalitiesController ──────────────────────────────────────
 
