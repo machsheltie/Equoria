@@ -280,10 +280,15 @@ export async function createElection(req, res) {
         .status(403)
         .json({ success: false, message: 'Only officers and presidents can create elections' });
     }
+    const startDate = new Date(startsAt);
+    const endDate = new Date(endsAt);
+    if (endDate <= startDate) {
+      return res.status(400).json({ success: false, message: 'endsAt must be after startsAt' });
+    }
     const now = new Date();
-    const status = new Date(startsAt) <= now ? 'open' : 'upcoming';
+    const status = startDate <= now ? 'open' : 'upcoming';
     const election = await prisma.clubElection.create({
-      data: { clubId, position, startsAt: new Date(startsAt), endsAt: new Date(endsAt), status },
+      data: { clubId, position, startsAt: startDate, endsAt: endDate, status },
     });
     return res.status(201).json({ success: true, data: { election } });
   } catch (error) {
