@@ -137,9 +137,10 @@ const MIGRATED = [
   ['modules/competition/services/resultModelService.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-bvddn.17 — trainHorse (POST /api/v1/training/train). Owner XP, the
   // cooldown claim, the TrainingLog row, the discipline-score gain and the stat
-  // gain now commit as ONE transaction (they were separate autocommit writes).
-  // A client-facing player-state mutation, so it is wrapped for the retryable 503.
-  ['modules/training/controllers/trainingController.mjs', { wrapped: 1, totalTx: 1 }],
+  // gain now commit as ONE transaction (they were separate autocommit writes),
+  // in commitTrainingSession. A client-facing player-state mutation, so it is
+  // wrapped for the retryable 503.
+  ['modules/training/services/trainingSessionTx.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites
