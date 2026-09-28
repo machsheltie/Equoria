@@ -311,13 +311,18 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
   }, 30000);
 
   it('leaves the neighbouring owner mutation PUT /:id working', async () => {
-    // Equoria-4fnro (OWNER RULING 2026-09-14): this case used to prove PUT still
-    // worked by renaming the horse. PUT no longer sets a name — renaming is
-    // PATCH /horses/:id/name — so it proves the same thing with `sex`, the field
-    // PUT still owns, and asserts the name did not move.
+    // OLD CONTRACT: pre-Equoria-4fnro this proved PUT still worked by
+    // renaming the horse; Equoria-4fnro switched it to `sex`, the field PUT
+    // still owned at the time. NEW RULING (Equoria-bvddn.2, audit finding
+    // 2026-09-25): `sex` is off the PUT allow-list too (see
+    // horseUpdateSexDobMassAssign.sentinel.test.mjs), and the remaining
+    // allow-listed fields (sireId/damId) need a second, sex-matched horse
+    // fixture this file doesn't have. An empty payload is a legitimate no-op
+    // PUT and is enough to prove this route was not collaterally closed by
+    // the DELETE fix above — which is the only thing this case exists to show.
     const before = await prisma.horse.findUnique({
       where: { id: horse.id },
-      select: { name: true },
+      select: { name: true, sex: true },
     });
     const csrf = await fetchCsrf(app);
     const res = await request(app)
@@ -326,7 +331,7 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ sex: 'mare' });
+      .send({});
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -334,7 +339,7 @@ describe('Equoria-9tque — DELETE /api/v1/horses/:id is closed to players', () 
       where: { id: horse.id },
       select: { name: true, sex: true },
     });
-    expect(persisted.sex).toBe('Mare');
+    expect(persisted.sex).toBe(before.sex);
     expect(persisted.name).toBe(before.name);
   }, 60000);
 });

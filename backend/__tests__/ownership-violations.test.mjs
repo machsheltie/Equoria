@@ -180,11 +180,18 @@ describe('Ownership Violation Attempts Integration Tests', () => {
       expect(horse.name).toBe(horseB.name);
     });
 
-    it('allows owners to update their horse with a valid payload', async () => {
-      // Equoria-4fnro (OWNER RULING 2026-09-14): this case used to send
-      // { name, sex, dateOfBirth } and assert the name changed. PUT no longer
-      // renames anything — the contract changed WITH the implementation, and the
-      // case below proves the refusal. What PUT still does is asserted here.
+    it('refuses to update sex/dateOfBirth through PUT — Equoria-bvddn.2', async () => {
+      // OLD CONTRACT: pre-Equoria-4fnro this sent { name, sex, dateOfBirth }
+      // and asserted the name changed. Equoria-4fnro dropped `name` and this
+      // case was rewritten to prove `sex`/`dateOfBirth` still worked (200).
+      // NEW RULING (Equoria-bvddn.2, audit finding 2026-09-25): `sex`,
+      // `gender` and `dateOfBirth` had no value validation at all — an owner
+      // could instantly age a newborn foal or un-geld/flip a horse's sex —
+      // so they are off the allow-list too. This case now proves the
+      // refusal; the happy-path "PUT still works" is proven by
+      // horseUpdateParentageSexRole.integration.test.mjs's sireId/damId case.
+      const before = await prisma.horse.findUnique({ where: { id: horseA.id } });
+
       const response = await request(app)
         .put(`/api/v1/horses/${horseA.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
@@ -195,12 +202,13 @@ describe('Ownership Violation Attempts Integration Tests', () => {
           sex: 'mare',
           dateOfBirth: new Date().toISOString(),
         })
-        .expect(200);
+        .expect(400);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.success).toBe(false);
 
       const horse = await prisma.horse.findUnique({ where: { id: horseA.id } });
-      expect(horse.sex).toBe('Mare');
+      expect(horse.sex).toBe(before.sex);
+      expect(horse.dateOfBirth.toISOString()).toBe(before.dateOfBirth.toISOString());
       expect(horse.name).toBe(horseA.name);
     });
 

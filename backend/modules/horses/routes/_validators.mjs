@@ -179,8 +179,15 @@ export const rejectPollutedRequest = (req, res, next) => {
  *
  *   NO LONGER A NAME PATH: `PUT /api/v1/horses/:id`. `validateHorseUpdatePayload`
  *   below now refuses ANY body carrying `name`, with a message pointing at the
- *   rename endpoint (Equoria-4fnro). It still accepts sex, gender, dateOfBirth,
- *   sireId and damId.
+ *   rename endpoint (Equoria-4fnro). Equoria-bvddn.2 (OWNER-ASSIGNED AUDIT
+ *   FINDING, 2026-09-25) went further: `sex`, `gender` and `dateOfBirth` are
+ *   OFF the allow-list too — `dateOfBirth` drives age everywhere (foal
+ *   stages, milestones, training eligibility) and `sex` had no value
+ *   validation at all, so PUT let an owner instantly age a newborn foal or
+ *   reverse a gelding/flip a mare with an arbitrary string. It now accepts
+ *   only `sireId` and `damId` — sireId/damId are a separate, still-open
+ *   question (does a player get to re-point pedigree after birth at all?)
+ *   that this fix deliberately leaves alone.
  *
  *   CLOSED, not gated: `POST /api/v1/horses` returns 403 before any validation
  *   runs (Finding 2 / Equoria-6p398.2), so `validateHorseCreation` below is DEAD
@@ -391,10 +398,20 @@ export const validateHorseUpdatePayload = (req, res, next) => {
   // allow-list. Renaming a horse is its own player intent with its own narrow,
   // transactional endpoint (PATCH /horses/:id/name); leaving it here as well
   // left two ways to rename a horse, one of them a mass-assignment path that
-  // also takes sex, dateOfBirth, sireId and damId. See the explicit branch
+  // also took sex, dateOfBirth, sireId and damId. See the explicit branch
   // below for the message, which is deliberately more informative than the
   // generic unexpected-field refusal this Set would otherwise produce.
-  const allowedFields = new Set(['sex', 'gender', 'dateOfBirth', 'sireId', 'damId']);
+  //
+  // Equoria-bvddn.2 (audit finding, 2026-09-25): `sex`, `gender` and
+  // `dateOfBirth` are ALSO gone. They had no value validation at all, so a
+  // player could PUT any string to `sex` (un-gelding, sex-flipping) or any
+  // date to `dateOfBirth` (instantly ageing a newborn foal past every
+  // development stage). No legitimate in-game mechanic re-sexes or re-ages a
+  // horse after birth; if one ever ships it needs its own endpoint with real
+  // validation, same reasoning as breedId (Equoria-tmyd2). sireId/damId are
+  // deliberately left as-is — whether players should ever edit pedigree after
+  // birth is a separate, still-open owner question.
+  const allowedFields = new Set(['sireId', 'damId']);
 
   // `name` is refused BEFORE the allow-list loop so the caller is told where
   // renaming lives rather than being told 'unexpected field' about the one

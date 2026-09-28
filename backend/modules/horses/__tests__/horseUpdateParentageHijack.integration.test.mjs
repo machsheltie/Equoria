@@ -224,14 +224,18 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     });
   });
 
-  it('still allows PUT with non-genealogy fields (sex) — no regression', async () => {
-    // Equoria-4fnro (OWNER RULING 2026-09-14): `name` used to be the
-    // non-genealogy field this case exercised. PUT no longer sets a name at all
-    // (renaming is PATCH /horses/:id/name), so the case uses `sex` and asserts
-    // the name did not move.
+  it('no longer allows PUT with non-genealogy fields (sex) — Equoria-bvddn.2', async () => {
+    // OLD CONTRACT: `name` (pre-Equoria-4fnro), then `sex` (Equoria-4fnro) was
+    // "a non-genealogy field PUT still permits", asserted here as a 200. NEW
+    // RULING (Equoria-bvddn.2, audit finding 2026-09-25): `sex`, `gender` and
+    // `dateOfBirth` are off the allow-list too — sireId/damId are now the
+    // ONLY fields PUT accepts, so there is no non-genealogy field left to
+    // prove "still works" with. This case now proves the opposite: `sex` is
+    // rejected and nothing is mutated. Full sentinel coverage for this class
+    // of finding lives in horseUpdateSexDobMassAssign.sentinel.test.mjs.
     const before = await prisma.horse.findUnique({
       where: { id: horseA.id },
-      select: { name: true },
+      select: { name: true, sex: true },
     });
 
     const response = await request(app)
@@ -242,12 +246,13 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sex: 'mare' });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
     const after = await prisma.horse.findUnique({
       where: { id: horseA.id },
       select: { name: true, sex: true },
     });
-    expect(after.sex).toBe('Mare');
+    expect(after.sex).toBe(before.sex);
     expect(after.name).toBe(before.name);
   });
 });

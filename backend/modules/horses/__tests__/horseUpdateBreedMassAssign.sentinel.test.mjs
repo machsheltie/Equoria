@@ -142,15 +142,18 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
     expect(after.breedId).toBe(originalBreed.id);
   });
 
-  it('still allows PUT with a permitted field (sex) — sanity', async () => {
-    // Regression guard: dropping breedId from the allowlist must not
-    // break legitimate updates of other allowlisted fields.
+  it('still allows PUT with an empty (no-field) payload — sanity', async () => {
+    // Regression guard: dropping breedId from the allowlist must not break
+    // the route itself.
     //
-    // Equoria-4fnro (OWNER RULING 2026-09-14): this used to send `{ name }`,
-    // because name was the obvious permitted field. It no longer is — renaming
-    // moved to PATCH /horses/:id/name and PUT refuses a name outright — so the
-    // sanity case exercises `sex`, which PUT still owns, and the horse's name is
-    // asserted UNCHANGED to prove the route kept its hands off it.
+    // OLD CONTRACT: this case used `sex` as "a permitted field" — first
+    // `name` (pre-Equoria-4fnro), then `sex` (Equoria-4fnro). NEW RULING
+    // (Equoria-bvddn.2, audit finding 2026-09-25): `sex`, `gender` and
+    // `dateOfBirth` are OFF the allow-list too (see
+    // horseUpdateSexDobMassAssign.sentinel.test.mjs for that guard), so there
+    // is no non-genealogy field left for a "still works" sanity case to send.
+    // An empty payload is a legitimate no-op PUT and proves the route itself
+    // is still reachable and healthy after the allow-list narrowed.
     const before = await prisma.horse.findUnique({
       where: { id: horse.id },
       select: { name: true, sex: true },
@@ -162,7 +165,7 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
       .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({ sex: 'mare' });
+      .send({});
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -170,7 +173,7 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
       where: { id: horse.id },
       select: { name: true, breedId: true, sex: true },
     });
-    expect(after.sex).toBe('Mare');
+    expect(after.sex).toBe(before.sex);
     expect(after.name).toBe(before.name);
     expect(after.breedId).toBe(originalBreed.id);
   });
