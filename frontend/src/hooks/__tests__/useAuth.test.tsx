@@ -21,7 +21,14 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { useProfile, useLogin, useRegister, useLogout, useIsAuthenticated } from '../useAuth';
+import {
+  useProfile,
+  useLogin,
+  useRegister,
+  useLogout,
+  useIsAuthenticated,
+  useUpdateProfile,
+} from '../useAuth';
 import { server } from '../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -328,6 +335,59 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
       const { result } = renderHook(() => useIsAuthenticated(), { wrapper });
 
       await waitFor(() => expect(result.current).toBe(false));
+    });
+  });
+
+  describe('useUpdateProfile - Merge partial response into cache (Equoria-bvddn.28)', () => {
+    it('preserves money/role/onboarding when the PUT response only carries identity fields', async () => {
+      // Exact shape backend profileController.mjs updateProfile returns
+      // (id/username/email/bio/notifications/display — see lines 317-331).
+      const partialResponse = {
+        user: {
+          id: 'user-uuid-0001',
+          username: 'renamed-user',
+          email: 'test@example.com',
+          bio: 'Updated bio',
+          notifications: null,
+          display: null,
+        },
+      };
+      server.use(
+        http.put(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: partialResponse }))
+      );
+
+      // Seed a FULL cached user, as it would be after a normal profile fetch.
+      queryClient.setQueryData(['profile'], {
+        user: {
+          id: 'user-uuid-0001',
+          username: 'testuser',
+          email: 'test@example.com',
+          money: 5000,
+          level: 7,
+          xp: 1200,
+          role: 'admin',
+          completedOnboarding: true,
+          onboardingStep: 10,
+        },
+      });
+
+      const { result } = renderHook(() => useUpdateProfile(), { wrapper });
+
+      result.current.mutate({ bio: 'Updated bio' });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      // Before the fix: setQueryData(['profile'], data) replaced the whole
+      // cache with the partial response — money became undefined (0 in the
+      // UI), role/onboarding vanished, and nothing refetches for 5 minutes.
+      const cached = queryClient.getQueryData<{ user: Record<string, unknown> }>(['profile']);
+      expect(cached?.user.money).toBe(5000);
+      expect(cached?.user.role).toBe('admin');
+      expect(cached?.user.completedOnboarding).toBe(true);
+      expect(cached?.user.onboardingStep).toBe(10);
+      // The response fields the endpoint DID return must still be applied.
+      expect(cached?.user.username).toBe('renamed-user');
+      expect(cached?.user.bio).toBe('Updated bio');
     });
   });
 

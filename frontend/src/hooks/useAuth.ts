@@ -178,8 +178,16 @@ export function useUpdateProfile() {
   return useMutation<{ user: User }, ApiError, Partial<User>>({
     mutationFn: authApi.updateProfile,
     onSuccess: (data) => {
-      // Update profile cache
-      queryClient.setQueryData(['profile'], data);
+      // The PUT response only carries id/username/email/bio/notifications/display
+      // (backend profileController.mjs updateProfile), not money/role/level/
+      // onboarding/preferences. Replacing the cache wholesale with that partial
+      // object zeroed the balance and dropped role/onboarding until the next
+      // 5-minute refetch (Equoria-bvddn.28). Merge the response fields into the
+      // existing cached user instead, so fields the endpoint doesn't return
+      // survive untouched.
+      queryClient.setQueryData<{ user: User } | undefined>(['profile'], (old) =>
+        old?.user ? { ...old, user: { ...old.user, ...data.user } } : data
+      );
       toast.success('Profile updated successfully.');
     },
     onError: (error) => {
