@@ -348,23 +348,39 @@ export async function executeConformationShow(showId) {
           const placement = i + 1;
           const { ribbon, titlePoints: tpAwarded, breedingBoostDelta } = resolveReward(placement);
 
-          // Accumulate title points
-          const newTitlePoints = (horse.titlePoints ?? 0) + tpAwarded;
-          const newTitle = resolveTitle(newTitlePoints);
+          // Equoria-bvddn.21: `horse` here is a PRE-transaction read (from the
+          // entries.findMany above, taken before this $transaction opened).
+          // Two concurrent executions that both include this horse read the
+          // same stale titlePoints and, if each wrote a precomputed total,
+          // the second write would blindly clobber the first's — losing
+          // title points under concurrency. Instead, increment titlePoints
+          // in the DATABASE inside this transaction (Prisma `{ increment }`
+          // compiles to an atomic `SET titlePoints = titlePoints + n` on the
+          // DB side), and derive the title from the value the update
+          // RETURNS — the true post-increment total — not from the stale
+          // pre-read. breedingValueBoost keeps its existing (out-of-scope)
+          // precomputed-write behaviour; only titlePoints/currentTitle are
+          // in scope for this fix.
           const newBoost = applyBreedingValueBoost(
             horse.breedingValueBoost ?? 0,
             breedingBoostDelta,
           );
 
-          // Update horse title fields
-          await tx.horse.update({
+          const updatedHorse = await tx.horse.update({
             where: { id: horse.id },
             data: {
-              titlePoints: newTitlePoints,
-              currentTitle: newTitle,
+              titlePoints: { increment: tpAwarded },
               breedingValueBoost: newBoost,
             },
           });
+
+          const newTitle = resolveTitle(updatedHorse.titlePoints);
+          if (newTitle !== updatedHorse.currentTitle) {
+            await tx.horse.update({
+              where: { id: horse.id },
+              data: { currentTitle: newTitle },
+            });
+          }
 
           // Create CompetitionResult — no prizeWon (AC4)
           await tx.competitionResult.create({
