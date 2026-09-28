@@ -34,8 +34,5 @@ export interface FarrierBookingResult {
 export const farrierApi = {
   getServices: () => apiClient.get<FarrierService[]>('/api/v1/farrier/services'),
   bookService: (data: { horseId: number; serviceId: string }) =>
-    apiClient.post<{ success: boolean; data: FarrierBookingResult }>(
-      '/api/v1/farrier/book-service',
-      data
-    ),
+    apiClient.post<FarrierBookingResult>('/api/v1/farrier/book-service', data),
 };

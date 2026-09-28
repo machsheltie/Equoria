@@ -76,7 +76,7 @@ export function useHireTrainer() {
   const queryClient = useQueryClient();
 
   return useMutation<
-    { success: boolean; data: { trainer: TrainerEntry; cost: number; remainingMoney: number } },
+    { trainer: TrainerEntry; cost: number; remainingMoney: number },
     ApiError,
     string
   >({

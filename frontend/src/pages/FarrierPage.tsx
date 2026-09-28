@@ -303,7 +303,7 @@ const FarrierPage: React.FC = () => {
       { horseId: selectedHorseId, serviceId: service.id },
       {
         onSuccess: (result) => {
-          const msg = `${result.data.service.name} booked for ${result.data.horse.name}. Remaining balance: ${result.data.remainingMoney.toLocaleString('en-US')} coins.`;
+          const msg = `${result.service.name} booked for ${result.horse.name}. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins.`;
           setBookingSuccess(msg);
           setBookingServiceId(null);
           toast.success(msg);

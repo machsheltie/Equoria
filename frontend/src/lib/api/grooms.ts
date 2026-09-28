@@ -73,10 +73,10 @@ export const groomsApi = {
   getMarketplace: () => apiClient.get<MarketplaceData>('/api/v1/groom-marketplace'),
   getMarketplaceStats: () => apiClient.get<MarketplaceStats>('/api/v1/groom-marketplace/stats'),
   hireGroom: (marketplaceId: string) =>
-    apiClient.post<{
-      success: boolean;
-      data: { groom: Groom; cost: number; remainingMoney: number };
-    }>('/api/v1/groom-marketplace/hire', { marketplaceId }),
+    apiClient.post<{ groom: Groom; cost: number; remainingMoney: number }>(
+      '/api/v1/groom-marketplace/hire',
+      { marketplaceId }
+    ),
   refreshMarketplace: (force: boolean = false) =>
     apiClient.post<MarketplaceData>('/api/v1/groom-marketplace/refresh', { force }),
   assignGroom: (data: {

@@ -32,12 +32,7 @@ interface PreferencesMutationContext {
 export function useUpdatePreferences() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    { status: string; data: { preferences: UserPreferences } },
-    Error,
-    Patch,
-    PreferencesMutationContext
-  >({
+  return useMutation<{ preferences: UserPreferences }, Error, Patch, PreferencesMutationContext>({
     mutationFn: (updates: Patch) => authApi.updatePreferences(updates),
 
     onMutate: async (updates) => {
@@ -99,7 +94,7 @@ export function useUpdatePreferences() {
           ...existing,
           user: {
             ...existing.user,
-            preferences: response.data.preferences,
+            preferences: response.preferences,
           },
         });
       }

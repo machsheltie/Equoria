@@ -80,11 +80,7 @@ export function useGroomMarketplace(options: { enabled?: boolean } = {}) {
 export function useHireGroom() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    { success: boolean; data: { groom: Groom; cost: number; remainingMoney: number } },
-    ApiError,
-    string
-  >({
+  return useMutation<{ groom: Groom; cost: number; remainingMoney: number }, ApiError, string>({
     mutationFn: (marketplaceId) => groomsApi.hireGroom(marketplaceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groomKeys.all });

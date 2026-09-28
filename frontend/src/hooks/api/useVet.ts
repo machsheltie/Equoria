@@ -29,11 +29,7 @@ export function useVetServices() {
 export function useBookVetAppointment() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    { success: boolean; data: VetAppointmentResult },
-    ApiError,
-    { horseId: number; serviceId: string }
-  >({
+  return useMutation<VetAppointmentResult, ApiError, { horseId: number; serviceId: string }>({
     mutationFn: (data) => vetApi.bookAppointment(data),
     onSuccess: () => {
       // Invalidate horse data so healthStatus / lastVettedDate refresh

@@ -29,11 +29,7 @@ export function useFarrierServices() {
 export function useBookFarrierService() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    { success: boolean; data: FarrierBookingResult },
-    ApiError,
-    { horseId: number; serviceId: string }
-  >({
+  return useMutation<FarrierBookingResult, ApiError, { horseId: number; serviceId: string }>({
     mutationFn: (data) => farrierApi.bookService(data),
     onSuccess: () => {
       // Invalidate horse data so hoofCondition / lastFarrierDate / lastShod refresh

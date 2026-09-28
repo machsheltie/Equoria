@@ -22,10 +22,10 @@ export const ridersApi = {
   getAssignments: () => apiClient.get<RiderAssignment[]>('/api/v1/riders/assignments'),
   getMarketplace: () => apiClient.get<RiderMarketplaceData>('/api/v1/riders/marketplace'),
   hireRider: (marketplaceId: string) =>
-    apiClient.post<{
-      success: boolean;
-      data: { rider: Rider; cost: number; remainingMoney: number };
-    }>('/api/v1/riders/marketplace/hire', { marketplaceId }),
+    apiClient.post<{ rider: Rider; cost: number; remainingMoney: number }>(
+      '/api/v1/riders/marketplace/hire',
+      { marketplaceId }
+    ),
   refreshMarketplace: (force: boolean = false) =>
     apiClient.post<RiderMarketplaceData>('/api/v1/riders/marketplace/refresh', { force }),
   assignRider: (data: { riderId: number; horseId: number; notes?: string }) =>

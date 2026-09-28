@@ -312,10 +312,10 @@ export const authApi = {
    * preferences. Unknown keys are rejected server-side.
    */
   updatePreferences: (updates: Partial<UserPreferences>) => {
-    return apiClient.patch<{
-      status: string;
-      data: { preferences: UserPreferences };
-    }>('/api/v1/auth/profile/preferences', updates);
+    return apiClient.patch<{ preferences: UserPreferences }>(
+      '/api/v1/auth/profile/preferences',
+      updates
+    );
   },
 
   /**

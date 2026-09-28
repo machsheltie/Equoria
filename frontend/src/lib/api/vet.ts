@@ -26,8 +26,5 @@ export interface VetAppointmentResult {
 export const vetApi = {
   getServices: () => apiClient.get<VetService[]>('/api/v1/vet/services'),
   bookAppointment: (data: { horseId: number; serviceId: string }) =>
-    apiClient.post<{ success: boolean; data: VetAppointmentResult }>(
-      '/api/v1/vet/book-appointment',
-      data
-    ),
+    apiClient.post<VetAppointmentResult>('/api/v1/vet/book-appointment', data),
 };
