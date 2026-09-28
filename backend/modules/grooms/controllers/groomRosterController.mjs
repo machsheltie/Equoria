@@ -243,8 +243,12 @@ export async function hireGroom(req, res) {
     // hires can both pass it), so it is NOT the authoritative guard — the in-tx
     // post-lock re-count below is. Keeping it avoids opening a tx for an
     // obviously-capped user.
+    // Equoria-bvddn.12: retired grooms keep their userId (schema.prisma —
+    // retirement deliberately does not clear it) so they must be excluded
+    // here or they count against the cap forever. Matches the rider/trainer
+    // idiom (riderMarketplaceController.mjs, trainerMarketplaceController.mjs).
     const userGroomCount = await prisma.groom.count({
-      where: { userId },
+      where: { userId, retired: false },
     });
 
     if (userGroomCount >= MAX_GROOMS_PER_USER) {
@@ -338,7 +342,8 @@ export async function hireGroom(req, res) {
           // this hire; if it now exceeds MAX_GROOMS_PER_USER the last slot was
           // already taken by a racing sibling — throw so the groom.create +
           // debit above roll back together (no over-cap groom, no charge).
-          const rosterCount = await prismaTx.groom.count({ where: { userId } });
+          // Equoria-bvddn.12: exclude retired grooms — see the fast-path count above.
+          const rosterCount = await prismaTx.groom.count({ where: { userId, retired: false } });
           if (rosterCount > MAX_GROOMS_PER_USER) {
             throw new CapExceededError(
               `You have reached the maximum limit of ${MAX_GROOMS_PER_USER} grooms. Please release a groom before hiring a new one.`,

@@ -175,7 +175,11 @@ export async function hireFreeAgent(req, res) {
     const hiringCost = Math.round(Number(offer.sessionRate) * 7);
 
     // Fast-path cap reject, mirroring both existing hire paths.
-    const existingGroomCount = await prisma.groom.count({ where: { userId } });
+    // Equoria-bvddn.12: retired grooms keep their userId (schema.prisma —
+    // retirement deliberately does not clear it) so they must be excluded
+    // here or they count against the cap forever. Matches the rider/trainer
+    // idiom (riderMarketplaceController.mjs, trainerMarketplaceController.mjs).
+    const existingGroomCount = await prisma.groom.count({ where: { userId, retired: false } });
     if (existingGroomCount >= MAX_GROOMS_PER_USER) {
       return res.status(400).json({
         success: false,
@@ -234,7 +238,8 @@ export async function hireFreeAgent(req, res) {
             );
           }
 
-          const rosterCount = await tx.groom.count({ where: { userId } });
+          // Equoria-bvddn.12: exclude retired grooms — see the fast-path count above.
+          const rosterCount = await tx.groom.count({ where: { userId, retired: false } });
           if (rosterCount > MAX_GROOMS_PER_USER) {
             throw new CapExceededError(
               `You have reached the maximum limit of ${MAX_GROOMS_PER_USER} grooms. Please release a groom before hiring a new one.`,
