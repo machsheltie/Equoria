@@ -40,23 +40,18 @@ describe('Equoria-bvddn.25: Election date validation', () => {
       },
     });
 
-    cleanup.add(async () => {
-      await prisma.clubElection.deleteMany({ where: { club: { name: { contains: TAG } } } });
-    }, 'clubElections(byClubTag)');
-
-    cleanup.add(async () => {
-      await prisma.clubMembership.deleteMany({
-        where: { club: { name: { contains: TAG } } },
-      });
-    }, 'clubMemberships(byClubTag)');
-
-    cleanup.add(async () => {
-      await prisma.club.deleteMany({ where: { name: { contains: TAG } } });
-    }, 'clubs(byTag)');
-
-    cleanup.add(async () => {
-      await prisma.user.deleteMany({ where: { username: `${TAG}_user` } });
-    }, 'users(byTag)');
+    // FK-ordered cleanup (children before parents): elections, memberships, club, user.
+    // Use deleteMany (idempotent) scoped by club ID to handle cascade deletion safely.
+    cleanup.add(
+      () => (testClub?.id ? prisma.clubElection.deleteMany({ where: { clubId: testClub.id } }) : undefined),
+      'clubElections(byClubId)',
+    );
+    cleanup.add(
+      () => (testClub?.id ? prisma.clubMembership.deleteMany({ where: { clubId: testClub.id } }) : undefined),
+      'clubMemberships(byClubId)',
+    );
+    cleanup.add(() => (testClub?.id ? prisma.club.deleteMany({ where: { id: testClub.id } }) : undefined), 'club');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');
 
     // Create a test club
     testClub = await prisma.club.create({
@@ -149,11 +144,5 @@ describe('Equoria-bvddn.25: Election date validation', () => {
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data?.election?.id).toBeDefined();
-
-    // Clean up this election (capture ID to avoid stale closure reference)
-    if (res.body.data?.election?.id) {
-      const electionId = res.body.data.election.id;
-      cleanup.add(() => prisma.clubElection.delete({ where: { id: electionId } }), `election(${electionId})`);
-    }
   });
 });
