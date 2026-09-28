@@ -625,36 +625,29 @@ router.get(
  * Equoria-6p398.3's horse-XP closure and Equoria-bvddn.1's user-XP closure).
  *
  * `updateGroomBonusTraits` -> `assignBonusTraits` only checked the SHAPE of
- * the submitted map (<=3 traits, <=0.3 bonus each,
- * groomBonusTraitService.mjs:27-28) — it never checked the service's own
- * earning conditions (bond >= 60, >= 75% assignment window coverage,
- * groomBonusTraitService.mjs:29-30, enforced only inside
- * checkBonusEligibility, :236-237). Any authenticated owner of a groom could
- * PUT arbitrary bonus traits straight into `Groom.bonusTraitMap` with zero
- * play — including three ultra-rare/exotic trait names at 0.3 each, which
- * also made the groom immediately eligible for the `any-with-3-rare-bonuses`
- * rare-trait booster perk (groomRareTraitPerks.mjs:173-181,
- * evaluatePerkEligibility) without ever earning it.
+ * the submitted map (<=3 traits, <=0.3 each, groomBonusTraitService.mjs:
+ * 27-28) — never the service's own earning conditions (bond >= 60, >= 75%
+ * assignment coverage, :29-30, enforced only inside checkBonusEligibility,
+ * :236-237). Any owner could PUT arbitrary bonus traits into
+ * `Groom.bonusTraitMap` with zero play, including 3 rare traits at 0.3
+ * each, which also unlocked the `any-with-3-rare-bonuses` rare-trait
+ * booster perk (groomRareTraitPerks.mjs:173-181) for free.
  *
- * Resolution: remove the write from the player API outright. No caller
- * exists to preserve: the frontend never calls this route (it only reads
- * `groom.bonusTraitMap` to render GroomBonusTraitPanel), and no server code
- * calls `assignBonusTraits` either — it is invoked only from
- * `groomBonusTraitsController.updateGroomBonusTraits`, i.e. only from this
- * route. The real earned-bonus path (`checkBonusEligibility`, consumed by
- * `traitAssignmentLogic.mjs`) computes probability bonuses at trait-roll
- * time and never writes `bonusTraitMap` — it is untouched by this closure.
- * `assignBonusTraits` and `updateGroomBonusTraits` are left in place (still
- * exercised directly by groomBonusTraits.test.mjs) since removing dead code
- * is out of scope for this fix. GET /:id/bonus-traits is read-only and was
- * never part of the exploit, so it is untouched.
+ * No caller to preserve: the frontend only reads `bonusTraitMap`
+ * (GroomBonusTraitPanel), and no server code calls `assignBonusTraits`
+ * except this route's controller. The real earned-bonus path
+ * (`checkBonusEligibility` -> `traitAssignmentLogic.mjs`) applies
+ * probability bonuses at trait-roll time and never writes `bonusTraitMap`;
+ * it is untouched. `assignBonusTraits`/`updateGroomBonusTraits` are left in
+ * place (service-level tests still exercise them directly) — removing dead
+ * code is out of scope. GET /:id/bonus-traits (read-only, not part of the
+ * exploit) is untouched too.
  *
- * 410 (not 404) mirrors the established hard-deprecation idiom. `authenticateToken`
- * is kept (this file has no router-level auth) so an anonymous caller still
- * gets 401; what's removed is the `param('id')`/`body('bonusTraits')`
- * validators and `requireOwnership('groom')` — the refusal runs before any
- * of that, so a malformed id or a groom the caller doesn't own gets the same
- * closed answer without running ownership checks first.
+ * 410 mirrors the established closed-route idiom. `authenticateToken` is
+ * kept (file has no router-level auth) so anonymous still gets 401; the
+ * `param('id')`/`body('bonusTraits')` validators and
+ * `requireOwnership('groom')` are removed — the refusal runs before any of
+ * that.
  */
 router.put('/:id/bonus-traits', authenticateToken, (req, res) => {
   logger.info(
