@@ -190,7 +190,10 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       });
       const settings =
         dbUser?.settings && typeof dbUser.settings === 'object' ? dbUser.settings : {};
-      const inventory = getInventory(settings).map(i => ({ ...i }));
+      // `inventoryAsRead` is the compare-and-swap precondition for the write
+      // below (Equoria-bvddn.13); `inventory` is the copy this feed mutates.
+      const inventoryAsRead = getInventory(settings);
+      const inventory = inventoryAsRead.map(i => ({ ...i }));
       const idx = inventory.findIndex(i => i.id === `feed-${tier.id}`);
 
       if (idx < 0 || !Number.isFinite(inventory[idx].quantity) || inventory[idx].quantity < 1) {
@@ -298,7 +301,21 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       // Finding 1 (Equoria-6p398.1): write ONLY the `inventory` path so the
       // weekly bank-claim marker, materials and onboarding state are never
       // replayed from this transaction's earlier settings snapshot.
-      await updateUserSettingsPaths(tx, userId, { set: { inventory } });
+      // Equoria-bvddn.13: the new array is computed from the plain (unlocked)
+      // read above, so a feed purchase or another horse's feed that committed
+      // since then would be erased by writing it back. The `expect`
+      // compare-and-swap (same idiom as equip and crafting) makes that write
+      // affect 0 rows instead; the 409 rolls back this whole transaction,
+      // including the horse claim, so the player can simply feed again.
+      const affectedSettings = await updateUserSettingsPaths(tx, userId, {
+        set: { inventory },
+        expect: { inventory: { equals: inventoryAsRead, whenMissing: [] } },
+      });
+      if (affectedSettings !== 1) {
+        const e = new Error('Your feed inventory changed while feeding. Please try again.');
+        e.status = 409;
+        throw e;
+      }
 
       // Re-read the horse to return the post-update state (stat boost + counter
       // applied) in the spec shape. Within the same txn this reflects our write.
