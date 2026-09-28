@@ -135,6 +135,11 @@ const MIGRATED = [
   // to reach the player as a retryable 503 rather than a 500 the client would
   // treat as permanent. Pinned here so a later edit cannot silently un-wrap it.
   ['modules/competition/services/resultModelService.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-bvddn.17 — trainHorse (POST /api/v1/training/train). Owner XP, the
+  // cooldown claim, the TrainingLog row, the discipline-score gain and the stat
+  // gain now commit as ONE transaction (they were separate autocommit writes).
+  // A client-facing player-state mutation, so it is wrapped for the retryable 503.
+  ['modules/training/controllers/trainingController.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites

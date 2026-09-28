@@ -1,16 +1,11 @@
 import {
   getLastTrainingDate,
   getHorseAge,
-  logTrainingSession,
   getAnyRecentTraining,
 } from '../services/trainingModelService.mjs';
-import {
-  incrementDisciplineScore,
-  getHorseById,
-  updateHorseStat,
-  getTemperamentTrainingModifiers,
-} from '../../horses/index.mjs';
-import { getUserWithHorses, addXpToUser } from '../../users/index.mjs';
+import { getHorseById, getTemperamentTrainingModifiers } from '../../horses/index.mjs';
+import { getUserWithHorses, addXpToUserCore } from '../../users/index.mjs';
+import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { applyFlagInfluencesToTraining } from '../../../utils/epigeneticFlagInfluence.mjs';
@@ -18,11 +13,17 @@ import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
+import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { awardTrainerSessionXP, computeTrainerModifiers } from '../../trainers/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { MIN_ACTIVE_AGE_YEARS, MAX_ACTIVE_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
+
+// Thrown inside the training transaction when the atomic cooldown claim loses
+// the race, so every write already made in that transaction rolls back; caught
+// by identity and turned into the normal "cooldown active" result.
+const COOLDOWN_CLAIM_LOST = Symbol('trainingCooldownClaimLost');
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -220,20 +221,19 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       };
     }
 
-    // Equoria-0ihyi: atomic cooldown claim. canTrain() above is a fast-path
-    // pre-check; the AUTHORITATIVE gate is this conditional updateMany. Two
-    // concurrent train calls both pass canTrain (it does a logTraining lookup,
-    // not a forSale-style row-state check), so without an atomic gate both
-    // would log sessions + award XP + bump discipline scores. The updateMany
-    // predicate enforces "trainingCooldown is null OR expired"; only the
-    // first racer flips trainingCooldown forward and gets count===1. The
-    // second sees count===0 and short-circuits before any state write.
-    //
-    // We compute nextEligible HERE (was previously at line ~408 after the
-    // writes) because the gate IS the cooldown write. The silent try/catch
-    // that previously wrapped the post-write update has been removed — a
-    // cooldown-persistence failure here propagates as an exception, which
-    // is the correct behavior (no half-trained state).
+    // Equoria-bvddn.17: a training session is ONE unit of work. Everything the
+    // session writes — owner XP, the cooldown claim, the TrainingLog row, the
+    // discipline-score gain and the stat gain — commits in a single
+    // transaction, so a failure at any step leaves the cooldown unclaimed and
+    // nothing half-applied. All inputs (modifiers, the RNG rolls, XP amount)
+    // are computed BEFORE the transaction; the transaction only writes.
+    // Score and stat gains are applied as in-database increments on the
+    // committed row value, never as a JS read-then-write, so a concurrent
+    // writer (e.g. a show payout's stat gain) is never overwritten.
+    const parsedHorseId = parseInt(horseId, 10);
+
+    // Equoria-0ihyi: the cooldown claim inside the transaction below is the
+    // AUTHORITATIVE gate — canTrain() above is only a fast-path pre-check.
     const cooldownNow = new Date();
     let cooldownDaysForGate = 7;
     if (traitEffects.trainingTimeReduction) {
@@ -245,29 +245,6 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     const nextEligibleClaim = new Date(cooldownNow);
     nextEligibleClaim.setDate(nextEligibleClaim.getDate() + cooldownDaysForGate);
 
-    const claim = await prisma.horse.updateMany({
-      where: {
-        id: parseInt(horseId, 10),
-        OR: [{ trainingCooldown: null }, { trainingCooldown: { lte: cooldownNow } }],
-      },
-      data: { trainingCooldown: nextEligibleClaim },
-    });
-    if (claim.count === 0) {
-      logger.info(
-        `[trainingController.trainHorse] Atomic cooldown claim lost the race for horse ${horseId}`,
-      );
-      return {
-        success: false,
-        reason: 'Training cooldown active for this horse',
-        updatedHorse: null,
-        message: 'Training not allowed: Training cooldown active for this horse',
-        nextEligible: null,
-      };
-    }
-
-    // Log the training session
-    const trainingLog = await logTrainingSession({ horseId, discipline });
-
     // Equoria-oey96.7: load the active trainer (if any) for the training
     // modifier. Fail-soft — a trainer load / DB error degrades to the
     // no-trainer path (net modifier 0) and must NEVER block the primary
@@ -277,7 +254,7 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     let activeTrainer = null;
     try {
       const activeTrainerAssignment = await prisma.trainerAssignment.findFirst({
-        where: { horseId: parseInt(horseId, 10), isActive: true },
+        where: { horseId: parsedHorseId, isActive: true },
         select: { trainerId: true, trainer: true },
       });
       if (activeTrainerAssignment?.trainerId) {
@@ -342,14 +319,7 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       );
     }
 
-    // Update the horse's discipline score with trait-modified amount (primary write — must succeed)
-    const updatedHorse = await incrementDisciplineScore(
-      horseId,
-      discipline,
-      disciplineScoreIncrease,
-    );
-
-    // Check for stat gain chance with trait effects (secondary/bonus write — after primary)
+    // Check for stat gain chance with trait effects
     let statGainOccurred = false;
     let statGainDetails = null;
 
@@ -435,18 +405,12 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
         amount: statGainAmount,
         traitModified: !!(traitEffects.statGainChanceModifier || traitEffects.baseStatBoost),
       };
+    }
 
-      // Apply stat gain after discipline score is already committed
-      try {
-        await updateHorseStat(horseId, statToImprove, statGainAmount);
-        logger.info(
-          `[trainingController.trainHorse] Stat gain: ${statToImprove} +${statGainAmount}`,
-        );
-      } catch (error) {
-        logger.error(`[trainingController.trainHorse] Failed to update stat: ${error.message}`);
-        statGainOccurred = false;
-        statGainDetails = null;
-      }
+    // The stat column name is interpolated as an SQL identifier below, so it
+    // must be a real horse stat (the map above is hardcoded, but fail closed).
+    if (statGainDetails && !HORSE_STAT_VALUES.includes(statGainDetails.stat)) {
+      throw new Error(`Invalid stat name: ${statGainDetails.stat}`);
     }
 
     // Calculate XP award with trait effects
@@ -467,40 +431,117 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     }
     baseXp = Math.max(1, baseXp);
 
-    // Award XP to horse owner for training
-    if (updatedHorse && updatedHorse.userId) {
-      // Equoria-jvi3u: addXpToUser now writes the XpEvent audit row IN its own
-      // transaction, so the award and its audit log are one atomic operation — the
-      // reason is passed as the 3rd arg instead of via a SEPARATE logXpEvent call.
-      // (The former two-try-catch split existed so an audit-log failure couldn't
-      // suppress the XP award; that split is obsolete now that they share a tx —
-      // if the audit insert fails, the XP write correctly rolls back with it rather
-      // than leaving User.xp disagreeing with SUM(XpEvent).) addXpToUser never
-      // throws (it returns { success:false } on error), so training still completes.
-      const xpResult = await addXpToUser(
-        updatedHorse.userId,
-        baseXp,
-        `Trained horse ${updatedHorse.name} in ${discipline}`,
-      );
-      if (xpResult.success) {
-        logger.info(
-          `[trainingController.trainHorse] Awarded ${baseXp} XP to user ${updatedHorse.userId} for training${xpResult.leveledUp ? ` - LEVEL UP to ${xpResult.currentLevel}!` : ''}`,
-        );
-      } else {
-        logger.error(
-          `[trainingController.trainHorse] Failed to award training XP: ${xpResult.error}`,
-        );
-        // Continue with training completion even if XP award fails.
-      }
-    } else if (updatedHorse && !updatedHorse.userId) {
+    const ownerId = horse.userId ?? null;
+    if (!ownerId) {
       logger.warn(
-        `[trainingController.trainHorse] Horse ${updatedHorse.id} (${updatedHorse.name}) has no userId - XP cannot be awarded`,
+        `[trainingController.trainHorse] Horse ${horse.id} (${horse.name}) has no userId - XP cannot be awarded`,
       );
     }
 
-    // Equoria-0ihyi: cooldown was claimed atomically at the gate above (see
-    // the conditional updateMany before logTrainingSession). nextEligible is
-    // reused here as the return-value contract.
+    let txResult;
+    try {
+      txResult = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          // Lock order User -> Horse (codebase convention). The owner XP award
+          // is part of the same session (Equoria-jvi3u's tx-aware core), so it
+          // is written FIRST: if the cooldown claim then loses, or any later
+          // write fails, the XP and its audit row roll back with everything
+          // else — no XP without training, no training without XP.
+          let xpCore = null;
+          if (ownerId) {
+            xpCore = await addXpToUserCore(
+              tx,
+              ownerId,
+              baseXp,
+              `Trained horse ${horse.name} in ${discipline}`,
+            );
+          }
+
+          // Equoria-0ihyi: atomic cooldown claim. Only the first racer flips
+          // trainingCooldown forward and gets count===1; a loser rolls back.
+          const claim = await tx.horse.updateMany({
+            where: {
+              id: parsedHorseId,
+              OR: [{ trainingCooldown: null }, { trainingCooldown: { lte: cooldownNow } }],
+            },
+            data: { trainingCooldown: nextEligibleClaim },
+          });
+          if (claim.count === 0) {
+            throw COOLDOWN_CLAIM_LOST;
+          }
+
+          const trainingLog = await tx.trainingLog.create({
+            data: { horseId: parsedHorseId, discipline, trainedAt: new Date() },
+          });
+
+          // disciplineScores[discipline] += increase, on the committed value.
+          // A non-object column (null / array / scalar) starts from {} — the
+          // same four-part guard asFlagObject applies on the read side.
+          await tx.$executeRaw(Prisma.sql`
+            UPDATE "horses" SET "disciplineScores" = jsonb_set(
+              CASE WHEN jsonb_typeof("disciplineScores") = 'object' THEN "disciplineScores" ELSE '{}'::jsonb END,
+              ARRAY[${discipline}]::text[],
+              to_jsonb(COALESCE(("disciplineScores" ->> ${discipline})::numeric, 0) + ${disciplineScoreIncrease}),
+              true)
+            WHERE "id" = ${parsedHorseId}`);
+
+          if (statGainDetails) {
+            // stat += amount, capped at 100 in the database; a stat already at
+            // or above 100 is left untouched (never lowered).
+            const statCol = Prisma.raw(`"${statGainDetails.stat}"`);
+            await tx.$executeRaw(Prisma.sql`
+              UPDATE "horses"
+              SET ${statCol} = CASE WHEN ${statCol} >= 100 THEN ${statCol}
+                                    ELSE LEAST(${statCol} + ${statGainDetails.amount}, 100) END
+              WHERE "id" = ${parsedHorseId}`);
+          }
+
+          const updatedHorse = await tx.horse.findUnique({
+            where: { id: parsedHorseId },
+            include: { breed: true, user: true, stable: true },
+          });
+
+          return { trainingLog, updatedHorse, xpCore };
+        }),
+        { message: 'The stable is busy right now, please try training again in a moment.' },
+      );
+    } catch (txError) {
+      if (txError === COOLDOWN_CLAIM_LOST) {
+        logger.info(
+          `[trainingController.trainHorse] Atomic cooldown claim lost the race for horse ${horseId}`,
+        );
+        return {
+          success: false,
+          reason: 'Training cooldown active for this horse',
+          updatedHorse: null,
+          message: 'Training not allowed: Training cooldown active for this horse',
+          nextEligible: null,
+        };
+      }
+      throw txError;
+    }
+
+    const { trainingLog, updatedHorse, xpCore } = txResult;
+
+    if (statGainDetails) {
+      logger.info(
+        `[trainingController.trainHorse] Stat gain: ${statGainDetails.stat} +${statGainDetails.amount}`,
+      );
+    }
+    if (xpCore) {
+      logger.info(
+        `[trainingController.trainHorse] Awarded ${baseXp} XP to user ${ownerId} for training${xpCore.leveledUp ? ` - LEVEL UP to ${xpCore.currentLevel}!` : ''}`,
+      );
+      // Post-commit, so a reader can never cache a value from a rolled-back tx.
+      try {
+        await invalidateCache(`user:progress:${ownerId}`);
+      } catch (cacheErr) {
+        logger.warn(
+          `[trainingController.trainHorse] Failed to invalidate user progress cache: ${cacheErr.message}`,
+        );
+      }
+    }
+
     const nextEligible = nextEligibleClaim;
 
     logger.info(
@@ -569,6 +610,11 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     };
   } catch (error) {
     logger.error(`[trainingController.trainHorse] Training failed: ${error.message}`);
+    // Equoria-7x9po idiom: a transient transaction timeout keeps its 503 so the
+    // route can tell the player to retry, instead of being re-wrapped as a 500.
+    if (error?.status === 503) {
+      throw error;
+    }
     throw new Error(`Training failed: ${error.message}`, { cause: error });
   }
 }
@@ -859,6 +905,9 @@ async function trainRouteHandler(req, res) {
     }
   } catch (error) {
     logger.error(`[trainingController.trainRouteHandler] Error: ${error.message}`);
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     res.status(500).json({
       success: false,
       message: 'Failed to train horse',
