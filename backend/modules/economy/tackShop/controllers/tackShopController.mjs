@@ -569,6 +569,30 @@ export function resolveTackBonus(tack, showType = 'ridden') {
   return { saddleBonus, bridleBonus, presenceBonus };
 }
 
+class HorseNotOwnedError extends Error {}
+
+// Merge a purchased item into Horse.tack (no mutation). Decorations are additive
+// (no duplicates); functional items replace their slot + store numeric bonuses.
+function mergeTackItem(rawTack, item) {
+  const current =
+    rawTack !== null && typeof rawTack === 'object' && !Array.isArray(rawTack) ? rawTack : {};
+  const updated = { ...current };
+  if (item.category === 'decorative') {
+    const existing = Array.isArray(updated.decorations) ? updated.decorations : [];
+    if (!existing.includes(item.id)) {
+      updated.decorations = [...existing, item.id];
+    }
+    return updated;
+  }
+  updated[item.category] = item.id;
+  if (item.category === 'saddle') {
+    updated.saddleBonus = item.numericBonus;
+  } else if (item.category === 'bridle') {
+    updated.bridleBonus = item.numericBonus;
+  }
+  return updated;
+}
+
 // ── Route handlers ──────────────────────────────────────────────────────────
 
 /**
@@ -599,10 +623,7 @@ export async function getTackInventory(_req, res) {
 
 /**
  * POST /api/tack-shop/purchase
- * Body: { horseId, itemId }
- *
- * Stores item ID AND numeric bonuses in Horse.tack so both old and new
- * scoring code works.
+ * Body: { horseId, itemId } — stores item ID AND numeric bonuses in Horse.tack.
  */
 export async function purchaseTackItem(req, res) {
   try {
@@ -616,45 +637,17 @@ export async function purchaseTackItem(req, res) {
         .json({ success: false, message: 'Item not found in inventory', data: null });
     }
 
-    const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
+    // Fast 404 + display name only; the tack is re-read inside the tx below.
+    const horse = await prisma.horse.findFirst({
+      where: { id: horseId, userId },
+      select: { name: true },
+    });
     if (!horse) {
       return res.status(404).json({ success: false, message: 'Horse not found', data: null });
     }
 
-    // Merge item into horse.tack JSON — store item ID, numeric bonuses, and initial condition
-    const currentTack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
-    const updatedTack = { ...currentTack };
-
-    if (item.category === 'decorative') {
-      // Decorative items are additive — append to decorations array (no duplicates)
-      const existing = Array.isArray(updatedTack.decorations) ? updatedTack.decorations : [];
-      if (!existing.includes(item.id)) {
-        updatedTack.decorations = [...existing, item.id];
-      }
-    } else {
-      // Functional items replace the slot
-      updatedTack[item.category] = item.id;
-
-      // Also store numeric bonus fields for scoring compatibility
-      if (item.category === 'saddle') {
-        updatedTack.saddleBonus = item.numericBonus;
-      } else if (item.category === 'bridle') {
-        updatedTack.bridleBonus = item.numericBonus;
-      }
-    }
-
-    // Equoria-6g8wm: interactive tx so the money debit (via the shared
-    // helper) is atomic with the horse.tack update + ledger row. Pre-fix
-    // this was an array-style $transaction with an unconditional
-    // user.update(decrement) — vulnerable to a TOCTOU race where two
-    // concurrent purchases both pass the pre-check and both debit, taking
-    // the wallet negative. InsufficientFundsError unwinds the horse.update
-    // and the ledger row, surfacing as a 400 with the same envelope as
-    // before. The ledger row is now ALSO inside the tx — pre-fix it was
-    // an outside fire-then-await with errors swallowed; post-fix a ledger
-    // failure unwinds the whole purchase (the only correct behavior — a
-    // committed purchase with no audit trail was the original Equoria-78i38
-    // bug we are now closing properly rather than working around).
+    // Equoria-6g8wm / 78i38: the debit, horse.tack update and ledger row commit
+    // or unwind together; InsufficientFundsError surfaces as a 400.
     let updatedHorse;
     let updatedUser;
     try {
@@ -672,14 +665,18 @@ export async function purchaseTackItem(req, res) {
             description: `Tack purchase — ${item.name} for ${horse.name ?? horseId}`,
             metadata: { horseId, itemId: item.id, itemCategory: item.category },
           });
-          const horseRow = await tx.horse.update({
-            where: { id: horseId },
-            data: { tack: updatedTack },
-          });
-          // Equoria-0caxg: recordTransactionTx(tx, opts) reads the authoritative
-          // balanceAfter inside the same tx, so the caller no longer supplies it.
-          // moneyAfter is kept purely as the response-shape value
-          // (remainingMoney in the 200 envelope below).
+          // Equoria-bvddn.14: re-read tack AFTER the debit, whose User row lock
+          // serialises concurrent purchases (and a sale) — no stale overwrite.
+          // userId guard: a horse sold mid-purchase is never written (404).
+          const where = { id: horseId, userId };
+          const fresh = await tx.horse.findFirst({ where, select: { tack: true } });
+          const tack = fresh && mergeTackItem(fresh.tack, item);
+          if (!fresh || (await tx.horse.updateMany({ where, data: { tack } })).count !== 1) {
+            throw new HorseNotOwnedError();
+          }
+          const horseRow = { id: horseId, name: horse.name, tack };
+          // Equoria-0caxg: balanceAfter is read inside the tx by the service;
+          // moneyAfter is only the response value (remainingMoney below).
           await recordTransactionTx(tx, {
             userId,
             type: 'debit',
@@ -693,6 +690,9 @@ export async function purchaseTackItem(req, res) {
         { message: 'The tack shop is busy right now, please retry in a moment.' },
       ));
     } catch (txErr) {
+      if (txErr instanceof HorseNotOwnedError) {
+        return res.status(404).json({ success: false, message: 'Horse not found', data: null });
+      }
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
