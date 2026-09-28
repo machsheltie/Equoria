@@ -12,7 +12,7 @@
  *   - epigenetic-trait roll at birth (mare stress + lineage + feed quality)
  *   - conformation, gait, temperament generation (or inherited)
  *   - the actual `createHorse()` insert
- *   - resetting the dam's pregnancy columns
+ *   - clearing the dam's pregnancy, in the same transaction as the insert
  *
  * Note: B4 (per-feeding tier counters) and B5 (`runFoalingJob`) both landed here.
  *
@@ -40,7 +40,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
 import { normalizeEpigeneticModifiers } from '../../../utils/epigeneticTraitKeyMap.mjs';
-import { createNotification } from '../../../utils/notificationService.mjs';
+import {
+  createNotificationTx,
+  finalizeNotificationAfterCommit,
+} from '../../../utils/notificationService.mjs';
 import { UNNAMED_HORSE_NAME } from './horseNamePolicy.mjs';
 
 /**
@@ -92,6 +95,13 @@ const PREGNANCY_BONUS_NEGATIVE_TRAITS = Object.freeze([
 function collectEpigeneticTraits(modifiers) {
   const norm = normalizeEpigeneticModifiers(modifiers);
   return [...new Set([...norm.positive, ...norm.negative, ...norm.hidden])];
+}
+
+/** Error code thrown when the guarded pregnancy claim matches no row. */
+export const PREGNANCY_NOT_CLAIMABLE = 'PREGNANCY_NOT_CLAIMABLE';
+
+function foalBornPayload(foal, dam, sire) {
+  return { foalName: foal.name, foalId: foal.id, damName: dam.name, sireName: sire.name };
 }
 
 function pickFirstUnused(pool, existing) {
@@ -223,40 +233,35 @@ async function gatherLineage(sireId, damId, generations) {
  *
  * Reads the dam's `inFoalSinceDate` / `pregnancySireId` /
  * `pregnancyFeedingsByTier`, generates the foal exactly as the legacy
- * `createFoal` controller did, inserts the Horse row, and clears the dam's
- * pregnancy columns. The B5 foaling job is the expected caller.
+ * `createFoal` controller did, then in ONE transaction clears the dam's
+ * pregnancy (guarded), inserts the foal and its foal_born notification.
+ * Callers: the foaling job and POST /:id/foal-now.
  *
  * @param {object} params
  * @param {number} params.damId - id of the in-foal mare
  * @param {object} [params.options] - { name?, breedId?, sex?, ownerId?,
  *   userId?, playerId?, stableId?, healthStatus?, positiveTraitChance?,
- *   negativeTraitChance?, rng?, skipDamReset?, damSnapshot?, sireSnapshot? }.
+ *   negativeTraitChance?, rng?, damSnapshot?, sireSnapshot?, dueBy? }.
  *   The bonus chance fields are produced by
  *   `calculatePregnancyEpigeneticChances()` and applied as independent rolls
  *   on top of `applyEpigeneticTraitsAtBirth`. `rng` is a () => number
  *   returning [0,1); defaults to Math.random. `damSnapshot` (and optional
- *   `sireSnapshot`) lets the foaling job pass a pre-claim snapshot when the
- *   dam's pregnancy columns were already cleared atomically — the function
- *   then skips the in-foal validation and bypasses the trailing dam reset
- *   (forced via `skipDamReset=true`).
+ *   `sireSnapshot`) lets the foaling job skip re-reading the dam; `dueBy`
+ *   limits the claim to a pregnancy that began on or before that Date.
  * @returns {Promise<object>} the created foal Horse row + applied traits
+ * @throws {Error} with `code === PREGNANCY_NOT_CLAIMABLE` when the mare is no
+ *   longer in foal at claim time (another caller foaled her first).
  */
 export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   if (!damId) {
     throw new Error('createFoalFromPregnancy: damId is required');
   }
 
-  // The foaling job atomically claims the mare (clears pregnancy columns)
-  // BEFORE invoking this function and passes the pre-claim snapshot via
-  // options.damSnapshot. In that mode we skip the in-foal validation since
-  // the snapshot already verified it. Direct callers pass no snapshot and
-  // get the read-and-validate behavior.
+  // The foaling job passes the row it selected as options.damSnapshot, which
+  // skips the re-read. Either way the pregnancy is claimed only inside the
+  // transaction below, so a stale snapshot cannot foal twice.
   let dam;
   let sireId;
-  // Equoria-wgw5k: set true once the DIRECT branch has performed its atomic
-  // pregnancy claim (below). Drives both the createHorse compensation and the
-  // suppression of the trailing dam-reset (the claim already cleared the row).
-  let directClaimed = false;
   if (options.damSnapshot) {
     dam = options.damSnapshot;
     sireId = options.sireSnapshot?.id ?? dam.pregnancySireId;
@@ -461,25 +466,30 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     _epigeneticTraitsApplied: true,
   };
 
-  // Equoria-wgw5k: atomic per-mare claim for the DIRECT branch (POST
-  // /:id/foal-now and any other snapshot-less caller). The direct path
-  // previously read+validated the mare then created a foal UNCONDITIONALLY,
-  // clearing the pregnancy only at the very end — so N concurrent callers each
-  // read the same still-pregnant row, each passed validation, and each created
-  // a foal (one pregnancy → N foals; the race the k6 load harness surfaced).
-  // Mirror runFoalingJob's idempotency claim: clear the pregnancy columns
-  // guarded by them STILL being set, so exactly ONE concurrent caller matches
-  // (count=1) and proceeds to the insert; the losers match 0 and throw "not in
-  // foal" (route → 400). The claim sits AFTER all fallible generation so a
-  // generation failure leaves the pregnancy intact — only the createHorse
-  // insert is post-claim, and it is compensated below. The snapshot branch
-  // (foaling job) was already claimed by runFoalingJob and never enters here.
-  if (!options.damSnapshot) {
-    const claim = await prisma.horse.updateMany({
+  // Equoria-bvddn.20: the pregnancy claim, the foal insert and the foal_born
+  // notification row commit as ONE transaction. They used to be separate
+  // autocommit writes with a compensating restore on failure, so a crash (or a
+  // rejected restore) between the claim and the insert lost the pregnancy with
+  // no foal. Now a failure anywhere rolls the claim back with it.
+  //
+  // The claim is a guarded conditional update (Equoria-wgw5k): it clears the
+  // pregnancy only if it is STILL set for this sire, so of N overlapping
+  // callers (foaling-job runs or foal-now requests) exactly one matches
+  // (count=1); the others match 0 and throw PREGNANCY_NOT_CLAIMABLE ("not in
+  // foal", which foal-now maps to 400 and the job treats as already foaled).
+  // `options.dueBy` is the foaling job's gestation cutoff. All fallible
+  // generation above ran before the transaction, so it stays short.
+  //
+  // Lock order: the tx write-locks only this mare's row, then inserts the foal
+  // and the notification (FK checks take KEY SHARE on the user/sire rows). It
+  // never write-locks a User row, so it cannot invert User -> Horse.
+  const notifUserId = options.userId || dam.userId;
+  const newFoal = await prisma.$transaction(async tx => {
+    const claim = await tx.horse.updateMany({
       where: {
         id: damId,
-        inFoalSinceDate: { not: null },
-        pregnancySireId: { not: null },
+        inFoalSinceDate: options.dueBy ? { lte: options.dueBy } : { not: null },
+        pregnancySireId: sireId,
       },
       data: {
         inFoalSinceDate: null,
@@ -490,66 +500,20 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       },
     });
     if (claim.count === 0) {
-      throw new Error(`createFoalFromPregnancy: mare ${damId} is not in foal`);
+      const lost = new Error(`createFoalFromPregnancy: mare ${damId} is not in foal`);
+      lost.code = PREGNANCY_NOT_CLAIMABLE;
+      throw lost;
     }
-    directClaimed = true;
-  }
-
-  let newFoal;
-  try {
-    newFoal = await createHorse(horseData);
-  } catch (err) {
-    if (directClaimed) {
-      // The claim already cleared the pregnancy but the insert failed — restore
-      // the mare's pregnancy columns from the in-memory pre-claim snapshot so
-      // the pregnancy is not silently consumed with no foal (mirrors
-      // runFoalingJob's compensation).
-      try {
-        await prisma.horse.update({
-          where: { id: damId },
-          data: {
-            inFoalSinceDate: dam.inFoalSinceDate,
-            pregnancySireId: dam.pregnancySireId,
-            pregnancyFeedingsByTier: dam.pregnancyFeedingsByTier ?? {},
-            pendingFoalName: dam.pendingFoalName ?? null,
-            pendingFoalBreedId: dam.pendingFoalBreedId ?? null,
-          },
-        });
-      } catch (rollbackErr) {
-        logger.error(
-          `[foalingService.createFoalFromPregnancy] Compensation rollback failed for dam ${damId}: ${rollbackErr.message}`,
-        );
-      }
+    const foal = await createHorse(horseData, tx);
+    if (notifUserId) {
+      await createNotificationTx(tx, notifUserId, 'foal_born', foalBornPayload(foal, dam, sire));
     }
-    throw err;
-  }
+    return foal;
+  });
 
-  const notifUserId = options.userId || dam.userId;
+  // Post-commit only: the real-time nudge and retention prune (never throws).
   if (notifUserId) {
-    await createNotification(notifUserId, 'foal_born', {
-      foalName: newFoal.name,
-      foalId: newFoal.id,
-      damName: dam.name,
-      sireName: sire.name,
-    });
-  }
-
-  // Clear the mare's pregnancy state. Skipped when it was already cleared
-  // atomically: the foaling job pre-claims (skipDamReset=true), and the direct
-  // branch pre-claims just before the insert (directClaimed — Equoria-wgw5k).
-  // This guarded fallback remains only for a hypothetical snapshot-less caller
-  // that neither pre-claims nor opts out.
-  if (!options.skipDamReset && !directClaimed) {
-    await prisma.horse.update({
-      where: { id: damId },
-      data: {
-        inFoalSinceDate: null,
-        pregnancySireId: null,
-        pregnancyFeedingsByTier: {},
-        pendingFoalName: null,
-        pendingFoalBreedId: null,
-      },
-    });
+    finalizeNotificationAfterCommit(notifUserId, 'foal_born', foalBornPayload(newFoal, dam, sire));
   }
 
   logger.info(
@@ -573,9 +537,9 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
 /**
  * Foaling job — finds every mare whose gestation has elapsed (>= 7 days) and
  * delivers each foal. Per-mare isolation: a failure on one mare does not
- * abort the run. Idempotent: an atomic "claim" via `updateMany()` guards
- * against duplicate foaling when two job runners overlap or a single run is
- * invoked twice.
+ * abort the run. Idempotent: the guarded in-transaction claim in
+ * `createFoalFromPregnancy` guards against duplicate foaling when two job
+ * runners overlap or a single run is invoked twice.
  *
  * @param {object} [opts]
  * @param {Date}     [opts.now] - test seam; defaults to new Date().
@@ -621,38 +585,11 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
     const damId = candidate.id;
     const snapshot = { ...candidate };
 
-    // Atomic claim: clear pregnancy state if (and only if) it's still set.
-    // Two parallel runners can each call findMany() and see the same dam,
-    // but only ONE updateMany() will match (count=1); the other gets count=0
-    // and skips. This is the idempotency guarantee.
-    let claimed;
-    try {
-      const claim = await prisma.horse.updateMany({
-        where: {
-          id: damId,
-          inFoalSinceDate: { lte: cutoff },
-          pregnancySireId: { not: null },
-        },
-        data: {
-          inFoalSinceDate: null,
-          pregnancySireId: null,
-          pregnancyFeedingsByTier: {},
-          pendingFoalName: null,
-          pendingFoalBreedId: null,
-        },
-      });
-      claimed = claim.count;
-    } catch (err) {
-      logger.error(`[foalingService.runFoalingJob] Claim failed for dam ${damId}: ${err.message}`);
-      errors.push({ damId, error: err.message });
-      continue;
-    }
-
-    if (claimed === 0) {
-      logger.info(`[foalingService.runFoalingJob] Dam ${damId} already claimed; skipping`);
-      continue;
-    }
-
+    // Equoria-bvddn.20: createFoalFromPregnancy claims the pregnancy (guarded
+    // on it still being due) and inserts the foal in one transaction. A
+    // failure rolls the claim back, so the mare stays pregnant and is retried
+    // next run; a parallel runner that foaled her first makes the claim match
+    // nothing, which is a skip, not an error.
     try {
       const { positive_chance: positiveChance, negative_chance: negativeChance } =
         calculatePregnancyEpigeneticChances(snapshot.pregnancyFeedingsByTier);
@@ -661,10 +598,10 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
         damId,
         options: {
           damSnapshot: snapshot,
+          dueBy: cutoff,
           positiveTraitChance: positiveChance,
           negativeTraitChance: negativeChance,
           rng,
-          skipDamReset: true,
           userId: snapshot.userId,
           name: snapshot.pendingFoalName ?? undefined,
           breedId: snapshot.pendingFoalBreedId ?? undefined,
@@ -672,29 +609,14 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
       });
       foalsBorn += 1;
     } catch (err) {
+      if (err.code === PREGNANCY_NOT_CLAIMABLE) {
+        logger.info(`[foalingService.runFoalingJob] Dam ${damId} already foaled; skipping`);
+        continue;
+      }
       logger.error(
         `[foalingService.runFoalingJob] Foal creation failed for dam ${damId}: ${err.message}`,
       );
       errors.push({ damId, error: err.message });
-
-      // Compensation: restore the dam's pregnancy state so it gets retried
-      // on the next run rather than silently consumed.
-      try {
-        await prisma.horse.update({
-          where: { id: damId },
-          data: {
-            inFoalSinceDate: snapshot.inFoalSinceDate,
-            pregnancySireId: snapshot.pregnancySireId,
-            pregnancyFeedingsByTier: snapshot.pregnancyFeedingsByTier ?? {},
-            pendingFoalName: snapshot.pendingFoalName ?? null,
-            pendingFoalBreedId: snapshot.pendingFoalBreedId ?? null,
-          },
-        });
-      } catch (rollbackErr) {
-        logger.error(
-          `[foalingService.runFoalingJob] Compensation rollback failed for dam ${damId}: ${rollbackErr.message}`,
-        );
-      }
     }
   }
 
