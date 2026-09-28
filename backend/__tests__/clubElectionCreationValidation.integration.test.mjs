@@ -150,12 +150,10 @@ describe('Equoria-bvddn.25: Election date validation', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data?.election?.id).toBeDefined();
 
-    // Clean up this election
+    // Clean up this election (capture ID to avoid stale closure reference)
     if (res.body.data?.election?.id) {
-      cleanup.add(
-        () => prisma.clubElection.delete({ where: { id: res.body.data.election.id } }),
-        `election(${res.body.data.election.id})`,
-      );
+      const electionId = res.body.data.election.id;
+      cleanup.add(() => prisma.clubElection.delete({ where: { id: electionId } }), `election(${electionId})`);
     }
   });
 });
