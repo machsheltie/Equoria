@@ -45,10 +45,18 @@ const FIXTURE_PREFIX = 'TestFixture-bvddn12-groom';
 const MAX_GROOMS_PER_USER = 10;
 const RETIRED_COUNT = 6;
 const ACTIVE_COUNT = MAX_GROOMS_PER_USER - RETIRED_COUNT; // 4 — well under the cap
-const SESSION_RATE = 20;
-const MARKETPLACE_HIRE_COST = SESSION_RATE * 7;
 const SKILL_LEVEL = 'novice';
 const DIRECT_HIRE_COST = Math.round(500 * SKILL_LEVELS[SKILL_LEVEL].costModifier);
+// The marketplace offer's sessionRate is procedurally generated per-offer
+// (groomMarketplace.mjs: base rate 15-60 by skill tier, up to +50% by
+// experience within the tier -> worst case master/max-experience is 90,
+// hiring cost 90*7=630). This suite is exercising the ROSTER-CAP guard, not
+// the wallet, so the buyer gets a flat balance well above that ceiling —
+// tying it to an assumed fixed sessionRate (as an earlier revision did)
+// under-funded the buyer whenever the RNG rolled a pricier offer, producing
+// an intermittent false-negative 400 (insufficient funds) unrelated to the
+// cap fix under test.
+const MARKETPLACE_BUYER_MONEY = 10000;
 
 const tag = () => randomBytes(6).toString('hex');
 
@@ -124,7 +132,7 @@ describe('Equoria-bvddn.12 — retired grooms excluded from the roster cap', () 
   afterEach(() => cleanup.run(), 60000);
 
   it('marketplace hire path: 10 total grooms (6 retired, 4 active) still allows a hire', async () => {
-    const buyer = await makeUser('mkt', MARKETPLACE_HIRE_COST * 2);
+    const buyer = await makeUser('mkt', MARKETPLACE_BUYER_MONEY);
     cleanup.add(() => prisma.groom.deleteMany({ where: { userId: buyer.id } }), 'grooms');
     cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: buyer.id } }), 'ledger rows');
     cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: buyer.id } }), 'marketplace state');
