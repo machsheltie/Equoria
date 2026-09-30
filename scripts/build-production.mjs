@@ -94,9 +94,17 @@ function run(stage, index) {
   }
 }
 
-STAGES.forEach(run);
-console.log(
-  DRY_RUN
-    ? '\n[build:production] dry run complete (nothing executed).'
-    : '\n[build:production] complete: dependencies installed, Prisma generated, frontend built and verified.'
-);
+function main() {
+  STAGES.forEach(run);
+  console.log(
+    DRY_RUN
+      ? '\n[build:production] dry run complete (nothing executed).'
+      : '\n[build:production] complete: dependencies installed, Prisma generated, frontend built and verified.'
+  );
+}
+
+// Import-safe entry guard (.claude/rules/CONTRIBUTING.md): the stages only run
+// when this file is the direct entrypoint.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main();
+}
