@@ -208,6 +208,8 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
     loginPath,
     authenticatedRedirectPath,
     location.pathname,
+    location.search,
+    location.hash,
   ]);
 
   return result;

@@ -12,6 +12,7 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router';
 import type { EpigeneticTrait } from '../../../hooks/useHorseGenetics';
 import type { Horse } from '../HorseDetailPageTypes';
 
@@ -129,22 +130,22 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
       {/* Parent Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {horse.parentIds.sireId && (
-          <button
-            onClick={() => (window.location.href = `/horses/${horse.parentIds!.sireId}`)}
+          <Link
+            to={`/horses/${horse.parentIds.sireId}`}
             className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-[var(--alpha-gold-primary-50)] transition-colors text-left"
           >
             <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Sire</p>
             <p className="fantasy-body text-[rgb(220,235,255)]">View Sire Details &rarr;</p>
-          </button>
+          </Link>
         )}
         {horse.parentIds.damId && (
-          <button
-            onClick={() => (window.location.href = `/horses/${horse.parentIds!.damId}`)}
+          <Link
+            to={`/horses/${horse.parentIds.damId}`}
             className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-[var(--alpha-gold-primary-50)] transition-colors text-left"
           >
             <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Dam</p>
             <p className="fantasy-body text-[rgb(220,235,255)]">View Dam Details &rarr;</p>
-          </button>
+          </Link>
         )}
       </div>
     </div>
