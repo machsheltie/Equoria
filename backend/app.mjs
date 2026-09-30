@@ -38,6 +38,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 import logger from './utils/logger.mjs';
+import { createNotFoundHandler } from './middleware/notFoundHandler.mjs';
 
 // Static asset configuration (dir selection + cache headers)
 import { staticAssetDirs, spaPublicDir, setStaticCacheHeaders } from './config/staticAssets.mjs';
@@ -370,32 +371,10 @@ if (process.env.NODE_ENV === 'production' && spaPublicDir) {
   }
 }
 
-// 404 handler for undefined routes
+// 404 handler for undefined routes (middleware/notFoundHandler.mjs)
 // In production: serve index.html for non-API routes (SPA client-side routing)
 // In development: return JSON 404 so API callers get useful errors
-app.use('*', (req, res) => {
-  if (
-    spaHtml &&
-    process.env.NODE_ENV === 'production' &&
-    !req.path.startsWith('/api') &&
-    !req.path.startsWith('/health') &&
-    !req.path.startsWith('/api-docs')
-  ) {
-    // SPA HTML pins the current bundle hash — it must never be served from
-    // a stale cache, otherwise users boot an old bundle whose chunks no
-    // longer exist on the server (ZAP rule 10049).
-    res.setHeader('Cache-Control', 'no-store');
-    return res.type('html').send(spaHtml);
-  }
-
-  logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl} from ${req.ip}`);
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-    path: req.originalUrl,
-    method: req.method,
-  });
-});
+app.use('*', createNotFoundHandler({ spaHtml, logger }));
 
 // Error request logging
 app.use(errorRequestLogger);
