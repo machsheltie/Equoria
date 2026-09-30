@@ -361,13 +361,27 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
       // sentinel exists for is unchanged and still enforced; the two extra
       // assertions below pin the NEW contract so the whole-document form cannot
       // come back.
+      //
+      // Equoria-bvddn.13 (owner ruling 2026-09-30):
+      //   OLD contract: the inventory write is exactly
+      //     `updateUserSettingsPaths(tx, userId, { set: { inventory } })` after the
+      //     `affected === 0` claim check. That unguarded form wrote back an
+      //     inventory computed from an unlocked read, erasing a concurrent feed
+      //     purchase or another horse's feed (feedInventoryStaleWrite test).
+      //   NEW contract: the write still sets ONLY `inventory` and still comes
+      //     after the `affected === 0` claim check, AND it must carry the
+      //     `expect: { inventory: ... }` compare-and-swap on the value it read.
       const guardIdx = FEED_SERVICE_SRC.search(/if\s*\(affected\s*===\s*0\)/);
       const invWriteIdx = FEED_SERVICE_SRC.search(
-        /updateUserSettingsPaths\(\s*tx,\s*userId,\s*\{\s*set:\s*\{\s*inventory\s*\}\s*\}\s*\)/,
+        /updateUserSettingsPaths\(\s*tx,\s*userId,\s*\{\s*set:\s*\{\s*inventory\s*\}/,
       );
       expect(guardIdx).toBeGreaterThan(-1);
       expect(invWriteIdx).toBeGreaterThan(-1);
       expect(invWriteIdx).toBeGreaterThan(guardIdx);
+      const casIdx = FEED_SERVICE_SRC.slice(invWriteIdx).search(/expect:\s*\{\s*inventory:/);
+      expect(casIdx).toBeGreaterThan(-1);
+      // The CAS belongs to THIS call: it appears before the call's closing `});`.
+      expect(casIdx).toBeLessThan(FEED_SERVICE_SRC.slice(invWriteIdx).indexOf('});'));
       // No writer in this service may replace the whole settings document.
       expect(FEED_SERVICE_SRC).not.toMatch(/data:\s*\{\s*settings:\s*\{\s*\.\.\.settings/);
     });
