@@ -190,7 +190,13 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
       .send({ horseName: 'Beta Star', breedId: breed.id, gender: 'Stallion' })
       .expect(200);
 
-    expect(response.body.data.completed).toBe(true);
+    // OLD contract: horse customization jumped the player to step 10 / completed
+    // true, so the 9-step spotlight tour was unreachable.
+    // NEW contract: finishing the wizard creates the horse and hands the player
+    // INTO the tour: step 1, completed false.
+    // Owner ruling 2026-09-30, Equoria-bvddn.31.
+    expect(response.body.data.step).toBe(1);
+    expect(response.body.data.completed).toBe(false);
     expect(response.body.data.horse).toMatchObject({
       name: 'Beta Star',
       breedId: breed.id,
@@ -210,8 +216,46 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     });
 
     const updated = await prisma.user.findUnique({ where: { id: testUser.id } });
-    expect(updated.settings.completedOnboarding).toBe(true);
+    // Owner ruling 2026-09-30, Equoria-bvddn.31 (old: true / 10).
+    expect(updated.settings.completedOnboarding).toBe(false);
+    expect(updated.settings.onboardingStep).toBe(1);
+  });
+
+  // Equoria-bvddn.31: the whole hand-off, end to end. The wizard's submit lands
+  // the player on tour step 1; the tour's own advances (no horse payload) walk
+  // her to step 10, which is the only place onboarding completes.
+  it('finishing the wizard enters the tour at step 1 and the tour advances end at step 10 / completed true', async () => {
+    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    expect(breed).toBeTruthy();
+    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
+
+    const advance = body =>
+      request(app)
+        .post('/api/v1/auth/advance-onboarding')
+        .set('Origin', 'http://localhost:3000')
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', cookieHeader)
+        .set('X-Test-Email', testUserData.email)
+        .set(rateLimitBypassHeader)
+        .send(body)
+        .expect(200);
+
+    const wizard = await advance({ horseName: 'Tour Star', breedId: breed.id, gender: 'Mare' });
+    expect(wizard.body.data).toMatchObject({ step: 1, completed: false });
+
+    // Tour steps 1 -> 10 are nine advances; none completes until the last.
+    for (let expectedStep = 2; expectedStep <= 10; expectedStep += 1) {
+      const res = await advance({});
+      expect(res.body.data.step).toBe(expectedStep);
+      expect(res.body.data.completed).toBe(expectedStep === 10);
+    }
+
+    const updated = await prisma.user.findUnique({ where: { id: testUser.id } });
     expect(updated.settings.onboardingStep).toBe(10);
+    expect(updated.settings.completedOnboarding).toBe(true);
+    const horses = await prisma.horse.findMany({ where: { userId: testUser.id } });
+    expect(horses).toHaveLength(1);
+    expect(horses[0].name).toBe('Tour Star');
   });
 
   // Equoria-f5372 — the onboarding starter-horse paths must never leave the

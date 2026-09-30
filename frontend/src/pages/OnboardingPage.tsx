@@ -289,20 +289,22 @@ const OnboardingPage: React.FC = () => {
         breedId: horseSelection.breedId,
         gender: horseSelection.gender,
       }),
-    onSuccess: async () => {
-      // Story 21S-2/21S-3: Synchronously patch the profile query cache so
-      // OnboardingGuard sees `completedOnboarding=true` BEFORE navigation.
-      // Previously used fire-and-forget `invalidateQueries`, which caused a
-      // race — the guard read stale user and bounced back to /onboarding.
-      // Setting the data directly guarantees the next render has fresh flags.
+    onSuccess: async (result) => {
+      // Story 21S-2/21S-3: Synchronously patch the profile query cache so the
+      // next render has fresh flags (a fire-and-forget `invalidateQueries` raced
+      // OnboardingGuard and bounced the player back to /onboarding).
+      // Owner ruling 2026-09-30 (Equoria-bvddn.31): finishing the wizard hands the
+      // player into the guided spotlight tour, so the server answers step 1 /
+      // completed false. Write exactly what the mutation returned (merged into
+      // the cached user, never replacing it) so the spotlight appears immediately.
       const existingProfile = queryClient.getQueryData<{ user: User }>(['profile']);
       if (existingProfile?.user) {
         queryClient.setQueryData(['profile'], {
           ...existingProfile,
           user: {
             ...existingProfile.user,
-            completedOnboarding: true,
-            onboardingStep: 10,
+            completedOnboarding: result.completed,
+            onboardingStep: result.step,
           },
         });
       }

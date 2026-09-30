@@ -247,7 +247,12 @@ export const advanceOnboarding = async (req, res, next) => {
       typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
     const currentStep =
       typeof currentSettings.onboardingStep === 'number' ? currentSettings.onboardingStep : 0;
-    const newStep = hasHorseCustomization ? 10 : currentStep + 1;
+    // Owner ruling 2026-09-30 (Equoria-bvddn.31): finishing the wizard (horse
+    // customization) hands the player INTO the 9-step spotlight tour at step 1
+    // with completedOnboarding false; it no longer jumps to 10/true. Math.max keeps
+    // a player who is already further along (or finished) from being moved back.
+    // The tour's own advances (no customization) still walk to step 10/true.
+    const newStep = hasHorseCustomization ? Math.max(currentStep, 1) : currentStep + 1;
     const isComplete = newStep >= 10;
 
     // Finding 1 (Equoria-6p398.1): only the onboarding keys are written; every
