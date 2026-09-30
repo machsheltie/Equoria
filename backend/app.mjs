@@ -354,7 +354,8 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1', authRouter);
 
 // Serve frontend static assets in every environment so direct backend-port
-// image requests work for local development, non-Docker production, and Docker.
+// image requests work for local development and the Railway production build,
+// which serves frontend/dist straight from the repository layout.
 // Must come before the 404 handler so asset requests are served, not rejected.
 // Cache-Control policy lives in config/staticAssets.mjs (ZAP rule 10049).
 for (const staticAssetDir of staticAssetDirs) {

@@ -158,7 +158,7 @@ export const healthCheckHandler = async (req, res) => {
 };
 
 /**
- * Simple liveness probe (for Kubernetes/Docker)
+ * Simple liveness probe (platform health polling)
  */
 export const livenessHandler = (req, res) => {
   res.status(200).json({
@@ -169,7 +169,7 @@ export const livenessHandler = (req, res) => {
 };
 
 /**
- * Readiness probe (for Kubernetes/Docker)
+ * Readiness probe (platform health polling)
  */
 export const readinessHandler = async (req, res) => {
   try {

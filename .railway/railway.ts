@@ -15,9 +15,16 @@ export const partial = 'Equoria';
 export default defineRailway(() => {
   const Equoria = service('Equoria', {
     source: github('machsheltie/Equoria', { branch: 'master' }),
+    // Native Railpack build (Equoria-6q7cf, 2026-09-30). The repository-managed
+    // Dockerfile was removed; the owner does not use Docker. Railpack installs
+    // the repository root (npm ci) and then runs `build:production`, the one
+    // fail-fast build command shared with CI (scripts/build-production.mjs):
+    // backend/database/frontend installs, Prisma generate, Vite build, asset
+    // verification. Railpack sets NODE_ENV=production in the image; the
+    // service's own NODE_ENV variable (preserved below) still wins at runtime.
     build: {
-      builder: 'DOCKERFILE',
-      dockerfilePath: 'Dockerfile',
+      builder: 'RAILPACK',
+      buildCommand: 'npm run build:production',
     },
     // Run database migrations before starting the server on every deploy.
     // prisma migrate deploy is idempotent — safe to run even with no new migrations.
@@ -29,8 +36,11 @@ export default defineRailway(() => {
     // regression the doctrine check check-railway-migrate-failfast.mjs guards
     // against. The `${DIRECT_URL:-$DATABASE_URL}` fallback (Supabase pooler, commit
     // c6c66db01) is parameter substitution, not a failure swallow — keep it.
+    // Paths are repository-relative: Railpack runs the start command from the
+    // app directory (/app, per https://railpack.com/config/file), so no image
+    // layout is hardcoded here.
     start:
-      'sh -c \'cd /app/packages/database && (DATABASE_URL="${DIRECT_URL:-$DATABASE_URL}" npx prisma migrate deploy) && cd /app/backend && node server.mjs\'',
+      'sh -c \'cd packages/database && (DATABASE_URL="${DIRECT_URL:-$DATABASE_URL}" npx prisma migrate deploy) && cd ../backend && node server.mjs\'',
     healthcheck: '/health',
     healthcheckTimeout: 300,
     // Restart policy: railway.toml set ON_FAILURE with 10 retries, which is

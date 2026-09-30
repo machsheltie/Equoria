@@ -34,6 +34,7 @@
     "prepare": "husky",
     "format:check": "prettier --check .",
     "typecheck": "tsc -p frontend/tsconfig.json --noEmit",
+    "build:production": "node scripts/build-production.mjs",
     "check-prerequisites": "node scripts/check-prerequisites.mjs"
   },
   "keywords": [

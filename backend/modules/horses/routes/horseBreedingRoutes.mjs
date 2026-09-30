@@ -228,8 +228,8 @@ router.get(
  * `beta-readiness` (playwright.beta-readiness.config.ts).
  *
  * Membership is an ALLOWLIST, not a `!== 'production'` check, because
- * `NODE_ENV` is UNSET in a real deploy: neither the Dockerfile nor
- * the Railway start command (`.railway/railway.ts`) exports it, and
+ * `NODE_ENV` is not guaranteed in a real deploy: the Railway start command
+ * (`.railway/railway.ts`) does not export it, and
  * config/config.mjs only *defaults* its own local `NODE_ENV` const to
  * 'development' — `process.env.NODE_ENV` itself stays `undefined`. A
  * block-production gate would therefore have left the deploy wide open. Unset,

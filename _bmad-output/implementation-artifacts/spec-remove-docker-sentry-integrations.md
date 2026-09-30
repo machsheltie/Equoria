@@ -2,7 +2,7 @@
 title: 'Remove repository-managed Docker and Sentry integrations'
 type: 'chore'
 created: '2026-09-17'
-status: 'draft'
+status: 'implemented'
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/devops-cicd.md'
@@ -50,11 +50,11 @@ context:
 
 **Execution:**
 
-- [ ] `package.json` -- add a fail-fast `build:production` orchestration that deterministically installs backend/database/frontend dependencies, generates Prisma, builds Vite, and validates required assets.
-- [ ] `railway.toml`, `Dockerfile`, `.dockerignore` -- remove the application Dockerfile, select Railpack explicitly, reuse `build:production`, preserve migration-first startup, and retain Railpack exclusions.
-- [ ] `.github/workflows/test.yml` -- replace Docker image/startup checks with the canonical native production build and update all downstream job identifiers and reporting.
-- [ ] `backend/app.mjs`, `backend/modules/horses/routes/horseBreedingRoutes.mjs`, `docs/devops-cicd.md` -- remove stale Docker claims and record the live build/deploy path.
-- [ ] Repository runtime/config scan -- confirm Sentry packages, DSNs, initialization, capture APIs, and middleware remain absent; leave historical audit evidence and test comments untouched.
+- [x] `package.json` -- `build:production` runs `scripts/build-production.mjs`, a fail-fast stage runner (backend/database/frontend `npm ci`, Prisma generate, Vite build, asset verification; `--dry-run` prints the stages).
+- [x] `.railway/railway.ts`, `Dockerfile`, `.dockerignore` -- Dockerfile and `.dockerignore` deleted (Railway's source ignore files are `.gitignore` / `.railwayignore`; `.dockerignore` had no consumer without the Dockerfile). Builder `RAILPACK` with `buildCommand: 'npm run build:production'`; start command kept `migrate deploy && node server.mjs` with repository-relative paths (Railpack runs from `/app`, per railpack.com/config/file).
+- [x] `.github/workflows/test.yml` -- `docker-build` replaced by `production-build` (master only, same `if:`), wired into `deployment-gate`, the skip sentinel (`R_PRODUCTION_BUILD`, `EXPECT_MASTER_ONLY`), the header map and the gate summary.
+- [x] `backend/app.mjs`, `backend/modules/horses/routes/horseBreedingRoutes.mjs`, `backend/utils/healthCheck.mjs`, `docs/devops-cicd.md` -- stale Docker commentary removed; docs record the Railpack/native build path.
+- [x] Repository runtime/config scan -- Sentry rg matches only historical comments in tests/helpers and `showExecutionReaper.mjs`; no packages, DSNs, initialization or capture calls.
 
 **Acceptance Criteria:**
 
@@ -64,6 +64,8 @@ context:
 - Given repository source and manifests are scanned, when Sentry runtime identifiers and dependencies are queried, then no executable integration or environment contract is found.
 
 ## Spec Change Log
+
+- 2026-09-30 (Equoria-6q7cf): implemented. Code Map re-derived from live files: `railway.toml` no longer exists (migrated to `.railway/railway.ts` on 2026-09-22), so the Railpack switch and start-command change landed there. `.dockerignore` was deleted rather than retained because no evidence shows Railpack consuming it. `railway config apply` and the first Railpack deploy remain owner actions.
 
 ## Design Notes
 
