@@ -256,10 +256,19 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
   //    runFoalingJob's claim uses `inFoalSinceDate: { lte: cutoff }` and
   //    `claimed === 0`, so neither matches its code. A revert to the old
   //    read-then-create-then-clear-at-end shape fails here.
+  //
+  //    Old contract: the claim was a standalone `prisma.horse.updateMany(` on
+  //    the global client, with `inFoalSinceDate: { not: null }` as its literal
+  //    guard. New contract (Equoria-bvddn.20): the claim runs as
+  //    `tx.horse.updateMany(` inside the one foaling transaction, and the
+  //    guard is `{ not: null }` for foal-now or `{ lte: dueBy }` for the job.
+  //    The regexes below accept either client name and the guard on the same
+  //    line; the `claim.count === 0` marker is unchanged. Owner ruling
+  //    2026-09-30.
   describe('source sentinel — direct branch uses a guarded atomic claim (Equoria-wgw5k)', () => {
     it('contains an updateMany claim guarded by inFoalSinceDate: { not: null }', () => {
-      expect(FOALING_SERVICE_SRC).toMatch(/prisma\.horse\.updateMany\(/);
-      expect(FOALING_SERVICE_SRC).toMatch(/inFoalSinceDate:\s*\{\s*not:\s*null\s*\}/);
+      expect(FOALING_SERVICE_SRC).toMatch(/(?:prisma|tx)\.horse\.updateMany\(/);
+      expect(FOALING_SERVICE_SRC).toMatch(/inFoalSinceDate:[^\n]*\{\s*not:\s*null\s*\}/);
     });
 
     it('rejects the concurrent loser on claim.count === 0', () => {
