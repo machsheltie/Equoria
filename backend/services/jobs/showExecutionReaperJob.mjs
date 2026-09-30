@@ -11,6 +11,10 @@
  * stranded show is recovered at most ~2.5h after its claim; staleAfterMs
  * (heartbeat budget) is 1h — 2x the schedule period, so one missed tick
  * does not false-alarm but a dead job surfaces within the hour.
+ *
+ * Equoria-bvddn.15 / Equoria-cmw85.8 (owner ruling 2026-09-30): minutes shifted from :00/:30 to :08/:38
+ * (same 30-minute cadence) so it no longer starts in the same minute as another
+ * locked job; see cronScheduleCollision sentinel.
  */
 
 export default Object.freeze({
@@ -18,7 +22,8 @@ export default Object.freeze({
   // Every 30 minutes (UTC) — frequent enough that a stranded show's escrow
   // is unfrozen within ~2.5h of the crash, cheap enough that the usual
   // zero-stale scan is a single indexed query (shows_status_claimed_at_idx).
-  schedule: '*/30 * * * *',
+  // Old: '*/30 * * * *'.
+  schedule: '8,38 * * * *',
   applyLock: true,
   staleAfterMs: 60 * 60 * 1000,
   run: service => service.reapStaleExecutingShows(),

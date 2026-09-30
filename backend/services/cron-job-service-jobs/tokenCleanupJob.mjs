@@ -3,7 +3,9 @@
  *
  * Registry entry consumed by initializeCronJobs() in cronJobService.mjs.
  * Behaviour identical to the pre-split inline `cron.schedule('0 3 * * *', ...)`:
- * Daily 03:00 UTC, advisory-locked under 'cronJobService:tokenCleanup'.
+ * Daily 03:15 UTC (moved from 03:00 by Equoria-bvddn.15 / Equoria-cmw85.8 (owner ruling 2026-09-30): it shared the minute
+ * with nightlyShowExecution, the heaviest job; hour unchanged), advisory-locked
+ * under 'cronJobService:tokenCleanup'.
  * Removes expired refresh tokens (CWE-613: Insufficient Session Expiration).
  *
  * `runTokenCleanup` stays the work function; cronJobService.mjs re-exports it
@@ -56,8 +58,8 @@ export async function runTokenCleanup() {
 
 export default Object.freeze({
   jobName: 'tokenCleanup',
-  // Daily at 03:00 UTC.
-  schedule: '0 3 * * *',
+  // Daily at 03:15 UTC. Old: '0 3 * * *' (collided with nightlyShowExecution).
+  schedule: '15 3 * * *',
   lockKey: 'cronJobService:tokenCleanup',
   run: runTokenCleanup,
 });

@@ -33,7 +33,9 @@ const EXPECTED_JOBS = [
   { jobName: 'dailyHorseAging', schedule: '5 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'dailyFoalMilestoneEvaluation', schedule: '10 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'weeklyRiderTrainerCareerWeeks', schedule: '15 0 * * 1', staleAfterMs: 192 * 60 * 60 * 1000 },
-  { jobName: 'electionStatusTransition', schedule: '*/15 * * * *', staleAfterMs: 30 * 60 * 1000 },
+  // owner ruling 2026-09-30, Equoria-bvddn.15: old '*/15 * * * *', new '3,18,33,48 * * * *'
+  // (same 15-minute cadence; minutes shifted off the :00/:15/:30/:45 minutes other locked jobs use).
+  { jobName: 'electionStatusTransition', schedule: '3,18,33,48 * * * *', staleAfterMs: 30 * 60 * 1000 },
   { jobName: 'nightlyShowExecution', schedule: '0 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'auditLogRetention', schedule: '30 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'hoofConditionDecay', schedule: '45 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
@@ -44,7 +46,9 @@ const EXPECTED_JOBS = [
   // Equoria-2tx16: appended after docCoverageSnapshot (does not reorder prior jobs).
   { jobName: 'cronRunLogRetention', schedule: '15 4 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   // Equoria-c7mx0: show-execution reaper, appended last (does not reorder prior jobs).
-  { jobName: 'showExecutionReaper', schedule: '*/30 * * * *', staleAfterMs: 60 * 60 * 1000 },
+  // owner ruling 2026-09-30, Equoria-bvddn.15: old '*/30 * * * *', new '8,38 * * * *'
+  // (same 30-minute cadence; minutes shifted off :00/:30).
+  { jobName: 'showExecutionReaper', schedule: '8,38 * * * *', staleAfterMs: 60 * 60 * 1000 },
   // Equoria-m9lz1: the weekly groom career/auto-retirement pass, appended last
   // (reorders nothing). It is in THIS registry, not the function-based
   // cronJobService, because it is the one job whose silent failure has no external
