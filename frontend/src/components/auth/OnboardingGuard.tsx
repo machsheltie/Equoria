@@ -17,28 +17,37 @@
  * beta-critical routing.
  */
 
-import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import React, { type ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 
-const OnboardingGuard: React.FC = () => {
+/** Never redirected away from: the wizard itself (Equoria-bvddn.38). */
+const EXEMPT_PATHS = new Set(['/onboarding']);
+
+/**
+ * Emailed-link routes are exempt only when they carry a token, so the link is
+ * always consumed. Token-less /verify-email is where registration lands a new
+ * player, and that visit still continues into the wizard.
+ */
+const TOKEN_PATHS = new Set(['/verify-email', '/reset-password', '/confirm-email-change']);
+
+const OnboardingGuard: React.FC<{ children?: ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    if (isLoading) return; // Wait for auth to resolve
-    if (!user) return; // Not authenticated — ProtectedRoute handles login redirect
-    if (location.pathname === '/onboarding') return; // Already on onboarding
+  const carriesToken =
+    TOKEN_PATHS.has(location.pathname) && new URLSearchParams(location.search).has('token');
 
-    // Only redirect when completedOnboarding is explicitly false AND tour not yet started
-    // (onboardingStep >= 1 means player is mid-tour; let them navigate freely)
-    if (user.completedOnboarding === false && (user.onboardingStep ?? 0) === 0) {
-      navigate('/onboarding', { replace: true });
-    }
-  }, [user, isLoading, location.pathname, navigate]);
+  const mustOnboard =
+    !isLoading &&
+    !!user &&
+    !EXEMPT_PATHS.has(location.pathname) &&
+    !carriesToken &&
+    user.completedOnboarding === false &&
+    (user.onboardingStep ?? 0) === 0;
 
-  return null;
+  if (mustOnboard) return <Navigate to="/onboarding" replace />;
+  return <>{children}</>;
 };
 
 export default OnboardingGuard;

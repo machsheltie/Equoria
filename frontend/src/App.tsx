@@ -56,52 +56,53 @@ const App = () => (
               <Suspense fallback={null}>
                 <WhileYouWereGone />
               </Suspense>
-              {/* Redirects new users to /onboarding when completedOnboarding === false */}
-              <OnboardingGuard />
+              {/* OnboardingGuard (wraps Routes below) redirects new users to /onboarding when completedOnboarding === false */}
               {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1 */}
               <Suspense fallback={null}>
                 <OnboardingSpotlight />
               </Suspense>
-              <Suspense fallback={<GallopingLoader />}>
-                <Routes>
-                  {/* Equoria-bvddn.36: requires auth (no DashboardLayout nav shell) —
+              <OnboardingGuard>
+                <Suspense fallback={<GallopingLoader />}>
+                  <Routes>
+                    {/* Equoria-bvddn.36: requires auth (no DashboardLayout nav shell) —
                       a logged-out visitor must not be able to walk the wizard and
                       only fail with a 401 on submit. OnboardingGuard still does the
                       post-registration redirect into this route for an already
                       signed-in player. */}
-                  <Route
-                    path="/onboarding"
-                    element={
-                      <ProtectedRoute>
-                        <OnboardingPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  {/* Public routes — no nav shell */}
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/verify-email" element={<VerifyEmailPage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
+                    <Route
+                      path="/onboarding"
+                      element={
+                        <ProtectedRoute>
+                          <OnboardingPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Public routes — no nav shell */}
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/verify-email" element={<VerifyEmailPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
 
-                  {/* Authenticated routes — DashboardLayout provides persistent nav */}
-                  <Route
-                    element={
-                      <ProtectedRoute>
-                        <DashboardLayout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route path="/horses/:id" element={<HorseDetailPage />} />
-                    <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
-                    <Route path="/foals/:id" element={<FoalDetailPage />} />
-                    {navItems.map(({ to, Page }) => (
-                      <Route key={to} path={to} element={<Page />} />
-                    ))}
-                  </Route>
-                </Routes>
-              </Suspense>
+                    {/* Authenticated routes — DashboardLayout provides persistent nav */}
+                    <Route
+                      element={
+                        <ProtectedRoute>
+                          <DashboardLayout />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route path="/horses/:id" element={<HorseDetailPage />} />
+                      <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
+                      <Route path="/foals/:id" element={<FoalDetailPage />} />
+                      {navItems.map(({ to, Page }) => (
+                        <Route key={to} path={to} element={<Page />} />
+                      ))}
+                    </Route>
+                  </Routes>
+                </Suspense>
+              </OnboardingGuard>
             </BrowserRouter>
           </RewardToastProvider>
         </TooltipProvider>
