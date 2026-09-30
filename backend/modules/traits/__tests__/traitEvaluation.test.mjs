@@ -447,10 +447,15 @@ describe('evaluateTraitRevelation — uncovered branch paths', () => {
   });
 
   it('legendary rare trait is revealed as hidden (exercises lines 320-324, 402)', () => {
-    // legendaryBloodline: 3% per iter → P(0 in 200) < 0.3%
+    // Old contract: up to 200 real rolls, needing legendaryBloodline at least once.
+    //   Measured per-roll rate is ~2.87% (20,000 real calls), so P(0 hits in 200) =
+    //   (1 - 0.0287)^200 ≈ 3.0e-3: about 1 full gate in 335 failed by pure chance.
+    // New contract (owner approval 2026-09-30, Equoria-kdlvd): same assertion, same real
+    //   rolls, no mocking and no change to any odds, but up to 2000 rolls:
+    //   (1 - 0.0287)^2000 ≈ 5e-26. The early break keeps a typical run at ~35 rolls.
     const eliteFoal = { id: 54, bondScore: 90, stressLevel: 10, age: 0 };
     let found = false;
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 2000; i++) {
       const result = evaluateTraitRevelation(eliteFoal, empty, 6);
       if (result.hidden.includes('legendaryBloodline')) {
         found = true;
