@@ -856,6 +856,8 @@ model Show {
   /// scan. `map` pins the name the migration created so `prisma migrate dev`
   /// does not generate a rename/drop.
   @@index([status, claimedAt], map: "shows_status_claimed_at_idx")
+  /// Equoria-bvddn.23: FK index for "shows I created" lookups.
+  @@index([createdByUserId])
   @@map("shows")
 }
 
@@ -1792,6 +1794,9 @@ model ForumPost {
   author    User        @relation("ForumPosts", fields: [authorId], references: [id])
   content   String
   createdAt DateTime    @default(now())
+
+  /// Equoria-bvddn.23: FK index for thread-page post lookups.
+  @@index([threadId])
 }
 
 model DirectMessage {
@@ -1805,6 +1810,10 @@ model DirectMessage {
   tag         String?
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
+
+  /// Equoria-bvddn.23: FK indexes for sent-box and inbox lookups.
+  @@index([senderId])
+  @@index([recipientId])
 }
 
 enum ClubType {
@@ -1847,6 +1856,9 @@ model ClubMembership {
   joinedAt DateTime @default(now())
 
   @@unique([clubId, userId])
+  /// Equoria-bvddn.23: the unique index above leads with clubId, so it cannot
+  /// serve a by-user membership lookup; this FK index does.
+  @@index([userId])
 }
 
 model ClubElection {
@@ -1903,6 +1915,8 @@ model HorseSale {
   /// When the sale completed
   soldAt    DateTime @default(now())
 
+  /// Equoria-bvddn.23: FK index for per-horse sale history.
+  @@index([horseId])
   @@index([sellerId])
   @@index([buyerId])
   @@index([soldAt])
