@@ -16,6 +16,7 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { readTestCredentials } from './helpers/credentials';
+import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -173,6 +174,11 @@ test.describe('Path 1: New-player critical path', () => {
 
     // ── 7. Onboarding navigates to /stable (beta-live stable route) ───────
     await page.waitForURL(/\/stable$/, { timeout: 20000 });
+
+    // Owner ruling 2026-09-30 (Equoria-bvddn.31). Old: finishing the wizard ended
+    // onboarding. New: it hands the player into the guided tour (step 1, completed
+    // false); skip the tour the way a player would so the user is fully set up.
+    await skipGuidedTourAfterWizard(page);
 
     // ── 8. GET /api/horses — assert starter horse persisted in backend ─────
     const horsesListResponse = await page.request.get('/api/v1/horses');

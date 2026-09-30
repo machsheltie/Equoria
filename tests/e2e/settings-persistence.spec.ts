@@ -18,6 +18,7 @@
 
 import { test, expect } from '@playwright/test';
 import { randomBytes } from 'crypto';
+import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
 
 const BACKEND = 'http://localhost:3001';
 const FRONTEND = 'http://localhost:3000';
@@ -165,6 +166,11 @@ test.describe('Settings preferences persistence (21S-5)', () => {
 
       // Wait for redirect out of /onboarding
       await page.waitForURL((url) => !url.href.includes('/onboarding'), { timeout: 20000 });
+
+      // Owner ruling 2026-09-30 (Equoria-bvddn.31). Old: finishing the wizard ended
+      // onboarding. New: it hands the player into the guided tour (step 1, completed
+      // false); skip the tour the way a player would so the user is fully set up.
+      await skipGuidedTourAfterWizard(page);
     }
   }
 

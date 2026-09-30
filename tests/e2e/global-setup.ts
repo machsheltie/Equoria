@@ -1,5 +1,6 @@
 import { chromium, expect, type FullConfig } from '@playwright/test';
 import { startSessionKeepAlive } from './helpers/sessionKeepAlive';
+import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -156,6 +157,11 @@ async function globalSetup(config: FullConfig) {
           { cause: navError }
         );
       }
+
+      // Owner ruling 2026-09-30 (Equoria-bvddn.31). Old: finishing the wizard ended
+      // onboarding. New: it hands the player into the guided tour (step 1, completed
+      // false); skip the tour the way a player would so the user is fully set up.
+      await skipGuidedTourAfterWizard(page);
     }
 
     // ── 3. Save storageState (auth cookies) for all authenticated tests ──────

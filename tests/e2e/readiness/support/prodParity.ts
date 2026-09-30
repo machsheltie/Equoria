@@ -1,6 +1,7 @@
 import { expect, type APIResponse, type Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import { skipGuidedTourAfterWizard } from '../../helpers/guidedTour';
 
 const BANNED_HEADERS = [
   'x-test-skip-csrf', // doctrine-allow: bypass-header-literal
@@ -146,6 +147,11 @@ export async function registerAndCompleteOnboarding(
   expect((await advanceResponse).status()).toBe(200);
 
   await page.waitForURL(/\/stable$/);
+
+  // Owner ruling 2026-09-30 (Equoria-bvddn.31). Old: finishing the wizard ended
+  // onboarding. New: it hands the player into the guided tour (step 1, completed
+  // false); skip the tour the way a player would so the user is fully set up.
+  await skipGuidedTourAfterWizard(page);
   await expect(page.getByText(horseName).first()).toBeVisible();
 
   const horsesResponse = await page.request.get('/api/v1/horses');

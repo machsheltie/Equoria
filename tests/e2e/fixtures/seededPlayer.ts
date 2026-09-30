@@ -184,8 +184,11 @@ export async function createSeededPlayerSession(browser: Browser): Promise<Seede
   expect(breeds.length, 'GET /api/v1/breeds must return at least one breed').toBeGreaterThan(0);
 
   // ── 3. Finish onboarding through the SAME call the wizard's final step makes.
-  //       Sending the starter-horse customization jumps to step 10 and sets
-  //       completedOnboarding: true, so OnboardingGuard stops redirecting.
+  //       Owner ruling 2026-09-30 (Equoria-bvddn.31). Old: sending the
+  //       starter-horse customization jumped to step 10 / completed true.
+  //       New: it moves the player to tour step 1 (completed false), so the
+  //       seeded player then skips the tour via complete-onboarding, exactly
+  //       like a player pressing "Skip".
   const onboardingResponse = await request.post('/api/v1/auth/advance-onboarding', {
     data: {
       horseName: `Seeded Starter ${stamp}`.slice(0, 40),
@@ -198,6 +201,16 @@ export async function createSeededPlayerSession(browser: Browser): Promise<Seede
     onboardingResponse.ok(),
     `POST /api/v1/auth/advance-onboarding returned ${onboardingResponse.status()}: ` +
       `${await onboardingResponse.text()} — the seeded player would be bounced to /onboarding`
+  ).toBe(true);
+
+  const completeResponse = await request.post('/api/v1/auth/complete-onboarding', {
+    data: {},
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken! },
+  });
+  expect(
+    completeResponse.ok(),
+    `POST /api/v1/auth/complete-onboarding returned ${completeResponse.status()}: ` +
+      `${await completeResponse.text()} — the seeded player would still be in the guided tour`
   ).toBe(true);
 
   // ── 4. Persist the cookie jar for the spec's `page`. Deliberately the LAST
