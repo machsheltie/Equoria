@@ -408,10 +408,15 @@ export const validateHorseUpdatePayload = (req, res, next) => {
   // date to `dateOfBirth` (instantly ageing a newborn foal past every
   // development stage). No legitimate in-game mechanic re-sexes or re-ages a
   // horse after birth; if one ever ships it needs its own endpoint with real
-  // validation, same reasoning as breedId (Equoria-tmyd2). sireId/damId are
-  // deliberately left as-is — whether players should ever edit pedigree after
-  // birth is a separate, still-open owner question.
-  const allowedFields = new Set(['sireId', 'damId']);
+  // validation, same reasoning as breedId (Equoria-tmyd2).
+  //
+  // Equoria-bvddn.2 (OWNER RULING 2026-09-30): `sireId` and `damId` are gone
+  // too. OLD CONTRACT: an owner could PUT them at another owned horse of the
+  // right sex. NEW RULING: a horse's sire and dam can NEVER be edited —
+  // pedigree is fixed by breeding. The allow-list is therefore EMPTY: this
+  // validator refuses every field. (PUT /horses/:id is itself closed with 410
+  // before this runs; the validator stays as a second wall.)
+  const allowedFields = new Set();
 
   // `name` is refused BEFORE the allow-list loop so the caller is told where
   // renaming lives rather than being told 'unexpected field' about the one

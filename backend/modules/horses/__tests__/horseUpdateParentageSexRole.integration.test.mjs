@@ -18,6 +18,14 @@
  *   3) Integration test covers both reject paths and the success path.
  *   4) Mirror message/status of POST /horses pattern.
  *
+ * UPDATED owner ruling 2026-09-30, Equoria-bvddn.2:
+ * OLD contract: an owned Stallion/Mare was accepted as sire/dam (200) and a wrong-sex
+ * parent was refused with 'Sire must be a stallion' / 'Dam must be a mare'.
+ * NEW contract: sireId/damId can NEVER be edited, so the sex-role check was
+ * removed with the field; EVERY sireId/damId PUT is refused 400 (unexpected field),
+ * whatever the sex, and the genealogy is untouched. The wrong-sex corruption
+ * scenario stays impossible, more strictly.
+ *
  * Real-DB integration. No mocks (CLAUDE.md §3). Scoped cleanup by id.
  */
 
@@ -138,7 +146,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toBe('Sire must be a stallion');
+    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Sire must be a stallion'
 
     // Genealogy must NOT have been touched.
     const after = await prisma.horse.findUnique({
@@ -159,7 +167,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .send({ sireId: colt.id });
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe('Sire must be a stallion');
+    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Sire must be a stallion'
   });
 
   it('rejects PUT { damId: <Stallion> } with 400 "Dam must be a mare"', async () => {
@@ -174,7 +182,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toBe('Dam must be a mare');
+    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Dam must be a mare'
 
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
@@ -194,12 +202,12 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .send({ damId: colt.id });
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe('Dam must be a mare');
+    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Dam must be a mare'
   });
 
   // ─── happy path: success when sexes correct ──────────────────────────────
 
-  it('accepts PUT { sireId: <Stallion>, damId: <Mare> } — 200 and persists', async () => {
+  it('refuses PUT { sireId: <Stallion>, damId: <Mare> } — 400, parents unchanged (owner ruling 2026-09-30, Equoria-bvddn.2)', async () => {
     expect.hasAssertions();
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -209,20 +217,15 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: stallion.id, damId: mare.id });
 
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
+    // OLD: 200 and both parents persisted.
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
       select: { sireId: true, damId: true },
     });
-    expect(after.sireId).toBe(stallion.id);
-    expect(after.damId).toBe(mare.id);
-
-    // Reset for subsequent assertions
-    await prisma.horse.update({
-      where: { id: horse.id },
-      data: { sireId: null, damId: null },
-    });
+    expect(after.sireId).toBeNull();
+    expect(after.damId).toBeNull();
   });
 
   // ─── ordering: sex check runs AFTER ownership check ──────────────────────
@@ -230,7 +233,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   // 400 sex-role error (not the 404 ownership error). Ownership succeeds; sex
   // role fails. This ordering matches POST /horses (sex check follows ownership).
 
-  it('owned non-Stallion sireId returns 400 sex-role (not 404 ownership)', async () => {
+  it('owned non-Stallion sireId returns 400 unexpected-field (sex-role check removed)', async () => {
     expect.hasAssertions();
     const response = await request(app)
       .put(`/api/v1/horses/${horse.id}`)
@@ -241,6 +244,6 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
       .send({ sireId: colt.id }); // owned, but wrong sex
 
     expect(response.status).toBe(400);
-    expect(response.body.message).toBe('Sire must be a stallion');
+    expect(response.body.message).toMatch(/unexpected field/i); // OLD: 'Sire must be a stallion'
   });
 });

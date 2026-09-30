@@ -11,6 +11,13 @@
  * AC #2 (sentinel): user A attempts PUT with user B's horse as sireId → 404,
  * not 200. AC #1: validate via findOwnedResource. AC #3 dam parallel covered.
  *
+ * UPDATED owner ruling 2026-09-30, Equoria-bvddn.2:
+ * OLD contract: cross-user / missing parents were refused 404 by an ownership
+ * check while an owned sireId was accepted (200). NEW contract: sireId and damId
+ * can NEVER be edited (pedigree is fixed by breeding), so the allow-list is empty
+ * and EVERY sireId/damId PUT is refused 400 with the genealogy untouched. The
+ * hijack is now closed more strictly: no parent id of any kind is accepted.
+ *
  * Real-DB integration. No mocks (per CLAUDE.md §3, "Tests exist to detect
  * real failures"). Cleanup is scoped by id.
  */
@@ -125,7 +132,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     }
   }, 120000);
 
-  it('rejects PUT with cross-user sireId — 404, no genealogy mutation (sentinel-positive)', async () => {
+  it('rejects PUT with cross-user sireId — 400, no genealogy mutation (sentinel-positive)', async () => {
     // Sentinel: this is the exact failure mode hg62v describes. Before the
     // fix this returned 200 and the row's sireId became victimSire.id.
     const response = await request(app)
@@ -136,7 +143,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: victimSire.id });
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(400); // OLD: 404 (owner ruling 2026-09-30, Equoria-bvddn.2)
     expect(response.body.success).toBe(false);
 
     // Genealogy must NOT have been touched.
@@ -148,7 +155,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     expect(after.damId).toBeNull();
   });
 
-  it('rejects PUT with cross-user damId — 404, no genealogy mutation', async () => {
+  it('rejects PUT with cross-user damId — 400, no genealogy mutation', async () => {
     const response = await request(app)
       .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
@@ -157,7 +164,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ damId: victimDam.id });
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(400); // OLD: 404 (owner ruling 2026-09-30, Equoria-bvddn.2)
     expect(response.body.success).toBe(false);
 
     const after = await prisma.horse.findUnique({
@@ -168,7 +175,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     expect(after.damId).toBeNull();
   });
 
-  it('rejects PUT with cross-user sireId+damId combo — 404', async () => {
+  it('rejects PUT with cross-user sireId+damId combo — 400', async () => {
     const response = await request(app)
       .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
@@ -177,7 +184,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: victimSire.id, damId: victimDam.id });
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(400); // OLD: 404 (owner ruling 2026-09-30, Equoria-bvddn.2)
     const after = await prisma.horse.findUnique({
       where: { id: horseA.id },
       select: { sireId: true, damId: true },
@@ -186,7 +193,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     expect(after.damId).toBeNull();
   });
 
-  it('rejects PUT with non-existent sireId — 404', async () => {
+  it('rejects PUT with non-existent sireId — 400', async () => {
     // Same 404 as cross-user case to prevent enumeration disclosure.
     const response = await request(app)
       .put(`/api/v1/horses/${horseA.id}`)
@@ -196,11 +203,13 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: 2_147_483_640 }); // far above any real id
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(400); // OLD: 404 (owner ruling 2026-09-30, Equoria-bvddn.2)
   });
 
-  it('allows PUT with own-owned sireId — 200, sireId persists', async () => {
-    // Happy path: legitimate sire reassignment by the owner.
+  it('refuses PUT with own-owned sireId — 400, sireId unchanged', async () => {
+    // OLD CONTRACT: the owner could reassign a sire to their own stallion (200,
+    // persisted). NEW RULING (owner ruling 2026-09-30, Equoria-bvddn.2): pedigree is fixed by
+    // breeding; even the owner's own horse is refused and nothing changes.
     const response = await request(app)
       .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
@@ -209,28 +218,21 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sireId: horseAOriginalSire.id });
 
-    expect(response.status).toBe(200);
-    expect(response.body.success).toBe(true);
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
     const after = await prisma.horse.findUnique({
       where: { id: horseA.id },
       select: { sireId: true },
     });
-    expect(after.sireId).toBe(horseAOriginalSire.id);
-
-    // Clean up: reset for any subsequent test in the file.
-    await prisma.horse.update({
-      where: { id: horseA.id },
-      data: { sireId: null },
-    });
+    expect(after.sireId).toBeNull();
   });
 
   it('no longer allows PUT with non-genealogy fields (sex) — Equoria-bvddn.2', async () => {
     // OLD CONTRACT: `name` (pre-Equoria-4fnro), then `sex` (Equoria-4fnro) was
     // "a non-genealogy field PUT still permits", asserted here as a 200. NEW
     // RULING (Equoria-bvddn.2, audit finding 2026-09-25): `sex`, `gender` and
-    // `dateOfBirth` are off the allow-list too — sireId/damId are now the
-    // ONLY fields PUT accepts, so there is no non-genealogy field left to
-    // prove "still works" with. This case now proves the opposite: `sex` is
+    // `dateOfBirth` are off the allow-list too — sireId/damId were the
+    // ONLY fields PUT accepted (since removed too, owner ruling 2026-09-30, Equoria-bvddn.2). This case now proves the opposite: `sex` is
     // rejected and nothing is mutated. Full sentinel coverage for this class
     // of finding lives in horseUpdateSexDobMassAssign.sentinel.test.mjs.
     const before = await prisma.horse.findUnique({

@@ -3,7 +3,7 @@ import { query } from 'express-validator';
 import { getTrainableHorses } from '../../training/index.mjs';
 import { getTemperamentDefinitions } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import horseFeedRoutes from './horseFeedRoutes.mjs';
 import horseGeneticsRoutes from './horseGeneticsRoutes.mjs';
@@ -387,52 +387,11 @@ router.put(
     try {
       const horseId = parseInt(req.params.id);
 
-      // Parentage-hijack guard (Equoria-hg62v): the update allowlist permits
-      // sireId and damId, but the requireOwnership('horse') middleware only
-      // validates the :id path-param (the row being updated), not the bodies.
-      // Without this check, the owner of HorseA can PUT
-      // { sireId: <victim-stallion-id> } and silently rewrite genealogy of
-      // their own horse to point at another player's horse — corrupting
-      // pedigree, legacy-score, breeding-data, and lineage-analysis
-      // endpoints. Mirror the POST /horses (horseRoutes.mjs ~887) and POST
-      // /horses/:id/foals (horseRoutes.mjs ~1330) patterns: findOwnedResource
-      // → 404 (NOT 403) on both not-found and cross-user to prevent
-      // ID-enumeration disclosure of other players' horses.
-      if (req.body.sireId !== undefined && req.body.sireId !== null) {
-        const sireIdNum = parseInt(req.body.sireId, 10);
-        if (!Number.isFinite(sireIdNum) || sireIdNum < 1) {
-          return res.status(400).json({ success: false, message: 'Invalid sireId' });
-        }
-        const ownedSire = await findOwnedResource('horse', sireIdNum, req.user.id);
-        if (!ownedSire) {
-          return res.status(404).json({ success: false, message: 'Sire not found' });
-        }
-        // Equoria-91ezs: biological sex validation. POST /horses (~907) and
-        // POST /horses/:id/foals both enforce sireHorse.sex === 'Stallion'
-        // / damHorse.sex === 'Mare'. PUT was the lone post-creation
-        // mutation path that allowed an owner to assign one of their own
-        // Mares (or Rigs/Colts/Fillies) as the sire — silently corrupting
-        // genealogy that breeding + pedigree + legacy-score endpoints
-        // rely on. Mirror the POST pattern's exact message + 400 status
-        // (per AC #4). Sex is canonical Title Case post-Equoria-duz2.
-        if (ownedSire.sex !== 'Stallion') {
-          return res.status(400).json({ success: false, message: 'Sire must be a stallion' });
-        }
-      }
-      if (req.body.damId !== undefined && req.body.damId !== null) {
-        const damIdNum = parseInt(req.body.damId, 10);
-        if (!Number.isFinite(damIdNum) || damIdNum < 1) {
-          return res.status(400).json({ success: false, message: 'Invalid damId' });
-        }
-        const ownedDam = await findOwnedResource('horse', damIdNum, req.user.id);
-        if (!ownedDam) {
-          return res.status(404).json({ success: false, message: 'Dam not found' });
-        }
-        // Equoria-91ezs: biological sex validation — see sireId block above.
-        if (ownedDam.sex !== 'Mare') {
-          return res.status(400).json({ success: false, message: 'Dam must be a mare' });
-        }
-      }
+      // Equoria-bvddn.2 (OWNER RULING 2026-09-30): sireId/damId can never be
+      // edited — pedigree is fixed by breeding. validateHorseUpdatePayload's
+      // allow-list is empty, so no pedigree field reaches this handler; the
+      // former sire/dam ownership and sex-role checks (Equoria-hg62v,
+      // Equoria-91ezs) had nothing left to guard and were removed.
 
       // Ownership already validated by middleware (service-layer update, Equoria-becrm)
       const updatedHorse = await updateHorse(horseId, req.body);

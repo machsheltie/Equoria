@@ -188,8 +188,8 @@ describe('Ownership Violation Attempts Integration Tests', () => {
       // `gender` and `dateOfBirth` had no value validation at all — an owner
       // could instantly age a newborn foal or un-geld/flip a horse's sex —
       // so they are off the allow-list too. This case now proves the
-      // refusal; the happy-path "PUT still works" is proven by
-      // horseUpdateParentageSexRole.integration.test.mjs's sireId/damId case.
+      // refusal. (Comment updated owner ruling 2026-09-30, Equoria-bvddn.2: the old
+      // sireId/damId "PUT still works" happy path is gone; pedigree is never editable.)
       const before = await prisma.horse.findUnique({ where: { id: horseA.id } });
 
       const response = await request(app)
