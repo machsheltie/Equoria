@@ -40,7 +40,7 @@ export default defineRailway(() => {
     // app directory (/app, per https://railpack.com/config/file), so no image
     // layout is hardcoded here.
     start:
-      'sh -c \'cd packages/database && (DATABASE_URL="${DIRECT_URL:-$DATABASE_URL}" npx prisma migrate deploy) && cd ../backend && node server.mjs\'',
+      'sh -c \'cd packages/database && (DATABASE_URL="${DIRECT_URL:-$DATABASE_URL}" npx prisma migrate deploy) && cd ../../backend && node server.mjs\'',
     healthcheck: '/health',
     healthcheckTimeout: 300,
     // Restart policy: railway.toml set ON_FAILURE with 10 retries, which is
