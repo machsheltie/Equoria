@@ -127,7 +127,7 @@ no hook exists for them.
 
 ## Railway invariant
 
-`.railway/railway.ts` (Railway Infrastructure as Code) owns the production build, start, healthcheck and restart policy. The builder is Railpack (native Node build, no repository Dockerfile since 2026-09-30, Equoria-6q7cf); its `buildCommand` is `npm run build:production`, the same fail-fast command the CI `production-build` job runs, and the start command uses repository-relative paths because Railpack runs it from the app directory. The backend serves `frontend/dist` directly; nothing is copied into `backend/public`. Railway does not read it at deploy time: a change takes effect only after `railway config plan` is reviewed and `railway config apply` is run against the linked project, so an edit without an apply is drift, not a deployment change. Prisma migration deployment must succeed before the backend starts; a non-zero migration exit must abort deployment. Preserve the direct/pooler URL behavior already encoded there and verify changes against the doctrine check that enforces fail-fast migration startup. The former `railway.toml` (Config as Code) is deprecated by Railway and was migrated on 2026-09-22; do not recreate it.
+`.railway/railway.ts` (Railway Infrastructure as Code) owns the production build, start, healthcheck and restart policy. The builder is Railpack (native Node build, no repository Dockerfile since 2026-09-30, Equoria-6q7cf); its `buildCommand` is `npm run build:production`, the same fail-fast command the CI `production-build` job runs, and the start command uses repository-relative paths because Railpack runs it from the app directory. The backend serves `frontend/dist` directly; nothing is copied into `backend/public`. Known CLI quirk (5.58.0): the plan renders `builder: 'RAILPACK'` as `null` and the apply treats null as no change, so the file keeps the plan clean but cannot move a service off `DOCKERFILE`; that switch is an `environmentPatchCommit` through `railway api` (the exact command is in the file's comment), verified by reading `environment { config }`. Railway does not read it at deploy time: a change takes effect only after `railway config plan` is reviewed and `railway config apply` is run against the linked project, so an edit without an apply is drift, not a deployment change. Prisma migration deployment must succeed before the backend starts; a non-zero migration exit must abort deployment. Preserve the direct/pooler URL behavior already encoded there and verify changes against the doctrine check that enforces fail-fast migration startup. The former `railway.toml` (Config as Code) is deprecated by Railway and was migrated on 2026-09-22; do not recreate it.
 
 No document authorizes production deployment, rollback, secret changes, database mutation, branch-protection changes, or external service changes. Those actions require the authority implied by the user's request and must target the exact environment.
 
@@ -282,7 +282,11 @@ Historical CI recovery proposals, readiness reports, generated workflow inventor
 Railway currently starts `node server.mjs` directly; the startup path does not
 fork Node cluster workers. `CLUSTER_ENABLED` and `WEB_CONCURRENCY` are signals
 consumed by guards, not a complete launcher. Confirm the live startup path
-before claiming otherwise.
+before claiming otherwise. The SSE multi-instance guard
+(`backend/utils/sseMultiInstanceGuard.mjs`) therefore treats cluster mode as
+present only when one of those two variables is set explicitly; the host CPU
+count alone never counts (2026-10-01: the 48-core Railway host produced a false
+"cluster mode is active with 48 workers" alert on every deploy until then).
 
 `packages/database/dbPoolConfig.mjs` currently owns Prisma pool defaults and
 environment overrides. Every backend process has its own pool, so potential

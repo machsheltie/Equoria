@@ -41,10 +41,11 @@ function parsePositiveInt(value) {
  * SSE. Pure (no I/O); env is injectable for testing.
  *
  * Signals (any one means the process-local SSE bus assumption is violated):
- *   1. Node cluster mode active with worker count > 1 — clusterManager forks
- *      one worker process per core/WEB_CONCURRENCY; each is a separate process
- *      with its own EventEmitter, so an event on worker 1 never reaches a
- *      client connected to worker 2.
+ *   1. Node cluster mode explicitly configured (CLUSTER_ENABLED or
+ *      WEB_CONCURRENCY set) with worker count > 1 — each worker would be a
+ *      separate process with its own EventEmitter, so an event on worker 1
+ *      never reaches a client connected to worker 2. The host CPU count alone
+ *      is NOT a signal: no launcher forks on it.
  *   2. An explicit horizontal-replica count > 1 from the platform/env
  *      (RAILWAY_REPLICA_COUNT / NUM_REPLICAS / WEB_CONCURRENCY when not in
  *      cluster mode but used as a replica hint).
@@ -60,8 +61,19 @@ export function detectMultiInstanceRisk(env = process.env) {
   const details = {};
 
   // Signal 1 — Node cluster mode with >1 worker.
-  const clusterOn = shouldUseCluster(env);
-  const workerCount = getWorkerCount({ env });
+  //
+  // Only an EXPLICIT cluster configuration counts. shouldUseCluster() falls
+  // back to "production && host CPU count > 1" when neither CLUSTER_ENABLED nor
+  // WEB_CONCURRENCY is set, but nothing in server.mjs forks workers on that
+  // default (docs/devops-cicd.md, "Runtime scaling guardrails"), so on the
+  // 48-core Railway host that fallback produced a false "cluster mode is
+  // active with 48 workers" alert on every deploy. Cluster mode is a fact only
+  // when someone configured it.
+  const clusterConfigured =
+    env.CLUSTER_ENABLED !== undefined || parsePositiveInt(env.WEB_CONCURRENCY) !== null;
+  const clusterOn = clusterConfigured && shouldUseCluster(env);
+  const workerCount = clusterOn ? getWorkerCount({ env }) : 1;
+  details.clusterConfigured = clusterConfigured;
   details.clusterEnabled = clusterOn;
   details.workerCount = workerCount;
   if (clusterOn && workerCount > 1) {

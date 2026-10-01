@@ -35,6 +35,19 @@ describe('detectMultiInstanceRisk (Equoria-o3ync)', () => {
     expect(r.multiInstance).toBe(false);
   });
 
+  // Regression (Equoria-6q7cf rollout, 2026-10-01): the production Railway
+  // deploy sets NODE_ENV=production and neither CLUSTER_ENABLED nor
+  // WEB_CONCURRENCY. Nothing in server.mjs forks cluster workers, yet the guard
+  // logged "cluster mode is active with 48 workers" on every deploy because the
+  // cluster predicate defaulted to the host's CPU count. Cluster mode is only a
+  // fact when it has been configured explicitly.
+  it('does NOT infer cluster mode from the host CPU count when nothing configures it', () => {
+    const r = detectMultiInstanceRisk({ NODE_ENV: 'production' });
+    expect(r.multiInstance).toBe(false);
+    expect(r.reasons).toEqual([]);
+    expect(r.details.clusterEnabled).toBe(false);
+  });
+
   it('FIRES when Node cluster mode is enabled with more than one worker', () => {
     const r = detectMultiInstanceRisk({
       NODE_ENV: 'production',

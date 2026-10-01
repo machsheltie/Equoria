@@ -22,6 +22,18 @@ export default defineRailway(() => {
     // backend/database/frontend installs, Prisma generate, Vite build, asset
     // verification. Railpack sets NODE_ENV=production in the image; the
     // service's own NODE_ENV variable (preserved below) still wins at runtime.
+    //
+    // CLI quirk (CLI 5.58.0 / SDK 3.11.0, observed 2026-10-01): `railway config
+    // plan` renders builder 'RAILPACK' as `null` because it is Railway's
+    // default, and an apply treats null as "no change". That means this line
+    // documents intent and keeps the plan clean once the environment already
+    // holds RAILPACK, but it CANNOT move a service off DOCKERFILE by itself.
+    // To switch a service's builder, patch the environment config directly:
+    //   railway api 'mutation($e: String!, $p: EnvironmentConfig) {
+    //     environmentPatchCommit(environmentId: $e, patch: $p) }'
+    //     --raw-var e=<environmentId>
+    //     --var 'p={"services":{"<serviceId>":{"build":{"builder":"RAILPACK","dockerfilePath":null}}}}'
+    // then verify with `railway api 'query($id: String!) { environment(id: $id) { config } }'`.
     build: {
       builder: 'RAILPACK',
       buildCommand: 'npm run build:production',
