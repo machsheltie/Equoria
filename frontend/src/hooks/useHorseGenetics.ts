@@ -39,12 +39,21 @@ import { apiClient } from '@/lib/api-client';
  * (backend/modules/labs/routes/enhancedReportingRoutes.mjs)
  * Shape: { horseId, traitAnalysis, environmentalInfluences,
  *          developmentalProgress, predictiveInsights, recommendations }
- * traitAnalysis (= generateInteractionMatrix output,
- * backend/services/traitInteractionMatrix.mjs) is:
+ * traitAnalysis is the full generateInteractionMatrix() result
+ * (backend/modules/traits/services/traitInteractionMatrix.mjs):
+ *   { horseId, traitInteractions, synergies, conflicts, dominance,
+ *     complexInteractions, stability, temporalModel, matrixVisualization,
+ *     summary, analysisTimestamp }
+ * where traitInteractions is
  *   { horseId, traits: string[], synergies: [...], conflicts: [...],
- *     overallHarmony, dominantTraits, interactionStrength }
- * NOTE: `traitAnalysis.traits` is an array of trait-NAME strings
- * (horse.epigeneticFlags), NOT rich trait objects.
+ *     overallHarmony, dominantTraits, interactionStrength, analysisTimestamp }
+ * and synergies / conflicts are { synergyPairs | conflictPairs, totals,
+ * per-trait effects, categories }. The trait-NAME strings
+ * (horse.epigeneticFlags) live at `traitAnalysis.traitInteractions.traits`;
+ * there is no top-level `traitAnalysis.traits`.
+ * NOTE: RawTraitAnalysis below and mapEpigeneticInsights read the
+ * traitInteractions fields at the top level of traitAnalysis, so they do not
+ * match this response.
  */
 export interface RawTraitAnalysis {
   horseId?: number;
