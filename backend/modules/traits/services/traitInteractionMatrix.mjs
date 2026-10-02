@@ -9,8 +9,10 @@
  * pure. loadTraitAnalysisSnapshot() reads the horse ONCE into a frozen
  * snapshot; analyzeTraitSnapshot() derives every section from that snapshot
  * and one clock, so all sections of a response describe the same horse state
- * and carry the same analysisTimestamp. Callers that need a subset call
- * generateInteractionMatrix() and pick the sections they need.
+ * and carry the same analysisTimestamp. Callers that need a subset analyze once
+ * and pick the sections they need. A caller that already holds the horse row
+ * (requireOwnership's req.horse) passes it through toTraitAnalysisSnapshot()
+ * instead of reading again.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -53,7 +55,24 @@ export async function loadTraitAnalysisSnapshot(horseId, client = prisma) {
   if (!horse) {
     throw new NotFoundError('Horse', horseId);
   }
-  return Object.freeze({ ...horse, epigeneticFlags: Object.freeze([...horse.epigeneticFlags]) });
+  return toTraitAnalysisSnapshot(horse);
+}
+
+/**
+ * Pick the analysis fields from a horse row (any row with at least the
+ * snapshot fields, e.g. the full row requireOwnership attaches as req.horse)
+ * and freeze them. Pure: no database read.
+ * @param {{id, epigeneticFlags, stressLevel, bondScore, dateOfBirth}} horse
+ * @returns {Readonly<{id, epigeneticFlags, stressLevel, bondScore, dateOfBirth}>}
+ */
+export function toTraitAnalysisSnapshot(horse) {
+  return Object.freeze({
+    id: horse.id,
+    epigeneticFlags: Object.freeze([...horse.epigeneticFlags]),
+    stressLevel: horse.stressLevel,
+    bondScore: horse.bondScore,
+    dateOfBirth: horse.dateOfBirth,
+  });
 }
 
 /**
@@ -355,9 +374,11 @@ function evaluateDominance(snapshot, traits) {
     primaryTrait: dominanceHierarchy[0] || null,
     secondaryTraits: dominanceHierarchy.slice(1, 3),
     recessiveTraits: dominanceHierarchy.slice(3),
-    // NaN (null on the wire) for a horse with no traits — pinned behaviour.
-    dominanceStrength:
-      dominanceHierarchy.reduce((sum, t) => sum + t.dominanceScore, 0) / traits.length,
+    // null for a horse with no traits: the wire always showed null (JSON of the
+    // old 0/0 NaN); the service now says so itself (Equoria-q4uem.5).
+    dominanceStrength: traits.length
+      ? dominanceHierarchy.reduce((sum, t) => sum + t.dominanceScore, 0) / traits.length
+      : null,
   };
 }
 

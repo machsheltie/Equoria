@@ -7,7 +7,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { analyzeTraitSnapshot } from '../services/traitInteractionMatrix.mjs';
+import { analyzeTraitSnapshot, toTraitAnalysisSnapshot } from '../services/traitInteractionMatrix.mjs';
+import * as rules from '../services/traitInteractionRules.mjs';
 
 const NOW = new Date('2026-06-01T12:00:00Z');
 
@@ -201,7 +202,59 @@ describe('analyzeTraitSnapshot', () => {
       analysisTimestamp: NOW,
     });
     expect(matrix.dominance.primaryTrait).toBeNull();
+    // Equoria-q4uem.5: null, not NaN (the wire always showed null).
+    expect(matrix.dominance.dominanceStrength).toBeNull();
     expect(matrix.summary.dominantTrait).toBe('none');
     expect(matrix.matrixVisualization).toEqual({ nodes: [], edges: [], clusters: [] });
+  });
+});
+
+describe('toTraitAnalysisSnapshot', () => {
+  it('picks only the analysis fields from a full horse row and freezes them', () => {
+    const row = {
+      id: 7,
+      name: 'Moonlit Ember',
+      userId: 'owner-1',
+      epigeneticFlags: ['brave', 'calm'],
+      stressLevel: 3,
+      bondScore: 22,
+      dateOfBirth: new Date('2026-01-01T00:00:00Z'),
+      speed: 80,
+    };
+    const snap = toTraitAnalysisSnapshot(row);
+
+    expect(snap).toEqual({
+      id: 7,
+      epigeneticFlags: ['brave', 'calm'],
+      stressLevel: 3,
+      bondScore: 22,
+      dateOfBirth: row.dateOfBirth,
+    });
+    expect(Object.isFrozen(snap)).toBe(true);
+    expect(Object.isFrozen(snap.epigeneticFlags)).toBe(true);
+    expect(snap.epigeneticFlags).not.toBe(row.epigeneticFlags);
+    expect(analyzeTraitSnapshot(snap, { now: NOW }).horseId).toBe(7);
+  });
+});
+
+describe('trait interaction rule tables', () => {
+  function expectDeepFrozen(value, path) {
+    expect({ path, frozen: Object.isFrozen(value) }).toEqual({ path, frozen: true });
+    for (const [key, inner] of Object.entries(value)) {
+      if (inner && typeof inner === 'object') {
+        expectDeepFrozen(inner, `${path}.${key}`);
+      }
+    }
+  }
+
+  it('are frozen at every level, so no analysis can hand out mutable game data', () => {
+    for (const [name, table] of Object.entries(rules)) {
+      if (table && typeof table === 'object') {
+        expectDeepFrozen(table, name);
+      }
+    }
+    expect(() => {
+      rules.UNKNOWN_TRAIT_DOMINANCE.dominance_score = 1;
+    }).toThrow(TypeError);
   });
 });

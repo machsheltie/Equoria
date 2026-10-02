@@ -27,7 +27,10 @@ import {
   generateEnvironmentalReport,
 } from '../../labs/index.mjs';
 
-import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mjs';
+import {
+  analyzeTraitSnapshot,
+  toTraitAnalysisSnapshot,
+} from '../services/traitInteractionMatrix.mjs';
 
 import {
   identifyDevelopmentalWindows,
@@ -285,9 +288,11 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      // One horse read; every section comes from the same snapshot (Equoria-q4uem.5).
-      const { traitInteractions, synergies, conflicts, dominance } =
-        await generateInteractionMatrix(horseId);
+      // requireOwnership already loaded the horse row into req.horse: analyze that
+      // one row, no second read; every section shares one snapshot (Equoria-q4uem.5).
+      const { traitInteractions, synergies, conflicts, dominance } = analyzeTraitSnapshot(
+        toTraitAnalysisSnapshot(req.horse),
+      );
 
       logger.info(`Trait interactions analyzed for horse ${horseId} by user ${req.user.id}`);
 
@@ -325,7 +330,7 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      const matrix = await generateInteractionMatrix(horseId);
+      const matrix = analyzeTraitSnapshot(toTraitAnalysisSnapshot(req.horse));
 
       logger.info(`Trait interaction matrix generated for horse ${horseId} by user ${req.user.id}`);
 
@@ -357,7 +362,7 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      const { stability } = await generateInteractionMatrix(horseId);
+      const { stability } = analyzeTraitSnapshot(toTraitAnalysisSnapshot(req.horse));
 
       logger.info(`Trait stability analyzed for horse ${horseId} by user ${req.user.id}`);
 

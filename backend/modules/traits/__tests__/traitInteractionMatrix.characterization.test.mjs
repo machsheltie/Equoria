@@ -7,12 +7,15 @@
  * representative horses at both seams callers use:
  *
  *   - service: generateInteractionMatrix(horseId) (also consumed by the
- *     enhanced-reporting routes)
+ *     enhanced-reporting routes) — pinned by snapshot
  *   - HTTP: GET /api/v1/horses/:id/trait-interactions, /trait-matrix,
- *     /trait-stability (real app, real auth, real ownership middleware)
+ *     /trait-stability (real app, real auth, real ownership middleware) —
+ *     asserted equal to the pinned matrix as JSON, or the sections they pick
  *
  * The snapshots were written against the pre-refactor code and must stay green
- * after it. Only values that legitimately differ per run are normalized: the
+ * after it. The one deliberate change since: an empty-trait horse's
+ * dominance.dominanceStrength is null in the service too (it was NaN there and
+ * already null on the wire). Only values that legitimately differ per run are normalized: the
  * analysis timestamps (wall clock) and the fixture horse id (database serial).
  * Horse age is deterministic because each fixture's date of birth is a whole
  * number of UTC days before today.
@@ -162,14 +165,33 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
       expect(normalize(matrix, horseIds[key])).toMatchSnapshot();
     });
 
-    it.each(['trait-interactions', 'trait-matrix', 'trait-stability'])(
-      'GET /api/v1/horses/:id/%s wire response is unchanged',
-      async route => {
-        const response = await get(`/api/v1/horses/${horseIds[key]}/${route}`);
-        expect(response.status).toBe(200);
-        expect(normalize(response.body, horseIds[key])).toMatchSnapshot();
-      },
-    );
+    // The wire carries exactly the pinned service matrix (as JSON), or the
+    // sections each subset route picks from it.
+    it('GET /api/v1/horses/:id/trait-matrix, /trait-interactions and /trait-stability serve the pinned matrix', async () => {
+      const id = horseIds[key];
+      const pinned = normalize(JSON.parse(JSON.stringify(await generateInteractionMatrix(id))), id);
+
+      const matrix = await get(`/api/v1/horses/${id}/trait-matrix`);
+      expect(matrix.status).toBe(200);
+      expect(normalize(matrix.body, id)).toEqual({ success: true, data: pinned });
+
+      const interactions = await get(`/api/v1/horses/${id}/trait-interactions`);
+      expect(interactions.status).toBe(200);
+      expect(normalize(interactions.body, id)).toEqual({
+        success: true,
+        data: {
+          horseId: '<horseId>',
+          traitInteractions: pinned.traitInteractions,
+          synergies: pinned.synergies,
+          conflicts: pinned.conflicts,
+          dominance: pinned.dominance,
+        },
+      });
+
+      const stability = await get(`/api/v1/horses/${id}/trait-stability`);
+      expect(stability.status).toBe(200);
+      expect(normalize(stability.body, id)).toEqual({ success: true, data: pinned.stability });
+    });
   });
 
   it.each(['trait-interactions', 'trait-matrix', 'trait-stability'])(

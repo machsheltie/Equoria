@@ -54,7 +54,7 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ── analyzeTraitInteractions ──────────────────────────────────────────────────
+// ── generateInteractionMatrix traitInteractions section (was analyzeTraitInteractions) ──
 
 describe('generateInteractionMatrix traitInteractions section (was analyzeTraitInteractions)', () => {
   it('throws for non-existent horse', async () => {
@@ -71,7 +71,7 @@ describe('generateInteractionMatrix traitInteractions section (was analyzeTraitI
   });
 });
 
-// ── calculateTraitSynergies ───────────────────────────────────────────────────
+// ── generateInteractionMatrix synergies section (was calculateTraitSynergies) ──
 
 describe('generateInteractionMatrix synergies section (was calculateTraitSynergies)', () => {
   it('returns result for horse with no flags', async () => {
@@ -81,7 +81,7 @@ describe('generateInteractionMatrix synergies section (was calculateTraitSynergi
   });
 });
 
-// ── identifyTraitConflicts ────────────────────────────────────────────────────
+// ── generateInteractionMatrix conflicts section (was identifyTraitConflicts) ──
 
 describe('generateInteractionMatrix conflicts section (was identifyTraitConflicts)', () => {
   it('returns result for horse with no flags', async () => {
@@ -91,7 +91,7 @@ describe('generateInteractionMatrix conflicts section (was identifyTraitConflict
   });
 });
 
-// ── evaluateTraitDominance ────────────────────────────────────────────────────
+// ── generateInteractionMatrix dominance section (was evaluateTraitDominance) ──
 
 describe('generateInteractionMatrix dominance section (was evaluateTraitDominance)', () => {
   it('returns result for horse with no flags', async () => {
@@ -101,7 +101,7 @@ describe('generateInteractionMatrix dominance section (was evaluateTraitDominanc
   });
 });
 
-// ── processComplexInteractions ────────────────────────────────────────────────
+// ── generateInteractionMatrix complexInteractions section (was processComplexInteractions) ──
 
 describe('generateInteractionMatrix complexInteractions section (was processComplexInteractions)', () => {
   it('returns result for horse with no flags', async () => {
@@ -111,7 +111,7 @@ describe('generateInteractionMatrix complexInteractions section (was processComp
   });
 });
 
-// ── assessInteractionStability ────────────────────────────────────────────────
+// ── generateInteractionMatrix stability section (was assessInteractionStability) ──
 
 describe('generateInteractionMatrix stability section (was assessInteractionStability)', () => {
   it('returns result for horse with no flags', async () => {
@@ -121,7 +121,7 @@ describe('generateInteractionMatrix stability section (was assessInteractionStab
   });
 });
 
-// ── modelTemporalInteractions ─────────────────────────────────────────────────
+// ── generateInteractionMatrix temporalModel section (was modelTemporalInteractions) ──
 
 describe('generateInteractionMatrix temporalModel section (was modelTemporalInteractions)', () => {
   it('returns result for horse with 30-day window', async () => {

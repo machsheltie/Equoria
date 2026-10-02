@@ -14,9 +14,9 @@
  * The client omits the horse-sex write extension; this file writes only
  * canonical sex values, and every request under test is read-only.
  *
- * A "horse-state read" is a SELECT on "horses" that loads epigeneticFlags and
- * is not the ownership middleware's id+userId lookup (which runs before the
- * handler and is not part of the analysis).
+ * A "horse read" is ANY SELECT on "horses". A trait route must issue exactly
+ * one per request in total: the ownership middleware's id+userId lookup loads
+ * the full row, and the handler analyzes that row instead of reading again.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -43,13 +43,7 @@ const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs')
 const { createCleanupTracker } = await import('../../../__tests__/helpers/failLoudCleanup.mjs');
 
 function horseStateReads() {
-  return statements.filter(
-    sql =>
-      /^SELECT\b/i.test(sql) &&
-      sql.includes('FROM "public"."horses"') &&
-      sql.includes('"epigeneticFlags"') &&
-      !sql.includes('"horses"."userId" ='),
-  );
+  return statements.filter(sql => /^SELECT\b/i.test(sql) && sql.includes('FROM "public"."horses"'));
 }
 
 async function measure(fn) {
@@ -114,7 +108,7 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
   });
 
   it.each(['trait-interactions', 'trait-matrix', 'trait-stability'])(
-    'GET /api/v1/horses/:id/%s performs exactly one horse-state read',
+    'GET /api/v1/horses/:id/%s performs exactly one horse query in total (ownership check included)',
     async route => {
       const { result, reads } = await measure(() => get(`/api/v1/horses/${horse.id}/${route}`));
       expect(result.status).toBe(200);

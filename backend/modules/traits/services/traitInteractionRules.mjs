@@ -15,7 +15,7 @@
 export const MATURITY_PERIOD_DAYS = 90;
 
 // Trait synergy clusters - traits that enhance each other
-export const TRAIT_SYNERGIES = {
+export const TRAIT_SYNERGIES = deepFreeze({
   confidence_cluster: {
     traits: ['brave', 'confident', 'social'],
     synergy_strength: 0.8,
@@ -51,10 +51,10 @@ export const TRAIT_SYNERGIES = {
     description: 'Sensitivity traits create emotional awareness',
     color: '#607D8B',
   },
-};
+});
 
 // Trait conflict definitions - traits that oppose each other
-export const TRAIT_CONFLICTS = {
+export const TRAIT_CONFLICTS = deepFreeze({
   fear_confidence: {
     trait_pairs: [
       ['fearful', 'brave'],
@@ -105,10 +105,10 @@ export const TRAIT_CONFLICTS = {
     suppression_factor: 0.8,
     description: 'Impulsive traits conflict with methodical approaches',
   },
-};
+});
 
 // Trait dominance hierarchy - some traits are naturally more dominant
-export const TRAIT_DOMINANCE = {
+export const TRAIT_DOMINANCE = deepFreeze({
   high_dominance: {
     traits: ['confident', 'brave', 'intelligent', 'dominant', 'assertive'],
     dominance_score: 0.9,
@@ -129,16 +129,16 @@ export const TRAIT_DOMINANCE = {
     dominance_score: 0.1,
     description: 'Recessive traits that are often masked by others',
   },
-};
+});
 
-export const UNKNOWN_TRAIT_DOMINANCE = {
+export const UNKNOWN_TRAIT_DOMINANCE = deepFreeze({
   dominance_score: 0.5,
   level: 'moderate_dominance',
   description: 'Unknown trait with moderate dominance',
-};
+});
 
 // Properties that emerge when every contributing trait is present
-export const EMERGENT_PROPERTIES = [
+export const EMERGENT_PROPERTIES = deepFreeze([
   {
     name: 'Natural Leadership',
     description:
@@ -165,10 +165,10 @@ export const EMERGENT_PROPERTIES = [
     contributingTraits: ['curious', 'intelligent', 'brave'],
     strength: 0.65,
   },
-];
+]);
 
 // Temporal patterns that emerge when every required trait is present
-export const TRAIT_PATTERNS = [
+export const TRAIT_PATTERNS = deepFreeze([
   {
     requires: ['curious', 'intelligent'],
     pattern: 'learning_acceleration',
@@ -181,4 +181,14 @@ export const TRAIT_PATTERNS = [
     description: 'Social confidence may lead to leadership behaviors',
     confidence: 0.6,
   },
-];
+]);
+
+/** Freeze a rule table and everything inside it, so no caller can edit game data. */
+function deepFreeze(value) {
+  for (const inner of Object.values(value)) {
+    if (inner && typeof inner === 'object') {
+      deepFreeze(inner);
+    }
+  }
+  return Object.freeze(value);
+}
