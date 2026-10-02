@@ -28,7 +28,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { detectAndRecordFoalMilestones, computeReachedMilestones } from '../services/foalMilestoneService.mjs';
+import {
+  detectAndRecordFoalMilestones,
+  detectAndRecordFoalMilestonesCore,
+  computeReachedMilestones,
+} from '../services/foalMilestoneService.mjs';
 import { completeEnrichmentActivity, graduateFoal } from '../models/foalModel.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -252,5 +256,157 @@ describe('graduation milestone recorded on the graduateFoal write path (real DB)
     expect(again.newMilestones).not.toContain('graduation');
     const persistedAgain = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
     expect(persistedAgain.completedMilestones.graduation).toBe(gradTs);
+  }, 30000);
+});
+
+// ---------------------------------------------------------------------------
+// Concurrent recording (Equoria-q4uem.8). The store must be merged at the
+// database, existing keys winning: a key another transaction commits between
+// this call's read and its write must survive with ITS timestamp.
+//
+// Deterministic interleaving, no sleeps-for-luck: transaction B records its
+// keys and then parks on a promise barrier while holding the
+// foal_development row lock. Transaction A then reads the (still empty)
+// committed store and attempts its write, which must wait on B. Only once
+// Postgres reports A as blocked by B's backend is B released to commit — so
+// A's read is guaranteed to precede B's commit, and A's write to follow it.
+// ---------------------------------------------------------------------------
+const RACE_TX_OPTS = { maxWait: 10000, timeout: 20000 };
+
+async function waitUntilBlockedBy(blockerPid) {
+  const deadline = Date.now() + 10000;
+  for (;;) {
+    const [{ blocked }] = await prisma.$queryRaw`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_stat_activity WHERE ${blockerPid}::int = ANY (pg_blocking_pids(pid))
+      ) AS blocked`;
+    if (blocked) {
+      return;
+    }
+    if (Date.now() > deadline) {
+      throw new Error(`no backend became blocked by pid ${blockerPid}`);
+    }
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+}
+
+/**
+ * Run B (records at `bNow`, parks holding the row lock) and A (optionally
+ * mutates the foal in its own transaction, then records at `aNow`) in the
+ * interleaving described above. Resolves with both core results.
+ */
+async function raceRecordings(foalId, { bNow, aNow, aPrepare }) {
+  let releaseB;
+  const bMayCommit = new Promise(resolve => {
+    releaseB = resolve;
+  });
+  let signalBRecorded;
+  const bRecorded = new Promise(resolve => {
+    signalBRecorded = resolve;
+  });
+
+  const txB = prisma.$transaction(async tx => {
+    const [{ pid }] = await tx.$queryRaw`SELECT pg_backend_pid()::int AS pid`;
+    const result = await detectAndRecordFoalMilestonesCore(tx, foalId, { now: bNow });
+    signalBRecorded(pid);
+    await bMayCommit;
+    return result;
+  }, RACE_TX_OPTS);
+
+  let txA;
+  try {
+    // If B fails before signalling, surface its error instead of hanging.
+    const bPid = await Promise.race([bRecorded, txB.then(() => Promise.reject(new Error('B finished early')))]);
+    txA = prisma.$transaction(async tx => {
+      if (aPrepare) {
+        await aPrepare(tx);
+      }
+      return detectAndRecordFoalMilestonesCore(tx, foalId, { now: aNow });
+    }, RACE_TX_OPTS);
+    await waitUntilBlockedBy(bPid);
+  } finally {
+    releaseB();
+  }
+  const [b, a] = await Promise.all([txB, txA]);
+  return { a, b };
+}
+
+describe('concurrent milestone recording keeps every key (real DB, Equoria-q4uem.8)', () => {
+  it('a key committed by another transaction after this read survives with its own timestamp', async () => {
+    // 1 day old, bond 0: nothing reached at the real clock.
+    const foal = await makeFoal({ suffix: 'race', days: 1, ageYears: 0, bondScore: 0 });
+    await prisma.foalDevelopment.create({ data: { foalId: foal.id } });
+
+    const aNow = new Date();
+    // B looks 10 days ahead: it reaches the stage milestones (key X).
+    const bNow = new Date(aNow.getTime() + 10 * MS_PER_DAY);
+
+    const { a, b } = await raceRecordings(foal.id, {
+      bNow,
+      aNow,
+      // A raises the bond inside its own transaction: it reaches bond-25 (key Y).
+      aPrepare: tx => tx.horse.update({ where: { id: foal.id }, data: { bondScore: 30 } }),
+    });
+
+    expect(b.newMilestones).toEqual(['stage-weanling', 'stage-yearling']);
+    expect(a.newMilestones).toEqual(['bond-25']);
+
+    const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
+    expect(persisted.completedMilestones).toEqual({
+      'stage-weanling': bNow.toISOString(),
+      'stage-yearling': bNow.toISOString(),
+      'bond-25': aNow.toISOString(),
+    });
+    // The returned map is what the database holds after A's statement.
+    expect(a.completedMilestones).toEqual(persisted.completedMilestones);
+  }, 30000);
+
+  it('a key another transaction stored first keeps its timestamp and is not new for this call', async () => {
+    const foal = await makeFoal({ suffix: 'raceoverlap', days: 1, ageYears: 0, bondScore: 0 });
+    await prisma.foalDevelopment.create({ data: { foalId: foal.id } });
+
+    const bNow = new Date(Date.now() + 10 * MS_PER_DAY);
+    const aNow = new Date(bNow.getTime() + 1000);
+
+    // Both reach the stage milestones; only A also reaches bond-25.
+    const { a } = await raceRecordings(foal.id, {
+      bNow,
+      aNow,
+      aPrepare: tx => tx.horse.update({ where: { id: foal.id }, data: { bondScore: 30 } }),
+    });
+
+    expect(a.newMilestones).toEqual(['bond-25']);
+    const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
+    expect(persisted.completedMilestones).toEqual({
+      'stage-weanling': bNow.toISOString(),
+      'stage-yearling': bNow.toISOString(),
+      'bond-25': aNow.toISOString(),
+    });
+  }, 30000);
+
+  it('a pre-stored key keeps its original timestamp and is not reported as new', async () => {
+    const foal = await makeFoal({ suffix: 'prestored', days: 1, ageYears: 0, bondScore: 60 });
+    const t0 = '2026-01-01T00:00:00.000Z';
+    await prisma.foalDevelopment.create({ data: { foalId: foal.id, completedMilestones: { 'bond-25': t0 } } });
+
+    const now = new Date();
+    const result = await detectAndRecordFoalMilestones(foal.id, { now });
+
+    expect(result.newMilestones).toEqual(['bond-50']);
+    const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
+    expect(persisted.completedMilestones).toEqual({ 'bond-25': t0, 'bond-50': now.toISOString() });
+    expect(result.completedMilestones).toEqual(persisted.completedMilestones);
+  }, 30000);
+
+  it('a stored non-object value is treated as an empty store and replaced', async () => {
+    const foal = await makeFoal({ suffix: 'nonobject', days: 1, ageYears: 0, bondScore: 30 });
+    await prisma.foalDevelopment.create({ data: { foalId: foal.id, completedMilestones: ['legacy'] } });
+
+    const now = new Date();
+    const result = await detectAndRecordFoalMilestones(foal.id, { now });
+
+    expect(result.newMilestones).toEqual(['bond-25']);
+    const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
+    expect(persisted.completedMilestones).toEqual({ 'bond-25': now.toISOString() });
   }, 30000);
 });

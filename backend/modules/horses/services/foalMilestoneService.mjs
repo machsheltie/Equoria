@@ -35,10 +35,11 @@
  * @default(0) makes the empty state honest.
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { toJsonParam } from '../../../utils/userSettingsPaths.mjs';
 import {
   STAGE_WEANLING_MIN_DAYS,
   STAGE_YEARLING_MIN_DAYS,
@@ -154,9 +155,18 @@ export function computeReachedMilestones({ ageDays, bondScore, hasDiscoveredTrai
  * EXACTLY-ONCE: the store is a JSONB object keyed by milestone id, and a key is
  * only written when absent (its original timestamp is preserved). Re-running on
  * unchanged state is a pure no-op (no keys added, no write) — a milestone can
- * never be celebrated twice. Uses `upsert` so the enrichment write path (which
- * never touches FoalDevelopment otherwise) still gets a row created on first
- * milestone.
+ * never be celebrated twice.
+ *
+ * CONCURRENCY (Equoria-q4uem.8): the write is ONE statement that merges the
+ * new keys into whatever the database holds at write time, existing keys
+ * winning (`new || stored` — in jsonb `a || b`, b's keys win). A key another
+ * transaction committed after this call's read therefore survives with its own
+ * timestamp, instead of being overwritten by a whole-map write from a stale
+ * read. No row lock is taken beyond the statement's own. INSERT ... ON
+ * CONFLICT keeps the upsert behaviour, so the enrichment write path (which
+ * never touches FoalDevelopment otherwise) still gets a row on first milestone.
+ * `completedMilestones` in the result is the map the database returned, and
+ * `newMilestones` lists only the keys whose stored timestamp is this call's.
  *
  * Server-side timestamps only (never client-supplied).
  *
@@ -198,32 +208,49 @@ export async function detectAndRecordFoalMilestonesCore(tx, foalId, { now = new 
   });
 
   const store = readMilestoneStore(dev?.completedMilestones);
-  const newMilestones = [];
   const timestamp = now.toISOString();
+  const additions = {};
 
   for (const id of reached) {
     if (!Object.prototype.hasOwnProperty.call(store, id)) {
-      store[id] = timestamp;
-      newMilestones.push(id);
+      additions[id] = timestamp;
     }
   }
 
-  if (newMilestones.length === 0) {
+  const candidates = Object.keys(additions);
+  if (candidates.length === 0) {
     // Idempotent no-op: nothing new to record, so no write at all.
-    return { newMilestones, completedMilestones: store };
+    return { newMilestones: [], completedMilestones: store };
   }
 
-  await tx.foalDevelopment.upsert({
-    where: { foalId: parsedFoalId },
-    create: { foalId: parsedFoalId, completedMilestones: store },
-    update: { completedMilestones: store },
-  });
+  // A stored non-object (null / array / primitive) counts as an empty store,
+  // exactly as readMilestoneStore treats it, and is replaced by the additions.
+  const [row] = await tx.$queryRaw(Prisma.sql`
+    INSERT INTO "foal_development" ("foalId", "completedMilestones", "updatedAt")
+    VALUES (${parsedFoalId}::int, ${toJsonParam(additions)}::jsonb, NOW())
+    ON CONFLICT ("foalId") DO UPDATE SET
+      "completedMilestones" = EXCLUDED."completedMilestones" || CASE
+        WHEN jsonb_typeof("foal_development"."completedMilestones") = 'object'
+          THEN "foal_development"."completedMilestones"
+        ELSE '{}'::jsonb
+      END,
+      "updatedAt" = NOW()
+    RETURNING "completedMilestones"`);
 
-  logger.info(
-    `[foalMilestoneService] Recorded foal ${parsedFoalId} milestones: ${newMilestones.join(', ')}`,
-  );
+  const completedMilestones = readMilestoneStore(row?.completedMilestones);
+  // A candidate another transaction stored first kept ITS timestamp, so it is
+  // not new for this call. Residual: a same-millisecond concurrent record of the
+  // same key is reported as new by BOTH callers, so do not drive one-shot awards
+  // from newMilestones without revisiting this (exact fix: PG18 RETURNING OLD).
+  const newMilestones = candidates.filter(id => completedMilestones[id] === timestamp);
 
-  return { newMilestones, completedMilestones: store };
+  if (newMilestones.length > 0) {
+    logger.info(
+      `[foalMilestoneService] Recorded foal ${parsedFoalId} milestones: ${newMilestones.join(', ')}`,
+    );
+  }
+
+  return { newMilestones, completedMilestones };
 }
 
 /**

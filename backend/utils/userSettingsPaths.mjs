@@ -57,7 +57,7 @@ function assertKey(key) {
 }
 
 /** Serialize a JS value for a jsonb bind parameter. `undefined` becomes null. */
-function toJsonParam(value) {
+export function toJsonParam(value) {
   return JSON.stringify(value === undefined ? null : value);
 }
 
