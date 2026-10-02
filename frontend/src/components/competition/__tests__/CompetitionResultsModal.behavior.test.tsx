@@ -27,7 +27,8 @@ import { MemoryRouter } from 'react-router';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import React from 'react';
-import CompetitionResultsModal, { type CompetitionResults } from '../CompetitionResultsModal';
+import CompetitionResultsModal from '../CompetitionResultsModal';
+import type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
 
 const RESULTS: CompetitionResults = {
   competitionId: 555,
@@ -222,5 +223,24 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
     renderModal({ ...RESULTS, results: [], totalParticipants: 0 });
     expect(await screen.findByTestId('empty-state')).toBeInTheDocument();
     expect(screen.queryByTestId('results-table')).not.toBeInTheDocument();
+  });
+
+  // Equoria-q4uem.6 — the fixture is typed with the canonical API DTO
+  // (lib/api/competitionResults), which now carries temperamentImpact exactly
+  // as backend/utils/competitionScore.mjs calculateCompetitionScoreDetailed
+  // builds it, so the modal reads it without a component-local contract.
+  it('renders the temperament attribution chip from the canonical DTO, and nothing when it is null', async () => {
+    const withImpact: ParticipantResult = {
+      ...RESULTS.results[1],
+      temperamentImpact: { temperament: 'Bold', modifier: 0.05, appliedAs: 'ridden' },
+    };
+    const withoutImpact: ParticipantResult = { ...RESULTS.results[0], temperamentImpact: null };
+    renderModal({ ...RESULTS, results: [withoutImpact, withImpact, RESULTS.results[2]] });
+
+    const chip = await screen.findByTestId('temperament-impact-102');
+    expect(within(chip).getByTestId('temperament-impact-name')).toHaveTextContent('Bold');
+    expect(within(chip).getByTestId('temperament-impact-modifier')).toHaveTextContent('+5%');
+    expect(chip).toHaveTextContent('(ridden score)');
+    expect(screen.queryByTestId('temperament-impact-101')).not.toBeInTheDocument();
   });
 });

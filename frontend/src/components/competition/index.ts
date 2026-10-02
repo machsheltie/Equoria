@@ -46,11 +46,8 @@ export type {
 } from './CompetitionResultsList';
 
 export { default as CompetitionResultsModal } from './CompetitionResultsModal';
-export type {
-  CompetitionResultsModalProps,
-  CompetitionResults,
-  ParticipantResult,
-} from './CompetitionResultsModal';
+export type { CompetitionResultsModalProps } from './CompetitionResultsModal';
+export type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
 
 export { default as ScoreBreakdownChart } from './ScoreBreakdownChart';
 export type { ScoreBreakdownChartProps, ScoreBreakdown, TraitBonus } from './ScoreBreakdownChart';

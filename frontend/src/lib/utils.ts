@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { HorseSex } from '@/types/breeding';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -49,4 +50,23 @@ export function isFemaleHorseSex(sex: string | null | undefined): boolean {
 export function isMaleHorseSex(sex: string | null | undefined): boolean {
   const s = sex?.toLowerCase();
   return s === 'stallion' || s === 'colt' || s === 'rig';
+}
+
+const CANONICAL_HORSE_SEX: ReadonlyMap<string, HorseSex> = new Map<string, HorseSex>([
+  ['stallion', 'Stallion'],
+  ['mare', 'Mare'],
+  ['colt', 'Colt'],
+  ['filly', 'Filly'],
+  ['rig', 'Rig'],
+]);
+
+/**
+ * Parse an API horse-sex string into the canonical HorseSex (Equoria-q4uem.6).
+ * Case-insensitive, matching isFemaleHorseSex/isMaleHorseSex; anything outside
+ * the canonical vocabulary (including 'Male'/'Female', which the database
+ * never stores) is null, so callers handle it explicitly.
+ */
+export function parseHorseSex(sex: string | null | undefined): HorseSex | null {
+  if (!sex) return null;
+  return CANONICAL_HORSE_SEX.get(sex.toLowerCase()) ?? null;
 }
