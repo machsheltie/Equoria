@@ -35,7 +35,7 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * REAL backend-shaped payloads (post `{ success, data }` unwrap is what MSW
  * returns as `data`). Sources:
  *  - epigenetic-insights: enhancedReportingRoutes.mjs:198-208 + traitInteractionMatrix
- *  - trait-interactions:  advancedEpigeneticRoutes.mjs:303-312 + analyzeTraitInteractions
+ *  - trait-interactions:  advancedEpigeneticRoutes.mjs + generateInteractionMatrix().traitInteractions
  *  - trait-timeline:      enhancedReportingRoutes.mjs:262-271 + buildTraitTimeline
  * ------------------------------------------------------------------------- */
 

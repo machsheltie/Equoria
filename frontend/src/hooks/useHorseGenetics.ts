@@ -69,7 +69,7 @@ export interface RawEpigeneticInsights {
  * GET /api/horses/:id/trait-interactions → data
  * (backend/modules/traits/routes/advancedEpigeneticRoutes.mjs)
  * Shape: { horseId, traitInteractions, synergies, conflicts, dominance }
- * `traitInteractions` (= analyzeTraitInteractions output) is the full matrix:
+ * `traitInteractions` (= generateInteractionMatrix().traitInteractions) is the full matrix:
  *   { horseId, traits, synergies: [...], conflicts: [...], ... }
  * synergy/conflict items: { trait1, trait2, strength (0-1 float),
  *                           description, category, amplificationFactor? }
