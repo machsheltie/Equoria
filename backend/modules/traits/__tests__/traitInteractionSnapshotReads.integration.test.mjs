@@ -1,14 +1,18 @@
 /**
  * Trait interaction analysis reads the horse once per request (Equoria-q4uem.5).
  *
- * Mechanism (no Prisma mock, no spy): before the app or the shared client
- * module loads, this file builds a REAL PrismaClient — the same @prisma/client
- * copy and the same database URL builder prismaClient.mjs uses — with Prisma's
- * own query-event logging enabled, and installs it as `globalThis.__prisma`.
- * prismaClient.mjs reuses an existing `globalThis.__prisma` outside production,
- * so the real app (auth, ownership middleware, routes, services) runs every
- * statement through this client against the real test database, and the
- * engine reports each SQL statement it sends. Jest gives each test file its
+ * Mechanism (no Prisma mock, no spy): the real app runs every statement
+ * through a REAL PrismaClient that has Prisma's own query-event logging
+ * enabled, against the real test database, and the engine reports each SQL
+ * statement it sends.
+ *
+ * How that client becomes the app's client: prismaClient.mjs adopts an
+ * existing `globalThis.__prisma` outside production. This file installs a
+ * forwarding handle there BEFORE the shared client module loads, then builds
+ * the observed client from prismaClient.mjs's own `PrismaClient` re-export —
+ * one @prisma/client copy per process (Equoria-fefh2.44; no deep
+ * generated-client import) — and points the handle at it. Every property the
+ * app reads goes straight to that real client. Jest gives each test file its
  * own global, so no other suite sees this client.
  *
  * The client omits the horse-sex write extension; this file writes only
@@ -24,19 +28,33 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
 
-const { PrismaClient } = await import('../../../../packages/database/node_modules/@prisma/client/default.js');
+let observedClient = null;
+const appClientHandle = new Proxy(
+  {},
+  {
+    get(_target, prop) {
+      if (!observedClient) {
+        // Only reached while prismaClient.mjs registers the handle for cleanup.
+        return prop === '$disconnect' ? async () => {} : undefined;
+      }
+      const value = Reflect.get(observedClient, prop);
+      return typeof value === 'function' ? value.bind(observedClient) : value;
+    },
+  },
+);
+globalThis.__prisma = appClientHandle;
+
+const { default: prisma, PrismaClient } = await import('../../../../packages/database/prismaClient.mjs');
 const { buildDatabaseUrl } = await import('../../../../packages/database/dbPoolConfig.mjs');
 
 const statements = [];
-const observedClient = new PrismaClient({
+observedClient = new PrismaClient({
   datasources: { db: { url: buildDatabaseUrl(process.env.DATABASE_URL, process.env) } },
   log: [{ emit: 'event', level: 'query' }],
   errorFormat: 'minimal',
 });
 observedClient.$on('query', event => statements.push(event.query));
-globalThis.__prisma = observedClient;
 
-const { default: prisma } = await import('../../../../packages/database/prismaClient.mjs');
 const { default: app } = await import('../../../app.mjs');
 const { generateInteractionMatrix } = await import('../services/traitInteractionMatrix.mjs');
 const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs');
@@ -59,7 +77,7 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
   let authToken;
 
   beforeAll(async () => {
-    expect(prisma).toBe(observedClient);
+    expect(prisma).toBe(appClientHandle);
     const suffix = `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
     user = await prisma.user.create({
       data: {
