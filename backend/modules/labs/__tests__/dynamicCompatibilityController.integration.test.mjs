@@ -52,6 +52,11 @@ let grooms = [];
 // 3 horses: [nervous (fearful), confident, developing].
 let horses = [];
 let breedId = null;
+// Foreign-owner fixtures (Equoria-q4uem.2): a groom and horse owned by ANOTHER user,
+// used to prove the trends endpoint rejects resources the caller does not own.
+let foreignUser;
+let foreignGroom;
+let foreignHorse;
 // Equoria-plw0h: CSRF pair bound to the acting identity — fetched after the
 // fixture token exists, forwarding the accessToken cookie so issuance binds to
 // user.id (an anonymous salt-bound token would 403 on authenticated mutations).
@@ -168,12 +173,73 @@ beforeAll(async () => {
     );
   }
 
+  foreignUser = await prisma.user.create({
+    data: {
+      email: `dcompat-foreign-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `dcompatf${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
+      password: 'irrelevant-hash',
+      firstName: 'DCompat',
+      lastName: 'Foreign',
+      money: 0,
+      xp: 0,
+      level: 1,
+    },
+  });
+  foreignGroom = await prisma.groom.create({
+    data: {
+      userId: foreignUser.id,
+      name: `Foreign Groom ${uid}`,
+      speciality: 'foal_care',
+      personality: 'calm',
+      epigeneticInfluenceType: 'calm',
+      skillLevel: 'expert',
+      experience: 10,
+      level: 1,
+      sessionRate: 25.0,
+      isActive: true,
+    },
+  });
+  foreignHorse = await prisma.horse.create({
+    data: {
+      ...fixtureColor(),
+      userId: foreignUser.id,
+      breedId,
+      name: `Foreign Horse ${uid}`,
+      sex: 'Filly',
+      dateOfBirth: birthDate2YearsOld,
+      age: 2,
+      temperament: 'confident',
+      stressLevel: 3,
+      bondScore: 35,
+      healthStatus: 'Good',
+      speed: 50,
+      stamina: 50,
+      agility: 50,
+      balance: 50,
+      precision: 50,
+      intelligence: 50,
+      boldness: 50,
+      flexibility: 50,
+      obedience: 50,
+      focus: 50,
+      epigeneticFlags: [],
+    },
+  });
+
   // Equoria-plw0h: forward the accessToken cookie so getCsrfToken's
   // tryPopulateUserFromAccessCookie binds issuance to user.id — the same
   // sessionIdentifier the Bearer-authed mutations below resolve to.
   csrfPair = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
   // FK-ordered, id-scoped, fail-loud sweep.
+  cleanup.add(
+    () =>
+      prisma.groomInteraction.deleteMany({ where: { groomId: { in: [...grooms.map(g => g.id), foreignGroom.id] } } }),
+    'groom interactions',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: foreignUser.id } }), 'foreign horse');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: foreignUser.id } }), 'foreign groom');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: foreignUser.id } }), 'foreign user');
   cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
   cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
@@ -654,5 +720,71 @@ describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
     expect(res.body.data).toBeDefined();
     expect(res.body.data.overallTrend).toBe('insufficient_data');
     expect(res.body.data.dataPoints).toBeLessThan(3);
+  });
+});
+
+// ─── Equoria-q4uem.2: trends scoping ─────────────────────────────────────────
+
+describe('GET /api/compatibility/trends/:groomId/:horseId ownership and pair scoping', () => {
+  it('rejects a groom owned by another user with 404', async () => {
+    const res = await request(app)
+      .get(`/api/v1/compatibility/trends/${foreignGroom.id}/${horses[0].id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.data).toBeUndefined();
+  });
+
+  it('rejects a horse owned by another user with 404', async () => {
+    const res = await request(app)
+      .get(`/api/v1/compatibility/trends/${grooms[0].id}/${foreignHorse.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.data).toBeUndefined();
+  });
+
+  it('computes only from interactions of the requested groom-horse pair', async () => {
+    const pairGroom = grooms[2];
+    const pairHorse = horses[2];
+    const base = { interactionType: 'enrichment', duration: 30, bondingChange: 1, stressChange: -1, quality: 'good' };
+    for (let i = 0; i < 3; i += 1) {
+      await prisma.groomInteraction.create({
+        data: { ...base, groomId: pairGroom.id, foalId: pairHorse.id },
+      });
+    }
+    // Noise: same groom with a different horse, same horse with a different groom.
+    await prisma.groomInteraction.create({
+      data: { ...base, groomId: pairGroom.id, foalId: horses[1].id },
+    });
+    await prisma.groomInteraction.create({
+      data: { ...base, groomId: grooms[1].id, foalId: pairHorse.id },
+    });
+
+    const res = await request(app)
+      .get(`/api/v1/compatibility/trends/${pairGroom.id}/${pairHorse.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.dataPoints).toBe(3);
+  });
+});
+
+// ─── Equoria-q4uem.2: fake history-update command removed ────────────────────
+
+describe('POST /api/compatibility/history/update (removed)', () => {
+  it('does not exist: returns 404 for an authenticated user', async () => {
+    const res = await request(app)
+      .post('/api/v1/compatibility/history/update')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrfPair.cookieHeader)
+      .set('X-CSRF-Token', csrfPair.csrfToken)
+      .send({ groomId: grooms[0].id, horseId: horses[0].id, interactionId: 1 });
+
+    expect(res.status).toBe(404);
   });
 });

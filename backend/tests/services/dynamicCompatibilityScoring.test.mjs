@@ -20,7 +20,6 @@ import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
   predictInteractionOutcome,
-  updateCompatibilityHistory,
   getOptimalGroomRecommendations,
   analyzeCompatibilityTrends,
 } from '../../modules/breeding/index.mjs';
@@ -333,40 +332,6 @@ describe('Dynamic Compatibility Scoring', () => {
       expect(prediction.predictedBondingChange).toBeLessThan(2); // Low bonding gain
       expect(prediction.predictedStressChange).toBeGreaterThan(1); // Stress increase
       expect(prediction.successProbability).toBeLessThan(0.5);
-    });
-  });
-
-  describe('updateCompatibilityHistory', () => {
-    test('should update compatibility history with interaction results', async () => {
-      const [groom] = testGrooms;
-
-      const horse = testHorses[1];
-
-      // Create an interaction first
-      const interaction = await prisma.groomInteraction.create({
-        data: {
-          groomId: groom.id,
-          foalId: horse.id,
-          interactionType: 'enrichment',
-          duration: 30,
-          taskType: 'trust_building',
-          bondingChange: 3,
-          stressChange: -1,
-          quality: 'excellent',
-          cost: 35.0,
-        },
-      });
-
-      const result = await updateCompatibilityHistory(groom.id, horse.id, interaction.id);
-
-      expect(result).toBeDefined();
-      expect(result.historyUpdated).toBe(true);
-      expect(result.compatibilityTrend).toBeDefined();
-      expect(result.learningAdjustment).toBeDefined();
-      expect(result.newBaselineScore).toBeDefined();
-
-      // Should show positive trend for good interaction
-      expect(['improving', 'stable'].includes(result.compatibilityTrend)).toBe(true);
     });
   });
 

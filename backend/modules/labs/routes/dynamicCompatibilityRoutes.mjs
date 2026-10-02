@@ -24,7 +24,6 @@ import {
   predictOutcome,
   getRecommendations,
   getCompatibilityTrends,
-  updateHistory,
   getCompatibilityConfig,
 } from '../controllers/dynamicCompatibilityController.mjs';
 
@@ -189,23 +188,6 @@ router.get(
   requireOwnership('groom', { idParam: 'groomId' }),
   requireOwnership('horse', { idParam: 'horseId' }),
   getCompatibilityTrends,
-);
-
-/**
- * POST /api/compatibility/history/update
- * Update compatibility history with interaction results
- */
-router.post(
-  '/history/update',
-  [
-    body('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
-    body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('interactionId')
-      .isInt({ min: 1 })
-      .withMessage('Interaction ID must be a positive integer'),
-  ],
-  handleValidationErrors,
-  updateHistory,
 );
 
 /**

@@ -13,7 +13,6 @@ import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
   predictInteractionOutcome,
-  updateCompatibilityHistory,
 } from '../../breeding/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -657,7 +656,6 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   // 1st interaction (quality 'poor') is created for the 2-interaction trend but
   // never referenced by id (cascade-cleaned via the RR7 horse/groom sweep), so
   // its return value is intentionally not captured.
-  let rr7Interaction2; // 2nd interaction between rr7MethodicalGroom + rr7Horse (quality: 'excellent')
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -760,33 +758,6 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
       },
     });
 
-    // Two interactions for slope-trend analysis (lines 864-875). The first one's
-    // id is unused (only rr7Interaction2 is passed to updateCompatibilityHistory),
-    // so its return value is not captured.
-    await prisma.groomInteraction.create({
-      data: {
-        interactionType: 'grooming',
-        duration: 30,
-        bondingChange: 1,
-        stressChange: -1,
-        quality: 'poor',
-        foalId: rr7Horse.id,
-        groomId: rr7MethodicalGroom.id,
-      },
-    });
-
-    rr7Interaction2 = await prisma.groomInteraction.create({
-      data: {
-        interactionType: 'grooming',
-        duration: 30,
-        bondingChange: 3,
-        stressChange: -1,
-        quality: 'excellent',
-        foalId: rr7Horse.id,
-        groomId: rr7MethodicalGroom.id,
-      },
-    });
-
     // GroomInteraction.foalId/groomId both onDelete: Cascade — deleting the
     // RR7-prefixed horses + grooms cascades EVERY interaction created in this
     // suite (including per-test ones on rr7StressHorse / rr7HighBondHorse), so
@@ -798,55 +769,6 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);
-
-  // ── updateCompatibilityHistory ──────────────────────────────────────────────
-
-  it('updateCompatibilityHistory: invalid interactionId → throws (line 279)', async () => {
-    await expect(updateCompatibilityHistory(rr7MethodicalGroom.id, rr7Horse.id, 999999999)).rejects.toThrow(
-      'Interaction not found',
-    );
-  });
-
-  it('updateCompatibilityHistory: valid interaction, no prior history → newBaselineScore=0.5 (line 898)', async () => {
-    // Use rr7EnergeticGroom + rr7Horse (no interactions between this pair → recentInteractions=[])
-    // interaction2 belongs to rr7MethodicalGroom + rr7Horse, so calling with rr7EnergeticGroom
-    // makes recentInteractions = [] → calculateNewBaselineScore([]) → 0.5
-    const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7Horse.id, rr7Interaction2.id);
-    expect(result.historyUpdated).toBe(true);
-    expect(result.newBaselineScore).toBe(0.5);
-    expect(result.totalInteractions).toBe(0);
-  });
-
-  it('updateCompatibilityHistory: 2 interactions → trend calculated from slope (lines 864-875)', async () => {
-    // poor(1) then excellent(4) — slope positive → 'improving'
-    // Both interactions are for rr7MethodicalGroom + rr7Horse, both in last 30 days
-    const result = await updateCompatibilityHistory(rr7MethodicalGroom.id, rr7Horse.id, rr7Interaction2.id);
-    expect(result.historyUpdated).toBe(true);
-    expect(result.totalInteractions).toBe(2);
-    // slope from [poor=1, excellent=4] in desc order [4,1] gives declining slope
-    // or [1,4] ascending. The service orders desc (most recent first), so rr7Interaction2
-    // (created last) is index 0 → scores=[4,1] → slope < 0 → 'declining'
-    expect(['improving', 'stable', 'declining']).toContain(result.compatibilityTrend);
-  });
-
-  it('updateCompatibilityHistory: 1 interaction, quality=excellent → trend=stable (line 859-861)', async () => {
-    // Create a fresh pair: rr7EnergeticGroom + rr7HighBondHorse with exactly 1 interaction
-    const singleInteraction = await prisma.groomInteraction.create({
-      data: {
-        interactionType: 'grooming',
-        duration: 20,
-        bondingChange: 2,
-        quality: 'excellent',
-        foalId: rr7HighBondHorse.id,
-        groomId: rr7EnergeticGroom.id,
-      },
-    });
-    const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7HighBondHorse.id, singleInteraction.id);
-    expect(result.totalInteractions).toBe(1);
-    expect(result.compatibilityTrend).toBe('stable');
-    // singleInteraction.foalId = rr7HighBondHorse (RR7-prefix) → cascade-deleted
-    // by the suite afterAll horse sweep; no per-test delete needed.
-  });
 
   // ── getOptimalGroomRecommendations: empty grooms (lines 348-354, 948-949) ──
 
@@ -933,69 +855,5 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
     });
     expect(Array.isArray(result.contextualNotes)).toBe(true);
     expect(result.contextualNotes.some(n => n.toLowerCase().includes('stress'))).toBe(true);
-  });
-
-  // ── analyzeCompatibilityTrendFromInteractions slope paths (lines 870, 875) ─
-
-  it('updateCompatibilityHistory: older=excellent, newer=poor → improving slope (line 870)', async () => {
-    // scores=[poor=1, excellent=4] in desc order → slope=3 > 0.05 → 'improving'.
-    // The older interaction's id is unused (cascade-cleaned via the RR7 horse
-    // sweep), so its return value is not captured.
-    await prisma.groomInteraction.create({
-      data: {
-        interactionType: 'grooming',
-        duration: 20,
-        quality: 'excellent',
-        foalId: rr7StressHorse.id,
-        groomId: rr7EnergeticGroom.id,
-        createdAt: new Date(Date.now() - 10000),
-      },
-    });
-    const newerInteraction = await prisma.groomInteraction.create({
-      data: {
-        interactionType: 'grooming',
-        duration: 20,
-        quality: 'poor',
-        foalId: rr7StressHorse.id,
-        groomId: rr7EnergeticGroom.id,
-      },
-    });
-    // Both interactions are on rr7StressHorse (RR7-prefix) → cascade-deleted by
-    // the suite afterAll horse sweep; the try/finally per-test delete was
-    // removed (a throwing finally would have masked the assertions above).
-    const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7StressHorse.id, newerInteraction.id);
-    expect(result.totalInteractions).toBe(2);
-    expect(result.compatibilityTrend).toBe('improving');
-  });
-
-  it('updateCompatibilityHistory: both interactions same quality → stable slope (line 875)', async () => {
-    // scores=[good=3, good=3] → slope=0 → 'stable'. The first interaction's id
-    // is unused (cascade-cleaned via the RR7 horse sweep), so its return value
-    // is not captured.
-    await prisma.groomInteraction.create({
-      data: {
-        interactionType: 'grooming',
-        duration: 20,
-        quality: 'good',
-        foalId: rr7HighBondHorse.id,
-        groomId: rr7MethodicalGroom.id,
-        createdAt: new Date(Date.now() - 10000),
-      },
-    });
-    const int2 = await prisma.groomInteraction.create({
-      data: {
-        interactionType: 'grooming',
-        duration: 20,
-        quality: 'good',
-        foalId: rr7HighBondHorse.id,
-        groomId: rr7MethodicalGroom.id,
-      },
-    });
-    // Both interactions are on rr7HighBondHorse (RR7-prefix) → cascade-deleted
-    // by the suite afterAll horse sweep; the try/finally per-test delete was
-    // removed (a throwing finally would have masked the assertions above).
-    const result = await updateCompatibilityHistory(rr7MethodicalGroom.id, rr7HighBondHorse.id, int2.id);
-    expect(result.totalInteractions).toBe(2);
-    expect(result.compatibilityTrend).toBe('stable');
   });
 });

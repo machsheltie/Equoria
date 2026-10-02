@@ -19,7 +19,6 @@ import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
   predictInteractionOutcome,
-  updateCompatibilityHistory,
   getOptimalGroomRecommendations,
   analyzeCompatibilityTrends,
 } from '../../breeding/index.mjs';
@@ -257,69 +256,6 @@ export async function getCompatibilityTrends(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to analyze compatibility trends',
-      error: error.message,
-    });
-  }
-}
-
-/**
- * Update compatibility history with interaction results
- * POST /api/compatibility/history/update
- */
-export async function updateHistory(req, res) {
-  try {
-    const { groomId, horseId, interactionId } = req.body;
-    const userId = req.user.id;
-
-    logger.info(
-      `[dynamicCompatibilityController.updateHistory] Updating history for groom ${groomId}, horse ${horseId}, interaction ${interactionId}`,
-    );
-
-    // Validate required fields
-    if (!groomId || !horseId || !interactionId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: groomId, horseId, and interactionId are required',
-      });
-    }
-
-    // Validate groom ownership (atomic)
-    const groom = await findOwnedResource('groom', parseInt(groomId), userId);
-    if (!groom) {
-      return res.status(404).json({
-        success: false,
-        message: 'Groom not found or not on your staff',
-      });
-    }
-
-    // Validate horse ownership (atomic)
-    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found or you do not own this horse',
-      });
-    }
-
-    // Note: interactionId validation depends on service implementation
-    // The service should verify interaction belongs to this groom-horse pair
-
-    const result = await updateCompatibilityHistory(groomId, horseId, interactionId);
-
-    logger.info(
-      `[dynamicCompatibilityController.updateHistory] History updated: ${result.compatibilityTrend} trend, ${result.totalInteractions} total interactions`,
-    );
-
-    res.json({
-      success: true,
-      message: 'Compatibility history updated successfully',
-      data: result,
-    });
-  } catch (error) {
-    logger.error('[dynamicCompatibilityController.updateHistory] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update compatibility history',
       error: error.message,
     });
   }

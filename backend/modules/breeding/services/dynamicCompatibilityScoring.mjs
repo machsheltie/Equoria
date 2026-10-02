@@ -238,64 +238,6 @@ export async function predictInteractionOutcome(groomId, horseId, context) {
 }
 
 /**
- * Update compatibility history with interaction results
- * @param {number} groomId - ID of the groom
- * @param {number} horseId - ID of the horse
- * @param {number} interactionId - ID of the completed interaction
- * @returns {Object} Updated compatibility history
- */
-export async function updateCompatibilityHistory(groomId, horseId, interactionId) {
-  const interaction = await prisma.groomInteraction.findUnique({
-    where: { id: interactionId },
-    select: {
-      bondingChange: true,
-      stressChange: true,
-      quality: true,
-      taskType: true,
-      createdAt: true,
-    },
-  });
-
-  if (!interaction) {
-    throw new Error(`Interaction not found: ${interactionId}`);
-  }
-
-  // Get recent interaction history for trend analysis
-  const recentInteractions = await prisma.groomInteraction.findMany({
-    where: {
-      groomId,
-      foalId: horseId,
-      createdAt: {
-        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 10,
-  });
-
-  // Analyze compatibility trend
-  const compatibilityTrend = analyzeCompatibilityTrendFromInteractions(recentInteractions);
-
-  // Calculate learning adjustment
-  const learningAdjustment = calculateLearningAdjustment(interaction, recentInteractions);
-
-  // Calculate new baseline score
-  const newBaselineScore = calculateNewBaselineScore(recentInteractions);
-
-  return {
-    groomId,
-    horseId,
-    interactionId,
-    historyUpdated: true,
-    compatibilityTrend,
-    learningAdjustment,
-    newBaselineScore,
-    totalInteractions: recentInteractions.length,
-    updateTimestamp: new Date(),
-  };
-}
-
-/**
  * Get optimal groom recommendations for a horse and context
  * @param {number} horseId - ID of the horse
  * @param {Object} context - Interaction context
@@ -812,72 +754,6 @@ function generatePredictionRecommendations(compatibility, context) {
   }
 
   return recommendations;
-}
-
-/**
- * Analyze compatibility trend from interactions
- */
-function analyzeCompatibilityTrendFromInteractions(interactions) {
-  if (interactions.length === 0) {
-    return 'insufficient_data';
-  }
-
-  // For a single interaction there is no trend — return based on quality direction
-  if (interactions.length === 1) {
-    const { quality } = interactions[0];
-    return ['good', 'excellent'].includes(quality) ? 'stable' : 'declining';
-  }
-
-  const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
-  const scores = interactions.map(i => qualityScores[i.quality] || 2);
-
-  const trend = calculateLinearTrend(scores);
-
-  if (trend.slope > 0.05) {
-    return 'improving';
-  } // More sensitive threshold
-  if (trend.slope < -0.05) {
-    return 'declining';
-  }
-  return 'stable';
-}
-
-/**
- * Calculate learning adjustment
- */
-function calculateLearningAdjustment(interaction, recentInteractions) {
-  const qualityScore = { poor: 1, fair: 2, good: 3, excellent: 4 }[interaction.quality] || 2;
-  const avgQuality =
-    recentInteractions.reduce((sum, i) => {
-      return sum + ({ poor: 1, fair: 2, good: 3, excellent: 4 }[i.quality] || 2);
-    }, 0) / recentInteractions.length;
-
-  const adjustment = (qualityScore - avgQuality) * 0.05; // 5% adjustment per quality point difference
-
-  return Math.max(-0.2, Math.min(0.2, adjustment));
-}
-
-/**
- * Calculate new baseline score
- */
-function calculateNewBaselineScore(recentInteractions) {
-  if (recentInteractions.length === 0) {
-    return 0.5;
-  }
-
-  const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
-  const avgQuality =
-    recentInteractions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) /
-    recentInteractions.length;
-  const avgBonding =
-    recentInteractions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) /
-    recentInteractions.length;
-
-  // Normalize to 0-1 scale
-  const qualityScore = (avgQuality - 1) / 3; // 1-4 scale to 0-1
-  const bondingScore = Math.max(0, Math.min(1, (avgBonding + 2) / 4)); // -2 to +2 scale to 0-1
-
-  return (qualityScore + bondingScore) / 2;
 }
 
 /**

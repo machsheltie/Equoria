@@ -18,7 +18,6 @@ import {
   predictOutcome,
   getRecommendations,
   getCompatibilityTrends,
-  updateHistory,
   getCompatibilityConfig,
 } from '../controllers/dynamicCompatibilityController.mjs';
 
@@ -280,80 +279,6 @@ describe('getRecommendations guard clauses', () => {
     const res = makeRes();
 
     await getRecommendations(req, res);
-
-    expect([404, 500]).toContain(res.statusValue);
-    expect(res.bodyValue.success).toBe(false);
-  });
-});
-
-// ─── updateHistory — missing fields guard ─────────────────────────────────────
-
-describe('updateHistory guard clauses', () => {
-  it('returns 400 when groomId is missing', async () => {
-    const req = {
-      body: { horseId: 1, interactionId: 5 },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await updateHistory(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-    expect(res.bodyValue.message).toMatch(/missing required fields/i);
-  });
-
-  it('returns 400 when horseId is missing', async () => {
-    const req = {
-      body: { groomId: 1, interactionId: 5 },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await updateHistory(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 400 when interactionId is missing', async () => {
-    const req = {
-      body: { groomId: 1, horseId: 2 },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await updateHistory(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 400 when all fields missing', async () => {
-    const req = {
-      body: {},
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await updateHistory(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 404 when groom not found (non-existent)', async () => {
-    const req = {
-      body: {
-        groomId: NON_EXISTENT_ID,
-        horseId: NON_EXISTENT_ID + 1,
-        interactionId: NON_EXISTENT_ID + 2,
-      },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await updateHistory(req, res);
 
     expect([404, 500]).toContain(res.statusValue);
     expect(res.bodyValue.success).toBe(false);
