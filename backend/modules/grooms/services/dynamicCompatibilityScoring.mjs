@@ -20,6 +20,10 @@ import {
   calculatePersonalityModifiers,
 } from './groomPersonalityTraits.mjs';
 import { analyzeHorseTemperament } from '../../horses/index.mjs';
+import {
+  assertCompatibilityTaskType,
+  getTaskCompatibilityModifier,
+} from './groomHorseCompatibilityTaskPolicy.mjs';
 
 /**
  * Calculate dynamic compatibility with contextual factors
@@ -29,6 +33,8 @@ import { analyzeHorseTemperament } from '../../horses/index.mjs';
  * @returns {Object} Dynamic compatibility analysis
  */
 export async function calculateDynamicCompatibility(groomId, horseId, context) {
+  assertCompatibilityTaskType(context.taskType);
+
   // Get base compatibility from personality analysis
   const baseModifiers = await calculatePersonalityModifiers(groomId, horseId, context.taskType);
   const baseCompatibility = baseModifiers.compatibilityScore;
@@ -47,7 +53,10 @@ export async function calculateDynamicCompatibility(groomId, horseId, context) {
   // Calculate contextual modifiers
   const experienceBonus = calculateExperienceBonus(groom);
   const stressSituationModifier = calculateStressSituationModifier(horse, context);
-  const taskSpecificModifier = calculateTaskSpecificModifier(groom, context);
+  const taskSpecificModifier = getTaskCompatibilityModifier(
+    context.taskType,
+    groom.epigeneticInfluenceType,
+  );
   const environmentalModifier = calculateEnvironmentalModifier(context);
   const timeOfDayModifier = calculateTimeOfDayModifier(context);
 
@@ -247,6 +256,8 @@ export async function predictInteractionOutcome(groomId, horseId, context) {
  * @returns {Object} Ranked groom recommendations
  */
 export async function getOptimalGroomRecommendations(horseId, context) {
+  assertCompatibilityTaskType(context.taskType);
+
   // Get all available grooms for the horse's owner
   const horse = await prisma.horse.findUnique({
     where: { id: horseId },
@@ -420,24 +431,6 @@ function calculateStressSituationModifier(horse, context) {
     return 0.9;
   } // High stress - slight penalty
   return 0.7; // Very high stress - significant penalty
-}
-
-/**
- * Calculate task-specific modifier
- */
-function calculateTaskSpecificModifier(groom, context) {
-  const { taskType } = context;
-  const personality = groom.epigeneticInfluenceType;
-
-  const taskCompatibility = {
-    trust_building: { calm: 1.3, methodical: 1.1, energetic: 0.8 },
-    desensitization: { energetic: 1.1, calm: 1.2, methodical: 0.9 }, // Reduced energetic bonus, increased calm
-    hoof_handling: { methodical: 1.2, calm: 1.1, energetic: 0.8 }, // Reduced methodical bonus
-    showground_exposure: { energetic: 1.2, calm: 0.9, methodical: 1.0 },
-    sponge_bath: { calm: 1.2, methodical: 1.3, energetic: 0.9 },
-  };
-
-  return taskCompatibility[taskType]?.[personality] || 1.0;
 }
 
 /**

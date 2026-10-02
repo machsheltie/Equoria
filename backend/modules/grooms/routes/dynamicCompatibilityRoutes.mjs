@@ -26,6 +26,7 @@ import {
   getCompatibilityTrends,
   getCompatibilityConfig,
 } from '../controllers/dynamicCompatibilityController.mjs';
+import { GROOM_HORSE_COMPATIBILITY_TASK_TYPES } from '../services/groomHorseCompatibilityTaskPolicy.mjs';
 
 const router = express.Router();
 
@@ -44,16 +45,7 @@ router.post(
     body('context').isObject().withMessage('Context must be an object'),
     body('context.taskType')
       .isString()
-      .isIn([
-        'trust_building',
-        'desensitization',
-        'hoof_handling',
-        'showground_exposure',
-        'sponge_bath',
-        'coat_check',
-        'tying_practice',
-        'early_touch',
-      ])
+      .isIn(GROOM_HORSE_COMPATIBILITY_TASK_TYPES)
       .withMessage('Task type must be a valid task type'),
     body('context.timeOfDay')
       .optional()
@@ -105,16 +97,7 @@ router.post(
     body('context').isObject().withMessage('Context must be an object'),
     body('context.taskType')
       .isString()
-      .isIn([
-        'trust_building',
-        'desensitization',
-        'hoof_handling',
-        'showground_exposure',
-        'sponge_bath',
-        'coat_check',
-        'tying_practice',
-        'early_touch',
-      ])
+      .isIn(GROOM_HORSE_COMPATIBILITY_TASK_TYPES)
       .withMessage('Task type must be a valid task type'),
     body('context.duration')
       .optional()
@@ -140,16 +123,7 @@ router.post(
     body('context').isObject().withMessage('Context must be an object'),
     body('context.taskType')
       .isString()
-      .isIn([
-        'trust_building',
-        'desensitization',
-        'hoof_handling',
-        'showground_exposure',
-        'sponge_bath',
-        'coat_check',
-        'tying_practice',
-        'early_touch',
-      ])
+      .isIn(GROOM_HORSE_COMPATIBILITY_TASK_TYPES)
       .withMessage('Task type must be a valid task type'),
     body('context.timeOfDay')
       .optional()

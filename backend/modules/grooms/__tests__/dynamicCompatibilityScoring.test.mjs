@@ -70,7 +70,7 @@ beforeAll(async () => {
 
 afterAll(() => moduleCleanup.run(), 30000);
 
-const CONTEXT = { taskType: 'grooming', timeOfDay: 'morning', weather: 'sunny' };
+const CONTEXT = { taskType: 'coat_check', timeOfDay: 'morning', weather: 'sunny' };
 
 // ─── analyzeCompatibilityTrends ───────────────────────────────────────────────
 
@@ -155,7 +155,7 @@ describe('predictInteractionOutcome', () => {
 describe('calculateDynamicCompatibility — stressSituationModifier branches (Equoria-jkht)', () => {
   it('stressSituationModifier=1.1 when horseCurrentStress=1 (≤ 3)', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 1,
     });
@@ -164,7 +164,7 @@ describe('calculateDynamicCompatibility — stressSituationModifier branches (Eq
 
   it('stressSituationModifier=1.0 when horseCurrentStress=5 (≤ 6)', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 5,
     });
@@ -173,7 +173,7 @@ describe('calculateDynamicCompatibility — stressSituationModifier branches (Eq
 
   it('stressSituationModifier=0.9 when horseCurrentStress=7 (≤ 8)', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 7,
     });
@@ -182,7 +182,7 @@ describe('calculateDynamicCompatibility — stressSituationModifier branches (Eq
 
   it('stressSituationModifier=0.7 when horseCurrentStress=9 (> 8)', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 9,
     });
@@ -196,7 +196,7 @@ describe('calculateDynamicCompatibility — stressSituationModifier branches (Eq
 describe('calculateDynamicCompatibility — timeOfDayModifier branches (Equoria-jkht)', () => {
   it('timeOfDayModifier=1.1 for timeOfDay=morning', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
     });
     expect(result.timeOfDayModifier).toBe(1.1);
@@ -204,7 +204,7 @@ describe('calculateDynamicCompatibility — timeOfDayModifier branches (Equoria-
 
   it('timeOfDayModifier=1.0 for timeOfDay=afternoon', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'afternoon',
     });
     expect(result.timeOfDayModifier).toBe(1.0);
@@ -212,7 +212,7 @@ describe('calculateDynamicCompatibility — timeOfDayModifier branches (Equoria-
 
   it('timeOfDayModifier=0.95 for timeOfDay=evening', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'evening',
     });
     expect(result.timeOfDayModifier).toBe(0.95);
@@ -309,7 +309,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
           bondingChange: r.bondingChange,
           stressChange: r.stressChange,
           quality: r.quality,
-          taskType: 'grooming',
+          taskType: 'coat_check',
           createdAt: new Date(ts - (improvingRows.length - i) * 60000),
           timestamp: new Date(ts - (improvingRows.length - i) * 60000),
         },
@@ -334,7 +334,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
           bondingChange: r.bondingChange,
           stressChange: r.stressChange,
           quality: r.quality,
-          taskType: 'grooming',
+          taskType: 'coat_check',
           createdAt: new Date(ts - (decliningRows.length - i) * 60000),
           timestamp: new Date(ts - (decliningRows.length - i) * 60000),
         },
@@ -353,7 +353,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
           bondingChange: 1,
           stressChange: 0,
           quality: 'fair',
-          taskType: 'grooming',
+          taskType: 'coat_check',
           createdAt: new Date(ts - (3 - i) * 60000),
           timestamp: new Date(ts - (3 - i) * 60000),
         },
@@ -482,7 +482,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
           bondingChange: 4,
           stressChange: -2,
           quality: 'excellent',
-          taskType: 'grooming',
+          taskType: 'coat_check',
           timestamp: new Date(ts - 2 * 24 * 60 * 60 * 1000),
         },
         {
@@ -493,7 +493,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
           bondingChange: 3,
           stressChange: -1,
           quality: 'good',
-          taskType: 'grooming',
+          taskType: 'coat_check',
           timestamp: new Date(ts - 1 * 24 * 60 * 60 * 1000),
         },
       ],
@@ -512,7 +512,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('recommendationLevel=acceptable: stress=7 + evening context', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'evening',
       horseCurrentStress: 7,
     });
@@ -523,7 +523,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('recommendationLevel=not_recommended: stress=9 + chaotic environment', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'evening',
       horseCurrentStress: 9,
       environmentalFactors: ['chaotic'],
@@ -534,7 +534,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('recommendationLevel=highly_recommended: high-experience groom morning low-stress', async () => {
     const result = await calculateDynamicCompatibility(highExpGroom.id, branchHorse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 1,
     });
@@ -544,11 +544,11 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('calculateEnvironmentalModifier: quiet factor multiplies by 1.1', async () => {
     const base = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
     });
     const withQuiet = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['quiet'],
     });
@@ -559,7 +559,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('calculateEnvironmentalModifier: noisy factor multiplies by 0.9', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['noisy'],
     });
@@ -568,7 +568,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('calculateEnvironmentalModifier: familiar factor multiplies by 1.1', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['familiar'],
     });
@@ -577,7 +577,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('calculateEnvironmentalModifier: unfamiliar factor multiplies by 0.9', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['unfamiliar'],
     });
@@ -586,7 +586,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('calculateEnvironmentalModifier: structured factor multiplies by 1.05', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['structured'],
     });
@@ -595,7 +595,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('calculateEnvironmentalModifier: stimulating factor leaves modifier at 1.0', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['stimulating'],
     });
@@ -604,7 +604,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('calculateTimeOfDayModifier default branch: unknown timeOfDay returns 1.0', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'midnight',
     });
     expect(result.timeOfDayModifier).toBe(1.0);
@@ -612,7 +612,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
   it('calculateHistoricalModifier non-1.0: existing interactions produce modifier != 1.0', async () => {
     const result = await calculateDynamicCompatibility(highExpGroom.id, branchHorse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
     });
     // 2 excellent/good interactions → qualityModifier > 1, historicalModifier != 1.0
@@ -624,7 +624,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
     // methodical groom with high experience → experienceBonus=1.9
     // A fresh horse has baseCompatibility > 0.5 so the outer condition is false — exercises that branch
     const result = await calculateDynamicCompatibility(methodicalGroom.id, branchHorse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 1,
     });
@@ -774,7 +774,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
   it('getOptimalGroomRecommendations: horse owner has no grooms → empty rankedGrooms (line 348-354)', async () => {
     const result = await getOptimalGroomRecommendations(rr7NoGroomHorse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
     });
     expect(result.rankedGrooms).toEqual([]);
@@ -786,7 +786,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
   it('calculateDynamicCompatibility: unknown environmental factor → default switch arm (line 562)', async () => {
     const result = await calculateDynamicCompatibility(rr7MethodicalGroom.id, rr7Horse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['rainy'],
     });
@@ -836,7 +836,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
   it('predictInteractionOutcome: horseCurrentStress=9 → stress recommendation added (line 839)', async () => {
     const result = await predictInteractionOutcome(rr7MethodicalGroom.id, rr7StressHorse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 9,
     });
@@ -849,7 +849,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
   it('getOptimalGroomRecommendations: horseCurrentStress=9 → contextual note about stress (line 962)', async () => {
     const result = await getOptimalGroomRecommendations(rr7StressHorse.id, {
-      taskType: 'grooming',
+      taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 9,
     });

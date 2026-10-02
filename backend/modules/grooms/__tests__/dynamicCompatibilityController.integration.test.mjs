@@ -749,6 +749,7 @@ describe('GET /api/compatibility/trends/:groomId/:horseId ownership and pair sco
   it('computes only from interactions of the requested groom-horse pair', async () => {
     const pairGroom = grooms[2];
     const pairHorse = horses[2];
+    // Assumes no other test in this file records interactions for grooms[2] with horses[2].
     const base = { interactionType: 'enrichment', duration: 30, bondingChange: 1, stressChange: -1, quality: 'good' };
     for (let i = 0; i < 3; i += 1) {
       await prisma.groomInteraction.create({

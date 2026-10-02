@@ -22,6 +22,7 @@ import {
   getOptimalGroomRecommendations,
   analyzeCompatibilityTrends,
 } from '../services/dynamicCompatibilityScoring.mjs';
+import { GROOM_HORSE_COMPATIBILITY_TASK_TYPES } from '../services/groomHorseCompatibilityTaskPolicy.mjs';
 
 /**
  * Calculate dynamic compatibility between a groom and horse
@@ -283,13 +284,7 @@ export async function getCompatibilityConfig(req, res) {
         'curious',
         'complex',
       ],
-      taskTypes: [
-        'trust_building',
-        'desensitization',
-        'hoof_handling',
-        'showground_exposure',
-        'sponge_bath',
-      ],
+      taskTypes: [...GROOM_HORSE_COMPATIBILITY_TASK_TYPES],
       environmentalFactors: [
         'quiet',
         'noisy',

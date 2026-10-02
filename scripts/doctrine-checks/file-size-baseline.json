@@ -16,7 +16,7 @@
   "backend/modules/economy/tackShop/controllers/tackShopController.mjs": 784,
   "backend/modules/grooms/__tests__/dynamicCompatibilityScoring.test.mjs": 859,
   "backend/modules/grooms/routes/groomRoutes.mjs": 674,
-  "backend/modules/grooms/services/dynamicCompatibilityScoring.mjs": 832,
+  "backend/modules/grooms/services/dynamicCompatibilityScoring.mjs": 828,
   "backend/modules/grooms/services/groomPersonalityTraits.mjs": 693,
   "backend/modules/health/__tests__/session-lifecycle.test.mjs": 860,
   "backend/modules/horses/__tests__/breedingColorInheritanceService.test.mjs": 1114,
