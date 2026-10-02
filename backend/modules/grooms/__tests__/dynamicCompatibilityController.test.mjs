@@ -1,7 +1,7 @@
 /**
  * dynamicCompatibilityController.test.mjs
  *
- * Unit tests for backend/modules/labs/controllers/dynamicCompatibilityController.mjs
+ * Unit tests for backend/modules/grooms/controllers/dynamicCompatibilityController.mjs
  * covering guard-clause and branch paths that don't require a seeded DB.
  *
  * Strategy: Direct function invocation with stub req/res objects.

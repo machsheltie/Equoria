@@ -21,7 +21,7 @@ import {
   predictInteractionOutcome,
   getOptimalGroomRecommendations,
   analyzeCompatibilityTrends,
-} from '../../breeding/index.mjs';
+} from '../services/dynamicCompatibilityScoring.mjs';
 
 /**
  * Calculate dynamic compatibility between a groom and horse

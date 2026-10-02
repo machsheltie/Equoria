@@ -16,7 +16,6 @@ export * from './routes/foalRoutes.mjs';
 export * from './services/advancedLineageAnalysisService.mjs';
 export * from './services/breedingOwnershipQueries.mjs';
 export * from './services/breedingPredictionService.mjs';
-export * from './services/dynamicCompatibilityScoring.mjs';
 export * from './services/enhancedGeneticProbabilityService.mjs';
 // Equoria-v8l96.3: surface the genetics-diversity aggregator so the
 // cross-module consumer (tests/unit/geneticDiversityTracking.test.mjs) goes

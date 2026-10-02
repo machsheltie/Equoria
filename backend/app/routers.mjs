@@ -72,11 +72,11 @@ import {
   groomHandlerRoutes,
   groomSalaryRoutes,
   groomPerformanceRoutes,
+  dynamicCompatibilityRoutes,
 } from '../modules/grooms/index.mjs';
 import { leaderboardRoutes } from '../modules/leaderboards/index.mjs';
 import {
   enhancedReportingRoutes,
-  dynamicCompatibilityRoutes,
   personalityEvolutionRoutes,
   apiOptimizationRoutes,
   memoryManagementRoutes,

@@ -65,3 +65,6 @@ export { default as groomAssignmentRoutes } from './routes/groomAssignmentRoutes
 export { default as groomHandlerRoutes } from './routes/groomHandlerRoutes.mjs';
 export { default as groomSalaryRoutes } from './routes/groomSalaryRoutes.mjs';
 export { default as groomPerformanceRoutes } from './routes/groomPerformanceRoutes.mjs';
+// Equoria-q4uem.3: groom/horse compatibility moved here from labs (route/controller)
+// and breeding (scorer). Only the router is public; no other module consumes the scorer.
+export { default as dynamicCompatibilityRoutes } from './routes/dynamicCompatibilityRoutes.mjs';

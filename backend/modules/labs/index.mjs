@@ -10,10 +10,8 @@
  * Public API: exports from controllers, routes, services, tests.
  */
 
-export * from './controllers/dynamicCompatibilityController.mjs';
 export * from './controllers/personalityEvolutionController.mjs';
 export * from './routes/apiOptimizationRoutes.mjs';
-export * from './routes/dynamicCompatibilityRoutes.mjs';
 export * from './routes/enhancedReportingRoutes.mjs';
 export * from './routes/environmentalRoutes.mjs';
 export * from './routes/memoryManagementRoutes.mjs';
@@ -29,7 +27,6 @@ export * from './services/environmentalTriggerSystem.mjs';
 // API instead of the retired backend/routes/*.mjs compat shims. `export *`
 // above re-exports NAMED symbols only; a default needs an explicit re-export.
 export { default as enhancedReportingRoutes } from './routes/enhancedReportingRoutes.mjs';
-export { default as dynamicCompatibilityRoutes } from './routes/dynamicCompatibilityRoutes.mjs';
 export { default as personalityEvolutionRoutes } from './routes/personalityEvolutionRoutes.mjs';
 export { default as apiOptimizationRoutes } from './routes/apiOptimizationRoutes.mjs';
 export { default as memoryManagementRoutes } from './routes/memoryManagementRoutes.mjs';

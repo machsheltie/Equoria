@@ -13,16 +13,16 @@
  * - Predictive compatibility modeling
  */
 
-import prisma from '../../../packages/database/prismaClient.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
-import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
   predictInteractionOutcome,
   getOptimalGroomRecommendations,
   analyzeCompatibilityTrends,
-} from '../../modules/breeding/index.mjs';
+} from '../services/dynamicCompatibilityScoring.mjs';
 
 describe('Dynamic Compatibility Scoring', () => {
   let testUser;
