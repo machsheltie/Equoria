@@ -15,6 +15,7 @@
 
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
+import { AppError } from '../../../errors/index.mjs';
 import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
@@ -22,7 +23,15 @@ import {
   getOptimalGroomRecommendations,
   analyzeCompatibilityTrends,
 } from '../services/dynamicCompatibilityScoring.mjs';
-import { GROOM_HORSE_COMPATIBILITY_TASK_TYPES } from '../services/groomHorseCompatibilityTaskPolicy.mjs';
+import {
+  GROOM_HORSE_COMPATIBILITY_TASK_TYPES,
+  GROOM_HORSE_COMPATIBILITY_PERSONALITIES,
+} from '../services/groomHorseCompatibilityTaskPolicy.mjs';
+
+/** An AppError (e.g. the policy's 400 for an unsupported task) keeps its status; anything else is a 500. */
+function errorStatus(error) {
+  return AppError.isAppError(error) ? error.statusCode : 500;
+}
 
 /**
  * Calculate dynamic compatibility between a groom and horse
@@ -77,7 +86,7 @@ export async function calculateCompatibility(req, res) {
     });
   } catch (error) {
     logger.error('[dynamicCompatibilityController.calculateCompatibility] Error:', error);
-    res.status(500).json({
+    res.status(errorStatus(error)).json({
       success: false,
       message: 'Failed to calculate dynamic compatibility',
       error: error.message,
@@ -110,7 +119,7 @@ export async function getCompatibilityFactors(req, res) {
     });
   } catch (error) {
     logger.error('[dynamicCompatibilityController.getCompatibilityFactors] Error:', error);
-    res.status(500).json({
+    res.status(errorStatus(error)).json({
       success: false,
       message: 'Failed to analyze compatibility factors',
       error: error.message,
@@ -170,7 +179,7 @@ export async function predictOutcome(req, res) {
     });
   } catch (error) {
     logger.error('[dynamicCompatibilityController.predictOutcome] Error:', error);
-    res.status(500).json({
+    res.status(errorStatus(error)).json({
       success: false,
       message: 'Failed to predict interaction outcome',
       error: error.message,
@@ -221,7 +230,7 @@ export async function getRecommendations(req, res) {
     });
   } catch (error) {
     logger.error('[dynamicCompatibilityController.getRecommendations] Error:', error);
-    res.status(500).json({
+    res.status(errorStatus(error)).json({
       success: false,
       message: 'Failed to generate groom recommendations',
       error: error.message,
@@ -254,7 +263,7 @@ export async function getCompatibilityTrends(req, res) {
     });
   } catch (error) {
     logger.error('[dynamicCompatibilityController.getCompatibilityTrends] Error:', error);
-    res.status(500).json({
+    res.status(errorStatus(error)).json({
       success: false,
       message: 'Failed to analyze compatibility trends',
       error: error.message,
@@ -273,7 +282,7 @@ export async function getCompatibilityConfig(req, res) {
     );
 
     const config = {
-      personalityTypes: ['calm', 'energetic', 'methodical'],
+      personalityTypes: [...GROOM_HORSE_COMPATIBILITY_PERSONALITIES],
       temperamentTypes: [
         'nervous',
         'fearful',
@@ -307,7 +316,7 @@ export async function getCompatibilityConfig(req, res) {
     });
   } catch (error) {
     logger.error('[dynamicCompatibilityController.getCompatibilityConfig] Error:', error);
-    res.status(500).json({
+    res.status(errorStatus(error)).json({
       success: false,
       message: 'Failed to get compatibility configuration',
       error: error.message,

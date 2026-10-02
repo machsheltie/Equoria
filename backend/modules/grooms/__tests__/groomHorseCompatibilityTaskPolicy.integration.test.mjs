@@ -29,7 +29,7 @@ import {
   predictInteractionOutcome,
   getOptimalGroomRecommendations,
 } from '../services/dynamicCompatibilityScoring.mjs';
-import { getPersonalityTraitDefinitions } from '../services/groomPersonalityTraits.mjs';
+import { getPersonalityTraitDefinitions, calculatePersonalityModifiers } from '../services/groomPersonalityTraits.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const POLICY_MODULE = '../services/groomHorseCompatibilityTaskPolicy.mjs';
@@ -75,6 +75,8 @@ let horse;
 let foreignUser;
 let foreignGroom;
 let foreignHorse;
+let fearfulFlagHorse;
+let braveFlagHorse;
 const groomsByPersonality = {};
 const cleanup = createCleanupTracker();
 
@@ -170,6 +172,15 @@ beforeAll(async () => {
     });
   }
   horse = await prisma.horse.create({ data: horseData(user.id, `Policy Horse ${uid}`) });
+  // Flags that make a trait with a task bonus compatible (see groomPersonalityTraits.mjs):
+  // calm 'gentle' (trustBuilding 1.4) is compatibleWith fearful; energetic 'enthusiastic'
+  // (stimulationBonus 1.4) is compatibleWith brave.
+  fearfulFlagHorse = await prisma.horse.create({
+    data: { ...horseData(user.id, `Policy Fearful Horse ${uid}`), epigeneticFlags: ['fearful'] },
+  });
+  braveFlagHorse = await prisma.horse.create({
+    data: { ...horseData(user.id, `Policy Brave Horse ${uid}`), epigeneticFlags: ['brave'] },
+  });
   foreignGroom = await prisma.groom.create({
     data: groomData(foreignUser.id, `Foreign Policy Groom ${uid}`, 'calm'),
   });
@@ -202,10 +213,14 @@ describe('one task vocabulary for validator, config and scorer', () => {
 });
 
 describe('task modifiers', () => {
-  it('supports exactly the groom personalities the personality service defines', async () => {
-    const { GROOM_HORSE_COMPATIBILITY_PERSONALITIES } = await import(POLICY_MODULE);
+  it('policy personalities === config-advertised personalityTypes === personality definitions', async () => {
+    const res = await getAuthed('/config');
+    expect(res.status).toBe(200);
     const { personalities } = await getPersonalityTraitDefinitions();
-    expect(sorted(GROOM_HORSE_COMPATIBILITY_PERSONALITIES)).toEqual(sorted(Object.keys(personalities)));
+    const defined = sorted(Object.keys(personalities));
+    expect(sorted(res.body.data.personalityTypes)).toEqual(defined);
+    const { GROOM_HORSE_COMPATIBILITY_PERSONALITIES } = await import(POLICY_MODULE);
+    expect(sorted(GROOM_HORSE_COMPATIBILITY_PERSONALITIES)).toEqual(defined);
   });
 
   it('gives every accepted task an explicit finite modifier for every supported personality', async () => {
@@ -255,6 +270,22 @@ describe('task modifiers', () => {
 });
 
 describe('unsupported task types are rejected, never defaulted', () => {
+  it("old input 'grooming' (formerly scored a silent 1.0; now rejected per Equoria-q4uem.3): POST /calculate returns 400", async () => {
+    const res = await postWithCsrf('/calculate', {
+      groomId: groomsByPersonality.calm.id,
+      horseId: horse.id,
+      context: { taskType: 'grooming' },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Task type must be a valid task type');
+  });
+
+  it("old input 'grooming' (formerly scored a silent 1.0; now rejected per Equoria-q4uem.3): the scorer throws a 400", async () => {
+    await expect(
+      calculateDynamicCompatibility(groomsByPersonality.calm.id, horse.id, { taskType: 'grooming' }),
+    ).rejects.toMatchObject({ message: 'Unsupported compatibility task type: grooming', statusCode: 400 });
+  });
+
   it.each(TASK_ROUTES)('POST %s rejects an unsupported task with 400', async routePath => {
     const res = await postWithCsrf(routePath, {
       groomId: groomsByPersonality.calm.id,
@@ -267,7 +298,10 @@ describe('unsupported task types are rejected, never defaulted', () => {
 
   it('the scorer throws for an unsupported task instead of scoring it neutral', async () => {
     const context = { taskType: UNSUPPORTED_TASK };
-    const unsupported = { message: `Unsupported compatibility task type: ${UNSUPPORTED_TASK}` };
+    const unsupported = {
+      message: `Unsupported compatibility task type: ${UNSUPPORTED_TASK}`,
+      statusCode: 400,
+    };
     await expect(calculateDynamicCompatibility(groomsByPersonality.calm.id, horse.id, context)).rejects.toMatchObject(
       unsupported,
     );
@@ -277,17 +311,28 @@ describe('unsupported task types are rejected, never defaulted', () => {
     await expect(getOptimalGroomRecommendations(horse.id, context)).rejects.toMatchObject(unsupported);
   });
 
-  it('the policy lookup throws for an unsupported task or personality', async () => {
+  it('the policy lookup throws a 400 for an unsupported task or personality', async () => {
     const { getTaskCompatibilityModifier } = await import(POLICY_MODULE);
-    expect(() => getTaskCompatibilityModifier(UNSUPPORTED_TASK, 'calm')).toThrow(
-      `Unsupported compatibility task type: ${UNSUPPORTED_TASK}`,
-    );
-    expect(() => getTaskCompatibilityModifier('constructor', 'calm')).toThrow(
-      'Unsupported compatibility task type: constructor',
-    );
-    expect(() => getTaskCompatibilityModifier('trust_building', 'grumpy')).toThrow(
-      'Unsupported groom personality: grumpy',
-    );
+    const thrownBy = fn => {
+      try {
+        fn();
+      } catch (error) {
+        return { message: error.message, statusCode: error.statusCode };
+      }
+      return null;
+    };
+    expect(thrownBy(() => getTaskCompatibilityModifier(UNSUPPORTED_TASK, 'calm'))).toEqual({
+      message: `Unsupported compatibility task type: ${UNSUPPORTED_TASK}`,
+      statusCode: 400,
+    });
+    expect(thrownBy(() => getTaskCompatibilityModifier('constructor', 'calm'))).toEqual({
+      message: 'Unsupported compatibility task type: constructor',
+      statusCode: 400,
+    });
+    expect(thrownBy(() => getTaskCompatibilityModifier('trust_building', 'grumpy'))).toEqual({
+      message: 'Unsupported groom personality: grumpy',
+      statusCode: 400,
+    });
   });
 });
 
@@ -342,4 +387,53 @@ describe('ownership is enforced on every compatibility route', () => {
     expect(g.body.data).toBeUndefined();
     expect(h.body.data).toBeUndefined();
   });
+});
+
+// Characterization (Equoria-q4uem.3 fix round 1): trust_building and desensitization
+// through the FULL scorer, with a groom whose trait carries that task's bonus and a horse
+// whose flags make the trait compatible. Pins today's values; no mechanics change.
+//
+// Observed behaviour, pinned as-is: the trait task bonus is computed by
+// calculatePersonalityModifiers (taskEffectiveness rises), but the scorer uses only that
+// call's compatibilityScore, so the bonus does not reach the compatibility result. The
+// result differs from the coat_check control by exactly the policy task modifier.
+describe('trait task bonuses through the full scorer (characterization)', () => {
+  const cases = [
+    // [taskType, personality, horse, policy modifier, task overall, task effectiveness]
+    ['trust_building', 'calm', () => fearfulFlagHorse, 1.3, 1.2441, 1.23548085528],
+    ['desensitization', 'energetic', () => braveFlagHorse, 1.1, 1.0527, 1.23548085528],
+  ];
+  const CONTROL_OVERALL = 0.957;
+  const CONTROL_TASK_EFFECTIVENESS = 1.14736335;
+  const BASE_COMPATIBILITY = 0.725;
+
+  it.each(cases)(
+    '%s with a %s groom: policy modifier applied, trait bonus present in taskEffectiveness, coat_check control lower',
+    async (taskType, personality, getHorse, policyModifier, overall, taskEffectiveness) => {
+      const groomId = groomsByPersonality[personality].id;
+      const horseId = getHorse().id;
+      const task = await calculateDynamicCompatibility(groomId, horseId, { taskType });
+      const control = await calculateDynamicCompatibility(groomId, horseId, { taskType: 'coat_check' });
+      const taskMods = await calculatePersonalityModifiers(groomId, horseId, taskType);
+      const controlMods = await calculatePersonalityModifiers(groomId, horseId, 'coat_check');
+
+      // Policy task modifier, through the full scorer.
+      expect(task.taskSpecificModifier).toBe(policyModifier);
+      expect(control.taskSpecificModifier).toBe(1);
+      expect(task.overallScore).toBeCloseTo(overall, 6);
+      expect(control.overallScore).toBeCloseTo(CONTROL_OVERALL, 6);
+      expect(control.overallScore).toBeLessThan(task.overallScore);
+
+      // Trait task bonus: present in the personality modifiers, higher than the control.
+      expect(taskMods.taskEffectiveness).toBeCloseTo(taskEffectiveness, 6);
+      expect(controlMods.taskEffectiveness).toBeCloseTo(CONTROL_TASK_EFFECTIVENESS, 6);
+      expect(controlMods.taskEffectiveness).toBeLessThan(taskMods.taskEffectiveness);
+
+      // ...but it does not reach the scorer: base compatibility is task-independent and
+      // the score ratio is exactly the policy modifier.
+      expect(task.baseCompatibility).toBeCloseTo(BASE_COMPATIBILITY, 6);
+      expect(control.baseCompatibility).toBeCloseTo(BASE_COMPATIBILITY, 6);
+      expect(task.overallScore / control.overallScore).toBeCloseTo(policyModifier, 6);
+    },
+  );
 });

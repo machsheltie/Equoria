@@ -17,6 +17,8 @@
  * compatibility weighting and are not accepted here.
  */
 
+import { ValidationError } from '../../../errors/index.mjs';
+
 const NEUTRAL = Object.freeze({ calm: 1, energetic: 1, methodical: 1, balanced: 1 });
 
 export const GROOM_HORSE_COMPATIBILITY_TASK_POLICY = Object.freeze({
@@ -36,19 +38,27 @@ export const GROOM_HORSE_COMPATIBILITY_TASK_TYPES = Object.freeze(
 
 export const GROOM_HORSE_COMPATIBILITY_PERSONALITIES = Object.freeze(Object.keys(NEUTRAL));
 
-/** Throws unless `taskType` is one of GROOM_HORSE_COMPATIBILITY_TASK_TYPES. */
+/** Throws a ValidationError (400) unless `taskType` is one of GROOM_HORSE_COMPATIBILITY_TASK_TYPES. */
 export function assertCompatibilityTaskType(taskType) {
   if (!Object.hasOwn(GROOM_HORSE_COMPATIBILITY_TASK_POLICY, taskType)) {
-    throw new Error(`Unsupported compatibility task type: ${taskType}`);
+    throw new ValidationError(
+      `Unsupported compatibility task type: ${taskType}`,
+      'taskType',
+      taskType,
+    );
   }
 }
 
-/** The task modifier for a groom personality; throws for an unsupported task or personality. */
+/** The task modifier for a groom personality; throws a ValidationError (400) for an unsupported task or personality. */
 export function getTaskCompatibilityModifier(taskType, personality) {
   assertCompatibilityTaskType(taskType);
   const byPersonality = GROOM_HORSE_COMPATIBILITY_TASK_POLICY[taskType];
   if (!Object.hasOwn(byPersonality, personality)) {
-    throw new Error(`Unsupported groom personality: ${personality}`);
+    throw new ValidationError(
+      `Unsupported groom personality: ${personality}`,
+      'personality',
+      personality,
+    );
   }
   return byPersonality[personality];
 }
