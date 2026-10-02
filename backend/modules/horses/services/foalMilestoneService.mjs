@@ -146,32 +146,32 @@ export function computeReachedMilestones({ ageDays, bondScore, hasDiscoveredTrai
  * Detect the foal's currently-reached milestones from REAL persisted state and
  * append any that are not already recorded to `FoalDevelopment.completedMilestones`.
  *
+ * Transaction-aware core: every read and the write use `tx`, and this function
+ * never opens a transaction of its own. A command that is already inside a
+ * transaction (enrichment, graduation) calls this so its milestones commit or
+ * roll back with the rest of the command.
+ *
  * EXACTLY-ONCE: the store is a JSONB object keyed by milestone id, and a key is
  * only written when absent (its original timestamp is preserved). Re-running on
  * unchanged state is a pure no-op (no keys added, no write) — a milestone can
- * never be celebrated twice.
- *
- * The read+merge+write runs inside a single transaction that RE-READS the store
- * so a concurrent writer's already-recorded milestones are merged, not clobbered.
- * Uses `upsert` so the enrichment write path (which never touches
- * FoalDevelopment) still gets a row created on first milestone.
+ * never be celebrated twice. Uses `upsert` so the enrichment write path (which
+ * never touches FoalDevelopment otherwise) still gets a row created on first
+ * milestone.
  *
  * Server-side timestamps only (never client-supplied).
  *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
  * @param {number|string} foalId
- * @param {{ now?: Date, client?: import('@prisma/client').PrismaClient }} [opts]
+ * @param {{ now?: Date }} [opts]
  * @returns {Promise<{ newMilestones: string[], completedMilestones: Record<string, unknown> }>}
  */
-export async function detectAndRecordFoalMilestones(
-  foalId,
-  { now = new Date(), client = prisma } = {},
-) {
+export async function detectAndRecordFoalMilestonesCore(tx, foalId, { now = new Date() } = {}) {
   const parsedFoalId = parseInt(foalId, 10);
   if (!Number.isInteger(parsedFoalId) || parsedFoalId <= 0) {
     throw new Error('Foal ID must be a positive integer');
   }
 
-  const horse = await client.horse.findUnique({
+  const horse = await tx.horse.findUnique({
     where: { id: parsedFoalId },
     select: {
       id: true,
@@ -192,39 +192,52 @@ export async function detectAndRecordFoalMilestones(
     hasDiscoveredTrait: hasDiscoveredEpigeneticTrait(horse),
   });
 
+  const dev = await tx.foalDevelopment.findUnique({
+    where: { foalId: parsedFoalId },
+    select: { completedMilestones: true },
+  });
+
+  const store = readMilestoneStore(dev?.completedMilestones);
+  const newMilestones = [];
   const timestamp = now.toISOString();
 
-  return client.$transaction(async tx => {
-    const dev = await tx.foalDevelopment.findUnique({
-      where: { foalId: parsedFoalId },
-      select: { completedMilestones: true },
-    });
-
-    const store = readMilestoneStore(dev?.completedMilestones);
-    const newMilestones = [];
-
-    for (const id of reached) {
-      if (!Object.prototype.hasOwnProperty.call(store, id)) {
-        store[id] = timestamp;
-        newMilestones.push(id);
-      }
+  for (const id of reached) {
+    if (!Object.prototype.hasOwnProperty.call(store, id)) {
+      store[id] = timestamp;
+      newMilestones.push(id);
     }
+  }
 
-    if (newMilestones.length === 0) {
-      // Idempotent no-op: nothing new to record, so no write at all.
-      return { newMilestones, completedMilestones: store };
-    }
-
-    await tx.foalDevelopment.upsert({
-      where: { foalId: parsedFoalId },
-      create: { foalId: parsedFoalId, completedMilestones: store },
-      update: { completedMilestones: store },
-    });
-
-    logger.info(
-      `[foalMilestoneService] Recorded foal ${parsedFoalId} milestones: ${newMilestones.join(', ')}`,
-    );
-
+  if (newMilestones.length === 0) {
+    // Idempotent no-op: nothing new to record, so no write at all.
     return { newMilestones, completedMilestones: store };
+  }
+
+  await tx.foalDevelopment.upsert({
+    where: { foalId: parsedFoalId },
+    create: { foalId: parsedFoalId, completedMilestones: store },
+    update: { completedMilestones: store },
   });
+
+  logger.info(
+    `[foalMilestoneService] Recorded foal ${parsedFoalId} milestones: ${newMilestones.join(', ')}`,
+  );
+
+  return { newMilestones, completedMilestones: store };
+}
+
+/**
+ * Standalone entry point for callers that are not already inside a
+ * transaction (e.g. lazy detection on a development read): runs the core in
+ * one transaction of its own.
+ *
+ * @param {number|string} foalId
+ * @param {{ now?: Date, client?: import('@prisma/client').PrismaClient }} [opts]
+ * @returns {Promise<{ newMilestones: string[], completedMilestones: Record<string, unknown> }>}
+ */
+export async function detectAndRecordFoalMilestones(
+  foalId,
+  { now = new Date(), client = prisma } = {},
+) {
+  return client.$transaction(tx => detectAndRecordFoalMilestonesCore(tx, foalId, { now }));
 }

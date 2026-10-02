@@ -256,12 +256,11 @@ export async function completeFoalEnrichment(req, res) {
     });
   } catch (error) {
     logger.error(`[foalController] POST /api/foals/:foalId/enrichment error: ${error.message}`);
-    // Equoria-4xwyi: TYPE-based 404 detection. completeEnrichmentActivity throws a
-    // typed AppError(404) for the missing-foal case. The `'not a foal'`
-    // (wrong-state) string branch is retained (completeEnrichmentActivity does not
-    // currently throw it, but the controller keeps the contract defensively).
-    // Fail-closed: any other error surfaces as 500 rather than being string-
-    // matched into a misleading 404.
+    // Equoria-4xwyi: TYPE-based 404; 503 is the busy-retry signal from
+    // runRetryableTransaction. Fail-closed: anything unrecognised is a 500.
+    if (AppError.isAppError(error) && error.statusCode === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     if (
       (AppError.isAppError(error) && error.statusCode === 404) ||
       error.message.includes('not a foal')
@@ -309,12 +308,10 @@ export async function graduateFoalHandler(req, res) {
     });
   } catch (error) {
     logger.error(`[foalController] POST /api/foals/:foalId/graduate error: ${error.message}`);
-    // Equoria-4xwyi: TYPE-based 404 detection. graduateFoal throws a typed
-    // AppError(404) for the missing-horse case. Fail-closed: any other error
-    // surfaces as 500 rather than being string-matched into a misleading 404. The
-    // graduation-age / already-graduated 400 branch is unchanged.
-    if (AppError.isAppError(error) && error.statusCode === 404) {
-      return res.status(404).json({ success: false, message: error.message });
+    // Equoria-4xwyi: TYPE-based 404; 503 is the busy-retry signal from
+    // runRetryableTransaction. Fail-closed: anything unrecognised is a 500.
+    if (AppError.isAppError(error) && [404, 503].includes(error.statusCode)) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     if (
       error.message.includes('not reached graduation age') ||

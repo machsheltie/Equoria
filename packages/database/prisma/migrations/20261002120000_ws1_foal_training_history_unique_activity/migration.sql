@@ -1,0 +1,22 @@
+-- Thermo-Nuclear quality repair, Workstream 1: one enrichment activity per
+-- foal per derived day, enforced by the database.
+--
+-- completeEnrichmentActivity used to rely on an application findFirst
+-- pre-check, so two concurrent identical requests both passed it and both
+-- paid the bond/stress reward. The command now inserts this row first inside
+-- its transaction; a duplicate fails here before any state changes.
+--
+-- SQL generated without a database by
+--   prisma migrate diff --from-schema-datamodel <pre-change schema.prisma>
+--     --to-schema-datamodel packages/database/prisma/schema.prisma --script
+-- and contains nothing else.
+--
+-- No data writes. If a target database already holds duplicate
+-- (horseId, day, activity) rows this statement fails and the migration stops;
+-- it deliberately does not delete player history. Check first, read-only:
+--   SELECT "horseId", day, activity, count(*) FROM foal_training_history
+--   GROUP BY 1, 2, 3 HAVING count(*) > 1;
+-- Reversible with DROP INDEX.
+
+-- CreateIndex
+CREATE UNIQUE INDEX "foal_training_history_horseId_day_activity_key" ON "foal_training_history"("horseId", "day", "activity");

@@ -1045,6 +1045,10 @@ model FoalTrainingHistory {
   updatedAt    DateTime @updatedAt
   horse        Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
 
+  /// Anti-farming invariant: one enrichment activity per foal per derived day.
+  /// completeEnrichmentActivity reserves this row first inside its transaction,
+  /// so the database, not a pre-check, rejects a repeated or concurrent award.
+  @@unique([horseId, day, activity])
   @@index([horseId])
   @@index([day])
   @@index([timestamp])
