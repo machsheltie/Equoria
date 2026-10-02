@@ -17,16 +17,7 @@
 
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
-import {
-  analyzeTraitInteractions,
-  calculateTraitSynergies,
-  identifyTraitConflicts,
-  evaluateTraitDominance,
-  processComplexInteractions,
-  assessInteractionStability,
-  modelTemporalInteractions,
-  generateInteractionMatrix,
-} from '../../modules/traits/index.mjs';
+import { generateInteractionMatrix } from '../../modules/traits/index.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
@@ -180,11 +171,11 @@ describe('Trait Interaction Matrix', () => {
     await prisma.user.deleteMany({ where: { id: testUser?.id } });
   });
 
-  describe('analyzeTraitInteractions', () => {
+  describe('generateInteractionMatrix traitInteractions section (was analyzeTraitInteractions)', () => {
     test('should analyze trait interactions for synergistic traits', async () => {
       const [synergisticHorse] = testHorses; // brave + confident + social
 
-      const interactions = await analyzeTraitInteractions(synergisticHorse.id);
+      const interactions = (await generateInteractionMatrix(synergisticHorse.id)).traitInteractions;
 
       expect(interactions).toBeDefined();
       expect(interactions.horseId).toBe(synergisticHorse.id);
@@ -206,7 +197,7 @@ describe('Trait Interaction Matrix', () => {
     test('should analyze trait interactions for conflicting traits', async () => {
       const conflictingHorse = testHorses[1]; // fearful + brave + reactive + calm
 
-      const interactions = await analyzeTraitInteractions(conflictingHorse.id);
+      const interactions = (await generateInteractionMatrix(conflictingHorse.id)).traitInteractions;
 
       expect(interactions.conflicts.length).toBeGreaterThan(0);
       expect(interactions.overallHarmony).toBeLessThan(0.5);
@@ -220,7 +211,7 @@ describe('Trait Interaction Matrix', () => {
     test('should handle horses with minimal traits', async () => {
       const minimalHorse = testHorses[3]; // only developing
 
-      const interactions = await analyzeTraitInteractions(minimalHorse.id);
+      const interactions = (await generateInteractionMatrix(minimalHorse.id)).traitInteractions;
 
       expect(interactions.traits.length).toBeLessThanOrEqual(1);
       expect(interactions.synergies.length).toBe(0);
@@ -229,11 +220,11 @@ describe('Trait Interaction Matrix', () => {
     });
   });
 
-  describe('calculateTraitSynergies', () => {
+  describe('generateInteractionMatrix synergies section (was calculateTraitSynergies)', () => {
     test('should calculate synergies for compatible traits', async () => {
       const [synergisticHorse] = testHorses;
 
-      const synergies = await calculateTraitSynergies(synergisticHorse.id);
+      const synergies = (await generateInteractionMatrix(synergisticHorse.id)).synergies;
 
       expect(synergies).toBeDefined();
       expect(synergies.horseId).toBe(synergisticHorse.id);
@@ -257,7 +248,7 @@ describe('Trait Interaction Matrix', () => {
     test('should calculate amplification effects correctly', async () => {
       const dominantHorse = testHorses[4]; // Multiple strong traits
 
-      const synergies = await calculateTraitSynergies(dominantHorse.id);
+      const synergies = (await generateInteractionMatrix(dominantHorse.id)).synergies;
 
       expect(synergies.amplificationEffects).toBeDefined();
       expect(Object.keys(synergies.amplificationEffects).length).toBeGreaterThan(0);
@@ -274,7 +265,7 @@ describe('Trait Interaction Matrix', () => {
     test('should categorize synergies by type', async () => {
       const complexHorse = testHorses[2]; // curious + intelligent + fragile + social
 
-      const synergies = await calculateTraitSynergies(complexHorse.id);
+      const synergies = (await generateInteractionMatrix(complexHorse.id)).synergies;
 
       expect(synergies.synergyCategories).toBeDefined();
       expect(typeof synergies.synergyCategories).toBe('object');
@@ -285,11 +276,11 @@ describe('Trait Interaction Matrix', () => {
     });
   });
 
-  describe('identifyTraitConflicts', () => {
+  describe('generateInteractionMatrix conflicts section (was identifyTraitConflicts)', () => {
     test('should identify conflicts between opposing traits', async () => {
       const conflictingHorse = testHorses[1]; // fearful + brave + reactive + calm
 
-      const conflicts = await identifyTraitConflicts(conflictingHorse.id);
+      const conflicts = (await generateInteractionMatrix(conflictingHorse.id)).conflicts;
 
       expect(conflicts).toBeDefined();
       expect(conflicts.horseId).toBe(conflictingHorse.id);
@@ -314,7 +305,7 @@ describe('Trait Interaction Matrix', () => {
     test('should calculate suppression effects', async () => {
       const conflictingHorse = testHorses[1];
 
-      const conflicts = await identifyTraitConflicts(conflictingHorse.id);
+      const conflicts = (await generateInteractionMatrix(conflictingHorse.id)).conflicts;
 
       expect(conflicts.suppressionEffects).toBeDefined();
 
@@ -330,18 +321,18 @@ describe('Trait Interaction Matrix', () => {
     test('should handle horses with no conflicts', async () => {
       const [synergisticHorse] = testHorses; // Only compatible traits
 
-      const conflicts = await identifyTraitConflicts(synergisticHorse.id);
+      const conflicts = (await generateInteractionMatrix(synergisticHorse.id)).conflicts;
 
       expect(conflicts.conflictPairs.length).toBe(0);
       expect(conflicts.totalConflictStrength).toBe(0);
     });
   });
 
-  describe('evaluateTraitDominance', () => {
+  describe('generateInteractionMatrix dominance section (was evaluateTraitDominance)', () => {
     test('should evaluate trait dominance hierarchy', async () => {
       const dominantHorse = testHorses[4]; // Multiple strong traits
 
-      const dominance = await evaluateTraitDominance(dominantHorse.id);
+      const dominance = (await generateInteractionMatrix(dominantHorse.id)).dominance;
 
       expect(dominance).toBeDefined();
       expect(dominance.horseId).toBe(dominantHorse.id);
@@ -366,7 +357,7 @@ describe('Trait Interaction Matrix', () => {
     test('should identify primary and secondary traits correctly', async () => {
       const complexHorse = testHorses[2];
 
-      const dominance = await evaluateTraitDominance(complexHorse.id);
+      const dominance = (await generateInteractionMatrix(complexHorse.id)).dominance;
 
       expect(dominance.primaryTrait.trait).toBeDefined();
       expect(dominance.primaryTrait.dominanceScore).toBeDefined();
@@ -382,11 +373,11 @@ describe('Trait Interaction Matrix', () => {
     });
   });
 
-  describe('processComplexInteractions', () => {
+  describe('generateInteractionMatrix complexInteractions section (was processComplexInteractions)', () => {
     test('should process complex multi-trait interactions', async () => {
       const complexHorse = testHorses[2]; // curious + intelligent + fragile + social
 
-      const complexInteractions = await processComplexInteractions(complexHorse.id);
+      const complexInteractions = (await generateInteractionMatrix(complexHorse.id)).complexInteractions;
 
       expect(complexInteractions).toBeDefined();
       expect(complexInteractions.horseId).toBe(complexHorse.id);
@@ -404,7 +395,7 @@ describe('Trait Interaction Matrix', () => {
     test('should identify emergent properties from trait combinations', async () => {
       const dominantHorse = testHorses[4]; // Multiple strong traits
 
-      const complexInteractions = await processComplexInteractions(dominantHorse.id);
+      const complexInteractions = (await generateInteractionMatrix(dominantHorse.id)).complexInteractions;
 
       expect(complexInteractions.emergentProperties.length).toBeGreaterThan(0);
 
@@ -422,19 +413,19 @@ describe('Trait Interaction Matrix', () => {
 
       const minimalHorse = testHorses[3];
 
-      const complexScore = await processComplexInteractions(complexHorse.id);
-      const minimalScore = await processComplexInteractions(minimalHorse.id);
+      const complexScore = (await generateInteractionMatrix(complexHorse.id)).complexInteractions;
+      const minimalScore = (await generateInteractionMatrix(minimalHorse.id)).complexInteractions;
 
       // Complex horse should have higher complexity score
       expect(complexScore.complexityScore).toBeGreaterThan(minimalScore.complexityScore);
     });
   });
 
-  describe('assessInteractionStability', () => {
+  describe('generateInteractionMatrix stability section (was assessInteractionStability)', () => {
     test('should assess stability of trait interactions', async () => {
       const [synergisticHorse] = testHorses;
 
-      const stability = await assessInteractionStability(synergisticHorse.id);
+      const stability = (await generateInteractionMatrix(synergisticHorse.id)).stability;
 
       expect(stability).toBeDefined();
       expect(stability.horseId).toBe(synergisticHorse.id);
@@ -453,18 +444,18 @@ describe('Trait Interaction Matrix', () => {
     test('should identify volatility risks in conflicting traits', async () => {
       const conflictingHorse = testHorses[1];
 
-      const stability = await assessInteractionStability(conflictingHorse.id);
+      const stability = (await generateInteractionMatrix(conflictingHorse.id)).stability;
 
       expect(stability.volatilityRisks.length).toBeGreaterThan(0);
       expect(stability.overallStability).toBeLessThan(0.7); // Lower stability due to conflicts
     });
   });
 
-  describe('modelTemporalInteractions', () => {
+  describe('generateInteractionMatrix temporalModel section (was modelTemporalInteractions)', () => {
     test('should model trait interactions over time', async () => {
       const [horse] = testHorses;
 
-      const temporalModel = await modelTemporalInteractions(horse.id, 30); // 30 days
+      const temporalModel = (await generateInteractionMatrix(horse.id, { timeWindow: 30 })).temporalModel; // 30 days
 
       expect(temporalModel).toBeDefined();
       expect(temporalModel.horseId).toBe(horse.id);
@@ -481,7 +472,7 @@ describe('Trait Interaction Matrix', () => {
     test('should project future interaction changes', async () => {
       const complexHorse = testHorses[2];
 
-      const temporalModel = await modelTemporalInteractions(complexHorse.id, 60);
+      const temporalModel = (await generateInteractionMatrix(complexHorse.id, { timeWindow: 60 })).temporalModel;
 
       expect(temporalModel.projectedChanges).toBeDefined();
       expect(temporalModel.projectedChanges.synergyChanges).toBeDefined();

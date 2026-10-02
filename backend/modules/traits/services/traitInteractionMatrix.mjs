@@ -1,549 +1,177 @@
 /**
  * Trait Interaction Matrix Service
  *
- * Implements complex trait interaction system with synergies and conflicts.
- * Analyzes how multiple epigenetic traits interact, amplify, or suppress each other
- * to create emergent behavioral patterns and characteristics.
+ * Analyzes how a horse's epigenetic traits interact: synergies that amplify,
+ * conflicts that suppress, dominance shaped by stress and bond, stability, and
+ * how the interactions evolve as the horse matures.
  *
- * Business Rules:
- * - Trait synergy detection and amplification effects
- * - Trait conflict identification and suppression effects
- * - Complex multi-trait interaction calculations
- * - Trait dominance hierarchies and expression priorities
- * - Temporal trait interaction evolution over time
- * - Environmental modulation of trait interactions
- * - Emergent property identification from trait combinations
+ * Shape (Equoria-q4uem.5): the database is a thin seam and the analysis is
+ * pure. loadTraitAnalysisSnapshot() reads the horse ONCE into a frozen
+ * snapshot; analyzeTraitSnapshot() derives every section from that snapshot
+ * and one clock, so all sections of a response describe the same horse state
+ * and carry the same analysisTimestamp. Callers that need a subset call
+ * generateInteractionMatrix() and pick the sections they need.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { NotFoundError } from '../../../errors/index.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import {
+  MATURITY_PERIOD_DAYS,
+  TRAIT_SYNERGIES,
+  TRAIT_CONFLICTS,
+  TRAIT_DOMINANCE,
+  UNKNOWN_TRAIT_DOMINANCE,
+  EMERGENT_PROPERTIES,
+  TRAIT_PATTERNS,
+} from './traitInteractionRules.mjs';
 
-// Equoria-rjs2n: Trait-interaction "maturity" reaches full expression at this
-// many game-days. This is the module's own maturity model — see
-// identifyEmergingPatterns(), where ageInDays >= 90 yields the
-// 'mature_expression' pattern ("Trait interactions have reached mature
-// expression"). The temporal-evolution maturityFactor ramp MUST normalize
-// over this same period so the 0..1 ramp hits ~1.0 exactly when the module
-// declares the horse mature. The previous denominator was the calendar
-// constant 365, which is the same calendar-vs-game-cadence drift class as
-// Equoria-fe9k/z183/wpqr: under /365 a 90-game-day horse (module-"mature")
-// had maturityFactor 0.247, and no horse (retirement = 147 game-days = 21
-// game-years) ever approached 1.0. Game-year cadence is 7 game-days = 1
-// game-year (backend/utils/horseAge.mjs), so 90 game-days ≈ 13 game-years —
-// a deliberate slow behavioral-maturation ramp, distinct from the 7-day
-// age-display cadence (gameYearsFromDays is a floor step-function and is the
-// wrong tool for this continuous ramp).
-const MATURITY_PERIOD_DAYS = 90;
-
-// Trait synergy definitions - traits that enhance each other
-const TRAIT_SYNERGIES = {
-  confidence_cluster: {
-    traits: ['brave', 'confident', 'social'],
-    synergy_strength: 0.8,
-    amplification_factor: 1.3,
-    description: 'Confidence and social traits reinforce each other',
-  },
-  intelligence_cluster: {
-    traits: ['curious', 'intelligent', 'adaptable'],
-    synergy_strength: 0.7,
-    amplification_factor: 1.25,
-    description: 'Intelligence traits create learning synergies',
-  },
-  stability_cluster: {
-    traits: ['calm', 'patient', 'stable'],
-    synergy_strength: 0.9,
-    amplification_factor: 1.4,
-    description: 'Stability traits create emotional balance',
-  },
-  social_cluster: {
-    traits: ['social', 'affectionate', 'outgoing'],
-    synergy_strength: 0.75,
-    amplification_factor: 1.2,
-    description: 'Social traits enhance interpersonal connections',
-  },
-  sensitivity_cluster: {
-    traits: ['sensitive', 'empathetic', 'intuitive'],
-    synergy_strength: 0.6,
-    amplification_factor: 1.15,
-    description: 'Sensitivity traits create emotional awareness',
-  },
-};
-
-// Trait conflict definitions - traits that oppose each other
-const TRAIT_CONFLICTS = {
-  fear_confidence: {
-    trait_pairs: [
-      ['fearful', 'brave'],
-      ['fearful', 'confident'],
-      ['insecure', 'confident'],
-    ],
-    conflict_strength: 0.9,
-    suppression_factor: 0.6,
-    description: 'Fear-based traits conflict with confidence traits',
-  },
-  reactive_calm: {
-    trait_pairs: [
-      ['reactive', 'calm'],
-      ['reactive', 'patient'],
-      ['volatile', 'stable'],
-    ],
-    conflict_strength: 0.8,
-    suppression_factor: 0.7,
-    description: 'Reactive traits conflict with calm stability',
-  },
-  social_antisocial: {
-    trait_pairs: [
-      ['social', 'antisocial'],
-      ['outgoing', 'withdrawn'],
-      ['affectionate', 'aloof'],
-    ],
-    conflict_strength: 0.85,
-    suppression_factor: 0.65,
-    description: 'Social and antisocial traits are mutually exclusive',
-  },
-  fragile_resilient: {
-    trait_pairs: [
-      ['fragile', 'resilient'],
-      ['fragile', 'hardy'],
-      ['delicate', 'robust'],
-    ],
-    conflict_strength: 0.7,
-    suppression_factor: 0.75,
-    description: 'Physical fragility conflicts with resilience',
-  },
-  impulsive_methodical: {
-    trait_pairs: [
-      ['impulsive', 'methodical'],
-      ['spontaneous', 'deliberate'],
-      ['hasty', 'careful'],
-    ],
-    conflict_strength: 0.6,
-    suppression_factor: 0.8,
-    description: 'Impulsive traits conflict with methodical approaches',
-  },
-};
-
-// Trait dominance hierarchy - some traits are naturally more dominant
-const TRAIT_DOMINANCE = {
-  high_dominance: {
-    traits: ['confident', 'brave', 'intelligent', 'dominant', 'assertive'],
-    dominance_score: 0.9,
-    description: 'Highly dominant traits that tend to override others',
-  },
-  moderate_dominance: {
-    traits: ['social', 'curious', 'adaptable', 'resilient', 'stable'],
-    dominance_score: 0.6,
-    description: 'Moderately dominant traits with balanced expression',
-  },
-  low_dominance: {
-    traits: ['sensitive', 'gentle', 'patient', 'submissive', 'compliant'],
-    dominance_score: 0.3,
-    description: 'Low dominance traits that are easily suppressed',
-  },
-  recessive: {
-    traits: ['fearful', 'fragile', 'insecure', 'withdrawn', 'timid'],
-    dominance_score: 0.1,
-    description: 'Recessive traits that are often masked by others',
-  },
+const RISK_RECOMMENDATIONS = {
+  multiple_trait_conflicts: 'Address trait conflicts through targeted behavioral interventions',
+  high_stress_environment: 'Reduce environmental stressors and increase calming activities',
+  reactive_temperament: 'Use gentle, predictable approaches to minimize reactive responses',
 };
 
 /**
- * Analyze trait interactions for a horse
- * @param {number} horseId - ID of the horse to analyze
- * @returns {Object} Comprehensive trait interaction analysis
+ * Read the horse state every trait analysis needs, once.
+ * @param {number} horseId
+ * @param {object} [client] Prisma client (or transaction client)
+ * @returns {Promise<Readonly<{id, epigeneticFlags, stressLevel, bondScore, dateOfBirth}>>}
+ * @throws {NotFoundError} when the horse does not exist
  */
-export async function analyzeTraitInteractions(horseId) {
-  const horse = await prisma.horse.findUnique({
+export async function loadTraitAnalysisSnapshot(horseId, client = prisma) {
+  const horse = await client.horse.findUnique({
     where: { id: horseId },
-    select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
+    select: {
+      id: true,
+      epigeneticFlags: true,
+      stressLevel: true,
+      bondScore: true,
+      dateOfBirth: true,
+    },
   });
-
   if (!horse) {
-    throw new Error(`Horse not found: ${horseId}`);
+    throw new NotFoundError('Horse', horseId);
   }
+  return Object.freeze({ ...horse, epigeneticFlags: Object.freeze([...horse.epigeneticFlags]) });
+}
 
-  const traits = horse.epigeneticFlags;
+/**
+ * Analyze trait interactions from one snapshot and one clock. Pure.
+ * @param {{id, epigeneticFlags, stressLevel, bondScore, dateOfBirth}} snapshot
+ * @param {{timeWindow?: number, now?: Date}} [options] timeWindow in days (default 30)
+ * @returns {object} Complete interaction matrix; every section shares analysisTimestamp
+ */
+export function analyzeTraitSnapshot(snapshot, { timeWindow = 30, now = new Date() } = {}) {
+  const horseId = snapshot.id;
+  const traits = Object.freeze([...snapshot.epigeneticFlags]);
+  const synergyPairs = findTraitSynergies(traits);
+  const conflictPairs = findTraitConflicts(traits);
+  const synergyScore = sumStrength(synergyPairs);
+  const conflictScore = sumStrength(conflictPairs);
+  const harmony = calculateHarmonyScore(synergyScore, conflictScore, traits.length);
+  const traitClusters = identifyTraitClusters(traits);
+  const counts = { synergies: synergyPairs.length, conflicts: conflictPairs.length };
 
-  if (traits.length === 0) {
-    return {
-      horseId,
-      traits: [],
-      synergies: [],
-      conflicts: [],
-      overallHarmony: 0.5,
-      dominantTraits: [],
-      interactionStrength: 0,
-      analysisTimestamp: new Date(),
-    };
-  }
-
-  // Analyze synergies and conflicts
-  const synergies = findTraitSynergies(traits);
-  const conflicts = findTraitConflicts(traits);
-  const dominantTraits = identifyDominantTraits(traits);
-
-  // Calculate overall harmony (balance between synergies and conflicts)
-  const synergyScore = synergies.reduce((sum, s) => sum + s.strength, 0);
-  const conflictScore = conflicts.reduce((sum, c) => sum + c.strength, 0);
-  const overallHarmony = calculateHarmonyScore(synergyScore, conflictScore, traits.length);
-
-  // Calculate interaction strength
-  const interactionStrength = (synergyScore + conflictScore) / traits.length;
-
-  return {
+  const traitInteractions = {
     horseId,
     traits,
-    synergies,
-    conflicts,
-    overallHarmony,
-    dominantTraits,
-    interactionStrength,
-    analysisTimestamp: new Date(),
+    synergies: synergyPairs,
+    conflicts: conflictPairs,
+    overallHarmony: harmony,
+    dominantTraits: identifyDominantTraits(traits),
+    interactionStrength: traits.length === 0 ? 0 : (synergyScore + conflictScore) / traits.length,
+    analysisTimestamp: now,
   };
-}
 
-/**
- * Calculate trait synergies and amplification effects
- * @param {number} horseId - ID of the horse
- * @returns {Object} Trait synergy analysis
- */
-export async function calculateTraitSynergies(horseId) {
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: { epigeneticFlags: true },
+  const amplification = compoundPairEffects(synergyPairs, {
+    factor: 'amplificationFactor',
+    strength: 'amplifiedStrength',
+    count: 'synergyCount',
   });
-
-  const traits = horse.epigeneticFlags;
-  const synergyPairs = findTraitSynergies(traits);
-
-  // Calculate amplification effects
-  const amplificationEffects = {};
-  const synergyCategories = {};
-
-  synergyPairs.forEach(synergy => {
-    // Track amplification for each trait
-    [synergy.trait1, synergy.trait2].forEach(trait => {
-      if (!amplificationEffects[trait]) {
-        amplificationEffects[trait] = {
-          baseStrength: 1.0,
-          amplifiedStrength: 1.0,
-          amplificationFactor: 1.0,
-          synergyCount: 0,
-        };
-      }
-
-      amplificationEffects[trait].amplificationFactor *= synergy.amplificationFactor;
-      amplificationEffects[trait].amplifiedStrength =
-        amplificationEffects[trait].baseStrength * amplificationEffects[trait].amplificationFactor;
-      amplificationEffects[trait].synergyCount++;
-    });
-
-    // Categorize synergies
-    const category = synergy.category || 'general';
-    if (!synergyCategories[category]) {
-      synergyCategories[category] = [];
-    }
-    synergyCategories[category].push(synergy);
-  });
-
-  const totalSynergyStrength = synergyPairs.reduce((sum, s) => sum + s.strength, 0);
-
-  return {
+  const synergies = {
     horseId,
     synergyPairs,
-    totalSynergyStrength,
-    amplificationEffects,
-    synergyCategories,
-    analysisTimestamp: new Date(),
+    totalSynergyStrength: synergyScore,
+    amplificationEffects: amplification.effects,
+    synergyCategories: amplification.categories,
+    analysisTimestamp: now,
   };
-}
 
-/**
- * Identify trait conflicts and suppression effects
- * @param {number} horseId - ID of the horse
- * @returns {Object} Trait conflict analysis
- */
-export async function identifyTraitConflicts(horseId) {
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: { epigeneticFlags: true },
+  const suppression = compoundPairEffects(conflictPairs, {
+    factor: 'suppressionFactor',
+    strength: 'suppressedStrength',
+    count: 'conflictCount',
   });
-
-  const traits = horse.epigeneticFlags;
-  const conflictPairs = findTraitConflicts(traits);
-
-  // Calculate suppression effects
-  const suppressionEffects = {};
-  const conflictCategories = {};
-
-  conflictPairs.forEach(conflict => {
-    // Track suppression for each trait
-    [conflict.trait1, conflict.trait2].forEach(trait => {
-      if (!suppressionEffects[trait]) {
-        suppressionEffects[trait] = {
-          baseStrength: 1.0,
-          suppressedStrength: 1.0,
-          suppressionFactor: 1.0,
-          conflictCount: 0,
-        };
-      }
-
-      suppressionEffects[trait].suppressionFactor *= conflict.suppressionFactor;
-      suppressionEffects[trait].suppressedStrength =
-        suppressionEffects[trait].baseStrength * suppressionEffects[trait].suppressionFactor;
-      suppressionEffects[trait].conflictCount++;
-    });
-
-    // Categorize conflicts
-    const category = conflict.category || 'general';
-    if (!conflictCategories[category]) {
-      conflictCategories[category] = [];
-    }
-    conflictCategories[category].push(conflict);
-  });
-
-  const totalConflictStrength = conflictPairs.reduce((sum, c) => sum + c.strength, 0);
-
-  return {
+  const conflicts = {
     horseId,
     conflictPairs,
-    totalConflictStrength,
-    suppressionEffects,
-    conflictCategories,
-    analysisTimestamp: new Date(),
+    totalConflictStrength: conflictScore,
+    suppressionEffects: suppression.effects,
+    conflictCategories: suppression.categories,
+    analysisTimestamp: now,
   };
-}
 
-/**
- * Evaluate trait dominance hierarchy
- * @param {number} horseId - ID of the horse
- * @returns {Object} Trait dominance analysis
- */
-export async function evaluateTraitDominance(horseId) {
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
-  });
+  const dominance = { horseId, ...evaluateDominance(snapshot, traits), analysisTimestamp: now };
 
-  const traits = horse.epigeneticFlags;
-
-  // Calculate dominance scores for each trait
-  const dominanceHierarchy = traits
-    .map(trait => {
-      const dominanceInfo = getTraitDominanceInfo(trait);
-      const environmentalModifier = calculateEnvironmentalDominanceModifier(horse, trait);
-
-      return {
-        trait,
-        baseDominanceScore: dominanceInfo.dominance_score,
-        environmentalModifier,
-        dominanceScore: dominanceInfo.dominance_score * environmentalModifier,
-        dominanceLevel: dominanceInfo.level,
-        description: dominanceInfo.description,
-      };
-    })
-    .sort((a, b) => b.dominanceScore - a.dominanceScore);
-
-  // Identify primary, secondary, and recessive traits
-  const primaryTrait = dominanceHierarchy[0] || null;
-  const secondaryTraits = dominanceHierarchy.slice(1, 3);
-  const recessiveTraits = dominanceHierarchy.slice(3);
-
-  // Calculate overall dominance strength
-  const dominanceStrength =
-    dominanceHierarchy.reduce((sum, t) => sum + t.dominanceScore, 0) / traits.length;
-
-  return {
-    horseId,
-    dominanceHierarchy,
-    primaryTrait,
-    secondaryTraits,
-    recessiveTraits,
-    dominanceStrength,
-    analysisTimestamp: new Date(),
-  };
-}
-
-/**
- * Process complex multi-trait interactions
- * @param {number} horseId - ID of the horse
- * @returns {Object} Complex interaction analysis
- */
-export async function processComplexInteractions(horseId) {
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: { epigeneticFlags: true },
-  });
-
-  const traits = horse.epigeneticFlags;
-
-  // Identify trait clusters
-  const traitClusters = identifyTraitClusters(traits);
-
-  // Identify emergent properties from trait combinations
   const emergentProperties = identifyEmergentProperties(traits);
-
-  // Create interaction networks
-  const interactionNetworks = createInteractionNetworks(traits);
-
-  // Calculate stability metrics
-  const stabilityMetrics = calculateStabilityMetrics(traits);
-
-  // Calculate complexity score
-  const complexityScore = calculateComplexityScore(traits, traitClusters, emergentProperties);
-
-  return {
+  const complexInteractions = {
     horseId,
     traitClusters,
     emergentProperties,
-    interactionNetworks,
-    stabilityMetrics,
-    complexityScore,
-    analysisTimestamp: new Date(),
+    interactionNetworks: {
+      nodes: traits.map(trait => ({ id: trait, type: 'trait' })),
+      edges: [
+        ...synergyPairs.map(pair => pairEdge(pair, 'synergy')),
+        ...conflictPairs.map(pair => pairEdge(pair, 'conflict')),
+      ],
+      clusters: [],
+    },
+    stabilityMetrics: calculateStabilityMetrics(counts, traits.length),
+    complexityScore: Math.min(
+      1.0,
+      traits.length * 0.1 + traitClusters.length * 0.2 + emergentProperties.length * 0.3,
+    ),
+    analysisTimestamp: now,
   };
-}
 
-/**
- * Assess stability of trait interactions
- * @param {number} horseId - ID of the horse
- * @returns {Object} Interaction stability analysis
- */
-export async function assessInteractionStability(horseId) {
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
-  });
-
-  const traits = horse.epigeneticFlags;
-  const synergies = findTraitSynergies(traits);
-  const conflicts = findTraitConflicts(traits);
-
-  // Calculate overall stability
-  const synergyStability = synergies.length > 0 ? 0.8 : 0.5;
-  const conflictInstability = conflicts.length * 0.1;
-  const stressInstability = horse.stressLevel * 0.05;
-
-  const overallStability = Math.max(
-    0,
-    Math.min(1, synergyStability - conflictInstability - stressInstability),
-  );
-
-  // Identify stability factors
-  const stabilityFactors = [];
-  if (synergies.length > 0) {
-    stabilityFactors.push('trait_synergies');
-  }
-  if (horse.bondScore > 30) {
-    stabilityFactors.push('strong_bonding');
-  }
-  if (horse.stressLevel < 4) {
-    stabilityFactors.push('low_stress');
-  }
-
-  // Identify volatility risks
-  const volatilityRisks = [];
-  if (conflicts.length > 2) {
-    volatilityRisks.push('multiple_trait_conflicts');
-  }
-  if (horse.stressLevel > 7) {
-    volatilityRisks.push('high_stress_environment');
-  }
-  if (traits.includes('reactive')) {
-    volatilityRisks.push('reactive_temperament');
-  }
-
-  // Generate recommendations
-  const recommendations = generateStabilityRecommendations(overallStability, volatilityRisks);
-
-  return {
+  const stability = {
     horseId,
-    overallStability,
-    stabilityFactors,
-    volatilityRisks,
-    stabilityTrends: calculateStabilityTrends(traits),
-    recommendations,
-    analysisTimestamp: new Date(),
+    ...assessStability(snapshot, traits, counts),
+    analysisTimestamp: now,
   };
-}
 
-/**
- * Model temporal trait interactions over time
- * @param {number} horseId - ID of the horse
- * @param {number} timeWindow - Time window in days
- * @returns {Object} Temporal interaction model
- */
-export async function modelTemporalInteractions(horseId, timeWindow) {
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: { epigeneticFlags: true, dateOfBirth: true },
+  const ageInDays = getHorseAgeDays(snapshot.dateOfBirth, now);
+  const interactionEvolution = modelInteractionEvolution(timeWindow, ageInDays, {
+    synergyScore,
+    conflictScore,
+    harmony,
   });
-
-  const traits = horse.epigeneticFlags;
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
-
-  // Model interaction evolution over time
-  const interactionEvolution = modelInteractionEvolution(traits, timeWindow, ageInDays);
-
-  // Analyze stability trends
-  const stabilityTrends = analyzeStabilityTrends(traits, timeWindow);
-
-  // Identify emerging patterns
-  const emergingPatterns = identifyEmergingPatterns(traits, ageInDays);
-
-  // Project future changes
-  const projectedChanges = projectFutureChanges(traits, timeWindow);
-
-  return {
+  const temporalModel = {
     horseId,
     timeWindow,
     interactionEvolution,
-    stabilityTrends,
-    emergingPatterns,
-    projectedChanges,
-    analysisTimestamp: new Date(),
+    stabilityTrends: analyzeStabilityTrends(interactionEvolution),
+    emergingPatterns: identifyEmergingPatterns(traits, ageInDays),
+    projectedChanges: projectFutureChanges(counts, timeWindow),
+    analysisTimestamp: now,
   };
-}
 
-/**
- * Generate comprehensive interaction matrix
- * @param {number} horseId - ID of the horse
- * @returns {Object} Complete interaction matrix
- */
-export async function generateInteractionMatrix(horseId) {
-  const [
-    traitInteractions,
-    synergies,
-    conflicts,
-    dominance,
-    complexInteractions,
-    stability,
-    temporalModel,
-  ] = await Promise.all([
-    analyzeTraitInteractions(horseId),
-    calculateTraitSynergies(horseId),
-    identifyTraitConflicts(horseId),
-    evaluateTraitDominance(horseId),
-    processComplexInteractions(horseId),
-    assessInteractionStability(horseId),
-    modelTemporalInteractions(horseId, 30),
-  ]);
-
-  // Create matrix visualization data
-  const matrixVisualization = createMatrixVisualization(
-    traitInteractions.traits,
-    synergies,
-    conflicts,
-  );
-
-  // Generate summary
-  const summary = {
-    totalTraits: traitInteractions.traits.length,
-    synergyCount: synergies.synergyPairs.length,
-    conflictCount: conflicts.conflictPairs.length,
-    overallHarmony: traitInteractions.overallHarmony,
-    complexityScore: complexInteractions.complexityScore,
-    stabilityScore: stability.overallStability,
-    dominantTrait: dominance.primaryTrait?.trait || 'none',
+  const matrixVisualization = {
+    nodes: traits.map(trait => ({
+      id: trait,
+      type: 'trait',
+      dominance: getTraitDominanceInfo(trait).dominance_score,
+    })),
+    edges: [
+      ...synergyPairs.map(pair => ({ ...pairEdge(pair, 'synergy'), color: 'green' })),
+      ...conflictPairs.map(pair => ({ ...pairEdge(pair, 'conflict'), color: 'red' })),
+    ],
+    clusters: traitClusters.map(cluster => ({
+      name: cluster.name,
+      traits: cluster.traits,
+      color: TRAIT_SYNERGIES[cluster.name].color,
+    })),
   };
 
   return {
@@ -556,259 +184,201 @@ export async function generateInteractionMatrix(horseId) {
     stability,
     temporalModel,
     matrixVisualization,
-    summary,
-    analysisTimestamp: new Date(),
+    summary: {
+      totalTraits: traits.length,
+      synergyCount: counts.synergies,
+      conflictCount: counts.conflicts,
+      overallHarmony: harmony,
+      complexityScore: complexInteractions.complexityScore,
+      stabilityScore: stability.overallStability,
+      dominantTrait: dominance.primaryTrait?.trait || 'none',
+    },
+    analysisTimestamp: now,
   };
 }
 
 /**
- * Find trait synergies from a list of traits
+ * Load the horse once and analyze it.
+ * @param {number} horseId
+ * @param {{timeWindow?: number, now?: Date, client?: object}} [options]
+ * @returns {Promise<object>} See analyzeTraitSnapshot
+ * @throws {NotFoundError} when the horse does not exist
  */
+export async function generateInteractionMatrix(horseId, options = {}) {
+  const snapshot = await loadTraitAnalysisSnapshot(horseId, options.client);
+  return analyzeTraitSnapshot(snapshot, options);
+}
+
+function sumStrength(pairs) {
+  return pairs.reduce((sum, pair) => sum + pair.strength, 0);
+}
+
+function pairEdge(pair, type) {
+  return { source: pair.trait1, target: pair.trait2, type, strength: pair.strength };
+}
+
+/** Pairs within each synergy cluster that the horse carries. */
 function findTraitSynergies(traits) {
   const synergies = [];
-
-  Object.entries(TRAIT_SYNERGIES).forEach(([clusterName, cluster]) => {
-    const matchingTraits = traits.filter(trait => cluster.traits.includes(trait));
-
-    if (matchingTraits.length >= 2) {
-      // Create synergy pairs within the cluster
-      for (let i = 0; i < matchingTraits.length; i++) {
-        for (let j = i + 1; j < matchingTraits.length; j++) {
-          synergies.push({
-            trait1: matchingTraits[i],
-            trait2: matchingTraits[j],
-            strength: cluster.synergy_strength,
-            amplificationFactor: cluster.amplification_factor,
-            category: clusterName,
-            description: cluster.description,
-          });
-        }
+  for (const cluster of identifyTraitClusters(traits)) {
+    const definition = TRAIT_SYNERGIES[cluster.name];
+    for (let i = 0; i < cluster.traits.length; i++) {
+      for (let j = i + 1; j < cluster.traits.length; j++) {
+        synergies.push({
+          trait1: cluster.traits[i],
+          trait2: cluster.traits[j],
+          strength: definition.synergy_strength,
+          amplificationFactor: definition.amplification_factor,
+          category: cluster.name,
+          description: definition.description,
+        });
       }
     }
-  });
-
+  }
   return synergies;
 }
 
-/**
- * Find trait conflicts from a list of traits
- */
+/** Defined conflicting pairs that the horse carries both halves of. */
 function findTraitConflicts(traits) {
   const conflicts = [];
-
-  Object.entries(TRAIT_CONFLICTS).forEach(([conflictName, conflict]) => {
-    conflict.trait_pairs.forEach(([trait1, trait2]) => {
+  for (const [category, conflict] of Object.entries(TRAIT_CONFLICTS)) {
+    for (const [trait1, trait2] of conflict.trait_pairs) {
       if (traits.includes(trait1) && traits.includes(trait2)) {
         conflicts.push({
           trait1,
           trait2,
           strength: conflict.conflict_strength,
           suppressionFactor: conflict.suppression_factor,
-          category: conflictName,
+          category,
           description: conflict.description,
         });
       }
-    });
-  });
-
+    }
+  }
   return conflicts;
 }
 
-/**
- * Identify dominant traits from a list
- */
-function identifyDominantTraits(traits) {
-  return traits
-    .map(trait => {
-      const dominanceInfo = getTraitDominanceInfo(trait);
-      return {
-        trait,
-        dominanceScore: dominanceInfo.dominance_score,
-        dominanceLevel: dominanceInfo.level,
-      };
-    })
-    .filter(t => t.dominanceScore > 0.6)
-    .sort((a, b) => b.dominanceScore - a.dominanceScore);
-}
-
-/**
- * Get dominance information for a trait
- */
-function getTraitDominanceInfo(trait) {
-  for (const [level, info] of Object.entries(TRAIT_DOMINANCE)) {
-    if (info.traits.includes(trait)) {
-      return {
-        dominance_score: info.dominance_score,
-        level,
-        description: info.description,
-      };
-    }
-  }
-
-  // Default for unknown traits
-  return {
-    dominance_score: 0.5,
-    level: 'moderate_dominance',
-    description: 'Unknown trait with moderate dominance',
-  };
-}
-
-/**
- * Calculate environmental dominance modifier
- */
-function calculateEnvironmentalDominanceModifier(horse, trait) {
-  let modifier = 1.0;
-
-  // Stress affects different traits differently
-  if (['fearful', 'reactive', 'fragile'].includes(trait)) {
-    modifier += horse.stressLevel * 0.05; // Stress enhances negative traits
-  } else if (['brave', 'confident', 'calm'].includes(trait)) {
-    modifier -= horse.stressLevel * 0.03; // Stress suppresses positive traits
-  }
-
-  // Bonding affects social traits
-  if (['social', 'affectionate', 'trusting'].includes(trait)) {
-    modifier += (horse.bondScore - 20) * 0.01; // Higher bond enhances social traits
-  }
-
-  return Math.max(0.5, Math.min(1.5, modifier));
-}
-
-/**
- * Calculate harmony score between synergies and conflicts
- */
-function calculateHarmonyScore(synergyScore, conflictScore, traitCount) {
-  if (traitCount === 0) {
-    return 0.5;
-  }
-
-  const normalizedSynergy = synergyScore / traitCount;
-  const normalizedConflict = conflictScore / traitCount;
-
-  // Harmony is the balance between synergies and conflicts
-  const harmony = (normalizedSynergy - normalizedConflict + 1) / 2;
-
-  return Math.max(0, Math.min(1, harmony));
-}
-
-/**
- * Identify trait clusters
- */
+/** Synergy clusters with at least two of the horse's traits. */
 function identifyTraitClusters(traits) {
   const clusters = [];
-
-  Object.entries(TRAIT_SYNERGIES).forEach(([clusterName, cluster]) => {
+  for (const [name, cluster] of Object.entries(TRAIT_SYNERGIES)) {
     const matchingTraits = traits.filter(trait => cluster.traits.includes(trait));
-
     if (matchingTraits.length >= 2) {
       clusters.push({
-        name: clusterName,
+        name,
         traits: matchingTraits,
         strength: cluster.synergy_strength,
         description: cluster.description,
       });
     }
-  });
-
+  }
   return clusters;
 }
 
 /**
- * Identify emergent properties from trait combinations
+ * Per-trait compounded effect of every pair the trait belongs to, plus the
+ * pairs grouped by category. Synergies amplify; conflicts suppress.
  */
-function identifyEmergentProperties(traits) {
-  const emergentProperties = [];
-
-  // Leadership emergence
-  if (traits.includes('confident') && traits.includes('intelligent') && traits.includes('social')) {
-    emergentProperties.push({
-      name: 'Natural Leadership',
-      description:
-        'Combination of confidence, intelligence, and social skills creates leadership potential',
-      contributingTraits: ['confident', 'intelligent', 'social'],
-      strength: 0.8,
-    });
+function compoundPairEffects(pairs, keys) {
+  const effects = {};
+  const categories = {};
+  for (const pair of pairs) {
+    for (const trait of [pair.trait1, pair.trait2]) {
+      effects[trait] ??= {
+        baseStrength: 1.0,
+        [keys.strength]: 1.0,
+        [keys.factor]: 1.0,
+        [keys.count]: 0,
+      };
+      const effect = effects[trait];
+      effect[keys.factor] *= pair[keys.factor];
+      effect[keys.strength] = effect.baseStrength * effect[keys.factor];
+      effect[keys.count]++;
+    }
+    (categories[pair.category] ??= []).push(pair);
   }
-
-  // Emotional intelligence
-  if (traits.includes('sensitive') && traits.includes('social') && traits.includes('intelligent')) {
-    emergentProperties.push({
-      name: 'Emotional Intelligence',
-      description:
-        'Sensitivity combined with social and cognitive abilities creates emotional awareness',
-      contributingTraits: ['sensitive', 'social', 'intelligent'],
-      strength: 0.7,
-    });
-  }
-
-  // Resilient adaptability
-  if (traits.includes('adaptable') && traits.includes('calm') && traits.includes('intelligent')) {
-    emergentProperties.push({
-      name: 'Resilient Adaptability',
-      description: 'Adaptability with calmness and intelligence creates exceptional resilience',
-      contributingTraits: ['adaptable', 'calm', 'intelligent'],
-      strength: 0.75,
-    });
-  }
-
-  // Creative problem solving
-  if (traits.includes('curious') && traits.includes('intelligent') && traits.includes('brave')) {
-    emergentProperties.push({
-      name: 'Creative Problem Solving',
-      description: 'Curiosity, intelligence, and bravery combine for innovative solutions',
-      contributingTraits: ['curious', 'intelligent', 'brave'],
-      strength: 0.65,
-    });
-  }
-
-  return emergentProperties;
+  return { effects, categories };
 }
 
-/**
- * Create interaction networks
- */
-function createInteractionNetworks(traits) {
-  const networks = {
-    nodes: traits.map(trait => ({ id: trait, type: 'trait' })),
-    edges: [],
-    clusters: [],
+function getTraitDominanceInfo(trait) {
+  for (const [level, info] of Object.entries(TRAIT_DOMINANCE)) {
+    if (info.traits.includes(trait)) {
+      return { dominance_score: info.dominance_score, level, description: info.description };
+    }
+  }
+  return UNKNOWN_TRAIT_DOMINANCE;
+}
+
+/** Traits whose base dominance is above moderate, strongest first. */
+function identifyDominantTraits(traits) {
+  return traits
+    .map(trait => {
+      const info = getTraitDominanceInfo(trait);
+      return { trait, dominanceScore: info.dominance_score, dominanceLevel: info.level };
+    })
+    .filter(t => t.dominanceScore > 0.6)
+    .sort((a, b) => b.dominanceScore - a.dominanceScore);
+}
+
+/** Stress strengthens negative traits and weakens positive ones; bond lifts social traits. */
+function calculateEnvironmentalDominanceModifier(snapshot, trait) {
+  let modifier = 1.0;
+  if (['fearful', 'reactive', 'fragile'].includes(trait)) {
+    modifier += snapshot.stressLevel * 0.05;
+  } else if (['brave', 'confident', 'calm'].includes(trait)) {
+    modifier -= snapshot.stressLevel * 0.03;
+  }
+  if (['social', 'affectionate', 'trusting'].includes(trait)) {
+    modifier += (snapshot.bondScore - 20) * 0.01;
+  }
+  return Math.max(0.5, Math.min(1.5, modifier));
+}
+
+function evaluateDominance(snapshot, traits) {
+  const dominanceHierarchy = traits
+    .map(trait => {
+      const info = getTraitDominanceInfo(trait);
+      const environmentalModifier = calculateEnvironmentalDominanceModifier(snapshot, trait);
+      return {
+        trait,
+        baseDominanceScore: info.dominance_score,
+        environmentalModifier,
+        dominanceScore: info.dominance_score * environmentalModifier,
+        dominanceLevel: info.level,
+        description: info.description,
+      };
+    })
+    .sort((a, b) => b.dominanceScore - a.dominanceScore);
+
+  return {
+    dominanceHierarchy,
+    primaryTrait: dominanceHierarchy[0] || null,
+    secondaryTraits: dominanceHierarchy.slice(1, 3),
+    recessiveTraits: dominanceHierarchy.slice(3),
+    // NaN (null on the wire) for a horse with no traits — pinned behaviour.
+    dominanceStrength:
+      dominanceHierarchy.reduce((sum, t) => sum + t.dominanceScore, 0) / traits.length,
   };
-
-  // Add synergy edges
-  const synergies = findTraitSynergies(traits);
-  synergies.forEach(synergy => {
-    networks.edges.push({
-      source: synergy.trait1,
-      target: synergy.trait2,
-      type: 'synergy',
-      strength: synergy.strength,
-    });
-  });
-
-  // Add conflict edges
-  const conflicts = findTraitConflicts(traits);
-  conflicts.forEach(conflict => {
-    networks.edges.push({
-      source: conflict.trait1,
-      target: conflict.trait2,
-      type: 'conflict',
-      strength: conflict.strength,
-    });
-  });
-
-  return networks;
 }
 
-/**
- * Calculate stability metrics
- */
-function calculateStabilityMetrics(traits) {
-  const synergies = findTraitSynergies(traits);
-  const conflicts = findTraitConflicts(traits);
+/** Balance between synergies and conflicts, normalized per trait to 0..1. */
+function calculateHarmonyScore(synergyScore, conflictScore, traitCount) {
+  if (traitCount === 0) {
+    return 0.5;
+  }
+  const harmony = (synergyScore / traitCount - conflictScore / traitCount + 1) / 2;
+  return Math.max(0, Math.min(1, harmony));
+}
 
-  const synergyRatio = synergies.length / Math.max(1, traits.length);
-  const conflictRatio = conflicts.length / Math.max(1, traits.length);
+function identifyEmergentProperties(traits) {
+  return EMERGENT_PROPERTIES.filter(property =>
+    property.contributingTraits.every(trait => traits.includes(trait)),
+  ).map(property => ({ ...property, contributingTraits: [...property.contributingTraits] }));
+}
 
+function calculateStabilityMetrics(counts, traitCount) {
+  const synergyRatio = counts.synergies / Math.max(1, traitCount);
+  const conflictRatio = counts.conflicts / Math.max(1, traitCount);
   return {
     synergyRatio,
     conflictRatio,
@@ -817,110 +387,81 @@ function calculateStabilityMetrics(traits) {
   };
 }
 
-/**
- * Calculate complexity score
- */
-function calculateComplexityScore(traits, clusters, emergentProperties) {
-  const traitComplexity = traits.length * 0.1;
-  const clusterComplexity = clusters.length * 0.2;
-  const emergentComplexity = emergentProperties.length * 0.3;
+function assessStability(snapshot, traits, counts) {
+  const synergyStability = counts.synergies > 0 ? 0.8 : 0.5;
+  const overallStability = Math.max(
+    0,
+    Math.min(1, synergyStability - counts.conflicts * 0.1 - snapshot.stressLevel * 0.05),
+  );
 
-  return Math.min(1.0, traitComplexity + clusterComplexity + emergentComplexity);
-}
-
-/**
- * Generate stability recommendations
- */
-function generateStabilityRecommendations(stability, volatilityRisks) {
-  const recommendations = [];
-
-  if (stability < 0.4) {
-    recommendations.push(
-      'High instability detected - focus on stress reduction and consistent care',
-    );
-  } else if (stability < 0.6) {
-    recommendations.push('Moderate instability - monitor for behavioral changes');
-  } else {
-    recommendations.push('Good stability - continue current care approach');
+  const stabilityFactors = [];
+  if (counts.synergies > 0) {
+    stabilityFactors.push('trait_synergies');
+  }
+  if (snapshot.bondScore > 30) {
+    stabilityFactors.push('strong_bonding');
+  }
+  if (snapshot.stressLevel < 4) {
+    stabilityFactors.push('low_stress');
   }
 
-  volatilityRisks.forEach(risk => {
-    switch (risk) {
-      case 'multiple_trait_conflicts':
-        recommendations.push('Address trait conflicts through targeted behavioral interventions');
-        break;
-      case 'high_stress_environment':
-        recommendations.push('Reduce environmental stressors and increase calming activities');
-        break;
-      case 'reactive_temperament':
-        recommendations.push('Use gentle, predictable approaches to minimize reactive responses');
-        break;
-    }
-  });
+  const volatilityRisks = [];
+  if (counts.conflicts > 2) {
+    volatilityRisks.push('multiple_trait_conflicts');
+  }
+  if (snapshot.stressLevel > 7) {
+    volatilityRisks.push('high_stress_environment');
+  }
+  if (traits.includes('reactive')) {
+    volatilityRisks.push('reactive_temperament');
+  }
 
-  return recommendations;
-}
-
-/**
- * Calculate stability trends
- */
-function calculateStabilityTrends(traits) {
-  const synergies = findTraitSynergies(traits);
-  const conflicts = findTraitConflicts(traits);
+  let baseline = 'Good stability - continue current care approach';
+  if (overallStability < 0.4) {
+    baseline = 'High instability detected - focus on stress reduction and consistent care';
+  } else if (overallStability < 0.6) {
+    baseline = 'Moderate instability - monitor for behavioral changes';
+  }
 
   return {
-    synergyTrend: synergies.length > 0 ? 'stabilizing' : 'neutral',
-    conflictTrend: conflicts.length > 2 ? 'destabilizing' : 'neutral',
-    overallTrend: synergies.length > conflicts.length ? 'improving' : 'declining',
+    overallStability,
+    stabilityFactors,
+    volatilityRisks,
+    stabilityTrends: {
+      synergyTrend: counts.synergies > 0 ? 'stabilizing' : 'neutral',
+      conflictTrend: counts.conflicts > 2 ? 'destabilizing' : 'neutral',
+      overallTrend: counts.synergies > counts.conflicts ? 'improving' : 'declining',
+    },
+    recommendations: [baseline, ...volatilityRisks.map(risk => RISK_RECOMMENDATIONS[risk])],
   };
 }
 
-/**
- * Model interaction evolution over time
- */
-function modelInteractionEvolution(traits, timeWindow, ageInDays) {
+/** Weekly snapshots across the window as the horse matures. */
+function modelInteractionEvolution(
+  timeWindow,
+  ageInDays,
+  { synergyScore, conflictScore, harmony },
+) {
   const evolution = [];
-
-  // Simulate evolution over time window
   for (let day = 0; day < timeWindow; day += 7) {
-    // Weekly snapshots
-    // Equoria-rjs2n: normalize over MATURITY_PERIOD_DAYS (game-day maturity
-    // model), NOT the calendar /365. See constant definition above.
     const maturityFactor = Math.min(1.0, (ageInDays + day) / MATURITY_PERIOD_DAYS);
-    const synergies = findTraitSynergies(traits);
-    const conflicts = findTraitConflicts(traits);
-
     evolution.push({
       day,
       maturityFactor,
-      synergyStrength: synergies.reduce((sum, s) => sum + s.strength, 0) * maturityFactor,
-      conflictStrength:
-        conflicts.reduce((sum, c) => sum + c.strength, 0) * (1 - maturityFactor * 0.3),
-      stabilityScore: calculateHarmonyScore(
-        synergies.reduce((sum, s) => sum + s.strength, 0),
-        conflicts.reduce((sum, c) => sum + c.strength, 0),
-        traits.length,
-      ),
+      synergyStrength: synergyScore * maturityFactor,
+      conflictStrength: conflictScore * (1 - maturityFactor * 0.3),
+      stabilityScore: harmony,
     });
   }
-
   return evolution;
 }
 
-/**
- * Analyze stability trends over time
- */
-function analyzeStabilityTrends(traits, timeWindow) {
-  const evolution = modelInteractionEvolution(traits, timeWindow, 30); // Assume 30 days old
-
+function analyzeStabilityTrends(evolution) {
   if (evolution.length < 2) {
     return { trend: 'insufficient_data', strength: 0 };
   }
-
-  const firstStability = evolution[0].stabilityScore;
   const lastStability = evolution[evolution.length - 1].stabilityScore;
-  const change = lastStability - firstStability;
-
+  const change = lastStability - evolution[0].stabilityScore;
   return {
     trend: change > 0.1 ? 'improving' : change < -0.1 ? 'declining' : 'stable',
     strength: Math.abs(change),
@@ -928,68 +469,40 @@ function analyzeStabilityTrends(traits, timeWindow) {
   };
 }
 
-/**
- * Identify emerging patterns
- */
 function identifyEmergingPatterns(traits, ageInDays) {
-  const patterns = [];
-
-  // Age-based pattern emergence
+  let stage = {
+    pattern: 'mature_expression',
+    description: 'Trait interactions have reached mature expression',
+    confidence: 0.9,
+  };
   if (ageInDays < 30) {
-    patterns.push({
+    stage = {
       pattern: 'early_development',
       description: 'Traits are still forming and highly malleable',
       confidence: 0.8,
-    });
+    };
   } else if (ageInDays < MATURITY_PERIOD_DAYS) {
-    patterns.push({
+    stage = {
       pattern: 'stabilization_period',
       description: 'Trait interactions are beginning to stabilize',
       confidence: 0.7,
-    });
-  } else {
-    patterns.push({
-      pattern: 'mature_expression',
-      description: 'Trait interactions have reached mature expression',
-      confidence: 0.9,
-    });
+    };
   }
-
-  // Trait-specific patterns
-  if (traits.includes('curious') && traits.includes('intelligent')) {
-    patterns.push({
-      pattern: 'learning_acceleration',
-      description: 'Curiosity and intelligence create accelerated learning potential',
-      confidence: 0.75,
-    });
-  }
-
-  if (traits.includes('social') && traits.includes('confident')) {
-    patterns.push({
-      pattern: 'leadership_emergence',
-      description: 'Social confidence may lead to leadership behaviors',
-      confidence: 0.6,
-    });
-  }
-
-  return patterns;
+  const traitPatterns = TRAIT_PATTERNS.filter(entry =>
+    entry.requires.every(trait => traits.includes(trait)),
+  ).map(({ pattern, description, confidence }) => ({ pattern, description, confidence }));
+  return [stage, ...traitPatterns];
 }
 
-/**
- * Project future changes
- */
-function projectFutureChanges(traits, timeWindow) {
-  const synergies = findTraitSynergies(traits);
-  const conflicts = findTraitConflicts(traits);
-
+function projectFutureChanges(counts, timeWindow) {
   return {
     synergyChanges: {
-      expected: synergies.length > 0 ? 'strengthening' : 'stable',
+      expected: counts.synergies > 0 ? 'strengthening' : 'stable',
       confidence: 0.6,
       timeframe: `${timeWindow} days`,
     },
     conflictChanges: {
-      expected: conflicts.length > 2 ? 'intensifying' : 'stable',
+      expected: counts.conflicts > 2 ? 'intensifying' : 'stable',
       confidence: 0.5,
       timeframe: `${timeWindow} days`,
     },
@@ -999,72 +512,9 @@ function projectFutureChanges(traits, timeWindow) {
       description: 'Dominant traits will become more established over time',
     },
     stabilityForecast: {
-      expected: synergies.length > conflicts.length ? 'improving' : 'declining',
+      expected: counts.synergies > counts.conflicts ? 'improving' : 'declining',
       confidence: 0.65,
       factors: ['trait_maturation', 'environmental_consistency', 'care_quality'],
     },
   };
-}
-
-/**
- * Create matrix visualization data
- */
-function createMatrixVisualization(traits, synergies, conflicts) {
-  const nodes = traits.map(trait => ({
-    id: trait,
-    type: 'trait',
-    dominance: getTraitDominanceInfo(trait).dominance_score,
-  }));
-
-  const edges = [];
-
-  // Add synergy edges
-  synergies.synergyPairs.forEach(synergy => {
-    edges.push({
-      source: synergy.trait1,
-      target: synergy.trait2,
-      type: 'synergy',
-      strength: synergy.strength,
-      color: 'green',
-    });
-  });
-
-  // Add conflict edges
-  conflicts.conflictPairs.forEach(conflict => {
-    edges.push({
-      source: conflict.trait1,
-      target: conflict.trait2,
-      type: 'conflict',
-      strength: conflict.strength,
-      color: 'red',
-    });
-  });
-
-  // Identify clusters for visualization
-  const clusters = identifyTraitClusters(traits);
-
-  return {
-    nodes,
-    edges,
-    clusters: clusters.map(cluster => ({
-      name: cluster.name,
-      traits: cluster.traits,
-      color: getClusterColor(cluster.name),
-    })),
-  };
-}
-
-/**
- * Get cluster color for visualization
- */
-function getClusterColor(clusterName) {
-  const colors = {
-    confidence_cluster: '#4CAF50',
-    intelligence_cluster: '#2196F3',
-    stability_cluster: '#9C27B0',
-    social_cluster: '#FF9800',
-    sensitivity_cluster: '#607D8B',
-  };
-
-  return colors[clusterName] || '#757575';
 }

@@ -27,14 +27,7 @@ import {
   generateEnvironmentalReport,
 } from '../../labs/index.mjs';
 
-import {
-  analyzeTraitInteractions,
-  calculateTraitSynergies,
-  identifyTraitConflicts,
-  evaluateTraitDominance,
-  assessInteractionStability,
-  generateInteractionMatrix,
-} from '../services/traitInteractionMatrix.mjs';
+import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mjs';
 
 import {
   identifyDevelopmentalWindows,
@@ -292,10 +285,9 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      const interactions = await analyzeTraitInteractions(horseId);
-      const synergies = await calculateTraitSynergies(horseId);
-      const conflicts = await identifyTraitConflicts(horseId);
-      const dominance = await evaluateTraitDominance(horseId);
+      // One horse read; every section comes from the same snapshot (Equoria-q4uem.5).
+      const { traitInteractions, synergies, conflicts, dominance } =
+        await generateInteractionMatrix(horseId);
 
       logger.info(`Trait interactions analyzed for horse ${horseId} by user ${req.user.id}`);
 
@@ -303,7 +295,7 @@ router.get(
         success: true,
         data: {
           horseId,
-          traitInteractions: interactions,
+          traitInteractions,
           synergies,
           conflicts,
           dominance,
@@ -365,7 +357,7 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      const stability = await assessInteractionStability(horseId);
+      const { stability } = await generateInteractionMatrix(horseId);
 
       logger.info(`Trait stability analyzed for horse ${horseId} by user ${req.user.id}`);
 

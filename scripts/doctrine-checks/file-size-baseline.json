@@ -38,7 +38,6 @@
   "backend/modules/marketplace/controllers/marketplaceController.mjs": 768,
   "backend/modules/training/controllers/trainingController.mjs": 870,
   "backend/modules/traits/routes/traitRoutes.mjs": 706,
-  "backend/modules/traits/services/traitInteractionMatrix.mjs": 1070,
   "backend/modules/users/controllers/userController.mjs": 899,
   "backend/scripts/performance-regression-tests.mjs": 616,
   "backend/services/apiDocumentationService.mjs": 676,

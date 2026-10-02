@@ -1,22 +1,14 @@
 /**
  * traitInteractionMatrix service unit tests (Equoria-rr7 coverage sprint).
  *
- * All 8 exported async functions tested with real DB fixtures.
+ * Every analysis section of generateInteractionMatrix tested with real DB fixtures
+ * (Equoria-q4uem.5 folded the seven per-analysis loaders into one snapshot read).
  * Horse with no flags exercises the zero-data code paths.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import {
-  analyzeTraitInteractions,
-  calculateTraitSynergies,
-  identifyTraitConflicts,
-  evaluateTraitDominance,
-  processComplexInteractions,
-  assessInteractionStability,
-  modelTemporalInteractions,
-  generateInteractionMatrix,
-} from '../services/traitInteractionMatrix.mjs';
+import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -64,13 +56,13 @@ afterAll(() => cleanup.run(), 30000);
 
 // ── analyzeTraitInteractions ──────────────────────────────────────────────────
 
-describe('analyzeTraitInteractions', () => {
+describe('generateInteractionMatrix traitInteractions section (was analyzeTraitInteractions)', () => {
   it('throws for non-existent horse', async () => {
-    await expect(analyzeTraitInteractions(999999999)).rejects.toThrow();
+    await expect(generateInteractionMatrix(999999999)).rejects.toThrow();
   });
 
   it('returns zero-flag analysis for horse with no flags', async () => {
-    const result = await analyzeTraitInteractions(horse.id);
+    const result = (await generateInteractionMatrix(horse.id)).traitInteractions;
     expect(result.horseId).toBe(horse.id);
     expect(result.traits).toHaveLength(0);
     expect(Array.isArray(result.synergies)).toBe(true);
@@ -81,9 +73,9 @@ describe('analyzeTraitInteractions', () => {
 
 // ── calculateTraitSynergies ───────────────────────────────────────────────────
 
-describe('calculateTraitSynergies', () => {
+describe('generateInteractionMatrix synergies section (was calculateTraitSynergies)', () => {
   it('returns result for horse with no flags', async () => {
-    const result = await calculateTraitSynergies(horse.id);
+    const result = (await generateInteractionMatrix(horse.id)).synergies;
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
   });
@@ -91,9 +83,9 @@ describe('calculateTraitSynergies', () => {
 
 // ── identifyTraitConflicts ────────────────────────────────────────────────────
 
-describe('identifyTraitConflicts', () => {
+describe('generateInteractionMatrix conflicts section (was identifyTraitConflicts)', () => {
   it('returns result for horse with no flags', async () => {
-    const result = await identifyTraitConflicts(horse.id);
+    const result = (await generateInteractionMatrix(horse.id)).conflicts;
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
   });
@@ -101,9 +93,9 @@ describe('identifyTraitConflicts', () => {
 
 // ── evaluateTraitDominance ────────────────────────────────────────────────────
 
-describe('evaluateTraitDominance', () => {
+describe('generateInteractionMatrix dominance section (was evaluateTraitDominance)', () => {
   it('returns result for horse with no flags', async () => {
-    const result = await evaluateTraitDominance(horse.id);
+    const result = (await generateInteractionMatrix(horse.id)).dominance;
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
   });
@@ -111,9 +103,9 @@ describe('evaluateTraitDominance', () => {
 
 // ── processComplexInteractions ────────────────────────────────────────────────
 
-describe('processComplexInteractions', () => {
+describe('generateInteractionMatrix complexInteractions section (was processComplexInteractions)', () => {
   it('returns result for horse with no flags', async () => {
-    const result = await processComplexInteractions(horse.id);
+    const result = (await generateInteractionMatrix(horse.id)).complexInteractions;
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
   });
@@ -121,9 +113,9 @@ describe('processComplexInteractions', () => {
 
 // ── assessInteractionStability ────────────────────────────────────────────────
 
-describe('assessInteractionStability', () => {
+describe('generateInteractionMatrix stability section (was assessInteractionStability)', () => {
   it('returns result for horse with no flags', async () => {
-    const result = await assessInteractionStability(horse.id);
+    const result = (await generateInteractionMatrix(horse.id)).stability;
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
   });
@@ -131,9 +123,9 @@ describe('assessInteractionStability', () => {
 
 // ── modelTemporalInteractions ─────────────────────────────────────────────────
 
-describe('modelTemporalInteractions', () => {
+describe('generateInteractionMatrix temporalModel section (was modelTemporalInteractions)', () => {
   it('returns result for horse with 30-day window', async () => {
-    const result = await modelTemporalInteractions(horse.id, 30);
+    const result = (await generateInteractionMatrix(horse.id, { timeWindow: 30 })).temporalModel;
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
   });
@@ -179,7 +171,7 @@ describe('modelTemporalInteractions', () => {
     matureCleanup.add(() => prisma.user.delete({ where: { id: matureUser.id } }), 'matureUser');
 
     try {
-      const result = await modelTemporalInteractions(matureHorse.id, 30);
+      const result = (await generateInteractionMatrix(matureHorse.id, { timeWindow: 30 })).temporalModel;
       expect(Array.isArray(result.interactionEvolution)).toBe(true);
       expect(result.interactionEvolution.length).toBeGreaterThan(0);
 
@@ -269,8 +261,8 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
 
   afterAll(() => tiCleanup.run(), 30000);
 
-  it('analyzeTraitInteractions returns non-empty synergies+conflicts for horse with mixed flags (non-zero traits branch)', async () => {
-    const result = await analyzeTraitInteractions(tiSynergyHorse.id);
+  it('traitInteractions section returns non-empty synergies+conflicts for horse with mixed flags (non-zero traits branch)', async () => {
+    const result = (await generateInteractionMatrix(tiSynergyHorse.id)).traitInteractions;
     expect(result.traits).toHaveLength(3);
     expect(result.synergies.length).toBeGreaterThan(0);
     expect(result.conflicts.length).toBeGreaterThan(0);
@@ -278,8 +270,8 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
     expect(typeof result.overallHarmony).toBe('number');
   });
 
-  it('calculateTraitSynergies populates amplificationEffects for synergy-forming flags', async () => {
-    const result = await calculateTraitSynergies(tiSynergyHorse.id);
+  it('synergies section populates amplificationEffects for synergy-forming flags', async () => {
+    const result = (await generateInteractionMatrix(tiSynergyHorse.id)).synergies;
     expect(result.synergyPairs.length).toBeGreaterThan(0);
     expect(Object.keys(result.amplificationEffects).length).toBeGreaterThan(0);
     expect(result.totalSynergyStrength).toBeGreaterThan(0);
@@ -288,8 +280,8 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
     expect(result.amplificationEffects['confident']).toBeDefined();
   });
 
-  it('identifyTraitConflicts populates suppressionEffects for conflict-forming flags', async () => {
-    const result = await identifyTraitConflicts(tiSynergyHorse.id);
+  it('conflicts section populates suppressionEffects for conflict-forming flags', async () => {
+    const result = (await generateInteractionMatrix(tiSynergyHorse.id)).conflicts;
     expect(result.conflictPairs.length).toBeGreaterThan(0);
     expect(Object.keys(result.suppressionEffects).length).toBeGreaterThan(0);
     expect(result.totalConflictStrength).toBeGreaterThan(0);
@@ -297,23 +289,23 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
     expect(result.suppressionEffects['brave']).toBeDefined();
   });
 
-  it('assessInteractionStability adds trait_synergies/low_stress/strong_bonding stabilityFactors', async () => {
-    const result = await assessInteractionStability(tiSynergyHorse.id);
+  it('stability section adds trait_synergies/low_stress/strong_bonding stabilityFactors', async () => {
+    const result = (await generateInteractionMatrix(tiSynergyHorse.id)).stability;
     expect(result.stabilityFactors).toContain('trait_synergies');
     expect(result.stabilityFactors).toContain('low_stress');
     expect(result.stabilityFactors).toContain('strong_bonding');
     expect(typeof result.overallStability).toBe('number');
   });
 
-  it('assessInteractionStability adds multiple_trait_conflicts/high_stress/reactive_temperament volatilityRisks', async () => {
-    const result = await assessInteractionStability(tiConflictHorse.id);
+  it('stability section adds multiple_trait_conflicts/high_stress/reactive_temperament volatilityRisks', async () => {
+    const result = (await generateInteractionMatrix(tiConflictHorse.id)).stability;
     expect(result.volatilityRisks).toContain('multiple_trait_conflicts');
     expect(result.volatilityRisks).toContain('high_stress_environment');
     expect(result.volatilityRisks).toContain('reactive_temperament');
   });
 
-  it('evaluateTraitDominance returns sorted dominanceHierarchy with primaryTrait for non-empty flags', async () => {
-    const result = await evaluateTraitDominance(tiSynergyHorse.id);
+  it('dominance section returns sorted dominanceHierarchy with primaryTrait for non-empty flags', async () => {
+    const result = (await generateInteractionMatrix(tiSynergyHorse.id)).dominance;
     expect(result.dominanceHierarchy.length).toBe(3);
     expect(result.primaryTrait).not.toBeNull();
     expect(result.dominanceHierarchy[0].dominanceScore).toBeGreaterThanOrEqual(
