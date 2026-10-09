@@ -11,8 +11,7 @@
 
 import { describe, it, expect } from 'vitest';
 import type { HorseSummary } from '../types';
-import { toBreedingHorse, toBreedingHorses } from '../breedingHorse';
-import { parseHorseSex } from '@/lib/utils';
+import { parseHorseSex, toBreedingHorse, toBreedingHorses } from '../breedingHorse';
 
 /** A list-endpoint horse as backend/modules/horses/routes/horseRoutes.mjs emits it. */
 function listHorse(overrides: Partial<HorseSummary> = {}): HorseSummary {

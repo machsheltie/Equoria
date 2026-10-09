@@ -21,18 +21,40 @@
  * here instead of being filtered out by both selectors.
  */
 
-import { getBreedName, parseHorseSex } from '../utils.js';
+import { getBreedName } from '../utils.js';
 import type { HorseSex } from '../../types/breeding.js';
 import type { HorseSummary } from './types.js';
 
 export type BreedingHorse = Pick<
   HorseSummary,
+  // `level` and `imageUrl` are always undefined from GET /horses today:
+  // HORSE_LIST_SELECT does not send them. Stud fee is player-set (owner
+  // ruling, Equoria-q4uem.9); the game never derives it from `level`.
   'id' | 'name' | 'dateOfBirth' | 'healthStatus' | 'imageUrl' | 'level'
 > & {
   age: number;
   sex: HorseSex;
   breedName: string;
 };
+
+const CANONICAL_HORSE_SEX: ReadonlyMap<string, HorseSex> = new Map<string, HorseSex>([
+  ['stallion', 'Stallion'],
+  ['mare', 'Mare'],
+  ['colt', 'Colt'],
+  ['filly', 'Filly'],
+  ['rig', 'Rig'],
+]);
+
+/**
+ * Parse an API horse-sex string into the canonical HorseSex (Equoria-q4uem.6).
+ * Case-insensitive, matching isFemaleHorseSex/isMaleHorseSex; anything outside
+ * the canonical vocabulary (including 'Male'/'Female', which the database
+ * never stores) is null, so callers handle it explicitly.
+ */
+export function parseHorseSex(sex: string | null | undefined): HorseSex | null {
+  if (!sex) return null;
+  return CANONICAL_HORSE_SEX.get(sex.toLowerCase()) ?? null;
+}
 
 /** Normalize one list horse; null when its sex is missing or unrecognised. */
 export function toBreedingHorse(horse: HorseSummary): BreedingHorse | null {
