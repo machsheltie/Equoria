@@ -119,7 +119,15 @@ export async function hasExistingShowEntry(showId, horseId) {
  * creator OR burn) had nothing to settle. The post-fix path is byte-identical
  * to showController.enterShow.
  */
-export function enterShowDeferredTx({ show, showId, horseId, userId, horseLevel }) {
+export function enterShowDeferredTx({
+  show,
+  showId,
+  horseId,
+  userId,
+  horseLevel,
+  groomId = null,
+  groomSnapshot = null,
+}) {
   return withRetryableTxMapping(
     prisma.$transaction(
       async tx => {
@@ -174,8 +182,18 @@ export function enterShowDeferredTx({ show, showId, horseId, userId, horseLevel 
           throw new Error('ENTRY_CLOSED');
         }
 
+        // groomId/groomSnapshot: the conformation entry's presenting groom and its
+        // scoring fields as entered (both null for ridden; a Json column takes no
+        // plain null, so the snapshot is omitted rather than passed as null).
         const createdEntry = await tx.showEntry.create({
-          data: { showId, horseId, userId, feePaid: show.entryFee },
+          data: {
+            showId,
+            horseId,
+            userId,
+            feePaid: show.entryFee,
+            groomId,
+            ...(groomSnapshot ? { groomSnapshot } : {}),
+          },
         });
 
         if (show.entryFee > 0) {

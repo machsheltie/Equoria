@@ -182,6 +182,14 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
     expect(after.entries).toHaveLength(1);
     expect(after.entries[0].feePaid).toBe(ENTRY_FEE);
     expect(after.entries[0].userId).toBe(entrant.user.id);
+    // The entry keeps the groom it was entered with (owner ruling 2026-10-12).
+    expect(after.entries[0].groomId).toBe(entrant.groom.id);
+    expect(after.entries[0].groomSnapshot).toEqual({
+      id: entrant.groom.id,
+      name: entrant.groom.name,
+      showHandlingSkill: entrant.groom.showHandlingSkill,
+      personality: entrant.groom.personality,
+    });
     expect(after.escrowCredits.map(row => Number(row.amount))).toEqual([ENTRY_FEE]);
     expect(after.entrantDebits.map(row => Number(row.amount))).toEqual([ENTRY_FEE]);
     // The creator is paid at settlement, never at entry.
@@ -189,19 +197,17 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
     expect(Number(creatorNow.money)).toBe(Number(creator.money));
   });
 
-  it('a free conformation show with no closing date still accepts entries and charges nothing', async () => {
-    const entrant = await makeEntrant('free');
-    const show = await makeShow({ entryFee: 0, openDate: null, closeDate: null });
+  // Owner ruling 2026-10-12: a show with no closing date can never be settled,
+  // so it takes no entries (paid or free).
+  it('refuses a show with no closing date (409) with no side effects', async () => {
+    const entrant = await makeEntrant('undated');
+    const show = await makeShow({ openDate: null, closeDate: null });
     const before = await snapshot(entrant, show);
 
     const res = await enter(entrant, show);
 
-    expect(res.status).toBe(201);
-    const after = await snapshot(entrant, show);
-    expect(after.money).toBe(before.money);
-    expect(after.feeEscrow).toBe(0);
-    expect(after.entries).toHaveLength(1);
-    expect(after.entries[0].feePaid).toBe(0);
+    expect(res.status).toBe(409);
+    expectUnchanged(await snapshot(entrant, show), before);
   });
 
   it('refuses a player who cannot afford the fee (402) with no entry, debit, escrow or ledger drift', async () => {

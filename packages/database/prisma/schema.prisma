@@ -573,6 +573,8 @@ model Groom {
   ultraRareTraitEvents UltraRareTraitEvent[]
   groomHorseSynergies GroomHorseSynergy[]
   groomAssignmentLogs GroomAssignmentLog[]
+  /// Equoria-mwjst: conformation entries this groom presents at settlement.
+  showEntries         ShowEntry[]
   groomTalentSelections GroomTalentSelections?
   /// Equoria-m9lz1: the game's HIDDEN retirement schedule for this groom.
   /// Deliberately a separate table, not a column on `grooms`: the retirement
@@ -1952,12 +1954,21 @@ model ShowEntry {
   user      User     @relation("ShowEntries", fields: [userId], references: [id])
   /// Entry fee paid (snapshot)
   feePaid   Int      @default(0)
+  /// Equoria-mwjst (owner ruling 2026-10-12): the groom chosen at a conformation
+  /// entry presents the horse at settlement, whatever the assignment says by
+  /// then. Null for ridden entries.
+  groomId   Int?
+  groom     Groom?   @relation(fields: [groomId], references: [id], onDelete: SetNull)
+  /// The groom's scoring fields as entered ({ id, name, showHandlingSkill,
+  /// personality }); settlement scores with it only if the groom row was deleted.
+  groomSnapshot Json?
   createdAt DateTime @default(now())
 
   @@unique([showId, horseId])
   @@index([showId])
   @@index([horseId])
   @@index([userId])
+  @@index([groomId])
   @@map("show_entries")
 }
 

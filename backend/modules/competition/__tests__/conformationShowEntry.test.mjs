@@ -125,6 +125,10 @@ async function createConformationShow(overrides = {}) {
       levelMax: 10,
       entryFee: 50,
       prize: 200,
+      // A real week, as the game schedules shows: entry refuses a show with
+      // no closing date (Equoria-mwjst, owner ruling 2026-10-12).
+      openDate: new Date(),
+      closeDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       showType: overrides.showType ?? 'conformation',
       status: overrides.status ?? 'open',

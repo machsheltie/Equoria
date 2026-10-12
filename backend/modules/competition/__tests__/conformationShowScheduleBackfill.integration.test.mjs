@@ -1,6 +1,7 @@
 /**
  * Undated conformation shows are scheduled — Equoria-mwjst (Codex review
- * 2026-10-06, finding 3; owner ruling 2026-10-07: backfill the dates).
+ * 2026-10-06, finding 3; owner rulings 2026-10-07: backfill the dates, and
+ * 2026-10-12: the seven days count from creation).
  *
  * The defect: an open conformation show with closeDate NULL accepted paid
  * entries (wallet 1000 -> 925, escrow 75) but settlement only runs once
@@ -9,8 +10,8 @@
  * This runs the real migration SQL against the real test database inside a
  * transaction that is always rolled back, so the global UPDATE never touches
  * another suite's rows. It asserts the backfill gives every open undated
- * conformation show the seven-day schedule (openDate, else createdAt, + 7
- * days) and leaves every other show alone; then that a backfilled show whose
+ * conformation show the seven-day schedule (closes createdAt + 7 days; an
+ * existing openDate is kept) and leaves every other show alone; then that a backfilled show whose
  * week has passed is one the settlement scan picks up.
  */
 
@@ -96,9 +97,11 @@ describe('undated conformation shows get the seven-day schedule (mwjst backfill)
     expect(after.get(noDates.id).openDate.getTime()).toBe(createdAt.getTime());
     expect(after.get(noDates.id).closeDate.getTime()).toBe(createdAt.getTime() + 7 * DAY_MS);
     expect(after.get(noDates.id).runDate.getTime()).toBe(createdAt.getTime() + 7 * DAY_MS);
-    // An existing openDate is kept and anchors the week.
+    // An existing openDate is kept, but the week still counts from creation
+    // (owner ruling 2026-10-12: "creation date").
     expect(after.get(opened.id).openDate.getTime()).toBe(openDate.getTime());
-    expect(after.get(opened.id).closeDate.getTime()).toBe(openDate.getTime() + 7 * DAY_MS);
+    expect(after.get(opened.id).closeDate.getTime()).toBe(createdAt.getTime() + 7 * DAY_MS);
+    expect(after.get(opened.id).runDate.getTime()).toBe(createdAt.getTime() + 7 * DAY_MS);
 
     for (const untouched of [ridden, completed, scheduled]) {
       expect(after.get(untouched.id).closeDate).toEqual(untouched.closeDate);

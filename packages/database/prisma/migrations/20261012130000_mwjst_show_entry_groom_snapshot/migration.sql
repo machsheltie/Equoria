@@ -1,0 +1,23 @@
+-- Equoria-mwjst (Codex review 2026-10-12, round 3): a conformation entry keeps
+-- the groom it was entered with even if that groom row is deleted.
+--
+-- CORRECTS 20261012120000_mwjst_show_entry_groom, whose header says a groom is
+-- deleted only together with the referencing entries. That is false: a groom
+-- released to the free-agent pool can be hired by another player, and that
+-- player's account erasure (gdprAccountService) deletes the groom row while the
+-- first player's entry survives; ON DELETE SET NULL then clears its groomId.
+-- That migration is already applied (its checksum is recorded), so it is left
+-- unedited and corrected here.
+--
+-- WHAT THIS CHANGES
+--   show_entries."groomSnapshot" JSONB, NULL for ridden entries. The
+--   conformation entry writes the groom's scoring fields
+--   { id, name, showHandlingSkill, personality } in the entry transaction.
+--   Settlement scores with the live groom row while it exists and with this
+--   snapshot only when the row is gone, never with a different groom.
+--
+-- Additive and nullable; existing rows stay NULL (only rows from before
+-- groomId existed lack both, and they keep the active-assignment fallback).
+
+-- AlterTable
+ALTER TABLE "show_entries" ADD COLUMN     "groomSnapshot" JSONB;

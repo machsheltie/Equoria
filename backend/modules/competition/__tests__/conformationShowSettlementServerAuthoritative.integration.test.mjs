@@ -44,7 +44,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, createTestShow, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { executeClosedShows } from '../shows/showController.mjs';
-import { executeConformationShow, REWARD_TABLE } from '../services/conformationShowService.mjs';
+import {
+  executeConformationShow,
+  REWARD_TABLE,
+  calculateConformationShowScore,
+  SCORE_NEUTRAL_CONFORMATION_CLASS,
+} from '../services/conformationShowService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-mwjst-confsettle';
 const ORIGIN = 'http://localhost:3000';
@@ -140,6 +145,26 @@ async function letWeekPass(show) {
     where: { id: show.id },
     data: { openDate: new Date(closeDate.getTime() - 7 * DAY_MS), closeDate, runDate: closeDate },
   });
+}
+
+/** Make every UPDATE of one show row fail inside Postgres. Returns the remover. */
+async function failShowUpdatesFor(showId) {
+  const suffix = `${tag}_${showId}`;
+  const fn = `mwjst_fail_show_${suffix}`;
+  const trg = `mwjst_fail_show_trg_${suffix}`;
+  await prisma.$executeRawUnsafe(`
+    CREATE FUNCTION ${fn}() RETURNS trigger AS $$
+    BEGIN
+      IF OLD.id = ${Number(showId)} THEN
+        RAISE EXCEPTION 'injected test failure (${FIXTURE_PREFIX})';
+      END IF;
+      RETURN NEW;
+    END $$ LANGUAGE plpgsql`);
+  await prisma.$executeRawUnsafe(`CREATE TRIGGER ${trg} BEFORE UPDATE ON shows FOR EACH ROW EXECUTE FUNCTION ${fn}()`);
+  return async () => {
+    await prisma.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${trg} ON shows`);
+    await prisma.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${fn}()`);
+  };
 }
 
 /** A due show hosted by one player with two entered horses (fees paid into escrow). */
@@ -302,8 +327,13 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
 
   it('a settlement that fails part-way leaves the show open with no rewards and the escrow unsettled', async () => {
     const { show, entrants } = await dueShowWithTwoEntries();
-    // One entry loses its handler after entering — a real data state the
-    // settlement refuses to score (Equoria-axad9.1), after it has claimed.
+    // A legacy entry from before entries recorded their groom, whose horse has
+    // no active groom either: the settlement refuses to score it with no real
+    // handler (Equoria-axad9.1), after it has claimed.
+    // (Neither groomId nor groomSnapshot; raw SQL for the Json NULL, as
+    // showController.clearStagedOrdering explains for Prisma.DbNull under Jest.)
+    await prisma.$executeRaw`UPDATE "show_entries" SET "groomId" = NULL, "groomSnapshot" = NULL
+      WHERE "showId" = ${show.id} AND "horseId" = ${entrants[1].horse.id}`;
     await prisma.groomAssignment.update({
       where: { id: entrants[1].assignment.id },
       data: { isActive: false },
@@ -320,6 +350,121 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     expectNothingAwarded(after);
     expect(after.feeEscrow).toBe(2 * ENTRY_FEE);
     expect(after.hostMoney).toBe(before.hostMoney);
+  });
+
+  // Owner ruling 2026-10-12: "If the horse was entered with a groom ... they
+  // have that groom still attached to them when it runs. The groom has already
+  // been paid for to use for those entries."
+  it('a groom whose assignment ended after entry still presents the horse at settlement', async () => {
+    const { show, entrants } = await dueShowWithTwoEntries();
+    await prisma.groomAssignment.update({
+      where: { id: entrants[1].assignment.id },
+      data: { isActive: false },
+    });
+    const before = await rewardState(show, entrants);
+
+    await executeClosedShows({ body: { showIds: [show.id] } });
+
+    const after = await rewardState(show, entrants);
+    expect(after.status).toBe('completed');
+    expect(after.results).toHaveLength(2);
+    expect(after.titlePoints).toEqual(PODIUM_POINTS);
+    expect(after.feeEscrow).toBe(0);
+    expect(after.hostMoney).toBe(before.hostMoney + 2 * ENTRY_FEE);
+  });
+
+  // Codex review 2026-10-12: a released groom can be hired by another player
+  // whose account erasure (gdprAccountService) deletes the groom row. The entry
+  // must still be scored with the groom it was entered with — never with
+  // whichever groom the horse has now, and never left unscorable.
+  it('a groom deleted after entry still presents the horse as entered, not a stand-in', async () => {
+    const { show, entrants } = await dueShowWithTwoEntries();
+    const [first] = entrants;
+    const asEntered = await prisma.groom.findUnique({ where: { id: first.groom.id } });
+
+    // Meanwhile the horse gets a different groom, so a fallback would be visible.
+    const standIn = await prisma.groom.create({
+      data: {
+        name: `${FIXTURE_PREFIX}-standin-groom-${tag}`,
+        speciality: 'show_handling',
+        personality: 'strict',
+        skillLevel: 'master',
+        showHandlingSkill: 'master',
+        user: { connect: { id: first.user.id } },
+      },
+    });
+    groomIds.push(standIn.id);
+    const standInAssignment = await prisma.groomAssignment.create({
+      data: {
+        groom: { connect: { id: standIn.id } },
+        foal: { connect: { id: first.horse.id } },
+        user: { connect: { id: first.user.id } },
+        isActive: true,
+      },
+    });
+    assignmentIds.push(standInAssignment.id);
+
+    // The entered groom moves to another player's staff, whose erasure deletes it.
+    const other = await createTestUser({
+      username: `${FIXTURE_PREFIX}-erased-${tag}`,
+      email: `${FIXTURE_PREFIX}-erased-${tag}@example.com`,
+    });
+    await prisma.groom.update({ where: { id: asEntered.id }, data: { userId: other.user.id } });
+    await prisma.groom.delete({ where: { id: asEntered.id } });
+
+    const horseRow = await prisma.horse.findUnique({ where: { id: first.horse.id } });
+    const scoreWith = groom =>
+      calculateConformationShowScore(horseRow, groom, SCORE_NEUTRAL_CONFORMATION_CLASS).finalScore;
+    // Precondition: the two grooms would score this horse differently.
+    expect(scoreWith(standIn)).not.toBe(scoreWith(asEntered));
+    const before = await rewardState(show, entrants);
+
+    await executeClosedShows({ body: { showIds: [show.id] } });
+
+    const after = await rewardState(show, entrants);
+    expect(after.status).toBe('completed');
+    expect(after.results).toHaveLength(2);
+    expect(after.feeEscrow).toBe(0);
+    expect(after.hostMoney).toBe(before.hostMoney + 2 * ENTRY_FEE);
+    const firstResult = after.results.find(r => r.horseId === first.horse.id);
+    expect(Number(firstResult.score)).toBe(scoreWith(asEntered));
+  });
+
+  it('a ridden show that fails does not stop a due conformation show from settling', async () => {
+    const { show, entrants } = await dueShowWithTwoEntries();
+    const ridden = await createTestShow({
+      name: `${FIXTURE_PREFIX}-ridden`,
+      discipline: 'Dressage',
+      status: 'open',
+      entryFee: 0,
+      prize: 0,
+      levelMin: 1,
+      levelMax: 10,
+      openDate: new Date(Date.now() - 8 * DAY_MS),
+      closeDate: new Date(Date.now() - 60 * 60 * 1000),
+      runDate: new Date(Date.now() - 60 * 60 * 1000),
+    });
+    const removeTrigger = await failShowUpdatesFor(ridden.id);
+    const before = await rewardState(show, entrants);
+    try {
+      // The ridden failure still reaches the nightly job as a failure ... (a
+      // Prisma error from outside Jest's realm, so matched by message, not
+      // by toThrow's Error-instance check).
+      await expect(executeClosedShows({ body: { showIds: [ridden.id, show.id] } })).rejects.toMatchObject({
+        message: expect.stringMatching(/injected test failure/),
+      });
+    } finally {
+      await removeTrigger();
+    }
+
+    // ... but the due conformation show was settled all the same.
+    const after = await rewardState(show, entrants);
+    expect(after.status).toBe('completed');
+    expect(after.results).toHaveLength(2);
+    expect(after.feeEscrow).toBe(0);
+    expect(after.hostMoney).toBe(before.hostMoney + 2 * ENTRY_FEE);
+    const riddenAfter = await prisma.show.findUnique({ where: { id: ridden.id } });
+    expect(riddenAfter.status).toBe('open');
   });
 });
 

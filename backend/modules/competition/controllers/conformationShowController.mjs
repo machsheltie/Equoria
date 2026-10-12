@@ -20,7 +20,10 @@ import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
-import { validateConformationEntry } from '../services/conformationShowService.mjs';
+import {
+  validateConformationEntry,
+  conformationGroomSnapshot,
+} from '../services/conformationShowService.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 
 /**
@@ -150,7 +153,15 @@ export async function enterConformationShow(req, res) {
         .status(409)
         .json({ success: false, message: 'This show is not open for entries yet' });
     }
-    if (show.closeDate && new Date(show.closeDate) <= now) {
+    // Owner ruling 2026-10-12: settlement waits for closeDate, so a show
+    // without one could never settle the fees it took.
+    if (!show.closeDate) {
+      return res.status(409).json({
+        success: false,
+        message: 'This show has no closing date and is not taking entries',
+      });
+    }
+    if (new Date(show.closeDate) <= now) {
       return res.status(409).json({ success: false, message: 'Entry period has closed' });
     }
 
@@ -187,7 +198,17 @@ export async function enterConformationShow(req, res) {
     const horseLevel = getHorseXpLevel(horse.horseXp);
     let entry;
     try {
-      entry = await enterShowDeferredTx({ show, showId, horseId, userId, horseLevel });
+      // The entry keeps this groom for settlement (owner ruling 2026-10-12),
+      // with a snapshot of its scoring fields in case the groom row is deleted.
+      entry = await enterShowDeferredTx({
+        show,
+        showId,
+        horseId,
+        userId,
+        horseLevel,
+        groomId: groom.id,
+        groomSnapshot: conformationGroomSnapshot(groom),
+      });
     } catch (txError) {
       if (txError.message === 'OUT_OF_BRACKET') {
         return res.status(400).json({

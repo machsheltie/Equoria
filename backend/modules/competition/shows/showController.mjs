@@ -404,23 +404,16 @@ async function clearStagedOrdering(showId) {
 // ── BA-4: Overnight show execution ────────────────────────────────────────────
 
 /**
- * Executes due shows (closeDate <= now, 'open'); conformation shows settle on their own scorer.
- * Sets status = 'completed', executedAt = now.
- * Awards prizes and XP for each entry.
- * Sets firstEverWin milestone flag if applicable.
+ * Executes due shows (closeDate <= now, 'open'): sets status 'completed' and executedAt,
+ * awards prizes and XP, sets the firstEverWin milestone. Conformation shows settle first
+ * on their own scorer (titles, no prize), isolated from the ridden batch (Equoria-mwjst):
+ * each batch is attempted even if the other fails, and any failure is rethrown to cron.
  *
- * Called by the scheduled task or POST /api/v1/shows/execute (admin).
+ * Called by the nightly cron (no req/res) or POST /api/v1/shows/execute (admin).
  *
- * Equoria-rsss0 (test-isolation): the HTTP path accepts an OPTIONAL
- * `req.body.showIds` array. When supplied, the closeable-show scan is
- * narrowed to those specific ids (still gated on `status:'open'` AND
- * `closeDate <= now`, so a non-due or non-open id in the list is a no-op).
- * This lets a test scope its execute call to ONLY the shows it created, so
- * parallel competition suites no longer claim/score each other's open shows.
- * When `showIds` is omitted (every production caller — the cron and the
- * scheduler pass `null`/`undefined` req, so `req?.body?.showIds` is
- * `undefined`) the scan is the original unfiltered global scan — production
- * behaviour is byte-for-byte unchanged.
+ * Equoria-rsss0 (test-isolation): an OPTIONAL `req.body.showIds` array narrows the scan
+ * to those ids (still gated on status 'open' AND closeDate <= now), so a test settles
+ * only its own shows. Production callers pass no req, so the scan stays global.
  */
 export async function executeClosedShows(req, res) {
   try {
@@ -434,6 +427,12 @@ export async function executeClosedShows(req, res) {
     const scopedShowIds = Array.isArray(rawShowIds)
       ? rawShowIds.filter(id => Number.isInteger(id))
       : null;
+
+    // Conformation first, failure held: a ridden failure below cannot strand these shows.
+    const conformation = await settleDueConformationShows({ now, showIds: scopedShowIds }).then(
+      executed => ({ executed }),
+      error => ({ error }),
+    );
 
     const where = { status: 'open', closeDate: { lte: now }, showType: { not: 'conformation' } };
     if (scopedShowIds && scopedShowIds.length > 0) {
@@ -466,7 +465,7 @@ export async function executeClosedShows(req, res) {
       },
     });
 
-    let totalExecuted = 0;
+    let totalExecuted = conformation.executed ?? 0;
 
     for (const show of shows) {
       const entries = show.entries;
@@ -715,8 +714,9 @@ export async function executeClosedShows(req, res) {
       logger.info(`Executed show: ${show.name} (id=${show.id}), ${entries.length} entries`);
     }
 
-    // Equoria-mwjst: due conformation shows settle on their own scorer (titles, no prize).
-    totalExecuted += await settleDueConformationShows({ now, showIds: scopedShowIds });
+    if (conformation.error) {
+      throw conformation.error; // the ridden batch ran; surface the held conformation failure
+    }
 
     const message = `Executed ${totalExecuted} show(s)`;
     logger.info(message);

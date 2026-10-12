@@ -62,15 +62,36 @@ export {
 } from './conformationShowScoring.mjs';
 
 /**
- * Error thrown when a conformation show entry has no active groom assignment at
- * execution time (Equoria-axad9.1). This is a data-integrity anomaly: entry
- * validation (`validateConformationEntry`) REQUIRES an active groom assignment
- * before an entry is accepted, so a null groom at execution means the
- * assignment was deactivated/deleted between entry and execution. Rather than
+ * Error thrown when a conformation show entry has no groom at execution time
+ * (Equoria-axad9.1). Entries record the groom they were entered with (owner
+ * ruling 2026-10-12), which presents the horse even if its assignment ended,
+ * so this is reachable only for an entry from before that column existed
+ * whose horse also has no active assignment — a data-integrity anomaly. Rather than
  * silently fabricating a novice handler (which would award a real 20*0.20=4pt
  * handler component + synergy to a horse with no handler and corrupt
  * placements), we fail honest and surface the affected horses.
  */
+/**
+ * The groom's scoring fields as entered (Equoria-mwjst, owner ruling 2026-10-12:
+ * the entry keeps its groom). Stored on ShowEntry.groomSnapshot so the entry can
+ * still be scored with this groom if the groom row is later deleted (a released
+ * groom hired by another player whose account is erased).
+ */
+export function conformationGroomSnapshot(groom) {
+  return {
+    id: groom.id,
+    name: groom.name,
+    showHandlingSkill: groom.showHandlingSkill,
+    personality: groom.personality,
+  };
+}
+
+/** Read a stored snapshot back; null unless it is a well-formed object. */
+function groomFromSnapshot(raw) {
+  const value = raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw : null;
+  return value && typeof value.showHandlingSkill === 'string' ? value : null;
+}
+
 export class ConformationGroomMissingError extends Error {
   constructor(horseIds) {
     super(
@@ -283,7 +304,7 @@ export class ConformationShowAlreadySettledError extends Error {
  * @throws {Error} statusCode 400 for a missing or non-conformation show
  * @throws {ConformationShowAlreadySettledError} already settled or claimed
  * @throws {ConformationShowNotDueError} closeDate has not passed
- * @throws {ConformationGroomMissingError} an entry has no active handler
+ * @throws {ConformationGroomMissingError} an entry has no groom (recorded or active)
  */
 export async function executeConformationShow(showId, { now = new Date() } = {}) {
   // Fast-path reads only; the claim inside the transaction is the authority.
@@ -328,22 +349,31 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
 
         const entries = await tx.showEntry.findMany({
           where: { showId },
-          include: { horse: true },
+          include: { horse: true, groom: true },
           orderBy: { createdAt: 'asc' },
         });
 
-        // Resolve the active groom (handler) for every entry. Equoria-axad9.1:
-        // never fabricate a placeholder groom — that would award a real
-        // handler-score component to a horse with no handler. Entry validation
-        // requires an active assignment, so a missing one is a data-integrity
-        // anomaly; fail honest, which rolls the claim back.
+        // Resolve the groom (handler) for every entry. Owner ruling 2026-10-12:
+        // the groom the horse was entered with presents it, even if that
+        // assignment has since ended — the entry already paid for that groom.
+        // The live groom row is used while it exists; if it was deleted, the
+        // snapshot taken at entry stands in for it — never another groom. Only an
+        // entry from before entries recorded their groom (no snapshot at all)
+        // falls back to the horse's active assignment. Equoria-axad9.1: never
+        // fabricate a placeholder groom — that would award a real handler-score
+        // component to a horse with no handler; fail honest, which rolls the
+        // claim back.
         const resolved = [];
         for (const entry of entries) {
-          const assignment = await tx.groomAssignment.findFirst({
-            where: { foalId: entry.horse.id, isActive: true },
-            include: { groom: true },
-          });
-          resolved.push({ entry, horse: entry.horse, groom: assignment?.groom ?? null });
+          let groom = entry.groom ?? groomFromSnapshot(entry.groomSnapshot);
+          if (!groom && entry.groomSnapshot === null) {
+            const assignment = await tx.groomAssignment.findFirst({
+              where: { foalId: entry.horse.id, isActive: true },
+              include: { groom: true },
+            });
+            groom = assignment?.groom ?? null;
+          }
+          resolved.push({ entry, horse: entry.horse, groom });
         }
         const missingGroomHorseIds = resolved.filter(r => r.groom === null).map(r => r.horse.id);
         if (missingGroomHorseIds.length > 0) {
