@@ -18,10 +18,7 @@ export function StaffSection({ title, intro, children }: StaffSectionProps) {
   const headingId = useId();
   return (
     <section aria-labelledby={headingId} className="border-t border-[var(--border-muted)] pt-6">
-      <h2
-        id={headingId}
-        className="font-[var(--font-entity)] font-normal text-2xl text-[var(--text-primary)]"
-      >
+      <h2 id={headingId} className="type-section-heading">
         {title}
       </h2>
       {intro && <p className="mt-1 text-sm text-role-secondary">{intro}</p>}

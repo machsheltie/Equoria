@@ -52,6 +52,12 @@ export interface StaffLogPage {
   nextCursor: number | null;
 }
 
+/** Ledger filters; only an account holding log.view.all may widen past itself. */
+export interface StaffLogFilter {
+  actorId?: string;
+  capability?: string;
+}
+
 export interface StaffMember {
   id: string;
   username: string;
@@ -102,10 +108,14 @@ export const staffApi = {
   verifyCheckin: (code: string) =>
     apiClient.post<{ trusted: true }>(`${BASE}/checkin/verify`, { code }),
 
-  log: (cursor?: number) =>
-    apiClient.get<StaffLogPage>(
-      cursor === undefined ? `${BASE}/log` : `${BASE}/log?cursor=${encodeURIComponent(cursor)}`
-    ),
+  log: (filter: StaffLogFilter = {}, cursor?: number) => {
+    const params = new URLSearchParams();
+    if (filter.actorId) params.set('actorId', filter.actorId);
+    if (filter.capability) params.set('capability', filter.capability);
+    if (cursor !== undefined) params.set('cursor', String(cursor));
+    const qs = params.toString();
+    return apiClient.get<StaffLogPage>(`${BASE}/log${qs ? `?${qs}` : ''}`);
+  },
 
   listStaff: () => apiClient.get<{ staff: StaffMember[] }>(`${BASE}/roles`),
   lookupUser: (username: string) =>

@@ -8,10 +8,11 @@
  * it (admin); otherwise an account shows as its role and a short reference.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Select } from '@/components/ui/form';
 import { ErrorState, InlineError, SectionLoading } from '@/components/ui/state';
 import { isCheckinRequired, useStaffList, useStaffLog } from '@/hooks/api/useStaff';
 import type { StaffLogEntry } from '@/lib/api/staff';
@@ -28,6 +29,18 @@ const STATUS_WORDS: Record<string, string> = {
 };
 
 type NameOf = (id: string) => string | undefined;
+
+/**
+ * Actions the admin can filter the ledger by, in the ledger's own wording.
+ * Only capabilities that write log entries today are offered; a later staff
+ * tool adds its own line here when it starts writing.
+ */
+const ACTION_OPTIONS = [
+  { value: '', label: 'any action' },
+  { value: 'roles.manage', label: 'making or revoking moderators' },
+  { value: 'ticket.file', label: 'filing tickets' },
+  { value: 'ticket.resolve', label: 'marking tickets' },
+];
 
 const shortRef = (id: string) => `#${id.slice(0, 8)}`;
 
@@ -80,12 +93,21 @@ export interface StaffActionLogProps {
   selfId: string | undefined;
   /** True when the reader may list staff names (roles.manage). */
   canSeeNames: boolean;
+  /** True when the reader sees every steward's entries (log.view.all) and may filter them. */
+  canFilter: boolean;
   /** The server says this browser must check in again. */
   onCheckinRequired: () => void;
 }
 
-export function StaffActionLog({ selfId, canSeeNames, onCheckinRequired }: StaffActionLogProps) {
-  const log = useStaffLog();
+export function StaffActionLog({
+  selfId,
+  canSeeNames,
+  canFilter,
+  onCheckinRequired,
+}: StaffActionLogProps) {
+  const [actorId, setActorId] = useState('');
+  const [capability, setCapability] = useState('');
+  const log = useStaffLog(canFilter ? { actorId, capability } : {});
   const staff = useStaffList(canSeeNames);
 
   const checkinLapsed = isCheckinRequired(log.error);
@@ -116,8 +138,12 @@ export function StaffActionLog({ selfId, canSeeNames, onCheckinRequired }: Staff
       entries.length === 0 ? (
         <EmptyState
           variant="first-use"
-          title="The ledger is empty"
-          description="Every staff action is written here as it happens."
+          title={actorId || capability ? 'No entries match' : 'The ledger is empty'}
+          description={
+            actorId || capability
+              ? 'No steward action matches this filter.'
+              : 'Every staff action is written here as it happens.'
+          }
         />
       ) : (
         <>
@@ -165,6 +191,32 @@ export function StaffActionLog({ selfId, canSeeNames, onCheckinRequired }: Staff
       title="Ledger"
       intro="The permanent record of staff actions, newest first, in game time."
     >
+      {canFilter && (
+        <p className="mb-4 flex flex-wrap items-center gap-2 text-role-secondary">
+          Show entries by
+          <Select
+            aria-label="Steward"
+            value={actorId}
+            onChange={(event) => setActorId(event.target.value)}
+            className="w-auto"
+            options={[
+              { value: '', label: 'any steward' },
+              ...(staff.data?.staff ?? []).map((member) => ({
+                value: member.id,
+                label: member.username,
+              })),
+            ]}
+          />
+          for
+          <Select
+            aria-label="Action"
+            value={capability}
+            onChange={(event) => setCapability(event.target.value)}
+            className="w-auto"
+            options={ACTION_OPTIONS}
+          />
+        </p>
+      )}
       {body}
     </StaffSection>
   );

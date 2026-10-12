@@ -24,7 +24,7 @@ import StaffRoles from '@/components/staff/StaffRoles';
 import StaffTickets from '@/components/staff/StaffTickets';
 import { ErrorState, PageLoading } from '@/components/ui/state';
 import { useAuth } from '@/contexts/AuthContext';
-import { statusOf, useStaffMe } from '@/hooks/api/useStaff';
+import { isCheckinRequired, statusOf, useStaffMe } from '@/hooks/api/useStaff';
 import { userMessageFor } from '@/lib/http/userMessage';
 
 export default function StewardsOfficePage() {
@@ -34,13 +34,17 @@ export default function StewardsOfficePage() {
   const onCheckinRequired = useCallback(() => setCheckinLapsed(true), []);
   const onCheckedIn = useCallback(() => setCheckinLapsed(false), []);
 
+  // A 404 — not staff, or staff access revoked mid-visit — always leaves.
+  if (statusOf(me.error) === 404) {
+    return <Navigate to="/" replace />;
+  }
   if (me.isPending) {
     return <PageLoading />;
   }
-  if (me.isError) {
-    if (statusOf(me.error) === 404) {
-      return <Navigate to="/" replace />;
-    }
+  // Only a /me that never loaded replaces the office. A failed background
+  // refetch keeps the areas (and any open dialog or half-written form) on
+  // screen with the last good answer.
+  if (!me.data) {
     const { title, message, retryable } = userMessageFor(me.error);
     return (
       <ErrorState
@@ -54,12 +58,12 @@ export default function StewardsOfficePage() {
 
   const { capabilities, trusted } = me.data;
   const can = (capability: string) => capabilities.includes(capability);
-  const showCheckIn = !trusted || checkinLapsed;
+  const showCheckIn = !trusted || checkinLapsed || isCheckinRequired(me.error);
 
   return (
     <PageContainer variant="content" className="pb-12" data-testid="stewards-office">
       <header className="mb-8">
-        <h1 className="font-[var(--font-announcer)] text-3xl text-[var(--text-primary)]">
+        <h1 className="font-[family-name:var(--font-announcer)] text-3xl font-bold text-[var(--text-primary)]">
           The Steward&apos;s Office
         </h1>
         <p className="mt-2 text-role-secondary">
@@ -88,6 +92,7 @@ export default function StewardsOfficePage() {
             <StaffActionLog
               selfId={user?.id === undefined ? undefined : String(user.id)}
               canSeeNames={can('roles.manage')}
+              canFilter={can('log.view.all')}
               onCheckinRequired={onCheckinRequired}
             />
           )}

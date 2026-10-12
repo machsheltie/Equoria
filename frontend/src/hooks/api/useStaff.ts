@@ -6,7 +6,12 @@
  */
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { staffApi, type FileTicketPayload, type TicketStatus } from '@/lib/api/staff';
+import {
+  staffApi,
+  type FileTicketPayload,
+  type StaffLogFilter,
+  type TicketStatus,
+} from '@/lib/api/staff';
 import type { ApiError } from '@/lib/http/types';
 
 export const staffKeys = {
@@ -60,10 +65,13 @@ export function useVerifyCheckin() {
   });
 }
 
-export function useStaffLog() {
+/** One cache entry per filter, so a new filter starts again from the newest entry. */
+export function useStaffLog(filter: StaffLogFilter = {}) {
+  const actorId = filter.actorId ?? '';
+  const capability = filter.capability ?? '';
   return useInfiniteQuery({
-    queryKey: staffKeys.log,
-    queryFn: ({ pageParam }) => staffApi.log(pageParam),
+    queryKey: [...staffKeys.log, { actorId, capability }],
+    queryFn: ({ pageParam }) => staffApi.log({ actorId, capability }, pageParam),
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });

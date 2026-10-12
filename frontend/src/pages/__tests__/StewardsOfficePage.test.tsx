@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { act, render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse, delay } from 'msw';
 import { MemoryRouter, MockAuthProvider, Routes, Route } from '@/test/utils';
@@ -335,6 +335,92 @@ describe("The Steward's Office", () => {
     await user.click(await screen.findByRole('button', { name: 'Show older entries' }));
     expect(await screen.findByText(/An older note/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Show older entries' })).not.toBeInTheDocument();
+  });
+
+  // ── Ledger filter (admin only) ────────────────────────────────────────────
+
+  /** Records every ledger request URL's query string. */
+  function recordLogQueries() {
+    const queries: URLSearchParams[] = [];
+    server.use(
+      http.get(`${STAFF}/log`, ({ request }) => {
+        queries.push(new URL(request.url).searchParams);
+        return json({ entries: [logEntry], nextCursor: null });
+      })
+    );
+    return queries;
+  }
+
+  it('ledger filter: the admin chooses a steward and the request carries actorId', async () => {
+    stubStaff();
+    const queries = recordLogQueries();
+    const user = userEvent.setup();
+    renderPage();
+    const steward = await screen.findByLabelText('Steward');
+    await screen.findByRole('option', { name: 'Willow' });
+    await user.selectOptions(steward, 'Willow');
+    await waitFor(() => expect(queries.some((q) => q.get('actorId') === 'mod-2')).toBe(true));
+    const filtered = queries.find((q) => q.get('actorId') === 'mod-2');
+    expect(filtered?.get('cursor')).toBeNull();
+  });
+
+  it('ledger filter: choosing an action sends capability', async () => {
+    stubStaff();
+    const queries = recordLogQueries();
+    const user = userEvent.setup();
+    renderPage();
+    await user.selectOptions(await screen.findByLabelText('Action'), 'filing tickets');
+    await waitFor(() =>
+      expect(queries.some((q) => q.get('capability') === 'ticket.file')).toBe(true)
+    );
+  });
+
+  it('ledger filter: a moderator does not see the filter line', async () => {
+    stubStaff({ me: () => json(moderatorMe) });
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Steward')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Action')).not.toBeInTheDocument();
+  });
+
+  // ── /me refetch after the office has loaded ───────────────────────────────
+
+  it('a failed background /me refetch keeps the office and an open dialog with its reason', async () => {
+    let meFails = false;
+    stubStaff({ me: () => (meFails ? json({ message: 'boom' }, 500) : json(adminMe)) });
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Revoke Willow' }));
+    const dialog = await screen.findByRole('dialog');
+    const reason = within(dialog).getByLabelText(/reason/i);
+    await user.type(reason, 'Half-written reason');
+
+    meFails = true;
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['staff', 'me'] });
+    });
+    await waitFor(() => expect(queryClient.getQueryState(['staff', 'me'])?.status).toBe('error'));
+    // Let the query observer's batched notification reach React before asserting.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+
+    expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(reason).toHaveValue('Half-written reason');
+    expect(screen.getByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
+  });
+
+  it('a /me refetch that answers 404 (access revoked) still sends the visitor home', async () => {
+    let revoked = false;
+    stubStaff({
+      me: () => (revoked ? json({ success: false, message: 'Not found' }, 404) : json(adminMe)),
+    });
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
+    revoked = true;
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['staff', 'me'] });
+    });
+    expect(await screen.findByText('Stable home')).toBeInTheDocument();
   });
 
   // ── Stewards (roles) ──────────────────────────────────────────────────────
