@@ -1,7 +1,8 @@
 /**
  * foalRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: development, activity, advance-day, enrichment, graduate.
+ * Covers: development, activity, enrichment, graduate — and that the retired
+ * advance-day route stays gone (Equoria-mwjst).
  * Routes are mounted at /api/v1/foals (authRouter at /api/v1, foalRoutes at
  * '/foals'; app.mjs:290 + routers.mjs:143). The unversioned /api/* mounts were
  * removed (Equoria-4bs3s), so /api/foals/* now 404s.
@@ -155,42 +156,30 @@ describe('POST /api/v1/foals/:foalId/activity', () => {
   });
 });
 
-// ─── POST /api/v1/foals/:foalId/advance-day ──────────────────────────────────
+// ─── POST /api/v1/foals/:foalId/advance-day — retired (Equoria-mwjst) ────────
+//
+// OLD CONTRACT (vulnerable): "returns 200 or 400 when advancing day for owned
+// foal" — any owner could bump FoalDevelopment.currentDay on demand, skipping
+// the development week that drives nightly trait revelation. CORRECTED
+// CONTRACT (owner ruling 2026-10-05, "THEY DO NOT GET AN ADVANCE DAY"): the
+// route is gone; only the nightly trait job advances the day. Full proof,
+// including the unchanged development record, lives in
+// modules/breeding/__tests__/foalDevelopmentServerAuthoritative.integration.test.mjs.
 
-describe('POST /api/v1/foals/:foalId/advance-day', () => {
-  it('returns 200 or 400 when advancing day for owned foal', async () => {
+describe('POST /api/v1/foals/:foalId/advance-day (retired)', () => {
+  it('returns 404 to the owner and leaves the development day where it was', async () => {
+    const before = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post(`/api/v1/foals/${foal.id}/advance-day`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
-
-    expect([200, 400]).toContain(res.status);
-  });
-
-  it('returns 404 for foal not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/foals/999999999/advance-day')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);
 
     expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/advance-day`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
-
-    expect(res.status).toBe(401);
+    const after = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
+    expect(after?.currentDay ?? null).toBe(before?.currentDay ?? null);
   });
 });
 

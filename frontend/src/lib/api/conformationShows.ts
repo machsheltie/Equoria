@@ -2,15 +2,17 @@
  * Conformation Show API client (Equoria-rfsml).
  *
  * Backend routes mounted at /api/v1/competition/conformation/* (Equoria-pety wired
- * the sub-router into competitionRoutes.mjs). All four endpoints require an
+ * the sub-router into competitionRoutes.mjs). All three endpoints require an
  * authenticated session; mutations also acquire a CSRF token via the standard
  * fetchWithAuth path.
  *
  * Endpoints (controller: backend/modules/competition/controllers/conformationShowController.mjs):
- *   POST /enter                  — enter a horse + groom in a conformation show
+ *   POST /enter                  — enter a horse + groom; debits the show's entry fee
  *   GET  /eligibility/:horseId   — check whether a horse can enter conformation shows
- *   POST /execute                — host-only; score the show and distribute titles/breeding boosts
  *   GET  /titles/:horseId        — query a horse's accumulated title points + current title
+ *
+ * There is no settle/execute endpoint (Equoria-mwjst): the nightly show job
+ * settles a conformation show once its closing date has passed.
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -28,6 +30,8 @@ export interface ConformationShowEntryResult {
   showId: number;
   ageClass: string;
   className: string;
+  /** The entry fee actually debited (the show's configured fee). */
+  feePaid: number;
   warnings: string[];
 }
 
@@ -39,23 +43,6 @@ export interface ConformationShowEligibilityResult {
   warnings: string[];
   ageClass: string;
   groomAssigned: boolean;
-}
-
-export interface ConformationShowResultEntry {
-  entryId: number;
-  horseId: number;
-  horseName: string;
-  finalScore: number;
-  placement: number;
-  ribbon: string | null;
-  titlePoints: number;
-  newTitle: string | null;
-  breedingValueBoost: number;
-}
-
-export interface ConformationShowExecuteResult {
-  showId: number;
-  results: ConformationShowResultEntry[];
 }
 
 export interface ConformationShowTitlesResult {
@@ -82,16 +69,6 @@ export const conformationShowsApi = {
     apiClient.get<ConformationShowEligibilityResult>(
       `/api/v1/competition/conformation/eligibility/${horseId}`
     ),
-
-  /**
-   * Execute a conformation show (host-only). Backend gates by hostUserId and
-   * returns 404 on non-host callers (CWE-639 doctrine, Equoria-dmec).
-   * Equoria-349l — wires POST /execute.
-   */
-  execute: (showId: number) =>
-    apiClient.post<ConformationShowExecuteResult>('/api/v1/competition/conformation/execute', {
-      showId,
-    }),
 
   /**
    * Query a horse's accumulated title data.

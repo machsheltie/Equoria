@@ -8,8 +8,8 @@
  * health, age class — can shift between sessions and we want a fresh read
  * when the user opens the entry surface.
  *
- * Sibling file: useConformationShowExecution.ts (Equoria-349l) covers the
- * host-only /execute + /titles endpoints.
+ * There is no hook to settle a show (Equoria-mwjst): the nightly show job
+ * settles a conformation show once its closing date has passed.
  */
 
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
@@ -18,7 +18,6 @@ import {
   type ConformationShowEntryPayload,
   type ConformationShowEntryResult,
   type ConformationShowEligibilityResult,
-  type ConformationShowExecuteResult,
   type ConformationShowTitlesResult,
 } from '@/lib/api-client';
 
@@ -44,8 +43,8 @@ export function useConformationEligibility(
  * POST /api/v1/competition/conformation/enter
  *
  * Invalidates: competitions cache (entry list / participant counts), user
- * balance (no entry fee today, but kept symmetric with `useEnterCompetition`
- * for forward compatibility), and the eligibility cache for the entered horse.
+ * balance (the show's entry fee is debited on entry — Equoria-mwjst), and the
+ * eligibility cache for the entered horse.
  */
 export function useEnterConformationShow() {
   const queryClient = useQueryClient();
@@ -67,32 +66,10 @@ export function useEnterConformationShow() {
 }
 
 /**
- * POST /api/v1/competition/conformation/execute (Equoria-349l)
- *
- * Host-only: backend gates by hostUserId and returns 404 to non-host callers
- * (Equoria-dmec / CWE-639 doctrine). On success the show's entries are scored
- * and titlePoints / breedingValueBoost are written to each entered horse —
- * we invalidate competitions and the broad horses cache so callers see the
- * fresh titles immediately.
- */
-export function useExecuteConformationShow() {
-  const queryClient = useQueryClient();
-
-  return useMutation<ConformationShowExecuteResult, Error, { showId: number }>({
-    mutationFn: ({ showId }) => conformationShowsApi.execute(showId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['competitions'] });
-      queryClient.invalidateQueries({ queryKey: ['horses'] });
-      queryClient.invalidateQueries({ queryKey: ['horse'] });
-    },
-  });
-}
-
-/**
  * GET /api/v1/competition/conformation/titles/:horseId (Equoria-349l)
  *
  * Reads titlePoints / currentTitle / breedingValueBoost. Cached for 2 minutes
- * (titles only change after /execute runs, so we don't need real-time freshness
+ * (titles only change when the nightly job settles a show, so we don't need real-time freshness
  * on the read side).
  */
 export function useConformationTitles(

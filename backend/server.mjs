@@ -23,7 +23,6 @@ import { validateEnvironment } from './utils/validateEnvironment.mjs';
 import app from './app.mjs';
 import logger from './utils/logger.mjs';
 import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
-import { startShowScheduler, stopShowScheduler } from './utils/showScheduler.mjs';
 import prisma from '../packages/database/prismaClient.mjs';
 import { shutdownMemoryManagement } from './services/memoryResourceManagementService.mjs';
 import { closeRedis } from './middleware/rateLimiting.mjs';
@@ -74,8 +73,8 @@ const server = app.listen(PORT, () => {
     initializeCronJobs();
   }
 
-  // Start show execution scheduler (all environments)
-  startShowScheduler();
+  // Shows settle only in the nightly cron run (owner ruling 2026-10-07), so
+  // no show poller is started here.
 
   // SSE multi-instance trigger monitor (Equoria-o3ync, ADR-011). Fires a loud
   // alert if this deploy runs >1 SSE-serving process (cluster workers or
@@ -98,9 +97,6 @@ const shutdown = async signal => {
         logger.info('Stopping cron jobs...');
         stopCronJobs();
       }
-
-      // Stop show scheduler
-      stopShowScheduler();
 
       // Shutdown memory management
       logger.info('Shutting down memory management...');

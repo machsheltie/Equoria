@@ -14,7 +14,7 @@
  *
  *  - THIS file (breeding/FoalDevelopmentTracker): the CONTAINER /
  *    orchestrator. Owns all the API hooks (useFoal, useFoalDevelopment,
- *    useDevelopFoal, useRevealFoalTraits, …), activity selection, the
+ *    useRevealFoalTraits, …), activity selection, the
  *    trait-reveal CinematicMoment, and the activity log. This is the
  *    component wired into FoalDetailPage.
  *
@@ -33,7 +33,6 @@ import { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { Sparkles, Dna, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react';
 import {
-  useDevelopFoal,
   useEnrichFoal,
   useFoal,
   useFoalActivities,
@@ -59,7 +58,6 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
   const logActivity = useLogFoalActivity(foalId);
   const enrichFoal = useEnrichFoal(foalId);
   const revealTraits = useRevealFoalTraits(foalId);
-  const developFoal = useDevelopFoal(foalId);
   const graduateFoal = useGraduateFoal(foalId);
 
   const { notify } = useRewardToast();
@@ -245,23 +243,9 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             {enrichFoal.isPending ? 'Enriching…' : 'Enrich'}
           </button>
 
-          {/* Advance day — Equoria-n3yw6: sends the REAL `currentDay` field
-              the PUT /develop endpoint accepts (whitelisted, 0–6), not a
-              fabricated `progress`. Capped at maxDay; disabled at the cap. */}
-          <button
-            type="button"
-            onClick={() =>
-              developFoal.mutate({
-                currentDay: Math.min((development?.currentDay ?? 0) + 1, development?.maxDay ?? 6),
-              })
-            }
-            disabled={
-              developFoal.isPending || (development?.currentDay ?? 0) >= (development?.maxDay ?? 6)
-            }
-            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold border border-[rgba(100,130,165,0.2)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
-          >
-            {developFoal.isPending ? 'Updating…' : 'Advance Day'}
-          </button>
+          {/* No "Advance Day" (Equoria-mwjst; owner ruling 2026-10-05): a foal
+              waits out its full development week — the nightly job moves the
+              day, never the player. */}
 
           {/* Graduate — BB-4: visible only when foal is 3+ years old */}
           {isGraduationEligible && (

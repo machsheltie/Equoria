@@ -27,6 +27,7 @@ import {
   getShowMetadata,
   getShowEntriesWithHorseStats,
   getShowForEntry,
+  CONFORMATION_ENTRY_ONLY_MESSAGE,
   hasExistingShowEntry,
   enterShowDeferredTx,
 } from '../services/competitionRouteQueries.mjs';
@@ -393,7 +394,6 @@ router.post(
       const horse = req.horse;
 
       // ── Equoria-kacla: DEFERRED ENTRY ONLY ──────────────────────────────
-      //
       // This endpoint used to write a pre-scored row into competitionResult
       // (score 0, placement null) — a parallel, NON-canonical entry record
       // the nightly cron never reads, AND it never credited the show creator
@@ -406,10 +406,10 @@ router.post(
       const show = await getShowForEntry(showId);
 
       if (!show) {
-        return res.status(404).json({
-          success: false,
-          message: 'Show not found',
-        });
+        return res.status(404).json({ success: false, message: 'Show not found' });
+      }
+      if (show.showType === 'conformation') {
+        return res.status(400).json({ success: false, message: CONFORMATION_ENTRY_ONLY_MESSAGE });
       }
 
       // 7-day window guards (nx8t1): only an open show inside its entry

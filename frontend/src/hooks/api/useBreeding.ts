@@ -94,17 +94,6 @@ export const useRevealFoalTraits = (foalId: number) => {
   });
 };
 
-export const useDevelopFoal = (foalId: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation<FoalDevelopment | null, ApiError, Partial<FoalDevelopment>>({
-    mutationFn: (payload) => breedingApi.developFoal(foalId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: breedingKeys.development(foalId) });
-    },
-  });
-};
-
 export const useGraduateFoal = (foalId: number) => {
   const queryClient = useQueryClient();
 

@@ -529,7 +529,7 @@ router.get(
 // with this parent's GET /:id (1 segment). Sub-router mounted at the bottom.
 
 // Feed / equippable routes (POST /:id/equip-feed, /:id/unequip-feed, /:id/feed,
-// /:id/reset-last-fed, GET /:id/equippable) extracted to horseFeedRoutes.mjs.
+// GET /:id/equippable) extracted to horseFeedRoutes.mjs.
 
 // POST /foals extracted to horseFoalRoutes.mjs (Equoria-y8u2j). Sub-router
 // mounted alongside the others below. `/foals` is a specific path (single

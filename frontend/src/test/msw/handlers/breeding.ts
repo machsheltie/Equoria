@@ -17,9 +17,10 @@ export const breedingHandlers = [
   // to /api/v1/horses/foals (handled above).
   // (Equoria-0fw18) Deleted dead unversioned /api/foals/:id, /development,
   // /activities, /enrich, /reveal-traits — the v1 mirrors below serve the real
-  // breedingApi.* calls (/api/v1/foals/:id...). The POST /activity and PUT
-  // /develop handlers are kept here, versioned to /api/v1/, because they have
-  // no v1 mirror below (breedingApi.recordActivity / developFoal call them).
+  // breedingApi.* calls (/api/v1/foals/:id...). The POST /activity handler is
+  // kept here, versioned to /api/v1/, because it has no v1 mirror below
+  // (breedingApi.logFoalActivity calls it). The PUT /develop handler went with
+  // the retired endpoint (Equoria-mwjst).
   http.post(`${base}/api/v1/foals/:id/activity`, async ({ request, params }) => {
     const body = (await request.json()) as { activityType?: string; activity?: string };
     return HttpResponse.json({
@@ -29,13 +30,6 @@ export const breedingHandlers = [
         activity: body.activityType ?? body.activity ?? 'activity',
         foalId: params.id,
       },
-    });
-  }),
-  http.put(`${base}/api/v1/foals/:id/develop`, async ({ request, params }) => {
-    const updates = (await request.json()) as Record<string, unknown>;
-    return HttpResponse.json({
-      success: true,
-      data: { foalId: Number(params.id), ...updates },
     });
   }),
 ];

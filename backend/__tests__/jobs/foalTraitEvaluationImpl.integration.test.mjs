@@ -62,7 +62,10 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
       {
         name: `TestFixture-urqic3-${randHex()}`,
         sex: 'Colt',
-        dateOfBirth: new Date(),
+        // Equoria-3i34b (owner ruling 2026-10-06, "NO PREMATURE AGING"): the
+        // development day only advances once it has elapsed, so these foals
+        // have lived ten days. A just-born foal no longer moves.
+        dateOfBirth: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
         age: 0,
         userId: user.id,
         bondScore,

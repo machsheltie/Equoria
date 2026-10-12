@@ -8,8 +8,8 @@
  * (controller-only — no Express middleware chain, no HTTP, no supertest).
  * Per .claude/rules test-architecture doctrine a controller-harness suite
  * is a COMPONENT test, not an integration test, and MUST NOT be cited as
- * integration or beta-readiness evidence. The real HTTP integration of the
- * POST /execute pipeline lives in conformationShowRoutesHttp.integration.test.mjs.
+ * integration or beta-readiness evidence. The host-triggered POST /execute
+ * handler it used to drive was removed (Equoria-mwjst); see the note below.
  *
  * The pure-helper unit assertions (resolveReward / resolveTitle /
  * applyBreedingValueBoost) were SPLIT OUT into
@@ -39,7 +39,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { executeConformationShowHandler, getConformationTitles } from '../controllers/conformationShowController.mjs';
+import { getConformationTitles } from '../controllers/conformationShowController.mjs';
 import { executeConformationShow } from '../services/conformationShowService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -132,6 +132,12 @@ async function createGroom(userId) {
 }
 
 async function createConformationShow(overrides = {}) {
+  // Equoria-mwjst: a show settles only once its closeDate has passed (owner
+  // ruling 2026-10-05: 7 days from creation, nightly job). These idempotency
+  // fixtures model a show whose week is already over: opened 7 days and an
+  // hour ago, closed an hour ago. They used to model a show still seven days
+  // from due, which only "settled" because the old code never checked.
+  const closeDate = new Date(Date.now() - 60 * 60 * 1000);
   const data = {
     name: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
     discipline: 'Conformation',
@@ -139,7 +145,9 @@ async function createConformationShow(overrides = {}) {
     levelMax: 10,
     entryFee: 50,
     prize: 0,
-    runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    openDate: new Date(closeDate.getTime() - 7 * 24 * 60 * 60 * 1000),
+    closeDate,
+    runDate: closeDate,
     showType: 'conformation',
     status: overrides.status ?? 'open',
   };
@@ -210,220 +218,21 @@ async function cleanupSuite() {
 // and belong in a unit-named file, not here.
 
 // ===========================================================================
-// executeConformationShowHandler — controller-harness component suite
-// (real DB, controller-only via buildReq/buildRes — NOT HTTP supertest;
-//  see conformationShowRoutesHttp.integration.test.mjs for the real HTTP
-//  integration of the POST /execute pipeline)
+// executeConformationShowHandler — REMOVED (Equoria-mwjst)
 // ===========================================================================
-
-describe('executeConformationShowHandler (real DB)', () => {
-  beforeAll(cleanupSuite);
-  afterAll(cleanupSuite);
-  afterEach(cleanupSuite);
-
-  describe('AC1 — successful execution', () => {
-    it('returns 200 with results array for a show with 2 entries', async () => {
-      const user = await createUser();
-      const horse1 = await createHorse(user.id);
-      const horse2 = await createHorse(user.id);
-      const groom = await createGroom(user.id);
-      await createGroomAssignment(groom.id, horse1.id, user.id);
-      await createGroomAssignment(groom.id, horse2.id, user.id);
-      const show = await createConformationShow({ hostUserId: user.id });
-      await createShowEntry(show.id, horse1.id, user.id);
-      await createShowEntry(show.id, horse2.id, user.id);
-
-      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.statusValue).toBe(200);
-      const body = res.jsonValue;
-      expect(body.success).toBe(true);
-      expect(body.data.showId).toBe(show.id);
-      expect(Array.isArray(body.data.results)).toBe(true);
-      expect(body.data.results.length).toBe(2);
-
-      // 1st place must have placement=1 and Blue ribbon (deterministic by table).
-      const first = body.data.results.find(r => r.placement === 1);
-      expect(first).toBeDefined();
-      expect(first.ribbon).toBe('Blue');
-      expect(first.titlePoints).toBe(10);
-      expect(first.breedingValueBoost).toBeCloseTo(0.05);
-
-      // 2nd place must have placement=2 and Red ribbon.
-      const second = body.data.results.find(r => r.placement === 2);
-      expect(second).toBeDefined();
-      expect(second.ribbon).toBe('Red');
-      expect(second.titlePoints).toBe(7);
-    });
-
-    it('zero entries returns 200 with empty results array', async () => {
-      const user = await createUser();
-      const show = await createConformationShow({ hostUserId: user.id });
-
-      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.statusValue).toBe(200);
-      const body = res.jsonValue;
-      expect(body.success).toBe(true);
-      expect(body.data.results).toEqual([]);
-    });
-  });
-
-  describe('AC4 — no prize money in conformation', () => {
-    it('results array entries do not include prizeWon', async () => {
-      const user = await createUser();
-      const horse = await createHorse(user.id);
-      const groom = await createGroom(user.id);
-      await createGroomAssignment(groom.id, horse.id, user.id);
-      const show = await createConformationShow({ hostUserId: user.id });
-      await createShowEntry(show.id, horse.id, user.id);
-
-      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      const results = res.jsonValue.data.results;
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0]).not.toHaveProperty('prizeWon');
-    });
-  });
-
-  describe('Error handling', () => {
-    it('returns 404 when show does not exist (CWE-639: indistinguishable from non-host)', async () => {
-      const user = await createUser();
-      const req = buildReq({ user: { id: user.id }, body: { showId: 999999999 } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.statusValue).toBe(404);
-      expect(res.jsonValue.success).toBe(false);
-      expect(res.jsonValue.message).toMatch(/not found/i);
-    });
-
-    it('returns 400 when show is not a conformation show', async () => {
-      const user = await createUser();
-      const show = await prisma.show.create({
-        data: {
-          name: `${SUITE_PREFIX}-ridden-${randomBytes(4).toString('hex')}`,
-          discipline: 'Dressage',
-          levelMin: 1,
-          levelMax: 10,
-          entryFee: 50,
-          prize: 100,
-          runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          showType: 'ridden',
-          status: 'open',
-          hostUserId: user.id,
-        },
-      });
-
-      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.statusValue).toBe(400);
-      expect(res.jsonValue.message).toMatch(/conformation/i);
-    });
-  });
-
-  // -----------------------------------------------------------------------
-  // Equoria-dmec — Host authorization (31F-3)
-  // -----------------------------------------------------------------------
-  // SECURITY GAP fix: previously any authenticated user could execute any
-  // conformation show by sending its showId, awarding ribbons / titlePoints /
-  // breedingValueBoost on horses they don't own. Now the controller scopes
-  // the show lookup by hostUserId and returns 404 (CWE-639, matching the
-  // ridden-competition /execute pattern). Sentinel-positive: non-host gets
-  // 404 even though the show exists; the host gets 200 (covered above).
-  // No state mutation must occur when the call is rejected.
-  describe('AC — host authorization (Equoria-dmec, CWE-639)', () => {
-    it('returns 404 when caller is not the show host (state must NOT mutate)', async () => {
-      const host = await createUser();
-      const attacker = await createUser();
-
-      // Set up a real show with horses + entries owned by the host.
-      const horse = await createHorse(host.id, {
-        titlePoints: 0,
-        currentTitle: null,
-        breedingValueBoost: 0,
-      });
-      const groom = await createGroom(host.id);
-      await createGroomAssignment(groom.id, horse.id, host.id);
-      const show = await createConformationShow({ hostUserId: host.id });
-      await createShowEntry(show.id, horse.id, host.id);
-
-      // Snapshot pre-call state to verify nothing mutated.
-      const horseBefore = await prisma.horse.findUnique({ where: { id: horse.id } });
-      const resultsBefore = await prisma.competitionResult.count({ where: { showId: show.id } });
-
-      // Attacker invokes /execute with the host's showId.
-      const req = buildReq({ user: { id: attacker.id }, body: { showId: show.id } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      // CWE-639: 404 indistinguishable from not-found.
-      expect(res.statusValue).toBe(404);
-      expect(res.jsonValue.success).toBe(false);
-      expect(res.jsonValue.message).toMatch(/not found/i);
-
-      // State must NOT have mutated.
-      const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
-      expect(horseAfter.titlePoints).toBe(horseBefore.titlePoints);
-      expect(horseAfter.currentTitle).toBe(horseBefore.currentTitle);
-      expect(horseAfter.breedingValueBoost).toBeCloseTo(horseBefore.breedingValueBoost ?? 0);
-
-      const resultsAfter = await prisma.competitionResult.count({ where: { showId: show.id } });
-      expect(resultsAfter).toBe(resultsBefore);
-
-      // Show must remain 'open' — not flipped to 'completed'.
-      const showAfter = await prisma.show.findUnique({ where: { id: show.id } });
-      expect(showAfter.status).toBe('open');
-    });
-
-    it('returns 404 when show has no host (null hostUserId)', async () => {
-      // Legacy shows or shows imported without a host owner cannot be
-      // executed by anyone via this endpoint. Same 404 shape.
-      const user = await createUser();
-      const show = await createConformationShow(); // no hostUserId set
-
-      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.statusValue).toBe(404);
-      expect(res.jsonValue.message).toMatch(/not found/i);
-    });
-
-    it('returns 200 when caller IS the show host (sentinel-positive — fix did not over-restrict)', async () => {
-      const host = await createUser();
-      const horse = await createHorse(host.id);
-      const groom = await createGroom(host.id);
-      await createGroomAssignment(groom.id, horse.id, host.id);
-      const show = await createConformationShow({ hostUserId: host.id });
-      await createShowEntry(show.id, horse.id, host.id);
-
-      const req = buildReq({ user: { id: host.id }, body: { showId: show.id } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.statusValue).toBe(200);
-      expect(res.jsonValue.success).toBe(true);
-      expect(res.jsonValue.data.showId).toBe(show.id);
-    });
-  });
-});
+//
+// This file used to drive the host-triggered POST /execute handler through a
+// controller harness, including "returns 200 when caller IS the show host" for
+// a show whose runDate was seven days away. That was the vulnerable contract
+// (Codex scan 2026-10-02 Finding 2): a host could pay out titles and
+// breeding-value boosts the moment they asked. Owner ruling 2026-10-05: the
+// nightly show job settles conformation shows once closeDate passes; there is
+// no player settlement route, so the handler and its harness tests are gone.
+// Their behavioural coverage moved with the behaviour: result shape, no prize
+// money, the not-due refusal and exactly-once settlement run through the real
+// nightly executor in conformationShowSettlementServerAuthoritative
+// .integration.test.mjs; the empty-show and wrong-show-type service branches
+// stay in conformationShowService.test.mjs; idempotency stays below.
 
 // ===========================================================================
 // getConformationTitles — real DB integration

@@ -9,8 +9,8 @@
  *   backend/modules/competition/routes/conformationShowRoutes.mjs exposes
  *     POST /enter
  *     GET  /eligibility/:horseId
- *     POST /execute
  *     GET  /titles/:horseId
+ *   (POST /execute was removed by Equoria-mwjst — see the last block.)
  *   …but as of Equoria-pety it is NOT imported or mounted into
  *   competitionRoutes.mjs, so every endpoint returns 404 in production
  *   despite the 16 controller-level tests passing.
@@ -92,7 +92,7 @@ describe('conformation sub-router HTTP mount (Equoria-pety sentinel)', () => {
   //   IS mounted, the GET reaches validation/controller and returns
   //   something other than 404 (200/400/etc.). That's a real sentinel.
   //
-  //   Controller behaviour for the four endpoints remains covered by
+  //   Controller behaviour for the three endpoints remains covered by
   //   conformationShowEntry/Execution/Scoring/Service unit suites.
 
   it('GET /api/v1/competition/conformation/eligibility/:horseId is reachable (status !== 404)', async () => {
@@ -131,18 +131,26 @@ describe('conformation sub-router HTTP mount (Equoria-pety sentinel)', () => {
 });
 
 // ===========================================================================
-// REAL HTTP integration of the POST /execute pipeline (Equoria-1zpd).
+// Early settlement over HTTP is impossible (Equoria-mwjst, Codex scan
+// 2026-10-02 Finding 2).
 //
-// conformationShowExecution.test.mjs exercises the execute handler through a
-// buildReq/buildRes controller-only harness — that is a component test, not
-// integration. Equoria-1zpd requires conformation show execution to have a
-// real supertest HTTP integration test against the real DB: full middleware
-// chain (authenticateToken → csrfProtection → mutationRateLimiter →
-// validateExecuteBody → handler), real JWT, real CSRF double-submit, real
-// Show/Horse/ShowEntry rows. No bypass headers, no mocks.
+// OLD CONTRACT (vulnerable): this block was "executes the show end-to-end over
+// real HTTP and returns ranked results" — a player who hosted a conformation
+// show seven days from due POSTed /execute and received 200 with Blue/Red
+// ribbons, 10/7 title points and breeding-value boosts, immediately.
+//
+// CORRECTED CONTRACT (owner ruling 2026-10-05): conformation shows run exactly
+// 7 days from creation and are settled by the nightly show job only. There is
+// no player settlement route, so the host's request finds nothing (404) and the
+// show, its entries and its horses are untouched. The legitimate path — the
+// nightly executor settling a DUE show exactly once, rewards and fee escrow
+// included — is proven in conformationShowSettlementServerAuthoritative
+// .integration.test.mjs. The old "no CSRF token → 403" case is gone with the
+// route: an unmatched POST still meets csrfProtection first, so it could only
+// ever re-prove the global CSRF guard, not anything about settlement.
 // ===========================================================================
 
-describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (Equoria-1zpd)', () => {
+describe('POST /api/v1/competition/conformation/execute — no early settlement (Equoria-mwjst)', () => {
   const SUITE = 'TestFixture-conformation-execute-http';
   let host;
   let hostToken;
@@ -165,12 +173,8 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
     horse1 = await createTestHorse({ name: `${SUITE}-H1-${tag}`, userId: host.id });
     horse2 = await createTestHorse({ name: `${SUITE}-H2-${tag}`, userId: host.id });
 
-    // Equoria-axad9.1: conformation execution now requires an ACTIVE groom
-    // (handler) per entry — the service fails honest (ConformationGroomMissingError)
-    // if an entry has none, instead of fabricating a placeholder groom. The real
-    // entry flow (validateConformationEntry) guarantees an active assignment;
-    // this suite inserts ShowEntry rows directly, so it must set up the same
-    // active groom the entry path would otherwise have required.
+    // Every entry has an ACTIVE groom (handler), exactly as the real entry
+    // flow requires, so nothing but the missing route can stop a settlement.
     const groom = await prisma.groom.create({
       data: {
         name: `${SUITE}-Groom-${tag}`,
@@ -186,8 +190,10 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
       });
     }
 
-    // Real conformation show hosted by the authed user (host authorization
-    // is enforced in-controller via Show.findFirst scoped to hostUserId).
+    // A player-hosted conformation show that opened now and closes in seven
+    // days — the show the old test settled immediately.
+    const openDate = new Date();
+    const closeDate = new Date(openDate.getTime() + 7 * 24 * 60 * 60 * 1000);
     show = await prisma.show.create({
       data: {
         name: `${SUITE}-Show-${tag}`,
@@ -196,10 +202,13 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
         levelMax: 10,
         entryFee: 50,
         prize: 0,
-        runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        openDate,
+        closeDate,
+        runDate: closeDate,
         showType: 'conformation',
         status: 'open',
         hostUserId: host.id,
+        createdByUserId: host.id,
       },
     });
 
@@ -214,25 +223,18 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
       });
     }
 
-    // Equoria-plw0h per-user CSRF binding: the token must be minted under the
-    // same sessionIdentifier (req.user.id) the execute POST resolves from its
-    // Bearer token. Forward host's accessToken on the GET /csrf-token so the
-    // issued token binds to host.id; without this the authenticated execute
-    // POST 403s on a sessionIdentifier mismatch (salt-fallback vs host.id).
+    // Equoria-plw0h per-user CSRF binding: mint the token for host.id so the
+    // request clears csrfProtection and reaches the route matcher — the 404
+    // asserted below is then the router's answer, not the CSRF guard's.
     csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${hostToken}`] });
 
     // Scoped, fail-loud cleanup (Equoria-1ohys) — only rows this suite created.
-    // FK order: showEntries + results -> show -> (cleanupTestData removes the
-    // horses + users it tracked). A cleanup failure now fails the suite instead
-    // of being swallowed.
     cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show?.id } }), 'showEntry');
     cleanup.add(
       () =>
         prisma.competitionResult.deleteMany({ where: { horseId: { in: [horse1?.id, horse2?.id].filter(Boolean) } } }),
       'competitionResult',
     );
-    // groomAssignment (FK -> groom, foal/horse, user) and groom (FK -> user)
-    // must be cleared before cleanupTestData removes the horses + users.
     cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: groom.id } }), 'groomAssignment');
     cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
     cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: SUITE } } }), 'show');
@@ -241,7 +243,7 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
 
   afterAll(() => cleanup.run());
 
-  it('executes the show end-to-end over real HTTP and returns ranked results', async () => {
+  it('the host’s settle request for a show seven days from due is 404 and awards nothing', async () => {
     const res = await request(app)
       .post('/api/v1/competition/conformation/execute')
       .set('Authorization', `Bearer ${hostToken}`)
@@ -250,33 +252,22 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ showId: show.id });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.showId).toBe(show.id);
-    expect(Array.isArray(res.body.data.results)).toBe(true);
-    expect(res.body.data.results.length).toBe(2);
+    expect(res.status).toBe(404);
 
-    // Reward table is deterministic by placement even though scores have
-    // internal randomness: 1st = Blue/10/5%, 2nd = Red/7/3%.
-    const first = res.body.data.results.find(r => r.placement === 1);
-    const second = res.body.data.results.find(r => r.placement === 2);
-    expect(first).toBeDefined();
-    expect(first.ribbon).toBe('Blue');
-    expect(first.titlePoints).toBe(10);
-    expect(second).toBeDefined();
-    expect(second.ribbon).toBe('Red');
-
-    // AC4: conformation distributes no prize money.
-    expect(res.body.data.results[0]).not.toHaveProperty('prizeWon');
-  });
-
-  it('rejects a state-mutating execute with no CSRF token (403, real guard)', async () => {
-    const res = await request(app)
-      .post('/api/v1/competition/conformation/execute')
-      .set('Authorization', `Bearer ${hostToken}`)
-      .set('Origin', 'http://localhost:3000')
-      .send({ showId: show.id });
-
-    expect(res.status).toBe(403);
+    const [showAfter, results, horses] = await Promise.all([
+      prisma.show.findUnique({ where: { id: show.id } }),
+      prisma.competitionResult.findMany({ where: { showId: show.id } }),
+      prisma.horse.findMany({
+        where: { id: { in: [horse1.id, horse2.id] } },
+        select: { titlePoints: true, currentTitle: true, breedingValueBoost: true },
+      }),
+    ]);
+    expect(showAfter.status).toBe('open');
+    expect(showAfter.executedAt).toBeNull();
+    expect(results).toEqual([]);
+    expect(horses).toEqual([
+      { titlePoints: 0, currentTitle: null, breedingValueBoost: 0 },
+      { titlePoints: 0, currentTitle: null, breedingValueBoost: 0 },
+    ]);
   });
 });

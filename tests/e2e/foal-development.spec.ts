@@ -21,7 +21,8 @@ import { seedOwnedHorses } from './fixtures/ownedHorses';
  *  - The newborn foal starts at currentDay 0 / maxDay 6, no traits, no
  *    completed activities — i.e. the "starting state" the old Vitest mocks
  *    fabricated. We exercise the real lifecycle hooks (reveal-traits,
- *    develop, enrich, log-activity) from this state.
+ *    enrich, log-activity) from this state, and prove the retired develop
+ *    endpoint cannot move the development day (Equoria-mwjst).
  *
  * Graduation flow (BB-4) is intentionally NOT exercised here: it requires
  * a foal aged 104+ weeks (~2 real years). Seeding a sufficiently-old foal
@@ -215,15 +216,16 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
       timeout: 10000,
     });
 
-    // FoalDevelopmentTracker renders the three lifecycle action buttons.
-    // Reveal Traits is always present; Advance Day is always present;
-    // Enrich is present (may be disabled if no enrichment activities for
-    // the day, which is honest UI not a defect).
+    // FoalDevelopmentTracker renders the lifecycle action buttons. Reveal
+    // Traits is always present; Enrich is present (may be disabled if no
+    // enrichment activities for the day, which is honest UI not a defect).
+    // There is NO Advance Day (Equoria-mwjst, owner ruling 2026-10-05: foals
+    // wait out their full development week).
     await expect(page.getByRole('button', { name: /Reveal Traits/i })).toBeVisible({
       timeout: 15000,
     });
     await expect(page.getByRole('button', { name: /Enrich/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Advance Day/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
 
     // Newborn foal (0 weeks) is NOT graduation-eligible (requires 104+ weeks),
     // so the Graduate button MUST NOT be in the DOM. This is the production
@@ -261,39 +263,38 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     await expect(revealBtn).toBeEnabled({ timeout: 10000 });
   });
 
-  test('Advance Day button fires PUT /develop and increments currentDay', async ({ page }) => {
+  // Equoria-mwjst. OLD CONTRACT (vulnerable): an "Advance Day" button sent
+  // PUT /develop and the server stored the client's chosen day/bond/stress.
+  // CORRECTED CONTRACT (owner ruling 2026-10-05): no Advance Day anywhere; the
+  // endpoint is gone and the development record does not move.
+  test('the player cannot advance the development day: no control, and PUT /develop is refused', async ({
+    page,
+  }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('button', { name: /Reveal Traits/i })).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
 
-    const advanceBtn = page.getByRole('button', { name: /Advance Day/i });
-    await expect(advanceBtn).toBeVisible({ timeout: 20000 });
+    const readDevelopment = async () => {
+      const res = await session.request.get(`/api/v1/foals/${foalId}/development`);
+      expect(res.ok(), `GET /development returned ${res.status()}`).toBeTruthy();
+      const json = (await res.json()) as {
+        data?: {
+          development?: { currentDay?: number; bondingLevel?: number; stressLevel?: number };
+        };
+      };
+      return json.data?.development;
+    };
 
-    // Skip if the previous test consumed all 6 days (button disabled at cap).
-    const isDisabled = await advanceBtn.isDisabled();
-    if (isDisabled) {
-      test.info().annotations.push({
-        type: 'note',
-        description: 'Advance Day disabled (cap reached); skipping mutation assertion',
-      });
-      return;
-    }
-
-    const developResp = page.waitForResponse(
-      (resp) =>
-        resp.url().includes(`/api/v1/foals/${foalId}/develop`) && resp.request().method() === 'PUT',
-      { timeout: 30000 }
-    );
-
-    await advanceBtn.click();
-    const resp = await developResp;
-    expect(
-      [200, 201].includes(resp.status()),
-      `Develop returned ${resp.status()} ${await resp.text()}`
-    ).toBeTruthy();
-
-    // After the cache invalidation, the "Day" stat in the development grid
-    // re-renders. The exact value depends on prior test order, but the
-    // "Day X / 6" pattern must remain present.
-    await expect(page.getByText(/\bDay\b/i).first()).toBeVisible({ timeout: 10000 });
+    const before = await readDevelopment();
+    const forged = await csrfMutate(session, 'PUT', `/api/v1/foals/${foalId}/develop`, {
+      currentDay: 6,
+      bondingLevel: 100,
+      stressLevel: 0,
+    });
+    expect(forged.status(), 'the retired develop endpoint must not exist').toBe(404);
+    expect(await readDevelopment()).toEqual(before);
   });
 
   test('Enrich button surfaces the activity picker when activities are available', async ({

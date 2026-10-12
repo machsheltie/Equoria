@@ -239,8 +239,6 @@ export type {
   ConformationShowEntryPayload,
   ConformationShowEntryResult,
   ConformationShowEligibilityResult,
-  ConformationShowResultEntry,
-  ConformationShowExecuteResult,
   ConformationShowTitlesResult,
 } from './api/conformationShows.js';
 

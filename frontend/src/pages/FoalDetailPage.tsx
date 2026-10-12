@@ -4,12 +4,13 @@
  * Page rendered at /foals/:id. Loads the foal record + development
  * data via the existing useFoal / useFoalDevelopment hooks and displays
  * a summary card plus the full foal lifecycle UI (FoalDevelopmentTracker)
- * which exposes the 5 lifecycle primary actions:
+ * which exposes the lifecycle primary actions:
  *   - Enrich (POST /api/foals/:foalId/enrich)
  *   - Reveal Traits (POST /api/foals/:foalId/reveal-traits)
- *   - Advance Stage / Develop (PUT /api/foals/:foalId/develop)
  *   - Graduate to Adult (POST /api/foals/:foalId/graduate)
  *   - Activity (POST /api/foals/:foalId/activity, via DevelopmentTracker activity-select)
+ * There is deliberately no "Advance Day": foals wait out their full
+ * development week (Equoria-mwjst).
  *
  * Equoria-p3g0 (initial page), Equoria-bi6i (lifecycle UI wired in).
  */
@@ -115,11 +116,11 @@ const FoalDetailPage: React.FC = () => {
        * Foal lifecycle actions (Equoria-bi6i).
        *
        * FoalDevelopmentTracker owns the buttons + mutations + cache
-       * invalidation for the 5 primary actions called out in
+       * invalidation for the primary actions called out in
        * docs/beta-route-truth-table.md for the /breeding row:
-       *   enrich / reveal-traits / develop / graduate / activity.
+       *   enrich / reveal-traits / graduate / activity.
        *
-       * The hooks (useEnrichFoal, useRevealFoalTraits, useDevelopFoal,
+       * The hooks (useEnrichFoal, useRevealFoalTraits,
        * useGraduateFoal, useLogFoalActivity) all invalidate their
        * relevant React Query keys on success — see
        * frontend/src/hooks/api/useBreeding.ts.

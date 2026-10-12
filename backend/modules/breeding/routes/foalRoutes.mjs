@@ -3,6 +3,12 @@
  *
  * Handlers extracted to foalController.mjs — pure structural refactor.
  * Validation middleware (express-validator) and ownership checks remain here.
+ *
+ * No route here may set or advance a foal's development day, or write its
+ * bond/stress values (Equoria-mwjst; owner ruling 2026-10-05: "THEY MUST WAIT
+ * OUT THE FULL 7 DAY AGING PROCESS"). PUT /:foalId/develop (client-chosen
+ * day/bond/stress) and POST /:foalId/advance-day were removed; the nightly
+ * trait job is the only thing that moves FoalDevelopment.currentDay.
  */
 
 import express from 'express';
@@ -18,10 +24,8 @@ import {
   getFoalDevelopmentHandler,
   getFoalActivitiesHandler,
   completeFoalActivity,
-  advanceFoalDay,
   completeFoalEnrichment,
   revealFoalTraitsHandler,
-  developFoalHandler,
   graduateFoalHandler,
 } from '../controllers/foalController.mjs';
 
@@ -88,19 +92,6 @@ router.post(
 );
 
 /**
- * POST /api/foals/:foalId/advance-day
- * Advance foal to next day (admin/cron endpoint)
- *
- * Security: Validates foal ownership before advancing day
- */
-router.post(
-  '/:foalId/advance-day',
-  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
-  requireOwnership('foal', { idParam: 'foalId' }),
-  advanceFoalDay,
-);
-
-/**
  * POST /api/foals/:foalId/enrichment
  * Complete a foal enrichment activity (Task 5 API)
  *
@@ -161,19 +152,6 @@ router.post(
   [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
   requireOwnership('foal', { idParam: 'foalId' }),
   revealFoalTraitsHandler,
-);
-
-/**
- * PUT /api/foals/:foalId/develop
- * Update developable fields on a foal's FoalDevelopment record.
- *
- * Equoria-rkmh
- */
-router.put(
-  '/:foalId/develop',
-  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
-  requireOwnership('foal', { idParam: 'foalId' }),
-  developFoalHandler,
 );
 
 /**

@@ -254,9 +254,9 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
     });
 
     it('does NOT start the pregnancy via an unconditional prisma.horse.update (the racy read-then-write shape)', () => {
-      // The only prisma.horse.update call left in this controller is the
-      // resetHorseLastFed E2E helper (a single-field lastFedDate rewind, not
-      // pregnancy start). The pregnancy-start write MUST go through the guarded
+      // The resetHorseLastFed E2E helper that used to hold this controller's
+      // only prisma.horse.update call was removed (Equoria-mwjst). The
+      // pregnancy-start write MUST go through the guarded
       // updateMany. Assert no `prisma.horse.update(...)` call references
       // inFoalSinceDate — a regression to the unconditional read-then-write
       // shape would reintroduce that and fail here.

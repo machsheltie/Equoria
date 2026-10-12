@@ -31,7 +31,6 @@
  *
  *   horseFoalingController.mjs
  *     - createFoal
- *     - resetHorseLastFed
  *
  * No behavior changes. No opportunistic refactor. Per CLAUDE.md OPTIMAL_FIX
  * §3 (adjacent locations) any future symbol that grows past the per-file
@@ -61,4 +60,4 @@ export {
 
 export { listHorseAtStud, unlistHorseAtStud } from './horseStudController.mjs';
 
-export { createFoal, resetHorseLastFed } from './horseFoalingController.mjs';
+export { createFoal } from './horseFoalingController.mjs';

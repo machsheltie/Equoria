@@ -26,7 +26,11 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { BYPASS_HEADER_TOKENS, FRONTEND_MOCK_TOKENS } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
+import {
+  BYPASS_HEADER_TOKENS,
+  FRONTEND_MOCK_TOKENS,
+  FORBIDDEN_STATE_REWIND_PATH_PATTERNS,
+} from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
@@ -265,6 +269,71 @@ describe('doctrine checks fire on planted violations after the shared-module ref
       "router.delete('/test/cleanup', (req, res) => res.end());\n",
       'check-no-cleanup-routes.mjs',
     );
+  });
+});
+
+// =============================================================================
+// Equoria-mwjst — server-clock rewind routes (Codex scan 2026-10-02 Finding 1)
+// =============================================================================
+//
+// POST /horses/:id/reset-last-fed shipped on the production horse router and
+// let any owner rewind the daily feed authority. check-no-cleanup-routes.mjs now
+// also scans FORBIDDEN_STATE_REWIND_PATH_PATTERNS. These cases plant the ORIGINAL
+// registration shape (multi-line router.post under a real module routes dir) and
+// prove the real check fires on it, then stops naming it once removed.
+const REWIND_ROUTE = "router.post(\n  '/:id/reset-last-fed',\n  (req, res) => res.end(),\n);\n";
+
+describe('check-no-cleanup-routes.mjs forbids server-clock rewind routes (Equoria-mwjst)', () => {
+  test('fires on the original multi-line POST /:id/reset-last-fed registration in a module router', () => {
+    expectFiresThenClean(
+      'backend/modules/horses/routes/__mwjst_rewind_plant_70pb9__.mjs',
+      REWIND_ROUTE,
+      'check-no-cleanup-routes.mjs',
+    );
+  });
+
+  test('fires on a planted POST /:foalId/advance-day route', () => {
+    expectFiresThenClean(
+      'backend/routes/__mwjst_advance_plant_70pb9__.mjs',
+      "router.post('/:foalId/advance-day', (req, res) => res.end());\n",
+      'check-no-cleanup-routes.mjs',
+    );
+  });
+
+  test('a rewind route inside an __tests__ dir is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'backend/modules/horses/__tests__/__mwjst_rewind_oos_70pb9__.mjs',
+      REWIND_ROUTE,
+      'check-no-cleanup-routes.mjs',
+    );
+  });
+
+  test('each rewind pattern matches its shape and spares the legitimate look-alike routes', () => {
+    const matches = p => FORBIDDEN_STATE_REWIND_PATH_PATTERNS.some(re => re.test(p));
+    for (const forbidden of [
+      '/:id/reset-last-fed',
+      '/:id/reset-last-trained',
+      '/:foalId/advance-day',
+      '/:id/skip-cooldown',
+      '/:id/reset-cooldowns',
+      '/:id/clear-cooldown',
+      '/:id/rewind',
+      '/:id/backdate-feed',
+      '/horses/:id/fast-forward',
+    ]) {
+      expect({ path: forbidden, forbidden: matches(forbidden) }).toEqual({ path: forbidden, forbidden: true });
+    }
+    // Live production paths with similar words must stay legal.
+    for (const legal of [
+      '/reset-password',
+      '/advance-onboarding',
+      '/:id/feed',
+      '/horses/:id/set-age',
+      '/:foalId/development',
+      '/:foalId/enrichment',
+    ]) {
+      expect({ path: legal, forbidden: matches(legal) }).toEqual({ path: legal, forbidden: false });
+    }
   });
 });
 

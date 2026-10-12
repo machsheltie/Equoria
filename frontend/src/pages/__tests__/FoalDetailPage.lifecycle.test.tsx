@@ -9,15 +9,15 @@
  * envelope unwrap, the GET /development → flat-normalizer path, and the
  * mutation → CSRF round trip → wire-payload contract end-to-end.
  *
- * Verifies that FoalDetailPage exposes the 5 foal lifecycle primary
- * actions called out in docs/beta-route-truth-table.md for the
- * /breeding row:
+ * Verifies that FoalDetailPage exposes the foal lifecycle primary actions
+ * called out in docs/beta-route-truth-table.md for the /breeding row:
  *
  *   - POST /api/v1/foals/:foalId/enrich          → "Enrich" button
  *   - POST /api/v1/foals/:foalId/reveal-traits   → "Reveal Traits" button
- *   - PUT  /api/v1/foals/:foalId/develop         → "Advance Day" button
  *   - POST /api/v1/foals/:foalId/graduate        → "Graduate to Adult" (age-gated)
  *   - POST /api/v1/foals/:foalId/activity        → activity-select → Confirm
+ *
+ * …and that it offers NO "Advance Day" (the retired PUT /develop, Equoria-mwjst).
  *
  * Per 21R doctrine: no graceful skips, no fake values. These mutations
  * MUST be reachable through the production UI from the /foals/:id route.
@@ -29,7 +29,6 @@
  *   - GET  /:foalId/activities   → { success, data: [ { id, activity, ... } ] }
  *   - POST /:foalId/reveal-traits → { success, data: { traits, revealed, hidden } }
  *   - POST /:foalId/enrich       → { success, data: { foal, activity, updatedLevels, changes } }
- *   - PUT  /:foalId/develop      → { success, data: { currentDay, bondingLevel, stressLevel, completedActivities, maxDay } }
  *   - POST /:foalId/graduate     → { success, data: { horse, graduation } }
  */
 
@@ -195,34 +194,27 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
     await waitFor(() => expect(enrichBody).toEqual({ activity: 'gentle_touch' }));
   });
 
-  it('renders the Advance Day button and sends the real currentDay field via the develop boundary', async () => {
-    const user = userEvent.setup();
-    let developBody: unknown = null;
+  // Equoria-mwjst. OLD CONTRACT (vulnerable): an "Advance Day" button sent
+  // PUT /develop { currentDay: day + 1 }, and the server stored whatever day,
+  // bond and stress the client chose. CORRECTED CONTRACT (owner ruling
+  // 2026-10-05: no advance day, foals wait out the full week): the page offers
+  // no way to set or advance the development day, and never calls /develop.
+  it('offers no Advance Day control and never calls the develop boundary', async () => {
+    let developHit = false;
     server.use(
-      http.put(foalPath('/develop'), async ({ request }) => {
-        developBody = await request.json();
-        return HttpResponse.json({
-          success: true,
-          data: {
-            currentDay: 4,
-            bondingLevel: 50,
-            stressLevel: 10,
-            completedActivities: {},
-            maxDay: 6,
-          },
-        });
+      http.put(foalPath('/develop'), () => {
+        developHit = true;
+        return HttpResponse.json({ success: false }, { status: 404 });
       })
     );
 
     renderPage();
 
-    const btn = await screen.findByRole('button', { name: /advance day/i });
-    expect(btn).toBeInTheDocument();
-
-    await user.click(btn);
-    // Equoria-n3yw6: must send the whitelisted backend field `currentDay`
-    // (incremented from 3 → 4), NOT a fabricated `progress`.
-    await waitFor(() => expect(developBody).toEqual({ currentDay: 4 }));
+    // The lifecycle actions have rendered (the page is loaded) ...
+    expect(await screen.findByRole('button', { name: /reveal traits/i })).toBeInTheDocument();
+    // ... and none of them advances the day.
+    expect(screen.queryByRole('button', { name: /advance day/i })).not.toBeInTheDocument();
+    expect(developHit).toBe(false);
   });
 
   it('renders the Graduate to Adult button (age-gated) and wires it to the graduate boundary', async () => {

@@ -25,6 +25,11 @@ import {
 // Equoria-8pb6w: the two escrow-touching transactions live in a sibling module
 // (extracted for deterministic testability + file-size discipline).
 import { enterShowAtomicTx, settleShowFeeEscrow } from './showEscrowTx.mjs';
+import { settleDueConformationShows } from '../services/conformationShowService.mjs';
+import {
+  getShowForEntry,
+  CONFORMATION_ENTRY_ONLY_MESSAGE,
+} from '../services/competitionRouteQueries.mjs';
 import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 // Equoria-c7mx0: scoring extracted verbatim to the shared scoring service;
 // readStagedOrdering implements the 2026-07-06 staged-ordering replay contract.
@@ -283,23 +288,14 @@ export async function enterShow(req, res) {
       return res.status(400).json({ success: false, message: 'horseId is required' });
     }
 
-    // Load show
-    const show = await prisma.show.findUnique({
-      where: { id: showId },
-      select: {
-        id: true,
-        status: true,
-        closeDate: true,
-        entryFee: true,
-        createdByUserId: true,
-        // Equoria-g8qg0: the advertised level bracket, enforced at entry below.
-        levelMin: true,
-        levelMax: true,
-      },
-    });
+    // Same select as POST /competition/enter (incl. the g8qg0 level bracket).
+    const show = await getShowForEntry(showId);
 
     if (!show) {
       return res.status(404).json({ success: false, message: 'Show not found' });
+    }
+    if (show.showType === 'conformation') {
+      return res.status(400).json({ success: false, message: CONFORMATION_ENTRY_ONLY_MESSAGE });
     }
     if (show.status !== 'open') {
       return res
@@ -408,7 +404,7 @@ async function clearStagedOrdering(showId) {
 // ── BA-4: Overnight show execution ────────────────────────────────────────────
 
 /**
- * Executes all shows where closeDate <= now && status === 'open'.
+ * Executes due shows (closeDate <= now, 'open'); conformation shows settle on their own scorer.
  * Sets status = 'completed', executedAt = now.
  * Awards prizes and XP for each entry.
  * Sets firstEverWin milestone flag if applicable.
@@ -439,7 +435,7 @@ export async function executeClosedShows(req, res) {
       ? rawShowIds.filter(id => Number.isInteger(id))
       : null;
 
-    const where = { status: 'open', closeDate: { lte: now } };
+    const where = { status: 'open', closeDate: { lte: now }, showType: { not: 'conformation' } };
     if (scopedShowIds && scopedShowIds.length > 0) {
       where.id = { in: scopedShowIds };
     }
@@ -719,6 +715,9 @@ export async function executeClosedShows(req, res) {
       logger.info(`Executed show: ${show.name} (id=${show.id}), ${entries.length} entries`);
     }
 
+    // Equoria-mwjst: due conformation shows settle on their own scorer (titles, no prize).
+    totalExecuted += await settleDueConformationShows({ now, showIds: scopedShowIds });
+
     const message = `Executed ${totalExecuted} show(s)`;
     logger.info(message);
 
@@ -730,5 +729,6 @@ export async function executeClosedShows(req, res) {
     if (res) {
       return res.status(500).json({ success: false, message: 'Execution failed' });
     }
+    throw error; // cron/reaper callers: unfinished shows must record as a failure
   }
 }

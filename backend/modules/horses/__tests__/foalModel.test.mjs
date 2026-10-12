@@ -4,7 +4,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import {
   getFoalDevelopment,
   completeActivity,
-  advanceDay,
   completeEnrichmentActivity,
   getAvailableActivities,
 } from '../models/foalModel.mjs';
@@ -341,35 +340,6 @@ describe('completeActivity', () => {
       await mkDev(foal.id, { currentDay: 0, stressLevel: 2, completedActivities: {} });
       const result = await completeActivity(foal.id, 'gentle_touch');
       expect(result.development.stressLevel).toBeGreaterThanOrEqual(0);
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-});
-
-// ─── advanceDay ───────────────────────────────────────────────────────────────
-
-describe('advanceDay', () => {
-  it('throws for invalid foal ID', async () => {
-    await expect(advanceDay('invalid')).rejects.toThrow('Foal ID must be a positive integer');
-  });
-
-  it('advances foal to next development day', async () => {
-    const foal = await mkFoal('AdvanceDay');
-    try {
-      await mkDev(foal.id, { currentDay: 2 });
-      const result = await advanceDay(foal.id);
-      expect(result.development.currentDay).toBe(3);
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('throws when foal has already completed 7-day development period', async () => {
-    const foal = await mkFoal('AlreadyGrad');
-    try {
-      await mkDev(foal.id, { currentDay: 6 });
-      await expect(advanceDay(foal.id)).rejects.toThrow('Foal has already completed development period');
     } finally {
       await rmFoal(foal.id);
     }

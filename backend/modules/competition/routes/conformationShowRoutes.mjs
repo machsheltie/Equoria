@@ -5,6 +5,12 @@
  *
  * POST /enter                  — enter a horse in a conformation show
  * GET  /eligibility/:horseId   — check if a horse is eligible to enter
+ * GET  /titles/:horseId        — a horse's conformation title data
+ *
+ * No route settles a show (Equoria-mwjst, owner ruling 2026-10-05): the nightly
+ * show job settles a conformation show once its closeDate has passed, exactly
+ * like a regular show. The former host-triggered POST /execute paid out titles
+ * and breeding-value boosts the moment a host asked.
  *
  * Auth is enforced both at the authRouter mount AND locally on this router
  * (Equoria-jk9oj.2 — defence-in-depth, no longer relying on the mount comment).
@@ -21,7 +27,6 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import {
   enterConformationShow,
   checkConformationEligibility,
-  executeConformationShowHandler,
   getConformationTitles,
 } from '../controllers/conformationShowController.mjs';
 
@@ -53,10 +58,6 @@ const validateEnterBody = [
   body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
   body('showId').isInt({ min: 1 }).withMessage('showId must be a positive integer'),
   body('className').isString().trim().notEmpty().withMessage('className is required'),
-];
-
-const validateExecuteBody = [
-  body('showId').isInt({ min: 1 }).withMessage('showId must be a positive integer'),
 ];
 
 const validateHorseIdParam = [
@@ -98,16 +99,6 @@ router.get(
   requireOwnership('horse', { idParam: 'horseId' }),
   checkConformationEligibility,
 );
-
-/**
- * POST /api/v1/competition/conformation/execute
- * Execute a conformation show — score, rank, distribute rewards.
- *
- * Host authorization is enforced inside the controller via a Show.findFirst
- * scoped to hostUserId (Equoria-dmec). Per-horse ownership is N/A — this
- * endpoint operates on a show, not a single horse.
- */
-router.post('/execute', mutationRateLimiter, validateExecuteBody, executeConformationShowHandler);
 
 /**
  * GET /api/v1/competition/conformation/titles/:horseId

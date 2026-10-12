@@ -23,6 +23,29 @@ import {
 } from '../../economy/index.mjs';
 
 /**
+ * The Show row filter that is true only while a show takes entries: still
+ * `open`, past its openDate and before its closeDate (Equoria-mwjst). A null
+ * date leaves that side unbounded, exactly as the callers' pre-transaction
+ * checks have always read it. It is the WHERE of the status-scoped feeEscrow
+ * increment in BOTH entry transactions (this file's enterShowAtomicTx and
+ * services/competitionRouteQueries.enterShowDeferredTx), so the entry window is
+ * enforced atomically with the debit and the entry, not only by an earlier read.
+ *
+ * @param {number} showId
+ * @param {Date} [now]
+ */
+export function openForEntriesWhere(showId, now = new Date()) {
+  return {
+    id: showId,
+    status: 'open',
+    AND: [
+      { OR: [{ openDate: null }, { openDate: { lte: now } }] },
+      { OR: [{ closeDate: null }, { closeDate: { gt: now } }] },
+    ],
+  };
+}
+
+/**
  * Atomic show-entry transaction (extracted from enterShow for testability —
  * Equoria-8pb6w). Debits the entrant the entryFee, credits
  * SystemAccount[show_escrow], increments the per-show feeEscrow, and creates
@@ -90,8 +113,9 @@ export function enterShowAtomicTx({ show, showId, horseId, userId, horseLevel })
       // (surfaced as HTTP 409). Free shows (entryFee 0) carry no natural
       // increment, so the increment:0 no-op still performs the status-scoped
       // lock + recheck — without it a free entry would silently bypass the guard.
+      // Equoria-mwjst: the same predicate re-checks the open/close window.
       const stillOpen = await tx.show.updateMany({
-        where: { id: showId, status: 'open' },
+        where: openForEntriesWhere(showId),
         data: { feeEscrow: { increment: show.entryFee } },
       });
       if (stillOpen.count === 0) {
@@ -119,48 +143,79 @@ export function enterShowAtomicTx({ show, showId, horseId, userId, horseLevel })
  * test can interpose a concurrent increment between the two.
  */
 export async function settleShowFeeEscrow(showId, client = prisma) {
+  const settled = await readUnsettledFeeEscrow(client, showId);
+  if (!settled) {
+    return;
+  }
+  await client.$transaction(tx => moveFeeEscrow(tx, showId, settled));
+}
+
+/**
+ * The same fee-escrow settlement, run inside the CALLER's transaction
+ * (Equoria-mwjst). The conformation settlement pays the escrow in the same
+ * transaction as its claim and rewards, so a failure anywhere in it leaves the
+ * escrow unsettled and the show open — never paid-but-unscored.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {number} showId
+ */
+export async function settleShowFeeEscrowInTx(tx, showId) {
+  const settled = await readUnsettledFeeEscrow(tx, showId);
+  if (!settled) {
+    return;
+  }
+  await moveFeeEscrow(tx, showId, settled);
+}
+
+/** The show's fee escrow and creator, or null when there is nothing to settle. */
+async function readUnsettledFeeEscrow(client, showId) {
   const settled = await client.show.findUnique({
     where: { id: showId },
     select: { feeEscrow: true, createdByUserId: true },
   });
   if (!settled || settled.feeEscrow <= 0) {
-    return;
+    return null;
   }
-  await client.$transaction(async tx => {
-    // Always debit the escrow account by the full feeEscrow amount.
-    await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, settled.feeEscrow, {
-      category: settled.createdByUserId
-        ? 'show_settle_fees_to_creator'
-        : 'show_settle_fees_to_burn',
-      description: `Fee settlement for show ${showId}`,
-      linkedUserId: settled.createdByUserId ?? null,
-      metadata: { showId, creatorPresent: !!settled.createdByUserId },
+  return settled;
+}
+
+/**
+ * Move `settled.feeEscrow` out of SystemAccount[show_escrow] to the creator
+ * (or to SystemAccount[burn] when the creator was GDPR-deleted), and decrement
+ * the show's feeEscrow by exactly that amount. Every write uses `tx`.
+ */
+async function moveFeeEscrow(tx, showId, settled) {
+  // Always debit the escrow account by the full feeEscrow amount.
+  await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, settled.feeEscrow, {
+    category: settled.createdByUserId ? 'show_settle_fees_to_creator' : 'show_settle_fees_to_burn',
+    description: `Fee settlement for show ${showId}`,
+    linkedUserId: settled.createdByUserId ?? null,
+    metadata: { showId, creatorPresent: !!settled.createdByUserId },
+  });
+  if (settled.createdByUserId) {
+    // Creator still exists → pay them the accumulated fees.
+    await tx.user.update({
+      where: { id: settled.createdByUserId },
+      data: { money: { increment: settled.feeEscrow } },
     });
-    if (settled.createdByUserId) {
-      // Creator still exists → pay them the accumulated fees.
-      await tx.user.update({
-        where: { id: settled.createdByUserId },
-        data: { money: { increment: settled.feeEscrow } },
-      });
-    } else {
-      // Creator GDPR-deleted → move the escrow into the burn account.
-      // System-to-system move; no linkedUserId so no ledger row, but
-      // the SystemAccount.balance mutations themselves form the audit
-      // pair (escrow.balance -= X, burn.balance += X).
-      await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, settled.feeEscrow, {
-        category: 'show_burn_orphaned_fees',
-        description: `Burn orphaned fees for show ${showId} (creator GDPR-deleted)`,
-      });
-    }
-    // Equoria-8pb6w: decrement by the amount we READ + settled, NOT an absolute
-    // reset to 0. The read (above) and this write are separate round-trips; an
-    // absolute `feeEscrow: 0` would erase any increment that raced in between,
-    // breaking the SystemAccount[show_escrow] == SUM(prizeEscrow + feeEscrow)
-    // reconciliation invariant. A relative decrement leaves the raced residual
-    // in the column for a later settlement pass.
-    await tx.show.update({
-      where: { id: showId },
-      data: { feeEscrow: { decrement: settled.feeEscrow } },
+  } else {
+    // Creator GDPR-deleted → move the escrow into the burn account.
+    // System-to-system move; no linkedUserId so no ledger row, but
+    // the SystemAccount.balance mutations themselves form the audit
+    // pair (escrow.balance -= X, burn.balance += X).
+    await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, settled.feeEscrow, {
+      category: 'show_burn_orphaned_fees',
+      description: `Burn orphaned fees for show ${showId} (creator GDPR-deleted)`,
     });
+  }
+  // Equoria-8pb6w: decrement by the amount we READ + settled, NOT an absolute
+  // reset to 0. The read (above) and this write are separate round-trips; an
+  // absolute `feeEscrow: 0` would erase any increment that raced in between,
+  // breaking the SystemAccount[show_escrow] == SUM(prizeEscrow + feeEscrow)
+  // reconciliation invariant. A relative decrement leaves the raced residual
+  // in the column for a later settlement pass.
+  await tx.show.update({
+    where: { id: showId },
+    data: { feeEscrow: { decrement: settled.feeEscrow } },
   });
 }

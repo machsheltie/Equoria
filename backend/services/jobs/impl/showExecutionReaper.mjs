@@ -165,9 +165,14 @@ export async function reapStaleExecutingShows({ showIds } = {}) {
     // released above. executeClosedShows re-claims each show atomically
     // ('open' -> 'executing' with a fresh claimedAt), scores, pays from
     // escrow, settles fees, and marks 'completed' — the identical code the
-    // crashed run was executing. It handles its own errors internally and
-    // never throws; the post-state query below is the outcome check.
-    await executeClosedShows({ body: { showIds: releasedIds } }, undefined);
+    // crashed run was executing. With no res it rethrows a failed run; that
+    // is logged here, and the post-state query below stays the outcome check
+    // (it names exactly which released shows did not complete).
+    try {
+      await executeClosedShows({ body: { showIds: releasedIds } }, undefined);
+    } catch (error) {
+      logger.error(`[ShowExecutionReaper] Re-drive failed: ${error.message}`);
+    }
   }
 
   const postStates =

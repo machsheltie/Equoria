@@ -26,6 +26,7 @@ import {
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
 import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 import {
   useConformationEligibility,
   useEnterConformationShow,
@@ -38,8 +39,12 @@ export interface ConformationEntryModalProps {
   isOpen: boolean;
   /** Callback when the modal is closed (cancel or successful entry) */
   onClose: () => void;
-  /** Show to enter — must be a conformation show */
-  show: { id: number; name: string };
+  /**
+   * Show to enter — must be a conformation show. `entryFee` is the server's
+   * configured fee, debited on entry (Equoria-mwjst) and shown before the
+   * player confirms (Equoria-wgfbf).
+   */
+  show: { id: number; name: string; entryFee: number };
   /** Horse to enter */
   horse: { id: number; name: string; sex?: string };
   /** Optional success callback (entry created) */
@@ -136,6 +141,9 @@ export default function ConformationEntryModal({
           <div className="space-y-4">
             <div className="text-sm text-gray-700">
               <strong>Horse:</strong> {horse.name}
+            </div>
+            <div className="text-sm text-gray-700" data-testid="conformation-entry-fee">
+              <strong>Entry fee:</strong> <Currency amount={show.entryFee} zeroLabel="Free" />
             </div>
 
             {eligLoading && <p className="text-sm text-gray-500">Checking eligibility…</p>}

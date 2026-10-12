@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { seedOwnedHorses } from './fixtures/ownedHorses';
+import { markHorseFedTwoDaysAgo } from './fixtures/feedHistory';
 
 // Tests must run in order: each test depends on state from the previous.
 // beforeAll creates the test horses + starts the pregnancy so it is committed
@@ -161,21 +162,13 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
   });
 
   test('feed pregnant mare — pregnancy-counter-basic increments to ≥1', async ({ page }) => {
-    // Step 0 (Equoria-4sqr): the mare was fed in beforeAll to pass the
-    // critical-health breeding gate (Equoria-2e7e → Equoria-st9u). That set
-    // lastFedDate=today, which blocks alreadyFedToday() from accepting a
-    // second feed in this test. Rewind lastFedDate by 1 day via the
-    // owner-scoped reset-last-fed fixture endpoint so the feed action below
-    // proceeds. Per the controller doc, this is safe — no privilege impact
-    // (functionally equivalent to "wait 24h" which the player could do).
-    const resetRes = await csrfMutate(session, 'POST', `/api/v1/horses/${mareId}/reset-last-fed`, {
-      days: 1,
-    });
-    if (!resetRes.ok()) {
-      throw new Error(
-        `Reset lastFedDate for mare ${mareId} failed: ${resetRes.status()} ${await resetRes.text()}`
-      );
-    }
+    // Step 0 (Equoria-4sqr → Equoria-mwjst): the mare was fed in beforeAll to
+    // pass the critical-health breeding gate (Equoria-2e7e → Equoria-st9u).
+    // That set lastFedDate=today, which blocks a second feed in this test.
+    // Give her earlier feeding history straight in the test database — the
+    // owner-callable reset-last-fed route that used to do this let any player
+    // re-feed the same day and was removed from the production app.
+    await markHorseFedTwoDaysAgo(mareId);
 
     // Step 1: equip basic feed to the mare via the equip page.
     //

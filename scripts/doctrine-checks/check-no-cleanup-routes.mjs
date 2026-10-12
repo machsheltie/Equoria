@@ -1,11 +1,16 @@
 #!/usr/bin/env node
-// Doctrine: production routers must not expose test-cleanup endpoints.
+// Doctrine: production routers must not expose test-fixture endpoints.
 // Source: 21R "No bypass evidence" — endpoints that wipe DB state for tests
-// are bypass infrastructure that must not ship.
+// are bypass infrastructure that must not ship. Equoria-mwjst extends the same
+// rule to endpoints that rewind or skip a server-owned clock (a feed day, a
+// cooldown, a foal development day): those are fixture helpers too, and the
+// reset-last-fed one let any owner farm permanent stat rolls.
 //
 // Scans backend/routes/ and backend/modules/.../routes for router method calls
-// whose path contains "/test/cleanup", "/cleanup-tests", "/__cleanup", or
-// similar patterns. Skips files in __tests__/ and tests/ directories.
+// whose path matches FORBIDDEN_CLEANUP_PATH_PATTERNS ("/test/cleanup",
+// "/cleanup-tests", "/__cleanup", ...) or FORBIDDEN_STATE_REWIND_PATH_PATTERNS
+// ("/reset-last-*", "/advance-day", "/skip-cooldown", ...). Skips files in
+// __tests__/ and tests/ directories.
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +19,8 @@ import { fileURLToPath } from 'node:url';
 // stays here; the forbidden path patterns + route regex live in the shared
 // module so they cannot drift between Node doctrine checks.
 import {
-  FORBIDDEN_CLEANUP_PATH_PATTERNS as FORBIDDEN_PATH_PATTERNS,
+  FORBIDDEN_CLEANUP_PATH_PATTERNS,
+  FORBIDDEN_STATE_REWIND_PATH_PATTERNS,
   makeRouteRegex,
   walkFiles,
   readScannedFileSyncTolerant,
@@ -30,6 +36,11 @@ const SCAN_ROOTS = [
 
 // Match: router.<method>('<path>' OR app.<method>('<path>'
 const ROUTE_RE = makeRouteRegex();
+
+const FORBIDDEN_PATH_PATTERNS = [
+  ...FORBIDDEN_CLEANUP_PATH_PATTERNS.map((re) => ({ re, kind: 'test-cleanup' })),
+  ...FORBIDDEN_STATE_REWIND_PATH_PATTERNS.map((re) => ({ re, kind: 'clock-rewind' })),
+];
 
 // Per-check scope predicates (Equoria-ml7jj). These reproduce this check's
 // ORIGINAL local walk skip/include rules verbatim; the shared walkFiles helper
@@ -56,7 +67,7 @@ for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
   let match;
   while ((match = ROUTE_RE.exec(content)) !== null) {
     const routePath = match[1];
-    for (const re of FORBIDDEN_PATH_PATTERNS) {
+    for (const { re, kind } of FORBIDDEN_PATH_PATTERNS) {
       if (re.test(routePath)) {
         // Compute line number.
         const upto = content.slice(0, match.index);
@@ -65,6 +76,7 @@ for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
           file: path.relative(REPO_ROOT, file),
           line: lineNum,
           route: routePath,
+          kind,
         });
       }
     }
@@ -74,11 +86,12 @@ for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
 if (failures.length > 0) {
   console.error('\nForbidden cleanup/test routes in production routers:');
   for (const f of failures) {
-    console.error(`  ${f.file}:${f.line}  ${f.route}`);
+    console.error(`  ${f.file}:${f.line}  ${f.route}  [${f.kind}]`);
   }
   console.error(
-    '\nProduction routers must not expose test cleanup endpoints. ' +
-      'Move cleanup logic into test fixtures (e.g. tests/helpers/testAuth.mjs).'
+    '\nProduction routers must not expose test cleanup endpoints or routes that ' +
+      'rewind/skip a server-owned clock. Move that setup into test fixtures that ' +
+      'write the test database directly (e.g. tests/helpers/testAuth.mjs).'
   );
   process.exit(1);
 }

@@ -142,8 +142,8 @@ export async function executeOvernightShows() {
   logger.info('[CronJobService.executeOvernightShows] Starting nightly overnight show execution');
 
   // Pass undefined for req/res — controller's `if (res)` guards both response
-  // paths (200-on-success, 500-on-error), so when called from cron those sends
-  // are skipped and the handler runs purely as a service.
+  // paths, so from cron the sends are skipped and a failed run rethrows,
+  // which runWithHeartbeat records as an error.
   await executeClosedShows(undefined, undefined);
   const duration = Date.now() - startTime;
   logger.info(`[CronJobService.executeOvernightShows] Completed in ${duration}ms`);

@@ -107,6 +107,8 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
         entryFee: 0,
         prize: 0,
         runDate: new Date(),
+        // Equoria-mwjst: a show settles only once its closeDate has passed.
+        closeDate: new Date(Date.now() - 60 * 60 * 1000),
         showType: 'conformation',
       },
     });
@@ -124,6 +126,8 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
         entryFee: 0,
         prize: 0,
         runDate: new Date(),
+        // Equoria-mwjst: a show settles only once its closeDate has passed.
+        closeDate: new Date(Date.now() - 60 * 60 * 1000),
         showType: 'conformation',
       },
     });

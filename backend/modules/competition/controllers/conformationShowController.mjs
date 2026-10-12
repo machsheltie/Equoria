@@ -7,6 +7,11 @@
  * Endpoints:
  *   POST /api/v1/competition/conformation/enter       — register horse in conformation show
  *   GET  /api/v1/competition/conformation/eligibility/:horseId — check if horse can enter
+ *   GET  /api/v1/competition/conformation/titles/:horseId      — a horse's title data
+ *
+ * There is no player settlement endpoint (Equoria-mwjst): the nightly show job
+ * settles a conformation show once its closeDate passes
+ * (showController.executeClosedShows → executeConformationShow).
  */
 
 import { validationResult } from 'express-validator';
@@ -14,10 +19,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
-import {
-  validateConformationEntry,
-  executeConformationShow as executeShowService,
-} from '../services/conformationShowService.mjs';
+import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
+import { validateConformationEntry } from '../services/conformationShowService.mjs';
+import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 
 /**
  * Resolve the owned Horse for the request: prefer req.horse populated by the
@@ -108,8 +112,22 @@ export async function enterConformationShow(req, res) {
       );
     }
 
-    // Load show and check it exists — AC1: missing show is a 400, not 404
-    const show = await prisma.show.findUnique({ where: { id: showId } });
+    // Load show and check it exists — AC1: missing show is a 400, not 404.
+    // The select is what the canonical entry transaction below consumes.
+    const show = await prisma.show.findUnique({
+      where: { id: showId },
+      select: {
+        id: true,
+        showType: true,
+        status: true,
+        openDate: true,
+        closeDate: true,
+        entryFee: true,
+        createdByUserId: true,
+        levelMin: true,
+        levelMax: true,
+      },
+    });
     if (!show) {
       return res.status(400).json({ success: false, message: 'Show not found' });
     }
@@ -117,6 +135,23 @@ export async function enterConformationShow(req, res) {
     // Guard: must be a conformation show (AC3)
     if (show.showType !== 'conformation') {
       return res.status(400).json({ success: false, message: 'Show is not a conformation show' });
+    }
+
+    // Entry window (Equoria-mwjst): the same reads and messages as the regular
+    // show entry. The entry transaction re-checks all three atomically.
+    const now = new Date();
+    if (show.status !== 'open') {
+      return res
+        .status(409)
+        .json({ success: false, message: 'This show is no longer accepting entries' });
+    }
+    if (show.openDate && new Date(show.openDate) > now) {
+      return res
+        .status(409)
+        .json({ success: false, message: 'This show is not open for entries yet' });
+    }
+    if (show.closeDate && new Date(show.closeDate) <= now) {
+      return res.status(409).json({ success: false, message: 'Entry period has closed' });
     }
 
     // Guard: duplicate entry check before DB constraint (AC1)
@@ -141,23 +176,49 @@ export async function enterConformationShow(req, res) {
       });
     }
 
-    // Persist the entry (P2002 fallback for race-condition duplicate)
+    // Equoria-mwjst (owner ruling 2026-10-05: conformation entry follows the
+    // regular-show rules). The canonical entry transaction — the one behind
+    // POST /competition/enter — enforces the XP-level bracket, debits exactly
+    // the configured entryFee with a guarded update, credits show escrow with
+    // its ledger rows, re-checks the entry window and creates the entry with
+    // feePaid = entryFee, all in ONE transaction; any refusal rolls all of it
+    // back. Conformation keeps its own groom/health/age-class rules above, so
+    // the ridden age-3 minimum is deliberately not applied.
+    const horseLevel = getHorseXpLevel(horse.horseXp);
     let entry;
     try {
-      entry = await prisma.showEntry.create({
-        data: { showId, horseId, userId, feePaid: 0 },
-      });
-    } catch (err) {
-      if (err.code === 'P2002') {
+      entry = await enterShowDeferredTx({ show, showId, horseId, userId, horseLevel });
+    } catch (txError) {
+      if (txError.message === 'OUT_OF_BRACKET') {
+        return res.status(400).json({
+          success: false,
+          message: `This show is restricted to horses at level ${show.levelMin}${
+            show.levelMax !== show.levelMin ? `–${show.levelMax}` : ''
+          }. This horse is level ${horseLevel}.`,
+        });
+      }
+      if (txError.message === 'INSUFFICIENT_FUNDS') {
+        return res
+          .status(402)
+          .json({ success: false, message: 'Insufficient funds for entry fee' });
+      }
+      if (txError.message === 'ENTRY_CLOSED') {
+        return res
+          .status(409)
+          .json({ success: false, message: 'This show is no longer accepting entries' });
+      }
+      // A concurrent duplicate loses on @@unique([showId, horseId]); its
+      // debit and escrow credit roll back with the transaction.
+      if (txError.code === 'P2002') {
         return res
           .status(409)
           .json({ success: false, message: 'Horse is already entered in this show' });
       }
-      throw err;
+      throw txError;
     }
 
     logger.info(
-      `[conformationShowController.POST /enter] Entry created: id=${entry.id} horse=${horseId} show=${showId} ageClass=${result.ageClass}`,
+      `[conformationShowController.POST /enter] Entry created: id=${entry.id} horse=${horseId} show=${showId} ageClass=${result.ageClass} feePaid=${entry.feePaid}`,
     );
 
     return res.status(201).json({
@@ -168,10 +229,15 @@ export async function enterConformationShow(req, res) {
         showId,
         ageClass: result.ageClass,
         className,
+        feePaid: entry.feePaid,
         warnings: result.warnings,
       },
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503 || error?.statusCode === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     logger.error(`[conformationShowController.POST /enter] Unexpected error: ${error.message}`);
     return res.status(500).json({
       success: false,
@@ -259,85 +325,6 @@ export async function checkConformationEligibility(req, res) {
       success: false,
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-    });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// POST /api/v1/competition/conformation/execute
-// ---------------------------------------------------------------------------
-
-/**
- * Execute a conformation show: score all entries, rank, distribute rewards.
- *
- * Body: { showId }
- * Returns 200 with full results array including ribbon, titlePoints, newTitle, breedingValueBoost.
- * No prize money is awarded (AC4).
- */
-export async function executeConformationShowHandler(req, res) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(
-        `[conformationShowController.POST /execute] Validation errors: ${JSON.stringify(errors.array())}`,
-      );
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { showId } = req.body;
-    const userId = req.user?.id;
-
-    logger.info(
-      `[conformationShowController.POST /execute] User ${userId} executing show ${showId}`,
-    );
-
-    // Authorization (Equoria-dmec, 31F-3): only the show host may execute.
-    // CWE-639: non-host caller receives 404 (indistinguishable from not-found),
-    // matching the ridden-competition /execute pattern at
-    // competitionRoutes.mjs:466-470 (Equoria-c4g3 doctrine). Prevents arbitrary
-    // users from awarding ribbons/titlePoints/breedingValueBoost on shows they
-    // don't own.
-    const show = await prisma.show.findFirst({
-      where: { id: showId, hostUserId: userId },
-    });
-    if (!show) {
-      return res.status(404).json({ success: false, message: 'Show not found' });
-    }
-
-    const results = await executeShowService(showId);
-
-    logger.info(
-      `[conformationShowController.POST /execute] Show ${showId} complete — ${results.length} results`,
-    );
-
-    return res.status(200).json({
-      success: true,
-      data: { showId, results },
-    });
-  } catch (error) {
-    // Equoria-2ksil: this catch HARDCODES 400-or-500, so without an explicit
-    // 503 branch it would swallow the retryable busy-signal that
-    // executeConformationShow now maps a transient P2028 transaction timeout to
-    // (RetryableTransactionError, statusCode/status 503) and report a permanent
-    // 500 — telling the client NOT to retry a request that is in fact
-    // retryable. Surface 503 with its client-facing message so the client can
-    // retry the show execution.
-    if (error?.statusCode === 503 || error?.status === 503) {
-      logger.warn(
-        `[conformationShowController.POST /execute] Transient busy (503): ${error.message}`,
-      );
-      return res.status(503).json({ success: false, message: error.message });
-    }
-    const status = error.statusCode === 400 ? 400 : 500;
-    logger.error(`[conformationShowController.POST /execute] Error: ${error.message}`);
-    return res.status(status).json({
-      success: false,
-      message: status === 400 ? error.message : 'Internal server error',
-      error: process.env.NODE_ENV === 'development' && status === 500 ? error.message : undefined,
     });
   }
 }

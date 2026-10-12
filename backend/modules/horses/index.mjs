@@ -76,7 +76,6 @@ export * from './services/temperamentService.mjs';
 export {
   getFoalDevelopment,
   completeActivity,
-  advanceDay,
   getAvailableActivities,
   completeEnrichmentActivity,
   graduateFoal,

@@ -9,12 +9,14 @@
  *   GET  /api/foals/:foalId/development   — get foal development data
  *   GET  /api/foals/:foalId/activities    — get foal activity log
  *   POST /api/foals/:foalId/activity      — complete a foal enrichment activity
- *   POST /api/foals/:foalId/advance-day   — advance foal to next day (admin/cron)
  *   POST /api/foals/:foalId/enrichment    — complete enrichment activity (Task 5 API)
  *   POST /api/foals/:foalId/enrich        — alias for /enrichment (frontend contract)
  *   POST /api/foals/:foalId/reveal-traits — trigger trait discovery for the foal
- *   PUT  /api/foals/:foalId/develop       — update developable fields (currentDay/bonding/stress)
  *   POST /api/foals/:foalId/graduate      — graduate a foal at age 3
+ *
+ * The former PUT /develop (client-set day/bond/stress) and POST /advance-day
+ * handlers were removed (Equoria-mwjst): foals wait out the full development
+ * week, and only the nightly trait job advances the day.
  */
 
 import { validationResult } from 'express-validator';
@@ -23,7 +25,6 @@ import { validationResult } from 'express-validator';
 import {
   getFoalDevelopment,
   completeActivity,
-  advanceDay,
   completeEnrichmentActivity,
   graduateFoal,
 } from '../../horses/index.mjs';
@@ -167,47 +168,6 @@ export async function completeFoalActivity(req, res) {
       return res.status(404).json({ success: false, message: error.message });
     }
     if (error.message.includes('already completed') || error.message.includes('not available')) {
-      return res.status(400).json({ success: false, message: error.message });
-    }
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-}
-
-/**
- * POST /api/foals/:foalId/advance-day
- * Advance foal to next day (admin/cron endpoint)
- */
-export async function advanceFoalDay(req, res) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { foalId } = req.params;
-    logger.info(`[foalController] POST /api/foals/${foalId}/advance-day`);
-
-    const updatedData = await advanceDay(foalId);
-
-    res.json({
-      success: true,
-      message: `Foal advanced to day ${updatedData.development.currentDay}`,
-      data: updatedData,
-    });
-  } catch (error) {
-    logger.error(`[foalController] POST /api/foals/:foalId/advance-day error: ${error.message}`);
-    // Equoria-4xwyi: TYPE-based 404 detection. advanceDay throws a typed
-    // AppError(404) for the missing development-record case. Fail-closed: any
-    // other error surfaces as 500 rather than being string-matched into a
-    // misleading 404. The `'already completed'` 400 branch is unchanged.
-    if (AppError.isAppError(error) && error.statusCode === 404) {
-      return res.status(404).json({ success: false, message: error.message });
-    }
-    if (error.message.includes('already completed')) {
       return res.status(400).json({ success: false, message: error.message });
     }
     res.status(500).json({ success: false, message: 'Internal server error' });
@@ -511,92 +471,6 @@ export async function revealFoalTraitsHandler(req, res) {
     });
   } catch (error) {
     logger.error(`[foalController] POST /api/foals/:foalId/reveal-traits error: ${error.message}`);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-}
-
-/**
- * PUT /api/foals/:foalId/develop
- * Update developable fields on a foal's FoalDevelopment record.
- *
- * Allowed updates: { currentDay, bondingLevel, stressLevel }
- * Anything else in the payload is ignored.
- *
- * Equoria-rkmh
- */
-export async function developFoalHandler(req, res) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { foalId } = req.params;
-    const parsedFoalId = parseInt(foalId, 10);
-    const updates = req.body || {};
-    logger.info(`[foalController] PUT /api/foals/${parsedFoalId}/develop`);
-
-    // Whitelist of mutable fields on FoalDevelopment that the client may update.
-    const ALLOWED_FIELDS = ['currentDay', 'bondingLevel', 'stressLevel'];
-    const updateData = {};
-
-    for (const field of ALLOWED_FIELDS) {
-      if (updates[field] === undefined || updates[field] === null) {
-        continue;
-      }
-      const value = Number(updates[field]);
-      if (!Number.isFinite(value) || !Number.isInteger(value)) {
-        return res.status(400).json({ success: false, message: `${field} must be an integer` });
-      }
-      // Range validation
-      if (field === 'currentDay' && (value < 0 || value > 6)) {
-        return res
-          .status(400)
-          .json({ success: false, message: 'currentDay must be between 0 and 6' });
-      }
-      if ((field === 'bondingLevel' || field === 'stressLevel') && (value < 0 || value > 100)) {
-        return res
-          .status(400)
-          .json({ success: false, message: `${field} must be between 0 and 100` });
-      }
-      updateData[field] = value;
-    }
-
-    if (Object.keys(updateData).length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'No valid fields supplied for update' });
-    }
-
-    // Ensure a FoalDevelopment record exists; upsert to be safe.
-    const development = await prisma.foalDevelopment.upsert({
-      where: { foalId: parsedFoalId },
-      update: updateData,
-      create: {
-        foalId: parsedFoalId,
-        currentDay: updateData.currentDay ?? 0,
-        bondingLevel: updateData.bondingLevel ?? 50,
-        stressLevel: updateData.stressLevel ?? 20,
-        completedActivities: {},
-      },
-    });
-
-    res.json({
-      success: true,
-      data: {
-        currentDay: development.currentDay,
-        bondingLevel: development.bondingLevel,
-        stressLevel: development.stressLevel,
-        completedActivities: development.completedActivities || {},
-        maxDay: 6,
-      },
-    });
-  } catch (error) {
-    logger.error(`[foalController] PUT /api/foals/:foalId/develop error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }

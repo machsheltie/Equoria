@@ -1,10 +1,11 @@
 /**
  * Breeding / Foal API client (Equoria-jog8w, Equoria-aodym slice 2).
  *
- * normalizeFoalDevelopment + getFoalDevelopment/developFoal stay together
- * here: the normalizer is the shared contract the foal-development sentinel
+ * normalizeFoalDevelopment + getFoalDevelopment stay together here: the
+ * normalizer is the shared contract the foal-development sentinel
  * (frontend/src/lib/__tests__/foalDevelopmentContract.test.ts, Equoria-n3yw6)
- * asserts on, and both breedingApi reads flow through it.
+ * asserts on. There is no client call that sets or advances a foal's
+ * development day (Equoria-mwjst): only the nightly job moves it.
  *
  * Path registry:
  *   POST /api/v1/horses/foals                  → BreedResponse
@@ -14,7 +15,6 @@
  *   POST /api/v1/foals/:foalId/activity         → FoalActivity
  *   POST /api/v1/foals/:foalId/enrich           → FoalActivity
  *   POST /api/v1/foals/:foalId/reveal-traits    → { traits }
- *   PUT  /api/v1/foals/:foalId/develop          → FoalDevelopment | null
  *   POST /api/v1/foals/:foalId/graduate         → graduation result
  */
 
@@ -94,18 +94,6 @@ export const breedingApi = {
   },
   revealTraits: (foalId: number) => {
     return apiClient.post<{ traits: string[] }>(`/api/v1/foals/${foalId}/reveal-traits`);
-  },
-  developFoal: async (
-    foalId: number,
-    updates: Partial<FoalDevelopment>
-  ): Promise<FoalDevelopment | null> => {
-    // PUT /develop returns an already-flat body; normalize for shape parity
-    // with getFoalDevelopment (Equoria-n3yw6).
-    const raw = await apiClient.put<RawFoalDevelopmentBody | null>(
-      `/api/v1/foals/${foalId}/develop`,
-      updates
-    );
-    return normalizeFoalDevelopment(raw);
   },
   graduateFoal: (foalId: number) => {
     return apiClient.post<{

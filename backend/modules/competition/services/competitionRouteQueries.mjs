@@ -20,6 +20,7 @@ import {
 } from '../../economy/index.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { isHorseWithinLevelBracket } from '../../../utils/horseCompetitionLevel.mjs';
+import { openForEntriesWhere } from '../shows/showEscrowTx.mjs';
 
 export async function listShowsPaginated({ where, skip, take }) {
   const [shows, total] = await Promise.all([
@@ -76,11 +77,17 @@ export function getShowEntriesWithHorseStats(showId) {
   });
 }
 
+// A conformation entry needs a groom (validated only by the conformation entry
+// route); a groomless entry would fail settlement for the whole show.
+export const CONFORMATION_ENTRY_ONLY_MESSAGE =
+  'Conformation shows take entries through the conformation entry, where a groom presents the horse.';
+
 export function getShowForEntry(showId) {
   return prisma.show.findUnique({
     where: { id: showId },
     select: {
       id: true,
+      showType: true,
       status: true,
       closeDate: true,
       entryFee: true,
@@ -157,8 +164,10 @@ export function enterShowDeferredTx({ show, showId, horseId, userId, horseLevel 
         // ENTRY_CLOSED to roll back the fee debit + escrow credit + entry
         // (surfaced as HTTP 409 by the route). Free shows carry no natural
         // increment, so increment:0 still performs the status-scoped lock+recheck.
+        // Equoria-mwjst: the same shared predicate re-checks the open/close
+        // window, so an entry can never commit outside it.
         const stillOpen = await tx.show.updateMany({
-          where: { id: showId, status: 'open' },
+          where: openForEntriesWhere(showId),
           data: { feeEscrow: { increment: show.entryFee } },
         });
         if (stillOpen.count === 0) {

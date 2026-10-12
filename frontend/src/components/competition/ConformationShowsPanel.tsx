@@ -17,9 +17,10 @@ import { formatDate } from '@/lib/formatDate';
 import { useCompetitions } from '@/hooks/api/useCompetitions';
 import { useHorses } from '@/hooks/api/useHorses';
 import ConformationEntryModal from '@/components/competition/ConformationEntryModal';
+import Currency from '@/components/ui/Currency';
 
 interface SelectedEntry {
-  show: { id: number; name: string };
+  show: { id: number; name: string; entryFee: number };
   horse: { id: number; name: string; sex?: string };
 }
 
@@ -41,7 +42,7 @@ const ConformationShowsPanel = (): JSX.Element => {
     const horse = horses.find((h) => h.id === selectedHorseId);
     if (!show || !horse) return;
     setEntry({
-      show: { id: show.id, name: show.name },
+      show: { id: show.id, name: show.name, entryFee: show.entryFee },
       horse: { id: horse.id, name: horse.name, sex: horse.sex ?? horse.gender },
     });
   };
@@ -136,6 +137,10 @@ const ConformationShowsPanel = (): JSX.Element => {
                     {s.discipline} · {formatDate(s.date)}
                   </div>
                 </div>
+                {/* Equoria-wgfbf: entry debits this fee (Equoria-mwjst). */}
+                <span className="text-gray-700" data-testid={`conformation-show-fee-${s.id}`}>
+                  Entry: <Currency amount={s.entryFee} zeroLabel="Free" />
+                </span>
               </li>
             ))}
           </ul>

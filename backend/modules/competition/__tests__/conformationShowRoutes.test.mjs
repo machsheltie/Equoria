@@ -17,9 +17,11 @@
  * Rate limiters are real but the tests stay well below their thresholds.
  *
  * The route file (modules/competition/routes/conformationShowRoutes.mjs)
- * is mostly imports + validator chain declarations + 4 router.post/get
+ * is mostly imports + validator chain declarations + 3 router.post/get
  * calls — exercising any 400/non-400 path proves the wiring loads and
- * the chains run.
+ * the chains run. The host-triggered POST /execute was removed
+ * (Equoria-mwjst, owner ruling 2026-10-05: the nightly show job settles
+ * conformation shows); its old validation cases became the not-a-route check.
  *
  * Note: the full HTTP path (real app.mjs mount, CSRF, ownership against a real
  * owned horse) is covered separately by conformationShowRoutesHttp.integration.test.mjs.
@@ -75,16 +77,13 @@ describe('conformationShowRoutes', () => {
     expect(Array.isArray(conformationShowRoutes.stack)).toBe(true);
   });
 
-  it('registers the four expected routes', () => {
+  it('registers exactly the three player routes and no settlement route (Equoria-mwjst)', () => {
     // The router's stack contains middleware + each route layer
     const paths = conformationShowRoutes.stack
       .filter(layer => layer.route)
       .map(layer => `${Object.keys(layer.route.methods)[0].toUpperCase()} ${layer.route.path}`);
 
-    expect(paths).toContain('POST /enter');
-    expect(paths).toContain('GET /eligibility/:horseId');
-    expect(paths).toContain('POST /execute');
-    expect(paths).toContain('GET /titles/:horseId');
+    expect([...paths].sort()).toEqual(['GET /eligibility/:horseId', 'GET /titles/:horseId', 'POST /enter']);
   });
 
   it('rejects unauthenticated requests with 401 before validation runs', async () => {
@@ -161,17 +160,11 @@ describe('conformationShowRoutes', () => {
     });
   });
 
-  describe('POST /execute validation', () => {
-    it('rejects missing showId with 400', async () => {
+  describe('POST /execute is not a route (Equoria-mwjst)', () => {
+    it('an authenticated, well-formed settle request finds no route (404)', async () => {
       const app = makeApp();
-      const res = await auth(request(app).post('/conformation/execute')).send({});
-      expect(res.status).toBe(400);
-    });
-
-    it('rejects non-integer showId with 400', async () => {
-      const app = makeApp();
-      const res = await auth(request(app).post('/conformation/execute')).send({ showId: 'oops' });
-      expect(res.status).toBe(400);
+      const res = await auth(request(app).post('/conformation/execute')).send({ showId: 1 });
+      expect(res.status).toBe(404);
     });
   });
 

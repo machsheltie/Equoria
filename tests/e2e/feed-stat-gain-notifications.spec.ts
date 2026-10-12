@@ -17,6 +17,7 @@
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { seedOwnedHorse } from './fixtures/ownedHorses';
+import { markHorseFedTwoDaysAgo } from './fixtures/feedHistory';
 
 test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)', () => {
   let session: AuthedSession;
@@ -103,21 +104,16 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     test.setTimeout(180_000);
 
     // Step 1 — feed up to 20 times via API, watching for any statBoost.
-    // Each feed call sets lastFedDate=today; reset-last-fed lets us do back-to-back
-    // feeds within one test run. statRollPct for performance is non-zero so at
+    // Each feed call sets lastFedDate=today; the feedHistory fixture backdates
+    // it in the test database between feeds (Equoria-mwjst — no production
+    // route may rewind it). statRollPct for performance is non-zero so at
     // least one of 20 attempts should fire a stat_gain notification.
     let statBoostFired = false;
     let attempts = 0;
     while (attempts < 20 && !statBoostFired) {
-      // Rewind lastFedDate by 1 day so the next feed proceeds.
+      // Give the horse earlier feeding history so the next feed proceeds.
       if (attempts > 0) {
-        const resetRes = await csrfMutate(
-          session,
-          'POST',
-          `/api/v1/horses/${horseId}/reset-last-fed`,
-          { days: 1 }
-        );
-        expect(resetRes.ok(), `reset-last-fed failed at attempt ${attempts}`).toBeTruthy();
+        await markHorseFedTwoDaysAgo(horseId);
       }
 
       const feedRes = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/feed`);
@@ -199,11 +195,8 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     // string matches that format AND, on a non-stat-gain feed, has no suffix.
     test.setTimeout(180_000);
 
-    // Make sure the test horse can be fed via the UI.
-    const resetRes = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/reset-last-fed`, {
-      days: 1,
-    });
-    expect(resetRes.ok(), 'reset-last-fed failed before UI feed').toBeTruthy();
+    // Make sure the test horse can be fed via the UI (test-database fixture).
+    await markHorseFedTwoDaysAgo(horseId);
 
     // Navigate to the horse detail page and wait for the action bar to mount.
     await page.goto(`/horses/${horseId}`, { waitUntil: 'load' });
@@ -221,11 +214,8 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
 
     for (let i = 0; i < 20 && !statGainToastCaptured; i++) {
       if (i > 0) {
-        const r = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/reset-last-fed`, {
-          days: 1,
-        });
-        expect(r.ok(), `reset-last-fed failed at UI attempt ${i}`).toBeTruthy();
-        // Reload so the page picks up the reset lastFedDate and re-enables the button.
+        await markHorseFedTwoDaysAgo(horseId);
+        // Reload so the page picks up the backdated lastFedDate and re-enables the button.
         await page.reload({ waitUntil: 'load' });
         await expect(page.getByTestId('action-feed')).toBeEnabled({ timeout: 15_000 });
       }

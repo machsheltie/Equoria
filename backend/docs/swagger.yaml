@@ -863,10 +863,16 @@ paths:
       description: |
         Registers a horse + groom pair into a conformation-type show. The horse
         and groom must both be owned by the authenticated user; the show must
-        have `showType === 'conformation'`. Returns 400 on critical-health,
-        validation failure, or non-conformation show; 404 on horse-ownership
-        failure (IDOR doctrine — indistinguishable from not-found); 409 on
-        duplicate entry.
+        have `showType === 'conformation'`. Uses the regular-show entry
+        transaction (Equoria-mwjst): the show's entryFee is debited into show
+        escrow and the entry records it as feePaid, the entry window and the
+        horse's XP-level bracket are enforced, all atomically. Returns 400 on
+        critical-health, validation failure, out-of-bracket level, or
+        non-conformation show; 402 when the entrant cannot afford the fee; 404
+        on horse-ownership failure (IDOR doctrine — indistinguishable from
+        not-found); 409 on duplicate entry or when the show is not open for
+        entries. There is no settle endpoint: the nightly show job settles a
+        conformation show once its closing date has passed.
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -901,6 +907,9 @@ paths:
                         type: string
                         description: "Resolved age class (e.g. 'foal', 'mature')."
                       className: { type: string }
+                      feePaid:
+                        type: integer
+                        description: "The entry fee debited (the show's configured entryFee)."
                       warnings:
                         type: array
                         items: { type: string }
@@ -946,56 +955,6 @@ paths:
                       groomAssigned: { type: boolean }
         '400': { description: 'Validation error on horseId param' }
         '404': { description: 'Horse not found / not owned by user (IDOR)' }
-
-  /competition/conformation/execute:
-    post:
-      tags: [Competition]
-      summary: 'Execute a conformation show (host only)'
-      description: |
-        Scores all entered horses, ranks them, and writes titlePoints +
-        breedingValueBoost to each. Authorization is host-gated (Equoria-dmec
-        / 31F-3): non-host callers receive 404 (CWE-639 doctrine — does not
-        leak the show's existence). No prize money is awarded for conformation
-        shows.
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [showId]
-              properties:
-                showId: { type: integer, minimum: 1 }
-      responses:
-        '200':
-          description: 'Show executed'
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  data:
-                    type: object
-                    properties:
-                      showId: { type: integer }
-                      results:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            entryId: { type: integer }
-                            horseId: { type: integer }
-                            horseName: { type: string }
-                            finalScore: { type: number }
-                            placement: { type: integer }
-                            ribbon: { type: string, nullable: true }
-                            titlePoints: { type: integer }
-                            newTitle: { type: string, nullable: true }
-                            breedingValueBoost: { type: number }
-        '400': { description: 'Validation failure or unrecoverable service error' }
-        '404': { description: 'Show not found or caller is not the host (host-only gate, CWE-639)' }
 
   '/competition/conformation/titles/{horseId}':
     get:
@@ -1136,16 +1095,6 @@ paths:
         '201': { description: 'Foal created' }
         '400': { description: 'Breeding not eligible' }
         '401': { description: Unauthorized }
-
-  '/foals/{foalId}/develop':
-    post:
-      tags: [Breeding]
-      summary: 'Trigger foal development step'
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - { name: foalId, in: path, required: true, schema: { type: integer } }
-      responses:
-        '200': { description: 'Foal development step completed' }
 
   '/foals/{foalId}/interact':
     post:

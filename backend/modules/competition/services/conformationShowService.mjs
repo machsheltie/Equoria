@@ -25,6 +25,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { settleShowFeeEscrowInTx } from '../shows/showEscrowTx.mjs';
 
 import {
   CONFORMATION_SHOW_CONFIG,
@@ -218,21 +219,74 @@ export async function validateConformationEntry(horse, groom, className, userId)
 }
 
 // ---------------------------------------------------------------------------
-// executeConformationShow (AC1)
+// executeConformationShow — nightly settlement of one due show (AC1)
 // ---------------------------------------------------------------------------
 
 /**
- * Execute a conformation show: score all entries, rank, distribute rewards,
- * persist CompetitionResult per horse, update Horse title fields.
+ * Thrown when a conformation show is asked to settle before its closeDate
+ * (Equoria-mwjst). Owner ruling 2026-10-05: conformation shows run exactly 7
+ * days from creation and are settled by the nightly show job — never early. A
+ * show with no closeDate has no due time and never settles.
+ */
+export class ConformationShowNotDueError extends Error {
+  constructor(showId, closeDate) {
+    super(
+      closeDate
+        ? `Conformation show ${showId} is not due for settlement until ${new Date(closeDate).toISOString()}`
+        : `Conformation show ${showId} has no closing date, so it is not due for settlement`,
+    );
+    this.name = 'ConformationShowNotDueError';
+    this.statusCode = 409;
+    this.showId = showId;
+  }
+}
+
+/**
+ * Thrown when the show was already settled, or another settlement claimed it
+ * first (Equoria-08ln idempotency). Message and 400 status are the established
+ * contract; the nightly executor reads this as "another run won", not a fault.
+ */
+export class ConformationShowAlreadySettledError extends Error {
+  constructor(showId) {
+    super('Show already executed');
+    this.name = 'ConformationShowAlreadySettledError';
+    this.statusCode = 400;
+    this.showId = showId;
+  }
+}
+
+/**
+ * Settle one due conformation show: score every entry against its real
+ * handler, rank, award ribbons, title points, titles and breeding-value boosts,
+ * write a CompetitionResult per horse (no prize money, AC4), complete the show,
+ * and pay its entry-fee escrow to the creator (or burn it).
  *
- * Returns the full results array so the controller can build the HTTP response.
+ * The production caller is the nightly executor (showController
+ * .executeClosedShows). The host-triggered POST /execute that used to call this
+ * on any open show was removed (Equoria-mwjst).
+ *
+ * Exactly-once and on time — ONE transaction (Equoria-08ln + Equoria-mwjst):
+ *   1. the atomic claim `open → executing`, WHERE the show is still open, is a
+ *      conformation show AND its closeDate has passed. The due predicate is in
+ *      the same statement as the state transition, so neither an early call
+ *      nor a concurrent second settlement can get past it;
+ *   2. the entries are read AFTER the claim, on the transaction, so the scored
+ *      set is the final one;
+ *   3. rewards, results, the completion write and the fee-escrow settlement
+ *      follow on the same transaction. Any failure (e.g. a missing handler)
+ *      rolls ALL of it back, claim included: the show stays open, unscored and
+ *      unpaid, and the next nightly run tries again.
  *
  * @param {number} showId
+ * @param {{ now?: Date }} [options] - the settlement clock (the executor's run time)
  * @returns {Promise<Array<{horseId, placement, score, ribbon, titlePoints, newTitle, breedingValueBoost}>>}
- * @throws {Error} with .statusCode set to 400 for bad showId / wrong show type
+ * @throws {Error} statusCode 400 for a missing or non-conformation show
+ * @throws {ConformationShowAlreadySettledError} already settled or claimed
+ * @throws {ConformationShowNotDueError} closeDate has not passed
+ * @throws {ConformationGroomMissingError} an entry has no active handler
  */
-export async function executeConformationShow(showId) {
-  // Load show
+export async function executeConformationShow(showId, { now = new Date() } = {}) {
+  // Fast-path reads only; the claim inside the transaction is the authority.
   const show = await prisma.show.findUnique({ where: { id: showId } });
   if (!show) {
     const err = new Error('Show not found');
@@ -244,123 +298,87 @@ export async function executeConformationShow(showId) {
     err.statusCode = 400;
     throw err;
   }
-
-  // Idempotency guard (Equoria-08ln). A second call on an already-executed
-  // show would double-pay titlePoints + breedingValueBoost and insert
-  // duplicate CompetitionResult rows. The pre-transaction read here is the
-  // fast-path reject; the atomic flip inside $transaction below is the
-  // race-condition guard. Both are required: without the pre-read every
-  // duplicate call pays the full DB cost; without the atomic flip two
-  // concurrent calls can both pass the pre-read and double-execute.
-  if (show.status === 'completed') {
-    const err = new Error('Show already executed');
-    err.statusCode = 400;
-    throw err;
+  if (show.status !== 'open') {
+    throw new ConformationShowAlreadySettledError(showId);
+  }
+  if (!show.closeDate || new Date(show.closeDate) > now) {
+    throw new ConformationShowNotDueError(showId, show.closeDate);
   }
 
-  // Load all entries with horse + active groom assignment + groom
-  const entries = await prisma.showEntry.findMany({
-    where: { showId },
-    include: {
-      horse: true,
-    },
-    orderBy: { createdAt: 'asc' },
-  });
-
-  if (entries.length === 0) {
-    return [];
-  }
-
-  // Resolve the active groom (handler) for every entry. Equoria-axad9.1:
-  // do NOT fabricate a placeholder groom when none is assigned — that would
-  // silently award a real handler-score component to a horse with no handler.
-  // Entry validation already requires an active assignment, so a null groom
-  // here is a data-integrity anomaly; fail honest below.
-  const resolved = await Promise.all(
-    entries.map(async entry => {
-      const horse = entry.horse;
-      const assignment = await prisma.groomAssignment.findFirst({
-        where: { foalId: horse.id, isActive: true },
-        include: { groom: true },
-      });
-      return { entry, horse, groom: assignment?.groom ?? null };
-    }),
-  );
-
-  // Fail honest: surface every entry that lost its handler before scoring.
-  const missingGroomHorseIds = resolved.filter(r => r.groom === null).map(r => r.horse.id);
-  if (missingGroomHorseIds.length > 0) {
-    logger.error(
-      `[conformationShowService] Show ${showId} has ${missingGroomHorseIds.length} entr(y/ies) with no active groom: ${missingGroomHorseIds.join(', ')}`,
-    );
-    throw new ConformationGroomMissingError(missingGroomHorseIds);
-  }
-
-  // Score each entry against its REAL handler. className is score-irrelevant
-  // (see SCORE_NEUTRAL_CONFORMATION_CLASS) and there is no per-entry class
-  // column to read, so the score-neutral default satisfies class validation.
-  const scored = resolved.map(({ entry, horse, groom }) => {
-    const { finalScore } = calculateConformationShowScore(
-      horse,
-      groom,
-      SCORE_NEUTRAL_CONFORMATION_CLASS,
-    );
-    return { entry, horse, finalScore };
-  });
-
-  // Rank by score descending, ties broken by entry creation order (already asc)
-  scored.sort((a, b) => b.finalScore - a.finalScore);
-
-  // Build results and persist via transaction
-  const results = [];
-
-  // Equoria-2ksil: the ONLY caller of executeConformationShow is the
-  // client-facing POST /api/v1/competition/conformation/execute handler
-  // (conformationShowController.executeConformationShowHandler). There is no
-  // cron/executor caller of THIS transaction (the daily show-execution cron
-  // path lives in showController.executeClosedShows, which is separately and
-  // intentionally left unwrapped). So a transient P2028 interactive-transaction
-  // timeout here should reach that client as a retryable 503
-  // (RetryableTransactionError) rather than a permanent 500. The wrap rethrows
-  // a 503 on timeout and leaves the in-tx 400 idempotency rejects (thrown
-  // Errors with statusCode:400) and every genuine fault unchanged.
-  await withRetryableTxMapping(
+  // Equoria-2ksil: a transient P2028 interactive-transaction timeout becomes a
+  // retryable 503 (RetryableTransactionError); the in-transaction rejections
+  // above and every genuine fault are rethrown unchanged.
+  return withRetryableTxMapping(
     prisma.$transaction(
       async tx => {
-        // Atomic idempotency claim (Equoria-08ln race-condition guard).
-        // updateMany with a `status: 'open'` predicate succeeds with count=1
-        // only when no concurrent caller has flipped the row yet. Two
-        // simultaneous executors race here; whichever wins gets count=1 and
-        // continues; the loser gets count=0 and throws. Pre-transaction read
-        // above + this atomic flip together fully close the gap.
         const claim = await tx.show.updateMany({
-          where: { id: showId, status: 'open' },
+          where: { id: showId, status: 'open', showType: 'conformation', closeDate: { lte: now } },
           data: { status: 'executing' },
         });
         if (claim.count === 0) {
-          const err = new Error('Show already executed');
-          err.statusCode = 400;
-          throw err;
+          const current = await tx.show.findUnique({
+            where: { id: showId },
+            select: { status: true, closeDate: true },
+          });
+          if (current?.status === 'open') {
+            throw new ConformationShowNotDueError(showId, current.closeDate);
+          }
+          throw new ConformationShowAlreadySettledError(showId);
         }
 
+        const entries = await tx.showEntry.findMany({
+          where: { showId },
+          include: { horse: true },
+          orderBy: { createdAt: 'asc' },
+        });
+
+        // Resolve the active groom (handler) for every entry. Equoria-axad9.1:
+        // never fabricate a placeholder groom — that would award a real
+        // handler-score component to a horse with no handler. Entry validation
+        // requires an active assignment, so a missing one is a data-integrity
+        // anomaly; fail honest, which rolls the claim back.
+        const resolved = [];
+        for (const entry of entries) {
+          const assignment = await tx.groomAssignment.findFirst({
+            where: { foalId: entry.horse.id, isActive: true },
+            include: { groom: true },
+          });
+          resolved.push({ entry, horse: entry.horse, groom: assignment?.groom ?? null });
+        }
+        const missingGroomHorseIds = resolved.filter(r => r.groom === null).map(r => r.horse.id);
+        if (missingGroomHorseIds.length > 0) {
+          logger.error(
+            `[conformationShowService] Show ${showId} has ${missingGroomHorseIds.length} entr(y/ies) with no active groom: ${missingGroomHorseIds.join(', ')}`,
+          );
+          throw new ConformationGroomMissingError(missingGroomHorseIds);
+        }
+
+        // Score each entry against its REAL handler. className is score-irrelevant
+        // (see SCORE_NEUTRAL_CONFORMATION_CLASS) and there is no per-entry class
+        // column to read, so the score-neutral default satisfies class validation.
+        const scored = resolved.map(({ horse, groom }) => {
+          const { finalScore } = calculateConformationShowScore(
+            horse,
+            groom,
+            SCORE_NEUTRAL_CONFORMATION_CLASS,
+          );
+          return { horse, finalScore };
+        });
+
+        // Rank by score descending; ties keep entry creation order (already asc).
+        scored.sort((a, b) => b.finalScore - a.finalScore);
+
+        const results = [];
         for (let i = 0; i < scored.length; i++) {
           const { horse, finalScore } = scored[i];
           const placement = i + 1;
           const { ribbon, titlePoints: tpAwarded, breedingBoostDelta } = resolveReward(placement);
 
-          // Equoria-bvddn.21: `horse` here is a PRE-transaction read (from the
-          // entries.findMany above, taken before this $transaction opened).
-          // Two concurrent executions that both include this horse read the
-          // same stale titlePoints and, if each wrote a precomputed total,
-          // the second write would blindly clobber the first's — losing
-          // title points under concurrency. Instead, increment titlePoints
-          // in the DATABASE inside this transaction (Prisma `{ increment }`
-          // compiles to an atomic `SET titlePoints = titlePoints + n` on the
-          // DB side), and derive the title from the value the update
-          // RETURNS — the true post-increment total — not from the stale
-          // pre-read. breedingValueBoost keeps its existing (out-of-scope)
-          // precomputed-write behaviour; only titlePoints/currentTitle are
-          // in scope for this fix.
+          // Equoria-bvddn.21: titlePoints is incremented IN the database
+          // (`{ increment }` → `SET titlePoints = titlePoints + n`) and the title
+          // is derived from the value the update RETURNS, so two settlements
+          // that share a horse cannot clobber each other's points.
+          // breedingValueBoost keeps its precomputed-write behaviour.
           const newBoost = applyBreedingValueBoost(
             horse.breedingValueBoost ?? 0,
             breedingBoostDelta,
@@ -382,7 +400,7 @@ export async function executeConformationShow(showId) {
             });
           }
 
-          // Create CompetitionResult — no prizeWon (AC4)
+          // CompetitionResult — no prizeWon (AC4)
           await tx.competitionResult.create({
             data: {
               horseId: horse.id,
@@ -390,7 +408,7 @@ export async function executeConformationShow(showId) {
               score: finalScore,
               placement: String(placement),
               discipline: 'conformation',
-              runDate: new Date(),
+              runDate: now,
               showName: show.name ?? `Show #${showId}`,
               prizeWon: null,
               statGains: { ribbon, titlePoints: tpAwarded },
@@ -408,18 +426,64 @@ export async function executeConformationShow(showId) {
           });
         }
 
-        // Finalise the idempotency claim — flip from 'executing' to 'completed'
-        // inside the same transaction so a future call gets rejected by both
-        // the pre-transaction read and the atomic flip above. Equoria-08ln.
         await tx.show.update({
           where: { id: showId },
-          data: { status: 'completed', executedAt: new Date() },
+          data: { status: 'completed', executedAt: now },
         });
+
+        // Equoria-mwjst: the entry fees leave escrow for the creator (or the
+        // burn account) on the SAME transaction as the results, so a show is
+        // never paid out without being scored, or scored without being paid.
+        await settleShowFeeEscrowInTx(tx, showId);
+
+        return results;
       },
       { timeout: 30000 },
     ),
     { message: 'The server is busy executing the show, please retry in a moment.' },
   );
+}
 
-  return results;
+/**
+ * Nightly dispatch (Equoria-mwjst): settle every due conformation show — still
+ * open, closeDate passed — through executeConformationShow. Called by
+ * showController.executeClosedShows, whose ridden scan excludes conformation
+ * shows so they are never scored as ridden shows.
+ *
+ * A show another run settled first is skipped. A show that fails is logged and
+ * left open (its transaction rolled back) while the rest still settle; the run
+ * then throws so the failure surfaces to the executor instead of vanishing.
+ *
+ * @param {{ now?: Date, showIds?: number[] | null }} [options] - showIds narrows
+ *   the scan exactly as executeClosedShows' test-isolation filter does.
+ * @returns {Promise<number>} how many shows this run settled
+ */
+export async function settleDueConformationShows({ now = new Date(), showIds = null } = {}) {
+  const where = { status: 'open', showType: 'conformation', closeDate: { lte: now } };
+  if (Array.isArray(showIds) && showIds.length > 0) {
+    where.id = { in: showIds };
+  }
+  const due = await prisma.show.findMany({ where, select: { id: true }, orderBy: { id: 'asc' } });
+
+  let settled = 0;
+  const failedShowIds = [];
+  for (const { id } of due) {
+    try {
+      await executeConformationShow(id, { now });
+      settled++;
+    } catch (error) {
+      if (error instanceof ConformationShowAlreadySettledError) {
+        logger.info(`[conformationShowService] Show ${id} was already settled by another run`);
+        continue;
+      }
+      logger.error(
+        `[conformationShowService] Settling conformation show ${id} failed: ${error.message}`,
+      );
+      failedShowIds.push(id);
+    }
+  }
+  if (failedShowIds.length > 0) {
+    throw new Error(`Conformation show settlement failed for show(s) ${failedShowIds.join(', ')}`);
+  }
+  return settled;
 }

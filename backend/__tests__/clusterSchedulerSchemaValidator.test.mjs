@@ -1,5 +1,5 @@
 /**
- * clusterManager + showScheduler + schemaValidator + dailyCareAutomation constants
+ * clusterManager + schemaValidator + dailyCareAutomation constants
  * unit tests (Equoria-rr7 coverage sprint).
  *
  * All tested exports are pure sync (cluster, scheduler control) or near-pure
@@ -7,16 +7,10 @@
  * No horse or user fixture needed.
  */
 
-import { describe, it, expect, afterEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { getWorkerCount, shouldUseCluster } from '../utils/clusterManager.mjs';
-import { startShowScheduler, stopShowScheduler } from '../utils/showScheduler.mjs';
 import { validateDatabaseSchema } from '../utils/schemaValidator.mjs';
 import { DAILY_CARE_ROUTINES } from '../utils/dailyCareAutomation.mjs';
-
-afterEach(() => {
-  // Ensure scheduler is always stopped after each test to avoid open handles
-  stopShowScheduler();
-});
 
 // ── clusterManager ────────────────────────────────────────────────────────────
 
@@ -52,27 +46,6 @@ describe('shouldUseCluster', () => {
 
   it('respects CLUSTER_ENABLED=false', () => {
     expect(shouldUseCluster({ CLUSTER_ENABLED: 'false', NODE_ENV: 'production' })).toBe(false);
-  });
-});
-
-// ── showScheduler ─────────────────────────────────────────────────────────────
-
-describe('startShowScheduler', () => {
-  it('starts without error and can be stopped', () => {
-    expect(() => startShowScheduler()).not.toThrow();
-    expect(() => stopShowScheduler()).not.toThrow();
-  });
-
-  it('is idempotent — calling start twice does not error', () => {
-    startShowScheduler();
-    expect(() => startShowScheduler()).not.toThrow();
-    stopShowScheduler();
-  });
-});
-
-describe('stopShowScheduler', () => {
-  it('calling stop when not started does not error', () => {
-    expect(() => stopShowScheduler()).not.toThrow();
   });
 });
 

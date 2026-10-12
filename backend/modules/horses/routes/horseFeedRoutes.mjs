@@ -2,13 +2,16 @@
  * Horse Feed Sub-Router (Equoria-y8u2j split)
  *
  * Extracted from backend/modules/horses/routes/horseRoutes.mjs as part of the
- * god-file split. Owns the 5 feed/equippable endpoints under /horses/:id/...
+ * god-file split. Owns the 4 feed/equippable endpoints under /horses/:id/...
  *
  *   POST   /:id/equip-feed       — equip a feed type from user's inventory
  *   POST   /:id/unequip-feed     — clear the horse's equipped feed type
  *   POST   /:id/feed             — daily feed action (inventory decrement)
- *   POST   /:id/reset-last-fed   — owner test-helper: rewind lastFedDate
  *   GET    /:id/equippable       — list tack + feed items equippable on horse
+ *
+ * No route here may move `lastFedDate` (Equoria-mwjst): it is the daily feed
+ * authority and only the feed claim writes it. Tests that need feeding history
+ * write the fixture row directly in the test database.
  *
  * Mounting: this router is mounted at the SAME path as the parent
  * (`router.use(horseFeedRoutes)` in horseRoutes.mjs). All routes start with
@@ -31,7 +34,6 @@ import {
   feedHorseHandler,
   getEquippableHandler,
 } from '../controllers/horseFeedController.mjs';
-import { resetHorseLastFed } from '../controllers/horseController.mjs';
 import { validateHorseId } from './_validators.mjs';
 
 const router = express.Router();
@@ -88,23 +90,6 @@ router.post(
   authenticateToken,
   requireOwnership('horse'),
   feedHorseHandler,
-);
-
-/**
- * POST /horses/:id/reset-last-fed
- * Owner-scoped test/fixture helper: rewinds the horse's lastFedDate so the
- * same-day feed gate (alreadyFedToday) no longer blocks a subsequent feed.
- * Body: { days?: number } (default 1, max 30).
- *
- * See horseController.resetHorseLastFed for full rationale (Equoria-4sqr).
- */
-router.post(
-  '/:id/reset-last-fed',
-  mutationRateLimiter,
-  validateHorseId,
-  authenticateToken,
-  requireOwnership('horse'),
-  resetHorseLastFed,
 );
 
 /**

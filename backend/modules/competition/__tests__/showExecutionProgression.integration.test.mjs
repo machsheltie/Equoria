@@ -417,9 +417,14 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
       select: { money: true, xp: true, level: true },
     });
 
-    // Execute — the entry tx aborts with P2002; executor swallows in its outer
-    // catch (res=null). No throw escapes to the test.
-    await executeClosedShows({ body: { showIds: [show.id] } }, null);
+    // Execute — the entry tx aborts with P2002. With no res (the cron path) the
+    // executor now rethrows so the nightly job records a failure (Codex review
+    // 2026-10-06, finding 2; old contract: swallowed, nothing escaped).
+    // (Matched by Prisma's error code: its error object can come from another
+    // module realm, which `.rejects.toThrow` does not recognise as an Error.)
+    await expect(executeClosedShows({ body: { showIds: [show.id] } }, null)).rejects.toMatchObject({
+      code: 'P2002',
+    });
 
     // Full rollback: no XP, no stat, no money — and no NEW result row.
     const after = await prisma.horse.findUnique({

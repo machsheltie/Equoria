@@ -144,15 +144,10 @@ describe('Foal routes auth enforcement (real DB)', () => {
     expect(response.body.message).toBe('Access token is required');
   });
 
-  it('rejects unauthenticated access to advance-day', async () => {
-    const response = await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/advance-day`)
-      .set('Origin', 'http://localhost:3000')
-      .expect(401);
-
-    expect(response.body.success).toBe(false);
-    expect(response.body.message).toBe('Access token is required');
-  });
+  // Equoria-mwjst: the 'rejects unauthenticated access to advance-day' case
+  // was removed with the route itself (owner ruling 2026-10-05: no advance
+  // day). Router-level authenticateToken still answers 401 for that path,
+  // so the case could only re-prove auth, never anything about the route.
 
   it('rate limits foal activity endpoints — 429 on Nth+1 request', async () => {
     // First two requests count toward the per-user limit (any status is fine

@@ -48,9 +48,8 @@ router.post('/create', createShow);
  * a non-admin is rejected before requireAdminMfa ever runs (no MFA-message leak
  * to non-admins).
  *
- * The scheduled cron / showScheduler path is UNAFFECTED: it calls
- * `executeClosedShows()` directly in-process (see
- * `backend/services/cronJobs.mjs` and `backend/utils/showScheduler.mjs`),
+ * The nightly cron path is UNAFFECTED: it calls `executeClosedShows()`
+ * directly in-process (see `backend/services/jobs/nightlyShowExecutionJob.mjs`),
  * NOT over HTTP — so it never passes through this middleware chain.
  */
 router.post(
