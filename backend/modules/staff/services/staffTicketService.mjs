@@ -4,7 +4,8 @@
  * Moderators file tickets for the admin. Every write is one transaction that
  * also creates the in-game notifications and the staff action-log entry.
  * Bells are finalized and emails sent only after commit; an email failure is
- * logged and never thrown, so the ticket and its bell always stand.
+ * logged and never thrown, so the ticket and its bell always stand. Emails are
+ * not awaited: a slow or hung mail server never delays the filing response.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -42,9 +43,20 @@ function finalizeAll(notes) {
 async function emailAdmin(admin, details) {
   try {
     await sendStaffTicketEmail(admin.email, details);
+    return { to: admin.email, sent: true };
   } catch (error) {
     logger.error(`[staff] ticket email failed for ticket ${details.ticketId}: ${error.message}`);
+    return { to: admin.email, sent: false, error: error.message };
   }
+}
+
+// The most recent filing's email batch. One reference, overwritten per filing,
+// so nothing accumulates; tests await it to see real delivery outcomes.
+let lastTicketEmails = Promise.resolve([]);
+
+/** Test-only: the per-admin outcomes of the most recent filing's emails. */
+export function _lastTicketEmails() {
+  return lastTicketEmails;
 }
 
 export async function fileTicket(staff, { targetType, targetId, category, note }) {
@@ -78,15 +90,14 @@ export async function fileTicket(staff, { targetType, targetId, category, note }
   });
 
   finalizeAll(notes);
-  for (const admin of admins) {
-    if (admin.emailVerified === true && admin.email) {
-      await emailAdmin(admin, {
-        ticketId: ticket.id,
-        category,
-        filedBy: filer?.username ?? 'A moderator',
-      });
-    }
-  }
+  const details = { ticketId: ticket.id, category, filedBy: filer?.username ?? 'A moderator' };
+  const batch = Promise.allSettled(
+    admins
+      .filter(admin => admin.emailVerified === true && admin.email)
+      .map(admin => emailAdmin(admin, details)),
+  ).then(results => results.map(result => result.value));
+  // Deliberately not awaited; emailAdmin never rejects, so nothing goes unhandled.
+  lastTicketEmails = batch;
   return { ticket };
 }
 

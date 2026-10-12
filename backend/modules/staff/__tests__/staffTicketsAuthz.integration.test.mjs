@@ -5,18 +5,21 @@
  * Covers who may file, read, reply and change status; that a moderator sees
  * only their own tickets (another's reads as 404); that filing writes the
  * ticket, the admin bell and the log entry together; the admin email through
- * the real email service (EMAIL_CAPTURE_FILE sink); and that a real SMTP
- * failure never costs the ticket or the bell.
+ * the real email service (EMAIL_CAPTURE_FILE sink); that a real SMTP
+ * failure never costs the ticket or the bell; and that a mail server that
+ * accepts but never answers does not hold up the 201.
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import { existsSync, readFileSync } from 'node:fs';
+import net from 'node:net';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { _resetTransporter } from '../../../utils/emailService.mjs';
+import { _lastTicketEmails } from '../services/staffTicketService.mjs';
 import {
   ORIGIN,
   checkIn,
@@ -70,6 +73,65 @@ function ticketEmailsFor(email) {
     .map(line => JSON.parse(line))
     .filter(entry => entry.kind === 'staff-ticket' && entry.to === email);
 }
+
+const SMTP_KEYS = ['NODE_ENV', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
+
+/**
+ * File one ticket through the real email service in production mode, with
+ * SMTP pointed at 127.0.0.1:<port>. The env is restored once the response is
+ * in: the transport is built synchronously while the request is handled.
+ */
+async function fileWithSmtpPort(mod, modDevice, port) {
+  const csrf = await fetchCsrf(app, {
+    origin: ORIGIN,
+    extraCookies: cookiesFor(mod, modDevice),
+  });
+  const saved = { ...process.env };
+  Object.assign(process.env, {
+    NODE_ENV: 'production',
+    SMTP_HOST: '127.0.0.1',
+    SMTP_PORT: String(port),
+    SMTP_USER: 'nobody',
+    SMTP_PASS: 'nothing',
+  });
+  _resetTransporter();
+  try {
+    return await request(app)
+      .post(TICKETS)
+      .set('Origin', ORIGIN)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send(goodTicket());
+  } finally {
+    for (const key of SMTP_KEYS) {
+      if (saved[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = saved[key];
+      }
+    }
+    _resetTransporter();
+  }
+}
+
+// A local mail server that accepts connections and never says a word.
+const silentSockets = new Set();
+const silentSmtp = net.createServer(socket => {
+  silentSockets.add(socket);
+  socket.on('error', () => {});
+  socket.on('close', () => silentSockets.delete(socket));
+});
+
+beforeAll(async () => {
+  await new Promise(resolve => silentSmtp.listen(0, '127.0.0.1', resolve));
+});
+
+afterAll(async () => {
+  for (const socket of silentSockets) {
+    socket.destroy();
+  }
+  await new Promise(resolve => silentSmtp.close(resolve));
+});
 
 beforeAll(() => {
   const scope = () => ({ in: createdUserIds });
@@ -132,44 +194,49 @@ describe('Filing a ticket', () => {
 
   it('keeps the ticket and the bell and still answers 201 when SMTP really fails', async () => {
     const { admin, mod, modDevice } = await fixtureStaff();
-    const csrf = await fetchCsrf(app, {
-      origin: ORIGIN,
-      extraCookies: cookiesFor(mod, modDevice),
-    });
+
     // Real email service, real nodemailer transport, real refused connection:
-    // production mode with an SMTP host that nothing listens on.
-    const saved = { ...process.env };
-    Object.assign(process.env, {
-      NODE_ENV: 'production',
-      SMTP_HOST: '127.0.0.1',
-      SMTP_PORT: '1',
-      SMTP_USER: 'nobody',
-      SMTP_PASS: 'nothing',
-    });
-    _resetTransporter();
-    let res;
-    try {
-      res = await request(app)
-        .post(TICKETS)
-        .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send(goodTicket());
-    } finally {
-      for (const key of ['NODE_ENV', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS']) {
-        if (saved[key] === undefined) {
-          delete process.env[key];
-        } else {
-          process.env[key] = saved[key];
-        }
-      }
-      _resetTransporter();
-    }
+    // production mode with an SMTP port that nothing listens on.
+    const res = await fileWithSmtpPort(mod, modDevice, 1);
 
     expect(res.status).toBe(201);
     expect(await prisma.staffTicket.count({ where: { id: res.body.ticket.id } })).toBe(1);
     expect(await bells(admin.id, 'staff_ticket')).toHaveLength(1);
-    expect(ticketEmailsFor(admin.email)).toHaveLength(0);
+    // The delivery was really attempted and really failed, and was swallowed.
+    const outcome = (await _lastTicketEmails()).find(entry => entry.to === admin.email);
+    expect(outcome).toMatchObject({ sent: false });
+    expect(outcome.error).toMatch(/ECONNREFUSED/);
+  });
+
+  it('answers 201 while the admin email is still stuck on a silent mail server', async () => {
+    const { admin, mod, modDevice } = await fixtureStaff();
+
+    const started = Date.now();
+    const res = await fileWithSmtpPort(mod, modDevice, silentSmtp.address().port);
+    const elapsed = Date.now() - started;
+
+    expect(res.status).toBe(201);
+    expect(await prisma.staffTicket.count({ where: { id: res.body.ticket.id } })).toBe(1);
+    expect(await bells(admin.id, 'staff_ticket')).toHaveLength(1);
+    // nodemailer waits 30s for a greeting; the response did not.
+    expect(elapsed).toBeLessThan(10_000);
+
+    const batch = _lastTicketEmails();
+    const marker = Symbol('pending');
+    const raced = await Promise.race([batch, new Promise(resolve => setTimeout(() => resolve(marker), 200))]);
+    expect(raced).toBe(marker);
+    // The send really reached the mail server and is waiting on it.
+    for (let tries = 0; silentSockets.size === 0 && tries < 50; tries += 1) {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    expect(silentSockets.size).toBeGreaterThan(0);
+
+    // Hang up on every waiting send so nothing outlives the test.
+    for (const socket of silentSockets) {
+      socket.destroy();
+    }
+    const outcome = (await batch).find(entry => entry.to === admin.email);
+    expect(outcome).toMatchObject({ sent: false });
   });
 
   it('refuses an admin (no ticket.file), a player, and a moderator without a trusted browser', async () => {
