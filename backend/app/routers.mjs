@@ -97,6 +97,7 @@ import { forumRoutes, messageRoutes, clubRoutes } from '../modules/community/ind
 import { marketplaceRoutes } from '../modules/marketplace/index.mjs';
 import { bankRoutes } from '../modules/bank/index.mjs';
 import { craftingRoutes } from '../modules/crafting/index.mjs';
+import { staffRoutes } from '../modules/staff/index.mjs';
 
 /**
  * Build the three security routers with all routes mounted. Returns them for
@@ -233,7 +234,16 @@ export function buildRouters() {
   // ADMIN ROUTES (Admin role required)
   adminRouter.use('/', adminRoutes);
 
-  return { publicRouter, authRouter, adminRouter };
+  // STAFF ROUTES (Equoria-puj1e.1) — the Steward's Office API. Deliberately
+  // NO requireRole here: a non-staff caller must get the ordinary unknown-route
+  // 404, which the per-route staff guards (requireStaffRole /
+  // requireStaffCapability) decide after re-reading the role from the DB.
+  const staffRouter = express.Router();
+  staffRouter.use(authenticateToken);
+  staffRouter.use(csrfProtection);
+  staffRouter.use('/', staffRoutes);
+
+  return { publicRouter, authRouter, adminRouter, staffRouter };
 }
 
 // Equoria-7p4xe: the public `/api/v1/breeds` mount (no auth — needed for

@@ -508,7 +508,53 @@ If this was not you, change your password now — doing so cancels the pending c
   return { success: true, messageId: info?.messageId };
 }
 
+/**
+ * Send a Steward's Office check-in code to a staff account's verified address
+ * (Equoria-puj1e.1). The code is never written to the log; in non-production
+ * it reaches only the EMAIL_CAPTURE_FILE sink, like reset links do.
+ *
+ * @param {string} email - The staff account's verified address.
+ * @param {string} code - The 6-digit check-in code.
+ * @returns {Promise<Object>} Send result
+ */
+export async function sendStaffCheckinCodeEmail(email, code) {
+  const subject = "Your Steward's Office code";
+  const heading = "Steward's Office";
+  const line = `Your Steward's Office code is ${code}. It expires in 10 minutes.`;
+  const bodyHtml = `<p>${line}</p><p>If you did not ask for this code, change your password.</p>`;
+  const bodyText = `${line}\n\nIf you did not ask for this code, change your password.`;
+
+  const htmlEmail = generateEmailTemplate(subject, heading, bodyHtml);
+  const plainTextEmail = generatePlainTextEmail(heading, bodyText);
+
+  if (process.env.NODE_ENV !== 'production') {
+    captureEmailPreview('staff-checkin', { to: email, subject, preview: line });
+
+    logger.info("[EmailService] Steward's Office code (DEV MODE - not sent)", {
+      to: email,
+      subject,
+    });
+
+    return { success: true, messageId: `dev-mode-staff-checkin-${Date.now()}` };
+  }
+
+  const info = await sendViaSmtp({
+    to: email,
+    subject,
+    html: htmlEmail,
+    text: plainTextEmail,
+  });
+
+  logger.info("[EmailService] Steward's Office code sent", {
+    to: email,
+    messageId: info?.messageId,
+  });
+
+  return { success: true, messageId: info?.messageId };
+}
+
 export default {
+  sendStaffCheckinCodeEmail,
   sendVerificationEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,

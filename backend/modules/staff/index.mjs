@@ -5,3 +5,5 @@
  */
 
 export * from './capabilities.mjs';
+export * from './middleware/requireStaffCapability.mjs';
+export { default as staffRoutes } from './routes/staffRoutes.mjs';
