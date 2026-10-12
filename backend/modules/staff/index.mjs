@@ -6,4 +6,5 @@
 
 export * from './capabilities.mjs';
 export * from './middleware/requireStaffCapability.mjs';
+export { recordStaffActionTx, recordStaffFailure } from './services/staffActionLogService.mjs';
 export { default as staffRoutes } from './routes/staffRoutes.mjs';

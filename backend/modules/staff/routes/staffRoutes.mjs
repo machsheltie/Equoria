@@ -12,18 +12,18 @@
 import express from 'express';
 import { requireStaffCapability, requireStaffRole } from '../middleware/requireStaffCapability.mjs';
 import {
-  getCheckinStatus,
   getStaffMe,
   requestCheckin,
   verifyCheckin,
 } from '../controllers/staffCheckinController.mjs';
+import { getStaffLog } from '../controllers/staffLogController.mjs';
 
 const router = express.Router();
 
 router.post('/checkin/request', requireStaffRole, requestCheckin);
 router.post('/checkin/verify', requireStaffRole, verifyCheckin);
 router.get('/me', requireStaffRole, getStaffMe);
-// Answers 200 only when the full staff guard passes on this browser.
-router.get('/checkin/status', requireStaffCapability('log.view.own'), getCheckinStatus);
+// Admin sees every entry; a moderator is forced to their own.
+router.get('/log', requireStaffCapability('log.view.own'), getStaffLog);
 
 export default router;

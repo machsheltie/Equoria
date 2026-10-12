@@ -92,11 +92,3 @@ export async function getStaffMe(req, res, next) {
     return handleError(res, next, error);
   }
 }
-
-/**
- * GET /api/v1/staff/checkin/status — behind requireStaffCapability, so
- * reaching it means this browser passes the full staff guard.
- */
-export function getCheckinStatus(req, res) {
-  return res.status(200).json({ trusted: true, role: req.staff.role });
-}

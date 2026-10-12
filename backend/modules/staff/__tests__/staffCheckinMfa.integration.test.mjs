@@ -7,107 +7,44 @@
  * non-production sink (EMAIL_CAPTURE_FILE), as the auth suites do; nothing is
  * mocked. Each rate-limit-sensitive case uses its own fixture user.
  *
- * The capability guard is exercised through GET /api/v1/staff/checkin/status,
- * the one route guarded by requireStaffCapability('log.view.own').
+ * The capability guard is exercised through GET /api/v1/staff/log, guarded by
+ * requireStaffCapability('log.view.own'). Fixtures live in
+ * helpers/staffFixtures.mjs.
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
-import crypto from 'node:crypto';
-import { readFileSync, existsSync, unlinkSync } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import {
+  ORIGIN,
+  capturedFor,
+  checkIn,
+  createUserFactory,
+  deviceCookieFrom,
+  get,
+  latestCode,
+  post,
+  sha256,
+  startEmailCapture,
+  stopEmailCapture,
+  uid,
+  wrongCodeFor,
+} from './helpers/staffFixtures.mjs';
 
-const ORIGIN = 'http://localhost:3000';
 const ME = '/api/v1/staff/me';
-const STATUS = '/api/v1/staff/checkin/status';
+const STATUS = '/api/v1/staff/log';
 const REQUEST = '/api/v1/staff/checkin/request';
 const VERIFY = '/api/v1/staff/checkin/verify';
 
-const uid = () => crypto.randomBytes(5).toString('hex');
-const sha256 = value => crypto.createHash('sha256').update(value, 'utf8').digest('hex');
-
 const cleanup = createCleanupTracker();
-const createdUserIds = [];
-let captureFile = null;
-
-async function makeUser(role, extra = {}) {
-  const suffix = `${uid()}${uid()}`;
-  const row = await prisma.user.create({
-    data: {
-      email: `staffmfa-${suffix}@test.com`,
-      username: `staffmfa${suffix}`,
-      password: 'not-a-real-hash',
-      firstName: 'Staff',
-      lastName: 'Checkin',
-      role,
-      settings: {},
-      emailVerified: true,
-      emailVerifiedAt: new Date(),
-      ...extra,
-    },
-  });
-  createdUserIds.push(row.id);
-  return { ...row, token: generateTestToken({ id: row.id, email: row.email, role }) };
-}
+const { makeUser, createdUserIds } = createUserFactory('staffmfa');
 
 const cookiesFor = (user, device) =>
   device ? [`accessToken=${user.token}`, `staff_device=${device}`] : [`accessToken=${user.token}`];
-
-const get = (url, user, device) => request(app).get(url).set('Origin', ORIGIN).set('Cookie', cookiesFor(user, device));
-
-async function post(url, user, body = {}, device) {
-  const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: cookiesFor(user, device) });
-  return request(app)
-    .post(url)
-    .set('Origin', ORIGIN)
-    .set('Cookie', csrf.cookieHeader)
-    .set('X-CSRF-Token', csrf.csrfToken)
-    .send(body);
-}
-
-function capturedFor(email) {
-  if (!existsSync(captureFile)) {
-    return [];
-  }
-  return readFileSync(captureFile, 'utf-8')
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map(line => JSON.parse(line))
-    .filter(entry => entry.kind === 'staff-checkin' && entry.to === email);
-}
-
-function latestCode(email) {
-  const entries = capturedFor(email);
-  const entry = entries[entries.length - 1];
-  if (!entry) {
-    throw new Error(`No staff-checkin email captured for ${email}`);
-  }
-  return entry.preview.match(/\b(\d{6})\b/)[1];
-}
-
-const wrongCodeFor = code => String((Number(code) + 1) % 1_000_000).padStart(6, '0');
-
-function deviceCookieFrom(res) {
-  const raw = (res.headers['set-cookie'] || []).find(c => c.startsWith('staff_device='));
-  return raw ?? null;
-}
-
-/** Full real check-in for a user; returns the raw device token. */
-async function checkIn(user) {
-  expect((await post(REQUEST, user)).status).toBe(202);
-  const res = await post(VERIFY, user, { code: latestCode(user.email) });
-  expect(res.status).toBe(200);
-  const cookie = deviceCookieFrom(res);
-  expect(cookie).not.toBeNull();
-  return cookie.split(';')[0].slice('staff_device='.length);
-}
 
 beforeAll(() => {
   const scope = () => ({ in: createdUserIds });
@@ -119,18 +56,9 @@ beforeAll(() => {
 
 afterAll(() => cleanup.run(), 60_000);
 
-beforeEach(() => {
-  captureFile = path.join(os.tmpdir(), `staff-checkin-mfa-${crypto.randomBytes(8).toString('hex')}.jsonl`);
-  process.env.EMAIL_CAPTURE_FILE = captureFile;
-});
+beforeEach(() => startEmailCapture());
 
-afterEach(() => {
-  delete process.env.EMAIL_CAPTURE_FILE;
-  if (captureFile && existsSync(captureFile)) {
-    unlinkSync(captureFile);
-  }
-  captureFile = null;
-});
+afterEach(() => stopEmailCapture());
 
 describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
   it('answers a player with the ordinary unknown-route 404 on every staff path', async () => {
@@ -210,7 +138,7 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
 
     const status = await get(STATUS, mod, rawToken);
     expect(status.status).toBe(200);
-    expect(status.body).toEqual({ trusted: true, role: 'moderator' });
+    expect(status.body).toEqual({ entries: [], nextCursor: null });
   });
 
   it('burns a code after five wrong guesses, even for the right code', async () => {
