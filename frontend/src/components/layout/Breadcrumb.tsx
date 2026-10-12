@@ -54,6 +54,7 @@ const ROUTE_LABELS: Record<string, string> = {
   'forgot-password': 'Forgot Password',
   'reset-password': 'Reset Password',
   'verify-email': 'Verify Email',
+  steward: "The Steward's Office",
 };
 
 interface Crumb {
