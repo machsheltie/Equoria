@@ -4,7 +4,7 @@
  * Single source of truth for the discipline → trait-effect grouping that
  * was previously duplicated between:
  *   - TrainingSessionModal.getDisciplineTraitModifiers (full TraitModifier[])
- *   - disciplineRecommendation.disciplineTraitEffects ({bonus, penalty} names)
+ *   - disciplineTraitIndicators (via disciplineTraitEffects) ({bonus, penalty} names)
  *
  * Both consumers now import from here, so the Trait-Modifiers panel and the
  * per-discipline recommendation indicators can never drift. No behaviour
@@ -117,7 +117,7 @@ export function getDisciplineTraitModifiers(discipline: string): TraitModifier[]
 
 /**
  * Lowercased trait-name lists that benefit / harm a discipline (consumed
- * by disciplineRecommendation). Derived from the SAME canonical modifiers
+ * by disciplineTraitIndicators). Derived from the SAME canonical modifiers
  * so the two views cannot disagree. The 'quick-learner' default also
  * exposes the space-form 'quick learner' because horses may store either.
  */

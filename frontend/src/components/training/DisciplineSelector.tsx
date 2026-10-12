@@ -3,9 +3,13 @@
  *
  * Celestial Night styled discipline picker for the training flow.
  * Features:
- *  - Top 5 recommended disciplines (from server aptitude scores or static popular defaults)
- *  - Expandable full list of all 23 disciplines
- *  - Stat impact preview per discipline (primary/secondary/tertiary stats + predicted gain range)
+ *  - One flat alphabetical list of all 23 disciplines
+ *  - The primary/secondary/tertiary stats each discipline uses
+ *
+ * Owner ruling 2026-10-07 (Stacey): the game never recommends or ranks
+ * disciplines for a horse, and shows no predicted gain ranges (training is a
+ * flat +5). The "Recommended for this horse" section, match-score badges and
+ * per-stat gain ranges were removed.
  *  - Backward compatible: same selectedDiscipline / onDisciplineChange interface
  *
  * RELATIONSHIP TO DisciplinePicker (Equoria-nhic, 2026-05-15):
@@ -18,13 +22,12 @@
  * Props:
  *  - selectedDiscipline: currently selected discipline string
  *  - onDisciplineChange: callback(discipline: string)
- *  - recommendedDisciplines?: ordered list of recommended discipline names (top shown first)
  *  - description?: helper text
  */
 
 import React from 'react';
-import { Zap, Lock } from 'lucide-react';
-import type { DisciplineTraitIndicator } from './disciplineRecommendation';
+import { Lock } from 'lucide-react';
+import type { DisciplineTraitIndicator } from './disciplineTraitIndicators';
 
 // ── Discipline stat map (mirrors backend/utils/statMap.mjs) ───────────────────
 
@@ -56,16 +59,6 @@ export const DISCIPLINE_STAT_MAP: Record<string, [string, string, string]> = {
 
 export const ALL_DISCIPLINES = Object.keys(DISCIPLINE_STAT_MAP).sort();
 
-const DEFAULT_RECOMMENDED = ['Dressage', 'Show Jumping', 'Barrel Racing', 'Racing', 'Endurance'];
-
-// ── Gain range estimates (points per session per weight tier) ─────────────────
-
-const GAIN_RANGE = {
-  primary: { min: 4, max: 9 },
-  secondary: { min: 2, max: 5 },
-  tertiary: { min: 1, max: 3 },
-};
-
 // ── Stat display label ────────────────────────────────────────────────────────
 
 function capitalize(s: string): string {
@@ -75,7 +68,6 @@ function capitalize(s: string): string {
 // ── Stat impact pill ─────────────────────────────────────────────────────────
 
 function StatPill({ stat, tier }: { stat: string; tier: 'primary' | 'secondary' | 'tertiary' }) {
-  const range = GAIN_RANGE[tier];
   const colorClass =
     tier === 'primary'
       ? 'bg-[var(--alpha-gold-ember-15)] border-[var(--alpha-gold-ember-40)] text-[var(--gold-primary)]'
@@ -86,12 +78,9 @@ function StatPill({ stat, tier }: { stat: string; tier: 'primary' | 'secondary' 
   return (
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${colorClass} font-[var(--font-body)] whitespace-nowrap`}
-      title={`${capitalize(stat)}: +${range.min}–${range.max} pts/session`}
+      title={`${capitalize(stat)} (${tier})`}
     >
       {capitalize(stat)}
-      <span className="opacity-70">
-        +{range.min}–{range.max}
-      </span>
     </span>
   );
 }
@@ -124,8 +113,6 @@ function TraitIndicatorBadge({ indicator }: { indicator: DisciplineTraitIndicato
 function DisciplineOption({
   discipline,
   isSelected,
-  isRecommended,
-  matchScore,
   traitIndicators,
   isIneligible,
   ineligibleReason,
@@ -133,8 +120,6 @@ function DisciplineOption({
 }: {
   discipline: string;
   isSelected: boolean;
-  isRecommended: boolean;
-  matchScore?: number;
   traitIndicators?: DisciplineTraitIndicator[];
   isIneligible?: boolean;
   ineligibleReason?: string;
@@ -167,28 +152,6 @@ function DisciplineOption({
           )}
           {discipline}
         </span>
-        <div className="flex items-center gap-1.5">
-          {matchScore !== undefined && (
-            <span
-              className={[
-                'text-[10px] font-bold px-1.5 py-0.5 rounded-full border font-[var(--font-body)]',
-                matchScore >= 80
-                  ? 'text-[var(--role-success-text)] bg-[var(--role-success-bg)] border-[var(--role-success-border)]'
-                  : matchScore >= 50
-                    ? 'text-[var(--gold-primary)] bg-[var(--alpha-gold-primary-12)] border-[var(--alpha-gold-ember-25)]'
-                    : 'text-[var(--text-muted)] bg-[rgba(100,130,165,0.1)] border-[rgba(100,130,165,0.2)]',
-              ].join(' ')}
-            >
-              {matchScore}%
-            </span>
-          )}
-          {isRecommended && (
-            <span className="flex items-center gap-0.5 text-[9px] uppercase tracking-widest text-[var(--gold-primary)] bg-[var(--alpha-gold-primary-12)] border border-[var(--alpha-gold-ember-25)] px-1.5 py-0.5 rounded-full">
-              <Zap className="w-2.5 h-2.5" aria-hidden="true" />
-              Rec.
-            </span>
-          )}
-        </div>
       </div>
       {isIneligible && ineligibleReason && (
         <p className="text-[10px] text-[var(--role-danger-text)] mb-1.5 font-[var(--font-body)]">
@@ -218,12 +181,8 @@ function DisciplineOption({
 interface DisciplineSelectorProps {
   selectedDiscipline: string;
   onDisciplineChange: (_discipline: string) => void;
-  /** Ordered list of recommended disciplines for this horse. Defaults to popular 5. */
-  recommendedDisciplines?: string[];
   disciplines?: string[];
   description?: string;
-  /** Match score percentages keyed by discipline name (e.g. { "Dressage": 92 }) */
-  matchScores?: Record<string, number>;
   /**
    * Real per-discipline trait indicators (Equoria-pfp1w) keyed by discipline
    * name — e.g. { "Racing": [{ trait: "athletic", kind: "bonus" }] }. Derived
@@ -237,18 +196,13 @@ interface DisciplineSelectorProps {
 const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
   selectedDiscipline,
   onDisciplineChange,
-  recommendedDisciplines = DEFAULT_RECOMMENDED,
   disciplines = ALL_DISCIPLINES,
   description,
-  matchScores,
   traitIndicators,
   ineligibleDisciplines,
 }) => {
-  // Top 5 recommended (validated against known list)
-  const top5 = recommendedDisciplines.filter((d) => disciplines.includes(d)).slice(0, 5);
-
-  // Remaining disciplines not in top 5
-  const rest = disciplines.filter((d) => !top5.includes(d)).sort();
+  // One flat alphabetical list — no ranking, no recommended subset.
+  const sorted = [...disciplines].sort();
 
   return (
     <div data-testid="discipline-selector">
@@ -264,41 +218,13 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
         )}
       </div>
 
-      {/* Recommended section */}
-      {top5.length > 0 && (
-        <div className="mb-3">
-          <p className="text-[9px] uppercase tracking-widest text-[var(--alpha-gold-primary-70)] font-[var(--font-body)] mb-2 flex items-center gap-1">
-            <Zap className="w-3 h-3" aria-hidden="true" />
-            Recommended for this horse
-          </p>
-          <div className="space-y-2">
-            {top5.map((d) => (
-              <DisciplineOption
-                key={d}
-                discipline={d}
-                isSelected={selectedDiscipline === d}
-                isRecommended
-                matchScore={matchScores?.[d]}
-                traitIndicators={traitIndicators?.[d]}
-                isIneligible={!!ineligibleDisciplines?.[d]}
-                ineligibleReason={ineligibleDisciplines?.[d]}
-                onSelect={() => onDisciplineChange(d)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* All remaining disciplines — always visible */}
-      {rest.length > 0 && (
+      {sorted.length > 0 && (
         <div className="space-y-2 max-h-64 overflow-y-auto scroll-area-celestial pr-1">
-          {rest.map((d) => (
+          {sorted.map((d) => (
             <DisciplineOption
               key={d}
               discipline={d}
               isSelected={selectedDiscipline === d}
-              isRecommended={false}
-              matchScore={matchScores?.[d]}
               traitIndicators={traitIndicators?.[d]}
               isIneligible={!!ineligibleDisciplines?.[d]}
               ineligibleReason={ineligibleDisciplines?.[d]}

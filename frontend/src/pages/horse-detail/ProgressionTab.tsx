@@ -1,15 +1,17 @@
 /**
  * ProgressionTab — XP bar, stat progression chart, recent gains,
- * age-up counter, training recommendations, score progression panel.
+ * score progression panel.
  * Equoria-kdduk: extracted from HorseDetailPage.tsx.
+ *
+ * Owner ruling 2026-10-07: the Age-Up Counter and Training Recommendations
+ * panels were removed. Stats never change with age, there is no stat ceiling,
+ * no training window, and the game never recommends what to train or enter.
  */
 
 import React from 'react';
 import XpProgressBar from '../../components/horse/XpProgressBar';
 import StatProgressionChart from '../../components/horse/StatProgressionChart';
 import RecentGains from '../../components/horse/RecentGains';
-import AgeUpCounter from '../../components/horse/AgeUpCounter';
-import TrainingRecommendations from '../../components/horse/TrainingRecommendations';
 import ScoreProgressionPanel from '../../components/training/ScoreProgressionPanel';
 import type { Horse } from './HorseDetailPageTypes';
 
@@ -25,19 +27,9 @@ const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
       <StatProgressionChart horseId={horse.id} />
     </div>
 
-    {/* Recent Gains and Age Counter - Two Column Grid */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="col-span-1">
-        <RecentGains horseId={horse.id} />
-      </div>
-      <div className="col-span-1">
-        <AgeUpCounter horseId={horse.id} />
-      </div>
-    </div>
-
-    {/* Training Recommendations - Full Width */}
+    {/* Recent Gains - Full Width */}
     <div className="col-span-full">
-      <TrainingRecommendations horseId={horse.id} />
+      <RecentGains horseId={horse.id} />
     </div>
 
     {/* Score Progression Panel - Discipline scores and training history */}

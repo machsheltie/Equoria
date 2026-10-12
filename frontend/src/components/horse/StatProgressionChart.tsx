@@ -85,7 +85,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
       labels,
       datasets: [
         {
-          label: 'XP',
+          label: 'Horse Points',
           data,
           borderColor: 'rgb(16, 185, 129)', // emerald-500
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -129,13 +129,13 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
 
             if (historyEntry) {
               return [
-                `XP: ${value}`,
+                `Horse Points: ${value}`,
                 `Reason: ${historyEntry.reason}`,
                 `Gained: +${historyEntry.amount}`,
               ];
             }
 
-            return `XP: ${value}`;
+            return `Horse Points: ${value}`;
           },
         },
       },
@@ -156,7 +156,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
           color: 'rgba(0, 0, 0, 0.05)',
         },
         ticks: {
-          callback: (value) => `${value} XP`,
+          callback: (value) => `${value} pts`,
         },
       },
     },
@@ -171,7 +171,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
-        <div className="text-center text-sm text-slate-400">Loading XP progression...</div>
+        <div className="text-center text-sm text-slate-400">Loading Horse Points...</div>
       </div>
     );
   }
@@ -181,7 +181,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
     return (
       <div className="rounded-lg border border-rose-500/30 bg-[rgba(239,68,68,0.1)] p-6 shadow-sm">
         <div className="text-sm text-rose-400">
-          {error?.message || 'Failed to fetch XP history'}
+          {error?.message || 'Failed to fetch Horse Points history'}
         </div>
         <button
           onClick={() => refetch()}
@@ -198,7 +198,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
         <div className="text-center text-sm text-slate-400">
-          No XP history data available for this time range.
+          No Horse Points history available for this time range.
         </div>
       </div>
     );
@@ -208,7 +208,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
     <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">XP Progression</h3>
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Horse Points Progression</h3>
 
         {/* Time Range Selector */}
         <div className="flex gap-2">
@@ -241,7 +241,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
       {/* Summary Stats */}
       <div className="mt-4 grid grid-cols-3 gap-4 border-t border-[rgba(37,99,235,0.3)] pt-4">
         <div className="text-center">
-          <p className="text-xs text-slate-400">Total XP Gained</p>
+          <p className="text-xs text-slate-400">Total Horse Points Gained</p>
           <p className="text-lg font-semibold text-emerald-400">
             +{historyData.events.reduce((sum, event) => sum + event.amount, 0)}
           </p>
@@ -253,7 +253,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-slate-400">Current XP</p>
+          <p className="text-xs text-slate-400">Current Horse Points</p>
           <p className="text-lg font-semibold text-[rgb(220,235,255)]">
             {historyData.events[historyData.events.length - 1]?.amount || 0}
           </p>

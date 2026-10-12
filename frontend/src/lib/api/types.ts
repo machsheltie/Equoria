@@ -359,62 +359,6 @@ export interface HorseXPHistory {
   };
 }
 
-export interface HorseAge {
-  horseId: number;
-  horseName: string;
-  currentAge: {
-    years: number;
-    months: number;
-  };
-  ageInDays: number;
-  nextMilestone: {
-    name: string;
-    ageYears: number;
-    daysRemaining: number;
-    monthsRemaining: number;
-    expectedStatGains: {
-      speed: number;
-      stamina: number;
-      agility: number;
-      strength: number;
-      intelligence: number;
-      temperament: number;
-    };
-  } | null;
-  trainingWindow: {
-    isPrimeWindow: boolean;
-    windowName: string;
-    endsInDays: number | null;
-  };
-}
-
-export interface HorseStats {
-  horseId: number;
-  horseName: string;
-  age: {
-    years: number;
-    months: number;
-  };
-  currentStats: {
-    speed: number;
-    stamina: number;
-    agility: number;
-    strength: number;
-    intelligence: number;
-    temperament: number;
-  };
-  geneticPotential: {
-    speed: number;
-    stamina: number;
-    agility: number;
-    strength: number;
-    intelligence: number;
-    temperament: number;
-  };
-  trainingWindow: 'too young' | 'prime' | 'maintenance' | 'senior';
-  discipline?: string;
-}
-
 export interface HorseProgression {
   horseId: number;
   horseName: string;

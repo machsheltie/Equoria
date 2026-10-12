@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import DisciplineSelector from '../DisciplineSelector';
@@ -282,7 +282,6 @@ describe('DisciplineSelector', () => {
         <DisciplineSelector
           selectedDiscipline=""
           onDisciplineChange={mockOnChange}
-          recommendedDisciplines={['Racing']}
           traitIndicators={{ Racing: [{ trait: 'athletic', kind: 'bonus' }] }}
         />
       );
@@ -296,27 +295,27 @@ describe('DisciplineSelector', () => {
         <DisciplineSelector
           selectedDiscipline=""
           onDisciplineChange={mockOnChange}
-          recommendedDisciplines={['Racing']}
           traitIndicators={{ Racing: [{ trait: 'stubborn', kind: 'penalty' }] }}
         />
       );
       expect(screen.getByTestId('trait-indicator-penalty')).toHaveTextContent('Stubborn');
     });
 
-    it('respects a personalized recommended order (not the static default)', () => {
-      // Steeplechase is NOT in DEFAULT_RECOMMENDED; passing it explicitly
-      // proves the recommended set is caller-driven (personalized), and the
-      // matchScore badge surfaces the horse-specific score.
-      render(
-        <DisciplineSelector
-          selectedDiscipline=""
-          onDisciplineChange={mockOnChange}
-          recommendedDisciplines={['Steeplechase']}
-          matchScores={{ Steeplechase: 91 }}
-        />
-      );
-      expect(screen.getByText('Recommended for this horse')).toBeInTheDocument();
-      expect(screen.getByText('91%')).toBeInTheDocument();
+    // Owner ruling 2026-10-07 (Stacey) changed this test's contract. OLD: the
+    // picker showed a ranked "Recommended for this horse" set with match-score
+    // percentage badges. NEW: the game never recommends; one flat alphabetical
+    // list with no recommendation label, score badge or gain range.
+    it('renders one flat alphabetical list with no recommendations or scores', () => {
+      render(<DisciplineSelector selectedDiscipline="" onDisciplineChange={mockOnChange} />);
+      expect(screen.queryByText(/Recommended/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/\d+%/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/pts\/session/i)).not.toBeInTheDocument();
+
+      const names = within(screen.getByTestId('discipline-selector'))
+        .getAllByRole('button')
+        .map((b) => b.textContent ?? '');
+      const sorted = [...names].sort();
+      expect(names).toEqual(sorted);
     });
 
     it('does not render trait indicator container when none supplied', () => {

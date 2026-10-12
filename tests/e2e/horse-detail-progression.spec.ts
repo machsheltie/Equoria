@@ -1,8 +1,8 @@
 /**
  * Horse Detail — Progression Tab E2E (Equoria-prfgh, Equoria-c61qa child)
  *
- * Real-user coverage for the Progression tab on /horses/:id, which renders
- * (among other panels) the TrainingRecommendations component. Replaces the
+ * Real-user coverage for the Progression tab on /horses/:id. The
+ * TrainingRecommendations panel was removed by owner ruling 2026-10-07. Replaces the
  * deleted vi.mock'd unit tests:
  *
  *   - frontend/src/components/horse/__tests__/TrainingRecommendations.test.tsx
@@ -24,7 +24,13 @@ import { test, expect } from '@playwright/test';
 import { readTestCredentials } from './helpers/credentials';
 
 test.describe('Horse Detail — Progression Tab (Equoria-prfgh)', () => {
-  test('owner can view TrainingRecommendations panel on the Progression tab', async ({ page }) => {
+  // Owner ruling 2026-10-07 (Stacey) changed this test's contract. OLD: the
+  // Progression tab renders a TrainingRecommendations panel. NEW: the game
+  // never recommends what to train or enter, so neither that panel nor the
+  // Age-Up Counter may render. The tab must still load for the owner.
+  test('owner sees the Progression tab without recommendation or age-countdown panels', async ({
+    page,
+  }) => {
     const creds = readTestCredentials();
     const horseId = creds.testHorseId;
     if (!horseId) {
@@ -53,20 +59,14 @@ test.describe('Horse Detail — Progression Tab (Equoria-prfgh)', () => {
     // ProgressionTab container — lazy content may take a moment.
     await expect(page.locator('[data-testid="progression-tab"]')).toBeVisible({ timeout: 15000 });
 
-    // TrainingRecommendations panel must render against real stats. The
-    // wired component renders a single panel with this testid whether it
-    // shows recommendations, the "fully trained" empty state, or an error
-    // retry surface — all three are valid real-data paths.
-    await expect(page.locator('[data-testid="training-recommendations"]')).toBeVisible({
+    // The score progression section proves the tab rendered its real content
+    // before the absence checks below run.
+    await expect(page.locator('[data-testid="score-progression-section"]')).toBeVisible({
       timeout: 15000,
     });
 
-    // The "Training Recommendations" heading is present in every render path
-    // (recommendations list, fully-trained empty state). This guards against
-    // the panel mounting but failing to render its own UI.
-    await expect(
-      page.getByRole('heading', { name: /Training Recommendations/i }).first()
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Training Recommendations/i })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Age-Up Counter/i })).toHaveCount(0);
   });
 
   test('training dashboard exposes discipline status surface (TrainingHistoryPanel)', async ({

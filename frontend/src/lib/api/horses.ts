@@ -7,9 +7,7 @@
 
 import { apiClient } from '../http/apiClient.js';
 import type {
-  HorseAge,
   HorseProgression,
-  HorseStats,
   HorseSummary,
   HorseTrainingAnalytics,
   HorseXP,
@@ -68,8 +66,6 @@ export const horsesApi = {
     const queryString = params.toString() ? `?${params.toString()}` : '';
     return apiClient.get<HorseXPHistory>(`/api/v1/horses/${horseId}/xp-history${queryString}`);
   },
-  getAge: (horseId: number) => apiClient.get<HorseAge>(`/api/v1/horses/${horseId}/age`),
-  getStats: (horseId: number) => apiClient.get<HorseStats>(`/api/v1/horses/${horseId}/stats`),
   getProgression: (horseId: number) =>
     apiClient.get<HorseProgression>(`/api/v1/horses/${horseId}/progression`),
   getStatHistory: (horseId: number, timeRange = '30d') =>

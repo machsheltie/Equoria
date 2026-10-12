@@ -165,7 +165,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
         <h3 className="mb-4 text-lg font-semibold text-[rgb(220,235,255)]">Recent Gains</h3>
         <div className="text-center text-sm text-slate-400">
-          No XP gains in the selected time period.
+          No Horse Points gained in the selected time period.
           <br />
           No recent gains available.
         </div>
@@ -286,7 +286,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
       {/* Summary Statistics */}
       <div className="mt-6 grid grid-cols-3 gap-4 border-t border-[rgba(37,99,235,0.3)] pt-4">
         <div className="text-center">
-          <p className="text-xs text-slate-400">Total XP</p>
+          <p className="text-xs text-slate-400">Total Horse Points</p>
           <p className="text-lg font-semibold text-emerald-400">+{stats.total}</p>
         </div>
         <div className="text-center">

@@ -33,11 +33,7 @@ import {
 } from '@/hooks/api/useTraining';
 import type { TrainableHorse, TrainingResult } from '@/lib/api-client';
 import { useHorse } from '@/hooks/api/useHorses';
-import {
-  recommendedDisciplineOrder,
-  disciplineMatchScores,
-  disciplineTraitIndicators,
-} from './disciplineRecommendation';
+import { disciplineTraitIndicators } from './disciplineTraitIndicators';
 import DisciplineSelector from './DisciplineSelector';
 import HorseStatsCard from './HorseStatsCard';
 import TrainingResultsDisplay from './TrainingResultsDisplay';
@@ -69,8 +65,8 @@ interface TrainingSessionModalProps {
 /**
  * Discipline trait modifiers now come from the shared
  * ./disciplineTraitGrouping module (Equoria-svilx) — single source of
- * truth shared with disciplineRecommendation so the Trait-Modifiers panel
- * and the per-discipline recommendation indicators cannot drift.
+ * truth shared with disciplineTraitIndicators so the Trait-Modifiers panel
+ * and the per-discipline trait indicators cannot drift.
  */
 
 /**
@@ -106,15 +102,10 @@ const TrainingSessionModal = ({
   const [trainingResult, setTrainingResult] = useState<TrainingResult | null>(null);
   const [previousScore, setPreviousScore] = useState<number | undefined>(undefined);
 
-  // Real horse stats + traits drive personalized discipline recommendations
-  // (Equoria-pfp1w) — replaces DisciplineSelector's static DEFAULT_RECOMMENDED
-  // fallback. useHorse fetches the full HorseSummary (stats + traits).
+  // useHorse fetches the full HorseSummary (traits) for the per-discipline
+  // trait badges. Owner ruling 2026-10-07: no discipline ranking or
+  // recommendation — the player chooses.
   const { data: horseDetail } = useHorse(horse.id);
-  const personalizedRecommended = useMemo(
-    () => recommendedDisciplineOrder(horseDetail),
-    [horseDetail]
-  );
-  const personalizedMatchScores = useMemo(() => disciplineMatchScores(horseDetail), [horseDetail]);
   const personalizedTraitIndicators = useMemo(
     () => disciplineTraitIndicators(horseDetail),
     [horseDetail]
@@ -269,12 +260,7 @@ const TrainingSessionModal = ({
               <DisciplineSelector
                 selectedDiscipline={discipline}
                 onDisciplineChange={setDiscipline}
-                recommendedDisciplines={
-                  personalizedRecommended.length > 0 ? personalizedRecommended : undefined
-                }
-                matchScores={personalizedMatchScores}
                 traitIndicators={personalizedTraitIndicators}
-                description="Ranked for this horse's stats — best matches shown first (all 23 below)"
               />
             </div>
 
