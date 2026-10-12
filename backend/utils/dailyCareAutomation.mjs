@@ -5,6 +5,7 @@
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
+import { gameDateParts, gameDayBounds } from './gameTime.mjs';
 import { calculateGroomInteractionEffects } from './groomSystem.mjs';
 import { updateGroomSynergy } from '../modules/grooms/index.mjs';
 
@@ -290,7 +291,7 @@ export function isGroomAvailableToday(groom) {
     }
 
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const todayName = dayNames[new Date().getDay()];
+    const todayName = dayNames[gameDateParts(new Date()).weekday]; // Eastern game day
 
     // Check availability (default to true if not specified)
     const availability = groom.availability || {};
@@ -311,9 +312,8 @@ export function isGroomAvailableToday(groom) {
  */
 async function checkExistingCareToday(foalId, groomId) {
   try {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+    // "Today" is the Eastern game day (owner ruling 2026-10-09).
+    const { start: startOfDay, end: endOfDay } = gameDayBounds();
 
     const todaysInteractions = await prisma.groomInteraction.findMany({
       where: {

@@ -19,7 +19,7 @@
 
 export default Object.freeze({
   jobName: 'showExecutionReaper',
-  // Every 30 minutes (UTC) — frequent enough that a stranded show's escrow
+  // Every 30 minutes — frequent enough that a stranded show's escrow
   // is unfrozen within ~2.5h of the crash, cheap enough that the usual
   // zero-stale scan is a single indexed query (shows_status_claimed_at_idx).
   // Old: '*/30 * * * *'.

@@ -4,7 +4,7 @@
  *
  * Registry entry consumed by initializeCronJobs() in cronJobService.mjs.
  * Behaviour identical to the pre-split inline `cron.schedule('30 9 * * 1', ...)`:
- * Every Monday 09:30 UTC (just after weekly salary processing), advisory-locked
+ * Every Monday 09:30 Eastern (just after weekly salary processing), advisory-locked
  * under 'cronJobService:riderTrainerRetirement'. Retires any rider/trainer
  * whose careerWeeks have crossed the mandatory-retirement threshold
  * (Equoria-osum).
@@ -40,7 +40,7 @@ export async function runRiderTrainerRetirement() {
 
 export default Object.freeze({
   jobName: 'riderTrainerRetirement',
-  // Every Monday at 09:30 UTC.
+  // Every Monday at 09:30 Eastern.
   schedule: '30 9 * * 1',
   lockKey: 'cronJobService:riderTrainerRetirement',
   run: runRiderTrainerRetirement,

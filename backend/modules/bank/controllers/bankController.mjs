@@ -2,7 +2,7 @@
  * Bank Controller — Weekly Reward Claim
  *
  * Handles the weekly coin reward system. Users can claim 5,000 coins once per week
- * (2026-07-07 economy ruling; previously 500), resetting every Sunday at midnight UTC.
+ * (2026-07-07 economy ruling; previously 500), resetting every Sunday at midnight Eastern (the game clock).
  * Missed weeks do not roll over.
  *
  * Uses atomic SQL (jsonb_set) to prevent TOCTOU race conditions and JSONB clobber.
@@ -11,7 +11,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { MS_PER_WEEK } from '../../../constants/time.mjs';
+import { gameDayIndex, startOfGameDayIndex, startOfGameWeek } from '../../../utils/gameTime.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { getTransactionsForUser, recordTransactionTx } from '../../economy/index.mjs';
 
@@ -19,23 +19,23 @@ import { getTransactionsForUser, recordTransactionTx } from '../../economy/index
 const WEEKLY_REWARD_AMOUNT = 5_000;
 
 /**
- * Get the most recent Sunday at 00:00 UTC.
- * If today is Sunday, returns today at 00:00 UTC.
+ * Get the most recent Sunday at 00:00 Eastern (the game clock).
+ * If today is Sunday, returns today at 00:00 Eastern.
  * Weekly rewards reset every Sunday.
  */
 export function getCurrentWeekStart() {
-  const now = new Date();
-  const day = now.getUTCDay(); // 0 = Sunday, 1 = Monday, ...
-  const sunday = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - day, 0, 0, 0, 0),
-  );
-  return sunday;
+  return startOfGameWeek(new Date(), 0);
+}
+
+/** 00:00 Eastern on the Sunday after `weekStart` (7 game days, DST-safe). */
+function nextWeekStart(weekStart) {
+  return startOfGameDayIndex(gameDayIndex(weekStart) + 7);
 }
 
 /**
  * POST /api/v1/bank/claim
  *
- * Claim the weekly 500-coin reward. Resets every Sunday at midnight UTC.
+ * Claim the weekly 500-coin reward. Resets every Sunday at midnight Eastern.
  * Uses atomic SQL to prevent double-claim race conditions.
  * Returns { success, newBalance, nextClaimDate }.
  */
@@ -121,7 +121,7 @@ export async function claimWeeklyReward(req, res) {
         });
       }
 
-      const nextSunday = new Date(weekStart.getTime() + MS_PER_WEEK);
+      const nextSunday = nextWeekStart(weekStart);
       return res.status(400).json({
         success: false,
         message: 'Weekly reward already claimed. Come back next week!',
@@ -129,7 +129,7 @@ export async function claimWeeklyReward(req, res) {
       });
     }
 
-    const nextSunday = new Date(weekStart.getTime() + MS_PER_WEEK);
+    const nextSunday = nextWeekStart(weekStart);
     const newBalance = updatedRows[0].money;
 
     logger.info(
@@ -228,7 +228,7 @@ export async function getClaimStatus(req, res) {
     const lastClaim = settings.lastWeeklyClaimDate ? new Date(settings.lastWeeklyClaimDate) : null;
     const weekStart = getCurrentWeekStart();
     const canClaim = !lastClaim || lastClaim < weekStart;
-    const nextSunday = new Date(weekStart.getTime() + MS_PER_WEEK);
+    const nextSunday = nextWeekStart(weekStart);
 
     return res.status(200).json({
       success: true,

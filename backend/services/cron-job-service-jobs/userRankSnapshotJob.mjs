@@ -3,7 +3,7 @@
  *
  * Registry entry consumed by initializeCronJobs() in cronJobService.mjs.
  * Behaviour identical to the pre-split inline `cron.schedule('0 2 * * *', ...)`:
- * Daily 02:00 UTC, advisory-locked under 'cronJobService:userRankSnapshot'.
+ * Daily 02:00 Eastern, advisory-locked under 'cronJobService:userRankSnapshot'.
  * Walks every user, computes their current rank across the four leaderboard
  * categories, and persists a UserRankSnapshot row per category. Frontend chart
  * consumes this history via leaderboardController.getUserRankSummary
@@ -36,7 +36,7 @@ export async function runUserRankSnapshotCapture() {
 
 export default Object.freeze({
   jobName: 'userRankSnapshot',
-  // Daily at 02:00 UTC.
+  // Daily at 02:00 Eastern.
   schedule: '0 2 * * *',
   lockKey: 'cronJobService:userRankSnapshot',
   run: runUserRankSnapshotCapture,

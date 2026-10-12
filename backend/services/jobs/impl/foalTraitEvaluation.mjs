@@ -28,12 +28,19 @@
  *
  * CAUTION (CLAUDE.md / GENERAL_RULES): no inline horse-age math here. This
  * cluster keys off FoalDevelopment.currentDay (an explicit development-day
- * counter), not date arithmetic, so there is no age math to route through
- * backend/utils/horseAge.mjs.
+ * counter). Its one age question — how many whole days has this foal lived? —
+ * goes through backend/utils/horseAge.mjs#getHorseAgeDays (Equoria-3i34b).
+ *
+ * NO PREMATURE AGING (Equoria-3i34b, owner ruling 2026-10-06): a development
+ * day is evaluated and advanced only once it has fully elapsed, so currentDay
+ * never exceeds the foal's age in whole Eastern calendar days. The pass is reachable
+ * on demand (admin POST /api/admin/traits/evaluate → manualTraitEvaluation) and
+ * the cron can fire twice; both are now no-ops for a foal whose day is not due.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { evaluateTraitRevelation } from '../../../utils/traitEvaluation.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { logTraitAssignment } from '../../../modules/traits/index.mjs';
@@ -135,6 +142,15 @@ export async function evaluateFoalTraits(service, foal) {
     return { traitsRevealed: 0, reason: 'development_complete' };
   }
 
+  // Equoria-3i34b: no premature aging. Day N is evaluated (its reveals rolled)
+  // and then advanced only once the foal has lived more than N whole Eastern game days.
+  // A second run the same day — the admin trigger, a repeated cron fire — finds
+  // currentDay already equal to the elapsed days and does nothing.
+  const elapsedDays = getHorseAgeDays(foal.dateOfBirth);
+  if (currentDay >= elapsedDays) {
+    return { traitsRevealed: 0, reason: 'day_not_elapsed', currentDay };
+  }
+
   // Get current epigenetic modifiers
   const currentTraits = foal.epigeneticModifiers || {
     positive: [],
@@ -215,11 +231,49 @@ export async function advanceFoalDevelopmentDay(foalId, currentDay) {
     return currentDay;
   }
   const nextDay = currentDay + 1;
-  await prisma.foalDevelopment.upsert({
-    where: { foalId },
-    update: { currentDay: nextDay },
-    create: { foalId, currentDay: nextDay },
+
+  // Equoria-3i34b: whoever calls this, the day never runs ahead of the foal's
+  // age in whole Eastern calendar days.
+  const foal = await prisma.horse.findUnique({
+    where: { id: foalId },
+    select: { dateOfBirth: true },
   });
+  if (!foal || nextDay > getHorseAgeDays(foal.dateOfBirth)) {
+    logger.info(
+      `[CronJobService.advanceFoalDevelopmentDay] Foal ${foalId} stays on day ${currentDay}: day ${nextDay} has not been reached yet`,
+    );
+    return currentDay;
+  }
+
+  // Compare-and-swap from the day the caller evaluated, so two concurrent
+  // passes cannot both step the same foal forward.
+  const { count } = await prisma.foalDevelopment.updateMany({
+    where: { foalId, currentDay },
+    data: { currentDay: nextDay },
+  });
+  if (count === 0) {
+    const existing = await prisma.foalDevelopment.findUnique({
+      where: { foalId },
+      select: { currentDay: true },
+    });
+    if (existing) {
+      // Another pass already moved this foal on; report where it actually is.
+      return existing.currentDay;
+    }
+    // Some foals predate their FoalDevelopment row (Equoria-3lb8q).
+    try {
+      await prisma.foalDevelopment.create({ data: { foalId, currentDay: nextDay } });
+    } catch (error) {
+      if (error?.code !== 'P2002') {
+        throw error;
+      }
+      const raced = await prisma.foalDevelopment.findUnique({
+        where: { foalId },
+        select: { currentDay: true },
+      });
+      return raced.currentDay;
+    }
+  }
   logger.info(
     `[CronJobService.advanceFoalDevelopmentDay] Foal ${foalId} development day ${currentDay} -> ${nextDay}`,
   );

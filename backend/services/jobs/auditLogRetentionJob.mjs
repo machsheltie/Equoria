@@ -5,14 +5,14 @@
  * existing `purgeExpiredAuditLogs()` impl.
  *
  * Behaviour identical to the pre-split inline `cron.schedule('30 3 * * *', ...)`
- * (Equoria-54qq8, OWASP A09 follow-up): 03:30 UTC (after nightlyShowExecution
+ * (Equoria-54qq8, OWASP A09 follow-up): 03:30 Eastern (after nightlyShowExecution
  * at 03:00 so the two heaviest nightly jobs don't overlap), advisory-locked,
  * runWithHeartbeat.
  */
 
 export default Object.freeze({
   jobName: 'auditLogRetention',
-  // Runs nightly at 03:30 UTC.
+  // Runs nightly at 03:30 Eastern.
   schedule: '30 3 * * *',
   applyLock: true,
   staleAfterMs: 30 * 60 * 60 * 1000,

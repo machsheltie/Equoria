@@ -10,7 +10,7 @@
  * CADENCE — GAME-YEAR CLOCK (Equoria-oey96.16, decision 2026-07-02):
  *   Foal age-stage boundaries run on the same clock as everything else in the
  *   game: 7 real days = 1 game year, computed via backend/utils/horseAge.mjs
- *   (the vdw5 date-only UTC convention). They are NOT real calendar weeks.
+ *   (the vdw5 date-only, Eastern game clock convention). They are NOT real calendar weeks.
  *   Previously computeAgeStage read real-time weeks (`Date.now()` millisecond
  *   delta / MS_PER_WEEK, graduating only at 104 real weeks = 728 real days),
  *   which contradicted the canonical horse clock: a horse became a
@@ -42,7 +42,7 @@ export const STAGE_GRADUATION_DAYS = 21; // two_year_old -> graduated (game-year
 /**
  * Compute age stage from a horse's dateOfBirth.
  *
- * Uses the canonical game-year clock via getHorseAgeDays (date-only UTC,
+ * Uses the canonical game-year clock via getHorseAgeDays (date-only, Eastern game clock,
  * Equoria-vdw5) — NOT real calendar weeks (Equoria-oey96.16).
  *
  * @param {Date|string} dateOfBirth
@@ -76,7 +76,7 @@ export function computeAgeStage(dateOfBirth, now = new Date()) {
  * Compute age in whole real weeks from dateOfBirth.
  *
  * Equoria-oey96.16: reimplemented on top of the canonical getHorseAgeDays
- * helper (date-only UTC) instead of an inline millisecond-per-week literal.
+ * helper (date-only, Eastern game clock) instead of an inline millisecond-per-week literal.
  * The numeric contract (whole real weeks) is unchanged; because 7 real days =
  * 1 game year, this value equals the horse's game-year age. Retained only for
  * the GET /foals/:id ageInDays display path in foalController; reconciling that

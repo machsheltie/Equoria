@@ -69,7 +69,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getPoolConfig } from '../../../../packages/database/dbPoolConfig.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { startOfUtcDay } from '../../../utils/horseHealth.mjs';
+import { startOfGameDay } from '../../../utils/horseHealth.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FEED_SERVICE_SRC = readFileSync(
@@ -314,7 +314,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
   describe('source + primitive sentinel — the inventory decrement is gated on a winning guarded claim', () => {
     it("the guarded WHERE precondition is the race-closing primitive: affects 1 row before today's claim, 0 after", async () => {
       // Before any feed today: the guarded WHERE matches (lastFedDate is NULL).
-      const startOfTodayUtc = startOfUtcDay(new Date());
+      const startOfTodayUtc = startOfGameDay(new Date());
       const before = await prisma.$executeRawUnsafe(
         'UPDATE "horses" SET "id" = "id" WHERE "id" = $1 AND ("lastFedDate" IS NULL OR "lastFedDate" < $2)',
         mareId,

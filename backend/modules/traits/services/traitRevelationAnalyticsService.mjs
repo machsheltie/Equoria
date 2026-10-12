@@ -28,6 +28,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { TRAIT_DEFINITIONS } from '../../../utils/traitEvaluation.mjs';
+import { gameDateKey } from '../../../utils/gameTime.mjs';
 
 /**
  * Build a one-time map of traitKey -> definitional category from TRAIT_DEFINITIONS.
@@ -124,9 +125,9 @@ export async function getTraitRevelationAnalytics(options = {}) {
     // initialize defensively so totals always reconcile.
     byCategory[category] = (byCategory[category] ?? 0) + 1;
 
-    // Count by UTC calendar day (date-only bucket — over-time aggregation)
+    // Count by Eastern game day (date-only bucket — over-time aggregation)
     const ts = row.timestamp instanceof Date ? row.timestamp : new Date(row.timestamp);
-    const dayKey = ts.toISOString().slice(0, 10); // 'YYYY-MM-DD' in UTC
+    const dayKey = gameDateKey(ts); // 'YYYY-MM-DD' on the game clock
     byDate[dayKey] = (byDate[dayKey] ?? 0) + 1;
   }
 

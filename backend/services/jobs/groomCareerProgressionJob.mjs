@@ -19,7 +19,7 @@
  *   `weeklyRiderTrainerCareerWeeks` is the exact analogue already living here.
  *   Observability is worth a two-line method wrapper on the class.
  *
- * WHY MONDAY 09:45 UTC
+ * WHY MONDAY 09:45 Eastern
  *   Unchanged from the original placement, and the ordering is the point:
  *     09:00  weeklySalaries (cronJobService)   — bills every groom ON STAFF
  *     09:30  riderTrainerRetirement            — sibling staff-retirement pass
@@ -55,7 +55,7 @@
 
 export default Object.freeze({
   jobName: 'groomCareerProgression',
-  // Every Monday at 09:45 UTC, after payroll. See the header for why the order
+  // Every Monday at 09:45 Eastern, after payroll. See the header for why the order
   // is load-bearing.
   schedule: '45 9 * * 1',
   applyLock: true,

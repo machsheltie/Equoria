@@ -151,7 +151,7 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
   const predisposedFlags = await getPredisposedFlags(horse.sireId, horse.damId);
 
   // Equoria-wpqr: canonical game-years (1 game-week = 1 game-year,
-  // floor(ageDays / 7), date-only UTC) via the single-source-of-truth
+  // floor(ageDays / 7), date-only, Eastern game clock) via the single-source-of-truth
   // helper, NOT raw calendar `/ 365.25` math. The calendar reading made
   // the FLAG_EVALUATION_AGE_RANGE gate below effectively never reject
   // real game-aged horses: a 35-real-day-old horse is 5 game-years

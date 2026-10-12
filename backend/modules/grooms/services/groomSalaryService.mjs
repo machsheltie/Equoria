@@ -48,7 +48,7 @@
  *        paid           -> `feeUnpaidSince` cleared; the groom works again.
  *
  *      Grace is measured by comparing PAY WEEKS, not elapsed milliseconds: this
- *      job runs at 09:00 UTC on Mondays, and a `now > graceStart + 7 days` test
+ *      job runs at 09:00 Eastern on Mondays, and a `now > graceStart + 7 days` test
  *      decided a player's staff on seconds of cron jitter.
  *
  * Equoria-7r67q (hjtys follow-up #3): the per-user payment block in
@@ -77,12 +77,13 @@
  * Equoria-icqqm: `processWeeklySalaries` is now IDEMPOTENT per pay week.
  * Each per-user transaction (1) takes a per-(user, payWeek) advisory xact
  * lock, (2) reads which grooms already have a 'paid' weekly_salary row
- * dated inside the pay week ([Monday 00:00 UTC, +7d) — `getPayWeekStart`),
+ * dated inside the pay week ([Monday 00:00 Eastern, +7 game days) — `getPayWeekStart`),
  * and (3) debits ONLY the unpaid grooms' salaries. A same-week re-run is a
  * no-op reported via `results.skipped`; a new pay week always pays.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameDayIndex, startOfGameDayIndex, startOfGameWeek } from '../../../utils/gameTime.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   debitMoneyOrThrow,
@@ -146,24 +147,19 @@ export const SALARY_CONFIG = {
   MINIMUM_BALANCE: 0,
 };
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 /**
- * Equoria-icqqm: compute the UTC start of the pay week containing `now`.
+ * Equoria-icqqm: compute the start of the pay week containing `now`.
  *
  * The pay week is the half-open interval [start, start + 7 days), where
- * `start` is 00:00 UTC of the most recent SALARY_CONFIG.PAYMENT_DAY
- * (Monday) at-or-before `now`. Date-only UTC arithmetic means time-of-day on
- * `now` never shifts the week boundary.
+ * `start` is 00:00 Eastern (the game clock) of the most recent
+ * SALARY_CONFIG.PAYMENT_DAY (Monday) at-or-before `now`. Date-only game-day
+ * arithmetic means time-of-day on `now` never shifts the week boundary.
  *
  * @param {Date} [now]
- * @returns {Date} UTC midnight of the pay week's Monday
+ * @returns {Date} Eastern midnight of the pay week's Monday
  */
 export function getPayWeekStart(now = new Date()) {
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const diff = (d.getUTCDay() - SALARY_CONFIG.PAYMENT_DAY + 7) % 7;
-  d.setUTCDate(d.getUTCDate() - diff);
-  return d;
+  return startOfGameWeek(now, SALARY_CONFIG.PAYMENT_DAY);
 }
 
 /**
@@ -234,7 +230,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
 
     // Equoria-icqqm: pay-week window for the idempotency predicate.
     const payWeekStart = getPayWeekStart(now);
-    const payWeekEnd = new Date(payWeekStart.getTime() + 7 * MS_PER_DAY);
+    const payWeekEnd = startOfGameDayIndex(gameDayIndex(payWeekStart) + 7);
 
     const results = {
       processed: 0,

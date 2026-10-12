@@ -20,7 +20,7 @@
  * their own 2nacc legs (do NOT assume they exist yet).
  *
  * ⏰ Age is always read via getHorseAgeYears / backend/utils/horseAge.mjs
- * (Equoria-vdw5, date-only UTC). NEVER inline `Math.floor((Date.now()-dob)/…)`.
+ * (Equoria-vdw5, date-only, Eastern game clock). NEVER inline `Math.floor((Date.now()-dob)/…)`.
  *
  * Rule form (game-years, inclusive): MIN_ACTIVE_AGE_YEARS <= age <= MAX_ACTIVE_AGE_YEARS.
  */

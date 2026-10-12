@@ -17,6 +17,7 @@ import { getAllDisciplines } from '../../../utils/competitionLogic.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
 import logger from '../../../utils/logger.mjs';
+import { startOfGameDay } from '../../../utils/gameTime.mjs';
 import {
   fetchHorseDetailsByIds,
   groupWinsByHorse,
@@ -537,11 +538,8 @@ router.get(
         }
 
         if (startDate) {
-          dateFilter = {
-            runDate: {
-              gte: startDate.toISOString().split('T')[0],
-            },
-          };
+          // Period starts at 00:00 Eastern of its first game day.
+          dateFilter = { runDate: { gte: startOfGameDay(startDate) } };
         }
       }
 
@@ -743,7 +741,7 @@ router.get(
       }
 
       // Age in game-years via the canonical helper (7 real days = 1
-      // game-year, date-only UTC). Equoria-rkld: previously used raw
+      // game-year, date-only, Eastern game clock). Equoria-rkld: previously used raw
       // Math.floor(ms / 365.25 days) calendar math, which both used the
       // wrong unit (calendar years, not game-years) and was off-by-one for
       // any dateOfBirth not stored at midnight UTC. getHorseAgeYears() is

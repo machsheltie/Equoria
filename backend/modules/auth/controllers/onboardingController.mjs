@@ -43,7 +43,6 @@ import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
-import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 // Equoria-zalyb: the starter horse's name is a player-typed horse name, so it
@@ -73,6 +72,7 @@ import { calculatePhenotype } from '../../horses/services/phenotypeCalculationSe
 import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
 // eslint-disable-next-line no-restricted-imports -- Equoria-hk739: see above; leaf deep-import to avoid the horses-barrel TDZ cycle.
 import { generateTemperamentWithDefault } from '../../horses/services/temperamentService.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 // Equoria-3f0yx: ESM-native JSON load. See module docstring for the
 // rationale on readFileSync vs createRequire vs import attributes.
@@ -359,7 +359,7 @@ export const advanceOnboarding = async (req, res, next) => {
             // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
             // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
             // (which the canonical age helper would read as ~156 game-years).
-            const dateOfBirth = new Date(Date.now() - 3 * MS_PER_GAME_YEAR);
+            const dateOfBirth = birthDateForAge(3);
 
             // Equoria-vbrc4: a brand-new starter horse created via this branch must
             // be born with a valid colorGenotype + phenotype (omitting them produced

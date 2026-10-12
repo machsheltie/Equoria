@@ -18,17 +18,17 @@ context.
 
 ## Active map
 
-| Area                                               | Purpose                                                                                               |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| [`design-system/`](design-system/)                 | Accepted visual decisions, tokens, motion, exceptions, and narrowly routed implementation inventories |
-| [`features/`](features/)                           | Durable contracts for feed/pregnancy care and the planned cross-owner stud-service economy            |
-| [`architecture/`](architecture/)                   | Small active ADR collection                                                                           |
-| [`api-contracts-backend/`](api-contracts-backend/) | Narrow, drift-protected backend contracts; currently rate limiting only                               |
-| [`testing/`](testing/)                             | Cross-config Playwright beta-profile reference                                                        |
-| [`audits/`](audits/)                               | Reserved current findings location required by `AGENTS.md`; not ordinary context                      |
-| [`legal/`](legal/)                                 | Legal text                                                                                            |
-| [`product/`](product/)                             | Test-required compatibility stubs; never product authority                                            |
-| [`.archive/`](.archive/)                           | Retired originals awaiting owner extraction; never active context                                     |
+| Area                                               | Purpose                                                                                                                                             |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`design-system/`](design-system/)                 | Accepted visual decisions, tokens, motion, exceptions, and narrowly routed implementation inventories                                               |
+| [`features/`](features/)                           | Durable contracts for feed/pregnancy care, the planned cross-owner stud-service economy, and the planned staff tools (foundation, outage time-back) |
+| [`architecture/`](architecture/)                   | Small active ADR collection                                                                                                                         |
+| [`api-contracts-backend/`](api-contracts-backend/) | Narrow, drift-protected backend contracts; currently rate limiting only                                                                             |
+| [`testing/`](testing/)                             | Cross-config Playwright beta-profile reference                                                                                                      |
+| [`audits/`](audits/)                               | Reserved current findings location required by `AGENTS.md`; not ordinary context                                                                    |
+| [`legal/`](legal/)                                 | Legal text                                                                                                                                          |
+| [`product/`](product/)                             | Test-required compatibility stubs; never product authority                                                                                          |
+| [`.archive/`](.archive/)                           | Retired originals awaiting owner extraction; never active context                                                                                   |
 
 ## Cross-cutting operational references
 

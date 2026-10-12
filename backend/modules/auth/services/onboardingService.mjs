@@ -46,6 +46,7 @@
  */
 
 import logger from '../../../utils/logger.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-hk739: deep-import the LEAF horses services directly, NOT the full
 // horses barrel (../../horses/index.mjs). The barrel re-exports the entire
@@ -72,7 +73,6 @@ import {
 } from '../../horses/services/temperamentService.mjs';
 
 const STARTER_HORSE_AGE_GAME_YEARS = 3;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Create the starter horse for a brand-new user. Non-fatal: failures
@@ -99,7 +99,7 @@ export async function createStarterHorseForNewUser(
     // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
     // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
     // (which the canonical age helper would read as ~156 game-years).
-    const dateOfBirth = new Date(Date.now() - STARTER_HORSE_AGE_GAME_YEARS * 7 * MS_PER_DAY);
+    const dateOfBirth = birthDateForAge(STARTER_HORSE_AGE_GAME_YEARS);
 
     // Equoria-b9zgr: resolve the breed id so the starter horse is never born
     // with a NULL breedId (the prior behaviour left every registration starter

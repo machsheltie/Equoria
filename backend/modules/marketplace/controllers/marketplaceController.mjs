@@ -9,9 +9,9 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
-import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
@@ -125,11 +125,11 @@ export async function browseListings(req, res) {
     // maxAge old means born on or after now - maxAge*7 days. (Using calendar years
     // here would exclude every correctly-aged horse, whose dob is only weeks ago.)
     if (minAge !== undefined) {
-      const cutoff = new Date(Date.now() - parseInt(minAge, 10) * MS_PER_GAME_YEAR);
+      const cutoff = birthDateForAge(parseInt(minAge, 10));
       where.dateOfBirth = { ...where.dateOfBirth, lte: cutoff };
     }
     if (maxAge !== undefined) {
-      const cutoff = new Date(Date.now() - parseInt(maxAge, 10) * MS_PER_GAME_YEAR);
+      const cutoff = birthDateForAge(parseInt(maxAge, 10));
       where.dateOfBirth = { ...where.dateOfBirth, gte: cutoff };
     }
     if (minPrice !== undefined) {
@@ -596,7 +596,7 @@ export async function buyStoreHorse(req, res) {
     // store horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
     // (which the canonical age helper would read as ~156 game-years).
     const STORE_HORSE_AGE_GAME_YEARS = 3;
-    const dateOfBirth = new Date(Date.now() - STORE_HORSE_AGE_GAME_YEARS * MS_PER_GAME_YEAR);
+    const dateOfBirth = birthDateForAge(STORE_HORSE_AGE_GAME_YEARS);
 
     // 31E color genetics (Equoria-kiep): generate colorGenotype + phenotype the
     // same way the starter-horse (authController) and POST /api/v1/horses

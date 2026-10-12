@@ -21,6 +21,7 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { runFoalingJob, createFoalFromPregnancy } from '../services/foalingService.mjs';
+import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -150,11 +151,33 @@ describe('runFoalingJob (B5)', () => {
     expect(foals[0].age).toBe(0);
   });
 
-  it('cutoff sentinel: a mare at 6.5 days is NOT foaled (proves the +7-day boundary)', async () => {
+  // Owner ruling 2026-10-12: a mare bred on Eastern calendar day D foals at the
+  // nightly run on day D+7, whatever the hour she was bred. (Old contract: 7 x
+  // 24 hours, which made an afternoon breeding foal on D+8.)
+  it('cutoff sentinel: a mare bred at the very end of day D-7 IS foaled on day D', async () => {
+    const user = await createUser('lateD7');
+    createdUserIds.push(user.id);
+
+    // 23:59 Eastern, seven calendar days ago: under 7 x 24h on most of today.
+    const inFoal = new Date(startOfGameDayIndex(gameDayIndex(new Date()) - 6).getTime() - 60 * 1000);
+    const { dam } = await createMareSirePair({
+      userId: user.id,
+      breedId,
+      inFoalSinceDate: inFoal,
+      pregnancyFeedingsByTier: { performance: 7 },
+    });
+
+    const result = await runFoalingJob();
+    expect(result.foalsBorn).toBeGreaterThanOrEqual(1);
+    const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
+    expect(refreshedDam.inFoalSinceDate).toBeNull();
+  });
+
+  it('cutoff sentinel: a mare bred at 00:00 on day D-6 is NOT foaled yet (6 calendar days)', async () => {
     const user = await createUser('cutoff');
     createdUserIds.push(user.id);
 
-    const inFoal = new Date(Date.now() - 6.5 * DAY_MS);
+    const inFoal = startOfGameDayIndex(gameDayIndex(new Date()) - 6);
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,

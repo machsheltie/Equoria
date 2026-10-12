@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   getFeedHealth,
-  startOfUtcDay,
+  startOfGameDay,
   alreadyFedToday,
   getVetHealth,
   getDisplayedHealth,
@@ -22,53 +22,60 @@ describe('getFeedHealth', () => {
     expect(getFeedHealth({ age: 5 }, NOW)).toBe('critical');
   });
 
-  it('returns excellent for 0-2 day gap (UTC calendar)', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-29T00:00:00Z') }, NOW)).toBe('excellent');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-28T00:00:00Z') }, NOW)).toBe('excellent');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-27T00:00:00Z') }, NOW)).toBe('excellent');
+  it('returns excellent for 0-2 day gap (Eastern game days; feeds at noon EDT)', () => {
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-29T16:00:00Z') }, NOW)).toBe('excellent');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-28T16:00:00Z') }, NOW)).toBe('excellent');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-27T16:00:00Z') }, NOW)).toBe('excellent');
   });
 
   it('returns good for 3-4 day gap', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-26T00:00:00Z') }, NOW)).toBe('good');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-25T00:00:00Z') }, NOW)).toBe('good');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-26T16:00:00Z') }, NOW)).toBe('good');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-25T16:00:00Z') }, NOW)).toBe('good');
   });
 
   it('returns fair for 5-6 day gap', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-24T00:00:00Z') }, NOW)).toBe('fair');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-23T00:00:00Z') }, NOW)).toBe('fair');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-24T16:00:00Z') }, NOW)).toBe('fair');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-23T16:00:00Z') }, NOW)).toBe('fair');
   });
 
   it('returns poor for 7-8 day gap', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-22T00:00:00Z') }, NOW)).toBe('poor');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-21T00:00:00Z') }, NOW)).toBe('poor');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-22T16:00:00Z') }, NOW)).toBe('poor');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-21T16:00:00Z') }, NOW)).toBe('poor');
   });
 
   it('returns critical for 9+ day gap', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-20T00:00:00Z') }, NOW)).toBe('critical');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-01T00:00:00Z') }, NOW)).toBe('critical');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-20T16:00:00Z') }, NOW)).toBe('critical');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-01T16:00:00Z') }, NOW)).toBe('critical');
   });
 });
 
-describe('startOfUtcDay', () => {
-  it('truncates to UTC midnight', () => {
-    expect(startOfUtcDay(new Date('2026-04-29T15:30:45.999Z')).toISOString()).toBe('2026-04-29T00:00:00.000Z');
+// Owner ruling 2026-10-09: feeding days are Eastern game days
+// (America/New_York). Old contract: UTC calendar days.
+describe('startOfGameDay', () => {
+  it('truncates to 00:00 Eastern (EDT in April: 04:00 UTC)', () => {
+    expect(startOfGameDay(new Date('2026-04-29T15:30:45.999Z')).toISOString()).toBe('2026-04-29T04:00:00.000Z');
+  });
+
+  it('uses EST (05:00 UTC) in winter', () => {
+    expect(startOfGameDay(new Date('2026-12-15T15:30:00Z')).toISOString()).toBe('2026-12-15T05:00:00.000Z');
   });
 });
 
 describe('alreadyFedToday', () => {
-  const NOW = new Date('2026-04-29T15:30:00Z');
+  const NOW = new Date('2026-04-29T15:30:00Z'); // 11:30 EDT, Apr 29
 
   it('returns false when lastFedDate is null', () => {
     expect(alreadyFedToday(null, NOW)).toBe(false);
   });
 
-  it('returns true when fed earlier today UTC', () => {
-    expect(alreadyFedToday(new Date('2026-04-29T01:00:00Z'), NOW)).toBe(true);
-    expect(alreadyFedToday(new Date('2026-04-29T23:59:59Z'), NOW)).toBe(true);
+  it('returns true when fed earlier today Eastern', () => {
+    expect(alreadyFedToday(new Date('2026-04-29T04:00:00Z'), NOW)).toBe(true); // 00:00 EDT
+    expect(alreadyFedToday(new Date('2026-04-30T03:59:59Z'), NOW)).toBe(true); // 23:59:59 EDT
   });
 
-  it('returns false when fed yesterday UTC', () => {
-    expect(alreadyFedToday(new Date('2026-04-28T23:59:59Z'), NOW)).toBe(false);
+  it('returns false when fed yesterday Eastern, even if it was already today in UTC', () => {
+    expect(alreadyFedToday(new Date('2026-04-29T03:59:59Z'), NOW)).toBe(false); // Apr 28, 23:59 EDT
+    expect(alreadyFedToday(new Date('2026-04-29T01:00:00Z'), NOW)).toBe(false); // Apr 28, 21:00 EDT
   });
 });
 
@@ -146,7 +153,7 @@ describe('getDisplayedHealth', () => {
   it('returns the worse of feed and vet', () => {
     const horse = {
       age: 5,
-      lastFedDate: new Date('2026-04-28T00:00:00Z'), // excellent feed
+      lastFedDate: new Date('2026-04-28T16:00:00Z'), // excellent feed
       lastVettedDate: new Date('2026-04-08T00:00:00Z'), // fair vet (21 days)
     };
     expect(getDisplayedHealth(horse, NOW)).toBe('fair');
@@ -155,7 +162,7 @@ describe('getDisplayedHealth', () => {
   it('returns critical when feed is critical', () => {
     const horse = {
       age: 5,
-      lastFedDate: new Date('2026-04-15T00:00:00Z'), // critical feed (14 days)
+      lastFedDate: new Date('2026-04-15T16:00:00Z'), // critical feed (14 days)
       lastVettedDate: NOW, // excellent vet
     };
     expect(getDisplayedHealth(horse, NOW)).toBe('critical');

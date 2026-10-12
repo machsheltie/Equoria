@@ -6,7 +6,7 @@
  * (Equoria-zr9kl) and then purges expired rows (scoped DELETE) so the table
  * stays bounded.
  *
- * Schedule: 04:00 UTC — a low-traffic time AFTER the existing nightly cluster
+ * Schedule: 04:00 Eastern — a low-traffic time AFTER the existing nightly cluster
  * (nightlyShowExecution 03:00, auditLogRetention 03:30, hoofConditionDecay
  * 03:45) so the heaviest jobs don't overlap.
  *
@@ -20,7 +20,7 @@
 
 export default Object.freeze({
   jobName: 'docCoverageSnapshot',
-  // Runs daily at 04:00 UTC.
+  // Runs daily at 04:00 Eastern.
   schedule: '0 4 * * *',
   applyLock: true,
   // Daily job: 24h period + 6h tolerance (mirrors the other daily budgets).

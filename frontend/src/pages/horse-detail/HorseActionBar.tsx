@@ -11,13 +11,14 @@
  *
  * The Feed button calls POST /api/v1/horses/:id/feed via the
  * useFeedHorse mutation. Disabled when no feed equipped, already-fed-
- * today (UTC-day boundary), or horse is retired. Feed-system redesign
+ * today (Eastern game-day boundary), or horse is retired. Feed-system redesign
  * 2026-04-29 (A16).
  */
 
 import React from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
+import { gameDateKey } from '@/lib/gameTime';
 import { Backpack, Brush, Dumbbell, Heart, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFeedHorse } from '../../hooks/api/useFeedHorse';
@@ -42,13 +43,12 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
   const delistHorseMutation = useDelistHorse();
 
   const isAlreadyFedToday = horse.lastFedDate
-    ? new Date(horse.lastFedDate).toISOString().slice(0, 10) ===
-      new Date().toISOString().slice(0, 10)
+    ? gameDateKey(horse.lastFedDate) === gameDateKey(new Date())
     : false;
   const feedDisabledReason = !horse.equippedFeedType
     ? 'No feed selected. Click Equip first.'
     : isAlreadyFedToday
-      ? 'Fed today. Available again at UTC midnight.'
+      ? 'Fed today. Available again at midnight Eastern time.'
       : horse.feedHealth === 'retired'
         ? 'Retired.'
         : null;

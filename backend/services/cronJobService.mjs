@@ -15,6 +15,7 @@
 
 import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
+import { GAME_TIME_ZONE } from '../utils/gameTime.mjs';
 import { processWeeklySalaries } from '../modules/grooms/index.mjs';
 import { runFoalingJob } from '../modules/horses/index.mjs';
 import { processRiderTrainerRetirement } from '../modules/trainers/index.mjs';
@@ -42,7 +43,7 @@ export function initializeCronJobs() {
 
     // Build + register every job from the descriptor registry. Each job runs
     // its work function under the descriptor's advisory lock, on the
-    // descriptor's UTC schedule. `scheduled: false` then explicit .start()
+    // descriptor's schedule on the Eastern game clock. `scheduled: false` then explicit .start()
     // matches the pre-split create-then-start sequence exactly.
     for (const descriptor of CRON_JOB_SERVICE_REGISTRY) {
       const { jobName, schedule, lockKey, run } = descriptor;
@@ -53,7 +54,7 @@ export function initializeCronJobs() {
         },
         {
           scheduled: false,
-          timezone: 'UTC',
+          timezone: GAME_TIME_ZONE,
         },
       );
       runningJobs.set(jobName, job);
@@ -108,6 +109,7 @@ export function getCronJobStatus() {
       status[jobName] = {
         running: job.running,
         scheduled: job.scheduled,
+        timezone: job.timezone, // the game clock (owner ruling 2026-10-09)
       };
     }
 

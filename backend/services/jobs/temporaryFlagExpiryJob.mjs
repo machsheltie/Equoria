@@ -5,14 +5,14 @@
  * existing `sweepExpiredTemporaryFlags()` impl.
  *
  * Behaviour identical to the pre-split inline `cron.schedule('20 0 * * *', ...)`
- * (Equoria-yzqhj.5): 00:20 UTC (after dailyFoalMilestoneEvaluation at 00:10,
+ * (Equoria-yzqhj.5): 00:20 Eastern (after dailyFoalMilestoneEvaluation at 00:10,
  * before the staggered 03:xx nightly jobs), advisory-locked, runWithHeartbeat.
  * Idempotent — a second run with the same clock is a no-op.
  */
 
 export default Object.freeze({
   jobName: 'temporaryFlagExpiry',
-  // Runs daily at 00:20 UTC.
+  // Runs daily at 00:20 Eastern.
   schedule: '20 0 * * *',
   applyLock: true,
   // Daily cadence → 30h budget (24h period + 6h tolerance).

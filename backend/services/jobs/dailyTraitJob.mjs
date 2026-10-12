@@ -11,12 +11,12 @@
  * a free function without breaking that contract — see fx4e7 notes).
  *
  * Behaviour is identical to the pre-split inline `cron.schedule('0 0 * * *', ...)`
- * registration: midnight UTC, advisory-locked, wrapped in runWithHeartbeat.
+ * registration: midnight Eastern, advisory-locked, wrapped in runWithHeartbeat.
  */
 
 export default Object.freeze({
   jobName: 'dailyTraitEvaluation',
-  // Daily trait evaluation — runs at midnight UTC.
+  // Daily trait evaluation — runs at midnight Eastern.
   schedule: '0 0 * * *',
   applyLock: true,
   // Daily cadence → 30h budget (24h period + 6h tolerance).

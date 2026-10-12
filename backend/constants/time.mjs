@@ -16,7 +16,7 @@
  *
  * Cross-reference:
  * - `backend/utils/horseAge.mjs` for the canonical age-math helpers
- *   that operate on UTC calendar days (this file is for millisecond
+ *   that operate on Eastern game-calendar days (this file is for millisecond
  *   arithmetic where calendar-day math is overkill).
  */
 

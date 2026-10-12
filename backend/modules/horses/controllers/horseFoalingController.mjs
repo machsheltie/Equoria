@@ -2,16 +2,18 @@
  * Horse Foaling Controller
  *
  * Equoria-xod8b (child A of Equoria-mh937): extracted from horseController.mjs.
- * Owns createFoal (begin delayed pregnancy) + resetHorseLastFed (E2E helper).
- * No behavior changes — functions moved verbatim.
+ * Owns createFoal (begin delayed pregnancy). No behavior changes — functions
+ * moved verbatim. The former resetHorseLastFed E2E helper was removed
+ * (Equoria-mwjst): it let any owner rewind the daily feed authority.
  */
-import { GESTATION_MS } from '../../../constants/time.mjs';
+import { GESTATION_DAYS } from '../../../constants/time.mjs';
 import { getHorseById } from '../services/horseModelService.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 
 /** Minimum breeding age in game-years (PRD-08 s2.5). 3 game-years = 21 real days. */
 const MIN_BREEDING_AGE_YEARS = 3;
@@ -21,8 +23,8 @@ const MIN_BREEDING_AGE_YEARS = 3;
  * 1 game year = 7 real days, DAM only, stallions unrestricted.
  *
  * Anchor is lastBredDate (conception stamp, not foaling date).
- * Semantics: a mare bred any time on day D is breedable from 00:00 UTC
- * on D+7 (mirrors the Equoria-vdw5 date-only UTC convention).
+ * Semantics: a mare bred any time on day D is breedable from 00:00 Eastern
+ * on D+7 (mirrors the Equoria-vdw5 date-only, Eastern game clock convention).
  */
 const DAM_BREEDING_COOLDOWN_DAYS = 7;
 
@@ -121,7 +123,7 @@ export async function createFoal(req, res) {
     }
 
     // Guard 3: minimum breeding age (3 game-years = 21 real days).
-    // Uses horseAge.mjs date-only UTC arithmetic (Equoria-vdw5) — never inline math.
+    // Uses horseAge.mjs date-only, Eastern game clock arithmetic (Equoria-vdw5) — never inline math.
     const sireAgeYears = getHorseAgeYears(sire.dateOfBirth);
     if (sireAgeYears < MIN_BREEDING_AGE_YEARS) {
       return res.status(400).json({
@@ -331,7 +333,7 @@ export async function createFoal(req, res) {
         inFoalSinceDate: now,
         pregnancySireId: sire.id,
         pregnancyFeedingsByTier: {},
-        lastBredDate: now,
+        lastBredDate: gameCalendarDate(now), // date-only column: the Eastern date
         pendingFoalName: name ?? null,
         // The VALIDATED EFFECTIVE breed, not the supplied one (Equoria-m9lz1 fix
         // round 3, finding 7). `effectiveBreedId` is `normalizedBreedId ??
@@ -366,7 +368,8 @@ export async function createFoal(req, res) {
       });
     }
 
-    const foalDueDate = new Date(now.getTime() + GESTATION_MS);
+    // 00:00 Eastern on the day the nightly foaling run delivers (bred day + 7).
+    const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + GESTATION_DAYS);
 
     logger.info(
       `[horseController.createFoal] Pregnancy started for dam ${damId} (sire ${sireId}); foal due ${foalDueDate.toISOString()}`,
@@ -399,83 +402,3 @@ export async function createFoal(req, res) {
 // Foal materialisation now happens in `foalingService.createFoalFromPregnancy()`
 // when the foaling job (B5) fires +7 days after `createFoal` flips the dam
 // into the in-foal state.
-
-/**
- * POST /api/v1/horses/:id/reset-last-fed
- * Owner-scoped test/fixture helper that rewinds the horse's lastFedDate by N
- * days (default 1) so the same-day feed gate (alreadyFedToday) no longer
- * blocks a subsequent feed within the same E2E session.
- *
- * Background (Equoria-4sqr): feed-system-phase-b test 2 must feed the
- * pregnant mare to verify pregnancyFeedingsByTier increments, but the mare
- * was already fed in beforeAll to satisfy the critical-health breeding gate
- * (Equoria-2e7e). Without this endpoint there's no way to satisfy both.
- *
- * Why owner-scoped, not admin-only: the E2E global-setup flow creates a
- * regular user without admin role, so an admin-only endpoint cannot be hit
- * from the test session. The operation has no privilege impact — rewinding
- * the user's OWN horse's lastFedDate is functionally equivalent to "skip a
- * real-world day" and grants no advantage over honest play (the user could
- * already just wait 24h).
- *
- * Mounted on authRouter via horseRoutes.mjs with requireOwnership('horse'),
- * so a user cannot reset a horse they don't own. Rate-limited.
- *
- * Body: { days?: number }  — days to subtract from now (default 1, max 30).
- */
-export async function resetHorseLastFed(req, res) {
-  try {
-    // requireOwnership middleware pre-attaches the horse to req.horse and
-    // validates that req.user owns it. Defensive guard in case middleware
-    // ordering changes in the future.
-    if (!req.horse) {
-      logger.error(
-        '[horseController.resetHorseLastFed] req.horse not set — requireOwnership middleware did not run',
-      );
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-
-    const days = Number(req.body?.days ?? 1);
-    if (!Number.isFinite(days) || days < 0 || days > 30) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'days must be a number between 0 and 30' });
-    }
-
-    const newLastFed = new Date();
-    newLastFed.setDate(newLastFed.getDate() - days);
-
-    logger.info(
-      `[horseController.resetHorseLastFed] horse ${req.horse.id} — rewinding lastFedDate by ${days} day(s) to ${newLastFed.toISOString()}`,
-    );
-
-    const updated = await prisma.horse.update({
-      where: { id: req.horse.id },
-      data: { lastFedDate: newLastFed },
-      select: { id: true, name: true, lastFedDate: true },
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: `Horse ${req.horse.id} lastFedDate rewound by ${days} day(s)`,
-      // Explicit ISO conversion — some Prisma client builds serialize Date as
-      // an empty object via JSON.stringify, so we coerce defensively.
-      data: {
-        id: updated.id,
-        name: updated.name,
-        lastFedDate: updated.lastFedDate ? new Date(updated.lastFedDate).toISOString() : null,
-      },
-    });
-  } catch (error) {
-    logger.error(
-      `[horseController.resetHorseLastFed] Error: ${error.message}\nStack: ${error.stack}`,
-    );
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to reset lastFedDate',
-    });
-  }
-}

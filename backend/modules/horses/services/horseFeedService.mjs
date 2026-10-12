@@ -25,7 +25,7 @@
 
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { FEED_CATALOG } from '../../economy/index.mjs';
-import { alreadyFedToday, startOfUtcDay } from '../../../utils/horseHealth.mjs';
+import { alreadyFedToday, startOfGameDay } from '../../../utils/horseHealth.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 
@@ -227,8 +227,8 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       //   - pregnancyFeedingsByTier[tier] += 1  (when in-foal — JSONB increment)
       //
       // The WHERE clause encodes the precondition (lastFedDate IS NULL OR
-      // lastFedDate < start-of-today-UTC), matching `alreadyFedToday()`'s
-      // UTC-calendar-day semantics. Postgres evaluates the WHERE against the
+      // lastFedDate < 00:00 Eastern today), matching `alreadyFedToday()`'s
+      // Eastern game-day semantics. Postgres evaluates the WHERE against the
       // COMMITTED row at statement time, so the loser of a race sees the
       // winner's already-committed lastFedDate=today and matches 0 rows.
       //
@@ -242,7 +242,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       // No SELECT…FOR-UPDATE: this is a plain UPDATE taking only the ordinary
       // per-row write lock for the statement's duration — race-safe and
       // timeout-free (the FOR-UPDATE-absence sentinel stays green).
-      const startOfTodayUtc = startOfUtcDay(new Date());
+      const startOfToday = startOfGameDay(new Date());
 
       // Equoria-lnblu: migrated off `tx.$executeRawUnsafe` (allowlisted unsafe
       // raw SQL) to the parameterized `tx.$executeRaw(Prisma.sql\`…\`)` form.
@@ -284,7 +284,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       const affected = await tx.$executeRaw(Prisma.sql`
       UPDATE "horses" SET ${Prisma.join(setFragments, ', ')}
       WHERE "id" = ${horse.id}
-      AND ("lastFedDate" IS NULL OR "lastFedDate" < ${startOfTodayUtc})`);
+      AND ("lastFedDate" IS NULL OR "lastFedDate" < ${startOfToday})`);
 
       if (affected === 0) {
         // A concurrent feed already claimed today. Reject — do NOT decrement

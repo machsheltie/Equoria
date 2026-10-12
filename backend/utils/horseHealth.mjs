@@ -6,20 +6,14 @@
  * Contract: docs/features/feed-system.md § Health contract.
  */
 
-const MS_PER_DAY = 86_400_000;
+// Days here are Eastern game days (owner ruling 2026-10-09; utils/gameTime.mjs).
+import { calendarDateDayIndex, gameDayIndex, startOfGameDay } from './gameTime.mjs';
+
+// Re-exported for the feed path's "not yet fed today" SQL cutoff.
+export { startOfGameDay };
 
 /**
- * Truncate a Date to UTC midnight (00:00:00.000 UTC of the same calendar day).
- * @param {Date|string} date
- * @returns {Date}
- */
-export function startOfUtcDay(date) {
-  const d = new Date(date);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-}
-
-/**
- * Has the horse been fed in the same UTC calendar day as `now`?
+ * Has the horse been fed on the same Eastern game day as `now`?
  * @param {Date|string|null|undefined} lastFedDate
  * @param {Date} [now=new Date()]
  * @returns {boolean}
@@ -28,13 +22,13 @@ export function alreadyFedToday(lastFedDate, now = new Date()) {
   if (!lastFedDate) {
     return false;
   }
-  return startOfUtcDay(lastFedDate).getTime() === startOfUtcDay(now).getTime();
+  return gameDayIndex(lastFedDate) === gameDayIndex(now);
 }
 
 /**
  * Feed-health band derived from horse.lastFedDate.
  *
- * Bands (UTC calendar days since last feeding):
+ * Bands (Eastern game days since last feeding):
  *   0-2  → excellent
  *   3-4  → good
  *   5-6  → fair
@@ -57,9 +51,7 @@ export function getFeedHealth(horse, now = new Date()) {
     return 'critical';
   }
 
-  const days = Math.floor(
-    (startOfUtcDay(now).getTime() - startOfUtcDay(horse.lastFedDate).getTime()) / MS_PER_DAY,
-  );
+  const days = gameDayIndex(now) - gameDayIndex(horse.lastFedDate);
   if (days <= 2) {
     return 'excellent';
   }
@@ -120,7 +112,7 @@ export function worseOf(a, b) {
  *   - age >= 21 → 'retired'
  *   - healthStatus non-null → that value (vet-finding override takes priority)
  *   - lastVettedDate null → 'critical'
- *   - otherwise weekly decay from lastVettedDate (UTC calendar days):
+ *   - otherwise weekly decay from lastVettedDate (Eastern game days):
  *       ≤7  → excellent
  *       8-14 → good
  *       15-21 → fair
@@ -142,9 +134,8 @@ export function getVetHealth(horse, now = new Date()) {
     return 'critical';
   }
 
-  const days = Math.floor(
-    (startOfUtcDay(now).getTime() - startOfUtcDay(horse.lastVettedDate).getTime()) / MS_PER_DAY,
-  );
+  // lastVettedDate is a date-only column: read it as the calendar date it is.
+  const days = gameDayIndex(now) - calendarDateDayIndex(horse.lastVettedDate);
   if (days <= 7) {
     return 'excellent';
   }

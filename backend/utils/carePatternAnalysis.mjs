@@ -17,6 +17,7 @@
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
+import { gameDateKey } from './gameTime.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';
 import { EPIGENETIC_FLAG_DEFINITIONS as _EPIGENETIC_FLAG_DEFINITIONS } from '../config/epigeneticFlagDefinitions.mjs';
@@ -50,7 +51,7 @@ export async function analyzeCarePatterns(horseId, evaluationDate = new Date()) 
   }
 
   // Equoria-z183: Age in canonical game-years/game-days (1 game-week = 1
-  // game-year, date-only UTC) via the single-source-of-truth helper, NOT
+  // game-year, date-only, Eastern game clock) via the single-source-of-truth helper, NOT
   // raw Math.floor(ms) days + ms/365.25 calendar math. The previous
   // calendar-year calc made the `>= 3` epigenetic-eligibility gate below
   // effectively never fire for real game-aged horses: a 35-real-day-old
@@ -266,7 +267,7 @@ function analyzeEnvironmentalFactors(interactions) {
  */
 function groupInteractionsByDay(interactions) {
   return interactions.reduce((groups, interaction) => {
-    const day = new Date(interaction.createdAt).toDateString();
+    const day = gameDateKey(interaction.createdAt);
     if (!groups[day]) {
       groups[day] = [];
     }

@@ -24,6 +24,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -144,11 +145,10 @@ describe('createFoal — delayed pregnancy (B3)', () => {
     expect(res.body.data.sireId).toBe(sireId);
     expect(res.body.data.foalDueDate).toBeTruthy();
 
-    // foalDueDate is exactly 7 days after inFoalSinceDate
-    const due = new Date(res.body.data.foalDueDate).getTime();
-    const now = Date.now();
-    expect(due).toBeGreaterThan(now + 6.9 * 24 * 60 * 60 * 1000);
-    expect(due).toBeLessThan(now + 7.1 * 24 * 60 * 60 * 1000);
+    // Owner ruling 2026-10-12: bred on Eastern day D, the foal arrives on day
+    // D+7 — foalDueDate is 00:00 Eastern that day. (Old contract: now + 7x24h.)
+    const due = new Date(res.body.data.foalDueDate);
+    expect(due.toISOString()).toBe(startOfGameDayIndex(gameDayIndex(new Date()) + 7).toISOString());
 
     // DB: the mare is in foal, the columns are set, no foal row exists.
     const dam = await prisma.horse.findUnique({ where: { id: damId } });

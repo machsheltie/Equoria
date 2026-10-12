@@ -7,6 +7,7 @@
  */
 
 import logger from './logger.mjs';
+import { gameDateKey } from './gameTime.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from './epigeneticFlags.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
@@ -313,7 +314,7 @@ function calculateDailyInteractionCounts(interactions) {
   const dailyCounts = {};
 
   interactions.forEach(interaction => {
-    const date = new Date(interaction.timestamp).toDateString();
+    const date = gameDateKey(interaction.timestamp);
     dailyCounts[date] = (dailyCounts[date] || 0) + 1;
   });
 

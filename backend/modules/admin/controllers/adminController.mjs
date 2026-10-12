@@ -36,6 +36,7 @@ import {
 } from '../../../services/apiDocumentationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 /**
  * GET /api/admin/cron/status
@@ -294,9 +295,7 @@ export async function setHorseAge(req, res) {
     );
 
     // 1 game year = 7 real days — derive the correct dateOfBirth
-    const DAYS_PER_GAME_YEAR = 7;
-    const dateOfBirth = new Date();
-    dateOfBirth.setDate(dateOfBirth.getDate() - Math.round(gameAge * DAYS_PER_GAME_YEAR));
+    const dateOfBirth = birthDateForAge(gameAge);
 
     // Update dateOfBirth so the aging cron stays consistent going forward
     await prisma.horse.update({ where: { id: horseId }, data: { dateOfBirth } });

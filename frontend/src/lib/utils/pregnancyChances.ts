@@ -13,6 +13,8 @@
  * Contract: docs/features/feed-system.md § Pregnancy-care contract.
  */
 
+import { gameDayIndex } from '@/lib/gameTime';
+
 /** Per-feeding bonus weight (in percentage points) by tier. */
 export const PREGNANCY_BONUS_PCT: Record<string, number> = Object.freeze({
   basic: 0,
@@ -65,10 +67,8 @@ export function calculatePregnancyEpigeneticChances(
   return { positive_chance, negative_chance };
 }
 
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-
 export interface PregnancyProgress {
-  /** Whole days elapsed since inFoalSinceDate (>= 0). */
+  /** Whole Eastern game days elapsed since inFoalSinceDate (>= 0). */
   elapsedDays: number;
   /** 1-based gestation day, capped at GESTATION_DAYS. */
   gestationDay: number;
@@ -80,8 +80,9 @@ export interface PregnancyProgress {
 
 /**
  * Compute the gestation-day countdown for an in-foal mare from her
- * `inFoalSinceDate`. Mirrors the math used by PregnancyFeedingPanel so the
- * HorseCard badge and the detail panel never disagree.
+ * `inFoalSinceDate`, counted in Eastern calendar days like the nightly foaling
+ * run (owner ruling 2026-10-12: bred on day D, foals on day D+7). Shared by the
+ * HorseCard badge and PregnancyFeedingPanel so they never disagree.
  *
  * Returns null when there is no usable start date (not pregnant, or an
  * unparseable date string) so callers can simply skip rendering the badge.
@@ -95,7 +96,7 @@ export function getPregnancyProgress(
   const startMs = new Date(inFoalSinceDate).getTime();
   if (Number.isNaN(startMs)) return null;
 
-  const elapsedDays = Math.max(0, Math.floor((now - startMs) / MS_PER_DAY));
+  const elapsedDays = Math.max(0, gameDayIndex(now) - gameDayIndex(startMs));
   const gestationDay = Math.min(elapsedDays + 1, GESTATION_DAYS);
   const daysRemaining = Math.max(0, GESTATION_DAYS - elapsedDays);
   const isOverdue = elapsedDays >= GESTATION_DAYS;

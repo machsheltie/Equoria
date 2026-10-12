@@ -5,7 +5,8 @@
  * Verifies the three feed-button disabled-reason cases that gate the
  * action-feed button on HorseDetailPage:
  *   1. No feed equipped   → "No feed selected. Click Equip first."
- *   2. Already fed today  → "Fed today. Available again at UTC midnight."
+ *   2. Already fed today  → "Fed today. Available again at midnight Eastern time."
+ *      "Today" is the Eastern game day (owner ruling 2026-10-09), not UTC.
  *   3. Horse is retired   → "Retired."
  */
 
@@ -124,21 +125,31 @@ describe('HorseDetailPage — feed button disabled-reason', () => {
     expect(feedBtn).toBeDisabled();
   });
 
-  it('shows "Fed today" when lastFedDate is today\'s UTC date', async () => {
-    const today = new Date().toISOString().slice(0, 10);
-    global.fetch = createFetchMock({
-      ...BASE_HORSE,
-      equippedFeedType: 'basic',
-      lastFedDate: today,
-      feedHealth: 'good',
-    });
-    renderPage(5);
+  it('shows "Fed today" when lastFedDate is on today\'s Eastern game day', async () => {
+    // 10 PM Eastern on Oct 9 is already Oct 10 in UTC. A feed at 10 AM
+    // Eastern the same day is "today" on the game clock (a UTC reading
+    // would wrongly re-enable the button).
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-10T02:00:00Z'));
+    try {
+      global.fetch = createFetchMock({
+        ...BASE_HORSE,
+        equippedFeedType: 'basic',
+        lastFedDate: '2026-10-09T14:00:00Z',
+        feedHealth: 'good',
+      });
+      renderPage(5);
 
-    await waitFor(() => expect(screen.getByText('Comet')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Comet')).toBeInTheDocument());
 
-    const feedBtn = screen.getByTestId('action-feed');
-    expect(feedBtn.getAttribute('title')).toBe('Fed today. Available again at UTC midnight.');
-    expect(feedBtn).toBeDisabled();
+      const feedBtn = screen.getByTestId('action-feed');
+      expect(feedBtn.getAttribute('title')).toBe(
+        'Fed today. Available again at midnight Eastern time.'
+      );
+      expect(feedBtn).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows "Retired." when feedHealth is retired', async () => {
@@ -158,7 +169,8 @@ describe('HorseDetailPage — feed button disabled-reason', () => {
   });
 
   it('is enabled with "Feed this horse" title when feed is equipped and not yet fed today', async () => {
-    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    // Two days back is never today's Eastern game day, DST included.
+    const yesterday = new Date(Date.now() - 2 * 86_400_000).toISOString();
     global.fetch = createFetchMock({
       ...BASE_HORSE,
       equippedFeedType: 'basic',

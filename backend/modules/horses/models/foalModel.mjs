@@ -24,6 +24,9 @@ import {
 // Enrichment window: development days 0-6 (the foal's first real week of life).
 const ENRICHMENT_MAX_DAY = 6;
 
+// completeActivity's refusal; foalController maps it via its 'not available' branch.
+const ACTIVITY_NOT_AVAILABLE = 'Activity not available for current day or already completed';
+
 function parseFoalId(foalId) {
   const parsedFoalId = parseInt(foalId, 10);
   if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
@@ -97,7 +100,7 @@ async function getFoalDevelopment(foalId) {
   logger.info(`[foalModel.getFoalDevelopment] Retrieved development data for foal ${parsedFoalId}`);
 
   // Equoria-g89vy: the enrichment day is DERIVED from the foal's age
-  // (date-only UTC), not the manually-incremented FoalDevelopment.currentDay.
+  // (date-only, Eastern game clock), not the manually-incremented FoalDevelopment.currentDay.
   // Surface it (and the day's enrichment activities) additively so the
   // frontend Enrich action has a real source of truth instead of guessing.
   const enrichmentDay = getHorseAgeDays(foal.dateOfBirth);
@@ -195,7 +198,7 @@ function toCompletedMilestonesArray(store) {
  * Complete a foal enrichment activity (Task 5 API).
  *
  * The enrichment "day" is NOT supplied by the caller — it is DERIVED from the
- * foal's dateOfBirth using canonical date-only UTC age math (Equoria-g89vy).
+ * foal's dateOfBirth using canonical date-only, Eastern game clock age math (Equoria-g89vy).
  * This makes the foal's age the single source of truth for which activities
  * are available and prevents a client from harvesting any day's activities
  * regardless of the foal's real age.
@@ -237,7 +240,7 @@ async function completeEnrichmentActivity(foalId, activity) {
         throw new AppError('Foal not found', 404);
       }
 
-      // Derive the development day from the foal's age (date-only UTC).
+      // Derive the development day from the foal's age (date-only, Eastern game clock).
       // Day 0 = just born; day 6 = end of the enrichment window.
       const day = getHorseAgeDays(foal.dateOfBirth, now);
 
@@ -332,7 +335,16 @@ async function completeEnrichmentActivity(foalId, activity) {
 }
 
 /**
- * Complete a foal enrichment activity
+ * Complete a legacy day-based foal development activity.
+ *
+ * The day is the server-owned FoalDevelopment.currentDay — advanced only by the
+ * nightly trait job (Equoria-mwjst retired every player route that set or
+ * advanced it). One transaction (Equoria-mwjst): the bond/stress/completed
+ * update and its FoalActivity record commit or roll back together. The update
+ * is a compare-and-swap on the values it was computed from (day, completed
+ * activities, bond, stress), so a concurrent or replayed completion of the
+ * same activity matches nothing and is refused instead of applying twice.
+ *
  * @param {number} foalId - ID of the foal
  * @param {string} activityType - Type of activity to complete
  * @returns {Object} - Updated foal development data
@@ -349,120 +361,104 @@ async function completeActivity(foalId, activityType) {
     `[foalModel.completeActivity] Completing activity ${activityType} for foal ${parsedFoalId}`,
   );
 
-  // Get current development status
-  const development = await prisma.foalDevelopment.findUnique({
-    where: { foalId: parsedFoalId },
-  });
+  const outcome = await runRetryableTransaction(
+    prisma,
+    async tx => {
+      const development = await tx.foalDevelopment.findUnique({
+        where: { foalId: parsedFoalId },
+      });
 
-  if (!development) {
-    // Equoria-4xwyi: typed 404 (AppError) so foalController.completeFoalActivity
-    // detects not-found by type, not error.message.includes('not found'). Raw
-    // AppError preserves the exact 'Foal development record not found' message.
-    throw new AppError('Foal development record not found', 404);
-  }
+      if (!development) {
+        // Equoria-4xwyi: typed 404 (AppError) so foalController.completeFoalActivity
+        // detects not-found by type, not error.message.includes('not found'). Raw
+        // AppError preserves the exact 'Foal development record not found' message.
+        throw new AppError('Foal development record not found', 404);
+      }
 
-  // Check if activity is available for current day
-  const availableActivities = getAvailableActivities(
-    development.currentDay,
-    development.completedActivities || {},
-  );
-  const activity = availableActivities.find(a => a.type === activityType);
+      // Check if activity is available for current day
+      const availableActivities = getAvailableActivities(
+        development.currentDay,
+        development.completedActivities || {},
+      );
+      const activity = availableActivities.find(a => a.type === activityType);
 
-  if (!activity) {
-    // NOTE (Equoria-4xwyi): NOT a not-found case — an availability/already-done
-    // state rejection. The controller maps this to 404 via its retained
-    // `'not available'` string branch (a pre-existing quirk: this is arguably a
-    // 400, but converting the status is out of scope — see what-was-NOT-done).
-    // Left as a plain Error so behavior is unchanged.
-    throw new Error('Activity not available for current day or already completed');
-  }
+      if (!activity) {
+        // NOTE (Equoria-4xwyi): NOT a not-found case — an availability/already-done
+        // state rejection. The controller maps this to 404 via its retained
+        // `'not available'` string branch (a pre-existing quirk). Left as a plain
+        // Error so behavior is unchanged.
+        throw new Error(ACTIVITY_NOT_AVAILABLE);
+      }
 
-  // Calculate activity outcome (random with some variance)
-  const outcome = calculateActivityOutcome(activity);
+      // Calculate activity outcome (random with some variance)
+      const rolled = calculateActivityOutcome(activity);
 
-  // Update development record
-  const completedActivities = { ...development.completedActivities };
-  if (!completedActivities[development.currentDay]) {
-    completedActivities[development.currentDay] = [];
-  }
-  completedActivities[development.currentDay].push(activityType);
+      // Built without touching the value as read: that value is the
+      // compare-and-swap's expected state below, and a shallow copy plus
+      // push() would alias the day's array and mutate it.
+      const completedAsRead = development.completedActivities ?? {};
+      const completedActivities = {
+        ...completedAsRead,
+        [development.currentDay]: [
+          ...(completedAsRead[development.currentDay] ?? []),
+          activityType,
+        ],
+      };
 
-  const newBondingLevel = Math.max(
-    0,
-    Math.min(100, development.bondingLevel + outcome.bondingChange),
-  );
-  const newStressLevel = Math.max(0, Math.min(100, development.stressLevel + outcome.stressChange));
+      const newBondingLevel = Math.max(
+        0,
+        Math.min(100, development.bondingLevel + rolled.bondingChange),
+      );
+      const newStressLevel = Math.max(
+        0,
+        Math.min(100, development.stressLevel + rolled.stressChange),
+      );
 
-  await prisma.foalDevelopment.update({
-    where: { foalId: parsedFoalId },
-    data: {
-      bondingLevel: newBondingLevel,
-      stressLevel: newStressLevel,
-      completedActivities,
+      const { count } = await tx.foalDevelopment.updateMany({
+        where: {
+          foalId: parsedFoalId,
+          currentDay: development.currentDay,
+          bondingLevel: development.bondingLevel,
+          stressLevel: development.stressLevel,
+          completedActivities: { equals: completedAsRead },
+        },
+        data: {
+          bondingLevel: newBondingLevel,
+          stressLevel: newStressLevel,
+          completedActivities,
+        },
+      });
+      if (count !== 1) {
+        // Another completion changed this record after we read it; the
+        // activity it was racing to log is already done (or the day moved).
+        throw new Error(ACTIVITY_NOT_AVAILABLE);
+      }
+
+      await tx.foalActivity.create({
+        data: {
+          foalId: parsedFoalId,
+          day: development.currentDay,
+          activityType,
+          outcome: rolled.result,
+          bondingChange: rolled.bondingChange,
+          stressChange: rolled.stressChange,
+          description: rolled.description,
+          // Equoria-8yhe3: tag this as the legacy ENRICHMENT stream. It does NOT
+          // feed Horse.taskLog; the source discriminator guarantees the taskLog
+          // count derivation excludes these rows even if an enrichment
+          // activityType ever collides with a groom interactionType string.
+          source: FOAL_ACTIVITY_SOURCE.ENRICHMENT_ACTIVITY,
+        },
+      });
+
+      return rolled;
     },
-  });
-
-  // Log the activity
-  await prisma.foalActivity.create({
-    data: {
-      foalId: parsedFoalId,
-      day: development.currentDay,
-      activityType,
-      outcome: outcome.result,
-      bondingChange: outcome.bondingChange,
-      stressChange: outcome.stressChange,
-      description: outcome.description,
-      // Equoria-8yhe3: tag this as the legacy ENRICHMENT stream. It does NOT
-      // feed Horse.taskLog; the source discriminator guarantees the taskLog
-      // count derivation excludes these rows even if an enrichment
-      // activityType ever collides with a groom interactionType string.
-      source: FOAL_ACTIVITY_SOURCE.ENRICHMENT_ACTIVITY,
-    },
-  });
+    { message: 'Could not complete this activity right now; please retry.' },
+  );
 
   logger.info(`[foalModel.completeActivity] Activity completed: ${outcome.result}`);
 
   // Return updated development data
-  return await getFoalDevelopment(parsedFoalId);
-}
-
-/**
- * Advance foal to next day (typically called by daily cron job)
- * @param {number} foalId - ID of the foal
- * @returns {Object} - Updated foal development data
- */
-async function advanceDay(foalId) {
-  const parsedFoalId = parseFoalId(foalId);
-
-  logger.info(`[foalModel.advanceDay] Advancing day for foal ${parsedFoalId}`);
-
-  const development = await prisma.foalDevelopment.findUnique({
-    where: { foalId: parsedFoalId },
-  });
-
-  if (!development) {
-    // Equoria-4xwyi: typed 404 (AppError) so foalController.advanceFoalDay detects
-    // not-found by type, not error.message.includes('not found'). Raw AppError
-    // preserves the exact 'Foal development record not found' message.
-    throw new AppError('Foal development record not found', 404);
-  }
-
-  if (development.currentDay >= 6) {
-    throw new Error('Foal has already completed development period');
-  }
-
-  // Advance to next day
-  await prisma.foalDevelopment.update({
-    where: { foalId: parsedFoalId },
-    data: {
-      currentDay: development.currentDay + 1,
-    },
-  });
-
-  logger.info(
-    `[foalModel.advanceDay] Foal ${parsedFoalId} advanced to day ${development.currentDay + 1}`,
-  );
-
   return await getFoalDevelopment(parsedFoalId);
 }
 
@@ -824,7 +820,6 @@ async function recordFirstGraduation(tx, userId, now) {
 export {
   getFoalDevelopment,
   completeActivity,
-  advanceDay,
   getAvailableActivities,
   completeEnrichmentActivity,
   graduateFoal,

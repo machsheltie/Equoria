@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { validateFoalInteractionLimits } from '../../../utils/groomSystem.mjs';
+import { startOfGameDay } from '../../../utils/gameTime.mjs';
 // Equoria-15b6j: fail-loud scoped cleanup — a cleanup failure must fail the
 // suite (not swallow into a warn) so a leaked fixture surfaces at the source.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -51,7 +52,7 @@ async function rmHorse(id) {
   await prisma.horse.deleteMany({ where: { id } });
 }
 
-async function mkInteractionToday(foalId) {
+async function mkInteractionToday(foalId, timestamp = new Date()) {
   // validateFoalInteractionLimits queries the `timestamp` field for today's window
   return prisma.groomInteraction.create({
     data: {
@@ -59,7 +60,7 @@ async function mkInteractionToday(foalId) {
       groomId,
       interactionType: 'daily_care',
       duration: 30,
-      timestamp: new Date(),
+      timestamp,
     },
   });
 }
@@ -142,6 +143,34 @@ describe('Daily Limits — ALL Horses', () => {
 });
 
 // ─── edge cases ───────────────────────────────────────────────────────────────
+
+// Owner rulings 2026-10-09 / 2026-10-12: one groom interaction per horse per
+// Eastern game day. The day turns at 00:00 Eastern, not at the server's (UTC)
+// midnight.
+describe('Daily limit follows the Eastern game day', () => {
+  it('an interaction at 00:00 Eastern today blocks another today', async () => {
+    const horse = await mkHorse('EasternMidnight', { age: 1 });
+    try {
+      await mkInteractionToday(horse.id, startOfGameDay(new Date()));
+      const result = await validateFoalInteractionLimits(horse.id);
+      expect(result.canInteract).toBe(false);
+      expect(result.interactionsToday).toBe(1);
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+
+  it('an interaction at 23:59 Eastern yesterday does not block today', async () => {
+    const horse = await mkHorse('EasternYesterday', { age: 1 });
+    try {
+      await mkInteractionToday(horse.id, new Date(startOfGameDay(new Date()).getTime() - 60 * 1000));
+      const result = await validateFoalInteractionLimits(horse.id);
+      expect(result.canInteract).toBe(true);
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+});
 
 describe('Edge Cases', () => {
   it('throws when horse ID does not exist', async () => {

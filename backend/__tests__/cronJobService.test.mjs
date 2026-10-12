@@ -141,6 +141,24 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
       expect(status.totalJobs).toBe(CANONICAL_CRON_JOBS.length);
     });
 
+    // Owner ruling 2026-10-09 (repeated — it had drifted to UTC): every
+    // scheduled job runs on the owner's Eastern time. Read from the real
+    // node-cron tasks of BOTH registries, not from source text.
+    it('should schedule every job, in both registries, on Eastern time (America/New_York)', () => {
+      initializeCronJobs();
+
+      const status = getCronJobStatus();
+      expect(Object.keys(status.jobs).length).toBeGreaterThan(0);
+      for (const [jobName, job] of Object.entries(status.jobs)) {
+        expect({ jobName, timezone: job.timezone }).toEqual({ jobName, timezone: 'America/New_York' });
+      }
+
+      expect(legacyCronJobs.jobs.size).toBeGreaterThan(0);
+      for (const [jobName, job] of legacyCronJobs.jobs) {
+        expect({ jobName, timezone: job.timezone }).toEqual({ jobName, timezone: 'America/New_York' });
+      }
+    });
+
     it('should report running and scheduled flags for each job', () => {
       initializeCronJobs();
 

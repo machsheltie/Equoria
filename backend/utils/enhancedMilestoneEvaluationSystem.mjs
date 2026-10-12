@@ -15,6 +15,7 @@
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
+import { gameDateKey } from './gameTime.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
 import { evaluateAndPersistUltraRareTraits } from '../modules/traits/index.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
@@ -296,7 +297,7 @@ async function getGroomCareHistory(horseId, window) {
 
   // Calculate task consistency
   const totalDays = window.end - window.start + 1;
-  const daysWithInteractions = new Set(interactions.map(i => i.timestamp.toDateString())).size;
+  const daysWithInteractions = new Set(interactions.map(i => gameDateKey(i.timestamp))).size;
   const taskConsistency = Math.round((daysWithInteractions / totalDays) * 5); // Max 5 points for consistency
 
   return {

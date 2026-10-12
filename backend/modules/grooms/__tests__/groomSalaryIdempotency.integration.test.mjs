@@ -78,16 +78,42 @@ function uniq() {
  * (SALARY_CONFIG.PAYMENT_DAY = 1) at-or-before `now`. The pay week is the
  * half-open interval [start, start + 7 days).
  */
+// Owner ruling 2026-10-09: the pay week starts at 00:00 EASTERN on Monday
+// (America/New_York, with daylight saving). Old contract: 00:00 UTC Monday.
+// Independent oracle: walk back to the Eastern Monday, then pick whichever of
+// 04:00Z (EDT) / 05:00Z (EST) reads as Eastern midnight on that date.
+const easternFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  weekday: 'short',
+  hour: 'numeric',
+  hourCycle: 'h23',
+});
+function easternParts(date) {
+  return Object.fromEntries(easternFormatter.formatToParts(date).map(p => [p.type, p.value]));
+}
+const WEEKDAY = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
 function payWeekStartOf(now) {
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const diff = (d.getUTCDay() - 1 + 7) % 7; // 1 = Monday
-  d.setUTCDate(d.getUTCDate() - diff);
-  return d;
+  const p = easternParts(now);
+  const back = (WEEKDAY[p.weekday] - 1 + 7) % 7; // 1 = Monday
+  const mondayUtc = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day) - back);
+  for (const offsetHours of [4, 5]) {
+    const candidate = new Date(mondayUtc + offsetHours * 60 * 60 * 1000);
+    const c = easternParts(candidate);
+    if (c.weekday === 'Mon' && Number(c.hour) === 0) {
+      return candidate;
+    }
+  }
+  throw new Error(`no Eastern midnight found for ${now.toISOString()}`);
 }
 
 function payWeekWindowOf(now) {
   const start = payWeekStartOf(now);
-  return { start, end: new Date(start.getTime() + 7 * MS_PER_DAY) };
+  // The next Monday's start (a DST week is 7 days +/- 1 hour long).
+  return { start, end: payWeekStartOf(new Date(start.getTime() + 8 * MS_PER_DAY)) };
 }
 
 async function makeUser(money) {
@@ -353,30 +379,50 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
 // oracle above (guards the helper against Monday-anchor / UTC drift)
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('getPayWeekStart — UTC Monday anchoring (Equoria-icqqm)', () => {
-  it('a Monday maps to that same UTC day regardless of time-of-day', () => {
-    // 2026-08-17 is a Monday.
-    const morning = new Date('2026-08-17T00:00:00.000Z');
-    const night = new Date('2026-08-17T23:59:59.999Z');
-    expect(getPayWeekStart(morning).toISOString()).toBe('2026-08-17T00:00:00.000Z');
-    expect(getPayWeekStart(night).toISOString()).toBe('2026-08-17T00:00:00.000Z');
+describe('getPayWeekStart — Eastern Monday anchoring (Equoria-icqqm; owner ruling 2026-10-09)', () => {
+  it('a Monday maps to that same Eastern day regardless of time-of-day', () => {
+    // 2026-08-17 is a Monday; Eastern is EDT (UTC-4).
+    const morning = new Date('2026-08-17T04:00:00.000Z'); // Mon 00:00 EDT
+    const night = new Date('2026-08-18T03:59:59.999Z'); // Mon 23:59:59.999 EDT
+    expect(getPayWeekStart(morning).toISOString()).toBe('2026-08-17T04:00:00.000Z');
+    expect(getPayWeekStart(night).toISOString()).toBe('2026-08-17T04:00:00.000Z');
+  });
+
+  it('Sunday evening Eastern still belongs to the previous pay week, even though it is Monday in UTC', () => {
+    const sundayNight = new Date('2026-08-17T02:00:00.000Z'); // Sun 22:00 EDT
+    expect(getPayWeekStart(sundayNight).toISOString()).toBe('2026-08-10T04:00:00.000Z');
   });
 
   it('a Sunday maps back to the PREVIOUS Monday (6 days earlier)', () => {
     const sunday = new Date('2026-08-23T12:00:00.000Z');
-    expect(getPayWeekStart(sunday).toISOString()).toBe('2026-08-17T00:00:00.000Z');
+    expect(getPayWeekStart(sunday).toISOString()).toBe('2026-08-17T04:00:00.000Z');
   });
 
   it('exactly one week later lands on the NEXT Monday (windows tile with no gap/overlap)', () => {
-    const monday = new Date('2026-08-17T09:00:00.000Z'); // the cron's Monday 09:00 UTC tick
+    const monday = new Date('2026-08-17T13:00:00.000Z'); // the cron's Monday 09:00 EDT tick
     const nextTick = new Date(monday.getTime() + 7 * MS_PER_DAY);
-    expect(getPayWeekStart(nextTick).toISOString()).toBe('2026-08-24T00:00:00.000Z');
+    expect(getPayWeekStart(nextTick).toISOString()).toBe('2026-08-24T04:00:00.000Z');
   });
 
-  it('agrees with the test-local independent oracle across a full week of days', () => {
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(Date.UTC(2026, 7, 17 + i, 9, 0, 0)); // Mon..Sun
-      expect(getPayWeekStart(d).toISOString()).toBe(payWeekStartOf(d).toISOString());
+  it('across the autumn daylight-saving change the Monday starts at 00:00 EST', () => {
+    const mondayAfterDst = new Date('2026-11-02T14:00:00.000Z'); // Mon 09:00 EST
+    expect(getPayWeekStart(mondayAfterDst).toISOString()).toBe('2026-11-02T05:00:00.000Z');
+    const weekBefore = new Date('2026-10-30T12:00:00.000Z'); // Fri, still EDT
+    expect(getPayWeekStart(weekBefore).toISOString()).toBe('2026-10-26T04:00:00.000Z');
+  });
+
+  it('agrees with the test-local independent oracle across a full week of days, DST weeks included', () => {
+    for (const [month, day] of [
+      [7, 17], // August (EDT)
+      [9, 26], // Oct 26 – Nov 1 (crosses the autumn change)
+      [11, 14], // December (EST)
+    ]) {
+      for (let i = 0; i < 7; i++) {
+        for (const hour of [2, 13, 23]) {
+          const d = new Date(Date.UTC(2026, month, day + i, hour, 0, 0));
+          expect(getPayWeekStart(d).toISOString()).toBe(payWeekStartOf(d).toISOString());
+        }
+      }
     }
   });
 });

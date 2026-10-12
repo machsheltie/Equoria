@@ -25,7 +25,11 @@
  */
 
 import React from 'react';
-import { calculatePregnancyEpigeneticChances, GESTATION_DAYS } from '@/lib/utils/pregnancyChances';
+import {
+  calculatePregnancyEpigeneticChances,
+  getPregnancyProgress,
+  GESTATION_DAYS,
+} from '@/lib/utils/pregnancyChances';
 
 const TIER_LABELS: Record<string, string> = {
   basic: 'Basic',
@@ -43,8 +47,6 @@ const TIER_ORDER: Array<keyof typeof TIER_LABELS> = [
   'performance',
   'basic',
 ];
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface PregnancyFeedingPanelProps {
   /** ISO timestamp when the mare was bred. Null/undefined = not pregnant → renders nothing. */
@@ -71,13 +73,9 @@ export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
   sireName,
   pregnancySireId,
 }) => {
-  if (!inFoalSinceDate) return null;
-
-  const startMs = new Date(inFoalSinceDate).getTime();
-  const elapsedDays = Math.max(0, Math.floor((Date.now() - startMs) / MS_PER_DAY));
-  const gestationDay = Math.min(elapsedDays + 1, GESTATION_DAYS);
-  const daysRemaining = Math.max(0, GESTATION_DAYS - elapsedDays);
-  const isOverdue = elapsedDays >= GESTATION_DAYS;
+  const progress = getPregnancyProgress(inFoalSinceDate);
+  if (!progress) return null;
+  const { gestationDay, daysRemaining, isOverdue } = progress;
 
   const { positive_chance, negative_chance } = calculatePregnancyEpigeneticChances(feedings);
 

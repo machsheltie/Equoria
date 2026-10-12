@@ -124,7 +124,7 @@ wholesale.
 | Work                                                        | Read                                                                                                   |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Player-facing product or UI                                 | `PRODUCT.md` and `DESIGN.md`, then only the design-system files triggered by `CLAUDE.md`               |
-| A named feed or stud-service rule                           | The exact file in `docs/features/`, plus live source/tests                                             |
+| A named feed, stud-service, or outage time-back rule        | The exact file in `docs/features/`, plus live source/tests                                             |
 | A named cross-cutting architecture decision                 | The exact ADR in `docs/architecture/`                                                                  |
 | Rate-limit behavior                                         | `docs/api-contracts-backend/rate-limiting.md` and live middleware/tests                                |
 | Ordinary implementation or debugging                        | Source, tests, config, current issue; no broad docs preload                                            |

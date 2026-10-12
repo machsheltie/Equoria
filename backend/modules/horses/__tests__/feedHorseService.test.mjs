@@ -23,7 +23,7 @@ import { feedHorse, rollStatBoost } from '../services/horseFeedService.mjs';
 // Equoria-zvp4: same UTC-day truncation the service uses to build the
 // optimistic-claim WHERE precondition — the guard test asserts the precondition
 // matches 1 row before the feed-day claim and 0 rows after.
-import { startOfUtcDay } from '../../../utils/horseHealth.mjs';
+import { startOfGameDay } from '../../../utils/horseHealth.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -541,7 +541,7 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
     // Because lastFedDate is now committed as today, this must affect 0 rows —
     // which is what makes a concurrent loser a no-op. (A no-WHERE update — the
     // pre-fix behavior — would have affected 1, i.e. double-applied.)
-    const startOfTodayUtc = startOfUtcDay(new Date());
+    const startOfTodayUtc = startOfGameDay(new Date());
     const affected = await prisma.$executeRawUnsafe(
       'UPDATE "horses" SET "lastFedDate" = $1 WHERE "id" = $2 AND ("lastFedDate" IS NULL OR "lastFedDate" < $3)',
       new Date(),

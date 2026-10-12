@@ -5,6 +5,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { gameDayBounds } from '../../../utils/gameTime.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
@@ -184,10 +185,8 @@ export async function performEnhancedInteraction(req, res) {
     }
 
     // Check daily interaction limits
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // "Today" is the Eastern game day (owner ruling 2026-10-09).
+    const { start: today, end: tomorrow } = gameDayBounds();
 
     const todaysInteractions = await prisma.groomInteraction.findMany({
       where: {

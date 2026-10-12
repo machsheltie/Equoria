@@ -6,13 +6,13 @@
  * weeklyFlagEvaluationCron.*.test.mjs).
  *
  * Behaviour identical to the pre-split inline `cron.schedule('30 0 * * 1', ...)`
- * (Equoria-yzqhj.2): every Monday at 00:30 UTC (after the weekly rider/trainer
+ * (Equoria-yzqhj.2): every Monday at 00:30 Eastern (after the weekly rider/trainer
  * career tick at 00:15), advisory-locked, runWithHeartbeat.
  */
 
 export default Object.freeze({
   jobName: 'weeklyFlagEvaluation',
-  // Runs every Monday at 00:30 UTC.
+  // Runs every Monday at 00:30 Eastern.
   schedule: '30 0 * * 1',
   applyLock: true,
   // Weekly cadence → 192h budget (168h period + 24h tolerance).

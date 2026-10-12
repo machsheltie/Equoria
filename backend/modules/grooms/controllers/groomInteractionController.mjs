@@ -35,6 +35,7 @@ import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInflu
 // so a pool-acquire / interactive-timeout P2028 must surface as a retryable 503
 // rather than a permanent 500.
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { gameDateKey } from '../../../utils/gameTime.mjs';
 
 /**
  * Determine the current milestone window for a horse based on age
@@ -179,8 +180,8 @@ export async function recordInteraction(req, res) {
     }
 
     // Check for task mutual exclusivity (enrichment vs grooming same day)
-    // Get today's date in YYYY-MM-DD format for task log checking
-    const [today] = new Date().toISOString().split('T');
+    // Today's Eastern game date (YYYY-MM-DD) for task log checking
+    const today = gameDateKey(new Date());
 
     // Check if foal has already completed a task today
     let existingTaskToday = null;

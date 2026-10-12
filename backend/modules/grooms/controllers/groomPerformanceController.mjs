@@ -7,6 +7,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
+import { gameDateKey } from '../../../utils/gameTime.mjs';
 import {
   recordGroomPerformance,
   getGroomPerformanceSummary,
@@ -271,7 +272,7 @@ export async function getGroomAnalytics(req, res) {
 
     // Group by day
     records.forEach(record => {
-      const [day] = record.recordedAt.toISOString().split('T');
+      const day = gameDateKey(record.recordedAt);
       analytics.dailyActivity[day] = (analytics.dailyActivity[day] || 0) + 1;
     });
 

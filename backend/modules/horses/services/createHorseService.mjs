@@ -33,7 +33,6 @@
  * (preserving the prior error path verbatim).
  */
 
-import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { createHorse } from './horseModelService.mjs';
 import { generateConformationScores } from './conformationService.mjs';
@@ -47,6 +46,7 @@ import { generateMarkings, inheritMarkings } from './markingGenerationService.mj
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 /**
  * Create a horse for the given user from a validated request body.
@@ -193,7 +193,7 @@ export async function createHorseFromRequest(reqBody, userId) {
   const horseAge = reqBody.age ?? 0;
   const computedDateOfBirth = reqBody.dateOfBirth
     ? new Date(reqBody.dateOfBirth).toISOString()
-    : new Date(Date.now() - horseAge * MS_PER_GAME_YEAR).toISOString();
+    : birthDateForAge(horseAge).toISOString();
 
   const horseData = {
     name: reqBody.name,

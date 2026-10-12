@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
+import { GAME_TIME_ZONE } from '../utils/gameTime.mjs';
 // Equoria-urqic.3: heavy job-logic clusters extracted out of this orchestrator
 // into focused, individually-testable impl modules. The class keeps thin
 // delegator methods (the names integration tests call on the singleton) that
@@ -120,8 +121,8 @@ class CronJobService {
    * Equoria-fx4e7: the per-job descriptors (schedule + applyLock + staleAfterMs
    * + run thunk) live in backend/services/jobs/. We iterate the ordered
    * CRON_JOB_REGISTRY and build each cron.schedule identically to the previous
-   * inline blocks (same schedule string, same { scheduled: false, timezone:
-   * 'UTC' } options, same runWithHeartbeat wrapping). Map insertion order is
+   * inline blocks (same schedule string, same { scheduled: false } options, now on the
+   * owner's Eastern game clock, GAME_TIME_ZONE, same runWithHeartbeat wrapping). Map insertion order is
    * preserved, so getStatus()/getHealth() iteration order is unchanged.
    */
   start() {
@@ -140,7 +141,7 @@ class CronJobService {
         },
         {
           scheduled: false,
-          timezone: 'UTC',
+          timezone: GAME_TIME_ZONE,
         },
       );
       this.jobs.set(jobName, job);

@@ -3,7 +3,7 @@
  *
  * Registry entry consumed by initializeCronJobs() in cronJobService.mjs.
  * Behaviour identical to the pre-split inline `cron.schedule('0 9 * * 1', ...)`:
- * Every Monday 09:00 UTC, advisory-locked under 'cronJobService:weeklySalaries'.
+ * Every Monday 09:00 Eastern, advisory-locked under 'cronJobService:weeklySalaries'.
  *
  * `runSalaryProcessing` stays the work function (also re-exported by
  * cronJobService.mjs as the manual triggerSalaryProcessing path's impl is a
@@ -46,7 +46,7 @@ export async function runSalaryProcessing() {
 
 export default Object.freeze({
   jobName: 'weeklySalaries',
-  // Every Monday at 09:00 UTC.
+  // Every Monday at 09:00 Eastern.
   schedule: '0 9 * * 1',
   lockKey: 'cronJobService:weeklySalaries',
   run: runSalaryProcessing,

@@ -6,12 +6,12 @@
  * cronJobsOvernightShowExecution.test.mjs).
  *
  * Behaviour identical to the pre-split inline `cron.schedule('0 3 * * *', ...)`
- * (Equoria-aghl / FR-CN8): 03:00 UTC, advisory-locked, runWithHeartbeat.
+ * (Equoria-aghl / FR-CN8): 03:00 Eastern, advisory-locked, runWithHeartbeat.
  */
 
 export default Object.freeze({
   jobName: 'nightlyShowExecution',
-  // Runs nightly at 03:00 UTC.
+  // Runs nightly at 03:00 Eastern.
   schedule: '0 3 * * *',
   applyLock: true,
   staleAfterMs: 30 * 60 * 60 * 1000,

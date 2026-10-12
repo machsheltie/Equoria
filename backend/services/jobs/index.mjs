@@ -6,7 +6,7 @@
  * staleAfterMs, run }`:
  *   - jobName      — canonical key (CronJobService.jobs / heartbeats key,
  *                    /api/admin/cron/health key).
- *   - schedule     — node-cron schedule string (UTC).
+ *   - schedule     — node-cron schedule string (Eastern game clock, GAME_TIME_ZONE).
  *   - applyLock    — true => wrap in pg_try_advisory_xact_lock so the
  *                    side-effect runs EXACTLY ONCE cluster-wide (Equoria-iot0h).
  *   - staleAfterMs — heartbeat staleness budget (Equoria-0elk) — surfaced in

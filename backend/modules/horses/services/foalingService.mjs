@@ -45,14 +45,13 @@ import {
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
 import { UNNAMED_HORSE_NAME } from './horseNamePolicy.mjs';
+import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 
 /**
- * Length of an Equoria gestation. Mirrors GESTATION_DAYS in
- * pregnancyBonus.mjs but kept local so the foaling job's date math is
- * self-contained.
+ * Length of an Equoria gestation. Mirrors GESTATION_DAYS in pregnancyBonus.mjs
+ * but kept local so the foaling job's date math is self-contained.
  */
 const GESTATION_DAYS = 7;
-const GESTATION_MS = GESTATION_DAYS * 24 * 60 * 60 * 1000;
 
 /**
  * Pool of bonus epigenetic traits the pregnancy formula can roll on top of
@@ -452,7 +451,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     playerId: options.playerId,
     stableId: options.stableId,
     healthStatus: options.healthStatus || 'Excellent',
-    dateOfBirth: new Date().toISOString(),
+    dateOfBirth: gameCalendarDate().toISOString(), // born today, Eastern
     conformationScores,
     gaitScores,
     temperament,
@@ -535,11 +534,10 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
 }
 
 /**
- * Foaling job — finds every mare whose gestation has elapsed (>= 7 days) and
- * delivers each foal. Per-mare isolation: a failure on one mare does not
- * abort the run. Idempotent: the guarded in-transaction claim in
- * `createFoalFromPregnancy` guards against duplicate foaling when two job
- * runners overlap or a single run is invoked twice.
+ * Foaling job — delivers every mare bred 7+ Eastern calendar days ago (owner
+ * ruling 2026-10-12: bred on day D, foals on day D+7). Per-mare isolation: a
+ * failure on one mare does not abort the run. Idempotent: the guarded claim in
+ * `createFoalFromPregnancy` prevents duplicate foaling across overlapping runs.
  *
  * @param {object} [opts]
  * @param {Date}     [opts.now] - test seam; defaults to new Date().
@@ -548,14 +546,15 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
  * @returns {Promise<{foalsBorn:number, errors:Array<{damId:number,error:string}>}>}
  */
 export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}) {
-  const cutoff = new Date(now.getTime() - GESTATION_MS);
+  // Bred before 00:00 Eastern on (today - 6) means bred on day <= today - 7.
+  const cutoff = startOfGameDayIndex(gameDayIndex(now) - GESTATION_DAYS + 1);
   logger.info(
     `[foalingService.runFoalingJob] Searching for mares due as of ${cutoff.toISOString()}`,
   );
 
   const candidates = await prisma.horse.findMany({
     where: {
-      inFoalSinceDate: { lte: cutoff },
+      inFoalSinceDate: { lt: cutoff },
       pregnancySireId: { not: null },
     },
     select: {

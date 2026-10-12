@@ -3,7 +3,7 @@
  *
  * Registry entry consumed by initializeCronJobs() in cronJobService.mjs.
  * Behaviour identical to the pre-split inline `cron.schedule('5 0 * * *', ...)`:
- * Daily 00:25 UTC (moved from 00:05 by Equoria-bvddn.15 / Equoria-cmw85.8 (owner ruling 2026-09-30): it shared the minute
+ * Daily 00:25 Eastern (moved from 00:05 by Equoria-bvddn.15 / Equoria-cmw85.8 (owner ruling 2026-09-30): it shared the minute
  * with dailyHorseAging; it stays AFTER aging so newborns are not double-processed
  * the same night), advisory-locked under 'cronJobService:foaling'. Mares whose
  * inFoalSinceDate is older than 7 days are foaled and their pregnancy columns
@@ -36,7 +36,7 @@ export async function runFoalingJobScheduled() {
 
 export default Object.freeze({
   jobName: 'foaling',
-  // Daily at 00:25 UTC. Old: '5 0 * * *' (collided with dailyHorseAging).
+  // Daily at 00:25 Eastern. Old: '5 0 * * *' (collided with dailyHorseAging).
   // Keep it after aging (00:05) and off every other job's minute; the
   // cronScheduleCollision sentinel enforces the latter across BOTH registries
   // (this file and backend/services/jobs/index.mjs).

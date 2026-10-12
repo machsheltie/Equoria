@@ -1071,3 +1071,87 @@ Stale-issue reconciliation from the same sweep: Equoria-49dzc and Equoria-pey97 
 SECURITY.md §A03-Injection; Equoria-xbir9 (Bearer CSRF) is documented in the CSRF section.
 
 Owner ruling 2026-09-21: record here and close; the retired report is not resurrected.
+
+## 2026-10-09 — Platform technical architecture implementation audit
+
+Scope: current on-disk implementation, including pre-existing uncommitted changes; base commit `62b852948ededc82431dfec53f69616563917048`. The completed architecture volume inventories 54 Prisma models, 6 enums, 101 migration directories, 420 explicit route registrations / 417 unique method-path combinations, 41 browser routes and 19 cron descriptors. These are static source counts, not production certification.
+
+Output: `EquoriaBible/Findings/02_Platform_Technical_Architecture_Completed.docx`. The supplied original was open/locked, so the completed copy is saved beside it. Application source and tests were not edited by this audit.
+
+### Open findings
+
+#### ARCH-01 [P2] API discovery advertises removed routes
+
+**Evidence:** `backend/config/healthHandlers.mjs:123`; `backend/app.mjs:354`.
+
+**Failure scenario:** GET /api-info returns /api/auth, /api/horses and other unversioned URLs plus /api/v1/labs. The composition root mounts gameplay at /api/v1 and mounts labs-derived routes individually, without a /labs router. A client following the advertised horse URL receives 404 rather than the horse API.
+
+**Recommended correction (not applied):** Update discovery from the actual mount tree and cover the advertised URLs with a contract check.
+
+#### ARCH-02 [P2] Served Swagger JSON selects the wrong API base
+
+**Evidence:** `backend/middleware/swaggerSetup.mjs:38`; `backend/docs/swagger.yaml:104`.
+
+**Failure scenario:** loadSwaggerSpec overwrites the server list with API_BASE_URL plus /api, while specification paths include /auth/login. With API_BASE_URL set to the site origin, Swagger Try it out targets /api/auth/login; the implemented path is /api/v1/auth/login. The raw YAML and served JSON also expose different server lists.
+
+**Recommended correction (not applied):** Align the served server base and root health paths with the mounted API, then verify generated request URLs.
+
+#### ARCH-03 [P2] Query cache and rate limits use different Redis connection contracts
+
+**Evidence:** `backend/utils/cacheHelper.mjs:180`; `backend/utils/cacheHelper.mjs:197`; `backend/middleware/rateLimiting.mjs:276`.
+
+**Failure scenario:** The query cache constructs ioredis from REDIS_HOST/PORT/PASSWORD/DB and never consumes REDIS_URL, whereas rate limiting accepts REDIS_URL. A deployment configured only with REDIS_URL can have working distributed rate limits but an unavailable localhost query cache and per-process fallback. initializeRedis also short-circuits only NODE_ENV=test, so REDIS_DISABLED=true does not itself prevent the cache connection attempt despite the helper reporting intentional disablement.
+
+**Recommended correction (not applied):** Use a consistent cache connection resolver and enforce intentional disablement in the actual initialization path. Multi-replica fallback otherwise permits stale cache reads after writes on another process.
+
+#### ARCH-04 [P2] Trait trends return a successful empty report
+
+**Evidence:** `backend/modules/horses/routes/horseRoutes.mjs:182`; `backend/modules/horses/routes/horseRoutes.mjs:204`.
+
+**Failure scenario:** The authenticated self-scoped trait-trends route creates empty trends, patterns and predictions and returns success without querying trait history. A player with recorded trait events receives an empty report indistinguishable from having no events.
+
+**Recommended correction (not applied):** Implement the history aggregation or return an explicit unavailable/partial capability response.
+
+#### ARCH-05 [P2] Personality history is not persisted or reconstructed
+
+**Evidence:** `backend/modules/horses/services/personalityEvolutionSystem.mjs:364`; `backend/modules/labs/controllers/personalityEvolutionController.mjs:296`.
+
+**Failure scenario:** The mounted history controller delegates to a helper that always returns totalEvolutions=0 and empty event, timeline, trajectory and stability arrays. After an evolution action, this API still reports no evolution history. There is no PersonalityEvolutionLog model in the current schema.
+
+**Recommended correction (not applied):** Persist/reconstruct history before presenting it as a complete feature, or expose the missing capability explicitly.
+
+#### ARCH-06 [P2] A CI build artifact step uploads directories the build does not produce
+
+**Evidence:** `.github/workflows/ci-cd.yml:91`; `.github/workflows/ci-cd.yml:92`; `frontend/package.json:11`; `backend/package.json:13`.
+
+**Failure scenario:** Build Validation uploads backend/dist and frontend/build. The backend build only prints a completion message for its ESM source, and the frontend Vite build writes dist. After a successful build, the configured upload paths do not contain the intended client bundle, so that workflow cannot provide the advertised build artifact. Railway uses its separate build script.
+
+**Recommended correction (not applied):** Point the artifact upload at real output paths and make missing expected files fail the step.
+
+#### ARCH-07 [P2] Training eligibility can use stale stored age
+
+**Evidence:** `backend/modules/training/controllers/trainingController.mjs:85`; `backend/services/jobs/dailyAgingJob.mjs:15`; `backend/utils/horseAge.mjs:157`.
+
+**Failure scenario:** Training computes the date-derived age but then prefers Horse.age whenever it is present. At Eastern midnight a horse can display ageYears=21 while its stored age is still 20 until the 00:05 aging job updates it; a horse with no other training restrictions passes the age gate during that window. A failed aging job prolongs the mismatch. This is a source-traced scenario, not a live database reproduction.
+
+**Recommended correction (not applied):** Use the canonical date-derived age for eligibility or reconcile the stored value atomically before accepting the action.
+
+#### ARCH-08 [P2] Manual salary processing bypasses the admin MFA policy
+
+**Evidence:** `backend/modules/grooms/routes/groomSalaryRoutes.mjs:81`; `backend/app/routers.mjs:195`; `backend/modules/grooms/controllers/groomSalaryController.mjs:155`; `backend/middleware/auth.mjs:371`.
+
+**Failure scenario:** With ADMIN_MFA_REQUIRED=true, an authenticated admin account without MFA enrollment is blocked from the guarded admin router but can POST /api/v1/groom-salaries/process with a valid CSRF token. This route has only an inline role check and inherits no requireAdminMfa guard; its controller invokes salary processing without a further MFA check. The account can therefore trigger this administrative financial operation despite the configured enrollment policy. This is source-traced, not a live mutation reproduction.
+
+**Recommended correction (not applied):** Apply the shared role and admin-MFA guards to this route and extend coverage to inline role checks as well as requireRole calls.
+
+### Verification performed
+
+- `npm run typecheck`: PASS (exit 0).
+- Doctrine `scripts/doctrine-checks/run-all.sh`: PASS, all 46 checks (exit 0), using installed Git for Windows bash because bare bash was unavailable.
+- `npm run lint`: FAIL (exit 1), 480 errors and 352 warnings. No autofix.
+- Selected backend tests: PASS, 11 suites / 188 tests. Covered game clock, horse age, cron registry, cookie security, DB pool configuration, JWT key ring, runtime secret policy, request-body security, SSE multi-instance guard, Railway migration fail-fast and beta-readiness environment sentinels. `NODE_ENV=test`, `REDIS_DISABLED=true`, and an intentionally unreachable local database URL avoided use of a shared database.
+- `npm run test:frontend`: FAIL (exit 1), 354 files passed / 2 failed, 5915 tests passed / 5 failed. `frontend/src/components/breeding/__tests__/HorseSelector.test.tsx:173` expected 30 cooldown days and received 31. Four cases in `frontend/src/pages/horse-detail/genetics/__tests__/nonColorMeaning.test.tsx` failed on missing React Router context. These are observed test failures, not a claim that every case establishes a production bug.
+- Full database-backed backend tests, E2E/beta-readiness, migrations/seeds, live load testing and production deployment checks were not run. Source-traced scenarios above have not been reproduced against production.
+- DOCX structural checks passed: all schema fields and registered paths included, valid XML, source locations resolvable, repeating table headers and non-splitting rows, and only `word/document.xml` changed from the supplied template package. Visual pagination review could not run because the bundled renderer could not locate LibreOffice `soffice.exe`.
+
+AUDIT: CONCERNS

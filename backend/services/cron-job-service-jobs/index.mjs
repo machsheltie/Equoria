@@ -10,7 +10,7 @@
  *
  * Each descriptor is `{ jobName, schedule, lockKey, run }`:
  *   - jobName  — canonical key (runningJobs Map key / getCronJobStatus() key).
- *   - schedule — node-cron schedule string (UTC).
+ *   - schedule — node-cron schedule string (Eastern game clock, GAME_TIME_ZONE).
  *   - lockKey  — Postgres advisory-lock key passed to withAdvisoryLock so the
  *                side-effect runs EXACTLY ONCE cluster-wide (Equoria-dx65z).
  *   - run()    — the async work function (also re-exported by its own module so

@@ -5,6 +5,7 @@
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
+import { gameDayBounds } from './gameTime.mjs';
 import { calculatePersonalityEffects } from './groomPersonalityEffects.mjs';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
 import { getTemperamentGroomSynergy } from '../modules/horses/index.mjs';
@@ -223,10 +224,8 @@ export async function validateFoalInteractionLimits(foalId) {
   // ALL horses (regardless of age) are limited to 1 interaction per day
 
   // Check for interactions today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // "Today" is the Eastern game day (owner ruling 2026-10-09).
+  const { start: today, end: tomorrow } = gameDayBounds();
 
   const todaysInteractions = await prisma.groomInteraction.findMany({
     where: {

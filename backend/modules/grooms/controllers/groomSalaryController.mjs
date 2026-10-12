@@ -6,6 +6,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { gameDayIndex, startOfGameDayIndex, startOfGameWeek } from '../../../utils/gameTime.mjs';
 import {
   calculateUserSalaryCost,
   getSalaryPaymentHistory,
@@ -268,19 +269,15 @@ export async function getSalarySummary(req, res) {
  * @returns {Date} Next payment date
  */
 function getNextPaymentDate() {
+  // Payroll runs Mondays at 09:00 Eastern (the game clock). No daylight-saving
+  // change happens between 00:00 and 09:00 on a Monday, so +9h is exact.
   const now = new Date();
-  const nextMonday = new Date(now);
-
-  // Get days until next Monday (1 = Monday)
-  const daysUntilMonday = (1 + 7 - now.getDay()) % 7;
-  if (daysUntilMonday === 0 && now.getHours() >= 9) {
-    // If it's Monday after 9 AM, get next Monday
-    nextMonday.setDate(now.getDate() + 7);
-  } else {
-    nextMonday.setDate(now.getDate() + daysUntilMonday);
+  const NINE_HOURS_MS = 9 * 60 * 60 * 1000;
+  const thisMonday = startOfGameWeek(now, 1);
+  const payday = new Date(thisMonday.getTime() + NINE_HOURS_MS);
+  if (now < payday) {
+    return payday;
   }
-
-  nextMonday.setHours(9, 0, 0, 0); // 9:00 AM
-
-  return nextMonday;
+  const nextMonday = startOfGameDayIndex(gameDayIndex(thisMonday) + 7);
+  return new Date(nextMonday.getTime() + NINE_HOURS_MS);
 }

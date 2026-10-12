@@ -12,6 +12,7 @@
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
+import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import {
   recordTransactionTx,
@@ -97,7 +98,8 @@ export async function bookVetAppointment(req, res) {
     // money>=cost predicate). InsufficientFundsError propagates out of the
     // tx and is mapped to a 400 client response, identical envelope as
     // before.
-    const updateData = { lastVettedDate: new Date() };
+    // Date-only column: store the Eastern calendar date of the visit.
+    const updateData = { lastVettedDate: gameCalendarDate() };
     if (service.healthOutcome) {
       updateData.healthStatus = service.healthOutcome;
     }
