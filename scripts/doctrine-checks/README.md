@@ -27,6 +27,11 @@ to fix the underlying problem. It is not a license to weaken the check.
   `check-no-frontend-mocks.mjs` — Node checks whose forbidden pattern/token/
   marker DATA is single-sourced from `scripts/lib/doctrine-scan-patterns.mjs`
   (Equoria-4iudq); their structural scan/walk logic stays local to each check.
+- `check-staff-routes-guarded.mjs` — every `router.<method>(` in
+  `backend/modules/staff/routes/*.mjs` names `requireStaffCapability(` or
+  `requireAnyStaffCapability(`; `requireStaffRole` alone is allowed only for
+  `POST /checkin/request`, `POST /checkin/verify` and `GET /me`; `router.use(`
+  (non-guard) and `router.route(` are rejected (Equoria-puj1e.1).
 - `check-audit-level.sh` — every `npm audit` step in `.github/workflows/`
   uses `--audit-level=moderate` or stricter (`low`).
 - `check-gates-run-on-prs.sh` — every job named `*-gate` (except those in
