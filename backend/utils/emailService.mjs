@@ -553,7 +553,30 @@ export async function sendStaffCheckinCodeEmail(email, code) {
   return { success: true, messageId: info?.messageId };
 }
 
+/**
+ * Tell an admin a steward has filed a ticket (Equoria-puj1e.1). Names the
+ * ticket number, category and filing moderator; never the note text.
+ * @param {string} email - The admin's verified address.
+ * @param {{ ticketId: number, category: string, filedBy: string }} ticket
+ */
+export async function sendStaffTicketEmail(email, { ticketId, category, filedBy }) {
+  const subject = 'A steward has filed a ticket';
+  const line = `${filedBy} has filed ticket #${ticketId} (${category}). Open the Steward's Office to read it.`;
+  const safe = line.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  const html = generateEmailTemplate(subject, "Steward's Office", `<p>${safe}</p>`);
+  const text = generatePlainTextEmail("Steward's Office", line);
+  if (process.env.NODE_ENV !== 'production') {
+    captureEmailPreview('staff-ticket', { to: email, subject, preview: line });
+    logger.info("[EmailService] Steward's ticket alert (DEV MODE - not sent)", { subject });
+    return { success: true, messageId: `dev-mode-staff-ticket-${Date.now()}` };
+  }
+  const info = await sendViaSmtp({ to: email, subject, html, text });
+  logger.info("[EmailService] Steward's ticket alert sent", { messageId: info?.messageId });
+  return { success: true, messageId: info?.messageId };
+}
+
 export default {
+  sendStaffTicketEmail,
   sendStaffCheckinCodeEmail,
   sendVerificationEmail,
   sendWelcomeEmail,

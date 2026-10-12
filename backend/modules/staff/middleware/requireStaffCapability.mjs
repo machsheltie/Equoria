@@ -9,7 +9,7 @@
  * - Non-staff receive the app's ordinary unknown-route 404, so the staff
  *   surface's existence is not disclosed.
  * - requireStaffRole (check-in request/verify and GET /me only): staff role.
- * - requireStaffCapability(cap) (every other staff route): staff role, a
+ * - requireStaffCapability(cap) / requireAnyStaffCapability([caps]) (every other staff route): staff role, a
  *   verified email, a valid trusted-device cookie for this account, and cap.
  *
  * Attaches `req.staff = { id, role }`.
@@ -53,11 +53,7 @@ export const requireStaffRole = async (req, res, next) => {
   }
 };
 
-/**
- * Full staff guard for one named capability.
- * @param {string} capability
- */
-export function requireStaffCapability(capability) {
+function buildCapabilityGuard(capabilities) {
   return async (req, res, next) => {
     try {
       const account = await loadStaffAccount(req.user?.id);
@@ -79,7 +75,7 @@ export function requireStaffCapability(capability) {
           message: "Check in to the Steward's Office on this browser first.",
         });
       }
-      if (!hasCapability(account.role, capability)) {
+      if (!capabilities.some(capability => hasCapability(account.role, capability))) {
         return res.status(403).json({
           success: false,
           code: 'STAFF_CAPABILITY_REQUIRED',
@@ -93,4 +89,22 @@ export function requireStaffCapability(capability) {
       return respondGuardFailure(res, error);
     }
   };
+}
+
+/**
+ * Full staff guard for one named capability.
+ * @param {string} capability
+ */
+export function requireStaffCapability(capability) {
+  return buildCapabilityGuard([capability]);
+}
+
+/**
+ * Same guard, satisfied by holding ANY of the named capabilities (a route both
+ * roles use, e.g. ticket threads). Identical fresh-role, verified-email and
+ * trusted-device checks.
+ * @param {string[]} capabilities
+ */
+export function requireAnyStaffCapability(capabilities) {
+  return buildCapabilityGuard(capabilities);
 }

@@ -10,13 +10,24 @@
  */
 
 import express from 'express';
-import { requireStaffCapability, requireStaffRole } from '../middleware/requireStaffCapability.mjs';
+import {
+  requireAnyStaffCapability,
+  requireStaffCapability,
+  requireStaffRole,
+} from '../middleware/requireStaffCapability.mjs';
 import {
   getStaffMe,
   requestCheckin,
   verifyCheckin,
 } from '../controllers/staffCheckinController.mjs';
 import { getStaffLog } from '../controllers/staffLogController.mjs';
+import {
+  changeTicketStatus,
+  createTicket,
+  getTicketById,
+  getTickets,
+  replyToTicket,
+} from '../controllers/staffTicketController.mjs';
 import { listStaff, lookupUser, setUserRole } from '../controllers/staffRolesController.mjs';
 
 const router = express.Router();
@@ -30,5 +41,14 @@ router.get('/log', requireStaffCapability('log.view.own'), getStaffLog);
 router.get('/roles', requireStaffCapability('roles.manage'), listStaff);
 router.post('/roles/lookup', requireStaffCapability('roles.manage'), lookupUser);
 router.post('/roles/:userId', requireStaffCapability('roles.manage'), setUserRole);
+
+// Tickets: moderators file; both roles read and reply (a moderator only on
+// their own); only the admin changes status.
+const TICKET_PARTIES = ['ticket.file', 'ticket.resolve'];
+router.post('/tickets', requireStaffCapability('ticket.file'), createTicket);
+router.get('/tickets', requireAnyStaffCapability(TICKET_PARTIES), getTickets);
+router.get('/tickets/:id', requireAnyStaffCapability(TICKET_PARTIES), getTicketById);
+router.post('/tickets/:id/replies', requireAnyStaffCapability(TICKET_PARTIES), replyToTicket);
+router.post('/tickets/:id/status', requireStaffCapability('ticket.resolve'), changeTicketStatus);
 
 export default router;
