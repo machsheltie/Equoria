@@ -11,6 +11,8 @@
  *   capabilities allow.
  * - If any area is refused with STAFF_CHECKIN_REQUIRED (the 30-day trust ran
  *   out mid-visit), the page returns to check-in.
+ * - If any area or action gets a 404, /me is asked again at once; a steward
+ *   revoked mid-visit then gets /me's 404 and is sent home.
  * - Plain and open: a title, then each area under its own heading and rule.
  *   No dashboard tiles, no cards.
  */
@@ -24,12 +26,18 @@ import StaffRoles from '@/components/staff/StaffRoles';
 import StaffTickets from '@/components/staff/StaffTickets';
 import { ErrorState, PageLoading } from '@/components/ui/state';
 import { useAuth } from '@/contexts/AuthContext';
-import { isCheckinRequired, statusOf, useStaffMe } from '@/hooks/api/useStaff';
+import {
+  isCheckinRequired,
+  statusOf,
+  useStaffMe,
+  useStaffRevocationWatch,
+} from '@/hooks/api/useStaff';
 import { userMessageFor } from '@/lib/http/userMessage';
 
 export default function StewardsOfficePage() {
   const { user } = useAuth();
   const me = useStaffMe();
+  useStaffRevocationWatch();
   const [checkinLapsed, setCheckinLapsed] = useState(false);
   const onCheckinRequired = useCallback(() => setCheckinLapsed(true), []);
   const onCheckedIn = useCallback(() => setCheckinLapsed(false), []);

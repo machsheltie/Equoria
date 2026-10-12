@@ -636,4 +636,60 @@ describe("The Steward's Office", () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/something went wrong/i);
     expect(screen.getByLabelText('Note')).toHaveValue('Selling coins');
   });
+
+  // ── Revoked mid-visit ─────────────────────────────────────────────────────
+
+  /** /me answers as a moderator once, then as nobody (revoked). */
+  const revokedAfterFirstMe = () => {
+    let meCalls = 0;
+    return () => {
+      meCalls += 1;
+      return meCalls === 1
+        ? json(moderatorMe)
+        : json({ success: false, message: 'Not found' }, 404);
+    };
+  };
+
+  it('an area read that gets a 404 re-asks /me, and a revoked steward is sent home', async () => {
+    stubStaff({
+      me: revokedAfterFirstMe(),
+      tickets: () => json({ success: false, message: 'Not found' }, 404),
+    });
+    renderPage();
+    expect(await screen.findByText('Stable home')).toBeInTheDocument();
+    expect(screen.queryByTestId('stewards-office')).not.toBeInTheDocument();
+  });
+
+  it('an action that gets a 404 re-asks /me, and a revoked steward is sent home', async () => {
+    stubStaff({ me: revokedAfterFirstMe(), tickets: () => json({ tickets: [] }) });
+    server.use(
+      http.post(`${STAFF}/tickets`, () => json({ success: false, message: 'Not found' }, 404))
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(await screen.findByLabelText('Their ID'), '345');
+    await user.type(screen.getByLabelText('Category'), 'Spam');
+    await user.type(screen.getByLabelText('Note'), 'Selling coins');
+    await user.click(screen.getByRole('button', { name: 'File ticket' }));
+    expect(await screen.findByText('Stable home')).toBeInTheDocument();
+  });
+
+  it('a 404 for a steward who is still staff leaves the office open', async () => {
+    stubStaff({
+      me: () => json(moderatorMe),
+      tickets: () => json({ tickets: [] }),
+    });
+    server.use(
+      http.post(`${STAFF}/tickets`, () => json({ success: false, message: 'Not found' }, 404))
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(await screen.findByLabelText('Their ID'), '345');
+    await user.type(screen.getByLabelText('Category'), 'Spam');
+    await user.type(screen.getByLabelText('Note'), 'Selling coins');
+    await user.click(screen.getByRole('button', { name: 'File ticket' }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByTestId('stewards-office')).toBeInTheDocument();
+    expect(screen.getByLabelText('Note')).toHaveValue('Selling coins');
+  });
 });
