@@ -36,6 +36,9 @@ const ConfirmEmailChangePage = lazy(() => import('./pages/ConfirmEmailChangePage
 const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 const HorseEquipPage = lazy(() => import('./pages/horses/HorseEquipPage'));
 const FoalDetailPage = lazy(() => import('./pages/FoalDetailPage'));
+// Equoria-puj1e.1: the staff-only Steward's Office. Deliberately absent from
+// navItems; non-staff are sent home by the page itself (GET /staff/me → 404).
+const StewardsOfficePage = lazy(() => import('./pages/StewardsOfficePage'));
 
 // Equoria-bvddn.29: ends a dead session (clear cache + /login) on a 401 after a failed refresh.
 const queryClient = createAppQueryClient();
@@ -96,6 +99,7 @@ const App = () => (
                       <Route path="/horses/:id" element={<HorseDetailPage />} />
                       <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
                       <Route path="/foals/:id" element={<FoalDetailPage />} />
+                      <Route path="/steward" element={<StewardsOfficePage />} />
                       {navItems.map(({ to, Page }) => (
                         <Route key={to} path={to} element={<Page />} />
                       ))}
