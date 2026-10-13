@@ -33,7 +33,9 @@ export const GMAIL_REQUIRED_VARS = [
  * missing) and counts as not configured anywhere else.
  */
 export function readGmailConfig(env = process.env) {
-  const missing = GMAIL_REQUIRED_VARS.filter(name => !env[name]);
+  // Whitespace-only values count as missing.
+  const value = name => (typeof env[name] === 'string' ? env[name].trim() : '');
+  const missing = GMAIL_REQUIRED_VARS.filter(name => !value(name));
   if (missing.length === GMAIL_REQUIRED_VARS.length) {
     return null;
   }
@@ -47,12 +49,12 @@ export function readGmailConfig(env = process.env) {
     return null;
   }
   return {
-    clientId: env.GMAIL_CLIENT_ID,
-    clientSecret: env.GMAIL_CLIENT_SECRET,
-    refreshToken: env.GMAIL_REFRESH_TOKEN,
-    sender: env.GMAIL_SENDER || undefined,
-    oauthUrl: env.GMAIL_OAUTH_URL || undefined,
-    apiUrl: env.GMAIL_API_URL || undefined,
+    clientId: value('GMAIL_CLIENT_ID'),
+    clientSecret: value('GMAIL_CLIENT_SECRET'),
+    refreshToken: value('GMAIL_REFRESH_TOKEN'),
+    sender: value('GMAIL_SENDER') || undefined,
+    oauthUrl: value('GMAIL_OAUTH_URL') || undefined,
+    apiUrl: value('GMAIL_API_URL') || undefined,
   };
 }
 
@@ -190,12 +192,16 @@ export function createGmailApiTransport({
       from: mailOptions.from || sender,
     });
 
-    let response = await postMessage(await getAccessToken(), raw);
+    const token = await getAccessToken();
+    let response = await postMessage(token, raw);
     if (response.status === 401) {
-      // The cached token was revoked or expired early: refresh and retry once.
+      // The token was revoked or expired early: refresh and retry once. Clear
+      // the cache only if no concurrent send has already replaced that token.
       await response.body?.cancel();
-      accessToken = null;
-      accessTokenExpiresAt = 0;
+      if (accessToken === token) {
+        accessToken = null;
+        accessTokenExpiresAt = 0;
+      }
       response = await postMessage(await getAccessToken(), raw);
     }
 

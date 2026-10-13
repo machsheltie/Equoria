@@ -218,6 +218,27 @@ describe('Gmail API transport', () => {
     expect(sendRequests()).toHaveLength(0);
   });
 
+  it('never caches a rejected refresh: the next send refreshes again and succeeds', async () => {
+    tokenHandler = res => {
+      tokenCount += 1;
+      if (tokenCount === 1) {
+        json(res, 400, { error: 'invalid_grant', error_description: 'Bad Request' });
+      } else {
+        json(res, 200, { access_token: `${ACCESS_TOKEN}-${tokenCount}`, expires_in: 3599 });
+      }
+    };
+    const transport = makeTransport();
+
+    await expect(transport.sendMail(MAIL)).rejects.toThrow(/HTTP 400 invalid_grant/);
+    expect(sendRequests()).toHaveLength(0);
+
+    const result = await transport.sendMail(MAIL);
+    expect(result.messageId).toBe('gmail-msg-1');
+    expect(tokenRequests()).toHaveLength(2);
+    expect(sendRequests()).toHaveLength(1);
+    expect(sendRequests()[0].headers.authorization).toBe(`Bearer ${ACCESS_TOKEN}-2`);
+  });
+
   it('rejects within timeoutMs when Google never answers', async () => {
     sendHandler = () => {}; // hold the request open forever
 
@@ -296,6 +317,15 @@ describe('emailService transport selection', () => {
     await withEnv({ NODE_ENV: 'production', GMAIL_CLIENT_ID: CLIENT_ID, ...deadSmtpEnv }, async () => {
       await expect(sendStaffCheckinCodeEmail('steward@example.com', '111111')).rejects.toThrow(
         /Missing: GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN/,
+      );
+    });
+    expect(requests).toHaveLength(0);
+  });
+
+  it('a whitespace-only GMAIL_REFRESH_TOKEN counts as missing in production', async () => {
+    await withEnv({ NODE_ENV: 'production', ...gmailEnv(), GMAIL_REFRESH_TOKEN: '   ' }, async () => {
+      await expect(sendStaffCheckinCodeEmail('steward@example.com', '444444')).rejects.toThrow(
+        /Missing: GMAIL_REFRESH_TOKEN./,
       );
     });
     expect(requests).toHaveLength(0);
