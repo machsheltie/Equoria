@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Equoria Privacy Policy</title>
+    <!-- Generated from docs/legal/privacy-policy.md. Edit the Markdown, then regenerate. -->
+    <style>
+      body {
+        font-family: Georgia, serif;
+        background: #0f1a33;
+        color: #e8ecf6;
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+        line-height: 1.6;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        color: #e9c46a;
+        line-height: 1.25;
+      }
+      a {
+        color: #9fc5ff;
+      }
+      code {
+        font-size: 0.9em;
+        background: #18264a;
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 16px 0;
+        font-size: 0.95em;
+      }
+      th,
+      td {
+        border: 1px solid #33456f;
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      hr {
+        border: 0;
+        border-top: 1px solid #33456f;
+        margin: 28px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Equoria Privacy Policy</h1>
+    <p>
+      <strong>Last updated:</strong> 2026-09-25 <strong>Applies to:</strong> the Equoria horse
+      breeding &amp; competition simulation game (web).
+    </p>
+    <p>
+      This policy describes what personal data Equoria collects, why we collect it, how long we keep
+      it, and the rights you have over it. It is written to honestly reflect the
+      <strong>actual data model and code</strong> in this repository — not an aspirational template.
+      Where a data-handling behaviour is implemented, the implementing module is named so the policy
+      can be audited against the code.
+    </p>
+    <hr />
+    <h2>1. Who we are</h2>
+    <p>
+      Equoria is an online game. The account you create to play is the basis of all data we hold
+      about you. For privacy questions or to exercise any of the rights below, contact
+      <strong>privacy@equoria.com</strong> (also reachable via the security contact in
+      <code>SECURITY.md</code>).
+    </p>
+    <hr />
+    <h2>2. What data we collect, and why</h2>
+    <p>
+      We only collect data that is necessary to operate the game. There is
+      <strong>no advertising, no third-party analytics SDK, and no sale of personal data</strong>.
+    </p>
+    <table>
+      <tr>
+        <th>Category</th>
+        <th>Specific data</th>
+        <th>
+          Why we collect it (lawful basis: performance of the game contract you enter by
+          registering)
+        </th>
+      </tr>
+      <tr>
+        <td>Account / identity</td>
+        <td>username, email address, first name, last name, hashed password (<code>User</code>)</td>
+        <td>To create and secure your account and let you log in</td>
+      </tr>
+      <tr>
+        <td>Authentication security</td>
+        <td>
+          password-change timestamp, email-verification status, refresh tokens, password-reset
+          tokens, optional TOTP MFA secret (encrypted at rest) &amp; recovery codes
+        </td>
+        <td>To keep your account secure and support login/MFA/password reset</td>
+      </tr>
+      <tr>
+        <td>Game progression</td>
+        <td>
+          in-game currency, level, XP, XP events, rank snapshots (<code>User</code>,
+          <code>XpEvent</code>, <code>UserRankSnapshot</code>)
+        </td>
+        <td>To run game progression and leaderboards</td>
+      </tr>
+      <tr>
+        <td>Preferences</td>
+        <td>settings JSON (theme, UI preferences) (<code>User.settings</code>)</td>
+        <td>To remember how you like the game configured</td>
+      </tr>
+      <tr>
+        <td>Game assets you own</td>
+        <td>horses, grooms, riders, trainers, facilities and their full state</td>
+        <td>These are the objects you play with — the game cannot function without them</td>
+      </tr>
+      <tr>
+        <td>Game activity</td>
+        <td>competition results, training logs, transactions, horse sales, notifications</td>
+        <td>To run competitions, the economy, and show you your history</td>
+      </tr>
+      <tr>
+        <td>Social activity</td>
+        <td>forum threads/posts, direct messages, club memberships, election ballots</td>
+        <td>To provide community features you opt into by using them</td>
+      </tr>
+      <tr>
+        <td>Operational security</td>
+        <td>
+          a server-side audit trail of sensitive actions (login, financial, breeding, training,
+          admin, account, groom)
+        </td>
+        <td>Fraud/abuse prevention and security forensics (lawful basis: legitimate interest)</td>
+      </tr>
+    </table>
+    <p>
+      We do <strong>not</strong> intentionally collect special-category data. Please do not put
+      sensitive personal information into free-text fields (horse names, forum posts, messages,
+      settings).
+    </p>
+    <hr />
+    <h2>3. How long we keep it (retention)</h2>
+    <ul>
+      <li>
+        <strong>Account &amp; game data:</strong> kept for as long as Equoria operates. Accounts are
+        not deleted, including when you stop playing (see Section 5).
+      </li>
+      <li>
+        <strong>Security audit trail (<code>AuditLog</code>):</strong> retained for a rolling window
+        (default <strong>90 days</strong>, minimum 7 days) and then automatically purged by a
+        nightly job (<code>backend/services/auditLogRetentionService.mjs</code>).
+      </li>
+    </ul>
+    <hr />
+    <h2>4. Your right to access your data (data export / portability)</h2>
+    <p>
+      You can download a <strong>complete, machine-readable (JSON) copy</strong> of the personal
+      data we hold about you at any time.
+    </p>
+    <ul>
+      <li>
+        <strong>How:</strong> authenticated request to <code>GET /api/v1/account/export</code>.
+      </li>
+      <li>
+        <strong>What you get:</strong> your profile (excluding the password hash), settings, horses,
+        competition history, transactions, notifications, grooms, riders, trainers, sent/received
+        messages, forum threads/posts, club memberships, XP events, and horse-sale records —
+        everything keyed to your account.
+      </li>
+      <li>
+        <strong>Scope guarantee:</strong> the export is strictly scoped to your own user id. It is
+        structurally impossible to export another user's data through this endpoint (there is no
+        user-id parameter; the endpoint only ever reads <code>req.user.id</code>).
+      </li>
+      <li>
+        <strong>Implementation:</strong>
+        <code>backend/modules/users/services/gdprAccountService.mjs</code>
+        (<code>buildUserDataExport</code>) /
+        <code>backend/modules/users/controllers/gdprAccountController.mjs</code>.
+      </li>
+    </ul>
+    <hr />
+    <h2>5. Account deletion</h2>
+    <p>
+      <strong>Equoria does not delete player accounts</strong> — not from inside the game, and not
+      on request. Your horses, their lineage, competition results and club history are part of a
+      shared world: other players' horses descend from yours, and their records name your horses.
+      Removing an account would break their pedigrees and histories, so accounts stay.
+    </p>
+    <ul>
+      <li>
+        <strong>If you stop playing,</strong> your account simply stays as it is, and you can log in
+        again whenever you like.
+      </li>
+      <li>
+        <strong>What you can still do:</strong> download a full copy of your data at any time
+        (Section 4), and change your username, password and recovery email address in Settings.
+      </li>
+      <li>
+        <strong>Implementation:</strong> the game offers no deletion control, and the server routes
+        that once allowed self-service deletion (<code>POST /api/v1/account/delete</code>,
+        <code>DELETE /api/v1/users/:id</code>) refuse every request.
+      </li>
+      <li>
+        <strong>Audit:</strong> data-export requests are recorded in the security audit trail
+        (action <code>account_operation</code>) for abuse detection; that audit row is subject to
+        the retention window in Section 3 and contains no game data.
+      </li>
+    </ul>
+    <hr />
+    <h2>6. How we protect your data</h2>
+    <ul>
+      <li>Passwords are hashed with bcrypt (12+ rounds); never stored or exported in plaintext.</li>
+      <li>TOTP MFA secrets are encrypted at rest (AES-256-GCM).</li>
+      <li>All traffic is expected to be served over HTTPS in production.</li>
+      <li>
+        Access to your data through the API is gated by JWT authentication, CSRF protection, rate
+        limiting, and strict per-user ownership checks.
+      </li>
+      <li>
+        Server-side security logging records selected sensitive actions; its coverage and retention
+        are implementation-specific.
+      </li>
+    </ul>
+    <p>
+      Current technical detail is in <code>.claude/rules/SECURITY.md</code>, live security
+      source/tests, and <code>docs/SECURITY_TESTING.md</code>.
+    </p>
+    <hr />
+    <h2>7. Data sharing</h2>
+    <p>
+      We do not sell your personal data and do not share it with advertisers. Data is processed only
+      to operate the game. Some data is visible to other players
+      <strong>by the nature of the game</strong> (e.g. your username on leaderboards, forum posts
+      you make, messages you send) — that visibility is the feature, not a separate disclosure.
+    </p>
+    <hr />
+    <h2>8. Changes to this policy</h2>
+    <p>
+      Material changes will be reflected in this document with an updated "Last updated" date and,
+      where appropriate, an in-game notice.
+    </p>
+    <hr />
+    <h2>9. Contact</h2>
+    <ul>
+      <li><strong>Privacy / data requests:</strong> privacy@equoria.com</li>
+      <li><strong>Security issues:</strong> see <code>SECURITY.md</code> (security@equoria.com)</li>
+    </ul>
+  </body>
+</html>
