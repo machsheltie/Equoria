@@ -21,7 +21,8 @@ import { AlertCircle, CheckCircle, Dna, ChevronDown, ChevronUp } from 'lucide-re
 import { useAuth } from '@/contexts/AuthContext';
 import Currency from '@/components/ui/Currency';
 import { breedingApi, horsesApi } from '@/lib/api-client';
-import { getBreedName } from '@/lib/utils';
+import { toBreedingHorses, type BreedingHorse } from '@/lib/api/breedingHorse';
+import type { HorseSummary } from '@/lib/api/types';
 import HorseSelector from '@/components/breeding/HorseSelector';
 import BreedingPredictionsPanel from './BreedingPredictionsPanel';
 import LethalWhiteWarning from '@/components/breeding/LethalWhiteWarning';
@@ -94,7 +95,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     data: horses,
     isLoading: loadingHorses,
     error: horsesError,
-  } = useQuery<Horse[]>({
+  } = useQuery<HorseSummary[], Error, BreedingHorse[]>({
     // Equoria-bvddn.33: this reads the same session-scoped horse list every
     // other list consumer reads (horsesApi.list() takes no userId — the
     // cookie session determines the owner). The prior ['horses', userId] key
@@ -103,28 +104,16 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     // Sharing horseQueryKeys.all keeps this in the same cache entry as
     // every mutation that already invalidates the horse list.
     queryKey: horseQueryKeys.all,
-    queryFn: async () => {
-      const response = await horsesApi.list();
-      // Equoria-gxcxs: horse.sex from the API is already the canonical
-      // value (Stallion/Mare/Colt/Filly/Rig) HorseSelector's own group
-      // filter (isMaleHorseSex/isFemaleHorseSex) understands directly — no
-      // translation to a synthetic Male/Female binary needed here.
-      return response.map((horse) => ({
-        id: horse.id,
-        name: horse.name,
-        age: horse.ageYears || horse.age,
-        sex: horse.sex,
-        breedName: getBreedName(horse.breed),
-        healthStatus: horse.healthStatus,
-        level: horse.level,
-        dateOfBirth: horse.dateOfBirth,
-        imageUrl: horse.imageUrl,
-        stats: horse.stats,
-        disciplineScores: horse.disciplineScores,
-        traits: horse.traits,
-        parentIds: horse.parentIds,
-      })) as unknown as Horse[];
-    },
+    // Equoria-q4uem.6: the cache entry holds the raw list DTO (exactly what
+    // useHorses() stores under the same key) and the breeding view is derived
+    // per observer by `select`. Storing a projection from this queryFn made
+    // the shared entry's shape depend on which screen fetched first. The one
+    // checked normalizer (toBreedingHorses) replaces the former double cast
+    // to the breeding Horse type; a horse with a missing or unrecognised sex
+    // is dropped there — the same horses the selectors' isMaleHorseSex /
+    // isFemaleHorseSex group filter already never listed.
+    queryFn: horsesApi.list,
+    select: toBreedingHorses,
     enabled: Boolean(userId),
     staleTime: 30000,
   });

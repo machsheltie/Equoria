@@ -62,48 +62,7 @@ import XpProgressTracker from '../XpProgressTracker';
 import HorseLevelBadge from '../horse/HorseLevelBadge';
 import { useHorseLevelInfo } from '@/hooks/api/useHorseLevelInfo';
 import { useCompetitionResults } from '@/hooks/api/useCompetitionResults';
-
-/**
- * Participant result data structure
- */
-export interface ParticipantResult {
-  rank: number;
-  horseId: number;
-  horseName: string;
-  ownerId: string;
-  ownerName: string;
-  finalScore: number;
-  prizeWon: number;
-  isCurrentUser: boolean;
-  /**
-   * Equoria-jnw3 — temperament-driven score modifier surfaced from the
-   * backend's `calculateCompetitionScoreDetailed`. null when the horse has no
-   * temperament recorded (legacy data); UI renders nothing in that case.
-   */
-  temperamentImpact?: {
-    temperament: string | null;
-    modifier: number;
-    appliedAs: 'ridden' | 'conformation' | 'parade';
-  } | null;
-}
-
-/**
- * Competition results data structure
- */
-export interface CompetitionResults {
-  competitionId: number;
-  competitionName: string;
-  discipline: string;
-  date: string;
-  totalParticipants: number;
-  prizePool: number;
-  prizeDistribution: {
-    first: number;
-    second: number;
-    third: number;
-  };
-  results: ParticipantResult[];
-}
+import type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
 
 /**
  * Level-up data structure for celebration modal (Story 5-4)
@@ -355,13 +314,11 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
     error: fetchError,
   } = useCompetitionResults(usingTestSeam ? null : competitionId);
 
-  // The API hook's CompetitionResults is structurally a subset of this
-  // component's CompetitionResults (the latter only adds the OPTIONAL
-  // `temperamentImpact` field per Equoria-jnw3), so the fetched payload is a
-  // valid local CompetitionResults with that field simply absent.
+  // Equoria-q4uem.6: the hook and this modal share the one canonical
+  // CompetitionResults DTO (lib/api/competitionResults), so no cast.
   const results: CompetitionResults | null = usingTestSeam
     ? (_testResults ?? null)
-    : ((fetchedResults as CompetitionResults | undefined) ?? null);
+    : (fetchedResults ?? null);
   const isLoading = usingTestSeam ? _testLoading : fetchLoading;
   const error = usingTestSeam
     ? _testError

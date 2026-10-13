@@ -26,6 +26,20 @@ export interface ScoreBreakdown {
 }
 
 /**
+ * Temperament-driven score modifier (Equoria-hv1y / Equoria-jnw3), exactly as
+ * backend/utils/competitionScore.mjs calculateCompetitionScoreDetailed builds
+ * it: `horse.temperament ? { temperament, modifier, appliedAs } : null`.
+ * `temperament` is therefore always a non-empty string when the object exists;
+ * `modifier` is the clamped applied fraction (-1..1, e.g. 0.05 = +5%);
+ * `appliedAs` is the normalized show type.
+ */
+export interface TemperamentImpact {
+  temperament: string;
+  modifier: number;
+  appliedAs: 'ridden' | 'conformation' | 'parade';
+}
+
+/**
  * Individual participant result in a competition
  */
 export interface ParticipantResult {
@@ -38,10 +52,25 @@ export interface ParticipantResult {
   prizeWon: number;
   isCurrentUser: boolean;
   scoreBreakdown?: ScoreBreakdown;
+  /** null when the horse has no temperament recorded (legacy data). */
+  temperamentImpact?: TemperamentImpact | null;
 }
 
 /**
- * Full competition results data
+ * Full competition results data.
+ *
+ * Equoria-q4uem.6 contract note: the backend has NO route for
+ * GET /api/v1/competitions/:id/results (backend/app/routers.mjs mounts only
+ * /competition and /competition/results; the closest read is
+ * GET /api/v1/competition/show/:showId/results, which returns raw
+ * CompetitionResult rows in a different shape). No backend serializer emits
+ * this envelope, `scoreBreakdown` or `temperamentImpact` on a results read —
+ * temperamentImpact exists only on the in-memory run result of
+ * runEnhancedCompetition (backend/modules/competition/controllers/
+ * competitionController.mjs, which has no production caller) and is not
+ * persisted on CompetitionResult. This interface is the single
+ * frontend owner of the shape the modal renders; the missing endpoint is an
+ * open owner decision recorded on Equoria-q4uem.6.
  */
 export interface CompetitionResults {
   competitionId: number;
