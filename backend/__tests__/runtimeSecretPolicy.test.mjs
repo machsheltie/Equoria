@@ -5,7 +5,12 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { DEPLOYABLE_ENVS, isDeployableEnvironment, getSecretValidationError } from '../utils/runtimeSecretPolicy.mjs';
+import {
+  DEPLOYABLE_ENVS,
+  isDeployableEnvironment,
+  getSecretValidationError,
+  isCommittedTestSecret,
+} from '../utils/runtimeSecretPolicy.mjs';
 
 // ---------------------------------------------------------------------------
 // DEPLOYABLE_ENVS constant
@@ -167,5 +172,34 @@ describe('getSecretValidationError', () => {
       const result = getSecretValidationError('JWT_SECRET', 'shorttest', 'test');
       expect(result).toBeNull();
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isCommittedTestSecret — the one list of committed test-only secret values.
+// playwright.config.ts uses it to keep backend/.env.test's test secrets out of
+// the NODE_ENV=beta backend it starts (security review of 870e07e2f), so the
+// harness and the policy can never disagree about what counts as test-only.
+// ---------------------------------------------------------------------------
+describe('isCommittedTestSecret', () => {
+  it.each([
+    'test-jwt-secret-key-for-testing-only',
+    'test-jwt-refresh-secret-for-testing-only',
+    'test-session-secret-for-testing-only',
+  ])('recognises the committed test secret %s, case-insensitively and inside a longer value', pattern => {
+    expect(isCommittedTestSecret(pattern)).toBe(true);
+    expect(isCommittedTestSecret(`prefix-${pattern.toUpperCase()}-suffix`)).toBe(true);
+  });
+
+  it('does not flag a real random secret, an empty value or a missing one', () => {
+    expect(isCommittedTestSecret('Zq3vR8kL2pX9mN4tB7wY1cF6hJ0sD5gA')).toBe(false);
+    expect(isCommittedTestSecret('')).toBe(false);
+    expect(isCommittedTestSecret(undefined)).toBe(false);
+  });
+
+  it('agrees with getSecretValidationError: a value it flags is refused in beta', () => {
+    const value = 'test-session-secret-for-testing-only-padding';
+    expect(isCommittedTestSecret(value)).toBe(true);
+    expect(getSecretValidationError('SESSION_SECRET', value, 'beta')).toMatch(/committed test-only secret/);
   });
 });

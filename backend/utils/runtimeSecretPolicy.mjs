@@ -21,6 +21,19 @@ export function isDeployableEnvironment(nodeEnv = process.env.NODE_ENV) {
   return DEPLOYABLE_ENVS.has(nodeEnv);
 }
 
+/**
+ * True when a value is one of the committed test-only secrets. The single list
+ * both this policy and playwright.config.ts (which keeps backend/.env.test's
+ * test secrets away from the NODE_ENV=beta backend it starts) rely on.
+ */
+export function isCommittedTestSecret(value) {
+  if (!value) {
+    return false;
+  }
+  const normalized = String(value).toLowerCase();
+  return DEPLOYABLE_TEST_SECRET_PATTERNS.some(pattern => normalized.includes(pattern));
+}
+
 export function getSecretValidationError(secretName, secretValue, nodeEnv = process.env.NODE_ENV) {
   if (!secretValue) {
     return null;
@@ -36,11 +49,7 @@ export function getSecretValidationError(secretName, secretValue, nodeEnv = proc
   }
 
   if (isDeployableEnvironment(nodeEnv)) {
-    const usesTestOnlySecret = DEPLOYABLE_TEST_SECRET_PATTERNS.some(pattern =>
-      normalizedSecret.includes(pattern),
-    );
-
-    if (usesTestOnlySecret) {
+    if (isCommittedTestSecret(secretValue)) {
       return `${secretName} uses a committed test-only secret and is not allowed in deployable environments (${nodeEnv}).`;
     }
 

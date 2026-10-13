@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { isCommittedTestSecret } from './backend/utils/runtimeSecretPolicy.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,18 +13,20 @@ const __dirname = path.dirname(__filename);
 const READINESS = /[\\/]readiness[\\/]/;
 
 // Read from backend/.env.test to get the test database URL
-// .env.test's JWT secrets are test-only values that the NODE_ENV=beta backend
-// below must refuse (runtimeSecretPolicy), and the backend inherits this
-// process's env, which its own env.beta cannot override. So the two JWT keys
-// are put back to what they were before the load: CI's workflow values pass
-// through, and locally the backend takes them from backend/env.beta. No E2E
-// code reads them itself.
-const JWT_KEYS = ['JWT_SECRET', 'JWT_REFRESH_SECRET'] as const;
-const jwtBeforeEnvTest = Object.fromEntries(JWT_KEYS.map((key) => [key, process.env[key]]));
-dotenv.config({ path: path.resolve(__dirname, 'backend', '.env.test') });
-for (const key of JWT_KEYS) {
-  if (jwtBeforeEnvTest[key] === undefined) delete process.env[key];
-  else process.env[key] = jwtBeforeEnvTest[key];
+// The NODE_ENV=beta backend below inherits this process's env, which its own
+// env.beta cannot override, and .env.test also carries committed test-only
+// secrets that a beta backend must never run with. So every variable this load
+// adds whose value the backend's own policy (isCommittedTestSecret) classes as
+// a committed test secret is removed again: one list, shared with the policy,
+// so a pattern it adds later is covered here too. Variables already set before
+// the load (CI's workflow secrets) are untouched; locally the backend takes its
+// secrets from the gitignored backend/env.beta. No E2E code reads them itself.
+const presetEnvKeys = new Set(Object.keys(process.env));
+const { parsed: envTest = {} } = dotenv.config({
+  path: path.resolve(__dirname, 'backend', '.env.test'),
+});
+for (const [key, value] of Object.entries(envTest)) {
+  if (!presetEnvKeys.has(key) && isCommittedTestSecret(value)) delete process.env[key];
 }
 
 export default defineConfig({
