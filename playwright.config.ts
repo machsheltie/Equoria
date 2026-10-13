@@ -12,7 +12,19 @@ const __dirname = path.dirname(__filename);
 const READINESS = /[\\/]readiness[\\/]/;
 
 // Read from backend/.env.test to get the test database URL
+// .env.test's JWT secrets are test-only values that the NODE_ENV=beta backend
+// below must refuse (runtimeSecretPolicy), and the backend inherits this
+// process's env, which its own env.beta cannot override. So the two JWT keys
+// are put back to what they were before the load: CI's workflow values pass
+// through, and locally the backend takes them from backend/env.beta. No E2E
+// code reads them itself.
+const JWT_KEYS = ['JWT_SECRET', 'JWT_REFRESH_SECRET'] as const;
+const jwtBeforeEnvTest = Object.fromEntries(JWT_KEYS.map((key) => [key, process.env[key]]));
 dotenv.config({ path: path.resolve(__dirname, 'backend', '.env.test') });
+for (const key of JWT_KEYS) {
+  if (jwtBeforeEnvTest[key] === undefined) delete process.env[key];
+  else process.env[key] = jwtBeforeEnvTest[key];
+}
 
 export default defineConfig({
   testDir: './tests/e2e',
