@@ -34,7 +34,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+import { invalidateHorseListCache } from './horseListCache.mjs';
 import { horseNameRejectionReason, horseNameRejectionMessage } from './horseNamePolicy.mjs';
 
 /**
@@ -105,11 +105,9 @@ export async function renameHorseById(horseId, userId, name) {
 
   logger.info(`[renameHorseService] User ${userId} renamed horse ${renamed.id}`);
 
-  // Horse lists cache the name; drop them so the next fetch shows the rename.
-  // Same non-critical treatment as deleteHorseService / PUT /horses/:id.
-  invalidateCachePattern('horses:list:*').catch(() => {
-    /* non-critical */
-  });
+  // Horse lists cache the name; drop them so the next fetch shows the rename
+  // (Equoria-gf4kd: the old hand-written pattern never matched the key).
+  await invalidateHorseListCache();
 
   return {
     status: 200,

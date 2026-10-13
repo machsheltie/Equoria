@@ -20,6 +20,7 @@
  */
 
 import { createHorse, getHorseById } from './horseModelService.mjs';
+import { invalidateHorseListCache } from './horseListCache.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 import {
   generateConformationScores,
@@ -465,23 +466,18 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     _epigeneticTraitsApplied: true,
   };
 
-  // Equoria-bvddn.20: the pregnancy claim, the foal insert and the foal_born
-  // notification row commit as ONE transaction. They used to be separate
-  // autocommit writes with a compensating restore on failure, so a crash (or a
-  // rejected restore) between the claim and the insert lost the pregnancy with
-  // no foal. Now a failure anywhere rolls the claim back with it.
-  //
-  // The claim is a guarded conditional update (Equoria-wgw5k): it clears the
-  // pregnancy only if it is STILL set for this sire, so of N overlapping
-  // callers (foaling-job runs or foal-now requests) exactly one matches
-  // (count=1); the others match 0 and throw PREGNANCY_NOT_CLAIMABLE ("not in
-  // foal", which foal-now maps to 400 and the job treats as already foaled).
-  // `options.dueBy` is the foaling job's gestation cutoff. All fallible
-  // generation above ran before the transaction, so it stays short.
-  //
-  // Lock order: the tx write-locks only this mare's row, then inserts the foal
-  // and the notification (FK checks take KEY SHARE on the user/sire rows). It
-  // never write-locks a User row, so it cannot invert User -> Horse.
+  // Equoria-bvddn.20: the pregnancy claim, the foal insert and the foal_born notification row
+  // commit as ONE transaction. They used to be separate autocommit writes with a compensating
+  // restore on failure, so a crash (or a rejected restore) between the claim and the insert lost
+  // the pregnancy with no foal. Now a failure anywhere rolls the claim back with it. The claim is a
+  // guarded conditional update (Equoria-wgw5k): it clears the pregnancy only if it is STILL set for
+  // this sire, so of N overlapping callers (foaling-job runs or foal-now requests) exactly one
+  // matches (count=1); the others match 0 and throw PREGNANCY_NOT_CLAIMABLE ("not in foal", which
+  // foal-now maps to 400 and the job treats as already foaled). `options.dueBy` is the foaling
+  // job's gestation cutoff. All fallible generation above ran before the transaction, so it stays
+  // short. Lock order: the tx write-locks only this mare's row, then inserts the foal and the
+  // notification (FK checks take KEY SHARE on the user/sire rows). It never write-locks a User row,
+  // so it cannot invert User -> Horse.
   const notifUserId = options.userId || dam.userId;
   const newFoal = await prisma.$transaction(async tx => {
     const claim = await tx.horse.updateMany({
@@ -510,7 +506,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     return foal;
   });
 
-  // Post-commit only: the real-time nudge and retention prune (never throws).
+  // Post-commit, never throw: list refresh (Equoria-3427a), real-time nudge, prune.
+  await invalidateHorseListCache();
   if (notifUserId) {
     finalizeNotificationAfterCommit(notifUserId, 'foal_born', foalBornPayload(newFoal, dam, sire));
   }

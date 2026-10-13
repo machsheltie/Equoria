@@ -27,14 +27,12 @@ import {
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';
+import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
 import {
-  getCachedQuery,
-  generateCacheKey,
-  invalidateCachePattern,
-} from '../../../utils/cacheHelper.mjs';
-
-// Horse list cache TTL (seconds)
-const HORSE_LIST_TTL = 120; // 2 minutes
+  HORSE_LIST_TTL,
+  horseListCacheKey,
+  invalidateHorseListCache,
+} from '../services/horseListCache.mjs';
 
 const router = express.Router();
 
@@ -96,13 +94,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
       where.breedId = parseInt(breedId);
     }
 
-    const cacheKey = generateCacheKey(
-      'horses:list',
-      effectiveUserId || 'all',
-      breedId || 'all',
-      limit,
-      offset,
-    );
+    const cacheKey = horseListCacheKey(effectiveUserId || 'all', breedId || 'all', limit, offset);
 
     const horses = await getCachedQuery(
       cacheKey,
@@ -400,10 +392,8 @@ router.put(
         `[horseRoutes] User ${req.user.id} updated horse: ${updatedHorse.name} (ID: ${horseId})`,
       );
 
-      // Invalidate horse list caches so updated data appears on next fetch
-      invalidateCachePattern('horses:list:*').catch(() => {
-        /* non-critical */
-      });
+      // Equoria-gf4kd: horse lists show the updated data on the next fetch.
+      await invalidateHorseListCache();
 
       res.json({
         success: true,
