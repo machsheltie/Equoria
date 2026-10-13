@@ -29,6 +29,14 @@ for (const [key, value] of Object.entries(envTest)) {
   if (!presetEnvKeys.has(key) && isCommittedTestSecret(value)) delete process.env[key];
 }
 
+// Equoria-jz9v2 calibration, applied locally as in CI: the e2e-tests job in
+// .github/workflows/test.yml sets E2E_RATE_LIMIT_MAX=100000 so one client
+// running the whole suite stays under every limiter's ceiling (a finite ceiling,
+// honoured only outside production — resolveE2eRateLimitMax). Without it a
+// local run enforces e.g. the 30/min profile limit and fast runs fail on 429s
+// CI never sees. CI's own value, when set, wins.
+process.env.E2E_RATE_LIMIT_MAX ??= '100000';
+
 export default defineConfig({
   testDir: './tests/e2e',
   // tests/e2e/readiness/* is the beta-readiness suite which has its own
