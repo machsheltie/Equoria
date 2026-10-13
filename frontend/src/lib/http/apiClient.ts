@@ -237,6 +237,9 @@ export async function fetchWithAuth<T>(
         message: errorData.message || 'An error occurred',
         status: errorData.status || 'error',
         statusCode: response.status,
+        // A machine-readable refusal code (e.g. STAFF_CHECKIN_REQUIRED) lets a
+        // caller tell apart two refusals that share a status. Never rendered.
+        ...(typeof errorData.code === 'string' ? { code: errorData.code } : {}),
       } as ApiError;
     }
 

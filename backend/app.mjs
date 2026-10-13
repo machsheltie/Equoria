@@ -307,7 +307,7 @@ app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
  * 4. Admin routes (highest security)
  * 5. Authenticated routes (standard auth)
  */
-const { publicRouter, authRouter, adminRouter } = buildRouters();
+const { publicRouter, authRouter, adminRouter, staffRouter } = buildRouters();
 
 // Setup Swagger documentation (public) — registers before the routers below.
 setupSwaggerDocs(app);
@@ -349,6 +349,11 @@ app.use(
 
 // Admin routes (requires auth + admin role)
 app.use('/api/v1/admin', adminRouter);
+
+// Staff routes (Equoria-puj1e.1): auth + CSRF on the router, staff role and
+// capability decided per route. Mounted before the broad /api/v1 authRouter so
+// staff requests are not authenticated twice.
+app.use('/api/v1/staff', staffRouter);
 
 // Authenticated routes (requires auth)
 app.use('/api/v1', authRouter);

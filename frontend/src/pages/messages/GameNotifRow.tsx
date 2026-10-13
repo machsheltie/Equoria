@@ -3,7 +3,7 @@
  *
  * The game-notification row family: a shared GameNotifShell (unread dot,
  * avatar, badge, timestamp layout) plus per-type renderers (stat gain,
- * foal born, groom retired, unknown) and the GameNotifRow dispatcher that
+ * foal born, groom retired, staff tickets, unknown) and the GameNotifRow dispatcher that
  * selects a renderer by notif.type. Kept together because they form one
  * cohesive notification-rendering unit.
  *
@@ -14,6 +14,7 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router';
 import { Circle, CheckCircle2, Clock } from 'lucide-react';
 import { Surface } from '@/components/ui/Surface';
 import { GameBadge, type GameBadgeProps } from '@/components/ui/game';
@@ -243,6 +244,89 @@ const GroomRetiredRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   );
 };
 
+/**
+ * Equoria-puj1e.1 — the Steward's Office bells. Only staff receive these: an
+ * admin hears that a steward filed a ticket, and a steward hears that their
+ * ticket has a reply or a new status. Payloads are `{ ticketId, category }` for
+ * a filing and `{ ticketId, status? }` for an update (no status means a reply).
+ * The note text never travels in a bell. These are the only rows that link
+ * anywhere, because the ticket itself lives in the office, not in the bell.
+ */
+const TICKET_STATUS_WORDS: Record<string, string> = {
+  open: 'open',
+  in_progress: 'in progress',
+  resolved: 'resolved',
+  declined: 'declined',
+};
+
+const ticketLabel = (payload: Record<string, unknown>): string =>
+  typeof payload.ticketId === 'number' ? `Ticket #${payload.ticketId}` : 'A ticket';
+
+const StewardOfficeLink: React.FC = () => (
+  <Link
+    to="/steward"
+    className="inline-flex min-h-[44px] items-center font-medium text-[var(--link-gold)] hover:underline"
+  >
+    Open the Steward&apos;s Office
+  </Link>
+);
+
+const StaffTicketRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
+  const p = notif.payload ?? {};
+  const ticket = typeof p.ticketId === 'number' ? `ticket #${p.ticketId}` : 'a ticket';
+  const category =
+    typeof p.category === 'string' && p.category.trim() !== '' ? ` (${p.category.trim()})` : '';
+  return (
+    <GameNotifShell
+      notif={notif}
+      iconBg="bg-[var(--role-accent-bg)]"
+      emoji="🎫"
+      badgeLabel="Ticket Filed"
+      badgeVariant="default"
+      title="Steward's Office"
+      body={
+        <>
+          <p>
+            A steward filed {ticket}
+            {category}.
+          </p>
+          <StewardOfficeLink />
+        </>
+      }
+    />
+  );
+};
+
+const StaffTicketUpdateRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
+  const p = notif.payload ?? {};
+  const label = ticketLabel(p);
+  const status = typeof p.status === 'string' ? p.status : null;
+  let sentence: string;
+  if (status === null) {
+    sentence = `${label} has a reply.`;
+  } else if (TICKET_STATUS_WORDS[status]) {
+    sentence = `${label} is now ${TICKET_STATUS_WORDS[status]}.`;
+  } else {
+    sentence = `${label} has been updated.`;
+  }
+  return (
+    <GameNotifShell
+      notif={notif}
+      iconBg="bg-[var(--role-accent-bg)]"
+      emoji="🎫"
+      badgeLabel="Ticket Update"
+      badgeVariant="default"
+      title="Steward's Office"
+      body={
+        <>
+          <p>{sentence}</p>
+          <StewardOfficeLink />
+        </>
+      }
+    />
+  );
+};
+
 const UnknownNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
   <GameNotifShell
     notif={notif}
@@ -263,6 +347,10 @@ export const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) =
       return <FoalBornRow notif={notif} />;
     case 'groom_retired':
       return <GroomRetiredRow notif={notif} />;
+    case 'staff_ticket':
+      return <StaffTicketRow notif={notif} />;
+    case 'staff_ticket_update':
+      return <StaffTicketUpdateRow notif={notif} />;
     default:
       return <UnknownNotifRow notif={notif} />;
   }

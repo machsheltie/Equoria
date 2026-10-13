@@ -1,8 +1,8 @@
 # Staff Foundation Contract (the Steward's Office)
 
-- **Status:** Planned — owner-approved design (2026-10-09), not implemented
+- **Status:** Active contract
 - **Owner:** Project owner (Stacey)
-- **Last verified:** 2026-10-09
+- **Last verified:** 2026-10-12
 - **Load only when:** designing, planning, implementing, or reviewing staff
   roles, the Steward's Office page, staff 2FA, the staff action log, or staff
   tickets

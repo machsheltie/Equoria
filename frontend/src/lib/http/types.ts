@@ -13,6 +13,11 @@ export interface ApiError {
   statusCode: number;
   retryAfter?: number; // Seconds to wait before retrying (for 429)
   /**
+   * The server's machine-readable refusal code when its error body carries one
+   * (e.g. `STAFF_CHECKIN_REQUIRED`). For branching only; never shown to players.
+   */
+  code?: string;
+  /**
    * True only on the 401 the transport throws after the refresh-token attempt
    * FAILED — the session is dead, not merely an expired access token
    * (Equoria-bvddn.29). A 401 that survives a successful refresh, or a 401 from

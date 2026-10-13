@@ -95,6 +95,11 @@ model User {
   staffMarketplaceStates  StaffMarketplaceState[]
   notifications             Notification[]
   rankSnapshots             UserRankSnapshot[]
+  staffActions              StaffActionLog[]       @relation("StaffActionActor")
+  staffCheckinCodes         StaffCheckinCode[]
+  staffTrustedDevices       StaffTrustedDevice[]
+  staffTicketsFiled         StaffTicket[]          @relation("StaffTicketFiler")
+  staffTicketReplies        StaffTicketReply[]     @relation("StaffTicketReplyAuthor")
 
   @@index([email])
   @@index([emailVerified])
@@ -2117,4 +2122,87 @@ model DocCoverageSnapshot {
 
   @@index([capturedAt(sort: Desc)])
   @@map("doc_coverage_snapshots")
+}
+
+/// Permanent staff action log: rows are never deleted; actor FK is Restrict.
+model StaffActionLog {
+  id         Int             @id @default(autoincrement())
+  actorId    String
+  actor      User            @relation("StaffActionActor", fields: [actorId], references: [id], onDelete: Restrict)
+  actorRole  String
+  capability String
+  targetType String
+  targetId   String?
+  reason     String?
+  before     Json?
+  after      Json?
+  outcome    String // succeeded | failed
+  error      String?
+  reversesId Int?            @unique
+  reverses   StaffActionLog? @relation("StaffActionReversal", fields: [reversesId], references: [id])
+  reversedBy StaffActionLog? @relation("StaffActionReversal")
+  createdAt  DateTime        @default(now())
+
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+  @@index([capability])
+  @@map("staff_action_log")
+}
+
+model StaffCheckinCode {
+  id        Int       @id @default(autoincrement())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("staff_checkin_codes")
+}
+
+model StaffTrustedDevice {
+  id        Int       @id @default(autoincrement())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("staff_trusted_devices")
+}
+
+model StaffTicket {
+  id         Int                @id @default(autoincrement())
+  filedById  String
+  filedBy    User               @relation("StaffTicketFiler", fields: [filedById], references: [id], onDelete: Restrict)
+  targetType String // user | post | horse | show
+  targetId   String
+  category   String
+  note       String
+  status     String             @default("open") // open | in_progress | resolved | declined
+  replies    StaffTicketReply[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([filedById])
+  @@map("staff_tickets")
+}
+
+model StaffTicketReply {
+  id        Int         @id @default(autoincrement())
+  ticketId  Int
+  ticket    StaffTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User        @relation("StaffTicketReplyAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  body      String
+  createdAt DateTime    @default(now())
+
+  @@index([ticketId, createdAt])
+  @@map("staff_ticket_replies")
 }
