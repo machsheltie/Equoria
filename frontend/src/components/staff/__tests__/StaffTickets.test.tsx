@@ -93,7 +93,7 @@ describe('StaffTickets: the player a ticket is about', () => {
     stubTickets();
     server.use(
       http.post(`${STAFF}/tickets`, () =>
-        json({ success: false, message: 'No player by that name or ID' }, 404)
+        json({ success: false, message: 'No player by that name or ID', code: 'NO_PLAYER' }, 404)
       )
     );
     const user = userEvent.setup();
@@ -103,6 +103,52 @@ describe('StaffTickets: the player a ticket is about', () => {
     expect(await screen.findByText('No player by that name or ID.')).toBeInTheDocument();
     expect(screen.getByLabelText('Their username')).toHaveValue('Nobody');
     expect(screen.getByLabelText('Note')).toHaveValue('Selling coins');
+  });
+
+  it('does not call a revoked steward 404 an unknown player', async () => {
+    stubTickets();
+    server.use(
+      http.post(`${STAFF}/tickets`, () => json({ success: false, message: 'Not found' }, 404))
+    );
+    const user = userEvent.setup();
+    renderTickets();
+    await user.type(await screen.findByLabelText('Their username'), 'Mara');
+    await fillRest(user);
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.queryByText('No player by that name or ID.')).not.toBeInTheDocument();
+  });
+
+  it('clears the field error when the name is edited or the mode is switched', async () => {
+    stubTickets();
+    server.use(
+      http.post(`${STAFF}/tickets`, () =>
+        json({ success: false, message: 'No player by that name or ID', code: 'NO_PLAYER' }, 404)
+      )
+    );
+    const user = userEvent.setup();
+    renderTickets();
+    await user.type(await screen.findByLabelText('Their username'), 'Nobody');
+    await fillRest(user);
+    expect(await screen.findByText('No player by that name or ID.')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Their username'), 'x');
+    expect(screen.queryByText('No player by that name or ID.')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'File ticket' }));
+    expect(await screen.findByText('No player by that name or ID.')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Find the player'), 'id');
+    expect(screen.queryByText('No player by that name or ID.')).not.toBeInTheDocument();
+  });
+
+  it('keeps a separate value for each way of naming the player', async () => {
+    stubTickets();
+    const user = userEvent.setup();
+    renderTickets();
+    await user.type(await screen.findByLabelText('Their username'), 'Mara');
+    await user.selectOptions(screen.getByLabelText('Find the player'), 'id');
+    expect(screen.getByLabelText('Their ID')).toHaveValue('');
+    await user.type(screen.getByLabelText('Their ID'), 'abc-123');
+    await user.selectOptions(screen.getByLabelText('Find the player'), 'name');
+    expect(screen.getByLabelText('Their username')).toHaveValue('Mara');
   });
 
   it('shows the current username, or a former player', async () => {

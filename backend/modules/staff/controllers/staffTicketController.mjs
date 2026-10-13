@@ -86,7 +86,9 @@ export async function createTicket(req, res, next) {
       note,
     });
     if (result.error === 'no_player') {
-      return res.status(404).json({ success: false, message: 'No player by that name or ID' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'No player by that name or ID', code: 'NO_PLAYER' });
     }
     if (result.error === 'name_id_mismatch') {
       return invalid(res, 'The name and ID point to different players');

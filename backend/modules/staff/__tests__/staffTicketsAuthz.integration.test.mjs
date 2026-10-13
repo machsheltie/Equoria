@@ -552,7 +552,11 @@ describe('Naming the player by username or ID', () => {
 
     expect(byName.status).toBe(404);
     expect(byId.status).toBe(404);
-    expect(byName.body).toEqual({ success: false, message: 'No player by that name or ID' });
+    expect(byName.body).toEqual({
+      success: false,
+      message: 'No player by that name or ID',
+      code: 'NO_PLAYER',
+    });
     expect(byId.body).toEqual(byName.body);
   });
 

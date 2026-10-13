@@ -49,30 +49,35 @@ const PLAYER_MESSAGES = {
   404: 'No player by that name or ID.',
 };
 
+// Only the backend's own refusal; a revoked steward's 404 has no such code.
 const isPlayerRefusal = (error: unknown) =>
-  (error as { statusCode?: number } | null)?.statusCode === 404;
+  (error as { code?: string } | null)?.code === 'NO_PLAYER';
 
 function FileTicketForm() {
   const [targetType, setTargetType] = useState<TicketTargetType>('user');
   const [lookup, setLookup] = useState<PlayerLookup>('name');
+  // One value per way of naming, so switching never carries text across.
+  const [username, setUsername] = useState('');
   const [targetId, setTargetId] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
   const file = useFileTicket();
 
   const playerRefused = targetType === 'user' && file.isError && isPlayerRefusal(file.error);
-  const ready = targetId.trim() !== '' && category.trim() !== '' && note.trim() !== '';
+  const byName = targetType === 'user' && lookup === 'name';
+  const subjectValue = byName ? username : targetId;
+  const ready = subjectValue.trim() !== '' && category.trim() !== '' && note.trim() !== '';
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!ready) {
       return;
     }
-    const subject = targetType === 'user' && lookup === 'name' ? 'targetUsername' : 'targetId';
+    const subject = byName ? 'targetUsername' : 'targetId';
     file.mutate(
       {
         targetType,
-        [subject]: targetId.trim(),
+        [subject]: subjectValue.trim(),
         category: category.trim(),
         note: note.trim(),
       },
@@ -80,6 +85,7 @@ function FileTicketForm() {
         onSuccess: () => {
           setTargetType('user');
           setLookup('name');
+          setUsername('');
           setTargetId('');
           setCategory('');
           setNote('');
@@ -97,7 +103,10 @@ function FileTicketForm() {
             <Select
               {...field}
               value={targetType}
-              onChange={(event) => setTargetType(event.target.value as TicketTargetType)}
+              onChange={(event) => {
+                file.reset();
+                setTargetType(event.target.value as TicketTargetType);
+              }}
               options={TARGET_OPTIONS}
             />
           )}
@@ -108,22 +117,28 @@ function FileTicketForm() {
               <Select
                 {...field}
                 value={lookup}
-                onChange={(event) => setLookup(event.target.value as PlayerLookup)}
+                onChange={(event) => {
+                  file.reset();
+                  setLookup(event.target.value as PlayerLookup);
+                }}
                 options={LOOKUP_OPTIONS}
               />
             )}
           </FormField>
         )}
         <FormField
-          label={targetType === 'user' && lookup === 'name' ? 'Their username' : 'Their ID'}
+          label={byName ? 'Their username' : 'Their ID'}
           error={playerRefused ? PLAYER_MESSAGES[404] : undefined}
         >
           {(field) => (
             <Input
               {...field}
-              value={targetId}
-              onChange={(event) => setTargetId(event.target.value)}
-              maxLength={targetType === 'user' && lookup === 'name' ? 100 : 64}
+              value={subjectValue}
+              onChange={(event) => {
+                file.reset();
+                (byName ? setUsername : setTargetId)(event.target.value);
+              }}
+              maxLength={byName ? 100 : 64}
               autoComplete="off"
             />
           )}
