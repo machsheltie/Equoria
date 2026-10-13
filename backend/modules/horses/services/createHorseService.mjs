@@ -45,7 +45,6 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { generateMarkings, inheritMarkings } from './markingGenerationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { invalidateHorseListCache } from './horseListCache.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 /**
@@ -217,9 +216,6 @@ export async function createHorseFromRequest(reqBody, userId) {
   const newHorse = await createHorse(horseData);
 
   logger.info(`[createHorseService] Created new horse: ${newHorse.name} (ID: ${newHorse.id})`);
-
-  // The new horse appears in horse lists on the next fetch (Equoria-gf4kd).
-  await invalidateHorseListCache();
 
   return {
     status: 201,

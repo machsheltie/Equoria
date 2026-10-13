@@ -27,12 +27,6 @@ import {
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';
-import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
-import {
-  HORSE_LIST_TTL,
-  horseListCacheKey,
-  invalidateHorseListCache,
-} from '../services/horseListCache.mjs';
 
 const router = express.Router();
 
@@ -94,13 +88,9 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
       where.breedId = parseInt(breedId);
     }
 
-    const cacheKey = horseListCacheKey(effectiveUserId || 'all', breedId || 'all', limit, offset);
-
-    const horses = await getCachedQuery(
-      cacheKey,
-      () => listHorses(where, { take: parseInt(limit), skip: parseInt(offset) }),
-      HORSE_LIST_TTL,
-    );
+    // Read fresh every time — no server-side list cache (Equoria-de3op, owner
+    // ruling 2026-10-13): any writer's committed change is in the next read.
+    const horses = await listHorses(where, { take: parseInt(limit), skip: parseInt(offset) });
 
     // Equoria-55bo.5: attach a lightweight `latestEvent` (most-recent
     // competition result) so NarrativeChip.deriveLatestChapter can surface
@@ -391,9 +381,6 @@ router.put(
       logger.info(
         `[horseRoutes] User ${req.user.id} updated horse: ${updatedHorse.name} (ID: ${horseId})`,
       );
-
-      // Equoria-gf4kd: horse lists show the updated data on the next fetch.
-      await invalidateHorseListCache();
 
       res.json({
         success: true,

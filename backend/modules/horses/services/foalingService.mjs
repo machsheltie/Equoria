@@ -20,7 +20,6 @@
  */
 
 import { createHorse, getHorseById } from './horseModelService.mjs';
-import { invalidateHorseListCache } from './horseListCache.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 import {
   generateConformationScores,
@@ -506,8 +505,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     return foal;
   });
 
-  // Post-commit, never throw: list refresh (Equoria-3427a), real-time nudge, prune.
-  await invalidateHorseListCache();
+  // Post-commit only: the real-time nudge and retention prune (never throws).
   if (notifUserId) {
     finalizeNotificationAfterCommit(notifUserId, 'foal_born', foalBornPayload(newFoal, dam, sire));
   }
