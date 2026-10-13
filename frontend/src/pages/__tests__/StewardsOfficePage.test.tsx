@@ -675,7 +675,7 @@ describe("The Steward's Office", () => {
     server.use(http.post(`${STAFF}/tickets`, () => json({ message: 'boom' }, 500)));
     const user = userEvent.setup();
     renderPage();
-    await user.type(await screen.findByLabelText('Their ID'), '345');
+    await user.type(await screen.findByLabelText('Their username'), 'Mara');
     await user.type(screen.getByLabelText('Category'), 'Spam');
     await user.type(screen.getByLabelText('Note'), 'Selling coins');
     await user.click(screen.getByRole('button', { name: 'File ticket' }));
@@ -713,7 +713,7 @@ describe("The Steward's Office", () => {
     );
     const user = userEvent.setup();
     renderPage();
-    await user.type(await screen.findByLabelText('Their ID'), '345');
+    await user.type(await screen.findByLabelText('Their username'), 'Mara');
     await user.type(screen.getByLabelText('Category'), 'Spam');
     await user.type(screen.getByLabelText('Note'), 'Selling coins');
     await user.click(screen.getByRole('button', { name: 'File ticket' }));
@@ -730,7 +730,7 @@ describe("The Steward's Office", () => {
     );
     const user = userEvent.setup();
     renderPage();
-    await user.type(await screen.findByLabelText('Their ID'), '345');
+    await user.type(await screen.findByLabelText('Their username'), 'Mara');
     await user.type(screen.getByLabelText('Category'), 'Spam');
     await user.type(screen.getByLabelText('Note'), 'Selling coins');
     await user.click(screen.getByRole('button', { name: 'File ticket' }));

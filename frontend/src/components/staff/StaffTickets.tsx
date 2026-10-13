@@ -33,17 +33,34 @@ const TARGET_OPTIONS = (Object.keys(TARGET_LABELS) as TicketTargetType[]).map((v
   label: TARGET_LABELS[value],
 }));
 
+type PlayerLookup = 'name' | 'id';
+
+const LOOKUP_OPTIONS = [
+  { value: 'name', label: 'By username' },
+  { value: 'id', label: 'By ID' },
+];
+
 const FILE_MESSAGES = {
   400: 'Fill in every field. The note can be up to 2,000 characters.',
 };
 
+// The refusals that belong at the player field, not at the button.
+const PLAYER_MESSAGES = {
+  404: 'No player by that name or ID.',
+};
+
+const isPlayerRefusal = (error: unknown) =>
+  (error as { statusCode?: number } | null)?.statusCode === 404;
+
 function FileTicketForm() {
   const [targetType, setTargetType] = useState<TicketTargetType>('user');
+  const [lookup, setLookup] = useState<PlayerLookup>('name');
   const [targetId, setTargetId] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
   const file = useFileTicket();
 
+  const playerRefused = targetType === 'user' && file.isError && isPlayerRefusal(file.error);
   const ready = targetId.trim() !== '' && category.trim() !== '' && note.trim() !== '';
 
   const submit = (event: React.FormEvent) => {
@@ -51,16 +68,18 @@ function FileTicketForm() {
     if (!ready) {
       return;
     }
+    const subject = targetType === 'user' && lookup === 'name' ? 'targetUsername' : 'targetId';
     file.mutate(
       {
         targetType,
-        targetId: targetId.trim(),
+        [subject]: targetId.trim(),
         category: category.trim(),
         note: note.trim(),
       },
       {
         onSuccess: () => {
           setTargetType('user');
+          setLookup('name');
           setTargetId('');
           setCategory('');
           setNote('');
@@ -83,13 +102,28 @@ function FileTicketForm() {
             />
           )}
         </FormField>
-        <FormField label="Their ID">
+        {targetType === 'user' && (
+          <FormField label="Find the player">
+            {(field) => (
+              <Select
+                {...field}
+                value={lookup}
+                onChange={(event) => setLookup(event.target.value as PlayerLookup)}
+                options={LOOKUP_OPTIONS}
+              />
+            )}
+          </FormField>
+        )}
+        <FormField
+          label={targetType === 'user' && lookup === 'name' ? 'Their username' : 'Their ID'}
+          error={playerRefused ? PLAYER_MESSAGES[404] : undefined}
+        >
           {(field) => (
             <Input
               {...field}
               value={targetId}
               onChange={(event) => setTargetId(event.target.value)}
-              maxLength={64}
+              maxLength={targetType === 'user' && lookup === 'name' ? 100 : 64}
               autoComplete="off"
             />
           )}
@@ -121,10 +155,20 @@ function FileTicketForm() {
         <Button type="submit" pending={file.isPending} disabled={!ready}>
           File ticket
         </Button>
-        {file.isError && <InlineError message={staffErrorMessage(file.error, FILE_MESSAGES)} />}
+        {file.isError && !playerRefused && (
+          <InlineError message={staffErrorMessage(file.error, FILE_MESSAGES)} />
+        )}
       </div>
     </form>
   );
+}
+
+/** "Player Willow", "Horse 345"; a player whose account is gone reads as a former player. */
+function subjectOf(ticket: StaffTicket): string {
+  if (ticket.targetType === 'user') {
+    return ticket.targetUsername ? `Player ${ticket.targetUsername}` : 'a former player';
+  }
+  return `${TARGET_LABELS[ticket.targetType] ?? ticket.targetType} ${ticket.targetId}`;
 }
 
 function TicketRow({
@@ -145,7 +189,7 @@ function TicketRow({
             Ticket #{ticket.id}: {ticket.category}
           </span>
           <span className="text-sm font-normal text-role-secondary">
-            {TARGET_LABELS[ticket.targetType] ?? ticket.targetType} {ticket.targetId}
+            {subjectOf(ticket)}
             {ticket.filedBy ? ` · filed by ${ticket.filedBy.username}` : ''} ·{' '}
             {formatDateTime(ticket.createdAt, STAFF_TIME_OPTIONS)} ·{' '}
             {STATUS_LABELS[ticket.status] ?? ticket.status}

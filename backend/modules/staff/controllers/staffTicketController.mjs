@@ -53,15 +53,44 @@ export async function createTicket(req, res, next) {
     const body = req.body ?? {};
     const targetType = typeof body.targetType === 'string' ? body.targetType : null;
     const targetId = text(body.targetId, 64);
+    const targetUsername = text(body.targetUsername, 100);
     const category = text(body.category, 40);
     const note = text(body.note, 2000);
     if (!TARGET_TYPES.has(targetType)) {
       return invalid(res, 'targetType must be user, post, horse or show');
     }
-    if (!targetId || !category || !note) {
+    if (!category || !note) {
+      return invalid(res, 'category and note are required and must fit their limits');
+    }
+    // A present-but-unusable value (blank, overlong, not text) is refused, not ignored.
+    if (
+      (body.targetId !== undefined && body.targetId !== null && !targetId) ||
+      (body.targetUsername !== undefined && body.targetUsername !== null && !targetUsername)
+    ) {
+      return invalid(res, 'The player or target is not valid');
+    }
+    if (targetType === 'user') {
+      if (!targetId && !targetUsername) {
+        return invalid(res, 'Name the player by username or by ID');
+      }
+    } else if (body.targetUsername !== undefined && body.targetUsername !== null) {
+      return invalid(res, 'A username can only name a player');
+    } else if (!targetId) {
       return invalid(res, 'targetId, category and note are required and must fit their limits');
     }
-    const result = await fileTicket(req.staff, { targetType, targetId, category, note });
+    const result = await fileTicket(req.staff, {
+      targetType,
+      targetId,
+      targetUsername,
+      category,
+      note,
+    });
+    if (result.error === 'no_player') {
+      return res.status(404).json({ success: false, message: 'No player by that name or ID' });
+    }
+    if (result.error === 'name_id_mismatch') {
+      return invalid(res, 'The name and ID point to different players');
+    }
     return res.status(201).json(result);
   } catch (error) {
     return fail(error, 'filing', next);

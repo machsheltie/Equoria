@@ -84,6 +84,8 @@ their text) and successful check-ins are logged too.
 - Moderator → admin. A ticket names a target (player, post, horse or show), a
   category and a note; status open → in progress → resolved or declined; both
   sides can reply.
+  A player may be named by username or by account ID; the ticket stores the
+  account ID and shows the player's current username.
 - Filing alerts the admin by in-game notification and email; a reply or
   resolution alerts the filing moderator in game.
 - The player-conduct project adds player appeals as a ticket type.

@@ -1,0 +1,117 @@
+/**
+ * StaffTickets: naming a player by username or ID (Equoria-puj1e.1)
+ *
+ * The real staff hooks over the real apiClient; MSW stubs the HTTP boundary.
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { server } from '@/test/msw/server';
+import StaffTickets from '../StaffTickets';
+
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const STAFF = `${base}/api/v1/staff`;
+
+const json = (body: unknown, status = 200) => HttpResponse.json(body as object, { status });
+
+const ticket = {
+  id: 12,
+  filedById: 'mod-2',
+  filedBy: { id: 'mod-2', username: 'Willow' },
+  targetType: 'user',
+  targetId: 'u-1',
+  category: 'Spam',
+  note: 'Selling coins',
+  status: 'open',
+  createdAt: '2026-10-11T12:00:00.000Z',
+  updatedAt: '2026-10-11T12:00:00.000Z',
+};
+
+function stubTickets(tickets: unknown[] = []) {
+  server.use(http.get(`${STAFF}/tickets`, () => json({ tickets })));
+}
+
+describe('StaffTickets: the player a ticket is about', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+  });
+
+  const renderTickets = () =>
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StaffTickets canFile canResolve={false} onCheckinRequired={() => undefined} />
+      </QueryClientProvider>
+    );
+
+  async function fillRest(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText('Category'), 'Spam');
+    await user.type(screen.getByLabelText('Note'), 'Selling coins');
+    await user.click(screen.getByRole('button', { name: 'File ticket' }));
+  }
+
+  it('names a player by username by default and by ID on request', async () => {
+    const bodies: unknown[] = [];
+    stubTickets();
+    server.use(
+      http.post(`${STAFF}/tickets`, async ({ request }) => {
+        bodies.push(await request.json());
+        return json({ ticket }, 201);
+      })
+    );
+    const user = userEvent.setup();
+    renderTickets();
+    await user.type(await screen.findByLabelText('Their username'), '  Mara  ');
+    await fillRest(user);
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toEqual({
+      targetType: 'user',
+      targetUsername: 'Mara',
+      category: 'Spam',
+      note: 'Selling coins',
+    });
+
+    await user.selectOptions(screen.getByLabelText('Find the player'), 'id');
+    await user.type(screen.getByLabelText('Their ID'), 'abc-123');
+    await fillRest(user);
+    await waitFor(() => expect(bodies).toHaveLength(2));
+    expect(bodies[1]).toEqual({
+      targetType: 'user',
+      targetId: 'abc-123',
+      category: 'Spam',
+      note: 'Selling coins',
+    });
+  });
+
+  it('shows an unknown player at the field and keeps what was typed', async () => {
+    stubTickets();
+    server.use(
+      http.post(`${STAFF}/tickets`, () =>
+        json({ success: false, message: 'No player by that name or ID' }, 404)
+      )
+    );
+    const user = userEvent.setup();
+    renderTickets();
+    await user.type(await screen.findByLabelText('Their username'), 'Nobody');
+    await fillRest(user);
+    expect(await screen.findByText('No player by that name or ID.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Their username')).toHaveValue('Nobody');
+    expect(screen.getByLabelText('Note')).toHaveValue('Selling coins');
+  });
+
+  it('shows the current username, or a former player', async () => {
+    stubTickets([
+      { ...ticket, id: 20, targetUsername: 'Mara' },
+      { ...ticket, id: 21, targetId: 'u-2', targetUsername: null },
+    ]);
+    renderTickets();
+    expect(await screen.findByText(/Player Mara/)).toBeInTheDocument();
+    expect(screen.getByText(/a former player/)).toBeInTheDocument();
+  });
+});

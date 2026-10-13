@@ -73,6 +73,8 @@ export interface StaffTicket {
   filedBy?: { id: string; username: string };
   targetType: TicketTargetType;
   targetId: string;
+  /** Player targets only: their current username, or null when the account is gone. */
+  targetUsername?: string | null;
   category: string;
   note: string;
   status: TicketStatus;
@@ -93,9 +95,11 @@ export interface StaffTicketWithReplies extends StaffTicket {
   replies: StaffTicketReply[];
 }
 
+/** A player is named by `targetUsername` or by `targetId`; every other target by `targetId`. */
 export interface FileTicketPayload {
   targetType: TicketTargetType;
-  targetId: string;
+  targetId?: string;
+  targetUsername?: string;
   category: string;
   note: string;
 }

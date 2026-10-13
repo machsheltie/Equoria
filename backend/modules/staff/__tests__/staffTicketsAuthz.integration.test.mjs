@@ -481,3 +481,121 @@ describe('Status changes', () => {
     expect((await prisma.staffTicket.findUnique({ where: { id: ticket.id } })).status).toBe('open');
   });
 });
+
+describe('Naming the player by username or ID', () => {
+  const aboutPlayer = (fields = {}) => ({
+    targetType: 'user',
+    category: 'Needs the admin',
+    note: `private note ${uid()}`,
+    ...fields,
+  });
+
+  it('files by username and stores that account id', async () => {
+    const { mod, modDevice } = await fixtureStaff();
+    const player = await makeUser('user');
+
+    const res = await post(TICKETS, mod, aboutPlayer({ targetUsername: `  ${player.username}  ` }), modDevice);
+
+    expect(res.status).toBe(201);
+    expect(res.body.ticket).toMatchObject({ targetType: 'user', targetId: player.id });
+    const stored = await prisma.staffTicket.findUnique({ where: { id: res.body.ticket.id } });
+    expect(stored.targetId).toBe(player.id);
+  });
+
+  it('files by account id as before, and accepts a name and id that agree', async () => {
+    const { mod, modDevice } = await fixtureStaff();
+    const player = await makeUser('user');
+
+    const byId = await post(TICKETS, mod, aboutPlayer({ targetId: player.id }), modDevice);
+    const both = await post(
+      TICKETS,
+      mod,
+      aboutPlayer({ targetId: player.id, targetUsername: player.username }),
+      modDevice,
+    );
+
+    expect(byId.status).toBe(201);
+    expect(byId.body.ticket.targetId).toBe(player.id);
+    expect(both.status).toBe(201);
+    expect(both.body.ticket.targetId).toBe(player.id);
+  });
+
+  it('matches the username exactly as stored: a different case is not that player', async () => {
+    const { mod, modDevice } = await fixtureStaff();
+    const player = await makeUser('user');
+
+    const res = await post(TICKETS, mod, aboutPlayer({ targetUsername: player.username.toUpperCase() }), modDevice);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('refuses a name and id that point to different players, and neither', async () => {
+    const { mod, modDevice } = await fixtureStaff();
+    const one = await makeUser('user');
+    const two = await makeUser('user');
+    const before = await prisma.staffTicket.count({ where: { filedById: mod.id } });
+
+    const clash = await post(TICKETS, mod, aboutPlayer({ targetId: one.id, targetUsername: two.username }), modDevice);
+    const neither = await post(TICKETS, mod, aboutPlayer(), modDevice);
+
+    expect(clash.status).toBe(400);
+    expect(clash.body.message).toBe('The name and ID point to different players');
+    expect(neither.status).toBe(400);
+    expect(await prisma.staffTicket.count({ where: { filedById: mod.id } })).toBe(before);
+  });
+
+  it('answers 404 with the same body for an unknown name and an unknown id', async () => {
+    const { mod, modDevice } = await fixtureStaff();
+
+    const byName = await post(TICKETS, mod, aboutPlayer({ targetUsername: `nobody${uid()}` }), modDevice);
+    const byId = await post(TICKETS, mod, aboutPlayer({ targetId: `nobody${uid()}` }), modDevice);
+
+    expect(byName.status).toBe(404);
+    expect(byId.status).toBe(404);
+    expect(byName.body).toEqual({ success: false, message: 'No player by that name or ID' });
+    expect(byId.body).toEqual(byName.body);
+  });
+
+  it('refuses a username for any target but a player', async () => {
+    const { mod, modDevice } = await fixtureStaff();
+    const res = await post(
+      TICKETS,
+      mod,
+      goodTicket({ targetType: 'horse', targetId: '345', targetUsername: 'someone' }),
+      modDevice,
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('allows a staff account as the subject', async () => {
+    const { admin, mod, modDevice } = await fixtureStaff();
+    const res = await post(TICKETS, mod, aboutPlayer({ targetUsername: admin.username }), modDevice);
+    expect(res.status).toBe(201);
+    expect(res.body.ticket.targetId).toBe(admin.id);
+  });
+
+  it('shows the current username in the list and the thread, and "former player" data when erased', async () => {
+    const { admin, mod, adminDevice, modDevice } = await fixtureStaff();
+    const player = await makeUser('user');
+    const other = await makeUser('user');
+    const filed = (await post(TICKETS, mod, aboutPlayer({ targetId: player.id }), modDevice)).body.ticket;
+    const second = (await post(TICKETS, mod, aboutPlayer({ targetId: other.id }), modDevice)).body.ticket;
+    const horse = (await post(TICKETS, mod, goodTicket({ targetType: 'horse', targetId: '9' }), modDevice)).body.ticket;
+
+    const renamed = `renamed${uid()}`;
+    await prisma.user.update({ where: { id: player.id }, data: { username: renamed } });
+
+    const list = (await get(TICKETS, admin, adminDevice)).body.tickets;
+    expect(list.find(t => t.id === filed.id).targetUsername).toBe(renamed);
+    expect(list.find(t => t.id === second.id).targetUsername).toBe(other.username);
+    expect(list.find(t => t.id === horse.id)).not.toHaveProperty('targetUsername');
+
+    const thread = await get(`${TICKETS}/${filed.id}`, admin, adminDevice);
+    expect(thread.body.ticket.targetUsername).toBe(renamed);
+
+    // An account that is gone: null, which the page shows as "a former player".
+    await prisma.staffTicket.update({ where: { id: second.id }, data: { targetId: `gone-${uid()}` } });
+    const after = (await get(`${TICKETS}/${second.id}`, admin, adminDevice)).body.ticket;
+    expect(after.targetUsername).toBeNull();
+  });
+});

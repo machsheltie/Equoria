@@ -59,15 +59,62 @@ export function _lastTicketEmails() {
   return lastTicketEmails;
 }
 
-export async function fileTicket(staff, { targetType, targetId, category, note }) {
+const NO_PLAYER = { error: 'no_player' };
+const NAME_ID_DISAGREE = { error: 'name_id_mismatch' };
+
+/**
+ * The account a ticket names, by ID, by username, or by both. Usernames match
+ * exactly as stored (the same findUnique rule the staff roles lookup uses).
+ * Unknown name and unknown ID give the same refusal.
+ */
+async function resolvePlayer(tx, { targetId, targetUsername }) {
+  const [byId, byName] = await Promise.all([
+    targetId ? tx.user.findUnique({ where: { id: targetId }, select: { id: true } }) : null,
+    targetUsername
+      ? tx.user.findUnique({ where: { username: targetUsername }, select: { id: true } })
+      : null,
+  ]);
+  if ((targetId && !byId) || (targetUsername && !byName)) {
+    return NO_PLAYER;
+  }
+  if (byId && byName && byId.id !== byName.id) {
+    return NAME_ID_DISAGREE;
+  }
+  return { id: (byId ?? byName).id };
+}
+
+/** Attach each user-targeted ticket's current username in one query. */
+async function withTargetUsernames(tickets) {
+  const ids = [...new Set(tickets.filter(t => t.targetType === 'user').map(t => t.targetId))];
+  const rows = ids.length
+    ? await prisma.user.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, username: true },
+      })
+    : [];
+  const names = new Map(rows.map(row => [row.id, row.username]));
+  return tickets.map(t =>
+    t.targetType === 'user' ? { ...t, targetUsername: names.get(t.targetId) ?? null } : t,
+  );
+}
+
+export async function fileTicket(staff, { targetType, targetId, targetUsername, category, note }) {
   const notes = [];
-  const { ticket, admins, filer } = await prisma.$transaction(async tx => {
+  const outcome = await prisma.$transaction(async tx => {
+    let resolvedId = targetId;
+    if (targetType === 'user') {
+      const player = await resolvePlayer(tx, { targetId, targetUsername });
+      if (player.error) {
+        return player;
+      }
+      resolvedId = player.id;
+    }
     const filerRow = await tx.user.findUnique({
       where: { id: staff.id },
       select: { username: true },
     });
     const created = await tx.staffTicket.create({
-      data: { filedById: staff.id, targetType, targetId, category, note },
+      data: { filedById: staff.id, targetType, targetId: resolvedId, category, note },
     });
     const adminRows = await tx.user.findMany({
       where: { role: 'admin' },
@@ -88,6 +135,10 @@ export async function fileTicket(staff, { targetType, targetId, category, note }
     });
     return { ticket: created, admins: adminRows, filer: filerRow };
   });
+  if (outcome.error) {
+    return outcome;
+  }
+  const { ticket, admins, filer } = outcome;
 
   finalizeAll(notes);
   const details = { ticketId: ticket.id, category, filedBy: filer?.username ?? 'A moderator' };
@@ -112,7 +163,7 @@ export async function listTickets(staff, status) {
     take: LIST_LIMIT,
     include: { filedBy: { select: { id: true, username: true } } },
   });
-  return { tickets };
+  return { tickets: await withTargetUsernames(tickets) };
 }
 
 export async function getTicket(staff, id) {
@@ -126,7 +177,7 @@ export async function getTicket(staff, id) {
       },
     },
   });
-  return ticket ? { ticket } : notFound();
+  return ticket ? { ticket: (await withTargetUsernames([ticket]))[0] } : notFound();
 }
 
 export async function addReply(staff, id, body) {
