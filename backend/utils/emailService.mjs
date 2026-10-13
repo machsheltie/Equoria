@@ -1,16 +1,25 @@
 /**
  * 📨 Email Service
  *
- * Handles sending emails via AWS SES (or fallback to console in development).
- * Supports HTML and plain text email templates with mobile-first design.
+ * Sends player and staff email in production; outside production it logs and
+ * captures (EMAIL_CAPTURE_FILE) instead of sending.
  *
- * Phase 1, Day 6-7: Email Verification System
+ * Production email (Equoria-s4rf4): Railway blocks outbound SMTP on the
+ * owner's plan, so production sends through the Gmail API over HTTPS from
+ * equoriagame@gmail.com. Set:
+ *   GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN (OAuth client + token),
+ *   EMAIL_FROM=equoriagame@gmail.com (Gmail sends only as that account), EMAIL_FROM_NAME,
+ *   VERIFICATION_URL_BASE, PASSWORD_RESET_URL_BASE, EMAIL_CHANGE_URL_BASE.
+ * GMAIL_SENDER (default EMAIL_FROM) is optional. When the three GMAIL_* values
+ * are absent, SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS are used instead. With
+ * neither, or with only some GMAIL_* values, production sends throw.
  */
 
 import logger from './logger.mjs';
 import fs from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
+import { createGmailApiTransport, readGmailConfig } from './gmailApiTransport.mjs';
 import { SUPPORT_EMAIL, generateEmailTemplate, generatePlainTextEmail } from './emailTemplates.mjs';
 
 // Email configuration
@@ -29,23 +38,26 @@ const EMAIL_CONFIG = {
   SUPPORT_EMAIL,
 };
 
-// Cached SMTP transporter (lazy-initialized so import-time doesn't fail).
+// Cached transporter (lazy-initialized so import-time doesn't fail).
 let cachedTransporter = null;
 
 /**
- * Build / return a nodemailer SMTP transporter from env config.
- *
- * Required env vars in production:
- *   - SMTP_HOST  (e.g. email-smtp.us-east-1.amazonaws.com for SES, smtp.resend.com for Resend)
- *   - SMTP_PORT  (587 STARTTLS or 465 TLS)
- *   - SMTP_USER  (provider's SMTP username)
- *   - SMTP_PASS  (provider's SMTP password / API key)
- *
- * Throws (fail-loud) if any required var is missing in production. Returns
- * `null` in non-production so capture/dev paths stay opt-in.
+ * Build / return the mail transporter: the Gmail API when all three GMAIL_*
+ * values are set, else nodemailer SMTP from SMTP_HOST/PORT/USER/PASS.
+ * Throws (fail-loud) in production when neither is configured. Returns `null`
+ * in non-production so capture/dev paths stay opt-in.
  */
-function getSmtpTransporter() {
+function getTransporter() {
   if (cachedTransporter) {
+    return cachedTransporter;
+  }
+
+  const gmail = readGmailConfig(process.env);
+  if (gmail) {
+    cachedTransporter = createGmailApiTransport({
+      ...gmail,
+      sender: gmail.sender || EMAIL_CONFIG.FROM_EMAIL,
+    });
     return cachedTransporter;
   }
 
@@ -58,7 +70,8 @@ function getSmtpTransporter() {
     if (process.env.NODE_ENV === 'production') {
       // Fail closed: refuse to silently drop user-facing emails in production.
       throw new Error(
-        '[EmailService] SMTP not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in environment.',
+        '[EmailService] Gmail API and SMTP not configured. Set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, ' +
+          'GMAIL_REFRESH_TOKEN for the Gmail API, or SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS for SMTP.',
       );
     }
     return null;
@@ -82,15 +95,15 @@ export function _resetTransporter() {
 }
 
 /**
- * Deliver a single message via the configured SMTP provider.
+ * Deliver a single message via the configured provider (Gmail API or SMTP).
  * Throws on send failure so callers can surface the error.
  */
-async function sendViaSmtp({ to, subject, html, text }) {
-  const transporter = getSmtpTransporter();
+async function sendViaProvider({ to, subject, html, text }) {
+  const transporter = getTransporter();
   if (!transporter) {
-    // Non-production path with no SMTP configured — should never reach here
-    // because the production branches gate on getSmtpTransporter() first.
-    throw new Error('[EmailService] sendViaSmtp called without a configured transporter');
+    // Non-production path with nothing configured — should never reach here
+    // because the production branches gate on getTransporter() first.
+    throw new Error('[EmailService] sendViaProvider called without a configured transporter');
   }
   const from = `"${EMAIL_CONFIG.FROM_NAME}" <${EMAIL_CONFIG.FROM_EMAIL}>`;
   const info = await transporter.sendMail({ from, to, subject, html, text });
@@ -183,8 +196,8 @@ export async function sendVerificationEmail(email, token, user = {}) {
     };
   }
 
-  // Production: send via configured SMTP provider. Fails loud if unconfigured.
-  const info = await sendViaSmtp({
+  // Production: send via the configured provider. Fails loud if unconfigured.
+  const info = await sendViaProvider({
     to: email,
     subject,
     html: htmlEmail,
@@ -264,8 +277,8 @@ export async function sendWelcomeEmail(email, user = {}) {
     };
   }
 
-  // Production: send via configured SMTP provider. Fails loud if unconfigured.
-  const info = await sendViaSmtp({
+  // Production: send via the configured provider. Fails loud if unconfigured.
+  const info = await sendViaProvider({
     to: email,
     subject,
     html: htmlEmail,
@@ -321,8 +334,8 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
     };
   }
 
-  // Production: send via configured SMTP provider. Fails loud if unconfigured.
-  const info = await sendViaSmtp({
+  // Production: send via the configured provider. Fails loud if unconfigured.
+  const info = await sendViaProvider({
     to: email,
     subject,
     html: htmlEmail,
@@ -412,8 +425,8 @@ If this was not you, do nothing and change your password.`;
     };
   }
 
-  // Production: send via configured SMTP provider. Fails loud if unconfigured.
-  const info = await sendViaSmtp({
+  // Production: send via the configured provider. Fails loud if unconfigured.
+  const info = await sendViaProvider({
     to: email,
     subject,
     html: htmlEmail,
@@ -492,8 +505,8 @@ If this was not you, change your password now — doing so cancels the pending c
     return { success: true, messageId: `dev-mode-email-change-notice-${Date.now()}` };
   }
 
-  // Production: send via configured SMTP provider. Fails loud if unconfigured.
-  const info = await sendViaSmtp({
+  // Production: send via the configured provider. Fails loud if unconfigured.
+  const info = await sendViaProvider({
     to: email,
     subject,
     html: htmlEmail,
@@ -538,7 +551,7 @@ export async function sendStaffCheckinCodeEmail(email, code) {
     return { success: true, messageId: `dev-mode-staff-checkin-${Date.now()}` };
   }
 
-  const info = await sendViaSmtp({
+  const info = await sendViaProvider({
     to: email,
     subject,
     html: htmlEmail,
@@ -570,7 +583,7 @@ export async function sendStaffTicketEmail(email, { ticketId, category, filedBy 
     logger.info("[EmailService] Steward's ticket alert (DEV MODE - not sent)", { subject });
     return { success: true, messageId: `dev-mode-staff-ticket-${Date.now()}` };
   }
-  const info = await sendViaSmtp({ to: email, subject, html, text });
+  const info = await sendViaProvider({ to: email, subject, html, text });
   logger.info("[EmailService] Steward's ticket alert sent", { messageId: info?.messageId });
   return { success: true, messageId: info?.messageId };
 }
