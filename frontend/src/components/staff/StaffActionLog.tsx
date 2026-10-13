@@ -40,6 +40,8 @@ const ACTION_OPTIONS = [
   { value: 'roles.manage', label: 'making or revoking moderators' },
   { value: 'ticket.file', label: 'filing tickets' },
   { value: 'ticket.resolve', label: 'marking tickets' },
+  { value: 'ticket.reply', label: 'Ticket replies' },
+  { value: 'staff.checkin', label: 'Check-ins' },
 ];
 
 const shortRef = (id: string) => `#${id.slice(0, 8)}`;
@@ -79,6 +81,10 @@ function describeEntry(entry: StaffLogEntry, selfId: string | undefined, nameOf:
       return `${actor} changed ${target}'s role`;
     case 'ticket.file':
       return `${actor} filed ${target}`;
+    case 'ticket.reply':
+      return `${actor} replied to ${target}`;
+    case 'staff.checkin':
+      return `${actor} checked in to the office`;
     case 'ticket.resolve': {
       const word = STATUS_WORDS[String(after.status)];
       return word ? `${actor} marked ${target} ${word}` : `${actor} updated ${target}`;

@@ -127,13 +127,17 @@ describe('Staff action log read access (Equoria-puj1e.1)', () => {
     }
     const newestFirst = created.map(r => r.id).reverse();
 
-    const first = await get(`${LOG}?actorId=${admin.id}`, admin, adminDevice);
+    const first = await get(`${LOG}?actorId=${admin.id}&capability=rename`, admin, adminDevice);
     expect(first.status).toBe(200);
     expect(first.body.entries).toHaveLength(50);
     expect(first.body.entries.map(e => e.id)).toEqual(newestFirst.slice(0, 50));
     expect(first.body.nextCursor).toBe(newestFirst[49]);
 
-    const second = await get(`${LOG}?actorId=${admin.id}&cursor=${first.body.nextCursor}`, admin, adminDevice);
+    const second = await get(
+      `${LOG}?actorId=${admin.id}&capability=rename&cursor=${first.body.nextCursor}`,
+      admin,
+      adminDevice,
+    );
     expect(second.status).toBe(200);
     expect(second.body.entries.map(e => e.id)).toEqual(newestFirst.slice(50));
     expect(second.body.nextCursor).toBeNull();
@@ -175,7 +179,18 @@ describe('Staff action recording (Equoria-puj1e.1)', () => {
         });
       }
     }
-    expect(await rowsFor([admin.id])).toHaveLength(0);
+    // Checking in is itself logged; no punitive row may exist besides it.
+    const rows = await rowsFor([admin.id]);
+    expect(rows.filter(r => r.capability !== 'staff.checkin')).toHaveLength(0);
+  });
+
+  it('accepts the two logged non-capability actions as filters and still rejects other strings', async () => {
+    const { admin, adminDevice } = await fixtureStaff();
+    for (const capability of ['ticket.reply', 'staff.checkin']) {
+      const res = await get(`${LOG}?capability=${capability}`, admin, adminDevice);
+      expect({ capability, status: res.status }).toEqual({ capability, status: 200 });
+    }
+    expect((await get(`${LOG}?capability=ticket.delete`, admin, adminDevice)).status).toBe(400);
   });
 
   it('records a punitive entry with a reason, trimmed, and non-punitive entries without one', async () => {

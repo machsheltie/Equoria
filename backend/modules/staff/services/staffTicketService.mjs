@@ -139,6 +139,17 @@ export async function addReply(staff, id, body) {
     const reply = await tx.staffTicketReply.create({
       data: { ticketId: id, authorId: staff.id, body },
     });
+    // The reply text stays in the ticket thread; the log only notes that it happened.
+    await recordStaffActionTx(tx, {
+      actorId: staff.id,
+      actorRole: staff.role,
+      capability: 'ticket.reply',
+      targetType: 'ticket',
+      targetId: String(id),
+      reason: null,
+      before: null,
+      after: null,
+    });
     // The filer's own reply tells the admins; anyone else's tells the filer.
     const recipients =
       staff.id === ticket.filedById

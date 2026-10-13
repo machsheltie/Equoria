@@ -10,7 +10,14 @@ import logger from '../../../utils/logger.mjs';
 import { ROLE_CAPABILITIES, hasCapability } from '../capabilities.mjs';
 import { listStaffActions } from '../services/staffActionLogService.mjs';
 
-const ALL_CAPABILITIES = new Set(Object.values(ROLE_CAPABILITIES).flatMap(set => [...set]));
+// Logged actions that are not capabilities: things any staff member does
+// (reply to a ticket, check in). Never granted, so they stay out of
+// capabilities.mjs and are only accepted here as ledger filters.
+const LOGGED_NON_CAPABILITY_ACTIONS = ['ticket.reply', 'staff.checkin'];
+const ALL_CAPABILITIES = new Set([
+  ...Object.values(ROLE_CAPABILITIES).flatMap(set => [...set]),
+  ...LOGGED_NON_CAPABILITY_ACTIONS,
+]);
 const FILTER_KEYS = new Set(['actorId', 'targetType', 'targetId', 'capability', 'cursor']);
 const MAX_TEXT = 100;
 const MAX_INT4 = 2147483647;

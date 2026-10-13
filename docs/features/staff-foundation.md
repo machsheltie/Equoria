@@ -76,7 +76,8 @@ account and role, time, capability, target (player, horse, show, post, IP or
 device), required reason, before/after values where something changed,
 outcome, and a link to the entry it reverses. The admin sees and filters every
 entry; a moderator sees their own. Every later staff tool writes here; an
-action and its log entry commit in one transaction.
+action and its log entry commit in one transaction. Ticket replies (without
+their text) and successful check-ins are logged too.
 
 ## Tickets
 

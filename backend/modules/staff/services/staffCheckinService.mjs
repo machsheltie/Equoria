@@ -23,6 +23,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { sendStaffCheckinCodeEmail } from '../../../utils/emailService.mjs';
 import { isStaffRole } from '../capabilities.mjs';
+import { recordStaffActionTx } from './staffActionLogService.mjs';
 
 export const CHECKIN_CODE_TTL_MS = 10 * 60 * 1000;
 export const CHECKIN_MAX_ATTEMPTS = 5;
@@ -197,8 +198,16 @@ export async function verifyCheckinCode(account, code) {
     if (consumed.count !== 1) {
       throw new StaffCheckinError('CODE_INVALID');
     }
-    await tx.staffTrustedDevice.create({
+    const device = await tx.staffTrustedDevice.create({
       data: { userId: account.id, tokenHash: hashDeviceToken(rawToken), expiresAt },
+    });
+    await recordStaffActionTx(tx, {
+      actorId: account.id,
+      actorRole: account.role,
+      capability: 'staff.checkin',
+      targetType: 'device',
+      targetId: String(device.id),
+      reason: null,
     });
   });
 

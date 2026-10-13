@@ -48,6 +48,7 @@ const cookiesFor = (user, device) =>
 
 beforeAll(() => {
   const scope = () => ({ in: createdUserIds });
+  cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: scope() } }), 'action log');
   cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: scope() } }), 'checkin codes');
   cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: scope() } }), 'devices');
   cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: scope() } }), 'refresh tokens');
@@ -138,7 +139,44 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
 
     const status = await get(STATUS, mod, rawToken);
     expect(status.status).toBe(200);
-    expect(status.body).toEqual({ entries: [], nextCursor: null });
+    // The verified check-in itself is the one entry in the moderator's own log.
+    expect(status.body.entries).toHaveLength(1);
+    expect(status.body.entries[0]).toMatchObject({
+      actorId: mod.id,
+      capability: 'staff.checkin',
+      targetId: String(devices[0].id),
+    });
+    expect(status.body.nextCursor).toBeNull();
+  });
+
+  it('logs one staff.checkin row per verified check-in, naming the new device', async () => {
+    const mod = await makeUser('moderator');
+    expect((await post(REQUEST, mod)).status).toBe(202);
+    expect((await post(VERIFY, mod, { code: latestCode(mod.email) })).status).toBe(200);
+
+    const device = await prisma.staffTrustedDevice.findFirst({ where: { userId: mod.id } });
+    const rows = await prisma.staffActionLog.findMany({ where: { actorId: mod.id } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      actorRole: 'moderator',
+      capability: 'staff.checkin',
+      targetType: 'device',
+      targetId: String(device.id),
+      reason: null,
+      outcome: 'succeeded',
+    });
+  });
+
+  it('writes no check-in log row for a wrong code, an exhausted code, or a reused code', async () => {
+    const mod = await makeUser('moderator');
+    expect((await post(REQUEST, mod)).status).toBe(202);
+    const code = latestCode(mod.email);
+    expect((await post(VERIFY, mod, { code: wrongCodeFor(code) })).status).toBe(400);
+    expect(await prisma.staffActionLog.count({ where: { actorId: mod.id } })).toBe(0);
+
+    expect((await post(VERIFY, mod, { code })).status).toBe(200);
+    expect((await post(VERIFY, mod, { code })).status).toBe(400);
+    expect(await prisma.staffActionLog.count({ where: { actorId: mod.id, capability: 'staff.checkin' } })).toBe(1);
   });
 
   it('burns a code after five wrong guesses, even for the right code', async () => {

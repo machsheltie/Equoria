@@ -19,7 +19,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { _resetTransporter } from '../../../utils/emailService.mjs';
-import { _lastTicketEmails } from '../services/staffTicketService.mjs';
+import { _lastTicketEmails, addReply } from '../services/staffTicketService.mjs';
 import {
   ORIGIN,
   checkIn,
@@ -173,7 +173,7 @@ describe('Filing a ticket', () => {
     expect(adminBells).toHaveLength(1);
     expect(adminBells[0].payload).toEqual({ ticketId: ticket.id, category: 'Needs the admin' });
 
-    const log = await prisma.staffActionLog.findMany({ where: { actorId: mod.id } });
+    const log = await prisma.staffActionLog.findMany({ where: { actorId: mod.id, capability: 'ticket.file' } });
     expect(log).toHaveLength(1);
     expect(log[0]).toMatchObject({
       capability: 'ticket.file',
@@ -360,6 +360,74 @@ describe('Replies', () => {
     expect((await post(`${TICKETS}/${ticket.id}/replies`, mod, { body: 'r'.repeat(2001) }, modDevice)).status).toBe(
       400,
     );
+  });
+
+  it('writes exactly one ticket.reply log row per reply, with the ticket id and no reply text', async () => {
+    const { admin, mod, adminDevice, modDevice } = await fixtureStaff();
+    const ticket = (await post(TICKETS, mod, goodTicket(), modDevice)).body.ticket;
+    const secret = `reply-text-${uid()}`;
+
+    expect((await post(`${TICKETS}/${ticket.id}/replies`, admin, { body: secret }, adminDevice)).status).toBe(201);
+
+    const rows = await prisma.staffActionLog.findMany({
+      where: { capability: 'ticket.reply', targetId: String(ticket.id) },
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      actorId: admin.id,
+      actorRole: 'admin',
+      targetType: 'ticket',
+      reason: null,
+      before: null,
+      after: null,
+      outcome: 'succeeded',
+    });
+    expect(JSON.stringify(rows[0])).not.toContain(secret);
+
+    expect((await post(`${TICKETS}/${ticket.id}/replies`, mod, { body: 'Thanks.' }, modDevice)).status).toBe(201);
+    const after = await prisma.staffActionLog.findMany({
+      where: { capability: 'ticket.reply', targetId: String(ticket.id) },
+    });
+    expect(after.map(r => r.actorId).sort()).toEqual([admin.id, mod.id].sort());
+  });
+
+  it('writes no log row for a refused reply', async () => {
+    const { mod, otherMod, modDevice, otherDevice } = await fixtureStaff();
+    const ticket = (await post(TICKETS, mod, goodTicket(), modDevice)).body.ticket;
+
+    expect((await post(`${TICKETS}/${ticket.id}/replies`, otherMod, { body: 'Hi' }, otherDevice)).status).toBe(404);
+    expect((await post(`${TICKETS}/${ticket.id}/replies`, mod, { body: '  ' }, modDevice)).status).toBe(400);
+    expect(
+      await prisma.staffActionLog.count({ where: { capability: 'ticket.reply', targetId: String(ticket.id) } }),
+    ).toBe(0);
+  });
+
+  it('rolls the reply back when its log write fails: no reply, no bell, no log row', async () => {
+    const { admin, mod, modDevice } = await fixtureStaff();
+    const ticket = (await post(TICKETS, mod, goodTicket(), modDevice)).body.ticket;
+
+    // A real staff row whose role reads as valid for the visibility check and
+    // then as missing for the log entry, so the real log insert fails after
+    // the real reply insert, inside the same real transaction.
+    let reads = 0;
+    const staff = {
+      id: admin.id,
+      get role() {
+        reads += 1;
+        return reads === 1 ? 'admin' : undefined;
+      },
+    };
+
+    await expect(addReply(staff, ticket.id, 'This must not stay.')).rejects.toMatchObject({
+      name: 'PrismaClientValidationError',
+    });
+
+    expect(reads).toBeGreaterThan(1);
+    expect(await prisma.staffTicketReply.count({ where: { ticketId: ticket.id } })).toBe(0);
+    expect(await bells(mod.id, 'staff_ticket_update')).toHaveLength(0);
+    expect(
+      await prisma.staffActionLog.count({ where: { capability: 'ticket.reply', targetId: String(ticket.id) } }),
+    ).toBe(0);
   });
 });
 

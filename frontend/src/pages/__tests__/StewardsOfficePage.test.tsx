@@ -375,6 +375,52 @@ describe("The Steward's Office", () => {
     );
   });
 
+  it('ledger: a ticket reply and a check-in read as plain sentences', async () => {
+    const reply = {
+      ...logEntry,
+      id: 9,
+      actorId: 'mod-2',
+      actorRole: 'moderator',
+      capability: 'ticket.reply',
+      targetType: 'ticket',
+      targetId: '12',
+      reason: null,
+      before: null,
+      after: null,
+    };
+    const checkin = {
+      ...reply,
+      id: 8,
+      capability: 'staff.checkin',
+      targetType: 'device',
+      targetId: '31',
+    };
+    stubStaff();
+    server.use(
+      http.get(`${STAFF}/log`, () => json({ entries: [reply, checkin], nextCursor: null }))
+    );
+    renderPage();
+    const ledger = await screen.findByRole('region', { name: 'Ledger' });
+    expect(await within(ledger).findByText('Willow replied to ticket #12.')).toBeInTheDocument();
+    expect(within(ledger).getByText('Willow checked in to the office.')).toBeInTheDocument();
+  });
+
+  it('ledger filter: Ticket replies and Check-ins send their capability', async () => {
+    stubStaff();
+    const queries = recordLogQueries();
+    const user = userEvent.setup();
+    renderPage();
+    const action = await screen.findByLabelText('Action');
+    await user.selectOptions(action, 'Ticket replies');
+    await waitFor(() =>
+      expect(queries.some((q) => q.get('capability') === 'ticket.reply')).toBe(true)
+    );
+    await user.selectOptions(action, 'Check-ins');
+    await waitFor(() =>
+      expect(queries.some((q) => q.get('capability') === 'staff.checkin')).toBe(true)
+    );
+  });
+
   it('ledger filter: a moderator does not see the filter line', async () => {
     stubStaff({ me: () => json(moderatorMe) });
     renderPage();
