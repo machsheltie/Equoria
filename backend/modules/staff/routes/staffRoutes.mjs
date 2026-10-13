@@ -4,9 +4,10 @@
  * Mounted at /api/v1/staff on the staff router, which applies
  * authenticateToken + csrfProtection. Every route names its guard inline:
  * requireStaffRole for the two check-in paths and GET /me, and
- * requireStaffCapability(cap) for everything else. A doctrine check parses
- * `router.<method>(path, ...middleware, handler)` here — keep that shape and
- * keep the Router named `router`.
+ * requireStaffCapability(cap) for everything else. The doctrine check
+ * (scripts/doctrine-checks/check-staff-routes-guarded.mjs) parses this file:
+ * keep each route a plain `router.<method>('<path>', ...middleware, handler)`
+ * statement whose guard is a direct argument with literal capability names.
  */
 
 import express from 'express';
@@ -43,12 +44,20 @@ router.post('/roles/lookup', requireStaffCapability('roles.manage'), lookupUser)
 router.post('/roles/:userId', requireStaffCapability('roles.manage'), setUserRole);
 
 // Tickets: moderators file; both roles read and reply (a moderator only on
-// their own); only the admin changes status.
-const TICKET_PARTIES = ['ticket.file', 'ticket.resolve'];
+// their own); only the admin changes status. Capability lists stay inline
+// literals so the doctrine check can read them.
 router.post('/tickets', requireStaffCapability('ticket.file'), createTicket);
-router.get('/tickets', requireAnyStaffCapability(TICKET_PARTIES), getTickets);
-router.get('/tickets/:id', requireAnyStaffCapability(TICKET_PARTIES), getTicketById);
-router.post('/tickets/:id/replies', requireAnyStaffCapability(TICKET_PARTIES), replyToTicket);
+router.get('/tickets', requireAnyStaffCapability(['ticket.file', 'ticket.resolve']), getTickets);
+router.get(
+  '/tickets/:id',
+  requireAnyStaffCapability(['ticket.file', 'ticket.resolve']),
+  getTicketById,
+);
+router.post(
+  '/tickets/:id/replies',
+  requireAnyStaffCapability(['ticket.file', 'ticket.resolve']),
+  replyToTicket,
+);
 router.post('/tickets/:id/status', requireStaffCapability('ticket.resolve'), changeTicketStatus);
 
 export default router;
