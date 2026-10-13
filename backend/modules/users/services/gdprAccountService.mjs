@@ -525,6 +525,13 @@ export async function eraseUserAccount(userId) {
       // ── Staff marketplace state (Cascade, but explicit for clarity) ───────
       await tx.staffMarketplaceState.deleteMany({ where: { userId } });
 
+      // ── Staff records are KEPT (Equoria-2yugk, owner ruling 2026-10-13) ──
+      // The staff action log holds actorId with no foreign key, so a former
+      // steward's entries stay under their account ID. Staff tickets and
+      // replies are SetNull on the filer/author, so they survive with the
+      // person shown as a former steward. Check-in codes and trusted devices
+      // cascade. Nothing here deletes a staff log row.
+
       // ── Riders / Trainers owned by the user ───────────────────────────────
       // Their assignments cascade-delete with the rider/trainer (schema
       // onDelete: Cascade on RiderAssignment/TrainerAssignment -> Rider/Trainer).

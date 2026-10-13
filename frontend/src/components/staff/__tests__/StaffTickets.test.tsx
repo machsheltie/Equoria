@@ -161,3 +161,64 @@ describe('StaffTickets: the player a ticket is about', () => {
     expect(screen.getByText(/a former player/)).toBeInTheDocument();
   });
 });
+
+describe('StaffTickets: a filer or author whose account was erased (Equoria-2yugk)', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+  });
+
+  it('shows a former steward in the ticket list and in the thread', async () => {
+    const orphan = {
+      ...ticket,
+      id: 30,
+      targetType: 'post',
+      targetId: '77',
+      filedById: null,
+      filedBy: null,
+    };
+    stubTickets([orphan]);
+    server.use(
+      http.get(`${STAFF}/tickets/30`, () =>
+        json({
+          ticket: {
+            ...orphan,
+            replies: [
+              {
+                id: 1,
+                ticketId: 30,
+                authorId: 'admin-1',
+                author: { id: 'admin-1', username: 'Hazel' },
+                body: 'On it.',
+                createdAt: '2026-10-11T13:00:00.000Z',
+              },
+              {
+                id: 2,
+                ticketId: 30,
+                authorId: null,
+                author: null,
+                body: 'Thanks.',
+                createdAt: '2026-10-11T14:00:00.000Z',
+              },
+            ],
+          },
+        })
+      )
+    );
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StaffTickets canFile={false} canResolve onCheckinRequired={() => undefined} />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText(/filed by a former steward/)).toBeInTheDocument();
+    await user.click(screen.getByText('Ticket #30: Spam'));
+    expect(await screen.findByText('Thanks.')).toBeInTheDocument();
+    expect(screen.getByText(/^Hazel,/)).toBeInTheDocument();
+    expect(screen.getByText(/^a former steward,/)).toBeInTheDocument();
+  });
+});

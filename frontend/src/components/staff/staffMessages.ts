@@ -24,6 +24,9 @@ export const STAFF_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   timeZoneName: 'short',
 };
 
+/** A steward whose account is no longer on staff or was erased (Equoria-2yugk). */
+export const FORMER_STEWARD = 'a former steward';
+
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   open: 'Open',
   in_progress: 'In progress',

@@ -19,7 +19,12 @@ import {
 import type { StaffTicketWithReplies, TicketStatus } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { STAFF_TIME_OPTIONS, STATUS_LABELS, staffErrorMessage } from './staffMessages';
+import {
+  FORMER_STEWARD,
+  STAFF_TIME_OPTIONS,
+  STATUS_LABELS,
+  staffErrorMessage,
+} from './staffMessages';
 
 const STATUS_OPTIONS = (Object.keys(STATUS_LABELS) as TicketStatus[]).map((value) => ({
   value,
@@ -153,7 +158,7 @@ export function TicketThread({ ticketId, canResolve, onCheckinRequired }: Ticket
           {ticket.replies.map((reply) => (
             <li key={reply.id}>
               <p className="text-sm text-role-secondary">
-                {reply.author.username},{' '}
+                {reply.author?.username ?? FORMER_STEWARD},{' '}
                 <time dateTime={reply.createdAt}>
                   {formatDateTime(reply.createdAt, STAFF_TIME_OPTIONS)}
                 </time>

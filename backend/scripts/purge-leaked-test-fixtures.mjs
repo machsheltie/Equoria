@@ -288,6 +288,8 @@ async function executeScopedPurge(userIds, horseIds) {
 
     // ── Staff marketplace state (Cascade, explicit for clarity) ──────────────
     await tx.staffMarketplaceState.deleteMany({ where: { userId: { in: userIds } } });
+    // Staff log rows keep their actorId (no FK) and staff tickets/replies are
+    // SetNull on the filer/author (Equoria-2yugk), so neither blocks the purge.
 
     // ── Riders / Trainers owned by the matched users (assignments cascade) ───
     await tx.rider.deleteMany({ where: { userId: { in: userIds } } });

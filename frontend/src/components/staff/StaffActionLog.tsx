@@ -5,7 +5,9 @@
  * decides). Each entry is one plain sentence — who did what to whom — with the
  * reason and the Eastern game time beneath it. Older entries load from the
  * server's cursor. Names resolve from the staff list when the reader may see
- * it (admin); otherwise an account shows as its role and a short reference.
+ * it (admin), and an actor no longer on that list reads as a former steward
+ * with a short reference (Equoria-2yugk); otherwise an account shows as its
+ * role and a short reference.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -18,7 +20,7 @@ import { isCheckinRequired, useStaffList, useStaffLog } from '@/hooks/api/useSta
 import type { StaffLogEntry } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { STAFF_TIME_OPTIONS, staffErrorMessage } from './staffMessages';
+import { FORMER_STEWARD, STAFF_TIME_OPTIONS, staffErrorMessage } from './staffMessages';
 import StaffSection from './StaffSection';
 
 const STATUS_WORDS: Record<string, string> = {
@@ -29,6 +31,9 @@ const STATUS_WORDS: Record<string, string> = {
 };
 
 type NameOf = (id: string) => string | undefined;
+
+/** True once the staff list has loaded and does not include this account. */
+type IsFormer = (id: string) => boolean;
 
 /**
  * Actions the admin can filter the ledger by, in the ledger's own wording.
@@ -46,9 +51,21 @@ const ACTION_OPTIONS = [
 
 const shortRef = (id: string) => `#${id.slice(0, 8)}`;
 
-function actorText(entry: StaffLogEntry, selfId: string | undefined, nameOf: NameOf): string {
+function actorText(
+  entry: StaffLogEntry,
+  selfId: string | undefined,
+  nameOf: NameOf,
+  isFormer: IsFormer
+): string {
   if (selfId !== undefined && entry.actorId === selfId) {
     return 'You';
+  }
+  // Off the staff list, or erased (the log keeps the account ID): a former
+  // steward, with a short reference so two of them can be told apart. The
+  // actor opens the sentence, so the wording is capitalized here.
+  if (isFormer(entry.actorId)) {
+    const former = FORMER_STEWARD.charAt(0).toUpperCase() + FORMER_STEWARD.slice(1);
+    return `${former} (${shortRef(entry.actorId)})`;
   }
   const role = entry.actorRole === 'admin' ? 'The admin' : 'Moderator';
   return nameOf(entry.actorId) ?? `${role} ${shortRef(entry.actorId)}`;
@@ -66,8 +83,13 @@ function targetText(entry: StaffLogEntry, nameOf: NameOf): string {
 }
 
 /** One readable sentence for an entry: actor, action, target. */
-function describeEntry(entry: StaffLogEntry, selfId: string | undefined, nameOf: NameOf): string {
-  const actor = actorText(entry, selfId, nameOf);
+function describeEntry(
+  entry: StaffLogEntry,
+  selfId: string | undefined,
+  nameOf: NameOf,
+  isFormer: IsFormer
+): string {
+  const actor = actorText(entry, selfId, nameOf, isFormer);
   const target = targetText(entry, nameOf);
   const after = entry.after ?? {};
   switch (entry.capability) {
@@ -125,6 +147,9 @@ export function StaffActionLog({
 
   const names = new Map((staff.data?.staff ?? []).map((member) => [member.id, member.username]));
   const nameOf: NameOf = (id) => names.get(id);
+  // Only a loaded list can say someone is no longer on staff; while it loads,
+  // or for a reader who may not see it, the role wording stands.
+  const isFormer: IsFormer = (id) => staff.data !== undefined && !names.has(id);
 
   let body: React.ReactNode;
   if (log.isPending) {
@@ -157,7 +182,7 @@ export function StaffActionLog({
             {entries.map((entry) => (
               <li key={entry.id} className="py-3">
                 <p className="text-[var(--text-primary)]">
-                  {describeEntry(entry, selfId, nameOf)}.
+                  {describeEntry(entry, selfId, nameOf, isFormer)}.
                 </p>
                 {entry.outcome === 'failed' && (
                   <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-role-danger">

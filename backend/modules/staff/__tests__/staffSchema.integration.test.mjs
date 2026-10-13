@@ -2,8 +2,9 @@
  * Staff foundation schema — real-DB integration (Equoria-puj1e.1)
  *
  * Proves every staff model persists, and that the permanent staff action log
- * survives: its actor foreign key is Restrict, so a user who has acted as
- * staff cannot be deleted out from under the log.
+ * survives its actor: the log holds the actor's account ID with no foreign key,
+ * so deleting the account leaves every row in place (Equoria-2yugk, owner
+ * ruling 2026-10-13; previously the actor FK was Restrict and refused the delete).
  */
 
 import { randomBytes } from 'crypto';
@@ -13,6 +14,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 describe('Staff foundation schema (Equoria-puj1e.1)', () => {
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
   const createdUserIds = [];
+  const ticketIds = [];
   const cleanup = createCleanupTracker();
   let admin;
   let mod;
@@ -40,10 +42,14 @@ describe('Staff foundation schema (Equoria-puj1e.1)', () => {
 
   afterAll(async () => {
     const scope = { in: createdUserIds };
-    // Log rows hold Restrict FKs on their actors, so they go before users.
+    // Log rows keep their actorId after the actor is gone; tickets whose filer
+    // was deleted have a null filedById, so they are also scoped by id.
     cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: scope } }), 'staffActionLog');
     cleanup.add(() => prisma.staffTicketReply.deleteMany({ where: { authorId: scope } }), 'staffTicketReply');
-    cleanup.add(() => prisma.staffTicket.deleteMany({ where: { filedById: scope } }), 'staffTicket');
+    cleanup.add(
+      () => prisma.staffTicket.deleteMany({ where: { OR: [{ id: { in: ticketIds } }, { filedById: scope }] } }),
+      'staffTicket',
+    );
     cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: scope } }), 'staffCheckinCode');
     cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: scope } }), 'staffTrustedDevice');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: scope } }), 'user');
@@ -67,6 +73,7 @@ describe('Staff foundation schema (Equoria-puj1e.1)', () => {
     const ticket = await prisma.staffTicket.create({
       data: { filedById: mod.id, targetType: 'post', targetId: '42', category: 'spam', note: 'help', status: 'open' },
     });
+    ticketIds.push(ticket.id);
     const reply = await prisma.staffTicketReply.create({
       data: { ticketId: ticket.id, authorId: admin.id, body: 'on it' },
     });
@@ -84,7 +91,7 @@ describe('Staff foundation schema (Equoria-puj1e.1)', () => {
     expect(reread.replies).toHaveLength(1);
   });
 
-  it('refuses to delete the actor of a staff action log row, so the log survives', async () => {
+  it('lets the actor of a staff action log row be deleted, and the row survives with its actorId', async () => {
     const log = await prisma.staffActionLog.create({
       data: {
         actorId: mod.id,
@@ -96,19 +103,11 @@ describe('Staff foundation schema (Equoria-puj1e.1)', () => {
       },
     });
 
-    // Prisma errors cross the Jest vm realm, so rejects.toThrow() cannot see them as
-    // Errors; capture the rejection and assert on it directly.
-    let refusal;
-    try {
-      await prisma.user.delete({ where: { id: mod.id } });
-    } catch (err) {
-      refusal = err;
-    }
-    expect(refusal).toBeDefined();
-    expect(String(refusal.message)).toMatch(/staff_action_log|foreign key|constraint/i);
+    await prisma.user.delete({ where: { id: mod.id } });
 
+    expect(await prisma.user.findUnique({ where: { id: mod.id } })).toBeNull();
     const survivor = await prisma.staffActionLog.findUnique({ where: { id: log.id } });
     expect(survivor).not.toBeNull();
-    expect(await prisma.user.findUnique({ where: { id: mod.id } })).not.toBeNull();
+    expect(survivor.actorId).toBe(mod.id);
   });
 });

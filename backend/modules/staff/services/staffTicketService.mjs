@@ -28,8 +28,21 @@ export const parseTicketId = raw =>
 
 const seesAll = staff => hasCapability(staff.role, 'ticket.resolve');
 
+/**
+ * A moderator sees only tickets they filed. An erased filer leaves filedById
+ * null (Equoria-2yugk); such a ticket is visible only to ticket.resolve
+ * holders, so the moderator filter must never be widened or dropped.
+ */
+function ownedBy(staff) {
+  if (typeof staff.id !== 'string' || staff.id === '') {
+    // Prisma drops an undefined filter, which would widen to every ticket.
+    throw new Error('[staff] a ticket query needs the staff account id');
+  }
+  return { filedById: staff.id };
+}
+
 /** Tickets a moderator did not file read as missing, not forbidden. */
-const visibleWhere = (staff, id) => (seesAll(staff) ? { id } : { id, filedById: staff.id });
+const visibleWhere = (staff, id) => (seesAll(staff) ? { id } : { id, ...ownedBy(staff) });
 
 const notFound = () => ({ error: 'not_found' });
 
@@ -153,7 +166,7 @@ export async function fileTicket(staff, { targetType, targetId, targetUsername, 
 }
 
 export async function listTickets(staff, status) {
-  const where = seesAll(staff) ? {} : { filedById: staff.id };
+  const where = seesAll(staff) ? {} : ownedBy(staff);
   if (status) {
     where.status = status;
   }
@@ -201,13 +214,16 @@ export async function addReply(staff, id, body) {
       before: null,
       after: null,
     });
-    // The filer's own reply tells the admins; anyone else's tells the filer.
-    const recipients =
-      staff.id === ticket.filedById
-        ? (await tx.user.findMany({ where: { role: 'admin' }, select: { id: true } })).map(
-            row => row.id,
-          )
-        : [ticket.filedById];
+    // The filer's own reply tells the admins; anyone else's tells the filer,
+    // unless the filer's account was erased (filedById null): then no one.
+    let recipients = [];
+    if (ticket.filedById !== null && staff.id === ticket.filedById) {
+      recipients = (await tx.user.findMany({ where: { role: 'admin' }, select: { id: true } })).map(
+        row => row.id,
+      );
+    } else if (ticket.filedById !== null) {
+      recipients = [ticket.filedById];
+    }
     for (const userId of recipients) {
       const payload = { ticketId: id };
       await createNotificationTx(tx, userId, 'staff_ticket_update', payload);
@@ -242,9 +258,12 @@ export async function setStatus(staff, id, status) {
       before: { status: ticket.status },
       after: { status },
     });
-    const payload = { ticketId: id, status };
-    await createNotificationTx(tx, ticket.filedById, 'staff_ticket_update', payload);
-    notes.push({ userId: ticket.filedById, type: 'staff_ticket_update', payload });
+    // An erased filer (filedById null) has no one to tell.
+    if (ticket.filedById !== null) {
+      const payload = { ticketId: id, status };
+      await createNotificationTx(tx, ticket.filedById, 'staff_ticket_update', payload);
+      notes.push({ userId: ticket.filedById, type: 'staff_ticket_update', payload });
+    }
     return { ticket: await tx.staffTicket.findUnique({ where: { id } }) };
   });
   finalizeAll(notes);

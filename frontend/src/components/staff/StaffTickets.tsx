@@ -17,7 +17,12 @@ import { isCheckinRequired, useFileTicket, useStaffTickets } from '@/hooks/api/u
 import type { StaffTicket, TicketTargetType } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { STAFF_TIME_OPTIONS, STATUS_LABELS, staffErrorMessage } from './staffMessages';
+import {
+  FORMER_STEWARD,
+  STAFF_TIME_OPTIONS,
+  STATUS_LABELS,
+  staffErrorMessage,
+} from './staffMessages';
 import StaffSection from './StaffSection';
 import TicketThread from './TicketThread';
 
@@ -205,7 +210,7 @@ function TicketRow({
           </span>
           <span className="text-sm font-normal text-role-secondary">
             {subjectOf(ticket)}
-            {ticket.filedBy ? ` · filed by ${ticket.filedBy.username}` : ''} ·{' '}
+            {` · filed by ${ticket.filedBy?.username ?? FORMER_STEWARD}`} ·{' '}
             {formatDateTime(ticket.createdAt, STAFF_TIME_OPTIONS)} ·{' '}
             {STATUS_LABELS[ticket.status] ?? ticket.status}
           </span>

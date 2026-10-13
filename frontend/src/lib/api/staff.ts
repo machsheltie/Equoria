@@ -69,8 +69,9 @@ export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'declined';
 
 export interface StaffTicket {
   id: number;
-  filedById: string;
-  filedBy?: { id: string; username: string };
+  /** Null once the filing account is erased (Equoria-2yugk): a former steward. */
+  filedById: string | null;
+  filedBy?: { id: string; username: string } | null;
   targetType: TicketTargetType;
   targetId: string;
   /** Player targets only: their current username, or null when the account is gone. */
@@ -85,8 +86,9 @@ export interface StaffTicket {
 export interface StaffTicketReply {
   id: number;
   ticketId: number;
-  authorId: string;
-  author: { id: string; username: string };
+  /** Null once the author's account is erased (Equoria-2yugk): a former steward. */
+  authorId: string | null;
+  author: { id: string; username: string } | null;
   body: string;
   createdAt: string;
 }

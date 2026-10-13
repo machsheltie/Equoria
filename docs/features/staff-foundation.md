@@ -77,7 +77,9 @@ device), required reason, before/after values where something changed,
 outcome, and a link to the entry it reverses. The admin sees and filters every
 entry; a moderator sees their own. Every later staff tool writes here; an
 action and its log entry commit in one transaction. Ticket replies (without
-their text) and successful check-ins are logged too.
+their text) and successful check-ins are logged too. Erasing an account keeps
+its staff log entries under the account ID, and keeps its tickets and replies
+with the filer or author shown as a former steward.
 
 ## Tickets
 

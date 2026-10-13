@@ -95,7 +95,6 @@ model User {
   staffMarketplaceStates  StaffMarketplaceState[]
   notifications             Notification[]
   rankSnapshots             UserRankSnapshot[]
-  staffActions              StaffActionLog[]       @relation("StaffActionActor")
   staffCheckinCodes         StaffCheckinCode[]
   staffTrustedDevices       StaffTrustedDevice[]
   staffTicketsFiled         StaffTicket[]          @relation("StaffTicketFiler")
@@ -2124,11 +2123,12 @@ model DocCoverageSnapshot {
   @@map("doc_coverage_snapshots")
 }
 
-/// Permanent staff action log: rows are never deleted; actor FK is Restrict.
+/// Permanent staff action log: rows are never deleted. actorId is the acting
+/// account's ID with no foreign key, so erasing that account keeps its entries
+/// (Equoria-2yugk).
 model StaffActionLog {
   id         Int             @id @default(autoincrement())
   actorId    String
-  actor      User            @relation("StaffActionActor", fields: [actorId], references: [id], onDelete: Restrict)
   actorRole  String
   capability String
   targetType String
@@ -2178,8 +2178,9 @@ model StaffTrustedDevice {
 
 model StaffTicket {
   id         Int                @id @default(autoincrement())
-  filedById  String
-  filedBy    User               @relation("StaffTicketFiler", fields: [filedById], references: [id], onDelete: Restrict)
+  /// Null once the filing account is erased (Equoria-2yugk): "a former steward".
+  filedById  String?
+  filedBy    User?              @relation("StaffTicketFiler", fields: [filedById], references: [id], onDelete: SetNull)
   targetType String // user | post | horse | show
   targetId   String
   category   String
@@ -2198,8 +2199,9 @@ model StaffTicketReply {
   id        Int         @id @default(autoincrement())
   ticketId  Int
   ticket    StaffTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User        @relation("StaffTicketReplyAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  /// Null once the author's account is erased (Equoria-2yugk): "a former steward".
+  authorId  String?
+  author    User?       @relation("StaffTicketReplyAuthor", fields: [authorId], references: [id], onDelete: SetNull)
   body      String
   createdAt DateTime    @default(now())
 
