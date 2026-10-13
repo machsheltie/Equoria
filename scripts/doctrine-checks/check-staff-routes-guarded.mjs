@@ -2,26 +2,32 @@
 // Doctrine: every staff route carries a capability guard (Equoria-puj1e.1,
 // STAFF-CR-05).
 //
-// Parses every .mjs file under backend/modules/staff/routes/ with espree and
-// inspects every Express Router created there (`express.Router()` or
-// `Router()`, whatever the variable is called; `router` is always treated as
-// one). Each registration must be a plain statement of the shape
+// Parses every .js/.mjs/.cjs file under backend/modules/staff/routes/ with
+// espree (any other file there fails). A Router is ONLY a binding created as
 //
-//   <router>.<get|post|put|patch|delete|all|head|options>('<path>', ...mw, handler)
+//   const <name> = express.Router();   // express = default import of 'express'
+//   const <name> = Router();           // Router = named import from 'express'
 //
-// with a recognized guard as a DIRECT argument before the terminal handler:
+// and each registration on it must be a plain statement of the shape
+//
+//   <name>.<get|post|put|patch|delete|all|head|options>('<path>', GUARD, ...mw, handler)
+//
+// where GUARD, the first argument after the path, is a direct call to a guard
+// imported from backend/modules/staff/middleware/requireStaffCapability.mjs:
 //   requireStaffCapability('<literal>')
 //   requireAnyStaffCapability(['<literal>', ...])
 //   requireStaffRole  -- only for POST /checkin/request, POST /checkin/verify
 //                        and GET /me (a staff member who is not yet checked in
 //                        has no capabilities to check).
-// `<router>.use(...)` is allowed only when every argument is a capability guard.
+// `<name>.use(...)` is allowed only when every argument is a capability guard.
 //
-// Everything else fails closed: a guard after the handler or wrapped in another
-// call, computed methods, spread arguments, router.route, chained registration,
-// a Router passed / aliased / exported other than `export default <name>`, a
-// Router created anywhere but `const <name> = ...Router()`, a guard name
-// redefined locally, and files that do not parse.
+// Everything else fails closed: a guard that is not first, after the handler
+// or wrapped in another call; computed methods; spread arguments; route();
+// chained registration; a route-method call on anything that is not a
+// recognized Router (an express() app, an imported router, an aliased factory);
+// any other use of `express`, `.Router` or the Router factory; a Router passed,
+// aliased or exported other than `export default <name>`; a guard name
+// redefined locally or imported from elsewhere; and files that do not parse.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,13 +38,14 @@ const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const STAFF_ROUTES_DIR = path.join(REPO_ROOT, 'backend', 'modules', 'staff', 'routes');
 
-const GUARD_MODULE_SUFFIX = '/middleware/requireStaffCapability.mjs';
 const GUARD_NAMES = new Set([
   'requireStaffCapability',
   'requireAnyStaffCapability',
   'requireStaffRole',
 ]);
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'all', 'head', 'options']);
+const ROUTE_METHODS = new Set([...HTTP_METHODS, 'use', 'route']);
+const SOURCE_FILE_RE = /\.(?:js|mjs|cjs)$/;
 // requireStaffRole is enough for exactly these registrations.
 const ROLE_ONLY_ALLOWED = new Set(['POST /checkin/request', 'POST /checkin/verify', 'GET /me']);
 
@@ -47,7 +54,15 @@ const ROLE_ONLY_ALLOWED = new Set(['POST /checkin/request', 'POST /checkin/verif
 // Empty today; this is where a forbidden-capability rule plugs in.
 const CAPABILITY_RULES = [];
 
+/** The guard module a routes directory must import from: <routesDir>/../middleware/. */
+export const guardModuleFor = (routesDir) =>
+  path.resolve(routesDir, '..', 'middleware', 'requireStaffCapability.mjs');
+
 const isStringLiteral = (n) => n?.type === 'Literal' && typeof n.value === 'string';
+
+/** Static member name (`a.b` or `a['b']`), or null when it cannot be known. */
+const memberName = (m) =>
+  !m.computed ? m.property.name : isStringLiteral(m.property) ? m.property.value : null;
 
 /** Walk the AST depth-first, calling visit(node, parent) for every node. */
 function walk(node, visit, parent = null) {
@@ -66,82 +81,131 @@ function walk(node, visit, parent = null) {
 function patternNames(p, out = []) {
   if (!p) return out;
   if (p.type === 'Identifier') out.push(p);
-  else if (p.type === 'ObjectPattern')
+  else if (p.type === 'ObjectPattern') {
     p.properties.forEach((q) => patternNames(q.type === 'RestElement' ? q : q.value, out));
-  else if (p.type === 'ArrayPattern') p.elements.forEach((e) => patternNames(e, out));
+  } else if (p.type === 'ArrayPattern') p.elements.forEach((e) => patternNames(e, out));
   else if (p.type === 'RestElement') patternNames(p.argument, out);
   else if (p.type === 'AssignmentPattern') patternNames(p.left, out);
   return out;
 }
 
-const isRouterFactoryCall = (n) =>
-  (n?.type === 'CallExpression' || n?.type === 'NewExpression') &&
-  ((n.callee.type === 'Identifier' && n.callee.name === 'Router') ||
-    (n.callee.type === 'MemberExpression' &&
-      !n.callee.computed &&
-      n.callee.property.name === 'Router'));
+/** True when `id` is a property name / object key rather than a variable reference. */
+function isNonReference(id, parent) {
+  if (parent.type === 'MemberExpression' && parent.property === id && !parent.computed) return true;
+  if (
+    (parent.type === 'Property' ||
+      parent.type === 'PropertyDefinition' ||
+      parent.type === 'MethodDefinition') &&
+    parent.key === id &&
+    !parent.computed &&
+    !parent.shorthand
+  ) {
+    return true;
+  }
+  if (/^Import(?:Default|Namespace)?Specifier$/.test(parent.type)) return true;
+  // `export { a as b }`: `a` is a reference, `b` is only a name.
+  return parent.type === 'ExportSpecifier' && parent.exported === id && parent.local !== id;
+}
 
 /**
- * Collect file-level facts: which local names are Routers, which local names
- * are the real guards, and failures for bindings that break either.
+ * Collect the file's imports: the local names of the `express` default import,
+ * of `Router` named-imported from 'express', and of the real guards. Imports of
+ * a guard name from anywhere else, and local redeclarations, are failures.
  */
-function collectBindings(ast, fail) {
-  const routerNames = new Set(['router']);
-  const guards = new Map([...GUARD_NAMES].map((g) => [g, g]));
-  const redefined = new Set();
-  const markBinding = (id, allowed) => {
-    if (!allowed && guards.has(id.name)) redefined.add(id);
-  };
-
-  walk(ast, (node, parent) => {
+function collectImports(ast, file, guardModule, fail) {
+  const expressNames = new Set();
+  const factoryNames = new Set();
+  const guards = new Map();
+  const declared = [];
+  walk(ast, (node) => {
     if (node.type === 'ImportDeclaration') {
-      const fromGuardModule = String(node.source.value).endsWith(GUARD_MODULE_SUFFIX);
+      const source = String(node.source.value);
+      const resolved = source.startsWith('.') ? path.resolve(path.dirname(file), source) : null;
+      const fromGuardModule = resolved !== null && path.relative(resolved, guardModule) === '';
       for (const s of node.specifiers) {
-        const imported = s.type === 'ImportSpecifier' ? s.imported.name : null;
-        if (fromGuardModule && GUARD_NAMES.has(imported)) guards.set(s.local.name, imported);
-        else markBinding(s.local, false);
+        const imported =
+          s.type === 'ImportSpecifier' ? (s.imported.name ?? s.imported.value) : null;
+        if (source === 'express' && s.type === 'ImportDefaultSpecifier')
+          expressNames.add(s.local.name);
+        else if (source === 'express' && imported === 'Router') factoryNames.add(s.local.name);
+        else if (fromGuardModule && GUARD_NAMES.has(imported)) guards.set(s.local.name, imported);
+        else if (GUARD_NAMES.has(s.local.name) || GUARD_NAMES.has(imported)) {
+          fail(
+            s,
+            `guard ${imported ?? s.local.name} must be imported from the staff middleware module`
+          );
+        }
       }
     } else if (node.type === 'VariableDeclarator') {
-      patternNames(node.id).forEach((id) => markBinding(id, false));
-      if (node.id.type === 'Identifier' && isRouterFactoryCall(node.init)) {
-        if (parent?.kind !== 'const') {
-          fail(node, `Router "${node.id.name}" must be declared with const`);
-        }
-        routerNames.add(node.id.name);
-      }
+      declared.push(...patternNames(node.id));
     } else if (/Function|Class/.test(node.type)) {
-      if (node.id) markBinding(node.id, false);
-      (node.params ?? []).forEach((p) => patternNames(p).forEach((id) => markBinding(id, false)));
+      if (node.id) declared.push(node.id);
+      (node.params ?? []).forEach((p) => declared.push(...patternNames(p)));
     } else if (node.type === 'CatchClause') {
-      patternNames(node.param).forEach((id) => markBinding(id, false));
-    }
-    if (isRouterFactoryCall(node)) {
-      const declared =
-        parent?.type === 'VariableDeclarator' &&
-        parent.init === node &&
-        parent.id.type === 'Identifier';
-      if (!declared)
-        fail(node, 'Router created in an unsupported way; use const <name> = express.Router()');
+      declared.push(...patternNames(node.param));
     }
   });
-
-  for (const id of redefined) {
-    guards.delete(id.name);
-    fail(
-      id,
-      `guard name ${id.name} is redefined or imported from somewhere other than ${GUARD_MODULE_SUFFIX}`
-    );
+  for (const id of declared) {
+    if (guards.has(id.name) || GUARD_NAMES.has(id.name)) {
+      guards.delete(id.name);
+      fail(id, `guard name ${id.name} is redefined locally`);
+    }
   }
-  // A Router declared inside an export statement is exported by name.
-  walk(ast, (node) => {
-    if (node.type === 'ExportNamedDeclaration' && node.declaration) {
-      for (const d of node.declaration.declarations ?? []) {
-        if (isRouterFactoryCall(d.init))
-          fail(d, 'Router exported other than by export default <name>');
-      }
+  return { expressNames, factoryNames, guards };
+}
+
+/**
+ * Find Routers: `const <name> = express.Router()` / `const <name> = Router()`.
+ * Every other reference to `express`, the Router factory or a `.Router` member
+ * is a failure.
+ */
+function collectRouters(ast, parents, { expressNames, factoryNames }, fail) {
+  const routerNames = new Set();
+  const creationSite = (call) => {
+    const decl = parents.get(call);
+    const ok =
+      decl?.type === 'VariableDeclarator' &&
+      decl.init === call &&
+      decl.id.type === 'Identifier' &&
+      parents.get(decl)?.kind === 'const' &&
+      parents.get(parents.get(decl))?.type !== 'ExportNamedDeclaration';
+    return ok ? decl.id.name : null;
+  };
+  const accept = (call, at) => {
+    const name = creationSite(call);
+    if (name) routerNames.add(name);
+    else
+      fail(
+        at,
+        'Router must be created as `const <name> = express.Router()` and not exported by name'
+      );
+  };
+  walk(ast, (node, parent) => {
+    if (node.type === 'MemberExpression' && memberName(node) === 'Router') {
+      const direct =
+        !node.computed &&
+        node.object.type === 'Identifier' &&
+        expressNames.has(node.object.name) &&
+        parent?.type === 'CallExpression' &&
+        parent.callee === node;
+      if (direct) accept(parent, node);
+      else fail(node, '`.Router` may only be called directly as express.Router()');
+      return;
+    }
+    if (node.type !== 'Identifier' || !parent || isNonReference(node, parent)) return;
+    if (expressNames.has(node.name)) {
+      const routerMember =
+        parent.type === 'MemberExpression' &&
+        parent.object === node &&
+        memberName(parent) === 'Router';
+      if (!routerMember)
+        fail(node, `\`${node.name}\` may only be used as ${node.name}.Router() (no express() app)`);
+    } else if (factoryNames.has(node.name)) {
+      if (parent.type === 'CallExpression' && parent.callee === node) accept(parent, node);
+      else fail(node, `Router factory \`${node.name}\` may only be called directly`);
     }
   });
-  return { routerNames, guards };
+  return routerNames;
 }
 
 /**
@@ -185,22 +249,24 @@ function checkMethodRegistration(call, method, guards, fail) {
   const [first] = args;
   const routeKey = `${method.toUpperCase()} ${isStringLiteral(first) ? first.value : '<non-literal path>'}`;
   if (!isStringLiteral(first)) return fail(call, `${routeKey}: the path must be a string literal`);
-  if (args.length < 2) return fail(call, `${routeKey} has no handler`);
-  const handler = args[args.length - 1];
-  const middleware = args.slice(1, -1);
-  const found = middleware.map((a) => recognizeGuard(a, guards)).filter(Boolean);
-  for (const g of found) {
-    const reason = capabilityRuleViolation(g, routeKey);
-    if (reason) return fail(call, `${routeKey}: ${reason}`);
+  if (args.length < 3) {
+    return fail(
+      call,
+      `${routeKey} needs a guard as the first argument after the path, then a handler`
+    );
   }
-  if (found.some((g) => g.kind === 'capability')) return undefined;
-  if (found.some((g) => g.kind === 'role') && ROLE_ONLY_ALLOWED.has(routeKey)) return undefined;
-  const detail = recognizeGuard(handler, guards)
-    ? ' (a guard after the terminal handler does not count)'
-    : '';
+  const guard = recognizeGuard(args[1], guards);
+  if (guard) {
+    const reason = capabilityRuleViolation(guard, routeKey);
+    if (reason) return fail(call, `${routeKey}: ${reason}`);
+    if (guard.kind === 'capability') return undefined;
+    if (ROLE_ONLY_ALLOWED.has(routeKey)) return undefined;
+  }
+  const later = args.slice(2).some((a) => recognizeGuard(a, guards));
   return fail(
     call,
-    `${routeKey} has no direct requireStaffCapability/requireAnyStaffCapability guard before its handler${detail}`
+    `${routeKey} does not start with a direct requireStaffCapability/requireAnyStaffCapability guard` +
+      (later ? ' (the guard must be the first argument after the path)' : '')
   );
 }
 
@@ -216,8 +282,9 @@ function checkUse(call, guards, fail) {
 }
 
 /** Judge one reference to a Router binding by where it sits. */
-function checkRouterReference(id, parent, grandparent, ctx) {
-  const { guards, fail } = ctx;
+function checkRouterReference(id, parent, ctx) {
+  const { guards, fail, parents } = ctx;
+  const grandparent = parents.get(parent);
   if (parent.type === 'VariableDeclarator' && parent.id === id) return; // its declaration
   if (parent.type === 'ExportDefaultDeclaration') return;
   const isCallee =
@@ -225,8 +292,9 @@ function checkRouterReference(id, parent, grandparent, ctx) {
     parent.object === id &&
     grandparent?.type === 'CallExpression' &&
     grandparent.callee === parent;
-  if (!isCallee)
+  if (!isCallee) {
     return fail(id, `Router "${id.name}" is passed, aliased or exported in an unsupported way`);
+  }
   const call = grandparent;
   if (parent.computed) return fail(call, `computed method on Router "${id.name}" is unsupported`);
   const method = parent.property.name;
@@ -234,7 +302,7 @@ function checkRouterReference(id, parent, grandparent, ctx) {
     return fail(call, `spread arguments in ${id.name}.${method}( are unsupported`);
   }
   if (method === 'route') return fail(call, `${id.name}.route( is unsupported in staff routes`);
-  if (!ctx.isStatement(call)) {
+  if (parents.get(call)?.type !== 'ExpressionStatement') {
     return fail(
       call,
       `${id.name}.${method}( must be its own statement (no chaining or reuse of its result)`
@@ -245,7 +313,30 @@ function checkRouterReference(id, parent, grandparent, ctx) {
   return fail(call, `${id.name}.${method}( is unsupported in staff routes`);
 }
 
-export function scanSource(src, file) {
+/** A route-method call whose object is not a recognized Router fails closed. */
+function checkForeignRouteCall(node, routerNames, parents, fail) {
+  if (node.type !== 'CallExpression' || node.callee.type !== 'MemberExpression') return;
+  const method = memberName(node.callee);
+  if (!ROUTE_METHODS.has(method)) return;
+  const obj = node.callee.object;
+  if (obj.type === 'Identifier' && routerNames.has(obj.name)) return; // checked as a Router
+  // A chained call on a Router call is already reported at the inner call.
+  if (obj.type === 'CallExpression' && obj.callee.type === 'MemberExpression') {
+    const inner = obj.callee.object;
+    if (inner.type === 'Identifier' && routerNames.has(inner.name)) return;
+  }
+  const label = obj.type === 'Identifier' ? obj.name : '<expression>';
+  fail(
+    node,
+    `${label}.${method}( is not on a Router created here by const <name> = express.Router()`
+  );
+}
+
+/**
+ * Scan one source string. `file` must be the file's real path: guard imports
+ * are resolved against its directory and must land on `guardModule`.
+ */
+export function scanSource(src, file, { guardModule = guardModuleFor(path.dirname(file)) } = {}) {
   const failures = [];
   let ast;
   try {
@@ -253,8 +344,7 @@ export function scanSource(src, file) {
   } catch (err) {
     return [{ file, line: err.lineNumber ?? 0, reason: `parse error: ${err.message}` }];
   }
-  // One finding per node and per line+reason (a shorthand or export specifier
-  // can surface the same reference twice).
+  // One finding per node and per line+reason.
   const seen = new Set();
   const fail = (node, reason) => {
     const key = `${node.loc.start.line}|${reason}`;
@@ -262,42 +352,40 @@ export function scanSource(src, file) {
     seen.add(node).add(key);
     failures.push({ file, line: node.loc.start.line, reason });
   };
-  const { routerNames, guards } = collectBindings(ast, fail);
-
   const parents = new Map();
   walk(ast, (node, parent) => parents.set(node, parent));
-  const isStatement = (call) => parents.get(call)?.type === 'ExpressionStatement';
-  const ctx = { guards, fail, isStatement };
+  const imports = collectImports(ast, file, guardModule, fail);
+  const routerNames = collectRouters(ast, parents, imports, fail);
+  const ctx = { guards: imports.guards, fail, parents };
 
   walk(ast, (node, parent) => {
+    checkForeignRouteCall(node, routerNames, parents, fail);
     if (node.type !== 'Identifier' || !routerNames.has(node.name) || !parent) return;
-    // Property names and object keys are not references to the binding.
-    if (parent.type === 'MemberExpression' && parent.property === node && !parent.computed) return;
-    if (
-      (parent.type === 'Property' || parent.type === 'PropertyDefinition') &&
-      parent.key === node &&
-      !parent.computed &&
-      !parent.shorthand
-    )
-      return;
-    if (parent.type === 'ImportSpecifier' || parent.type === 'ImportDefaultSpecifier') return;
-    checkRouterReference(node, parent, parents.get(parent), ctx);
+    if (isNonReference(node, parent)) return;
+    checkRouterReference(node, parent, ctx);
   });
   return failures.sort((a, b) => a.line - b.line);
 }
 
-/** Scan every .mjs file under routesDir. Returns [{file, line, reason}]. */
+/** Scan every file under routesDir. Returns [{file, line, reason}]. */
 export function scanStaffRoutes(routesDir = STAFF_ROUTES_DIR) {
   if (!fs.existsSync(routesDir)) {
     return [{ file: routesDir, line: 0, reason: 'staff routes directory not found' }];
   }
+  const guardModule = guardModuleFor(routesDir);
   const failures = [];
   const walkDir = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) walkDir(full);
-      else if (/\.mjs$/.test(entry.name)) {
-        failures.push(...scanSource(fs.readFileSync(full, 'utf8'), full));
+      else if (SOURCE_FILE_RE.test(entry.name)) {
+        failures.push(...scanSource(fs.readFileSync(full, 'utf8'), full, { guardModule }));
+      } else {
+        failures.push({
+          file: full,
+          line: 0,
+          reason: 'only .js/.mjs/.cjs route files may live here',
+        });
       }
     }
   };
@@ -314,7 +402,7 @@ function main() {
     }
     console.error(
       "\nEvery staff route must pass a direct requireStaffCapability('<cap>') or " +
-        "requireAnyStaffCapability(['<cap>', ...]) argument before its handler. " +
+        "requireAnyStaffCapability(['<cap>', ...]) as the first argument after its path. " +
         'requireStaffRole alone is allowed only for POST /checkin/request, ' +
         'POST /checkin/verify and GET /me.'
     );
