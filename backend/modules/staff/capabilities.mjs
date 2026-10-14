@@ -31,10 +31,19 @@ const ADMIN_ONLY = [
   'horse.admin',
 ];
 
-export const ROLE_CAPABILITIES = Object.freeze({
-  moderator: new Set(MODERATOR),
-  admin: new Set([...MODERATOR.filter(c => c !== 'ticket.file'), ...ADMIN_ONLY]),
+// Private and frozen (STAFF-CR-12): no importer can reach a mutable copy of
+// the policy. Callers ask through hasCapability and capabilitiesFor only.
+const ROLE_CAPABILITIES = Object.freeze({
+  moderator: Object.freeze([...MODERATOR]),
+  admin: Object.freeze([...MODERATOR.filter(c => c !== 'ticket.file'), ...ADMIN_ONLY]),
 });
+
+/** The role's own frozen list, or null. Inherited keys are never roles. */
+function listFor(role) {
+  return typeof role === 'string' && Object.hasOwn(ROLE_CAPABILITIES, role)
+    ? ROLE_CAPABILITIES[role]
+    : null;
+}
 
 /**
  * True only for the two staff roles. Never throws.
@@ -54,10 +63,16 @@ export function isStaffRole(role) {
  * @returns {boolean}
  */
 export function hasCapability(role, cap) {
-  if (typeof role !== 'string' || !Object.hasOwn(ROLE_CAPABILITIES, role)) {
-    return false;
-  }
-  return ROLE_CAPABILITIES[role].has(cap);
+  return listFor(role)?.includes(cap) ?? false;
+}
+
+/**
+ * A fresh frozen copy of a role's capabilities; empty for any other role.
+ * @param {unknown} role
+ * @returns {readonly string[]}
+ */
+export function capabilitiesFor(role) {
+  return Object.freeze([...(listFor(role) ?? [])]);
 }
 
 /**

@@ -7,7 +7,7 @@
 
 import logger from '../../../utils/logger.mjs';
 import { ACCESS_TOKEN_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
-import { ROLE_CAPABILITIES } from '../capabilities.mjs';
+import { capabilitiesFor } from '../capabilities.mjs';
 import {
   STAFF_DEVICE_COOKIE,
   StaffCheckinError,
@@ -85,7 +85,7 @@ export async function getStaffMe(req, res, next) {
     const device = await isTrustedDevice(account, req.cookies?.[STAFF_DEVICE_COOKIE]);
     return res.status(200).json({
       role: account.role,
-      capabilities: [...ROLE_CAPABILITIES[account.role]],
+      capabilities: [...capabilitiesFor(account.role)],
       trusted: account.emailVerified === true && device,
     });
   } catch (error) {

@@ -1,17 +1,12 @@
 /**
  * Staff capabilities and target guard — pure unit test (Equoria-puj1e.2)
  *
- * Proves the role → capability map, the staff-role check, the frozen
- * exports, and that staff tools cannot act on themselves or on other staff.
+ * Proves the role → capability map, the staff-role check, that the policy
+ * cannot be mutated by an importer (STAFF-CR-12), and that staff tools cannot act on themselves or on other staff.
  */
 
-import {
-  hasCapability,
-  isStaffRole,
-  assertActionableTarget,
-  ROLE_CAPABILITIES,
-  STAFF_ROLES,
-} from '../capabilities.mjs';
+import * as capabilities from '../capabilities.mjs';
+import { hasCapability, isStaffRole, assertActionableTarget, capabilitiesFor, STAFF_ROLES } from '../capabilities.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
 describe('staff capabilities (Equoria-puj1e.2)', () => {
@@ -61,18 +56,59 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
     });
   });
 
-  describe('frozen exports', () => {
-    it('freezes STAFF_ROLES and ROLE_CAPABILITIES', () => {
-      expect(Object.isFrozen(STAFF_ROLES)).toBe(true);
-      expect(Object.isFrozen(ROLE_CAPABILITIES)).toBe(true);
+  describe('capabilitiesFor', () => {
+    it("lists a role's capabilities, and nothing for a non-staff or inherited role", () => {
+      expect(capabilitiesFor('moderator')).toContain('ticket.file');
+      expect(capabilitiesFor('admin')).toContain('roles.manage');
+      expect(capabilitiesFor('admin')).not.toContain('ticket.file');
+      expect(capabilitiesFor('user')).toEqual([]);
+      expect(capabilitiesFor('constructor')).toEqual([]);
+      expect(capabilitiesFor(undefined)).toEqual([]);
+    });
+
+    it('agrees with hasCapability for every listed capability', () => {
+      for (const role of STAFF_ROLES) {
+        for (const cap of capabilitiesFor(role)) {
+          expect(hasCapability(role, cap)).toBe(true);
+        }
+      }
+    });
+  });
+
+  // STAFF-CR-12: the policy must not be mutable by any importer.
+  describe('the policy cannot be changed at runtime', () => {
+    it('exports only functions and frozen arrays of strings, never a Set, Map or open object', () => {
+      for (const [name, value] of Object.entries(capabilities)) {
+        if (typeof value === 'function') {
+          continue;
+        }
+        expect({ name, isArray: Array.isArray(value), frozen: Object.isFrozen(value) }).toEqual({
+          name,
+          isArray: true,
+          frozen: true,
+        });
+        expect(value.every(item => typeof item === 'string')).toBe(true);
+      }
       expect(STAFF_ROLES).toEqual(['moderator', 'admin']);
     });
 
-    it('ignores attempts to add a role to the frozen capability map', () => {
+    it('a list handed out cannot grant a capability, to that caller or to any other', () => {
+      const mine = capabilitiesFor('moderator');
+      expect(Object.isFrozen(mine)).toBe(true);
+      expect(() => mine.push('roles.manage')).toThrow();
       expect(() => {
-        ROLE_CAPABILITIES.user = new Set(['warn']);
+        mine[0] = 'roles.manage';
       }).toThrow();
-      expect(ROLE_CAPABILITIES.user).toBeUndefined();
+      expect(() => STAFF_ROLES.push('user')).toThrow();
+
+      expect(hasCapability('moderator', 'roles.manage')).toBe(false);
+      expect(capabilitiesFor('moderator')).not.toContain('roles.manage');
+      expect(isStaffRole('user')).toBe(false);
+    });
+
+    it('hands each caller a fresh list', () => {
+      expect(capabilitiesFor('admin')).not.toBe(capabilitiesFor('admin'));
+      expect(capabilitiesFor('admin')).toEqual(capabilitiesFor('admin'));
     });
   });
 
