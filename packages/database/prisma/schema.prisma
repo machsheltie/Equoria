@@ -2239,6 +2239,8 @@ model EmailOutbox {
   updatedAt      DateTime  @updatedAt
 
   @@index([status, nextAttemptAt])
+  // Retention purge: settled rows by status and age (STAFF-CR-10 review).
+  @@index([status, updatedAt])
   @@index([recipientId])
   @@map("email_outbox")
 }

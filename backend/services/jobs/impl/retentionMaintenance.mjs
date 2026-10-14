@@ -76,7 +76,10 @@ import { executeClosedShows } from '../../../modules/competition/index.mjs';
 import { recordCoverageSnapshot } from '../../apiDocumentationService.mjs';
 import { purgeExpiredDocCoverageSnapshots } from '../../docCoverageSnapshotRetentionService.mjs';
 import { purgeExpiredCronRunLogs as purgeExpiredCronRunLogsService } from '../../cronRunLogRetentionService.mjs';
-import { purgeStaleStaffCheckinRecords } from '../../../modules/staff/index.mjs';
+import {
+  purgeSettledEmails,
+  purgeStaleStaffCheckinRecords,
+} from '../../../modules/staff/index.mjs';
 
 /**
  * Equoria-3yxz: Daily foal milestone evaluation pass.
@@ -279,21 +282,29 @@ export async function decayHoofConditions() {
  *
  * Delegates to the staff module's purgeStaleStaffCheckinRecords(): deletes
  * check-in codes used or expired more than 1 day ago and trusted devices
- * expired or revoked more than 30 days ago. Idempotent; the summary flows into
- * the heartbeat layer so /api/admin/cron/health shows what was purged.
+ * expired or revoked more than 30 days ago. STAFF-CR-10 adds the staff email
+ * outbox (purgeSettledEmails): sent or cancelled emails 30 days after they
+ * settled, failed ones after 90. Idempotent; the summary flows into the
+ * heartbeat layer so /api/admin/cron/health shows what was purged.
  *
  * @returns {Promise<{ codesDeleted: number, devicesDeleted: number,
- *   codeCutoff: string, deviceCutoff: string }>}
+ *   codeCutoff: string, deviceCutoff: string, emailsDeleted: number,
+ *   sentCutoff: string, failedCutoff: string }>}
  */
 export async function purgeStaleStaffCheckins() {
   const startTime = Date.now();
   logger.info('[CronJobService.purgeStaleStaffCheckins] Starting staff check-in retention purge');
 
-  const result = await purgeStaleStaffCheckinRecords();
+  const now = new Date();
+  const result = {
+    ...(await purgeStaleStaffCheckinRecords(now)),
+    ...(await purgeSettledEmails(now)),
+  };
   const duration = Date.now() - startTime;
   logger.info(
     `[CronJobService.purgeStaleStaffCheckins] Completed in ${duration}ms — ` +
-      `deleted ${result.codesDeleted} code(s), ${result.devicesDeleted} device(s)`,
+      `deleted ${result.codesDeleted} code(s), ${result.devicesDeleted} device(s), ` +
+      `${result.emailsDeleted} email(s)`,
   );
   return result;
 }

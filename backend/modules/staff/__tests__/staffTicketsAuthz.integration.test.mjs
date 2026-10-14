@@ -240,6 +240,12 @@ describe('Filing a ticket', () => {
 
   it('answers 201 while the admin email is still stuck on a silent mail server', async () => {
     const { admin, mod, modDevice } = await fixtureStaff();
+    // Earlier tests' admins step down, so this admin's email is the only one
+    // the filing sends and the first to reach the silent server.
+    await prisma.user.updateMany({
+      where: { id: { in: createdUserIds, not: admin.id }, role: 'admin' },
+      data: { role: 'moderator' },
+    });
 
     let elapsed = null;
     let reached = 0;
@@ -253,7 +259,11 @@ describe('Filing a ticket', () => {
       }
       reached = silentSockets.size;
       sending = await prisma.emailOutbox.count({
-        where: { idempotencyKey: { startsWith: `staff_ticket:${filed.body.ticket.id}:` }, status: 'sending' },
+        where: {
+          idempotencyKey: { startsWith: `staff_ticket:${filed.body.ticket.id}:` },
+          recipientId: admin.id,
+          status: 'sending',
+        },
       });
       // Hang up on every waiting send until each gives up, so nothing outlives the test.
       for (let tries = 0; row === null && tries < 400; tries += 1) {

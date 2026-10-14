@@ -33,6 +33,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { eraseOrAnonymizeOwnedHorses } from './gdprHorseLineageErasure.mjs';
+import { scrubTicketEmailFilerTx } from '../../staff/index.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
   SYSTEM_ACCOUNT_BURN,
@@ -531,6 +532,10 @@ export async function eraseUserAccount(userId) {
       // replies are SetNull on the filer/author, so they survive with the
       // person shown as a former steward. Check-in codes and trusted devices
       // cascade. Nothing here deletes a staff log row.
+      // STAFF-CR-10: queued or sent ticket emails about tickets this user
+      // filed stop naming them (before the user row goes, while filedById
+      // still points here). Emails addressed to them cascade with the user.
+      await scrubTicketEmailFilerTx(tx, userId);
 
       // ── Riders / Trainers owned by the user ───────────────────────────────
       // Their assignments cascade-delete with the rider/trainer (schema

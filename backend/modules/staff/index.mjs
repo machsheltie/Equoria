@@ -12,4 +12,8 @@ export * from './middleware/requireStaffCapability.mjs';
 export { recordStaffActionTx, recordStaffFailure } from './services/staffActionLogService.mjs';
 export { retireStaffCheckinCodesTx } from './services/staffChallengeRetirement.mjs';
 export { purgeStaleStaffCheckinRecords } from './services/staffCheckinRetentionService.mjs';
-export { runEmailOutbox } from './services/ticketEmailOutbox.mjs';
+export {
+  purgeSettledEmails,
+  runEmailOutbox,
+  scrubTicketEmailFilerTx,
+} from './services/ticketEmailOutbox.mjs';

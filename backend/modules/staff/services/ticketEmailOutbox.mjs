@@ -113,8 +113,12 @@ const stillWanted = user =>
   Boolean(user.email) &&
   hasCapability(user.role, 'ticket.resolve');
 
-/** Deliver one claimed row; returns the summary bucket it lands in. */
-async function deliver(row, now) {
+/**
+ * Deliver one claimed row; returns the summary bucket it lands in. Logs come
+ * before the row's final write, so nothing of this delivery runs after the
+ * row is seen settled.
+ */
+async function deliver(row, clock) {
   // Only the holder of this claim may finish the row.
   const finish = data =>
     prisma.emailOutbox.updateMany({
@@ -122,10 +126,10 @@ async function deliver(row, now) {
       data,
     });
   const fail = async message => {
-    await finish({ status: 'failed', lastError: message });
     logger.error(
       `[emailOutbox] ${row.idempotencyKey} failed for good after ${row.attempts} attempt(s): ${message}`,
     );
+    await finish({ status: 'failed', lastError: message });
     return 'failed';
   };
 
@@ -142,8 +146,8 @@ async function deliver(row, now) {
     select: { email: true, emailVerified: true, role: true },
   });
   if (!stillWanted(user)) {
-    await finish({ status: 'cancelled', lastError: 'recipient is no longer a verified admin' });
     logger.info(`[emailOutbox] ${row.idempotencyKey} cancelled: recipient no longer an admin`);
+    await finish({ status: 'cancelled', lastError: 'recipient is no longer a verified admin' });
     return 'cancelled';
   }
 
@@ -155,18 +159,20 @@ async function deliver(row, now) {
       return fail(message);
     }
     const delay = BACKOFF_MS[Math.min(row.attempts, BACKOFF_MS.length) - 1];
-    await finish({
-      status: 'pending',
-      lastError: message,
-      nextAttemptAt: new Date(now.getTime() + delay),
-    });
     logger.warn(
       `[emailOutbox] ${row.idempotencyKey} attempt ${row.attempts} failed, retrying: ${message}`,
     );
+    // Backoff runs from when this send failed, not from when the run began.
+    await finish({
+      status: 'pending',
+      lastError: message,
+      nextAttemptAt: new Date(clock().getTime() + delay),
+    });
     return 'retrying';
   }
 
-  const marked = await finish({ status: 'sent', sentAt: new Date(), lastError: null });
+  const sentAt = clock();
+  const marked = await finish({ status: 'sent', sentAt, lastError: null });
   if (marked.count === 0) {
     logger.warn(`[emailOutbox] ${row.idempotencyKey} sent after its claim lapsed`);
   }
@@ -174,20 +180,71 @@ async function deliver(row, now) {
 }
 
 /**
- * Deliver due rows one claim at a time (each lease starts just before its
- * own send). `now` and `keys` exist for the kick and for tests.
+ * Deliver due rows one claim at a time. The clock is read afresh for every
+ * claim and every backoff, so each row's lease starts just before its own
+ * send however long earlier rows took (STAFF-CR-10 review). `clock` is a test
+ * override; `keys` limits the run to those rows (the post-commit kick), and
+ * the run stops once each of them has been claimed.
  */
-export async function runEmailOutbox({ now = new Date(), keys = null } = {}) {
+export async function runEmailOutbox({ clock = () => new Date(), keys = null } = {}) {
   const summary = { claimed: 0, sent: 0, retrying: 0, failed: 0, cancelled: 0 };
-  while (summary.claimed < MAX_PER_RUN) {
-    const [row] = await claimDueEmails({ now, keys });
+  const limit = keys ? Math.min(keys.length, MAX_PER_RUN) : MAX_PER_RUN;
+  while (summary.claimed < limit) {
+    const [row] = await claimDueEmails({ now: clock(), keys });
     if (!row) {
       break;
     }
     summary.claimed += 1;
-    summary[await deliver(row, now)] += 1;
+    summary[await deliver(row, clock)] += 1;
   }
   return summary;
+}
+
+export const SENT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+export const FAILED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+
+/**
+ * Retention (STAFF-CR-10 review): a sent or cancelled email is deleted 30
+ * days after it settled, a failed one 90 days after (time for the admin to
+ * see it on the cron-health page and in the table). Strictly older than the
+ * cutoff, so a rerun with the same clock deletes nothing more. Pending and
+ * sending rows are never deleted here. Runs in the nightly staff retention job.
+ */
+export async function purgeSettledEmails(now = new Date()) {
+  const sentCutoff = new Date(now.getTime() - SENT_RETENTION_MS);
+  const failedCutoff = new Date(now.getTime() - FAILED_RETENTION_MS);
+  const { count } = await prisma.emailOutbox.deleteMany({
+    where: {
+      OR: [
+        { status: { in: ['sent', 'cancelled'] }, updatedAt: { lt: sentCutoff } },
+        { status: 'failed', updatedAt: { lt: failedCutoff } },
+      ],
+    },
+  });
+  return {
+    emailsDeleted: count,
+    sentCutoff: sentCutoff.toISOString(),
+    failedCutoff: failedCutoff.toISOString(),
+  };
+}
+
+export const FORMER_STEWARD = 'A former steward';
+
+/**
+ * Account erasure (STAFF-CR-10 review): the outbox rows about tickets this
+ * user filed stop naming them. Runs inside the erasure transaction, before
+ * the user row goes (while filedById still points at them). updatedAt is left
+ * alone so retention timing is unchanged.
+ * @returns {Promise<number>} rows scrubbed
+ */
+export async function scrubTicketEmailFilerTx(tx, userId) {
+  return tx.$executeRaw`
+    UPDATE email_outbox
+    SET payload = jsonb_set(payload, '{filedBy}', to_jsonb(${FORMER_STEWARD}::text))
+    WHERE "templateKey" = ${TICKET_TEMPLATE}
+      AND (payload->>'ticketId') IN (
+        SELECT id::text FROM staff_tickets WHERE "filedById" = ${userId}
+      )`;
 }
 
 /**

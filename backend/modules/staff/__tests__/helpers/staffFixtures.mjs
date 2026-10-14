@@ -194,10 +194,14 @@ export async function settledTicketEmails(ticketId, timeoutMs = 15_000) {
 /**
  * Test teardown: the outbox rows of the tickets matching `ticketWhere`,
  * whoever they were addressed to (an admin left by another suite included).
- * Run it before those tickets are deleted.
+ * Waits first for each ticket's post-commit delivery to finish, so nothing of
+ * it runs after the suite. Run it before those tickets are deleted.
  */
 export async function removeTicketEmails(ticketWhere) {
   const tickets = await prisma.staffTicket.findMany({ where: ticketWhere, select: { id: true } });
+  for (const ticket of tickets) {
+    await settledTicketEmails(ticket.id);
+  }
   await prisma.emailOutbox.deleteMany({
     where: { OR: tickets.map(t => ({ idempotencyKey: { startsWith: `staff_ticket:${t.id}:` } })) },
   });
