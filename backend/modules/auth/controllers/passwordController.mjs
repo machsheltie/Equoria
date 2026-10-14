@@ -55,6 +55,7 @@ import { CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware/csrf.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 import { revokePendingEmailChanges } from '../services/emailChangeService.mjs';
+import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -187,6 +188,9 @@ export const changePassword = async (req, res, next) => {
           where: { id: req.user.id },
           data: { password: hashedPassword, passwordChangedAt: new Date() },
         });
+        // STAFF-CR-01: a staff check-in code issued under the old password
+        // dies with it. After the User write — check-in locks User first.
+        await retireStaffCheckinCodesTx(tx, req.user.id);
         await tx.refreshToken.deleteMany({
           where: { userId: req.user.id },
         });
@@ -429,6 +433,9 @@ export const resetPassword = async (req, res, next) => {
           where: { id: resetToken.userId },
           data: { password: hashedPassword, passwordChangedAt: new Date() },
         });
+        // STAFF-CR-01: as changePassword — outstanding staff check-in codes
+        // die with the old password, after the User write.
+        await retireStaffCheckinCodesTx(tx, resetToken.userId);
         await tx.refreshToken.deleteMany({
           where: { userId: resetToken.userId },
         });

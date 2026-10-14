@@ -69,6 +69,7 @@ import { decryptField } from '../../../utils/fieldEncryption.mjs';
 import * as mfaService from './mfaService.mjs';
 import * as mfaLockoutService from './mfaLockoutService.mjs';
 import * as mfaReplayProtectionService from './mfaReplayProtectionService.mjs';
+import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
 
 /** Pending changes expire on the same 24h clock as signup verification. */
 export const PENDING_EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -404,8 +405,8 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
         SET "usedAt" = NOW()
         WHERE "userId" = ${owner.id} AND "usedAt" IS NULL`;
 
-      // (f) The identity transition itself — the LAST write in the
-      // transaction, so the User row lock is taken after every token-table
+      // (f) The identity transition itself — the last token-or-User write in
+      // the transaction, so the User row lock is taken after every token-table
       // lock this transaction needs.
       let committed;
       try {
@@ -420,6 +421,11 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
         }
         throw error;
       }
+
+      // (g) STAFF-CR-01: a staff check-in code mailed to the old address dies
+      // with it. Staff check-in codes lock User before code rows, so this
+      // comes after the User write, never before it.
+      await retireStaffCheckinCodesTx(tx, owner.id, now);
 
       return committed;
     }),

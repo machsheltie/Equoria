@@ -21,6 +21,7 @@ import logger from './logger.mjs';
 import { AppError } from '../errors/index.mjs';
 import { withRetryableTxMapping, RetryableTransactionError } from './retryableTransaction.mjs';
 import { normalizeEmailAddress } from './emailIdentityPolicy.mjs';
+import { retireStaffCheckinCodesTx } from '../modules/staff/index.mjs';
 
 // Email verification configuration
 const EMAIL_CONFIG = {
@@ -316,6 +317,10 @@ export async function verifyEmailToken(token, metadata = {}) {
             emailVerifiedAt: true,
           },
         });
+
+        // STAFF-CR-01: a new verification time voids earlier staff check-in
+        // codes; retire them here too, after the User write.
+        await retireStaffCheckinCodesTx(prisma, tokenRecord.userId);
 
         return updatedUser;
       }),

@@ -178,3 +178,64 @@ export async function checkIn(user) {
   expect(cookie).not.toBeNull();
   return cookie.split(';')[0].slice('staff_device='.length);
 }
+
+/**
+ * Fetch a CSRF pair now and return a thunk that sends the POST later, so
+ * racing requests leave together instead of each waiting on its CSRF fetch.
+ */
+export async function preparePost(url, user, body = {}, device) {
+  const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: cookiesFor(user, device) });
+  return () =>
+    request(app)
+      .post(url)
+      .set('Origin', ORIGIN)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send(body);
+}
+
+/**
+ * Race requests against the real database. `lock(tx)` takes row locks in a
+ * real transaction; the starters are then launched one at a time, each only
+ * once every earlier one has either settled or is queued on a lock
+ * (pg_stat_activity). When all are settled or queued the holder commits and
+ * releases them together. The holder polls inside its own transaction (the
+ * test pool has three connections, which the queued requests may hold).
+ * @param {(tx: object) => Promise<unknown>} lock
+ * @param {Array<() => Promise<object>>} starters each sends one request
+ * @returns {Promise<object[]>} the responses, in starter order
+ */
+export async function raceUnderLock(lock, starters, timeoutMs = 20_000) {
+  const tracked = [];
+  await prisma.$transaction(
+    async tx => {
+      await lock(tx);
+      const deadline = Date.now() + timeoutMs;
+      for (;;) {
+        // pg_stat_activity is snapshotted once per transaction; refresh it.
+        await tx.$executeRaw`SELECT pg_stat_clear_snapshot()`;
+        const [{ n }] = await tx.$queryRaw`
+          SELECT count(*)::int AS n FROM pg_stat_activity
+          WHERE datname = current_database() AND wait_event_type = 'Lock'`;
+        const settled = tracked.filter(t => t.settled).length;
+        if (n + settled >= tracked.length) {
+          if (tracked.length === starters.length) {
+            return;
+          }
+          const send = starters[tracked.length];
+          const state = { settled: false };
+          // A supertest request is thenable but not a Promise.
+          state.done = Promise.resolve(send()).finally(() => {
+            state.settled = true;
+          });
+          tracked.push(state);
+        } else if (Date.now() > deadline) {
+          throw new Error(`only ${n} queued and ${settled} settled of ${tracked.length} started`);
+        }
+        await new Promise(resolve => setTimeout(resolve, 25));
+      }
+    },
+    { timeout: timeoutMs + 10_000 },
+  );
+  return Promise.all(tracked.map(t => t.done));
+}

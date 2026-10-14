@@ -8,14 +8,15 @@
  * target, and revoking targets a moderator. Instead the admin may not act on
  * their own account or on any admin, and the role must actually change.
  *
- * The role write, the target's trusted-device revocation and the log entry
- * commit in one transaction. The role write is conditional on the role read
+ * The role write, the target's trusted-device revocation, the retirement of
+ * their outstanding check-in codes and the log entry commit in one transaction. The role write is conditional on the role read
  * beforehand, so of two racing requests exactly one succeeds.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
+import { retireStaffCheckinCodesTx } from '../services/staffChallengeRetirement.mjs';
 
 const ASSIGNABLE_ROLES = new Set(['moderator', 'user']);
 const MAX_TEXT = 100;
@@ -126,6 +127,9 @@ export async function setUserRole(req, res, next) {
         where: { userId: target.id, revokedAt: null },
         data: { revokedAt: new Date() },
       });
+      // STAFF-CR-01: a code issued before the change can never finish a
+      // check-in after it, so demote-then-re-promote starts from nothing.
+      await retireStaffCheckinCodesTx(tx, target.id);
       await recordStaffActionTx(tx, {
         actorId: req.staff.id,
         actorRole: req.staff.role,

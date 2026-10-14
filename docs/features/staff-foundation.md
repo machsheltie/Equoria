@@ -54,6 +54,17 @@ Owner ruling 2026-10-09: email codes, not text messages; remember the device.
 - A verified browser is trusted for 30 days via a signed, httpOnly cookie bound
   to the account. It asks again on a new browser, after 30 days, after a
   password change, or after the account's staff access is revoked.
+- A code is bound to the account's security state (STAFF-CR-01). Only the
+  newest code counts; requesting a new one retires the old. A code is void
+  once the password changes or is reset, the verified email changes, or the
+  account is demoted or promoted after it was issued; those paths retire
+  outstanding codes in their own transactions. Verification re-reads the
+  account under its row lock and creates the device and its log entry together.
+- Retention (STAFF-CR-18): a code is deleted 1 day after it was used or
+  expired (a retired code counts as expired when retired); a trusted device is
+  deleted 30 days after it expired or was revoked. A nightly job at 03:50
+  Eastern does this. The permanent record of each check-in is its staff action
+  log entry.
 - Applying or reversing a time-back always requires a fresh code.
 - Staff without a verified email cannot use staff tools; they can still play.
 - SMS was considered and declined (paid provider receives phone numbers; weakest

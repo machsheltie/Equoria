@@ -6,11 +6,17 @@
  *
  * - A code is 6 digits from crypto.randomInt, stored only as a bcrypt hash,
  *   valid 10 minutes, single use, at most 5 guesses. Only the newest code for
- *   an account is ever checked, so issuing a new code retires the old one.
- * - At most 3 codes per account per 15 minutes. The count runs under a row
- *   lock on the account so two parallel requests cannot both take the last slot.
- * - A guess first reserves one of the 5 attempts with a conditional update
- *   (`attempts < 5`), so parallel wrong guesses can never exceed the cap.
+ *   an account is ever checked, and issuing a new code retires the old one.
+ * - A code is bound to the security state it was issued under (STAFF-CR-01):
+ *   it is void once the password or the verified email changes after it was
+ *   issued, or the account stops being staff with a verified email. Password,
+ *   email and role changes also retire outstanding codes in their own
+ *   transactions (staffChallengeRetirement.mjs).
+ * - Issuance and both verification steps run under a row lock on the account
+ *   (`SELECT … FOR UPDATE`) and re-read it there; the middleware snapshot is
+ *   never the final authority. So two parallel requests cannot both take the
+ *   last of the 3-per-15-minutes slots, a resend cannot interleave with a
+ *   verify, and parallel guesses can never exceed the 5-attempt cap.
  * - A verified browser gets a random 32-byte token; only its sha256 is stored.
  *   A device is valid for its own account only, while not revoked, not
  *   expired, and created after the account's last password change.
@@ -24,6 +30,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { sendStaffCheckinCodeEmail } from '../../../utils/emailService.mjs';
 import { isStaffRole } from '../capabilities.mjs';
 import { recordStaffActionTx } from './staffActionLogService.mjs';
+import { retireStaffCheckinCodesTx } from './staffChallengeRetirement.mjs';
 
 export const CHECKIN_CODE_TTL_MS = 10 * 60 * 1000;
 export const CHECKIN_MAX_ATTEMPTS = 5;
@@ -101,8 +108,63 @@ export async function isTrustedDevice(account, rawToken, now = new Date()) {
 }
 
 /**
+ * Lock the account row and re-read the security state a code is bound to.
+ * Every check-in step that reads or writes codes runs under this lock, and
+ * every path that changes the state retires codes after writing the same row
+ * (staffChallengeRetirement.mjs), so the two serialize.
+ * @returns {Promise<object|null>} fresh account, or null when it is gone
+ */
+async function lockAccountTx(tx, userId) {
+  await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+  return tx.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      emailVerifiedAt: true,
+      passwordChangedAt: true,
+    },
+  });
+}
+
+/** Whether the locked account may still check in at all. */
+const mayCheckIn = account =>
+  Boolean(account) && isStaffRole(account.role) && account.emailVerified === true;
+
+/** A code issued at or before the last password or email change is void. */
+function issuedUnderCurrentState(account, code) {
+  const issued = code.createdAt.getTime();
+  return [account.passwordChangedAt, account.emailVerifiedAt].every(
+    at => !at || issued > at.getTime(),
+  );
+}
+
+/**
+ * The account's newest code, when it can still be used: unused, unexpired,
+ * issued under the current security state and, with `requireAttemptLeft`,
+ * below the guess cap. Only the newest code ever counts.
+ */
+async function newestLiveCodeTx(tx, account, now, { requireAttemptLeft }) {
+  const newest = await tx.staffCheckinCode.findFirst({
+    where: { userId: account.id },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+  });
+  if (!newest || newest.usedAt !== null || newest.expiresAt <= now) {
+    return null;
+  }
+  if (requireAttemptLeft && newest.attempts >= CHECKIN_MAX_ATTEMPTS) {
+    return null;
+  }
+  return issuedUnderCurrentState(account, newest) ? newest : null;
+}
+
+/**
  * Issue a check-in code and email it to the account's verified address.
- * @param {{ id: string, email: string, role: string, emailVerified: boolean }} account
+ * The account is re-read under its row lock; the middleware snapshot only
+ * names which account is asking.
+ * @param {{ id: string }} account
  * @returns {Promise<void>}
  */
 export async function requestCheckinCode(account) {
@@ -116,35 +178,55 @@ export async function requestCheckinCode(account) {
   const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
   const codeHash = await bcrypt.hash(code, CODE_HASH_ROUNDS);
 
-  await prisma.$transaction(async tx => {
-    // Serialize code issuance per account so the window count is exact.
-    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${account.id} FOR UPDATE`;
+  const sendTo = await prisma.$transaction(async tx => {
+    // Serialize issuance and verification per account so the window count is
+    // exact and a resend can never interleave with a verify.
+    const fresh = await lockAccountTx(tx, account.id);
+    if (!fresh || !isStaffRole(fresh.role)) {
+      throw new StaffCheckinError('CODE_INVALID');
+    }
+    if (fresh.emailVerified !== true) {
+      throw new StaffCheckinError('EMAIL_UNVERIFIED');
+    }
     const now = new Date();
     const recent = await tx.staffCheckinCode.count({
       where: {
-        userId: account.id,
+        userId: fresh.id,
         createdAt: { gt: new Date(now.getTime() - CHECKIN_REQUEST_WINDOW_MS) },
       },
     });
     if (recent >= CHECKIN_REQUEST_LIMIT) {
       throw new StaffCheckinError('RATE_LIMITED');
     }
+    await retireStaffCheckinCodesTx(tx, fresh.id, now);
+    // createdAt from the same clock as passwordChangedAt/emailVerifiedAt, which
+    // issuedUnderCurrentState compares it with.
     await tx.staffCheckinCode.create({
       data: {
-        userId: account.id,
+        userId: fresh.id,
         codeHash,
+        createdAt: now,
         expiresAt: new Date(now.getTime() + CHECKIN_CODE_TTL_MS),
       },
     });
+    return fresh.email;
   });
 
-  await sendStaffCheckinCodeEmail(account.email, code);
+  await sendStaffCheckinCodeEmail(sendTo, code);
 }
 
 /**
  * Check a code against the account's newest code. On success, consume it and
  * create a trusted device, returning the raw device token (shown once, as a
  * cookie). Any refusal throws StaffCheckinError('CODE_INVALID').
+ *
+ * Two short transactions, each under the account row lock, with the bcrypt
+ * compare between them so the lock is never held for the hash:
+ *   1. re-read the account, prove the code is its newest live code, reserve
+ *      one of the five guesses;
+ *   2. after a matching compare, re-read the account again, prove the same
+ *      code is still the newest live code, consume it once, and create the
+ *      device and its log entry together.
  * @param {{ id: string, role: string }} account
  * @param {unknown} code
  * @returns {Promise<{ rawToken: string, expiresAt: Date }>}
@@ -155,60 +237,63 @@ export async function verifyCheckinCode(account, code) {
   }
   const normalized = typeof code === 'string' ? code.trim() : '';
 
-  const latest = await prisma.staffCheckinCode.findFirst({
-    where: { userId: account.id },
-    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    select: { id: true, codeHash: true },
-  });
-  if (!latest) {
-    throw new StaffCheckinError('CODE_INVALID');
-  }
-
-  // Reserve one attempt atomically. Fails when the code is used, expired or
-  // already has 5 guesses against it.
-  const reserved = await prisma.$transaction(tx =>
-    tx.staffCheckinCode.updateMany({
-      where: {
-        id: latest.id,
-        usedAt: null,
-        expiresAt: { gt: new Date() },
-        attempts: { lt: CHECKIN_MAX_ATTEMPTS },
-      },
+  const candidate = await prisma.$transaction(async tx => {
+    const fresh = await lockAccountTx(tx, account.id);
+    if (!mayCheckIn(fresh)) {
+      return null;
+    }
+    const newest = await newestLiveCodeTx(tx, fresh, new Date(), { requireAttemptLeft: true });
+    if (!newest) {
+      return null;
+    }
+    const reserved = await tx.staffCheckinCode.updateMany({
+      where: { id: newest.id, attempts: { lt: CHECKIN_MAX_ATTEMPTS } },
       data: { attempts: { increment: 1 } },
-    }),
-  );
-  if (reserved.count !== 1) {
+    });
+    return reserved.count === 1 ? { id: newest.id, codeHash: newest.codeHash } : null;
+  });
+  if (!candidate) {
     throw new StaffCheckinError('CODE_INVALID');
   }
 
-  const matches = /^\d{6}$/.test(normalized) && (await bcrypt.compare(normalized, latest.codeHash));
+  const matches =
+    /^\d{6}$/.test(normalized) && (await bcrypt.compare(normalized, candidate.codeHash));
   if (!matches) {
     throw new StaffCheckinError('CODE_INVALID');
   }
 
   const rawToken = crypto.randomBytes(32).toString('base64url');
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + TRUSTED_DEVICE_TTL_MS);
-
-  await prisma.$transaction(async tx => {
+  const expiresAt = await prisma.$transaction(async tx => {
+    const fresh = await lockAccountTx(tx, account.id);
+    if (!mayCheckIn(fresh)) {
+      throw new StaffCheckinError('CODE_INVALID');
+    }
+    const now = new Date();
+    // Guess cap not re-checked here: this guess already holds its reservation.
+    const newest = await newestLiveCodeTx(tx, fresh, now, { requireAttemptLeft: false });
+    if (!newest || newest.id !== candidate.id) {
+      throw new StaffCheckinError('CODE_INVALID');
+    }
     const consumed = await tx.staffCheckinCode.updateMany({
-      where: { id: latest.id, usedAt: null, expiresAt: { gt: now } },
+      where: { id: candidate.id, usedAt: null },
       data: { usedAt: now },
     });
     if (consumed.count !== 1) {
       throw new StaffCheckinError('CODE_INVALID');
     }
+    const deviceExpiresAt = new Date(now.getTime() + TRUSTED_DEVICE_TTL_MS);
     const device = await tx.staffTrustedDevice.create({
-      data: { userId: account.id, tokenHash: hashDeviceToken(rawToken), expiresAt },
+      data: { userId: fresh.id, tokenHash: hashDeviceToken(rawToken), expiresAt: deviceExpiresAt },
     });
     await recordStaffActionTx(tx, {
-      actorId: account.id,
-      actorRole: account.role,
+      actorId: fresh.id,
+      actorRole: fresh.role,
       capability: 'staff.checkin',
       targetType: 'device',
       targetId: String(device.id),
       reason: null,
     });
+    return deviceExpiresAt;
   });
 
   return { rawToken, expiresAt };
