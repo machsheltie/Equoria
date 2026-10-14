@@ -13,6 +13,10 @@ import GallopingLoader from '@/components/ui/GallopingLoader';
 import { RewardToastProvider } from '@/components/feedback';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+// Eager, not lazy: a Suspense fallback here would tell /steward apart from an
+// unknown address (STAFF-CR-17).
+import StewardGate from '@/components/staff/StewardGate';
+import NotFoundPage from './pages/NotFoundPage';
 
 // Overlay components — lazy loaded (never visible on initial render)
 // WhileYouWereGone: shown only after 4+ hour authenticated absence
@@ -37,7 +41,7 @@ const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 const HorseEquipPage = lazy(() => import('./pages/horses/HorseEquipPage'));
 const FoalDetailPage = lazy(() => import('./pages/FoalDetailPage'));
 // Equoria-puj1e.1: the staff-only Steward's Office. Deliberately absent from
-// navItems; non-staff are sent home by the page itself (GET /staff/me → 404).
+// navItems. Loaded only after StewardGate has confirmed a steward.
 const StewardsOfficePage = lazy(() => import('./pages/StewardsOfficePage'));
 
 // Equoria-bvddn.29: ends a dead session (clear cache + /login) on a 401 after a failed refresh.
@@ -88,6 +92,22 @@ const App = () => (
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
 
+                    {/* The Steward's Office (STAFF-CR-17): StewardGate decides before
+                      any login redirect or nav shell, so for anyone who is not
+                      staff /steward renders exactly like the catch-all below. */}
+                    <Route
+                      path="/steward"
+                      element={
+                        <StewardGate>
+                          <ProtectedRoute>
+                            <DashboardLayout />
+                          </ProtectedRoute>
+                        </StewardGate>
+                      }
+                    >
+                      <Route index element={<StewardsOfficePage />} />
+                    </Route>
+
                     {/* Authenticated routes — DashboardLayout provides persistent nav */}
                     <Route
                       element={
@@ -99,11 +119,13 @@ const App = () => (
                       <Route path="/horses/:id" element={<HorseDetailPage />} />
                       <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
                       <Route path="/foals/:id" element={<FoalDetailPage />} />
-                      <Route path="/steward" element={<StewardsOfficePage />} />
                       {navItems.map(({ to, Page }) => (
                         <Route key={to} path={to} element={<Page />} />
                       ))}
                     </Route>
+
+                    {/* Any other address: the one not-found behaviour. */}
+                    <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>
               </OnboardingGuard>

@@ -73,7 +73,11 @@ Owner ruling 2026-10-09: email codes, not text messages; remember the device.
 ## The Steward's Office page
 
 - One hidden route, rendered only for staff; for everyone else it behaves like a
-  missing page and nothing in player navigation links to it.
+  missing page and nothing in player navigation links to it. Signed out, as a
+  player, or while /staff/me has not answered for a steward, /steward leaves the
+  same page, address and history as any unknown address, with no login prompt;
+  a signed-out visit never asks /staff/me. A steward revoked mid-visit sees the
+  office replaced the same way, in place (STAFF-CR-17).
 - In-world framing with a plain, legible layout using the existing Celestial
   Night tokens, typography and dialogs; no admin-console shell (`DESIGN.md`).
 - Areas appear by capability. Destructive actions go preview → confirm, with a
@@ -86,7 +90,8 @@ retention and records requests, not outcomes). Each entry records: acting
 account and role, time, capability, target (player, horse, show, post, IP or
 device), required reason, before/after values where something changed,
 outcome, and a link to the entry it reverses. The admin sees and filters every
-entry; a moderator sees their own. Every later staff tool writes here; an
+entry, by any account that has ever written to the log, so a revoked or erased
+steward stays choosable (STAFF-CR-16); a moderator sees their own. Every later staff tool writes here; an
 action and its log entry commit in one transaction. Ticket replies (without
 their text) and successful check-ins are logged too. Erasing an account keeps
 its staff log entries under the account ID, and keeps its tickets and replies

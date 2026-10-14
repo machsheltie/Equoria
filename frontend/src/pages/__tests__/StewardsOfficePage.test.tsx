@@ -12,6 +12,7 @@ import { http, HttpResponse, delay } from 'msw';
 import { MemoryRouter, MockAuthProvider, Routes, Route } from '@/test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/msw/server';
+import StewardGate from '@/components/staff/StewardGate';
 import StewardsOfficePage from '../StewardsOfficePage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -120,51 +121,58 @@ describe("The Steward's Office", () => {
           <MemoryRouter initialEntries={['/steward']}>
             <Routes>
               <Route path="/" element={<p>Stable home</p>} />
-              <Route path="/steward" element={<StewardsOfficePage />} />
+              <Route
+                path="/steward"
+                element={
+                  <StewardGate>
+                    <StewardsOfficePage />
+                  </StewardGate>
+                }
+              />
             </Routes>
           </MemoryRouter>
         </MockAuthProvider>
       </QueryClientProvider>
     );
 
+  // STAFF-CR-17 changed the contract: anyone who is not (or no longer) staff
+  // gets the client's not-found page in place (no route content, no redirect
+  // home), exactly as at an unknown address. The full-app comparison lives in
+  // src/__tests__/StewardRouteNotFound.test.tsx.
+  const meSettled = () =>
+    waitFor(() => expect(queryClient.getQueryState(['staff', 'me'])?.status).toBe('error'));
+  const expectNotFound = (container: HTMLElement) => {
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText('Stable home')).not.toBeInTheDocument();
+  };
+
   // ── /me gate ──────────────────────────────────────────────────────────────
 
-  it('sends a non-staff player home, with no hint the office exists', async () => {
+  it('gives a non-staff player the not-found page, with no hint the office exists', async () => {
     stubStaff({ me: () => json({ success: false, message: 'Not found' }, 404) });
-    renderPage();
-    expect(await screen.findByText('Stable home')).toBeInTheDocument();
-    expect(screen.queryByText(/steward/i)).not.toBeInTheDocument();
+    const { container } = renderPage();
+    await meSettled();
+    expectNotFound(container);
   });
 
-  it('shows the loading state while /me is pending, not the redirect or the areas', async () => {
+  it('shows nothing while /me is pending (no loader), then the office for a steward', async () => {
     stubStaff({
       me: async () => {
         await delay(150);
         return json(adminMe);
       },
     });
-    renderPage();
-    // PageLoading nests the shared GallopingLoader, so two status regions show.
-    expect((await screen.findAllByRole('status', { name: 'Loading' })).length).toBeGreaterThan(0);
-    expect(screen.queryByText('Stable home')).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Ledger' })).not.toBeInTheDocument();
+    const { container } = renderPage();
+    expectNotFound(container);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
   });
 
-  it('shows an error with a working retry when /me fails for another reason', async () => {
-    let calls = 0;
-    stubStaff({
-      me: () => {
-        calls += 1;
-        return calls === 1 ? json({ message: 'db exploded' }, 500) : json(adminMe);
-      },
-    });
-    const user = userEvent.setup();
-    renderPage();
-    const alert = await screen.findByRole('alert');
-    expect(screen.queryByText(/db exploded/)).not.toBeInTheDocument();
-    await user.click(within(alert).getByRole('button', { name: /try again/i }));
-    expect(await screen.findByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
+  it('gives the not-found page when /me fails for another reason, never an error hint', async () => {
+    stubStaff({ me: () => json({ message: 'db exploded' }, 500) });
+    const { container } = renderPage();
+    await meSettled();
+    expectNotFound(container);
   });
 
   // ── Check-in ──────────────────────────────────────────────────────────────
@@ -462,18 +470,18 @@ describe("The Steward's Office", () => {
     expect(screen.getByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
   });
 
-  it('a /me refetch that answers 404 (access revoked) still sends the visitor home', async () => {
+  it('a /me refetch that answers 404 (access revoked) replaces the office with not found', async () => {
     let revoked = false;
     stubStaff({
       me: () => (revoked ? json({ success: false, message: 'Not found' }, 404) : json(adminMe)),
     });
-    renderPage();
+    const { container } = renderPage();
     expect(await screen.findByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
     revoked = true;
     await act(async () => {
       await queryClient.refetchQueries({ queryKey: ['staff', 'me'] });
     });
-    expect(await screen.findByText('Stable home')).toBeInTheDocument();
+    await waitFor(() => expectNotFound(container));
   });
 
   // ── Stewards (roles) ──────────────────────────────────────────────────────
@@ -703,17 +711,23 @@ describe("The Steward's Office", () => {
     };
   };
 
-  it('an area read that gets a 404 re-asks /me, and a revoked steward is sent home', async () => {
+  it('an area read that gets a 404 re-asks /me, and a revoked steward gets not found', async () => {
+    const me = revokedAfterFirstMe();
+    let meCalls = 0;
     stubStaff({
-      me: revokedAfterFirstMe(),
+      me: () => {
+        meCalls += 1;
+        return me();
+      },
       tickets: () => json({ success: false, message: 'Not found' }, 404),
     });
-    renderPage();
-    expect(await screen.findByText('Stable home')).toBeInTheDocument();
+    const { container } = renderPage();
+    await waitFor(() => expect(meCalls).toBeGreaterThanOrEqual(2));
+    await waitFor(() => expectNotFound(container));
     expect(screen.queryByTestId('stewards-office')).not.toBeInTheDocument();
   });
 
-  it('an action that gets a 404 re-asks /me, and a revoked steward is sent home', async () => {
+  it('an action that gets a 404 re-asks /me, and a revoked steward gets not found', async () => {
     stubStaff({ me: revokedAfterFirstMe(), tickets: () => json({ tickets: [] }) });
     server.use(
       http.post(`${STAFF}/tickets`, () => json({ success: false, message: 'Not found' }, 404))
@@ -724,7 +738,8 @@ describe("The Steward's Office", () => {
     await user.type(screen.getByLabelText('Category'), 'Spam');
     await user.type(screen.getByLabelText('Note'), 'Selling coins');
     await user.click(screen.getByRole('button', { name: 'File ticket' }));
-    expect(await screen.findByText('Stable home')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('stewards-office')).not.toBeInTheDocument());
+    expect(screen.queryByText('Stable home')).not.toBeInTheDocument();
   });
 
   it('a 404 for a steward who is still staff leaves the office open', async () => {

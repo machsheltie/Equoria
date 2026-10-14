@@ -2,66 +2,47 @@
  * The Steward's Office (Equoria-puj1e.1, docs/features/staff-foundation.md).
  *
  * A hidden room for the game's stewards: the admin and the moderators. It is
- * reached only by its address and is not in any navigation. For anyone who is
- * not staff, GET /staff/me answers 404 and the page sends them home, exactly
- * as an unknown address would.
+ * reached only by its address and is not in any navigation. StewardGate
+ * (components/staff/StewardGate.tsx) mounts this page only once GET /staff/me
+ * has answered for a steward; for everyone else, and whenever /me stops
+ * answering for one, the address renders exactly like an unknown one
+ * (STAFF-CR-17).
  *
- * - /me decides everything. Pending → the shared page loader. Untrusted
- *   browser → check in by email code. Trusted → the areas the account's
- *   capabilities allow.
+ * - /me decides everything. Untrusted browser → check in by email code.
+ *   Trusted → the areas the account's capabilities allow.
  * - If any area is refused with STAFF_CHECKIN_REQUIRED (the 30-day trust ran
  *   out mid-visit), the page returns to check-in.
  * - If any area or action gets a 404, /me is asked again at once; a steward
- *   revoked mid-visit then gets /me's 404 and is sent home.
+ *   revoked mid-visit then gets /me's 404 and the gate replaces the office
+ *   with the not-found page in place.
  * - Plain and open: a title, then each area under its own heading and rule.
  *   No dashboard tiles, no cards.
  */
 
 import React, { useCallback, useState } from 'react';
-import { Navigate } from 'react-router';
 import { PageContainer } from '@/components/layout/PageContainer';
 import StaffActionLog from '@/components/staff/StaffActionLog';
 import StaffCheckIn from '@/components/staff/StaffCheckIn';
 import StaffRoles from '@/components/staff/StaffRoles';
 import StaffTickets from '@/components/staff/StaffTickets';
-import { ErrorState, PageLoading } from '@/components/ui/state';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  isCheckinRequired,
-  statusOf,
-  useStaffMe,
-  useStaffRevocationWatch,
-} from '@/hooks/api/useStaff';
-import { userMessageFor } from '@/lib/http/userMessage';
+import { useGatedStaffMe } from '@/components/staff/StewardGate';
+import { isCheckinRequired, useStaffRevocationWatch } from '@/hooks/api/useStaff';
+import NotFoundPage from './NotFoundPage';
 
 export default function StewardsOfficePage() {
   const { user } = useAuth();
-  const me = useStaffMe();
+  const me = useGatedStaffMe();
   useStaffRevocationWatch();
   const [checkinLapsed, setCheckinLapsed] = useState(false);
   const onCheckinRequired = useCallback(() => setCheckinLapsed(true), []);
   const onCheckedIn = useCallback(() => setCheckinLapsed(false), []);
 
-  // A 404 — not staff, or staff access revoked mid-visit — always leaves.
-  if (statusOf(me.error) === 404) {
-    return <Navigate to="/" replace />;
-  }
-  if (me.isPending) {
-    return <PageLoading />;
-  }
-  // Only a /me that never loaded replaces the office. A failed background
-  // refetch keeps the areas (and any open dialog or half-written form) on
-  // screen with the last good answer.
+  // The gate mounts the office only with a steward's /me in hand. A failed
+  // background refetch keeps the areas (and any open dialog or half-written
+  // form) on screen with the last good answer; its 404 is the gate's to act on.
   if (!me.data) {
-    const { title, message, retryable } = userMessageFor(me.error);
-    return (
-      <ErrorState
-        severity="page"
-        title={title}
-        message={message}
-        retry={retryable ? { label: 'Try Again', onClick: () => void me.refetch() } : undefined}
-      />
-    );
+    return <NotFoundPage />;
   }
 
   const { capabilities, trusted } = me.data;

@@ -86,8 +86,9 @@ export function useStaffRevocationWatch() {
   }, [queryClient]);
 }
 
-export function useStaffMe() {
-  return useQuery({ queryKey: staffKeys.me, queryFn: staffApi.me });
+/** `enabled` is false for a signed-out visitor, who is never asked about (STAFF-CR-17). */
+export function useStaffMe(enabled = true) {
+  return useQuery({ queryKey: staffKeys.me, queryFn: staffApi.me, enabled });
 }
 
 export function useRequestCheckin() {
