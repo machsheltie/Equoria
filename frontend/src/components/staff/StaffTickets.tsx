@@ -3,7 +3,8 @@
  *
  * Moderators (ticket.file) file a ticket about a player, post, horse or show
  * and see their own; the admin (ticket.resolve) sees every ticket and sets its
- * status. A ticket opens in place to show its note and replies.
+ * status. A ticket opens in place to show its note and replies. The list
+ * loads one page, newest first; older tickets come on request (STAFF-CR-03).
  */
 
 import React, { useEffect, useState } from 'react';
@@ -247,7 +248,9 @@ export function StaffTickets({ canFile, canResolve, onCheckinRequired }: StaffTi
   let list: React.ReactNode;
   if (tickets.isPending) {
     list = <SectionLoading label="Loading tickets" />;
-  } else if (tickets.isError) {
+  } else if (!tickets.data) {
+    // Only a failed first page has no data; a failed older page keeps the
+    // loaded tickets and shows its error at the button below.
     const { title, message, retryable } = userMessageFor(tickets.error);
     list = (
       <ErrorState
@@ -258,7 +261,7 @@ export function StaffTickets({ canFile, canResolve, onCheckinRequired }: StaffTi
         }
       />
     );
-  } else if (tickets.data.tickets.length === 0) {
+  } else if (tickets.data.pages[0].tickets.length === 0) {
     list = (
       <EmptyState
         variant="first-use"
@@ -272,16 +275,34 @@ export function StaffTickets({ canFile, canResolve, onCheckinRequired }: StaffTi
     );
   } else {
     list = (
-      <ul className="divide-y divide-[var(--border-muted)]">
-        {tickets.data.tickets.map((ticket) => (
-          <TicketRow
-            key={ticket.id}
-            ticket={ticket}
-            canResolve={canResolve}
-            onCheckinRequired={onCheckinRequired}
-          />
-        ))}
-      </ul>
+      <>
+        <ul className="divide-y divide-[var(--border-muted)]">
+          {tickets.data.pages
+            .flatMap((page) => page.tickets)
+            .map((ticket) => (
+              <TicketRow
+                key={ticket.id}
+                ticket={ticket}
+                canResolve={canResolve}
+                onCheckinRequired={onCheckinRequired}
+              />
+            ))}
+        </ul>
+        {tickets.hasNextPage && (
+          <div className="mt-3 flex flex-col items-start gap-2">
+            <Button
+              variant="outline"
+              onClick={() => void tickets.fetchNextPage()}
+              pending={tickets.isFetchingNextPage}
+            >
+              Show older tickets
+            </Button>
+            {tickets.isFetchNextPageError && (
+              <InlineError message={staffErrorMessage(tickets.error)} />
+            )}
+          </div>
+        )}
+      </>
     );
   }
 

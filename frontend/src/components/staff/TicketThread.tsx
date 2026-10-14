@@ -1,9 +1,10 @@
 /**
  * TicketThread — one ticket opened in place (Equoria-puj1e.1).
  *
- * Loads the ticket with its replies, lets either party reply, and gives the
- * admin (ticket.resolve) the status control. Failures stay at the control;
- * a typed reply is kept until the server accepts it.
+ * Loads the ticket with its latest replies (earlier ones on request,
+ * STAFF-CR-09), lets either party reply, and gives the admin
+ * (ticket.resolve) the status control. Failures stay at the control; a typed
+ * reply is kept until the server accepts it.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -135,7 +136,9 @@ export function TicketThread({ ticketId, canResolve, onCheckinRequired }: Ticket
   if (query.isPending) {
     return <SectionLoading label="Loading the ticket" minHeight="80px" />;
   }
-  if (query.isError) {
+  if (!query.data) {
+    // Only a failed first page has no data; a failed earlier page keeps the
+    // loaded replies and shows its error at its button.
     const { title, message, retryable } = userMessageFor(query.error);
     return (
       <ErrorState
@@ -146,16 +149,33 @@ export function TicketThread({ ticketId, canResolve, onCheckinRequired }: Ticket
     );
   }
 
-  const { ticket } = query.data;
+  // The first page holds the latest replies and the current ticket; each
+  // further page holds the replies before it, so read them back to front.
+  const { pages } = query.data;
+  const { ticket } = pages[0];
+  const replies = [...pages].reverse().flatMap((page) => page.ticket.replies);
   return (
     <div className="flex flex-col gap-4 border-l-2 border-[var(--border-muted)] pl-4">
       <p className="whitespace-pre-wrap text-[var(--text-primary)]">{ticket.note}</p>
 
-      {ticket.replies.length === 0 ? (
+      {query.hasNextPage && (
+        <div className="flex flex-col items-start gap-2">
+          <Button
+            variant="outline"
+            onClick={() => void query.fetchNextPage()}
+            pending={query.isFetchingNextPage}
+          >
+            Show earlier replies
+          </Button>
+          {query.isFetchNextPageError && <InlineError message={staffErrorMessage(query.error)} />}
+        </div>
+      )}
+
+      {replies.length === 0 ? (
         <p className="text-sm text-role-secondary">No replies yet.</p>
       ) : (
-        <ol className="flex flex-col gap-3">
-          {ticket.replies.map((reply) => (
+        <ol aria-label="Replies" className="flex flex-col gap-3">
+          {replies.map((reply) => (
             <li key={reply.id}>
               <p className="text-sm text-role-secondary">
                 {reply.author?.username ?? FORMER_STEWARD},{' '}

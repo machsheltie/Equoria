@@ -149,12 +149,27 @@ export function useSetUserRole() {
   });
 }
 
+/** The ticket list, newest first, one page at a time (STAFF-CR-03). */
 export function useStaffTickets() {
-  return useQuery({ queryKey: staffKeys.tickets, queryFn: staffApi.listTickets });
+  return useInfiniteQuery({
+    queryKey: staffKeys.tickets,
+    queryFn: ({ pageParam }) => staffApi.listTickets(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
 }
 
+/**
+ * One ticket: the first page carries the latest replies; each further page
+ * carries the replies before it (STAFF-CR-09).
+ */
 export function useStaffTicket(id: number) {
-  return useQuery({ queryKey: staffKeys.ticket(id), queryFn: () => staffApi.getTicket(id) });
+  return useInfiniteQuery({
+    queryKey: staffKeys.ticket(id),
+    queryFn: ({ pageParam }) => staffApi.getTicket(id, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.olderRepliesCursor ?? undefined,
+  });
 }
 
 export function useFileTicket() {

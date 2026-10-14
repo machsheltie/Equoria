@@ -13,8 +13,8 @@
  *   POST /api/v1/staff/roles/lookup       → StaffMember
  *   POST /api/v1/staff/roles/:userId      → StaffMember (with the new role)
  *   POST /api/v1/staff/tickets            → 201 { ticket }
- *   GET  /api/v1/staff/tickets?status     → { tickets }
- *   GET  /api/v1/staff/tickets/:id        → { ticket (with replies) }
+ *   GET  /api/v1/staff/tickets?status&cursor → { tickets, nextCursor }
+ *   GET  /api/v1/staff/tickets/:id?before → { ticket (with a page of replies), olderRepliesCursor }
  *   POST /api/v1/staff/tickets/:id/replies → 201 { reply }
  *   POST /api/v1/staff/tickets/:id/status → { ticket }
  */
@@ -94,7 +94,20 @@ export interface StaffTicketReply {
 }
 
 export interface StaffTicketWithReplies extends StaffTicket {
+  /** One page of replies, oldest first: the latest page unless `before` was given. */
   replies: StaffTicketReply[];
+}
+
+/** One page of the ticket list, newest first; nextCursor is null on the last page. */
+export interface StaffTicketPage {
+  tickets: StaffTicket[];
+  nextCursor: string | null;
+}
+
+/** A ticket with one page of replies; olderRepliesCursor is null when none are earlier. */
+export interface StaffTicketThreadPage {
+  ticket: StaffTicketWithReplies;
+  olderRepliesCursor: string | null;
 }
 
 /** A player is named by `targetUsername` or by `targetId`; every other target by `targetId`. */
@@ -129,9 +142,14 @@ export const staffApi = {
   setRole: (userId: string, role: 'moderator' | 'user', reason: string) =>
     apiClient.post<StaffMember>(`${BASE}/roles/${encodeURIComponent(userId)}`, { role, reason }),
 
-  listTickets: () => apiClient.get<{ tickets: StaffTicket[] }>(`${BASE}/tickets`),
-  getTicket: (id: number) =>
-    apiClient.get<{ ticket: StaffTicketWithReplies }>(`${BASE}/tickets/${id}`),
+  listTickets: (cursor?: string) =>
+    apiClient.get<StaffTicketPage>(
+      `${BASE}/tickets${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`
+    ),
+  getTicket: (id: number, before?: string) =>
+    apiClient.get<StaffTicketThreadPage>(
+      `${BASE}/tickets/${id}${before ? `?before=${encodeURIComponent(before)}` : ''}`
+    ),
   fileTicket: (payload: FileTicketPayload) =>
     apiClient.post<{ ticket: StaffTicket }>(`${BASE}/tickets`, payload),
   replyToTicket: (id: number, body: string) =>
