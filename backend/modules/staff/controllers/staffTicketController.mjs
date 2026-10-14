@@ -90,6 +90,18 @@ export async function createTicket(req, res, next) {
         .status(404)
         .json({ success: false, message: 'No player by that name or ID', code: 'NO_PLAYER' });
     }
+    if (result.error === 'not_a_player') {
+      return res.status(403).json({
+        success: false,
+        message: 'Tickets can only be about players',
+        code: 'NOT_A_PLAYER',
+      });
+    }
+    if (result.error === 'no_target') {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Nothing by that ID', code: 'NO_TARGET' });
+    }
     if (result.error === 'name_id_mismatch') {
       return invalid(res, 'The name and ID point to different players');
     }

@@ -88,6 +88,12 @@ with the filer or author shown as a former steward.
   sides can reply.
   A player may be named by username or by account ID; the ticket stores the
   account ID and shows the player's current username.
+- A ticket about an account names a player only (owner ruling 2026-10-13): the
+  filer, another moderator and the admin are refused, by username or by ID
+  alike, and a promotion that lands while the ticket is being filed cannot
+  slip a staff account through. A post (forum post), horse or show must exist
+  when the ticket is filed; a malformed, unknown, deleted or wrong-kind ID
+  gets one "not found" answer that does not say which.
 - Filing alerts the admin by in-game notification and email; a reply or
   resolution alerts the filing moderator in game.
 - The player-conduct project adds player appeals as a ticket type.

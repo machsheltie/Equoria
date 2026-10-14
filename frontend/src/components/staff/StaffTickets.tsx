@@ -49,14 +49,16 @@ const FILE_MESSAGES = {
   400: 'Fill in every field. The note can be up to 2,000 characters.',
 };
 
-// The refusals that belong at the player field, not at the button.
-const PLAYER_MESSAGES = {
-  404: 'No player by that name or ID.',
-};
+// The refusals that belong at the subject field, not at the button, keyed by
+// the backend's own code; a revoked steward's 404 has no such code.
+const SUBJECT_MESSAGES = new Map<unknown, string>([
+  ['NO_PLAYER', 'No player by that name or ID.'],
+  ['NOT_A_PLAYER', 'Tickets can only be about players, not stewards or yourself.'],
+  ['NO_TARGET', 'Nothing by that ID.'],
+]);
 
-// Only the backend's own refusal; a revoked steward's 404 has no such code.
-const isPlayerRefusal = (error: unknown) =>
-  (error as { code?: string } | null)?.code === 'NO_PLAYER';
+const subjectRefusal = (error: unknown) =>
+  SUBJECT_MESSAGES.get((error as { code?: unknown } | null)?.code);
 
 function FileTicketForm() {
   const [targetType, setTargetType] = useState<TicketTargetType>('user');
@@ -68,7 +70,7 @@ function FileTicketForm() {
   const [note, setNote] = useState('');
   const file = useFileTicket();
 
-  const playerRefused = targetType === 'user' && file.isError && isPlayerRefusal(file.error);
+  const subjectError = file.isError ? subjectRefusal(file.error) : undefined;
   const byName = targetType === 'user' && lookup === 'name';
   const subjectValue = byName ? username : targetId;
   const ready = subjectValue.trim() !== '' && category.trim() !== '' && note.trim() !== '';
@@ -131,10 +133,7 @@ function FileTicketForm() {
             )}
           </FormField>
         )}
-        <FormField
-          label={byName ? 'Their username' : 'Their ID'}
-          error={playerRefused ? PLAYER_MESSAGES[404] : undefined}
-        >
+        <FormField label={byName ? 'Their username' : 'Their ID'} error={subjectError}>
           {(field) => (
             <Input
               {...field}
@@ -175,7 +174,7 @@ function FileTicketForm() {
         <Button type="submit" pending={file.isPending} disabled={!ready}>
           File ticket
         </Button>
-        {file.isError && !playerRefused && (
+        {file.isError && !subjectError && (
           <InlineError message={staffErrorMessage(file.error, FILE_MESSAGES)} />
         )}
       </div>

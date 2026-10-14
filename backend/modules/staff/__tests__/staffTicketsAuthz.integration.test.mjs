@@ -24,6 +24,7 @@ import {
   ORIGIN,
   checkIn,
   cookiesFor,
+  createTargetFactory,
   createUserFactory,
   get,
   post,
@@ -36,10 +37,16 @@ const TICKETS = '/api/v1/staff/tickets';
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('staffticket');
+const { makeHorse, makePost, removeTargets } = createTargetFactory('StaffTicket');
+
+// A ticket's horse, show or post must exist (STAFF-CR-07): the default
+// subject is one real forum post, made in beforeAll.
+let fixturePostId = null;
+let fixtureOwner = null;
 
 const goodTicket = (overrides = {}) => ({
   targetType: 'post',
-  targetId: `post-${uid()}`,
+  targetId: String(fixturePostId),
   category: 'Needs the admin',
   note: `private note ${uid()}`,
   ...overrides,
@@ -142,7 +149,13 @@ beforeAll(() => {
   cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: scope() } }), 'checkin codes');
   cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: scope() } }), 'devices');
   cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: scope() } }), 'refresh tokens');
+  cleanup.add(() => removeTargets(), 'horses and posts');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: scope() } }), 'users');
+});
+
+beforeAll(async () => {
+  fixtureOwner = await makeUser('user');
+  fixturePostId = (await makePost(fixtureOwner)).id;
 });
 
 afterAll(() => cleanup.run(), 60_000);
@@ -571,11 +584,13 @@ describe('Naming the player by username or ID', () => {
     expect(res.status).toBe(400);
   });
 
-  it('allows a staff account as the subject', async () => {
+  // Owner ruling 2026-10-13 replaced "allows a staff account as the subject":
+  // tickets may name players only. staffTicketTargetsAuthz covers every case.
+  it('refuses a staff account as the subject', async () => {
     const { admin, mod, modDevice } = await fixtureStaff();
     const res = await post(TICKETS, mod, aboutPlayer({ targetUsername: admin.username }), modDevice);
-    expect(res.status).toBe(201);
-    expect(res.body.ticket.targetId).toBe(admin.id);
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('NOT_A_PLAYER');
   });
 
   it('shows the current username in the list and the thread, and "former player" data when erased', async () => {
@@ -584,7 +599,10 @@ describe('Naming the player by username or ID', () => {
     const other = await makeUser('user');
     const filed = (await post(TICKETS, mod, aboutPlayer({ targetId: player.id }), modDevice)).body.ticket;
     const second = (await post(TICKETS, mod, aboutPlayer({ targetId: other.id }), modDevice)).body.ticket;
-    const horse = (await post(TICKETS, mod, goodTicket({ targetType: 'horse', targetId: '9' }), modDevice)).body.ticket;
+    const realHorse = await makeHorse(fixtureOwner);
+    const horse = (
+      await post(TICKETS, mod, goodTicket({ targetType: 'horse', targetId: String(realHorse.id) }), modDevice)
+    ).body.ticket;
 
     const renamed = `renamed${uid()}`;
     await prisma.user.update({ where: { id: player.id }, data: { username: renamed } });

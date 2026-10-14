@@ -118,6 +118,50 @@ describe('StaffTickets: the player a ticket is about', () => {
     expect(screen.queryByText('No player by that name or ID.')).not.toBeInTheDocument();
   });
 
+  // STAFF-CR-02: tickets name players only; the refusal is the same by name or ID.
+  it('shows a steward or yourself as not a player, by username and by ID', async () => {
+    stubTickets();
+    server.use(
+      http.post(`${STAFF}/tickets`, () =>
+        json(
+          { success: false, message: 'Tickets can only be about players', code: 'NOT_A_PLAYER' },
+          403
+        )
+      )
+    );
+    const user = userEvent.setup();
+    renderTickets();
+    await user.type(await screen.findByLabelText('Their username'), 'Willow');
+    await fillRest(user);
+    const copy = 'Tickets can only be about players, not stewards or yourself.';
+    expect(await screen.findByText(copy)).toBeInTheDocument();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByLabelText('Their username')).toHaveValue('Willow');
+
+    await user.selectOptions(screen.getByLabelText('Find the player'), 'id');
+    await user.type(screen.getByLabelText('Their ID'), 'mod-2');
+    await user.click(screen.getByRole('button', { name: 'File ticket' }));
+    expect(await screen.findByText(copy)).toBeInTheDocument();
+  });
+
+  // STAFF-CR-07: a horse, show or post that does not exist is refused at the field.
+  it('shows an unknown horse at the field', async () => {
+    stubTickets();
+    server.use(
+      http.post(`${STAFF}/tickets`, () =>
+        json({ success: false, message: 'Nothing by that ID', code: 'NO_TARGET' }, 404)
+      )
+    );
+    const user = userEvent.setup();
+    renderTickets();
+    await user.selectOptions(await screen.findByLabelText('About'), 'horse');
+    await user.type(screen.getByLabelText('Their ID'), '999');
+    await fillRest(user);
+    expect(await screen.findByText('Nothing by that ID.')).toBeInTheDocument();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByLabelText('Their ID')).toHaveValue('999');
+  });
+
   it('clears the field error when the name is edited or the mode is switched', async () => {
     stubTickets();
     server.use(

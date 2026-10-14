@@ -15,12 +15,14 @@ import {
   createNotificationTx,
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
-import { hasCapability } from '../capabilities.mjs';
+import AppError from '../../../errors/AppError.mjs';
+import { assertActionableTarget, hasCapability } from '../capabilities.mjs';
 import { recordStaffActionTx } from './staffActionLogService.mjs';
 
 export const LIST_LIMIT = 100;
 const MAX_INT4 = 2147483647;
 
+/** A positive int4 written plainly (no sign, no leading zero), else null. */
 export const parseTicketId = raw =>
   typeof raw === 'string' && /^[1-9]\d{0,9}$/.test(raw) && Number(raw) <= MAX_INT4
     ? Number(raw)
@@ -73,14 +75,21 @@ export function _lastTicketEmails() {
 }
 
 const NO_PLAYER = { error: 'no_player' };
+const NOT_A_PLAYER = { error: 'not_a_player' };
 const NAME_ID_DISAGREE = { error: 'name_id_mismatch' };
+const NO_TARGET = { error: 'no_target' };
 
 /**
- * The account a ticket names, by ID, by username, or by both. Usernames match
+ * The player a ticket names, by ID, by username, or by both. Usernames match
  * exactly as stored (the same findUnique rule the staff roles lookup uses).
  * Unknown name and unknown ID give the same refusal.
+ *
+ * Players only (owner ruling 2026-10-13, STAFF-CR-02): the filer, another
+ * moderator and the admin are refused by the shared actionable-target rule,
+ * whichever way they were named. The role is read under a row lock, so a
+ * promotion either commits first and is seen, or waits for this filing.
  */
-async function resolvePlayer(tx, { targetId, targetUsername }) {
+async function resolvePlayer(tx, staff, { targetId, targetUsername }) {
   const [byId, byName] = await Promise.all([
     targetId ? tx.user.findUnique({ where: { id: targetId }, select: { id: true } }) : null,
     targetUsername
@@ -93,7 +102,45 @@ async function resolvePlayer(tx, { targetId, targetUsername }) {
   if (byId && byName && byId.id !== byName.id) {
     return NAME_ID_DISAGREE;
   }
-  return { id: (byId ?? byName).id };
+  const id = (byId ?? byName).id;
+  const [locked] = await tx.$queryRaw`SELECT id, role FROM "User" WHERE id = ${id} FOR UPDATE`;
+  if (!locked) {
+    return NO_PLAYER;
+  }
+  try {
+    assertActionableTarget({ actorId: staff.id, targetUser: locked });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return NOT_A_PLAYER;
+    }
+    throw error;
+  }
+  return { id: locked.id };
+}
+
+// The authoritative row for each non-player target (STAFF-CR-07).
+const TARGET_TABLES = {
+  horse: tx => tx.horse,
+  show: tx => tx.show,
+  post: tx => tx.forumPost,
+};
+
+/**
+ * The horse, show or forum post a ticket names. Its ID is a positive integer
+ * written plainly; anything else, and any ID with no row, is the same
+ * NO_TARGET, so the answer never says which.
+ */
+async function resolveTarget(tx, targetType, targetId) {
+  const table = TARGET_TABLES[targetType];
+  if (!table) {
+    throw new Error(`[staff] unknown ticket target type: ${targetType}`);
+  }
+  const id = parseTicketId(targetId);
+  if (id === null) {
+    return NO_TARGET;
+  }
+  const row = await table(tx).findUnique({ where: { id }, select: { id: true } });
+  return row ? { id: String(row.id) } : NO_TARGET;
 }
 
 /** Attach each user-targeted ticket's current username in one query. */
@@ -114,14 +161,14 @@ async function withTargetUsernames(tickets) {
 export async function fileTicket(staff, { targetType, targetId, targetUsername, category, note }) {
   const notes = [];
   const outcome = await prisma.$transaction(async tx => {
-    let resolvedId = targetId;
-    if (targetType === 'user') {
-      const player = await resolvePlayer(tx, { targetId, targetUsername });
-      if (player.error) {
-        return player;
-      }
-      resolvedId = player.id;
+    const target =
+      targetType === 'user'
+        ? await resolvePlayer(tx, staff, { targetId, targetUsername })
+        : await resolveTarget(tx, targetType, targetId);
+    if (target.error) {
+      return target;
     }
+    const resolvedId = target.id;
     const filerRow = await tx.user.findUnique({
       where: { id: staff.id },
       select: { username: true },

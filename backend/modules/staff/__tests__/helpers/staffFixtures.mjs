@@ -16,6 +16,7 @@ import app from '../../../../app.mjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
+import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 
 export const ORIGIN = 'http://localhost:3000';
 export const STAFF_API = '/api/v1/staff';
@@ -69,6 +70,60 @@ export function createUserFactory(prefix) {
     return { ...row, token: generateTestToken({ id: row.id, email: row.email, role }) };
   }
   return { makeUser, createdUserIds };
+}
+
+/**
+ * Real horse, show and forum-post rows for ticket targets (STAFF-CR-07).
+ * `owner` is an ordinary user row; `removeTargets` deletes only what this
+ * factory made and must run before that owner is deleted.
+ */
+export function createTargetFactory(prefix) {
+  const made = { horse: [], show: [], thread: [] };
+  async function makeHorse(owner) {
+    const row = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-${prefix}-${uid()}`,
+        sex: 'Mare',
+        dateOfBirth: new Date('2020-01-01'),
+        userId: owner.id,
+      },
+    });
+    made.horse.push(row.id);
+    return row;
+  }
+  async function makeShow() {
+    const row = await prisma.show.create({
+      data: {
+        name: `TestFixture-${prefix}-${uid()}${uid()}`,
+        discipline: 'Dressage',
+        runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        prize: 100,
+        entryFee: 10,
+        levelMin: 1,
+        levelMax: 10,
+        status: 'open',
+      },
+    });
+    made.show.push(row.id);
+    return row;
+  }
+  async function makePost(owner) {
+    const thread = await prisma.forumThread.create({
+      data: { section: 'general', title: `TestFixture-${prefix}-${uid()}`, authorId: owner.id },
+    });
+    made.thread.push(thread.id);
+    return prisma.forumPost.create({
+      data: { threadId: thread.id, authorId: owner.id, content: 'fixture post' },
+    });
+  }
+  async function removeTargets() {
+    // Posts cascade from their threads.
+    await prisma.forumThread.deleteMany({ where: { id: { in: made.thread } } });
+    await prisma.horse.deleteMany({ where: { id: { in: made.horse } } });
+    await prisma.show.deleteMany({ where: { id: { in: made.show } } });
+  }
+  return { makeHorse, makeShow, makePost, removeTargets };
 }
 
 export const cookiesFor = (user, device) =>
