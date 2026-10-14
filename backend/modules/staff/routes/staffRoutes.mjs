@@ -21,7 +21,7 @@ import {
   requestCheckin,
   verifyCheckin,
 } from '../controllers/staffCheckinController.mjs';
-import { getStaffLog } from '../controllers/staffLogController.mjs';
+import { getStaffLog, getStaffLogActors } from '../controllers/staffLogController.mjs';
 import {
   changeTicketStatus,
   createTicket,
@@ -38,6 +38,8 @@ router.post('/checkin/verify', requireStaffRole, verifyCheckin);
 router.get('/me', requireStaffRole, getStaffMe);
 // Admin sees every entry; a moderator is forced to their own.
 router.get('/log', requireStaffCapability('log.view.own'), getStaffLog);
+// Admin only: everyone who has ever written to the log, for the actor filter.
+router.get('/log/actors', requireStaffCapability('log.view.all'), getStaffLogActors);
 // Admin only. /roles/lookup is registered before the /roles/:userId catch-all.
 router.get('/roles', requireStaffCapability('roles.manage'), listStaff);
 router.post('/roles/lookup', requireStaffCapability('roles.manage'), lookupUser);

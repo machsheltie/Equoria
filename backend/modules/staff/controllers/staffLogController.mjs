@@ -8,7 +8,7 @@
 
 import logger from '../../../utils/logger.mjs';
 import { STAFF_ROLES, capabilitiesFor, hasCapability } from '../capabilities.mjs';
-import { listStaffActions } from '../services/staffActionLogService.mjs';
+import { listStaffActions, listStaffLogActors } from '../services/staffActionLogService.mjs';
 
 // Logged actions that are not capabilities: things any staff member does
 // (reply to a ticket, check in). Never granted, so they stay out of
@@ -73,6 +73,24 @@ export async function getStaffLog(req, res, next) {
     return res.status(200).json(result);
   } catch (error) {
     logger.error(`[staff] log read failed: ${error.message}`);
+    return next(error);
+  }
+}
+
+/**
+ * GET /api/v1/staff/log/actors, behind requireStaffCapability('log.view.all'):
+ * every account that has written to the log, for the admin's actor filter
+ * (STAFF-CR-16). Takes no query.
+ */
+export async function getStaffLogActors(req, res, next) {
+  try {
+    if (Object.keys(req.query ?? {}).length > 0) {
+      return invalid(res, 'This list takes no filters');
+    }
+    const actors = await listStaffLogActors();
+    return res.status(200).json({ actors });
+  } catch (error) {
+    logger.error(`[staff] log actor read failed: ${error.message}`);
     return next(error);
   }
 }

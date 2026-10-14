@@ -113,3 +113,29 @@ export async function listStaffActions({ actorId, targetType, targetId, capabili
   const nextCursor = rows.length > LOG_PAGE_SIZE ? entries[entries.length - 1].id : null;
   return { entries, nextCursor };
 }
+
+/**
+ * Every account that has ever written to the log, once each, for the admin's
+ * actor filter (STAFF-CR-16). Drawn from the whole log, not one page, so a
+ * steward who was revoked or erased can still be chosen. `username` is the
+ * account's current name, or null when the account no longer exists.
+ * @returns {Promise<Array<{ id: string, username: string | null }>>}
+ */
+export async function listStaffLogActors() {
+  const groups = await prisma.staffActionLog.groupBy({ by: ['actorId'] });
+  const ids = groups.map(group => group.actorId);
+  const accounts = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, username: true },
+  });
+  const names = new Map(accounts.map(account => [account.id, account.username]));
+  return ids
+    .map(id => ({ id, username: names.get(id) ?? null }))
+    .sort((a, b) => {
+      // Named accounts first, by name; then the erased, by ID.
+      if ((a.username === null) !== (b.username === null)) {
+        return a.username === null ? 1 : -1;
+      }
+      return (a.username ?? a.id).localeCompare(b.username ?? b.id);
+    });
+}
