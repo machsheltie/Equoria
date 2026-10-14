@@ -70,6 +70,16 @@ function FileTicketForm() {
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
   const file = useFileTicket();
+  // While a filing is in flight every control is locked (STAFF-CR-13): a live
+  // mutation is never reset, so its pending state cannot be cleared and the
+  // button cannot re-arm for a second, duplicate filing.
+  const pending = file.isPending;
+  // Editing clears only a settled refusal, never an in-flight request.
+  const clearSettledError = () => {
+    if (file.isError) {
+      file.reset();
+    }
+  };
 
   const subjectError = file.isError ? subjectRefusal(file.error) : undefined;
   const byName = targetType === 'user' && lookup === 'name';
@@ -78,7 +88,7 @@ function FileTicketForm() {
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!ready) {
+    if (!ready || file.isPending) {
       return;
     }
     const subject = byName ? 'targetUsername' : 'targetId';
@@ -111,9 +121,14 @@ function FileTicketForm() {
             <Select
               {...field}
               value={targetType}
+              disabled={pending}
               onChange={(event) => {
-                file.reset();
+                clearSettledError();
                 setTargetType(event.target.value as TicketTargetType);
+                // A new kind of subject starts empty, so an ID typed for a
+                // post can never be filed against a horse (STAFF-CR-14).
+                setUsername('');
+                setTargetId('');
               }}
               options={TARGET_OPTIONS}
             />
@@ -125,8 +140,9 @@ function FileTicketForm() {
               <Select
                 {...field}
                 value={lookup}
+                disabled={pending}
                 onChange={(event) => {
-                  file.reset();
+                  clearSettledError();
                   setLookup(event.target.value as PlayerLookup);
                 }}
                 options={LOOKUP_OPTIONS}
@@ -139,8 +155,9 @@ function FileTicketForm() {
             <Input
               {...field}
               value={subjectValue}
+              disabled={pending}
               onChange={(event) => {
-                file.reset();
+                clearSettledError();
                 (byName ? setUsername : setTargetId)(event.target.value);
               }}
               maxLength={byName ? 100 : 64}
@@ -154,6 +171,7 @@ function FileTicketForm() {
           <Input
             {...field}
             value={category}
+            disabled={pending}
             onChange={(event) => setCategory(event.target.value)}
             maxLength={40}
             autoComplete="off"
@@ -165,6 +183,7 @@ function FileTicketForm() {
           <Textarea
             {...field}
             value={note}
+            disabled={pending}
             onChange={(event) => setNote(event.target.value)}
             rows={4}
             maxLength={2000}
