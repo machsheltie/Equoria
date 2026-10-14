@@ -21,6 +21,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import type {
   EpigeneticTrait,
   TraitInteraction,
@@ -161,6 +162,9 @@ describe('GeneticOverviewCard — band is readable without colour', () => {
 
 /* ── LineageSection ─────────────────────────────────────────────────────── */
 
+// Sire/dam names are in-app router Links (Equoria-bvddn.40), so each render
+// needs a Router; `{ wrapper: MemoryRouter }` supplies it.
+
 describe('LineageSection — sire/dam split is readable without colour', () => {
   const inherited: EpigeneticTrait[] = [
     trait({ name: 'S1', source: 'sire' }),
@@ -173,14 +177,14 @@ describe('LineageSection — sire/dam split is readable without colour', () => {
   ]; // 4 sire / 3 dam of 7 → 57% / 43%
 
   it('names each bar segment in words beside its share', () => {
-    render(<LineageSection horse={horse()} allTraits={inherited} />);
+    render(<LineageSection horse={horse()} allTraits={inherited} />, { wrapper: MemoryRouter });
 
     expect(screen.getByText('Sire 57%')).toBeInTheDocument();
     expect(screen.getByText('Dam 43%')).toBeInTheDocument();
   });
 
   it('gives the bar a spoken summary naming both parents and both counts', () => {
-    render(<LineageSection horse={horse()} allTraits={inherited} />);
+    render(<LineageSection horse={horse()} allTraits={inherited} />, { wrapper: MemoryRouter });
 
     expect(
       screen.getByRole('img', {
@@ -194,7 +198,8 @@ describe('LineageSection — sire/dam split is readable without colour', () => {
       <LineageSection
         horse={horse()}
         allTraits={[trait({ name: 'S1', source: 'sire' }), trait({ name: 'D1', source: 'dam' })]}
-      />
+      />,
+      { wrapper: MemoryRouter }
     );
 
     expect(
@@ -209,7 +214,8 @@ describe('LineageSection — sire/dam split is readable without colour', () => {
       <LineageSection
         horse={horse()}
         allTraits={[...inherited, trait({ name: 'M1', source: 'mutation' })]}
-      />
+      />,
+      { wrapper: MemoryRouter }
     );
 
     expect(screen.getByText(/^Sire:/)).toBeInTheDocument();
