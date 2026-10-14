@@ -189,7 +189,11 @@ export function useReplyToTicket(id: number) {
   return useMutation({
     mutationKey: [...staffKeys.all, 'reply'],
     mutationFn: (body: string) => staffApi.replyToTicket(id, body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: staffKeys.ticket(id) }),
+    // A reply writes a ledger entry in the same transaction (STAFF-CR-15).
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.ticket(id) });
+      queryClient.invalidateQueries({ queryKey: staffKeys.log });
+    },
   });
 }
 
