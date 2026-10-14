@@ -2160,6 +2160,9 @@ model StaffCheckinCode {
   createdAt DateTime  @default(now())
 
   @@index([userId, createdAt(sort: Desc)])
+  // Retention purge (STAFF-CR-18): used or expired more than 1 day ago.
+  @@index([usedAt])
+  @@index([expiresAt])
   @@map("staff_checkin_codes")
 }
 
@@ -2173,6 +2176,9 @@ model StaffTrustedDevice {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+  // Retention purge (STAFF-CR-18): revoked or expired more than 30 days ago.
+  @@index([revokedAt])
+  @@index([expiresAt])
   @@map("staff_trusted_devices")
 }
 

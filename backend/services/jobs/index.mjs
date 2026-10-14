@@ -47,6 +47,7 @@ import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
 import cronRunLogRetentionJob from './cronRunLogRetentionJob.mjs';
 import showExecutionReaperJob from './showExecutionReaperJob.mjs';
 import groomCareerProgressionJob from './groomCareerProgressionJob.mjs';
+import staffCheckinRetentionJob from './staffCheckinRetentionJob.mjs';
 
 /**
  * Ordered registry. The first ten entries match the original `this.jobs.set(...)`
@@ -67,6 +68,8 @@ import groomCareerProgressionJob from './groomCareerProgressionJob.mjs';
  * one job whose silent failure has no external symptom (grooms simply never age
  * out), so it needs runWithHeartbeat, a CronRunLog row and visibility at
  * /api/admin/cron/health. See its descriptor header.
+ *
+ * staffCheckinRetention (STAFF-CR-18) is appended after it, reordering nothing.
  */
 export const CRON_JOB_REGISTRY = Object.freeze([
   dailyTraitJob,
@@ -83,6 +86,7 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   cronRunLogRetentionJob,
   showExecutionReaperJob,
   groomCareerProgressionJob,
+  staffCheckinRetentionJob,
 ]);
 
 export default CRON_JOB_REGISTRY;

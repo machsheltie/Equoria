@@ -76,6 +76,7 @@ import { executeClosedShows } from '../../../modules/competition/index.mjs';
 import { recordCoverageSnapshot } from '../../apiDocumentationService.mjs';
 import { purgeExpiredDocCoverageSnapshots } from '../../docCoverageSnapshotRetentionService.mjs';
 import { purgeExpiredCronRunLogs as purgeExpiredCronRunLogsService } from '../../cronRunLogRetentionService.mjs';
+import { purgeStaleStaffCheckinRecords } from '../../../modules/staff/index.mjs';
 
 /**
  * Equoria-3yxz: Daily foal milestone evaluation pass.
@@ -269,6 +270,30 @@ export async function decayHoofConditions() {
   logger.info(
     `[CronJobService.decayHoofConditions] Completed in ${duration}ms — ` +
       `decayed ${result.decayedCount} horse(s), interval ${result.decayDays}d`,
+  );
+  return result;
+}
+
+/**
+ * STAFF-CR-18: nightly staff check-in retention purge.
+ *
+ * Delegates to the staff module's purgeStaleStaffCheckinRecords(): deletes
+ * check-in codes used or expired more than 1 day ago and trusted devices
+ * expired or revoked more than 30 days ago. Idempotent; the summary flows into
+ * the heartbeat layer so /api/admin/cron/health shows what was purged.
+ *
+ * @returns {Promise<{ codesDeleted: number, devicesDeleted: number,
+ *   codeCutoff: string, deviceCutoff: string }>}
+ */
+export async function purgeStaleStaffCheckins() {
+  const startTime = Date.now();
+  logger.info('[CronJobService.purgeStaleStaffCheckins] Starting staff check-in retention purge');
+
+  const result = await purgeStaleStaffCheckinRecords();
+  const duration = Date.now() - startTime;
+  logger.info(
+    `[CronJobService.purgeStaleStaffCheckins] Completed in ${duration}ms — ` +
+      `deleted ${result.codesDeleted} code(s), ${result.devicesDeleted} device(s)`,
   );
   return result;
 }

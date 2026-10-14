@@ -60,6 +60,9 @@ const EXPECTED_JOBS = [
   // groom who worked that week their final wage. 192h staleness = 168h period + 24h tolerance,
   // matching the other weekly jobs.
   { jobName: 'groomCareerProgression', schedule: '45 9 * * 1', staleAfterMs: 192 * 60 * 60 * 1000 },
+  // STAFF-CR-18: nightly staff check-in code/device retention, appended last
+  // (reorders nothing). 03:50 Eastern, a free minute.
+  { jobName: 'staffCheckinRetention', schedule: '50 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
 ];
 
 afterEach(() => {
@@ -119,6 +122,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       cronRunLogRetention: 'purgeExpiredCronRunLogs',
       showExecutionReaper: 'reapStaleExecutingShows',
       groomCareerProgression: 'runGroomCareerProgression',
+      staffCheckinRetention: 'purgeStaleStaffCheckins',
     };
 
     for (const job of CRON_JOB_REGISTRY) {

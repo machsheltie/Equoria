@@ -342,6 +342,15 @@ class CronJobService {
   }
 
   /**
+   * Nightly staff check-in code/device retention purge (STAFF-CR-18).
+   * @returns {Promise<{ codesDeleted: number, devicesDeleted: number,
+   *                      codeCutoff: string, deviceCutoff: string }>}
+   */
+  async purgeStaleStaffCheckins() {
+    return retentionMaintenanceImpl.purgeStaleStaffCheckins();
+  }
+
+  /**
    * Daily documentation-coverage snapshot recording + retention (Equoria-qr114).
    * @returns {Promise<{ snapshotId: number, coveragePct: number,
    *                      qualityScore: number, deletedCount: number,
