@@ -14,12 +14,22 @@ import {
   parseTicketId,
   setStatus,
 } from '../services/staffTicketService.mjs';
+import { decodeCursor } from '../services/staffTicketCursor.mjs';
 
 const TARGET_TYPES = new Set(['user', 'post', 'horse', 'show']);
 const STATUSES = new Set(['open', 'in_progress', 'resolved', 'declined']);
 
 const invalid = (res, message) => res.status(400).json({ success: false, message });
 const missing = res => res.status(404).json({ success: false, message: 'Ticket not found' });
+const badCursor = res => invalid(res, 'That page link is not valid. Reload and try again.');
+
+/** An absent cursor is null; a present one must decode, else undefined (refuse). */
+function cursorParam(raw) {
+  if (raw === undefined) {
+    return null;
+  }
+  return decodeCursor(raw) ?? undefined;
+}
 
 /** Trimmed non-empty string within max, else null. */
 function text(value, max) {
@@ -33,6 +43,13 @@ function text(value, max) {
 function respond(res, result, status = 200) {
   if (result.error === 'not_found') {
     return missing(res);
+  }
+  if (result.error === 'same_status') {
+    return res.status(409).json({
+      success: false,
+      message: 'The ticket already has that status.',
+      code: 'SAME_STATUS',
+    });
   }
   if (result.error === 'conflict') {
     return res.status(409).json({
@@ -113,11 +130,15 @@ export async function createTicket(req, res, next) {
 
 export async function getTickets(req, res, next) {
   try {
-    const { status } = req.query ?? {};
+    const { status, cursor: rawCursor } = req.query ?? {};
     if (status !== undefined && !(typeof status === 'string' && STATUSES.has(status))) {
       return invalid(res, 'Invalid status');
     }
-    return res.status(200).json(await listTickets(req.staff, status));
+    const cursor = cursorParam(rawCursor);
+    if (cursor === undefined) {
+      return badCursor(res);
+    }
+    return res.status(200).json(await listTickets(req.staff, status, cursor));
   } catch (error) {
     return fail(error, 'list', next);
   }
@@ -129,7 +150,11 @@ export async function getTicketById(req, res, next) {
     if (id === null) {
       return missing(res);
     }
-    return respond(res, await getTicket(req.staff, id));
+    const before = cursorParam(req.query?.before);
+    if (before === undefined) {
+      return badCursor(res);
+    }
+    return respond(res, await getTicket(req.staff, id, before));
   } catch (error) {
     return fail(error, 'read', next);
   }

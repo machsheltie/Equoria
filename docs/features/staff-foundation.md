@@ -95,8 +95,15 @@ with the filer or author shown as a former steward.
 ## Tickets
 
 - Moderator → admin. A ticket names a target (player, post, horse or show), a
-  category and a note; status open → in progress → resolved or declined; both
+  category and a note; its status is open, in progress, resolved or declined.
+  The admin may change any status to any other, including reopening a
+  resolved or declined ticket and skipping a step (owner ruling 2026-10-13);
+  only a change to the status it already has is refused. Of two simultaneous
+  changes exactly one lands, with one log entry and one notification. Both
   sides can reply.
+- The ticket list pages newest first and the office offers older tickets on
+  request; a thread shows its latest replies and offers earlier ones on
+  request. Nothing a steward may see is ever out of reach.
   A player may be named by username or by account ID; the ticket stores the
   account ID and shows the player's current username.
 - A ticket about an account names a player only (owner ruling 2026-10-13): the
@@ -106,7 +113,9 @@ with the filer or author shown as a former steward.
   when the ticket is filed; a malformed, unknown, deleted or wrong-kind ID
   gets one "not found" answer that does not say which.
 - Filing alerts the admin by in-game notification and email; a reply or
-  resolution alerts the filing moderator in game.
+  resolution alerts the filing moderator in game, but only while they are
+  still a moderator. Demotion deletes the account's unread staff-ticket
+  notifications.
 - The player-conduct project adds player appeals as a ticket type.
 
 ## Tests the implementation must provide

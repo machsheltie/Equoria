@@ -99,6 +99,32 @@ export async function createNotificationTx(tx, userId, type, payload) {
 }
 
 /**
+ * Delete a user's UNREAD notifications of the given types inside the caller's
+ * transaction (STAFF-CR-11: a demoted moderator's staff-ticket bells). Read
+ * notifications stay. Like createNotificationTx, `tx` is required and errors
+ * throw so the caller's transaction rolls back.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {string} userId
+ * @param {string[]} types
+ * @returns {Promise<{count: number}>}
+ */
+export async function deleteUnreadNotificationsTx(tx, userId, types) {
+  if (!tx || typeof tx.notification?.deleteMany !== 'function') {
+    throw new Error(
+      '[notificationService.deleteUnreadNotificationsTx] a Prisma transaction client is required as the first argument',
+    );
+  }
+  if (typeof userId !== 'string' || userId === '' || !Array.isArray(types) || types.length === 0) {
+    // An undefined filter would widen the delete to every user or type.
+    throw new Error(
+      '[notificationService.deleteUnreadNotificationsTx] a user id and types are required',
+    );
+  }
+  return tx.notification.deleteMany({ where: { userId, type: { in: types }, isRead: false } });
+}
+
+/**
  * Equoria-m9lz1 — the POST-COMMIT half: the real-time SSE nudge (ADR-011) and
  * the per-user retention prune (ADR-007). Never throws; a failure here leaves
  * the durable row in place, which is the source of truth.

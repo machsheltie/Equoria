@@ -9,12 +9,15 @@
  * their own account or on any admin, and the role must actually change.
  *
  * The role write, the target's trusted-device revocation, the retirement of
- * their outstanding check-in codes and the log entry commit in one transaction. The role write is conditional on the role read
- * beforehand, so of two racing requests exactly one succeeds.
+ * their outstanding check-in codes, on demotion the deletion of their unread
+ * staff-ticket bells, and the log entry commit in one transaction. The role
+ * write is conditional on the role read beforehand, so of two racing requests
+ * exactly one succeeds.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { deleteUnreadNotificationsTx } from '../../../utils/notificationService.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import { retireStaffCheckinCodesTx } from '../services/staffChallengeRetirement.mjs';
 
@@ -22,6 +25,8 @@ const ASSIGNABLE_ROLES = new Set(['moderator', 'user']);
 const MAX_TEXT = 100;
 const MAX_REASON = 1000;
 const PUBLIC_FIELDS = { id: true, username: true, role: true };
+// Bells that link into the Steward's Office (STAFF-CR-11).
+const STAFF_BELL_TYPES = ['staff_ticket', 'staff_ticket_update'];
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 
@@ -130,6 +135,12 @@ export async function setUserRole(req, res, next) {
       // STAFF-CR-01: a code issued before the change can never finish a
       // check-in after it, so demote-then-re-promote starts from nothing.
       await retireStaffCheckinCodesTx(tx, target.id);
+      // STAFF-CR-11: a former moderator's feed keeps no unread pointers into
+      // the office. A ticket change holding a share lock on this user row
+      // commits first, so its bell is deleted here too.
+      if (toRole === 'user') {
+        await deleteUnreadNotificationsTx(tx, target.id, STAFF_BELL_TYPES);
+      }
       await recordStaffActionTx(tx, {
         actorId: req.staff.id,
         actorRole: req.staff.role,

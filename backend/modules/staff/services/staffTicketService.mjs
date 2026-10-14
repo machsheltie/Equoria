@@ -18,8 +18,11 @@ import {
 import AppError from '../../../errors/AppError.mjs';
 import { assertActionableTarget, hasCapability } from '../capabilities.mjs';
 import { recordStaffActionTx } from './staffActionLogService.mjs';
+import { olderThan, pageOf } from './staffTicketCursor.mjs';
 
 export const LIST_LIMIT = 100;
+/** Replies per thread page (STAFF-CR-09). */
+export const REPLY_PAGE_SIZE = 50;
 const MAX_INT4 = 2147483647;
 
 /** A positive int4 written plainly (no sign, no leading zero), else null. */
@@ -41,6 +44,22 @@ function ownedBy(staff) {
     throw new Error('[staff] a ticket query needs the staff account id');
   }
   return { filedById: staff.id };
+}
+
+/**
+ * Whether the filer should still hear about their ticket (STAFF-CR-11): only
+ * while their current role can file tickets. The role is read under a share
+ * lock, after the caller's ticket write, so a demotion either committed
+ * before and is seen here, or waits for this transaction and then deletes
+ * the bell it leaves.
+ */
+async function filerStillStaff(tx, filedById) {
+  if (filedById === null) {
+    // An erased filer has no one to tell.
+    return false;
+  }
+  const [row] = await tx.$queryRaw`SELECT role FROM "User" WHERE id = ${filedById} FOR SHARE`;
+  return Boolean(row) && hasCapability(row.role, 'ticket.file');
 }
 
 /** Tickets a moderator did not file read as missing, not forbidden. */
@@ -212,32 +231,51 @@ export async function fileTicket(staff, { targetType, targetId, targetUsername, 
   return { ticket };
 }
 
-export async function listTickets(staff, status) {
-  const where = seesAll(staff) ? {} : ownedBy(staff);
+/**
+ * One page of tickets, newest first on (createdAt, id) (STAFF-CR-03). The
+ * moderator's own-tickets rule and the status filter apply to every page;
+ * `cursor` (already decoded) only says where the previous page stopped.
+ */
+export async function listTickets(staff, status, cursor = null) {
+  const filters = [seesAll(staff) ? {} : ownedBy(staff)];
   if (status) {
-    where.status = status;
+    filters.push({ status });
   }
-  const tickets = await prisma.staffTicket.findMany({
-    where,
+  if (cursor) {
+    filters.push(olderThan(cursor));
+  }
+  const rows = await prisma.staffTicket.findMany({
+    where: { AND: filters },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    take: LIST_LIMIT,
+    take: LIST_LIMIT + 1,
     include: { filedBy: { select: { id: true, username: true } } },
   });
-  return { tickets: await withTargetUsernames(tickets) };
+  const { page, next } = pageOf(rows, LIST_LIMIT);
+  return { tickets: await withTargetUsernames(page), nextCursor: next };
 }
 
-export async function getTicket(staff, id) {
+/**
+ * A ticket with one page of its replies (STAFF-CR-09): the newest
+ * REPLY_PAGE_SIZE before `before` (already decoded; null for the latest),
+ * returned oldest first for reading, with the cursor for the page before it.
+ */
+export async function getTicket(staff, id, before = null) {
   const ticket = await prisma.staffTicket.findFirst({
     where: visibleWhere(staff, id),
-    include: {
-      filedBy: { select: { id: true, username: true } },
-      replies: {
-        orderBy: { id: 'asc' },
-        include: { author: { select: { id: true, username: true } } },
-      },
-    },
+    include: { filedBy: { select: { id: true, username: true } } },
   });
-  return ticket ? { ticket: (await withTargetUsernames([ticket]))[0] } : notFound();
+  if (!ticket) {
+    return notFound();
+  }
+  const rows = await prisma.staffTicketReply.findMany({
+    where: before ? { AND: [{ ticketId: id }, olderThan(before)] } : { ticketId: id },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: REPLY_PAGE_SIZE + 1,
+    include: { author: { select: { id: true, username: true } } },
+  });
+  const { page, next } = pageOf(rows, REPLY_PAGE_SIZE);
+  const [withName] = await withTargetUsernames([ticket]);
+  return { ticket: { ...withName, replies: page.reverse() }, olderRepliesCursor: next };
 }
 
 export async function addReply(staff, id, body) {
@@ -262,13 +300,14 @@ export async function addReply(staff, id, body) {
       after: null,
     });
     // The filer's own reply tells the admins; anyone else's tells the filer,
-    // unless the filer's account was erased (filedById null): then no one.
+    // only while the filer is still a moderator (STAFF-CR-11). An erased
+    // filer (filedById null) has no one to tell.
     let recipients = [];
     if (ticket.filedById !== null && staff.id === ticket.filedById) {
       recipients = (await tx.user.findMany({ where: { role: 'admin' }, select: { id: true } })).map(
         row => row.id,
       );
-    } else if (ticket.filedById !== null) {
+    } else if (await filerStillStaff(tx, ticket.filedById)) {
       recipients = [ticket.filedById];
     }
     for (const userId of recipients) {
@@ -289,6 +328,12 @@ export async function setStatus(staff, id, status) {
     if (!ticket) {
       return notFound();
     }
+    // Owner ruling (b), 2026-10-13: any status may become any other; only
+    // the status it already has is refused, so nothing is logged or belled.
+    if (ticket.status === status) {
+      return { error: 'same_status' };
+    }
+    // Conditional on the status just read: of two racing changes, one wins.
     const changed = await tx.staffTicket.updateMany({
       where: { id, status: ticket.status },
       data: { status },
@@ -305,8 +350,8 @@ export async function setStatus(staff, id, status) {
       before: { status: ticket.status },
       after: { status },
     });
-    // An erased filer (filedById null) has no one to tell.
-    if (ticket.filedById !== null) {
+    // Read after the ticket write, so a demotion that landed meanwhile is seen.
+    if (await filerStillStaff(tx, ticket.filedById)) {
       const payload = { ticketId: id, status };
       await createNotificationTx(tx, ticket.filedById, 'staff_ticket_update', payload);
       notes.push({ userId: ticket.filedById, type: 'staff_ticket_update', payload });
