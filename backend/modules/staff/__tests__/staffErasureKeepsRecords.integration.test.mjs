@@ -20,18 +20,20 @@ import { eraseUserAccount } from '../../users/index.mjs';
 import {
   STAFF_API,
   checkIn,
+  createTargetFactory,
   createUserFactory,
   get,
   post,
   startEmailCapture,
   stopEmailCapture,
-  uid,
 } from './helpers/staffFixtures.mjs';
 
 const TICKETS = `${STAFF_API}/tickets`;
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('staffersure');
+// A ticket's post must exist (STAFF-CR-07).
+const { makePost, removeTargets } = createTargetFactory('StaffErasure');
 const ticketIds = [];
 
 const ticketBells = ticketId =>
@@ -54,6 +56,7 @@ beforeAll(() => {
   cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: scope() } }), 'checkin codes');
   cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: scope() } }), 'devices');
   cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: scope() } }), 'refresh tokens');
+  cleanup.add(() => removeTargets(), 'posts');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: scope() } }), 'users');
 });
 
@@ -72,11 +75,13 @@ describe('Erasing a former steward (Equoria-2yugk)', () => {
     const modDevice = await checkIn(mod);
     const otherDevice = await checkIn(otherMod);
 
+    const forumPost = await makePost(await makeUser('user'));
+
     // The moderator files a ticket, the admin replies, the moderator answers.
     const filed = await post(
       TICKETS,
       mod,
-      { targetType: 'post', targetId: `post-${uid()}`, category: 'Spam', note: 'Selling coins' },
+      { targetType: 'post', targetId: String(forumPost.id), category: 'Spam', note: 'Selling coins' },
       modDevice,
     );
     expect(filed.status).toBe(201);
