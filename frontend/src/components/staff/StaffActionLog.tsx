@@ -21,6 +21,7 @@ import type { StaffLogEntry } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { FORMER_STEWARD, STAFF_TIME_OPTIONS, staffErrorMessage } from './staffMessages';
+import RefreshFailedNotice from './RefreshFailedNotice';
 import StaffSection from './StaffSection';
 
 const STATUS_WORDS: Record<string, string> = {
@@ -247,6 +248,14 @@ export function StaffActionLog({
             options={ACTION_OPTIONS}
           />
         </p>
+      )}
+      {log.isRefetchError && (
+        <RefreshFailedNotice
+          what="the ledger"
+          error={log.error}
+          onRetry={() => void log.refetch()}
+          pending={log.isRefetching}
+        />
       )}
       {body}
     </StaffSection>

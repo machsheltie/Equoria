@@ -24,6 +24,7 @@ import {
   STATUS_LABELS,
   staffErrorMessage,
 } from './staffMessages';
+import RefreshFailedNotice from './RefreshFailedNotice';
 import StaffSection from './StaffSection';
 import TicketThread from './TicketThread';
 
@@ -334,6 +335,14 @@ export function StaffTickets({ canFile, canResolve, onCheckinRequired }: StaffTi
           : 'Notes from the moderators. Open one to reply or set its status.'
       }
     >
+      {tickets.isRefetchError && (
+        <RefreshFailedNotice
+          what="the tickets"
+          error={tickets.error}
+          onRetry={() => void tickets.refetch()}
+          pending={tickets.isRefetching}
+        />
+      )}
       {list}
       {canFile && <FileTicketForm />}
     </StaffSection>

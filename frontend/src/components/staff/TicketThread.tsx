@@ -26,6 +26,7 @@ import {
   STATUS_LABELS,
   staffErrorMessage,
 } from './staffMessages';
+import RefreshFailedNotice from './RefreshFailedNotice';
 
 const STATUS_OPTIONS = (Object.keys(STATUS_LABELS) as TicketStatus[]).map((value) => ({
   value,
@@ -156,6 +157,14 @@ export function TicketThread({ ticketId, canResolve, onCheckinRequired }: Ticket
   const replies = [...pages].reverse().flatMap((page) => page.ticket.replies);
   return (
     <div className="flex flex-col gap-4 border-l-2 border-[var(--border-muted)] pl-4">
+      {query.isRefetchError && (
+        <RefreshFailedNotice
+          what="this ticket"
+          error={query.error}
+          onRetry={() => void query.refetch()}
+          pending={query.isRefetching}
+        />
+      )}
       <p className="whitespace-pre-wrap text-[var(--text-primary)]">{ticket.note}</p>
 
       {query.hasNextPage && (
