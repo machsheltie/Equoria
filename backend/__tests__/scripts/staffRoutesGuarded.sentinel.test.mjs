@@ -1,11 +1,13 @@
 /**
  * Equoria-puj1e.1 / STAFF-CR-05 - doctrine: staff route files match an
- * allow-listed grammar and only two backend files may import them.
+ * allow-listed grammar, only backend/app/routers.mjs may import them, and
+ * routers.mjs / app.mjs mount the staff Router in one pinned shape.
  *
  * Planted route files live in an OS temp dir laid out as <case>/routes/<file>,
  * so the scanner resolves guard imports to <case>/middleware/... and
  * controller imports to <case>/controllers/..., exactly as the real routes do.
- * The importer check runs against an OS-temp mirror of backend/.
+ * The importer and mount checks run against an OS-temp mirror of backend/;
+ * the mount cases start from copies of the real routers.mjs and app.mjs.
  */
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
@@ -17,10 +19,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 // runs from the repo root, the targeted script from backend/.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CHECK = path.resolve(HERE, '..', '..', '..', 'scripts', 'doctrine-checks', 'check-staff-routes-guarded.mjs');
+const MOUNT_CHECK = path.resolve(HERE, '..', '..', '..', 'scripts', 'doctrine-checks', 'check-staff-routes-mount.mjs');
+const BACKEND = path.resolve(HERE, '..', '..');
 const REAL_ROUTES_FILE = path.resolve(HERE, '..', '..', 'modules', 'staff', 'routes', 'staffRoutes.mjs');
 
 let scanStaffRoutes;
 let scanRouteImporters;
+let scanStaffMount;
 let tmp;
 
 const IMPORT_EXPRESS = "import express from 'express';";
@@ -48,6 +53,7 @@ const lines = failures => failures.map(f => f.line);
 
 beforeAll(async () => {
   ({ scanStaffRoutes, scanRouteImporters } = await import(pathToFileURL(CHECK).href));
+  ({ scanStaffMount } = await import(pathToFileURL(MOUNT_CHECK).href));
   tmp = mkdtempSync(path.join(tmpdir(), 'equoria-staff-guard-'));
 });
 
@@ -365,20 +371,20 @@ describe('check-staff-routes-guarded: files', () => {
   });
 });
 
-describe('check-staff-routes-guarded: importers of staff routes', () => {
-  const mirror = files => {
-    const root = path.join(mkdtempSync(path.join(tmp, 'mirror-')), 'backend');
-    for (const [rel, body] of Object.entries(files)) {
-      mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
-      writeFileSync(path.join(root, rel), body);
-    }
-    return root;
-  };
+// Builds <tmp>/mirror-*/backend with the given relative files.
+const mirror = files => {
+  const root = path.join(mkdtempSync(path.join(tmp, 'mirror-')), 'backend');
+  for (const [rel, body] of Object.entries(files)) {
+    mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    writeFileSync(path.join(root, rel), body);
+  }
+  return root;
+};
 
-  test('only app/routers.mjs and modules/staff/index.mjs may import staff routes', () => {
+describe('check-staff-routes-guarded: importers of staff routes', () => {
+  test('only app/routers.mjs may import staff routes', () => {
     const root = mirror({
       'modules/staff/routes/staffRoutes.mjs': 'export default 1;\n',
-      'modules/staff/index.mjs': "export { default as staffRoutes } from './routes/staffRoutes.mjs';\n",
       'app/routers.mjs': "import r from '../modules/staff/routes/staffRoutes.mjs';\n",
       'modules/other/evil.mjs': "// sneaks a route on\nimport r from '../staff/routes/staffRoutes.mjs';\n",
       'modules/other/lazy.mjs': 'const m = await import(`../staff/routes/staffRoutes.mjs`);\n',
@@ -388,7 +394,88 @@ describe('check-staff-routes-guarded: importers of staff routes', () => {
     expect(failures.map(f => `${path.basename(f.file)}:${f.line}`).sort()).toEqual(['evil.mjs:2', 'lazy.mjs:1']);
   });
 
+  test('import through the barrel: the staff barrel may not re-export the Router', () => {
+    const root = mirror({
+      'modules/staff/routes/staffRoutes.mjs': 'export default 1;\n',
+      'modules/staff/index.mjs':
+        "export * from './capabilities.mjs';\nexport { default as staffRoutes } from './routes/staffRoutes.mjs';\n",
+      'modules/other/consumer.mjs': "import { staffRoutes } from '../staff/index.mjs';\nstaffRoutes.post('/x', h);\n",
+    });
+    const failures = scanRouteImporters(root);
+    expect(failures.map(f => `${path.basename(f.file)}:${f.line}`)).toEqual(['index.mjs:2']);
+  });
+
   test('the real backend has no other importer', () => {
     expect(scanRouteImporters()).toEqual([]);
+  });
+});
+
+describe('check-staff-routes-mount: the staff Router is mounted once, in the pinned shape', () => {
+  const REAL_ROUTERS = readFileSync(path.join(BACKEND, 'app', 'routers.mjs'), 'utf8');
+  const REAL_APP = readFileSync(path.join(BACKEND, 'app.mjs'), 'utf8');
+  const MOUNT = "  staffRouter.use('/', staffRoutes);\n";
+  const APP_MOUNT = "app.use('/api/v1/staff', staffRouter);\n";
+
+  /** Replace `from` with `to` (which must be present) and return [text, line of the edit]. */
+  const edit = (text, from, to) => {
+    const at = text.indexOf(from);
+    expect(at).toBeGreaterThanOrEqual(0);
+    return [text.replace(from, to), text.slice(0, at).split('\n').length];
+  };
+  const scanWith = ({ routers = REAL_ROUTERS, app = REAL_APP }) =>
+    scanStaffMount(mirror({ 'app/routers.mjs': routers, 'app.mjs': app }));
+  const where = failures => failures.map(f => `${path.basename(f.file)}:${f.line}`);
+
+  test('the real routers.mjs and app.mjs pass, in place and mirrored', () => {
+    expect(scanStaffMount()).toEqual([]);
+    expect(scanWith({})).toEqual([]);
+  });
+
+  test.each([
+    ['an extra route on staffRoutes', `${MOUNT}  staffRoutes.post('/x', h);\n`],
+    ['an extra route on staffRouter', `${MOUNT}  staffRouter.post('/x', h);\n`],
+    ['staffRoutes leaked to another binding', `${MOUNT}  globalThis.leak = staffRoutes;\n`],
+    ['a /staff route on another router', `${MOUNT}  authRouter.post('/staff/x', h);\n`],
+  ])('routers.mjs: %s fails on the added line', (_name, to) => {
+    const [routers, line] = edit(REAL_ROUTERS, MOUNT, to);
+    expect(where(scanWith({ routers }))).toContain(`routers.mjs:${line + 1}`);
+  });
+
+  test.each([
+    ['csrfProtection dropped', '  staffRouter.use(csrfProtection);\n', ''],
+    [
+      'auth and CSRF swapped',
+      '  staffRouter.use(authenticateToken);\n  staffRouter.use(csrfProtection);\n',
+      '  staffRouter.use(csrfProtection);\n  staffRouter.use(authenticateToken);\n',
+    ],
+    [
+      'options passed to the staff Router',
+      '  const staffRouter = express.Router();\n',
+      '  const staffRouter = express.Router({ caseSensitive: false });\n',
+    ],
+    [
+      'staffRoutes imported through the barrel',
+      "import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';",
+      "import { staffRoutes } from '../modules/staff/index.mjs';",
+    ],
+  ])('routers.mjs: %s fails', (_name, from, to) => {
+    const [routers] = edit(REAL_ROUTERS, from, to);
+    const failures = scanWith({ routers });
+    expect(failures.length).toBeGreaterThan(0);
+    expect(failures.every(f => path.basename(f.file) === 'routers.mjs')).toBe(true);
+  });
+
+  test.each([
+    ['a second staff mount', `${APP_MOUNT}app.use('/api/v1/staff', staffRouter);\n`],
+    ['an app-level route under /api/v1/staff', `${APP_MOUNT}app.post('/api/v1/staff/x', h);\n`],
+    ['staffRouter mounted somewhere else too', `${APP_MOUNT}app.use('/api/v1/other', staffRouter);\n`],
+  ])('app.mjs: %s fails on the added line', (_name, to) => {
+    const [app, line] = edit(REAL_APP, APP_MOUNT, to);
+    expect(where(scanWith({ app }))).toContain(`app.mjs:${line + 1}`);
+  });
+
+  test('app.mjs: mounting at another path fails', () => {
+    const [app] = edit(REAL_APP, APP_MOUNT, "app.use('/api/v1/stewards', staffRouter);\n");
+    expect(where(scanWith({ app })).some(w => w.startsWith('app.mjs:'))).toBe(true);
   });
 });

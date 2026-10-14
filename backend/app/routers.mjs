@@ -97,7 +97,9 @@ import { forumRoutes, messageRoutes, clubRoutes } from '../modules/community/ind
 import { marketplaceRoutes } from '../modules/marketplace/index.mjs';
 import { bankRoutes } from '../modules/bank/index.mjs';
 import { craftingRoutes } from '../modules/crafting/index.mjs';
-import { staffRoutes } from '../modules/staff/index.mjs';
+// Imported directly, never through the staff barrel: this file is the only
+// allowed importer of the staff Router (STAFF-CR-05, check-staff-routes-mount).
+import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
 
 /**
  * Build the three security routers with all routes mounted. Returns them for

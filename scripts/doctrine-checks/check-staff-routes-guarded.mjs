@@ -25,9 +25,10 @@
 //    chained members, calls, inline functions, spreads, parse errors - fails.
 //
 // 2. No file under backend/ (tests and node_modules aside) may reference a file
-//    in staff/routes/ except backend/app/routers.mjs and
-//    backend/modules/staff/index.mjs, so nothing else can reach the mounted
-//    Router and register on it.
+//    in staff/routes/ except backend/app/routers.mjs, so nothing else can reach
+//    the mounted Router and register on it. (The staff barrel does not export
+//    it.) How routers.mjs and app.mjs mount it is pinned by
+//    check-staff-routes-mount.mjs.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,10 +40,7 @@ const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
 const STAFF_ROUTES_REL = path.join('modules', 'staff', 'routes');
 const STAFF_ROUTES_DIR = path.join(BACKEND_DIR, STAFF_ROUTES_REL);
-const ALLOWED_IMPORTERS_REL = [
-  path.join('app', 'routers.mjs'),
-  path.join('modules', 'staff', 'index.mjs'),
-];
+const ALLOWED_IMPORTERS_REL = [path.join('app', 'routers.mjs')];
 
 const GUARD_NAMES = new Set([
   'requireStaffCapability',
@@ -323,7 +321,7 @@ function walk(node, visit) {
 }
 
 /**
- * No backend source outside the two allowed importers may name a file in the
+ * No backend source except app/routers.mjs may name a file in the
  * staff routes directory. Any relative string (import, export-from, dynamic
  * import, require, createRequire, new URL, ...) that resolves into that
  * directory counts. Tests and node_modules are skipped.
@@ -365,7 +363,7 @@ export function scanRouteImporters(backendRoot = BACKEND_DIR) {
         failures.push({
           file,
           line: node.loc.start.line,
-          reason: `references staff routes ('${value}'); only app/routers.mjs and modules/staff/index.mjs may`,
+          reason: `references staff routes ('${value}'); only app/routers.mjs may`,
         });
       }
     });
@@ -394,7 +392,7 @@ function main() {
     console.error(
       '\nStaff route files must match the allow-list grammar at the top of ' +
         'scripts/doctrine-checks/check-staff-routes-guarded.mjs, and only ' +
-        'backend/app/routers.mjs and backend/modules/staff/index.mjs may import them.'
+        'backend/app/routers.mjs may import them.'
     );
     process.exit(1);
   }
