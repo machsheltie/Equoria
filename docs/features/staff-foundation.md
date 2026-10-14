@@ -112,8 +112,17 @@ with the filer or author shown as a former steward.
   slip a staff account through. A post (forum post), horse or show must exist
   when the ticket is filed; a malformed, unknown, deleted or wrong-kind ID
   gets one "not found" answer that does not say which.
-- Filing alerts the admin by in-game notification and email; a reply or
-  resolution alerts the filing moderator in game, but only while they are
+- Filing alerts the admin by in-game notification and email. The email is
+  queued in an outbox row written in the filing transaction (STAFF-CR-10),
+  sent right after commit without holding up the answer, and otherwise sent
+  by a job every 5 minutes, so a restart or a mail outage never loses it. A
+  failed send is retried after 1, 5, 15 and 60 minutes; the fifth failure
+  marks the row `failed`, logs an error and counts in the job's summary on
+  the cron-health page. An email whose admin has lost the role or a verified
+  address by then is cancelled. A crash after the mail service accepted a
+  message but before the row is marked sent can send it twice; nothing else
+  can.
+- A reply or resolution alerts the filing moderator in game, but only while they are
   still a moderator. Demotion deletes the account's unread staff-ticket
   notifications.
 - The player-conduct project adds player appeals as a ticket type.

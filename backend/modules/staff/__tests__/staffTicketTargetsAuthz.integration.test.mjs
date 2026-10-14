@@ -20,6 +20,7 @@ import {
   startEmailCapture,
   stopEmailCapture,
   uid,
+  removeTicketEmails,
 } from './helpers/staffFixtures.mjs';
 
 const TICKETS = '/api/v1/staff/tickets';
@@ -49,6 +50,7 @@ let owner;
 
 beforeAll(async () => {
   const scope = () => ({ in: createdUserIds });
+  cleanup.add(() => removeTicketEmails({ filedById: scope() }), 'ticket emails');
   cleanup.add(() => prisma.staffTicket.deleteMany({ where: { filedById: scope() } }), 'tickets');
   cleanup.add(() => prisma.notification.deleteMany({ where: { userId: scope() } }), 'notifications');
   cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: scope() } }), 'action log');

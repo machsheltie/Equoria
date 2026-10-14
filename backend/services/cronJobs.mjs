@@ -21,6 +21,7 @@ import * as groomCareerProgressionImpl from './jobs/impl/groomCareerProgression.
 // + run thunk) live in backend/services/jobs/. start() iterates this registry
 // instead of carrying ten inline cron.schedule(...) blocks.
 import { CRON_JOB_REGISTRY } from './jobs/index.mjs';
+import { runEmailOutbox } from '../modules/staff/index.mjs';
 // Equoria-urqic.3.5: the run-observability concern (heartbeat liveness,
 // CronRunLog persistence, the /api/admin/cron/health surface, and the
 // stale-alert debounce) is now a dedicated collaborator that this scheduler
@@ -348,6 +349,17 @@ class CronJobService {
    */
   async purgeStaleStaffCheckins() {
     return retentionMaintenanceImpl.purgeStaleStaffCheckins();
+  }
+
+  /**
+   * Email-outbox delivery (STAFF-CR-10): sends due staff-ticket emails,
+   * retries failures with backoff, ends a row as failed after its last try.
+   * `opts` ({ now, keys }) exists for tests; the schedule passes none.
+   * @returns {Promise<{ claimed: number, sent: number, retrying: number,
+   *                      failed: number, cancelled: number }>}
+   */
+  async deliverEmailOutbox(opts) {
+    return runEmailOutbox(opts);
   }
 
   /**

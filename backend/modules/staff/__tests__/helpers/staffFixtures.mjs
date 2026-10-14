@@ -154,6 +154,55 @@ export function capturedFor(email) {
     .filter(entry => entry.kind === 'staff-checkin' && entry.to === email);
 }
 
+/** Staff-ticket alerts the email service captured for this address. */
+export function capturedTicketEmailsFor(email) {
+  if (!captureFile || !existsSync(captureFile)) {
+    return [];
+  }
+  return readFileSync(captureFile, 'utf-8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map(line => JSON.parse(line))
+    .filter(entry => entry.kind === 'staff-ticket' && entry.to === email);
+}
+
+/**
+ * A ticket's email-outbox rows once the post-commit delivery has finished
+ * (STAFF-CR-10): none still waiting for its first attempt or mid-send.
+ */
+export async function settledTicketEmails(ticketId, timeoutMs = 15_000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const rows = await prisma.emailOutbox.findMany({
+      where: { idempotencyKey: { startsWith: `staff_ticket:${ticketId}:` } },
+      orderBy: { id: 'asc' },
+    });
+    const inFlight = rows.some(
+      row => row.status === 'sending' || (row.status === 'pending' && row.attempts === 0),
+    );
+    if (!inFlight) {
+      return rows;
+    }
+    if (Date.now() > deadline) {
+      throw new Error(`ticket ${ticketId} email still in flight after ${timeoutMs} ms`);
+    }
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+}
+
+/**
+ * Test teardown: the outbox rows of the tickets matching `ticketWhere`,
+ * whoever they were addressed to (an admin left by another suite included).
+ * Run it before those tickets are deleted.
+ */
+export async function removeTicketEmails(ticketWhere) {
+  const tickets = await prisma.staffTicket.findMany({ where: ticketWhere, select: { id: true } });
+  await prisma.emailOutbox.deleteMany({
+    where: { OR: tickets.map(t => ({ idempotencyKey: { startsWith: `staff_ticket:${t.id}:` } })) },
+  });
+}
+
 export function latestCode(email) {
   const entry = capturedFor(email).at(-1);
   if (!entry) {

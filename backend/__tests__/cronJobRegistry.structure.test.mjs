@@ -63,6 +63,13 @@ const EXPECTED_JOBS = [
   // STAFF-CR-18: nightly staff check-in code/device retention, appended last
   // (reorders nothing). 03:50 Eastern, a free minute.
   { jobName: 'staffCheckinRetention', schedule: '50 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
+  // STAFF-CR-10: email-outbox delivery every 5 minutes on minutes no other job
+  // uses, appended last (reorders nothing). Staleness is three periods.
+  {
+    jobName: 'emailOutboxDelivery',
+    schedule: '1,6,11,16,21,26,31,36,41,46,51,56 * * * *',
+    staleAfterMs: 15 * 60 * 1000,
+  },
 ];
 
 afterEach(() => {
@@ -123,6 +130,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       showExecutionReaper: 'reapStaleExecutingShows',
       groomCareerProgression: 'runGroomCareerProgression',
       staffCheckinRetention: 'purgeStaleStaffCheckins',
+      emailOutboxDelivery: 'deliverEmailOutbox',
     };
 
     for (const job of CRON_JOB_REGISTRY) {

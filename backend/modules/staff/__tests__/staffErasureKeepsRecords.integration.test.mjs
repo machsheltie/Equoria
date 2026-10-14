@@ -26,6 +26,7 @@ import {
   post,
   startEmailCapture,
   stopEmailCapture,
+  removeTicketEmails,
 } from './helpers/staffFixtures.mjs';
 
 const TICKETS = `${STAFF_API}/tickets`;
@@ -44,6 +45,7 @@ const ticketBells = ticketId =>
 beforeAll(() => {
   const scope = () => ({ in: createdUserIds });
   // An erased filer leaves filedById null, so tickets are also scoped by id.
+  cleanup.add(() => removeTicketEmails({ OR: [{ id: { in: ticketIds } }, { filedById: scope() }] }), 'ticket emails');
   cleanup.add(
     () =>
       prisma.staffTicket.deleteMany({

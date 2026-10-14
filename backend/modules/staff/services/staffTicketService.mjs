@@ -3,14 +3,14 @@
  *
  * Moderators file tickets for the admin. Every write is one transaction that
  * also creates the in-game notifications and the staff action-log entry.
- * Bells are finalized and emails sent only after commit; an email failure is
- * logged and never thrown, so the ticket and its bell always stand. Emails are
- * not awaited: a slow or hung mail server never delays the filing response.
+ * Filing also queues each admin's email in that transaction (STAFF-CR-10,
+ * ticketEmailOutbox.mjs); after commit the bells are finalized and a delivery
+ * is kicked without being awaited, so a slow or dead mail server never delays
+ * the response or costs the ticket, and a lost delivery is retried by the
+ * scheduled outbox job.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import logger from '../../../utils/logger.mjs';
-import { sendStaffTicketEmail } from '../../../utils/emailService.mjs';
 import {
   createNotificationTx,
   finalizeNotificationAfterCommit,
@@ -19,6 +19,7 @@ import AppError from '../../../errors/AppError.mjs';
 import { assertActionableTarget, hasCapability } from '../capabilities.mjs';
 import { recordStaffActionTx } from './staffActionLogService.mjs';
 import { olderThan, pageOf } from './staffTicketCursor.mjs';
+import { enqueueTicketEmailsTx, kickTicketEmails } from './ticketEmailOutbox.mjs';
 
 export const LIST_LIMIT = 100;
 /** Replies per thread page (STAFF-CR-09). */
@@ -71,26 +72,6 @@ function finalizeAll(notes) {
   for (const { userId, type, payload } of notes) {
     finalizeNotificationAfterCommit(userId, type, payload);
   }
-}
-
-/** One admin email, own try/catch: failure is logged and swallowed. */
-async function emailAdmin(admin, details) {
-  try {
-    await sendStaffTicketEmail(admin.email, details);
-    return { to: admin.email, sent: true };
-  } catch (error) {
-    logger.error(`[staff] ticket email failed for ticket ${details.ticketId}: ${error.message}`);
-    return { to: admin.email, sent: false, error: error.message };
-  }
-}
-
-// The most recent filing's email batch. One reference, overwritten per filing,
-// so nothing accumulates; tests await it to see real delivery outcomes.
-let lastTicketEmails = Promise.resolve([]);
-
-/** Test-only: the per-admin outcomes of the most recent filing's emails. */
-export function _lastTicketEmails() {
-  return lastTicketEmails;
 }
 
 const NO_PLAYER = { error: 'no_player' };
@@ -199,6 +180,16 @@ export async function fileTicket(staff, { targetType, targetId, targetUsername, 
       where: { role: 'admin' },
       select: { id: true, email: true, emailVerified: true },
     });
+    const details = {
+      ticketId: created.id,
+      category,
+      filedBy: filerRow?.username ?? 'A moderator',
+    };
+    const emailKeys = await enqueueTicketEmailsTx(
+      tx,
+      adminRows.filter(admin => admin.emailVerified === true && admin.email),
+      details,
+    );
     for (const admin of adminRows) {
       const payload = { ticketId: created.id, category };
       await createNotificationTx(tx, admin.id, 'staff_ticket', payload);
@@ -212,22 +203,16 @@ export async function fileTicket(staff, { targetType, targetId, targetUsername, 
       targetId: String(created.id),
       reason: category,
     });
-    return { ticket: created, admins: adminRows, filer: filerRow };
+    return { ticket: created, emailKeys };
   });
   if (outcome.error) {
     return outcome;
   }
-  const { ticket, admins, filer } = outcome;
+  const { ticket, emailKeys } = outcome;
 
   finalizeAll(notes);
-  const details = { ticketId: ticket.id, category, filedBy: filer?.username ?? 'A moderator' };
-  const batch = Promise.allSettled(
-    admins
-      .filter(admin => admin.emailVerified === true && admin.email)
-      .map(admin => emailAdmin(admin, details)),
-  ).then(results => results.map(result => result.value));
-  // Deliberately not awaited; emailAdmin never rejects, so nothing goes unhandled.
-  lastTicketEmails = batch;
+  // Not awaited; whatever the kick cannot deliver waits in the outbox.
+  kickTicketEmails(emailKeys);
   return { ticket };
 }
 

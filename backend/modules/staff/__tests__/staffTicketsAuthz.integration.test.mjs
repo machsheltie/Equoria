@@ -5,8 +5,9 @@
  * Covers who may file, read, reply and change status; that a moderator sees
  * only their own tickets (another's reads as 404); that filing writes the
  * ticket, the admin bell and the log entry together; the admin email through
- * the real email service (EMAIL_CAPTURE_FILE sink); that a real SMTP
- * failure never costs the ticket or the bell; and that a mail server that
+ * the real email service (EMAIL_CAPTURE_FILE sink), delivered from the email
+ * outbox (STAFF-CR-10); that a real SMTP failure never costs the ticket or the
+ * bell and leaves the email queued for a retry; and that a mail server that
  * accepts but never answers does not hold up the 201.
  */
 
@@ -19,7 +20,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { _resetTransporter } from '../../../utils/emailService.mjs';
-import { _lastTicketEmails, addReply } from '../services/staffTicketService.mjs';
+import { addReply } from '../services/staffTicketService.mjs';
 import {
   ORIGIN,
   checkIn,
@@ -28,6 +29,8 @@ import {
   createUserFactory,
   get,
   post,
+  removeTicketEmails,
+  settledTicketEmails,
   startEmailCapture,
   stopEmailCapture,
   uid,
@@ -85,10 +88,11 @@ const SMTP_KEYS = ['NODE_ENV', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS
 
 /**
  * File one ticket through the real email service in production mode, with
- * SMTP pointed at 127.0.0.1:<port>. The env is restored once the response is
- * in: the transport is built synchronously while the request is handled.
+ * SMTP pointed at 127.0.0.1:<port>. The outbox delivery runs after the
+ * response (STAFF-CR-10), so `whileProduction(res, elapsedMs)` runs before the
+ * env is restored; it must wait for that delivery to finish.
  */
-async function fileWithSmtpPort(mod, modDevice, port) {
+async function fileWithSmtpPort(mod, modDevice, port, whileProduction) {
   const csrf = await fetchCsrf(app, {
     origin: ORIGIN,
     extraCookies: cookiesFor(mod, modDevice),
@@ -103,12 +107,15 @@ async function fileWithSmtpPort(mod, modDevice, port) {
   });
   _resetTransporter();
   try {
-    return await request(app)
+    const started = Date.now();
+    const res = await request(app)
       .post(TICKETS)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
       .send(goodTicket());
+    await whileProduction(res, Date.now() - started);
+    return res;
   } finally {
     for (const key of SMTP_KEYS) {
       if (saved[key] === undefined) {
@@ -143,6 +150,7 @@ afterAll(async () => {
 beforeAll(() => {
   const scope = () => ({ in: createdUserIds });
   // Test teardown of rows this suite created; replies cascade from tickets.
+  cleanup.add(() => removeTicketEmails({ filedById: scope() }), 'ticket emails');
   cleanup.add(() => prisma.staffTicket.deleteMany({ where: { filedById: scope() } }), 'tickets');
   cleanup.add(() => prisma.notification.deleteMany({ where: { userId: scope() } }), 'notifications');
   cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: scope() } }), 'action log');
@@ -196,6 +204,10 @@ describe('Filing a ticket', () => {
       outcome: 'succeeded',
     });
 
+    // The email is queued with the ticket and delivered from the outbox.
+    const queued = (await settledTicketEmails(ticket.id)).filter(row => row.recipientId === admin.id);
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({ templateKey: 'staff_ticket', status: 'sent', attempts: 1 });
     const emails = ticketEmailsFor(admin.email);
     expect(emails).toHaveLength(1);
     expect(emails[0].subject).toBe('A steward has filed a ticket');
@@ -210,46 +222,61 @@ describe('Filing a ticket', () => {
 
     // Real email service, real nodemailer transport, real refused connection:
     // production mode with an SMTP port that nothing listens on.
-    const res = await fileWithSmtpPort(mod, modDevice, 1);
+    let row = null;
+    const res = await fileWithSmtpPort(mod, modDevice, 1, async filed => {
+      const rows = await settledTicketEmails(filed.body.ticket.id);
+      row = rows.find(entry => entry.recipientId === admin.id);
+    });
 
     expect(res.status).toBe(201);
     expect(await prisma.staffTicket.count({ where: { id: res.body.ticket.id } })).toBe(1);
     expect(await bells(admin.id, 'staff_ticket')).toHaveLength(1);
-    // The delivery was really attempted and really failed, and was swallowed.
-    const outcome = (await _lastTicketEmails()).find(entry => entry.to === admin.email);
-    expect(outcome).toMatchObject({ sent: false });
-    expect(outcome.error).toMatch(/ECONNREFUSED/);
+    // The delivery was really attempted and really failed; the email waits in
+    // the outbox for the worker's retry.
+    expect(row).toMatchObject({ status: 'pending', attempts: 1, sentAt: null });
+    expect(row.lastError).toMatch(/ECONNREFUSED/);
+    expect(row.nextAttemptAt.getTime()).toBeGreaterThan(Date.now());
   });
 
   it('answers 201 while the admin email is still stuck on a silent mail server', async () => {
     const { admin, mod, modDevice } = await fixtureStaff();
 
-    const started = Date.now();
-    const res = await fileWithSmtpPort(mod, modDevice, silentSmtp.address().port);
-    const elapsed = Date.now() - started;
+    let elapsed = null;
+    let reached = 0;
+    let sending = null;
+    let row = null;
+    const res = await fileWithSmtpPort(mod, modDevice, silentSmtp.address().port, async (filed, ms) => {
+      elapsed = ms;
+      // The send really reached the mail server and is waiting on it.
+      for (let tries = 0; silentSockets.size === 0 && tries < 50; tries += 1) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      reached = silentSockets.size;
+      sending = await prisma.emailOutbox.count({
+        where: { idempotencyKey: { startsWith: `staff_ticket:${filed.body.ticket.id}:` }, status: 'sending' },
+      });
+      // Hang up on every waiting send until each gives up, so nothing outlives the test.
+      for (let tries = 0; row === null && tries < 400; tries += 1) {
+        for (const socket of silentSockets) {
+          socket.destroy();
+        }
+        try {
+          row = (await settledTicketEmails(filed.body.ticket.id, 25)).find(r => r.recipientId === admin.id);
+        } catch {
+          // still in flight
+        }
+      }
+    });
 
     expect(res.status).toBe(201);
     expect(await prisma.staffTicket.count({ where: { id: res.body.ticket.id } })).toBe(1);
     expect(await bells(admin.id, 'staff_ticket')).toHaveLength(1);
     // nodemailer waits 30s for a greeting; the response did not.
     expect(elapsed).toBeLessThan(10_000);
-
-    const batch = _lastTicketEmails();
-    const marker = Symbol('pending');
-    const raced = await Promise.race([batch, new Promise(resolve => setTimeout(() => resolve(marker), 200))]);
-    expect(raced).toBe(marker);
-    // The send really reached the mail server and is waiting on it.
-    for (let tries = 0; silentSockets.size === 0 && tries < 50; tries += 1) {
-      await new Promise(resolve => setTimeout(resolve, 20));
-    }
-    expect(silentSockets.size).toBeGreaterThan(0);
-
-    // Hang up on every waiting send so nothing outlives the test.
-    for (const socket of silentSockets) {
-      socket.destroy();
-    }
-    const outcome = (await batch).find(entry => entry.to === admin.email);
-    expect(outcome).toMatchObject({ sent: false });
+    // The delivery was still on the wire after the 201, then waited for a retry.
+    expect(reached).toBeGreaterThan(0);
+    expect(sending).toBe(1);
+    expect(row).toMatchObject({ status: 'pending', attempts: 1, sentAt: null });
   });
 
   it('refuses an admin (no ticket.file), a player, and a moderator without a trusted browser', async () => {
@@ -354,7 +381,8 @@ describe('Replies', () => {
     expect(adminUpdates).toHaveLength(1);
     expect(adminUpdates[0].payload).toEqual({ ticketId: ticket.id });
     expect(await bells(mod.id, 'staff_ticket_update')).toHaveLength(1);
-    // Only filing emails the admin.
+    // Only filing emails the admin (delivered from the outbox after the 201).
+    await settledTicketEmails(ticket.id);
     expect(ticketEmailsFor(admin.email)).toHaveLength(1);
 
     const thread = await get(`${TICKETS}/${ticket.id}`, mod, modDevice);
