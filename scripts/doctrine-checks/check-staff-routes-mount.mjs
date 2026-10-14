@@ -19,6 +19,20 @@
 // backend/app.mjs must take staffRouter from buildRouters() (./app/routers.mjs)
 // and reference it exactly once, in `app.use('/api/v1/staff', staffRouter)`.
 //
+// Order (app.mjs): before the staff mount, any app.use / app.<verb> whose path
+// covers /api/v1/staff ('/', '/api', '/api/v1', any pattern path such as '*'
+// or '/:x', or no path) must be middleware, never something that can serve a
+// request: a verb handler fails,
+// and every argument of a covering use() must be an identifier or call bound
+// to an import from backend/{middleware,config,services,utils}/ or from cors,
+// helmet or cookie-parser, express.json/urlencoded/raw/text, or a local const
+// built from one; a name matching /route|router/i never counts as middleware.
+// Anything unclassifiable fails closed. The single exception is
+// `app.use('/', publicRouter)`, allowed because routers.mjs pins every
+// publicRouter registration to a static path that does not cover
+// /api/v1/staff. Before the staff mount `app` may only be passed to
+// setupSwaggerDocs (middleware/swaggerSetup.mjs, which registers /api-docs).
+//
 // In both files, no other route-method or use() call may name a path under
 // /api/v1/staff (app.mjs) or /staff (routers.mjs, where the auth router is
 // mounted at /api/v1), compared case-insensitively as Express does. String
@@ -28,110 +42,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as espree from 'espree';
-
-const parse = (src) =>
-  espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', loc: true });
+import {
+  STAFF_MOUNT,
+  ROUTE_CALL_METHODS,
+  isStringLiteral,
+  samePath,
+  load,
+  references,
+  importedLocal,
+  isUseStatement,
+  staticPath,
+  opaquePath,
+} from './staff-routes-ast.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
-
-const STAFF_MOUNT = '/api/v1/staff';
-const ROUTE_CALL_METHODS = new Set([
-  'get',
-  'post',
-  'put',
-  'patch',
-  'delete',
-  'all',
-  'head',
-  'options',
-  'use',
-  'route',
-  'search',
-  'purge',
-  'copy',
-  'propfind',
-  'trace',
-  'lock',
-  'unlock',
-  'mkcol',
-  'move',
-]);
-
-const isStringLiteral = (n) => n?.type === 'Literal' && typeof n.value === 'string';
-const samePath = (a, b) => path.relative(a, b) === '';
-
-/** Parse a file and index every node's parent. */
-function load(file) {
-  const ast = parse(fs.readFileSync(file, 'utf8'));
-  const parents = new Map();
-  const nodes = [];
-  const walk = (node, parent) => {
-    parents.set(node, parent);
-    nodes.push(node);
-    for (const key of espree.VisitorKeys[node.type] ?? []) {
-      const child = node[key];
-      if (Array.isArray(child)) child.forEach((c) => c && walk(c, node));
-      else if (child && typeof child.type === 'string') walk(child, node);
-    }
-  };
-  walk(ast, null);
-  return { ast, parents, nodes };
-}
-
-/** Identifier nodes that READ the binding `name` (not keys, members or import/declaration sites). */
-function references({ nodes, parents }, name, bindingIds) {
-  return nodes.filter((n) => {
-    if (n.type !== 'Identifier' || n.name !== name || bindingIds.has(n)) return false;
-    const p = parents.get(n);
-    if (p.type === 'MemberExpression' && p.property === n && !p.computed) return false;
-    if (p.type === 'Property' && p.key === n && p.value !== n && !p.computed) return false;
-    if (/^Import(?:Default|Namespace)?Specifier$/.test(p.type)) return false;
-    if (p.type === 'ExportSpecifier' && p.exported === n && p.local !== n) return false;
-    return true;
-  });
-}
-
-/** Named or default import binding of `imported` from `target` (resolved), or null. */
-function importedLocal(ast, file, target, imported) {
-  for (const stmt of ast.body) {
-    if (stmt.type !== 'ImportDeclaration' || !String(stmt.source.value).startsWith('.')) continue;
-    if (!samePath(path.resolve(path.dirname(file), String(stmt.source.value)), target)) continue;
-    for (const s of stmt.specifiers) {
-      const name = s.type === 'ImportDefaultSpecifier' ? 'default' : s.imported?.name;
-      if (name === imported) return s.local;
-    }
-  }
-  return null;
-}
-
-/** `<obj>.use(args...)` as its own statement, with args matching `match`. */
-const isUseStatement = (stmt, obj, match) =>
-  stmt?.type === 'ExpressionStatement' &&
-  stmt.expression.type === 'CallExpression' &&
-  !stmt.expression.optional &&
-  stmt.expression.callee.type === 'MemberExpression' &&
-  !stmt.expression.callee.computed &&
-  stmt.expression.callee.object.type === 'Identifier' &&
-  stmt.expression.callee.object.name === obj &&
-  stmt.expression.callee.property.name === 'use' &&
-  match(stmt.expression.arguments);
-
-/** Static string value of a path argument (string or expression-free template), else null. */
-const staticPath = (n) =>
-  isStringLiteral(n)
-    ? n.value
-    : n?.type === 'TemplateLiteral' && n.expressions.length === 0
-      ? n.quasis[0].value.cooked
-      : null;
-
-/** A path argument the check cannot judge: array, regex or template with expressions. */
-const opaquePath = (n) =>
-  n?.type === 'ArrayExpression' ||
-  (n?.type === 'Literal' && n.regex !== undefined) ||
-  (n?.type === 'TemplateLiteral' && n.expressions.length > 0);
 
 /**
  * Route-method / use() calls whose first argument names a path under any of
@@ -148,6 +74,181 @@ function pathCallsUnder({ nodes }, prefixes) {
     const value = staticPath(first)?.toLowerCase();
     return value != null && lower.some((p) => value === p || value.startsWith(`${p}/`));
   });
+}
+
+/** Does a mount path cover /api/v1/staff? `null` means no path (covers everything). */
+const coversStaff = (p) => {
+  if (p === null) return true;
+  const v = p.toLowerCase().replace(/\/+$/, '');
+  // A pattern path (wildcard, parameter, optional, group) may match the staff
+  // mount; it cannot be judged, so it counts as covering.
+  if (/[*:()?+[\]]/.test(v)) return true;
+  return v === '' || STAFF_MOUNT === v || STAFF_MOUNT.startsWith(`${v}/`);
+};
+const isUnderStaff = (p) => {
+  const v = p.toLowerCase().replace(/\/+$/, '');
+  return v === STAFF_MOUNT || v.startsWith(`${STAFF_MOUNT}/`);
+};
+const nodeBefore = (a, b) =>
+  a.loc.start.line < b.loc.start.line ||
+  (a.loc.start.line === b.loc.start.line && a.loc.start.column < b.loc.start.column);
+
+const MIDDLEWARE_DIRS = ['middleware', 'config', 'services', 'utils'];
+const MIDDLEWARE_PACKAGES = new Set(['cors', 'helmet', 'cookie-parser']);
+const EXPRESS_MIDDLEWARE = new Set(['json', 'urlencoded', 'raw', 'text']);
+const ROUTERISH = /route|router/i;
+
+/** Is `name` bound to middleware: a middleware-module import, or a const built from one? */
+function isMiddlewareName(idx, file, backendRoot, name, depth = 0) {
+  if (ROUTERISH.test(name) || depth > 3) return false;
+  for (const stmt of idx.ast.body) {
+    if (stmt.type !== 'ImportDeclaration') continue;
+    if (!stmt.specifiers.some((sp) => sp.local.name === name)) continue;
+    const src = String(stmt.source.value);
+    if (MIDDLEWARE_PACKAGES.has(src)) return true;
+    if (!src.startsWith('.')) return false;
+    const rel = path.relative(backendRoot, path.resolve(path.dirname(file), src));
+    return MIDDLEWARE_DIRS.includes(rel.split(path.sep)[0]);
+  }
+  const decl = idx.ast.body
+    .filter((st) => st.type === 'VariableDeclaration' && st.kind === 'const')
+    .flatMap((st) => st.declarations)
+    .find((d) => d.id.type === 'Identifier' && d.id.name === name);
+  return Boolean(decl?.init) && isMiddlewareArg(idx, file, backendRoot, decl.init, depth + 1);
+}
+
+/** Is a use() argument middleware (see the header), as opposed to a router or handler? */
+function isMiddlewareArg(idx, file, backendRoot, arg, depth = 0) {
+  if (arg.type === 'Identifier') return isMiddlewareName(idx, file, backendRoot, arg.name, depth);
+  if (arg.type !== 'CallExpression' || arg.optional) return false;
+  const c = arg.callee;
+  if (c.type === 'Identifier') return isMiddlewareName(idx, file, backendRoot, c.name, depth);
+  return (
+    c.type === 'MemberExpression' &&
+    !c.computed &&
+    c.object.type === 'Identifier' &&
+    EXPRESS_MIDDLEWARE.has(c.property.name) &&
+    idx.ast.body.some(
+      (st) =>
+        st.type === 'ImportDeclaration' &&
+        st.source.value === 'express' &&
+        st.specifiers.some(
+          (sp) => sp.type === 'ImportDefaultSpecifier' && sp.local.name === c.object.name
+        )
+    )
+  );
+}
+
+/** routers.mjs: every publicRouter registration has a static path that does not cover /api/v1/staff. */
+function checkPublicRouter(idx, fail, at) {
+  const ret = idx.nodes.find(
+    (n) =>
+      n.type === 'Property' &&
+      !n.computed &&
+      n.key.type === 'Identifier' &&
+      n.key.name === 'publicRouter' &&
+      n.value.type === 'Identifier' &&
+      idx.parents.get(idx.parents.get(n))?.type === 'ReturnStatement'
+  );
+  if (!ret) return;
+  const name = ret.value.name;
+  const declIds = idx.nodes.filter(
+    (n) => n.type === 'VariableDeclarator' && n.id.type === 'Identifier' && n.id.name === name
+  );
+  for (const ref of references(idx, name, new Set(declIds.map((d) => d.id)))) {
+    if (ref === ret.value) continue;
+    const member = idx.parents.get(ref);
+    const call = idx.parents.get(member);
+    const p = call?.type === 'CallExpression' ? staticPath(call.arguments[0]) : null;
+    const ok =
+      member.type === 'MemberExpression' &&
+      member.object === ref &&
+      !member.computed &&
+      ROUTE_CALL_METHODS.has(member.property.name) &&
+      call.callee === member &&
+      idx.parents.get(call)?.type === 'ExpressionStatement' &&
+      p !== null &&
+      !coversStaff(p) &&
+      !isUnderStaff(p);
+    if (!ok) {
+      fail(
+        at(ref),
+        `${name} is mounted at '/' ahead of the staff Router, so each registration needs a static path that does not cover ${STAFF_MOUNT}`
+      );
+    }
+  }
+}
+
+/** app.mjs: nothing that can serve a request covers /api/v1/staff before the staff mount. */
+function checkCoveringBeforeMount(idx, file, backendRoot, mountCall, publicLocal, fail) {
+  const appName = mountCall.callee.object.name;
+  const appDecl = idx.nodes.find(
+    (n) => n.type === 'VariableDeclarator' && n.id.type === 'Identifier' && n.id.name === appName
+  );
+  const swagger = importedLocal(
+    idx.ast,
+    file,
+    path.join(backendRoot, 'middleware', 'swaggerSetup.mjs'),
+    'setupSwaggerDocs'
+  );
+  for (const ref of references(idx, appName, new Set([appDecl?.id]))) {
+    if (!nodeBefore(ref, mountCall)) continue;
+    const parent = idx.parents.get(ref);
+    if (parent.type === 'CallExpression' && parent.arguments.includes(ref)) {
+      const helper =
+        parent.callee.type === 'Identifier' && swagger && parent.callee.name === swagger.name;
+      if (!helper)
+        fail(
+          ref.loc.start.line,
+          `${appName} may not be handed to another function before the staff mount`
+        );
+      continue;
+    }
+    if (parent.type !== 'MemberExpression' || parent.object !== ref) {
+      fail(ref.loc.start.line, `${appName} may not be aliased before the staff mount`);
+      continue;
+    }
+    const call = idx.parents.get(parent);
+    if (call?.type !== 'CallExpression' || call.callee !== parent) continue; // e.g. app.locals
+    const method = parent.computed ? staticPath(parent.property) : parent.property.name;
+    if (parent.computed && method === null) {
+      fail(
+        call.loc.start.line,
+        `computed ${appName}[...] call before the staff mount cannot be judged`
+      );
+      continue;
+    }
+    if (!ROUTE_CALL_METHODS.has(method)) continue; // app.set(...), app.disable(...)
+    const [first] = call.arguments;
+    if (opaquePath(first)) {
+      fail(
+        call.loc.start.line,
+        `${appName}.${method}( path before the staff mount cannot be judged`
+      );
+      continue;
+    }
+    const p = staticPath(first);
+    if (!coversStaff(p)) continue;
+    const handlers = p === null ? call.arguments : call.arguments.slice(1);
+    const isPublicMount =
+      method === 'use' &&
+      p === '/' &&
+      handlers.length === 1 &&
+      publicLocal !== null &&
+      handlers[0].type === 'Identifier' &&
+      handlers[0].name === publicLocal.name;
+    const ok =
+      isPublicMount ||
+      (method === 'use' &&
+        handlers.length > 0 &&
+        handlers.every((h) => isMiddlewareArg(idx, file, backendRoot, h)));
+    if (!ok) {
+      fail(
+        call.loc.start.line,
+        `${appName}.${method}(${p === null ? '' : `'${p}', `}...) covers ${STAFF_MOUNT} and comes before the staff mount; only middleware may (routers and handlers go after it)`
+      );
+    }
+  }
 }
 
 export function checkRoutersFile(file, backendRoot) {
@@ -322,6 +423,8 @@ export function checkRoutersFile(file, backendRoot) {
       );
   }
 
+  checkPublicRouter(idx, fail, at);
+
   for (const call of pathCallsUnder(idx, ['/staff', STAFF_MOUNT])) {
     fail(
       at(call),
@@ -397,6 +500,18 @@ export function checkAppFile(file, backendRoot) {
         call.loc.start.line,
         `only app.use('${STAFF_MOUNT}', staffRouter) may name ${STAFF_MOUNT}`
       );
+  }
+  if (mountCall) {
+    const pub = idx.parents
+      .get(bindings[0])
+      .properties.find(
+        (p) =>
+          p.type === 'Property' &&
+          !p.computed &&
+          p.key.name === 'publicRouter' &&
+          p.value.type === 'Identifier'
+      );
+    checkCoveringBeforeMount(idx, file, backendRoot, mountCall, pub?.value ?? null, fail);
   }
   return failures;
 }

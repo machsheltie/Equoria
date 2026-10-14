@@ -500,6 +500,38 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     expect(where(scanWith({ app }))).toContain(`app.mjs:${line + 1}`);
   });
 
+  // Inserted directly ABOVE the staff mount, so the new line takes its line number.
+  const AUTH_MOUNT = "app.use('/api/v1', authRouter);\n";
+  test.each([
+    ['authRouter moved above the staff mount', AUTH_MOUNT],
+    ["a new app.use('/api', someRouter)", "app.use('/api', someRouter);\n"],
+    ['a pathless router use', 'app.use(sneakyRouter);\n'],
+    ["an app.use('/') of an unclassifiable value", "app.use('/', mystery);\n"],
+    ['an inline handler use', "app.use((req, res) => res.send('x'));\n"],
+    ['a verb handler on a covering path', "app.all('/api/*', h);\n"],
+    ['app handed to another helper', 'registerExtras(app);\n'],
+  ])('app.mjs ordering: %s fails', (_name, line) => {
+    const withoutAuth = line === AUTH_MOUNT ? REAL_APP.replace(AUTH_MOUNT, '') : REAL_APP;
+    const [app, at] = edit(withoutAuth, APP_MOUNT, `${line}${APP_MOUNT}`);
+    expect(where(scanWith({ app }))).toContain(`app.mjs:${at}`);
+  });
+
+  test('app.mjs ordering: covering middleware above the staff mount stays allowed', () => {
+    const [app] = edit(REAL_APP, APP_MOUNT, `app.use(express.json());\napp.use('/api', apiLimiter);\n${APP_MOUNT}`);
+    expect(scanWith({ app })).toEqual([]);
+  });
+
+  // publicRouter is mounted at '/' before the staff Router, so its own paths are pinned.
+  const PUBLIC_ANCHOR = "  publicRouter.get('/health', healthHandler);\n";
+  test.each([
+    ['a covering /api path', "  publicRouter.use('/api', h);\n"],
+    ['a path under /api/v1/staff', "  publicRouter.get('/api/v1/staff/x', h);\n"],
+    ['a pathless use', '  publicRouter.use(h);\n'],
+  ])('routers.mjs: publicRouter with %s fails on the added line', (_name, to) => {
+    const [routers, line] = edit(REAL_ROUTERS, PUBLIC_ANCHOR, `${PUBLIC_ANCHOR}${to}`);
+    expect(where(scanWith({ routers }))).toContain(`routers.mjs:${line + 1}`);
+  });
+
   test('app.mjs: mounting at another path fails', () => {
     const [app] = edit(REAL_APP, APP_MOUNT, "app.use('/api/v1/stewards', staffRouter);\n");
     expect(where(scanWith({ app })).some(w => w.startsWith('app.mjs:'))).toBe(true);

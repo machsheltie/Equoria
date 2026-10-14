@@ -370,8 +370,12 @@ describe('Unknown staff paths end in the ordinary 404 (STAFF-CR-05)', () => {
   });
 
   it('a /staff route planted on a router mounted at / on the authRouter cannot be reached', async () => {
-    // Real routers from buildRouters(), mounted in app.mjs's order (pinned by
-    // check-staff-routes-mount); the planted router is test-only.
+    // Real routers from buildRouters(), mounted staff-first as app.mjs does.
+    // That order is what check-staff-routes-mount pins in app.mjs: no router
+    // or handler covering /api/v1/staff (authRouter at /api/v1 included) may
+    // come before app.use('/api/v1/staff', staffRouter); only publicRouter at
+    // '/' does, and its paths are pinned not to cover /api/v1/staff. This mini
+    // app reproduces that order; the planted router is test-only.
     const { authRouter, staffRouter } = buildRouters();
     const planted = express.Router();
     planted.get('/staff/planted', (req, res) => res.json({ leaked: true }));
