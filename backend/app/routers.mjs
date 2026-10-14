@@ -21,6 +21,8 @@ import express from 'express';
 // Authentication / CSRF middleware
 import { authenticateToken, requireRole, requireAdminMfa } from '../middleware/auth.mjs';
 import { csrfProtection } from '../middleware/csrf.mjs';
+import { createNotFoundHandler } from '../middleware/notFoundHandler.mjs';
+import logger from '../utils/logger.mjs';
 
 // Health / readiness / api-info handlers
 import { healthHandler, readyHandler, apiInfoHandler } from '../config/healthHandlers.mjs';
@@ -244,6 +246,10 @@ export function buildRouters() {
   staffRouter.use(authenticateToken);
   staffRouter.use(csrfProtection);
   staffRouter.use('/', staffRoutes);
+  // Nothing under /api/v1/staff falls through to the /api/v1 authRouter
+  // (STAFF-CR-05): an unmatched staff path ends here with the same handler
+  // app.mjs mounts as its catch-all, so the answer is the ordinary 404.
+  staffRouter.use(createNotFoundHandler({ spaHtml: null, logger }));
 
   return { publicRouter, authRouter, adminRouter, staffRouter };
 }

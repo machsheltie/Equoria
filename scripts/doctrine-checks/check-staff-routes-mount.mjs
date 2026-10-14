@@ -9,15 +9,21 @@
 //   staffRouter.use(authenticateToken);      // from ../middleware/auth.mjs
 //   staffRouter.use(csrfProtection);         // from ../middleware/csrf.mjs
 //   staffRouter.use('/', staffRoutes);
+//   staffRouter.use(createNotFoundHandler({ spaHtml: null, logger }));  // ../middleware/notFoundHandler.mjs
 //   return { ..., staffRouter };
-// staffRoutes is referenced nowhere else, staffRouter nowhere else.
+// staffRoutes is referenced nowhere else, staffRouter nowhere else. The
+// terminal not-found use is the last call on staffRouter, so an unmatched
+// /api/v1/staff path gets the app's ordinary 404 instead of falling through to
+// the /api/v1 authRouter.
 //
 // backend/app.mjs must take staffRouter from buildRouters() (./app/routers.mjs)
 // and reference it exactly once, in `app.use('/api/v1/staff', staffRouter)`.
 //
 // In both files, no other route-method or use() call may name a path under
 // /api/v1/staff (app.mjs) or /staff (routers.mjs, where the auth router is
-// mounted at /api/v1).
+// mounted at /api/v1), compared case-insensitively as Express does. String
+// and expression-free template paths are read; array, regex and other
+// template paths cannot be judged and fail closed.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -113,17 +119,34 @@ const isUseStatement = (stmt, obj, match) =>
   stmt.expression.callee.property.name === 'use' &&
   match(stmt.expression.arguments);
 
-/** Route-method calls whose first argument is a string path under `prefix`. */
-function pathCallsUnder({ nodes }, prefix) {
+/** Static string value of a path argument (string or expression-free template), else null. */
+const staticPath = (n) =>
+  isStringLiteral(n)
+    ? n.value
+    : n?.type === 'TemplateLiteral' && n.expressions.length === 0
+      ? n.quasis[0].value.cooked
+      : null;
+
+/** A path argument the check cannot judge: array, regex or template with expressions. */
+const opaquePath = (n) =>
+  n?.type === 'ArrayExpression' ||
+  (n?.type === 'Literal' && n.regex !== undefined) ||
+  (n?.type === 'TemplateLiteral' && n.expressions.length > 0);
+
+/**
+ * Route-method / use() calls whose first argument names a path under any of
+ * `prefixes` (case-insensitive), or whose path cannot be judged statically.
+ */
+function pathCallsUnder({ nodes }, prefixes) {
+  const lower = prefixes.map((p) => p.toLowerCase());
   return nodes.filter((n) => {
     if (n.type !== 'CallExpression' || n.callee.type !== 'MemberExpression') return false;
-    const m = n.callee.computed ? n.callee.property.value : n.callee.property.name;
+    const m = n.callee.computed ? staticPath(n.callee.property) : n.callee.property.name;
+    if (!ROUTE_CALL_METHODS.has(m)) return false;
     const [first] = n.arguments;
-    return (
-      ROUTE_CALL_METHODS.has(m) &&
-      isStringLiteral(first) &&
-      (first.value === prefix || first.value.startsWith(`${prefix}/`))
-    );
+    if (opaquePath(first)) return true;
+    const value = staticPath(first)?.toLowerCase();
+    return value != null && lower.some((p) => value === p || value.startsWith(`${p}/`));
   });
 }
 
@@ -235,8 +258,52 @@ export function checkRoutersFile(file, backendRoot) {
     );
   }
 
+  // Then the terminal: <staffRouter>.use(createNotFoundHandler({ spaHtml: null, logger })).
+  const terminal = body[i + 1];
+  const notFound = importedLocal(
+    idx.ast,
+    file,
+    path.join(backendRoot, 'middleware', 'notFoundHandler.mjs'),
+    'createNotFoundHandler'
+  );
+  const isTerminal = (args) => {
+    const [call] = args;
+    const [opts] = call?.arguments ?? [];
+    const props = opts?.type === 'ObjectExpression' ? opts.properties : [];
+    const prop = (key) =>
+      props.find(
+        (p) =>
+          p.type === 'Property' && !p.computed && p.key.type === 'Identifier' && p.key.name === key
+      );
+    return (
+      args.length === 1 &&
+      call.type === 'CallExpression' &&
+      call.callee.type === 'Identifier' &&
+      notFound !== null &&
+      call.callee.name === notFound.name &&
+      call.arguments.length === 1 &&
+      props.length === 2 &&
+      prop('spaHtml')?.value.type === 'Literal' &&
+      prop('spaHtml').value.value === null &&
+      prop('logger')?.value.type === 'Identifier'
+    );
+  };
+  if (!isUseStatement(terminal, routerName, isTerminal)) {
+    fail(
+      at(mountStmt),
+      `${routerName} must end, right after the '/' mount, with ${routerName}.use(createNotFoundHandler({ spaHtml: null, logger })) from ../middleware/notFoundHandler.mjs`
+    );
+  }
+
   // staffRouter is otherwise read only in `return { ..., staffRouter }`.
-  const pinned = new Set([useAuth, useCsrf, mountStmt].map((s) => s?.expression?.callee?.object));
+  const pinned = new Set(
+    [
+      useAuth,
+      useCsrf,
+      mountStmt,
+      isUseStatement(terminal, routerName, isTerminal) ? terminal : null,
+    ].map((s) => s?.expression?.callee?.object)
+  );
   for (const ref of references(idx, routerName, new Set([declarator?.id]))) {
     if (pinned.has(ref)) continue;
     const prop = idx.parents.get(ref);
@@ -251,14 +318,14 @@ export function checkRoutersFile(file, backendRoot) {
     if (!returned)
       fail(
         at(ref),
-        `${routerName} may only be configured by the three pinned use() calls and returned`
+        `${routerName} may only be configured by the four pinned use() calls and returned`
       );
   }
 
-  for (const call of pathCallsUnder(idx, '/staff').concat(pathCallsUnder(idx, STAFF_MOUNT))) {
+  for (const call of pathCallsUnder(idx, ['/staff', STAFF_MOUNT])) {
     fail(
       at(call),
-      `routes under /staff may only live in modules/staff/routes/ (this file mounts nothing there)`
+      `routes under /staff may only live in modules/staff/routes/ (this file mounts nothing there; array, regex and dynamic paths are refused)`
     );
   }
   return failures;
@@ -324,7 +391,7 @@ export function checkAppFile(file, backendRoot) {
       fail(local.loc.start.line, `${local.name} is never mounted at ${STAFF_MOUNT}`);
   }
   const mountCall = mountedOnce ? idx.parents.get(refs[0]) : null;
-  for (const call of pathCallsUnder(idx, STAFF_MOUNT)) {
+  for (const call of pathCallsUnder(idx, [STAFF_MOUNT])) {
     if (call !== mountCall)
       fail(
         call.loc.start.line,

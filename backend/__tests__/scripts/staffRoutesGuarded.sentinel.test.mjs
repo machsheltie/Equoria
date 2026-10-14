@@ -415,6 +415,7 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
   const REAL_APP = readFileSync(path.join(BACKEND, 'app.mjs'), 'utf8');
   const MOUNT = "  staffRouter.use('/', staffRoutes);\n";
   const APP_MOUNT = "app.use('/api/v1/staff', staffRouter);\n";
+  const TERMINAL = '  staffRouter.use(createNotFoundHandler({ spaHtml: null, logger }));\n';
 
   /** Replace `from` with `to` (which must be present) and return [text, line of the edit]. */
   const edit = (text, from, to) => {
@@ -439,6 +440,28 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
   ])('routers.mjs: %s fails on the added line', (_name, to) => {
     const [routers, line] = edit(REAL_ROUTERS, MOUNT, to);
     expect(where(scanWith({ routers }))).toContain(`routers.mjs:${line + 1}`);
+  });
+
+  // Added right after the terminal not-found use, i.e. as the new last line.
+  test.each([
+    ['a use() after the terminal not-found handler (terminal not last)', `${TERMINAL}  staffRouter.use(h);\n`],
+    ['a /staff route given as an expression-free template', `${TERMINAL}  authRouter.post(\`/staff/x\`, h);\n`],
+    ['a /STAFF route in another case', `${TERMINAL}  authRouter.post('/STAFF/x', h);\n`],
+    ['an array path', `${TERMINAL}  authRouter.post(['/ok', '/staff/x'], h);\n`],
+    ['a regex path', `${TERMINAL}  authRouter.post(/^\\/staff/, h);\n`],
+  ])('routers.mjs: %s fails on the added line', (_name, to) => {
+    const [routers, line] = edit(REAL_ROUTERS, TERMINAL, to);
+    expect(where(scanWith({ routers }))).toContain(`routers.mjs:${line + 1}`);
+  });
+
+  test.each([
+    ['the terminal not-found handler missing', TERMINAL, ''],
+    ['the terminal handler given SPA html', TERMINAL, TERMINAL.replace('spaHtml: null', 'spaHtml')],
+    ['a different terminal handler', TERMINAL, '  staffRouter.use((req, res) => res.sendStatus(404));\n'],
+  ])('routers.mjs: %s fails on the mount line', (_name, from, to) => {
+    const [routers] = edit(REAL_ROUTERS, from, to);
+    const [, mountLine] = edit(routers, MOUNT, MOUNT);
+    expect(where(scanWith({ routers }))).toContain(`routers.mjs:${mountLine}`);
   });
 
   test.each([
@@ -469,6 +492,9 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     ['a second staff mount', `${APP_MOUNT}app.use('/api/v1/staff', staffRouter);\n`],
     ['an app-level route under /api/v1/staff', `${APP_MOUNT}app.post('/api/v1/staff/x', h);\n`],
     ['staffRouter mounted somewhere else too', `${APP_MOUNT}app.use('/api/v1/other', staffRouter);\n`],
+    ['an app-level route as an expression-free template', `${APP_MOUNT}app.post(\`/api/v1/staff/x\`, h);\n`],
+    ['an app-level route in another case', `${APP_MOUNT}app.post('/API/V1/Staff/x', h);\n`],
+    ['an app-level array path', `${APP_MOUNT}app.use(['/api/v1/staff'], h);\n`],
   ])('app.mjs: %s fails on the added line', (_name, to) => {
     const [app, line] = edit(REAL_APP, APP_MOUNT, to);
     expect(where(scanWith({ app }))).toContain(`app.mjs:${line + 1}`);

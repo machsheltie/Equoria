@@ -14,7 +14,10 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
+import express from 'express';
+import cookieParser from 'cookie-parser';
 import app from '../../../app.mjs';
+import { buildRouters } from '../../../app/routers.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
@@ -332,5 +335,70 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
       data: { expiresAt: new Date(Date.now() + 60_000), revokedAt: new Date() },
     });
     expect((await get(STATUS, mod, device)).body.code).toBe('STAFF_CHECKIN_REQUIRED');
+  });
+});
+
+// STAFF-CR-05: an unmatched /api/v1/staff/* path must end inside the staff
+// router with the app's ordinary 404, never fall through to the /api/v1
+// authRouter where a '/'-mounted router could serve /staff/... unguarded.
+describe('Unknown staff paths end in the ordinary 404 (STAFF-CR-05)', () => {
+  // Per-request measurements (clocks incl. x-timestamp, rate-limit counters, memory and timing
+  // probes) and values derived from the differing URL (content-length, etag,
+  // x-response-size) are excluded; everything else, including which headers
+  // are present, must match exactly.
+  const VOLATILE =
+    /^(date|etag|content-length|ratelimit.*|x-ratelimit.*|x-response-time|x-request-id|x-timestamp|x-memory-.*|x-processing-time|x-response-size)$/;
+  const shape = (res, url) => ({
+    status: res.status,
+    body: res.text.split(url).join('<path>'),
+    headerNames: Object.keys(res.headers).sort(),
+    headers: Object.entries(res.headers)
+      .filter(([name]) => !VOLATILE.test(name))
+      .sort(([a], [b]) => a.localeCompare(b)),
+  });
+
+  it('answers an unknown staff path exactly like any unknown /api/v1 path, signed in or anonymous', async () => {
+    const player = await makeUser('user');
+    const staffUrl = `/api/v1/staff/does-not-exist-${uid()}`;
+    const otherUrl = `/api/v1/nothing-here-${uid()}`;
+    const signedInStaff = shape(await get(staffUrl, player), staffUrl);
+    expect(signedInStaff.status).toBe(404);
+    expect(signedInStaff).toEqual(shape(await get(otherUrl, player), otherUrl));
+
+    const anon = url => request(app).get(url).set('Origin', ORIGIN);
+    expect(shape(await anon(staffUrl), staffUrl)).toEqual(shape(await anon(otherUrl), otherUrl));
+  });
+
+  it('a /staff route planted on a router mounted at / on the authRouter cannot be reached', async () => {
+    // Real routers from buildRouters(), mounted in app.mjs's order (pinned by
+    // check-staff-routes-mount); the planted router is test-only.
+    const { authRouter, staffRouter } = buildRouters();
+    const planted = express.Router();
+    planted.get('/staff/planted', (req, res) => res.json({ leaked: true }));
+    planted.get('/control/planted', (req, res) => res.json({ leaked: true }));
+    authRouter.use('/', planted);
+    const mini = express();
+    mini.use(cookieParser());
+    mini.use('/api/v1/staff', staffRouter);
+    mini.use('/api/v1', authRouter);
+
+    const player = await makeUser('user');
+    const hit = url =>
+      request(mini)
+        .get(url)
+        .set('Origin', ORIGIN)
+        .set('Cookie', [`accessToken=${player.token}`]);
+
+    // The planting works: the same router serves its non-staff path.
+    expect((await hit('/api/v1/control/planted')).body).toEqual({ leaked: true });
+
+    const res = await hit('/api/v1/staff/planted');
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({
+      success: false,
+      message: 'Route not found',
+      path: '/api/v1/staff/planted',
+      method: 'GET',
+    });
   });
 });
