@@ -16,8 +16,13 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/form';
 import { ErrorState, InlineError, SectionLoading } from '@/components/ui/state';
-import { isCheckinRequired, useStaffList, useStaffLog } from '@/hooks/api/useStaff';
-import type { StaffLogEntry } from '@/lib/api/staff';
+import {
+  isCheckinRequired,
+  useStaffList,
+  useStaffLog,
+  useStaffLogActors,
+} from '@/hooks/api/useStaff';
+import type { StaffLogActor, StaffLogEntry } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { FORMER_STEWARD, STAFF_TIME_OPTIONS, staffErrorMessage } from './staffMessages';
@@ -51,6 +56,10 @@ const ACTION_OPTIONS = [
 ];
 
 const shortRef = (id: string) => `#${id.slice(0, 8)}`;
+
+/** A filter choice: the account's current name, or a former steward with a short reference. */
+const actorLabel = (actor: StaffLogActor) =>
+  actor.username ?? `${FORMER_STEWARD} (${shortRef(actor.id)})`;
 
 function actorText(
   entry: StaffLogEntry,
@@ -138,6 +147,9 @@ export function StaffActionLog({
   const [capability, setCapability] = useState('');
   const log = useStaffLog(canFilter ? { actorId, capability } : {});
   const staff = useStaffList(canSeeNames);
+  // The steward filter offers everyone who has written to the ledger, not
+  // only today's staff, so a revoked or erased steward can still be chosen.
+  const actors = useStaffLogActors(canFilter);
 
   const checkinLapsed = isCheckinRequired(log.error);
   useEffect(() => {
@@ -231,11 +243,13 @@ export function StaffActionLog({
             value={actorId}
             onChange={(event) => setActorId(event.target.value)}
             className="w-auto"
+            disabled={!actors.data}
+            aria-busy={actors.isPending}
             options={[
-              { value: '', label: 'any steward' },
-              ...(staff.data?.staff ?? []).map((member) => ({
-                value: member.id,
-                label: member.username,
+              { value: '', label: actors.isPending ? 'loading the stewards…' : 'any steward' },
+              ...(actors.data?.actors ?? []).map((actor) => ({
+                value: actor.id,
+                label: actorLabel(actor),
               })),
             ]}
           />
@@ -247,6 +261,19 @@ export function StaffActionLog({
             className="w-auto"
             options={ACTION_OPTIONS}
           />
+          {actors.isError && (
+            <span className="flex flex-wrap items-center gap-2">
+              <InlineError message={staffErrorMessage(actors.error)} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void actors.refetch()}
+                pending={actors.isFetching}
+              >
+                Try again
+              </Button>
+            </span>
+          )}
         </p>
       )}
       {log.isRefetchError && (

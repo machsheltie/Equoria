@@ -21,6 +21,8 @@ export const staffKeys = {
   all: ['staff'] as const,
   me: ['staff', 'me'] as const,
   log: ['staff', 'log'] as const,
+  // Under the ledger's prefix, so anything that refreshes the ledger refreshes it too.
+  logActors: ['staff', 'log', 'actors'] as const,
   roles: ['staff', 'roles'] as const,
   tickets: ['staff', 'tickets'] as const,
   ticket: (id: number) => ['staff', 'tickets', id] as const,
@@ -123,6 +125,14 @@ export function useStaffLog(filter: StaffLogFilter = {}) {
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
+}
+
+/**
+ * Everyone who has ever written to the ledger, for the admin's steward filter
+ * (STAFF-CR-16): drawn from the whole log, so former stewards stay choosable.
+ */
+export function useStaffLogActors(enabled: boolean) {
+  return useQuery({ queryKey: staffKeys.logActors, queryFn: staffApi.logActors, enabled });
 }
 
 export function useStaffList(enabled: boolean) {

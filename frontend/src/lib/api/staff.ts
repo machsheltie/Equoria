@@ -9,6 +9,7 @@
  *   POST /api/v1/staff/checkin/request    → 202 { sent: true }
  *   POST /api/v1/staff/checkin/verify     → 200 { trusted: true }
  *   GET  /api/v1/staff/log?cursor         → { entries, nextCursor }
+ *   GET  /api/v1/staff/log/actors         → { actors: StaffLogActor[] }   (admin only)
  *   GET  /api/v1/staff/roles              → { staff: StaffMember[] }
  *   POST /api/v1/staff/roles/lookup       → StaffMember
  *   POST /api/v1/staff/roles/:userId      → StaffMember (with the new role)
@@ -56,6 +57,12 @@ export interface StaffLogPage {
 export interface StaffLogFilter {
   actorId?: string;
   capability?: string;
+}
+
+/** Someone who has written to the ledger; username is null once the account is erased. */
+export interface StaffLogActor {
+  id: string;
+  username: string | null;
 }
 
 export interface StaffMember {
@@ -135,6 +142,8 @@ export const staffApi = {
     const qs = params.toString();
     return apiClient.get<StaffLogPage>(`${BASE}/log${qs ? `?${qs}` : ''}`);
   },
+
+  logActors: () => apiClient.get<{ actors: StaffLogActor[] }>(`${BASE}/log/actors`),
 
   listStaff: () => apiClient.get<{ staff: StaffMember[] }>(`${BASE}/roles`),
   lookupUser: (username: string) =>

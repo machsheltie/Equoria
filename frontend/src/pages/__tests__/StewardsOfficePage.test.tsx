@@ -86,12 +86,19 @@ interface StubOptions {
   log?: () => Response | Promise<Response>;
   roles?: () => Response | Promise<Response>;
   tickets?: () => Response | Promise<Response>;
+  actors?: () => Response | Promise<Response>;
 }
 
 function stubStaff(opts: StubOptions = {}) {
   server.use(
     http.get(`${STAFF}/me`, opts.me ?? (() => json(adminMe))),
     http.get(`${STAFF}/log`, opts.log ?? (() => json({ entries: [logEntry], nextCursor: null }))),
+    // STAFF-CR-16: the admin's steward filter lists everyone in the ledger.
+    http.get(
+      `${STAFF}/log/actors`,
+      opts.actors ??
+        (() => json({ actors: staffList.staff.map(({ id, username }) => ({ id, username })) }))
+    ),
     http.get(`${STAFF}/roles`, opts.roles ?? (() => json(staffList))),
     http.get(`${STAFF}/tickets`, opts.tickets ?? (() => json({ tickets: [ticket] })))
   );
