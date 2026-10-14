@@ -163,6 +163,7 @@ describe('The ticket list pages past 100 tickets', () => {
       expect(res.status).toBe(200);
       return { seen: res.body.tickets };
     })();
+    expect(seen.length).toBeGreaterThan(0);
     expect(seen.every(t => t.filedById === otherMod.id)).toBe(true);
   });
 

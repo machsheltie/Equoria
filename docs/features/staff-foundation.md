@@ -101,11 +101,11 @@ with the filer or author shown as a former steward.
   only a change to the status it already has is refused. Of two simultaneous
   changes exactly one lands, with one log entry and one notification. Both
   sides can reply.
+  A player may be named by username or by account ID; the ticket stores the
+  account ID and shows the player's current username.
 - The ticket list pages newest first and the office offers older tickets on
   request; a thread shows its latest replies and offers earlier ones on
   request. Nothing a steward may see is ever out of reach.
-  A player may be named by username or by account ID; the ticket stores the
-  account ID and shows the player's current username.
 - A ticket about an account names a player only (owner ruling 2026-10-13): the
   filer, another moderator and the admin are refused, by username or by ID
   alike, and a promotion that lands while the ticket is being filed cannot

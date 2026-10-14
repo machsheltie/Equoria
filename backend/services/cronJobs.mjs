@@ -354,7 +354,7 @@ class CronJobService {
   /**
    * Email-outbox delivery (STAFF-CR-10): sends due staff-ticket emails,
    * retries failures with backoff, ends a row as failed after its last try.
-   * `opts` ({ now, keys }) exists for tests; the schedule passes none.
+   * `opts` ({ clock, keys }) exists for tests; the schedule passes none.
    * @returns {Promise<{ claimed: number, sent: number, retrying: number,
    *                      failed: number, cancelled: number }>}
    */
