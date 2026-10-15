@@ -85,7 +85,7 @@ describe('🏆 INTEGRATION: Leaderboard Controller — canonical-DB safe', () =>
         money: 5000,
       },
     });
-    const user2 = await prisma.user.create({
+    await prisma.user.create({
       data: {
         id: user2Id,
         username: user2Name,

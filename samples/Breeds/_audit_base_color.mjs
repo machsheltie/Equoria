@@ -4,7 +4,7 @@
 // mostly chestnut; a "chestnut" breed shouldn't throw mostly bay).
 // Computes realized base distribution and checks expected thresholds.
 // Run: node _audit_base_color.mjs
-import { readFileSync, readdirSync, existsSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 // Equoria-26qjf.4: self-locating + env-overridable (was a hardcoded absolute path).

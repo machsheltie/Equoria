@@ -29,7 +29,7 @@ export async function evaluateFlagTriggers(horse, carePatterns) {
     const currentFlags = horse.epigeneticFlags || [];
 
     // Evaluate each flag definition against care patterns
-    for (const [flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
+    for (const flagDef of Object.values(EPIGENETIC_FLAG_DEFINITIONS)) {
       const flagName = flagDef.name;
 
       // Skip if horse already has this flag
@@ -109,8 +109,6 @@ function hasConflictingFlags(flagDef, currentFlags) {
  */
 function evaluateTriggerConditions(flagDef, carePatterns, horse) {
   const conditions = flagDef.triggerConditions;
-  const triggered = { triggered: false, reason: '', conditions: {} };
-
   try {
     // Evaluate based on flag name and common patterns
     switch (flagDef.name) {
@@ -154,7 +152,7 @@ function evaluateTriggerConditions(flagDef, carePatterns, horse) {
 /**
  * Evaluate triggers for BRAVE flag
  */
-function evaluateBraveTriggers(conditions, carePatterns, horse) {
+function evaluateBraveTriggers(conditions, carePatterns, _horse) {
   const { consistency, stressPatterns, taskDiversity } = carePatterns;
 
   // Brave flag: consistent care with stress management and task variety
@@ -182,7 +180,7 @@ function evaluateBraveTriggers(conditions, carePatterns, horse) {
 /**
  * Evaluate triggers for AFFECTIONATE flag
  */
-function evaluateAffectionateTriggers(conditions, carePatterns, horse) {
+function evaluateAffectionateTriggers(conditions, carePatterns, _horse) {
   const { consistency, bondTrends, groomConsistency } = carePatterns;
 
   // Affectionate flag: frequent positive interactions with consistent groom
@@ -211,7 +209,7 @@ function evaluateAffectionateTriggers(conditions, carePatterns, horse) {
  * Evaluate triggers for CONFIDENT flag
  */
 function evaluateConfidentTriggers(conditions, carePatterns, horse) {
-  const { bondTrends, stressPatterns, taskDiversity } = carePatterns;
+  const { bondTrends, taskDiversity } = carePatterns;
 
   // Confident flag: positive bond development with diverse experiences
   const strongBondGrowth = bondTrends.averageChange > 1.5;
@@ -238,8 +236,8 @@ function evaluateConfidentTriggers(conditions, carePatterns, horse) {
 /**
  * Evaluate triggers for FEARFUL flag (negative)
  */
-function evaluateFearfulTriggers(conditions, carePatterns, horse) {
-  const { stressPatterns, neglectPatterns, consistency } = carePatterns;
+function evaluateFearfulTriggers(conditions, carePatterns, _horse) {
+  const { stressPatterns, consistency } = carePatterns;
 
   // Fearful flag: high stress with poor care consistency
   const highStressSpikes = stressPatterns.stressSpikes.length > 3;
@@ -264,7 +262,7 @@ function evaluateFearfulTriggers(conditions, carePatterns, horse) {
 /**
  * Evaluate triggers for INSECURE flag (negative)
  */
-function evaluateInsecureTriggers(conditions, carePatterns, horse) {
+function evaluateInsecureTriggers(conditions, carePatterns, _horse) {
   const { groomConsistency, bondTrends, neglectPatterns } = carePatterns;
 
   // Insecure flag: frequent groom changes with declining bond
@@ -292,7 +290,7 @@ function evaluateInsecureTriggers(conditions, carePatterns, horse) {
 /**
  * Generic trigger evaluation for undefined flags
  */
-function evaluateGenericTriggers(flagDef, carePatterns, horse) {
+function evaluateGenericTriggers(flagDef, carePatterns, _horse) {
   // Basic evaluation based on flag type
   if (flagDef.type === FLAG_TYPES.POSITIVE) {
     const goodCare = carePatterns.consistency.consistencyScore > 0.6;
@@ -322,18 +320,18 @@ function evaluateGenericTriggers(flagDef, carePatterns, horse) {
 }
 
 // Placeholder functions for other flag types
-function evaluateSocialTriggers(conditions, carePatterns, horse) {
+function evaluateSocialTriggers(_conditions, _carePatterns, _horse) {
   return { triggered: false, reason: 'Not implemented', conditions: {} };
 }
 
-function evaluateCalmTriggers(conditions, carePatterns, horse) {
+function evaluateCalmTriggers(_conditions, _carePatterns, _horse) {
   return { triggered: false, reason: 'Not implemented', conditions: {} };
 }
 
-function evaluateAntisocialTriggers(conditions, carePatterns, horse) {
+function evaluateAntisocialTriggers(_conditions, _carePatterns, _horse) {
   return { triggered: false, reason: 'Not implemented', conditions: {} };
 }
 
-function evaluateFragileTriggers(conditions, carePatterns, horse) {
+function evaluateFragileTriggers(_conditions, _carePatterns, _horse) {
   return { triggered: false, reason: 'Not implemented', conditions: {} };
 }

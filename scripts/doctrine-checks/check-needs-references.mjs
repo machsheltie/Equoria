@@ -42,7 +42,6 @@ function extractJobsAndNeeds(content) {
   let inJobsBlock = false;
   let jobsIndent = -1;
   let currentJob = null;
-  let currentJobLine = -1;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -71,7 +70,6 @@ function extractJobsAndNeeds(content) {
     const jobMatch = /^(\s+)([A-Za-z0-9_-]+):\s*$/.exec(line);
     if (jobMatch && jobMatch[1].length === jobsIndent + 2) {
       currentJob = jobMatch[2];
-      currentJobLine = i + 1;
       jobIds.add(currentJob);
       continue;
     }

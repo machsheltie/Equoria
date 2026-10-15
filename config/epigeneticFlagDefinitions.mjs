@@ -276,7 +276,7 @@ export function flagsConflict(flag1, flag2) {
 export function getValidFlags(currentFlags = []) {
   const availableFlags = [];
 
-  for (const [flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
+  for (const flagDef of Object.values(EPIGENETIC_FLAG_DEFINITIONS)) {
     const flagName = flagDef.name;
 
     // Skip if horse already has this flag

@@ -66,7 +66,6 @@ function findJobsRanges(lines) {
   let jobsIndent = -1;
   let currentJob = null;
   let currentStart = -1;
-  let currentIndent = -1;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -94,7 +93,6 @@ function findJobsRanges(lines) {
       if (currentJob) ranges.push({ name: currentJob, start: currentStart, end: i - 1 });
       currentJob = jobMatch[2];
       currentStart = i;
-      currentIndent = jobMatch[1].length;
     }
   }
   if (currentJob) ranges.push({ name: currentJob, start: currentStart, end: lines.length - 1 });

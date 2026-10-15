@@ -56,17 +56,6 @@ const test = base.extend<{ browserConsole: void }>({
   ],
 });
 
-type FixtureContext = {
-  userId: string;
-  breedId: number;
-  lethalSireId: number;
-  lethalDamId: number;
-  safeSireId: number;
-  safeDamId: number;
-  legacySireId: number;
-  legacyDamId: number;
-};
-
 test.describe('Lethal White Warning (wrm5)', () => {
   let session: AuthedSession;
 
