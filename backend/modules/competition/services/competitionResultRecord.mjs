@@ -144,6 +144,95 @@ export async function getShowResultsView(showId, viewerId) {
   };
 }
 
+const HORSE_SHOW_SELECT = {
+  id: true,
+  name: true,
+  discipline: true,
+  showType: true,
+  status: true,
+  runDate: true,
+};
+
+/** Where a show stands for one horse: the result row decides "completed". */
+function horseShowStatus(show, result) {
+  if (result || show.status === 'completed') {
+    return 'completed';
+  }
+  return show.status === 'executing' ? 'running' : 'upcoming';
+}
+
+/**
+ * One row of a horse's show list (owner ruling R7). `show` comes from the
+ * entry or, for a result with no entry row left, from the result itself.
+ *
+ * @param {object} show - Show (HORSE_SHOW_SELECT).
+ * @param {object|null} result - The horse's CompetitionResult for that show.
+ * @returns {object}
+ */
+export function toHorseShowRow(show, result) {
+  const isConformation = (result?.discipline ?? show.discipline) === 'conformation';
+  return {
+    showId: show.id,
+    showName: show.name ?? result?.showName ?? null,
+    competitionType: { showType: show.showType, discipline: show.discipline },
+    status: horseShowStatus(show, result),
+    date: toIsoOrNull(result?.runDate ?? show.runDate),
+    placement: result ? toPlacement(result.placement) : null,
+    horsePointsAwarded: result?.horsePointsAwarded ?? null,
+    winnings: result ? toNumberOrNull(result.prizeWon) : null,
+    statGain: result && !isConformation ? readStatGain(result.statGains) : null,
+    conformationAward: result && isConformation ? readConformationAward(result.statGains) : null,
+  };
+}
+
+/**
+ * Every show a horse was entered in, run and unrun, newest first (owner ruling
+ * R7). The caller must already have proved the viewer owns the horse: the rows
+ * include the stat gain, which is the owner's to see.
+ *
+ * Entries and results are read with narrow selects and merged in memory (a
+ * horse's lifetime of shows is small), then paged.
+ *
+ * @param {number} horseId
+ * @param {{ skip: number, take: number }} page
+ * @returns {Promise<{ rows: object[], total: number }>}
+ */
+export async function getHorseShowResults(horseId, { skip, take }) {
+  const [entries, results] = await Promise.all([
+    prisma.showEntry.findMany({
+      where: { horseId },
+      select: { show: { select: HORSE_SHOW_SELECT } },
+    }),
+    prisma.competitionResult.findMany({
+      where: { horseId },
+      select: {
+        showId: true,
+        showName: true,
+        placement: true,
+        discipline: true,
+        runDate: true,
+        prizeWon: true,
+        statGains: true,
+        horsePointsAwarded: true,
+        show: { select: HORSE_SHOW_SELECT },
+      },
+    }),
+  ]);
+
+  const resultByShow = new Map(results.map(r => [r.showId, r]));
+  const showsById = new Map(entries.map(e => [e.show.id, e.show]));
+  for (const r of results) {
+    if (!showsById.has(r.showId)) {
+      showsById.set(r.showId, r.show);
+    }
+  }
+
+  const rows = [...showsById.values()]
+    .map(show => toHorseShowRow(show, resultByShow.get(show.id) ?? null))
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.showId - a.showId);
+  return { rows: rows.slice(skip, skip + take), total: rows.length };
+}
+
 /**
  * The competitionResult.create data for one replayed ridden placement.
  * `create` stays the first write of the per-entry transaction, so the

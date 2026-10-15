@@ -12,14 +12,21 @@
  * owner-approved reason (`.claude/rules/CONTRIBUTING.md`) — which "I wanted to
  * add a route" is not. The results-viewed write is its own small concern, so it
  * gets its own small file instead.
+ *
+ * GET /horse/:horseId (Equoria-q4uem.10, owner ruling R7) lives here for the same
+ * reason, and because a horses-module route would add another horses -> competition
+ * import to the cycle WS4 (Equoria-q4uem.4) is removing.
  */
 
 import express from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import auth from '../../../middleware/auth.mjs';
-import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
+import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
+import { parsePaginationParams, buildPaginatedResponse } from '../../../utils/paginationHelper.mjs';
 import { markUserResultsViewed } from '../services/resultModelService.mjs';
+import { getHorseShowResults } from '../services/competitionResultRecord.mjs';
 
 const router = express.Router();
 
@@ -96,6 +103,42 @@ router.post(
         message: status === 503 ? error.message : 'Internal server error',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
+    }
+  },
+);
+
+/**
+ * GET /api/v1/competition/results/horse/:horseId?page&limit
+ * Every show the horse was entered in, run and unrun, newest first (owner ruling
+ * R7): show name, competition type, status, date, placement, Horse Points,
+ * winnings, conformation ribbon and the stat gained. Owner-only (the stat gain
+ * is the owner's to see); 404 for anyone else, indistinguishable from not found.
+ * Unrecorded values are null, never 0. Paged, 50 per page by default.
+ */
+router.get(
+  '/horse/:horseId',
+  queryRateLimiter,
+  auth,
+  [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Validation failed', errors: errors.array() });
+    }
+    return next();
+  },
+  requireOwnership('horse', { idParam: 'horseId' }),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.horseId, 10);
+      const { page, limit, skip } = parsePaginationParams(req, { defaultLimit: 50, maxLimit: 100 });
+      const { rows, total } = await getHorseShowResults(horseId, { skip, take: limit });
+      return buildPaginatedResponse(res, rows, { page, limit, total });
+    } catch (error) {
+      logger.error(`[competitionResultsRoutes.GET /horse/:horseId] Error: ${error.message}`);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
     }
   },
 );
