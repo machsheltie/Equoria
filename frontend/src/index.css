@@ -810,7 +810,7 @@
   }
 }
 
-/* animate-fade-in — used by XpGainNotification and other toast-style components */
+/* animate-fade-in — used by toast-style components */
 @keyframes fade-in {
   from {
     opacity: 0;
