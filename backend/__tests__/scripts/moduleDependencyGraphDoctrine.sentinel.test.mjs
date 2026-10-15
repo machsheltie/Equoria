@@ -15,18 +15,21 @@
  *                      hidden behind a regex literal after an `if (…)` header (round 2, minor 9)
  *   R2 CommonJS     -> createRequire(…) / require(…) in an ESM-only module file (round 2, minor 8)
  *   R2 backslash    -> an import specifier containing `\` (S5 review M4)
- *   R2 lexer        -> fail-closed on an unterminated template literal or one spanning more
- *                      lines than any real one (round 2, minor 9 fail-safe)
+ *   R2 lexer        -> fail-closed on an unterminated template literal and on a template
+ *                      literal that CONTAINS import/export/require text the scanners would
+ *                      otherwise have read; a long template without such text passes (round 3)
  *   R3 export *     -> planted module barrel with `export *`
  *   R4 HTTP layer   -> planted module barrel re-exporting a Routes.mjs (any block), a
  *                      /controllers/ file and a bare *Controller.mjs (production block), a
- *                      controller reached THROUGH a re-export-only proxy file (S5 review M2) —
- *                      by `export … from`, by `import … from X; export { … }` (two statements),
- *                      by `export default` of an imported binding, by a namespace import
- *                      (round 2, evasion 7) — in the production AND the test block; a controller
- *                      under the `// Test-consumed only (… Equoria-7t1tn` label is classified as
- *                      test-block and fails only when its name is not pinned; a stale pinned name
- *                      fails; a route module inside the test block fails
+ *                      controller reached THROUGH proxy files by any re-export shape (S5 review
+ *                      M2, round 2 evasion 7, round 3: `export const X = binding[.member]`,
+ *                      semicolon-less `export default`), and — closure-based (round 3) — ANY
+ *                      production-block name whose target's static import closure reaches a
+ *                      route module or controller, with the path reported; a controller under
+ *                      the `// Test-consumed only (… Equoria-7t1tn` label fails outright too
+ *                      (WS4 S5-pre: no controller in any barrel block); any entry left in the
+ *                      retired testBlockControllers section fails; a route module inside the
+ *                      test block fails
  *   R5 upward       -> module file importing backend/app/routers.mjs
  *   --closure       -> three pure services evaluate no route module or controller file
  *
@@ -130,8 +133,11 @@ function runWithExtraAllowlistEntry(section, key) {
 }
 
 const WRITER_NOTE = '// sentinel plant; removed by afterEach\n';
-const CTRL_RE = `${esc(PM)}/controllers/epigeneticFlagController\\.mjs`;
-const PROXY_RE = `${esc(PM)}/services/proxy\\.mjs`;
+const CTRL = `${PM}/controllers/epigeneticFlagController.mjs`;
+const CTRL_RE = esc(CTRL);
+const PROXY = `${PM}/services/proxy.mjs`;
+const PROXY_RE = esc(PROXY);
+const CTRL_IMPORT = "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\n";
 
 beforeAll(() => {
   expect(fs.existsSync(CHECK)).toBe(true);
@@ -161,6 +167,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.out).toMatch(/cycles=0 deep-imports=0 .*star-exports=0 http-in-barrel=0 .*upward=0/);
     expect(res.out).toMatch(/nonliteral-dynamic=0/);
     expect(res.out).toMatch(/commonjs=0/);
+    expect(res.out).toMatch(/closure-checked=\d+/);
   });
 
   it('R1: FAILS on a planted cross-module cycle and prints it with the plant file:line', () => {
@@ -303,16 +310,28 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:1 lexer fail-safe: unterminated template literal`));
   });
 
-  it('R2 (minor 9 fail-safe): a template literal longer than any real one fails closed', () => {
+  it('R2 (round 3 fail-safe): a template literal that CONTAINS statement-shaped import text fails closed', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}longtpl_${RUN_ID}.mjs`,
-      `export const big = \`${'\n'.repeat(45)}\`;\n`,
+      `economy/${PLANT_TOKEN}tplimport_${RUN_ID}.mjs`,
+      'export const t = `\nimport { hidden } from "../bank/index.mjs";\n`;\n',
     );
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
-      new RegExp(`R2 ${esc(relPosix(plant))}:1 lexer fail-safe: template literal spans 46 lines`),
+      new RegExp(`R2 ${esc(relPosix(plant))}:1 lexer fail-safe: template literal contains import/export/require text`),
     );
+  });
+
+  it('R2 (round 3 control): a 100-line HTML template with no import/export text passes', () => {
+    const rows = Array.from({ length: 96 }, (_, i) => `  <tr><td>Row ${i + 1}</td><td>\${items[${i}]}</td></tr>`).join(
+      '\n',
+    );
+    plantFile(
+      `economy/${PLANT_TOKEN}html_${RUN_ID}.mjs`,
+      `export const page = (items) => \`<!doctype html>\n<table>\n${rows}\n</table>\n\`;\n`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(0);
   });
 
   it('R2 (minor 8): createRequire(…) and require(…) in an ESM-only module file fail with file:line', () => {
@@ -433,10 +452,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R4 (evasion 7): a proxy that IMPORTS a controller and re-exports the binding in a second statement is caught (production block)', () => {
     plantFile(`${PLANT_MODULE}/index.mjs`, "export { zzrvEval3 } from './services/proxy.mjs';\n");
-    plantFile(
-      `${PLANT_MODULE}/services/proxy.mjs`,
-      "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\nexport { evaluateFlags as zzrvEval3 };\n",
-    );
+    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export { evaluateFlags as zzrvEval3 };\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
@@ -446,27 +462,33 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     );
   });
 
-  it('R4 (evasion 7): the same two-statement proxy under the test label is classified as a controller and fails on the unpinned name', () => {
+  it('R4 (evasion 7 + S5-pre): the same two-statement proxy under the test label fails R4 outright (no test-block exemption for controllers)', () => {
     plantFile(`${PLANT_MODULE}/index.mjs`, `${TEST_LABEL}export { zzrvEval3 } from './services/proxy.mjs';\n`);
-    plantFile(
-      `${PLANT_MODULE}/services/proxy.mjs`,
-      "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\nexport { evaluateFlags as zzrvEval3 };\n",
-    );
+    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export { evaluateFlags as zzrvEval3 };\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4-allowlist ${esc(PM)}/index\\.mjs:3 test-block controller name "${esc(PLANT_MODULE)}\\.zzrvEval3" is not listed`,
+        `R4 ${esc(PM)}/index\\.mjs:3 barrel re-exports controller name\\(s\\) zzrvEval3 via ${PROXY_RE} -> ${CTRL_RE}`,
       ),
     );
   });
 
   it('R4 (evasion 7): `export default` of an imported controller binding in a proxy is followed', () => {
     plantFile(`${PLANT_MODULE}/index.mjs`, "export { default as flags } from './services/proxy.mjs';\n");
-    plantFile(
-      `${PLANT_MODULE}/services/proxy.mjs`,
-      "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\nexport default evaluateFlags;\n",
+    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export default evaluateFlags;\n`);
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flags via ${PROXY_RE} -> ${CTRL_RE}`,
+      ),
     );
+  });
+
+  it('R4 (round 3): a semicolon-less `export default` of an imported controller binding is followed (precise diagnostic)', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { default as flags } from './services/proxy.mjs';\n");
+    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export default evaluateFlags\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
@@ -491,26 +513,92 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     );
   });
 
-  it('R4 (evasion 7 control): a proxy that imports a controller but re-exports only its own service binding is not flagged', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { own } from './services/proxy.mjs';\n");
+  it('R4 (round 3): `export const X = <imported binding>` in a proxy is caught, with the chain named', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { zzEval } from './services/proxy.mjs';\n");
+    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export const zzEval = evaluateFlags;\n`);
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzEval via ${PROXY_RE} -> ${CTRL_RE}`,
+      ),
+    );
+  });
+
+  it('R4 (round 3): `export const X = ns.member` of a namespace-imported controller is caught', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { zzEval2 } from './services/proxy.mjs';\n");
     plantFile(
       `${PLANT_MODULE}/services/proxy.mjs`,
-      "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\nexport const own = () => evaluateFlags;\n",
+      "import * as c from '../controllers/epigeneticFlagController.mjs';\nexport const zzEval2 = c.evaluateFlags;\n",
     );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzEval2 via ${PROXY_RE} -> ${CTRL_RE}`,
+      ),
+    );
+  });
+
+  it('R4 (round 3): the barrel importing such a name and exporting it in a second statement is caught', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "import { zzEval } from './services/proxy.mjs';\nexport { zzEval };\n");
+    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export const zzEval = evaluateFlags;\n`);
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(`R4 ${esc(PM)}/index\\.mjs:1 barrel imports a controller file via ${PROXY_RE} -> ${CTRL_RE}`),
+    );
+  });
+
+  it('R4 (round 3, closure): a production name whose target merely IMPORTS a controller deeper in its closure fails, with the path', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { svc } from './services/svc.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/svc.mjs`,
+      "import { util } from './util.mjs';\nexport const svc = () => util();\n",
+    );
+    plantFile(`${PLANT_MODULE}/services/util.mjs`, `${CTRL_IMPORT}export const util = () => evaluateFlags();\n`);
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports svc from \\./services/svc\\.mjs: the import closure of ${esc(PM)}/services/svc\\.mjs reaches controller ${CTRL_RE} \\(${esc(PM)}/services/svc\\.mjs -> ${esc(PM)}/services/util\\.mjs -> ${CTRL_RE}\\)`,
+      ),
+    );
+  });
+
+  it('R4 (round 3 control): a production service whose closure contains no route module or controller passes', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { own } from './services/own.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/own.mjs`,
+      "import { helper } from './helper.mjs';\nexport const own = () => helper();\n",
+    );
+    plantFile(`${PLANT_MODULE}/services/helper.mjs`, 'export const helper = () => 1;\n');
     const res = runCheck();
     expect(res.status).toBe(0);
   });
 
-  it('R4 (M1): a controller under the Equoria-7t1tn label is classified test-block and FAILS only because its name is not pinned', () => {
+  it('R4 (evasion 7 control): a proxy that imports a controller but re-exports only its own service binding is still flagged by the closure rule', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { own } from './services/proxy.mjs';\n");
+    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export const own = () => evaluateFlags;\n`);
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports own from \\./services/proxy\\.mjs: the import closure of ${PROXY_RE} reaches controller ${CTRL_RE}`,
+      ),
+    );
+  });
+
+  it('R4 (S5-pre): a controller under the Equoria-7t1tn label fails R4 outright — old contract: classified test-block and governed by the pinned list; new ruling: no controller in any barrel block', () => {
     plantFile(`${PLANT_MODULE}/index.mjs`, `${TEST_LABEL}export { d } from './controllers/dController.mjs';\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.out).not.toMatch(new RegExp(`R4 ${esc(PM)}/index\\.mjs:3 barrel re-exports controller`)); // not a production-block violation
     expect(res.out).toMatch(
       new RegExp(
-        `R4-allowlist ${esc(PM)}/index\\.mjs:3 test-block controller name "${esc(PLANT_MODULE)}\\.d" is not listed`,
+        `R4 ${esc(PM)}/index\\.mjs:3 barrel re-exports controller name\\(s\\) d from \\./controllers/dController\\.mjs`,
       ),
     );
+    expect(res.out).not.toMatch(/R4-allowlist .*test-block controller name/);
   });
 
   it('R4 (M1): a stale testBlockControllers allow-list entry FAILS (the list only shrinks)', () => {

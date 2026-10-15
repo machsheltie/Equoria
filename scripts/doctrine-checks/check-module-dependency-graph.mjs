@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * Doctrine check: the backend module dependency graph stays a DAG of named service
- * contracts (Equoria-q4uem.4, WS4 S5; hardened in the S5 review rounds 1 and 2).
+ * contracts (Equoria-q4uem.4, WS4 S5; hardened in the S5 review rounds 1-3).
  *
  * Scope: production files under backend/modules/** (tests excluded). One parse pass,
- * zero dependencies, no DB, no network; well under a second on the development laptop.
+ * zero dependencies, no DB, no network; about a second on the development laptop.
  *
  * Rules (each violation prints `R<n> <repo-relative file>:<line> <message>`):
  *   R1  No cross-module cycle. The module graph (edges = one module's file importing
@@ -21,19 +21,23 @@
  *       whose first argument is not a plain single- or double-quoted string literal
  *       (template literal, variable, join(__dirname, …)); any createRequire(…) or
  *       require(…) call (the repo is ESM-only); an import specifier containing a
- *       backslash (Linux CI cannot resolve it); and a lexer fail-safe (below).
+ *       backslash (Linux CI cannot resolve it); and the lexer fail-safe (below).
  *   R3  No `export *` in any barrel.
- *   R4  No HTTP layer in barrels. A barrel may not import or re-export a route module
- *       (path contains /routes/ or file name ends in Routes.mjs) in any block. A barrel
- *       may not re-export a controller (path contains /controllers/ OR file name ends in
- *       Controller.mjs) except inside a labelled test-only block, recognised by the
- *       label line `// Test-consumed only (… Equoria-7t1tn …`, never by path, and only
- *       when `<module>.<name>` is pinned in the allow-list (testBlockControllers; stale
- *       entries fail). Classification follows re-export chains through proxy files:
- *       `export … from`, `export * from`, `import … from X` + `export { … }` of the
- *       imported binding, `export default <imported binding>`, and namespace imports —
- *       recursively, cycle-guarded, depth <= 6. A `// Sentinel-asserted` label switches
- *       back to production rules (no exemption).
+ *   R4  No HTTP layer in barrels — CLOSURE-BASED, every block. For every name a barrel
+ *       re-exports and for every `import` a barrel makes, the static import closure of
+ *       the target file (static imports, `export … from`, dynamic string imports;
+ *       recursive, in-repo files only) may reach no route module (path contains
+ *       /routes/ or file name ends in Routes.mjs) and no controller (path contains
+ *       /controllers/ OR file name ends in Controller.mjs). The path from the target to
+ *       the offending file is reported. Re-export chains through proxy files
+ *       (`export … from`, `export * from`, `import … from X` + `export { … }` /
+ *       `export const X = binding[.member]` / `export default binding`, namespace
+ *       imports) are followed only to produce a precise diagnostic naming the
+ *       controller. There is no test-block exemption for controllers (WS4 S5-pre: the
+ *       former labelled test block was a real runtime coupling — importing a barrel
+ *       evaluated the controller); the `// Test-consumed only (… Equoria-7t1tn` label
+ *       may still head NON-controller names consumed only by other modules' tests, and
+ *       the allow-list's testBlockControllers section is retired and must stay empty.
  *   R5  No upward import: a module file may not import backend/app/**.
  *   WARN (no exit-code effect, no baseline; controller ruling Q9a): shared-layer round
  *       trips — a backend/{utils,services,…} file that modules import and that itself
@@ -42,15 +46,19 @@
  *
  * Lexing. Statements are matched at statement boundaries (line start, or after `;` / `}`
  * on the same line), not only at line starts. Comments are stripped as SPANS; strings,
- * template literals and regex literals are copied verbatim. Regex literals are recognised
+ * template literals and regex literals are copied verbatim and import statements found
+ * inside a string or template span are ignored. Regex literals are recognised
  * heuristically: a `/` is a regex start after an operator, a `(`, `,`, `[`, `{`, `}`, `;`,
  * `:`, after the keywords return/typeof/case/do/else/in/of/delete/void/throw/new/
  * instanceof/yield/await, and after the `)` that closes an if/while/for/with header;
  * elsewhere it is division. What the lexer therefore CANNOT see: a regex literal in any
- * other position (treated as division, so a backtick inside it would open a template).
- * Fail-safe, fail-closed: a template literal spanning more than TEMPLATE_MAX_LINES
- * lines (today's longest real one is 17) or an unterminated template literal or block
- * comment at end of file is reported as a violation rather than trusted.
+ * other position (treated as division, so a quote or backtick inside it would open a
+ * string or template). Fail-safe, fail-closed: a template or string span that CONTAINS
+ * statement-shaped import/export/`require(`/`import(` text the scanners would otherwise
+ * have read, and an unterminated template literal or block comment at end of file, are
+ * reported as violations rather than trusted. Comment spans are never failed closed:
+ * JSDoc `{import('x').T}` types and `// import …` examples live there, and the only way
+ * a comment can hide code — an unterminated `/*` — is covered.
  *
  * Sanity: fewer than 10 modules or 50 production files parsed, or a missing allow-list
  * file => exit 2 (a gate that passes because it parsed nothing is not a gate).
@@ -80,20 +88,20 @@ const ALLOWLIST_NAME = path.basename(ALLOWLIST_PATH);
 const TAG = '[module-dependency-graph]';
 
 const R2_MARKER_RE = /eslint-disable-next-line no-restricted-imports -- Equoria-hk739/;
-const TEST_BLOCK_LABEL_RE = /^\/\/ Test-consumed only \(.*Equoria-7t1tn/;
-const SENTINEL_BLOCK_LABEL_RE = /^\/\/ Sentinel-asserted/;
 const ROUTE_PATH_RE = /\/routes\/|Routes\.mjs$/;
 const CONTROLLER_PATH_RE = /\/controllers\/|Controller\.mjs$/;
 const MIN_MODULES = 10;
 const MIN_FILES = 50;
 const MAX_CHAIN_DEPTH = 6;
-const TEMPLATE_MAX_LINES = 40;
 // Allow-list entry contract (same bar as horse-name-gate-allowlist.json).
 const MIN_REASON_LENGTH = 40;
 const ISSUE_REF_RE = /^Equoria-[A-Za-z0-9._-]+$/;
 
 const rel = (p) => path.relative(REPO_ROOT, p).split(path.sep).join('/');
 const isTestPath = (p) => /[\\/]__tests__[\\/]/.test(p) || /\.(test|spec)\.(mjs|js)$/.test(p);
+const isRepoFile = (abs) => !rel(abs).startsWith('..') && !/[\\/]node_modules[\\/]/.test(abs);
+const httpKind = (r) =>
+  ROUTE_PATH_RE.test(r) ? 'route' : CONTROLLER_PATH_RE.test(r) ? 'controller' : null;
 
 function walk(dir, out = []) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -113,12 +121,19 @@ function moduleOf(absPath) {
   return m ? m[1] : null;
 }
 
+// Statement boundary: line start, or after `;` / `}` on the same line (minor 6).
+const B = '(?:^|[\\n;}])[ \\t]*';
+// Statement-shaped text the scanners read; a string/template span containing it fails closed.
+const SPAN_SCAN_RE = new RegExp(
+  `${B}(?:import|export)\\s[^;'"\`]*?from\\s*['"]|${B}import\\s*['"]|\\bimport\\s*\\(|\\b(?:createRequire|require)\\s*\\(`
+);
+
 // ── comment stripping (spans, newline-preserving) ─────────────────────────────────────
 // Replaces every `//` and `/* */` comment with spaces of the same length (newlines kept)
 // so line numbers survive, while strings, template literals and regex literals are copied
 // verbatim and never mistaken for comment starts. Returns the code, the [start, end) spans
-// of string/template literals (so callers can ignore `import(` inside a string) and the
-// lexer fail-safe issues (unterminated template/block comment, over-long template).
+// of string/template literals (so callers can ignore statements inside a string) and the
+// lexer fail-safe issues (unterminated template/block comment, statement text in a span).
 const REGEX_AFTER_CHAR = /[(,=:[!&|?{};+\-*%<>~^]/;
 const REGEX_AFTER_WORD = new Set([
   'return',
@@ -154,6 +169,16 @@ function stripComments(src) {
   const flushWord = () => {
     if (word) prevWord = word;
     word = '';
+  };
+  const checkSpan = (start, kind) => {
+    const inner = out.slice(start + 1, out.length - 1);
+    const m = SPAN_SCAN_RE.exec(`\n${inner}`);
+    if (m) {
+      issues.push({
+        line: lineAt(start),
+        kind: `${kind} contains import/export/require text (${m[0].trim().slice(0, 60)})`,
+      });
+    }
   };
   while (i < n) {
     const c = src[i];
@@ -199,6 +224,7 @@ function stripComments(src) {
         i += 1;
       }
       spans.push([start, out.length]);
+      checkSpan(start, 'string literal');
       prevSig = c;
       afterHeaderParen = false;
       continue;
@@ -237,14 +263,8 @@ function stripComments(src) {
         }
       }
       spans.push([start, out.length]);
-      const lines = out.slice(start).split('\n').length;
       if (!closed) issues.push({ line: lineAt(start), kind: 'unterminated template literal' });
-      else if (lines > TEMPLATE_MAX_LINES) {
-        issues.push({
-          line: lineAt(start),
-          kind: `template literal spans ${lines} lines (> ${TEMPLATE_MAX_LINES})`,
-        });
-      }
+      else checkSpan(start, 'template literal');
       prevSig = '`';
       afterHeaderParen = false;
       continue;
@@ -331,8 +351,6 @@ function backslashViolation(where, spec) {
     : null;
 }
 
-// Statement boundary: line start, or after `;` / `}` on the same line (minor 6).
-const B = '(?:^|[\\n;}])[ \\t]*';
 // static import/export-from and side-effect import (on comment-stripped code)
 const STATIC_RE = new RegExp(
   `${B}(?:import|export)\\s[^;'"\`]*?from\\s*(['"])([^'"\\n]*)\\1|${B}import\\s*(['"])([^'"\\n]*)\\3`,
@@ -353,6 +371,8 @@ function resolveSpec(fromFile, spec) {
 
 /** Line of a match that may start with the boundary character itself. */
 const matchLine = (code, m) => lineOf(code, m.index + (m[0].startsWith('\n') ? 1 : 0));
+/** Index of the first non-boundary, non-space character of a boundary-anchored match. */
+const keywordIndex = (m) => m.index + /^[\n;}]?[ \t]*/.exec(m[0])[0].length;
 
 /**
  * All import sites of one file.
@@ -362,7 +382,9 @@ const matchLine = (code, m) => lineOf(code, m.index + (m[0].startsWith('\n') ? 1
  *   issues:     [{ line, kind }]                    — lexer fail-safe findings
  *   rawLines:   the original lines (for marker look-ups)
  */
+const siteCache = new Map();
 function importSites(file) {
+  if (siteCache.has(file)) return siteCache.get(file);
   const raw = fs.readFileSync(file, 'utf8');
   const { code, spans, issues } = stripComments(raw);
   const sites = [];
@@ -371,6 +393,7 @@ function importSites(file) {
   STATIC_RE.lastIndex = 0;
   let m;
   while ((m = STATIC_RE.exec(code))) {
+    if (inSpans(spans, keywordIndex(m))) continue; // an "import" inside a string span
     const spec = m[2] ?? m[4];
     sites.push({ spec, target: resolveSpec(file, spec), line: matchLine(code, m), dynamic: false });
   }
@@ -412,7 +435,57 @@ function importSites(file) {
       snippet: code.slice(m.index, end === -1 ? m.index + 60 : Math.min(end, m.index + 60)).trim(),
     });
   }
-  return { sites, nonliteral, commonjs, issues, rawLines: raw.split('\n') };
+  const result = { sites, nonliteral, commonjs, issues, rawLines: raw.split('\n') };
+  siteCache.set(file, result);
+  return result;
+}
+
+/** In-repo files a file imports directly (literal static, export-from and dynamic string imports). */
+const directCache = new Map();
+function directImports(file) {
+  if (directCache.has(file)) return directCache.get(file);
+  let out = [];
+  if (fs.existsSync(file) && fs.statSync(file).isFile() && /\.(mjs|js)$/.test(file)) {
+    out = importSites(file)
+      .sites.map((s) => s.target)
+      .filter((t) => t && isRepoFile(t));
+  }
+  directCache.set(file, out);
+  return out;
+}
+
+/**
+ * Breadth-first static import closure of `start` (start included). Returns the first route
+ * module or controller file reached, with the path from `start`, or null.
+ */
+const closureHitCache = new Map();
+function closureHttpHit(start) {
+  if (closureHitCache.has(start)) return closureHitCache.get(start);
+  const parent = new Map([[start, null]]);
+  const queue = [start];
+  let hit = null;
+  while (queue.length && !hit) {
+    const f = queue.shift();
+    const kind = httpKind(rel(f));
+    if (kind) {
+      hit = { kind, file: f };
+      break;
+    }
+    for (const t of directImports(f)) {
+      if (!parent.has(t)) {
+        parent.set(t, f);
+        queue.push(t);
+      }
+    }
+  }
+  let result = null;
+  if (hit) {
+    const chain = [];
+    for (let f = hit.file; f; f = parent.get(f)) chain.unshift(rel(f));
+    result = { kind: hit.kind, file: rel(hit.file), path: chain };
+  }
+  closureHitCache.set(start, result);
+  return result;
 }
 
 // ── --closure <file> ───────────────────────────────────────────────────────────────────
@@ -421,10 +494,9 @@ function closureOf(startFile) {
   const stack = [path.resolve(REPO_ROOT, startFile)];
   while (stack.length) {
     const f = stack.pop();
-    if (seen.has(f) || !fs.existsSync(f) || !/\.(mjs|js)$/.test(f)) continue;
-    if (rel(f).startsWith('..') || /[\\/]node_modules[\\/]/.test(f)) continue;
+    if (seen.has(f) || !fs.existsSync(f) || !/\.(mjs|js)$/.test(f) || !isRepoFile(f)) continue;
     seen.add(f);
-    for (const s of importSites(f).sites) if (s.target) stack.push(s.target);
+    for (const t of directImports(f)) stack.push(t);
   }
   seen.delete(path.resolve(REPO_ROOT, startFile));
   return [...seen].map(rel).sort();
@@ -677,7 +749,15 @@ const IMPORT_BINDING_RE = new RegExp(
   'g'
 );
 const LOCAL_EXPORT_RE = new RegExp(`${B}export\\s*\\{([^}]*)\\}(?!\\s*from)`, 'g');
-const DEFAULT_EXPORT_RE = new RegExp(`${B}export\\s+default\\s+([A-Za-z_$][\\w$]*)\\s*;`, 'g');
+// `export default binding[.member]` and `export const X = binding[.member]`, semicolon optional.
+const DEFAULT_EXPORT_RE = new RegExp(
+  `${B}export\\s+default\\s+([A-Za-z_$][\\w$]*)(?:\\s*\\.\\s*[\\w$]+)*\\s*(?:;|\\n|$)`,
+  'g'
+);
+const CONST_ALIAS_RE = new RegExp(
+  `${B}export\\s+(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*([A-Za-z_$][\\w$]*)(?:\\s*\\.\\s*[\\w$]+)*\\s*(?:;|\\n|$)`,
+  'g'
+);
 
 /** `export { a as b, c } from 'spec'` and `export * from 'spec'` statements of a stripped source. */
 function reExportStatements(code) {
@@ -722,7 +802,10 @@ function importBindingStatements(code) {
   return out;
 }
 
-/** Local re-exports of a stripped source: `export { a as b }` and `export default ident` -> [{ exported, local }]. */
+/**
+ * Local re-exports of a stripped source: `export { a as b }`, `export default ident[.m]` and
+ * `export const X = ident[.m]` -> [{ exported, local }] (local = the referenced binding).
+ */
 function localExportStatements(code) {
   const out = [];
   LOCAL_EXPORT_RE.lastIndex = 0;
@@ -732,19 +815,21 @@ function localExportStatements(code) {
   }
   DEFAULT_EXPORT_RE.lastIndex = 0;
   while ((m = DEFAULT_EXPORT_RE.exec(code))) out.push({ exported: 'default', local: m[1] });
+  CONST_ALIAS_RE.lastIndex = 0;
+  while ((m = CONST_ALIAS_RE.exec(code))) out.push({ exported: m[1], local: m[2] });
   return out;
 }
 
 /**
- * Follow re-export chains from `absTarget` for the requested exported names ('*' = all)
- * until a route module or controller file is reached: `export … from`, `export * from`,
- * and `import … from X` + `export { binding }` / `export default binding`.
- * Returns { kind, chain } or null.
+ * Precise diagnostic: follow re-export chains from `absTarget` for the requested exported
+ * names ('*' = all) until a route module or controller file is reached. Returns
+ * { kind, chain } or null. (The closure rule below is the one that decides production
+ * block violations; this names the controller when a chain explains the reach.)
  */
 function classifyTarget(absTarget, wanted, depth = 0, visited = new Set()) {
   const r = rel(absTarget);
-  if (ROUTE_PATH_RE.test(r)) return { kind: 'route', chain: [r] };
-  if (CONTROLLER_PATH_RE.test(r)) return { kind: 'controller', chain: [r] };
+  const direct = httpKind(r);
+  if (direct) return { kind: direct, chain: [r] };
   if (
     depth >= MAX_CHAIN_DEPTH ||
     visited.has(absTarget) ||
@@ -773,7 +858,7 @@ function classifyTarget(absTarget, wanted, depth = 0, visited = new Set()) {
     const res = follow(st.spec, nextWanted);
     if (res) return res;
   }
-  // Two-statement re-exports: an imported binding exported locally (by name or as default).
+  // Two-statement re-exports: an imported binding exported locally (by name, as default, or as a const alias).
   const bindings = importBindingStatements(code);
   if (!bindings.length) return null;
   for (const le of localExportStatements(code)) {
@@ -789,7 +874,8 @@ function classifyTarget(absTarget, wanted, depth = 0, visited = new Set()) {
 
 let starExports = 0;
 let httpInBarrel = 0;
-const testBlockObserved = new Map(); // "<module>.<name>" -> where
+let closureChecked = 0;
+let closureHits = 0;
 const STAR_EXPORT_RE = new RegExp(`${B}export\\s*\\*`, 'g');
 const BARREL_STMT_RE = new RegExp(
   `${B}export\\s*\\{([^}]*)\\}\\s*from\\s*(['"])([^'"\\n]*)\\2|${B}import\\s([^;'"\`]*?)from\\s*(['"])([^'"\\n]*)\\5|${B}import\\s*(['"])([^'"\\n]*)\\7`,
@@ -798,19 +884,11 @@ const BARREL_STMT_RE = new RegExp(
 for (const mod of modules) {
   const barrel = path.join(MODULES_DIR, mod, 'index.mjs');
   const raw = fs.readFileSync(barrel, 'utf8');
-  const rawLines = raw.split('\n');
-  const { code } = stripComments(raw);
-  // block mode per line: production until a test label; a sentinel label returns to production
-  const modeAt = [];
-  let mode = 'production';
-  rawLines.forEach((l, i) => {
-    if (TEST_BLOCK_LABEL_RE.test(l)) mode = 'test';
-    else if (SENTINEL_BLOCK_LABEL_RE.test(l)) mode = 'production';
-    modeAt[i + 1] = mode;
-  });
+  const { code, spans } = stripComments(raw);
   STAR_EXPORT_RE.lastIndex = 0;
   let m;
   while ((m = STAR_EXPORT_RE.exec(code))) {
+    if (inSpans(spans, keywordIndex(m))) continue;
     starExports += 1;
     violations.push(
       `R3 ${rel(barrel)}:${matchLine(code, m)} \`export *\` in a barrel; list the names the consumers need`
@@ -818,6 +896,7 @@ for (const mod of modules) {
   }
   BARREL_STMT_RE.lastIndex = 0;
   while ((m = BARREL_STMT_RE.exec(code))) {
+    if (inSpans(spans, keywordIndex(m))) continue;
     const isReExport = m[1] !== undefined;
     const spec = m[3] ?? m[6] ?? m[8];
     const line = matchLine(code, m);
@@ -838,39 +917,41 @@ for (const mod of modules) {
       wanted = bindings.some((b) => b.orig === '*') ? ['*'] : bindings.map((b) => b.orig);
       if (!wanted.length) wanted = ['*'];
     }
-    const cls = classifyTarget(target, wanted);
-    if (!cls) continue;
-    const via = cls.chain.length > 1 ? ` via ${cls.chain.join(' -> ')}` : '';
     const localNames = names.map((nm) => nm.local);
-    if (cls.kind === 'route') {
+    const cls = classifyTarget(target, wanted);
+    if (cls) {
+      const via = cls.chain.length > 1 ? ` via ${cls.chain.join(' -> ')}` : '';
       httpInBarrel += 1;
-      violations.push(
-        `R4 ${where} barrel ${isReExport ? 're-exports' : 'imports'} a route module (${spec}${via}); backend/app/routers.mjs wires routes directly`
-      );
-    } else if (isReExport && modeAt[line] === 'test') {
-      for (const nm of localNames) {
-        const key = `${mod}.${nm}`;
-        testBlockObserved.set(key, where);
-        if (!(key in testBlockListed)) {
-          violations.push(
-            `R4-allowlist ${where} test-block controller name "${key}" is not listed in ${ALLOWLIST_NAME} (testBlockControllers)`
-          );
-        }
+      if (cls.kind === 'route') {
+        violations.push(
+          `R4 ${where} barrel ${isReExport ? 're-exports' : 'imports'} a route module (${spec}${via}); backend/app/routers.mjs wires routes directly`
+        );
+      } else {
+        // WS4 S5-pre (controller ruling): no controller in ANY barrel block — the former
+        // labelled test-block exemption was a real runtime coupling, not a label.
+        violations.push(
+          `R4 ${where} barrel ${isReExport ? `re-exports controller name(s) ${localNames.join(', ')}` : 'imports a controller file'} ${via ? via.trim() : `from ${spec}`}; controllers are never barrel exports, in any block`
+        );
       }
-    } else {
+      continue;
+    }
+    // Closure rule: no barrel name (any block) and no barrel import may evaluate the HTTP layer.
+    closureChecked += 1;
+    const hit = closureHttpHit(target);
+    if (hit) {
       httpInBarrel += 1;
+      closureHits += 1;
       violations.push(
-        `R4 ${where} barrel ${isReExport ? `re-exports controller name(s) ${localNames.join(', ')}` : 'imports a controller file'} ${via ? via.trim() : `from ${spec}`} outside a labelled test-only block; controllers are not domain capabilities`
+        `R4 ${where} barrel ${isReExport ? `re-exports ${localNames.join(', ')} from ${spec}` : `imports ${spec}`}: the import closure of ${rel(target)} reaches ${hit.kind} ${hit.file} (${hit.path.join(' -> ')}) — barrel names must not evaluate the HTTP layer`
       );
     }
   }
 }
+// testBlockControllers is retired (WS4 S5-pre): no barrel may re-export a controller, so every entry is stale.
 for (const key of Object.keys(testBlockListed)) {
-  if (!testBlockObserved.has(key)) {
-    violations.push(
-      `R4-allowlist stale entry "${key}" — no such test-block re-export on disk; delete it (the list only shrinks)`
-    );
-  }
+  violations.push(
+    `R4-allowlist stale entry "${key}" — controllers are never barrel exports (WS4 S5-pre); delete it (this section stays empty)`
+  );
 }
 
 // WARN: shared-layer round trips (Q9a).
@@ -893,7 +974,7 @@ for (const [shared, importers] of [...sharedHops.entries()].sort((a, b) =>
 const summary =
   `modules=${modules.length} files=${files.length} edges=${crossEdges} (dynamic ${dynamicEdges}) nonliteral-dynamic=${nonliteralCount} commonjs=${commonjsCount} lexer-failsafe=${lexerCount} ` +
   `cycles=${cycleCount} deep-imports=${violations.filter((v) => v.startsWith('R2 ')).length} (marked ${markedDeep.size} listed ${Object.keys(deepImportsListed).length}) ` +
-  `star-exports=${starExports} http-in-barrel=${httpInBarrel} (test-block controller names ${testBlockObserved.size} listed ${Object.keys(testBlockListed).length}) ` +
+  `star-exports=${starExports} http-in-barrel=${httpInBarrel} closure-checked=${closureChecked} closure-hits=${closureHits} (testBlockControllers listed ${Object.keys(testBlockListed).length}, must be 0) ` +
   `upward=${violations.filter((v) => v.startsWith('R5 ')).length} warn=${warns.length}`;
 
 for (const w of warns) console.log(`${TAG} ${w}`);

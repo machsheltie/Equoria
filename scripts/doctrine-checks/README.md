@@ -64,22 +64,30 @@ to fix the underlying problem. It is not a license to weaken the check.
   `join(__dirname, …)`), any `createRequire(…)` or `require(…)` call (the repo is
   ESM-only), any import specifier containing a backslash (Linux CI cannot
   resolve it), and the lexer fail-safe (an unterminated template literal or
-  block comment, or a template literal longer than 40 lines, fails closed);
-  statements are matched at statement boundaries (line start, or after `;` /
-  `}` on the same line), not only at line starts; R3 no `export *` in a barrel;
-  R4 no HTTP layer in barrels — a route module (`/routes/` or `*Routes.mjs`) is
-  never imported or re-exported, a controller (`/controllers/` directory OR
-  `*Controller.mjs` file name, reached directly or through chains of proxy
-  files: `export … from`, `export * from`, `import … from X` + `export { … }` of
-  the binding, `export default` of the binding, namespace imports) is
-  re-exported only
-  inside a block opened by the label `// Test-consumed only (… Equoria-7t1tn`
-  and only when `<module>.<name>` is pinned in the allow-list
-  (`testBlockControllers`; Equoria-7t1tn empties it); `// Sentinel-asserted`
-  returns a barrel to production rules; R5 no module file imports
-  `backend/app/**`. Both allow-list sections may only SHRINK: an unpinned
-  exception fails, and so does a pinned entry that no longer matches anything on
-  disk; every entry needs a `reason` and an `issue`. Shared-layer round trips (a
+  block comment at end of file, or a template/string literal that CONTAINS
+  statement-shaped import/export/`require(`/`import(` text the scanners would
+  otherwise have read, fails closed; a long template without such text passes;
+  comment spans are stripped and never fail closed — JSDoc `{import('x')}` types
+  live there); statements are matched at statement boundaries (line start, or
+  after `;` / `}` on the same line), not only at line starts; R3 no `export *`
+  in a barrel; R4 no HTTP layer in barrels — CLOSURE-BASED, every block: for
+  every barrel re-export and every barrel `import`, the static import closure of
+  the target file (static imports, `export … from`, dynamic string imports) may
+  reach no route module (`/routes/` or `*Routes.mjs`) and no controller
+  (`/controllers/` directory OR `*Controller.mjs` file name); the path to the
+  offending file is reported, and the re-export chain (`export … from`,
+  `export * from`, `import … from X` + `export { … }` /
+  `export const X = binding[.member]` / `export default binding`, namespace
+  imports) is followed only to name the controller precisely. There is no
+  test-block exemption for controllers (WS4 S5-pre: the former labelled block was
+  a real runtime coupling — importing the economy barrel evaluated
+  tackShopController); the `// Test-consumed only (… Equoria-7t1tn` label may
+  still head NON-controller names consumed only by other modules' tests, and the
+  allow-list's `testBlockControllers` section is retired and must stay empty (any
+  entry fails); R5 no module file imports `backend/app/**`. The `deepImports`
+  allow-list section may only SHRINK: an unpinned marked import fails, and so does
+  a pinned pair that no longer matches anything on disk; every entry needs a
+  `reason` and an `issue`. Shared-layer round trips (a
   `backend/utils|services` file that modules import and that imports a module
   back) and a barrel-less directory under `modules/` print as `WARN` only, with
   no exit-code effect and no baseline (controller ruling Q9a). Fewer than 10
