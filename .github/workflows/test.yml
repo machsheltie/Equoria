@@ -333,6 +333,14 @@ jobs:
             backend/package-lock.json
             packages/database/package-lock.json
 
+      - name: Install root dependencies
+        # Backend Jest also runs sentinels over repo-root scripts, and those
+        # resolve their imports from root node_modules, not backend/:
+        # scripts/doctrine-checks/check-staff-routes-guarded.mjs imports
+        # espree. Without this step its sentinel fails with "Cannot find
+        # module 'espree'" (Equoria-5hdwr).
+        run: npm ci --no-audit --no-fund
+
       - name: Install backend dependencies
         working-directory: ./backend
         run: npm ci
@@ -1035,6 +1043,12 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
             packages/database/package-lock.json
+
+      - name: Install root dependencies
+        # test:security runs sentinels over repo-root scripts, which resolve
+        # their imports (e.g. espree in check-staff-routes-guarded.mjs) from
+        # root node_modules. See the backend-tests job (Equoria-5hdwr).
+        run: npm ci --no-audit --no-fund
 
       - name: Install backend dependencies
         working-directory: ./backend
