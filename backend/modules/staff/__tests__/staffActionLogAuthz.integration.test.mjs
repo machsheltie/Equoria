@@ -260,11 +260,35 @@ describe('Staff action recording (Equoria-puj1e.1)', () => {
     expect(row.reason).toBeNull();
   });
 
+  // STAFF-CR-18 / CR-10 retention (docs/features/staff-foundation.md): the barrel
+  // exports exactly these two purges, for check-in codes, trusted devices and the
+  // email outbox. Neither deletes staff_action_log rows (proved below). Every other
+  // export matching the regex still fails.
+  const RETENTION_PURGES = ['purgeSettledEmails', 'purgeStaleStaffCheckinRecords'];
+
   it('keeps the log permanent: no update or delete is exposed', () => {
-    const names = [...Object.keys(logService), ...Object.keys(staff)];
+    const names = [...Object.keys(logService), ...Object.keys(staff).filter(n => !RETENTION_PURGES.includes(n))];
     expect(names.filter(n => /^(update|delete|remove|purge|edit|clear|reset)/i.test(n))).toEqual([]);
     expect(Object.keys(logService).sort()).toEqual(
-      ['LOG_PAGE_SIZE', 'isPunitiveCapability', 'listStaffActions', 'recordStaffActionTx', 'recordStaffFailure'].sort(),
+      [
+        'LOG_PAGE_SIZE',
+        'isPunitiveCapability',
+        'listStaffActions',
+        'listStaffLogActors', // read-only actor list (STAFF-CR-16)
+        'recordStaffActionTx',
+        'recordStaffFailure',
+      ].sort(),
     );
+  });
+
+  it('keeps the log rows when both retention purges run with every cutoff passed', async () => {
+    const { admin } = await fixtureStaff();
+    const row = await recordStaffActionTx(prisma, entryFor(admin));
+    const farFuture = new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000);
+
+    await staff.purgeStaleStaffCheckinRecords(farFuture);
+    await staff.purgeSettledEmails(farFuture);
+
+    expect(await prisma.staffActionLog.count({ where: { id: row.id } })).toBe(1);
   });
 });

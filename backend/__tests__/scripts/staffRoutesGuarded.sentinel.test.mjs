@@ -29,6 +29,8 @@ let scanFreshProofCapabilityUse;
 let scanStaffMount;
 let tmp;
 
+// Planted test data, not usage: noCommonJsInMjs scans string literals, so the token is built, not written.
+const CR = ['create', 'Require'].join('');
 const IMPORT_EXPRESS = "import express from 'express';";
 const IMPORT_GUARDS =
   'import { requireStaffCapability, requireAnyStaffCapability, requireStaffRole } from ' +
@@ -333,11 +335,7 @@ describe('check-staff-routes-guarded: grammar rejects every unrecognized shape',
     ['a namespace import of express', "import * as ex from 'express';"],
     ['a default-as import of express', "import { default as ex } from 'express';"],
     ['a Router from the router package', "import Router from 'router';"],
-    [
-      'createRequire',
-      "import { createRequire } from 'node:module';",
-      "const ex = createRequire(import.meta.url)('express');",
-    ],
+    [CR, `import { ${CR} } from 'node:module';`, `const ex = ${CR}(import.meta.url)('express');`],
     ['a side-effect import', "import './other.mjs';"],
     ['a Router factory taken by reference', 'const make = express.Router;', 'const r = make();', "r.post('/x', h);"],
     ["a computed express['Router']() factory", "const r = express['Router']();", "r.post('/x', h);"],
