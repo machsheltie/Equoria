@@ -1,11 +1,8 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
-import {
-  getResultsByShow,
-  getResultsByHorse,
-  getUserResultsSummary,
-} from '../services/resultModelService.mjs';
+import { getResultsByHorse, getUserResultsSummary } from '../services/resultModelService.mjs';
+import { getShowResultsView } from '../services/competitionResultRecord.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 // Equoria-kacla: enterAndRunShow / executeEnhancedCompetition /
 // validateCompetitionEntry are no longer imported — the legacy instant
@@ -97,7 +94,9 @@ router.post('/enter-show', mutationRateLimiter, auth, (req, res) => {
 
 /**
  * GET /show/:showId/results
- * Get all results for a specific show
+ * One show's results as a scoped DTO (Equoria-q4uem.10, owner ruling R4):
+ * show header + one row per result; never raw horse/show rows. Shape owned by
+ * competitionResultRecord.getShowResultsView.
  */
 router.get('/show/:showId/results', queryRateLimiter, async (req, res) => {
   try {
@@ -110,18 +109,9 @@ router.get('/show/:showId/results', queryRateLimiter, async (req, res) => {
       });
     }
 
-    const results = await getResultsByShow(showId);
-
-    logger.info(
-      `[competitionRoutes.GET /show/${showId}/results] Retrieved ${results.length} results`,
-    );
-
-    res.json({
-      success: true,
-      showId,
-      results,
-      count: results.length,
-    });
+    const view = await getShowResultsView(showId, req.user?.id);
+    logger.info(`[competitionRoutes.GET /show/${showId}/results] Retrieved ${view.count} results`);
+    res.json(view);
   } catch (error) {
     logger.error(`[competitionRoutes.GET /show/:showId/results] Error: ${error.message}`);
     res.status(500).json({

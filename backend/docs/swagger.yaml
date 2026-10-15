@@ -837,12 +837,22 @@ paths:
     get:
       tags: [Competition]
       summary: 'Get results for a competition show'
+      description: |
+        Scoped results DTO (Equoria-q4uem.10, owner ruling R4):
+        `{ success, showId, count, show, results }`. `show` is
+        `{ id, name, discipline, showType, status, scheduledRunDate, executedAt, prize }`,
+        or null when the show does not exist (results is then []). Each result is
+        `{ resultId, horseId, horseName, ownerName, isViewerHorse, placement, score,
+        prizeWon, runDate, horsePointsAwarded, statGain, conformationAward }`, sorted
+        by placement. `statGain` is filled for the viewer's own horses only (R7);
+        unrecorded values are null, never 0. No horse, show or account rows are exposed.
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: showId, in: path, required: true, schema: { type: integer } }
       responses:
-        '200': { description: 'Show results' }
-        '404': { description: 'Show not found' }
+        '200':
+          { description: 'Show results (empty list and null show when the show does not exist)' }
+        '400': { description: 'Invalid show ID' }
 
   /competition/disciplines:
     get:
