@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "dev": "nodemon server.mjs",
+    "dev": "node --watch server.mjs",
     "build": "echo 'Backend build completed - ES modules ready for production'",
     "migrate:production": "cd ../packages/database && npx prisma migrate deploy",
     "test": "node --experimental-vm-modules --max-old-space-size=1536 node_modules/jest/bin/jest.js --maxWorkers=2",
@@ -104,7 +104,6 @@
     "jest-html-reporter": "^4.0.0",
     "jest-junit": "^17.0.0",
     "js-yaml": "^4.1.1",
-    "nodemon": "^3.1.4",
     "nyc": "^18.0.0",
     "prettier": "3.8.3",
     "supertest": "^7.0.0"

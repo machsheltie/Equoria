@@ -8,15 +8,16 @@
  * Prisma tries to rename a .tmp file over it on generate, but Windows refuses
  * to rename/overwrite a locked file — EPERM.
  *
- * The subtle issue: killing the server isn't enough on its own because nodemon
- * restarts it immediately, re-locking the DLL before prisma generate can run.
+ * The subtle issue: killing the server isn't enough on its own because a dev
+ * watcher (`node --watch`) can restart it, re-locking the DLL before prisma
+ * generate can run.
  *
  * Fix:
  *   1. Kill node processes that have the Prisma DLL in their loaded modules.
  *   2. Wait for OS to release handles.
  *   3. Actively DELETE the DLL file — this is the key step. If no process is
  *      holding it, the delete succeeds, and Prisma writes a fresh file without
- *      needing to rename over a locked one. Nodemon's next restart will briefly
+ *      needing to rename over a locked one. The watcher's next restart will briefly
  *      fail to find @prisma/client, then succeed once the new DLL exists.
  *   4. If the delete still fails, exit with a clear message.
  */
@@ -67,7 +68,7 @@ if ($killed -eq 0) { Write-Host "  No processes were holding the DLL." }
 
   // Now delete the DLL directly. This is the key step:
   // - If processes are gone: delete succeeds → Prisma writes a fresh file, no rename needed.
-  // - If nodemon restarted too fast and re-locked it: delete fails → we tell the user clearly.
+  // - If the watcher restarted too fast and re-locked it: delete fails → we tell the user clearly.
   try {
     unlinkSync(dllFile);
     console.log('[prisma-generate] DLL removed — Prisma will write a fresh one.\n');
@@ -76,10 +77,10 @@ if ($killed -eq 0) { Write-Host "  No processes were holding the DLL." }
       // File doesn't exist yet — first-time generate, that's fine.
       console.log('[prisma-generate] No existing DLL found — fresh generate.\n');
     } else {
-      // Still locked — nodemon restarted the server before we could delete it.
+      // Still locked — the dev watcher restarted the server before we could delete it.
       console.error('\n[prisma-generate] ERROR: Could not remove the Prisma DLL.');
-      console.error('  The file is still locked — nodemon likely restarted the server too fast.');
-      console.error('  Please stop your backend dev server (Ctrl+C in the nodemon terminal),');
+      console.error('  The file is still locked — the dev server likely restarted too fast.');
+      console.error('  Please stop your backend dev server (Ctrl+C in its terminal),');
       console.error('  run `npm run generate`, then restart the server with `npm run dev`.\n');
       process.exit(1);
     }
