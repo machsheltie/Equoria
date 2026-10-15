@@ -4,7 +4,7 @@
  * Comprehensive test suite for the prize notification modal component.
  * Tests cover:
  * - Component rendering states (open/closed)
- * - Prize data display (money, XP, placement)
+ * - Prize data display (money, placement; no XP since owner ruling R7)
  * - Placement-based icons and styling (gold/silver/bronze)
  * - User interactions (close button, backdrop, escape key, auto-dismiss)
  * - Animation classes
@@ -36,7 +36,6 @@ describe('PrizeNotificationModal', () => {
     date: '2026-04-15',
     placement: 1,
     prizeMoney: 5000,
-    xpGained: 150,
   };
 
   const defaultProps: PrizeNotificationModalProps = {
@@ -101,11 +100,14 @@ describe('PrizeNotificationModal', () => {
       expect(prizeMoney).not.toHaveTextContent('$');
     });
 
-    it('should show XP gained with "+X XP" format', () => {
+    // Owner ruling R7 (2026-10-15, Equoria-q4uem.10): the XP figure was
+    // invented (prize ÷ 10). Old contract: a "+150 XP" Experience Gained line.
+    it('shows no experience line', () => {
       renderModal();
 
-      const xpBadge = screen.getByTestId('xp-gained');
-      expect(xpBadge).toHaveTextContent('+150 XP');
+      expect(screen.queryByTestId('xp-gained')).not.toBeInTheDocument();
+      expect(screen.queryByText(/experience gained/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/\bXP\b/)).not.toBeInTheDocument();
     });
   });
 
@@ -344,15 +346,6 @@ describe('PrizeNotificationModal', () => {
       const prizeMoney = screen.getByTestId('prize-money');
       // Coins are integer-valued; the canonical Currency component truncates
       expect(prizeMoney).toHaveTextContent('1,234,567');
-    });
-
-    it('should handle zero XP gain correctly', () => {
-      renderModal({
-        prizeData: { ...samplePrizeData, xpGained: 0 },
-      });
-
-      const xpBadge = screen.getByTestId('xp-gained');
-      expect(xpBadge).toHaveTextContent('+0 XP');
     });
   });
 

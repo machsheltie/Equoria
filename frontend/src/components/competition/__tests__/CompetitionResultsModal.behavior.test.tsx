@@ -9,9 +9,8 @@
  * vi.mock of useCompetitionResults: passing `_testResults` switches the modal to
  * the explicit test-injection branch and disables the production fetch
  * (`useCompetitionResults(null)`), which is the component's own contract for
- * tests. The only network boundary that still fires is `useHorseLevelInfo` for
- * the first user horse (GET /horses/:id/xp); we satisfy it through MSW (the real
- * fetch pipeline) rather than mocking the hook — consistent with CLAUDE.md §3.
+ * tests. Since Equoria-q4uem.10 (owner ruling R7) the modal makes no other
+ * request: the horse XP/level read behind the invented XP column is gone.
  *
  * Assertions target user-visible behavior:
  *   - sort headers reorder the visible rows (default rank, then score desc, name)
@@ -76,10 +75,12 @@ const RESULTS: CompetitionResults = {
   ],
 };
 
-/** Satisfy useHorseLevelInfo's GET /horses/:id/xp so MSW does not 'error' it. */
-function stubXpHandler() {
-  return http.get('*/api/v1/horses/:horseId/xp', () =>
-    HttpResponse.json({
+/** Records any horse XP/level read; R7 says the results modal makes none. */
+const xpRequests: string[] = [];
+function recordXpRequests() {
+  return http.get('*/api/v1/horses/:horseId/xp', ({ request }) => {
+    xpRequests.push(new URL(request.url).pathname);
+    return HttpResponse.json({
       success: true,
       data: {
         horseId: 102,
@@ -91,8 +92,8 @@ function stubXpHandler() {
         totalEarnedXP: 1200,
         progressPercent: 60,
       },
-    })
-  );
+    });
+  });
 }
 
 function renderModal(results: CompetitionResults | null = RESULTS) {
@@ -123,7 +124,8 @@ function visibleHorseOrder(): string[] {
 
 describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
   beforeEach(() => {
-    server.use(stubXpHandler());
+    xpRequests.length = 0;
+    server.use(recordXpRequests());
   });
 
   it('defaults to rank ascending (best horse first)', async () => {
@@ -225,6 +227,44 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
     renderModal({ ...RESULTS, results: [], totalParticipants: 0 });
     expect(await screen.findByTestId('empty-state')).toBeInTheDocument();
     expect(screen.queryByTestId('results-table')).not.toBeInTheDocument();
+  });
+
+  // Owner ruling R7 (2026-10-15): the modal's XP column, horse level badge,
+  // prize ÷ 10 "XP" and fallback 50 XP were invented. Old contract: an
+  // "XP Progress" column and a level badge on every row (from the first user
+  // horse's XP, rival rows included).
+  it('shows no XP, horse level or XP progress anywhere, and reads no horse XP', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await screen.findByTestId('results-table');
+    await user.click(within(screen.getByTestId('prize-summary-card')).getByTestId('expand-toggle'));
+
+    expect(screen.queryByRole('columnheader', { name: /xp/i })).not.toBeInTheDocument();
+    expect(screen.queryAllByTestId('horse-level-badge')).toHaveLength(0);
+    expect(screen.queryAllByTestId('xp-progress-tracker')).toHaveLength(0);
+    expect(screen.queryByText(/\bXP\b/)).not.toBeInTheDocument();
+    expect(xpRequests).toEqual([]);
+  });
+
+  it('opens the prize notification without an experience line', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <CompetitionResultsModal
+            isOpen
+            onClose={() => {}}
+            competitionId={555}
+            showPrizeNotification
+            _testResults={RESULTS}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByTestId('prize-notification-modal')).toBeInTheDocument();
+    expect(screen.queryByTestId('xp-gained')).not.toBeInTheDocument();
+    expect(screen.queryByText(/experience gained/i)).not.toBeInTheDocument();
   });
 
   // Owner ruling R5: temperament's effect is part of the score, never itemised.

@@ -5,7 +5,6 @@
  * - Trophy/medal icons based on placement (1st: gold, 2nd: silver, 3rd: bronze)
  * - Congratulations heading with placement text
  * - Prize money with currency formatting
- * - XP gained with "+X XP" badge
  * - Competition context (name, discipline, date, horse name)
  * - Animated entrance (fade-in, scale-up)
  * - Auto-dismiss functionality with configurable delay
@@ -20,7 +19,7 @@
  */
 
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Trophy, Medal, Calendar, Award, Zap, Coins } from 'lucide-react';
+import { Trophy, Medal, Calendar, Award, Coins } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 import { GameDialog, GameDialogContent, GameDialogTitle } from '@/components/ui/game/GameDialog';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
@@ -42,8 +41,6 @@ export interface PrizeData {
   placement: 1 | 2 | 3;
   /** Prize money won */
   prizeMoney: number;
-  /** XP points gained */
-  xpGained: number;
 }
 
 /**
@@ -209,8 +206,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
     setShowCinematic(false);
   }, []);
 
-  const { horseName, competitionName, discipline, date, placement, prizeMoney, xpGained } =
-    prizeData;
+  const { horseName, competitionName, discipline, date, placement, prizeMoney } = prizeData;
 
   return (
     <>
@@ -318,21 +314,6 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
                   </div>
                   <span className="text-xl font-bold text-emerald-400" data-testid="prize-money">
                     <Currency amount={prizeMoney} showIcon={false} />
-                  </span>
-                </div>
-
-                {/* XP Gained */}
-                <div className="flex items-center justify-between p-4 bg-[rgba(147,51,234,0.1)] rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-[rgba(147,51,234,0.2)] p-2 rounded-full">
-                      <Zap className="h-5 w-5 text-purple-400" aria-hidden="true" />
-                    </div>
-                    <span className="text-sm font-medium text-[rgb(220,235,255)]">
-                      Experience Gained
-                    </span>
-                  </div>
-                  <span className="text-xl font-bold text-purple-400" data-testid="xp-gained">
-                    +{xpGained} XP
                   </span>
                 </div>
               </div>

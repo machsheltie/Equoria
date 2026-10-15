@@ -12,10 +12,10 @@
  * - PrizeSummaryCard showing user's prizes when applicable (Story 5-3)
  * - PrizeNotificationModal for first-time prize notifications (Story 5-3)
  * - Link to prize history page in footer (Story 5-3)
- * - XpGainNotification after viewing results (Story 5-4)
- * - LevelUpCelebrationModal for level-up events (Story 5-4)
- * - XpProgressTracker for each horse in results (Story 5-4)
- * - HorseLevelBadge next to horse names (Story 5-4)
+ *
+ * Owner ruling R7 (2026-10-15, Equoria-q4uem.10) removed the invented Story 5-4
+ * parts: the XP Progress column, horse level badges, the prize-derived "XP",
+ * the XP gain notification and the level-up celebration.
  *
  * Features:
  * - Migrated from BaseModal → GameDialog (Equoria-o5hub.13, DECISIONS.md §8)
@@ -23,11 +23,9 @@
  * - Responsive design (table collapses to cards on mobile)
  * - WCAG 2.1 AA compliance
  * - Virtual scrolling ready for large datasets
- * - Notification sequencing: Prize -> XP -> Level-Up (Story 5-4)
  *
  * Story 5-2: Competition Results Display
  * Story 5-3: Competition History - Task 7 (Integration with Results Display)
- * Story 5-4: XP System Integration - Task 7 (Integration with Competition Results)
  */
 
 import React, { memo, useCallback, useEffect, useState, useMemo } from 'react';
@@ -56,25 +54,8 @@ import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import PrizeSummaryCard, { type HorsePrize } from './PrizeSummaryCard';
 import PrizeNotificationModal, { type PrizeData } from './PrizeNotificationModal';
-import XpGainNotification from '../feedback/XpGainNotification';
-import LevelUpCelebrationModal, { type StatChange } from '../feedback/LevelUpCelebrationModal';
-import XpProgressTracker from '../XpProgressTracker';
-import HorseLevelBadge from '../horse/HorseLevelBadge';
-import { useHorseLevelInfo } from '@/hooks/api/useHorseLevelInfo';
 import { useCompetitionResults } from '@/hooks/api/useCompetitionResults';
 import type { CompetitionResults } from '@/lib/api/competitionResults';
-
-/**
- * Level-up data structure for celebration modal (Story 5-4)
- */
-export interface LevelUpData {
-  horseId: number;
-  horseName: string;
-  oldLevel: number;
-  newLevel: number;
-  statChanges: StatChange[];
-  totalXpGained: number;
-}
 
 /**
  * CompetitionResultsModal component props
@@ -94,16 +75,6 @@ export interface CompetitionResultsModalProps {
   showPrizeNotification?: boolean;
   /** Callback when prize notification is closed (Story 5-3) */
   onPrizeNotificationClose?: () => void;
-  /** Control XP gain notification display (Story 5-4) */
-  showXpNotification?: boolean;
-  /** Callback when XP notification is closed (Story 5-4) */
-  onXpNotificationClose?: () => void;
-  /** Control level-up celebration modal display (Story 5-4) */
-  showLevelUpCelebration?: boolean;
-  /** Callback when level-up celebration is closed (Story 5-4) */
-  onLevelUpClose?: () => void;
-  /** Level-up data for celebration modal (Story 5-4) */
-  levelUpData?: LevelUpData;
   /** Test prop for injecting results data */
   _testResults?: CompetitionResults | null;
   /** Test prop for loading state */
@@ -278,11 +249,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
     onFirstView,
     showPrizeNotification = false,
     onPrizeNotificationClose,
-    showXpNotification = false,
-    onXpNotificationClose,
-    showLevelUpCelebration = false,
-    onLevelUpClose,
-    levelUpData,
     _testResults,
     _testLoading = false,
     _testError = null,
@@ -336,7 +302,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
               horseName: r.horseName ?? '—',
               placement: r.rank,
               prizeMoney: r.prizeWon,
-              xpGained: Math.round(r.prizeWon * 0.1), // Calculate XP from prize money
             },
           ]
         : []
@@ -362,7 +327,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
       date,
       placement: best.placement as 1 | 2 | 3,
       prizeMoney: best.prizeMoney,
-      xpGained: best.xpGained,
     };
     return prize;
   }, [hasUserPrizes, userPrizes, results]);
@@ -378,45 +342,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
   const handlePrizeNotificationClose = useCallback(() => {
     onPrizeNotificationClose?.();
   }, [onPrizeNotificationClose]);
-
-  // Handle XP notification close (Story 5-4)
-  const handleXpNotificationClose = useCallback(() => {
-    onXpNotificationClose?.();
-  }, [onXpNotificationClose]);
-
-  // Handle level-up celebration close (Story 5-4)
-  const handleLevelUpClose = useCallback(() => {
-    onLevelUpClose?.();
-  }, [onLevelUpClose]);
-
-  // Fetch horse level info for the first user horse result (Story 5-4)
-  const firstUserHorseId = useMemo(() => {
-    if (!results?.results) return 0;
-    const firstUserResult = results.results.find((r) => r.isCurrentUser);
-    return firstUserResult?.horseId ?? 0;
-  }, [results]);
-
-  const { data: horseLevelData } = useHorseLevelInfo(firstUserHorseId);
-
-  // Calculate XP notification data from horse level info (Story 5-4)
-  const xpNotificationData = useMemo(() => {
-    if (!horseLevelData) {
-      return {
-        xpGained: 50,
-        currentLevel: 1,
-        currentXp: 0,
-        xpForCurrentLevel: 0,
-        xpToNextLevel: 100,
-      };
-    }
-    return {
-      xpGained: userPrizes.length > 0 ? Math.round(userPrizes[0].xpGained ?? 50) : 50,
-      currentLevel: horseLevelData.availableStatPoints,
-      currentXp: horseLevelData.currentXP,
-      xpForCurrentLevel: horseLevelData.nextStatPointAt - horseLevelData.xpToNextStatPoint,
-      xpToNextLevel: horseLevelData.nextStatPointAt,
-    };
-  }, [horseLevelData, userPrizes]);
 
   // Handle prize summary toggle
   const handlePrizeSummaryToggle = useCallback(() => {
@@ -582,12 +507,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
               >
                 Prize
               </th>
-              <th
-                scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wider"
-              >
-                XP Progress
-              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[rgba(37,99,235,0.2)]">
@@ -623,10 +542,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                       >
                         {result.horseName ?? '—'}
                       </span>
-                      <HorseLevelBadge
-                        level={horseLevelData?.availableStatPoints ?? 1}
-                        size="small"
-                      />
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -651,19 +566,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                       {/* Unknown (null) renders as an em dash labelled "unknown amount". */}
                       <Currency amount={result.prizeWon ?? Number.NaN} />
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <XpProgressTracker
-                      currentLevel={horseLevelData?.availableStatPoints ?? 1}
-                      currentXp={horseLevelData?.currentXP ?? 0}
-                      xpForCurrentLevel={
-                        horseLevelData
-                          ? horseLevelData.nextStatPointAt - horseLevelData.xpToNextStatPoint
-                          : 0
-                      }
-                      xpToNextLevel={horseLevelData?.nextStatPointAt ?? 100}
-                      size="small"
-                    />
                   </td>
                 </tr>
               );
@@ -802,34 +704,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
           onClose={handlePrizeNotificationClose}
           prizeData={bestPrize}
           autoDismiss={false}
-        />
-      )}
-
-      {/* XP Gain Notification - Story 5-4 */}
-      {showXpNotification && (
-        <XpGainNotification
-          xpGained={xpNotificationData.xpGained}
-          currentLevel={xpNotificationData.currentLevel}
-          currentXp={xpNotificationData.currentXp}
-          xpForCurrentLevel={xpNotificationData.xpForCurrentLevel}
-          xpToNextLevel={xpNotificationData.xpToNextLevel}
-          show={showXpNotification}
-          autoDismiss={false}
-          onClose={handleXpNotificationClose}
-        />
-      )}
-
-      {/* Level-Up Celebration Modal - Story 5-4 */}
-      {showLevelUpCelebration && levelUpData && (
-        <LevelUpCelebrationModal
-          isOpen={showLevelUpCelebration}
-          onClose={handleLevelUpClose}
-          horseId={levelUpData.horseId}
-          horseName={levelUpData.horseName}
-          oldLevel={levelUpData.oldLevel}
-          newLevel={levelUpData.newLevel}
-          statChanges={levelUpData.statChanges}
-          totalXpGained={levelUpData.totalXpGained}
         />
       )}
     </>

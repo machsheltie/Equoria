@@ -30,28 +30,24 @@ describe('PrizeSummaryCard', () => {
       horseName: 'Thunder Bolt',
       placement: 1,
       prizeMoney: 5000,
-      xpGained: 150,
     },
     {
       horseId: 102,
       horseName: 'Lightning Flash',
       placement: 2,
       prizeMoney: 2500,
-      xpGained: 100,
     },
     {
       horseId: 103,
       horseName: 'Storm Chaser',
       placement: 3,
       prizeMoney: 1000,
-      xpGained: 75,
     },
     {
       horseId: 104,
       horseName: 'Wind Runner',
       placement: 8,
       prizeMoney: 0,
-      xpGained: 25,
     },
   ];
 
@@ -74,14 +70,12 @@ describe('PrizeSummaryCard', () => {
         horseName: 'Lightning Flash',
         placement: 2,
         prizeMoney: 2500,
-        xpGained: 100,
       },
       {
         horseId: 103,
         horseName: 'Storm Chaser',
         placement: 5,
         prizeMoney: 500,
-        xpGained: 50,
       },
     ],
   };
@@ -95,14 +89,12 @@ describe('PrizeSummaryCard', () => {
         horseName: 'Storm Chaser',
         placement: 3,
         prizeMoney: 1000,
-        xpGained: 75,
       },
       {
         horseId: 104,
         horseName: 'Wind Runner',
         placement: 6,
         prizeMoney: 200,
-        xpGained: 30,
       },
     ],
   };
@@ -116,14 +108,12 @@ describe('PrizeSummaryCard', () => {
         horseName: 'Wind Runner',
         placement: 8,
         prizeMoney: 0,
-        xpGained: 25,
       },
       {
         horseId: 105,
         horseName: 'Cloud Dancer',
         placement: 12,
         prizeMoney: 0,
-        xpGained: 15,
       },
     ],
   };
@@ -143,7 +133,6 @@ describe('PrizeSummaryCard', () => {
         horseName: 'Million Dollar Horse',
         placement: 1,
         prizeMoney: 1500000,
-        xpGained: 5000,
       },
     ],
   };
@@ -185,12 +174,15 @@ describe('PrizeSummaryCard', () => {
       expect(screen.getByTestId('total-prize-money')).not.toHaveTextContent('$');
     });
 
-    it('shows total XP with proper formatting', () => {
-      render(<PrizeSummaryCard {...defaultProps} />);
+    // Owner ruling R7 (2026-10-15, Equoria-q4uem.10): the "XP" here was
+    // invented (prize ÷ 10). Old contract: a total-XP tile reading 350.
+    it('shows no XP total or per-horse XP figure', () => {
+      render(<PrizeSummaryCard {...expandedProps} />);
 
-      // Total: 150 + 100 + 75 + 25 = 350
-      expect(screen.getByTestId('total-xp')).toHaveTextContent('350');
-      expect(screen.getByText(/XP/)).toBeInTheDocument();
+      expect(screen.queryByTestId('total-xp')).not.toBeInTheDocument();
+      expect(screen.queryByText(/\bXP\b/)).not.toBeInTheDocument();
+      // Thunder's entry shows its 5,000 prize and nothing else numeric.
+      expect(screen.getAllByTestId('horse-prize-entry')[0]).toHaveTextContent(/^.*Thunder.*5,000$/);
     });
 
     it('shows number of placed horses', () => {
@@ -311,7 +303,6 @@ describe('PrizeSummaryCard', () => {
       expect(within(firstEntry).getByText('Thunder Bolt')).toBeInTheDocument();
       expect(within(firstEntry).getByText(/1st/)).toBeInTheDocument();
       expect(within(firstEntry).getByText(/5,000/)).toBeInTheDocument();
-      expect(within(firstEntry).getByText(/150/)).toBeInTheDocument();
     });
 
     it('horse entries are clickable when onViewPerformance provided', async () => {
@@ -355,7 +346,6 @@ describe('PrizeSummaryCard', () => {
 
       expect(screen.getByTestId('prize-summary-card')).toBeInTheDocument();
       expect(screen.getByTestId('total-prize-money')).toHaveTextContent('0');
-      expect(screen.getByTestId('total-xp')).toHaveTextContent('0');
       expect(screen.getByTestId('placed-count')).toHaveTextContent('0');
       expect(screen.getByTestId('best-placement')).toHaveTextContent('-');
     });
@@ -385,7 +375,6 @@ describe('PrizeSummaryCard', () => {
       render(<PrizeSummaryCard {...largePrizesProps} />);
 
       expect(screen.getByTestId('total-prize-money')).toHaveTextContent('1,500,000');
-      expect(screen.getByTestId('total-xp')).toHaveTextContent('5,000');
     });
   });
 

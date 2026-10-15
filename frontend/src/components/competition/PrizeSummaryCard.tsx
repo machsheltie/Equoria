@@ -4,7 +4,7 @@
  * Displays a compact summary of prizes won in a competition.
  * Features:
  * - Color-coded card based on best placement (gold/silver/bronze/default)
- * - Summary view with total prize money, XP, placed horses, best placement
+ * - Summary view with total prize money, placed horses, best placement
  * - Expandable details showing per-horse breakdown
  * - Trophy/medal icons for visual placement indicators
  * - Smooth expand/collapse animation
@@ -13,7 +13,7 @@
  */
 
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { Trophy, Medal, Star, Coins, Zap, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import { Trophy, Medal, Star, Coins, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 
 /**
@@ -24,7 +24,6 @@ export interface HorsePrize {
   horseName: string;
   placement: number;
   prizeMoney: number;
-  xpGained: number;
 }
 
 /**
@@ -40,13 +39,6 @@ export interface PrizeSummaryCardProps {
   onViewPerformance?: (_horseId: number) => void;
   className?: string;
 }
-
-/**
- * Format number with thousands separator
- */
-const formatNumber = (num: number): string => {
-  return new Intl.NumberFormat('en-US').format(num);
-};
 
 // Equoria-2dnd2: date formatting + honest invalid-date fallback now live in the
 // shared util (was a duplicated, unguarded component-local formatDate).
@@ -136,18 +128,12 @@ const HorsePrizeEntry = memo(({ prize, onClick }: { prize: HorsePrize; onClick?:
         </div>
       </div>
 
-      {/* Right side: Prize and XP */}
+      {/* Right side: Prize */}
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-1">
           <Coins className="h-3 w-3 text-green-500" aria-hidden="true" />
           <span className="font-medium text-[rgb(220,235,255)]">
             <Currency amount={prize.prizeMoney} showIcon={false} />
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Zap className="h-3 w-3 text-purple-400" aria-hidden="true" />
-          <span className="font-medium text-[rgb(220,235,255)]">
-            {formatNumber(prize.xpGained)}
           </span>
         </div>
       </div>
@@ -181,23 +167,16 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
   const isExpanded = isControlled ? controlledExpanded : internalExpanded;
 
   // Calculate totals and best placement
-  const { totalPrizeMoney, totalXp, placedCount, bestPlacement } = useMemo(() => {
+  const { totalPrizeMoney, placedCount, bestPlacement } = useMemo(() => {
     if (prizes.length === 0) {
       return {
         totalPrizeMoney: 0,
-        totalXp: 0,
         placedCount: 0,
         bestPlacement: 0,
       };
     }
 
-    const total = prizes.reduce(
-      (acc, prize) => ({
-        prizeMoney: acc.prizeMoney + prize.prizeMoney,
-        xp: acc.xp + prize.xpGained,
-      }),
-      { prizeMoney: 0, xp: 0 }
-    );
+    const totalPrize = prizes.reduce((sum, prize) => sum + prize.prizeMoney, 0);
 
     // Count horses that placed (1st, 2nd, or 3rd)
     const placed = prizes.filter((p) => p.placement <= 3).length;
@@ -206,8 +185,7 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
     const best = Math.min(...prizes.map((p) => p.placement));
 
     return {
-      totalPrizeMoney: total.prizeMoney,
-      totalXp: total.xp,
+      totalPrizeMoney: totalPrize,
       placedCount: placed,
       bestPlacement: best,
     };
@@ -282,17 +260,6 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
               data-testid="total-prize-money"
             >
               <Currency amount={totalPrizeMoney} showIcon={false} />
-            </p>
-          </div>
-
-          {/* Total XP */}
-          <div className="text-center p-2 rounded-lg bg-[rgba(15,35,70,0.4)]">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Zap className="h-4 w-4 text-purple-400" aria-hidden="true" />
-              <span className="text-xs text-slate-400">XP</span>
-            </div>
-            <p className="text-lg font-bold text-[rgb(220,235,255)]" data-testid="total-xp">
-              {formatNumber(totalXp)}
             </p>
           </div>
 
