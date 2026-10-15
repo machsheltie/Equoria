@@ -57,9 +57,18 @@ const ACTION_OPTIONS = [
 
 const shortRef = (id: string) => `#${id.slice(0, 8)}`;
 
-/** A filter choice: the account's current name, or a former steward with a short reference. */
-const actorLabel = (actor: StaffLogActor) =>
-  actor.username ?? `${FORMER_STEWARD} (${shortRef(actor.id)})`;
+/**
+ * A filter choice. Someone still on staff shows their current name. Anyone
+ * else reads as the entries do, a former steward with a short reference,
+ * plus the last known username when the account still exists.
+ */
+const actorLabel = (actor: StaffLogActor, isFormer: IsFormer) => {
+  if (!isFormer(actor.id)) {
+    return actor.username ?? `${FORMER_STEWARD} (${shortRef(actor.id)})`;
+  }
+  const ref = `${FORMER_STEWARD} (${shortRef(actor.id)})`;
+  return actor.username ? `${ref} (${actor.username})` : ref;
+};
 
 function actorText(
   entry: StaffLogEntry,
@@ -249,7 +258,7 @@ export function StaffActionLog({
               { value: '', label: actors.isPending ? 'loading the stewards…' : 'any steward' },
               ...(actors.data?.actors ?? []).map((actor) => ({
                 value: actor.id,
-                label: actorLabel(actor),
+                label: actorLabel(actor, isFormer),
               })),
             ]}
           />

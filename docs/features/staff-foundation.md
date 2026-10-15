@@ -77,7 +77,12 @@ Owner ruling 2026-10-09: email codes, not text messages; remember the device.
   player, or while /staff/me has not answered for a steward, /steward leaves the
   same page, address and history as any unknown address, with no login prompt;
   a signed-out visit never asks /staff/me. A steward revoked mid-visit sees the
-  office replaced the same way, in place (STAFF-CR-17).
+  office replaced the same way, in place (STAFF-CR-17). Owner ruling 2026-10-15:
+  if the office cannot reach the server, /steward stays blank like any unknown
+  address rather than showing an error, so an outage never reveals the page.
+  Accepted residual: a signed-in visitor's browser asks /api/v1/staff/me, whose
+  answer for non-staff is identical to any unknown API route; nothing on the
+  page, in the address or in history differs.
 - In-world framing with a plain, legible layout using the existing Celestial
   Night tokens, typography and dialogs; no admin-console shell (`DESIGN.md`).
 - Areas appear by capability. Destructive actions go preview → confirm, with a
@@ -91,8 +96,8 @@ account and role, time, capability, target (player, horse, show, post, IP or
 device), required reason, before/after values where something changed,
 outcome, and a link to the entry it reverses. The admin sees and filters every
 entry, by any account that has ever written to the log, so a revoked or erased
-steward stays choosable (STAFF-CR-16); a moderator sees their own. Every later staff tool writes here; an
-action and its log entry commit in one transaction. Ticket replies (without
+steward stays choosable (STAFF-CR-16); a moderator sees their own. Every later staff tool writes here;
+an action and its log entry commit in one transaction. Ticket replies (without
 their text) and successful check-ins are logged too. Erasing an account keeps
 its staff log entries under the account ID, and keeps its tickets and replies
 with the filer or author shown as a former steward.

@@ -168,11 +168,16 @@ describe("The Steward's Office", () => {
     expect(await screen.findByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
   });
 
-  it('gives the not-found page when /me fails for another reason, never an error hint', async () => {
+  it('gives the not-found page when /me answers 500: no error copy, no retry (owner ruling 2026-10-15)', async () => {
     stubStaff({ me: () => json({ message: 'db exploded' }, 500) });
     const { container } = renderPage();
     await meSettled();
     expectNotFound(container);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/try again|retry|went wrong|error|db exploded/i)
+    ).not.toBeInTheDocument();
   });
 
   // ── Check-in ──────────────────────────────────────────────────────────────
@@ -733,13 +738,13 @@ describe("The Steward's Office", () => {
       http.post(`${STAFF}/tickets`, () => json({ success: false, message: 'Not found' }, 404))
     );
     const user = userEvent.setup();
-    renderPage();
+    const { container } = renderPage();
     await user.type(await screen.findByLabelText('Their username'), 'Mara');
     await user.type(screen.getByLabelText('Category'), 'Spam');
     await user.type(screen.getByLabelText('Note'), 'Selling coins');
     await user.click(screen.getByRole('button', { name: 'File ticket' }));
     await waitFor(() => expect(screen.queryByTestId('stewards-office')).not.toBeInTheDocument());
-    expect(screen.queryByText('Stable home')).not.toBeInTheDocument();
+    expectNotFound(container);
   });
 
   it('a 404 for a steward who is still staff leaves the office open', async () => {

@@ -85,7 +85,10 @@ describe('StaffTickets: filing safety', () => {
     await fileAboutPost(user);
     await waitFor(() => expect(bodies).toHaveLength(1));
 
-    // Editing the subject, re-clicking and re-submitting while it is in flight.
+    // Re-clicking and re-submitting while in flight. fireEvent bypasses the
+    // disabled attributes (the next test covers those), so this exercises the
+    // isPending guard in the submit handler and the onSuccess reset, which
+    // must send once and clear the form even though the fields were edited.
     const button = screen.getByRole('button', { name: 'File ticket' });
     fireEvent.change(screen.getByLabelText('About'), { target: { value: 'horse' } });
     fireEvent.change(screen.getByLabelText('Their ID'), { target: { value: '43' } });

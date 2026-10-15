@@ -134,14 +134,20 @@ describe('StaffActionLog: the steward filter lists everyone in the ledger (STAFF
     const user = userEvent.setup();
     renderAdminLedger();
     const steward = await screen.findByLabelText('Steward');
-    await screen.findByRole('option', { name: 'Willow' });
+    // Hazel is on staff and keeps her name; a revoked steward reads as the
+    // entries do, with the last known username after the reference.
+    await screen.findByRole('option', { name: 'Hazel' });
+    expect(
+      screen.getByRole('option', { name: 'a former steward (#mod-will) (Willow)' })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Willow' })).not.toBeInTheDocument();
     expect(
       screen.getByRole('option', { name: 'a former steward (#1a2b3c4d)' })
     ).toBeInTheDocument();
 
     await user.selectOptions(steward, 'a former steward (#1a2b3c4d)');
     await waitFor(() => expect(actorIds).toContain('1a2b3c4d-erased-account'));
-    await user.selectOptions(steward, 'Willow');
+    await user.selectOptions(steward, 'a former steward (#mod-will) (Willow)');
     await waitFor(() => expect(actorIds).toContain('mod-willow-id'));
   });
 
@@ -178,7 +184,9 @@ describe('StaffActionLog: the steward filter lists everyone in the ledger (STAFF
 
     fail = false;
     await user.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByRole('option', { name: 'Willow' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', { name: 'a former steward (#mod-will) (Willow)' })
+    ).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
