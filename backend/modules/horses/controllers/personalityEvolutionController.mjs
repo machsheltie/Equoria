@@ -21,7 +21,7 @@ import {
   analyzePersonalityStability,
   predictPersonalityEvolution,
   getPersonalityEvolutionHistory,
-} from '../../horses/index.mjs';
+} from '../services/personalityEvolutionSystem.mjs';
 
 /**
  * The 404 body for "this entity is not yours", correct for BOTH entity types.

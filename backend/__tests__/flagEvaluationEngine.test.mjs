@@ -14,18 +14,18 @@ import flagEvalDefault, {
   evaluateHorseFlags,
   batchEvaluateFlags,
   getEligibleHorses,
-} from '../../../utils/flagEvaluationEngine.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+} from '../utils/flagEvaluationEngine.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-twmpa: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
 // leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
 // the suite goes red at the source. The per-test maxFlagHorse (created in a
 // test body) records its id in extraHorseIds so the fail-loud afterAll deletes
 // it instead of a swallowed try/finally. horses -> user
 // (Horse.userId onDelete: Restrict, schema:282).
-import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 let user;
 let foal;

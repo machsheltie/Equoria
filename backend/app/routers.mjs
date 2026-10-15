@@ -32,6 +32,8 @@ import { healthHandler, readyHandler, apiInfoHandler } from '../config/healthHan
 // (Equoria-fy2tx / CONTRIBUTING.md "Module public API boundaries"). The former
 // backend/routes/*.mjs compat shims were retired under Equoria-v8l96.1; the
 // barrels now surface each route default via an explicit `export { default as X }`.
+// Equoria-q4uem.4 (WS4) moves route wiring to direct imports of the route
+// modules (the former labs routers below already are); the rest follow in S4.
 import { pingRoute } from '../modules/health/index.mjs';
 import { authRoutes } from '../modules/auth/index.mjs';
 import authenticatedAuthRoutes from '../modules/auth/routes/authenticatedAuthRoutes.mjs';
@@ -77,13 +79,15 @@ import {
   dynamicCompatibilityRoutes,
 } from '../modules/grooms/index.mjs';
 import { leaderboardRoutes } from '../modules/leaderboards/index.mjs';
-import {
-  enhancedReportingRoutes,
-  personalityEvolutionRoutes,
-  apiOptimizationRoutes,
-  memoryManagementRoutes,
-  environmentalRoutes,
-} from '../modules/labs/index.mjs';
+// Equoria-q4uem.4 (WS4): the former labs module was dissolved into traits,
+// horses and admin. Its five routers are imported directly from their route
+// modules: the composition root wires routes, barrels are service contracts.
+// The remaining barrel route imports in this file convert in WS4 slice S4.
+import enhancedReportingRoutes from '../modules/traits/routes/enhancedReportingRoutes.mjs';
+import environmentalRoutes from '../modules/traits/routes/environmentalRoutes.mjs';
+import personalityEvolutionRoutes from '../modules/horses/routes/personalityEvolutionRoutes.mjs';
+import apiOptimizationRoutes from '../modules/admin/routes/apiOptimizationRoutes.mjs';
+import memoryManagementRoutes from '../modules/admin/routes/memoryManagementRoutes.mjs';
 import { documentationRoutes, userDocumentationRoutes } from '../modules/docs/index.mjs';
 import { adminRoutes } from '../modules/admin/index.mjs';
 import { riderRoutes } from '../modules/riders/index.mjs';

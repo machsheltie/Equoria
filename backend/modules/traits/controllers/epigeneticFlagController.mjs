@@ -30,7 +30,10 @@ import {
 } from '../../../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from '../../../utils/carePatternAnalysis.mjs';
 import { getFlagInfluenceSummary } from '../../../utils/epigeneticFlagInfluence.mjs';
-import { analyzeTraitDistribution, generateStableOverview } from '../../labs/index.mjs';
+import {
+  analyzeTraitDistribution,
+  generateStableOverview,
+} from '../services/enhancedReportingService.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 /**
@@ -319,7 +322,7 @@ export async function getCarePatterns(req, res) {
  *
  * Decision (Equoria-yzqhj.7): the flag-aggregation analytics previously
  * exposed ONLY behind the experimental labs reporting module
- * (modules/labs/.../enhancedReportingRoutes.mjs) are PROMOTED to the core
+ * (modules/traits/routes/enhancedReportingRoutes.mjs) are PROMOTED to the core
  * (beta) epigenetic-flag surface. This handler does NOT reimplement the
  * aggregation — it reuses the existing `analyzeTraitDistribution` +
  * `generateStableOverview` service functions from enhancedReportingService.

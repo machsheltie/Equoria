@@ -454,7 +454,7 @@ export function assessEnvironmentalStress(date, location, horse, weather = null)
  * (`calculateCurrentWeather`, `getSeasonalFactors`, `calculateEnvironmentalQuality`
  * — none of which use Math.random). Calling this twice with the same
  * (startDate, endDate, location) always yields identical output. The serving
- * route (modules/labs/routes/environmentalRoutes.mjs `/history`) returns this
+ * route (modules/traits/routes/environmentalRoutes.mjs `/history`) returns this
  * computed projection truthfully; it is the game's environmental model, not a
  * placeholder for unimplemented persistence. The prior "placeholder for future
  * database integration" / "return simulated historical data" wording was a

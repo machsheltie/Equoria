@@ -19,7 +19,7 @@ import {
   getEnvironmentalHistory as _getEnvironmentalHistory,
   calculateComfortZone,
   assessEnvironmentalStress,
-} from '../../modules/labs/index.mjs';
+} from '../../modules/traits/services/environmentalFactorEngineService.mjs';
 
 // Helper function to calculate seasonal temperature averages
 function calculateSeasonalAverage(startDate, days, location) {

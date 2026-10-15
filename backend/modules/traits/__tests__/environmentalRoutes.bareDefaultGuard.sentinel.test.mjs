@@ -2,7 +2,7 @@
  * environmentalRoutes — bare-default stat-fallback sentinel (Equoria-hnci3).
  *
  * Asserts that
- * backend/modules/labs/routes/environmentalRoutes.mjs never reintroduces
+ * backend/modules/traits/routes/environmentalRoutes.mjs never reintroduces
  * the bare-default `horse.<statField> || <number>` pattern when reading
  * Horse stat columns. Horse stats are nullable Int columns (0..100); a
  * stat of 0 is a legitimate game state (undeveloped or injury). The `||`

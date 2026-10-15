@@ -25,7 +25,7 @@ import {
   calculateTriggerThresholds,
   evaluateTraitExpressionProbability,
   generateEnvironmentalReport,
-} from '../../labs/index.mjs';
+} from '../services/environmentalTriggerSystem.mjs';
 
 import {
   analyzeTraitSnapshot,

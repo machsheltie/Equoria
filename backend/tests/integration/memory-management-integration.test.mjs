@@ -41,7 +41,7 @@ import { body } from 'express-validator';
 import { register, login } from '../../modules/auth/index.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
-import { memoryManagementRoutes } from '../../modules/labs/index.mjs';
+import memoryManagementRoutes from '../../modules/admin/routes/memoryManagementRoutes.mjs';
 import {
   getMemoryManager,
   initializeMemoryManagement,

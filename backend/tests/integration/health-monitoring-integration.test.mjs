@@ -42,7 +42,7 @@ import { register, login } from '../../modules/auth/index.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
 import { handlePing, handleHealthCheck } from '../../modules/health/index.mjs';
-import { memoryManagementRoutes } from '../../modules/labs/index.mjs';
+import memoryManagementRoutes from '../../modules/admin/routes/memoryManagementRoutes.mjs';
 import { documentationRoutes, userDocumentationRoutes } from '../../modules/docs/index.mjs';
 import { epigeneticFlagRoutes } from '../../modules/traits/index.mjs';
 import {

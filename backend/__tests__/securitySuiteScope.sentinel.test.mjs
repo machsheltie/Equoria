@@ -66,6 +66,10 @@ const REQUIRED_SCOPE_PATTERNS = [
  * — never to make a red gate green.
  */
 const REQUIRED_MODULE_CONTROL_TESTS = [
+  // Equoria-q4uem.4 (WS4 S1): moved from modules/labs/__tests__/ when labs
+  // was dissolved; the admin module owns the /memory and /optimization gates.
+  'modules/admin/__tests__/memoryAdminGuard.integration.test.mjs',
+  'modules/admin/__tests__/telemetryAdminGuard.integration.test.mjs',
   'modules/competition/__tests__/competition-rate-limiting.test.mjs',
   'modules/competition/__tests__/showExecuteAdminMfaEnforcement.integration.test.mjs',
   'modules/crafting/__tests__/craftingRouteSecurityPipeline.integration.test.mjs',
@@ -82,8 +86,6 @@ const REQUIRED_MODULE_CONTROL_TESTS = [
   'modules/horses/__tests__/horseUpdateBreedMassAssign.sentinel.test.mjs',
   'modules/horses/__tests__/horseUpdateParentageHijack.integration.test.mjs',
   'modules/horses/__tests__/horseXpAwardServerAuthoritative.integration.test.mjs',
-  'modules/labs/__tests__/memoryAdminGuard.integration.test.mjs',
-  'modules/labs/__tests__/telemetryAdminGuard.integration.test.mjs',
   'modules/riders/__tests__/riderAssignmentOwnership.integration.test.mjs',
   'modules/users/__tests__/user-rate-limiting.test.mjs',
   'modules/users/__tests__/userSearchSecurity.integration.test.mjs',

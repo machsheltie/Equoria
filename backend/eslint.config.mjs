@@ -27,7 +27,8 @@ import { equoriaForwardReferencesPlugin } from './eslint-plugins/no-forward-refe
 // ---------------------------------------------------------------------------
 // Equoria-v8l96.4 — module public-API barrel boundary enforcement.
 //
-// The 21 top-level domain modules under backend/modules/ each ship an
+// The top-level domain modules under backend/modules/ (labs was dissolved into
+// traits/horses/admin under Equoria-q4uem.4) each ship an
 // index.mjs barrel that IS their public API (CONTRIBUTING.md § "Module public
 // API boundaries"). Cross-module imports MUST go through that barrel; reaching
 // into another module's internals (controllers/services/routes/models/data/…)
@@ -80,7 +81,6 @@ const BARREL_MODULES = [
   'grooms',
   'health',
   'horses',
-  'labs',
   'leaderboards',
   'marketplace',
   'riders',

@@ -27,7 +27,7 @@ import {
   identifyTraitDifferences,
   generateHorseRankings,
   generateSummaryReport,
-} from '../modules/labs/index.mjs';
+} from '../modules/traits/services/enhancedReportingService.mjs';
 import { classifyTemperamentFromFlags } from '../modules/horses/index.mjs';
 
 // A horse row as Prisma may return it for a legacy/bare-created record:

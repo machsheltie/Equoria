@@ -1,7 +1,7 @@
 /**
  * personalityEvolutionController.test.mjs
  *
- * Unit tests for backend/modules/labs/controllers/personalityEvolutionController.mjs
+ * Unit tests for backend/modules/horses/controllers/personalityEvolutionController.mjs
  * covering guard-clause and branch paths that don't require a seeded DB.
  *
  * Strategy: Direct function invocation with stub req/res objects.
@@ -294,7 +294,7 @@ describe('getPersonalityEvolutionHistoryController', () => {
 // (audit 2026-09-25): the route it backed answered 410 — it was commented
 // "admin function" but had no role check, and the function it called
 // (applyPersonalityEvolutionEffects) never wrote to the database anyway. See
-// backend/modules/labs/__tests__/personalityEvolutionController.integration.test.mjs
+// backend/modules/horses/__tests__/personalityEvolutionController.integration.test.mjs
 // for the route-closure regression coverage.
 
 // ─── batchEvolvePersonalitiesController ──────────────────────────────────────

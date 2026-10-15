@@ -19,7 +19,7 @@
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { apiOptimizationRoutes } from '../modules/labs/index.mjs';
+import apiOptimizationRoutes from '../modules/admin/routes/apiOptimizationRoutes.mjs';
 import { responseHandler } from '../utils/apiResponse.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
