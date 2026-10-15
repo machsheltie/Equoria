@@ -39,6 +39,10 @@ import { awardRiderCompetitionXP } from '../../trainers/index.mjs';
 // gap (it paid prize + rider XP but zero player/horse progression). Tx-aware helper
 // so the awards run INSIDE the per-entry tx below without a nested transaction.
 import { awardPlacementProgression } from '../services/competitionAwards.mjs';
+import {
+  buildRiddenResultRow,
+  recordProgressionOnResult,
+} from '../services/competitionResultRecord.mjs';
 // Equoria-o26xc: sibling-fix of Equoria-pi4nk for the cron-driven executor.
 // executeClosedShows previously never wrote competition_placement
 // notifications — owners of winning horses got zero UI signal that their
@@ -563,23 +567,14 @@ export async function executeClosedShows(req, res) {
       // it is fail-soft (existing contract — XP failure must not block show
       // execution).
       const resultOps = stagedOrdering.map(async staged => {
-        const { horseId, userId, horseName, score, placement, riderId } = staged;
+        const { horseId, userId, horseName, placement, riderId } = staged;
         const prizeShare = prizeSlots[placement - 1] ?? 0;
         const prize = Math.floor(totalPrize * prizeShare);
 
         await prisma.$transaction(async tx => {
-          // Create competition result
+          // Create competition result (row shape owned by competitionResultRecord)
           await tx.competitionResult.create({
-            data: {
-              score,
-              placement: `${placement}`,
-              discipline: show.discipline,
-              runDate: now,
-              showName: show.name,
-              prizeWon: prize,
-              horseId,
-              showId: show.id,
-            },
+            data: buildRiddenResultRow({ show, staged, prize, now }),
           });
 
           // Equoria-si69u: pay the winner from SystemAccount[show_escrow]
@@ -649,13 +644,15 @@ export async function executeClosedShows(req, res) {
           // crash mid-award rolls back result+prize+XP together (AC5).
           // competitionResult.create stays the FIRST write so [showId,horseId]
           // uniqueness is the idempotency token; placement-at-END keeps lock order.
-          await awardPlacementProgression(tx, {
+          const progression = await awardPlacementProgression(tx, {
             horseId,
             ownerId: userId,
             placementNumber: placement,
             discipline: show.discipline,
             horseName,
           });
+          // Equoria-q4uem.10 (owner ruling R6): the result records what it awarded.
+          await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
         });
 
         // Equoria-r1nr: award XP + prestige OUTSIDE the transaction

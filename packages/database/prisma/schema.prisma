@@ -929,7 +929,16 @@ model CompetitionResult {
   showName   String
   /// Rewards
   prizeWon   Decimal? @default(0) @db.Decimal(10, 2)
+  /// Ridden shows: the post-show stat gain the horse really received,
+  /// `{ stat, gain }`, or NULL when none. Conformation shows: `{ ribbon,
+  /// titlePoints }`. Written by competitionResultRecord.mjs (owner ruling R6,
+  /// 2026-10-15, Equoria-q4uem.10).
   statGains  Json?
+  /// Horse Points the placement awarded, recorded at settlement so history is
+  /// never recomputed from today's award table (owner ruling R6). NULL on rows
+  /// settled before Equoria-q4uem.10 and on conformation results, which award
+  /// no Horse Points today.
+  horsePointsAwarded Int?
   /// Foreign keys
   horseId    Int
   showId     Int

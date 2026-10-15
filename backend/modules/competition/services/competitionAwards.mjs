@@ -98,8 +98,8 @@ export function computePlacementAwards(placementNumber) {
  * @param {string} [params.horseName] - Horse name for the user-XP reason string.
  * @param {Function} [params.rng] - Injectable RNG (defaults Math.random); tests
  *   pass () => 0 (always gain) / () => 0.999 (never gain).
- * @returns {Promise<{awards:object, statGain:{stat:string,gain:number}|null}>}
- *   for the caller's logging / notification payloads.
+ * @returns {Promise<{awards:object, statGain:{stat:string,gain:number}|null, statGainApplied:boolean}>}
+ *   for the caller's logging / notification payloads and the result record.
  */
 export async function awardPlacementProgression(
   db,
@@ -130,12 +130,16 @@ export async function awardPlacementProgression(
   // (allow-listed constants — safe to interpolate as a column key).
   const statGain =
     awards.statGainChance > 0 ? calculateStatGains(awards.ordinal, discipline, rng) : null;
+  // statGainApplied: whether the stat really rose (the cap-safe update matched a
+  // row). The result record stores only a gain that happened (Equoria-q4uem.10).
+  let statGainApplied = false;
   if (statGain) {
-    await db.horse.updateMany({
+    const { count } = await db.horse.updateMany({
       where: { id: horseId, [statGain.stat]: { lt: 100 } },
       data: { [statGain.stat]: { increment: statGain.gain } },
     });
+    statGainApplied = count === 1;
   }
 
-  return { awards, statGain };
+  return { awards, statGain, statGainApplied };
 }
