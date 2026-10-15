@@ -316,9 +316,12 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R2 (minor 8): createRequire(…) and require(…) in an ESM-only module file fail with file:line', () => {
+    // The plant uses import.meta.filename, not import.meta.url, so this fixture text is not
+    // read as a real `createRequire(import.meta.url)` by the Equoria-6gcvi no-CommonJS
+    // sentinel's text scan of every backend *.mjs; the graph gate flags any createRequire(.
     const plant = plantFile(
       `economy/${PLANT_TOKEN}cjs_${RUN_ID}.mjs`,
-      "import { createRequire } from 'node:module';\nconst require = createRequire(import.meta.url);\nconst bank = require('../bank/index.mjs');\n",
+      "import { createRequire } from 'node:module';\nconst require = createRequire(import.meta.filename);\nconst bank = require('../bank/index.mjs');\n",
     );
     const res = runCheck();
     expect(res.status).toBe(1);
