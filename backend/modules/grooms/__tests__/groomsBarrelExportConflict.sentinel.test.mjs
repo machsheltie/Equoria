@@ -1,65 +1,73 @@
 /**
  * Sentinel: grooms barrel must NOT have ambiguous star exports (Equoria-p7z26).
  *
- * backend/modules/grooms/index.mjs star-exports both
- * controllers/groomController.mjs and services/groomProgressionService.mjs,
- * and BOTH historically exported `getGroomProfile`. ESM treats a name
- * star-exported by 2+ modules as ambiguous; a NAMED re-export of that name
- * through the barrel throws at module-link time:
+ * THE DEFECT THIS GUARDS: backend/modules/grooms/index.mjs used to star-export both
+ * controllers/groomController.mjs and services/groomProgressionService.mjs, and BOTH
+ * export `getGroomProfile`. ESM treats a name star-exported by 2+ modules as ambiguous:
+ * it silently vanishes from the namespace, and a NAMED re-export of it through the
+ * barrel throws at module-link time:
  *   "contains conflicting star exports for name 'getGroomProfile'"
  *
- * Historically the canary for this was the Epic-20 shim
- * backend/controllers/groomController.mjs, which did
- *   export { ..., getGroomProfile, ... } from '../modules/grooms/index.mjs';
- * That shim was retired in Equoria-v8l96.5 (the whole backend/controllers/
- * compat-shim directory was deleted). The invariant it guarded still lives on
- * the BARREL: the explicit named re-export in index.mjs that disambiguates
- * `getGroomProfile` to the controller HTTP handler. This sentinel is therefore
- * re-pointed at the barrel itself (the module that actually owns the
- * invariant) instead of the deleted shim.
+ * Historically the canary was the Epic-20 shim backend/controllers/groomController.mjs,
+ * which re-exported `getGroomProfile` from the barrel. That shim was retired in
+ * Equoria-v8l96.5 (the whole backend/controllers/ compat-shim directory was deleted),
+ * and this suite was re-pointed at the barrel, which then carried the invariant as an
+ * explicit named re-export disambiguating `getGroomProfile` to the controller handler.
  *
- * The fix is an explicit named re-export in the barrel that disambiguates
- * `getGroomProfile` to the controller HTTP handler (the cross-module public
- * surface). The service `getGroomProfile(groomId)` remains reachable via
- * same-module deep import.
+ * CONTRACT CHANGE (Equoria-q4uem.4, WS4 S4, controller ruling G1):
+ *   Old contract: the grooms barrel exposes the controller `getGroomProfile` without a
+ *   conflicting star export.
+ *   New ruling (WS4 design rule 2: no controllers in barrels): the barrel has no
+ *   `export *`; `barrel.getGroomProfile` is undefined; both definers stay reachable by
+ *   same-module deep import with arities 2 and 1 and distinct references.
+ * p7z26's intent — no silent shadowing and no ambiguous export — is preserved: a barrel
+ * built only from named re-exports cannot merge two `getGroomProfile`s, and the HTTP
+ * handler is not a cross-module capability (backend/app/routers.mjs wires route modules).
  *
- * SENTINEL-POSITIVE intent: this suite imports the barrel and reads
- * `getGroomProfile`. If the barrel re-introduces the ambiguous star export
- * (i.e. drops the explicit named re-export), ESM rejects the import at
- * link time with the "conflicting star exports" SyntaxError and the whole
- * suite fails to load — exactly the regression this guards.
+ * SENTINEL-POSITIVE intent: re-introducing `export *` for either defining file fails the
+ * source check AND surfaces `getGroomProfile` on the barrel namespace (one star) or makes
+ * it ambiguous (two stars; the source check still fails). Proven RED on a planted
+ * `export * from './controllers/groomController.mjs'` and GREEN on the clean barrel
+ * (WS4 report, S4e).
  */
 
 import { describe, it, expect } from '@jest/globals';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const BARREL_PATH = resolve(__dirname, '..', 'index.mjs');
 
 describe('grooms barrel — no conflicting star exports (Equoria-p7z26)', () => {
-  it('barrel module loads without the "conflicting star exports" SyntaxError', async () => {
-    // If the barrel re-introduces the ambiguous star export, this dynamic
-    // import rejects with the "conflicting star exports" SyntaxError at link
-    // time. (Was previously asserted via the now-deleted Epic-20 shim.)
-    const barrel = await import('../index.mjs');
-    expect(typeof barrel.getGroomProfile).toBe('function');
+  it('barrel source has no `export *` in executable code (named re-exports only)', () => {
+    const source = readFileSync(BARREL_PATH, 'utf8');
+    // Strip /* … */ and // … comments so the header's own mention of `export *` cannot trip this.
+    const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    expect(stripped).not.toMatch(/\bexport\s*\*/);
   });
 
-  it('barrel exposes getGroomProfile as the controller HTTP handler (req,res arity)', async () => {
+  it('barrel loads and does not expose getGroomProfile (neither definer leaks through a merge)', async () => {
     const barrel = await import('../index.mjs');
-    expect(typeof barrel.getGroomProfile).toBe('function');
-    // The controller handler signature is (req, res) -> arity 2.
-    // The service signature is (groomId) -> arity 1. Assert we exposed the
-    // controller handler, not the service, through the public barrel surface.
-    expect(barrel.getGroomProfile.length).toBe(2);
+    // Non-vacuous: the barrel really loaded and carries its named service contract.
+    expect(Object.keys(barrel).length).toBeGreaterThan(0);
+    expect(barrel.getGroomProfile).toBeUndefined();
+    expect(Object.keys(barrel)).not.toContain('getGroomProfile');
   });
 
-  it('barrel re-exports the same getGroomProfile reference the controller exports', async () => {
-    const barrel = await import('../index.mjs');
+  it('controller getGroomProfile remains reachable via same-module deep import (req,res arity)', async () => {
     const controller = await import('../controllers/groomController.mjs');
-    expect(barrel.getGroomProfile).toBe(controller.getGroomProfile);
+    expect(typeof controller.getGroomProfile).toBe('function');
+    // The controller handler signature is (req, res) -> arity 2.
+    expect(controller.getGroomProfile.length).toBe(2);
   });
 
-  it('service getGroomProfile remains reachable via same-module deep import', async () => {
+  it('service getGroomProfile remains reachable via same-module deep import, distinct from the controller', async () => {
     const service = await import('../services/groomProgressionService.mjs');
+    const controller = await import('../controllers/groomController.mjs');
     expect(typeof service.getGroomProfile).toBe('function');
     // Service signature is (groomId) -> arity 1; distinct from the controller.
     expect(service.getGroomProfile.length).toBe(1);
+    expect(service.getGroomProfile).not.toBe(controller.getGroomProfile);
   });
 });
