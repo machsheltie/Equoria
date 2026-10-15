@@ -44,8 +44,6 @@ const CATEGORY_DISPLAY = {
   decorative: 'Decorative & Parade',
 };
 
-// ── Bonus resolution ────────────────────────────────────────────────────────
-
 class HorseNotOwnedError extends Error {}
 
 // Merge a purchased item into Horse.tack (no mutation). Decorations are additive

@@ -43,6 +43,10 @@ import userRoutes from '../modules/users/routes/userRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S4): bank owns GET /users/transactions; its router mounts at
 // /users BEFORE userRoutes (at base /transactions was registered ahead of GET /:id).
 import bankUserTransactionsRoutes from '../modules/bank/routes/bankUserTransactionsRoutes.mjs';
+// The three handlers the bank route must execute, in base order (S4 review M3).
+import { getTransactionHistory } from '../modules/bank/controllers/bankController.mjs';
+import { authenticateToken } from '../middleware/auth.mjs';
+import { queryRateLimiter } from '../middleware/rateLimiting.mjs';
 
 // Flatten a router (and its mounted sub-routers) into "METHOD path" signatures.
 function collectRoutes(router, basePath = '') {
@@ -170,6 +174,20 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
       const layer = layers.find(l => l.handle === bankUserTransactionsRoutes);
       expect(layer.regexp.test('/users/transactions')).toBe(true);
       expect(layer.regexp.test('/bank/transactions')).toBe(false);
+    });
+
+    it('CHAIN: GET /transactions runs exactly [queryRateLimiter, authenticateToken, getTransactionHistory], base order', () => {
+      // Equoria-q4uem.4 (WS4 S4, review M3): the move from userRoutes to the bank
+      // router must keep the executed chain byte-identical; pin the live handler
+      // references in order, not just the route signature.
+      const [layer] = bankUserTransactionsRoutes.stack;
+      expect(layer.route.path).toBe('/transactions');
+      const handles = layer.route.stack.map(l => l.handle);
+      expect(handles).toEqual([queryRateLimiter, authenticateToken, getTransactionHistory]);
+      expect(handles).toHaveLength(3);
+      expect(handles[0]).toBe(queryRateLimiter);
+      expect(handles[1]).toBe(authenticateToken);
+      expect(handles[2]).toBe(getTransactionHistory);
     });
   });
 });
