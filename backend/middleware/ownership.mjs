@@ -325,10 +325,62 @@ export async function validateBatchOwnership(resourceType, resourceIds, userId, 
 }
 
 /**
+ * Self-access validation middleware
+ * Ensures users can only access their own data (prevents CWE-639).
+ *
+ * Equoria-q4uem.4 (WS4 S3): hoisted verbatim from
+ * modules/users/routes/userRoutes.mjs so the users router and the application
+ * query router (backend/app/queries/userQueryRoutes.mjs) share one
+ * implementation instead of a copy. Responses are unchanged; only the log
+ * prefix names this middleware instead of userRoutes.
+ *
+ * @param {string} [idParam='id'] - route param holding the target user id
+ */
+export const requireSelfAccess = (idParam = 'id') => {
+  return (req, res, next) => {
+    // Ensure user is authenticated
+    if (!req.user || !req.user.id) {
+      logger.warn('[requireSelfAccess] Missing authenticated user for self-access check');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+
+    // Extract target user ID from params
+    const targetUserId = req.params[idParam];
+    if (!targetUserId) {
+      logger.warn(`[requireSelfAccess] Missing ${idParam} parameter for self-access check`);
+      return res.status(400).json({
+        success: false,
+        message: 'User ID required',
+      });
+    }
+
+    // Validate self-access: authenticated user can only access their own data
+    if (req.user.id !== targetUserId) {
+      logger.warn(
+        `[requireSelfAccess] Self-access violation: user ${req.user.id} attempted to access user ${targetUserId}`,
+      );
+      return res.status(403).json({
+        success: false,
+        message: 'You can only access your own user data',
+      });
+    }
+
+    logger.info(
+      `[requireSelfAccess] Self-access validated: user ${req.user.id} accessing own data`,
+    );
+    next();
+  };
+};
+
+/**
  * Default export for backward compatibility
  */
 export default {
   requireOwnership,
   findOwnedResource,
   validateBatchOwnership,
+  requireSelfAccess,
 };

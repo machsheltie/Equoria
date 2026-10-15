@@ -85,6 +85,18 @@ function collectRouteFiles() {
     }
   }
 
+  // Equoria-q4uem.4 (WS4 S3): the application query layer's routers
+  // (backend/app/queries/*Routes.mjs) define routes too and stay under this
+  // gate.
+  const appQueries = path.join(BACKEND_ROOT, 'app', 'queries');
+  if (fs.existsSync(appQueries)) {
+    for (const entry of fs.readdirSync(appQueries, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith('Routes.mjs')) {
+        files.push(path.join(appQueries, entry.name));
+      }
+    }
+  }
+
   return files;
 }
 

@@ -29,6 +29,16 @@
  * Equoria-evv49 (passwordController.mjs stale db/index.mjs path); this
  * sentinel reads the structural shape directly so it works even while the
  * full HTTP integration test is gated on that fix.
+ *
+ * Equoria-q4uem.4 (WS4 S3, controller ruling): GET /trainable/:userId,
+ * GET /:id/history, GET /:id/overview and GET /:id/training-history compose
+ * data from other domains and moved out of this module into
+ * backend/app/queries/horseQueryRoutes.mjs, which routers.mjs mounts at
+ * /horses BEFORE this router. Old contract: the horses module router tree
+ * hosts those routes. New ruling: the guarantee that every pre-split route is
+ * still mounted at /horses moves to backend/__tests__/
+ * appQueryRoutesMounting.sentinel.test.mjs (union of both routers + mount
+ * order), which is no weaker. This file keeps the module-local invariants.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -59,13 +69,15 @@ describe('horseRoutes mounting sentinel (Equoria-y8u2j)', () => {
   const routeSet = new Set(allRoutes.map(r => `${r.methods.sort().join(',')} ${r.path}`));
 
   it('exposes every pre-split route after the foal/history sub-router extractions', () => {
-    // Pre-split inventory: GET /, POST /, POST /batch-update, GET /:id,
-    // PUT /:id, DELETE /:id, GET /trait-trends, GET /temperament-definitions,
-    // GET /trainable/:userId, POST /foals (now in horseFoalRoutes),
-    // GET /:id/history, GET /:id/overview, GET /:id/prize-summary,
-    // GET /:id/training-history, GET /:horseId/competition-history (now in
+    // Pre-split inventory still owned by this module: GET /, POST /,
+    // POST /batch-update, GET /:id, PUT /:id, DELETE /:id, GET /trait-trends,
+    // GET /temperament-definitions, POST /foals (now in horseFoalRoutes),
+    // GET /:id/prize-summary, GET /:horseId/competition-history (now in
     // horseHistoryRoutes), plus the four other sub-routers' contributions
     // (feed, genetics, xp, breeding) which keep their own pre-split paths.
+    // GET /trainable/:userId, GET /:id/history, GET /:id/overview and
+    // GET /:id/training-history are asserted by the app-level sentinel
+    // (Equoria-q4uem.4, see header).
     const required = [
       'GET /',
       'POST /',
@@ -75,12 +87,8 @@ describe('horseRoutes mounting sentinel (Equoria-y8u2j)', () => {
       'DELETE /:id',
       'GET /trait-trends',
       'GET /temperament-definitions',
-      'GET /trainable/:userId',
       'POST /foals',
-      'GET /:id/history',
-      'GET /:id/overview',
       'GET /:id/prize-summary',
-      'GET /:id/training-history',
       'GET /:horseId/competition-history',
     ];
     for (const sig of required) {
@@ -114,19 +122,13 @@ describe('horseRoutes mounting sentinel (Equoria-y8u2j)', () => {
     expect(mounted).toEqual(expect.arrayContaining([horseHistoryRoutes, horseFoalRoutes]));
   });
 
-  it('horseHistoryRoutes exposes exactly the 5 routes extracted from horseRoutes', () => {
+  it('horseHistoryRoutes exposes exactly the 2 routes that remain horses-local (Equoria-q4uem.4)', () => {
+    // /:id/history, /:id/overview and /:id/training-history moved to
+    // backend/app/queries/horseQueryRoutes.mjs (asserted there).
     const sigs = collectRoutes(horseHistoryRoutes)
       .map(r => `${r.methods.sort().join(',')} ${r.path}`)
       .sort();
-    expect(sigs).toEqual(
-      [
-        'GET /:id/history',
-        'GET /:id/overview',
-        'GET /:id/prize-summary',
-        'GET /:id/training-history',
-        'GET /:horseId/competition-history',
-      ].sort(),
-    );
+    expect(sigs).toEqual(['GET /:id/prize-summary', 'GET /:horseId/competition-history'].sort());
   });
 
   it('horseFoalRoutes exposes exactly POST /foals', () => {

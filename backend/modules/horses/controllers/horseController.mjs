@@ -38,10 +38,11 @@
  * re-added here.
  */
 
+// Equoria-q4uem.4 (WS4 S3): getHorseHistory and getHorseOverview compose
+// Competition and Training data, so they moved above the domain into
+// backend/app/queries/horseOverviewQuery.mjs.
 export {
-  getHorseHistory,
   getHorseCompetitionHistory,
-  getHorseOverview,
   getHorsePersonalityImpact,
 } from './horseOverviewController.mjs';
 

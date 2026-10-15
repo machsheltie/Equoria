@@ -106,6 +106,14 @@ import { craftingRoutes } from '../modules/crafting/index.mjs';
 // Imported directly, never through the staff barrel: this file is the only
 // allowed importer of the staff Router (STAFF-CR-05, check-staff-routes-mount).
 import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
+// Equoria-q4uem.4 (WS4 S3): application-level cross-domain reads. These routers
+// hold the /horses and /users routes that compose data from more than one
+// domain (overview, history, trainable horses, training history, breeding
+// data, trait card, dashboard). They mount at the same prefixes immediately
+// BEFORE the module routers so every URL, chain and first-match position is
+// unchanged; the domains no longer import each other for them.
+import horseQueryRoutes from './queries/horseQueryRoutes.mjs';
+import userQueryRoutes from './queries/userQueryRoutes.mjs';
 
 /**
  * Build the three security routers with all routes mounted. Returns them for
@@ -162,7 +170,14 @@ export function buildRouters() {
   authRouter.use('/auth', authenticatedAuthRoutes);
 
   // Core game features
+  // Equoria-q4uem.4 (WS4 S3): the application query routers go first on their
+  // prefix. Their paths are all two-segment (/trainable/:userId, /:id/<sub>,
+  // /dashboard/:userId) and the module routers have no competing two-segment
+  // pattern, so first-match behaviour is identical to the pre-move layout
+  // (proven by the WS4 route-table dump + first-match probe).
+  authRouter.use('/horses', horseQueryRoutes);
   authRouter.use('/horses', horseRoutes);
+  authRouter.use('/users', userQueryRoutes);
   authRouter.use('/users', userRoutes);
   // Equoria-rgyv (ADR-011): GET /api/v1/events/stream — per-user SSE stream.
   authRouter.use('/events', eventRoutes);

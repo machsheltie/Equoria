@@ -5,9 +5,10 @@
  * Files (per bd Equoria-sl48c; paths updated after module migrations):
  *   - backend/modules/breeding/services/enhancedGeneticProbabilityService.mjs
  *     (moved from backend/services/ — original sites :175,176,379,380)
- *   - backend/modules/horses/controllers/horseOverviewController.mjs
+ *   - backend/app/queries/horseOverviewQuery.mjs
  *     (the disciplineScores site was extracted from horseController.mjs:517
- *     into this controller per Equoria-xod8b)
+ *     into horseOverviewController.mjs per Equoria-xod8b, then moved with
+ *     getHorseOverview into the application query layer per Equoria-q4uem.4)
  *   - backend/modules/training/controllers/trainingController.mjs:671
  *
  * All sites previously used the bare `something.disciplineScores || {}`
@@ -33,7 +34,11 @@ const BACKEND_ROOT = resolve(__dirname, '..');
 
 const TARGET_FILES = [
   resolve(BACKEND_ROOT, 'modules', 'breeding', 'services', 'enhancedGeneticProbabilityService.mjs'),
-  resolve(BACKEND_ROOT, 'modules', 'horses', 'controllers', 'horseOverviewController.mjs'),
+  // Equoria-q4uem.4 (WS4 S3): the disciplineScores site (getHorseOverview)
+  // moved from modules/horses/controllers/horseOverviewController.mjs into the
+  // application query layer; the entry follows the site. The controller has
+  // no Json-column reads left, so it is no longer an adjacent location.
+  resolve(BACKEND_ROOT, 'app', 'queries', 'horseOverviewQuery.mjs'),
   resolve(BACKEND_ROOT, 'modules', 'training', 'controllers', 'trainingController.mjs'),
 ];
 

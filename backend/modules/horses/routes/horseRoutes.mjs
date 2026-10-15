@@ -1,6 +1,5 @@
 import express from 'express';
 import { query } from 'express-validator';
-import { getTrainableHorses } from '../../training/index.mjs';
 import { getTemperamentDefinitions } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
@@ -17,7 +16,6 @@ import {
   rejectPollutedRequest,
   validateHorseUpdatePayload,
   validateHorseId,
-  validateUserId,
 } from './_validators.mjs';
 import {
   listHorses,
@@ -447,57 +445,6 @@ router.delete('/:id', mutationRateLimiter, authenticateToken, (req, res) => {
       'Horses cannot be deleted. A horse stays in your stable unless you sell it — list it in the marketplace to pass it on to another player.',
   });
 });
-
-/**
- * GET /horses/trainable/:userId
- * Get all horses owned by a user that are eligible for training
- *
- * Security: Validates that user can only access their own trainable horses
- */
-router.get(
-  '/trainable/:userId',
-  queryRateLimiter,
-  authenticateToken,
-  validateUserId,
-  async (req, res) => {
-    try {
-      const { userId } = req.params;
-
-      // Test bypass mechanism removed for production security (2025-01-16)
-      // Tests now use real JWT tokens via backend/tests/helpers/authHelper.mjs
-
-      // Verify user can only access their own trainable horses
-      if (!req.user || req.user.id !== userId) {
-        logger.warn(
-          `[horseRoutes] User ${req.user?.id} attempted to access trainable horses for user ${userId}`,
-        );
-        return res.status(403).json({
-          success: false,
-          message: 'Forbidden: Cannot access trainable horses for another user',
-        });
-      }
-
-      const trainableHorses = await getTrainableHorses(userId);
-
-      res.json({
-        success: true,
-        message: `Found ${trainableHorses.length} trainable horses`,
-        data: trainableHorses,
-      });
-    } catch (error) {
-      logger.error('[trainable horses route] Error occurred:', {
-        error: error.message,
-        stack: error.stack,
-      });
-
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
 
 // GET /:horseId/competition-history, GET /:id/history, GET /:id/overview,
 // GET /:id/prize-summary, GET /:id/training-history extracted to

@@ -31,7 +31,7 @@
 
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
-import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
@@ -42,7 +42,6 @@ import {
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import logger from '../../../utils/logger.mjs';
 import { validateHorseId, rejectPollutedRequest, handleValidationErrors } from './_validators.mjs';
-import AppError from '../../../errors/AppError.mjs';
 
 const router = express.Router();
 
@@ -146,70 +145,6 @@ router.delete(
     } catch (error) {
       logger.error(`[horseBreedingRoutes] Error in stud unlisting: ${error.message}`);
       res.status(500).json({ success: false, message: 'Internal server error' });
-    }
-  },
-);
-
-/**
- * @swagger
- * /api/horses/{id}/breeding-data:
- *   get:
- *     summary: Get horse breeding data with trait predictions
- *     tags: [Horses]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Horse ID
- *     responses:
- *       200:
- *         description: Breeding data retrieved successfully
- *       404:
- *         description: Horse not found
- *       500:
- *         description: Internal server error
- *
- * Security: Validates horse ownership before returning breeding data.
- */
-router.get(
-  '/:id/breeding-data',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id, 10);
-
-      const { generateBreedingData } =
-        await import('../../breeding/services/breedingPredictionService.mjs');
-      const breedingData = await generateBreedingData(horseId);
-
-      res.json({
-        success: true,
-        message: 'Breeding data retrieved successfully',
-        data: {
-          breedingData,
-        },
-      });
-    } catch (error) {
-      // Equoria-4xwyi: TYPE-based 404 detection. generateBreedingData throws a
-      // typed NotFoundError (AppError, statusCode 404) for a missing horse.
-      // Fail-closed: any other error surfaces as 500 rather than being string-
-      // matched into a misleading 404 (the Equoria-93lhj antipattern).
-      if (AppError.isAppError(error) && error.statusCode === 404) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate breeding data',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-      });
     }
   },
 );

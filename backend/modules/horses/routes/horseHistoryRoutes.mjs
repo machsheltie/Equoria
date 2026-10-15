@@ -20,70 +20,15 @@
 
 import express from 'express';
 import { param, validationResult } from 'express-validator';
-import { getHorseOverview, getHorseCompetitionHistory } from '../controllers/horseController.mjs';
-import { trainingAnalyticsService } from '../../training/index.mjs';
+import { getHorseCompetitionHistory } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { validateHorseId } from './_validators.mjs';
 import { getHorseCompetitionResultsForPrizeSummary } from '../services/horseRouteQueries.mjs';
 import logger from '../../../utils/logger.mjs';
-import AppError from '../../../errors/AppError.mjs';
 
 const router = express.Router();
-
-/**
- * GET /horses/:id/history
- * Get competition history for a specific horse
- *
- * Security: validates horse ownership before returning history.
- */
-router.get(
-  '/:id/history',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      // Dynamic import retained (matches pre-extraction shape — controller
-      // exports a function that's also used elsewhere; static import here
-      // would create a circular-import path through horseController.mjs).
-      const { getHorseHistory } = await import('../controllers/horseController.mjs');
-      await getHorseHistory(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/overview
- * Get comprehensive overview data for a specific horse
- *
- * Security: validates horse ownership before returning overview.
- */
-router.get(
-  '/:id/overview',
-  queryRateLimiter,
-  validateHorseId,
-  authenticateToken,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getHorseOverview(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
 
 /**
  * GET /horses/:id/prize-summary
@@ -150,61 +95,6 @@ router.get(
       return res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/training-history
- *
- * Returns training history and discipline analytics for a specific horse.
- * Delegates to trainingAnalyticsService.getTrainingHistory() which queries
- * TrainingLog records for the horse.
- *
- * Wired in Equoria-kbr0: the service existed but had no HTTP route.
- *
- * Security: validates horse ownership before returning training data.
- */
-router.get(
-  '/:id/training-history',
-  queryRateLimiter,
-  authenticateToken,
-  [
-    param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    (req, res, next) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res
-          .status(400)
-          .json({ success: false, message: 'Validation failed', errors: errors.array() });
-      }
-      return next();
-    },
-  ],
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id, 10);
-      const data = await trainingAnalyticsService.getTrainingHistory(horseId);
-      return res.json({
-        success: true,
-        message: 'Training history retrieved successfully',
-        data,
-      });
-    } catch (error) {
-      // Equoria-4xwyi: TYPE-based 404 detection. getTrainingHistory throws a typed
-      // AppError(404) for a missing horse. Fail-closed: any other error surfaces as
-      // 500 rather than being string-matched into a misleading 404 (the
-      // Equoria-93lhj antipattern).
-      if (AppError.isAppError(error) && error.statusCode === 404) {
-        return res.status(404).json({ success: false, message: error.message });
-      }
-      logger.error(`[horseHistoryRoutes GET /:id/training-history] Error: ${error.message}`);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve training history',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }

@@ -68,6 +68,18 @@ function walkRoutesFiles() {
   if (fs.existsSync(topRoutes)) {
     walkDir(topRoutes, results);
   }
+
+  // Equoria-q4uem.4 (WS4 S3): the application query layer's routers
+  // (backend/app/queries/*Routes.mjs) are route files too and stay under this
+  // gate. The sibling *Query.mjs files are read models and may use Prisma.
+  const appQueries = path.join(BACKEND_ROOT, 'app', 'queries');
+  if (fs.existsSync(appQueries)) {
+    for (const entry of fs.readdirSync(appQueries, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith('Routes.mjs')) {
+        results.push(path.join(appQueries, entry.name));
+      }
+    }
+  }
   return results;
 }
 
