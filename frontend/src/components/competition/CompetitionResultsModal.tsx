@@ -619,14 +619,14 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                   className="inline-block px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
                   data-testid="competition-discipline"
                 >
-                  {results?.discipline || 'N/A'}
+                  {results?.discipline || '—'}
                 </span>
                 <div
                   className="flex items-center text-sm text-slate-400"
                   data-testid="competition-date"
                 >
                   <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
-                  {results?.date ? formatDate(results.date) : 'N/A'}
+                  {results?.date ? formatDate(results.date) : '—'}
                 </div>
                 <div className="flex items-center text-sm text-slate-400">
                   <Users className="h-4 w-4 mr-1" aria-hidden="true" />

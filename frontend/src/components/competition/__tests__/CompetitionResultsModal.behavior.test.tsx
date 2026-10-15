@@ -290,6 +290,15 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
     expect(within(dist).getByTestId('prize-3rd')).toHaveTextContent(/^3rd20%—$/);
   });
 
+  it('shows a dash, not "N/A", for an unknown discipline or date', async () => {
+    renderModal({ ...RESULTS, discipline: null, date: null });
+    await screen.findByTestId('results-table');
+
+    expect(screen.getByTestId('competition-discipline')).toHaveTextContent(/^—$/);
+    expect(screen.getByTestId('competition-date')).toHaveTextContent(/^—$/);
+    expect(screen.queryByText('N/A')).not.toBeInTheDocument();
+  });
+
   it('shows no prize pool and no prize amount for a conformation show', async () => {
     const ribbonRow: ParticipantResult = {
       ...RESULTS.results[1],

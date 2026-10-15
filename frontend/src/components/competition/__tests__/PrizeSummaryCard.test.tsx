@@ -21,7 +21,6 @@ import PrizeSummaryCard, { type PrizeSummaryCardProps, type HorsePrize } from '.
 
 describe('PrizeSummaryCard', () => {
   const mockOnToggleExpand = vi.fn();
-  const mockOnViewPerformance = vi.fn();
 
   // Sample horse prize data for testing
   const samplePrizes: HorsePrize[] = [
@@ -58,7 +57,6 @@ describe('PrizeSummaryCard', () => {
     date: '2026-01-25',
     prizes: samplePrizes,
     onToggleExpand: mockOnToggleExpand,
-    onViewPerformance: mockOnViewPerformance,
   };
 
   // Props with only 2nd place as best
@@ -164,6 +162,16 @@ describe('PrizeSummaryCard', () => {
       // Should format date as "Jan 2X, 2026" (timezone may vary)
       // Accept Jan 24 or Jan 25 due to timezone differences
       expect(screen.getByText(/Jan 2[45], 2026/)).toBeInTheDocument();
+    });
+
+    // Controller ruling (fix round 1, 2026-10-15): with the XP tile removed (R7),
+    // the two remaining tiles fill the stats row instead of leaving an empty third.
+    it('lays the two summary tiles across the whole stats row', () => {
+      render(<PrizeSummaryCard {...defaultProps} />);
+
+      const row = screen.getByTestId('placed-count').closest('.grid');
+      expect(row).toHaveClass('grid-cols-2');
+      expect(row?.children).toHaveLength(2);
     });
 
     it('shows total prize money with currency formatting', () => {
@@ -305,14 +313,16 @@ describe('PrizeSummaryCard', () => {
       expect(within(firstEntry).getByText(/5,000/)).toBeInTheDocument();
     });
 
-    it('horse entries are clickable when onViewPerformance provided', async () => {
-      const user = userEvent.setup();
+    // Owner ruling R5 (2026-10-15, Equoria-q4uem.10): no score breakdown, so the
+    // "view performance" action is deleted. Old contract: entries were buttons
+    // that called onViewPerformance(horseId).
+    it('horse entries are plain rows with no performance action', () => {
       render(<PrizeSummaryCard {...expandedProps} />);
 
-      const horseEntries = screen.getAllByTestId('horse-prize-entry');
-      await user.click(horseEntries[0]);
-
-      expect(mockOnViewPerformance).toHaveBeenCalledWith(101); // horseId of Thunder Bolt
+      for (const entry of screen.getAllByTestId('horse-prize-entry')) {
+        expect(entry).not.toHaveAttribute('role', 'button');
+        expect(entry).not.toHaveAttribute('tabindex');
+      }
     });
   });
 

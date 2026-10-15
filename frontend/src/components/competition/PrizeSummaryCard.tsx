@@ -36,7 +36,6 @@ export interface PrizeSummaryCardProps {
   prizes: HorsePrize[];
   isExpanded?: boolean;
   onToggleExpand?: () => void;
-  onViewPerformance?: (_horseId: number) => void;
   className?: string;
 }
 
@@ -90,34 +89,13 @@ PlacementIcon.displayName = 'PlacementIcon';
 /**
  * Horse prize entry component for expanded view
  */
-const HorsePrizeEntry = memo(({ prize, onClick }: { prize: HorsePrize; onClick?: () => void }) => {
-  const handleClick = useCallback(() => {
-    onClick?.();
-  }, [onClick]);
-
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        onClick?.();
-      }
-    },
-    [onClick]
-  );
-
+// Owner ruling R5 (2026-10-15, Equoria-q4uem.10): no score breakdown, so an
+// entry is a plain row; the "view performance" action was deleted.
+const HorsePrizeEntry = memo(({ prize }: { prize: HorsePrize }) => {
   return (
     <div
-      className={`flex items-center justify-between p-3 rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.2)] ${
-        onClick
-          ? 'cursor-pointer hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
-          : ''
-      }`}
+      className="flex items-center justify-between p-3 rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.2)]"
       data-testid="horse-prize-entry"
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick ? handleClick : undefined}
-      onKeyDown={onClick ? handleKeyDown : undefined}
-      aria-label={onClick ? `View performance for ${prize.horseName}` : undefined}
     >
       {/* Left side: Horse info */}
       <div className="flex items-center gap-3">
@@ -156,7 +134,6 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
   prizes,
   isExpanded: controlledExpanded,
   onToggleExpand,
-  onViewPerformance,
   className = '',
 }) => {
   // Internal state for uncontrolled mode
@@ -200,14 +177,6 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
     }
   }, [onToggleExpand]);
 
-  // Handle horse click for performance view
-  const handleViewPerformance = useCallback(
-    (horseId: number) => {
-      onViewPerformance?.(horseId);
-    },
-    [onViewPerformance]
-  );
-
   // Get card styling based on best placement
   const cardClasses = getCardClasses(bestPlacement);
 
@@ -248,7 +217,8 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
         </div>
 
         {/* Summary Stats Row */}
-        <div className="grid grid-cols-3 gap-4 mb-3">
+        {/* Two tiles since the invented XP tile went (R7); controller ruling, fix round 1. */}
+        <div className="grid grid-cols-2 gap-4 mb-3">
           {/* Total Prize Money */}
           <div className="text-center p-2 rounded-lg bg-[rgba(15,35,70,0.4)]">
             <div className="flex items-center justify-center gap-1 mb-1">
@@ -300,11 +270,7 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
         >
           <p className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">Horse Breakdown</p>
           {sortedPrizes.map((prize) => (
-            <HorsePrizeEntry
-              key={prize.horseId}
-              prize={prize}
-              onClick={onViewPerformance ? () => handleViewPerformance(prize.horseId) : undefined}
-            />
+            <HorsePrizeEntry key={prize.horseId} prize={prize} />
           ))}
           {prizes.length === 0 && (
             <p className="text-sm text-slate-400 text-center py-4">No horses participated</p>
