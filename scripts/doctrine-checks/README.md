@@ -47,6 +47,26 @@ to fix the underlying problem. It is not a license to weaken the check.
   is how the drift cases were proven RED without editing the tree.
 - `check-no-skips-in-readiness.sh` — no `it.skip` / `test.skip` /
   `describe.skip` / `test.fixme` in any beta-readiness Playwright spec.
+- `check-module-dependency-graph.mjs` — the backend module graph stays a DAG
+  of named service contracts (Equoria-q4uem.4, WS4 S5). Production files under
+  `backend/modules/**` only, one parse pass, ~0.3 s. R1 no cross-module cycle
+  (every elementary cycle printed with a file:line per edge); R2 cross-module
+  imports go through `modules/<n>/index.mjs` — a deep import fails unless the
+  line before it carries the existing `eslint-disable-next-line
+no-restricted-imports -- Equoria-hk739` TDZ marker, and the marked sites are a
+  shrink-only baseline (9; S6 removes them and makes R2 strict); R3 no
+  `export *` in a barrel; R4 no HTTP layer in barrels — a route module
+  (`/routes/` or `*Routes.mjs`) is never imported or re-exported, a controller
+  (`/controllers/` directory OR `*Controller.mjs` file name) is re-exported only
+  inside a block opened by the label `// Test-consumed only (… Equoria-7t1tn`,
+  whose controller names are a shrink-only baseline (11; Equoria-7t1tn);
+  `// Sentinel-asserted` returns a barrel to production rules; R5 no module file
+  imports `backend/app/**`. Shared-layer round trips (a `backend/utils|services`
+  file that modules import and that imports a module back) print as `WARN`
+  only, with no exit-code effect and no baseline (controller ruling Q9a).
+  Fewer than 10 modules or 50 files parsed is a failure, not a pass.
+  `--closure <file>` prints a file's transitive import closure. Sentinel-positive:
+  `backend/__tests__/scripts/moduleDependencyGraphDoctrine.sentinel.test.mjs`.
 - `check-railway-migrate-failfast.mjs` — the Railway start command in
   `.railway/railway.ts` (`start:` / `startCommand:`; plus a legacy
   `railway.toml` `startCommand =` while that file exists) must NOT swallow a
