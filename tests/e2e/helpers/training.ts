@@ -24,7 +24,9 @@ export async function assertValidNextTrainingDate(page: Page): Promise<void> {
 
   // Normalise the narrow / no-break spaces (U+202F / U+00A0) some ICU builds
   // insert before AM/PM so parsing + matching are locale-build robust.
-  const text = ((await nextTrainingValue.textContent()) ?? '').replace(/[  ]/g, ' ').trim();
+  const text = ((await nextTrainingValue.textContent()) ?? '')
+    .replace(/[\u202F\u00A0]/g, ' ')
+    .trim();
 
   expect(text, 'Next Training date must not be empty').not.toBe('');
   expect(
