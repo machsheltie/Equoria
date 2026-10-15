@@ -241,6 +241,84 @@ describe('Check-in races resolve against the live account (STAFF-CR-01)', () => 
     expect(await checkinLogsOf(mod.id)).toBe(0);
   }, 60_000);
 
+  /**
+   * A security-state change committing between the verify's two transactions.
+   * The lock holder holds the code row, so the verify's first transaction
+   * takes the User row and then queues on the code; the change request
+   * queues behind it on the User row. On release the verify's first
+   * transaction commits (a guess reserved) and the change takes the User row
+   * at once — before the verify's bcrypt compare ends — so the verify's
+   * second transaction re-reads the account only after the change commits.
+   */
+  async function raceChangeAgainstVerify(mod, code, sendChange) {
+    const [row] = await codesOf(mod.id);
+    const sendVerify = await preparePost(VERIFY, mod, { code });
+    const [verified, changed] = await raceUnderLock(
+      tx => tx.$queryRaw`SELECT id FROM staff_checkin_codes WHERE id = ${row.id} FOR UPDATE`,
+      [sendVerify, sendChange],
+    );
+    expect(changed.status).toBe(200);
+    // The verify got past its first transaction: a guess was reserved.
+    expect((await codesOf(mod.id))[0].attempts).toBe(1);
+    expect(verified.status).toBe(400);
+    expect(verified.body.code).toBe('STAFF_CHECKIN_CODE_INVALID');
+    expect(deviceCookieFrom(verified)).toBeNull();
+    expect(await devicesOf(mod.id)).toBe(0);
+    expect(await checkinLogsOf(mod.id)).toBe(0);
+  }
+
+  it('a password change committing during a correct verify leaves no device', async () => {
+    const mod = await makeModerator();
+    const code = await requestCode(mod);
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${mod.token}`] });
+    const sendChange = () =>
+      request(app)
+        .post('/api/v1/auth/change-password')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${mod.token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ oldPassword: PASSWORD, newPassword: NEW_PASSWORD });
+
+    await raceChangeAgainstVerify(mod, code, sendChange);
+  }, 60_000);
+
+  it('a password reset committing during a correct verify leaves no device', async () => {
+    const mod = await makeModerator();
+    const code = await requestCode(mod);
+    const forgot = await request(app)
+      .post('/api/v1/auth/forgot-password')
+      .set('Origin', ORIGIN)
+      .send({ email: mod.email });
+    expect(forgot.status).toBe(200);
+    const token = capturedLinkToken('password-reset');
+    const sendReset = () =>
+      request(app).post('/api/v1/auth/reset-password').set('Origin', ORIGIN).send({ token, newPassword: NEW_PASSWORD });
+
+    await raceChangeAgainstVerify(mod, code, sendReset);
+  }, 60_000);
+
+  it('a verified-email change committing during a correct verify leaves no device', async () => {
+    const mod = await makeModerator();
+    const code = await requestCode(mod);
+    const destination = `stsecstate-new-${uid()}${uid()}@test.com`;
+    const staged = await authedPost(
+      '/api/v1/auth/email-change/request',
+      { email: destination, password: PASSWORD },
+      mod,
+    );
+    expect(staged.status).toBe(200);
+    const token = capturedLinkToken('email-change');
+    const sendConfirm = () =>
+      request(app)
+        .get(`/api/v1/auth/email-change/confirm?token=${encodeURIComponent(token)}`)
+        .set('Origin', ORIGIN);
+
+    await raceChangeAgainstVerify(mod, code, sendConfirm);
+    const row = await prisma.user.findUnique({ where: { id: mod.id }, select: { email: true } });
+    expect(row.email).toBe(destination);
+  }, 60_000);
+
   it('two simultaneous correct verifications create exactly one device and one log row', async () => {
     const mod = await makeModerator();
     const code = await requestCode(mod);
