@@ -5,13 +5,18 @@
  * persisted `FoalDevelopment.completedMilestones` store as
  * Array<{ id, timestamp }> on GET /foals/:id/development) shipped in
  * Equoria-oey96.17. This suite proves the detection/write path actually
- * POPULATES that store from REAL gameplay state, for all four milestone
+ * POPULATES that store from REAL gameplay state, for all three milestone
  * families, idempotently:
  *
- *   bond      — Horse.bondScore crosses 25/50/75/100 during a real interaction
+ *   bond      — Horse.bondScore crosses 25/50/75/100
  *   stage     — foal enters weanling/yearling/two-year-old stage (game-year clock)
  *   first-trait — first discovered/expressed epigenetic trait
- *   graduation  — foal reaches age 3 game-years (21 real days) via graduateFoal
+ *
+ * Equoria-fr2kg. OLD CONTRACT: a fourth family, `graduation`, was recorded
+ * when a foal reached age 3 game-years (21 real days) and graduateFoal ran,
+ * and a bond milestone could be recorded inside the player-run enrichment
+ * write path. NEW RULING (owner, 2026-10-14/15): there is no graduation and
+ * no player-run enrichment, so no `graduation` milestone is ever recorded.
  *
  * IDEMPOTENCY is the core correctness property: re-detecting on unchanged state
  * records nothing new and never duplicates a milestone (the store is keyed by
@@ -33,7 +38,6 @@ import {
   detectAndRecordFoalMilestonesCore,
   computeReachedMilestones,
 } from '../services/foalMilestoneService.mjs';
-import { completeEnrichmentActivity, graduateFoal } from '../models/foalModel.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -127,11 +131,11 @@ describe('computeReachedMilestones — pure boundary logic', () => {
       'stage-weanling',
       'stage-yearling',
     ]);
+    // No `graduation` milestone at 21 days (Equoria-fr2kg): only the stages.
     expect(computeReachedMilestones({ ageDays: 21, bondScore: 0, hasDiscoveredTrait: false })).toEqual([
       'stage-weanling',
       'stage-yearling',
       'stage-two-year-old',
-      'graduation',
     ]);
   });
 
@@ -218,44 +222,24 @@ describe('stage milestone detection on the /development read path (HTTP, real DB
 });
 
 // ---------------------------------------------------------------------------
-// Bond milestone recorded by the REAL enrichment write path.
+// No graduation milestone at age 3 (Equoria-fr2kg).
 // ---------------------------------------------------------------------------
-describe('bond milestone recorded on the enrichment write path (real DB)', () => {
-  it('completing an enrichment activity that crosses 25 records bond-25', async () => {
-    // dob today (day 0), bond 24 → any day-0 activity (+3..7) crosses 25.
-    const foal = await makeFoal({ suffix: 'enrich', days: 0, ageYears: 0, bondScore: 24 });
+describe('a foal past age 3 records its stage milestones and no graduation milestone (real DB)', () => {
+  it('detection on a 21-day foal records the three stages, never graduation; idempotent', async () => {
+    // 21 real days → age 3 game-years. age=3.
+    const foal = await makeFoal({ suffix: 'age3', days: 21, ageYears: 3 });
 
-    const result = await completeEnrichmentActivity(foal.id, 'gentle_touch');
-    expect(result.levels.bondScore).toBeGreaterThanOrEqual(25);
+    const first = await detectAndRecordFoalMilestones(foal.id);
+    expect(first.newMilestones).not.toContain('graduation');
 
     const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
-    expect(persisted).not.toBeNull();
-    expect(persisted.completedMilestones['bond-25']).toBeDefined();
-  }, 30000);
-});
-
-// ---------------------------------------------------------------------------
-// Graduation milestone recorded by the REAL graduateFoal write path.
-// ---------------------------------------------------------------------------
-describe('graduation milestone recorded on the graduateFoal write path (real DB)', () => {
-  it('graduating a 21-day foal records graduation + all passed stage milestones; idempotent', async () => {
-    // 21 real days → age 3 game-years (graduated). age=3.
-    const foal = await makeFoal({ suffix: 'grad', days: 21, ageYears: 3 });
-
-    await graduateFoal(foal.id, user.id);
-
-    const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
-    expect(persisted.completedMilestones.graduation).toBeDefined();
     expect(persisted.completedMilestones['stage-weanling']).toBeDefined();
     expect(persisted.completedMilestones['stage-yearling']).toBeDefined();
     expect(persisted.completedMilestones['stage-two-year-old']).toBeDefined();
-    const gradTs = persisted.completedMilestones.graduation;
+    expect(persisted.completedMilestones).not.toHaveProperty('graduation');
 
-    // Idempotency: a second detection does not duplicate / re-stamp graduation.
     const again = await detectAndRecordFoalMilestones(foal.id);
-    expect(again.newMilestones).not.toContain('graduation');
-    const persistedAgain = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
-    expect(persistedAgain.completedMilestones.graduation).toBe(gradTs);
+    expect(again.newMilestones).toEqual([]);
   }, 30000);
 });
 

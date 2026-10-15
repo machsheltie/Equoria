@@ -1,36 +1,30 @@
 import { describe, afterAll, expect, it } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import {
-  getFoalDevelopment,
-  completeActivity,
-  completeEnrichmentActivity,
-  getAvailableActivities,
-} from '../models/foalModel.mjs';
+import * as foalModel from '../models/foalModel.mjs';
+
+const { getFoalDevelopment } = foalModel;
 
 /**
  * Foal Model Tests
  *
- * getAvailableActivities is a pure function — tested with plain JS, no DB.
- * Input-validation tests (invalid IDs, empty strings) throw before any DB
- * call and therefore need no fixtures.
+ * Input-validation tests (invalid IDs) throw before any DB call and therefore
+ * need no fixtures.
  *
  * All other tests are DB integration tests using TestFixture-FoalModel-*
  * prefixed Horse records. Deleting the horse cascades to foalDevelopment,
  * foalActivities, and foalTrainingHistory, so cleanup is a single horse.delete.
+ *
+ * Equoria-fr2kg. OLD CONTRACT: the model also exported the player-run
+ * getAvailableActivities (day 0-6 table), completeActivity,
+ * completeEnrichmentActivity and graduateFoal, and getFoalDevelopment returned
+ * the enrichment day/window, that day's activities, the stage activity list
+ * and completedActivities. NEW RULING (owner, 2026-10-14/15): foal enrichment
+ * is the groom's job and there is no graduation, so none of that exists.
  */
 
 const PREFIX = 'TestFixture-FoalModel-';
 const DATE_OF_BIRTH = new Date('2020-01-01');
-
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-// A dateOfBirth N whole days ago, anchored off-midnight UTC so date-only age
-// math (Equoria-g89vy enrichment derived-day) is exercised honestly.
-function dobDaysAgo(days) {
-  const d = new Date(Date.now() - days * MS_PER_DAY);
-  d.setUTCHours(4, 0, 0, 0);
-  return d;
-}
 
 async function mkFoal(suffix, opts = {}) {
   return prisma.horse.create({
@@ -74,43 +68,6 @@ async function rmFoal(foalId) {
 // fail-loud (no .catch) and scoped to the TestFixture-FoalModel- prefix.
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
-});
-
-// ─── Pure function: getAvailableActivities ────────────────────────────────────
-
-describe('getAvailableActivities', () => {
-  it('returns activities for day 0', () => {
-    const activities = getAvailableActivities(0, {});
-    expect(Array.isArray(activities)).toBe(true);
-    expect(activities.length).toBeGreaterThan(0);
-    const types = activities.map(a => a.type);
-    expect(types).toContain('gentle_touch');
-    expect(types).toContain('quiet_presence');
-    expect(types).toContain('soft_voice');
-  });
-
-  it('returns different activities for different days', () => {
-    const day0Types = getAvailableActivities(0, {}).map(a => a.type);
-    const day3Types = getAvailableActivities(3, {}).map(a => a.type);
-    expect(day0Types).not.toContain('halter_introduction');
-    expect(day3Types).toContain('halter_introduction');
-  });
-
-  it('filters out completed activities', () => {
-    const types = getAvailableActivities(0, { 0: ['gentle_touch'] }).map(a => a.type);
-    expect(types).not.toContain('gentle_touch');
-    expect(types).toContain('quiet_presence');
-  });
-
-  it('returns empty array for invalid day', () => {
-    expect(getAvailableActivities(99, {})).toEqual([]);
-  });
-
-  it('handles missing completedActivities gracefully', () => {
-    const activities = getAvailableActivities(0);
-    expect(Array.isArray(activities)).toBe(true);
-    expect(activities.length).toBeGreaterThan(0);
-  });
 });
 
 // ─── getFoalDevelopment ───────────────────────────────────────────────────────
@@ -169,7 +126,6 @@ describe('getFoalDevelopment', () => {
       expect(result).toHaveProperty('foal');
       expect(result).toHaveProperty('development');
       expect(result).toHaveProperty('activityHistory');
-      expect(result).toHaveProperty('availableActivities');
       expect(result.development.currentDay).toBe(2);
       expect(result.development.bondingLevel).toBe(60);
     } finally {
@@ -177,65 +133,16 @@ describe('getFoalDevelopment', () => {
     }
   });
 
-  it("surfaces the derived enrichment day and that day's activities (Equoria-g89vy)", async () => {
-    // dob 3 days ago → derived enrichment day 3; window open.
-    const foal = await mkFoal('EnrichDayOpen', { dateOfBirth: dobDaysAgo(3) });
+  it('returns no player-run enrichment or activity fields (Equoria-fr2kg)', async () => {
+    const foal = await mkFoal('NoPlayerFields', { age: 0, dateOfBirth: new Date() });
     try {
+      await mkDev(foal.id, { completedActivities: { 0: ['gentle_touch'] } });
       const result = await getFoalDevelopment(foal.id);
-      expect(result.development.enrichmentDay).toBe(3);
-      expect(result.development.enrichmentWindowOpen).toBe(true);
-      expect(Array.isArray(result.availableEnrichmentActivities)).toBe(true);
-      // Day-3 activities include Trailer Exposure.
-      expect(result.availableEnrichmentActivities.map(a => a.type)).toContain('trailer_exposure');
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('reports a closed enrichment window with no activities once aged past day 6 (Equoria-g89vy)', async () => {
-    // dob 8 days ago → derived day 8 > 6; window closed.
-    const foal = await mkFoal('EnrichDayClosed', { age: 1, dateOfBirth: dobDaysAgo(8) });
-    try {
-      const result = await getFoalDevelopment(foal.id);
-      expect(result.development.enrichmentWindowOpen).toBe(false);
-      expect(result.availableEnrichmentActivities).toEqual([]);
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  // Equoria-oey96.17 (BB.2): availableActivities is now the STAGE-appropriate
-  // set from getActivitiesForStage (on the game-year clock), NOT the legacy
-  // day-based enrichment list. The day-based enrichment activities remain
-  // surfaced under availableEnrichmentActivities; the completedActivities
-  // day-filtering behaviour stays covered by the pure getAvailableActivities
-  // tests above.
-  it('returns stage-appropriate availableActivities for a newborn foal (BB.2)', async () => {
-    // dob today → newborn stage → newborn stage activities.
-    const foal = await mkFoal('StageNewborn', { age: 0, dateOfBirth: dobDaysAgo(0) });
-    try {
-      await mkDev(foal.id, { currentDay: 0, completedActivities: {} });
-      const result = await getFoalDevelopment(foal.id);
-      expect(Array.isArray(result.availableActivities)).toBe(true);
-      const ids = result.availableActivities.map(a => a.id);
-      expect(ids).toContain('imprinting'); // newborn stage
-      expect(ids).not.toContain('ground_work'); // yearling-only
-      expect(ids).not.toContain('gentle_touch'); // day-based enrichment, not a stage id
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('returns yearling-stage availableActivities for a 9-day-old foal (BB.2)', async () => {
-    // dob 9 real days ago → yearling stage (game-year 1; 7–13 real days).
-    const foal = await mkFoal('StageYearling', { age: 1, dateOfBirth: dobDaysAgo(9) });
-    try {
-      await mkDev(foal.id, { currentDay: 0 });
-      const result = await getFoalDevelopment(foal.id);
-      const ids = result.availableActivities.map(a => a.id);
-      expect(ids).toContain('ground_work'); // yearling stage
-      expect(ids).not.toContain('imprinting'); // newborn-only
-      expect(ids).not.toContain('longe_work'); // two_year_old-only
+      expect(result.development).not.toHaveProperty('completedActivities');
+      expect(result.development).not.toHaveProperty('enrichmentDay');
+      expect(result.development).not.toHaveProperty('enrichmentWindowOpen');
+      expect(result).not.toHaveProperty('availableEnrichmentActivities');
+      expect(result).not.toHaveProperty('availableActivities');
     } finally {
       await rmFoal(foal.id);
     }
@@ -254,177 +161,13 @@ describe('getFoalDevelopment', () => {
   });
 });
 
-// ─── completeActivity ─────────────────────────────────────────────────────────
+// ─── Retired player-run model functions (Equoria-fr2kg) ───────────────────────
 
-describe('completeActivity', () => {
-  it('throws for invalid foal ID', async () => {
-    await expect(completeActivity('invalid', 'gentle_touch')).rejects.toThrow('Foal ID must be a positive integer');
-  });
-
-  it('throws for missing activity type', async () => {
-    await expect(completeActivity(1, '')).rejects.toThrow('Activity type is required');
-  });
-
-  it('throws when development record does not exist', async () => {
-    const foal = await mkFoal('NoDevCA');
-    try {
-      await expect(completeActivity(foal.id, 'gentle_touch')).rejects.toThrow('Foal development record not found');
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('throws when activity is already completed', async () => {
-    const foal = await mkFoal('AlreadyDone');
-    try {
-      await mkDev(foal.id, { currentDay: 0, completedActivities: { 0: ['gentle_touch'] } });
-      await expect(completeActivity(foal.id, 'gentle_touch')).rejects.toThrow(
-        'Activity not available for current day or already completed',
-      );
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('completes available activity and returns updated development', async () => {
-    const foal = await mkFoal('CompleteOK');
-    try {
-      await mkDev(foal.id, { currentDay: 0, completedActivities: {} });
-      const result = await completeActivity(foal.id, 'gentle_touch');
-      expect(result).toHaveProperty('foal');
-      expect(result).toHaveProperty('development');
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('records completed activity in completedActivities for current day', async () => {
-    const foal = await mkFoal('UpdateRecord');
-    try {
-      await mkDev(foal.id, { currentDay: 0, completedActivities: {} });
-      const result = await completeActivity(foal.id, 'gentle_touch');
-      const dayActivities = result.development.completedActivities[0] || result.development.completedActivities['0'];
-      expect(dayActivities).toContain('gentle_touch');
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('appends to existing completed activities for the same day', async () => {
-    const foal = await mkFoal('AppendCA');
-    try {
-      await mkDev(foal.id, { currentDay: 0, completedActivities: { 0: ['quiet_presence'] } });
-      const result = await completeActivity(foal.id, 'gentle_touch');
-      const dayActivities = result.development.completedActivities[0] || result.development.completedActivities['0'];
-      expect(dayActivities).toContain('quiet_presence');
-      expect(dayActivities).toContain('gentle_touch');
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('keeps bondingLevel within 0-100 bounds', async () => {
-    const foal = await mkFoal('BondBounds');
-    try {
-      await mkDev(foal.id, { currentDay: 0, bondingLevel: 98, completedActivities: {} });
-      const result = await completeActivity(foal.id, 'gentle_touch');
-      expect(result.development.bondingLevel).toBeLessThanOrEqual(100);
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('keeps stressLevel at or above 0', async () => {
-    const foal = await mkFoal('StressBounds');
-    try {
-      await mkDev(foal.id, { currentDay: 0, stressLevel: 2, completedActivities: {} });
-      const result = await completeActivity(foal.id, 'gentle_touch');
-      expect(result.development.stressLevel).toBeGreaterThanOrEqual(0);
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-});
-
-// ─── completeEnrichmentActivity ───────────────────────────────────────────────
-
-describe('completeEnrichmentActivity (derived-day contract, Equoria-g89vy)', () => {
-  it('throws when activity is not appropriate for the derived day', async () => {
-    // dob today → derived day 0; halter_introduction is a day-3 activity.
-    const foal = await mkFoal('WrongDay', { dateOfBirth: dobDaysAgo(0) });
-    try {
-      await expect(completeEnrichmentActivity(foal.id, 'halter_introduction')).rejects.toThrow(
-        'Activity "halter_introduction" is not appropriate for day 0',
-      );
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('throws "window closed" when the foal has aged past day 6', async () => {
-    // dob 8 days ago → derived day 8 > 6: the enrichment window is closed.
-    const foal = await mkFoal('AgedOut', { age: 1, dateOfBirth: dobDaysAgo(8) });
-    try {
-      await expect(completeEnrichmentActivity(foal.id, 'gentle_touch')).rejects.toThrow(/window closed/i);
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('completes enrichment activity and returns result with all expected fields', async () => {
-    const foal = await mkFoal('EnrichOK', {
-      dateOfBirth: dobDaysAgo(0),
-      bondScore: 50,
-      stressLevel: 20,
-    });
-    try {
-      const result = await completeEnrichmentActivity(foal.id, 'gentle_touch');
-      expect(result.success).toBe(true);
-      expect(result.foal.name).toBe(`${PREFIX}EnrichOK`);
-      expect(result.activity.name).toBe('Gentle Touch');
-      expect(result.activity.day).toBe(0);
-      expect(result.levels).toHaveProperty('bondScore');
-      expect(result.levels).toHaveProperty('stressLevel');
-      expect(result.trainingRecordId).toBeDefined();
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('anti-farming: rejects repeating the same activity on the same derived day', async () => {
-    const foal = await mkFoal('EnrichDedup', { dateOfBirth: dobDaysAgo(0) });
-    try {
-      await completeEnrichmentActivity(foal.id, 'gentle_touch');
-      await expect(completeEnrichmentActivity(foal.id, 'gentle_touch')).rejects.toThrow(/already completed/i);
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('keeps bondScore and stressLevel within 0-100 bounds', async () => {
-    const foal = await mkFoal('EnrichBounds', {
-      dateOfBirth: dobDaysAgo(0),
-      bondScore: 98,
-      stressLevel: 2,
-    });
-    try {
-      const result = await completeEnrichmentActivity(foal.id, 'gentle_touch');
-      expect(result.levels.bondScore).toBeLessThanOrEqual(100);
-      expect(result.levels.stressLevel).toBeGreaterThanOrEqual(0);
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
-
-  it('uses default values when bondScore and stressLevel are null', async () => {
-    const foal = await mkFoal('EnrichNulls', { dateOfBirth: dobDaysAgo(0) });
-    try {
-      const result = await completeEnrichmentActivity(foal.id, 'gentle_touch');
-      expect(result.success).toBe(true);
-      expect(result.levels).toHaveProperty('bondScore');
-      expect(result.levels).toHaveProperty('stressLevel');
-    } finally {
-      await rmFoal(foal.id);
-    }
-  });
+describe('retired player-run foal functions', () => {
+  it.each(['getAvailableActivities', 'completeActivity', 'completeEnrichmentActivity', 'graduateFoal'])(
+    'foalModel no longer exports %s',
+    name => {
+      expect(foalModel).not.toHaveProperty(name);
+    },
+  );
 });

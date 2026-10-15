@@ -18,18 +18,20 @@
  * Canonical milestone ids owned by this service and its tests:
  *   bond-25 / bond-50 / bond-75 / bond-100  — Horse.bondScore crosses a threshold
  *   stage-weanling / stage-yearling / stage-two-year-old — foal enters an age stage
- *   graduation      — foal reaches age 3 game-years (21 real days)
  *   first-trait     — the foal's first epigenetic trait is discovered/expressed
  *
- * CADENCE — GAME-YEAR CLOCK (Equoria-oey96.16): the stage/graduation day
- * boundaries are the SAME real-day boundaries computeAgeStage uses; they are
+ * There is no `graduation` milestone (Equoria-fr2kg; owner ruling
+ * 2026-10-14/15: there is no graduation). Stores written before the removal
+ * may still hold a `graduation` key; it is left in place.
+ *
+ * CADENCE — GAME-YEAR CLOCK (Equoria-oey96.16): the stage day boundaries are
+ * the SAME real-day boundaries computeAgeStage uses; they are
  * imported from foalAgeUtils (single source of truth) so this detector can
  * never drift from the stage computation.
  *
  * BOND SOURCE — `Horse.bondScore` (NOT `FoalDevelopment.bondingLevel`). This is
  * deliberate: the product decision behind Equoria-507mt/g89vy set bond to start
- * at 0 ("unbonded — earned via grooming") and built the current enrichment path
- * on `Horse.bondScore`. The legacy `FoalDevelopment.bondingLevel` still carries
+ * at 0 ("unbonded — earned via grooming"), and grooms write `Horse.bondScore`. The legacy `FoalDevelopment.bondingLevel` still carries
  * a @default(50) — counting it would falsely fire bond-25 AND bond-50 on every
  * fresh foal the moment its development row is created. `Horse.bondScore`'s
  * @default(0) makes the empty state honest.
@@ -44,7 +46,6 @@ import {
   STAGE_WEANLING_MIN_DAYS,
   STAGE_YEARLING_MIN_DAYS,
   STAGE_TWO_YEAR_OLD_MIN_DAYS,
-  STAGE_GRADUATION_DAYS,
 } from '../../../utils/foalAgeUtils.mjs';
 
 // Bond thresholds → canonical persisted milestone id.
@@ -64,7 +65,6 @@ export const STAGE_MILESTONES = Object.freeze([
   Object.freeze({ id: 'stage-two-year-old', minDays: STAGE_TWO_YEAR_OLD_MIN_DAYS }),
 ]);
 
-export const GRADUATION_MILESTONE_ID = 'graduation';
 export const FIRST_TRAIT_MILESTONE_ID = 'first-trait';
 
 /**
@@ -132,10 +132,6 @@ export function computeReachedMilestones({ ageDays, bondScore, hasDiscoveredTrai
     }
   }
 
-  if (ageDays >= STAGE_GRADUATION_DAYS) {
-    reached.push(GRADUATION_MILESTONE_ID);
-  }
-
   if (hasDiscoveredTrait) {
     reached.push(FIRST_TRAIT_MILESTONE_ID);
   }
@@ -149,8 +145,8 @@ export function computeReachedMilestones({ ageDays, bondScore, hasDiscoveredTrai
  *
  * Transaction-aware core: every read and the write use `tx`, and this function
  * never opens a transaction of its own. A command that is already inside a
- * transaction (enrichment, graduation) calls this so its milestones commit or
- * roll back with the rest of the command.
+ * transaction calls this so its milestones commit or roll back with the rest
+ * of the command.
  *
  * EXACTLY-ONCE: the store is a JSONB object keyed by milestone id, and a key is
  * only written when absent (its original timestamp is preserved). Re-running on
@@ -163,8 +159,8 @@ export function computeReachedMilestones({ ageDays, bondScore, hasDiscoveredTrai
  * transaction committed after this call's read therefore survives with its own
  * timestamp, instead of being overwritten by a whole-map write from a stale
  * read. No row lock is taken beyond the statement's own. INSERT ... ON
- * CONFLICT keeps the upsert behaviour, so the enrichment write path (which
- * never touches FoalDevelopment otherwise) still gets a row on first milestone.
+ * CONFLICT keeps the upsert behaviour, so a foal without a FoalDevelopment row
+ * still gets one on its first milestone.
  * `completedMilestones` in the result is the map the database returned, and
  * `newMilestones` lists only the keys whose stored timestamp is this call's.
  *

@@ -33,14 +33,16 @@ import logger from './logger.mjs';
 /**
  * FoalActivity stream-source discriminators (Equoria-8yhe3).
  *
- * The FoalActivity table has TWO writers that are DISJOINT BY DESIGN
+ * The FoalActivity table holds TWO streams that are DISJOINT BY DESIGN
  * (Equoria-2emg / 8yhe3 — unifying them was explicitly rejected as
  * data-corrupting):
  *   - GROOM_INTERACTION: groomController.recordInteraction. This is the ONLY
  *     stream that drives the Horse.taskLog count cache (trait/milestone/streak
  *     evaluators read those counts on a hot path).
- *   - ENRICHMENT_ACTIVITY: foalModel.completeActivity (legacy foal-development
- *     enrichment-day system). It does NOT touch taskLog.
+ *   - ENRICHMENT_ACTIVITY: rows written by the removed player-run
+ *     foalModel.completeActivity (Equoria-fr2kg; owner ruling 2026-10-14/15).
+ *     Nothing writes this stream any more, but its existing rows remain, so
+ *     the exclusion below still matters. It never touched taskLog.
  *
  * Before 8yhe3 the disjointness was an UNENFORCED activityType naming
  * convention: deriveTaskCountsFromActivities did a blind groupBy(activityType)

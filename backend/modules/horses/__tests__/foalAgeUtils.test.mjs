@@ -10,13 +10,10 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import {
-  computeAgeStage,
-  computeAgeInWeeks,
-  getActivitiesForStage,
-  hasGraduated,
-} from '../../../utils/foalAgeUtils.mjs';
+import * as foalAgeUtils from '../../../utils/foalAgeUtils.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+
+const { computeAgeStage, computeAgeInWeeks } = foalAgeUtils;
 
 // Fixed reference "now" — injected, never Date.now() (Equoria-oey96.16 trap).
 // Chosen at 12:00Z so a whole-day dob subtraction lands on exact UTC-day diffs.
@@ -102,14 +99,12 @@ describe('graduation aligns exactly with the age-3 training gate (Equoria-oey96.
     const dob = daysAgo(20);
     expect(computeAgeStage(dob, NOW)).toBe('two_year_old');
     expect(getHorseAgeYears(dob, NOW)).toBe(2); // training gate NOT met (needs >= 3)
-    expect(hasGraduated(dob, NOW)).toBe(false);
   });
 
   it('AT the gate: graduated (stage null) AND exactly age-3 (training-eligible)', () => {
     const dob = daysAgo(21);
     expect(computeAgeStage(dob, NOW)).toBeNull(); // graduated from foal window
     expect(getHorseAgeYears(dob, NOW)).toBe(3); // training-eligible (>= 3)
-    expect(hasGraduated(dob, NOW)).toBe(true);
     // They flip together — no window where a horse is training-eligible but the
     // foal system still calls it a foal.
   });
@@ -131,70 +126,6 @@ describe('computeAgeInWeeks (Equoria-oey96.16 — via canonical getHorseAgeDays)
 
   it('returns 0 for a brand-new horse (0 days old)', () => {
     expect(computeAgeInWeeks(daysAgo(0), NOW)).toBe(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// getActivitiesForStage
-// ---------------------------------------------------------------------------
-describe('getActivitiesForStage', () => {
-  it('returns activities for newborn', () => {
-    const acts = getActivitiesForStage('newborn');
-    expect(Array.isArray(acts)).toBe(true);
-    expect(acts.length).toBeGreaterThan(0);
-  });
-
-  it('returns activities for weanling', () => {
-    expect(getActivitiesForStage('weanling').length).toBeGreaterThan(0);
-  });
-
-  it('returns activities for yearling', () => {
-    expect(getActivitiesForStage('yearling').length).toBeGreaterThan(0);
-  });
-
-  it('returns activities for two_year_old', () => {
-    expect(getActivitiesForStage('two_year_old').length).toBeGreaterThan(0);
-  });
-
-  it('returns empty array for unknown stage', () => {
-    expect(getActivitiesForStage('adult')).toEqual([]);
-  });
-
-  it('each activity has id, label, description, bondChange, stressChange, cooldownHours', () => {
-    for (const stage of ['newborn', 'weanling', 'yearling', 'two_year_old']) {
-      for (const act of getActivitiesForStage(stage)) {
-        expect(act).toHaveProperty('id');
-        expect(act).toHaveProperty('label');
-        expect(act).toHaveProperty('description');
-        expect(act).toHaveProperty('bondChange');
-        expect(act).toHaveProperty('stressChange');
-        expect(act).toHaveProperty('cooldownHours');
-      }
-    }
-  });
-
-  // ------------------------------------------------------------------------
-  // BB.2 activity-shape contract LOCK (Equoria-oey96.46)
-  //
-  // The canonical activity contract is the shipped code shape — `label` /
-  // `bondChange` / `stressChange` / `cooldownHours` — which the frontend
-  // consumer DevelopmentTracker.tsx reads verbatim (activity.label /
-  // .bondChange / .stressChange). The docs/epics.md BB.2 spec previously
-  // listed the DIVERGENT names `name` / `bondImpact` / `stressImpact` and a
-  // per-activity `ageStage`; the spec was aligned TO the code (doc-only).
-  // These negative assertions FIRE if any future refactor renames the fields
-  // toward the (rejected) spec names, silently breaking the frontend — the
-  // exact drift-recurrence this issue guards against (OPTIMAL_FIX §2 sentinel).
-  // ------------------------------------------------------------------------
-  it('activities do NOT carry the rejected spec field names (name/bondImpact/stressImpact/per-activity ageStage)', () => {
-    for (const stage of ['newborn', 'weanling', 'yearling', 'two_year_old']) {
-      for (const act of getActivitiesForStage(stage)) {
-        expect(act).not.toHaveProperty('name'); // canonical is `label`
-        expect(act).not.toHaveProperty('bondImpact'); // canonical is `bondChange`
-        expect(act).not.toHaveProperty('stressImpact'); // canonical is `stressChange`
-        expect(act).not.toHaveProperty('ageStage'); // stage is the map key, not per-activity
-      }
-    }
   });
 });
 
@@ -228,19 +159,19 @@ describe('ageStage enum spelling contract (Equoria-oey96.46)', () => {
 // (real-DB, exercises the persisted store through real gameplay paths).
 
 // ---------------------------------------------------------------------------
-// hasGraduated — game-year cadence (Equoria-oey96.16)
+// Retired player-run helpers (Equoria-fr2kg)
+//
+// OLD CONTRACT: foalAgeUtils exported the player stage-activity catalog
+// (getActivitiesForStage, getStageForActivity, validateActivityForFoalAge) and
+// hasGraduated. NEW RULING (owner, 2026-10-14/15): grooms, not players, do the
+// foal's activities, and there is no graduation. The stage computation above
+// stays.
 // ---------------------------------------------------------------------------
-describe('hasGraduated — game-year cadence (Equoria-oey96.16)', () => {
-  it('returns false for a young foal (10 real days = yearling)', () => {
-    expect(hasGraduated(daysAgo(10), NOW)).toBe(false);
-  });
-
-  it('returns true at/after age 3 (21+ real days)', () => {
-    expect(hasGraduated(daysAgo(21), NOW)).toBe(true);
-    expect(hasGraduated(daysAgo(40), NOW)).toBe(true);
-  });
-
-  it('returns true for null dateOfBirth (null stage = graduated)', () => {
-    expect(hasGraduated(null, NOW)).toBe(true);
-  });
+describe('retired player-run foal age helpers (Equoria-fr2kg)', () => {
+  it.each(['getActivitiesForStage', 'getStageForActivity', 'validateActivityForFoalAge', 'hasGraduated'])(
+    'foalAgeUtils no longer exports %s',
+    name => {
+      expect(foalAgeUtils).not.toHaveProperty(name);
+    },
+  );
 });

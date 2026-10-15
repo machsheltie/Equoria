@@ -5,6 +5,8 @@
  * Background: FoalActivity has two DISJOINT-BY-DESIGN writers (Equoria-2emg):
  *   - groomController.recordInteraction -> taskLog-driving GROOM stream
  *   - foalModel.completeActivity         -> legacy foal ENRICHMENT-day stream
+ *     (writer removed in Equoria-fr2kg; its existing rows remain, so the
+ *     exclusion proved here still matters)
  * Pre-8yhe3, deriveTaskCountsFromActivities did a blind groupBy(activityType)
  * with NO source filter, so the disjointness was an UNENFORCED naming
  * convention. If an enrichment activityType ever collided with a groom

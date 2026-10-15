@@ -73,13 +73,9 @@ export * from './services/temperamentService.mjs';
 // (mirrors the kwjav horseXpModelService pattern above) so cross-module
 // consumers — breeding/foalController — import the foal-development API through
 // this barrel; same-module tests deep-import ./models/foalModel.mjs directly.
-export {
-  getFoalDevelopment,
-  completeActivity,
-  getAvailableActivities,
-  completeEnrichmentActivity,
-  graduateFoal,
-} from './models/foalModel.mjs';
+// Equoria-fr2kg: the player-run activity, enrichment and graduation functions
+// were removed (owner ruling 2026-10-14/15: foal enrichment is the groom's job).
+export { getFoalDevelopment } from './models/foalModel.mjs';
 
 // Equoria-v8l96.1: surface route default-exports through the barrel so the
 // app composition root (app/routers.mjs) imports them via the module public

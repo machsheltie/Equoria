@@ -9,8 +9,6 @@
  * ratified game-year cadence (Equoria-oey96.16; 7 real days = 1 game year):
  *
  *   BB.1  ageInWeeks · ageStage · birthDate
- *   BB.2  availableActivities filtered to the foal's age stage
- *         (getActivitiesForStage), NOT the day-based enrichment list
  *   BB.3  completedMilestones: Array<{ id, timestamp }> read from the REAL
  *         persisted FoalDevelopment.completedMilestones store — the detection
  *         WRITE path is Equoria-oey96.18, so a fresh foal reports [] honestly;
@@ -18,9 +16,14 @@
  *         surfaces persisted data (not a hardcoded []).
  *
  * ADDITIVITY: every legacy field the FoalDetailPage flow reads
- * (development.currentDay/bondingLevel/stressLevel/maxDay/completedActivities,
- * availableEnrichmentActivities, activityHistory, foal) must remain present
- * with unchanged semantics.
+ * (development.currentDay/bondingLevel/stressLevel/maxDay, activityHistory,
+ * foal) must remain present with unchanged semantics.
+ *
+ * Equoria-fr2kg. OLD CONTRACT: the response also carried the player-run
+ * enrichment and activity fields (development.completedActivities,
+ * enrichmentDay, enrichmentWindowOpen, availableEnrichmentActivities, and the
+ * BB.2 stage-filtered availableActivities). NEW RULING (owner, 2026-10-14/15):
+ * foal enrichment is the groom's job, so none of those fields are returned.
  *
  * Real DB, real Express, no mocks. Scoped TestFixture- cleanup (CLAUDE.md §2).
  */
@@ -132,23 +135,16 @@ describe('GET /api/v1/foals/:foalId/development — BB.1/BB.2/BB.3 additive (Equ
     expect(data.development.bondingLevel).toBe(45);
     expect(data.development.stressLevel).toBe(12);
     expect(data.development.maxDay).toBe(6);
-    expect(data.development.completedActivities).toEqual({ 0: ['gentle_touch'] });
-    expect(data.development).toHaveProperty('enrichmentDay');
-    expect(data.development).toHaveProperty('enrichmentWindowOpen');
-    expect(Array.isArray(data.availableEnrichmentActivities)).toBe(true);
     expect(Array.isArray(data.activityHistory)).toBe(true);
     expect(data.foal.id).toBe(yearlingFoal.id);
   });
 
-  it('BB.2: availableActivities is stage-filtered (getActivitiesForStage), not the day-based list', () => {
-    expect(Array.isArray(data.availableActivities)).toBe(true);
-    const ids = data.availableActivities.map(a => a.id);
-    expect(ids).toContain('ground_work'); // yearling stage
-    expect(ids).not.toContain('imprinting'); // newborn-only
-    expect(ids).not.toContain('longe_work'); // two_year_old-only
-    // The day-based enrichment activity ids (gentle_touch etc.) must NOT leak
-    // into the stage list — those live under availableEnrichmentActivities.
-    expect(ids).not.toContain('gentle_touch');
+  it('carries no player-run enrichment or activity fields (Equoria-fr2kg)', () => {
+    expect(data.development).not.toHaveProperty('completedActivities');
+    expect(data.development).not.toHaveProperty('enrichmentDay');
+    expect(data.development).not.toHaveProperty('enrichmentWindowOpen');
+    expect(data).not.toHaveProperty('availableEnrichmentActivities');
+    expect(data).not.toHaveProperty('availableActivities');
   });
 
   it('BB.3: completedMilestones is Array<{id,timestamp}> read from the real persisted store', () => {
