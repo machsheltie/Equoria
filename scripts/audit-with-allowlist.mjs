@@ -50,6 +50,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 import { argv, exit, cwd } from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 const SEVERITY_RANK = { info: 0, low: 1, moderate: 2, high: 3, critical: 4 };
 
@@ -156,14 +157,36 @@ function extractGhsasFromVia(via) {
   return [...out];
 }
 
-function findBlockers(audit, threshold, active) {
+// A package that is vulnerable only through a dependency lists that
+// dependency's NAME in `via`, not a GHSA. Follow those names through the
+// report to the advisories they inherit, so an allowlisted advisory clears
+// its whole chain and an unallowlisted one blocks every link (Equoria-5hdwr).
+// Only advisories at or above the threshold count; one without a severity
+// counts, to fail safe.
+function resolveGhsas(vulns, pkgName, thresholdRank, seen = new Set()) {
+  if (seen.has(pkgName)) return [];
+  seen.add(pkgName);
+  const via = vulns[pkgName]?.via || [];
+  const atThreshold = via.filter(
+    (v) =>
+      typeof v === 'object' && v && (SEVERITY_RANK[v.severity] ?? thresholdRank) >= thresholdRank
+  );
+  const out = new Set(extractGhsasFromVia(atThreshold));
+  for (const dep of via) {
+    if (typeof dep !== 'string') continue;
+    for (const g of resolveGhsas(vulns, dep, thresholdRank, seen)) out.add(g);
+  }
+  return [...out];
+}
+
+export function findBlockers(audit, threshold, active) {
   const thresholdRank = SEVERITY_RANK[threshold];
   const blockers = [];
   const vulns = audit?.vulnerabilities || {};
   for (const [pkgName, info] of Object.entries(vulns)) {
     const sevRank = SEVERITY_RANK[info.severity] ?? 0;
     if (sevRank < thresholdRank) continue;
-    const ghsas = extractGhsasFromVia(info.via || []);
+    const ghsas = resolveGhsas(vulns, pkgName, thresholdRank);
     if (ghsas.length === 0) {
       // No GHSA we can pin this against — block by default; cannot
       // allowlist a non-identifiable advisory.
@@ -227,4 +250,6 @@ function main() {
   exit(0);
 }
 
-main();
+if (argv[1] && fileURLToPath(import.meta.url) === argv[1]) {
+  main();
+}
