@@ -58,14 +58,21 @@ to fix the underlying problem. It is not a license to weaken the check.
   `eslint-disable-next-line no-restricted-imports -- Equoria-hk739` TDZ marker
   AND its `<file> -> <target>` pair is pinned in
   `module-dependency-graph-allowlist.json` (`deepImports`; S6 empties it and
-  makes R2 strict); also under R2, a dynamic `import()` whose first argument is
-  not a plain single- or double-quoted string literal fails (the graph cannot
-  see a template literal, a variable or `join(__dirname, …)`), and any import
-  specifier containing a backslash fails (Linux CI cannot resolve it); R3 no
-  `export *` in a barrel; R4 no HTTP layer in barrels — a route module
-  (`/routes/` or `*Routes.mjs`) is never imported or re-exported, a controller
-  (`/controllers/` directory OR `*Controller.mjs` file name, reached directly or
-  through `export … from` chains of re-export-only files) is re-exported only
+  makes R2 strict); also under R2, because the graph cannot see such a target:
+  a dynamic `import()` whose first argument is not a plain single- or
+  double-quoted string literal (a template literal, a variable,
+  `join(__dirname, …)`), any `createRequire(…)` or `require(…)` call (the repo is
+  ESM-only), any import specifier containing a backslash (Linux CI cannot
+  resolve it), and the lexer fail-safe (an unterminated template literal or
+  block comment, or a template literal longer than 40 lines, fails closed);
+  statements are matched at statement boundaries (line start, or after `;` /
+  `}` on the same line), not only at line starts; R3 no `export *` in a barrel;
+  R4 no HTTP layer in barrels — a route module (`/routes/` or `*Routes.mjs`) is
+  never imported or re-exported, a controller (`/controllers/` directory OR
+  `*Controller.mjs` file name, reached directly or through chains of proxy
+  files: `export … from`, `export * from`, `import … from X` + `export { … }` of
+  the binding, `export default` of the binding, namespace imports) is
+  re-exported only
   inside a block opened by the label `// Test-consumed only (… Equoria-7t1tn`
   and only when `<module>.<name>` is pinned in the allow-list
   (`testBlockControllers`; Equoria-7t1tn empties it); `// Sentinel-asserted`

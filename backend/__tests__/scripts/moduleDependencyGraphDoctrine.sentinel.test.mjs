@@ -7,18 +7,26 @@
  *   clean tree      -> exit 0, >= 20 modules named (non-vacuity)
  *   R1 cycle        -> economy file importing the bank barrel (bank -> economy exists);
  *                      also when the import follows a same-line block comment (S5 review M3)
+ *                      or another statement on the same line (fix round 2, minor 6)
  *   R2 deep import  -> unmarked cross-module deep import; a marked one that is not pinned
  *                      in module-dependency-graph-allowlist.json; a stale allow-list entry
  *   R2 non-literal  -> dynamic import() whose specifier is a template literal, a plain
- *                      backtick literal or a join(__dirname, …) call (S5 review I1)
+ *                      backtick literal or a join(__dirname, …) call (S5 review I1); also one
+ *                      hidden behind a regex literal after an `if (…)` header (round 2, minor 9)
+ *   R2 CommonJS     -> createRequire(…) / require(…) in an ESM-only module file (round 2, minor 8)
  *   R2 backslash    -> an import specifier containing `\` (S5 review M4)
+ *   R2 lexer        -> fail-closed on an unterminated template literal or one spanning more
+ *                      lines than any real one (round 2, minor 9 fail-safe)
  *   R3 export *     -> planted module barrel with `export *`
  *   R4 HTTP layer   -> planted module barrel re-exporting a Routes.mjs (any block), a
  *                      /controllers/ file and a bare *Controller.mjs (production block), a
- *                      controller reached THROUGH a re-export-only proxy file (S5 review M2);
- *                      a controller under the `// Test-consumed only (… Equoria-7t1tn` label is
- *                      classified as test-block and fails only when its name is not pinned;
- *                      a stale pinned name fails; a route module inside the test block fails
+ *                      controller reached THROUGH a re-export-only proxy file (S5 review M2) —
+ *                      by `export … from`, by `import … from X; export { … }` (two statements),
+ *                      by `export default` of an imported binding, by a namespace import
+ *                      (round 2, evasion 7) — in the production AND the test block; a controller
+ *                      under the `// Test-consumed only (… Equoria-7t1tn` label is classified as
+ *                      test-block and fails only when its name is not pinned; a stale pinned name
+ *                      fails; a route module inside the test block fails
  *   R5 upward       -> module file importing backend/app/routers.mjs
  *   --closure       -> three pure services evaluate no route module or controller file
  *
@@ -48,6 +56,7 @@ const TEST_LABEL =
   "// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests\n// into the owning module, after which these lines go).\n";
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const relPosix = abs => path.relative(REPO_ROOT, abs).split(path.sep).join('/');
+const PM = `backend/modules/${PLANT_MODULE}`;
 
 /** Every path this suite creates (files and EVERY new directory), removed deepest-first in afterEach. */
 const planted = [];
@@ -121,6 +130,8 @@ function runWithExtraAllowlistEntry(section, key) {
 }
 
 const WRITER_NOTE = '// sentinel plant; removed by afterEach\n';
+const CTRL_RE = `${esc(PM)}/controllers/epigeneticFlagController\\.mjs`;
+const PROXY_RE = `${esc(PM)}/services/proxy\\.mjs`;
 
 beforeAll(() => {
   expect(fs.existsSync(CHECK)).toBe(true);
@@ -149,6 +160,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(Number(m[3])).toBeGreaterThan(0);
     expect(res.out).toMatch(/cycles=0 deep-imports=0 .*star-exports=0 http-in-barrel=0 .*upward=0/);
     expect(res.out).toMatch(/nonliteral-dynamic=0/);
+    expect(res.out).toMatch(/commonjs=0/);
   });
 
   it('R1: FAILS on a planted cross-module cycle and prints it with the plant file:line', () => {
@@ -184,6 +196,20 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     const plant = plantFile(
       `economy/${PLANT_TOKEN}deep_${RUN_ID}.mjs`,
       "import { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R2 ${esc(relPosix(plant))}:1 cross-module deep import of backend/modules/bank/controllers/bankController\\.mjs`,
+      ),
+    );
+  });
+
+  it('R2 (minor 6): a deep import that does not start its line (after `;`) is still seen', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}midline_${RUN_ID}.mjs`,
+      "export const z = 1; import { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -258,6 +284,48 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.status).toBe(0);
   });
 
+  it('R2 (minor 9): a non-literal import() hidden behind a regex literal after an `if (…)` header is still seen', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}regexif_${RUN_ID}.mjs`,
+      'export function f(s, p) {\n  if (s) /`/.test(s); import(p);\n}\n',
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(`R2 ${esc(relPosix(plant))}:2 dynamic import\\(\\) whose specifier is not a plain quoted`),
+    );
+  });
+
+  it('R2 (minor 9 fail-safe): an unterminated template literal fails closed', () => {
+    const plant = plantFile(`economy/${PLANT_TOKEN}unterminated_${RUN_ID}.mjs`, 'export const t = `abc\n');
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:1 lexer fail-safe: unterminated template literal`));
+  });
+
+  it('R2 (minor 9 fail-safe): a template literal longer than any real one fails closed', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}longtpl_${RUN_ID}.mjs`,
+      `export const big = \`${'\n'.repeat(45)}\`;\n`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(`R2 ${esc(relPosix(plant))}:1 lexer fail-safe: template literal spans 46 lines`),
+    );
+  });
+
+  it('R2 (minor 8): createRequire(…) and require(…) in an ESM-only module file fail with file:line', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}cjs_${RUN_ID}.mjs`,
+      "import { createRequire } from 'node:module';\nconst require = createRequire(import.meta.url);\nconst bank = require('../bank/index.mjs');\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:2 CommonJS-style loading \\(createRequire\\(`));
+    expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:3 CommonJS-style loading \\(require\\(`));
+  });
+
   it('R2 (M4): FAILS on an import specifier containing a backslash', () => {
     const plant = plantFile(`economy/${PLANT_TOKEN}bslash_${RUN_ID}.mjs`, "import '..\\\\bank\\\\index.mjs';\n");
     const res = runCheck();
@@ -269,7 +337,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     plantFile(`${PLANT_MODULE}/index.mjs`, "export * from './x.mjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.out).toMatch(new RegExp(`R3 backend/modules/${PLANT_MODULE}/index\\.mjs:1 \`export \\*\` in a barrel`));
+    expect(res.out).toMatch(new RegExp(`R3 ${esc(PM)}/index\\.mjs:1 \`export \\*\` in a barrel`));
   });
 
   it('R4: FAILS on a route module re-export in a barrel (any block, even the test block)', () => {
@@ -279,9 +347,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     );
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.out).toMatch(
-      new RegExp(`R4 backend/modules/${PLANT_MODULE}/index\\.mjs:3 barrel re-exports a route module`),
-    );
+    expect(res.out).toMatch(new RegExp(`R4 ${esc(PM)}/index\\.mjs:3 barrel re-exports a route module`));
   });
 
   it('R4: FAILS on controller re-exports in the production block — /controllers/ directory AND bare *Controller.mjs name', () => {
@@ -293,24 +359,31 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 backend/modules/${PLANT_MODULE}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a from \\./controllers/aController\\.mjs`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a from \\./controllers/aController\\.mjs`,
       ),
     );
     expect(res.out).toMatch(
-      new RegExp(
-        `R4 backend/modules/${PLANT_MODULE}/index\\.mjs:2 barrel re-exports controller name\\(s\\) b from \\./bController\\.mjs`,
-      ),
+      new RegExp(`R4 ${esc(PM)}/index\\.mjs:2 barrel re-exports controller name\\(s\\) b from \\./bController\\.mjs`),
     );
     expect(res.out).not.toMatch(/cService/); // services are the contract; never flagged
+  });
+
+  it('R4 (minor 6): a barrel re-export that does not start its line is still classified', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export const z = 1; export { a } from './controllers/aController.mjs';\n");
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a from \\./controllers/aController\\.mjs`,
+      ),
+    );
   });
 
   it('R4: a barrel that merely IMPORTS a controller or route file is flagged (no two-step evasion)', () => {
     plantFile(`${PLANT_MODULE}/index.mjs`, "import { a } from './controllers/aController.mjs';\nexport { a };\n");
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.out).toMatch(
-      new RegExp(`R4 backend/modules/${PLANT_MODULE}/index\\.mjs:1 barrel imports a controller file`),
-    );
+    expect(res.out).toMatch(new RegExp(`R4 ${esc(PM)}/index\\.mjs:1 barrel imports a controller file`));
   });
 
   it('R4 (M2): a controller reached THROUGH a re-export-only proxy file is caught, with the chain named', () => {
@@ -323,7 +396,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 backend/modules/${PLANT_MODULE}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via backend/modules/${PLANT_MODULE}/services/proxy\\.mjs -> backend/modules/${PLANT_MODULE}/controllers/aController\\.mjs`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via ${PROXY_RE} -> ${esc(PM)}/controllers/aController\\.mjs`,
       ),
     );
   });
@@ -335,21 +408,104 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 backend/modules/${PLANT_MODULE}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via .*proxy\\.mjs -> .*aController\\.mjs`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via .*proxy\\.mjs -> .*aController\\.mjs`,
       ),
     );
+  });
+
+  it('R4 (minor 6): a proxy whose re-export does not start its line is still followed', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/proxy.mjs`,
+      "export const z = 1; export { a } from '../controllers/aController.mjs';\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via ${PROXY_RE} -> .*aController\\.mjs`,
+      ),
+    );
+  });
+
+  it('R4 (evasion 7): a proxy that IMPORTS a controller and re-exports the binding in a second statement is caught (production block)', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { zzrvEval3 } from './services/proxy.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/proxy.mjs`,
+      "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\nexport { evaluateFlags as zzrvEval3 };\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzrvEval3 via ${PROXY_RE} -> ${CTRL_RE}`,
+      ),
+    );
+  });
+
+  it('R4 (evasion 7): the same two-statement proxy under the test label is classified as a controller and fails on the unpinned name', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, `${TEST_LABEL}export { zzrvEval3 } from './services/proxy.mjs';\n`);
+    plantFile(
+      `${PLANT_MODULE}/services/proxy.mjs`,
+      "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\nexport { evaluateFlags as zzrvEval3 };\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4-allowlist ${esc(PM)}/index\\.mjs:3 test-block controller name "${esc(PLANT_MODULE)}\\.zzrvEval3" is not listed`,
+      ),
+    );
+  });
+
+  it('R4 (evasion 7): `export default` of an imported controller binding in a proxy is followed', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { default as flags } from './services/proxy.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/proxy.mjs`,
+      "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\nexport default evaluateFlags;\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flags via ${PROXY_RE} -> ${CTRL_RE}`,
+      ),
+    );
+  });
+
+  it('R4 (evasion 7): a namespace import of a controller re-exported by a proxy is followed', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { flagsNs } from './services/proxy.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/proxy.mjs`,
+      "import * as flagsController from '../controllers/epigeneticFlagController.mjs';\nexport { flagsController as flagsNs };\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flagsNs via ${PROXY_RE} -> ${CTRL_RE}`,
+      ),
+    );
+  });
+
+  it('R4 (evasion 7 control): a proxy that imports a controller but re-exports only its own service binding is not flagged', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { own } from './services/proxy.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/proxy.mjs`,
+      "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\nexport const own = () => evaluateFlags;\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(0);
   });
 
   it('R4 (M1): a controller under the Equoria-7t1tn label is classified test-block and FAILS only because its name is not pinned', () => {
     plantFile(`${PLANT_MODULE}/index.mjs`, `${TEST_LABEL}export { d } from './controllers/dController.mjs';\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.out).not.toMatch(
-      new RegExp(`R4 backend/modules/${PLANT_MODULE}/index\\.mjs:3 barrel re-exports controller`),
-    ); // not a production-block violation
+    expect(res.out).not.toMatch(new RegExp(`R4 ${esc(PM)}/index\\.mjs:3 barrel re-exports controller`)); // not a production-block violation
     expect(res.out).toMatch(
       new RegExp(
-        `R4-allowlist backend/modules/${PLANT_MODULE}/index\\.mjs:3 test-block controller name "${PLANT_MODULE}\\.d" is not listed`,
+        `R4-allowlist ${esc(PM)}/index\\.mjs:3 test-block controller name "${esc(PLANT_MODULE)}\\.d" is not listed`,
       ),
     );
   });
@@ -368,9 +524,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     );
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.out).toMatch(
-      new RegExp(`R4 backend/modules/${PLANT_MODULE}/index\\.mjs:5 barrel re-exports controller name\\(s\\) e`),
-    );
+    expect(res.out).toMatch(new RegExp(`R4 ${esc(PM)}/index\\.mjs:5 barrel re-exports controller name\\(s\\) e`));
   });
 
   it('R5: FAILS when a module file imports the application layer', () => {
