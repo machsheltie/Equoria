@@ -71,14 +71,23 @@ export default defineRailway(() => {
       API_KEY: preserve(),
       BCRYPT_SALT_ROUNDS: preserve(),
       DATABASE_URL: preserve(),
+      // Production mail through the Gmail API (Equoria-s4rf4, set 2026-10-15).
+      EMAIL_CHANGE_URL_BASE: preserve(),
+      EMAIL_FROM: preserve(),
+      EMAIL_FROM_NAME: preserve(),
+      GMAIL_CLIENT_ID: preserve(),
+      GMAIL_CLIENT_SECRET: preserve(),
+      GMAIL_REFRESH_TOKEN: preserve(),
       JWT_ACCESS_TOKEN_EXPIRY: preserve(),
       JWT_REFRESH_SECRET: preserve(),
       JWT_REFRESH_TOKEN_EXPIRY: preserve(),
       JWT_SECRET: preserve(),
       LOG_LEVEL: preserve(),
       NODE_ENV: preserve(),
+      PASSWORD_RESET_URL_BASE: preserve(),
       PORT: preserve(),
       REDIS_DISABLED: preserve(),
+      VERIFICATION_URL_BASE: preserve(),
     },
   });
 
