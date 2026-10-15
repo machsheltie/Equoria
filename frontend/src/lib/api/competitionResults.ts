@@ -277,6 +277,20 @@ export interface CompetitionResultUserRow {
 }
 
 /**
+ * The Horse Points recorded across rows, or null when any row has none recorded:
+ * an unknown total is never a partial sum or a fake 0 (Equoria-q4uem.10, owner
+ * rulings R6/R7).
+ */
+export function sumHorsePoints(
+  rows: ReadonlyArray<{ horsePointsAwarded: number | null }>
+): number | null {
+  const points = rows.map((r) => r.horsePointsAwarded);
+  return points.every((p): p is number => p !== null)
+    ? points.reduce((sum, p) => sum + p, 0)
+    : null;
+}
+
+/**
  * One competition summary row rendered by the CompetitionResultsList.
  * Structurally compatible with `CompetitionResultSummary` in that
  * component - so the hook return value drops straight in as `results`.

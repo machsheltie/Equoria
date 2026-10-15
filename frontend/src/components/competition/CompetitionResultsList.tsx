@@ -21,19 +21,10 @@ import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { Select } from '@/components/ui/form';
 import { Skeleton, ErrorState } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
+import { sumHorsePoints, type CompetitionResultUserRow } from '@/lib/api/competitionResults';
 
-/**
- * User result for a single horse in a competition
- */
-export interface UserResult {
-  horseId: number;
-  horseName: string;
-  rank: number;
-  score: number;
-  prizeWon: number;
-  /** Recorded Horse Points; null when not recorded (legacy results). */
-  horsePointsAwarded: number | null;
-}
+/** User result for a single horse in a competition (the canonical API row). */
+export type UserResult = CompetitionResultUserRow;
 
 /**
  * Competition result summary data structure
@@ -214,14 +205,9 @@ const ResultCard = memo(
     const disciplineInfo = DISCIPLINES.find((d) => d.id === result.discipline);
     const disciplineName = disciplineInfo?.name || result.discipline;
 
-    // Total prize won, and the Horse Points recorded for the player's horses.
-    // One unrecorded row makes the total unknown (shown as a dash), never a
-    // partial sum or a fake 0 (Equoria-q4uem.10, owner rulings R6/R7).
+    // Total prize won and recorded Horse Points (null = unknown, shown as a dash)
     const totalPrize = result.userResults.reduce((sum, r) => sum + r.prizeWon, 0);
-    const recordedPoints = result.userResults.map((r) => r.horsePointsAwarded);
-    const totalHorsePoints = recordedPoints.every((p): p is number => p !== null)
-      ? recordedPoints.reduce((sum, p) => sum + p, 0)
-      : null;
+    const totalHorsePoints = sumHorsePoints(result.userResults);
 
     /* o5hub.44 ratchet (3): real <button> semantics via Surface(interactive),
      * mirroring the landed CompetitionCard conversion. Native button gives
@@ -275,11 +261,9 @@ const ResultCard = memo(
               <Currency amount={totalPrize} showIcon={false} />
             </span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center" data-testid="horse-points-total">
             <Star className="h-4 w-4 text-[var(--role-accent-text)] mr-1" aria-hidden="true" />
-            <span className="text-role-primary" data-testid="horse-points-total">
-              {totalHorsePoints ?? '—'} Horse Points
-            </span>
+            <span className="text-role-primary">{totalHorsePoints ?? '—'} Horse Points</span>
           </div>
         </div>
       </Surface>

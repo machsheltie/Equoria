@@ -52,7 +52,6 @@
   "backend/utils/ultraRareTriggerEngine.mjs": 835,
   "frontend/src/components/MyGroomsDashboard.tsx": 711,
   "frontend/src/components/competition/CompetitionHistory.tsx": 820,
-  "frontend/src/components/competition/CompetitionResultsList.tsx": 606,
   "frontend/src/components/competition/CompetitionResultsModal.tsx": 713,
   "frontend/src/components/competition/PrizeTransactionHistory.tsx": 824,
   "frontend/src/components/foal/DevelopmentTracker.tsx": 703,
