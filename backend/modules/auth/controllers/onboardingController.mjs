@@ -46,14 +46,11 @@ import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 // Equoria-zalyb: the starter horse's name is a player-typed horse name, so it
-// meets the SAME rule as every other one. Imported from the horses module's
-// published name-policy surface — see the header of that file for why it is not
-// the barrel (the barrel carries the horse routes, and importing it here forms a
-// module cycle) and not a deep import (ESLint refuses one).
-import {
-  horseNameRejectionReason,
-  firstHorseNameRejectionMessage,
-} from '../../horses/horseNamePolicy.mjs';
+// meets the SAME rule as every other one, imported from the horses barrel. (Until
+// Equoria-q4uem.4 WS4 S4 the barrel carried the horse routes, importing it here
+// formed a module cycle, and the rule came through a module-root publishing file
+// instead; the routes left the barrel, so that file is gone.)
+import { horseNameRejectionReason, firstHorseNameRejectionMessage } from '../../horses/index.mjs';
 // Equoria-hk739: deep-import the LEAF horses services directly, NOT the full
 // horses barrel (../../horses/index.mjs). This module is re-exported by
 // authController.mjs (export { completeOnboarding, advanceOnboarding }), so the

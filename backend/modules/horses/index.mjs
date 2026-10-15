@@ -16,6 +16,13 @@ export { runFoalingJob } from './services/foalingService.mjs';
 export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
 export { decayHoofConditions } from './services/hoofConditionDecayService.mjs';
 export { createHorse, getHorseById } from './services/horseModelService.mjs';
+// The horse-name rule (Equoria-zalyb): auth's onboarding writes a player-typed horse name and
+// meets the same rule; WS4 S4 took the routes out of this barrel, so the former module-root
+// publishing file is gone and the rule is reached here like every other capability.
+export {
+  firstHorseNameRejectionMessage,
+  horseNameRejectionReason,
+} from './services/horseNamePolicy.mjs';
 export { generateStoreStats } from './services/horseStarterStats.mjs';
 export { analyzeHorseTemperament } from './services/horseTemperamentAnalysis.mjs';
 export { addXpToHorseCore } from './services/horseXpModelService.mjs';

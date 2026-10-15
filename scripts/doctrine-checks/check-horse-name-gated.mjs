@@ -50,9 +50,11 @@
 //   C. Raw SQL containing `UPDATE horses ... SET ... name`.
 //
 // GATE
-//   A flagged file passes if it imports `horseNamePolicy.mjs` (directly or by
-//   re-export through `routes/_validators.mjs`), or if it is listed in
-//   `horse-name-gate-allowlist.json` with a reason and an issue.
+//   A flagged file passes if it imports `horseNamePolicy.mjs` (directly, by
+//   re-export through `routes/_validators.mjs`, or — for code outside the horses
+//   module — a horse-name policy symbol from the horses barrel `horses/index.mjs`,
+//   Equoria-q4uem.4), or if it is listed in `horse-name-gate-allowlist.json` with a
+//   reason and an issue.
 //
 // The allow-list may only SHRINK: an entry naming a file that no longer exists,
 // or that no longer trips any signal, FAILS this check — so a divergence cannot
@@ -110,6 +112,12 @@ const SCAN_ROOTS = [
 const EXEMPTION_MARKER = '// doctrine-allow: horse-name-ungated';
 const POLICY_MODULE_BASENAME = 'horseNamePolicy.mjs';
 const POLICY_REEXPORT_BASENAME = '_validators.mjs';
+// Cross-module consumers reach the rule through the horses barrel (Equoria-q4uem.4,
+// WS4 S5: the module-root `horses/horseNamePolicy.mjs` publishing file is gone).
+const POLICY_BARREL_SUFFIX = 'horses/index.mjs';
+// A policy symbol must be named in the statement; importing an unrelated horses
+// export (`getHorseById`) from the barrel does not gate a name write.
+const POLICY_SYMBOL_RE = /horseName|HorseName|HORSE_NAME_/;
 
 const skipDir = (name, full) =>
   /(^|[\\/])__tests__([\\/]|$)/.test(full) ||
@@ -314,7 +322,10 @@ function importsPolicy(source) {
     if (spec.endsWith(POLICY_MODULE_BASENAME)) return true;
     // `routes/_validators.mjs` re-exports the policy, so importing the shared
     // name rule through it counts.
-    if (spec.endsWith(POLICY_REEXPORT_BASENAME) && /horseName|HORSE_NAME_/.test(m[0])) return true;
+    if (spec.endsWith(POLICY_REEXPORT_BASENAME) && POLICY_SYMBOL_RE.test(m[0])) return true;
+    // So does importing a policy symbol from the horses barrel (the only
+    // cross-module path the boundary rule allows).
+    if (spec.endsWith(POLICY_BARREL_SUFFIX) && POLICY_SYMBOL_RE.test(m[0])) return true;
   }
   return false;
 }
