@@ -215,19 +215,19 @@ async function getTrainableHorses(userId) {
     }
 
     logger.info(
-      `[trainingController.getTrainableHorses] Getting trainable horses for user ${userId}`,
+      `[trainingModelService.getTrainableHorses] Getting trainable horses for user ${userId}`,
     );
 
     // Get user with their horses
     const player = await getUserWithHorses(userId);
 
     if (!player) {
-      logger.warn(`[trainingController.getTrainableHorses] User ${userId} not found`);
+      logger.warn(`[trainingModelService.getTrainableHorses] User ${userId} not found`);
       return [];
     }
 
     if (!player.horses || player.horses.length === 0) {
-      logger.info(`[trainingController.getTrainableHorses] User ${userId} has no horses`);
+      logger.info(`[trainingModelService.getTrainableHorses] User ${userId} has no horses`);
       return [];
     }
 
@@ -303,18 +303,18 @@ async function getTrainableHorses(userId) {
         allHorses.push(horseData);
       } catch (error) {
         logger.warn(
-          `[trainingController.getTrainableHorses] Error checking training eligibility for horse ${horse.id}: ${error.message}`,
+          `[trainingModelService.getTrainableHorses] Error checking training eligibility for horse ${horse.id}: ${error.message}`,
         );
       }
     }
 
     logger.info(
-      `[trainingController.getTrainableHorses] Returning ${allHorses.length} horses for user ${userId}`,
+      `[trainingModelService.getTrainableHorses] Returning ${allHorses.length} horses for user ${userId}`,
     );
     return allHorses;
   } catch (error) {
     logger.error(
-      `[trainingController.getTrainableHorses] Error getting trainable horses: ${error.message}`,
+      `[trainingModelService.getTrainableHorses] Error getting trainable horses: ${error.message}`,
     );
     throw new Error(`Failed to get trainable horses: ${error.message}`, { cause: error });
   }

@@ -17,8 +17,12 @@
  *
  * Equoria-urqic.5: this 1306-line module was split along its three concerns
  * into focused sibling modules. This file now re-exports the public surface
- * so every existing importer (routes, tests, the modules/horses barrel) is
- * unaffected:
+ * so every existing importer is unaffected. Equoria-q4uem.4 (WS4) moved the
+ * whole cluster from modules/horses/services into modules/traits/services; it
+ * is imported by the traits routers advancedEpigeneticRoutes.mjs and
+ * enhancedReportingRoutes.mjs and by the developmental-window tests
+ * (modules/traits/__tests__ and backend/tests/services). No module barrel
+ * re-exports it any more:
  *   - developmentalWindows.mjs       — window identification / sensitivity /
  *                                       closure / coordination / critical-period
  *                                       analysis / trait-opportunity evaluation

@@ -8,7 +8,7 @@
  *   - backend/modules/horses/controllers/horseOverviewController.mjs
  *     (the disciplineScores site was extracted from horseController.mjs:517
  *     into this controller per Equoria-xod8b)
- *   - backend/modules/training/controllers/trainingController.mjs:744
+ *   - backend/modules/training/controllers/trainingController.mjs:671
  *
  * All sites previously used the bare `something.disciplineScores || {}`
  * pattern — a stealth-corruption vector when the JSONB column drifts to a
