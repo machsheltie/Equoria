@@ -13,7 +13,15 @@
  *
  * Pass an explicit `options` to match a component's prior format; the defaults
  * cover the two dominant shapes (date-only "Jan 5, 2026" and date+time).
+ *
+ * GAME CLOCK (owner ruling 2026-10-09): every date and time is shown on the
+ * owner's Eastern time, whatever the player's own zone, so "the show settles
+ * at 3:00 AM" means the same moment for everyone; times carry their EDT/EST
+ * label. A bare calendar date ('YYYY-MM-DD') is shown as that date. A caller
+ * that passes its own `timeZone` option keeps it.
  */
+
+import { GAME_TIME_ZONE } from './gameTime';
 
 /** The honest fallback rendered when a date is absent or unparseable. */
 export const DATE_UNAVAILABLE = 'Date unavailable';
@@ -35,6 +43,7 @@ export const DEFAULT_DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
+  timeZoneName: 'short',
 };
 
 /** Default time-only format: "3:04 PM". */
@@ -42,7 +51,23 @@ export const DEFAULT_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
+  timeZoneName: 'short',
 };
+
+const CALENDAR_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Options with the game-clock time zone applied: Eastern for instants, UTC for
+ * a bare 'YYYY-MM-DD' (which parses as UTC midnight of exactly that date).
+ */
+function onGameClock(
+  value: DateInput,
+  options: Intl.DateTimeFormatOptions
+): Intl.DateTimeFormatOptions {
+  const timeZone =
+    typeof value === 'string' && CALENDAR_DATE_ONLY.test(value) ? 'UTC' : GAME_TIME_ZONE;
+  return { timeZone, ...options };
+}
 
 /**
  * Parse a date input into a valid Date, or null if it is absent / unparseable.
@@ -70,7 +95,7 @@ export function formatDate(
   locale: string = 'en-US'
 ): string {
   const date = toValidDate(value);
-  return date ? date.toLocaleDateString(locale, options) : fallback;
+  return date ? date.toLocaleDateString(locale, onGameClock(value, options)) : fallback;
 }
 
 /**
@@ -84,7 +109,7 @@ export function formatDateTime(
   locale: string = 'en-US'
 ): string {
   const date = toValidDate(value);
-  return date ? date.toLocaleString(locale, options) : fallback;
+  return date ? date.toLocaleString(locale, onGameClock(value, options)) : fallback;
 }
 
 /**
@@ -98,7 +123,7 @@ export function formatTime(
   locale: string = 'en-US'
 ): string {
   const date = toValidDate(value);
-  return date ? date.toLocaleTimeString(locale, options) : fallback;
+  return date ? date.toLocaleTimeString(locale, onGameClock(value, options)) : fallback;
 }
 
 /**

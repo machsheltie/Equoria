@@ -15,39 +15,16 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import HorseSelector from '../HorseSelector';
+import HorseSelector, { canHorseBreed } from '../HorseSelector';
 import type { Horse } from '@/types/breeding';
+
+// canHorseBreed is the component's real export (it used to be a copy pasted
+// into this file, which kept a daylight-saving bug the component no longer
+// has). Days remaining are Eastern game days (owner ruling 2026-10-09).
 
 /**
  * Helper functions replicated for unit testing
  */
-function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: string } {
-  // Age requirement: 3+ years
-  if (horse.age < 3) {
-    return { canBreed: false, reason: `Too young (${horse.age}y, needs 3+y)` };
-  }
-
-  // Health check
-  if (horse.healthStatus && horse.healthStatus.toLowerCase() === 'injured') {
-    return { canBreed: false, reason: 'Injured' };
-  }
-
-  // Breeding cooldown check
-  if (horse.breedingCooldownEndsAt) {
-    const cooldownDate = new Date(horse.breedingCooldownEndsAt);
-    const now = new Date();
-
-    if (cooldownDate > now) {
-      const daysRemaining = Math.ceil(
-        (cooldownDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      return { canBreed: false, reason: `Cooldown (${daysRemaining}d remaining)` };
-    }
-  }
-
-  return { canBreed: true };
-}
-
 function getStatusColor(canBreed: boolean, reason?: string): string {
   if (canBreed) {
     return 'text-green-700 bg-green-50 border-green-200';

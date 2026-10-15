@@ -13,6 +13,7 @@ import { Search, AlertCircle, Clock, Heart, SearchX } from 'lucide-react';
 import { Input } from '@/components/ui/form';
 import EmptyState from '@/components/ui/EmptyState';
 import { isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
+import { gameDayIndex } from '@/lib/gameTime';
 import type { Horse } from '@/types/breeding';
 
 export interface HorseSelectorProps {
@@ -26,7 +27,7 @@ export interface HorseSelectorProps {
 /**
  * Check if horse can breed based on age, health, and cooldown
  */
-function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: string } {
+export function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: string } {
   // Age requirement: 3+ years
   if (horse.age < 3) {
     return { canBreed: false, reason: `Too young (${horse.age}y, needs 3+y)` };
@@ -43,9 +44,9 @@ function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: string } {
     const now = new Date();
 
     if (cooldownDate > now) {
-      const daysRemaining = Math.ceil(
-        (cooldownDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      );
+      // Eastern game days (owner ruling 2026-10-09): a daylight-saving change
+      // inside the window never adds a phantom day; at least 1 while pending.
+      const daysRemaining = Math.max(1, gameDayIndex(cooldownDate) - gameDayIndex(now));
       return { canBreed: false, reason: `Cooldown (${daysRemaining}d remaining)` };
     }
   }

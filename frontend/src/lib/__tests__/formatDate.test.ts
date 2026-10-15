@@ -121,3 +121,27 @@ describe('dateSortKey', () => {
     ]);
   });
 });
+
+// Owner ruling 2026-10-09: the game runs on Eastern time. Every date and time
+// is shown on that clock, whatever the viewer's own zone. (Old contract: the
+// browser's local zone.)
+describe('game clock (Eastern) display', () => {
+  it('shows an evening instant on its Eastern date, not the UTC date', () => {
+    expect(formatDate('2026-10-10T02:30:00.000Z')).toBe('Oct 9, 2026'); // 10:30 PM EDT, Oct 9
+  });
+
+  it('shows a bare calendar date (YYYY-MM-DD) as exactly that date', () => {
+    expect(formatDate('2026-10-09')).toBe('Oct 9, 2026');
+  });
+
+  it('labels times with EDT in summer and EST in winter', () => {
+    expect(formatDateTime('2026-10-10T07:00:00.000Z')).toBe('Oct 10, 2026, 3:00 AM EDT');
+    expect(formatTime('2026-12-15T08:00:00.000Z')).toBe('3:00 AM EST');
+  });
+
+  it("keeps a caller's explicit timeZone", () => {
+    expect(
+      formatDate('2026-10-10T02:30:00.000Z', { timeZone: 'UTC', month: 'short', day: 'numeric' })
+    ).toBe('Oct 10');
+  });
+});

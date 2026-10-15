@@ -14,6 +14,7 @@
 
 import { useState, useMemo } from 'react';
 import { formatDate, formatDateTime } from '@/lib/formatDate';
+import { gameDateKey } from '@/lib/gameTime';
 import { ChevronDown, ChevronUp, ArrowUp } from 'lucide-react';
 import { useHorseXPHistory } from '@/hooks/api/useHorseXP';
 
@@ -99,7 +100,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
     const grouped = new Map<string, GroupedGain>();
     sortedEvents.forEach((event) => {
       const date = new Date(event.timestamp);
-      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dateKey = gameDateKey(date); // YYYY-MM-DD on the Eastern game clock
       const displayDate = formatDate(date, { month: 'short', day: 'numeric' });
 
       if (!grouped.has(dateKey)) {
