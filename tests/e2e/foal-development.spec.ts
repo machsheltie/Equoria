@@ -18,19 +18,15 @@ import { seedOwnedHorses } from './fixtures/ownedHorses';
  *    breed them via /api/v1/horses/foals (which starts a 7-day pregnancy), then
  *    skip gestation via the owner-scoped POST /api/v1/horses/:id/foal-now to
  *    mint a real foal owned by the session user (Equoria-6w3ur).
- *  - The newborn foal starts at currentDay 0 / maxDay 6, no traits, no
- *    completed activities — i.e. the "starting state" the old Vitest mocks
- *    fabricated. We exercise the real lifecycle hooks (reveal-traits,
- *    enrich, log-activity) from this state, and prove the retired develop
- *    endpoint cannot move the development day (Equoria-mwjst).
+ *  - The newborn foal starts at currentDay 0 / maxDay 6 with no traits.
+ *    We exercise the real reveal-traits hook from this state, and prove the
+ *    retired develop endpoint cannot move the development day
+ *    (Equoria-mwjst).
  *
- * Graduation flow (BB-4) is intentionally NOT exercised here: it requires
- * a foal aged 104+ weeks (~2 real years). Seeding a sufficiently-old foal
- * means either fast-forwarding DB rows (test infra not in scope here) or
- * inventing a backend "age-up" endpoint that doesn't exist. The Graduate
- * button's CONDITIONAL RENDER (only when isGraduationEligible) is the
- * production guard; we assert it is NOT shown on the newborn — that's the
- * contract the previous vitest mocks were really probing.
+ * Player-run enrichment, stage activities and graduation were removed
+ * (Equoria-fr2kg; owner ruling 2026-10-14/15: foal enrichment is the groom's
+ * job, and there is no graduation). We prove the page offers none of them
+ * and the backend no longer serves their routes.
  */
 const test = base.extend<{ browserConsole: void }>({
   browserConsole: [
@@ -216,21 +212,13 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
       timeout: 10000,
     });
 
-    // FoalDevelopmentTracker renders the lifecycle action buttons. Reveal
-    // Traits is always present; Enrich is present (may be disabled if no
-    // enrichment activities for the day, which is honest UI not a defect).
-    // There is NO Advance Day (Equoria-mwjst, owner ruling 2026-10-05: foals
-    // wait out their full development week).
+    // FoalDevelopmentTracker renders Reveal Traits. There is NO Advance Day
+    // (Equoria-mwjst, owner ruling 2026-10-05: foals wait out their full
+    // development week).
     await expect(page.getByRole('button', { name: /Reveal Traits/i })).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.getByRole('button', { name: /Enrich/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
-
-    // Newborn foal (0 weeks) is NOT graduation-eligible (requires 104+ weeks),
-    // so the Graduate button MUST NOT be in the DOM. This is the production
-    // guard the old vi.mock'd "isGraduationEligible" tests were probing.
-    await expect(page.getByRole('button', { name: /Graduate to Adult/i })).toHaveCount(0);
   });
 
   test('Reveal Traits button fires POST /reveal-traits and updates UI', async ({ page }) => {
@@ -297,63 +285,20 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     expect(await readDevelopment()).toEqual(before);
   });
 
-  test('Enrich button surfaces the activity picker when activities are available', async ({
+  // Equoria-fr2kg. OLD CONTRACT: the page offered "Enrich" (POST /enrich), a
+  // stage-activity picker (POST /activity) and, past 104 weeks, "Graduate to
+  // Adult" (POST /graduate). NEW RULING (owner, 2026-10-14/15): foal
+  // enrichment is the groom's job and there is no graduation, so the page
+  // offers none of these.
+  test('the player cannot enrich, run foal activities or graduate: no controls', async ({
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-
-    const enrichBtn = page.getByRole('button', { name: /Enrich/i });
-    await expect(enrichBtn).toBeVisible({ timeout: 20000 });
-
-    // The button is disabled when the enrichment window is closed (no
-    // activities for the foal's current day, per Equoria-g89vy). That's
-    // an honest empty-state, not a defect — we assert the production
-    // behavior either way.
-    const disabled = await enrichBtn.isDisabled();
-    if (disabled) {
-      test.info().annotations.push({
-        type: 'note',
-        description:
-          'Enrich disabled — backend returned no availableEnrichmentActivities for current day; this is honest UI.',
-      });
-      return;
-    }
-
-    await enrichBtn.click();
-    // Picker reveals "Choose an Enrichment Activity" header
-    await expect(page.getByText(/Choose an Enrichment Activity/i)).toBeVisible({
-      timeout: 5000,
+    await expect(page.getByRole('button', { name: /Reveal Traits/i })).toBeVisible({
+      timeout: 20000,
     });
-  });
-
-  test('Activity log toggles visible when activities exist', async ({ page }) => {
-    // Log an activity via API first so the collapsible Activity Log
-    // section has something to show.
-    const logResp = await csrfMutate(session, 'POST', `/api/v1/foals/${foalId}/activity`, {
-      activity: 'grooming',
-      duration: 15,
-    });
-    // Backend may reject activity-logging for some foal states; that's
-    // honest behaviour. We only assert the activity-log UI when the API
-    // accepted the activity.
-    if (!logResp.ok()) {
-      test.info().annotations.push({
-        type: 'note',
-        description: `Activity-log POST returned ${logResp.status()} — skipping UI log assertion`,
-      });
-      return;
-    }
-
-    await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-
-    // The collapsible header shows "Activity Log (N)" with N >= 1
-    const activityLogToggle = page.getByRole('button', { name: /Activity Log \(\d+\)/i });
-    await expect(activityLogToggle).toBeVisible({ timeout: 15000 });
-
-    // Collapsed by default — clicking expands the list
-    await activityLogToggle.click();
-
-    // After expansion, at least one activity row is visible
-    await expect(page.getByText(/grooming/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: /Enrich/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Graduat/i })).toHaveCount(0);
+    await expect(page.getByText(/Available activities/i)).toHaveCount(0);
   });
 });

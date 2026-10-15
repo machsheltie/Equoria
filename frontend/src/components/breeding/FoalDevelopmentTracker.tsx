@@ -3,9 +3,12 @@
  *
  * Full foal development interface:
  *  - DevelopmentTracker (age-stage timeline + bond score)
- *  - Age-stage-grouped activity selection (out-of-stage activities disabled)
  *  - Trait reveal with CinematicMoment (lifetime-first; Story 18-4 / Epic 29-3)
  *  - Activity log
+ *
+ * No player-run enrichment, stage activities or graduation (Equoria-fr2kg;
+ * owner ruling 2026-10-14/15: foal enrichment is the groom's job, and there
+ * is no graduation).
  *
  * ──────────────────────────────────────────────────────────────────────────
  * RELATIONSHIP TO foal/DevelopmentTracker.tsx (Equoria-rpnq4)
@@ -14,13 +17,12 @@
  *
  *  - THIS file (breeding/FoalDevelopmentTracker): the CONTAINER /
  *    orchestrator. Owns all the API hooks (useFoal, useFoalDevelopment,
- *    useRevealFoalTraits, …), activity selection, the
- *    trait-reveal CinematicMoment, and the activity log. This is the
+ *    useRevealFoalTraits, …), the trait-reveal CinematicMoment, and the
+ *    activity log. This is the
  *    component wired into FoalDetailPage.
  *
  *  - foal/DevelopmentTracker: the dumb PRESENTATIONAL "view" it renders —
- *    pure timeline/bond-bar/activity-list UI with no data fetching. We
- *    import that component and its Activity type from there.
+ *    pure timeline/bond-bar UI with no data fetching.
  *
  * If you need data/mutations → you are in the right file (edit here).
  * If you need to change the timeline/bond-bar LAYOUT → edit
@@ -31,20 +33,16 @@
 
 import { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/formatDate';
-import { Sparkles, Dna, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react';
+import { Dna, ChevronDown, ChevronUp } from 'lucide-react';
 import {
-  useEnrichFoal,
   useFoal,
   useFoalActivities,
   useFoalDevelopment,
-  useGraduateFoal,
-  useLogFoalActivity,
   useRevealFoalTraits,
 } from '@/hooks/api/useBreeding';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { useRewardToast } from '@/components/feedback';
 import DevelopmentTracker from '@/components/foal/DevelopmentTracker';
-import type { Activity } from '@/components/foal/DevelopmentTracker';
 
 interface FoalDevelopmentTrackerProps {
   foalId: number;
@@ -55,30 +53,12 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
   const { data: development, isLoading: loadingDev, error: devError } = useFoalDevelopment(foalId);
   const { data: activities } = useFoalActivities(foalId);
 
-  const logActivity = useLogFoalActivity(foalId);
-  const enrichFoal = useEnrichFoal(foalId);
   const revealTraits = useRevealFoalTraits(foalId);
-  const graduateFoal = useGraduateFoal(foalId);
 
   const { notify } = useRewardToast();
 
   const [showLog, setShowLog] = useState(false);
   const [showTraitCinematic, setShowTraitCinematic] = useState(false);
-  const [showGraduationCinematic, setShowGraduationCinematic] = useState(false);
-  const [pendingActivity, setPendingActivity] = useState<Activity | null>(null);
-  const [showEnrichPicker, setShowEnrichPicker] = useState(false);
-
-  // Equoria-g89vy: the day's enrichment activities, derived server-side from
-  // the foal's age and supplied by GET /development. Empty array = the
-  // enrichment window is closed (foal aged past day 6).
-  const enrichmentActivities = development?.availableEnrichmentActivities ?? [];
-
-  // Compute whether the foal is eligible for graduation (age >= 104 weeks)
-  const dateOfBirth = foal?.dateOfBirth ?? foal?.birthDate;
-  const ageInWeeks = dateOfBirth
-    ? Math.floor((Date.now() - new Date(dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 7))
-    : 0;
-  const isGraduationEligible = ageInWeeks >= 104;
 
   // Cinematic on trait reveal (Story 18-4 / Epic 29-3) + reward toast
   // (Equoria-55bo.1, Spec 11.3.10). Trait discovery is a meaningful
@@ -102,24 +82,6 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
     }
   }, [revealTraits.isSuccess, foal?.traits, foal?.name, notify]);
 
-  // Cinematic on graduation (BB-4)
-  useEffect(() => {
-    if (graduateFoal.isSuccess && graduateFoal.data?.graduation?.isFirstGraduation) {
-      setShowGraduationCinematic(true);
-    }
-  }, [graduateFoal.isSuccess, graduateFoal.data]);
-
-  // Handle activity selection from DevelopmentTracker
-  const handleActivitySelect = (activity: Activity) => {
-    setPendingActivity(activity);
-  };
-
-  const handleConfirmActivity = () => {
-    if (!pendingActivity) return;
-    logActivity.mutate({ activity: pendingActivity.id, duration: pendingActivity.cooldownHours });
-    setPendingActivity(null);
-  };
-
   const isLoading = loadingFoal || loadingDev;
 
   return (
@@ -140,7 +102,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
           </div>
         )}
 
-        {/* DevelopmentTracker — shows stage timeline + bond score + activities */}
+        {/* DevelopmentTracker — shows stage timeline + bond score */}
         {foal && (
           <DevelopmentTracker
             foalName={foal.name ?? `Foal #${foalId}`}
@@ -148,40 +110,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             bondScore={development?.bondingLevel ?? 0}
             completedMilestones={{}}
             lastInteractionAt={undefined}
-            onActivitySelect={handleActivitySelect}
           />
-        )}
-
-        {/* Pending activity confirmation */}
-        {pendingActivity && (
-          <div className="glass-panel rounded-2xl border border-[var(--alpha-gold-ember-20)] px-4 py-4 space-y-3">
-            <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
-              Confirm Activity
-            </p>
-            <p className="text-sm font-semibold text-[var(--cream)] font-[var(--font-body)]">
-              {pendingActivity.label}
-            </p>
-            <p className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
-              {pendingActivity.description}
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleConfirmActivity}
-                disabled={logActivity.isPending}
-                className="flex-1 rounded-full py-2 text-xs font-bold bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] disabled:opacity-40 font-[var(--font-heading)]"
-              >
-                {logActivity.isPending ? 'Logging…' : 'Confirm'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPendingActivity(null)}
-                className="flex-1 rounded-full py-2 text-xs font-bold border border-[rgba(100,130,165,0.25)] text-[var(--text-muted)] hover:text-[var(--cream)] font-[var(--font-body)]"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
         )}
 
         {/* Development stats — Equoria-n3yw6: these are the REAL backend
@@ -193,13 +122,6 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
               { label: 'Day', value: `${development.currentDay} / ${development.maxDay}` },
               { label: 'Bonding', value: development.bondingLevel },
               { label: 'Stress', value: development.stressLevel },
-              {
-                label: 'Activities',
-                value: Object.values(development.completedActivities ?? {}).reduce(
-                  (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
-                  0
-                ),
-              },
             ].map(({ label, value }) => (
               <div
                 key={label}
@@ -229,67 +151,10 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             {revealTraits.isPending ? 'Revealing…' : 'Reveal Traits'}
           </button>
 
-          {/* Enrich — opens a picker of the day's real enrichment activities
-              (Equoria-g89vy). The server derives the day from the foal's age,
-              so the client only sends the chosen activity. Disabled when the
-              window is closed (no activities available). */}
-          <button
-            type="button"
-            onClick={() => setShowEnrichPicker((v) => !v)}
-            disabled={enrichFoal.isPending || enrichmentActivities.length === 0}
-            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] hover:bg-[var(--role-success-border)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            {enrichFoal.isPending ? 'Enriching…' : 'Enrich'}
-          </button>
-
           {/* No "Advance Day" (Equoria-mwjst; owner ruling 2026-10-05): a foal
               waits out its full development week — the nightly job moves the
               day, never the player. */}
-
-          {/* Graduate — BB-4: visible only when foal is 3+ years old */}
-          {isGraduationEligible && (
-            <button
-              type="button"
-              onClick={() => graduateFoal.mutate()}
-              disabled={graduateFoal.isPending || graduateFoal.isSuccess}
-              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] disabled:opacity-40 transition-colors font-[var(--font-heading)]"
-            >
-              <GraduationCap className="h-3.5 w-3.5" />
-              {graduateFoal.isPending
-                ? 'Graduating…'
-                : graduateFoal.isSuccess
-                  ? 'Graduated!'
-                  : 'Graduate to Adult'}
-            </button>
-          )}
         </div>
-
-        {/* Enrichment activity picker (Equoria-g89vy) — the day's real
-            activities for this foal, derived server-side from its age. */}
-        {showEnrichPicker && enrichmentActivities.length > 0 && (
-          <div className="glass-panel rounded-2xl border border-[var(--role-success-border)] px-4 py-4 space-y-3">
-            <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
-              Choose an Enrichment Activity
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {enrichmentActivities.map((act) => (
-                <button
-                  key={act.type}
-                  type="button"
-                  onClick={() => {
-                    enrichFoal.mutate({ activity: act.type });
-                    setShowEnrichPicker(false);
-                  }}
-                  disabled={enrichFoal.isPending}
-                  className="rounded-full px-3 py-1.5 text-xs font-bold bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] hover:bg-[var(--role-success-border)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
-                >
-                  {act.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Traits display */}
         {foal?.traits && foal.traits.length > 0 && (
@@ -369,16 +234,6 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
               : undefined
           }
           onDismiss={() => setShowTraitCinematic(false)}
-        />
-      )}
-
-      {/* Cinematic graduation (BB-4 — lifetime-first only) */}
-      {showGraduationCinematic && (
-        <CinematicMoment
-          variant="cup-win"
-          title="Graduation Day!"
-          subtitle={`${foal?.name ?? 'Your horse'} is now an adult — ready for training & competition!`}
-          onDismiss={() => setShowGraduationCinematic(false)}
         />
       )}
     </>

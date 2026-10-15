@@ -6,7 +6,6 @@
  * - useFoal: returns Foal from GET /api/foals/:id
  * - useFoalDevelopment: returns FoalDevelopment from GET /api/foals/:id/development
  * - useFoalActivities: returns FoalActivity[] from GET /api/foals/:id/activities
- * - useEnrichFoal: POST /api/foals/:id/enrich mutation succeeds
  * - useRevealFoalTraits: POST /api/foals/:id/reveal-traits mutation succeeds
  * - breedingQueryKeys: correct query key structure
  *
@@ -23,7 +22,6 @@ import {
   useFoal,
   useFoalDevelopment,
   useFoalActivities,
-  useEnrichFoal,
   useRevealFoalTraits,
   breedingQueryKeys,
 } from '../useBreeding';
@@ -112,23 +110,9 @@ describe('useFoalActivities', () => {
   });
 });
 
-// ─── useEnrichFoal mutation ───────────────────────────────────────────────────
-
-describe('useEnrichFoal', () => {
-  it('mutation succeeds and returns enrichment result (AC: 5)', async () => {
-    const { result } = renderHook(() => useEnrichFoal(10), { wrapper: createWrapper() });
-    await act(async () => {
-      result.current.mutate({ activity: 'trust_building' });
-    });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toBeDefined();
-  });
-
-  it('mutation is in idle state before firing', () => {
-    const { result } = renderHook(() => useEnrichFoal(10), { wrapper: createWrapper() });
-    expect(result.current.isIdle).toBe(true);
-  });
-});
+// useEnrichFoal was removed (Equoria-fr2kg). OLD CONTRACT: the hook POSTed
+// the player's chosen activity to /enrich. NEW RULING (owner, 2026-10-14/15):
+// foal enrichment is the groom's job, so no player enrichment hook exists.
 
 // ─── useRevealFoalTraits mutation ─────────────────────────────────────────────
 

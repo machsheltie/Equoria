@@ -59,30 +59,6 @@ export const useFoalActivities = (foalId: number) =>
     staleTime: 15 * 1000,
   });
 
-export const useLogFoalActivity = (foalId: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation<FoalActivity, ApiError, FoalActivity>({
-    mutationFn: (activity) => breedingApi.logFoalActivity(foalId, activity),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: breedingKeys.activities(foalId) });
-      queryClient.invalidateQueries({ queryKey: breedingKeys.development(foalId) });
-    },
-  });
-};
-
-export const useEnrichFoal = (foalId: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation<FoalActivity, ApiError, FoalActivity>({
-    mutationFn: (activity) => breedingApi.enrichFoal(foalId, activity),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: breedingKeys.activities(foalId) });
-      queryClient.invalidateQueries({ queryKey: breedingKeys.development(foalId) });
-    },
-  });
-};
-
 export const useRevealFoalTraits = (foalId: number) => {
   const queryClient = useQueryClient();
 
@@ -90,26 +66,6 @@ export const useRevealFoalTraits = (foalId: number) => {
     mutationFn: () => breedingApi.revealTraits(foalId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: breedingKeys.foal(foalId) });
-    },
-  });
-};
-
-export const useGraduateFoal = (foalId: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation<
-    {
-      horse: { id: number; name: string; breed: string };
-      graduation: { clearedAssignments: number; bondScore: number; isFirstGraduation: boolean };
-    },
-    ApiError
-  >({
-    mutationFn: () => breedingApi.graduateFoal(foalId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: breedingKeys.foal(foalId) });
-      queryClient.invalidateQueries({ queryKey: breedingKeys.development(foalId) });
-      queryClient.invalidateQueries({ queryKey: ['horses'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 };

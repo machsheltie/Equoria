@@ -113,15 +113,15 @@ export interface BreedRequest {
  *
  * IMPORTANT: the real backend (GET /api/foals/:foalId/development) returns
  *   { success, data: { foal, development: { currentDay, bondingLevel,
- *     stressLevel, completedActivities, maxDay, enrichmentDay,
- *     enrichmentWindowOpen }, availableEnrichmentActivities, activityHistory,
- *     availableActivities } }
+ *     stressLevel, maxDay }, activityHistory } }
  * After the apiClient `.data` unwrap that leaves the development stats nested
  * one level deeper (data.development.development.*), so consumers reading
  * `development.currentDay` saw `undefined` and rendered placeholders. The
  * `getFoalDevelopment` API fn below normalizes that envelope into this flat
  * shape so every field here maps to a REAL backend value — there are no
  * fabricated `stage` / `progress` / `enrichmentLevel` placeholder fields.
+ * The player-run enrichment fields were removed (Equoria-fr2kg; owner ruling
+ * 2026-10-14/15: foal enrichment is the groom's job).
  */
 export interface FoalDevelopment {
   /** Manually-incremented development day (0–6). */
@@ -132,16 +132,6 @@ export interface FoalDevelopment {
   bondingLevel: number;
   /** Stress level 0–100. */
   stressLevel: number;
-  /** Per-day completed enrichment activities. */
-  completedActivities: { [day: number]: string[] };
-  /** Age-derived enrichment day (date-only UTC), Equoria-g89vy. */
-  enrichmentDay?: number;
-  /** Whether the age-derived enrichment window is still open. */
-  enrichmentWindowOpen?: boolean;
-  // Equoria-g89vy: the enrichment day is derived server-side from the foal's
-  // age; these activities are for that derived day. Empty when the window is
-  // closed (foal aged past day 6). Drives the Enrich activity picker.
-  availableEnrichmentActivities?: Array<{ type: string; name: string; description?: string }>;
 }
 
 /**
@@ -154,18 +144,13 @@ export interface RawFoalDevelopmentBody {
     currentDay?: number;
     bondingLevel?: number;
     stressLevel?: number;
-    completedActivities?: { [day: number]: string[] };
     maxDay?: number;
-    enrichmentDay?: number;
-    enrichmentWindowOpen?: boolean;
   };
-  availableEnrichmentActivities?: Array<{ type: string; name: string; description?: string }>;
   // The PUT /develop endpoint returns the FLAT shape already, so the same
   // normalizer must also pass through a body that has these fields at the top.
   currentDay?: number;
   bondingLevel?: number;
   stressLevel?: number;
-  completedActivities?: { [day: number]: string[] };
   maxDay?: number;
 }
 

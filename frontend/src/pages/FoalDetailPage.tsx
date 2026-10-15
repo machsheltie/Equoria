@@ -3,14 +3,12 @@
  *
  * Page rendered at /foals/:id. Loads the foal record + development
  * data via the existing useFoal / useFoalDevelopment hooks and displays
- * a summary card plus the full foal lifecycle UI (FoalDevelopmentTracker)
- * which exposes the lifecycle primary actions:
- *   - Enrich (POST /api/foals/:foalId/enrich)
- *   - Reveal Traits (POST /api/foals/:foalId/reveal-traits)
- *   - Graduate to Adult (POST /api/foals/:foalId/graduate)
- *   - Activity (POST /api/foals/:foalId/activity, via DevelopmentTracker activity-select)
+ * a summary card plus the foal development UI (FoalDevelopmentTracker),
+ * which exposes Reveal Traits (POST /api/foals/:foalId/reveal-traits).
  * There is deliberately no "Advance Day": foals wait out their full
- * development week (Equoria-mwjst).
+ * development week (Equoria-mwjst). There is no player-run enrichment,
+ * stage activity or graduation either (Equoria-fr2kg; owner ruling
+ * 2026-10-14/15: foal enrichment is the groom's job, no graduation).
  *
  * Equoria-p3g0 (initial page), Equoria-bi6i (lifecycle UI wired in).
  */
@@ -99,31 +97,14 @@ const FoalDetailPage: React.FC = () => {
             <Stat label="Day" value={`${development.currentDay} / ${development.maxDay}`} />
             <Stat label="Bonding" value={String(development.bondingLevel)} />
             <Stat label="Stress" value={String(development.stressLevel)} />
-            <Stat
-              label="Activities done"
-              value={String(
-                Object.values(development.completedActivities ?? {}).reduce(
-                  (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
-                  0
-                )
-              )}
-            />
           </div>
         )}
       </Surface>
 
       {/*
-       * Foal lifecycle actions (Equoria-bi6i).
-       *
-       * FoalDevelopmentTracker owns the buttons + mutations + cache
-       * invalidation for the primary actions called out in
-       * docs/beta-route-truth-table.md for the /breeding row:
-       *   enrich / reveal-traits / graduate / activity.
-       *
-       * The hooks (useEnrichFoal, useRevealFoalTraits,
-       * useGraduateFoal, useLogFoalActivity) all invalidate their
-       * relevant React Query keys on success — see
-       * frontend/src/hooks/api/useBreeding.ts.
+       * Foal development (Equoria-bi6i). FoalDevelopmentTracker owns the
+       * Reveal Traits button, its mutation and cache invalidation — see
+       * useRevealFoalTraits in frontend/src/hooks/api/useBreeding.ts.
        */}
       <FoalDevelopmentTracker foalId={foalId} />
     </PageContainer>

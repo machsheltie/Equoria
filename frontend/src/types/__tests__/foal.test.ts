@@ -4,36 +4,23 @@
  * Testing Sprint Day 1 - Helper Functions & Critical Logic
  * Epic 6 Technical Debt Resolution
  *
- * Tests cover 21 helper functions:
+ * Tests cover the milestone helper functions:
  * - Milestone progress and status (5 functions)
- * - Enrichment activity display (6 functions)
  * - Milestone evaluation (6 functions)
- * - Cooldown calculations (2 functions)
  * - Formatting and display (2 functions)
+ *
+ * The enrichment-activity display, cooldown and canPerformActivity helpers
+ * were removed with the player-run enrichment UI (Equoria-fr2kg).
  */
 
 import { describe, it, expect } from 'vitest';
-import type {
-  Milestone,
-  MilestoneType,
-  Foal,
-  EnrichmentActivityDefinition,
-  EnrichmentActivityStatus,
-  DevelopmentStage,
-} from '../foal';
+import type { Milestone, MilestoneType } from '../foal';
 import {
   calculateMilestoneProgress,
   getMilestoneStatus,
   getDaysUntilMilestone,
   getCurrentMilestone,
   calculateDevelopmentProgress,
-  getActivityStatusColor,
-  getActivityStatusLabel,
-  getCategoryColor,
-  getCategoryIcon,
-  calculateCooldownRemaining,
-  formatCooldownTime,
-  canPerformActivity,
   getEvaluationCategory,
   getEvaluationColor,
   getTraitConfirmationReason,
@@ -57,23 +44,6 @@ const createMilestone = (
   description: `Test ${type}`,
   ageWindow: { min: minAge, max: maxAge },
   status,
-});
-
-// Helper to create test foal
-const createFoal = (ageInDays: number, completedMilestones: MilestoneType[] = []): Foal => ({
-  id: 1,
-  name: 'Test Foal',
-  breedId: 1,
-  sex: 'Male',
-  birthDate: new Date(Date.now() - ageInDays * 24 * 60 * 60 * 1000).toISOString(),
-  ageInDays,
-  currentMilestone: null,
-  completedMilestones,
-  developmentStage: 'week1' as DevelopmentStage,
-  sireId: 1,
-  damId: 2,
-  bondingLevel: 50,
-  stressLevel: 30,
 });
 
 describe('calculateMilestoneProgress', () => {
@@ -247,240 +217,6 @@ describe('calculateDevelopmentProgress', () => {
       createMilestone('trust_handling', 22, 28, 'completed'),
     ];
     expect(calculateDevelopmentProgress(milestones, 30)).toBe(100);
-  });
-});
-
-describe('getActivityStatusColor', () => {
-  it('should return green for available', () => {
-    expect(getActivityStatusColor('available')).toBe('text-green-600 bg-green-50 border-green-200');
-  });
-
-  it('should return amber for on_cooldown', () => {
-    expect(getActivityStatusColor('on_cooldown')).toBe(
-      'text-amber-600 bg-amber-50 border-amber-200'
-    );
-  });
-
-  it('should return blue for completed_today', () => {
-    expect(getActivityStatusColor('completed_today')).toBe(
-      'text-blue-600 bg-blue-50 border-blue-200'
-    );
-  });
-
-  it('should return gray for locked', () => {
-    expect(getActivityStatusColor('locked')).toBe('text-gray-600 bg-gray-50 border-gray-200');
-  });
-});
-
-describe('getActivityStatusLabel', () => {
-  it('should return Available for available', () => {
-    expect(getActivityStatusLabel('available')).toBe('Available');
-  });
-
-  it('should return On Cooldown for on_cooldown', () => {
-    expect(getActivityStatusLabel('on_cooldown')).toBe('On Cooldown');
-  });
-
-  it('should return Completed Today for completed_today', () => {
-    expect(getActivityStatusLabel('completed_today')).toBe('Completed Today');
-  });
-
-  it('should return Locked for locked', () => {
-    expect(getActivityStatusLabel('locked')).toBe('Locked');
-  });
-});
-
-describe('getCategoryColor', () => {
-  it('should return blue for trust', () => {
-    expect(getCategoryColor('trust')).toBe('text-blue-600 bg-blue-50 border-blue-200');
-  });
-
-  it('should return purple for desensitization', () => {
-    expect(getCategoryColor('desensitization')).toBe(
-      'text-purple-600 bg-purple-50 border-purple-200'
-    );
-  });
-
-  it('should return emerald for exposure', () => {
-    expect(getCategoryColor('exposure')).toBe('text-emerald-600 bg-emerald-50 border-emerald-200');
-  });
-
-  it('should return amber for habituation', () => {
-    expect(getCategoryColor('habituation')).toBe('text-amber-600 bg-amber-50 border-amber-200');
-  });
-});
-
-describe('getCategoryIcon', () => {
-  it('should return Heart for trust', () => {
-    expect(getCategoryIcon('trust')).toBe('Heart');
-  });
-
-  it('should return Shield for desensitization', () => {
-    expect(getCategoryIcon('desensitization')).toBe('Shield');
-  });
-
-  it('should return Compass for exposure', () => {
-    expect(getCategoryIcon('exposure')).toBe('Compass');
-  });
-
-  it('should return Clock for habituation', () => {
-    expect(getCategoryIcon('habituation')).toBe('Clock');
-  });
-});
-
-describe('calculateCooldownRemaining', () => {
-  it('should return 0 when cooldown has passed', () => {
-    const pastDate = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1 hour ago
-    expect(calculateCooldownRemaining(pastDate)).toBe(0);
-  });
-
-  it('should calculate remaining minutes correctly', () => {
-    const futureDate = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 minutes from now
-    const remaining = calculateCooldownRemaining(futureDate);
-    expect(remaining).toBeGreaterThanOrEqual(29);
-    expect(remaining).toBeLessThanOrEqual(31);
-  });
-
-  it('should round up fractional minutes', () => {
-    const futureDate = new Date(Date.now() + 90 * 1000).toISOString(); // 1.5 minutes from now
-    expect(calculateCooldownRemaining(futureDate)).toBe(2);
-  });
-
-  it('should handle large cooldowns', () => {
-    const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours from now
-    expect(calculateCooldownRemaining(futureDate)).toBe(24 * 60);
-  });
-});
-
-describe('formatCooldownTime', () => {
-  it('should format minutes only for < 60 minutes', () => {
-    expect(formatCooldownTime(30)).toBe('30m');
-    expect(formatCooldownTime(59)).toBe('59m');
-  });
-
-  it('should format hours only when no remainder', () => {
-    expect(formatCooldownTime(60)).toBe('1h');
-    expect(formatCooldownTime(120)).toBe('2h');
-  });
-
-  it('should format hours and minutes when remainder', () => {
-    expect(formatCooldownTime(90)).toBe('1h 30m');
-    expect(formatCooldownTime(125)).toBe('2h 5m');
-  });
-
-  it('should handle 0 minutes', () => {
-    expect(formatCooldownTime(0)).toBe('0m');
-  });
-
-  it('should handle large durations', () => {
-    expect(formatCooldownTime(24 * 60)).toBe('24h');
-    expect(formatCooldownTime(24 * 60 + 15)).toBe('24h 15m');
-  });
-});
-
-describe('canPerformActivity', () => {
-  const baseActivity: EnrichmentActivityDefinition = {
-    id: 'test-activity',
-    name: 'Test Activity',
-    description: 'Test',
-    category: 'trust',
-    durationMinutes: 30,
-    cooldownHours: 12,
-    benefits: {
-      traitDiscoveryBoost: 5,
-      milestoneBonus: 10,
-      bondingIncrease: 5,
-      stressReduction: 10,
-    },
-  };
-
-  const availableStatus: EnrichmentActivityStatus = {
-    activityId: 'test-activity',
-    status: 'available',
-    canPerform: true,
-  };
-
-  it('should return false when activity status is not available', () => {
-    const result = canPerformActivity(baseActivity, createFoal(10), {
-      ...availableStatus,
-      status: 'on_cooldown',
-    });
-    expect(result.canPerform).toBe(false);
-    expect(result.reason).toBe('On Cooldown');
-  });
-
-  it('should return true when no requirements and status available', () => {
-    const result = canPerformActivity(baseActivity, createFoal(10), availableStatus);
-    expect(result.canPerform).toBe(true);
-    expect(result.reason).toBeUndefined();
-  });
-
-  it('should return false when foal under minimum age', () => {
-    const activity = {
-      ...baseActivity,
-      requirements: { minAge: 7 },
-    };
-    const result = canPerformActivity(activity, createFoal(5), availableStatus);
-    expect(result.canPerform).toBe(false);
-    expect(result.reason).toContain('at least 7 days old');
-  });
-
-  it('should return false when foal over maximum age', () => {
-    const activity = {
-      ...baseActivity,
-      requirements: { maxAge: 14 },
-    };
-    const result = canPerformActivity(activity, createFoal(20), availableStatus);
-    expect(result.canPerform).toBe(false);
-    expect(result.reason).toContain('under 14 days old');
-  });
-
-  it('should return false when required milestone not completed', () => {
-    const activity = {
-      ...baseActivity,
-      requirements: { milestoneRequired: 'imprinting' as MilestoneType },
-    };
-    const result = canPerformActivity(activity, createFoal(10), availableStatus);
-    expect(result.canPerform).toBe(false);
-    expect(result.reason).toContain('imprinting milestone');
-  });
-
-  it('should return true when required milestone completed', () => {
-    const activity = {
-      ...baseActivity,
-      requirements: { milestoneRequired: 'imprinting' as MilestoneType },
-    };
-    const foal = createFoal(10, ['imprinting']);
-    const result = canPerformActivity(activity, foal, availableStatus);
-    expect(result.canPerform).toBe(true);
-  });
-
-  it('should return false when stress level too high', () => {
-    const activity = {
-      ...baseActivity,
-      requirements: { maxStressLevel: 50 },
-    };
-    const foal = createFoal(10);
-    foal.stressLevel = 60;
-    const result = canPerformActivity(activity, foal, availableStatus);
-    expect(result.canPerform).toBe(false);
-    expect(result.reason).toContain('stress level too high');
-  });
-
-  it('should handle multiple requirements', () => {
-    const activity = {
-      ...baseActivity,
-      requirements: {
-        minAge: 7,
-        maxAge: 21,
-        milestoneRequired: 'imprinting' as MilestoneType,
-        maxStressLevel: 50,
-      },
-    };
-    const foal = createFoal(10, ['imprinting']);
-    foal.stressLevel = 30;
-    const result = canPerformActivity(activity, foal, availableStatus);
-    expect(result.canPerform).toBe(true);
   });
 });
 

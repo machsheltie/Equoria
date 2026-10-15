@@ -12,10 +12,10 @@
  *   GET  /api/v1/foals/:foalId                  → Foal
  *   GET  /api/v1/foals/:foalId/development      → FoalDevelopment | null
  *   GET  /api/v1/foals/:foalId/activities       → FoalActivity[]
- *   POST /api/v1/foals/:foalId/activity         → FoalActivity
- *   POST /api/v1/foals/:foalId/enrich           → FoalActivity
  *   POST /api/v1/foals/:foalId/reveal-traits    → { traits }
- *   POST /api/v1/foals/:foalId/graduate         → graduation result
+ *
+ * No player-run enrichment, activity or graduation calls (Equoria-fr2kg;
+ * owner ruling 2026-10-14/15: foal enrichment is the groom's job).
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -51,17 +51,12 @@ export function normalizeFoalDevelopment(
   const currentDay = dev.currentDay ?? raw.currentDay ?? 0;
   const bondingLevel = dev.bondingLevel ?? raw.bondingLevel ?? 0;
   const stressLevel = dev.stressLevel ?? raw.stressLevel ?? 0;
-  const completedActivities = dev.completedActivities ?? raw.completedActivities ?? {};
   const maxDay = dev.maxDay ?? raw.maxDay ?? 6;
   return {
     currentDay,
     maxDay,
     bondingLevel,
     stressLevel,
-    completedActivities,
-    enrichmentDay: dev.enrichmentDay,
-    enrichmentWindowOpen: dev.enrichmentWindowOpen,
-    availableEnrichmentActivities: raw.availableEnrichmentActivities ?? [],
   };
 }
 
@@ -86,23 +81,7 @@ export const breedingApi = {
   getFoalActivities: (foalId: number) => {
     return apiClient.get<FoalActivity[]>(`/api/v1/foals/${foalId}/activities`);
   },
-  logFoalActivity: (foalId: number, activity: FoalActivity) => {
-    return apiClient.post<FoalActivity>(`/api/v1/foals/${foalId}/activity`, activity);
-  },
-  enrichFoal: (foalId: number, activity: FoalActivity) => {
-    return apiClient.post<FoalActivity>(`/api/v1/foals/${foalId}/enrich`, activity);
-  },
   revealTraits: (foalId: number) => {
     return apiClient.post<{ traits: string[] }>(`/api/v1/foals/${foalId}/reveal-traits`);
-  },
-  graduateFoal: (foalId: number) => {
-    return apiClient.post<{
-      horse: { id: number; name: string; breed: string };
-      graduation: {
-        clearedAssignments: number;
-        bondScore: number;
-        isFirstGraduation: boolean;
-      };
-    }>(`/api/v1/foals/${foalId}/graduate`);
   },
 };

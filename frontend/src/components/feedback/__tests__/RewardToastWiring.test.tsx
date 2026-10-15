@@ -74,7 +74,6 @@ function stubFoalReads(traits: string[] = ['fast', 'bold']) {
             maxDay: 6,
             bondingLevel: 50,
             stressLevel: 10,
-            completedActivities: {},
           },
         },
       })

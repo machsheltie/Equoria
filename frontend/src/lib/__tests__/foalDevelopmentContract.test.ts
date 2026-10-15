@@ -5,9 +5,8 @@
  * development stats nested under `data.development`, e.g. after the
  * apiClient `.data` unwrap:
  *
- *   { foal, development: { currentDay, bondingLevel, stressLevel,
- *     completedActivities, maxDay, enrichmentDay, enrichmentWindowOpen },
- *     availableEnrichmentActivities, activityHistory, availableActivities }
+ *   { foal, development: { currentDay, bondingLevel, stressLevel, maxDay },
+ *     activityHistory }
  *
  * FoalDetailPage / FoalDevelopmentTracker read `development.currentDay`,
  * `development.bondingLevel`, etc. at the TOP level — so the raw nested body
@@ -36,12 +35,8 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
         currentDay: 3,
         bondingLevel: 72,
         stressLevel: 14,
-        completedActivities: { 0: ['gentle_touch'], 1: ['soft_voice'] },
         maxDay: 6,
-        enrichmentDay: 3,
-        enrichmentWindowOpen: true,
       },
-      availableEnrichmentActivities: [{ type: 'gentle_touch', name: 'Gentle Touch' }],
     };
 
     const flat = normalizeFoalDevelopment(rawNested);
@@ -52,12 +47,30 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
     expect(flat?.maxDay).toBe(6);
     expect(flat?.bondingLevel).toBe(72);
     expect(flat?.stressLevel).toBe(14);
-    expect(flat?.completedActivities).toEqual({ 0: ['gentle_touch'], 1: ['soft_voice'] });
-    expect(flat?.enrichmentDay).toBe(3);
-    expect(flat?.enrichmentWindowOpen).toBe(true);
-    expect(flat?.availableEnrichmentActivities).toEqual([
-      { type: 'gentle_touch', name: 'Gentle Touch' },
-    ]);
+  });
+
+  // Equoria-fr2kg. OLD CONTRACT: the flat record carried the player-run
+  // enrichment fields (completedActivities, enrichmentDay,
+  // enrichmentWindowOpen, availableEnrichmentActivities) that drove the
+  // Enrich picker. NEW RULING (owner, 2026-10-14/15): foal enrichment is the
+  // groom's job, so the contract carries none of them — even when an old
+  // body still sends them.
+  it('carries no player-run enrichment fields', () => {
+    const legacyBody = {
+      development: {
+        currentDay: 3,
+        bondingLevel: 72,
+        stressLevel: 14,
+        maxDay: 6,
+        completedActivities: { 0: ['gentle_touch'] },
+        enrichmentDay: 3,
+        enrichmentWindowOpen: true,
+      },
+      availableEnrichmentActivities: [{ type: 'gentle_touch', name: 'Gentle Touch' }],
+    } as unknown as RawFoalDevelopmentBody;
+
+    const flat = normalizeFoalDevelopment(legacyBody) as Record<string, unknown> | null;
+    expect(flat).toEqual({ currentDay: 3, maxDay: 6, bondingLevel: 72, stressLevel: 14 });
   });
 
   it('does NOT leave development stats nested (the bug) — no double-nesting', () => {
@@ -81,7 +94,6 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
       currentDay: 2,
       bondingLevel: 55,
       stressLevel: 18,
-      completedActivities: {},
       maxDay: 6,
     };
     const flat = normalizeFoalDevelopment(rawFlat);
@@ -108,7 +120,5 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
     expect(flat?.maxDay).toBe(6);
     expect(flat?.bondingLevel).toBe(0);
     expect(flat?.stressLevel).toBe(0);
-    expect(flat?.completedActivities).toEqual({});
-    expect(flat?.availableEnrichmentActivities).toEqual([]);
   });
 });

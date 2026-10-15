@@ -9,27 +9,19 @@
  * envelope unwrap, the GET /development → flat-normalizer path, and the
  * mutation → CSRF round trip → wire-payload contract end-to-end.
  *
- * Verifies that FoalDetailPage exposes the foal lifecycle primary actions
- * called out in docs/beta-route-truth-table.md for the /breeding row:
+ * Verifies that FoalDetailPage exposes the "Reveal Traits" action
+ * (POST /api/v1/foals/:foalId/reveal-traits), and that it offers NO
+ * "Advance Day" (the retired PUT /develop, Equoria-mwjst) and NO player-run
+ * enrichment, stage activity or graduation (Equoria-fr2kg).
  *
- *   - POST /api/v1/foals/:foalId/enrich          → "Enrich" button
- *   - POST /api/v1/foals/:foalId/reveal-traits   → "Reveal Traits" button
- *   - POST /api/v1/foals/:foalId/graduate        → "Graduate to Adult" (age-gated)
- *   - POST /api/v1/foals/:foalId/activity        → activity-select → Confirm
- *
- * …and that it offers NO "Advance Day" (the retired PUT /develop, Equoria-mwjst).
- *
- * Per 21R doctrine: no graceful skips, no fake values. These mutations
- * MUST be reachable through the production UI from the /foals/:id route.
+ * Per 21R doctrine: no graceful skips, no fake values.
  *
  * The REAL wire shapes mirrored below are taken verbatim from the backend
  * controllers (backend/modules/breeding/controllers/foalController.mjs):
  *   - GET  /:foalId             → { success, data: { id, name, sex, dateOfBirth, ageInDays, sireId, damId, ... } }
- *   - GET  /:foalId/development  → { success, data: { foal, development: { currentDay, bondingLevel, stressLevel, completedActivities, maxDay, enrichmentDay, enrichmentWindowOpen }, availableEnrichmentActivities } }
+ *   - GET  /:foalId/development  → { success, data: { foal, development: { currentDay, bondingLevel, stressLevel } } }
  *   - GET  /:foalId/activities   → { success, data: [ { id, activity, ... } ] }
  *   - POST /:foalId/reveal-traits → { success, data: { traits, revealed, hidden } }
- *   - POST /:foalId/enrich       → { success, data: { foal, activity, updatedLevels, changes } }
- *   - POST /:foalId/graduate     → { success, data: { horse, graduation } }
  */
 
 import React from 'react';
@@ -48,9 +40,12 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const FOAL_ID = 42;
 const foalPath = (suffix = '') => `${base}/api/v1/foals/${FOAL_ID}${suffix}`;
 
-// Pick a dateOfBirth that makes the foal 3+ years old so the Graduate
-// button (age-gated at 104 weeks) is visible in the test.
+// A foal older than the old client's 104-real-week graduation gate. The
+// retired "Graduate to Adult" button rendered for exactly this age, so the
+// no-graduation assertion below runs where it used to appear.
 const adultDob = new Date(Date.now() - 1100 * 24 * 60 * 60 * 1000).toISOString();
+// A two-day-old foal: the retired stage-activity cards rendered for this age.
+const newbornDob = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 
 /**
  * Register the happy-path MSW handlers shared by every test. The CSRF-token
@@ -58,7 +53,7 @@ const adultDob = new Date(Date.now() - 1100 * 24 * 60 * 60 * 1000).toISOString()
  * mutation (no test bypass in production code). Individual tests override the
  * mutation endpoints with a later server.use(...) to capture the wire payload.
  */
-function useDefaultHandlers() {
+function useDefaultHandlers(dateOfBirth: string = adultDob) {
   server.use(
     // api-client mutation CSRF round trip — real production path.
     http.get(`${base}/api/v1/auth/csrf-token`, () =>
@@ -73,7 +68,7 @@ function useDefaultHandlers() {
           id: FOAL_ID,
           name: 'TestFixture-Starlight',
           sex: 'Filly',
-          dateOfBirth: adultDob,
+          dateOfBirth,
           ageInDays: 1100,
           sireId: 100,
           damId: 101,
@@ -83,8 +78,8 @@ function useDefaultHandlers() {
       })
     ),
 
-    // GET /:foalId/development — REAL nested envelope: data.development.* with
-    // sibling availableEnrichmentActivities. normalizeFoalDevelopment flattens it.
+    // GET /:foalId/development — REAL nested envelope: data.development.*.
+    // normalizeFoalDevelopment flattens it.
     http.get(foalPath('/development'), () =>
       HttpResponse.json({
         success: true,
@@ -94,15 +89,7 @@ function useDefaultHandlers() {
             currentDay: 3,
             bondingLevel: 50,
             stressLevel: 10,
-            completedActivities: {},
-            maxDay: 6,
-            enrichmentDay: 3,
-            enrichmentWindowOpen: true,
           },
-          availableEnrichmentActivities: [
-            { type: 'gentle_touch', name: 'Gentle Touch' },
-            { type: 'soft_voice', name: 'Soft Voice' },
-          ],
         },
       })
     ),
@@ -161,37 +148,26 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
     await waitFor(() => expect(revealHit).toBe(true));
   });
 
-  it('renders the Enrich button and sends only the activity type via the enrich boundary', async () => {
-    const user = userEvent.setup();
-    let enrichBody: unknown = null;
+  // Equoria-fr2kg. OLD CONTRACT: an "Enrich" button opened a picker of the
+  // day 0-6 activities and POSTed the choice to /enrich, so the PLAYER
+  // performed foal enrichment. NEW RULING (owner, 2026-10-14/15): foal
+  // enrichment is the groom's job and the player-run enrichment was an AI
+  // invention, so the page offers no Enrich control and never calls /enrich.
+  it('offers no Enrich control and never calls the enrich boundary', async () => {
+    let enrichHit = false;
     server.use(
-      http.post(foalPath('/enrich'), async ({ request }) => {
-        enrichBody = await request.json();
-        return HttpResponse.json({
-          success: true,
-          message: 'Enrichment activity "Gentle Touch" completed successfully',
-          data: {
-            foal: { id: FOAL_ID, name: 'TestFixture-Starlight' },
-            activity: { name: 'Gentle Touch' },
-            updatedLevels: { bondScore: 55, stressLevel: 8 },
-            changes: { bondChange: 5, stressChange: -2 },
-          },
-        });
+      http.post(foalPath('/enrich'), () => {
+        enrichHit = true;
+        return HttpResponse.json({ success: false }, { status: 404 });
       })
     );
 
     renderPage();
 
-    const btn = await screen.findByRole('button', { name: /^enrich$/i });
-    expect(btn).toBeInTheDocument();
-
-    // Enrich opens a picker of the day's real activities; choosing one sends
-    // only the activity type (the backend derives the day, Equoria-g89vy).
-    await user.click(btn);
-    const choice = await screen.findByRole('button', { name: /gentle touch/i });
-    await user.click(choice);
-
-    await waitFor(() => expect(enrichBody).toEqual({ activity: 'gentle_touch' }));
+    expect(await screen.findByRole('button', { name: /reveal traits/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^enrich/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/choose an enrichment activity/i)).not.toBeInTheDocument();
+    expect(enrichHit).toBe(false);
   });
 
   // Equoria-mwjst. OLD CONTRACT (vulnerable): an "Advance Day" button sent
@@ -217,38 +193,48 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
     expect(developHit).toBe(false);
   });
 
-  it('renders the Graduate to Adult button (age-gated) and wires it to the graduate boundary', async () => {
-    const user = userEvent.setup();
+  // Equoria-fr2kg. OLD CONTRACT: a foal past 104 real weeks showed "Graduate
+  // to Adult", which POSTed /graduate and played a "Graduation Day!"
+  // cinematic. NEW RULING (owner, 2026-10-14/15): there is no graduation; it
+  // was an AI invention. The page offers no Graduate control at any age and
+  // never calls /graduate.
+  it('offers no Graduate control, even past the old 104-week gate, and never calls the graduate boundary', async () => {
     let graduateHit = false;
     server.use(
       http.post(foalPath('/graduate'), () => {
         graduateHit = true;
-        return HttpResponse.json({
-          success: true,
-          message: 'TestFixture-Starlight has graduated!',
-          data: {
-            horse: { id: FOAL_ID, name: 'TestFixture-Starlight', breed: 'Thoroughbred' },
-            graduation: { clearedAssignments: 0, bondScore: 50, isFirstGraduation: false },
-          },
-        });
+        return HttpResponse.json({ success: false }, { status: 404 });
       })
     );
 
     renderPage();
 
-    const btn = await screen.findByRole('button', { name: /graduate to adult/i });
-    expect(btn).toBeInTheDocument();
-
-    await user.click(btn);
-    await waitFor(() => expect(graduateHit).toBe(true));
+    expect(await screen.findByRole('button', { name: /reveal traits/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /graduat/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/graduated/i)).not.toBeInTheDocument();
+    expect(graduateHit).toBe(false);
   });
 
-  it('exposes an activity selection flow (logFoalActivity) via DevelopmentTracker', async () => {
+  // Equoria-fr2kg. OLD CONTRACT: the DevelopmentTracker listed per-stage
+  // activities ("Available activities") that the player selected and
+  // confirmed, POSTing /activity. NEW RULING (owner, 2026-10-14/15): grooms,
+  // not players, do the foal's activities. The page lists no player
+  // activities and never calls /activity.
+  it('lists no player-selectable foal activities and never calls the activity boundary', async () => {
+    useDefaultHandlers(newbornDob);
+    let activityHit = false;
+    server.use(
+      http.post(foalPath('/activity'), () => {
+        activityHit = true;
+        return HttpResponse.json({ success: false }, { status: 404 });
+      })
+    );
+
     renderPage();
 
-    // The activity-selection UI is provided by the nested DevelopmentTracker
-    // child — assert it renders so the activity → confirm → mutate flow
-    // is reachable for the user.
     expect(await screen.findByTestId('development-tracker')).toBeInTheDocument();
+    expect(screen.queryByText(/available activities/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/confirm activity/i)).not.toBeInTheDocument();
+    expect(activityHit).toBe(false);
   });
 });

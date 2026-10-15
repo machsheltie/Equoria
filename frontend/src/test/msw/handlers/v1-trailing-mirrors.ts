@@ -5,7 +5,7 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 /**
  * Trailing v1 mirror handlers — registered LAST in the exported `handlers`
  * array (after clubs). Covers: training status/trainable, grooms-by-user,
- * foal detail/development/activities/enrich/reveal-traits, and breeding
+ * foal detail/development/activities/reveal-traits, and breeding
  * prediction (breeding-data, lineage-analysis). First-match-wins order
  * preserved.
  */
@@ -78,7 +78,6 @@ export const v1TrailingMirrorHandlers = [
   // useFoal calls /api/v1/foals/:id
   // useFoalDevelopment calls /api/v1/foals/:id/development
   // useFoalActivities calls /api/v1/foals/:id/activities
-  // useEnrichFoal calls POST /api/v1/foals/:id/enrich
   // useRevealFoalTraits calls POST /api/v1/foals/:id/reveal-traits
   http.get(`${base}/api/v1/foals/:id`, ({ params }) =>
     HttpResponse.json({
@@ -103,17 +102,9 @@ export const v1TrailingMirrorHandlers = [
           currentDay: 1,
           bondingLevel: 50,
           stressLevel: 10,
-          completedActivities: {},
           maxDay: 6,
-          enrichmentDay: 1,
-          enrichmentWindowOpen: true,
         },
-        availableEnrichmentActivities: [
-          { type: 'gentle_touch', name: 'Gentle Touch' },
-          { type: 'soft_voice', name: 'Soft Voice' },
-        ],
         activityHistory: [],
-        availableActivities: [],
       },
     })
   ),
@@ -125,13 +116,6 @@ export const v1TrailingMirrorHandlers = [
       ],
     })
   ),
-  http.post(`${base}/api/v1/foals/:id/enrich`, async ({ request, params }) => {
-    const body = (await request.json()) as { activity?: string };
-    return HttpResponse.json({
-      success: true,
-      data: { id: 3, activity: body.activity ?? 'enrichment', foalId: params.id },
-    });
-  }),
   http.post(`${base}/api/v1/foals/:id/reveal-traits`, () =>
     HttpResponse.json({ success: true, data: { traits: ['brave', 'athletic'] } })
   ),

@@ -52,11 +52,8 @@ describe('MilestoneEvaluationDisplay', () => {
               maxDay: 180,
               bondingLevel: 65,
               stressLevel: 20,
-              completedActivities: {},
             },
-            availableEnrichmentActivities: [],
             activityHistory: [],
-            availableActivities: [],
           },
         })
       )
@@ -90,11 +87,8 @@ describe('MilestoneEvaluationDisplay', () => {
               maxDay: 180,
               bondingLevel: 65,
               stressLevel: 20,
-              completedActivities: {},
             },
-            availableEnrichmentActivities: [],
             activityHistory: [],
-            availableActivities: [],
           },
         })
       )
@@ -152,11 +146,8 @@ describe('MilestoneEvaluationDisplay', () => {
               maxDay: 180,
               bondingLevel: 65,
               stressLevel: 20,
-              completedActivities: {},
             },
-            availableEnrichmentActivities: [],
             activityHistory: [],
-            availableActivities: [],
           },
         })
       )

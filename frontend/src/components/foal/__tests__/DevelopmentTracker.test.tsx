@@ -1,12 +1,13 @@
 /**
  * DevelopmentTracker Component Tests
  *
- * Tests the foal development tracker with age stage computation,
- * bond score bar, and activity cards.
+ * Tests the foal development tracker with age stage computation and the
+ * bond score bar. It carries no player activity cards and no graduated
+ * state (Equoria-fr2kg).
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DevelopmentTracker } from '../DevelopmentTracker';
 
@@ -59,12 +60,16 @@ describe('DevelopmentTracker', () => {
       expect(screen.getByText('Stage 4 / 4')).toBeInTheDocument();
     });
 
-    it('shows graduated state (trophy) for foal 104+ weeks old', () => {
+    // Equoria-fr2kg. OLD CONTRACT: a foal past 104 weeks showed a
+    // "Graduated" badge and a "Development Complete … graduated from the foal
+    // development programme" panel. NEW RULING (owner, 2026-10-14/15): there
+    // is no graduation, so no graduated state renders at any age.
+    it('shows no graduated state for a foal past 104 weeks', () => {
       // 110 weeks ago
       const dob = new Date(Date.now() - 110 * 7 * 24 * 60 * 60 * 1000).toISOString();
       render(<DevelopmentTracker foalName="Foal" dateOfBirth={dob} />);
-      expect(screen.getByText('Graduated')).toBeInTheDocument();
-      expect(screen.getByText('Development Complete')).toBeInTheDocument();
+      expect(screen.queryByText(/graduat/i)).not.toBeInTheDocument();
+      expect(screen.queryByText('Development Complete')).not.toBeInTheDocument();
     });
   });
 
@@ -97,40 +102,15 @@ describe('DevelopmentTracker', () => {
     });
   });
 
-  describe('Activity cards', () => {
-    it('renders activity cards for newborn stage', () => {
-      render(<DevelopmentTracker foalName="Foal" dateOfBirth="2026-03-01T00:00:00Z" />);
-      // Desktop and mobile both render activities — use getAllByText
-      const imprintingCards = screen.getAllByText('Imprinting');
-      expect(imprintingCards.length).toBeGreaterThanOrEqual(1);
-      const gentleCards = screen.getAllByText('Gentle Handling');
-      expect(gentleCards.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('calls onActivitySelect when activity card is clicked', () => {
-      const onSelect = vi.fn();
-      render(
-        <DevelopmentTracker
-          foalName="Foal"
-          dateOfBirth="2026-03-01T00:00:00Z"
-          onActivitySelect={onSelect}
-        />
-      );
-      // Click the first (desktop) activity card
-      const imprintingCards = screen.getAllByText('Imprinting');
-      fireEvent.click(imprintingCards[0]);
-      expect(onSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'imprinting', label: 'Imprinting' })
-      );
-    });
-  });
-
-  it('does not show activities for graduated foals', () => {
-    const dob = new Date(Date.now() - 110 * 7 * 24 * 60 * 60 * 1000).toISOString();
-    render(<DevelopmentTracker foalName="Foal" dateOfBirth={dob} />);
-    // No activity cards should be present
+  // Equoria-fr2kg. OLD CONTRACT: each stage listed player-selectable
+  // activity cards (Imprinting, Gentle Handling, …) that called
+  // onActivitySelect. NEW RULING (owner, 2026-10-14/15): grooms, not players,
+  // do the foal's activities, so the tracker lists none.
+  it('renders no player activity cards', () => {
+    render(<DevelopmentTracker foalName="Foal" dateOfBirth="2026-03-01T00:00:00Z" />);
     expect(screen.queryByText('Imprinting')).not.toBeInTheDocument();
-    expect(screen.queryByText('Ground Work')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gentle Handling')).not.toBeInTheDocument();
+    expect(screen.queryByText(/available activities/i)).not.toBeInTheDocument();
   });
 
   it('displays last interaction date when provided', () => {
