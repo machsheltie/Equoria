@@ -112,6 +112,29 @@ describes the code as surveyed on 2026-10-06 and must be re-checked against the
 Eastern migration before planning. Raw SQL must still bind instants with an
 explicit zone.
 
+## Blocking dependency: fresh-code proof (STAFF-CR-06)
+
+The staff foundation has no fresh-code proof. Its only primitive for `time-back`
+is the ordinary capability guard, which a device trusted for up to 30 days
+satisfies, so an apply or reverse endpoint built on it would accept a month-old
+check-in. This project must build the proof before any apply or reverse route
+exists:
+
+- A purpose-bound, one-time, short-lived fresh check-in proof, consumed
+  atomically by apply and by reverse. It is not interchangeable with the 30-day
+  device cookie.
+- Invalidated by a password change, a verified-email change, or a role change.
+- A `requireFreshStaffProof` route guard in front of apply and reverse.
+
+Until it exists, the `time-back` and `jobs.hold` capabilities must not be
+mounted: `scripts/doctrine-checks/check-staff-routes-guarded.mjs` refuses any
+staff route guarded by either. Once the guard exists, relax that rule to "must
+be preceded by `requireFreshStaffProof`".
+
+Regressions this project must provide: a trusted 30-day device alone cannot
+authorize apply or reverse; a fresh purpose-bound proof works once; replay,
+expiry, password change, role change, and use for the wrong purpose all fail.
+
 ## Nightly-job hold
 
 The in-memory scheduler stop does not survive a restart, and `server.mjs` starts

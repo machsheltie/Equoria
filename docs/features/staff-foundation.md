@@ -66,6 +66,7 @@ Owner ruling 2026-10-09: email codes, not text messages; remember the device.
   Eastern does this. The permanent record of each check-in is its staff action
   log entry.
 - Applying or reversing a time-back always requires a fresh code.
+  The `time-back` and `jobs.hold` capabilities must not be mounted on any route until that fresh proof exists (STAFF-CR-06; `docs/features/admin-time-back.md`, "Blocking dependency").
 - Staff without a verified email cannot use staff tools; they can still play.
 - SMS was considered and declined (paid provider receives phone numbers; weakest
   2FA). It can be added later without changing this design.

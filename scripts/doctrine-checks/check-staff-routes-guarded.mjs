@@ -56,8 +56,20 @@ const ROLE_ONLY_ALLOWED = new Set(['POST /checkin/request', 'POST /checkin/verif
 
 // Extra rules on the capabilities a guard names: each is
 // (capabilities: string[], routeKey: string) => reason | null.
-// Empty today; this is where a forbidden-capability rule plugs in.
-const CAPABILITY_RULES = [];
+const FRESH_PROOF_CAPABILITIES = ['time-back', 'jobs.hold'];
+const CAPABILITY_RULES = [
+  // STAFF-CR-06: these capabilities need a purpose-bound, one-time fresh
+  // check-in proof that the 30-day device cookie cannot stand in for. Refused
+  // outright until requireFreshStaffProof exists; then relax this to "must be
+  // preceded by requireFreshStaffProof".
+  (capabilities) => {
+    const hit = capabilities.find((c) => FRESH_PROOF_CAPABILITIES.includes(c));
+    return hit
+      ? `capability '${hit}' needs a fresh-proof guard (requireFreshStaffProof), which does not exist yet; ` +
+          'a trusted 30-day device alone must not authorize it (see docs/features/admin-time-back.md, "Blocking dependency")'
+      : null;
+  },
+];
 
 const isStringLiteral = (n) => n?.type === 'Literal' && typeof n.value === 'string';
 const samePath = (a, b) => path.relative(a, b) === '';

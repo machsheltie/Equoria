@@ -101,6 +101,32 @@ describe('check-staff-routes-guarded: guards', () => {
     expect(scan('d.mjs', file("router.get('/t', requireAnyStaffCapability(['a', 'b']), h);"))).toEqual([]);
   });
 
+  describe('capabilities that need a fresh-proof guard (STAFF-CR-06)', () => {
+    test.each(['time-back', 'jobs.hold'])('requireStaffCapability(%s) is refused', cap => {
+      const failures = scan('fresh.mjs', file(`router.post('/x', requireStaffCapability('${cap}'), h);`));
+      expect(lines(failures)).toEqual([5]);
+      expect(failures[0].reason).toContain(cap);
+      expect(failures[0].reason).toContain('requireFreshStaffProof');
+    });
+
+    test.each(['time-back', 'jobs.hold'])('%s inside requireAnyStaffCapability is refused', cap => {
+      const failures = scan(
+        'fresh-any.mjs',
+        file(`router.post('/x', requireAnyStaffCapability(['ticket.file', '${cap}']), h);`),
+      );
+      expect(lines(failures)).toEqual([5]);
+      expect(failures[0].reason).toContain('requireFreshStaffProof');
+    });
+
+    test('a router.use guarded by time-back is refused', () => {
+      expect(scan('fresh-use.mjs', file("router.use(requireStaffCapability('time-back'));"))).toHaveLength(1);
+    });
+
+    test('the real staff routes still pass', () => {
+      expect(scanStaffRoutes()).toEqual([]);
+    });
+  });
+
   test('a supported multi-line route on an aliased Router passes', () => {
     const body = [
       IMPORT_EXPRESS,
