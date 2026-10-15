@@ -55,7 +55,9 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[var(--text-primary)]">Error loading enrichment activities</p>
+            <p className="font-semibold text-[var(--text-primary)]">
+              Error loading enrichment activities
+            </p>
             <p className="text-sm text-[var(--text-secondary)] mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>

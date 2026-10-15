@@ -63,7 +63,9 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[var(--text-primary)]">Error loading foal development</p>
+            <p className="font-semibold text-[var(--text-primary)]">
+              Error loading foal development
+            </p>
             <p className="text-sm text-[var(--text-secondary)] mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
@@ -110,7 +112,9 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
 
           <div className="flex items-center justify-between">
             <span className="text-sm text-[var(--text-secondary)]">Stress Level</span>
-            <span className="text-sm font-medium text-[var(--text-primary)]">{development.stressLevel}</span>
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              {development.stressLevel}
+            </span>
           </div>
 
           {/* Equoria-n3yw6: the previous `development.stage` row was dead — the

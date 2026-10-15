@@ -253,7 +253,9 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({
             </span>
             {trend !== undefined && <TrendIndicator trend={trend} />}
           </div>
-          <span className={`fantasy-body text-[var(--text-secondary)] ${labelSizes[size]}`}>{label}</span>
+          <span className={`fantasy-body text-[var(--text-secondary)] ${labelSizes[size]}`}>
+            {label}
+          </span>
         </div>
       </div>
     </div>

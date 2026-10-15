@@ -103,7 +103,11 @@ describe('PageHero — ambient mood orbs stay removed', () => {
 describe('PageHero — backgroundImage scrim (contrast backing unchanged)', () => {
   it('renders the image layer and the darkening scrim when backgroundImage is set', () => {
     const { container } = render(
-      <PageHero title="The Farrier" subtitle="Hoof care" backgroundImage="/images/farriershop.webp" />
+      <PageHero
+        title="The Farrier"
+        subtitle="Hoof care"
+        backgroundImage="/images/farriershop.webp"
+      />
     );
     const inlineStyled = Array.from(container.querySelectorAll<HTMLElement>('[style]'));
     const imageLayer = inlineStyled.find((el) =>
