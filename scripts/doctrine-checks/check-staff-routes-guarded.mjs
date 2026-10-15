@@ -29,11 +29,17 @@
 //    the mounted Router and register on it. (The staff barrel does not export
 //    it.) How routers.mjs and app.mjs mount it is pinned by
 //    check-staff-routes-mount.mjs.
+//
+// 3. STAFF-CR-06, repo-wide: no file under backend/ (tests and node_modules
+//    aside) may call requireStaffCapability / requireAnyStaffCapability naming
+//    'time-back' or 'jobs.hold' - imported, aliased or reached as a member -
+//    so neither capability can be mounted on an admin or any other route.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as espree from 'espree';
+import { load, staticPath } from './staff-routes-ast.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
@@ -394,8 +400,84 @@ export function scanRouteImporters(backendRoot = BACKEND_DIR) {
   return failures;
 }
 
+const CAPABILITY_GUARD_NAMES = new Set(['requireStaffCapability', 'requireAnyStaffCapability']);
+
+/** Backend source files outside tests and node_modules. */
+function backendSourceFiles(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) backendSourceFiles(full, out);
+    } else if (SOURCE_FILE_RE.test(entry.name) && !TEST_FILE_RE.test(entry.name)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+/**
+ * STAFF-CR-06 everywhere: any capability-guard call under backend/ whose
+ * literal capability (direct, or in the array) is a fresh-proof capability.
+ * Returns [{file, line, reason}].
+ */
+export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
+  const failures = [];
+  for (const file of backendSourceFiles(backendRoot)) {
+    const src = fs.readFileSync(file, 'utf8');
+    // Every route to a guard - import, alias or member - spells its name.
+    if (!src.includes('StaffCapability')) continue;
+    let parsed;
+    try {
+      parsed = load(file);
+    } catch (err) {
+      failures.push({
+        file,
+        line: err.lineNumber ?? 0,
+        reason: 'cannot parse; unable to prove it does not mount time-back or jobs.hold',
+      });
+      continue;
+    }
+    const locals = new Set(CAPABILITY_GUARD_NAMES);
+    for (const n of parsed.nodes) {
+      if (
+        n.type === 'ImportSpecifier' &&
+        CAPABILITY_GUARD_NAMES.has(n.imported.name ?? n.imported.value)
+      ) {
+        locals.add(n.local.name);
+      }
+    }
+    for (const n of parsed.nodes) {
+      if (n.type !== 'CallExpression') continue;
+      const c = n.callee;
+      const isGuard =
+        (c.type === 'Identifier' && locals.has(c.name)) ||
+        (c.type === 'MemberExpression' &&
+          CAPABILITY_GUARD_NAMES.has(c.computed ? staticPath(c.property) : c.property.name));
+      if (!isGuard) continue;
+      const named = n.arguments.flatMap((a) =>
+        a.type === 'ArrayExpression' ? a.elements.map((e) => staticPath(e)) : [staticPath(a)]
+      );
+      const hit = named.find((cap) => FRESH_PROOF_CAPABILITIES.includes(cap));
+      if (hit) {
+        failures.push({
+          file,
+          line: n.loc.start.line,
+          reason:
+            `capability '${hit}' must not be mounted on any route until requireFreshStaffProof exists ` +
+            '(STAFF-CR-06; see docs/features/admin-time-back.md, "Blocking dependency")',
+        });
+      }
+    }
+  }
+  return failures;
+}
+
 function main() {
-  const failures = [...scanStaffRoutes(), ...scanRouteImporters()];
+  const failures = [
+    ...scanStaffRoutes(),
+    ...scanRouteImporters(),
+    ...scanFreshProofCapabilityUse(),
+  ];
   if (failures.length > 0) {
     console.error('\nStaff routes doctrine violations:');
     for (const f of failures) {

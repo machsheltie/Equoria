@@ -25,6 +25,7 @@ const REAL_ROUTES_FILE = path.resolve(HERE, '..', '..', 'modules', 'staff', 'rou
 
 let scanStaffRoutes;
 let scanRouteImporters;
+let scanFreshProofCapabilityUse;
 let scanStaffMount;
 let tmp;
 
@@ -52,7 +53,7 @@ const scan = (name, body) => scanStaffRoutes(plant(name, body));
 const lines = failures => failures.map(f => f.line);
 
 beforeAll(async () => {
-  ({ scanStaffRoutes, scanRouteImporters } = await import(pathToFileURL(CHECK).href));
+  ({ scanStaffRoutes, scanRouteImporters, scanFreshProofCapabilityUse } = await import(pathToFileURL(CHECK).href));
   ({ scanStaffMount } = await import(pathToFileURL(MOUNT_CHECK).href));
   tmp = mkdtempSync(path.join(tmpdir(), 'equoria-staff-guard-'));
 });
@@ -433,6 +434,50 @@ describe('check-staff-routes-guarded: importers of staff routes', () => {
 
   test('the real backend has no other importer', () => {
     expect(scanRouteImporters()).toEqual([]);
+  });
+});
+
+describe('check-staff-routes-guarded: time-back and jobs.hold are mounted nowhere in backend/ (STAFF-CR-06)', () => {
+  const IMPORT = "import { requireStaffCapability, requireAnyStaffCapability } from '../../staff/index.mjs';\n";
+  const where = failures => failures.map(f => `${path.basename(f.file)}:${f.line}`).sort();
+
+  test.each(['time-back', 'jobs.hold'])('a planted admin route guarded by %s fails', cap => {
+    const root = mirror({
+      'modules/admin/routes/adminRoutes.mjs': `${IMPORT}router.post('/x', requireStaffCapability('${cap}'), h);\n`,
+    });
+    const failures = scanFreshProofCapabilityUse(root);
+    expect(where(failures)).toEqual(['adminRoutes.mjs:2']);
+    expect(failures[0].reason).toContain(cap);
+    expect(failures[0].reason).toContain('requireFreshStaffProof');
+  });
+
+  test('requireAnyStaffCapability, an alias, a member call and a template literal all fail', () => {
+    const root = mirror({
+      'modules/admin/routes/any.mjs': `${IMPORT}router.get('/a', requireAnyStaffCapability(['warn', 'jobs.hold']), h);\n`,
+      'modules/admin/routes/alias.mjs':
+        "import { requireStaffCapability as guard } from '../../staff/index.mjs';\nrouter.post('/b', guard('time-back'), h);\n",
+      'modules/admin/routes/member.mjs':
+        "import * as staff from '../../staff/index.mjs';\nrouter.post('/c', staff.requireStaffCapability(`time-back`), h);\n",
+    });
+    expect(where(scanFreshProofCapabilityUse(root))).toEqual(['alias.mjs:2', 'any.mjs:2', 'member.mjs:2']);
+  });
+
+  test('other capabilities, tests and node_modules pass', () => {
+    const root = mirror({
+      'modules/admin/routes/fine.mjs': `${IMPORT}router.post('/x', requireAnyStaffCapability(['warn', 'ban.ip']), h);\n`,
+      'modules/admin/__tests__/planted.test.mjs': `${IMPORT}router.post('/x', requireStaffCapability('time-back'), h);\n`,
+      'node_modules/pkg/index.mjs': `${IMPORT}router.post('/x', requireStaffCapability('jobs.hold'), h);\n`,
+    });
+    expect(scanFreshProofCapabilityUse(root)).toEqual([]);
+  });
+
+  test('an unparseable file naming a guard fails rather than passing vacuously', () => {
+    const root = mirror({ 'modules/admin/broken.mjs': 'requireStaffCapability(\n' });
+    expect(where(scanFreshProofCapabilityUse(root))).toHaveLength(1);
+  });
+
+  test('the real backend mounts neither capability', () => {
+    expect(scanFreshProofCapabilityUse()).toEqual([]);
   });
 });
 
