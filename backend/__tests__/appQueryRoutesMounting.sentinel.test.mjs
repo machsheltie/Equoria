@@ -40,6 +40,9 @@ import horseQueryRoutes from '../app/queries/horseQueryRoutes.mjs';
 import userQueryRoutes from '../app/queries/userQueryRoutes.mjs';
 import horseRoutes from '../modules/horses/routes/horseRoutes.mjs';
 import userRoutes from '../modules/users/routes/userRoutes.mjs';
+// Equoria-q4uem.4 (WS4 S4): bank owns GET /users/transactions; its router mounts at
+// /users BEFORE userRoutes (at base /transactions was registered ahead of GET /:id).
+import bankUserTransactionsRoutes from '../modules/bank/routes/bankUserTransactionsRoutes.mjs';
 
 // Flatten a router (and its mounted sub-routers) into "METHOD path" signatures.
 function collectRoutes(router, basePath = '') {
@@ -147,5 +150,26 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
     expect(userQueryRoutes.stack.length).toBeGreaterThan(0);
     expect(horseQueryRoutes.stack.every(l => Boolean(l.route))).toBe(true);
     expect(userQueryRoutes.stack.every(l => Boolean(l.route))).toBe(true);
+  });
+
+  describe('bank-owned GET /users/transactions (Equoria-q4uem.4, WS4 S4)', () => {
+    it('EXACT + NO PATH-LESS USE: the bank users-router exposes exactly GET /transactions', () => {
+      expect(sigsOf(bankUserTransactionsRoutes)).toEqual(['GET /transactions']);
+      expect(bankUserTransactionsRoutes.stack.every(l => Boolean(l.route))).toBe(true);
+      // userRoutes no longer hosts it (one first-match candidate only)
+      expect(new Set(sigsOf(userRoutes)).has('GET /transactions')).toBe(false);
+    });
+
+    it('MOUNT ORDER + PREFIX: mounted on /users BEFORE userRoutes (base registered /transactions ahead of /:id)', () => {
+      const { authRouter } = buildRouters();
+      const layers = authRouter.stack.filter(l => l.name === 'router');
+      const handles = layers.map(l => l.handle);
+      const idx = router => handles.indexOf(router);
+      expect(idx(bankUserTransactionsRoutes)).toBeGreaterThanOrEqual(0);
+      expect(idx(bankUserTransactionsRoutes)).toBeLessThan(idx(userRoutes));
+      const layer = layers.find(l => l.handle === bankUserTransactionsRoutes);
+      expect(layer.regexp.test('/users/transactions')).toBe(true);
+      expect(layer.regexp.test('/bank/transactions')).toBe(false);
+    });
   });
 });

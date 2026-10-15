@@ -118,6 +118,10 @@ import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
 // each other for these reads.
 import horseQueryRoutes from './queries/horseQueryRoutes.mjs';
 import userQueryRoutes from './queries/userQueryRoutes.mjs';
+// Equoria-q4uem.4 (WS4 S4): GET /users/transactions is bank's handler on the users
+// prefix; bank owns the route module (imported directly, like every route module
+// below after S4) and routers.mjs mounts it at /users ahead of userRoutes.
+import bankUserTransactionsRoutes from '../modules/bank/routes/bankUserTransactionsRoutes.mjs';
 
 /**
  * Build the three security routers with all routes mounted. Returns them for
@@ -185,8 +189,12 @@ export function buildRouters() {
   //     GET /:id/progress and GET /:id/activity before GET /dashboard/:userId,
   //     so GET /users/dashboard/progress matched /:id/progress; mounting the
   //     query router after userRoutes keeps that.
+  //   /users  — bank's GET /transactions FIRST (at base userRoutes registered
+  //     /transactions ahead of GET /:id; mounting the bank router before
+  //     userRoutes keeps /users/transactions from being claimed by /:id).
   authRouter.use('/horses', horseQueryRoutes);
   authRouter.use('/horses', horseRoutes);
+  authRouter.use('/users', bankUserTransactionsRoutes);
   authRouter.use('/users', userRoutes);
   authRouter.use('/users', userQueryRoutes);
   // Equoria-rgyv (ADR-011): GET /api/v1/events/stream — per-user SSE stream.

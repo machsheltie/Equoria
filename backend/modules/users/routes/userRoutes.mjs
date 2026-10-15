@@ -22,7 +22,6 @@ import { requireSelfAccess } from '../../../middleware/ownership.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import logger from '../../../utils/logger.mjs';
-import { getTransactionHistory } from '../../bank/index.mjs';
 
 const router = express.Router();
 
@@ -78,7 +77,9 @@ router.get('/search', queryRateLimiter, authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/transactions', queryRateLimiter, authenticateToken, getTransactionHistory);
+// GET /transactions (the player's bank transaction history) is bank's route:
+// modules/bank/routes/bankUserTransactionsRoutes.mjs, mounted at /users ahead of
+// this router by backend/app/routers.mjs (Equoria-q4uem.4, WS4 S4).
 
 /** GET /api/users/me/game-notifications — unread game notification list + unreadCount */
 router.get('/me/game-notifications', queryRateLimiter, authenticateToken, getGameNotifications);
