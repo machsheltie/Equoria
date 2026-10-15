@@ -4,7 +4,17 @@
  * Mounted by backend/app/routers.mjs at /horses immediately BEFORE the horses module router, so each
  * route keeps its URL, middleware chain and first-match position. The routes were moved verbatim from
  * backend/modules/horses/routes/{horseRoutes,horseHistoryRoutes,horseBreedingRoutes,horseXpRoutes}.mjs;
- * the only edits are three in-handler dynamic imports that became the static imports below.
+ * the only edits are three in-handler dynamic imports that became the static imports below, and
+ * one executed-chain compensation: at base, horseRoutes.mjs mounted horseXpRoutes (which applies
+ * `router.use(authenticateToken)` router-wide at :48) AHEAD of the breeding and history sub-routers,
+ * so every request that reached /:id/history, /:id/overview, /:id/training-history,
+ * /:id/breeding-data or /:id/trait-card first passed through that router-level authenticateToken.
+ * This router is mounted before horseRoutes, so those five routes carry `authenticateToken` as their
+ * FIRST route-level handler instead; the executed middleware sequence per URL is identical to base.
+ * /trainable/:userId was registered in horseRoutes before the sub-router mounts and never took that
+ * pass, so it gets nothing. This router registers no path-less `router.use` (a path-less use here
+ * would run for every /horses/* request, which base never did); the app-level mounting sentinel
+ * asserts that.
  *
  *   GET /trainable/:userId        — Training: horses eligible for training
  *   GET /:id/history              — Competition: results for a horse
@@ -87,6 +97,7 @@ router.get(
  */
 router.get(
   '/:id/history',
+  authenticateToken, // base pass-through of horseXpRoutes.mjs:48 (see header)
   queryRateLimiter,
   validateHorseId,
   requireOwnership('horse'),
@@ -111,6 +122,7 @@ router.get(
  */
 router.get(
   '/:id/overview',
+  authenticateToken, // base pass-through of horseXpRoutes.mjs:48 (see header)
   queryRateLimiter,
   validateHorseId,
   authenticateToken,
@@ -141,6 +153,7 @@ router.get(
  */
 router.get(
   '/:id/training-history',
+  authenticateToken, // base pass-through of horseXpRoutes.mjs:48 (see header)
   queryRateLimiter,
   authenticateToken,
   [
@@ -208,6 +221,7 @@ router.get(
  */
 router.get(
   '/:id/breeding-data',
+  authenticateToken, // base pass-through of horseXpRoutes.mjs:48 (see header)
   queryRateLimiter,
   validateHorseId,
   requireOwnership('horse'),
@@ -245,15 +259,6 @@ router.get(
   },
 );
 
-// horseXpRoutes.mjs registers `router.use(authenticateToken)` router-wide
-// (:48), so GET /:id/trait-card ran under a second, router-level
-// authenticateToken ahead of its own chain (the authRouter already applies
-// one). It is reproduced here, immediately before the only route moved from
-// that file, so the executed middleware sequence is byte-identical. It applies
-// to every route registered BELOW this line: keep trait-card last, or move this
-// line with it.
-router.use(authenticateToken);
-
 /**
  * @swagger
  * /api/horses/{id}/trait-card:
@@ -279,6 +284,7 @@ router.use(authenticateToken);
  */
 router.get(
   '/:id/trait-card',
+  authenticateToken, // base pass-through of horseXpRoutes.mjs:48 (see header)
   queryRateLimiter,
   validateHorseId,
   requireOwnership('horse'),

@@ -1,8 +1,9 @@
 /**
  * horseXpTypedNotFound404.integration.test.mjs
  *
- * Sentinel-positive integration coverage for Equoria-nm579 — the horseXpRoutes
- * legacy-score and trait-card endpoints hardened by Equoria-vkzvx (79ed6a00c),
+ * Sentinel-positive integration coverage for Equoria-nm579 — the legacy-score
+ * (horseXpRoutes) and trait-card (now backend/app/queries/horseQueryRoutes.mjs,
+ * Equoria-q4uem.4) endpoints hardened by Equoria-vkzvx (79ed6a00c),
  * which replaced `error.message.includes('not found')` string-sniffing with
  * type-based 404 detection: `AppError.isAppError(error) && error.statusCode === 404`.
  *
@@ -64,7 +65,7 @@ const ORIGIN = 'http://localhost:3000';
 // rather than being rejected as a 400 out-of-range id.
 const MISSING_ID = 2_000_333_444;
 
-describe('INTEGRATION: type-based 404 — horseXpRoutes legacy-score / trait-card (Equoria-nm579)', () => {
+describe('INTEGRATION: type-based 404 — legacy-score (horseXpRoutes) / trait-card (horseQueryRoutes) (Equoria-nm579)', () => {
   let owner;
   let ownerToken;
   let ownedHorse;

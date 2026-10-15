@@ -32,6 +32,9 @@ const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const SCAN_ROOTS = [
   path.join(REPO_ROOT, 'backend', 'routes'),
   path.join(REPO_ROOT, 'backend', 'modules'),
+  // Equoria-q4uem.4 (WS4 S3): the application query layer (backend/app/queries)
+  // defines routes too and stays under this gate.
+  path.join(REPO_ROOT, 'backend', 'app'),
 ];
 
 // Match: router.<method>('<path>' OR app.<method>('<path>'

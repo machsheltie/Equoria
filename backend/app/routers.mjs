@@ -170,15 +170,21 @@ export function buildRouters() {
   authRouter.use('/auth', authenticatedAuthRoutes);
 
   // Core game features
-  // Equoria-q4uem.4 (WS4 S3): the application query routers go first on their
-  // prefix. Their paths are all two-segment (/trainable/:userId, /:id/<sub>,
-  // /dashboard/:userId) and the module routers have no competing two-segment
-  // pattern, so first-match behaviour is identical to the pre-move layout
-  // (proven by the WS4 route-table dump + first-match probe).
+  // Equoria-q4uem.4 (WS4 S3): application query routers share a prefix with
+  // the module routers. Their relative order reproduces the base first-match
+  // behaviour exactly and is pinned by backend/__tests__/
+  // appQueryRoutesMounting.sentinel.test.mjs:
+  //   /horses — query router FIRST. Its paths (/trainable/:userId, /:id/<sub>)
+  //     have no competing two-segment pattern in horseRoutes, and at base they
+  //     were reached before any other two-segment route could match.
+  //   /users  — module router FIRST. At base userRoutes registered
+  //     GET /:id/progress and GET /:id/activity before GET /dashboard/:userId,
+  //     so GET /users/dashboard/progress matched /:id/progress; mounting the
+  //     query router after userRoutes keeps that.
   authRouter.use('/horses', horseQueryRoutes);
   authRouter.use('/horses', horseRoutes);
-  authRouter.use('/users', userQueryRoutes);
   authRouter.use('/users', userRoutes);
+  authRouter.use('/users', userQueryRoutes);
   // Equoria-rgyv (ADR-011): GET /api/v1/events/stream — per-user SSE stream.
   authRouter.use('/events', eventRoutes);
   authRouter.use('/account', gdprAccountRoutes);

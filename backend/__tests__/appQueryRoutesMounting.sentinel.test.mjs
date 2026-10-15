@@ -20,13 +20,18 @@
  *      backend/app/queries/, and the guarantee moves here, no weaker).
  *   2. EXACT INVENTORIES — each query router exposes exactly its re-homed
  *      routes and nothing else, so a route cannot drift back or sprout.
- *   3. MOUNT ORDER — in authRouter.stack the query-router layer precedes the
- *      module-router layer for both prefixes. A query router mounted AFTER a
- *      module router would still answer (its paths are two-segment and the
- *      module routers have no competing two-segment pattern), but the order
- *      is what the WS4 route-table dump and first-match probe certified, so it
- *      is pinned. Sentinel-positive: swapping the two mount lines in
- *      routers.mjs fails this test (recorded in the WS4 report).
+ *   3. MOUNT ORDER + PREFIX — the order that reproduces base first-match
+ *      behaviour, prefix by prefix: on /horses the query router is mounted
+ *      BEFORE horseRoutes (at base the six reads were reached before any other
+ *      two-segment route); on /users the query router is mounted AFTER
+ *      userRoutes (at base GET /:id/progress and GET /:id/activity were
+ *      registered before GET /dashboard/:userId, so GET /users/dashboard/progress
+ *      must keep matching /:id/progress). Each query-router layer must also be
+ *      mounted on its own prefix. Sentinel-positive: swapping either prefix's
+ *      two mount lines in routers.mjs fails this test (recorded in the WS4 report).
+ *   4. NO PATH-LESS USE — every layer of both query routers is a route. A
+ *      path-less router.use() in a router mounted ahead of the module router
+ *      would execute for every request on that prefix, which base never did.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -111,7 +116,7 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
     expect(new Set(sigsOf(userRoutes)).has('GET /dashboard/:userId')).toBe(false);
   });
 
-  it('MOUNT ORDER: each query router is mounted on the auth router BEFORE its module router', () => {
+  it('MOUNT ORDER: /horses query router BEFORE horseRoutes; /users query router AFTER userRoutes', () => {
     const { authRouter } = buildRouters();
     const handles = authRouter.stack.filter(l => l.name === 'router').map(l => l.handle);
     const idx = router => handles.indexOf(router);
@@ -119,7 +124,28 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
     expect(idx(horseRoutes)).toBeGreaterThanOrEqual(0);
     expect(idx(userQueryRoutes)).toBeGreaterThanOrEqual(0);
     expect(idx(userRoutes)).toBeGreaterThanOrEqual(0);
+    // /horses: the six reads were reached before any competing route at base.
     expect(idx(horseQueryRoutes)).toBeLessThan(idx(horseRoutes));
-    expect(idx(userQueryRoutes)).toBeLessThan(idx(userRoutes));
+    // /users: GET /:id/progress and GET /:id/activity preceded GET /dashboard/:userId
+    // at base, so the module router must still see /users/dashboard/progress first.
+    expect(idx(userRoutes)).toBeLessThan(idx(userQueryRoutes));
+  });
+
+  it('MOUNT PREFIX: each query router is mounted on its own prefix', () => {
+    const { authRouter } = buildRouters();
+    const layerOf = router => authRouter.stack.find(l => l.name === 'router' && l.handle === router);
+    const horsesLayer = layerOf(horseQueryRoutes);
+    const usersLayer = layerOf(userQueryRoutes);
+    expect(horsesLayer.regexp.test('/horses/42/history')).toBe(true);
+    expect(horsesLayer.regexp.test('/users/42')).toBe(false);
+    expect(usersLayer.regexp.test('/users/dashboard/x')).toBe(true);
+    expect(usersLayer.regexp.test('/horses/42')).toBe(false);
+  });
+
+  it('NO PATH-LESS USE: every layer of both query routers is a route', () => {
+    expect(horseQueryRoutes.stack.length).toBeGreaterThan(0);
+    expect(userQueryRoutes.stack.length).toBeGreaterThan(0);
+    expect(horseQueryRoutes.stack.every(l => Boolean(l.route))).toBe(true);
+    expect(userQueryRoutes.stack.every(l => Boolean(l.route))).toBe(true);
   });
 });

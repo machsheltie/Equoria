@@ -99,6 +99,8 @@ const ALLOWLIST_PATH = path.join(SCRIPT_DIR, 'horse-name-gate-allowlist.json');
 const SCAN_ROOTS = [
   path.join(REPO_ROOT, 'backend', 'modules'),
   path.join(REPO_ROOT, 'backend', 'routes'),
+  // Equoria-q4uem.4 (WS4 S3): request-reachable application queries/routers.
+  path.join(REPO_ROOT, 'backend', 'app'),
   path.join(REPO_ROOT, 'backend', 'services'),
   path.join(REPO_ROOT, 'backend', 'controllers'),
   path.join(REPO_ROOT, 'backend', 'middleware'),
