@@ -26,7 +26,7 @@ import {
   coordinateMultiWindowDevelopment,
   analyzeCriticalPeriodSensitivity,
   generateDevelopmentalForecast,
-} from '../../modules/horses/index.mjs';
+} from '../../modules/traits/services/developmentalWindowSystem.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';

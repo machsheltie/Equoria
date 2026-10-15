@@ -12,7 +12,6 @@
 
 export * from './controllers/competitionController.mjs';
 export * from './controllers/conformationShowController.mjs';
-export * from './controllers/traitCompetitionController.mjs';
 export * from './routes/competitionRoutes.mjs';
 export * from './routes/competitionResultsRoutes.mjs';
 export * from './routes/conformationShowRoutes.mjs';

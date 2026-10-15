@@ -33,7 +33,7 @@ import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mj
 import {
   generateDevelopmentalForecast,
   trackDevelopmentalMilestones,
-} from '../../horses/index.mjs';
+} from '../services/developmentalWindowSystem.mjs';
 
 // Import enhanced reporting service functions
 import {

@@ -18,7 +18,7 @@ import {
   compareTraitImpactAcrossDisciplines,
   getDisciplineRecommendations,
   getTraitCompetitionEffects,
-} from '../../competition/index.mjs';
+} from '../controllers/traitCompetitionController.mjs';
 import logger from '../../../utils/logger.mjs';
 // Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
 // than inferring it from the authRouter mount comment. Idempotent with the

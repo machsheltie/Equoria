@@ -17,7 +17,7 @@ import {
   coordinateMultiWindowDevelopment,
   analyzeCriticalPeriodSensitivity,
   generateDevelopmentalForecast,
-} from '../../horses/index.mjs';
+} from '../services/developmentalWindowSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

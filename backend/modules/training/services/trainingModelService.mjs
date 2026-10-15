@@ -1,6 +1,10 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { MS_PER_WEEK } from '../../../constants/time.mjs';
+import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
+import { getAllDisciplines } from '../../../utils/statMap.mjs';
+import { getUserWithHorses } from '../../users/index.mjs';
 
 /**
  * Log a training session for a horse in a specific discipline
@@ -197,4 +201,129 @@ async function getAnyRecentTraining(horseId) {
   }
 }
 
-export { logTrainingSession, getLastTrainingDate, getHorseAge, getAnyRecentTraining };
+/**
+ * Get all horses owned by a user that are eligible for training in at least one discipline
+ * @param {string} userId - UUID of the user
+ * @returns {Array} - Array of horses with their trainable disciplines
+ * @throws {Error} - If validation fails or database error occurs
+ */
+async function getTrainableHorses(userId) {
+  try {
+    // Validate input parameters
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    logger.info(
+      `[trainingController.getTrainableHorses] Getting trainable horses for user ${userId}`,
+    );
+
+    // Get user with their horses
+    const player = await getUserWithHorses(userId);
+
+    if (!player) {
+      logger.warn(`[trainingController.getTrainableHorses] User ${userId} not found`);
+      return [];
+    }
+
+    if (!player.horses || player.horses.length === 0) {
+      logger.info(`[trainingController.getTrainableHorses] User ${userId} has no horses`);
+      return [];
+    }
+
+    // All 23 disciplines — Gaited filtered per horse trait
+    const allDisciplines = getAllDisciplines();
+
+    const allHorses = [];
+
+    for (const horse of player.horses) {
+      try {
+        // Compute age from dateOfBirth — used as primary age signal when dateOfBirth is set
+        const computedAge = await getHorseAge(horse.id);
+
+        // Effective age: prefer the stored integer `age` field (the "game age") when
+        // computedAge would incorrectly under-count due to a wrong dateOfBirth (e.g.
+        // horses created before the dateOfBirth-from-age fix).  Fall back to computedAge
+        // if horse.age is absent, then default to 0.
+        const effectiveAge =
+          horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
+
+        // Gaited is only available if horse has the required trait
+        const availableDisciplines = allDisciplines.filter(
+          d => d !== 'Gaited' || checkTraitRequirements(horse, 'Gaited'),
+        );
+
+        // Equoria-lvjy: ageYears is computed from dateOfBirth at response
+        // time (not the cached horse.age column). The legacy `age` field
+        // continues to surface the cached/effective integer for backwards
+        // compat during the Equoria-son6 → Equoria-x49d rollout.
+        // Equoria-7l75: phenotype surfaced for HorseCard.tsx coat-color chip
+        // (sibling fix of tkyx for the /horses list endpoint).
+        const horseData = {
+          id: horse.id,
+          horseId: horse.id,
+          name: horse.name,
+          age: effectiveAge,
+          ageYears: getHorseAgeYears(horse.dateOfBirth),
+          level: horse.horseXp?.level ?? 1,
+          breed: horse.breed?.name ?? null,
+          sex: horse.sex ?? null,
+          phenotype: horse.phenotype ?? null,
+          trainableDisciplines: availableDisciplines,
+          bestDisciplines: horse.disciplineScores
+            ? Object.entries(horse.disciplineScores)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 3)
+                .map(([name]) => name)
+            : [],
+          nextEligibleAt: null,
+        };
+
+        // Under-age check: use effectiveAge so horses with a stale dateOfBirth
+        // but a correct stored age field are not incorrectly blocked
+        if (effectiveAge < 3) {
+          horseData.trainableDisciplines = [];
+          allHorses.push(horseData);
+          continue;
+        }
+
+        // Cooldown check: TrainingLog is the single source of truth
+        const lastTrainingDate = await getAnyRecentTraining(horse.id);
+        const now = new Date();
+        const sevenDays = MS_PER_WEEK;
+
+        if (lastTrainingDate) {
+          const diff = now - new Date(lastTrainingDate);
+          if (diff < sevenDays) {
+            const nextEligible = new Date(new Date(lastTrainingDate).getTime() + sevenDays);
+            horseData.nextEligibleAt = nextEligible.toISOString();
+          }
+        }
+
+        allHorses.push(horseData);
+      } catch (error) {
+        logger.warn(
+          `[trainingController.getTrainableHorses] Error checking training eligibility for horse ${horse.id}: ${error.message}`,
+        );
+      }
+    }
+
+    logger.info(
+      `[trainingController.getTrainableHorses] Returning ${allHorses.length} horses for user ${userId}`,
+    );
+    return allHorses;
+  } catch (error) {
+    logger.error(
+      `[trainingController.getTrainableHorses] Error getting trainable horses: ${error.message}`,
+    );
+    throw new Error(`Failed to get trainable horses: ${error.message}`, { cause: error });
+  }
+}
+
+export {
+  logTrainingSession,
+  getLastTrainingDate,
+  getHorseAge,
+  getAnyRecentTraining,
+  getTrainableHorses,
+};

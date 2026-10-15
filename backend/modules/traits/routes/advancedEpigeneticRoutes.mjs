@@ -40,7 +40,7 @@ import {
   coordinateMultiWindowDevelopment,
   analyzeCriticalPeriodSensitivity,
   generateDevelopmentalForecast,
-} from '../../horses/index.mjs';
+} from '../services/developmentalWindowSystem.mjs';
 
 const router = express.Router();
 
