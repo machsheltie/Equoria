@@ -96,11 +96,21 @@ histories, sales, forum and club records, `Show.executedAt` and `claimedAt`,
 run logs, display-only staff dates, `User.settings` milestones and crafted
 timestamps, MFA recovery codes.
 
-**Owner decision required before planning — weekly bank claim:**
-`User.settings.lastWeeklyClaimDate` is a calendar-week marker (claim allowed if
-unset or before the latest Sunday 00:00 UTC). No rule restores a week that fell
-entirely inside an outage. Options: leave it (rule 4), or let the time-back
-re-open one missed claim per player for each fully covered week.
+**Weekly bank claim — owner ruling 2026-10-12: players get a lost week back.**
+`User.settings.lastWeeklyClaimDate` is a calendar-week marker, so no shift rule
+restores a week that fell entirely inside an outage. Instead, the time-back
+grants each player one owed claim for every bank week fully covered by the
+window in which they had not already claimed. An owed claim is redeemed through
+the normal weekly claim (same amount, ledger-recorded), on top of that week's
+own claim; it is recorded per player in the change set so a reversal removes any
+owed claim not yet redeemed.
+
+**Time zone — owner ruling (repeated 2026-10-09):** all game timing runs on
+Eastern time, never UTC. The window `S`/`E`, calendar-day ages, bank weeks and
+job schedules are read in Eastern; the UTC wording in the code survey above
+describes the code as surveyed on 2026-10-06 and must be re-checked against the
+Eastern migration before planning. Raw SQL must still bind instants with an
+explicit zone.
 
 ## Nightly-job hold
 
@@ -120,7 +130,7 @@ minutes. A hold must therefore be durable:
 ## Operation
 
 1. **Hold jobs** (required; the panel offers it).
-2. **Enter the window** (`S`, `E` in UTC).
+2. **Enter the window** (`S`, `E` in Eastern time).
 3. **Preview** — a dry run with no writes: counts per field, horses that
    un-retire, worked examples, and every job run inside the window with its
    irreversible effects.
