@@ -1,12 +1,13 @@
 /**
  * check-horse-name-gated.mjs sentinel (Equoria-qkgfh.1 gate; arms added in Equoria-q4uem.4
- * WS4 S5 review M5).
+ * WS4 S5 review M5 and fix round 2 minor 10).
  *
  * Proves the horse-name gate fires on a planted request-reachable writer of `horses.name`,
- * and that its "imports the shared policy" test reads IDENTIFIERS, not text:
+ * and that its "imports the shared policy" test reads IDENTIFIERS in real import statements:
  *   - an ungated writer FAILS with file and line;
  *   - a writer whose only link to the policy is a comment inside the import braces
  *     (`import { getHorseById /* horseName *\/ } from '../horses/index.mjs'`) FAILS;
+ *   - a writer whose only "import" of the policy sits inside a string literal FAILS;
  *   - a writer importing an unrelated horses export from the barrel FAILS;
  *   - a writer importing an exact policy name from the horses barrel (plain or aliased) PASSES;
  *   - the same for horses/routes/_validators.mjs: a comment-only mention FAILS, the exact
@@ -110,7 +111,7 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
   });
 
   it('FAILS on a planted ungated writer, naming the file and line', () => {
-    const plant = plantFile(`economy/${PLANT_TOKEN}ungated_${RUN_ID}.mjs`, PRISMA_FROM_ECONOMY + WRITER);
+    const plant = plantFile(`economy/${PLANT_TOKEN}ungated_${RUN_ID}.mjs`, `${PRISMA_FROM_ECONOMY}${WRITER}`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toContain(relPosix(plant));
@@ -120,9 +121,17 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
   it('M5: a policy name that appears only in a COMMENT inside the import braces does not gate (barrel path)', () => {
     const plant = plantFile(
       `economy/${PLANT_TOKEN}commentbarrel_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_ECONOMY}import { getHorseById /* horseNameRejectionReason */ } from '../horses/index.mjs';\n${
-        WRITER
-      }`,
+      `${PRISMA_FROM_ECONOMY}import { getHorseById /* horseNameRejectionReason */ } from '../horses/index.mjs';\n${WRITER}`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toContain(relPosix(plant));
+  });
+
+  it('minor 10: an import statement that exists only inside a STRING literal does not gate', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}stringimport_${RUN_ID}.mjs`,
+      `${PRISMA_FROM_ECONOMY}const doc = \`\n import { horseNameRejectionReason } from '../horses/index.mjs';\n\`;\nexport const note = "import { horseNameRejectionReason } from '../horses/index.mjs';";\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -151,11 +160,7 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
   it('M5: an ALIASED exact policy name from the horses barrel gates the writer (the original name counts)', () => {
     plantFile(
       `economy/${PLANT_TOKEN}alias_${RUN_ID}.mjs`,
-      `${
-        PRISMA_FROM_ECONOMY
-      }import {\n  getHorseById, // unrelated\n  firstHorseNameRejectionMessage as firstMessage,\n} from '../horses/index.mjs';\n${
-        WRITER
-      }`,
+      `${PRISMA_FROM_ECONOMY}import {\n  getHorseById, // unrelated\n  firstHorseNameRejectionMessage as firstMessage,\n} from '../horses/index.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(0);
@@ -164,9 +169,7 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
   it('M5: a comment-only mention on the _validators path does not gate (horses-internal route file)', () => {
     const plant = plantFile(
       `horses/routes/${PLANT_TOKEN}commentvalidators_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_HORSE_ROUTES}import { validateHorseId /* horseNameBodyRule */ } from './_validators.mjs';\n${
-        WRITER
-      }`,
+      `${PRISMA_FROM_HORSE_ROUTES}import { validateHorseId /* horseNameBodyRule */ } from './_validators.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);

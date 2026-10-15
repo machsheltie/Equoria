@@ -336,6 +336,7 @@ function findWriteSignals(source) {
  */
 function stripComments(src) {
   let out = '';
+  const spans = []; // [start, end) of string/template literals in `out`
   let i = 0;
   const n = src.length;
   while (i < n) {
@@ -358,6 +359,7 @@ function stripComments(src) {
         i += 2;
       }
     } else if (c === "'" || c === '"' || c === '`') {
+      const start = out.length;
       out += c;
       i += 1;
       while (i < n && src[i] !== c) {
@@ -372,12 +374,13 @@ function stripComments(src) {
         out += c;
         i += 1;
       }
+      spans.push([start, out.length]);
     } else {
       out += c;
       i += 1;
     }
   }
-  return out;
+  return { code: out, spans };
 }
 
 /** The ORIGINAL exported names an import/export clause binds (`{ a, b as c }` -> a, b). */
@@ -391,12 +394,23 @@ function importedNames(clause) {
     .map((n) => n.split(/\s+as\s+/)[0].trim());
 }
 
-/** Does this file route through the shared policy at all? */
+/**
+ * Does this file route through the shared policy at all?
+ *
+ * Only REAL import/export statements count: matched at statement boundaries (line
+ * start, or after `;` / `}` on the same line) on comment-stripped code; the clause
+ * between the keyword and `from` may not contain a quote (so a statement can never
+ * reach into a string literal for its names or its `from`), and a match whose keyword
+ * sits inside a string or template literal is ignored (S5 fix round 2, minor 10 — an
+ * import written inside a string is prose, not an import).
+ */
 function importsPolicy(source) {
-  const code = stripComments(source);
-  const importRe = /(?:^|\s)(?:import|export)\b([^;]*?)from\s*['"]([^'"]+)['"]/g;
+  const { code, spans } = stripComments(source);
+  const importRe = /(?:^|[\n;}])[ \t]*((?:import|export)\b[^;'"`]*?)from\s*['"]([^'"\n]+)['"]/g;
   let m;
   while ((m = importRe.exec(code)) !== null) {
+    const keywordAt = m.index + m[0].indexOf(m[1]);
+    if (spans.some(([a, b]) => keywordAt >= a && keywordAt < b)) continue;
     const clause = m[1];
     const spec = m[2];
     if (spec.endsWith(POLICY_MODULE_BASENAME)) return true;
