@@ -16,11 +16,9 @@
  *       handler's catch is classified by its real (non-404) status and is NOT
  *       masked as a 404. This is the inverse of the Equoria-93lhj antipattern
  *       (any internal error whose message happened to contain "not found" used
- *       to masquerade as a clean 404). The bare-500 fail-closed path requires a
- *       truly unexpected fault (DB outage / import failure) that cannot be
- *       triggered mocklessly; the reachable, honest mockless proof is a non-404
- *       error → its correct non-404 status (here 400), never 404 — see the (b)
- *       block's NOTE for why.
+ *       to masquerade as a clean 404). The proof drives the bare-500
+ *       fail-closed path with a real database fault (a Postgres trigger scoped
+ *       to one fixture foal), never a mock — see the (b) block.
  *
  * IMPORTANT — honest accounting of WHERE the 404 originates (read before
  * editing): EVERY one of the 7 hardened routes is fronted by a pre-handler
@@ -39,19 +37,18 @@
  *     fires first. That is documented per assertion so a future reader does not
  *     mistake these for handler-branch coverage.
  *
- *   - The "(b) non-404 → 400" test DOES drive a hardened handler's catch with a
- *     REAL, mockless, non-404 error: POST /foals/:foalId/enrichment on a foal
- *     the user OWNS (so ownership passes), completing the same day-0 activity
- *     twice. `completeEnrichmentActivity()`'s anti-farming guard throws a plain
- *     `Error('Activity "..." already completed for day 0.')` — not an
- *     AppError, statusCode undefined — so the type check
+ *   - The "(b) non-404 → not 404" test DOES drive a hardened handler's catch
+ *     with a REAL, non-404 error: GET /foals/:foalId/development on a foal the
+ *     user OWNS (so ownership passes) and that has no development record yet,
+ *     while a Postgres trigger scoped to that foal makes the record's INSERT
+ *     fail. The resulting Prisma error is not an AppError, so the type check
  *     (`AppError.isAppError && statusCode===404`) is false and the handler
- *     correctly returns 400 via its own 'already completed' branch, proving it
- *     does not misclassify a non-404 error as a 404. (Equoria-bvddn.3, audit
- *     2026-09-25: this replaces the block's original example, PUT
- *     /grooms/:id/bonus-traits, which is now a closed 410-Gone route and can
- *     no longer reach that handler's catch at all — see the (b) block below
- *     for the full account.)
+ *     fails closed with 500, proving it does not misclassify a non-404 error
+ *     as a 404. History: the block's first example, PUT
+ *     /grooms/:id/bonus-traits, became a closed 410-Gone route
+ *     (Equoria-bvddn.3); its second, a repeated POST /foals/:foalId/enrichment,
+ *     was removed with player-run foal enrichment (Equoria-fr2kg). See the (b)
+ *     block below.
  *
  * Real DB only (CLAUDE.md Principle 3). Fixtures are name-scoped `TestFixture-*`
  * and cleaned up via the helper's tracked-id scoped delete (FK order: horses &
@@ -77,7 +74,7 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
   let ownerAccessCookie; // accessToken cookie for per-user CSRF binding on mutations
   let ownedHorse; // an adult horse owned by `owner` (used for owned-path probes)
   let ownedGroom; // a groom owned by `owner`
-  let ownedFoal; // a day-0 foal owned by `owner` (used by the (b) non-404 probe)
+  let ownedFoal; // a day-0 foal owned by `owner`, no development row (the (b) non-404 probe)
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -105,10 +102,10 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
       },
     });
 
-    // Equoria-bvddn.3: day-0 foal for the (b) non-404 probe (POST
-    // /foals/:foalId/enrichment, completeFoalEnrichment). dateOfBirth = now
-    // -> getHorseAgeDays() = 0, inside the enrichment window (days 0-6) and
-    // matching the day-0 activity list in foalModel.mjs's getAvailableActivities.
+    // Day-0 foal for the (b) non-404 probe (GET /foals/:foalId/development,
+    // getFoalDevelopmentHandler). age 0 passes getFoalDevelopment's foal-age
+    // check, and the foal has no FoalDevelopment row, so the read creates one —
+    // the INSERT the (b) trigger makes fail.
     ownedFoal = await createTestHorse({
       name: `TestFixture-pwjs5-foal-${ts}`,
       userId: owner.id,
@@ -258,62 +255,58 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
   //     make an unrelated change convenient), the example below replaces it
   //     with a DIFFERENT still-open, HTTP-reachable Equoria-4xwyi-hardened
   //     handler that exercises the identical catch shape:
-  //     `foalController.completeFoalEnrichment` (foalController.mjs:257-281).
+  //     `foalController.getFoalDevelopmentHandler`.
   //
-  //     We drive this mocklessly: an OWNED foal (ownership middleware passes,
-  //     day 0 of its enrichment window) completes the SAME day-0 activity
-  //     twice via POST /foals/:foalId/enrichment. The first call succeeds; the
-  //     second reaches completeEnrichmentActivity's anti-farming guard
-  //     (foalModel.mjs:266-278), which throws a PLAIN
-  //     Error('Activity "..." already completed for day 0.') — NOT an
-  //     AppError, statusCode undefined. completeFoalEnrichment's catch
-  //     evaluates the type-404 branch (false → does NOT 404, foalController.mjs
-  //     :265-270), then its dedicated 'already completed' branch → 400
-  //     (:271-278). The decisive contract this locks in: the type-based 404
-  //     branch does not over-match a non-AppError into a 404; the error is
-  //     classified by its real (non-404) status.
+  //     (Equoria-fr2kg: the previous example here, a repeated POST
+  //     /foals/:foalId/enrichment answered 400 'already completed', went with
+  //     the removed player-run foal enrichment — owner ruling 2026-10-14/15.)
   //
-  //     NOTE on why this is 400 and not a bare 500: every non-404 error
-  //     reachable from REAL DB state on an OWNED resource through these handlers
-  //     carries a string one of the retained 400 branches matches (here
-  //     'already completed'). The bare-500 fail-closed path requires a truly
-  //     unexpected fault (DB outage / import failure) that cannot be triggered
-  //     without injecting one — i.e. a mock, which CLAUDE.md Principle 3 forbids.
-  //     Asserting the honest reachable outcome (non-404 → 400, never 404) is the
-  //     correct mockless sentinel for "the type-check does not over-match".
+  //     An OWNED day-0 foal with no FoalDevelopment row is read via GET
+  //     /foals/:foalId/development. getFoalDevelopment creates the missing
+  //     row; a BEFORE INSERT trigger on foal_development, scoped to this
+  //     foal's id, raises inside Postgres, so Prisma throws a database error —
+  //     NOT an AppError, statusCode undefined, and its message does not
+  //     contain the retained 'not a foal' string. The handler's type-404
+  //     branch is false and it fails closed with 500. The decisive contract:
+  //     the type-based 404 branch does not over-match a non-AppError into a
+  //     404. The trigger is a real database fault, not a mock (the
+  //     foalDevelopmentServerAuthoritative precedent).
   // ===================================================================
   describe('(b) non-404 error in a hardened handler is NOT masked as 404', () => {
-    it('POST /foals/:foalId/enrichment (owned foal, activity repeated same day) → 400, NOT 404 (completeFoalEnrichment)', async () => {
-      // First completion of the day-0 activity succeeds and records it in
-      // foal_training_history (foalModel.mjs's completeEnrichmentActivity).
-      const firstCsrf = await ownerCsrf();
-      const firstRes = await request(app)
-        .post(`/api/v1/foals/${ownedFoal.id}/enrichment`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${ownerToken}`)
-        .set('Cookie', firstCsrf.cookieHeader)
-        .set('X-CSRF-Token', firstCsrf.csrfToken)
-        .send({ activity: 'gentle_touch' });
-      expect(firstRes.status).toBe(200);
+    it('GET /foals/:foalId/development (owned foal, development INSERT fails in Postgres) → 500, NOT 404 (getFoalDevelopmentHandler)', async () => {
+      const suffix = `${Date.now()}_${ownedFoal.id}`;
+      const fn = `fr2kg_fail_dev_insert_${suffix}`;
+      const trg = `fr2kg_fail_dev_insert_trg_${suffix}`;
+      await prisma.$executeRawUnsafe(`
+        CREATE FUNCTION ${fn}() RETURNS trigger AS $$
+        BEGIN
+          IF NEW."foalId" = ${Number(ownedFoal.id)} THEN
+            RAISE EXCEPTION 'injected test failure (TestFixture-pwjs5)';
+          END IF;
+          RETURN NEW;
+        END $$ LANGUAGE plpgsql`);
+      await prisma.$executeRawUnsafe(
+        `CREATE TRIGGER ${trg} BEFORE INSERT ON foal_development FOR EACH ROW EXECUTE FUNCTION ${fn}()`,
+      );
 
-      // Repeating the SAME day-0 activity hits the anti-farming guard: a
-      // plain Error('... already completed for day 0.'), not an AppError.
-      const secondCsrf = await ownerCsrf();
-      const res = await request(app)
-        .post(`/api/v1/foals/${ownedFoal.id}/enrichment`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${ownerToken}`)
-        .set('Cookie', secondCsrf.cookieHeader)
-        .set('X-CSRF-Token', secondCsrf.csrfToken)
-        .send({ activity: 'gentle_touch' });
+      let res;
+      try {
+        res = await request(app)
+          .get(`/api/v1/foals/${ownedFoal.id}/development`)
+          .set('Origin', ORIGIN)
+          .set('Authorization', `Bearer ${ownerToken}`);
+      } finally {
+        await prisma.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${trg} ON foal_development`);
+        await prisma.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${fn}()`);
+      }
 
       // The decisive assertion: a non-AppError error is classified by its real
-      // (non-404) status — here 400 — and is NEVER masked as a 404 by the
-      // type-based branch that runs first.
+      // (non-404) status — here the fail-closed 500 — and is NEVER masked as a
+      // 404 by the type-based branch that runs first.
       expect(res.status).not.toBe(404);
-      expect(res.status).toBe(400);
-      expect(res.body).toMatchObject({ success: false });
-      expect(String(res.body.message)).toContain('already completed');
+      expect(res.status).toBe(500);
+      expect(res.body).toMatchObject({ success: false, message: 'Internal server error' });
+      expect(await prisma.foalDevelopment.count({ where: { foalId: ownedFoal.id } })).toBe(0);
     });
   });
 });

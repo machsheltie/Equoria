@@ -8,34 +8,24 @@
  *   GET  /api/foals/:foalId               — get foal record (basic)
  *   GET  /api/foals/:foalId/development   — get foal development data
  *   GET  /api/foals/:foalId/activities    — get foal activity log
- *   POST /api/foals/:foalId/activity      — complete a foal enrichment activity
- *   POST /api/foals/:foalId/enrichment    — complete enrichment activity (Task 5 API)
- *   POST /api/foals/:foalId/enrich        — alias for /enrichment (frontend contract)
  *   POST /api/foals/:foalId/reveal-traits — trigger trait discovery for the foal
- *   POST /api/foals/:foalId/graduate      — graduate a foal at age 3
  *
  * The former PUT /develop (client-set day/bond/stress) and POST /advance-day
  * handlers were removed (Equoria-mwjst): foals wait out the full development
- * week, and only the nightly trait job advances the day.
+ * week, and only the nightly trait job advances the day. The player-run
+ * POST /activity, /enrichment, /enrich and /graduate handlers were removed
+ * too (Equoria-fr2kg; owner ruling 2026-10-14/15: foal enrichment is the
+ * groom's job, and there is no graduation).
  */
 
 import { validationResult } from 'express-validator';
 // Equoria-pq3oi: foalModel moved into the horses module; this cross-module
 // (breeding → horses) import now routes through the horses public-API barrel.
-import {
-  getFoalDevelopment,
-  completeActivity,
-  completeEnrichmentActivity,
-  graduateFoal,
-} from '../../horses/index.mjs';
+import { getFoalDevelopment } from '../../horses/index.mjs';
 import { ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { revealTraits } from '../../../utils/traitDiscovery.mjs';
-import {
-  validateActivityForFoalAge,
-  getActivitiesForStage,
-  computeAgeStage,
-} from '../../../utils/foalAgeUtils.mjs';
+import { computeAgeStage } from '../../../utils/foalAgeUtils.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
@@ -84,200 +74,6 @@ export async function getFoalDevelopmentHandler(req, res) {
       error.message.includes('not a foal')
     ) {
       return res.status(404).json({ success: false, message: error.message });
-    }
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-}
-
-/**
- * POST /api/foals/:foalId/activity
- * Complete a foal enrichment activity
- */
-export async function completeFoalActivity(req, res) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { foalId } = req.params;
-    const { activityType } = req.body;
-    logger.info(`[foalController] POST /api/foals/${foalId}/activity - ${activityType}`);
-
-    // Equoria-4kzik: enforce age-stage gating server-side. The frontend
-    // DevelopmentTracker only shows stage-appropriate activities, but a
-    // client could POST an out-of-stage activity directly. requireOwnership
-    // attached the full foal record (incl. dateOfBirth) to req.foal.
-    // Only KNOWN age-stage activities are gated here; an unrecognised
-    // activityType is deferred to completeActivity() (it may be a valid
-    // day-based enrichment activity handled by the separate Task-5 system).
-    const foal = req.foal;
-    const ageCheck = validateActivityForFoalAge(activityType, foal?.dateOfBirth);
-    if (!ageCheck.allowed && ageCheck.reason !== 'unknown_activity') {
-      const currentStage = computeAgeStage(foal?.dateOfBirth);
-      const allowedNow = getActivitiesForStage(currentStage).map(a => a.id);
-      let message;
-      if (ageCheck.reason === 'graduated') {
-        message =
-          `Activity "${activityType}" cannot be performed: this horse has ` +
-          'graduated from the foal development window (age 3+).';
-      } else {
-        message =
-          `Activity "${activityType}" is a ${ageCheck.requiredStage} activity ` +
-          `and cannot be performed on a ${ageCheck.currentStage} foal. ` +
-          `Age-appropriate activities right now: ${allowedNow.join(', ') || 'none'}.`;
-      }
-      logger.warn(
-        `[foalController] Rejected out-of-stage activity "${activityType}" for ` +
-          `foal ${foalId} (required=${ageCheck.requiredStage}, ` +
-          `current=${ageCheck.currentStage ?? 'graduated'})`,
-      );
-      return res.status(400).json({
-        success: false,
-        message,
-        reason: ageCheck.reason,
-        requiredStage: ageCheck.requiredStage,
-        currentStage: ageCheck.currentStage ?? null,
-        allowedActivities: allowedNow,
-      });
-    }
-
-    const updatedData = await completeActivity(foalId, activityType);
-
-    res.json({
-      success: true,
-      message: `Activity "${activityType}" completed successfully`,
-      data: updatedData,
-    });
-  } catch (error) {
-    logger.error(`[foalController] POST /api/foals/:foalId/activity error: ${error.message}`);
-    // Equoria-4xwyi: TYPE-based 404 detection. completeActivity throws a typed
-    // AppError(404) for the missing development-record case. The `'not available'`
-    // (wrong-state) case stays a plain Error and is preserved verbatim, including
-    // its pre-existing quirk that the 404 branch wins over the 400 branch below
-    // (registration order unchanged). Fail-closed: any other error surfaces as 500
-    // rather than being string-matched into a misleading 404.
-    if (
-      (AppError.isAppError(error) && error.statusCode === 404) ||
-      error.message.includes('not available')
-    ) {
-      return res.status(404).json({ success: false, message: error.message });
-    }
-    if (error.message.includes('already completed') || error.message.includes('not available')) {
-      return res.status(400).json({ success: false, message: error.message });
-    }
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-}
-
-/**
- * POST /api/foals/:foalId/enrichment
- * Complete a foal enrichment activity (Task 5 API)
- */
-export async function completeFoalEnrichment(req, res) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { foalId } = req.params;
-    const { activity } = req.body;
-    // The enrichment day is derived server-side from the foal's age
-    // (Equoria-g89vy) — any client-supplied `day` is intentionally ignored.
-    logger.info(`[foalController] POST /api/foals/${foalId}/enrichment - Activity: ${activity}`);
-
-    const result = await completeEnrichmentActivity(foalId, activity);
-
-    res.json({
-      success: true,
-      message: `Enrichment activity "${result.activity.name}" completed successfully`,
-      data: {
-        foal: result.foal,
-        activity: result.activity,
-        updatedLevels: {
-          bondScore: result.levels.bondScore,
-          stressLevel: result.levels.stressLevel,
-        },
-        changes: {
-          bondChange: result.levels.bondChange,
-          stressChange: result.levels.stressChange,
-        },
-        trainingRecordId: result.trainingRecordId,
-      },
-    });
-  } catch (error) {
-    logger.error(`[foalController] POST /api/foals/:foalId/enrichment error: ${error.message}`);
-    // Equoria-4xwyi: TYPE-based 404; 503 is the busy-retry signal from
-    // runRetryableTransaction. Fail-closed: anything unrecognised is a 500.
-    if (AppError.isAppError(error) && error.statusCode === 503) {
-      return res.status(503).json({ success: false, message: error.message });
-    }
-    if (
-      (AppError.isAppError(error) && error.statusCode === 404) ||
-      error.message.includes('not a foal')
-    ) {
-      return res.status(404).json({ success: false, message: error.message });
-    }
-    if (
-      error.message.includes('not appropriate') ||
-      error.message.includes('must be between') ||
-      error.message.includes('window closed') ||
-      error.message.includes('already completed')
-    ) {
-      return res.status(400).json({ success: false, message: error.message });
-    }
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-}
-
-/**
- * POST /api/foals/:foalId/graduate
- * Graduate a foal — closes development window and clears groom assignments.
- * Called when a foal reaches age 3 game-years (21 real days; Equoria-oey96.16).
- */
-export async function graduateFoalHandler(req, res) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { foalId } = req.params;
-    const userId = req.user?.id;
-    logger.info(`[foalController] POST /api/foals/${foalId}/graduate`);
-
-    const result = await graduateFoal(foalId, userId);
-
-    res.json({
-      success: true,
-      message: `${result.horse.name} has graduated! Now eligible for training and competition.`,
-      data: result,
-    });
-  } catch (error) {
-    logger.error(`[foalController] POST /api/foals/:foalId/graduate error: ${error.message}`);
-    // Equoria-4xwyi: TYPE-based 404; 503 is the busy-retry signal from
-    // runRetryableTransaction. Fail-closed: anything unrecognised is a 500.
-    if (AppError.isAppError(error) && [404, 503].includes(error.statusCode)) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    if (
-      error.message.includes('not reached graduation age') ||
-      error.message.includes('already graduated')
-    ) {
-      return res.status(400).json({ success: false, message: error.message });
     }
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
@@ -374,17 +170,14 @@ export async function getFoalActivitiesHandler(req, res) {
       take: 50,
     });
 
-    // Equoria-4kzik: surface the server-enforced age-stage rule so the
-    // client filter becomes a presentation layer over a real backend
-    // constraint (not the source of truth). requireOwnership attached the
-    // foal record to req.foal.
+    // requireOwnership attached the foal record to req.foal. The player-run
+    // stage-activity list that used to ride along here was removed
+    // (Equoria-fr2kg); the age stage stays.
     const currentStage = computeAgeStage(req.foal?.dateOfBirth);
-    const availableActivities = getActivitiesForStage(currentStage);
 
     res.json({
       success: true,
       ageStage: currentStage,
-      availableActivities,
       data: activities.map(a => ({
         id: a.id,
         day: a.day,

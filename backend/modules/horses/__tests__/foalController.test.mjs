@@ -1,8 +1,9 @@
 /**
  * foalRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: development, activity, enrichment, graduate — and that the retired
- * advance-day route stays gone (Equoria-mwjst).
+ * Covers: development — and that the retired advance-day (Equoria-mwjst) and
+ * player-run activity / enrichment / graduate routes (Equoria-fr2kg) stay
+ * gone.
  * Routes are mounted at /api/v1/foals (authRouter at /api/v1, foalRoutes at
  * '/foals'; app.mjs:290 + routers.mjs:143). The unversioned /api/* mounts were
  * removed (Equoria-4bs3s), so /api/foals/* now 404s.
@@ -97,66 +98,6 @@ describe('GET /api/v1/foals/:foalId/development', () => {
   });
 });
 
-// ─── POST /api/v1/foals/:foalId/activity ─────────────────────────────────────
-
-describe('POST /api/v1/foals/:foalId/activity', () => {
-  it('returns 400 when activityType is missing', async () => {
-    // Per-user CSRF (Equoria-plw0h): bind the token to the same user the
-    // mutation authenticates as, or csrfProtection 403s on the identifier
-    // mismatch. accessToken cookie lets the /csrf-token GET resolve req.user.id.
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/activity`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 404 for foal not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/foals/999999999/activity')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ activityType: 'grooming' });
-
-    expect(res.status).toBe(404);
-  });
-
-  it('returns 200, 400, or 404 when submitting activity for owned foal', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/activity`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ activityType: 'grooming' });
-
-    expect([200, 400, 404]).toContain(res.status);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/activity`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ activityType: 'grooming' });
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/foals/:foalId/advance-day — retired (Equoria-mwjst) ────────
 //
 // OLD CONTRACT (vulnerable): "returns 200 or 400 when advancing day for owned
 // foal" — any owner could bump FoalDevelopment.currentDay on demand, skipping
@@ -183,112 +124,49 @@ describe('POST /api/v1/foals/:foalId/advance-day (retired)', () => {
   });
 });
 
-// ─── POST /api/v1/foals/:foalId/enrichment ───────────────────────────────────
+// ─── Player-run activity / enrichment / graduation (retired) ────────────────
+//
+// Equoria-fr2kg. OLD CONTRACT: the owner could POST /activity (a stage or
+// day activity), /enrichment or its /enrich alias (a day 0-6 enrichment
+// activity) and /graduate (close the foal window at age 3); each returned 200
+// for a valid request and wrote bond/stress, activity or graduation state.
+// NEW RULING (owner, 2026-10-14/15): foal enrichment is the groom's job and
+// there is no graduation; the player-run enrichment and graduation were AI
+// inventions. The routes are gone: an authenticated owner gets 404 and
+// nothing about the foal changes.
 
-describe('POST /api/v1/foals/:foalId/enrichment', () => {
-  it('returns 400 when required fields are missing', async () => {
+describe('retired player-run foal routes (Equoria-fr2kg)', () => {
+  const retired = [
+    ['activity', { activityType: 'gentle_touch' }],
+    ['enrichment', { activity: 'gentle_touch' }],
+    ['enrich', { activity: 'gentle_touch' }],
+    ['graduate', {}],
+  ];
+
+  it.each(retired)('POST /:foalId/%s returns 404 to the owner and changes nothing', async (path, body) => {
+    const before = await prisma.horse.findUnique({
+      where: { id: foal.id },
+      select: { bondScore: true, stressLevel: true },
+    });
+    const devBefore = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/enrichment`)
+      .post(`/api/v1/foals/${foal.id}/${path}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 400 when day is out of range', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/enrichment`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ day: 99, activity: 'play' });
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 404 for foal not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/foals/999999999/enrichment')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ day: 0, activity: 'play' });
+      .send(body);
 
     expect(res.status).toBe(404);
-  });
-
-  it('returns 200 or 400 for valid enrichment request on owned foal', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/enrichment`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ day: 0, activity: 'play' });
-
-    expect([200, 400]).toContain(res.status);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/enrichment`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ day: 0, activity: 'play' });
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/foals/:foalId/graduate ─────────────────────────────────────
-
-describe('POST /api/v1/foals/:foalId/graduate', () => {
-  it('returns 400 when foal has not reached graduation age', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/graduate`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 404 for foal not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/foals/999999999/graduate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
-
-    expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/foals/${foal.id}/graduate`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
-
-    expect(res.status).toBe(401);
+    expect(
+      await prisma.horse.findUnique({
+        where: { id: foal.id },
+        select: { bondScore: true, stressLevel: true },
+      }),
+    ).toEqual(before);
+    expect(await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } })).toEqual(devBefore);
+    expect(await prisma.foalActivity.count({ where: { foalId: foal.id } })).toBe(0);
+    expect(await prisma.foalTrainingHistory.count({ where: { horseId: foal.id } })).toBe(0);
   });
 });

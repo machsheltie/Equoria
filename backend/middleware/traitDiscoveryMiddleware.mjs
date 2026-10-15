@@ -239,18 +239,6 @@ function emitDiscoveryEvent(horseId, discoveryResult) {
 }
 
 /**
- * Middleware specifically for foal enrichment activities
- * Triggers discovery after enrichment completion
- */
-export function enrichmentDiscoveryMiddleware() {
-  return autoDiscoveryMiddleware({
-    checkEnrichment: true,
-    skipIfRecentlyChecked: true,
-    recentCheckThreshold: 2 * 60 * 1000, // 2 minutes for enrichment
-  });
-}
-
-/**
  * Middleware specifically for training activities
  * Triggers discovery after training completion
  */
@@ -299,7 +287,6 @@ export async function manualDiscoveryTrigger(horseId, options = {}) {
 
 export default {
   autoDiscoveryMiddleware,
-  enrichmentDiscoveryMiddleware,
   trainingDiscoveryMiddleware,
   bondingDiscoveryMiddleware,
   manualDiscoveryTrigger,

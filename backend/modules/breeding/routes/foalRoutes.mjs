@@ -9,11 +9,15 @@
  * OUT THE FULL 7 DAY AGING PROCESS"). PUT /:foalId/develop (client-chosen
  * day/bond/stress) and POST /:foalId/advance-day were removed; the nightly
  * trait job is the only thing that moves FoalDevelopment.currentDay.
+ *
+ * There is no player-run enrichment, foal activity or graduation either
+ * (Equoria-fr2kg; owner ruling 2026-10-14/15: foal enrichment is the groom's
+ * job, and there is no graduation). POST /:foalId/activity, /enrichment,
+ * /enrich and /graduate were removed.
  */
 
 import express from 'express';
-import { body, param } from 'express-validator';
-import { enrichmentDiscoveryMiddleware } from '../../../middleware/traitDiscoveryMiddleware.mjs';
+import { param } from 'express-validator';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 // Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
 // than inferring it from the authRouter mount comment. Idempotent with the
@@ -23,10 +27,7 @@ import {
   getFoalHandler,
   getFoalDevelopmentHandler,
   getFoalActivitiesHandler,
-  completeFoalActivity,
-  completeFoalEnrichment,
   revealFoalTraitsHandler,
-  graduateFoalHandler,
 } from '../controllers/foalController.mjs';
 
 const router = express.Router();
@@ -72,76 +73,6 @@ router.get(
 );
 
 /**
- * POST /api/foals/:foalId/activity
- * Complete a foal enrichment activity
- *
- * Security: Validates foal ownership before allowing activity completion
- */
-router.post(
-  '/:foalId/activity',
-  [
-    param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer'),
-    body('activityType')
-      .notEmpty()
-      .withMessage('Activity type is required')
-      .isString()
-      .withMessage('Activity type must be a string'),
-  ],
-  requireOwnership('foal', { idParam: 'foalId' }),
-  completeFoalActivity,
-);
-
-/**
- * POST /api/foals/:foalId/enrichment
- * Complete a foal enrichment activity (Task 5 API)
- *
- * Security: Validates foal ownership before enrichment activity
- */
-router.post(
-  '/:foalId/enrichment',
-  [
-    param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer'),
-    // `day` is derived server-side from the foal's age (Equoria-g89vy); the
-    // client does not supply it. Only `activity` is validated here.
-    body('activity')
-      .notEmpty()
-      .withMessage('Activity is required')
-      .isString()
-      .withMessage('Activity must be a string')
-      .isLength({ min: 1, max: 100 })
-      .withMessage('Activity must be between 1 and 100 characters'),
-  ],
-  requireOwnership('foal', { idParam: 'foalId' }),
-  enrichmentDiscoveryMiddleware(),
-  completeFoalEnrichment,
-);
-
-/**
- * POST /api/foals/:foalId/enrich
- * Frontend contract alias for POST /:foalId/enrichment. Same validation and handler.
- *
- * Equoria-dsyu
- */
-router.post(
-  '/:foalId/enrich',
-  [
-    param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer'),
-    // `day` is derived server-side from the foal's age (Equoria-g89vy); the
-    // client does not supply it. Only `activity` is validated here.
-    body('activity')
-      .notEmpty()
-      .withMessage('Activity is required')
-      .isString()
-      .withMessage('Activity must be a string')
-      .isLength({ min: 1, max: 100 })
-      .withMessage('Activity must be between 1 and 100 characters'),
-  ],
-  requireOwnership('foal', { idParam: 'foalId' }),
-  enrichmentDiscoveryMiddleware(),
-  completeFoalEnrichment,
-);
-
-/**
  * POST /api/foals/:foalId/reveal-traits
  * Trigger trait discovery for a foal.
  *
@@ -152,20 +83,6 @@ router.post(
   [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
   requireOwnership('foal', { idParam: 'foalId' }),
   revealFoalTraitsHandler,
-);
-
-/**
- * POST /api/foals/:foalId/graduate
- * Graduate a foal — closes development window and clears groom assignments.
- * Called when a foal reaches age 3 (104 weeks).
- *
- * Security: Validates foal ownership before graduating
- */
-router.post(
-  '/:foalId/graduate',
-  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
-  requireOwnership('foal', { idParam: 'foalId' }),
-  graduateFoalHandler,
 );
 
 export default router;

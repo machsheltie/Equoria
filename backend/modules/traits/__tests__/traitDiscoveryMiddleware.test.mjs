@@ -1,7 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   autoDiscoveryMiddleware,
-  enrichmentDiscoveryMiddleware,
   trainingDiscoveryMiddleware,
   bondingDiscoveryMiddleware,
 } from '../../../middleware/traitDiscoveryMiddleware.mjs';
@@ -91,30 +90,9 @@ describe('autoDiscoveryMiddleware', () => {
   });
 });
 
-// ─── enrichmentDiscoveryMiddleware ────────────────────────────────────────────
-
-describe('enrichmentDiscoveryMiddleware', () => {
-  it('returns a function', () => {
-    expect(typeof enrichmentDiscoveryMiddleware()).toBe('function');
-  });
-
-  it('calls next()', async () => {
-    const mw = enrichmentDiscoveryMiddleware();
-    let called = false;
-    await mw(makeReq(), makeRes(), () => {
-      called = true;
-    });
-    expect(called).toBe(true);
-  });
-
-  it('patches res.json', async () => {
-    const mw = enrichmentDiscoveryMiddleware();
-    const res = makeRes();
-    const original = res.json;
-    await mw(makeReq(), res, () => {});
-    expect(res.json).not.toBe(original);
-  });
-});
+// enrichmentDiscoveryMiddleware was removed with the player-run foal
+// enrichment routes it fronted (Equoria-fr2kg; owner ruling 2026-10-14/15:
+// foal enrichment is the groom's job).
 
 // ─── trainingDiscoveryMiddleware ──────────────────────────────────────────────
 

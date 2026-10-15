@@ -289,8 +289,8 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
   // stage-activity picker (POST /activity) and, past 104 weeks, "Graduate to
   // Adult" (POST /graduate). NEW RULING (owner, 2026-10-14/15): foal
   // enrichment is the groom's job and there is no graduation, so the page
-  // offers none of these.
-  test('the player cannot enrich, run foal activities or graduate: no controls', async ({
+  // offers none of these and the backend no longer serves the routes.
+  test('the player cannot enrich, run foal activities or graduate: no controls, and the routes are gone', async ({
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
@@ -300,5 +300,15 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     await expect(page.getByRole('button', { name: /Enrich/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Graduat/i })).toHaveCount(0);
     await expect(page.getByText(/Available activities/i)).toHaveCount(0);
+
+    for (const [path, body] of [
+      ['enrich', { activity: 'gentle_touch' }],
+      ['enrichment', { activity: 'gentle_touch' }],
+      ['activity', { activityType: 'gentle_touch' }],
+      ['graduate', {}],
+    ] as const) {
+      const res = await csrfMutate(session, 'POST', `/api/v1/foals/${foalId}/${path}`, body);
+      expect(res.status(), `POST /foals/:id/${path} must no longer exist`).toBe(404);
+    }
   });
 });

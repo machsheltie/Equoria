@@ -37,10 +37,10 @@ const NON_EXISTENT_HORSE_ID = 999_999_999;
 let app;
 let testUser;
 let rateLimitActivityUser;
-let rateLimitEnrichmentUser;
+let rateLimitRevealUser;
 let authToken;
 let activityToken;
-let enrichmentToken;
+let revealToken;
 
 // Per-suite fail-loud cleanup queue; drained in afterAll (Equoria-1ohys).
 const cleanup = createCleanupTracker();
@@ -71,24 +71,24 @@ beforeAll(async () => {
       lastName: 'Activity',
     },
   });
-  rateLimitEnrichmentUser = await prisma.user.create({
+  rateLimitRevealUser = await prisma.user.create({
     data: {
       username: `foalAuthRLE_${ts}`,
       email: `foalAuthRLE_${ts}@test.com`,
       password: hashed,
       firstName: 'RL',
-      lastName: 'Enrichment',
+      lastName: 'Reveal',
     },
   });
 
   authToken = buildToken(testUser);
   activityToken = buildToken(rateLimitActivityUser);
-  enrichmentToken = buildToken(rateLimitEnrichmentUser);
+  revealToken = buildToken(rateLimitRevealUser);
 
   // Equoria-1ohys: register scoped, fail-loud deletes for the 3 fixture users.
   // These users own no horses (no Horse.userId Restrict to order around), so a
   // plain id-scoped user delete is the correct teardown.
-  for (const u of [testUser, rateLimitActivityUser, rateLimitEnrichmentUser]) {
+  for (const u of [testUser, rateLimitActivityUser, rateLimitRevealUser]) {
     cleanup.add(() => prisma.user.delete({ where: { id: u.id } }), `user#${u.id}`);
   }
 
@@ -122,22 +122,26 @@ describe('Foal routes auth enforcement (real DB)', () => {
     expect(response.body.message).toBe('Access token is required');
   });
 
-  it('rejects unauthenticated access to foal enrichment', async () => {
+  // Equoria-fr2kg: the unauthenticated enrichment and activity cases pointed
+  // at POST /enrichment and POST /activity, which were removed (owner ruling
+  // 2026-10-14/15: foal enrichment is the groom's job). They now probe the
+  // surviving foal mutation (POST /reveal-traits) and the activity-log read
+  // (GET /activities), with the same 401 + message assertions.
+  it('rejects unauthenticated access to foal trait reveal', async () => {
     const response = await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/enrichment`)
+      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/reveal-traits`)
       .set('Origin', 'http://localhost:3000')
-      .send({ day: 1, activity: 'Feeding Assistance' })
+      .send({})
       .expect(401);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Access token is required');
   });
 
-  it('rejects unauthenticated access to foal activity', async () => {
+  it('rejects unauthenticated access to the foal activity log', async () => {
     const response = await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/activity`)
+      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/activities`)
       .set('Origin', 'http://localhost:3000')
-      .send({ activityType: 'feeding' })
       .expect(401);
 
     expect(response.body.success).toBe(false);
@@ -149,50 +153,51 @@ describe('Foal routes auth enforcement (real DB)', () => {
   // day). Router-level authenticateToken still answers 401 for that path,
   // so the case could only re-prove auth, never anything about the route.
 
-  it('rate limits foal activity endpoints — 429 on Nth+1 request', async () => {
+  // Equoria-fr2kg: the two rate-limit cases drove POST /activity and POST
+  // /enrichment, both removed. They now drive the surviving foal endpoints
+  // (GET /activities and POST /reveal-traits) with the same 429 + message
+  // assertions, so foalRateLimiter coverage is kept, not lost.
+  it('rate limits the foal activity log — 429 on Nth+1 request', async () => {
     // First two requests count toward the per-user limit (any status is fine
     // — controller may 404 on the bogus horse id, that's not the contract).
     await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/activity`)
+      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/activities`)
       .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${activityToken}`)
-      .send({ activityType: 'feeding' });
+      .set('Authorization', `Bearer ${activityToken}`);
 
     await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/activity`)
+      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/activities`)
       .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${activityToken}`)
-      .send({ activityType: 'feeding' });
+      .set('Authorization', `Bearer ${activityToken}`);
 
     const response = await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/activity`)
+      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/activities`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${activityToken}`)
-      .send({ activityType: 'feeding' })
       .expect(429);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toContain('Foal action limit exceeded');
   });
 
-  it('rate limits foal enrichment endpoints — 429 on Nth+1 request', async () => {
+  it('rate limits foal trait reveal — 429 on Nth+1 request', async () => {
     await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/enrichment`)
+      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/reveal-traits`)
       .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${enrichmentToken}`)
-      .send({ day: 1, activity: 'Feeding Assistance' });
+      .set('Authorization', `Bearer ${revealToken}`)
+      .send({});
 
     await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/enrichment`)
+      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/reveal-traits`)
       .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${enrichmentToken}`)
-      .send({ day: 1, activity: 'Feeding Assistance' });
+      .set('Authorization', `Bearer ${revealToken}`)
+      .send({});
 
     const response = await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/enrichment`)
+      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/reveal-traits`)
       .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${enrichmentToken}`)
-      .send({ day: 1, activity: 'Feeding Assistance' })
+      .set('Authorization', `Bearer ${revealToken}`)
+      .send({})
       .expect(429);
 
     expect(response.body.success).toBe(false);

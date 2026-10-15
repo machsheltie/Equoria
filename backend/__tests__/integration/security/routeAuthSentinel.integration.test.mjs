@@ -96,12 +96,14 @@ const REPRESENTATIVE_MUTATIONS = [
     path: '/api/v1/bank/claim',
     body: {},
   },
-  // authRouter — breeding/foal mutation
+  // authRouter — breeding/foal mutation. Equoria-fr2kg: was POST
+  // /foals/1/activity, removed with player-run foal activities (owner ruling
+  // 2026-10-14/15); POST /reveal-traits is the surviving foal mutation.
   {
-    label: 'POST /api/v1/foals/1/activity (authRouter — foal activity)',
+    label: 'POST /api/v1/foals/1/reveal-traits (authRouter — foal trait reveal)',
     method: 'post',
-    path: '/api/v1/foals/1/activity',
-    body: { activityType: 'gentle_touch' },
+    path: '/api/v1/foals/1/reveal-traits',
+    body: {},
   },
   // authRouter — crafting (jk9oj.2 target router)
   {
