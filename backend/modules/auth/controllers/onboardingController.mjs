@@ -51,16 +51,16 @@ import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCano
 // formed a module cycle, and the rule came through a module-root publishing file
 // instead; the routes left the barrel, so that file is gone.)
 import { horseNameRejectionReason, firstHorseNameRejectionMessage } from '../../horses/index.mjs';
-// Equoria-hk739: deep-import the LEAF horses services directly, NOT the full
-// horses barrel (../../horses/index.mjs). This module is re-exported by
-// authController.mjs (export { completeOnboarding, advanceOnboarding }), so the
-// barrel here is part of the same TDZ circular dependency: the horses barrel
-// re-exports the horses route subgraph, which transitively re-enters the auth
-// barrel -> authRoutes.mjs while authController is still mid-evaluation,
-// crashing on `authController.register` (declared later, still in its temporal
-// dead zone). The leaf services import only utils/constants/data, so deep-
-// importing them breaks the cycle. Documented circular-dependency carve-out
-// per CLAUDE.md / CONTRIBUTING.md "Module public API boundaries".
+// Equoria-hk739 (historical): these four LEAF horses services were deep-imported
+// instead of the horses barrel because, at the time, the barrel re-exported the
+// horses route subgraph, which re-entered the auth barrel -> authRoutes.mjs while
+// authController was still mid-evaluation and crashed on `authController.register`
+// (temporal dead zone). That reason no longer holds: Equoria-q4uem.4 (WS4 S4)
+// took every route module and controller out of the barrels, and the horses
+// barrel import above is measured TDZ-safe (moduleImportCycleTdz + appBootSmoke
+// sentinels). The four marked deep imports below are retired in WS4 S6, when
+// the module-dependency-graph gate's R2 becomes strict; until then the markers
+// stay and the gate pins them in module-dependency-graph-allowlist.json.
 // eslint-disable-next-line no-restricted-imports -- Equoria-hk739: barrel import of ../../horses/index.mjs causes a TDZ circular-dependency crash (authController.register before initialization); deep-import the clean leaf services instead.
 import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
 // eslint-disable-next-line no-restricted-imports -- Equoria-hk739: see above; leaf deep-import to avoid the horses-barrel TDZ cycle.
