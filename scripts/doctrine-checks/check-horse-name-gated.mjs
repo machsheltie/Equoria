@@ -115,9 +115,23 @@ const POLICY_REEXPORT_BASENAME = '_validators.mjs';
 // Cross-module consumers reach the rule through the horses barrel (Equoria-q4uem.4,
 // WS4 S5: the module-root `horses/horseNamePolicy.mjs` publishing file is gone).
 const POLICY_BARREL_SUFFIX = 'horses/index.mjs';
-// A policy symbol must be named in the statement; importing an unrelated horses
-// export (`getHorseById`) from the barrel does not gate a name write.
-const POLICY_SYMBOL_RE = /horseName|HorseName|HORSE_NAME_/;
+// EXACT identifiers that embody the rule on each indirect path (S5 review M5). The
+// import braces are parsed with comments stripped and the ORIGINAL exported name of
+// each specifier (`x as y` -> `x`) must be one of these; a substring, a comment or an
+// unrelated horses export (`getHorseById`) never gates a name write.
+//   horses/index.mjs re-exports the two names onboarding needs;
+//   routes/_validators.mjs re-exports three policy functions and defines the
+//   express-validator chain horseNameBodyRule on top of the rule.
+const BARREL_POLICY_SYMBOLS = new Set([
+  'firstHorseNameRejectionMessage',
+  'horseNameRejectionReason',
+]);
+const VALIDATORS_POLICY_SYMBOLS = new Set([
+  'firstHorseNameRejectionMessage',
+  'horseNameRejectionReason',
+  'horseNameRejectionMessage',
+  'horseNameBodyRule',
+]);
 
 const skipDir = (name, full) =>
   /(^|[\\/])__tests__([\\/]|$)/.test(full) ||
@@ -313,19 +327,91 @@ function findWriteSignals(source) {
   return signals.filter((s) => !lineTextAt(source, s.index).includes(EXEMPTION_MARKER));
 }
 
+/**
+ * Replace `//` and `/* *\/` comments with spaces (newlines kept) so a policy name
+ * written only in a comment inside import braces is never read as an import.
+ * Strings and template literals are copied verbatim. (Same approach as
+ * check-module-dependency-graph.mjs; the scan logic stays local to each check by
+ * the doctrine-scan-patterns contract.)
+ */
+function stripComments(src) {
+  let out = '';
+  let i = 0;
+  const n = src.length;
+  while (i < n) {
+    const c = src[i];
+    const d = src[i + 1];
+    if (c === '/' && d === '/') {
+      while (i < n && src[i] !== '\n') {
+        out += ' ';
+        i += 1;
+      }
+    } else if (c === '/' && d === '*') {
+      out += '  ';
+      i += 2;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) {
+        out += src[i] === '\n' ? '\n' : ' ';
+        i += 1;
+      }
+      if (i < n) {
+        out += '  ';
+        i += 2;
+      }
+    } else if (c === "'" || c === '"' || c === '`') {
+      out += c;
+      i += 1;
+      while (i < n && src[i] !== c) {
+        if (src[i] === '\\' && i + 1 < n) {
+          out += src[i];
+          i += 1;
+        }
+        out += src[i];
+        i += 1;
+      }
+      if (i < n) {
+        out += c;
+        i += 1;
+      }
+    } else {
+      out += c;
+      i += 1;
+    }
+  }
+  return out;
+}
+
+/** The ORIGINAL exported names an import/export clause binds (`{ a, b as c }` -> a, b). */
+function importedNames(clause) {
+  const braces = clause.match(/\{([^}]*)\}/);
+  if (!braces) return [];
+  return braces[1]
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .map((n) => n.split(/\s+as\s+/)[0].trim());
+}
+
 /** Does this file route through the shared policy at all? */
 function importsPolicy(source) {
-  const importRe = /(?:^|\s)(?:import|export)\b[^;]*?from\s*['"]([^'"]+)['"]/g;
+  const code = stripComments(source);
+  const importRe = /(?:^|\s)(?:import|export)\b([^;]*?)from\s*['"]([^'"]+)['"]/g;
   let m;
-  while ((m = importRe.exec(source)) !== null) {
-    const spec = m[1];
+  while ((m = importRe.exec(code)) !== null) {
+    const clause = m[1];
+    const spec = m[2];
     if (spec.endsWith(POLICY_MODULE_BASENAME)) return true;
-    // `routes/_validators.mjs` re-exports the policy, so importing the shared
-    // name rule through it counts.
-    if (spec.endsWith(POLICY_REEXPORT_BASENAME) && POLICY_SYMBOL_RE.test(m[0])) return true;
-    // So does importing a policy symbol from the horses barrel (the only
-    // cross-module path the boundary rule allows).
-    if (spec.endsWith(POLICY_BARREL_SUFFIX) && POLICY_SYMBOL_RE.test(m[0])) return true;
+    const names = importedNames(clause);
+    // `routes/_validators.mjs` re-exports the policy and defines the body rule, so
+    // importing one of those EXACT names through it counts.
+    if (
+      spec.endsWith(POLICY_REEXPORT_BASENAME) &&
+      names.some((nm) => VALIDATORS_POLICY_SYMBOLS.has(nm))
+    )
+      return true;
+    // So does importing one of the EXACT policy names from the horses barrel (the
+    // only cross-module path the boundary rule allows).
+    if (spec.endsWith(POLICY_BARREL_SUFFIX) && names.some((nm) => BARREL_POLICY_SYMBOLS.has(nm)))
+      return true;
   }
   return false;
 }
