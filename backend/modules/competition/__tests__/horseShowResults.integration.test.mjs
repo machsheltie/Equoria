@@ -250,10 +250,16 @@ describe('GET /api/v1/competition/results/horse/:horseId — every entered show 
     expect(res.body.pagination).toMatchObject({ currentPage: 2, pageSize: 3, totalRecords: 4 });
   });
 
-  it('answers 404 to anyone but the owner', async () => {
-    const res = await getShowResults(strangerToken);
+  it('answers 404 to anyone but the owner, exactly as for a horse that does not exist', async () => {
+    const strangerRes = await getShowResults(strangerToken);
+    const missingRes = await request(app)
+      .get('/api/v1/competition/results/horse/2147483000')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${strangerToken}`);
 
-    expect(res.status).toBe(404);
-    expect(JSON.stringify(res.body)).not.toContain(shows.won.name);
+    expect(strangerRes.status).toBe(404);
+    expect(missingRes.status).toBe(404);
+    expect(strangerRes.body).toEqual(missingRes.body);
+    expect(JSON.stringify(strangerRes.body)).not.toContain(shows.won.name);
   });
 });

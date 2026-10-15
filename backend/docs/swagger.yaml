@@ -854,6 +854,31 @@ paths:
           { description: 'Show results (empty list and null show when the show does not exist)' }
         '400': { description: 'Invalid show ID' }
 
+  '/competition/results/horse/{horseId}':
+    get:
+      tags: [Competition]
+      summary: 'Every show a horse was entered in, run and unrun (owner only)'
+      description: |
+        Equoria-q4uem.10, owner ruling R7. Newest first. Each row is
+        `{ showId, showName, competitionType: { showType, discipline }, status
+        (upcoming | running | completed), date, placement, horsePointsAwarded,
+        winnings, statGain, conformationAward }`. Unrecorded values are null,
+        never 0. Standard paged envelope `{ success, data, pagination, meta }`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
+        - {
+            name: limit,
+            in: query,
+            required: false,
+            schema: { type: integer, default: 50, maximum: 100 },
+          }
+      responses:
+        '200': { description: "The horse's shows, paged" }
+        '400': { description: 'Invalid horse ID' }
+        '404': { description: 'Horse not found or not owned by the caller (indistinguishable)' }
+
   /competition/disciplines:
     get:
       tags: [Competition]
