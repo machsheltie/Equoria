@@ -26,7 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { executeClosedShows } from '../shows/showController.mjs';
+import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';

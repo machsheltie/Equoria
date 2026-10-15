@@ -5,7 +5,7 @@
  * Re-anchor of the deleted Equoria-toqet sentinel
  * (enhancedCompetitionPlacementNotification.sentinel.test.mjs), now bound
  * to the canonical post-toqet cron-driven executor in
- * backend/modules/competition/shows/showController.mjs#executeClosedShows.
+ * backend/modules/competition/shows/showExecutionService.mjs#executeClosedShows.
  *
  * Why this is sentinel-positive and RNG-independent:
  *   - A single valid horse entered into a show always places 1st (it is
@@ -34,7 +34,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { executeClosedShows } from '../shows/showController.mjs';
+import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const PREFIX = 'TestFixture-ExecClosedNotif-';

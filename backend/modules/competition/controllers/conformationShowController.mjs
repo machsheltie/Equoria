@@ -11,7 +11,7 @@
  *
  * There is no player settlement endpoint (Equoria-mwjst): the nightly show job
  * settles a conformation show once its closeDate passes
- * (showController.executeClosedShows → executeConformationShow).
+ * (showExecutionService.executeClosedShows → executeConformationShow).
  */
 
 import { validationResult } from 'express-validator';

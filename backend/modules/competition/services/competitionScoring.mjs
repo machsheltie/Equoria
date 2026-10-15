@@ -5,7 +5,7 @@
  * Two engines in the codebase score competition entries:
  *   1. backend/logic/simulateCompetition.mjs (rich, instant-path simulator —
  *      full stats / traits / tack / health / stress / luck pipeline).
- *   2. backend/modules/competition/shows/showController.mjs#executeClosedShows
+ *   2. backend/modules/competition/shows/showExecutionService.mjs#executeClosedShows
  *      (the nightly 7-day-show cron — simple 5-stat avg + luck + rider).
  *
  * The two engines differ ON PURPOSE for the rest of the formula, but BOTH

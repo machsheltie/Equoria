@@ -27,7 +27,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { executeClosedShows } from '../shows/showController.mjs';
+import { executeClosedShows } from '../shows/showExecutionService.mjs';
 
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 

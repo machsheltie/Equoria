@@ -79,11 +79,12 @@ const MIGRATED = [
   ['modules/trainers/controllers/trainerController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
-  // createShow wrapped; executeClosedShows' 1 remaining executor-path
-  // $transaction (per-entry prize payout) intentionally unwrapped
-  // (KNOWN_UNWRAPPED) → totalTx 2. enterShow's entry tx was extracted to
+  // createShow wrapped → wrapped 1 / totalTx 1. executeClosedShows' 1 remaining
+  // executor-path $transaction (per-entry prize payout) is intentionally unwrapped
+  // (KNOWN_UNWRAPPED) and moved with the executor to showExecutionService.mjs
+  // (Equoria-q4uem.4, WS4 S4). enterShow's entry tx was extracted to
   // showEscrowTx.mjs (Equoria-8pb6w) — pinned on the next row.
-  ['modules/competition/shows/showController.mjs', { wrapped: 1, totalTx: 2 }],
+  ['modules/competition/shows/showController.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-8pb6w extracted the enterShow entry tx here: enterShowAtomicTx is
   // withRetryableTxMapping-wrapped → wrapped 1 / totalTx 1. settleShowFeeEscrow
   // uses an injectable `client.$transaction` (cron fee-settlement, out of TX_RE
@@ -224,7 +225,7 @@ const KNOWN_UNWRAPPED = [
   'modules/community/controllers/forumController.mjs (createPost — array form)',
   'modules/community/controllers/clubController.mjs (transferLeadership — array form)',
   // Server-side cron / executor paths — no user request waiting to retry.
-  'modules/competition/shows/showController.mjs (executeClosedShows: per-result payout + fee settle)',
+  'modules/competition/shows/showExecutionService.mjs (executeClosedShows: per-result payout + fee settle)',
   'modules/grooms/services/groomSalaryService.mjs (weekly salary cron run)',
   'utils/cronLock.mjs (advisory-lock infra; timeout IS the intended skip path)',
   // Best-effort recovery inside a catch — not the primary mutation path.

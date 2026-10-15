@@ -44,7 +44,7 @@
 
 // Single source of truth for rider cap constants (Equoria-pqdte). Previously
 // these were locally re-declared in simulateCompetition.mjs and
-// showController.mjs#executeClosedShows (with a comment admitting drift —
+// showExecutionService.mjs#executeClosedShows (with a comment admitting drift —
 // `// mirrors riderBonus.mjs BONUS_CAP`). Both engines now consume these via
 // modules/competition/services/competitionScoring.mjs#applyRiderCompatibility,
 // so a change here propagates to every scoring path automatically.

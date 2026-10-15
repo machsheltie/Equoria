@@ -477,7 +477,7 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
 /**
  * Nightly dispatch (Equoria-mwjst): settle every due conformation show — still
  * open, closeDate passed — through executeConformationShow. Called by
- * showController.executeClosedShows, whose ridden scan excludes conformation
+ * showExecutionService.executeClosedShows, whose ridden scan excludes conformation
  * shows so they are never scored as ridden shows.
  *
  * A show another run settled first is skipped. A show that fails is logged and

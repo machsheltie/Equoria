@@ -12,13 +12,12 @@
 export { applyRiderCompatibility } from './services/competitionScoring.mjs';
 export { isValidConformationClass } from './services/conformationShowScoring.mjs';
 export { getResultsByHorse } from './services/resultModelService.mjs';
-// executeClosedShows is an Express handler (req, res) that the nightly jobs
-// (services/jobs/impl/retentionMaintenance.mjs, showExecutionReaper.mjs) call with
-// a synthetic `{ body: { showIds } }`. That is a controller used as a capability
-// (spec: HTTP controllers are never domain capabilities); it predates WS4 and
-// separating the settlement use case from the handler is a behaviour-bearing
-// change outside Equoria-q4uem.4. Kept as-is; reported in the WS4 report.
-export { executeClosedShows } from './shows/showController.mjs';
+// executeClosedShows is the overnight show executor: a service with an optional
+// Express (req, res) signature, called by the nightly jobs
+// (services/jobs/impl/retentionMaintenance.mjs, showExecutionReaper.mjs) with no
+// req/res or a synthetic `{ body: { showIds } }`, and wired by shows/showRoutes.mjs
+// as POST /shows/execute. Moved out of the controller file in WS4 S4 (review M2).
+export { executeClosedShows } from './shows/showExecutionService.mjs';
 
 // Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
 // into the owning module, after which these lines go).

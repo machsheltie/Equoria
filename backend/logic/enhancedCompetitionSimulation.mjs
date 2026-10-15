@@ -4,7 +4,7 @@
  * History: this file used to host `executeEnhancedCompetition`, the on-demand
  * competition executor called by POST /api/competition/execute and
  * POST /api/competition/enter-show. Equoria-kacla removed both routes (410 Gone)
- * and made the nightly cron's `showController.executeClosedShows` the sole
+ * and made the nightly cron's `showExecutionService.executeClosedShows` the sole
  * canonical executor. `executeEnhancedCompetition` survived only as a test
  * target and embedded an implicit-mint money-credit pattern (creator wallet
  * incremented with no SystemAccount debit) that violated the si69u escrow

@@ -29,7 +29,7 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { executeClosedShows } from '../shows/showController.mjs';
+import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 

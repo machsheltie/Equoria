@@ -13,7 +13,8 @@
 import express from 'express';
 import { authenticateToken, requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
 import { csrfProtection } from '../../../middleware/csrf.mjs';
-import { createShow, getShows, enterShow, executeClosedShows } from './showController.mjs';
+import { createShow, getShows, enterShow } from './showController.mjs';
+import { executeClosedShows } from './showExecutionService.mjs';
 
 const router = express.Router();
 

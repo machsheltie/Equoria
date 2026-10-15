@@ -43,7 +43,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, createTestShow, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-import { executeClosedShows } from '../shows/showController.mjs';
+import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import {
   executeConformationShow,
   REWARD_TABLE,

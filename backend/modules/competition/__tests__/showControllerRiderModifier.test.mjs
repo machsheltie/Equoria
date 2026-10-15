@@ -1,5 +1,5 @@
 /**
- * Rider modifier integration test for showController.executeClosedShows
+ * Rider modifier integration test for showExecutionService.executeClosedShows
  *
  * Bug fix for Equoria-5bkh: prior code computed
  *   `score = Math.round(base + luck)`
@@ -18,7 +18,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { executeClosedShows } from '../shows/showController.mjs';
+import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 

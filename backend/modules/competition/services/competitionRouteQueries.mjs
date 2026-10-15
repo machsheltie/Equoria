@@ -152,7 +152,7 @@ export function enterShowDeferredTx({
           // instead of directly to the creator's wallet. At show execute time
           // the accumulated feeEscrow is paid out to the creator IF they still
           // exist; otherwise it's burned via SystemAccount[burn] (handled by
-          // showController.executeClosedShows). Self-entry is still recorded
+          // showExecutionService.executeClosedShows). Self-entry is still recorded
           // into escrow — the escrow is a different counterparty, so the
           // self-entry really is a transfer worth recording.
           await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {

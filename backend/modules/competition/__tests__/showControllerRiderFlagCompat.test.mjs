@@ -1,8 +1,8 @@
 /**
- * Rider flag-compatibility integration test for showController.executeClosedShows
+ * Rider flag-compatibility integration test for showExecutionService.executeClosedShows
  * (Equoria-grys6 — adjacent to simulateCompetition.mjs yzqhj.6).
  *
- * showController.executeClosedShows is the SECOND live competition scoring
+ * showExecutionService.executeClosedShows is the SECOND live competition scoring
  * engine (distinct from logic/simulateCompetition.mjs). yzqhj.6 wired
  * `calculateRiderFlagCompatibility` into simulateCompetition but NOT here, so a
  * hired rider's effectiveness was NOT modulated by the horse's behavioral
@@ -26,7 +26,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { executeClosedShows } from '../shows/showController.mjs';
+import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 

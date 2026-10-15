@@ -4,7 +4,7 @@
  * change to a single constant cannot drift between paths.
  *
  * Pre-pqdte state: BONUS_CAP / PENALTY_CAP were locally re-declared inside
- * both simulateCompetition.mjs and showController.mjs#executeClosedShows.
+ * both simulateCompetition.mjs and showExecutionService.mjs#executeClosedShows.
  * Any change to riderBonus.mjs' BONUS_CAP did NOT propagate; the local
  * mirrors had to be hand-updated, and the original drift was already noted
  * in the showController:489 comment ("mirrors simulateCompetition.mjs
@@ -90,10 +90,16 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
     expect(src).not.toMatch(/const\s+RIDER_PENALTY_CAP\s*=/);
   });
 
-  it('SENTINEL: showController.mjs does NOT locally redeclare cap constants', () => {
-    const src = readFileSync(resolve(ROOT, 'modules/competition/shows/showController.mjs'), 'utf8');
-    expect(src).not.toMatch(/const\s+RIDER_BONUS_CAP\s*=/);
-    expect(src).not.toMatch(/const\s+RIDER_PENALTY_CAP\s*=/);
+  it('SENTINEL: showExecutionService.mjs and showController.mjs do NOT locally redeclare cap constants', () => {
+    // Equoria-q4uem.4 (WS4 S4): the executor moved to showExecutionService.mjs; both files stay pinned.
+    for (const rel of [
+      'modules/competition/shows/showExecutionService.mjs',
+      'modules/competition/shows/showController.mjs',
+    ]) {
+      const src = readFileSync(resolve(ROOT, rel), 'utf8');
+      expect(src).not.toMatch(/const\s+RIDER_BONUS_CAP\s*=/);
+      expect(src).not.toMatch(/const\s+RIDER_PENALTY_CAP\s*=/);
+    }
   });
 
   it('SENTINEL: both engines consume the shared scoring service', () => {
@@ -101,12 +107,12 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
     // shared applyRiderCompatibility helper.
     const simSrc = readFileSync(resolve(ROOT, 'logic/simulateCompetition.mjs'), 'utf8');
     expect(simSrc).toMatch(/applyRiderCompatibility/);
-    // showController's entire cron-path scorer was extracted into the shared
-    // service (Equoria-c7mx0): it imports scoreShowEntries from
-    // competitionScoring.mjs, and scoreShowEntries itself calls
-    // applyRiderCompatibility — asserted below so the chain cannot silently
-    // drop the flag-compat step.
-    const showSrc = readFileSync(resolve(ROOT, 'modules/competition/shows/showController.mjs'), 'utf8');
+    // The executor's entire cron-path scorer was extracted into the shared
+    // service (Equoria-c7mx0): executeClosedShows (showExecutionService.mjs since
+    // Equoria-q4uem.4) imports scoreShowEntries from competitionScoring.mjs, and
+    // scoreShowEntries itself calls applyRiderCompatibility — asserted below so
+    // the chain cannot silently drop the flag-compat step.
+    const showSrc = readFileSync(resolve(ROOT, 'modules/competition/shows/showExecutionService.mjs'), 'utf8');
     expect(showSrc).toMatch(
       /scoreShowEntries.*from '..\/services\/competitionScoring.mjs'|from '..\/services\/competitionScoring.mjs'/,
     );

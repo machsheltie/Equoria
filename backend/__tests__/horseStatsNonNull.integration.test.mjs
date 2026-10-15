@@ -23,6 +23,9 @@ import prisma from '../../packages/database/prismaClient.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
 const SHOW_CONTROLLER = path.join(REPO_ROOT, 'backend', 'modules', 'competition', 'shows', 'showController.mjs');
+// Equoria-q4uem.4 (WS4 S4): the executor (executeClosedShows) moved verbatim from
+// showController.mjs to showExecutionService.mjs; both files stay under the greps.
+const SHOW_EXECUTOR = path.join(REPO_ROOT, 'backend', 'modules', 'competition', 'shows', 'showExecutionService.mjs');
 // Equoria-c7mx0 (eb134bf05) extracted the base-score formula out of
 // showController into the shared scoreShowEntries in competitionScoring.mjs —
 // the positive formula anchor lives THERE now, while both files stay under the
@@ -83,7 +86,8 @@ describe('Horse stat columns NOT NULL (Equoria-507mt)', () => {
     // computes the score.
     const scoringSrc = fs.readFileSync(COMPETITION_SCORING, 'utf8');
     const controllerSrc = fs.readFileSync(SHOW_CONTROLLER, 'utf8');
-    for (const src of [scoringSrc, controllerSrc]) {
+    const executorSrc = fs.readFileSync(SHOW_EXECUTOR, 'utf8');
+    for (const src of [scoringSrc, controllerSrc, executorSrc]) {
       // Match the exact pre-fix shape (h.<stat> ?? 50) anywhere in the file.
       expect(src).not.toMatch(/h\.speed\s*\?\?\s*50/);
       expect(src).not.toMatch(/h\.stamina\s*\?\?\s*50/);
