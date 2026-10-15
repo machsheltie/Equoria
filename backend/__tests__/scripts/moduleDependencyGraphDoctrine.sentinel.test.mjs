@@ -5,23 +5,28 @@
  * by rule, by planting a violation, running the REAL script as a child process, asserting
  * on its exit code and its file:line output, and removing the plant:
  *   clean tree      -> exit 0, >= 20 modules named (non-vacuity)
- *   R1 cycle        -> economy file importing the bank barrel (bank -> economy exists)
- *   R2 deep import  -> unmarked cross-module deep import; a 10th Equoria-hk739-marked one
- *                      trips the shrink-only baseline instead
+ *   R1 cycle        -> economy file importing the bank barrel (bank -> economy exists);
+ *                      also when the import follows a same-line block comment (S5 review M3)
+ *   R2 deep import  -> unmarked cross-module deep import; a marked one that is not pinned
+ *                      in module-dependency-graph-allowlist.json; a stale allow-list entry
+ *   R2 non-literal  -> dynamic import() whose specifier is a template literal, a plain
+ *                      backtick literal or a join(__dirname, …) call (S5 review I1)
+ *   R2 backslash    -> an import specifier containing `\` (S5 review M4)
  *   R3 export *     -> planted module barrel with `export *`
  *   R4 HTTP layer   -> planted module barrel re-exporting a Routes.mjs (any block), a
- *                      /controllers/ file and a bare *Controller.mjs (production block);
- *                      the same controller under the `// Test-consumed only (… Equoria-7t1tn`
- *                      label is classified as test-block and fails only the shrink-only
- *                      name baseline; a route module inside the test block still fails
+ *                      /controllers/ file and a bare *Controller.mjs (production block), a
+ *                      controller reached THROUGH a re-export-only proxy file (S5 review M2);
+ *                      a controller under the `// Test-consumed only (… Equoria-7t1tn` label is
+ *                      classified as test-block and fails only when its name is not pinned;
+ *                      a stale pinned name fails; a route module inside the test block fails
  *   R5 upward       -> module file importing backend/app/routers.mjs
  *   --closure       -> three pure services evaluate no route module or controller file
- *                      (WS4 acceptance criterion 3)
  *
- * Plant hygiene (lesson from Equoria-or7o5): every plant has a unique, per-run file or
- * directory name, every created path is recorded and removed in afterEach (directories
- * included), and the suite asserts after each cleanup and at the end that no plant path
- * remains under backend/modules.
+ * Plant hygiene (lessons from Equoria-or7o5 and S5 review M7): every plant has a unique,
+ * per-run file or directory name; EVERY directory the suite creates is recorded and removed
+ * deepest-first in afterEach; the suite asserts after each cleanup and at the end that no
+ * plant path remains under backend/modules. The allow-list JSON is edited only by two arms,
+ * which restore it byte-for-byte and assert that they did.
  */
 
 import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
@@ -34,18 +39,29 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
 const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-module-dependency-graph.mjs');
+const ALLOWLIST = path.join(REPO_ROOT, 'scripts/doctrine-checks/module-dependency-graph-allowlist.json');
 const MODULES = path.join(REPO_ROOT, 'backend/modules');
 const RUN_ID = `${process.pid}-${randomBytes(4).toString('hex')}`;
 const PLANT_TOKEN = '_ws4graphplant_';
+const PLANT_MODULE = `${PLANT_TOKEN}${RUN_ID}`;
+const TEST_LABEL =
+  "// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests\n// into the owning module, after which these lines go).\n";
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const relPosix = abs => path.relative(REPO_ROOT, abs).split(path.sep).join('/');
 
-/** Every path this suite creates, removed (deepest first) in afterEach. */
+/** Every path this suite creates (files and EVERY new directory), removed deepest-first in afterEach. */
 const planted = [];
 
 function plantFile(relFromModules, content) {
   const abs = path.join(MODULES, relFromModules);
-  const dir = path.dirname(abs);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  // Record every directory that does not exist yet, shallowest first, so the reverse
+  // order of `planted` removes the deepest first and no parent is left behind (M7).
+  const missing = [];
+  for (let dir = path.dirname(abs); !fs.existsSync(dir); dir = path.dirname(dir)) {
+    missing.unshift(dir);
+  }
+  for (const dir of missing) {
+    fs.mkdirSync(dir);
     planted.push(dir);
   }
   fs.writeFileSync(abs, content);
@@ -87,8 +103,28 @@ function runCheck(args = []) {
   return { status: res.status, out: `${res.stdout}\n${res.stderr}` };
 }
 
+/** Run the check with one extra allow-list entry, then restore the file byte-for-byte. */
+function runWithExtraAllowlistEntry(section, key) {
+  const original = fs.readFileSync(ALLOWLIST, 'utf8');
+  try {
+    const json = JSON.parse(original);
+    json[section][key] = {
+      reason: 'Sentinel plant: a pinned entry that no longer matches anything on disk (stale).',
+      issue: 'Equoria-q4uem.4',
+    };
+    fs.writeFileSync(ALLOWLIST, `${JSON.stringify(json, null, 2)}\n`);
+    return runCheck();
+  } finally {
+    fs.writeFileSync(ALLOWLIST, original);
+    expect(fs.readFileSync(ALLOWLIST, 'utf8')).toBe(original);
+  }
+}
+
+const WRITER_NOTE = '// sentinel plant; removed by afterEach\n';
+
 beforeAll(() => {
   expect(fs.existsSync(CHECK)).toBe(true);
+  expect(fs.existsSync(ALLOWLIST)).toBe(true);
   expect(strayPlants()).toEqual([]);
 });
 
@@ -102,10 +138,6 @@ afterAll(() => {
   expect(strayPlants()).toEqual([]);
 });
 
-const PLANT_MODULE = `${PLANT_TOKEN}${RUN_ID}`;
-const TEST_LABEL =
-  "// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests\n// into the owning module, after which these lines go).\n";
-
 describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   it('passes on the current tree and names at least 20 modules (non-vacuity)', () => {
     const res = runCheck();
@@ -116,16 +148,36 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(Number(m[2])).toBeGreaterThanOrEqual(50);
     expect(Number(m[3])).toBeGreaterThan(0);
     expect(res.out).toMatch(/cycles=0 deep-imports=0 .*star-exports=0 http-in-barrel=0 .*upward=0/);
+    expect(res.out).toMatch(/nonliteral-dynamic=0/);
   });
 
   it('R1: FAILS on a planted cross-module cycle and prints it with the plant file:line', () => {
-    // bank -> economy exists today; an economy file importing the bank barrel closes the loop.
     const plant = plantFile(`economy/${PLANT_TOKEN}cycle_${RUN_ID}.mjs`, "import '../bank/index.mjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(/R1 cycle: bank -> economy -> bank/);
-    expect(res.out).toContain(`${path.relative(REPO_ROOT, plant).split(path.sep).join('/')}:1`);
+    expect(res.out).toContain(`${relPosix(plant)}:1`);
     expect(res.out).toMatch(/FAIL — \d+ violation line\(s\)/);
+  });
+
+  it('R1 (M3): an import preceded by a same-line block comment is still seen', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}comment_${RUN_ID}.mjs`,
+      "/* Equoria sentinel plant */ import '../bank/index.mjs';\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(/R1 cycle: bank -> economy -> bank/);
+    expect(res.out).toContain(`${relPosix(plant)}:1`);
+  });
+
+  it('R1 (M3 control): comment-only lines and block-comment bodies never create an edge', () => {
+    plantFile(
+      `economy/${PLANT_TOKEN}commentonly_${RUN_ID}.mjs`,
+      "// import '../bank/index.mjs';\n/*\nimport '../bank/index.mjs';\n*/\nexport const sentinelPlant = 1;\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(0);
   });
 
   it('R2: FAILS on an unmarked cross-module deep import with file:line', () => {
@@ -135,25 +187,82 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     );
     const res = runCheck();
     expect(res.status).toBe(1);
-    const relPlant = path.relative(REPO_ROOT, plant).split(path.sep).join('/');
     expect(res.out).toMatch(
       new RegExp(
-        `R2 ${relPlant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:1 cross-module deep import of backend/modules/bank/controllers/bankController\\.mjs`,
+        `R2 ${esc(relPosix(plant))}:1 cross-module deep import of backend/modules/bank/controllers/bankController\\.mjs`,
       ),
     );
   });
 
-  it('R2 baseline: an Equoria-hk739-marked deep import is honoured but a 10th marked site trips the shrink-only baseline', () => {
+  it('R2 (M1): an Equoria-hk739-marked deep import that is not pinned in the allow-list FAILS by its key', () => {
     const plant = plantFile(
       `economy/${PLANT_TOKEN}marked_${RUN_ID}.mjs`,
       "// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: sentinel plant\nimport { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
     );
     const res = runCheck();
     expect(res.status).toBe(1);
-    const relPlant = path.relative(REPO_ROOT, plant).split(path.sep).join('/');
-    expect(res.out).not.toMatch(new RegExp(`R2 ${relPlant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:2 `)); // not a direct violation
-    expect(res.out).toMatch(/R2-baseline marked deep imports 10 > 9/);
-    expect(res.out).toContain(`${relPlant}:2`);
+    const rel = relPosix(plant);
+    expect(res.out).not.toMatch(new RegExp(`R2 ${esc(rel)}:2 cross-module deep import`)); // honoured as marked…
+    expect(res.out).toMatch(new RegExp(`R2-allowlist ${esc(rel)}:2 marked deep import .*not listed`)); // …but must be pinned
+    expect(res.out).toContain(`"${rel} -> backend/modules/bank/controllers/bankController.mjs"`);
+  });
+
+  it('R2 (M1): a stale deepImports allow-list entry FAILS (the list only shrinks)', () => {
+    const key = `backend/modules/economy/${PLANT_TOKEN}gone_${RUN_ID}.mjs -> backend/modules/bank/index.mjs`;
+    const res = runWithExtraAllowlistEntry('deepImports', key);
+    expect(res.status).toBe(1);
+    expect(res.out).toContain(`R2-allowlist stale entry "${key}"`);
+  });
+
+  it('R2 (I1): FAILS on a dynamic import() whose specifier is a template literal with an expression', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}tpl_${RUN_ID}.mjs`,
+      'export async function load(m) {\n  return import(`../${m}/index.mjs`);\n}\n',
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R2 ${esc(relPosix(plant))}:2 dynamic import\\(\\) whose specifier is not a plain quoted string literal`,
+      ),
+    );
+  });
+
+  it('R2 (I1): FAILS on a dynamic import() with a plain backtick literal', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}tick_${RUN_ID}.mjs`,
+      'export const load = () => import(`../bank/index.mjs`);\n',
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(`R2 ${esc(relPosix(plant))}:1 dynamic import\\(\\) whose specifier is not a plain quoted`),
+    );
+  });
+
+  it('R2 (I1): FAILS on a dynamic import() built with join(__dirname, …)', () => {
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}join_${RUN_ID}.mjs`,
+      "import { join } from 'node:path';\nexport const load = () => import(join(__dirname, '../bank/index.mjs'));\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(`R2 ${esc(relPosix(plant))}:2 dynamic import\\(\\) whose specifier is not a plain quoted`),
+    );
+  });
+
+  it('R2 (I1 control): a dynamic import() with a plain quoted same-module specifier is not flagged', () => {
+    plantFile(`economy/${PLANT_TOKEN}literal_${RUN_ID}.mjs`, "export const load = () => import('./index.mjs');\n");
+    const res = runCheck();
+    expect(res.status).toBe(0);
+  });
+
+  it('R2 (M4): FAILS on an import specifier containing a backslash', () => {
+    const plant = plantFile(`economy/${PLANT_TOKEN}bslash_${RUN_ID}.mjs`, "import '..\\\\bank\\\\index.mjs';\n");
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:1 import specifier contains a backslash`));
   });
 
   it('R3: FAILS on `export *` in a barrel', () => {
@@ -204,13 +313,52 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     );
   });
 
-  it('R4 test block: a controller under the Equoria-7t1tn label is recognised as test-only and fails ONLY the shrink-only name baseline (12 > 11)', () => {
+  it('R4 (M2): a controller reached THROUGH a re-export-only proxy file is caught, with the chain named', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/proxy.mjs`,
+      `${WRITER_NOTE}export { a } from '../controllers/aController.mjs';\n`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 backend/modules/${PLANT_MODULE}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via backend/modules/${PLANT_MODULE}/services/proxy\\.mjs -> backend/modules/${PLANT_MODULE}/controllers/aController\\.mjs`,
+      ),
+    );
+  });
+
+  it('R4 (M2): a proxy that star-exports a controller is caught too', () => {
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
+    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${WRITER_NOTE}export * from '../controllers/aController.mjs';\n`);
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 backend/modules/${PLANT_MODULE}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via .*proxy\\.mjs -> .*aController\\.mjs`,
+      ),
+    );
+  });
+
+  it('R4 (M1): a controller under the Equoria-7t1tn label is classified test-block and FAILS only because its name is not pinned', () => {
     plantFile(`${PLANT_MODULE}/index.mjs`, `${TEST_LABEL}export { d } from './controllers/dController.mjs';\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.out).not.toMatch(new RegExp(`R4 backend/modules/${PLANT_MODULE}/index\\.mjs:3 `)); // not a production-block violation
-    expect(res.out).toMatch(/R4-baseline test-block controller names 12 > 11/);
-    expect(res.out).toContain(`${PLANT_MODULE}.d`);
+    expect(res.out).not.toMatch(
+      new RegExp(`R4 backend/modules/${PLANT_MODULE}/index\\.mjs:3 barrel re-exports controller`),
+    ); // not a production-block violation
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4-allowlist backend/modules/${PLANT_MODULE}/index\\.mjs:3 test-block controller name "${PLANT_MODULE}\\.d" is not listed`,
+      ),
+    );
+  });
+
+  it('R4 (M1): a stale testBlockControllers allow-list entry FAILS (the list only shrinks)', () => {
+    const key = `${PLANT_MODULE}.gone`;
+    const res = runWithExtraAllowlistEntry('testBlockControllers', key);
+    expect(res.status).toBe(1);
+    expect(res.out).toContain(`R4-allowlist stale entry "${key}"`);
   });
 
   it('R4 sentinel block: a `// Sentinel-asserted` label after the test label returns to production rules (no exemption)', () => {
@@ -229,9 +377,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     const plant = plantFile(`economy/${PLANT_TOKEN}up_${RUN_ID}.mjs`, "import '../../app/routers.mjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.out).toContain(
-      `R5 ${path.relative(REPO_ROOT, plant).split(path.sep).join('/')}:1 module file imports the application layer`,
-    );
+    expect(res.out).toContain(`R5 ${relPosix(plant)}:1 module file imports the application layer`);
   });
 
   it('WARN lines never affect the exit code (Q9a)', () => {
@@ -253,5 +399,18 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
       const http = lines.filter(l => /\/routes\/|Routes\.mjs$|\/controllers\/|Controller\.mjs$/.test(l));
       expect(http).toEqual([]);
     }
+  });
+
+  it('plant hygiene (M7): a two-level nested plant leaves neither directory behind after cleanup', () => {
+    const deep = plantFile(`${PLANT_MODULE}/sub/deep_${RUN_ID}.mjs`, WRITER_NOTE);
+    const sub = path.dirname(deep);
+    const top = path.dirname(sub);
+    expect(fs.existsSync(deep)).toBe(true);
+    expect(planted).toEqual(expect.arrayContaining([top, sub, deep]));
+    cleanupPlants();
+    expect(fs.existsSync(deep)).toBe(false);
+    expect(fs.existsSync(sub)).toBe(false);
+    expect(fs.existsSync(top)).toBe(false);
+    expect(strayPlants()).toEqual([]);
   });
 });

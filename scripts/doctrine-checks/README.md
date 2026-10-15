@@ -49,24 +49,41 @@ to fix the underlying problem. It is not a license to weaken the check.
   `describe.skip` / `test.fixme` in any beta-readiness Playwright spec.
 - `check-module-dependency-graph.mjs` — the backend module graph stays a DAG
   of named service contracts (Equoria-q4uem.4, WS4 S5). Production files under
-  `backend/modules/**` only, one parse pass, ~0.3 s. R1 no cross-module cycle
-  (every elementary cycle printed with a file:line per edge); R2 cross-module
-  imports go through `modules/<n>/index.mjs` — a deep import fails unless the
-  line before it carries the existing `eslint-disable-next-line
-no-restricted-imports -- Equoria-hk739` TDZ marker, and the marked sites are a
-  shrink-only baseline (9; S6 removes them and makes R2 strict); R3 no
+  `backend/modules/**` only, one parse pass, well under a second; comments are
+  stripped as spans (strings, template and regex literals kept), so a
+  commented-out import is not an edge and `/* x */ import …` is. R1 no
+  cross-module cycle (every elementary cycle printed with a file:line per edge);
+  R2 cross-module imports go through `modules/<n>/index.mjs` — a deep import
+  fails unless the line before it carries the existing
+  `eslint-disable-next-line no-restricted-imports -- Equoria-hk739` TDZ marker
+  AND its `<file> -> <target>` pair is pinned in
+  `module-dependency-graph-allowlist.json` (`deepImports`; S6 empties it and
+  makes R2 strict); also under R2, a dynamic `import()` whose first argument is
+  not a plain single- or double-quoted string literal fails (the graph cannot
+  see a template literal, a variable or `join(__dirname, …)`), and any import
+  specifier containing a backslash fails (Linux CI cannot resolve it); R3 no
   `export *` in a barrel; R4 no HTTP layer in barrels — a route module
   (`/routes/` or `*Routes.mjs`) is never imported or re-exported, a controller
-  (`/controllers/` directory OR `*Controller.mjs` file name) is re-exported only
-  inside a block opened by the label `// Test-consumed only (… Equoria-7t1tn`,
-  whose controller names are a shrink-only baseline (11; Equoria-7t1tn);
-  `// Sentinel-asserted` returns a barrel to production rules; R5 no module file
-  imports `backend/app/**`. Shared-layer round trips (a `backend/utils|services`
-  file that modules import and that imports a module back) print as `WARN`
-  only, with no exit-code effect and no baseline (controller ruling Q9a).
-  Fewer than 10 modules or 50 files parsed is a failure, not a pass.
-  `--closure <file>` prints a file's transitive import closure. Sentinel-positive:
+  (`/controllers/` directory OR `*Controller.mjs` file name, reached directly or
+  through `export … from` chains of re-export-only files) is re-exported only
+  inside a block opened by the label `// Test-consumed only (… Equoria-7t1tn`
+  and only when `<module>.<name>` is pinned in the allow-list
+  (`testBlockControllers`; Equoria-7t1tn empties it); `// Sentinel-asserted`
+  returns a barrel to production rules; R5 no module file imports
+  `backend/app/**`. Both allow-list sections may only SHRINK: an unpinned
+  exception fails, and so does a pinned entry that no longer matches anything on
+  disk; every entry needs a `reason` and an `issue`. Shared-layer round trips (a
+  `backend/utils|services` file that modules import and that imports a module
+  back) and a barrel-less directory under `modules/` print as `WARN` only, with
+  no exit-code effect and no baseline (controller ruling Q9a). Fewer than 10
+  modules or 50 files parsed, or a missing allow-list file, is a failure, not a
+  pass. `--closure <file>` prints a file's transitive import closure.
+  Sentinel-positive:
   `backend/__tests__/scripts/moduleDependencyGraphDoctrine.sentinel.test.mjs`.
+- `check-horse-name-gated.mjs` reads the import braces with comments stripped and
+  matches the EXACT policy identifiers on the `horses/index.mjs` and
+  `routes/_validators.mjs` paths (WS4 S5 review M5). Sentinel-positive:
+  `backend/__tests__/scripts/horseNameGatedDoctrine.sentinel.test.mjs`.
 - `check-railway-migrate-failfast.mjs` — the Railway start command in
   `.railway/railway.ts` (`start:` / `startCommand:`; plus a legacy
   `railway.toml` `startCommand =` while that file exists) must NOT swallow a
