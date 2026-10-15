@@ -34,8 +34,9 @@ const __dirname = dirname(__filename);
 // to backend/modules/breeding/services/ (commit 404baf191, efonm wave 3). The
 // SERVICE_PATH was not updated to follow the move, so this sentinel was reading
 // a nonexistent path (ENOENT) and silently guarded nothing. The service lives in
-// the BREEDING module, not labs — path crosses from labs/__tests__ up to
-// modules/, then into breeding/services/.
+// the BREEDING module; since Equoria-q4uem.4 this sentinel lives beside it in
+// breeding/__tests__, and SERVICE_PATH climbs to modules/ and back down into
+// breeding/services/, so it resolves to the same file it always guarded.
 const SERVICE_PATH = resolve(__dirname, '..', '..', 'breeding', 'services', 'enhancedGeneticProbabilityService.mjs');
 
 const STAT_FIELDS = [

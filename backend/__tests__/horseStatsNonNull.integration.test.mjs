@@ -35,7 +35,7 @@ const COMPETITION_SCORING = path.join(
   'services',
   'competitionScoring.mjs',
 );
-const ENV_ROUTES = path.join(REPO_ROOT, 'backend', 'modules', 'labs', 'routes', 'environmentalRoutes.mjs');
+const ENV_ROUTES = path.join(REPO_ROOT, 'backend', 'modules', 'traits', 'routes', 'environmentalRoutes.mjs');
 const FOAL_MODEL = path.join(REPO_ROOT, 'backend', 'modules', 'horses', 'models', 'foalModel.mjs');
 
 const TARGET_COLUMNS = [

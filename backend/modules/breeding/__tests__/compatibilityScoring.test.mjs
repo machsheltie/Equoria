@@ -5,7 +5,7 @@
  * No DB, no mocks — these functions take plain objects and return numbers/objects.
  * Asserts numeric output is identical to the pre-split facade behavior so the
  * 2 prod importers (breeding/index barrel + advancedBreedingGeneticsRoutes) and
- * the labs/tests-unit suites stay green.
+ * the enhancedGeneticProbabilityService suites (breeding/__tests__, tests/unit) stay green.
  */
 
 import { describe, it, expect } from '@jest/globals';

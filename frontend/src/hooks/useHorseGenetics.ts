@@ -115,7 +115,7 @@ export interface RawTraitInteractionsData {
  * (backend/modules/traits/routes/enhancedReportingRoutes.mjs)
  * Shape: { horseId, timeline, milestones, criticalPeriods, environmentalEvents }
  * timeline items (= buildTraitTimeline output,
- * backend/services/enhancedReportingService.mjs):
+ * backend/modules/traits/services/enhancedReportingService.mjs):
  *   { date, type, event, method?, context?, groom?, data, ... }
  * NOTE: there is NO `eventType`, `traitName`, `timestamp`, `id`, or `source`
  * field on a timeline item. The discriminator is `type`

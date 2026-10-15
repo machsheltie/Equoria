@@ -4,7 +4,7 @@
  * Pure in-memory calculations extracted from enhancedGeneticProbabilityService.
  * No DB, no mocks — these functions take plain objects and return numbers/arrays.
  * Asserts numeric output is identical to the pre-split facade behavior so the
- * 3 prod importers and the labs suites stay green.
+ * 3 prod importers and the enhancedGeneticProbabilityService suites (breeding/__tests__) stay green.
  */
 
 import { describe, it, expect } from '@jest/globals';

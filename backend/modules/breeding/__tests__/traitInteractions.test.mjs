@@ -5,7 +5,8 @@
  * enhancedGeneticProbabilityService. No DB, no mocks — these functions take plain
  * stallion/mare objects (and their `.traits` bags) and return numbers/arrays.
  * Asserts numeric output is identical to the pre-split facade behavior so the
- * prod importers and the labs/tests-unit importer suites stay green.
+ * prod importers and the enhancedGeneticProbabilityService importer suites
+ * (breeding/__tests__, tests/unit) stay green.
  */
 
 import { describe, it, expect } from '@jest/globals';

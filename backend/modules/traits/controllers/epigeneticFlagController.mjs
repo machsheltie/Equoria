@@ -321,8 +321,9 @@ export async function getCarePatterns(req, res) {
  * GET /api/v1/flags/analytics  (CORE/beta surface — Equoria-yzqhj.7)
  *
  * Decision (Equoria-yzqhj.7): the flag-aggregation analytics previously
- * exposed ONLY behind the experimental labs reporting module
- * (modules/traits/routes/enhancedReportingRoutes.mjs) are PROMOTED to the core
+ * exposed ONLY behind the experimental reporting module (formerly the labs
+ * reporting module, now modules/traits/routes/enhancedReportingRoutes.mjs) are
+ * PROMOTED to the core
  * (beta) epigenetic-flag surface. This handler does NOT reimplement the
  * aggregation — it reuses the existing `analyzeTraitDistribution` +
  * `generateStableOverview` service functions from enhancedReportingService.
