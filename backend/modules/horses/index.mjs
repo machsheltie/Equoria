@@ -1,84 +1,48 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * horses module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from controllers, data, routes, services, tests.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export * from './controllers/breedController.mjs';
-export * from './controllers/horseConformationController.mjs';
-export * from './controllers/horseController.mjs';
-export * from './controllers/horseFeedController.mjs';
-export * from './controllers/horseFoalingController.mjs';
-export * from './controllers/horseGeneticsController.mjs';
-export * from './controllers/horseOverviewController.mjs';
-export * from './controllers/horseStudController.mjs';
-export * from './controllers/horseXpController.mjs';
-export * from './data/breedGeneticProfiles.mjs';
-export * from './data/breedProfileLoader.mjs';
-export * from './routes/_validators.mjs';
-export * from './routes/breedRoutes.mjs';
-// Equoria-7p4xe follow-up: breedPublicRoutes is a default-exported router;
-// star re-exports drop defaults, so the barrel surfaces it by name for the
-// cross-module consumer (backend/app/routers.mjs onboarding mount).
-export { default as breedPublicRoutes } from './routes/breedPublicRoutes.mjs';
-export * from './routes/horseBreedingRoutes.mjs';
-export * from './routes/horseFeedRoutes.mjs';
-export * from './routes/horseFoalRoutes.mjs';
-export * from './routes/horseGeneticsRoutes.mjs';
-export * from './routes/horseHistoryRoutes.mjs';
-export * from './routes/horseRoutes.mjs';
-export * from './routes/horseXpRoutes.mjs';
-export * from './services/breedingColorInheritanceService.mjs';
-export * from './services/breedingColorPredictionService.mjs';
-export * from './services/conformationService.mjs';
-export * from './services/createHorseService.mjs';
-export * from './services/foalingService.mjs';
-export * from './services/gaitService.mjs';
-export * from './services/genotypeGenerationService.mjs';
-export * from './services/hoofConditionDecayService.mjs';
-export * from './services/horseFeedService.mjs';
-export * from './services/horseModelService.mjs';
-// Equoria-kwjav: horseXpModelService relocated from backend/models/horseXpModel.mjs.
-// Explicit named re-export (not `export *`) because horseXpController already
-// exports getHorseXpStatus / allocateStatPoint / getHorseXpHistory as the
-// HTTP-handler versions — a star re-export would ambiguously collide and
-// silently drop those names from the barrel. The model's distinct public
-// symbols are surfaced here; same-module callers deep-import the service.
-export {
-  addXpToHorse,
-  // Equoria-oey96.4: tx-aware core, consumed by the competition awards helper so
-  // the show executor can award horse XP INSIDE its per-entry tx without nesting.
-  addXpToHorseCore,
-  validateStatName,
-  awardCompetitionXp,
-} from './services/horseXpModelService.mjs';
-export * from './services/horseRouteQueries.mjs';
-export * from './services/horseStarterStats.mjs';
-export * from './services/horseTemperamentAnalysis.mjs';
-export * from './services/legacyScoreCalculator.mjs';
-export * from './services/markingGenerationService.mjs';
-export * from './services/personalityEvolutionSystem.mjs';
-export * from './services/phenotypeCalculationService.mjs';
-export * from './services/temperamentService.mjs';
-// Equoria-pq3oi: foalModel relocated from backend/models/foalModel.mjs into the
-// horses module (it was the LAST file in backend/models/, completing that
-// directory's deprecation per CONTRIBUTING.md). Explicit named re-export
-// (mirrors the kwjav horseXpModelService pattern above) so cross-module
-// consumers — breeding/foalController — import the foal-development API through
-// this barrel; same-module tests deep-import ./models/foalModel.mjs directly.
-// Equoria-fr2kg: the player-run activity, enrichment and graduation functions
-// were removed (owner ruling 2026-10-14/15: foal enrichment is the groom's job).
+export { BREED_GENETIC_PROFILES, CANONICAL_BREEDS } from './data/breedGeneticProfiles.mjs';
+export { preloadBreedProfiles } from './data/breedProfileLoader.mjs';
 export { getFoalDevelopment } from './models/foalModel.mjs';
+export { runFoalingJob } from './services/foalingService.mjs';
+export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
+export { decayHoofConditions } from './services/hoofConditionDecayService.mjs';
+export { createHorse, getHorseById } from './services/horseModelService.mjs';
+export { generateStoreStats } from './services/horseStarterStats.mjs';
+export { analyzeHorseTemperament } from './services/horseTemperamentAnalysis.mjs';
+export { addXpToHorseCore } from './services/horseXpModelService.mjs';
+export { generateMarkings } from './services/markingGenerationService.mjs';
+export { calculatePhenotype } from './services/phenotypeCalculationService.mjs';
+export {
+  DEFAULT_TEMPERAMENT_BREED,
+  generateTemperamentWithDefault,
+  getTemperamentCompetitionModifiers,
+  getTemperamentGroomSynergy,
+  getTemperamentTrainingModifiers,
+} from './services/temperamentService.mjs';
 
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as horseRoutes } from './routes/horseRoutes.mjs';
-export { default as breedRoutes } from './routes/breedRoutes.mjs';
+// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
+// into the owning module, after which these lines go).
+export { TEMPERAMENT_TYPES } from './data/breedGeneticProfiles.mjs';
+export {
+  CONFORMATION_REGIONS,
+  calculateOverallConformation,
+  clampScore,
+  generateConformationScores,
+  generateInheritedConformationScores,
+  hasValidConformationScores,
+  validateConformationScores,
+} from './services/conformationService.mjs';
+export { getLegacyScoreDefinitions } from './services/legacyScoreCalculator.mjs';
+export {
+  TEMPERAMENT_GROOM_SYNERGY,
+  TEMPERAMENT_TRAINING_MODIFIERS,
+} from './services/temperamentService.mjs';

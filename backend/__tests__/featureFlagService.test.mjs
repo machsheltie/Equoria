@@ -5,15 +5,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { isFeatureEnabled, getAllFlags, getEvaluationStats } from '../modules/admin/index.mjs';
 import {
-  isFeatureEnabled,
   getFeatureVariant,
-  getAllFlags,
-  getEvaluationStats,
   resetEvaluationStats,
   overrideFlag,
   clearOverrides,
-} from '../modules/admin/index.mjs';
+} from '../modules/admin/services/featureFlagService.mjs';
 
 let originalEnv;
 

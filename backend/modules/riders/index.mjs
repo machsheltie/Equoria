@@ -1,25 +1,22 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * riders module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from controllers, routes, services, tests.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-// Equoria-oey96.8: rider roster-cap config (RIDER_ROSTER_CAP_BY_STABLE_LEVEL,
-// getRiderRosterCap) — the canonical source for the stable-level-scaled cap.
-export * from './config/riderConfig.mjs';
-export * from './controllers/riderController.mjs';
-export * from './controllers/riderMarketplaceController.mjs';
-export * from './routes/riderRoutes.mjs';
-export * from './services/riderMarketplace.mjs';
+// No production consumer imports this module through the barrel today.
 
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as riderRoutes } from './routes/riderRoutes.mjs';
+// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
+// into the owning module, after which these lines go).
+export {
+  RIDER_MARKETPLACE_CONFIG,
+  generateRandomRider,
+  generateRiderMarketplace,
+  getRiderRefreshCost,
+  riderMarketplaceNeedsRefresh,
+} from './services/riderMarketplace.mjs';

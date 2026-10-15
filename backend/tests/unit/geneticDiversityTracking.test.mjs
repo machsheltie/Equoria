@@ -19,16 +19,20 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import {
   calculateAdvancedGeneticDiversity,
-  trackPopulationGeneticHealth,
-  calculateDetailedInbreedingCoefficient,
-  generateOptimalBreedingRecommendations,
-  analyzeGeneticTrends,
   calculateEffectivePopulationSize,
   identifyGeneticFounders,
-  assessBreedingPairCompatibility,
+} from '../../modules/breeding/services/genetics/geneticDiversityMetrics.mjs';
+import {
+  trackPopulationGeneticHealth,
+  analyzeGeneticTrends,
   trackGeneticDiversityOverTime,
   generateGeneticDiversityReport,
-} from '../../modules/breeding/index.mjs';
+} from '../../modules/breeding/services/genetics/geneticDiversityTrackingService.mjs';
+import {
+  calculateDetailedInbreedingCoefficient,
+  generateOptimalBreedingRecommendations,
+  assessBreedingPairCompatibility,
+} from '../../modules/breeding/services/genetics/breedingCompatibility.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';

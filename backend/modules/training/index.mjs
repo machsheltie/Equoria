@@ -1,26 +1,13 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * training module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from controllers, routes, services, tests.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export * from './controllers/enhancedMilestoneController.mjs';
-export * from './controllers/trainingController.mjs';
-export * from './routes/enhancedMilestoneRoutes.mjs';
-export * from './routes/trainingRoutes.mjs';
-export * from './services/trainingAnalyticsService.mjs';
-// Equoria-kwjav: trainingModelService relocated from backend/models/trainingModel.mjs.
-export * from './services/trainingModelService.mjs';
-
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as trainingRoutes } from './routes/trainingRoutes.mjs';
-export { default as enhancedMilestoneRoutes } from './routes/enhancedMilestoneRoutes.mjs';
+export { trainingAnalyticsService } from './services/trainingAnalyticsService.mjs';
+export { getAnyRecentTraining, getTrainableHorses } from './services/trainingModelService.mjs';

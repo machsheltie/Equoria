@@ -1,41 +1,26 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * competition module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from controllers, routes, services, shows, tests.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export * from './controllers/competitionController.mjs';
-export * from './controllers/conformationShowController.mjs';
-export * from './routes/competitionRoutes.mjs';
-export * from './routes/competitionResultsRoutes.mjs';
-export * from './routes/conformationShowRoutes.mjs';
-export * from './services/competitionRouteQueries.mjs';
-export * from './services/competitionScoring.mjs';
-export * from './services/conformationShowService.mjs';
-// Equoria-kwjav: resultModelService relocated from backend/models/resultModel.mjs.
-export * from './services/resultModelService.mjs';
-export * from './shows/showController.mjs';
-export * from './shows/showRoutes.mjs';
-// Equoria-hr0jw: the fee-settlement half of the show money lifecycle. Its
-// counterpart (the entry that fills the escrow) already reaches other modules
-// through `enterShow` above; settlement had stayed module-private only because
-// its callers happened to be in-module. Surfaced so a cross-module caller can
-// drain a show's escrow through production code instead of hand-rolling the
-// ledger moves.
-export { settleShowFeeEscrow } from './shows/showEscrowTx.mjs';
+export { applyRiderCompatibility } from './services/competitionScoring.mjs';
+export { isValidConformationClass } from './services/conformationShowScoring.mjs';
+export { getResultsByHorse } from './services/resultModelService.mjs';
+// executeClosedShows is an Express handler (req, res) that the nightly jobs
+// (services/jobs/impl/retentionMaintenance.mjs, showExecutionReaper.mjs) call with
+// a synthetic `{ body: { showIds } }`. That is a controller used as a capability
+// (spec: HTTP controllers are never domain capabilities); it predates WS4 and
+// separating the settlement use case from the handler is a behaviour-bearing
+// change outside Equoria-q4uem.4. Kept as-is; reported in the WS4 report.
+export { executeClosedShows } from './shows/showController.mjs';
 
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as competitionRoutes } from './routes/competitionRoutes.mjs';
-// Equoria-oey96.28: the results mark-viewed write, mounted at
-// /competition/results ahead of /competition (see app/routers.mjs).
-export { default as competitionResultsRoutes } from './routes/competitionResultsRoutes.mjs';
-export { default as showRoutes } from './shows/showRoutes.mjs';
+// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
+// into the owning module, after which these lines go).
+export { createShow, enterShow } from './shows/showController.mjs';
+export { settleShowFeeEscrow } from './shows/showEscrowTx.mjs';

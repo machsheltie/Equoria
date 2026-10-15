@@ -28,7 +28,10 @@ import { param, validationResult } from 'express-validator';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { requireOwnership } from '../../middleware/ownership.mjs';
 import { queryRateLimiter } from '../../middleware/rateLimiting.mjs';
-import { validateHorseId, validateUserId } from '../../modules/horses/index.mjs';
+// Equoria-q4uem.4 (WS4 S4, ruling 4): request validators are HTTP-layer helpers,
+// not domain capabilities, so the horses barrel does not export them; the
+// application layer imports the route-local validators file directly.
+import { validateHorseId, validateUserId } from '../../modules/horses/routes/_validators.mjs';
 import { getTrainableHorses, trainingAnalyticsService } from '../../modules/training/index.mjs';
 import { generateBreedingData } from '../../modules/breeding/index.mjs';
 import { generateTraitTimeline } from '../../modules/traits/index.mjs';

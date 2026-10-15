@@ -1,34 +1,16 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * auth module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from constants, controllers, routes, services, tests.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export * from './constants/authConstants.mjs';
-export * from './controllers/authController.mjs';
-export * from './controllers/emailChangeController.mjs';
-export * from './controllers/emailVerificationController.mjs';
-export * from './controllers/mfaController.mjs';
-export * from './controllers/onboardingController.mjs';
-export * from './controllers/passwordController.mjs';
-export * from './controllers/profileController.mjs';
-export * from './routes/authRoutes.mjs';
-export * from './routes/authenticatedAuthRoutes.mjs';
-export * from './services/authSessionService.mjs';
-export * from './services/emailChangeService.mjs';
-export * from './services/mfaLockoutService.mjs';
-export * from './services/mfaReplayProtectionService.mjs';
-export * from './services/mfaService.mjs';
-export * from './services/onboardingService.mjs';
+export { ALLOWED_PREFERENCE_KEYS, STARTER_CRAFTING_MATERIALS } from './constants/authConstants.mjs';
 
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as authRoutes } from './routes/authRoutes.mjs';
+// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
+// into the owning module, after which these lines go).
+export { login, register } from './controllers/authController.mjs';

@@ -13,13 +13,13 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
+import { generateStoreStats } from '../modules/horses/index.mjs';
 import {
   STAT_KEYS,
   TOTAL_STAT_CAP,
   sampleStat,
   clampStatsToTotalCap,
-  generateStoreStats,
-} from '../modules/horses/index.mjs';
+} from '../modules/horses/services/horseStarterStats.mjs';
 
 // ─── STAT_KEYS ─────────────────────────────────────────────────────────────────
 

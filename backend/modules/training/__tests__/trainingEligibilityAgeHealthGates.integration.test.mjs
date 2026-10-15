@@ -22,7 +22,7 @@
 
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { canTrain } from '../../training/index.mjs';
+import { canTrain } from '../controllers/trainingController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const GAME_YEAR_MS = 7 * 24 * 60 * 60 * 1000;

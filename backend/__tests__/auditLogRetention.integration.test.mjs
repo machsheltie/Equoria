@@ -11,13 +11,13 @@
 import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { purgeExpiredAuditLogs } from '../modules/admin/index.mjs';
 import {
-  purgeExpiredAuditLogs,
   computeCutoff,
   getRetentionDays,
   DEFAULT_RETENTION_DAYS,
   MIN_RETENTION_DAYS,
-} from '../modules/admin/index.mjs';
+} from '../modules/admin/services/auditLogRetentionService.mjs';
 
 // Unique sentinel so fixture rows never collide with real audit traffic and
 // cleanup stays scoped (startsWith pattern).

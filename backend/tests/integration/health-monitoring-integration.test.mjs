@@ -41,10 +41,11 @@ import { body } from 'express-validator';
 import { register, login } from '../../modules/auth/index.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
-import { handlePing, handleHealthCheck } from '../../modules/health/index.mjs';
+import { handlePing, handleHealthCheck } from '../../modules/health/controllers/pingController.mjs';
 import memoryManagementRoutes from '../../modules/admin/routes/memoryManagementRoutes.mjs';
-import { documentationRoutes, userDocumentationRoutes } from '../../modules/docs/index.mjs';
-import { epigeneticFlagRoutes } from '../../modules/traits/index.mjs';
+import documentationRoutes from '../../modules/docs/routes/documentationRoutes.mjs';
+import userDocumentationRoutes from '../../modules/docs/routes/userDocumentationRoutes.mjs';
+import epigeneticFlagRoutes from '../../modules/traits/routes/epigeneticFlagRoutes.mjs';
 import {
   initializeMemoryManagement,
   shutdownMemoryManagement,

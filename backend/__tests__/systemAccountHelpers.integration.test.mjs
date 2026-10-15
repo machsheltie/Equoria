@@ -20,8 +20,8 @@ import {
   SYSTEM_ACCOUNT_BURN,
   creditSystemAccount,
   debitSystemAccountOrThrow,
-  InsufficientSystemAccountBalanceError,
 } from '../modules/economy/index.mjs';
+import { InsufficientSystemAccountBalanceError } from '../modules/economy/services/financialLedgerService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-si69u-helpers';
 

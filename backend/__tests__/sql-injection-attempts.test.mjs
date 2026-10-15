@@ -28,7 +28,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
-import { createHorseFromRequest } from '../modules/horses/index.mjs';
+import { createHorseFromRequest } from '../modules/horses/services/createHorseService.mjs';
 
 describe('SQL Injection Attempts Integration Tests', () => {
   let testUser;

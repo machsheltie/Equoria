@@ -1,18 +1,13 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * events module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from controllers, routes.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export * from './controllers/eventStreamController.mjs';
-export * from './routes/eventRoutes.mjs';
-// Equoria-94z3m: re-export the default router under a named symbol so
-// cross-module consumers (app.mjs) can mount it through the barrel.
-// `export *` does not forward default exports.
-export { default as eventRoutes } from './routes/eventRoutes.mjs';
+// No production consumer imports this module through the barrel today.
+export {};

@@ -22,8 +22,8 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { decayHoofConditions } from '../modules/horses/index.mjs';
 import {
-  decayHoofConditions,
   getDecayDays,
   expectedLevel,
   levelOf,
@@ -31,7 +31,7 @@ import {
   MIN_DECAY_DAYS,
   HOOF_CONDITION_LADDER,
   EXCELLENT_LEVEL,
-} from '../modules/horses/index.mjs';
+} from '../modules/horses/services/hoofConditionDecayService.mjs';
 
 const SENTINEL = `TestFixture-HoofDecay-${randomBytes(6).toString('hex')}`;
 const DECAY_DAYS = 30;

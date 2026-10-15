@@ -14,7 +14,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/glo
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { createTestUser } from '../helpers/testAuth.mjs';
-import { forceExpireMarketplace } from '../../modules/grooms/index.mjs';
+import { forceExpireMarketplace } from '../../modules/grooms/controllers/groomMarketplaceController.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import app from '../../app.mjs';

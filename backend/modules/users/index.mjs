@@ -1,39 +1,31 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * users module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from controllers, routes, services, tests.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export * from './controllers/gdprAccountController.mjs';
-export * from './controllers/nextActionsController.mjs';
-export * from './controllers/userController.mjs';
-export * from './controllers/wyagController.mjs';
-export * from './routes/gdprAccountRoutes.mjs';
-export * from './routes/nextActionsRoutes.mjs';
-export * from './routes/userRoutes.mjs';
-export * from './routes/wyagRoutes.mjs';
-export * from './services/gdprAccountService.mjs';
-export * from './services/settingsValidation.mjs';
-export * from './services/userDocumentationService.mjs';
-// Equoria-kwjav: userModelService + xpLogModelService relocated from
-// backend/models/{userModel,xpLogModel}.mjs into the users domain module.
-export * from './services/userModelService.mjs';
-export * from './services/xpLogModelService.mjs';
-export * from './services/userPrizeHistoryService.mjs';
-// Equoria-oey96.2: shared competition-stats aggregation + bred-foal count.
-export * from './services/userStatsService.mjs';
+export {
+  getAllDocuments,
+  getDocument,
+  getDocumentationAnalytics,
+  getTableOfContents,
+  getUserDocumentationService,
+  searchDocumentation,
+} from './services/userDocumentationService.mjs';
+export {
+  addXpToUser,
+  addXpToUserCore,
+  createUser,
+  getStableLevel,
+  getUserById,
+  getUserWithHorses,
+} from './services/userModelService.mjs';
 
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as userRoutes } from './routes/userRoutes.mjs';
-export { default as gdprAccountRoutes } from './routes/gdprAccountRoutes.mjs';
-export { default as nextActionsRoutes } from './routes/nextActionsRoutes.mjs';
-export { default as wyagRoutes } from './routes/wyagRoutes.mjs';
+// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
+// into the owning module, after which these lines go).
+export { eraseUserAccount } from './services/gdprAccountService.mjs';

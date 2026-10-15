@@ -17,7 +17,7 @@
 
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
-import { generateInteractionMatrix } from '../../modules/traits/index.mjs';
+import { generateInteractionMatrix } from '../../modules/traits/services/traitInteractionMatrix.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';

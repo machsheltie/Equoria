@@ -84,6 +84,9 @@ const BARREL_MODULES = [
   'leaderboards',
   'marketplace',
   'riders',
+  // Equoria-q4uem.4 (WS4 S4): staff was missing from this list, so its internals
+  // were importable cross-module without a lint error. No consumer did so.
+  'staff',
   'trainers',
   'training',
   'traits',

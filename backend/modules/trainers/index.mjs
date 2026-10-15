@@ -1,31 +1,33 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * trainers module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from controllers, routes, services, tests.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-// Equoria-oey96.8: trainer roster-cap config (TRAINER_ROSTER_CAP_BY_STABLE_LEVEL,
-// getTrainerRosterCap) — the canonical source for the stable-level-scaled cap.
-export * from './config/trainerConfig.mjs';
-export * from './controllers/trainerController.mjs';
-export * from './controllers/trainerMarketplaceController.mjs';
-export * from './routes/trainerRoutes.mjs';
-export * from './services/riderTrainerProgressionService.mjs';
-export * from './services/riderTrainerRetirementService.mjs';
-export * from './services/trainerDiscoveryService.mjs';
-export * from './services/trainerMarketplace.mjs';
-// Equoria-oey96.7: trainer training-modifier (computeTrainerModifiers) — consumed
-// cross-module by training/controllers/trainingController.mjs via this barrel.
-export * from './services/trainerModifiers.mjs';
+export {
+  awardRiderCompetitionXP,
+  awardTrainerSessionXP,
+  incrementWeeklyCareerWeeks,
+} from './services/riderTrainerProgressionService.mjs';
+export { processRiderTrainerRetirement } from './services/riderTrainerRetirementService.mjs';
+export { computeTrainerModifiers } from './services/trainerModifiers.mjs';
 
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as trainerRoutes } from './routes/trainerRoutes.mjs';
+// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
+// into the owning module, after which these lines go).
+export {
+  TRAINER_MARKETPLACE_CONFIG,
+  generateRandomTrainer,
+  generateTrainerMarketplace,
+  getTrainerRefreshCost,
+  trainerMarketplaceNeedsRefresh,
+} from './services/trainerMarketplace.mjs';
+export {
+  TRAINER_BONUS_CAP,
+  TRAINER_CANONICAL_TEMPERAMENTS,
+  TRAINER_PENALTY_CAP,
+} from './services/trainerModifiers.mjs';

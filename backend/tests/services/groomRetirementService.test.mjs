@@ -30,15 +30,15 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 // Equoria-ypb7d.1: see the note on the testGroom fixture below.
 const FIXTURE_START_AGE = 20;
 import { randomBytes } from 'node:crypto';
+import { processWeeklyCareerProgression } from '../../modules/grooms/index.mjs';
 import {
   incrementCareerWeeks,
   checkRetirementEligibility,
   processRetirement,
   getRetirementStatistics,
-  processWeeklyCareerProgression,
   RETIREMENT_REASONS,
   CAREER_CONSTANTS,
-} from '../../modules/grooms/index.mjs';
+} from '../../modules/grooms/services/groomRetirementService.mjs';
 // Equoria-m9lz1 fix round 3: the schedule module is imported BY PATH, never via
 // the grooms barrel. `ensureRetirementSchedule` returns the hidden retirement
 // age, and the barrel published it to the whole backend

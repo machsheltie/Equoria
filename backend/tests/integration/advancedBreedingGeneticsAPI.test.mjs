@@ -14,7 +14,7 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../helpers/testAuth.mjs';
-import { createHorseFromRequest } from '../../modules/horses/index.mjs';
+import { createHorseFromRequest } from '../../modules/horses/services/createHorseService.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';

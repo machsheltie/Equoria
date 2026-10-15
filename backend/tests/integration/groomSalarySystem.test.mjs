@@ -9,7 +9,9 @@ import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
-import { calculateWeeklyFee, processWeeklySalaries, calculateUserSalaryCost } from '../../modules/grooms/index.mjs';
+import { processWeeklySalaries } from '../../modules/grooms/index.mjs';
+import { calculateWeeklyFee } from '../../modules/grooms/services/groomFeeBasisService.mjs';
+import { calculateUserSalaryCost } from '../../modules/grooms/services/groomSalaryReadService.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture

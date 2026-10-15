@@ -1,30 +1,28 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * economy module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from farrier, feedShop, inventory, services, tackShop, vet.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export * from './services/financialLedgerService.mjs';
-// Equoria-94z3m: re-export tackShop public surface so cross-module consumers
-// (e.g. logic/simulateCompetition.mjs#resolveTackBonus) go through the barrel.
-export * from './tackShop/controllers/tackShopController.mjs';
-// Equoria-v8l96.2: surface feedShop public surface so cross-module consumers
-// (horses/horseFeedController + horseFeedService import FEED_CATALOG) go
-// through the barrel instead of deep-importing the feedShop controller.
-export * from './feedShop/controllers/feedShopController.mjs';
+export { FEED_CATALOG } from './feedShop/services/feedCatalog.mjs';
+export {
+  InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
+  SYSTEM_ACCOUNT_SHOW_ESCROW,
+  creditSystemAccount,
+  debitMoneyOrThrow,
+  debitSystemAccountOrThrow,
+  getTransactionsForUser,
+  recordTransaction,
+  recordTransactionTx,
+} from './services/financialLedgerService.mjs';
+export { TACK_INVENTORY, resolveTackBonus } from './tackShop/services/tackInventory.mjs';
 
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as vetRoutes } from './vet/routes/vetRoutes.mjs';
-export { default as tackShopRoutes } from './tackShop/routes/tackShopRoutes.mjs';
-export { default as farrierRoutes } from './farrier/routes/farrierRoutes.mjs';
-export { default as feedShopRoutes } from './feedShop/routes/feedShopRoutes.mjs';
-export { default as inventoryRoutes } from './inventory/routes/inventoryRoutes.mjs';
+// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
+// into the owning module, after which these lines go).
+export { purchaseTackItem, unequipDecoration } from './tackShop/controllers/tackShopController.mjs';

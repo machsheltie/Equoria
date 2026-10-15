@@ -34,11 +34,13 @@ import {
   awardRiderCompetitionXP,
   awardTrainerSessionXP,
   incrementWeeklyCareerWeeks,
+} from '../modules/trainers/index.mjs';
+import {
   calculateLevel,
   RIDER_XP_REWARDS,
   RIDER_PRESTIGE_BUMPS,
   TRAINER_XP_REWARDS,
-} from '../modules/trainers/index.mjs';
+} from '../modules/trainers/services/riderTrainerProgressionService.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup. The prior silent no-op catch arms
 // kept the suite green even if a rider/trainer/user delete failed, leaking
 // fixtures into the canonical DB (CLAUDE.md §2).

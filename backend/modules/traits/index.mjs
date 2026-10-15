@@ -1,40 +1,25 @@
 /**
- * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
+ * traits module public API (named-export service contract).
  *
- * Cross-module imports MUST go through this barrel. Reaching into another
- * module's internals (controllers/services/routes/models/data/...) is
- * ENFORCED against by ESLint (no-restricted-imports, per-module barrel
- * boundary blocks in backend/eslint.config.mjs, Equoria-v8l96.4). Same-module
- * deep imports remain allowed.
- *
- * Public API: exports from controllers, routes, services, tests.
+ * Equoria-q4uem.4 (WS4 S4): this barrel lists exactly the names other modules, the
+ * application layer (backend/app) and repository scripts import. Route modules are
+ * wired only by backend/app/routers.mjs and are not exported here; HTTP controllers
+ * are not domain capabilities and are not exported for production use. Cross-module
+ * imports still go through this file (ESLint, CONTRIBUTING.md "Module public API
+ * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export * from './controllers/epigeneticFlagController.mjs';
-export * from './controllers/traitController.mjs';
-export * from './routes/advancedEpigeneticRoutes.mjs';
-export * from './routes/epigeneticFlagRoutes.mjs';
-export * from './routes/epigeneticTraitRoutes.mjs';
-export * from './routes/traitDiscoveryRoutes.mjs';
-export * from './routes/traitRoutes.mjs';
-export * from './routes/ultraRareTraitRoutes.mjs';
-export * from './services/epigeneticTraitQueries.mjs';
-export * from './services/legacyScoreTraitCalculator.mjs';
-export * from './services/temporaryFlagSystem.mjs';
-export * from './services/traitHistoryService.mjs';
-export * from './services/traitInteractionMatrix.mjs';
-export * from './services/traitRevelationAnalyticsService.mjs';
-export * from './services/traitTimelineService.mjs';
-export * from './services/ultraRareTraitEvaluationService.mjs';
-export * from './services/ultraRareTraitQueries.mjs';
+export { calculateTraitScore } from './services/legacyScoreTraitCalculator.mjs';
+export { sweepExpiredTemporaryFlags } from './services/temporaryFlagSystem.mjs';
+export { logTraitAssignment } from './services/traitHistoryService.mjs';
+export { getTraitRevelationAnalytics } from './services/traitRevelationAnalyticsService.mjs';
+export { generateTraitTimeline } from './services/traitTimelineService.mjs';
+export { evaluateAndPersistUltraRareTraits } from './services/ultraRareTraitEvaluationService.mjs';
+export { recordLineageAnalysisForPair } from './services/ultraRareTraitQueries.mjs';
 
-// Equoria-v8l96.1: surface route default-exports through the barrel so the
-// app composition root (app/routers.mjs) imports them via the module public
-// API instead of the retired backend/routes/*.mjs compat shims. `export *`
-// above re-exports NAMED symbols only; a default needs an explicit re-export.
-export { default as traitRoutes } from './routes/traitRoutes.mjs';
-export { default as traitDiscoveryRoutes } from './routes/traitDiscoveryRoutes.mjs';
-export { default as epigeneticTraitRoutes } from './routes/epigeneticTraitRoutes.mjs';
-export { default as epigeneticFlagRoutes } from './routes/epigeneticFlagRoutes.mjs';
-export { default as ultraRareTraitRoutes } from './routes/ultraRareTraitRoutes.mjs';
-export { default as advancedEpigeneticRoutes } from './routes/advancedEpigeneticRoutes.mjs';
+// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
+// into the owning module, after which these lines go).
+export {
+  calculateGroomCareConsistency,
+  getTraitScoringDefinitions,
+} from './services/legacyScoreTraitCalculator.mjs';

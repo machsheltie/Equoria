@@ -52,11 +52,16 @@ import { describe, it, expect } from '@jest/globals';
 // before initialization" at module-link time and the whole suite fails to load.
 import * as authController from '../../modules/auth/controllers/authController.mjs';
 import * as authBarrel from '../../modules/auth/index.mjs';
+// Equoria-q4uem.4 (WS4 S4, controller ruling Q5): barrels no longer surface route
+// defaults (old contract: barrels surface route defaults; new ruling: they do
+// not), so the two route modules that were the cycle re-entry points are imported
+// statically here, which keeps the module-link-time TDZ probe intact.
+import authRoutes from '../../modules/auth/routes/authRoutes.mjs';
+import competitionRoutes from '../../modules/competition/routes/competitionRoutes.mjs';
 import * as onboardingService from '../../modules/auth/services/onboardingService.mjs';
 import * as onboardingController from '../../modules/auth/controllers/onboardingController.mjs';
 import conformationShowRoutes from '../../modules/competition/routes/conformationShowRoutes.mjs';
 import * as conformationShowScoring from '../../modules/competition/services/conformationShowScoring.mjs';
-import * as competitionBarrel from '../../modules/competition/index.mjs';
 import * as horsesBarrel from '../../modules/horses/index.mjs';
 
 describe('module-import TDZ circular-dependency sentinel (Equoria-hk739)', () => {
@@ -68,9 +73,9 @@ describe('module-import TDZ circular-dependency sentinel (Equoria-hk739)', () =>
     expect(typeof authController.buildStarterSettings).toBe('function');
   });
 
-  it('auth barrel surfaces authRoutes (the cycle re-entry point) and register', () => {
+  it('auth barrel surfaces register; authRoutes (the cycle re-entry point) links as a route module', () => {
     expect(typeof authBarrel.register).toBe('function');
-    expect(typeof authBarrel.authRoutes).toBe('function'); // express Router default
+    expect(typeof authRoutes).toBe('function'); // express Router default, imported directly (WS4 S4)
   });
 
   it('auth onboarding service + controller imported their leaf horses deps', () => {
@@ -84,9 +89,9 @@ describe('module-import TDZ circular-dependency sentinel (Equoria-hk739)', () =>
     expect(Array.isArray(conformationShowRoutes.stack)).toBe(true);
   });
 
-  it('conformationShowScoring + competition barrel evaluated cleanly', () => {
+  it('conformationShowScoring + competitionRoutes evaluated cleanly', () => {
     expect(typeof conformationShowScoring.CONFORMATION_SHOW_CONFIG).toBe('object');
-    expect(typeof competitionBarrel.competitionRoutes).toBe('function');
+    expect(typeof competitionRoutes).toBe('function'); // route module imported directly (WS4 S4)
   });
 
   it('horses barrel still surfaces the leaf symbols for every OTHER cross-module consumer', () => {

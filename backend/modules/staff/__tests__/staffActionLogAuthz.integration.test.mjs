@@ -21,7 +21,7 @@ const LOG = '/api/v1/staff/log';
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('staffauthz');
 
-const { recordStaffActionTx, recordStaffFailure } = staff;
+const { recordStaffActionTx, recordStaffFailure } = logService;
 
 const entryFor = (actor, overrides = {}) => ({
   actorId: actor.id,
