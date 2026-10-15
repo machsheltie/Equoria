@@ -1,8 +1,12 @@
 /**
  * Cross-domain reads under the /users prefix (application query layer, Equoria-q4uem.4 / WS4 S3).
  *
- * Mounted by backend/app/routers.mjs at /users immediately BEFORE the users module router, so the
- * route keeps its URL, middleware chain and first-match position. Moved verbatim from
+ * Mounted by backend/app/routers.mjs at /users immediately AFTER the users module router (unlike
+ * horseQueryRoutes, which mounts before horseRoutes): at base userRoutes registered GET /:id/progress
+ * and GET /:id/activity before GET /dashboard/:userId, so GET /users/dashboard/progress and
+ * /users/dashboard/activity matched /:id/progress and /:id/activity. Mounting this router after
+ * userRoutes preserves that first-match order; /dashboard/<uuid> falls through userRoutes (no
+ * two-segment pattern there matches it) and lands here. Moved verbatim from
  * backend/modules/users/routes/userRoutes.mjs; requireSelfAccess, formerly local to that file, is
  * shared from backend/middleware/ownership.mjs.
  *

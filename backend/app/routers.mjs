@@ -109,9 +109,13 @@ import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S3): application-level cross-domain reads. These routers
 // hold the /horses and /users routes that compose data from more than one
 // domain (overview, history, trainable horses, training history, breeding
-// data, trait card, dashboard). They mount at the same prefixes immediately
-// BEFORE the module routers so every URL, chain and first-match position is
-// unchanged; the domains no longer import each other for them.
+// data, trait card, dashboard). They share a prefix with the module routers:
+// horseQueryRoutes mounts BEFORE horseRoutes, userQueryRoutes mounts AFTER
+// userRoutes, because at base GET /:id/progress and GET /:id/activity preceded
+// GET /dashboard/:userId, so /users/dashboard/progress|activity must keep
+// matching the module routes (see the mount block below). Every URL, executed
+// chain and first-match position is unchanged; the domains no longer import
+// each other for these reads.
 import horseQueryRoutes from './queries/horseQueryRoutes.mjs';
 import userQueryRoutes from './queries/userQueryRoutes.mjs';
 
