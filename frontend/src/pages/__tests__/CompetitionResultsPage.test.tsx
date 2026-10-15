@@ -43,6 +43,7 @@ import { MemoryRouter, Routes, Route, TestRouter, MockAuthProvider } from '@/tes
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/msw/server';
 import CompetitionResultsPage from '../CompetitionResultsPage';
+import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const STATS_PATH = `${base}/api/v1/users/123/competition-stats`;
@@ -77,16 +78,13 @@ vi.mock('@/components/competition/CompetitionResultsList', () => ({
 // Mock the results modal component (legitimate child stub — the real modal
 // pulls in useHorseLevelInfo + its own network surface).
 vi.mock('@/components/competition/CompetitionResultsModal', () => ({
-  default: vi.fn(({ isOpen, onClose, competitionId, onViewPerformance }) => {
+  default: vi.fn(({ isOpen, onClose, competitionId }) => {
     if (!isOpen) return null;
     return (
       <div data-testid="competition-results-modal" role="dialog">
         <span data-testid="modal-competition-id">{competitionId}</span>
         <button data-testid="close-modal-button" onClick={onClose}>
           Close
-        </button>
-        <button data-testid="view-performance-button" onClick={() => onViewPerformance?.(456)}>
-          View Performance
         </button>
       </div>
     );
@@ -393,29 +391,23 @@ describe('CompetitionResultsPage', () => {
       });
     });
 
-    it('performance breakdown opens with correct IDs', async () => {
+    // Owner ruling R5 (2026-10-15, Equoria-q4uem.10): no score breakdown is
+    // shown, so the page no longer passes a "view performance" action. Old
+    // contract: 'performance breakdown opens with correct IDs'.
+    it('does not hand the results modal a performance-breakdown action', async () => {
       const user = userEvent.setup();
       renderPageSimple();
 
-      // Open results modal first
       await user.click(screen.getByTestId('mock-result-item'));
 
       await waitFor(() => {
         expect(screen.getByTestId('competition-results-modal')).toBeInTheDocument();
       });
-
-      // Click view performance
-      await user.click(screen.getByTestId('view-performance-button'));
-
-      // Performance view state should be set (we verify through test ID or state change)
-      await waitFor(() => {
-        // The page should track performance view state internally
-        // This is verified by the onViewPerformance callback being triggered
-        expect(screen.getByTestId('competition-results-modal')).toBeInTheDocument();
-      });
+      const lastProps = vi.mocked(CompetitionResultsModal).mock.lastCall?.[0];
+      expect(lastProps).not.toHaveProperty('onViewPerformance');
     });
 
-    it('performance breakdown closes correctly', async () => {
+    it('results modal closes from its close button', async () => {
       const user = userEvent.setup();
       renderPageSimple();
 

@@ -9,7 +9,6 @@
  * - User statistics summary cards (total competitions, wins, win rate, prize money)
  * - Competition results list with filters
  * - Results modal for detailed competition view
- * - Performance breakdown modal for individual horse analysis
  * - Deep linking support for sharing specific competition results
  * - Empty state with CTA to browse competitions
  * - Loading and error states
@@ -50,17 +49,8 @@ import { useUserCompetitionResults } from '@/hooks/api/useUserCompetitionResults
 import { useMarkResultsViewed } from '@/hooks/api/useMarkResultsViewed';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
-import PerformanceBreakdownPanel from '@/components/competition/PerformanceBreakdownPanel';
 import BalanceUpdateIndicator from '@/components/feedback/BalanceUpdateIndicator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
-
-/**
- * Performance view state for tracking selected horse performance breakdown
- */
-interface PerformanceViewState {
-  competitionId: number;
-  horseId: number;
-}
 
 /**
  * Stat card skeleton component for loading state
@@ -257,9 +247,6 @@ const CompetitionResultsPage = (): JSX.Element => {
 
   // Modal state
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<number | null>(null);
-  // Set by the results modal's "view performance" action; rendered as a
-  // ScoreBreakdownRadar panel below the results (Equoria-gf8sj).
-  const [performanceView, setPerformanceView] = useState<PerformanceViewState | null>(null);
   const [activeTab, setActiveTab] = useState<'my-results' | 'browse'>('my-results');
 
   // Prize integration state (Story 5-3)
@@ -305,7 +292,6 @@ const CompetitionResultsPage = (): JSX.Element => {
 
   const handleCloseModal = useCallback(() => {
     setSelectedCompetitionId(null);
-    setPerformanceView(null);
     setShowPrizeNotification(false);
   }, []);
 
@@ -313,18 +299,6 @@ const CompetitionResultsPage = (): JSX.Element => {
   const handlePrizeNotificationClose = useCallback(() => {
     setShowPrizeNotification(false);
   }, []);
-
-  const handleViewPerformance = useCallback(
-    (horseId: number) => {
-      if (selectedCompetitionId) {
-        setPerformanceView({
-          competitionId: selectedCompetitionId,
-          horseId,
-        });
-      }
-    },
-    [selectedCompetitionId]
-  );
 
   const handleRetryStats = useCallback(() => {
     refetchStats();
@@ -448,21 +422,9 @@ const CompetitionResultsPage = (): JSX.Element => {
           isOpen={selectedCompetitionId !== null}
           onClose={handleCloseModal}
           competitionId={selectedCompetitionId}
-          onViewPerformance={handleViewPerformance}
           showPrizeNotification={showPrizeNotification}
           onPrizeNotificationClose={handlePrizeNotificationClose}
         />
-
-        {/* Score breakdown radar — wired from the modal's "view performance"
-            action, populated from the real backend scoringDetails
-            (Equoria-gf8sj, Spec 11.3 ScoreBreakdownRadar). */}
-        {performanceView && (
-          <PerformanceBreakdownPanel
-            competitionId={performanceView.competitionId}
-            horseId={performanceView.horseId}
-            onClose={() => setPerformanceView(null)}
-          />
-        )}
       </main>
     </PageContainer>
   );

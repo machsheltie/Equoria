@@ -49,16 +49,6 @@ export { default as CompetitionResultsModal } from './CompetitionResultsModal';
 export type { CompetitionResultsModalProps } from './CompetitionResultsModal';
 export type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
 
-export { default as ScoreBreakdownChart } from './ScoreBreakdownChart';
-export type { ScoreBreakdownChartProps, ScoreBreakdown, TraitBonus } from './ScoreBreakdownChart';
-
-export { default as PerformanceBreakdown } from './PerformanceBreakdown';
-export type {
-  PerformanceBreakdownProps,
-  ScoreBreakdown as PerformanceScoreBreakdown,
-  ComparisonData,
-} from './PerformanceBreakdown';
-
 export { default as CompetitionHistory } from './CompetitionHistory';
 export type {
   CompetitionHistoryProps,

@@ -16,108 +16,82 @@ export const competitionResultsHandlers = [
     return HttpResponse.json({ success: true, markedCount: body?.showIds?.length ?? 0 });
   }),
 
-  // Competition Results System - Competition Results
-  http.get(`${base}/api/v1/competitions/:id/results`, ({ params }) => {
-    const id = Number(params.id);
+  // One show's results: the backend's scoped DTO (competitionResultRecord.mjs,
+  // Equoria-q4uem.10, owner ruling R4). No `data` envelope; a missing show is
+  // 200 with `show: null` and no results.
+  http.get(`${base}/api/v1/competition/show/:showId/results`, ({ params }) => {
+    const showId = Number(params.showId);
 
-    // Return 404 for competition ID 999 (error test case)
-    if (id === 999) {
+    // Transport failure case (error-state tests).
+    if (showId === 999) {
       return HttpResponse.json(
-        { status: 'error', message: 'Competition results not found' },
-        { status: 404 }
+        { success: false, message: 'Internal server error' },
+        { status: 500 }
       );
     }
 
-    // Return empty results for competition ID 888 (empty results test case)
-    if (id === 888) {
-      return HttpResponse.json({
-        success: true,
-        data: {
-          competitionId: id,
-          competitionName: 'Empty Competition',
-          discipline: 'dressage',
-          date: '2026-02-01T10:00:00Z',
-          totalParticipants: 0,
-          prizePool: 5000,
-          prizeDistribution: {
-            first: 2500,
-            second: 1500,
-            third: 1000,
-          },
-          results: [],
-        },
-      });
+    const show = {
+      id: showId,
+      name: showId === 888 ? 'Empty Competition' : 'Spring Dressage Championship',
+      discipline: 'Dressage',
+      showType: 'ridden',
+      status: 'completed',
+      scheduledRunDate: '2026-03-15T07:00:00.000Z',
+      executedAt: '2026-03-15T07:02:00.000Z',
+      prize: 5000,
+    };
+
+    // Settled with no entrants (empty-state tests).
+    if (showId === 888) {
+      return HttpResponse.json({ success: true, showId, count: 0, show, results: [] });
     }
 
-    return HttpResponse.json({
-      success: true,
-      data: {
-        competitionId: id,
-        competitionName: 'Spring Dressage Championship',
-        discipline: 'dressage',
-        date: '2026-03-15T10:00:00Z',
-        totalParticipants: 12,
-        prizePool: 5000,
-        prizeDistribution: {
-          first: 2500,
-          second: 1500,
-          third: 1000,
-        },
-        results: [
-          {
-            rank: 1,
-            horseId: 1,
-            horseName: 'Thunder',
-            ownerId: 'user-1',
-            ownerName: 'John Doe',
-            finalScore: 95.5,
-            prizeWon: 2500,
-            isCurrentUser: true,
-            xpGained: 150,
-            leveledUp: true,
-            oldLevel: 4,
-            newLevel: 5,
-            scoreBreakdown: {
-              baseStatScore: 70,
-              traitBonus: 5,
-              trainingScore: 10,
-              equipmentBonus: 3,
-              riderBonus: 5,
-              healthModifier: 0,
-              randomLuck: 2.5,
-            },
-          },
-          {
-            rank: 2,
-            horseId: 2,
-            horseName: 'Storm',
-            ownerId: 'user-2',
-            ownerName: 'Jane Smith',
-            finalScore: 88.2,
-            prizeWon: 1500,
-            isCurrentUser: false,
-            xpGained: 100,
-            leveledUp: false,
-            oldLevel: 3,
-            newLevel: 3,
-          },
-          {
-            rank: 3,
-            horseId: 3,
-            horseName: 'Lightning',
-            ownerId: 'user-3',
-            ownerName: 'Bob Wilson',
-            finalScore: 82.0,
-            prizeWon: 1000,
-            isCurrentUser: false,
-            xpGained: 75,
-            leveledUp: false,
-            oldLevel: 6,
-            newLevel: 6,
-          },
-        ],
+    const runDate = '2026-03-15T07:02:00.000Z';
+    const results = [
+      {
+        resultId: 1,
+        horseId: 1,
+        horseName: 'Thunder',
+        ownerName: 'John Doe',
+        isViewerHorse: true,
+        placement: 1,
+        score: 95.5,
+        prizeWon: 2500,
+        runDate,
+        horsePointsAwarded: 30,
+        statGain: { stat: 'precision', gain: 1 },
+        conformationAward: null,
       },
-    });
+      {
+        resultId: 2,
+        horseId: 2,
+        horseName: 'Storm',
+        ownerName: 'Jane Smith',
+        isViewerHorse: false,
+        placement: 2,
+        score: 88.2,
+        prizeWon: 1500,
+        runDate,
+        horsePointsAwarded: 27,
+        statGain: null,
+        conformationAward: null,
+      },
+      {
+        resultId: 3,
+        horseId: 3,
+        horseName: 'Lightning',
+        ownerName: 'Bob Wilson',
+        isViewerHorse: false,
+        placement: 3,
+        score: 82.0,
+        prizeWon: 1000,
+        runDate,
+        horsePointsAwarded: 25,
+        statGain: null,
+        conformationAward: null,
+      },
+    ];
+    return HttpResponse.json({ success: true, showId, count: results.length, show, results });
   }),
 
   // Competition Results System - Horse Competition History

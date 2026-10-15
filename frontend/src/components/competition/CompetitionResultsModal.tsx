@@ -8,7 +8,7 @@
  * - User's horse(s) highlighted with different background
  * - Top 3 rows with gold/silver/bronze placement badges
  * - Sortable columns (rank, score, horse name, owner name)
- * - Click on user's horse to view performance breakdown
+ * - Your own horses' rows highlighted (no score breakdown: owner ruling R5, Equoria-q4uem.10)
  * - PrizeSummaryCard showing user's prizes when applicable (Story 5-3)
  * - PrizeNotificationModal for first-time prize notifications (Story 5-3)
  * - Link to prize history page in footer (Story 5-3)
@@ -62,7 +62,7 @@ import XpProgressTracker from '../XpProgressTracker';
 import HorseLevelBadge from '../horse/HorseLevelBadge';
 import { useHorseLevelInfo } from '@/hooks/api/useHorseLevelInfo';
 import { useCompetitionResults } from '@/hooks/api/useCompetitionResults';
-import type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
+import type { CompetitionResults } from '@/lib/api/competitionResults';
 
 /**
  * Level-up data structure for celebration modal (Story 5-4)
@@ -86,8 +86,6 @@ export interface CompetitionResultsModalProps {
   onClose: () => void;
   /** Competition ID to fetch results for */
   competitionId: number | null;
-  /** Callback when user clicks to view performance breakdown */
-  onViewPerformance?: (_horseId: number) => void;
   /** Callback for retrying data fetch on error */
   onRetry?: () => void;
   /** Callback when modal first opened with prizes (Story 5-3) */
@@ -276,7 +274,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
     isOpen,
     onClose,
     competitionId,
-    onViewPerformance,
     onRetry,
     onFirstView,
     showPrizeNotification = false,
@@ -330,15 +327,20 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
   const userPrizes: HorsePrize[] = useMemo(() => {
     if (!results?.results) return [];
 
-    return results.results
-      .filter((r) => r.isCurrentUser && r.rank <= 3)
-      .map((r) => ({
-        horseId: r.horseId,
-        horseName: r.horseName,
-        placement: r.rank,
-        prizeMoney: r.prizeWon,
-        xpGained: Math.round(r.prizeWon * 0.1), // Calculate XP from prize money
-      }));
+    // Only placings that were actually paid prize money (conformation pays none).
+    return results.results.flatMap((r) =>
+      r.isCurrentUser && r.rank !== null && r.rank <= 3 && r.prizeWon !== null
+        ? [
+            {
+              horseId: r.horseId,
+              horseName: r.horseName ?? '—',
+              placement: r.rank,
+              prizeMoney: r.prizeWon,
+              xpGained: Math.round(r.prizeWon * 0.1), // Calculate XP from prize money
+            },
+          ]
+        : []
+    );
   }, [results]);
 
   // Check if user has any prizes
@@ -347,19 +349,22 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
   // Get the best prize for notification modal (highest placement)
   const bestPrize = useMemo(() => {
     if (!hasUserPrizes || !results) return null;
+    const { competitionName, discipline, date } = results;
+    if (competitionName === null || discipline === null || date === null) return null;
 
     const sortedByPlacement = [...userPrizes].sort((a, b) => a.placement - b.placement);
     const best = sortedByPlacement[0];
 
-    return {
+    const prize: PrizeData = {
       horseName: best.horseName,
-      competitionName: results.competitionName,
-      discipline: results.discipline,
-      date: results.date,
+      competitionName,
+      discipline,
+      date,
       placement: best.placement as 1 | 2 | 3,
       prizeMoney: best.prizeMoney,
       xpGained: best.xpGained,
-    } as PrizeData;
+    };
+    return prize;
   }, [hasUserPrizes, userPrizes, results]);
 
   // Call onFirstView when modal opens with prizes (Story 5-3)
@@ -443,18 +448,18 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
 
       switch (sortField) {
         case 'rank':
-          // Ascending: 1, 2, 3... (lower rank is better)
-          comparison = a.rank - b.rank;
+          // Ascending: 1, 2, 3... (lower rank is better; unplaced last)
+          comparison = (a.rank ?? Infinity) - (b.rank ?? Infinity);
           break;
         case 'score':
           // Ascending: low to high; Descending (default): high to low
           comparison = a.finalScore - b.finalScore;
           break;
         case 'horse':
-          comparison = a.horseName.localeCompare(b.horseName);
+          comparison = (a.horseName ?? '').localeCompare(b.horseName ?? '');
           break;
         case 'owner':
-          comparison = a.ownerName.localeCompare(b.ownerName);
+          comparison = (a.ownerName ?? '').localeCompare(b.ownerName ?? '');
           break;
       }
 
@@ -464,16 +469,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
 
     return sorted;
   }, [results?.results, sortField, sortDirection]);
-
-  // Handle row click for user's horses
-  const handleRowClick = useCallback(
-    (result: ParticipantResult) => {
-      if (result.isCurrentUser && onViewPerformance) {
-        onViewPerformance(result.horseId);
-      }
-    },
-    [onViewPerformance]
-  );
 
   // Render content based on state
   const renderContent = () => {
@@ -599,7 +594,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
             {sortedResults.map((result, index) => {
               const isUserHorse = result.isCurrentUser;
               const rowClasses = `
-                ${isUserHorse ? 'bg-[rgba(37,99,235,0.1)] cursor-pointer hover:bg-[rgba(37,99,235,0.2)]' : index % 2 === 0 ? 'bg-[rgba(15,35,70,0.4)]' : 'bg-[rgba(15,35,70,0.5)]'}
+                ${isUserHorse ? 'bg-[rgba(37,99,235,0.1)]' : index % 2 === 0 ? 'bg-[rgba(15,35,70,0.4)]' : 'bg-[rgba(15,35,70,0.5)]'}
                 transition-colors
               `;
 
@@ -608,20 +603,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                   key={result.horseId}
                   className={rowClasses}
                   data-testid={`result-row-${result.horseId}`}
-                  onClick={() => handleRowClick(result)}
-                  role={isUserHorse ? 'button' : undefined}
-                  tabIndex={isUserHorse ? 0 : undefined}
-                  onKeyDown={
-                    isUserHorse
-                      ? (e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleRowClick(result);
-                          }
-                        }
-                      : undefined
-                  }
-                  aria-label={isUserHorse ? `View performance for ${result.horseName}` : undefined}
                 >
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
@@ -629,9 +610,9 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                         data-testid="rank-value"
                         className="font-medium text-[rgb(220,235,255)]"
                       >
-                        {result.rank}
+                        {result.rank ?? '—'}
                       </span>
-                      <PlacementBadge rank={result.rank} />
+                      {result.rank !== null && <PlacementBadge rank={result.rank} />}
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -640,37 +621,17 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                         data-testid="horse-name"
                         className="font-medium text-[rgb(220,235,255)]"
                       >
-                        {result.horseName}
+                        {result.horseName ?? '—'}
                       </span>
                       <HorseLevelBadge
                         level={horseLevelData?.availableStatPoints ?? 1}
                         size="small"
                       />
                     </div>
-                    {/* Equoria-jnw3 — temperament modifier attribution chip.
-                        Hidden gracefully when horse has no temperament. */}
-                    {result.temperamentImpact && result.temperamentImpact.temperament && (
-                      <div
-                        className="mt-1 text-2xs text-[var(--gold-primary)]"
-                        data-testid={`temperament-impact-${result.horseId}`}
-                      >
-                        <span data-testid="temperament-impact-name">
-                          {result.temperamentImpact.temperament}
-                        </span>
-                        {': '}
-                        <span data-testid="temperament-impact-modifier">
-                          {result.temperamentImpact.modifier > 0 ? '+' : ''}
-                          {Math.round(result.temperamentImpact.modifier * 100)}%
-                        </span>{' '}
-                        <span className="text-slate-400">
-                          ({result.temperamentImpact.appliedAs} score)
-                        </span>
-                      </div>
-                    )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span data-testid="owner-name" className="text-slate-400">
-                      {result.ownerName}
+                      {result.ownerName ?? '—'}
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -682,10 +643,13 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                     <span
                       data-testid="prize-value"
                       className={
-                        result.prizeWon > 0 ? 'font-semibold text-emerald-400' : 'text-slate-400'
+                        result.prizeWon !== null && result.prizeWon > 0
+                          ? 'font-semibold text-emerald-400'
+                          : 'text-slate-400'
                       }
                     >
-                      <Currency amount={result.prizeWon} />
+                      {/* Unknown (null) renders as an em dash labelled "unknown amount". */}
+                      <Currency amount={result.prizeWon ?? Number.NaN} />
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -770,7 +734,8 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
               </div>
 
               {/* Prize Distribution */}
-              {results && (
+              {/* Shows that pay no prize money (conformation) have no pool to show. */}
+              {results && results.prizePool !== null && results.prizeDistribution && (
                 <div
                   className="bg-[var(--alpha-gold-primary-10)] border border-amber-500/20 rounded-lg p-4"
                   data-testid="prize-distribution"
@@ -786,21 +751,21 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                       <div className="text-lg font-bold text-amber-400">1st</div>
                       <div className="text-sm text-slate-400">50%</div>
                       <div className="font-semibold text-[rgb(220,235,255)]">
-                        <Currency amount={results.prizeDistribution.first} />
+                        <Currency amount={results.prizeDistribution.first ?? Number.NaN} />
                       </div>
                     </div>
                     <div className="text-center" data-testid="prize-2nd">
                       <div className="text-lg font-bold text-slate-400">2nd</div>
                       <div className="text-sm text-slate-400">30%</div>
                       <div className="font-semibold text-[rgb(220,235,255)]">
-                        <Currency amount={results.prizeDistribution.second} />
+                        <Currency amount={results.prizeDistribution.second ?? Number.NaN} />
                       </div>
                     </div>
                     <div className="text-center" data-testid="prize-3rd">
                       <div className="text-lg font-bold text-orange-600">3rd</div>
                       <div className="text-sm text-slate-400">20%</div>
                       <div className="font-semibold text-orange-600">
-                        <Currency amount={results.prizeDistribution.third} />
+                        <Currency amount={results.prizeDistribution.third ?? Number.NaN} />
                       </div>
                     </div>
                   </div>
@@ -811,7 +776,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
               {renderContent()}
 
               {/* Prize Summary Card - Story 5-3: Show when user has prizes */}
-              {hasUserPrizes && results && (
+              {hasUserPrizes && results?.competitionName && results.date && (
                 <div className="mt-2">
                   <PrizeSummaryCard
                     competitionId={results.competitionId}
@@ -820,7 +785,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                     prizes={userPrizes}
                     isExpanded={isPrizeExpanded}
                     onToggleExpand={handlePrizeSummaryToggle}
-                    onViewPerformance={onViewPerformance}
                   />
                 </div>
               )}

@@ -71,7 +71,7 @@
  * GET    /api/v1/competitions                       paginated competition list
  * GET    /api/v1/competitions/:id                   competition detail
  * GET    /api/v1/competitions/:id/entries           competition entries
- * GET    /api/v1/competitions/:id/results           competition results
+ * GET    /api/v1/competition/show/:showId/results   show results (scoped DTO)
  * GET    /api/v1/competitions/:compId/eligibility/:userId  user eligibility
  * POST   /api/v1/competitions/enter                 enter competition (bulk)
  * (Equoria-o3try) removed claim-prizes POST handler — frontend claim concept deleted

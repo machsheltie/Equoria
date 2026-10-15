@@ -11,80 +11,136 @@
 
 import { apiClient } from '@/lib/api-client';
 
-/**
- * Score breakdown for a competition participant
- * Only visible for current user's horses
- */
-export interface ScoreBreakdown {
-  baseStatScore: number;
-  traitBonus: number;
-  trainingScore: number;
-  equipmentBonus: number;
-  riderBonus: number;
-  healthModifier: number;
-  randomLuck: number;
+/** A post-show stat gain, e.g. `{ stat: 'intelligence', gain: 1 }`. */
+export interface StatGain {
+  stat: string;
+  gain: number;
+}
+
+/** A conformation show's award: the ribbon and the title points it carried. */
+export interface ConformationAward {
+  ribbon: string;
+  titlePoints: number;
 }
 
 /**
- * Temperament-driven score modifier (Equoria-hv1y / Equoria-jnw3), exactly as
- * backend/utils/competitionScore.mjs calculateCompetitionScoreDetailed builds
- * it: `horse.temperament ? { temperament, modifier, appliedAs } : null`.
- * `temperament` is therefore always a non-empty string when the object exists;
- * `modifier` is the clamped applied fraction (-1..1, e.g. 0.05 = +5%);
- * `appliedAs` is the normalized show type.
+ * One result row of GET /api/v1/competition/show/:showId/results — the backend's
+ * scoped DTO (backend/modules/competition/services/competitionResultRecord.mjs,
+ * Equoria-q4uem.10, owner ruling R4). Unrecorded values are null, never 0.
  */
-export interface TemperamentImpact {
-  temperament: string;
-  modifier: number;
-  appliedAs: 'ridden' | 'conformation' | 'parade';
+export interface ShowResultRow {
+  resultId: number;
+  horseId: number;
+  horseName: string | null;
+  ownerName: string | null;
+  /** True for the signed-in player's own horses. */
+  isViewerHorse: boolean;
+  placement: number | null;
+  score: number;
+  /** null for conformation results, which pay no prize money. */
+  prizeWon: number | null;
+  runDate: string | null;
+  /** null on results settled before Horse Points were recorded. */
+  horsePointsAwarded: number | null;
+  /** Filled only on the viewer's own horses (owner ruling R7). */
+  statGain: StatGain | null;
+  conformationAward: ConformationAward | null;
+}
+
+/** The show header of the show-results DTO; null when the show does not exist. */
+export interface ShowResultsShow {
+  id: number;
+  name: string;
+  discipline: string;
+  showType: string;
+  status: string;
+  scheduledRunDate: string | null;
+  executedAt: string | null;
+  prize: number;
+}
+
+/** The envelope of GET /api/v1/competition/show/:showId/results (no `data` key). */
+export interface ShowResultsEnvelope {
+  success: boolean;
+  showId: number;
+  count: number;
+  show: ShowResultsShow | null;
+  results: ShowResultRow[];
 }
 
 /**
  * Individual participant result in a competition
  */
 export interface ParticipantResult {
-  rank: number;
+  rank: number | null;
   horseId: number;
-  horseName: string;
-  ownerId: string;
-  ownerName: string;
+  horseName: string | null;
+  ownerName: string | null;
   finalScore: number;
-  prizeWon: number;
+  prizeWon: number | null;
   isCurrentUser: boolean;
-  scoreBreakdown?: ScoreBreakdown;
-  /** null when the horse has no temperament recorded (legacy data). */
-  temperamentImpact?: TemperamentImpact | null;
+  horsePointsAwarded: number | null;
+  statGain: StatGain | null;
+  conformationAward: ConformationAward | null;
 }
 
 /**
- * Full competition results data.
- *
- * Equoria-q4uem.6 contract note: the backend has NO route for
- * GET /api/v1/competitions/:id/results (backend/app/routers.mjs mounts only
- * /competition and /competition/results; the closest read is
- * GET /api/v1/competition/show/:showId/results, which returns raw
- * CompetitionResult rows in a different shape). No backend serializer emits
- * this envelope, `scoreBreakdown` or `temperamentImpact` on a results read —
- * temperamentImpact exists only on the in-memory run result of
- * runEnhancedCompetition (backend/modules/competition/controllers/
- * competitionController.mjs, which has no production caller) and is not
- * persisted on CompetitionResult. This interface is the single
- * frontend owner of the shape the modal renders; the missing endpoint is an
- * open owner decision recorded on Equoria-q4uem.6.
+ * Full competition results data, as the results modal renders it. Built from the
+ * show-results DTO by `toCompetitionResults`.
  */
 export interface CompetitionResults {
   competitionId: number;
-  competitionName: string;
-  discipline: string;
-  date: string;
+  competitionName: string | null;
+  discipline: string | null;
+  showType: string | null;
+  date: string | null;
   totalParticipants: number;
-  prizePool: number;
+  /** null for conformation shows (no prize money) or a missing show. */
+  prizePool: number | null;
+  /** What each podium place was actually paid; null where nobody took it. */
   prizeDistribution: {
-    first: number;
-    second: number;
-    third: number;
-  };
+    first: number | null;
+    second: number | null;
+    third: number | null;
+  } | null;
   results: ParticipantResult[];
+}
+
+/**
+ * Map the show-results DTO to the modal's CompetitionResults. The prize
+ * distribution is read from the recorded payouts of placements 1–3, never
+ * recomputed from the 50/30/20 rule, so a two-horse show shows no third prize.
+ */
+export function toCompetitionResults(envelope: ShowResultsEnvelope): CompetitionResults {
+  const { show, results } = envelope;
+  const paysPrizes = show !== null && show.showType !== 'conformation';
+  const paidFor = (placement: number): number | null =>
+    results.find((r) => r.placement === placement)?.prizeWon ?? null;
+
+  return {
+    competitionId: envelope.showId,
+    competitionName: show?.name ?? null,
+    discipline: show?.discipline ?? null,
+    showType: show?.showType ?? null,
+    date: results[0]?.runDate ?? show?.executedAt ?? null,
+    totalParticipants: envelope.count,
+    prizePool: paysPrizes ? show.prize : null,
+    prizeDistribution: paysPrizes
+      ? { first: paidFor(1), second: paidFor(2), third: paidFor(3) }
+      : null,
+    results: results.map((r) => ({
+      rank: r.placement,
+      horseId: r.horseId,
+      horseName: r.horseName,
+      ownerName: r.ownerName,
+      finalScore: r.score,
+      prizeWon: r.prizeWon,
+      isCurrentUser: r.isViewerHorse,
+      horsePointsAwarded: r.horsePointsAwarded,
+      statGain: r.statGain,
+      conformationAward: r.conformationAward,
+    })),
+  };
 }
 
 /**
@@ -153,20 +209,18 @@ export interface CompetitionResultsApiError {
 }
 
 /**
- * Fetch full results for a specific competition
+ * Fetch one show's results for the results modal: GET
+ * /api/v1/competition/show/:showId/results (owner ruling R4), mapped by
+ * `toCompetitionResults`.
  *
- * Returns the complete results table with all participants,
- * their rankings, scores, and prize distribution.
- *
- * @param competitionId - Competition ID to fetch results for
+ * @param competitionId - The show's id.
  * @returns Promise<CompetitionResults> - Full competition results
- *
- * @example
- * const results = await fetchCompetitionResults(123);
- * console.log(`Winner: ${results.results[0].horseName}`);
  */
 export async function fetchCompetitionResults(competitionId: number): Promise<CompetitionResults> {
-  return apiClient.get<CompetitionResults>(`/api/v1/competitions/${competitionId}/results`);
+  const envelope = await apiClient.get<ShowResultsEnvelope>(
+    `/api/v1/competition/show/${competitionId}/results`
+  );
+  return toCompetitionResults(envelope);
 }
 
 /**

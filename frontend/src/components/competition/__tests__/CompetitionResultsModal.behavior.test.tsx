@@ -15,7 +15,8 @@
  *
  * Assertions target user-visible behavior:
  *   - sort headers reorder the visible rows (default rank, then score desc, name)
- *   - the current user's horse row gets the button affordance (highlight)
+ *   - no row offers a score breakdown or temperament line (owner ruling R5,
+ *     Equoria-q4uem.10); unrecorded values show a dash, never 0
  *   - the prize-distribution + per-row prizes render the real aggregated values
  */
 
@@ -30,10 +31,13 @@ import React from 'react';
 import CompetitionResultsModal from '../CompetitionResultsModal';
 import type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
 
+const RECORD = { horsePointsAwarded: null, statGain: null, conformationAward: null };
+
 const RESULTS: CompetitionResults = {
   competitionId: 555,
   competitionName: 'TestFixture-Spring Classic',
   discipline: 'Dressage',
+  showType: 'ridden',
   date: '2026-03-15T10:00:00Z',
   totalParticipants: 3,
   prizePool: 6000,
@@ -43,31 +47,31 @@ const RESULTS: CompetitionResults = {
       rank: 2,
       horseId: 101,
       horseName: 'Zephyr',
-      ownerId: 'owner-a',
       ownerName: 'Alice',
       finalScore: 88.2,
       prizeWon: 1800,
       isCurrentUser: false,
+      ...RECORD,
     },
     {
       rank: 1,
       horseId: 102,
       horseName: 'Comet',
-      ownerId: 'owner-me',
       ownerName: 'You',
       finalScore: 95.6,
       prizeWon: 3000,
       isCurrentUser: true,
+      ...RECORD,
     },
     {
       rank: 3,
       horseId: 103,
       horseName: 'Apple',
-      ownerId: 'owner-b',
       ownerName: 'Bob',
       finalScore: 80.1,
       prizeWon: 1200,
       isCurrentUser: false,
+      ...RECORD,
     },
   ],
 };
@@ -160,18 +164,16 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
     });
   });
 
-  it('highlights the current user row with the interactive button affordance', async () => {
+  // Owner ruling R5 (2026-10-15): no score breakdown is shown to anyone. Old
+  // contract: the user's row was a "View performance" button opening a breakdown.
+  it('offers no score breakdown from any row, the player’s own included', async () => {
     renderModal();
     await screen.findByTestId('results-table');
 
-    // The user's horse (Comet, id 102) row is a clickable button with an
-    // accessible "View performance" label; the others are plain rows.
-    const userRow = screen.getByTestId('result-row-102');
-    expect(userRow).toHaveAttribute('role', 'button');
-    expect(userRow).toHaveAttribute('aria-label', expect.stringContaining('Comet'));
-
-    const otherRow = screen.getByTestId('result-row-101');
-    expect(otherRow).not.toHaveAttribute('role', 'button');
+    for (const id of [101, 102, 103]) {
+      expect(screen.getByTestId(`result-row-${id}`)).not.toHaveAttribute('role', 'button');
+    }
+    expect(screen.queryByRole('button', { name: /view performance/i })).not.toBeInTheDocument();
   });
 
   it('renders the real prize-pool distribution and per-row prize aggregation', async () => {
@@ -225,22 +227,48 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
     expect(screen.queryByTestId('results-table')).not.toBeInTheDocument();
   });
 
-  // Equoria-q4uem.6 — the fixture is typed with the canonical API DTO
-  // (lib/api/competitionResults), which now carries temperamentImpact exactly
-  // as backend/utils/competitionScore.mjs calculateCompetitionScoreDetailed
-  // builds it, so the modal reads it without a component-local contract.
-  it('renders the temperament attribution chip from the canonical DTO, and nothing when it is null', async () => {
-    const withImpact: ParticipantResult = {
-      ...RESULTS.results[1],
-      temperamentImpact: { temperament: 'Bold', modifier: 0.05, appliedAs: 'ridden' },
-    };
-    const withoutImpact: ParticipantResult = { ...RESULTS.results[0], temperamentImpact: null };
-    renderModal({ ...RESULTS, results: [withoutImpact, withImpact, RESULTS.results[2]] });
+  // Owner ruling R5: temperament's effect is part of the score, never itemised.
+  // Old contract: a "Bold: +5% (ridden score)" chip under the horse name.
+  it('shows no temperament line on any row', async () => {
+    renderModal();
+    await screen.findByTestId('results-table');
 
-    const chip = await screen.findByTestId('temperament-impact-102');
-    expect(within(chip).getByTestId('temperament-impact-name')).toHaveTextContent('Bold');
-    expect(within(chip).getByTestId('temperament-impact-modifier')).toHaveTextContent('+5%');
-    expect(chip).toHaveTextContent('(ridden score)');
-    expect(screen.queryByTestId('temperament-impact-101')).not.toBeInTheDocument();
+    expect(screen.queryByText(/temperament/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ridden score/i)).not.toBeInTheDocument();
+  });
+
+  it('shows a dash, not 0, for a podium place nobody took', async () => {
+    renderModal({
+      ...RESULTS,
+      totalParticipants: 2,
+      prizeDistribution: { first: 3000, second: 1800, third: null },
+      results: RESULTS.results.filter((r) => r.rank !== 3),
+    });
+    const dist = await screen.findByTestId('prize-distribution');
+
+    // Label, share, then the amount: a dash where a coin figure would be.
+    expect(within(dist).getByTestId('prize-3rd')).toHaveTextContent(/^3rd20%—$/);
+  });
+
+  it('shows no prize pool and no prize amount for a conformation show', async () => {
+    const ribbonRow: ParticipantResult = {
+      ...RESULTS.results[1],
+      prizeWon: null,
+      conformationAward: { ribbon: 'Blue', titlePoints: 10 },
+    };
+    renderModal({
+      ...RESULTS,
+      discipline: 'conformation',
+      showType: 'conformation',
+      prizePool: null,
+      prizeDistribution: null,
+      totalParticipants: 1,
+      results: [ribbonRow],
+    });
+    await screen.findByTestId('results-table');
+
+    expect(screen.queryByTestId('prize-distribution')).not.toBeInTheDocument();
+    expect(screen.getByTestId('prize-value')).toHaveTextContent('—');
+    expect(screen.queryByTestId('prize-summary-card')).not.toBeInTheDocument();
   });
 });

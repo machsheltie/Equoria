@@ -3,9 +3,9 @@
  *
  * Successor to the Recharts RadarChart, per the owner ruling on Equoria-ij7ev
  * (2026-09-11): an authored inline-SVG stat constellation that also serves
- * the predicted foal profile in breeding (CompatibilityPreview), the scouting
- * view (CompetitionFieldPreview) and the competition results surface
- * (PerformanceBreakdownPanel).
+ * the predicted foal profile in breeding (CompatibilityPreview) and the scouting
+ * view (CompetitionFieldPreview). Competition results show no score breakdown
+ * (owner ruling R5, 2026-10-15).
  *
  * Each stat is a star on its own spoke of the night: the brighter and farther
  * out it sits, the higher the value. Faint lines trace the figure between the
