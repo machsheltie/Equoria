@@ -370,7 +370,9 @@ async function getUserResultsSummary(userId) {
       rank: placementToRank(r.placement) ?? rankFromPosition(showId, r.horseId),
       score: Number(r.score),
       prizeWon: Number(r.prizeWon ?? 0),
-      xpGained: 0,
+      // Horse Points recorded at settlement; null on legacy rows, never a fake 0
+      // (Equoria-q4uem.10, owner rulings R6/R7; was a hard-coded xpGained: 0).
+      horsePointsAwarded: r.horsePointsAwarded ?? null,
     });
   }
 

@@ -46,7 +46,7 @@ const mockResults = [
         rank: 1,
         score: 92.5,
         prizeWon: 2500,
-        xpGained: 0,
+        horsePointsAwarded: 30,
       },
     ],
   },

@@ -31,7 +31,8 @@ export interface UserResult {
   rank: number;
   score: number;
   prizeWon: number;
-  xpGained: number;
+  /** Recorded Horse Points; null when not recorded (legacy results). */
+  horsePointsAwarded: number | null;
 }
 
 /**
@@ -213,9 +214,14 @@ const ResultCard = memo(
     const disciplineInfo = DISCIPLINES.find((d) => d.id === result.discipline);
     const disciplineName = disciplineInfo?.name || result.discipline;
 
-    // Calculate total prize and XP won
+    // Total prize won, and the Horse Points recorded for the player's horses.
+    // One unrecorded row makes the total unknown (shown as a dash), never a
+    // partial sum or a fake 0 (Equoria-q4uem.10, owner rulings R6/R7).
     const totalPrize = result.userResults.reduce((sum, r) => sum + r.prizeWon, 0);
-    const totalXp = result.userResults.reduce((sum, r) => sum + r.xpGained, 0);
+    const recordedPoints = result.userResults.map((r) => r.horsePointsAwarded);
+    const totalHorsePoints = recordedPoints.every((p): p is number => p !== null)
+      ? recordedPoints.reduce((sum, p) => sum + p, 0)
+      : null;
 
     /* o5hub.44 ratchet (3): real <button> semantics via Surface(interactive),
      * mirroring the landed CompetitionCard conversion. Native button gives
@@ -271,7 +277,9 @@ const ResultCard = memo(
           </div>
           <div className="flex items-center">
             <Star className="h-4 w-4 text-[var(--role-accent-text)] mr-1" aria-hidden="true" />
-            <span className="text-role-primary">{totalXp} XP</span>
+            <span className="text-role-primary" data-testid="horse-points-total">
+              {totalHorsePoints ?? '—'} Horse Points
+            </span>
           </div>
         </div>
       </Surface>

@@ -6,8 +6,8 @@
  * `useUserCompetitionStats` hook (real React Query + real
  * `fetchUserCompetitionStats` over `apiClient`) with the network boundary
  * stubbed by MSW (`server.use(http.get(...))`) — NOT
- * `vi.mock('@/contexts/AuthContext')` / `vi.mock('@/hooks/api/useUserCompetitionStats')`
- * / `vi.mock('@/hooks/api/useHorseLevelInfo')`. This exercises the real
+ * `vi.mock('@/contexts/AuthContext')` / `vi.mock('@/hooks/api/useUserCompetitionStats')`.
+ * This exercises the real
  * query-key construction (`userCompetitionStatsQueryKeys.stats('123')`), the
  * `enabled: userId !== null` gating, the `fetchWithAuth` envelope unwrap, and
  * the loading→data / error transitions end-to-end.
@@ -21,9 +21,9 @@
  * `GET /api/v1/users/:userId/competition-stats`; `userId` is `user.id` cast to
  * a string, so the mock user's `id: 123` produces a request to `/users/123/…`.
  *
- * The `useHorseLevelInfo` mock was removed entirely: the page does NOT import
- * that hook — it is used only by `CompetitionResultsModal`, which this suite
- * stubs (the stub never mounts the real hook). The child stubs for
+ * No horse XP/level hook is involved: the results modal's invented XP and
+ * level parts and `useHorseLevelInfo` were deleted (Equoria-q4uem.10, owner
+ * ruling R7). The child stubs for
  * `CompetitionResultsList` and `CompetitionResultsModal` remain: they isolate
  * the page from those children's own network/hook surface and are legitimate
  * boundary stubs (NOT app-own hook/context/api mocks).
@@ -76,7 +76,7 @@ vi.mock('@/components/competition/CompetitionResultsList', () => ({
 }));
 
 // Mock the results modal component (legitimate child stub — the real modal
-// pulls in useHorseLevelInfo + its own network surface).
+// fetches its own show results over the network).
 vi.mock('@/components/competition/CompetitionResultsModal', () => ({
   default: vi.fn(({ isOpen, onClose, competitionId }) => {
     if (!isOpen) return null;
@@ -549,7 +549,14 @@ describe('CompetitionResultsPage', () => {
         totalParticipants: 4,
         prizePool: 1000,
         userResults: [
-          { horseId: 1, horseName: 'Aurora', rank: 1, score: 99, prizeWon: 500, xpGained: 0 },
+          {
+            horseId: 1,
+            horseName: 'Aurora',
+            rank: 1,
+            score: 99,
+            prizeWon: 500,
+            horsePointsAwarded: 30,
+          },
         ],
       };
     }

@@ -20,6 +20,10 @@
  *   2. Ownership scoping (IDOR guard): user2 gets none of user1s results.
  *   3. Endpoint resolves owner from req.user.id, NOT ?userId= param.
  *   4. Unauthenticated request returns 401.
+ *   5. Each horse row carries the Horse Points recorded at settlement, and null
+ *      (never a fabricated 0) for results settled before they were recorded
+ *      (Equoria-q4uem.10, owner rulings R6/R7; the field was a hard-coded
+ *      xpGained: 0).
  *
  * Doctrine: Real Express app, real JWT, real DB. No mocks, no bypasses.
  */
@@ -45,9 +49,19 @@ let show1;
 let show2;
 let show3;
 
-async function seedResult({ horseId, showId, score, placement, discipline, runDate, showName, prizeWon }) {
+async function seedResult({
+  horseId,
+  showId,
+  score,
+  placement,
+  discipline,
+  runDate,
+  showName,
+  prizeWon,
+  horsePointsAwarded,
+}) {
   return prisma.competitionResult.create({
-    data: { horseId, showId, score, placement, discipline, runDate, showName, prizeWon },
+    data: { horseId, showId, score, placement, discipline, runDate, showName, prizeWon, horsePointsAwarded },
   });
 }
 
@@ -95,6 +109,7 @@ beforeAll(async () => {
     runDate: new Date('2026-06-15T10:00:00Z'),
     showName: show2.name,
     prizeWon: 100,
+    horsePointsAwarded: 25,
   });
 
   await seedResult({
@@ -149,6 +164,19 @@ describe('GET /api/v1/competition/user-results (Equoria-oey96.5)', () => {
     });
     expect(typeof first.userResults[0].rank).toBe('number');
     expect(first.userResults[0].rank).toBe(3);
+  });
+
+  it('reports each horse’s recorded Horse Points, and null (not 0) where none were recorded', async () => {
+    const res = await request(app)
+      .get('/api/v1/competition/user-results')
+      .set('Authorization', `Bearer ${user1Token}`)
+      .set('Origin', 'http://localhost:3000');
+
+    const byShow = new Map(res.body.results.map(r => [r.competitionId, r.userResults[0]]));
+    // show2 was settled with Horse Points recorded; show1 is a legacy row.
+    expect(byShow.get(show2.id)).toMatchObject({ horseId: horse1b.id, horsePointsAwarded: 25 });
+    expect(byShow.get(show1.id)).toMatchObject({ horseId: horse1a.id, horsePointsAwarded: null });
+    expect(byShow.get(show1.id)).not.toHaveProperty('xpGained');
   });
 
   it('does not leak another users results (ownership scoping - IDOR guard)', async () => {

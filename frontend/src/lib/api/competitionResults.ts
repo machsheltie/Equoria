@@ -269,8 +269,11 @@ export interface CompetitionResultUserRow {
   rank: number;
   score: number;
   prizeWon: number;
-  /** Currently 0 - not stored in CompetitionResult (Equoria-aenc parity). */
-  xpGained: number;
+  /**
+   * Horse Points recorded at settlement; null for results settled before they
+   * were recorded (Equoria-q4uem.10, owner rulings R6/R7). Never a fake 0.
+   */
+  horsePointsAwarded: number | null;
 }
 
 /**

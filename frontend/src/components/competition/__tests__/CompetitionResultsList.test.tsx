@@ -41,7 +41,7 @@ describe('CompetitionResultsList', () => {
           rank: 1,
           score: 95.5,
           prizeWon: 5000,
-          xpGained: 150,
+          horsePointsAwarded: 150,
         },
       ],
     },
@@ -59,7 +59,7 @@ describe('CompetitionResultsList', () => {
           rank: 2,
           score: 88.2,
           prizeWon: 2500,
-          xpGained: 100,
+          horsePointsAwarded: 100,
         },
       ],
     },
@@ -77,7 +77,7 @@ describe('CompetitionResultsList', () => {
           rank: 3,
           score: 82.7,
           prizeWon: 1500,
-          xpGained: 75,
+          horsePointsAwarded: 75,
         },
       ],
     },
@@ -95,7 +95,7 @@ describe('CompetitionResultsList', () => {
           rank: 8,
           score: 72.1,
           prizeWon: 0,
-          xpGained: 25,
+          horsePointsAwarded: 25,
         },
       ],
     },
@@ -113,7 +113,7 @@ describe('CompetitionResultsList', () => {
           rank: 1,
           score: 91.3,
           prizeWon: 7500,
-          xpGained: 150,
+          horsePointsAwarded: 150,
         },
         {
           horseId: 106,
@@ -121,7 +121,7 @@ describe('CompetitionResultsList', () => {
           rank: 5,
           score: 78.9,
           prizeWon: 500,
-          xpGained: 50,
+          horsePointsAwarded: 50,
         },
       ],
     },
@@ -549,6 +549,60 @@ describe('CompetitionResultsList', () => {
    * unavailable" fallback. Sentinel-positive: a formatDate WITHOUT the guard
    * renders "Invalid Date" here and fails these assertions.
    */
+  // Equoria-q4uem.10 (owner rulings R6/R7): the card's total is the Horse Points
+  // recorded at settlement. Old contract: an "XP" total summed from a field the
+  // backend hard-coded to 0, so every card read "0 XP".
+  describe('Horse Points total', () => {
+    const card = (rows: Array<{ horseId: number; horsePointsAwarded: number | null }>) => [
+      {
+        competitionId: 9,
+        competitionName: 'Lantern Cup',
+        discipline: 'dressage',
+        date: '2026-10-08T07:00:00.000Z',
+        totalParticipants: 6,
+        prizePool: 1000,
+        userResults: rows.map((r, i) => ({
+          horseId: r.horseId,
+          horseName: `Horse ${i}`,
+          rank: i + 1,
+          score: 80 - i,
+          prizeWon: 0,
+          horsePointsAwarded: r.horsePointsAwarded,
+        })),
+      },
+    ];
+
+    it('shows the recorded Horse Points summed over the player’s horses', () => {
+      render(
+        <CompetitionResultsList
+          {...defaultProps}
+          results={card([
+            { horseId: 1, horsePointsAwarded: 30 },
+            { horseId: 2, horsePointsAwarded: 25 },
+          ])}
+          isLoading={false}
+        />
+      );
+      const total = screen.getByTestId('horse-points-total');
+      expect(total).toHaveTextContent(/^55 Horse Points$/);
+      expect(screen.queryByText(/\bXP\b/)).not.toBeInTheDocument();
+    });
+
+    it('shows an em dash, not 0, when any horse’s Horse Points were not recorded', () => {
+      render(
+        <CompetitionResultsList
+          {...defaultProps}
+          results={card([
+            { horseId: 1, horsePointsAwarded: 30 },
+            { horseId: 2, horsePointsAwarded: null },
+          ])}
+          isLoading={false}
+        />
+      );
+      expect(screen.getByTestId('horse-points-total')).toHaveTextContent(/^— Horse Points$/);
+    });
+  });
+
   describe('Invalid Date handling (Equoria-f19cz)', () => {
     const oneResult = (date: string): CompetitionResultSummary[] => [
       {
@@ -565,7 +619,7 @@ describe('CompetitionResultsList', () => {
             rank: 1,
             score: 95.5,
             prizeWon: 5000,
-            xpGained: 150,
+            horsePointsAwarded: 150,
           },
         ],
       },

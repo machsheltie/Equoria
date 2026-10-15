@@ -291,7 +291,7 @@ router.get(
  *     results: [{
  *       competitionId, competitionName, discipline, date,
  *       totalParticipants, prizePool,
- *       userResults: [{ horseId, horseName, rank, score, prizeWon, xpGained }]
+ *       userResults: [{ horseId, horseName, rank, score, prizeWon, horsePointsAwarded }]
  *     }, ...],
  *     count
  *   }
