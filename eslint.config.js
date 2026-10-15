@@ -51,6 +51,11 @@ export default [
       '**/*.d.ts',
       'backend/db/migrations/**',
       'tests/integration/**',
+      // Vendored third-party skill scripts, retired code (docs map: never
+      // active context) and local agent scratch are not Equoria source.
+      '.github/skills/**',
+      'docs/.archive/**',
+      '.remember/**',
     ],
   },
   {

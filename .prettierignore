@@ -8,6 +8,7 @@ coverage
 .github/agents/
 .github/skills/
 .remember/
+docs/.archive/
 
 # Legacy archive and non-production files
 .agent/
