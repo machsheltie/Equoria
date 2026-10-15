@@ -31,10 +31,11 @@
  *
  * BOND SOURCE — `Horse.bondScore` (NOT `FoalDevelopment.bondingLevel`). This is
  * deliberate: the product decision behind Equoria-507mt/g89vy set bond to start
- * at 0 ("unbonded — earned via grooming"), and grooms write `Horse.bondScore`. The legacy `FoalDevelopment.bondingLevel` still carries
- * a @default(50) — counting it would falsely fire bond-25 AND bond-50 on every
- * fresh foal the moment its development row is created. `Horse.bondScore`'s
- * @default(0) makes the empty state honest.
+ * at 0 ("unbonded — earned via grooming"), and grooms write `Horse.bondScore`.
+ * The legacy `FoalDevelopment.bondingLevel` still carries a @default(50) —
+ * counting it would falsely fire bond-25 AND bond-50 on every fresh foal the
+ * moment its development row is created. `Horse.bondScore`'s @default(0) makes
+ * the empty state honest.
  */
 
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
