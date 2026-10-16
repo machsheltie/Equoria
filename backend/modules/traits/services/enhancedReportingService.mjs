@@ -17,6 +17,7 @@ import logger from '../../../utils/logger.mjs';
 import _prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateEnvironmentalReport } from './environmentalTriggerSystem.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { gameDateKey } from '../../../utils/gameTime.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 /**
@@ -176,11 +177,10 @@ export function buildTraitTimeline(traitHistory, interactions) {
 export function identifyCriticalPeriods(timeline, _milestones) {
   const criticalPeriods = [];
 
-  // Group events by time periods
+  // Group events by week of the month on the Eastern game calendar ('YYYY-MM-Wn')
   const periods = {};
   timeline.forEach(event => {
-    const date = new Date(event.date);
-    const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
+    const weekKey = gameDateKey(event.date).replace(/-(\d+)$/, (_, d) => `-W${Math.ceil(d / 7)}`);
 
     if (!periods[weekKey]) {
       periods[weekKey] = [];
@@ -645,7 +645,7 @@ export function identifyTraitPatterns(traitHistory) {
   // Pattern: Traits discovered together
   const discoveryGroups = {};
   traitHistory.forEach(log => {
-    const dateKey = log.timestamp.toDateString();
+    const dateKey = gameDateKey(log.timestamp);
     if (!discoveryGroups[dateKey]) {
       discoveryGroups[dateKey] = [];
     }
