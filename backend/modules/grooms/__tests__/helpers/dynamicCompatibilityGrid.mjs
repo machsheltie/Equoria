@@ -69,8 +69,36 @@ export const CONTEXTS = [
     },
   ],
   ['bad-task', { taskType: 'juggling', timeOfDay: 'morning' }],
+  // The other four task types, with unknown and non-string factors and times:
+  // only a string names a factor or a time of day (the original switches used ===).
+  [
+    'hoof-junk-factors',
+    {
+      taskType: 'hoof_handling',
+      timeOfDay: 'night',
+      environmentalFactors: ['quiet', 'windy', ['quiet'], 5, {}, 'chaotic'],
+    },
+  ],
+  [
+    'coat-array-time',
+    { taskType: 'coat_check', timeOfDay: ['morning'], environmentalFactors: ['familiar'] },
+  ],
+  ['tying-number-time', { taskType: 'tying_practice', timeOfDay: 1, horseCurrentStress: 7 }],
+  [
+    'early-touch',
+    {
+      taskType: 'early_touch',
+      timeOfDay: 'evening',
+      environmentalFactors: ['structured', 'unfamiliar', 'noisy'],
+    },
+  ],
 ];
-const PREDICTION_CONTEXTS = ['morning-quiet', 'evening-noisy'];
+const PREDICTION_CONTEXTS = [
+  'morning-quiet',
+  'evening-noisy',
+  'hoof-junk-factors',
+  'coat-array-time',
+];
 
 // [key, influence, experience, level, owner]
 const GROOMS = [
@@ -93,6 +121,10 @@ const HORSES = [
   ['mixed', 6, 26, ['calm', 'social', 'fearful'], 'A'],
   ['b-horse', 4, 20, ['curious'], 'B'],
   ['c-horse', 3, 12, ['brave'], 'C'],
+  // All-negative flags and no interactions: the temperament analysis says
+  // 'nervous', so the energetic+nervous/fearful risk rule and the calm+nervous/
+  // fearful strength rule (the `in` operator) fire.
+  ['anxious', 9, 8, ['fearful', 'insecure', 'reactive', 'fragile'], 'A'],
 ];
 
 // Interaction histories per [groom, horse]: [daysAgo, fields]

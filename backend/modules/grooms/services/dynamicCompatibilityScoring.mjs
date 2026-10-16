@@ -444,7 +444,8 @@ function calculateEnvironmentalModifier(context) {
   const factors = context.environmentalFactors || [];
   let modifier = 1.0;
   factors.forEach(factor => {
-    if (Object.hasOwn(ENVIRONMENT_FACTOR_MULTIPLIERS, factor)) {
+    // Only a string names a factor (the old switch compared with ===).
+    if (typeof factor === 'string' && Object.hasOwn(ENVIRONMENT_FACTOR_MULTIPLIERS, factor)) {
       modifier *= ENVIRONMENT_FACTOR_MULTIPLIERS[factor];
     }
   });
@@ -454,7 +455,7 @@ function calculateEnvironmentalModifier(context) {
 
 function calculateTimeOfDayModifier(context) {
   const { timeOfDay } = context;
-  return Object.hasOwn(TIME_OF_DAY_MODIFIERS, timeOfDay)
+  return typeof timeOfDay === 'string' && Object.hasOwn(TIME_OF_DAY_MODIFIERS, timeOfDay)
     ? TIME_OF_DAY_MODIFIERS[timeOfDay]
     : TIME_OF_DAY_DEFAULT;
 }
