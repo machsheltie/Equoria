@@ -41,9 +41,11 @@
  * two pushes). loginTimingOracle moves for the same reason; TimingAnchor
  * stays in the lanes — it asserts bcrypt.compare invocation, not time.
  *
- * TREE LANE (Equoria-rfv9j): suites that plant files in, or scan, the shared
- * working tree run only in lane 1, as one serial stream; lane 2 gets only the
- * remaining hash shards. Set, rationale and balancing: tree-lane-plan.mjs.
+ * ONE DISCOVERY, TREE LANE (Equoria-rfv9j): suites are discovered ONCE before
+ * any lane starts and every batch gets an explicit --runTestsByPath list (a
+ * per-batch `--shard` re-discovered and saw other suites' planted *.test.mjs).
+ * Suites that plant files in, or scan, the shared tree run only in lane 1, as
+ * one serial stream. Sets, rationale and balancing: tree-lane-plan.mjs.
  *
  * GATE LOCK (Equoria-hqrqk, systemconstraints.md §3): before touching the
  * database this runner takes a machine-wide LOCAL lock file (scripts/gate-lock.mjs,
@@ -58,7 +60,7 @@
  * Usage:
  *   node scripts/run-suite-sharded.mjs [--jest-shards=8] [--lanes=1] [--timeout=600] [--heap=1536]
  *   node scripts/run-suite-sharded.mjs [--batch-size=25] [--timeout=600] [--heap=1536] [pattern]
- *     --jest-shards Jest hash shards, run in fresh processes
+ *     --jest-shards hash-ordered slices of the one discovery, each a fresh process
  *     --lanes       concurrent serial streams, each with its own database (1..2)
  *     --batch-size  test files per fresh process (default 25; lanes=1 only)
  *     --timeout     hard per-batch wall-clock cap in seconds (default 600)
@@ -109,8 +111,7 @@ import {
   resolveExitStatus,
 } from './gate-lock.mjs';
 import { buildOwnershipSteps } from './gate-ownership-steps.mjs';
-import { chunk, planTreeLanes, suiteTailPattern } from './tree-lane-plan.mjs';
-import jestConfig from '../jest.config.mjs';
+import { chunk, isPlantedTestPath, planLanes, toBackendRelative } from './tree-lane-plan.mjs';
 
 const args = process.argv.slice(2);
 const opt = (name, def) => {
@@ -178,22 +179,9 @@ const canonicalSet = new Set(
   CANONICAL_DB_SUITES.map(rel => normalizePath(path.join(BACKEND, rel))),
 );
 
-// The CLI flag REPLACES the config array rather than extending it (measured
-// 2026-09-14: load/perf suites leaked into lane shards), so the live config
-// patterns are re-supplied alongside the canonical exclusions. Jest's CLI
-// accepts the flag repeated once per pattern.
-const configIgnorePatterns = Array.isArray(jestConfig.testPathIgnorePatterns)
-  ? jestConfig.testPathIgnorePatterns
-  : [];
-const canonicalIgnoreArgs =
-  LANES > 1
-    ? [...configIgnorePatterns, ...CANONICAL_DB_SUITES.map(suiteTailPattern)].map(
-        patternText => `--testPathIgnorePatterns=${patternText}`,
-      )
-    : [];
-
 function listTestFiles() {
-  // jest --listTests prints one absolute path per line on stdout.
+  // jest --listTests prints one absolute path per line on stdout. It applies the
+  // config's testMatch/testPathIgnorePatterns, so the batches below need neither.
   const cmd = ['--experimental-vm-modules', JEST, '--listTests'];
   if (pattern) {
     cmd.push(pattern);
@@ -203,10 +191,18 @@ function listTestFiles() {
     encoding: 'utf8',
     maxBuffer: 128 * 1024 * 1024,
   });
-  return out
+  const files = out
     .split('\n')
     .map(s => s.trim())
     .filter(f => f.endsWith('.test.mjs') || f.endsWith('.test.js'));
+  // A sentinel's transient plant on disk right now is not a suite (Equoria-rfv9j).
+  const planted = files.filter(f => isPlantedTestPath(toBackendRelative(BACKEND, f)));
+  if (planted.length) {
+    console.error(
+      `[shard] not scheduling ${planted.length} transient plant(s): ${planted.join(', ')}`,
+    );
+  }
+  return files.filter(f => !planted.includes(f));
 }
 
 // Discovery manifest: the set every batch's executed suites must reconcile to.
@@ -228,48 +224,36 @@ function discoverAndPlan() {
   }
   discoveredSet = new Set(discovered.map(normalizePath));
 
-  if (JEST_SHARDS && LANES > 1) {
-    const plan = planTreeLanes({
+  if (JEST_SHARDS) {
+    // Canonical-db suites leave the lanes only when a canonical pass follows them.
+    const isCanonical = f => LANES > 1 && canonicalSet.has(normalizePath(f));
+    const plan = planLanes({
       discovered,
       backendDir: BACKEND,
-      isCanonical: f => canonicalSet.has(normalizePath(f)),
-      restShards: JEST_SHARDS,
-      restArgs: [...canonicalIgnoreArgs, ...(pattern ? [pattern] : [])],
+      isCanonical,
+      shards: JEST_SHARDS,
+      lanes: LANES,
     });
     laneBatches = plan.lanes;
     batches = laneBatches.flat();
-    return console.log(
-      `[shard] ${discovered.length} suites: ${plan.treeFiles.length} tree-touching in lane 1 only, the rest in ` +
-        `${JEST_SHARDS} hash shards; lane 1 ${laneBatches[0].length} / lane 2 ${laneBatches[1].length} batches (heap ${HEAP_MB}MB, cap ${BATCH_TIMEOUT_MS / 1000}s each).`,
-    );
-  }
-  batches = JEST_SHARDS
-    ? Array.from({ length: JEST_SHARDS }, (_, index) => ({
-        index,
-        label: `shard ${index + 1}/${JEST_SHARDS}`,
-        jestArgs: [`--shard=${index + 1}/${JEST_SHARDS}`, ...(pattern ? [pattern] : [])],
-      }))
-    : chunk(discovered, BATCH_SIZE).map((batch, index) => ({
-        index,
-        label: `batch ${index + 1}`,
-        jestArgs: ['--runTestsByPath', ...batch],
-        files: batch,
-      }));
-
-  if (JEST_SHARDS) {
     console.log(
-      `[shard] ${JEST_SHARDS} Jest hash shards over ${discovered.length} discovered suites, ` +
-        `${LANES} lane(s) of sequential fresh processes (heap ${HEAP_MB}MB each, hard cap ${BATCH_TIMEOUT_MS / 1000}s per shard).`,
+      `[shard] ${discovered.length} suites discovered once: ${plan.treeFiles.length} tree-touching in lane 1 only, ` +
+        `the rest in ${JEST_SHARDS} hash-ordered slices; batches per lane ${laneBatches.map(l => l.length).join('/')} ` +
+        `(explicit --runTestsByPath lists, heap ${HEAP_MB}MB, cap ${BATCH_TIMEOUT_MS / 1000}s each).`,
     );
-  } else {
-    console.log(
-      `[shard] ${discovered.length} test files in ${batches.length} batches of ${BATCH_SIZE} ` +
-        `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
-    );
+    return;
   }
-  // Round-robin assignment keeps each lane a contiguous serial stream.
-  laneBatches = Array.from({ length: LANES }, () => []);
-  batches.forEach((batch, i) => laneBatches[i % LANES].push(batch));
+  batches = chunk(discovered, BATCH_SIZE).map((batch, index) => ({
+    index,
+    label: `batch ${index + 1}`,
+    jestArgs: ['--runTestsByPath', ...batch],
+    files: batch,
+  }));
+  console.log(
+    `[shard] ${discovered.length} test files in ${batches.length} batches of ${BATCH_SIZE} ` +
+      `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
+  );
+  laneBatches = [batches]; // batch mode is single-lane only (checked above)
 }
 
 const totals = {

@@ -20,6 +20,13 @@ const EXPECTED = {
     'node --experimental-vm-modules --max-old-space-size=4096 ' +
     'node_modules/jest/bin/jest.js --maxWorkers=2 --workerIdleMemoryLimit=1500MB ' +
     '--ci --forceExit --json --outputFile=test-results/jest-results.json',
+  // Equoria-rfv9j: CI's serial shard (the suites that plant files in, or walk,
+  // the shared tree). Identical to `ci` except one worker; jest-cli rejects
+  // --runInBand beside --maxWorkers, so serial needs its own profile.
+  'ci:serial':
+    'node --experimental-vm-modules --max-old-space-size=4096 ' +
+    'node_modules/jest/bin/jest.js --maxWorkers=1 --workerIdleMemoryLimit=1500MB ' +
+    '--ci --forceExit --json --outputFile=test-results/jest-results.json',
   targeted:
     'node --experimental-vm-modules --max-old-space-size=1536 ' +
     'node_modules/jest/bin/jest.js --runInBand',

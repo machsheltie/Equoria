@@ -1,26 +1,35 @@
 /**
- * Tree-lane plan for run-suite-sharded.mjs (Equoria-rfv9j).
+ * Batch and lane plan for run-suite-sharded.mjs (Equoria-rfv9j).
  *
- * Some suites WRITE throwaway violating files into the real working tree and
- * delete them again ("planters": doctrine sentinels proving their check fires),
- * and some suites WALK the whole tree and assert it is clean ("scanners"). With
- * --lanes=2 both lanes run in ONE checkout at the same time, so a scanner in one
- * lane read the other lane's plant: an ENOENT crash when the plant vanished
- * mid-read (WS4 S6 push), or a false violation when the plant was still there
- * (controllerMaxLines' 803-line file failing fileSizeThreshold's clean-tree
- * check; reproduced by holding the plant and running the check). Per-scanner
- * name exclusions only ever covered the pairs that had already failed.
+ * Two defects of the earlier `jest --shard=i/n` per-batch design, both rooted in
+ * the shared working tree:
  *
- * The fix is structural: every tree-touching suite runs in lane 1, in ONE
- * serial stream, so no planter is ever concurrent with a scanner. Lane 2 runs
- * only suites that touch nothing but their own database and temp dirs.
+ * 1. Cross-lane planter/scanner race. Some suites WRITE throwaway violating
+ *    files into the real tree and delete them again ("planters"); some WALK the
+ *    tree and assert it is clean ("scanners"). With --lanes=2 both lanes run in
+ *    ONE checkout at once, so a scanner read the other lane's plant: ENOENT (WS4
+ *    S6 push) or a false violation (holding controllerMaxLines' 803-line plant
+ *    makes check-file-size-thresholds exit 1). Fix: every tree-touching suite
+ *    runs in lane 1, in ONE serial stream; lane 2 only runs suites that touch
+ *    nothing but their own database and temp dirs.
+ *
+ * 2. Per-batch discovery. Each `--shard=i/n` invocation discovered the test
+ *    files itself, at its own start. Planters write *.test.mjs files (e.g.
+ *    planted.test.mjs, __doctrine_jest_plant_70pb9__.test.mjs), so a shard
+ *    starting while a plant existed saw a different sorted list and different
+ *    slice boundaries: a boundary suite ran twice (gate equoria-shard-nwrKX9:
+ *    traitRevelationAnalytics in batch-2 AND batch-3) or not at all. Fix: the
+ *    runner discovers ONCE, before any lane starts, and every batch gets an
+ *    EXPLICIT --runTestsByPath list computed here. Discovery-time plant
+ *    artifacts (reserved scratch/plant names) are dropped by isPlantedTestPath.
  *
  *   TREE set  = backend/__tests__/** (every doctrine planter and whole-tree
- *               scanner lives there; CI shard 3 is the same set) plus the docs
- *               suites (two of them share one fixture directory under
- *               modules/docs/__tests__) plus two module sentinels that walk the
- *               real backend tree.
- *   REST set  = everything else, Jest hash-sharded exactly as before.
+ *               scanner lives there; CI's serial shard 3 is the same set) plus
+ *               modules/docs/__tests__/** (two suites share one fixture dir
+ *               there) plus two module sentinels that walk the real tree.
+ *   REST set  = everything else, ordered by a hash of its path and split into
+ *               --jest-shards contiguous slices (the same spreading Jest's own
+ *               --shard used, minus the per-invocation discovery).
  *
  * treeLanePinning.sentinel.test.mjs keeps this honest: it fails when a planter
  * or whole-tree scanner exists OUTSIDE the TREE set, and when CI stops running
@@ -28,7 +37,9 @@
  *
  * Pure module: no I/O, no side effects; run-suite-sharded.mjs executes the plan.
  */
+import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { isReservedScratchPlantPathSegment } from '../../scripts/lib/doctrine-scan-patterns.mjs';
 
 /** Backend-relative directories whose suites are tree-touching (whole subtree). */
 export const TREE_SUITE_DIRS = Object.freeze(['__tests__', 'modules/docs/__tests__']);
@@ -41,22 +52,11 @@ export const TREE_SUITE_FILES = Object.freeze([
 
 /**
  * Most suites per tree batch (one fresh --runInBand process each). Kept near
- * the ~120-suite hash shards the 768MB lane heap was measured on, and short
- * enough that the explicit --runTestsByPath argv stays far below the Windows
- * 32767-character command-line limit (~100 chars per absolute path).
+ * the ~120-suite shards the 768MB lane heap was measured on. Batches pass
+ * backend-relative paths (~60 chars each), far below the Windows
+ * 32767-character command-line limit.
  */
 export const TREE_BATCH_MAX_FILES = 110;
-
-const SEP = '[\\\\/]';
-
-function escapeRegex(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, match => `\\${match}`);
-}
-
-/** A backend-relative suite path as a regex matching its absolute path on either separator. */
-export function suiteTailPattern(rel) {
-  return `${rel.split('/').map(escapeRegex).join(SEP)}$`;
-}
 
 /** `file` relative to `backendDir`, with forward slashes. */
 export function toBackendRelative(backendDir, file) {
@@ -69,18 +69,12 @@ export function isTreeSuite(rel) {
 }
 
 /**
- * Jest testPathIgnorePatterns that drop exactly the TREE set from the hash
- * shards. Anchored on the backend directory's own name so `backend/__tests__/`
- * never matches `backend/modules/<x>/__tests__/`. Agreement with isTreeSuite()
- * is enforced at runtime by the runner's discovery reconciliation (a mismatch
- * shows up as a MISSING or duplicated suite and fails the run).
+ * True when a backend-relative path is a sentinel's transient plant (any path
+ * segment carries a DO_NOT_COMMIT/PLANTED marker or a reserved scratch/plant
+ * token), so discovery must not schedule it.
  */
-export function treeIgnorePatterns(backendDirName) {
-  const root = `${SEP}${escapeRegex(backendDirName)}${SEP}`;
-  return [
-    ...TREE_SUITE_DIRS.map(dir => `${root}${dir.split('/').map(escapeRegex).join(SEP)}${SEP}`),
-    ...TREE_SUITE_FILES.map(rel => `${root}${suiteTailPattern(rel)}`),
-  ];
+export function isPlantedTestPath(rel) {
+  return rel.split('/').some(segment => isReservedScratchPlantPathSegment(segment));
 }
 
 /** Consecutive slices of `size` items (the last may be shorter). */
@@ -102,68 +96,86 @@ function chunkEvenly(items, count) {
   return out;
 }
 
+function hashOrder(rel) {
+  return createHash('sha1').update(rel).digest('hex');
+}
+
 /**
- * Plan the two lanes of a sharded run.
+ * Plan the batches and lanes of a sharded run from ONE discovery.
  *
  * @param {object} input
- * @param {string[]} input.discovered  absolute suite paths from `jest --listTests`
+ * @param {string[]} input.discovered  absolute suite paths from the single `jest --listTests`
  * @param {string} input.backendDir    absolute backend directory
  * @param {(file: string) => boolean} input.isCanonical  suites owned by the canonical-db pass
- * @param {number} input.restShards    Jest hash shards for the REST set (the --jest-shards value)
- * @param {string[]} input.restArgs    extra Jest args for every REST shard (config/canonical
- *                                     ignore patterns, positional pattern)
+ * @param {number} input.shards        REST slices (the --jest-shards value)
+ * @param {number} input.lanes         1 or 2
  * @param {number} [input.maxTreeBatchFiles]
- * @returns {{ treeFiles: string[], lanes: [object[], object[]] }}
- *   lanes[0] = tree batches then the REST shards that balance it; lanes[1] = the
- *   other REST shards. Every batch has { index, label, jestArgs[, files] }.
+ * @returns {{ treeFiles: string[], lanes: object[][] }}
+ *   Two lanes: lanes[0] = tree batches then the REST slices that balance it,
+ *   lanes[1] = the other REST slices. One lane: everything in lanes[0].
+ *   Every batch is { index, label, jestArgs: ['--runTestsByPath', ...rel], files: abs[] }.
+ *   Every non-canonical discovered suite is in exactly one batch.
+ *
+ * A positional pattern narrows discovery (runner side), so a targeted run can
+ * leave a REST slice empty; empty slices are dropped rather than handed to Jest,
+ * which would exit 1 with "No tests found". The canonical gate passes no pattern.
  */
-export function planTreeLanes({
+export function planLanes({
   discovered,
   backendDir,
   isCanonical,
-  restShards,
-  restArgs,
+  shards,
+  lanes,
   maxTreeBatchFiles = TREE_BATCH_MAX_FILES,
 }) {
-  if (!Number.isInteger(restShards) || restShards < 1) {
-    throw new Error(`planTreeLanes: restShards must be a positive integer (got ${restShards})`);
+  if (!Number.isInteger(shards) || shards < 1) {
+    throw new Error(`planLanes: shards must be a positive integer (got ${shards})`);
+  }
+  if (lanes !== 1 && lanes !== 2) {
+    throw new Error(`planLanes: lanes must be 1 or 2 (got ${lanes})`);
   }
   const laneSuites = discovered.filter(file => !isCanonical(file));
-  const treeFiles = laneSuites
-    .filter(file => isTreeSuite(toBackendRelative(backendDir, file)))
-    .sort();
-  const restCount = laneSuites.length - treeFiles.length;
+  const rel = new Map(laneSuites.map(file => [file, toBackendRelative(backendDir, file)]));
+  const treeFiles = laneSuites.filter(file => isTreeSuite(rel.get(file))).sort();
+  const restFiles = laneSuites
+    .filter(file => !isTreeSuite(rel.get(file)))
+    .sort((a, b) => hashOrder(rel.get(a)).localeCompare(hashOrder(rel.get(b))));
 
-  const treeBatchCount = Math.ceil(treeFiles.length / maxTreeBatchFiles);
-  const treeBatches = chunkEvenly(treeFiles, treeBatchCount).map((files, i) => ({
-    label: `lane 1 tree ${i + 1}/${treeBatchCount}`,
-    jestArgs: ['--runTestsByPath', ...files],
+  const batch = (label, files) => ({
+    label,
+    jestArgs: ['--runTestsByPath', ...files.map(file => rel.get(file))],
     files,
-  }));
-
-  // Lane 1 takes as many REST shards as bring its suite count closest to half.
-  const perShard = restCount / restShards;
-  const wanted =
-    perShard > 0 ? Math.round((laneSuites.length / 2 - treeFiles.length) / perShard) : 0;
-  const lane1RestShards = Math.min(restShards, Math.max(0, wanted));
-
-  const ignoreArgs = treeIgnorePatterns(path.basename(backendDir)).map(
-    patternText => `--testPathIgnorePatterns=${patternText}`,
+  });
+  const treeBatchCount = Math.ceil(treeFiles.length / maxTreeBatchFiles);
+  const treeBatches = chunkEvenly(treeFiles, treeBatchCount).map((files, i) =>
+    batch(`lane 1 tree ${i + 1}/${treeBatchCount}`, files),
   );
-  const restBatches = Array.from({ length: restShards }, (_, i) => ({
-    label: `lane ${i < lane1RestShards ? 1 : 2} shard ${i + 1}/${restShards}`,
-    jestArgs: [`--shard=${i + 1}/${restShards}`, ...ignoreArgs, ...restArgs],
-  }));
+  const restSlices = chunkEvenly(restFiles, shards);
 
-  const lanes = [
-    [...treeBatches, ...restBatches.slice(0, lane1RestShards)],
-    restBatches.slice(lane1RestShards),
-  ];
+  // Lane 1 takes as many REST slices as bring its suite count closest to half.
+  const perShard = restFiles.length / shards;
+  const wanted =
+    lanes === 1
+      ? shards
+      : perShard > 0
+        ? Math.round((laneSuites.length / 2 - treeFiles.length) / perShard)
+        : 0;
+  const lane1Slices = Math.min(shards, Math.max(0, wanted));
+  const restBatches = restSlices
+    .map((files, i) => batch(`lane ${i < lane1Slices ? 1 : 2} shard ${i + 1}/${shards}`, files))
+    .map((b, i) => ({ ...b, lane: i < lane1Slices ? 0 : 1 }))
+    .filter(b => b.files.length > 0);
+
+  const planned = [
+    [...treeBatches, ...restBatches.filter(b => b.lane === 0)],
+    restBatches.filter(b => b.lane === 1),
+  ].slice(0, lanes);
   let index = 0;
-  for (const lane of lanes) {
-    for (const batch of lane) {
-      batch.index = index++;
+  for (const laneBatches of planned) {
+    for (const b of laneBatches) {
+      delete b.lane;
+      b.index = index++;
     }
   }
-  return { treeFiles, lanes };
+  return { treeFiles, lanes: planned };
 }

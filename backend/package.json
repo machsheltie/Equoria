@@ -16,6 +16,7 @@
     "test:backend:full": "node scripts/run-suite-sharded.mjs --jest-shards=8 --lanes=2 --heap=768 --timeout=600",
     "pretest:backend:ci": "node -e \"require('node:fs').mkdirSync('test-results', { recursive: true })\"",
     "test:backend:ci": "node --experimental-vm-modules --max-old-space-size=4096 node_modules/jest/bin/jest.js --maxWorkers=2 --workerIdleMemoryLimit=1500MB --ci --forceExit --json --outputFile=test-results/jest-results.json",
+    "test:backend:ci:serial": "node --experimental-vm-modules --max-old-space-size=4096 node_modules/jest/bin/jest.js --maxWorkers=1 --workerIdleMemoryLimit=1500MB --ci --forceExit --json --outputFile=test-results/jest-results.json",
     "test:backend:targeted": "node --experimental-vm-modules --max-old-space-size=1536 node_modules/jest/bin/jest.js --runInBand",
     "test:backend:diagnostic": "node scripts/diagnose-full-suite.mjs",
     "verify:gate-admission": "node scripts/verify-gate-admission.mjs",

@@ -318,11 +318,14 @@ jobs:
           # module dirs (modules/<x>/<sub>/__tests__). Verified via jest
           # --listTests: 0 files match >1 shard after this change (was 469),
           # and 0 NEW orphans. Guarded by ciShardExclusivity.sentinel.test.mjs.
-          # Equoria-rfv9j: shard 3 also owns the module suites that plant files
-          # in, or walk, the shared tree (modules/docs/__tests__ + the two named
-          # sentinels; the set is backend/scripts/tree-lane-plan.mjs), and runs
-          # SERIALLY: at --maxWorkers=2 a scanner suite read a planter's
-          # throwaway files mid-run. Guarded by treeLanePinning.sentinel.test.mjs.
+          # Equoria-rfv9j: shard 3 is the TREE set of backend/scripts/
+          # tree-lane-plan.mjs (suites that plant files in, or walk, the shared
+          # tree): backend/__tests__/ plus modules/docs/__tests__/ and the two
+          # named module sentinels. It runs serially (serial: true selects
+          # test:backend:ci:serial, one worker) because at --maxWorkers=2 a
+          # planter and a scanner can run at the same moment, the race that
+          # broke the local two-lane gate (WS4 S6). Guarded by
+          # treeLanePinning.sentinel.test.mjs.
           - shard: 3
             pattern: '^(?!.*modules/.*/__tests__/).*__tests__/|modules/docs/__tests__/|modules/grooms/__tests__/groomSalaryPassScoped\.sentinel\.test\.mjs$|modules/traits/__tests__/flagEngineSingleSource\.sentinel\.test\.mjs$'
             serial: true
@@ -401,18 +404,22 @@ jobs:
           #      counters, and Prisma client instances across hundreds of
           #      suites in a single worker.
           mkdir -p test-results
-          # Serial shard (Equoria-rfv9j): --runInBand overrides the script's
-          # --maxWorkers=2 (Jest's shouldRunInBand honours runInBand first). It
-          # only lowers concurrency.
-          serial_args=()
-          if [ "$SHARD_SERIAL" = "true" ]; then serial_args=(--runInBand); fi
-          npm run test:backend:ci -- \
-            --testPathPatterns="$SHARD_PATTERN" \
-            "${serial_args[@]}" \
-            --coverage \
-            --coverageReporters=lcov \
-            --coverageReporters=json-summary \
-            --coverageReporters=json 2>&1 | tee test-results/jest.log
+          jest_args=(
+            --testPathPatterns="$SHARD_PATTERN"
+            --coverage
+            --coverageReporters=lcov
+            --coverageReporters=json-summary
+            --coverageReporters=json
+          )
+          # Serial shard (Equoria-rfv9j): test:backend:ci:serial is the same
+          # command with --maxWorkers=1 (one recycled worker, one file at a
+          # time). jest-cli rejects --runInBand beside --maxWorkers, so the
+          # serial shard needs its own profile; it only lowers concurrency.
+          if [ "$SHARD_SERIAL" = "true" ]; then
+            npm run test:backend:ci:serial -- "${jest_args[@]}" 2>&1 | tee test-results/jest.log
+          else
+            npm run test:backend:ci -- "${jest_args[@]}" 2>&1 | tee test-results/jest.log
+          fi
 
       - name: Summarize backend failure — shard ${{ matrix.shard }}
         if: failure()
