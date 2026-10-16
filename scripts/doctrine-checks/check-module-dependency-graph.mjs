@@ -618,6 +618,7 @@ let nonliteralCount = 0;
 let commonjsCount = 0;
 let lexerCount = 0;
 let markerLines = 0; // leftover `eslint-disable-next-line no-restricted-imports -- Equoria-hk739` lines (must be 0 since WS4 S6)
+const markerSites = []; // file:line of each leftover marker — one R2 violation after the loop (S6 fix, M2)
 const sharedHops = new Map(); // shared file -> Set(importing modules)
 
 let cjsFiles = 0;
@@ -633,7 +634,12 @@ for (const file of files) {
     );
   }
   const { sites, nonliteral, commonjs, issues, rawLines } = importSites(file);
-  markerLines += rawLines.filter((l) => R2_MARKER_RE.test(l)).length;
+  rawLines.forEach((l, i) => {
+    if (R2_MARKER_RE.test(l)) {
+      markerLines += 1;
+      markerSites.push(`${rel(file)}:${i + 1}`);
+    }
+  });
   for (const is of issues) {
     lexerCount += 1;
     violations.push(
@@ -692,6 +698,13 @@ for (const file of files) {
       sharedHops.get(s.target).add(fromModule);
     }
   }
+}
+// R2 honours no marker since WS4 S6, so a leftover marker line is itself a violation — the summary's
+// "marked N" is enforced here, not merely reported (S6 fix, M2).
+if (markerLines > 0) {
+  violations.push(
+    `R2 leftover Equoria-hk739 marker line(s): ${markerLines} — delete them; R2 honours no marker since WS4 S6: ${markerSites.join(', ')}`
+  );
 }
 // deepImports is retired (WS4 S6): R2 honours no marker, so every entry is stale.
 for (const key of Object.keys(deepImportsListed)) {

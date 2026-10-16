@@ -264,6 +264,21 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.out).not.toMatch(/R2-allowlist .*marked deep import/);
   });
 
+  it('R2 (S6 fix, M2): a leftover Equoria-hk739 marker line in front of a BARREL import FAILS by itself — "marked" is enforced, not just reported', () => {
+    // auth -> horses is an existing barrel edge, so the plant adds no cycle and no deep import:
+    // the only thing wrong with it is the marker line.
+    const plant = plantFile(
+      `auth/services/${PLANT_TOKEN}marker_${RUN_ID}.mjs`,
+      "// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: sentinel plant\nimport { generateGenotype } from '../../horses/index.mjs';\nexport const planted = generateGenotype;\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toContain('R2 leftover Equoria-hk739 marker line(s): 1 — delete them');
+    expect(res.out).toContain(`${relPosix(plant)}:1`);
+    expect(res.out).not.toMatch(/cross-module deep import/);
+    expect(res.out).toMatch(/ deep-imports=0 \(marked 1 listed 0/);
+  });
+
   it('R2 (S6): the retired deepImports allow-list section must stay empty — any entry FAILS as stale', () => {
     const key = `backend/modules/economy/${PLANT_TOKEN}gone_${RUN_ID}.mjs -> backend/modules/bank/index.mjs`;
     const res = runWithExtraAllowlistEntry('deepImports', key);
