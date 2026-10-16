@@ -884,30 +884,3 @@ export const financialRateLimiter = createRateLimiter({
 // to RedisStore correctly. Do NOT re-add a deferred initializer here:
 // doing so would re-introduce the race where limiters lock to in-memory
 // before Redis connects.
-
-// Export for use in other modules
-export default {
-  createRateLimiter,
-  authRateLimiter,
-  trainingRateLimiter,
-  queryRateLimiter,
-  profileRateLimiter,
-  mutationRateLimiter,
-  adminRateLimiter,
-  foalRateLimiter,
-  breedingRateLimiter,
-  competitionRateLimiter,
-  financialRateLimiter,
-  isRedisConnected,
-  getRedisClient,
-  closeRedis,
-  getRateLimitingHealth,
-  // Equoria-hnud7: pure helpers exported for unit testing + white-box alert testing
-  redisIntentionallyDisabled,
-  shouldFailClosed,
-  _alertTimestamps,
-  emitDegradationAlert, // exported so alert throttle-window can be tested directly
-  // Equoria-4kfbh: startup fail-fast helpers (pure, unit-tested)
-  rateLimitRequiresRedis,
-  shouldFailStartupWithoutRedis,
-};
