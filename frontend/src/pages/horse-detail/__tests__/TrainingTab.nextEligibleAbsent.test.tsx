@@ -8,6 +8,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '../../../test/msw/server';
 import TrainingTab from '../TrainingTab';
 import type { Horse } from '../HorseDetailPageTypes';
+import { GAME_TIME_ZONE } from '../../../lib/gameTime';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -75,12 +76,14 @@ const renderTab = () => {
 };
 
 // The exact format TrainingResultModal.formatNextTrainingDate produces — used
-// to assert the fabricated now+7-days date is NOT rendered anywhere.
+// to assert the fabricated now+7-days date is NOT rendered anywhere. Dates
+// render on the Eastern game clock (Equoria-39m6l), never the runner's zone.
 const NEXT_TRAINING_LOCALE_OPTS: Intl.DateTimeFormatOptions = {
   weekday: 'long',
   month: 'long',
   day: 'numeric',
   year: 'numeric',
+  timeZone: GAME_TIME_ZONE,
 };
 
 describe('TrainingTab — absent server nextEligible (Equoria-gzvwa)', () => {
