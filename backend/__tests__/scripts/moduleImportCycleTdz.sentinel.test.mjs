@@ -46,6 +46,9 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // STATIC imports — these are the cycle entry points. If the TDZ regresses, the
 // import chain throws "Cannot access 'register' / 'conformationShowRoutes'
@@ -99,11 +102,42 @@ describe('module-import TDZ circular-dependency sentinel (Equoria-hk739)', () =>
     expect(typeof competitionRoutes).toBe('function'); // route module imported directly (WS4 S4)
   });
 
-  it('horses barrel still surfaces the leaf symbols for every OTHER cross-module consumer', () => {
+  it('horses barrel surfaces the symbols the former carve-outs now import from it (WS4 S6)', () => {
     expect(typeof horsesBarrel.generateGenotype).toBe('function');
     expect(typeof horsesBarrel.calculatePhenotype).toBe('function');
     expect(typeof horsesBarrel.generateMarkings).toBe('function');
     expect(typeof horsesBarrel.generateTemperamentWithDefault).toBe('function');
     expect(typeof horsesBarrel.calculateOverallConformation).toBe('function');
   });
+});
+
+// WS4 S6 (Equoria-q4uem.4): the nine Equoria-hk739 carve-outs now import the horses barrel.
+// The static imports above prove the whole graph links from this suite's entry point; this
+// block proves EVALUATION ORDER for each converted file on its own — a fresh Node process whose
+// entry point is that file, so the horses barrel is reached from it first — and fails on the
+// exact symptom hk739 guarded ("Cannot access … before initialization").
+describe('import-only evaluation-order smoke for the former hk739 carve-outs (WS4 S6)', () => {
+  const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+  const CONVERTED = [
+    'backend/modules/auth/controllers/onboardingController.mjs',
+    'backend/modules/auth/services/onboardingService.mjs',
+    'backend/modules/competition/services/conformationShowScoring.mjs',
+  ];
+  for (const file of CONVERTED) {
+    it(`${file} evaluates alone in a fresh process without a temporal-dead-zone error`, () => {
+      const url = pathToFileURL(path.join(REPO_ROOT, file)).href;
+      const res = spawnSync(
+        process.execPath,
+        [
+          '--env-file=backend/.env.test',
+          '--input-type=module',
+          '-e',
+          `const m = await import(${JSON.stringify(url)}); if (Object.keys(m).length === 0) throw new Error('no exports');`,
+        ],
+        { cwd: REPO_ROOT, encoding: 'utf8', env: { ...process.env, NODE_ENV: 'test' } },
+      );
+      expect(res.stderr).not.toMatch(/before initialization/);
+      expect(res.status).toBe(0);
+    });
+  }
 });

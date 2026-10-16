@@ -5,10 +5,9 @@
     "exception that is not listed here, AND on any listed entry that no longer matches",
     "anything on disk (delete stale entries; nothing can be grandfathered quietly).",
     "",
-    "deepImports — the Equoria-hk739 TDZ carve-outs: cross-module deep imports whose",
-    "preceding line carries `eslint-disable-next-line no-restricted-imports -- Equoria-hk739`.",
-    "Key: `<importing file> -> <imported file>` (repo-relative POSIX paths). WS4 S6 converts",
-    "them to barrel imports, makes rule R2 strict and empties this section.",
+    "deepImports — RETIRED (WS4 S6): the nine Equoria-hk739 TDZ carve-outs import the horses barrel",
+    "now, rule R2 is strict (no marker is honoured) and this section must stay empty; any entry",
+    "is stale and fails the gate.",
     "",
     "testBlockControllers — RETIRED (WS4 S5-pre, controller ruling): no barrel re-exports a controller",
     "in any block any more, so this section must stay empty; any entry is stale and fails the gate.",
@@ -17,43 +16,6 @@
     "",
     "Every entry MUST carry a `reason` (>= 40 chars) and an `issue` (Equoria-…)."
   ],
-  "deepImports": {
-    "backend/modules/auth/controllers/onboardingController.mjs -> backend/modules/horses/services/genotypeGenerationService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6.",
-      "issue": "Equoria-hk739"
-    },
-    "backend/modules/auth/controllers/onboardingController.mjs -> backend/modules/horses/services/phenotypeCalculationService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6.",
-      "issue": "Equoria-hk739"
-    },
-    "backend/modules/auth/controllers/onboardingController.mjs -> backend/modules/horses/services/markingGenerationService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6.",
-      "issue": "Equoria-hk739"
-    },
-    "backend/modules/auth/controllers/onboardingController.mjs -> backend/modules/horses/services/temperamentService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6.",
-      "issue": "Equoria-hk739"
-    },
-    "backend/modules/auth/services/onboardingService.mjs -> backend/modules/horses/services/genotypeGenerationService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6.",
-      "issue": "Equoria-hk739"
-    },
-    "backend/modules/auth/services/onboardingService.mjs -> backend/modules/horses/services/phenotypeCalculationService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6.",
-      "issue": "Equoria-hk739"
-    },
-    "backend/modules/auth/services/onboardingService.mjs -> backend/modules/horses/services/markingGenerationService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6.",
-      "issue": "Equoria-hk739"
-    },
-    "backend/modules/auth/services/onboardingService.mjs -> backend/modules/horses/services/temperamentService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6.",
-      "issue": "Equoria-hk739"
-    },
-    "backend/modules/competition/services/conformationShowScoring.mjs -> backend/modules/horses/services/conformationService.mjs": {
-      "reason": "Equoria-hk739 TDZ carve-out: leaf horses service deep-imported while the horses barrel carried the route subgraph; retired in WS4 S6 (unless ws10 B10 owns the file).",
-      "issue": "Equoria-hk739"
-    }
-  },
+  "deepImports": {},
   "testBlockControllers": {}
 }
