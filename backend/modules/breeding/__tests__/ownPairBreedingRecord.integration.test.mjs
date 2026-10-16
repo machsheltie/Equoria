@@ -16,7 +16,7 @@
  * Real DB, real HTTP, real CSRF, scoped fail-loud fixtures.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from '@jest/globals';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -28,6 +28,7 @@ import {
   moneyOf,
   seedPendingRequest,
   holdRowLockUntil,
+  disconnectLockClient,
   registerCleanup,
 } from './helpers/studBookingFixtures.mjs';
 
@@ -66,6 +67,10 @@ describe('own-pair breeding: free, recorded, sire-pinned, and blocked by a pendi
 
   afterEach(async () => {
     await cleanup.run();
+  });
+
+  afterAll(async () => {
+    await disconnectLockClient();
   });
 
   it('S-Q7: writes one OWN_PAIR COMPLETED record with fee 0; no money and no ledger rows; response shape unchanged', async () => {

@@ -19,7 +19,7 @@
  * test-held Postgres row lock (helpers/studBookingFixtures.mjs), not a seam.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from '@jest/globals';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -32,6 +32,7 @@ import {
   moneyOf,
   seedPendingRequest,
   holdRowLockUntil,
+  disconnectLockClient,
   registerCleanup,
 } from './helpers/studBookingFixtures.mjs';
 
@@ -74,6 +75,10 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
 
   afterEach(async () => {
     await cleanup.run();
+  });
+
+  afterAll(async () => {
+    await disconnectLockClient();
   });
 
   it('conserves money: the mare owner pays exactly the stored fee to the stallion owner, once, with the pregnancy', async () => {
@@ -125,18 +130,94 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     expect(notes).toHaveLength(1);
   });
 
-  it('double submit: two identical bookings charge the mare owner exactly once', async () => {
-    const [a, b] = await Promise.all([
-      bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE }),
-      bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE }),
-    ]);
+  /**
+   * Both bookings are held at the mare row (the test owns its lock) until BOTH
+   * are blocked: the first on the mare row, the second behind the first's
+   * debit. On release the first conceives; the second has already moved money
+   * by the time it reaches the dam claim, so only the guarded claim (and the
+   * rollback it throws) keeps the mare owner from paying twice.
+   */
+  async function doubleSubmitHeldAtMare() {
+    return holdRowLockUntil(
+      tx => tx.horse.update({ where: { id: mare.id }, data: { name: mare.name } }),
+      () =>
+        Promise.all([
+          bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE }),
+          bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE }),
+        ]),
+      { blockedSessions: 2 },
+    );
+  }
 
-    const statuses = [a.status, b.status].sort();
-    expect(statuses).toEqual([200, 400]);
+  function expectOneBookingCharged(results, mareOwnerStart) {
+    const ok = results.filter(r => r.status === 200);
+    const lost = results.filter(r => r.status !== 200);
+    expect(ok).toHaveLength(1);
+    expect(lost).toHaveLength(1);
+    expect(lost[0].status).toBe(400);
+    expect(lost[0].body.message).toBe(`${mare.name} is already in foal.`);
+    return Promise.all([
+      moneyOf(mareOwner.user.id),
+      moneyOf(studOwner.user.id),
+      prisma.userTransaction.count({ where: { userId: mareOwner.user.id, category: 'stud_fee_paid' } }),
+      prisma.userTransaction.count({ where: { userId: studOwner.user.id, category: 'stud_fee_received' } }),
+      prisma.breedingRecord.count({ where: { damId: mare.id } }),
+    ]).then(([a, b, paid, received, records]) => {
+      expect(a).toBe(mareOwnerStart - FEE);
+      expect(b).toBe(100 + FEE);
+      expect(paid).toBe(1);
+      expect(received).toBe(1);
+      expect(records).toBe(1);
+    });
+  }
+
+  it('double submit held at the mare row: the loser moved money before losing the dam claim, and it all rolls back', async () => {
+    const results = await doubleSubmitHeldAtMare();
+    await expectOneBookingCharged(results, 5000);
+  });
+
+  it('M-d double submit with exactly one fee in the bank: the loser answers "already in foal", not insufficient funds', async () => {
+    await prisma.user.update({ where: { id: mareOwner.user.id }, data: { money: FEE } });
+
+    const results = await doubleSubmitHeldAtMare();
+
+    await expectOneBookingCharged(results, FEE);
+    expect(results.some(r => r.body.code === 'INSUFFICIENT_FUNDS')).toBe(false);
+  });
+
+  it('the mare is sold while the booking waits on her row: 404 Mare not found, nothing moves', async () => {
+    const buyer = await player('mareBuyer', 0);
+
+    const res = await holdRowLockUntil(
+      tx => tx.horse.update({ where: { id: mare.id }, data: { userId: buyer.user.id } }),
+      () => bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE }),
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ success: false, message: 'Mare not found' });
+    expect(await moneyOf(mareOwner.user.id)).toBe(5000);
+    expect(await moneyOf(studOwner.user.id)).toBe(100);
+    expect(await prisma.userTransaction.count({ where: { userId: { in: userIds } } })).toBe(0);
+    const dam = await prisma.horse.findUnique({ where: { id: mare.id } });
+    expect(dam.inFoalSinceDate).toBeNull();
+    expect(await prisma.breedingRecord.count({ where: { damId: mare.id } })).toBe(0);
+  });
+
+  it("M-b: a mare whose id is lower than the stallion's books too (the dam-first lock branch)", async () => {
+    const laterStud = await horse({
+      ownerId: studOwner.user.id,
+      sex: 'Stallion',
+      studStatus: 'At Public Stud',
+      studFee: FEE,
+    });
+    expect(mare.id).toBeLessThan(laterStud.id);
+
+    const res = await bookStud(mareOwner.token, laterStud.id, { damId: mare.id, expectedStudFee: FEE });
+
+    expect(res.status).toBe(200);
     expect(await moneyOf(mareOwner.user.id)).toBe(5000 - FEE);
     expect(await moneyOf(studOwner.user.id)).toBe(100 + FEE);
-    expect(await prisma.userTransaction.count({ where: { userId: mareOwner.user.id } })).toBe(1);
-    expect(await prisma.breedingRecord.count({ where: { damId: mare.id } })).toBe(1);
+    expect((await prisma.horse.findUnique({ where: { id: mare.id } })).pregnancySireId).toBe(laterStud.id);
   });
 
   it('S2: two mare owners book one stallion at once; both succeed and money is conserved', async () => {
@@ -157,15 +238,21 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     expect(after).toBe(before);
   });
 
-  it('own pair racing a stud booking for the same mare: exactly one pregnancy, and money only moves if the booking won', async () => {
+  it('own pair and a stud booking both held at the mare row: exactly one pregnancy, money only if the booking won', async () => {
     const ownStallion = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion' });
 
-    const [own, booked] = await Promise.all([
-      breedOwnPair(mareOwner.token, ownStallion.id, mare.id),
-      bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE }),
-    ]);
+    const [own, booked] = await holdRowLockUntil(
+      tx => tx.horse.update({ where: { id: mare.id }, data: { name: mare.name } }),
+      () =>
+        Promise.all([
+          breedOwnPair(mareOwner.token, ownStallion.id, mare.id),
+          bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE }),
+        ]),
+      { blockedSessions: 2 },
+    );
 
     expect([own.status, booked.status].filter(s => s === 200)).toHaveLength(1);
+    expect([own.status, booked.status].filter(s => s === 400)).toHaveLength(1);
     const dam = await prisma.horse.findUnique({ where: { id: mare.id } });
     if (booked.status === 200) {
       expect(dam.pregnancySireId).toBe(stud.id);
@@ -175,6 +262,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
       expect(dam.pregnancySireId).toBe(ownStallion.id);
       expect(await moneyOf(mareOwner.user.id)).toBe(5000);
       expect(await moneyOf(studOwner.user.id)).toBe(100);
+      expect(await prisma.userTransaction.count({ where: { userId: { in: userIds } } })).toBe(0);
     }
     expect(await prisma.breedingRecord.count({ where: { damId: mare.id } })).toBe(1);
   });

@@ -155,6 +155,17 @@ export async function bookPublicStud(req, res) {
               data: { money: { decrement: fee } },
             });
             if (debit.count !== 1) {
+              // Review M-d: a booking that queued behind another breeding of
+              // this mare (a double submit) can find the money already spent.
+              // A fresh read (it sees that breeding's commit) says which loss
+              // it really is: the mare, not the money.
+              const current = await tx.horse.findUnique({
+                where: { id: damId },
+                select: { userId: true, inFoalSinceDate: true },
+              });
+              if (!current || current.userId !== requesterId || current.inFoalSinceDate) {
+                throw new ClaimLost('DAM');
+              }
               throw new BookingRefusal(400, {
                 success: false,
                 code: 'INSUFFICIENT_FUNDS',
@@ -335,14 +346,23 @@ export async function bookPublicStud(req, res) {
       return res.status(error.status).json(error.body);
     }
     if (error instanceof ClaimLost) {
-      const [status, body] = await resolveLostClaim(error.which, {
-        sireId,
-        damId,
-        requesterId,
-        stallionOwnerId,
-        expectedStudFee,
-      });
-      return res.status(status).json(body);
+      // Review M-a: this read runs inside the catch, so its own failure must
+      // be caught too (Express 4 would leave the request hanging).
+      try {
+        const [status, body] = await resolveLostClaim(error.which, {
+          sireId,
+          damId,
+          requesterId,
+          stallionOwnerId,
+          expectedStudFee,
+        });
+        return res.status(status).json(body);
+      } catch (readError) {
+        logger.error(
+          `[studBooking] could not resolve a lost ${error.which} claim: ${readError.message}`,
+        );
+        return res.status(500).json({ success: false, message: 'Internal server error' });
+      }
     }
     if (error instanceof RetryableTransactionError) {
       return res.status(error.statusCode).json({ success: false, message: error.message });
