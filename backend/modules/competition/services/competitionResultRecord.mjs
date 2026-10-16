@@ -17,6 +17,22 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 const isPlainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /**
+ * `statGains` as an object. The executors store an object; the dead
+ * resultModelService.saveResult stored a JSON string, so a string is parsed.
+ * Anything unparseable reads as nothing.
+ */
+function statGainsObject(raw) {
+  if (typeof raw !== 'string') {
+    return raw;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The stat gain stored on a ridden result, or null. `statGains` also carries
  * conformation awards, and legacy rows may hold anything, so the shape is
  * checked before it is trusted.
@@ -25,10 +41,11 @@ const isPlainObject = value => value !== null && typeof value === 'object' && !A
  * @returns {{ stat: string, gain: number } | null}
  */
 export function readStatGain(raw) {
-  if (!isPlainObject(raw) || typeof raw.stat !== 'string' || !Number.isInteger(raw.gain)) {
+  const value = statGainsObject(raw);
+  if (!isPlainObject(value) || typeof value.stat !== 'string' || !Number.isInteger(value.gain)) {
     return null;
   }
-  return { stat: raw.stat, gain: raw.gain };
+  return { stat: value.stat, gain: value.gain };
 }
 
 /**
@@ -38,10 +55,15 @@ export function readStatGain(raw) {
  * @returns {{ ribbon: string, titlePoints: number } | null}
  */
 export function readConformationAward(raw) {
-  if (!isPlainObject(raw) || typeof raw.ribbon !== 'string' || !Number.isInteger(raw.titlePoints)) {
+  const value = statGainsObject(raw);
+  if (
+    !isPlainObject(value) ||
+    typeof value.ribbon !== 'string' ||
+    !Number.isInteger(value.titlePoints)
+  ) {
     return null;
   }
-  return { ribbon: raw.ribbon, titlePoints: raw.titlePoints };
+  return { ribbon: value.ribbon, titlePoints: value.titlePoints };
 }
 
 const toNumberOrNull = value => (value === null || value === undefined ? null : Number(value));

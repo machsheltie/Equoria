@@ -38,6 +38,18 @@ describe('readStatGain', () => {
   });
 });
 
+describe('legacy JSON-string statGains (written by the dead resultModelService.saveResult)', () => {
+  it('reads a stringified stat gain or ribbon, and rejects an unparseable string', () => {
+    expect(readStatGain(JSON.stringify({ stat: 'speed', gain: 1 }))).toEqual({ stat: 'speed', gain: 1 });
+    expect(readConformationAward(JSON.stringify({ ribbon: 'Blue', titlePoints: 10 }))).toEqual({
+      ribbon: 'Blue',
+      titlePoints: 10,
+    });
+    expect(readStatGain('{not json')).toBeNull();
+    expect(readStatGain(JSON.stringify([{ stat: 'speed', gain: 1 }]))).toBeNull();
+  });
+});
+
 describe('readConformationAward', () => {
   it('reads a ribbon award and rejects a stat-gain shape', () => {
     expect(readConformationAward({ ribbon: 'Red', titlePoints: 7 })).toEqual({ ribbon: 'Red', titlePoints: 7 });

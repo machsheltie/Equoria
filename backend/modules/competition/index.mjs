@@ -12,6 +12,9 @@
 export { applyRiderCompatibility } from './services/competitionScoring.mjs';
 export { isValidConformationClass } from './services/conformationShowScoring.mjs';
 export { getResultsByHorse } from './services/resultModelService.mjs';
+// The CompetitionResult.statGains guards: the horse history read (app layer)
+// needs them to tell a ridden stat gain from a conformation ribbon.
+export { readStatGain, readConformationAward } from './services/competitionResultRecord.mjs';
 // executeClosedShows is the overnight show executor: a service with an optional
 // Express (req, res) signature, called by the nightly jobs
 // (services/jobs/impl/retentionMaintenance.mjs, showExecutionReaper.mjs) with no
