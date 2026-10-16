@@ -88,6 +88,24 @@ function buy(token, horseId) {
   );
 }
 
+/**
+ * The REAL route as a caller who does not own the horse: `requireOwnership`
+ * answers before the controller runs. Its body is the reference the guarded
+ * claim's 404 must equal byte for byte (CWE-639: a horse sold mid-request must
+ * look exactly like a horse the caller never owned).
+ */
+function studListingViaRoute(method, token, horseId, body) {
+  return fetchCsrf(app).then(csrf => {
+    const agent = request(app);
+    const req = agent[method](`/api/v1/horses/${horseId}/stud-listing`)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken);
+    return body ? req.send(body) : req;
+  });
+}
+
 function makeRes() {
   let statusCode = 200;
   let body = null;
@@ -153,6 +171,11 @@ describe('stud listing follows the owner, not the horse (Equoria-q4uem.9 slice 1
     await listHorseAtStud({ horse: staleSnapshot, body: { studFee: 99 }, user: { id: seller.user.id } }, res);
 
     expect(res.statusValue).toBe(404);
+    const middleware404 = await studListingViaRoute('post', seller.token, stallion.id, { studFee: 99 });
+    expect(middleware404.status).toBe(404);
+    expect(res.jsonValue).toEqual({ success: false, message: 'Horse not found', status: 'fail' });
+    expect(res.jsonValue).toEqual(middleware404.body);
+
     const after = await prisma.horse.findUnique({ where: { id: stallion.id } });
     expect(after.userId).toBe(buyer.user.id);
     expect(after.studStatus).toBe('Not at Stud');
@@ -175,6 +198,11 @@ describe('stud listing follows the owner, not the horse (Equoria-q4uem.9 slice 1
     await unlistHorseAtStud({ horse: staleSnapshot, body: {}, user: { id: seller.user.id } }, res);
 
     expect(res.statusValue).toBe(404);
+    const middleware404 = await studListingViaRoute('delete', seller.token, stallion.id);
+    expect(middleware404.status).toBe(404);
+    expect(res.jsonValue).toEqual({ success: false, message: 'Horse not found', status: 'fail' });
+    expect(res.jsonValue).toEqual(middleware404.body);
+
     const after = await prisma.horse.findUnique({ where: { id: stallion.id } });
     expect(after.studStatus).toBe('At Public Stud');
     expect(after.studFee).toBe(4321);

@@ -16,14 +16,40 @@
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import {
+  withRetryableTxMapping,
+  RetryableTransactionError,
+} from '../../../utils/retryableTransaction.mjs';
+import { AppError } from '../../../errors/index.mjs';
 
 const STUD_LISTING_SELECT = { id: true, name: true, sex: true, studStatus: true, studFee: true };
 const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a moment.';
 
-/** Same body `requireOwnership('horse')` sends for a horse the caller cannot see (CWE-639). */
+/** The error `requireOwnership('horse')` throws for a horse the caller cannot see (CWE-639). */
 function horseNotFound() {
-  return Object.assign(new Error('Horse not found'), { statusCode: 404 });
+  return new AppError('Horse not found', 404);
+}
+
+/**
+ * Map an error thrown out of a listing transaction. A retryable 503 keeps its
+ * `{ success, message }` body; any other AppError (the guarded-claim 404) gets
+ * exactly the body the ownership middleware sends (ownership.mjs, its
+ * `AppError.isAppError` branch), so a horse sold mid-request is
+ * indistinguishable from a horse the caller never owned. Returns null for an
+ * unexpected error, which the caller logs as a 500.
+ */
+function sendMappedError(res, error) {
+  if (error instanceof RetryableTransactionError) {
+    return res.status(error.statusCode).json({ success: false, message: error.message });
+  }
+  if (AppError.isAppError(error)) {
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+      status: error.status,
+    });
+  }
+  return null;
 }
 
 /**
@@ -58,17 +84,20 @@ export async function listHorseAtStud(req, res) {
     const horseId = req.horse.id;
     const ownerId = req.user.id;
     const updated = await withRetryableTxMapping(
-      prisma.$transaction(async tx => {
-        // Guarded claim: the caller must STILL own this stallion at write time.
-        const claim = await tx.horse.updateMany({
-          where: { id: horseId, userId: ownerId, sex: 'Stallion' },
-          data: { studStatus: 'At Public Stud', studFee },
-        });
-        if (claim.count !== 1) {
-          throw horseNotFound();
-        }
-        return tx.horse.findUnique({ where: { id: horseId }, select: STUD_LISTING_SELECT });
-      }),
+      prisma.$transaction(
+        async tx => {
+          // Guarded claim: the caller must STILL own this stallion at write time.
+          const claim = await tx.horse.updateMany({
+            where: { id: horseId, userId: ownerId, sex: 'Stallion' },
+            data: { studStatus: 'At Public Stud', studFee },
+          });
+          if (claim.count !== 1) {
+            throw horseNotFound();
+          }
+          return tx.horse.findUnique({ where: { id: horseId }, select: STUD_LISTING_SELECT });
+        },
+        { timeout: 30000 },
+      ),
       { message: BUSY_MESSAGE },
     );
 
@@ -82,8 +111,9 @@ export async function listHorseAtStud(req, res) {
       data: updated,
     });
   } catch (error) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
+    const mapped = sendMappedError(res, error);
+    if (mapped) {
+      return mapped;
     }
     logger.error(
       `[horseController.listHorseAtStud] Error: ${error.message}\nStack: ${error.stack}`,
@@ -108,17 +138,20 @@ export async function unlistHorseAtStud(req, res) {
     const horseId = req.horse.id;
     const ownerId = req.user.id;
     const updated = await withRetryableTxMapping(
-      prisma.$transaction(async tx => {
-        // Guarded claim: the caller must STILL own this horse at write time.
-        const claim = await tx.horse.updateMany({
-          where: { id: horseId, userId: ownerId },
-          data: { studStatus: 'Not at Stud', studFee: 0 },
-        });
-        if (claim.count !== 1) {
-          throw horseNotFound();
-        }
-        return tx.horse.findUnique({ where: { id: horseId }, select: STUD_LISTING_SELECT });
-      }),
+      prisma.$transaction(
+        async tx => {
+          // Guarded claim: the caller must STILL own this horse at write time.
+          const claim = await tx.horse.updateMany({
+            where: { id: horseId, userId: ownerId },
+            data: { studStatus: 'Not at Stud', studFee: 0 },
+          });
+          if (claim.count !== 1) {
+            throw horseNotFound();
+          }
+          return tx.horse.findUnique({ where: { id: horseId }, select: STUD_LISTING_SELECT });
+        },
+        { timeout: 30000 },
+      ),
       { message: BUSY_MESSAGE },
     );
 
@@ -130,8 +163,9 @@ export async function unlistHorseAtStud(req, res) {
       data: updated,
     });
   } catch (error) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
+    const mapped = sendMappedError(res, error);
+    if (mapped) {
+      return mapped;
     }
     logger.error(
       `[horseController.unlistHorseAtStud] Error: ${error.message}\nStack: ${error.stack}`,
