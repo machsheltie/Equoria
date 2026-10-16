@@ -24,6 +24,7 @@ import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readdirSyncTolerant } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
@@ -60,15 +61,21 @@ function cleanupPlants() {
   planted.length = 0;
 }
 
+// Equoria-rfv9j (gate equoria-shard-7QaJDm): another suite's plant directory under
+// backend/modules (e.g. adminMfaCoverage's _e4a2y_doctrine_sentinel) can vanish between
+// this scan's readdir and its stat. A vanished entry is not one of OUR strays — ours are
+// removed synchronously in cleanupPlants() before every scan, so a leftover of ours still
+// exists — so ENOENT alone is ignored (readdirSyncTolerant / throwIfNoEntry:false) and
+// every other error still throws, as in the WS4 module-graph gate.
 function strayPlants() {
   const found = [];
   const scan = (dir, depth) => {
-    for (const name of fs.readdirSync(dir)) {
+    for (const name of readdirSyncTolerant(dir, undefined, 'horse-name-gated-sentinel')) {
       const abs = path.join(dir, name);
       if (name.includes(PLANT_TOKEN)) {
         found.push(relPosix(abs));
       }
-      if (depth > 0 && fs.statSync(abs).isDirectory() && name !== 'node_modules') {
+      if (depth > 0 && name !== 'node_modules' && fs.statSync(abs, { throwIfNoEntry: false })?.isDirectory()) {
         scan(abs, depth - 1);
       }
     }
