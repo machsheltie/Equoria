@@ -7,7 +7,7 @@
  * (Equoria-mwjst): it let any owner rewind the daily feed authority.
  */
 import { GESTATION_DAYS } from '../../../constants/time.mjs';
-import { getHorseById } from '../services/horseModelService.mjs';
+import { getHorseById } from '../services/horseRouteQueries.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';

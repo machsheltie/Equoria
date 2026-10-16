@@ -19,7 +19,8 @@
  * @module modules/horses/services/foalingService
  */
 
-import { createHorse, getHorseById } from './horseModelService.mjs';
+import { createHorse } from './horseCreation.mjs';
+import { getHorseById } from './horseRouteQueries.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 import {
   generateConformationScores,
@@ -619,5 +620,3 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
   );
   return { foalsBorn, errors };
 }
-
-export default { createFoalFromPregnancy, runFoalingJob };

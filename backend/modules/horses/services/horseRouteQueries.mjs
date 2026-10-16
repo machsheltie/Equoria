@@ -10,9 +10,13 @@
  * y8u2j agent moves into a sub-router takes its prisma calls with it via
  * follow-up commits; this service stays as the canonical place to add
  * future helpers for routes left in the parent.
+ *
+ * It is also the home of the module's by-id read, getHorseById (Equoria-q4uem.7
+ * S2), the query half of the former horseModelService.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * The horse-list select shape (Equoria-tkyx, Equoria-lvjy, Equoria-u7e6,
@@ -136,4 +140,41 @@ export function getHorseCompetitionResultsForPrizeSummary(horseId) {
       prizeWon: true,
     },
   });
+}
+
+/**
+ * The horses module's by-id read (Equoria-q4uem.7 S2: moved here from the former
+ * horseModelService, the query half of its command/query split). Returns the horse
+ * with its breed and stable, or null. The owner's user row (password hash, MFA
+ * secret) is never loaded; no caller reads it.
+ *
+ * @param {number|string} id
+ * @returns {Promise<object|null>}
+ */
+export async function getHorseById(id) {
+  try {
+    // Validate ID
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId) || numericId <= 0) {
+      throw new Error('Invalid horse ID provided');
+    } // Refactored to use Prisma client with relations
+    const horse = await prisma.horse.findUnique({
+      where: { id: numericId },
+      include: {
+        breed: true,
+        stable: true,
+      },
+    });
+
+    if (horse) {
+      logger.info(
+        `[horseModel.getHorseById] Successfully found horse: ${horse.name} (ID: ${horse.id})`,
+      );
+    }
+
+    return horse; // Returns null if not found, which is Prisma's default
+  } catch (error) {
+    logger.error('[horseModel.getHorseById] Database error: %o', error);
+    throw new Error(`Database error in getHorseById: ${error.message}`, { cause: error });
+  }
 }

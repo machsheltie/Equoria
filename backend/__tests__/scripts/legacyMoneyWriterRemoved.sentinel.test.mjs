@@ -29,9 +29,9 @@
  * competitionAwards.mjs) does not trip it.
  *
  * updateHorseStat is DELIBERATELY NOT in the forbidden set: it is a stat writer
- * (not a money writer), out of slice 2's named scope, and still exported from
- * horseUpdates.mjs. (It is itself a production-orphan duplicate of the live
- * horseModelService.updateHorseStat — removal tracked as a 709qm follow-up.)
+ * (not a money writer), out of slice 2's named scope. Both of its former copies
+ * (utils/horseUpdates.mjs and horseModelService.updateHorseStat) were deleted as
+ * production-orphan dead code in Equoria-q4uem.7 S2 (Equoria-rtw4h).
  *
  * PLANTED-VIOLATION proof (OPTIMAL_FIX §2): the tests below construct synthetic
  * sources and assert the detector FIRES on a re-created definition / re-wired

@@ -34,7 +34,7 @@
  */
 
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
-import { createHorse } from './horseModelService.mjs';
+import { createHorse } from './horseCreation.mjs';
 import { generateConformationScores } from './conformationService.mjs';
 import { generateGaitScores } from './gaitService.mjs';
 import { generateTemperament } from './temperamentService.mjs';

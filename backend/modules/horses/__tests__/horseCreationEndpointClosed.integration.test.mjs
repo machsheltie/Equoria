@@ -60,7 +60,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { createHorse } from '../services/horseModelService.mjs';
+import { createHorse } from '../services/horseCreation.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const STORE_PRICE = 1000; // mirrors marketplaceController.STORE_PRICE

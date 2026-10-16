@@ -45,7 +45,7 @@
 //      Allow-listing those would have padded the list with false positives and
 //      turned the gate into noise — a guard that passes without guarding.
 //   B. A call to `createHorse(` — the model-level insert in
-//      `horses/services/horseModelService.mjs`, which writes `name` and caps
+//      `horses/services/horseCreation.mjs`, which writes `name` and caps
 //      nothing itself.
 //   C. Raw SQL containing `UPDATE horses ... SET ... name`.
 //
