@@ -242,28 +242,32 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
   // double-apply through — fails this test. Mirrors the FOR-UPDATE-absence
   // sentinel pattern in feedHorseService.test.mjs (Equoria-zvp4).
   describe('source sentinel — createFoal uses an optimistic guarded write (Equoria-9gsxg)', () => {
-    it('starts the pregnancy via updateMany with an inFoalSinceDate:null precondition (the guard)', () => {
-      // The guarded write is <client>.horse.updateMany({ where: { id, ..., inFoalSinceDate: null }, ... }).
-      // Equoria-q4uem.9 (design M-6): it now runs on the transaction client `tx`
-      // inside one wrapped transaction with the sire pin, so the client may be
-      // `prisma` or `tx`; the guard itself (updateMany + null precondition) is
-      // what this asserts. Assert both the updateMany call and the null precondition are present.
-      expect(FOALING_CONTROLLER_SRC).toMatch(/(?:prisma|tx)\.horse\.updateMany\(/);
-      expect(FOALING_CONTROLLER_SRC).toMatch(/inFoalSinceDate:\s*null/);
+    // Equoria-q4uem.9: the claim now runs on the transaction client inside the
+    // wrapped own-pair transaction, beside a sire pin that is ALSO an
+    // updateMany and whose data comes from pregnancyClaimData(). A loose
+    // "some updateMany exists" + "inFoalSinceDate: null appears somewhere"
+    // check therefore no longer proves anything (slice-2 review I-1 showed a
+    // findFirst + unguarded update passing it), so every assertion below is
+    // tied to the DAM claim itself: the statement that starts the pregnancy.
+    it('starts the pregnancy via a guarded updateMany on the dam whose WHERE carries inFoalSinceDate:null (the guard)', () => {
+      expect(FOALING_CONTROLLER_SRC).toMatch(
+        /tx\.horse\.updateMany\(\{\s*where:\s*\{\s*id:\s*dam\.id,[^}]*inFoalSinceDate:\s*null/,
+      );
     });
 
     it('asserts the affected-row count and rejects on 0 (no silent double-apply)', () => {
       expect(FOALING_CONTROLLER_SRC).toMatch(/affected\s*===\s*0/);
     });
 
-    it('does NOT start the pregnancy via an unconditional prisma.horse.update (the racy read-then-write shape)', () => {
+    it('does NOT read-then-write the dam (no update/findFirst/findUnique keyed on the dam id: the racy shape)', () => {
       // The resetHorseLastFed E2E helper that used to hold this controller's
-      // only prisma.horse.update call was removed (Equoria-mwjst). The
-      // pregnancy-start write MUST go through the guarded
-      // updateMany. Assert no `prisma.horse.update(...)` call references
-      // inFoalSinceDate — a regression to the unconditional read-then-write
-      // shape would reintroduce that and fail here.
-      expect(FOALING_CONTROLLER_SRC).not.toMatch(/(?:prisma|tx)\.horse\.update\([^)]*inFoalSinceDate/s);
+      // only horse.update call was removed (Equoria-mwjst). A regression to a
+      // read-then-write on the dam (find the dam "not in foal", then an
+      // unconditional update) is exactly what a concurrent loser would
+      // double-apply through; any such statement keyed on dam.id fails here.
+      expect(FOALING_CONTROLLER_SRC).not.toMatch(
+        /\.horse\.(?:update|findFirst|findUnique)\(\{\s*where:\s*\{\s*id:\s*dam\.id/,
+      );
     });
   });
 });
