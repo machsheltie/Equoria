@@ -20,8 +20,8 @@
  *      user-row lock the outer tx already holds (P2028). Because this file holds
  *      no `$transaction`, it never enters the retryableTransactionWrapping pin
  *      table.
- *   2. The award TABLE is the PRD-03 §2.1 contract, frozen and pinned by a
- *      sentinel test — editing a constant away from the PRD fails CI.
+ *   2. The award TABLE is the owner-ruled table (R8, 2026-10-15), frozen and pinned by a
+ *      sentinel test — editing a constant away from the ruling fails CI.
  */
 
 // Cross-module imports go through the module barrels (ESLint-enforced boundary,
@@ -33,22 +33,22 @@ import { addXpToUserCore } from '../../users/index.mjs';
 import { calculateStatGains } from '../../../utils/competitionRewards.mjs';
 
 /**
- * PRD-03 §2.1 award table (docs/product/PRD-03-Gameplay-Systems.md:141-146).
- * Verified equal to the legacy constants (awardCompetitionXp = 20 base + 10/7/5;
- * enterAndRunShow user-XP switch = 20/15/10; calculateStatGains = 0.10/0.05/0.03).
- * Frozen so a mutation is a compile-time-ish error and pinned by
- * competitionAwards.test.mjs (§5.D sentinel).
+ * Award table. Horse Points (stored as `horseXp`) are 10 / 5 / 3 for 1st / 2nd /
+ * 3rd and 1 for every other finisher: owner ruling R8 (Stacey, 2026-10-15) and
+ * BIBLE 13:209-210 [LOCKED] (Equoria-576c0 B1; was PRD-03 §2.1's 30/27/25/20).
+ * Player XP 20/15/10 (BIBLE 13:86-88) and the 10/5/3% stat-gain chances are
+ * unchanged. Frozen and pinned by competitionAwards.test.mjs.
  */
 const PLACEMENT_AWARD_TABLE = Object.freeze({
-  1: Object.freeze({ horseXp: 30, userXp: 20, statGainChance: 0.1, ordinal: '1st' }),
-  2: Object.freeze({ horseXp: 27, userXp: 15, statGainChance: 0.05, ordinal: '2nd' }),
-  3: Object.freeze({ horseXp: 25, userXp: 10, statGainChance: 0.03, ordinal: '3rd' }),
+  1: Object.freeze({ horseXp: 10, userXp: 20, statGainChance: 0.1, ordinal: '1st' }),
+  2: Object.freeze({ horseXp: 5, userXp: 15, statGainChance: 0.05, ordinal: '2nd' }),
+  3: Object.freeze({ horseXp: 3, userXp: 10, statGainChance: 0.03, ordinal: '3rd' }),
 });
 
-// Participation award for 4th place and beyond: the PRD grants every entrant the
-// base 20 horse XP (the legacy path under-awarded — it only ran inside
-// `if (placement)` so 4th+ got nothing), but NO user XP and NO stat-gain roll.
-const PARTICIPATION_AWARD = Object.freeze({ horseXp: 20, userXp: 0, statGainChance: 0 });
+// Every completed competition earns Horse Points, including non-placement
+// (BIBLE 13:209): 1 Horse Point for 4th and beyond, but NO player XP and NO
+// stat-gain roll.
+const PARTICIPATION_AWARD = Object.freeze({ horseXp: 1, userXp: 0, statGainChance: 0 });
 
 /**
  * Map a NUMERIC placement (the executor stores placement as "1"/"2"/"3"…; this

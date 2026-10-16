@@ -7,7 +7,7 @@
  * not say what the horse earned (BIBLE 13: "the result history should record
  * whether a stat increased and which stat"; "history should not be recomputed").
  *
- * A1 RECORDS what the award table pays today (30/27/25/20, PRD-03 §2.1). It
+ * A1 RECORDS what the award table pays (10/5/3/1 since Track B B1, owner ruling R8). It
  * changes no award, roll or odds; Track B slice B1 (Equoria-576c0) moves the
  * table to the LOCKED 10/5/3/1, and this test then follows the table through
  * computePlacementAwards rather than a literal.
@@ -132,7 +132,7 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
     expect(results).toHaveLength(4);
     for (const r of results) {
       const placement = Number(r.placement);
-      // Whatever the table pays today — 30/27/25/20 until Track B B1.
+      // Whatever the table pays: 10/5/3/1 (owner ruling R8, Track B B1).
       expect(r.horsePointsAwarded).toBe(computePlacementAwards(placement).horseXp);
 
       const after = await prisma.horse.findUnique({ where: { id: r.horseId }, select: STAT_SELECT });

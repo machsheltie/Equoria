@@ -19,11 +19,12 @@
  *   C. Atomicity — a planted P2002 on competitionResult.create rolls back the
  *      whole per-entry unit (no partial XP / money / stat award).
  *
- * PRD-03 §2.1 award table (pinned in competitionAwards.computePlacementAwards):
- *   1st -> horseXp 30, userXp 20, statChance 10%
- *   2nd -> horseXp 27, userXp 15, statChance  5%
- *   3rd -> horseXp 25, userXp 10, statChance  3%
- *   4th+-> horseXp 20, userXp  0, statChance  0%
+ * Award table (pinned in competitionAwards.computePlacementAwards). Horse
+ * Points per owner ruling R8 (2026-10-15); user XP and stat chances unchanged:
+ *   1st -> Horse Points 10, userXp 20, statChance 10%
+ *   2nd -> Horse Points  5, userXp 15, statChance  5%
+ *   3rd -> Horse Points  3, userXp 10, statChance  3%
+ *   4th+-> Horse Points  1, userXp  0, statChance  0%
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
@@ -37,7 +38,8 @@ const uid = () => `${randomBytes(6).toString('hex')}`;
 
 // Expected horse-XP by numeric-string placement (the executor stores placement
 // as a numeric string — "1"/"2"/"3"/"4"). Derived from the PRD table.
-const HORSE_XP_BY_PLACEMENT = { 1: 30, 2: 27, 3: 25, 4: 20 };
+// Owner ruling R8 (2026-10-15): Horse Points 10/5/3/1 (old contract: 30/27/25/20).
+const HORSE_XP_BY_PLACEMENT = { 1: 10, 2: 5, 3: 3, 4: 1 };
 const USER_XP_BY_PLACEMENT = { 1: 20, 2: 15, 3: 10, 4: 0 };
 
 const cleanup = createCleanupTracker();
@@ -344,7 +346,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
   // must roll back the ENTIRE unit — no partial horse XP, owner XP, stat, or money
   // award. This is the sentinel-positive for AC5 ("awards are INSIDE the tx"): if
   // the XP/stat writes were moved outside the tx (like the fail-soft rider XP),
-  // the horse would still gain 30 XP despite the rollback and this test would fail.
+  // the horse would still gain its Horse Points despite the rollback and this test would fail.
   //
   // Single-entry show by design: multi-entry blast-radius + fee-escrow-settlement
   // reachability under a mid-Promise.all rejection is the SEPARATE Equoria-wmwbr

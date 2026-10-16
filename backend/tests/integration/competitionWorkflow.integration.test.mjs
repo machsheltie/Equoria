@@ -465,13 +465,13 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     expect(competitionXpEvent).toBeTruthy();
     expect(competitionXpEvent.amount).toBe(20);
 
-    // Horse XP: 1st place -> 30 horse XP with a matching HorseXpEvent audit row.
+    // Horse Points: 1st place -> 10 (owner ruling R8; old contract 30) with a matching HorseXpEvent row.
     const horseXpEvent = await prisma.horseXpEvent.findFirst({
       where: { horseId: competitionHorse.id, reason: { contains: 'place in' } },
       orderBy: { id: 'desc' },
     });
     expect(horseXpEvent).toBeTruthy();
-    expect(horseXpEvent.amount).toBe(30);
+    expect(horseXpEvent.amount).toBe(10);
 
     // The post-cron user row (xpBeforeAward — read in STEP 5, AFTER the STEP 4
     // cron) already reflects the owner XP the cron applied: initialXp + 20.

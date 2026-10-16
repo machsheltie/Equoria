@@ -76,39 +76,41 @@ async function makeHorse(ownerId, overrides = {}) {
   );
 }
 
-describe('computePlacementAwards — PRD-03 §2.1 table sentinel (Equoria-oey96.4)', () => {
+// Owner ruling R8 (2026-10-15, BIBLE 13:209-210 LOCKED): Horse Points 10/5/3/1.
+// Old contract: PRD-03 §2.1 horse XP 30/27/25/20 (Equoria-576c0 B1).
+describe('computePlacementAwards — Horse Points table sentinel (R8; was PRD-03 §2.1)', () => {
   it('pins the four canonical rows exactly', () => {
     expect(computePlacementAwards(1)).toEqual({
-      horseXp: 30,
+      horseXp: 10,
       userXp: 20,
       statGainChance: 0.1,
       ordinal: '1st',
     });
     expect(computePlacementAwards(2)).toEqual({
-      horseXp: 27,
+      horseXp: 5,
       userXp: 15,
       statGainChance: 0.05,
       ordinal: '2nd',
     });
     expect(computePlacementAwards(3)).toEqual({
-      horseXp: 25,
+      horseXp: 3,
       userXp: 10,
       statGainChance: 0.03,
       ordinal: '3rd',
     });
     // 4th+: base participation horse XP only, no user XP, no stat roll.
     expect(computePlacementAwards(4)).toEqual({
-      horseXp: 20,
+      horseXp: 1,
       userXp: 0,
       statGainChance: 0,
       ordinal: '4th',
     });
   });
 
-  it('treats any placement >= 4 as participation (20 horse XP, nothing else)', () => {
+  it('treats any placement >= 4 as participation (1 Horse Point, nothing else)', () => {
     for (const n of [5, 10, 50]) {
       expect(computePlacementAwards(n)).toEqual({
-        horseXp: 20,
+        horseXp: 1,
         userXp: 0,
         statGainChance: 0,
         ordinal: `${n}th`,
@@ -119,7 +121,7 @@ describe('computePlacementAwards — PRD-03 §2.1 table sentinel (Equoria-oey96.
   it('defensively maps invalid input to participation without throwing', () => {
     for (const bad of [0, -1, NaN, undefined, null, 2.5]) {
       const a = computePlacementAwards(bad);
-      expect(a.horseXp).toBe(20);
+      expect(a.horseXp).toBe(1);
       expect(a.userXp).toBe(0);
       expect(a.statGainChance).toBe(0);
     }
@@ -127,7 +129,7 @@ describe('computePlacementAwards — PRD-03 §2.1 table sentinel (Equoria-oey96.
 });
 
 describe('awardPlacementProgression — determinism + stat cap (Equoria-oey96.4)', () => {
-  it('rng()=0 at 1st place: +30 horse XP, +20 owner XP with XpEvent, +1 on a Dressage stat', async () => {
+  it('rng()=0 at 1st place: +10 Horse Points, +20 owner XP with XpEvent, +1 on a Dressage stat', async () => {
     const owner = await makeOwner();
     const horse = await makeHorse(owner.id); // precision 50 (< 100)
 
@@ -140,7 +142,7 @@ describe('awardPlacementProgression — determinism + stat cap (Equoria-oey96.4)
       rng: () => 0,
     });
 
-    expect(awards.horseXp).toBe(30);
+    expect(awards.horseXp).toBe(10);
     // rng()=0 -> chance passes (0 <= 0.10) and relevantStats[floor(0*3)] = index 0.
     expect(statGain).toEqual({ stat: 'precision', gain: 1 });
 
@@ -148,11 +150,11 @@ describe('awardPlacementProgression — determinism + stat cap (Equoria-oey96.4)
       where: { id: horse.id },
       select: { horseXp: true, precision: true },
     });
-    expect(h.horseXp).toBe(30);
+    expect(h.horseXp).toBe(10);
     expect(h.precision).toBe(51); // 50 + 1
     const hEvents = await prisma.horseXpEvent.findMany({ where: { horseId: horse.id } });
     expect(hEvents).toHaveLength(1);
-    expect(hEvents[0].amount).toBe(30);
+    expect(hEvents[0].amount).toBe(10);
 
     const u = await prisma.user.findUnique({ where: { id: owner.id }, select: { xp: true } });
     expect(u.xp).toBe(20);
@@ -197,11 +199,11 @@ describe('awardPlacementProgression — determinism + stat cap (Equoria-oey96.4)
       where: { id: horse.id },
       select: { horseXp: true, precision: true },
     });
-    expect(h.horseXp).toBe(30);
+    expect(h.horseXp).toBe(10);
     expect(h.precision).toBe(50); // unchanged
   }, 30000);
 
-  it('4th place with rng()=0: +20 horse XP only — no owner XP, no stat gain (table teeth)', async () => {
+  it('4th place with rng()=0: +1 Horse Point only — no owner XP, no stat gain (table teeth)', async () => {
     const owner = await makeOwner();
     const horse = await makeHorse(owner.id);
 
@@ -214,7 +216,7 @@ describe('awardPlacementProgression — determinism + stat cap (Equoria-oey96.4)
       rng: () => 0, // chance is 0 for 4th -> calculateStatGains never consulted
     });
 
-    expect(awards.horseXp).toBe(20);
+    expect(awards.horseXp).toBe(1);
     expect(awards.userXp).toBe(0);
     expect(statGain).toBeNull();
 
@@ -222,7 +224,7 @@ describe('awardPlacementProgression — determinism + stat cap (Equoria-oey96.4)
       where: { id: horse.id },
       select: { horseXp: true, precision: true },
     });
-    expect(h.horseXp).toBe(20);
+    expect(h.horseXp).toBe(1);
     expect(h.precision).toBe(50);
     const u = await prisma.user.findUnique({ where: { id: owner.id }, select: { xp: true } });
     expect(u.xp).toBe(0); // no owner XP for 4th
