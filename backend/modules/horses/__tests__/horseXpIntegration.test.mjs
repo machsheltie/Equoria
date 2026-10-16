@@ -86,49 +86,22 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
   });
 
   describe('Competition Integration', () => {
-    it('should award horse XP when horse places in competition', async () => {
-      // Simulate a competition result by directly calling the horse XP model
-      const { awardCompetitionXp } = await import('../services/horseXpModelService.mjs');
-
-      const result = await awardCompetitionXp(testHorseId, '1st', 'Dressage');
-
-      expect(result.success).toBe(true);
-      expect(result.xpAwarded).toBe(30); // 20 base + 10 for 1st place
-      expect(result.currentXP).toBe(30);
-      expect(result.statPointsGained).toBe(0); // Not enough for stat point yet
-
-      // Verify horse was updated in database
-      const updatedHorse = await prisma.horse.findUnique({
-        where: { id: testHorseId },
-      });
-
-      expect(updatedHorse.horseXp).toBe(30);
-      expect(updatedHorse.availableStatPoints).toBe(0);
-
-      // Verify XP event was logged
-      const xpEvents = await prisma.horseXpEvent.findMany({
-        where: { horseId: testHorseId },
-      });
-
-      expect(xpEvents).toHaveLength(1);
-      expect(xpEvents[0].amount).toBe(30);
-      expect(xpEvents[0].reason).toBe('Competition: 1st place in Dressage');
-    });
-
     it('should award stat points when horse reaches 100 XP', async () => {
-      const { awardCompetitionXp } = await import('../services/horseXpModelService.mjs');
+      // Setup re-seeded via the live addXpToHorse (the dead awardCompetitionXp was
+      // removed, Equoria-576c0 B1); same amounts as before, assertions unchanged.
+      const { addXpToHorse } = await import('../services/horseXpModelService.mjs');
 
       // Award enough XP to get stat points (100 XP = 1 stat point)
-      const _result1 = await awardCompetitionXp(testHorseId, '1st', 'Racing');
-      const _result2 = await awardCompetitionXp(testHorseId, '1st', 'Show Jumping');
-      const result3 = await awardCompetitionXp(testHorseId, '2nd', 'Dressage');
+      await addXpToHorse(testHorseId, 30, 'Test seed: competition 1');
+      await addXpToHorse(testHorseId, 30, 'Test seed: competition 2');
+      const result3 = await addXpToHorse(testHorseId, 27, 'Test seed: competition 3');
 
       // Total: 30 + 30 + 27 = 87 XP (not enough yet)
       expect(result3.currentXP).toBe(87);
       expect(result3.statPointsGained).toBe(0);
 
       // One more competition to push over 100
-      const result4 = await awardCompetitionXp(testHorseId, '3rd', 'Cross Country');
+      const result4 = await addXpToHorse(testHorseId, 25, 'Test seed: competition 4');
 
       // Total: 87 + 25 = 112 XP (should get 1 stat point)
       expect(result4.success).toBe(true);
@@ -230,13 +203,15 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       const initialSpeed = horse.speed;
 
       // Step 2: Simulate multiple competition placements to accumulate XP
-      const { awardCompetitionXp, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } =
+      // Setup re-seeded via the live addXpToHorse (the dead awardCompetitionXp was
+      // removed, Equoria-576c0 B1); same amounts as before, assertions unchanged.
+      const { addXpToHorse, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } =
         await import('../services/horseXpModelService.mjs');
 
-      await awardCompetitionXp(testHorseId, '1st', 'Racing'); // 30 XP
-      await awardCompetitionXp(testHorseId, '2nd', 'Dressage'); // 27 XP
-      await awardCompetitionXp(testHorseId, '1st', 'Show Jumping'); // 30 XP
-      await awardCompetitionXp(testHorseId, '3rd', 'Cross Country'); // 25 XP
+      await addXpToHorse(testHorseId, 30, 'Test seed: competition 1'); // 30 XP
+      await addXpToHorse(testHorseId, 27, 'Test seed: competition 2'); // 27 XP
+      await addXpToHorse(testHorseId, 30, 'Test seed: competition 3'); // 30 XP
+      await addXpToHorse(testHorseId, 25, 'Test seed: competition 4'); // 25 XP
       // Total: 112 XP = 1 stat point
 
       // Step 3: Check XP status via model

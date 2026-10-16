@@ -7,10 +7,9 @@
  * not say what the horse earned (BIBLE 13: "the result history should record
  * whether a stat increased and which stat"; "history should not be recomputed").
  *
- * A1 RECORDS what the award table pays (10/5/3/1 since Track B B1, owner ruling R8). It
- * changes no award, roll or odds; Track B slice B1 (Equoria-576c0) moves the
- * table to the LOCKED 10/5/3/1, and this test then follows the table through
- * computePlacementAwards rather than a literal.
+ * A1 only RECORDS what the award table pays; it changed no award, roll or odds.
+ * The table itself is owner ruling R8's 10/5/3/1 (Track B B1, Equoria-576c0),
+ * and this test follows it through computePlacementAwards, never a literal.
  *
  * Real DB, TestFixture- fixtures, id-scoped fail-loud cleanup, executor always
  * scoped by body.showIds.

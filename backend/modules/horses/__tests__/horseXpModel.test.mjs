@@ -10,7 +10,6 @@
  *   addXpToHorse — horse-not-found error return, success path (creates HorseXpEvent)
  *   allocateStatPoint — success path (requires horse with availableStatPoints > 0)
  *   getHorseXpHistory — number API + options API
- *   awardCompetitionXp — 1st/2nd/3rd/other placements
  *   getHorseXpStatus — success path
  */
 
@@ -20,7 +19,6 @@ import {
   validateStatName,
   allocateStatPoint,
   getHorseXpHistory,
-  awardCompetitionXp,
   getHorseXpStatus,
 } from '../services/horseXpModelService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -253,34 +251,6 @@ describe('getHorseXpHistory()', () => {
 
   it('throws DatabaseError when horseId is missing', async () => {
     await expect(getHorseXpHistory(null)).rejects.toThrow();
-  });
-});
-
-// ── awardCompetitionXp ────────────────────────────────────────────────────────
-
-describe('awardCompetitionXp()', () => {
-  it('awards 30 XP (20 base + 10 bonus) for 1st place', async () => {
-    const result = await awardCompetitionXp(xpHorse.id, '1st', 'Dressage');
-    expect(result.success).toBe(true);
-    expect(result.xpAwarded).toBe(30);
-  });
-
-  it('awards 27 XP (20 base + 7 bonus) for 2nd place', async () => {
-    const result = await awardCompetitionXp(xpHorse.id, '2nd', 'Jumping');
-    expect(result.success).toBe(true);
-    expect(result.xpAwarded).toBe(27);
-  });
-
-  it('awards 25 XP (20 base + 5 bonus) for 3rd place', async () => {
-    const result = await awardCompetitionXp(xpHorse.id, '3rd', 'Cross Country');
-    expect(result.success).toBe(true);
-    expect(result.xpAwarded).toBe(25);
-  });
-
-  it('awards 20 XP (base only) for other placements', async () => {
-    const result = await awardCompetitionXp(xpHorse.id, '4th', 'Dressage');
-    expect(result.success).toBe(true);
-    expect(result.xpAwarded).toBe(20);
   });
 });
 

@@ -2,7 +2,6 @@ import { describe, it, expect, jest, afterEach } from '@jest/globals';
 import {
   calculateCompetitionScore,
   calculatePrizeAmount,
-  calculateCompetitionXP,
   calculatePlacements,
   getAllDisciplines,
   getDisciplineConfig,
@@ -39,36 +38,6 @@ describe('calculatePrizeAmount', () => {
 
   it('returns 0 for zero prize pool', () => {
     expect(calculatePrizeAmount(0, 1, 5)).toBe(0);
-  });
-});
-
-describe('calculateCompetitionXP', () => {
-  it('1st place gets +20 placement bonus plus score XP', () => {
-    // score 100 → 10 xp + 20 bonus = 30
-    expect(calculateCompetitionXP(100, 1, 5)).toBe(30);
-  });
-
-  it('2nd place gets +15 bonus', () => {
-    expect(calculateCompetitionXP(100, 2, 5)).toBe(25);
-  });
-
-  it('3rd place gets +10 bonus', () => {
-    expect(calculateCompetitionXP(100, 3, 5)).toBe(20);
-  });
-
-  it('top half (not podium) gets +5 bonus', () => {
-    // placement 2 of 10 entries = top half, but not podium... placement 4/10
-    expect(calculateCompetitionXP(50, 4, 10)).toBe(5 + 5); // 5 score XP + 5 top-half
-  });
-
-  it('returns minimum 3 xp for very low score non-podium', () => {
-    // score 0 → 0 xp + 0 bonus = 0, but minimum is 3
-    expect(calculateCompetitionXP(0, 10, 10)).toBe(3);
-  });
-
-  it('bottom half gets only score-based XP (minimum 3)', () => {
-    // placement 6/6 = last place, score 30 → 3 xp, min 3
-    expect(calculateCompetitionXP(30, 6, 6)).toBe(3);
   });
 });
 
@@ -436,13 +405,6 @@ describe('calculatePrizeAmount — catch block (lines 230-231)', () => {
   it('returns 0 when Symbol totalPrizePool causes arithmetic TypeError', () => {
     const result = calculatePrizeAmount(Symbol('bad'), 1, 5);
     expect(result).toBe(0);
-  });
-});
-
-describe('calculateCompetitionXP — catch block (lines 265-266)', () => {
-  it('returns 3 (minimum) when Symbol score causes arithmetic TypeError', () => {
-    const result = calculateCompetitionXP(Symbol('bad'), 1, 5);
-    expect(result).toBe(3);
   });
 });
 

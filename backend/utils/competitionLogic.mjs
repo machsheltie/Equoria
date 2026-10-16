@@ -233,41 +233,6 @@ export function calculatePrizeAmount(totalPrizePool, placement, totalEntries) {
 }
 
 /**
- * Calculate XP award based on competition performance
- * @param {number} score - Competition score (0-100)
- * @param {number} placement - Final placement
- * @param {number} totalEntries - Total number of entries
- * @returns {number} XP amount
- */
-export function calculateCompetitionXP(score, placement, totalEntries) {
-  try {
-    let xp = 0;
-
-    // Base XP from score
-    xp += Math.floor(score / 10); // 1 XP per 10 score points
-
-    // Placement bonus
-    if (placement === 1) {
-      xp += 20; // 1st place bonus
-    } else if (placement === 2) {
-      xp += 15; // 2nd place bonus
-    } else if (placement === 3) {
-      xp += 10; // 3rd place bonus
-    } else if (placement <= Math.ceil(totalEntries / 2)) {
-      xp += 5; // Top half bonus
-    }
-
-    // Participation XP (minimum)
-    xp = Math.max(xp, 3);
-
-    return xp;
-  } catch (error) {
-    logger.error('[competitionLogic.calculateCompetitionXP] Error:', error.message);
-    return 3; // Minimum participation XP
-  }
-}
-
-/**
  * Determine competition placement based on scores
  * @param {Array} competitionEntries - Array of {horseId, score} objects
  * @returns {Array} Sorted entries with placement
@@ -595,7 +560,6 @@ export function getDisciplineConfig(discipline) {
 export default {
   calculateCompetitionScore,
   calculatePrizeAmount,
-  calculateCompetitionXP,
   calculatePlacements,
   calculateHorseLevel,
   checkAgeRequirements,

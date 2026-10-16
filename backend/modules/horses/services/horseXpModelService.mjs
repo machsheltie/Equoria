@@ -331,55 +331,6 @@ export async function getHorseXpHistory(horseId, limitOrOptions = {}, offset = 0
 }
 
 /**
- * Award horse XP based on competition performance
- * @param {number} horseId - Horse ID
- * @param {string} placement - Competition placement (1st, 2nd, 3rd, etc.)
- * @param {string} discipline - Competition discipline
- * @returns {Promise<Object>} Result object with XP awarded
- */
-export async function awardCompetitionXp(horseId, placement, discipline) {
-  try {
-    // Calculate XP based on placement
-    const baseXp = 20; // Base XP for participation
-    let placementBonus = 0;
-
-    switch (placement) {
-      case '1st':
-        placementBonus = 10;
-        break;
-      case '2nd':
-        placementBonus = 7;
-        break;
-      case '3rd':
-        placementBonus = 5;
-        break;
-      default:
-        placementBonus = 0;
-    }
-
-    const totalXp = baseXp + placementBonus;
-    const reason = `Competition: ${placement} place in ${discipline}`;
-
-    const result = await addXpToHorse(horseId, totalXp, reason);
-
-    return {
-      success: result.success,
-      xpAwarded: totalXp,
-      currentXP: result.currentXP,
-      statPointsGained: result.statPointsGained,
-      error: result.error,
-    };
-  } catch (error) {
-    logger.error(`[horseXpModel.awardCompetitionXp] Error: ${error.message}`);
-    return {
-      success: false,
-      error: error.message,
-      xpAwarded: 0,
-    };
-  }
-}
-
-/**
  * Get horse XP status with progression information
  * @param {number} horseId - Horse ID
  * @returns {Promise<Object>} Result object with XP status

@@ -148,8 +148,8 @@ router.get(
  * Horse XP is now SERVER-AUTHORITATIVE: the only writer is the internal service
  * (`horseXpModelService.addXpToHorseCore` / `addXpToHorse`), whose live caller
  * is `competitionAwards.awardPlacementProgression` under the overnight
- * `executeClosedShows` executor, which computes the amount from the PRD-frozen
- * award table and server-side placement. Owners keep `GET /:id/xp`,
+ * `executeClosedShows` executor, which computes the amount from the owner-ruled
+ * Horse Points table (R8: 10/5/3/1, competitionAwards.mjs) and server-side placement. Owners keep `GET /:id/xp`,
  * `GET /:id/xp-history`, and `POST /:id/allocate-stat` for EARNED points.
  *
  * 410 (not a silent 404) mirrors the established Equoria-kacla hard-deprecation

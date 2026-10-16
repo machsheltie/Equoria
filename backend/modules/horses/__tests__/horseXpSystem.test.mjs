@@ -12,7 +12,6 @@ import {
   addXpToHorse,
   allocateStatPoint,
   getHorseXpHistory,
-  awardCompetitionXp,
   validateStatName,
 } from '../services/horseXpModelService.mjs';
 
@@ -161,21 +160,6 @@ describe('Horse XP System - Core Business Logic', () => {
       expect(result.events[0]).toHaveProperty('amount');
       expect(result.events[0]).toHaveProperty('reason');
       expect(result.pagination.limit).toBe(10);
-    });
-  });
-});
-
-describe('Horse XP System - Integration with Competition System', () => {
-  describe('Competition XP Awards', () => {
-    it('should award horse XP based on competition performance', async () => {
-      const horse = await mkHorse('CompXp1', { horseXp: 0, availableStatPoints: 0 });
-      const expectedXP = 20 + 10; // 20 base + 10 for 1st place
-
-      const result = await awardCompetitionXp(horse.id, '1st', 'Dressage');
-
-      expect(result.success).toBe(true);
-      expect(result.xpAwarded).toBe(expectedXP);
-      expect(result.currentXP).toBe(expectedXP);
     });
   });
 });

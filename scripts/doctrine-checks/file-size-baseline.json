@@ -36,7 +36,6 @@
   "backend/services/memoryResourceManagementService.mjs": 633,
   "backend/tests/services/developmentalWindowSystem.test.mjs": 922,
   "backend/utils/cacheHelper.mjs": 696,
-  "backend/utils/competitionLogic.mjs": 606,
   "backend/utils/fieldSelectionHelper.mjs": 690,
   "backend/utils/traitDiscovery.mjs": 610,
   "backend/utils/traitEffects.mjs": 707,
