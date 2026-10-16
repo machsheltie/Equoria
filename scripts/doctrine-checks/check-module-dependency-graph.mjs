@@ -356,10 +356,11 @@ function parseNameClause(inner) {
 }
 
 /** The R2 backslash rule, shared by module files and barrels; returns a violation line or null. */
+let backslashCount = 0;
 function backslashViolation(where, spec) {
-  return spec.includes('\\')
-    ? `R2 ${where} import specifier contains a backslash (${spec}); use forward slashes (Linux CI cannot resolve it)`
-    : null;
+  if (!spec.includes('\\')) return null;
+  backslashCount += 1;
+  return `R2 ${where} import specifier contains a backslash (${spec}); use forward slashes (Linux CI cannot resolve it)`;
 }
 
 // static import/export-from and side-effect import (on comment-stripped code)
@@ -523,7 +524,7 @@ function closureOf(startFile) {
   const stack = [path.resolve(REPO_ROOT, startFile)];
   while (stack.length) {
     const f = stack.pop();
-    if (seen.has(f) || !fs.existsSync(f) || !/\.(mjs|js)$/.test(f) || !isRepoFile(f)) continue;
+    if (seen.has(f) || !fs.existsSync(f) || !SOURCE_EXT_RE.test(f) || !isRepoFile(f)) continue;
     seen.add(f);
     for (const t of directImports(f)) stack.push(t);
   }
@@ -621,6 +622,7 @@ const markedDeep = new Map(); // key "<file> -> <target>" -> where
 const sharedHops = new Map(); // shared file -> Set(importing modules)
 
 let cjsFiles = 0;
+let deepImportCount = 0;
 for (const file of files) {
   const fromModule = moduleOf(file);
   if (file.endsWith('.cjs')) {
@@ -686,6 +688,7 @@ for (const file of files) {
             );
           }
         } else {
+          deepImportCount += 1;
           violations.push(
             `R2 ${where} cross-module deep import of ${r}; import modules/${toModule}/index.mjs (the barrel) instead`
           );
@@ -1054,16 +1057,17 @@ const sharedFiles = [...closureVisited]
     );
   })
   .sort();
+let sharedViolationCount = 0;
 for (const f of sharedFiles) {
   const { nonliteral, commonjs } = importSites(f);
   for (const nl of nonliteral) {
-    nonliteralCount += 1;
+    sharedViolationCount += 1;
     violations.push(
       `R2 ${rel(f)}:${nl.line} dynamic import() whose specifier is not a plain quoted string literal (${nl.snippet}); a module closure walks this shared file and the graph cannot see its target`
     );
   }
   for (const cj of commonjs) {
-    commonjsCount += 1;
+    sharedViolationCount += 1;
     violations.push(
       `R2 ${rel(f)}:${cj.line} CommonJS-style loading (${cj.snippet}) in a shared-layer file a module closure walks; the graph cannot see its target`
     );
@@ -1094,8 +1098,12 @@ for (const [shared, importers] of [...sharedHops.entries()].sort((a, b) =>
 }
 
 const summary =
-  `modules=${modules.length} files=${files.length} edges=${crossEdges} (dynamic ${dynamicEdges}) nonliteral-dynamic=${nonliteralCount} commonjs=${commonjsCount} cjs-files=${cjsFiles} lexer-failsafe=${lexerCount} shared-files=${sharedFiles.length} ` +
-  `cycles=${cycleCount} deep-imports=${violations.filter((v) => v.startsWith('R2 ')).length} (marked ${markedDeep.size} listed ${Object.keys(deepImportsListed).length}) ` +
+  // Each counter counts only its own violations (round 4 cosmetic 2): deep-imports is the
+  // unmarked cross-module deep imports; cjs-files, commonjs, nonliteral-dynamic, backslash and
+  // lexer-failsafe are the other R2 classes in module files; shared-violations covers the
+  // shared-layer non-literal/CommonJS findings.
+  `modules=${modules.length} files=${files.length} edges=${crossEdges} (dynamic ${dynamicEdges}) nonliteral-dynamic=${nonliteralCount} commonjs=${commonjsCount} cjs-files=${cjsFiles} backslash=${backslashCount} lexer-failsafe=${lexerCount} shared-files=${sharedFiles.length} shared-violations=${sharedViolationCount} ` +
+  `cycles=${cycleCount} deep-imports=${deepImportCount} (marked ${markedDeep.size} listed ${Object.keys(deepImportsListed).length}) ` +
   `star-exports=${starExports} http-in-barrel=${httpInBarrel} closure-checked=${closureChecked} closure-hits=${closureHits} (testBlockControllers listed ${Object.keys(testBlockListed).length}, must be 0) ` +
   `upward=${violations.filter((v) => v.startsWith('R5 ')).length} warn=${warns.length}`;
 

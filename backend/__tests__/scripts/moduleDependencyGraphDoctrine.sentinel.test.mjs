@@ -183,6 +183,13 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.out).toMatch(/commonjs=0/);
     expect(res.out).toMatch(/closure-checked=\d+/);
     expect(res.out).toMatch(/shared-files=[1-9]\d*/); // the shared layer really is scanned (round 4, M2)
+    // Round 4 cosmetic 2: each summary counter counts only its own violation class. Old format:
+    // `deep-imports=` counted every R2 line; new: unmarked cross-module deep imports only, with
+    // separate backslash=, cjs-files= and shared-violations= counters.
+    expect(res.out).toMatch(/ deep-imports=0 \(marked \d+ listed \d+\)/);
+    expect(res.out).toMatch(/backslash=0/);
+    expect(res.out).toMatch(/cjs-files=0/);
+    expect(res.out).toMatch(/shared-violations=0/);
   });
 
   it('R1: FAILS on a planted cross-module cycle and prints it with the plant file:line', () => {
