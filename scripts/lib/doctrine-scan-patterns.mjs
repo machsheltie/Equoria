@@ -322,6 +322,16 @@ const RESERVED_SCRATCH_PLANT_TOKENS = [
   '_sentinel_plant', // generic convention reservation
   '_ws4graphplant_', // moduleDependencyGraphDoctrine.sentinel.test.mjs (its own gate exempts it via ownTokens)
   '_ws4hnplant_', // horseNameGatedDoctrine.sentinel.test.mjs (its gate walks via walkFiles: unaffected)
+  // Equoria-rfv9j: the remaining in-tree planters' scratch names, so foreign scanners
+  // and the gate runner's one-time discovery skip them. None of these planters' own
+  // checks consults this predicate (their checks use walkFiles/isPlantArtifactBasename
+  // or their own walks), so each planter still sees its own plant.
+  '_silent_catch_doctrine_sentinel', // silentCleanupCatchDoctrine.sentinel.test.mjs (dir)
+  '_console_log_sentinel_scratch', // noConsoleLogInTestsDirs.sentinel.test.mjs (dir)
+  '_deep_prisma_import_sentinel_scratch', // noDeepPrismaClientImportInTests.sentinel.test.mjs (dir)
+  '_file_size_doctrine_sentinel', // fileSizeThresholdDoctrine.sentinel.test.mjs (dirs)
+  '__ml7jj_inscope_70pb9__', // doctrineScanPatterns.sentinel.test.mjs
+  '__ml7jj_oos_70pb9__', // doctrineScanPatterns.sentinel.test.mjs
 ];
 
 export function isReservedScratchPlantPathSegment(name, ownTokens = []) {

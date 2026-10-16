@@ -67,6 +67,8 @@ function cleanupPlants() {
 // removed synchronously in cleanupPlants() before every scan, so a leftover of ours still
 // exists — so ENOENT alone is ignored (readdirSyncTolerant / throwIfNoEntry:false) and
 // every other error still throws, as in the WS4 module-graph gate.
+// throwIfNoEntry:false also returns undefined on ENOTDIR (a path component became a
+// file mid-scan); that is the same "entry is gone" case and is accepted here too.
 function strayPlants() {
   const found = [];
   const scan = (dir, depth) => {

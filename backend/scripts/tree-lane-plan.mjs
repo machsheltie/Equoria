@@ -58,6 +58,19 @@ export const TREE_SUITE_FILES = Object.freeze([
  */
 export const TREE_BATCH_MAX_FILES = 110;
 
+/**
+ * Per-batch budget for the Jest arguments the planner controls. Windows caps a
+ * whole command line at 32,767 chars; the runner's fixed part (node path, heap,
+ * --experimental-vm-modules, jest.js, --json, --outputFile=<tmp>) is well under
+ * 1,500, so 30,000 leaves headroom.
+ */
+export const MAX_BATCH_ARGV_CHARS = 30000;
+
+/** Characters these args occupy on a command line (one separator each, quotes ignored). */
+export function argvChars(args) {
+  return args.reduce((sum, arg) => sum + arg.length + 1, 0);
+}
+
 /** `file` relative to `backendDir`, with forward slashes. */
 export function toBackendRelative(backendDir, file) {
   return path.relative(backendDir, file).split(path.sep).join('/');
@@ -110,6 +123,9 @@ function hashOrder(rel) {
  * @param {number} input.shards        REST slices (the --jest-shards value)
  * @param {number} input.lanes         1 or 2
  * @param {number} [input.maxTreeBatchFiles]
+ * @param {number} [input.maxArgvChars]  per-batch Jest argv budget; an oversize slice is
+ *   split deterministically into "part p/q" batches in the same lane (e.g. --jest-shards=1
+ *   would otherwise hand Jest ~42K chars, over the Windows 32,767 command-line limit)
  * @returns {{ treeFiles: string[], lanes: object[][] }}
  *   Two lanes: lanes[0] = tree batches then the REST slices that balance it,
  *   lanes[1] = the other REST slices. One lane: everything in lanes[0].
@@ -127,6 +143,7 @@ export function planLanes({
   shards,
   lanes,
   maxTreeBatchFiles = TREE_BATCH_MAX_FILES,
+  maxArgvChars = MAX_BATCH_ARGV_CHARS,
 }) {
   if (!Number.isInteger(shards) || shards < 1) {
     throw new Error(`planLanes: shards must be a positive integer (got ${shards})`);
@@ -141,14 +158,30 @@ export function planLanes({
     .filter(file => !isTreeSuite(rel.get(file)))
     .sort((a, b) => hashOrder(rel.get(a)).localeCompare(hashOrder(rel.get(b))));
 
-  const batch = (label, files) => ({
-    label,
-    jestArgs: ['--runTestsByPath', ...files.map(file => rel.get(file))],
-    files,
-  });
+  // One planned slice becomes one batch, or several "part" batches when its
+  // explicit file list would push the Jest argv past MAX_BATCH_ARGV_CHARS.
+  const batches = (label, files) => {
+    const make = (lbl, part) => {
+      const jestArgs = ['--runTestsByPath', ...part.map(file => rel.get(file))];
+      return { label: lbl, jestArgs, files: part };
+    };
+    for (let parts = 1; parts <= Math.max(1, files.length); parts++) {
+      const planned = chunkEvenly(files, parts).map((part, p) =>
+        make(parts === 1 ? label : `${label} part ${p + 1}/${parts}`, part),
+      );
+      if (planned.every(b => argvChars(b.jestArgs) <= maxArgvChars)) {
+        return planned;
+      }
+    }
+    const longest = files.reduce((a, f) => (rel.get(f).length > rel.get(a).length ? f : a));
+    throw new Error(
+      `planLanes: ${label} cannot fit the ${maxArgvChars}-char argv budget even one suite per batch ` +
+        `(longest path ${rel.get(longest).length} chars: ${rel.get(longest)})`,
+    );
+  };
   const treeBatchCount = Math.ceil(treeFiles.length / maxTreeBatchFiles);
-  const treeBatches = chunkEvenly(treeFiles, treeBatchCount).map((files, i) =>
-    batch(`lane 1 tree ${i + 1}/${treeBatchCount}`, files),
+  const treeBatches = chunkEvenly(treeFiles, treeBatchCount).flatMap((files, i) =>
+    batches(`lane 1 tree ${i + 1}/${treeBatchCount}`, files),
   );
   const restSlices = chunkEvenly(restFiles, shards);
 
@@ -161,10 +194,14 @@ export function planLanes({
         ? Math.round((laneSuites.length / 2 - treeFiles.length) / perShard)
         : 0;
   const lane1Slices = Math.min(shards, Math.max(0, wanted));
-  const restBatches = restSlices
-    .map((files, i) => batch(`lane ${i < lane1Slices ? 1 : 2} shard ${i + 1}/${shards}`, files))
-    .map((b, i) => ({ ...b, lane: i < lane1Slices ? 0 : 1 }))
-    .filter(b => b.files.length > 0);
+  const restBatches = restSlices.flatMap((files, i) =>
+    files.length === 0
+      ? []
+      : batches(`lane ${i < lane1Slices ? 1 : 2} shard ${i + 1}/${shards}`, files).map(b => ({
+          ...b,
+          lane: i < lane1Slices ? 0 : 1,
+        })),
+  );
 
   const planned = [
     [...treeBatches, ...restBatches.filter(b => b.lane === 0)],

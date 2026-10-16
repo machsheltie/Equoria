@@ -21,13 +21,19 @@
  *   2. No planter or whole-tree scanner exists OUTSIDE the TREE set. The
  *      detector is a static heuristic over each test file's code (comments
  *      stripped): an fs write (sync, callback or promises API) whose path
- *      argument derives from the checkout (REPO_ROOT/BACKEND/__dirname/…,
- *      followed through const/assignment/object-key definitions, and never
- *      through a mkdtemp()/tmpdir() value), a reference to
- *      scripts/doctrine-checks, or a recursive directory walk (typed/recursive
- *      readdir, stat().isDirectory() + readdir, walkFiles, globSync). It is
+ *      argument derives from the checkout (REPO_ROOT/BACKEND/__dirname/
+ *      process.cwd()/…, followed through const/assignment/object-key
+ *      definitions; only an os.tmpdir() value is temp, so a mkdtemp() with a
+ *      repo prefix counts as in-tree), a reference to scripts/doctrine-checks,
+ *      or a recursive directory walk (typed/recursive readdir,
+ *      stat().isDirectory() + readdir, walkFiles, globSync). fs bindings are
+ *      followed through imports, `fs.promises` aliases and destructuring. It is
  *      proved to fire on planted sources and on the real planters and scanners
- *      it exists to catch. It can still miss unusual spellings.
+ *      it exists to catch.
+ *      KNOWN LIMITS (a heuristic, by design): a path that reaches the write only
+ *      through a FUNCTION PARAMETER (`function plant(dir) { writeFileSync(dir…) }`)
+ *      is not traced to its call sites; nor are paths built in another module,
+ *      require()-style or dynamic-import fs handles, or computed property names.
  *   3. CI parity: test.yml's serial shard selects every TREE suite and runs it
  *      through test:backend:ci:serial (one worker); shard 3 previously ran them
  *      at --maxWorkers=2, the same interleaving inside one job.
@@ -37,7 +43,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  MAX_BATCH_ARGV_CHARS,
   TREE_BATCH_MAX_FILES,
+  argvChars,
   isPlantedTestPath,
   isTreeSuite,
   planLanes,
@@ -78,6 +86,8 @@ const FS_WRITE_FNS = [
   'writeFile',
   'appendFileSync',
   'appendFile',
+  'mkdtempSync',
+  'mkdtemp',
   'mkdirSync',
   'mkdir',
   'copyFileSync',
@@ -98,9 +108,12 @@ const FS_WRITE_FNS = [
 const WRITE_ALT = FS_WRITE_FNS.join('|');
 const FS_MODULE = '[\'"](?:node:)?fs(?:/promises)?[\'"]';
 // Expressions that name the repository checkout (or this file's place in it).
+// process.cwd() counts: Jest runs suites with cwd = backend/.
 const ROOT_TOKEN =
-  /\b(?:[A-Z_]*ROOT[A-Z_]*|repoRoot|projectRoot|rootDir|BACKEND[A-Z_]*|backendDir|HERE|__dirname|__filename)\b|import\.meta\.(?:url|dirname|filename)/;
-const TEMP_TOKEN = /\b(?:mkdtempSync|mkdtemp|tmpdir)\s*\(/;
+  /\b(?:[A-Z_]*ROOT[A-Z_]*|repoRoot|projectRoot|rootDir|BACKEND[A-Z_]*|backendDir|HERE|__dirname|__filename)\b|import\.meta\.(?:url|dirname|filename)|\bprocess\.cwd\s*\(/;
+// Only the OS temp dir makes a path temp. A mkdtemp() whose prefix is in the
+// repo (mkdtempSync(path.join(BACKEND, 'x-'))) creates a directory IN the tree.
+const TEMP_TOKEN = /\btmpdir\s*\(/;
 // Bounded argument span: survives nested calls like readdirSync(join(a, b), {...}).
 const SPAN = '[\\s\\S]{0,200}?';
 
@@ -124,6 +137,27 @@ function fsBindings(code) {
     }
     for (const part of (m[2] ?? '').split(',')) {
       const [original, alias] = part.trim().split(/\s+as\s+/);
+      const local = (alias || original || '').trim();
+      if (original?.trim() === 'promises') {
+        namespaces.push(local);
+      } else if (original && FS_WRITE_FNS.includes(original.trim())) {
+        writers.push([original.trim(), local]);
+      }
+    }
+  }
+  // Re-bindings of an fs namespace: `const fsp = fs.promises;` and destructuring
+  // `const { promises: fsp, writeFileSync: put } = fs;` (or `= fs.promises`).
+  for (const m of code.matchAll(/\b(?:const|let|var)\s+(\w+)\s*=\s*(\w+)\.promises\b/g)) {
+    if (namespaces.includes(m[2])) {
+      namespaces.push(m[1]);
+    }
+  }
+  for (const m of code.matchAll(/\b(?:const|let|var)\s*\{([^}]*)\}\s*=\s*(\w+)(?:\.promises)?\b/g)) {
+    if (!namespaces.includes(m[2])) {
+      continue;
+    }
+    for (const part of m[1].split(',')) {
+      const [original, alias] = part.trim().split(/\s*:\s*/);
       const local = (alias || original || '').trim();
       if (original?.trim() === 'promises') {
         namespaces.push(local);
@@ -310,6 +344,60 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       expect(Math.abs(lane1Suites - (files.length - 1) / 2)).toBeLessThanOrEqual(perShard / 2 + 1);
     });
 
+    it('an oversize slice is split deterministically under the argv budget (synthetic 1,200 suites)', () => {
+      const synthetic = Array.from({ length: 1200 }, (_, i) =>
+        path.join(
+          BACKEND,
+          'modules',
+          `m${i % 40}`,
+          '__tests__',
+          `synthetic${String(i).padStart(4, '0')}Long.integration.test.mjs`,
+        ),
+      );
+      const input = { discovered: synthetic, backendDir: BACKEND, isCanonical: () => false, shards: 1, lanes: 1 };
+      const unsplit = argvChars(['--runTestsByPath', ...synthetic.map(f => toBackendRelative(BACKEND, f))]);
+      expect(unsplit).toBeGreaterThan(MAX_BATCH_ARGV_CHARS);
+      const { lanes } = planLanes(input);
+      const all = lanes.flat();
+      expect(all.length).toBeGreaterThan(1);
+      for (const batch of all) {
+        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(MAX_BATCH_ARGV_CHARS);
+      }
+      expect(all.map(batch => batch.label)).toEqual(all.map((_, i) => `lane 1 shard 1/1 part ${i + 1}/${all.length}`));
+      expect(all.flatMap(batch => batch.files).sort()).toEqual([...synthetic].sort());
+      expect(planLanes(input).lanes).toEqual(lanes);
+    });
+
+    it('the real suite fits the argv budget at --jest-shards=1 (split) and at the canonical 8', () => {
+      for (const shards of [1, 8]) {
+        const { lanes } = planLanes({
+          discovered: files,
+          backendDir: BACKEND,
+          isCanonical: () => false,
+          shards,
+          lanes: 2,
+        });
+        const scheduled = lanes.flat().flatMap(batch => batch.files);
+        expect(scheduled).toHaveLength(files.length);
+        for (const batch of lanes.flat()) {
+          expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(MAX_BATCH_ARGV_CHARS);
+        }
+      }
+    });
+
+    it('throws, naming the batch, when even one suite per batch exceeds the budget', () => {
+      expect(() =>
+        planLanes({
+          discovered: [path.join(BACKEND, 'modules', 'x', '__tests__', `${'a'.repeat(80)}.test.mjs`)],
+          backendDir: BACKEND,
+          isCanonical: () => false,
+          shards: 1,
+          lanes: 1,
+          maxArgvChars: 50,
+        }),
+      ).toThrow(/lane 1 shard 1\/1 cannot fit the 50-char argv budget/);
+    });
+
     it('discovery drops transient plants, and only them', () => {
       expect(rels.filter(isPlantedTestPath)).toEqual([]); // no real suite carries a plant name
       for (const planted of [
@@ -319,6 +407,12 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
         '__tests__/__placeholder_artifact_DO_NOT_COMMIT__.test.mjs',
         'modules/horses/__tests__/_v8l96_sentinel_test_cross.test.mjs',
         '__tests__/_q7lqz_vanished_scan_scratch/planted.test.mjs',
+        '__tests__/_silent_catch_doctrine_sentinel/planted.test.mjs',
+        '__tests__/_console_log_sentinel_scratch/planted.test.mjs',
+        '__tests__/_deep_prisma_import_sentinel_scratch/planted.test.mjs',
+        '__tests__/_file_size_doctrine_sentinel/plantedThing.test.mjs',
+        '__tests__/__ml7jj_inscope_70pb9__.test.mjs',
+        'routes/__ml7jj_oos_70pb9__.test.mjs',
       ]) {
         expect(isPlantedTestPath(planted)).toBe(true);
       }
@@ -375,6 +469,16 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
         nsPromises: "import fs from 'node:fs';\nawait fs.promises.rm(path.join(BACKEND, 'x'), { recursive: true });",
         statWalk:
           "import { readdirSync, statSync } from 'fs';\nfor (const n of readdirSync(dir)) {\n  if (statSync(join(dir, n)).isDirectory()) walk(join(dir, n));\n}",
+        // Review round 2 (latent minors): cwd-rooted paths, a repo-prefixed mkdtemp,
+        // and fs.promises / writers reached through re-binding or destructuring.
+        cwdRooted: "import fs from 'node:fs';\nfs.writeFileSync(path.join(process.cwd(), 'services/x.mjs'), s);",
+        mkdtempInRepo:
+          "import fs from 'node:fs';\nconst dir = fs.mkdtempSync(path.join(BACKEND, 'x-'));\nfs.writeFileSync(path.join(dir, 'a'), '');",
+        destructuredPromises:
+          "import fs from 'node:fs';\nconst { promises: fsp } = fs;\nawait fsp.writeFile(path.join(BACKEND, 'x.mjs'), s);",
+        promisesRebound: "import fs from 'fs';\nconst fsp = fs.promises;\nawait fsp.rm(path.join(REPO_ROOT, 'x'));",
+        destructuredWriter:
+          "import fs from 'fs';\nconst { writeFileSync: put } = fs;\nput(path.join(BACKEND, 'x.mjs'), s);",
         copyIntoRepo:
           "import { copyFileSync } from 'node:fs';\nconst SRC = join(os.tmpdir(), 'x');\ncopyFileSync(SRC, path.join(BACKEND, 'data/x.json'));",
         tempElsewhere:
@@ -391,6 +495,11 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       expect(treeTouchReasons(planted.statWalk)).toEqual(WALKS);
       expect(treeTouchReasons(planted.tempElsewhere)).toEqual(WRITES);
       expect(treeTouchReasons(planted.copyIntoRepo)).toEqual(WRITES);
+      expect(treeTouchReasons(planted.cwdRooted)).toEqual(WRITES);
+      expect(treeTouchReasons(planted.mkdtempInRepo)).toEqual(WRITES);
+      expect(treeTouchReasons(planted.destructuredPromises)).toEqual(WRITES);
+      expect(treeTouchReasons(planted.promisesRebound)).toEqual(WRITES);
+      expect(treeTouchReasons(planted.destructuredWriter)).toEqual(WRITES);
       expect(treeTouchReasons("const CHECK = path.join(ROOT, 'scripts', 'doctrine-checks', 'c.mjs');")).toEqual([
         'runs a scripts/doctrine-checks check',
       ]);
