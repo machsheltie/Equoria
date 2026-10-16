@@ -243,9 +243,12 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
   // sentinel pattern in feedHorseService.test.mjs (Equoria-zvp4).
   describe('source sentinel — createFoal uses an optimistic guarded write (Equoria-9gsxg)', () => {
     it('starts the pregnancy via updateMany with an inFoalSinceDate:null precondition (the guard)', () => {
-      // The guarded write is prisma.horse.updateMany({ where: { id, inFoalSinceDate: null }, ... }).
-      // Assert both the updateMany call and the null precondition are present.
-      expect(FOALING_CONTROLLER_SRC).toMatch(/prisma\.horse\.updateMany\(/);
+      // The guarded write is <client>.horse.updateMany({ where: { id, ..., inFoalSinceDate: null }, ... }).
+      // Equoria-q4uem.9 (design M-6): it now runs on the transaction client `tx`
+      // inside one wrapped transaction with the sire pin, so the client may be
+      // `prisma` or `tx`; the guard itself (updateMany + null precondition) is
+      // what this asserts. Assert both the updateMany call and the null precondition are present.
+      expect(FOALING_CONTROLLER_SRC).toMatch(/(?:prisma|tx)\.horse\.updateMany\(/);
       expect(FOALING_CONTROLLER_SRC).toMatch(/inFoalSinceDate:\s*null/);
     });
 
@@ -260,7 +263,7 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
       // updateMany. Assert no `prisma.horse.update(...)` call references
       // inFoalSinceDate — a regression to the unconditional read-then-write
       // shape would reintroduce that and fail here.
-      expect(FOALING_CONTROLLER_SRC).not.toMatch(/prisma\.horse\.update\([^)]*inFoalSinceDate/s);
+      expect(FOALING_CONTROLLER_SRC).not.toMatch(/(?:prisma|tx)\.horse\.update\([^)]*inFoalSinceDate/s);
     });
   });
 });

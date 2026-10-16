@@ -100,6 +100,8 @@ model User {
   staffTicketsFiled         StaffTicket[]          @relation("StaffTicketFiler")
   staffTicketReplies        StaffTicketReply[]     @relation("StaffTicketReplyAuthor")
   emailOutbox               EmailOutbox[]
+  breedingRecordsAsMareOwner     BreedingRecord[]  @relation("BreedingRecordsAsMareOwner")
+  breedingRecordsAsStallionOwner BreedingRecord[]  @relation("BreedingRecordsAsStallionOwner")
 
   @@index([email])
   @@index([emailVerified])
@@ -291,6 +293,8 @@ model Horse {
   trainingLogs            TrainingLog[]
   horseSales              HorseSale[]
   showEntries             ShowEntry[]
+  breedingRecordsAsSire   BreedingRecord[]      @relation("BreedingRecordSire")
+  breedingRecordsAsDam    BreedingRecord[]      @relation("BreedingRecordDam")
 
   @@index([userId])
   @@index([breedId])
@@ -2252,4 +2256,62 @@ model EmailOutbox {
   @@index([status, updatedAt])
   @@index([recipientId])
   @@map("email_outbox")
+}
+
+/// Equoria-q4uem.9 — kind of breeding a BreedingRecord describes.
+enum BreedingKind {
+  OWN_PAIR
+  PUBLIC_STUD
+  PRIVATE_STUD
+}
+
+/// Equoria-q4uem.9 — PENDING exists only for a PRIVATE_STUD request awaiting
+/// the stallion owner; every other breeding is written COMPLETED.
+enum BreedingStatus {
+  PENDING
+  COMPLETED
+  DECLINED
+  CANCELLED
+}
+
+/// Equoria-q4uem.9 — one row per breeding (owner ruling S-Q7, Stacey
+/// 2026-10-16): the breeding itself and the stud fee paid (0 for a pair the
+/// player owns). No other "terms". A PRIVATE_STUD request starts PENDING (the
+/// stallion owner's queue) and becomes COMPLETED, DECLINED or CANCELLED.
+///
+/// FKs are nullable with onDelete: SetNull (GDPR erasure hard-deletes horses
+/// and users); the name snapshots keep the counterparty's record readable.
+///
+/// One PENDING row per dam (S7) is enforced by the PARTIAL unique index
+/// "breeding_records_one_pending_per_dam" (WHERE status = 'PENDING'), created
+/// in raw SQL by migration 20261016120000_q4uem9_breeding_records — Prisma
+/// cannot express a partial index (see the kccmt note on Horse).
+model BreedingRecord {
+  id                Int            @id @default(autoincrement())
+  kind              BreedingKind
+  status            BreedingStatus
+  /// Stud fee paid (or pinned while PENDING), in coins. 0 for OWN_PAIR.
+  fee               Int
+  sireId            Int?
+  sire              Horse?         @relation("BreedingRecordSire", fields: [sireId], references: [id], onDelete: SetNull)
+  damId             Int?
+  dam               Horse?         @relation("BreedingRecordDam", fields: [damId], references: [id], onDelete: SetNull)
+  mareOwnerId       String?
+  mareOwner         User?          @relation("BreedingRecordsAsMareOwner", fields: [mareOwnerId], references: [id], onDelete: SetNull)
+  stallionOwnerId   String?
+  stallionOwner     User?          @relation("BreedingRecordsAsStallionOwner", fields: [stallionOwnerId], references: [id], onDelete: SetNull)
+  sireName          String
+  damName           String
+  mareOwnerName     String
+  stallionOwnerName String
+  /// Request outcome only (DECLINED / CANCELLED).
+  declineReason     String?
+  createdAt         DateTime       @default(now())
+  resolvedAt        DateTime?
+
+  @@index([stallionOwnerId, status])
+  @@index([mareOwnerId, status])
+  @@index([damId, status])
+  @@index([sireId, status])
+  @@map("breeding_records")
 }

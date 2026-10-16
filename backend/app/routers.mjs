@@ -55,6 +55,7 @@ import competitionRoutes from '../modules/competition/routes/competitionRoutes.m
 import competitionResultsRoutes from '../modules/competition/routes/competitionResultsRoutes.mjs';
 import showRoutes from '../modules/competition/shows/showRoutes.mjs';
 import foalRoutes from '../modules/breeding/routes/foalRoutes.mjs';
+import studBookingRoutes from '../modules/breeding/routes/studBookingRoutes.mjs';
 import advancedBreedingGeneticsRoutes from '../modules/breeding/routes/advancedBreedingGeneticsRoutes.mjs';
 import traitRoutes from '../modules/traits/routes/traitRoutes.mjs';
 import traitDiscoveryRoutes from '../modules/traits/routes/traitDiscoveryRoutes.mjs';
@@ -199,6 +200,8 @@ export function buildRouters() {
   authRouter.use('/competition', competitionRoutes);
   authRouter.use('/breeds', breedRoutes);
   authRouter.use('/foals', foalRoutes);
+  // Equoria-q4uem.9: stud bookings (public stud; private requests follow).
+  authRouter.use('/studs', studBookingRoutes);
   authRouter.use('/trait-discovery', traitDiscoveryRoutes);
   authRouter.use('/traits', traitRoutes);
 

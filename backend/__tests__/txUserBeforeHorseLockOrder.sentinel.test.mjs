@@ -122,6 +122,10 @@ const GUARDED_FILES = [
   'modules/economy/vet/controllers/vetController.mjs',
   'modules/economy/farrier/controllers/farrierController.mjs',
   'modules/economy/tackShop/controllers/tackShopController.mjs',
+  // Equoria-q4uem.9: a public stud booking debits the mare owner and credits the
+  // stallion owner (User rows, ascending id) before pinning the sire and
+  // claiming the dam (Horse rows).
+  'modules/breeding/controllers/studBookingController.mjs',
 ];
 
 describe('SENTINEL: User rows are locked before Horse rows inside a transaction', () => {

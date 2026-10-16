@@ -15,6 +15,13 @@ export { getFoalDevelopment } from './models/foalModel.mjs';
 // Production since WS4 S6 (Equoria-q4uem.4): competition's conformationShowScoring.mjs reads the
 // overall conformation score through this barrel.
 export { calculateOverallConformation } from './services/conformationService.mjs';
+// Equoria-q4uem.9: breeding's stud-booking controller applies the same breeding rules and
+// pregnancy claim as the own-pair route (one set of rules, one set of messages).
+export {
+  validateBreedingPair,
+  pregnancyClaimData,
+  pendingRequestMessage,
+} from './services/breedingPairRules.mjs';
 export { runFoalingJob } from './services/foalingService.mjs';
 export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
 export { decayHoofConditions } from './services/hoofConditionDecayService.mjs';

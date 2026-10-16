@@ -2,31 +2,33 @@
  * Horse Foaling Controller
  *
  * Equoria-xod8b (child A of Equoria-mh937): extracted from horseController.mjs.
- * Owns createFoal (begin delayed pregnancy). No behavior changes — functions
- * moved verbatim. The former resetHorseLastFed E2E helper was removed
- * (Equoria-mwjst): it let any owner rewind the daily feed authority.
+ * Owns createFoal (begin delayed pregnancy for a pair the caller owns). The
+ * former resetHorseLastFed E2E helper was removed (Equoria-mwjst): it let any
+ * owner rewind the daily feed authority.
+ *
+ * Equoria-q4uem.9: the breeding rules moved to services/breedingPairRules.mjs
+ * (shared with stud bookings, same messages). The pregnancy claim is now one
+ * wrapped transaction that also pins the sire to the caller (a stallion sold
+ * after the route's ownership check can no longer sire a free pregnancy),
+ * honours the pending-request lock (owner ruling S-Q4, 2026-10-16) and writes
+ * the BreedingRecord (S-Q7: own pair, stud fee 0).
  */
 import { GESTATION_DAYS } from '../../../constants/time.mjs';
 import { getHorseById } from '../services/horseRouteQueries.mjs';
-import { getBreedProfile } from '../data/breedProfileLoader.mjs';
+import {
+  validateBreedingPair,
+  pregnancyClaimData,
+  pendingRequestMessage,
+} from '../services/breedingPairRules.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
-import { getHorseAgeDays, getHorseAgeYears } from '../../../utils/horseAge.mjs';
-import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
+import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 
-/** Minimum breeding age in game-years (PRD-08 s2.5). 3 game-years = 21 real days. */
-const MIN_BREEDING_AGE_YEARS = 3;
-
-/**
- * Dam cooldown in real days after conception (user decision 2026-07-02):
- * 1 game year = 7 real days, DAM only, stallions unrestricted.
- *
- * Anchor is lastBredDate (conception stamp, not foaling date).
- * Semantics: a mare bred any time on day D is breedable from 00:00 Eastern
- * on D+7 (mirrors the Equoria-vdw5 date-only, Eastern game clock convention).
- */
-const DAM_BREEDING_COOLDOWN_DAYS = 7;
+/** Failures thrown out of the claim transaction; mapped to a response after rollback. */
+function claimFailure(code, details = {}) {
+  return Object.assign(new Error(code), { claimFailure: code, ...details });
+}
 
 /**
  * Begin a delayed pregnancy on the dam mare.
@@ -80,293 +82,106 @@ export async function createFoal(req, res) {
       });
     }
 
-    // Critical-health gate (Equoria-2e7e): mirrors conformationShowController's A12 check.
-    // Both sire and dam must have displayedHealth !== 'critical' before pregnancy can begin.
-    if (getDisplayedHealth(sire) === 'critical') {
-      const msg = `${sire.name} is in critical health and cannot breed. Feed and vet to restore health.`;
-      logger.info(`[horseController.createFoal] Rejected: sire ${sireId} is in critical health`);
-      return res.status(400).json({ success: false, message: msg, data: null });
-    }
-    if (getDisplayedHealth(dam) === 'critical') {
-      const msg = `${dam.name} is in critical health and cannot breed. Feed and vet to restore health.`;
-      logger.info(`[horseController.createFoal] Rejected: dam ${damId} is in critical health`);
-      return res.status(400).json({ success: false, message: msg, data: null });
+    // Every breeding rule, in its long-standing order and wording. All checks
+    // run BEFORE any DB mutation; a refusal starts no pregnancy and stamps no
+    // cooldown.
+    const verdict = await validateBreedingPair({ sire, dam, breedId });
+    if (!verdict.ok) {
+      return res
+        .status(verdict.status)
+        .json({ success: false, message: verdict.message, data: null });
     }
 
-    // ── BIOLOGICAL VALIDATION (Equoria-mhdul) ───────────────────────────────
-    // All four checks run BEFORE any DB mutation. Fail-closed: each returns
-    // 400 immediately, no pregnancy is started, no cooldown stamp is written.
-
-    // Guard 1: self-cross (CONTRIBUTING.md s4 pattern)
-    if (Number(sireId) === Number(damId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Sire and dam cannot be the same horse',
-        data: null,
-      });
-    }
-
-    // Guard 2: sex validation
-    if (sire.sex !== 'Stallion') {
-      return res.status(400).json({
-        success: false,
-        message: `Sire must be a Stallion (${sire.name} is ${sire.sex})`,
-        data: null,
-      });
-    }
-    if (dam.sex !== 'Mare') {
-      return res.status(400).json({
-        success: false,
-        message: `Dam must be a Mare (${dam.name} is ${dam.sex})`,
-        data: null,
-      });
-    }
-
-    // Guard 3: minimum breeding age (3 game-years = 21 real days).
-    // Uses horseAge.mjs date-only, Eastern game clock arithmetic (Equoria-vdw5) — never inline math.
-    const sireAgeYears = getHorseAgeYears(sire.dateOfBirth);
-    if (sireAgeYears < MIN_BREEDING_AGE_YEARS) {
-      return res.status(400).json({
-        success: false,
-        message: `${sire.name} is too young to breed (${sireAgeYears} game-year(s); minimum is ${MIN_BREEDING_AGE_YEARS})`,
-        data: null,
-      });
-    }
-    const damAgeYears = getHorseAgeYears(dam.dateOfBirth);
-    if (damAgeYears < MIN_BREEDING_AGE_YEARS) {
-      return res.status(400).json({
-        success: false,
-        message: `${dam.name} is too young to breed (${damAgeYears} game-year(s); minimum is ${MIN_BREEDING_AGE_YEARS})`,
-        data: null,
-      });
-    }
-
-    // Guard 4: dam cooldown (1 game year = 7 real days; user decision 2026-07-02).
-    // Stallions are unrestricted. Null-check FIRST — getHorseAgeDays(null) returns 0
-    // which would be < DAM_BREEDING_COOLDOWN_DAYS and block every first breeding (trap).
-    if (dam.lastBredDate) {
-      const daysSinceLastBred = getHorseAgeDays(dam.lastBredDate, new Date());
-      if (daysSinceLastBred < DAM_BREEDING_COOLDOWN_DAYS) {
-        const daysRemaining = DAM_BREEDING_COOLDOWN_DAYS - daysSinceLastBred;
-        return res.status(400).json({
-          success: false,
-          message: `${dam.name} is on breeding cooldown for ${daysRemaining} more day(s) (one breeding per game year)`,
-          data: null,
-        });
-      }
-    }
-
-    // ── BREED PRECONDITION (Equoria-6w3ur) ──────────────────────────────────
-    // Validate the breed the foal will ACTUALLY be born with, not just the one
-    // the caller happened to type. A supplied breedId is optional pending
-    // intent; when it is absent the foaling job derives the breed from the dam
-    // (`foalingService.createFoalFromPregnancy`: options.breedId >
-    // dam.pendingFoalBreedId > dam.breedId — and pendingFoalBreedId is what THIS
-    // request is about to write, so the effective value is
-    // `supplied ?? dam.breedId`).
-    //
-    // Why this has to fail here and not there: `Horse.breedId` is nullable, and
-    // breedless mares genuinely exist in this database (see
-    // backend/seed/backfillStarterHorseBreedId.mjs, which is dry-run unless
-    // --apply, and onboardingService's default-breed path, which logs an error
-    // and proceeds with a NULL breedId). If the derived breed is null, unknown,
-    // or has no breed profile, the foaling job throws SEVEN DAYS LATER, and its
-    // compensation block restores the pregnancy so the job retries forever: the
-    // mare stays permanently in foal, permanently unbreedable, no foal arrives,
-    // and the player has no recovery path. So the derived breed is checked with
-    // exactly the strictness a supplied one gets, synchronously, BEFORE the
-    // guarded claim stamps anything — including lastBredDate, because a refused
-    // breed must not cost the player a seven-day cooldown.
-    let normalizedBreedId = null;
-    if (breedId !== undefined && breedId !== null && breedId !== '') {
-      normalizedBreedId = Number.parseInt(breedId, 10);
-      if (!Number.isInteger(normalizedBreedId) || normalizedBreedId <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'breedId must be a positive integer',
-          data: null,
-        });
-      }
-    }
-
-    const effectiveBreedId = normalizedBreedId ?? dam.breedId ?? null;
-    if (!Number.isInteger(effectiveBreedId) || effectiveBreedId <= 0) {
-      logger.info(
-        `[horseController.createFoal] Rejected: dam ${damId} has no breed on record and no breedId was supplied`,
-      );
-      // COPY EDITORS — this message is REACHABLE and its wording is load-bearing
-      // (Equoria-m9lz1 fix round 3, finding 5). There were 11 owned mares/fillies
-      // with a null `breedId` in the local database when this was rewritten, and
-      // BreedingPairSelection.tsx posts only { sireId, damId } by design and
-      // does not filter breedless mares out of the selector — so a player really
-      // does land here.
-      //
-      // The previous wording ended "Choose a breed for the foal to breed her",
-      // which was wrong twice: it told the player to use a breed picker that the
-      // breeding surface does not have and is not getting on this branch (the
-      // real remedy is an owner decision, filed separately), and its last clause
-      // is a garden path that parses as the FOAL breeding the mare.
-      //
-      // What replaces it says only what is true: the game cannot tell what the
-      // foal would be, and the missing fact is on the mare's record. It promises
-      // no control. Do not re-add an instruction here until a surface exists that
-      // can carry it out.
-      return res.status(400).json({
-        success: false,
-        message: `${dam.name} has no breed on record, so there is no telling what her foal would be. Her breed needs to be on her record before she can be bred.`,
-        data: null,
-      });
-    }
-
-    const breedRecord = await prisma.breed.findUnique({
-      where: { id: effectiveBreedId },
-      select: { name: true },
-    });
-    if (!breedRecord?.name) {
-      return res.status(400).json({
-        success: false,
-        message: `No breed found for id ${effectiveBreedId}`,
-        data: null,
-      });
-    }
-
-    // The breed's NAME must have a usable profile: the foaling path feeds it to
-    // `conformationService.generateConformationScores` / the parent-blend path,
-    // both of which throw on a missing profile — the same stuck-pregnancy
-    // outcome. `getBreedProfile` throws rather than returning null, so this is
-    // the honest way to ask "would foaling succeed?" using the very function
-    // foaling will call.
-    try {
-      getBreedProfile(breedRecord.name);
-    } catch (profileError) {
-      // Distinguish "this breed has no profile" from "the profile SOURCE is
-      // broken". The loader's four throw sites make this exact, not a guess:
-      // only its two load-failure arms (breedProfileLoader.mjs:181 and :196)
-      // attach `{ cause: JSON_LOAD_ERROR }`; its two genuine-absence arms
-      // (:189 and :202) throw without a cause.
-      //
-      // The distinction is not cosmetic. If breedProfiles.json fails to load and
-      // the DB cache is empty, EVERY breed fails this check — a total breeding
-      // outage. Reporting that as a 400 saying the player's mare's breed "has no
-      // breed profile on file" would blame her horse for a broken server file
-      // and tell every player the same lie at once. A server-side data outage is
-      // a 500, and the message says so.
-      if (profileError.cause) {
-        logger.error(
-          `[horseController.createFoal] Breed profile source unavailable while checking breed ${effectiveBreedId} ("${breedRecord.name}") — ${profileError.message}`,
-        );
-        return res.status(500).json({
-          success: false,
-          message:
-            'Breed data is unavailable right now, so breeding cannot start. Try again later.',
-          data: null,
-        });
-      }
-
-      logger.error(
-        `[horseController.createFoal] Rejected: breed ${effectiveBreedId} ("${breedRecord.name}") has no usable breed profile — ${profileError.message}`,
-      );
-      return res.status(400).json({
-        success: false,
-        message: `${breedRecord.name} has no breed profile on file, so a foal of that breed cannot be born yet.`,
-        data: null,
-      });
-    }
-
-    // The mare must not already be in foal.
-    //
-    // Concurrency model (Equoria-9gsxg — optimistic concurrency, NO row lock,
-    // mirrors the feed-action fix Equoria-zvp4):
-    //   This advisory pre-check produces a friendly 400 on the COMMON path. It
-    //   does NOT close the lost-update race on its own: under READ COMMITTED two
-    //   concurrent breed requests on the same dam can both read the stale
-    //   inFoalSinceDate=NULL and both pass this guard. The race is closed by the
-    //   ATOMIC GUARDED UPDATE below — a single UPDATE whose WHERE encodes the
-    //   "not already in foal" precondition and whose affected-row count must be
-    //   exactly 1. The first breed to commit flips inFoalSinceDate to a value;
-    //   the loser's WHERE then matches 0 rows, so it neither starts a SECOND
-    //   pregnancy (which would overwrite the winner's pregnancySireId /
-    //   pendingFoalName) nor re-stamps lastBredDate a second time (cooldown
-    //   bypass). affected===0 → reject with the same 400 the pre-check uses.
-    //   Fail-closed: a conflict rejects, it never silently double-applies.
-    if (dam.inFoalSinceDate) {
-      return res.status(400).json({
-        success: false,
-        message: `${dam.name} is already in foal.`,
-        data: null,
-      });
-    }
-
+    const ownerId = req.user.id;
     const now = new Date();
 
-    // ── ATOMIC OPTIMISTIC CLAIM (Equoria-9gsxg) ─────────────────────────────
-    // A single guarded UPDATE on the dam row is the linearisation point for
-    // "this breed claimed the pregnancy". Everything that must happen exactly
-    // once per pregnancy rides on this ONE statement:
-    //   - inFoalSinceDate := now      (the claim itself)
-    //   - pregnancySireId := sireId
-    //   - pregnancyFeedingsByTier := {}
-    //   - lastBredDate := now         (the cooldown stamp)
-    //   - pendingFoalName / pendingFoalBreedId := caller intent
+    // ── ATOMIC OPTIMISTIC CLAIM (Equoria-9gsxg; Equoria-q4uem.9) ────────────
+    // A guarded UPDATE on the dam row is the linearisation point for "this
+    // breed claimed the pregnancy": WHERE id = ? AND userId = caller AND
+    // inFoalSinceDate IS NULL, evaluated by Postgres against the COMMITTED row,
+    // so the loser of a race matches 0 rows and neither starts a second
+    // pregnancy nor re-stamps the cooldown. No SELECT…FOR-UPDATE (hyphenated
+    // so no FOR\s+UPDATE sentinel trips on this comment).
     //
-    // The WHERE clause (id = ? AND inFoalSinceDate = null) is evaluated by
-    // Postgres against the COMMITTED row at statement time, so the loser of a
-    // race sees the winner's already-committed inFoalSinceDate and matches 0
-    // rows. No SELECT…FOR-UPDATE: updateMany compiles to a plain guarded UPDATE
-    // taking only the ordinary per-row write lock for the statement's duration
-    // — race-safe AND timeout-free. (Hyphenated "FOR-UPDATE" in prose so any
-    // FOR\s+UPDATE sentinel can't trip on this comment.)
+    // The sire is pinned the same way (WHERE id = ? AND userId = caller AND
+    // sex = 'Stallion'): the route checked ownership BEFORE this transaction,
+    // so a stallion sold in between used to sire a free pregnancy. Both rows
+    // are written in ascending id order (the repository lock ruling).
     //
-    // Implemented with prisma.horse.updateMany (returns { count }) rather than
-    // raw $executeRaw: this matches the EXISTING optimistic-claim precedent in
-    // foalingService.runFoalingJob (the inverse pregnancy-CLEAR write, which
-    // already guards with updateMany + count===0 skip), and lets Prisma handle
-    // Int coercion + the `{}` Json default natively — no manual SQL, no
-    // '{}'::jsonb literal, no string/Int binding subtlety. (zvp4's feed fix
-    // needs raw SQL only because it does a per-column `stat + 1` increment +
-    // jsonb_set that updateMany can't express; createFoal has no such
-    // increment — every assignment here is a scalar, so updateMany is the
-    // cleaner fit.)
-    const { count: affected } = await prisma.horse.updateMany({
-      where: { id: dam.id, inFoalSinceDate: null },
-      data: {
-        inFoalSinceDate: now,
-        pregnancySireId: sire.id,
-        pregnancyFeedingsByTier: {},
-        lastBredDate: gameCalendarDate(now), // date-only column: the Eastern date
-        pendingFoalName: name ?? null,
-        // The VALIDATED EFFECTIVE breed, not the supplied one (Equoria-m9lz1 fix
-        // round 3, finding 7). `effectiveBreedId` is `normalizedBreedId ??
-        // dam.breedId`, and by this line it has passed the integer check, the
-        // `breed.findUnique` existence check and `getBreedProfile`. Storing it
-        // pins the breed the foal will be born with AT CONCEPTION.
-        //
-        // Storing `normalizedBreedId || null` instead made conception-time and
-        // birth-time agreement depend on an absence: with no pending breed,
-        // foalingService.createFoalFromPregnancy falls through to `dam.breedId`
-        // AS IT READS SEVEN DAYS LATER, so a dam whose breed changed mid-
-        // pregnancy would foal a breed nothing ever validated — the stuck-
-        // pregnancy failure this whole precondition exists to prevent. It was
-        // safe only because `breedId` happens not to be in the PUT /horses/:id
-        // allowlist; that is a property of another file's allowlist, not of this
-        // one's logic, and it should not be what holds the invariant up.
-        pendingFoalBreedId: effectiveBreedId,
-      },
-    });
+    // With the dam row held, a fresh read of her PENDING private-stud request
+    // enforces owner ruling S-Q4 (2026-10-16): she may not be bred elsewhere
+    // while one waits. A request that committed while this claim waited on the
+    // dam row is visible to that read (a new statement under READ COMMITTED).
+    //
+    // Owner ruling S-Q7 (2026-10-16): every breeding leaves one BreedingRecord;
+    // an own pair pays no stud fee, so its fee is 0.
+    await withRetryableTxMapping(
+      prisma.$transaction(
+        async tx => {
+          const pinSire = async () => {
+            const pinned = await tx.horse.updateMany({
+              where: { id: sire.id, userId: ownerId, sex: 'Stallion' },
+              data: { userId: ownerId },
+            });
+            if (pinned.count !== 1) {
+              throw claimFailure('SIRE_NOT_OWNED');
+            }
+          };
+          const claimDam = async () => {
+            const { count: affected } = await tx.horse.updateMany({
+              where: { id: dam.id, userId: ownerId, inFoalSinceDate: null },
+              data: pregnancyClaimData({
+                sireId: sire.id,
+                name,
+                effectiveBreedId: verdict.effectiveBreedId,
+                now,
+              }),
+            });
+            if (affected === 0) {
+              throw claimFailure('DAM_NOT_CLAIMABLE');
+            }
+          };
+          if (sire.id < dam.id) {
+            await pinSire();
+            await claimDam();
+          } else {
+            await claimDam();
+            await pinSire();
+          }
 
-    if (affected === 0) {
-      // A concurrent breed already claimed this dam's pregnancy. Reject with
-      // the same 400 the advisory pre-check uses — do NOT start a second
-      // pregnancy or re-stamp the cooldown.
-      logger.info(
-        `[horseController.createFoal] Lost-update conflict: dam ${damId} already claimed by a concurrent breed`,
-      );
-      return res.status(400).json({
-        success: false,
-        message: `${dam.name} is already in foal.`,
-        data: null,
-      });
-    }
+          const pending = await tx.breedingRecord.findFirst({
+            where: { damId: dam.id, status: 'PENDING' },
+            select: { id: true },
+          });
+          if (pending) {
+            throw claimFailure('MARE_HAS_PENDING_REQUEST', { damName: dam.name });
+          }
+
+          const owner = await tx.user.findUnique({
+            where: { id: ownerId },
+            select: { username: true },
+          });
+          await tx.breedingRecord.create({
+            data: {
+              kind: 'OWN_PAIR',
+              status: 'COMPLETED',
+              fee: 0,
+              sireId: sire.id,
+              damId: dam.id,
+              mareOwnerId: ownerId,
+              stallionOwnerId: ownerId,
+              sireName: sire.name,
+              damName: dam.name,
+              mareOwnerName: owner?.username ?? '',
+              stallionOwnerName: owner?.username ?? '',
+              resolvedAt: now,
+            },
+          });
+        },
+        { timeout: 30000 },
+      ),
+      { message: 'The breeding barn is busy right now, please retry in a moment.' },
+    );
 
     // 00:00 Eastern on the day the nightly foaling run delivers (bred day + 7).
     const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + GESTATION_DAYS);
@@ -386,6 +201,38 @@ export async function createFoal(req, res) {
       },
     });
   } catch (error) {
+    if (error.claimFailure === 'SIRE_NOT_OWNED') {
+      // Byte-identical to the route's ownership 404 (horseFoalRoutes.mjs).
+      return res.status(404).json({ success: false, message: 'Sire not found' });
+    }
+    if (error.claimFailure === 'MARE_HAS_PENDING_REQUEST') {
+      return res.status(409).json({
+        success: false,
+        code: 'MARE_HAS_PENDING_REQUEST',
+        message: pendingRequestMessage(error.damName),
+        data: null,
+      });
+    }
+    if (error.claimFailure === 'DAM_NOT_CLAIMABLE') {
+      // Rolled back. Tell apart "sold mid-request" (the route's ownership 404)
+      // from "a concurrent breed already claimed her" (the long-standing 400).
+      const current = await getHorseById(req.body.damId);
+      if (!current || current.userId !== req.user.id) {
+        return res.status(404).json({ success: false, message: 'Dam not found' });
+      }
+      logger.info(
+        `[horseController.createFoal] Lost-update conflict: dam ${req.body.damId} already claimed by a concurrent breed`,
+      );
+      return res.status(400).json({
+        success: false,
+        message: `${current.name} is already in foal.`,
+        data: null,
+      });
+    }
+    if (error.statusCode === 503) {
+      return res.status(503).json({ success: false, message: error.message, data: null });
+    }
+
     logger.error(`[horseController.createFoal] Error starting pregnancy: ${error.message}`);
 
     res.status(500).json({

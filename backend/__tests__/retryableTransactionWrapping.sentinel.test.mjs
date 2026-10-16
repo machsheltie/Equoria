@@ -147,6 +147,14 @@ const MIGRATED = [
   // that passed the read-only ownership check before a sale can no longer touch
   // the buyer's horse), so each is a player-state mutation wrapped for the 503.
   ['modules/horses/controllers/horseStudController.mjs', { wrapped: 2, totalTx: 2 }],
+  // Equoria-q4uem.9 slice 2 — bookPublicStud: the stud-fee transfer, the sire
+  // pin, the dam's pregnancy claim and the BreedingRecord commit as ONE
+  // transaction, wrapped for the retryable 503.
+  ['modules/breeding/controllers/studBookingController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-q4uem.9 slice 2 — createFoal (own pair): the sire pin, the dam's
+  // pregnancy claim and the BreedingRecord now commit as one wrapped
+  // transaction (the claim was a bare updateMany).
+  ['modules/horses/controllers/horseFoalingController.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites
