@@ -65,6 +65,13 @@ const TRAIT_SETS = [
   ['nervous', 'sensitive'],
   ['desert_adapted', 'heat_sensitive'],
   ['calm', 'resilient', 'adaptable'],
+  // Sets that put 3, 4 and 5 factors into one product (stress, triggers, impact).
+  ['calm', 'nervous', 'hardy', 'sensitive', 'resilient'],
+  ['nervous', 'hardy', 'sensitive', 'resilient'],
+  ['calm', 'hardy', 'resilient'],
+  ['calm', 'nervous', 'cold_tolerant', 'hardy'],
+  ['nervous', 'heat_tolerant', 'hardy', 'adaptable', 'sensitive'],
+  ['adaptable', 'sensitive', 'cold_tolerant'],
 ];
 const AGE_HEALTH = [
   [3, 50],
@@ -128,6 +135,19 @@ const OVERRIDES = [
       windSpeed: 26,
       pressure: 1020,
       conditions: 'cloudy',
+      timestamp: 'override',
+      location: 'override',
+    },
+  ],
+  [
+    'cold-storm',
+    {
+      temperature: -6,
+      humidity: 40,
+      precipitation: 0.9,
+      windSpeed: 26,
+      pressure: 1020,
+      conditions: 'stormy',
       timestamp: 'override',
       location: 'override',
     },
@@ -228,3 +248,44 @@ export function groupDigests(outputs) {
     ]),
   );
 }
+
+/**
+ * Trait-factor product cases: every subset of each factor table's traits under
+ * each condition context. The engine's outputs are rounded before they leave
+ * it, so the order in which a product is multiplied is invisible in the grid
+ * above (a search of 929,280 inputs found no output that changes when the
+ * tables are reversed); these cases pin the unrounded products themselves.
+ */
+const subsets = items => items.reduce((acc, item) => acc.concat(acc.map(s => [...s, item])), [[]]);
+
+export const TRAIT_PRODUCT_CASES = [
+  ...subsets(['calm', 'nervous', 'heat_tolerant', 'cold_tolerant', 'hardy']).flatMap(traits =>
+    [
+      [],
+      ['storm_stress'],
+      ['heat_stress'],
+      ['cold_stress', 'storm_stress'],
+      ['heat_stress', 'strong_wind', 'storm_stress'],
+      ['wet_conditions'],
+    ].map(triggers => ({ table: 'trigger', traits, triggers })),
+  ),
+  ...subsets(['adaptable', 'sensitive', 'heat_tolerant', 'cold_tolerant']).flatMap(traits =>
+    [35, 30, 20, 10, -5].map(temperature => ({
+      table: 'impact',
+      traits,
+      weather: { temperature },
+    })),
+  ),
+  ...subsets(['calm', 'nervous', 'hardy', 'sensitive', 'resilient']).map(traits => ({
+    table: 'stress',
+    traits,
+  })),
+].map(c => ({
+  ...c,
+  key: [
+    c.table,
+    c.traits.join('+') || 'none',
+    (c.triggers ?? []).join('+'),
+    c.weather?.temperature ?? '',
+  ].join('|'),
+}));

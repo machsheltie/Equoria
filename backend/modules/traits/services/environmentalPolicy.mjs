@@ -133,20 +133,22 @@ export const COMFORT_TRAIT_ADJUSTMENTS = deepFreeze([
   ['hardy', { tempMin: -5, tempMax: 5, humidityMin: -5, humidityMax: 10 }],
 ]);
 
-// Ordered multipliers. A third element conditions the factor: on the active
-// trigger list (trigger intensity) or on the weather (overall impact).
+// Ordered multipliers. An optional third element is a condition, as data, that
+// the engine interprets: { whenTrigger: <type> } (that trigger is active),
+// { whenAnyTrigger: true } (any trigger is active), { tempAbove: n } and
+// { tempBelow: n } (the weather's temperature, strictly).
 export const TRIGGER_TRAIT_FACTORS = deepFreeze([
-  ['calm', 0.7, triggers => triggers.includes('storm_stress')],
-  ['nervous', 1.3, triggers => triggers.length > 0],
-  ['heat_tolerant', 0.5, triggers => triggers.includes('heat_stress')],
-  ['cold_tolerant', 0.5, triggers => triggers.includes('cold_stress')],
+  ['calm', 0.7, { whenTrigger: 'storm_stress' }],
+  ['nervous', 1.3, { whenAnyTrigger: true }],
+  ['heat_tolerant', 0.5, { whenTrigger: 'heat_stress' }],
+  ['cold_tolerant', 0.5, { whenTrigger: 'cold_stress' }],
   ['hardy', 0.8],
 ]);
 export const IMPACT_TRAIT_FACTORS = deepFreeze([
   ['adaptable', 0.9],
   ['sensitive', 1.2],
-  ['heat_tolerant', 0.7, weather => weather.temperature > 30],
-  ['cold_tolerant', 0.7, weather => weather.temperature < 10],
+  ['heat_tolerant', 0.7, { tempAbove: 30 }],
+  ['cold_tolerant', 0.7, { tempBelow: 10 }],
 ]);
 // Ordered multipliers for environmental stress and stress recovery time.
 export const STRESS_TRAIT_FACTORS = deepFreeze([
@@ -162,3 +164,35 @@ export const RECOVERY_TRAIT_FACTORS = deepFreeze([
   ['sensitive', 1.3],
   ['calm', 0.8],
 ]);
+
+// How each data condition in the factor tables is read (one key per condition).
+const CONDITION_TESTS = {
+  whenTrigger: (type, { triggers }) => triggers.includes(type),
+  whenAnyTrigger: (_, { triggers }) => triggers.length > 0,
+  tempAbove: (limit, { weather }) => weather.temperature > limit,
+  tempBelow: (limit, { weather }) => weather.temperature < limit,
+};
+
+/**
+ * The product of a factor table's factors for a horse's traits, multiplied in
+ * table order (a conditioned factor applies only when its condition holds on
+ * `context` = { triggers, weather }). The engine scales a value once by this
+ * product, exactly as the pre-S3 if-chains did (`modifier *= f; value * modifier`).
+ */
+export function traitFactorProduct(factors, traits, context = {}) {
+  let modifier = 1.0;
+  for (const [trait, factor, condition] of factors) {
+    if (traits.includes(trait) && (!condition || conditionHolds(condition, context))) {
+      modifier *= factor;
+    }
+  }
+  return modifier;
+}
+
+function conditionHolds(condition, context) {
+  const [[kind, argument]] = Object.entries(condition);
+  if (!CONDITION_TESTS[kind]) {
+    throw new Error(`Unknown trait-factor condition: ${kind}`);
+  }
+  return CONDITION_TESTS[kind](argument, context);
+}

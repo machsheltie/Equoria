@@ -40,6 +40,7 @@ import {
   TRANSITION_GROWTH_EFFECT,
   TRANSITION_TRAINING_EFFECT,
   TRIGGER_TRAIT_FACTORS,
+  traitFactorProduct,
 } from './environmentalPolicy.mjs';
 import {
   generateForecastRecommendations,
@@ -239,19 +240,16 @@ function projectTriggers({ weather, seasonal }, horse, comfortZone) {
     intensity += Math.min(25, (comfortZone.temperatureRange.min - weather.temperature) * 1.5);
   }
 
-  // Humidity triggers
   if (weather.humidity > comfortZone.humidityRange.max) {
     triggers.push('high_humidity');
     intensity += Math.min(20, (weather.humidity - comfortZone.humidityRange.max) * 0.5);
   }
 
-  // Wind triggers
   if (weather.windSpeed > 20) {
     triggers.push('strong_wind');
     intensity += Math.min(15, (weather.windSpeed - 20) * 0.8);
   }
 
-  // Weather condition triggers
   if (weather.conditions === 'stormy') {
     triggers.push('storm_stress');
     intensity += 25;
@@ -260,13 +258,12 @@ function projectTriggers({ weather, seasonal }, horse, comfortZone) {
     intensity += 10;
   }
 
-  // Seasonal triggers
   if (seasonal.stressLevel > 30) {
     triggers.push('seasonal_stress');
     intensity += seasonal.stressLevel - 30;
   }
 
-  intensity = multiplyByTraitFactors(intensity, horse.traits, TRIGGER_TRAIT_FACTORS, triggers);
+  intensity *= traitFactorProduct(TRIGGER_TRAIT_FACTORS, horse.traits, { triggers });
   const traitExpressionProbability = Math.min(1, intensity / 100);
 
   return {
@@ -289,12 +286,7 @@ function projectImpact({ weather, seasonal }, horse, comfortZone, triggers) {
   overallImpact -= humidityDiff * 0.5;
   overallImpact += (seasonal.growthModifier - 1) * 50;
   overallImpact += CONDITION_IMPACT[weather.conditions] || 0;
-  overallImpact = multiplyByTraitFactors(
-    overallImpact,
-    horse.traits,
-    IMPACT_TRAIT_FACTORS,
-    weather,
-  );
+  overallImpact *= traitFactorProduct(IMPACT_TRAIT_FACTORS, horse.traits, { weather });
 
   const statModifiers = calculateStatModifiers(overallImpact, seasonal);
   const healthEffect = Math.round(overallImpact * 0.2 + (seasonal.healthModifier - 1) * 10);
@@ -342,7 +334,7 @@ function projectStress({ weather }, horse, comfortZone, triggers) {
 
   // The ROUNDED trigger intensity, as returned by the triggers projection
   stressLevel += triggers.intensity * 0.5;
-  stressLevel = multiplyByTraitFactors(stressLevel, horse.traits, STRESS_TRAIT_FACTORS);
+  stressLevel *= traitFactorProduct(STRESS_TRAIT_FACTORS, horse.traits);
 
   let severity;
   if (stressLevel >= 80) {
@@ -483,18 +475,6 @@ function getSeasonTransitionEffect(dayOfYear) {
 }
 
 // ===== TRAIT MODIFIERS =====
-
-// Multiply the factors of the horse's traits (in table order, optionally
-// conditioned on a context), then scale the value once by their product.
-function multiplyByTraitFactors(value, traits, factors, context) {
-  let modifier = 1.0;
-  for (const [trait, factor, appliesTo] of factors) {
-    if (traits.includes(trait) && (!appliesTo || appliesTo(context))) {
-      modifier *= factor;
-    }
-  }
-  return value * modifier;
-}
 
 function calculateStatModifiers(overallImpact, seasonalFactors) {
   const baseModifier = overallImpact / 100;

@@ -1,14 +1,23 @@
 /**
  * Environmental engine characterization (Equoria-q4uem.7 S3).
  *
- * helpers/environmentalEngine.golden.json holds sha256 digests of every
- * engine output over the fixed grid in helpers/environmentalEngineGrid.mjs,
- * recorded from the pre-S3 engine (the per-function API at 439e793d6). This
- * test drives the same grid through the snapshot API and requires every group
- * digest to match, so any change to a number, its rounding, the order of a
- * floating-point product, a recommendation text or a key fails here.
- * A deliberate mechanics change (owner ruling) re-records the golden file and
- * says so in its commit.
+ * Both golden files were recorded from the pre-S3 engine (439e793d6) and this
+ * test requires the current engine to reproduce them:
+ *
+ * 1. helpers/environmentalEngine.golden.json: sha256 digests, in 100 groups, of
+ *    every engine OUTPUT over the grid in helpers/environmentalEngineGrid.mjs
+ *    (16,472 cases, including trait sets that put 3, 4 and 5 factors into one
+ *    product). It proves the outputs are unchanged on that grid: any change to
+ *    a returned number, text or key there fails.
+ * 2. helpers/environmentalTraitProducts.golden.json: the UNROUNDED trait-factor
+ *    products (trigger, impact, stress tables) for every trait subset and
+ *    condition context, compared with Object.is. Outputs are rounded before they
+ *    leave the engine, so (1) cannot see the order a product is multiplied in;
+ *    (2) can: reordering a table or its loop changes the last bit of some product.
+ *
+ * Not covered: the recovery-time chain (its sequential multiplication is only
+ * visible through a whole-hour rounding). A deliberate mechanics change
+ * (owner ruling) re-records the golden files and says so in its commit.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -24,9 +33,27 @@ import {
   getEnvironmentalHistory,
   getSeasonalFactors,
 } from '../services/environmentalFactorEngineService.mjs';
-import { canonicalJson, groupDigests, groupOf, runGrid } from './helpers/environmentalEngineGrid.mjs';
+import {
+  canonicalJson,
+  groupDigests,
+  groupOf,
+  runGrid,
+  TRAIT_PRODUCT_CASES,
+} from './helpers/environmentalEngineGrid.mjs';
+import {
+  IMPACT_TRAIT_FACTORS,
+  STRESS_TRAIT_FACTORS,
+  TRIGGER_TRAIT_FACTORS,
+  traitFactorProduct,
+} from '../services/environmentalPolicy.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const PRODUCTS = JSON.parse(readFileSync(resolve(HERE, 'helpers/environmentalTraitProducts.golden.json'), 'utf8'));
+const TABLES = {
+  trigger: TRIGGER_TRAIT_FACTORS,
+  impact: IMPACT_TRAIT_FACTORS,
+  stress: STRESS_TRAIT_FACTORS,
+};
 const GOLDEN = JSON.parse(readFileSync(resolve(HERE, 'helpers/environmentalEngine.golden.json'), 'utf8'));
 
 const assess = (d, l, h, w) => assessHorseEnvironment(buildEnvironmentalSnapshot(d, l, { weather: w }), h);
@@ -78,5 +105,18 @@ describe('environmental engine characterization (golden digests from the pre-S3 
     expect(stress.weather).toBe(snapshot.weather);
     expect(triggers.seasonalFactors).toBe(snapshot.seasonal);
     expect(impact.seasonalFactors).toBe(snapshot.seasonal);
+  });
+});
+
+describe('trait-factor products at full precision (pre-S3 if-chain order)', () => {
+  it('covers the recorded cases', () => {
+    expect(TRAIT_PRODUCT_CASES).toHaveLength(PRODUCTS.cases);
+  });
+
+  it('reproduces every unrounded product bit for bit', () => {
+    const differing = TRAIT_PRODUCT_CASES.filter(
+      c => !Object.is(traitFactorProduct(TABLES[c.table], c.traits, c), PRODUCTS.products[c.key]),
+    ).map(c => c.key);
+    expect(differing).toEqual([]);
   });
 });

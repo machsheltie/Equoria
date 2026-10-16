@@ -66,8 +66,10 @@ afterAll(() => cleanup.run(), 30000);
 describe('POST /api/v1/environment/calculate-impact uses one environmental snapshot', () => {
   it('every section of every horse reports the same weather', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    let delays = 0;
     jest.spyOn(logger, 'info').mockImplementation(message => {
       if (String(message).includes('calculateCurrentWeather')) {
+        delays += 1;
         const started = Date.now();
         while (Date.now() - started < 3) {
           // advance the wall clock past the millisecond the weather was seeded with
@@ -84,6 +86,9 @@ describe('POST /api/v1/environment/calculate-impact uses one environmental snaps
       .send({ horseIds });
 
     expect(res.status).toBe(200);
+    // The clock driver must have armed: a renamed weather log line would
+    // otherwise silently remove the delay that makes separate clocks visible.
+    expect(delays).toBeGreaterThan(0);
     expect(res.body.data.results).toHaveLength(horseIds.length);
     const weathers = res.body.data.results.flatMap(r => [r.impact.weather, r.triggers.weather, r.stress.weather]);
     expect(new Set(weathers.map(w => w.timestamp)).size).toBe(1);
