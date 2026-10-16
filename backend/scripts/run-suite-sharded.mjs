@@ -111,7 +111,13 @@ import {
   resolveExitStatus,
 } from './gate-lock.mjs';
 import { buildOwnershipSteps } from './gate-ownership-steps.mjs';
-import { chunk, isPlantedTestPath, planLanes, toBackendRelative } from './tree-lane-plan.mjs';
+import {
+  batchModeBatches,
+  canonicalPassBatches,
+  isPlantedTestPath,
+  planLanes,
+  toBackendRelative,
+} from './tree-lane-plan.mjs';
 
 const args = process.argv.slice(2);
 const opt = (name, def) => {
@@ -243,12 +249,7 @@ function discoverAndPlan() {
     );
     return;
   }
-  batches = chunk(discovered, BATCH_SIZE).map((batch, index) => ({
-    index,
-    label: `batch ${index + 1}`,
-    jestArgs: ['--runTestsByPath', ...batch],
-    files: batch,
-  }));
+  batches = batchModeBatches({ discovered, backendDir: BACKEND, batchSize: BATCH_SIZE });
   console.log(
     `[shard] ${discovered.length} test files in ${batches.length} batches of ${BATCH_SIZE} ` +
       `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
@@ -497,15 +498,14 @@ async function main() {
     );
 
     if (LANES > 1) {
-      const canonicalFiles = discovered.filter(f => canonicalSet.has(normalizePath(f)));
-      if (canonicalFiles.length) {
-        const canonicalBatch = {
-          index: batches.length,
-          label: `canonical-db pass (${canonicalFiles.length} suite(s))`,
-          jestArgs: ['--runTestsByPath', ...canonicalFiles],
-          files: canonicalFiles,
-        };
-        await runLane([canonicalBatch], { ...process.env }, 'canonical-db pass');
+      const canonicalBatches = canonicalPassBatches({
+        discovered,
+        backendDir: BACKEND,
+        isCanonical: f => canonicalSet.has(normalizePath(f)),
+        firstIndex: batches.length,
+      });
+      if (canonicalBatches.length) {
+        await runLane(canonicalBatches, { ...process.env }, 'canonical-db pass');
       }
     }
   } finally {

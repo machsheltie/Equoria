@@ -114,6 +114,74 @@ function hashOrder(rel) {
 }
 
 /**
+ * One `--runTestsByPath` batch for `files`, or several "part p/q" batches (split
+ * evenly, deterministic) when the explicit list would push the Jest argv past
+ * `maxArgvChars`. Every batch the runner hands Jest goes through here: the
+ * planned lanes, the single-lane --batch-size chunks and the canonical-db pass.
+ * Throws, naming the batch, if even one suite per batch cannot fit.
+ *
+ * @returns {{ label: string, jestArgs: string[], files: string[] }[]} (no index)
+ */
+export function argvBoundedBatches({
+  label,
+  files,
+  backendDir,
+  maxArgvChars = MAX_BATCH_ARGV_CHARS,
+}) {
+  const rel = file => toBackendRelative(backendDir, file);
+  const make = (lbl, part) => ({
+    label: lbl,
+    jestArgs: ['--runTestsByPath', ...part.map(rel)],
+    files: part,
+  });
+  for (let parts = 1; parts <= Math.max(1, files.length); parts++) {
+    const planned = chunkEvenly(files, parts).map((part, p) =>
+      make(parts === 1 ? label : `${label} part ${p + 1}/${parts}`, part),
+    );
+    if (planned.every(b => argvChars(b.jestArgs) <= maxArgvChars)) {
+      return planned;
+    }
+  }
+  const longest = files.map(rel).reduce((a, b) => (b.length > a.length ? b : a));
+  throw new Error(
+    `${label} cannot fit the ${maxArgvChars}-char argv budget even one suite per batch ` +
+      `(longest path ${longest.length} chars: ${longest})`,
+  );
+}
+
+/**
+ * The post-lane canonical-db pass: the discovered canonical suites, argv-bounded,
+ * indexed from `firstIndex` (after every lane batch). [] when there are none.
+ */
+export function canonicalPassBatches({
+  discovered,
+  backendDir,
+  isCanonical,
+  firstIndex,
+  maxArgvChars,
+}) {
+  const files = discovered.filter(isCanonical);
+  if (files.length === 0) {
+    return [];
+  }
+  return argvBoundedBatches({
+    label: `canonical-db pass (${files.length} suite(s))`,
+    files,
+    backendDir,
+    maxArgvChars,
+  }).map((b, i) => ({ ...b, index: firstIndex + i }));
+}
+
+/** Single-lane --batch-size mode: consecutive chunks of `batchSize`, each argv-bounded, indexed in order. */
+export function batchModeBatches({ discovered, backendDir, batchSize, maxArgvChars }) {
+  return chunk(discovered, batchSize)
+    .flatMap((files, i) =>
+      argvBoundedBatches({ label: `batch ${i + 1}`, files, backendDir, maxArgvChars }),
+    )
+    .map((b, index) => ({ ...b, index }));
+}
+
+/**
  * Plan the batches and lanes of a sharded run from ONE discovery.
  *
  * @param {object} input
@@ -158,27 +226,7 @@ export function planLanes({
     .filter(file => !isTreeSuite(rel.get(file)))
     .sort((a, b) => hashOrder(rel.get(a)).localeCompare(hashOrder(rel.get(b))));
 
-  // One planned slice becomes one batch, or several "part" batches when its
-  // explicit file list would push the Jest argv past MAX_BATCH_ARGV_CHARS.
-  const batches = (label, files) => {
-    const make = (lbl, part) => {
-      const jestArgs = ['--runTestsByPath', ...part.map(file => rel.get(file))];
-      return { label: lbl, jestArgs, files: part };
-    };
-    for (let parts = 1; parts <= Math.max(1, files.length); parts++) {
-      const planned = chunkEvenly(files, parts).map((part, p) =>
-        make(parts === 1 ? label : `${label} part ${p + 1}/${parts}`, part),
-      );
-      if (planned.every(b => argvChars(b.jestArgs) <= maxArgvChars)) {
-        return planned;
-      }
-    }
-    const longest = files.reduce((a, f) => (rel.get(f).length > rel.get(a).length ? f : a));
-    throw new Error(
-      `planLanes: ${label} cannot fit the ${maxArgvChars}-char argv budget even one suite per batch ` +
-        `(longest path ${rel.get(longest).length} chars: ${rel.get(longest)})`,
-    );
-  };
+  const batches = (label, files) => argvBoundedBatches({ label, files, backendDir, maxArgvChars });
   const treeBatchCount = Math.ceil(treeFiles.length / maxTreeBatchFiles);
   const treeBatches = chunkEvenly(treeFiles, treeBatchCount).flatMap((files, i) =>
     batches(`lane 1 tree ${i + 1}/${treeBatchCount}`, files),

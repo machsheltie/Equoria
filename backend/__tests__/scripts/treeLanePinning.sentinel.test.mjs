@@ -46,6 +46,8 @@ import {
   MAX_BATCH_ARGV_CHARS,
   TREE_BATCH_MAX_FILES,
   argvChars,
+  batchModeBatches,
+  canonicalPassBatches,
   isPlantedTestPath,
   isTreeSuite,
   planLanes,
@@ -385,6 +387,61 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       }
     });
 
+    it('the canonical-db pass is argv-bounded too: a synthetic oversize canonical set splits', () => {
+      const synthetic = Array.from({ length: 600 }, (_, i) =>
+        path.join(
+          BACKEND,
+          'modules',
+          'auth',
+          '__tests__',
+          `canonicalSynthetic${String(i).padStart(4, '0')}Long.integration.test.mjs`,
+        ),
+      );
+      const unsplit = argvChars(['--runTestsByPath', ...synthetic.map(f => toBackendRelative(BACKEND, f))]);
+      expect(unsplit).toBeGreaterThan(MAX_BATCH_ARGV_CHARS);
+      const input = {
+        discovered: [...synthetic, files[0]],
+        backendDir: BACKEND,
+        isCanonical: f => synthetic.includes(f),
+        firstIndex: 11,
+      };
+      const pass = canonicalPassBatches(input);
+      expect(pass.length).toBeGreaterThan(1);
+      for (const batch of pass) {
+        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(MAX_BATCH_ARGV_CHARS);
+        expect(batch.label).toMatch(/^canonical-db pass \(600 suite\(s\)\) part \d+\/\d+$/);
+      }
+      expect(pass.flatMap(batch => batch.files).sort()).toEqual([...synthetic].sort());
+      expect(pass.map(batch => batch.index)).toEqual(pass.map((_, i) => 11 + i));
+      expect(canonicalPassBatches(input)).toEqual(pass);
+      // The real three canonical suites stay one batch.
+      expect(canonicalPassBatches({ ...input, discovered: files.slice(0, 3), isCanonical: () => true })).toHaveLength(
+        1,
+      );
+      expect(canonicalPassBatches({ ...input, isCanonical: () => false })).toEqual([]);
+    });
+
+    it('single-lane --batch-size batches are argv-bounded and keep every suite once, in order', () => {
+      const synthetic = Array.from({ length: 900 }, (_, i) =>
+        path.join(
+          BACKEND,
+          'modules',
+          'm',
+          '__tests__',
+          `batchModeSynthetic${String(i).padStart(4, '0')}Long.integration.test.mjs`,
+        ),
+      );
+      const all = batchModeBatches({ discovered: synthetic, backendDir: BACKEND, batchSize: 900 });
+      expect(all.length).toBeGreaterThan(1);
+      for (const batch of all) {
+        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(MAX_BATCH_ARGV_CHARS);
+      }
+      expect(all.flatMap(batch => batch.files)).toEqual(synthetic);
+      expect(all.map(batch => batch.index)).toEqual(all.map((_, i) => i));
+      const normal = batchModeBatches({ discovered: files, backendDir: BACKEND, batchSize: 25 });
+      expect(normal.map(batch => batch.label)).toEqual(normal.map((_, i) => `batch ${i + 1}`));
+    });
+
     it('throws, naming the batch, when even one suite per batch exceeds the budget', () => {
       expect(() =>
         planLanes({
@@ -465,6 +522,8 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
         nestedReaddir:
           "import fs from 'fs';\nconst e = fs.readdirSync(join(ROOT, 'backend'), { withFileTypes: true });",
         promisesAlias: "import { promises as fsp } from 'fs';\nawait fsp.writeFile(path.join(BACKEND, 'x.mjs'), s);",
+        promisesAliasNodeFs:
+          'import { existsSync, promises as fsp } from "node:fs";\nawait fsp.mkdir(path.join(REPO_ROOT, \'backend/x\'));',
         fsPromisesModule: "import { writeFile } from 'fs/promises';\nawait writeFile(path.join(REPO_ROOT, 'x'), s);",
         nsPromises: "import fs from 'node:fs';\nawait fs.promises.rm(path.join(BACKEND, 'x'), { recursive: true });",
         statWalk:
@@ -490,6 +549,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       expect(treeTouchReasons(planted.objectKey)).toEqual(WRITES);
       expect(treeTouchReasons(planted.nestedReaddir)).toEqual(WALKS);
       expect(treeTouchReasons(planted.promisesAlias)).toEqual(WRITES);
+      expect(treeTouchReasons(planted.promisesAliasNodeFs)).toEqual(WRITES);
       expect(treeTouchReasons(planted.fsPromisesModule)).toEqual(WRITES);
       expect(treeTouchReasons(planted.nsPromises)).toEqual(WRITES);
       expect(treeTouchReasons(planted.statWalk)).toEqual(WALKS);
