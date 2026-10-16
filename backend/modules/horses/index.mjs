@@ -12,6 +12,9 @@
 export { BREED_GENETIC_PROFILES, CANONICAL_BREEDS } from './data/breedGeneticProfiles.mjs';
 export { preloadBreedProfiles } from './data/breedProfileLoader.mjs';
 export { getFoalDevelopment } from './models/foalModel.mjs';
+// Production since WS4 S6 (Equoria-q4uem.4): competition's conformationShowScoring.mjs reads the
+// overall conformation score through this barrel.
+export { calculateOverallConformation } from './services/conformationService.mjs';
 export { runFoalingJob } from './services/foalingService.mjs';
 export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
 export { decayHoofConditions } from './services/hoofConditionDecayService.mjs';
@@ -41,7 +44,6 @@ export {
 export { TEMPERAMENT_TYPES } from './data/breedGeneticProfiles.mjs';
 export {
   CONFORMATION_REGIONS,
-  calculateOverallConformation,
   clampScore,
   generateConformationScores,
   generateInheritedConformationScores,
