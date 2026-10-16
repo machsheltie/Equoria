@@ -188,7 +188,9 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
     });
   }, 30000);
 
-  it('records no stat gain when the roll succeeded but the stat could not rise (today’s 100 ceiling)', async () => {
+  // Owner ruling R8 (2026-10-15): stats are never capped. Old contract: a horse at
+  // 100 gained nothing and the row recorded statGains null.
+  it('records the gain for a stat already at 100, which now rises to 101', async () => {
     const owner = await makeOwner('C');
     const horseIds = [];
     const horse = await makeHorse(owner.id, 50, horseIds);
@@ -224,7 +226,12 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
       where: { showId_horseId: { showId: show.id, horseId: horse.id } },
       select: { horsePointsAwarded: true, statGains: true },
     });
-    expect(row).toEqual({ horsePointsAwarded: computePlacementAwards(1).horseXp, statGains: null });
+    expect(row).toEqual({
+      horsePointsAwarded: computePlacementAwards(1).horseXp,
+      statGains: { stat: 'precision', gain: 1 },
+    });
+    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { precision: true } });
+    expect(after.precision).toBe(101);
   }, 30000);
 
   it('a crash re-drive that replays a staged ordering still records progression', async () => {

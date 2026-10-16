@@ -10,7 +10,7 @@
  *   - awardPlacementProgression: deterministic via the calculateStatGains _rngFn
  *     seam threaded through the helper's `rng` option — () => 0 always gains,
  *     () => 0.999 never gains, 4th place never gains (chance 0). Includes the
- *     stat=100 CAP sentinel (the `lt: 100` guard is a no-op at the ceiling).
+ *     stat=100 case: stats are never capped (owner ruling R8), so 100 -> 101.
  *
  * Real DB (CLAUDE.md §3): the determinism cases pass the ROOT prisma client as
  * `db` (the helper opens no $transaction), create TestFixture- fixtures via
@@ -163,7 +163,9 @@ describe('awardPlacementProgression — determinism + stat cap (Equoria-oey96.4)
     expect(uEvents[0].amount).toBe(20);
   }, 30000);
 
-  it('CAP SENTINEL: a stat already at 100 does not exceed the ceiling (lt:100 guard)', async () => {
+  // Owner ruling R8 (2026-10-15): stats are NEVER capped. Old contract: a stat at
+  // 100 stayed at 100 (the `lt: 100` guard made the gain a no-op).
+  it('NO CAP: a stat already at 100 still gains (100 -> 101)', async () => {
     const owner = await makeOwner();
     const horse = await makeHorse(owner.id, { precision: 100 });
 
@@ -173,12 +175,12 @@ describe('awardPlacementProgression — determinism + stat cap (Equoria-oey96.4)
       placementNumber: 1,
       discipline: 'Dressage',
       horseName: horse.name,
-      rng: () => 0, // would gain precision, but it is capped at 100
+      rng: () => 0, // gains precision
     });
 
-    expect(statGain).toEqual({ stat: 'precision', gain: 1 }); // helper computed a gain…
+    expect(statGain).toEqual({ stat: 'precision', gain: 1 });
     const h = await prisma.horse.findUnique({ where: { id: horse.id }, select: { precision: true } });
-    expect(h.precision).toBe(100); // …but the cap-safe updateMany was a no-op
+    expect(h.precision).toBe(101);
   }, 30000);
 
   it('rng()=0.999 at 1st place: XP awarded but NO stat gain', async () => {

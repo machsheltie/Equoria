@@ -81,12 +81,11 @@ export function computePlacementAwards(placementNumber) {
  * Order (matches the legacy semantics + the PRD):
  *   1. Horse XP — EVERY entrant (podium and participation) via addXpToHorseCore.
  *   2. User (owner) XP — top-3 only (userXp > 0) via addXpToUserCore.
- *   3. Stat gain — top-3 only, chance-gated; applied as a CAP-SAFE atomic +1
- *      (`updateMany where stat < 100`) so a stat already at the 0-100 ceiling is
- *      a no-op instead of exceeding it. `updateHorseRewards`/`updateHorseStat`
- *      are deliberately NOT reused — they are separate un-transacted writes that
- *      also bundle earnings (the executor adds totalEarnings in its own payout
- *      leg, Equoria-xal4m).
+ *   3. Stat gain — top-3 only, chance-gated; applied as an atomic +1 with no
+ *      ceiling: stats are never capped (owner ruling R8, 2026-10-15).
+ *      `updateHorseRewards`/`updateHorseStat` are deliberately NOT reused — they
+ *      are separate un-transacted writes that also bundle earnings (the executor
+ *      adds totalEarnings in its own payout leg, Equoria-xal4m).
  *
  * `db` MUST be a transaction client when atomicity with sibling writes is
  * required (the executor passes its per-entry `tx`); a root client is acceptable
@@ -146,12 +145,13 @@ export async function awardPlacementProgression(
       );
     }
   }
-  // statGainApplied: whether the stat really rose (the cap-safe update matched a
-  // row). The result record stores only a gain that happened (Equoria-q4uem.10).
+  // statGainApplied: whether the stat really rose (the update matched the horse).
+  // The result record stores only a gain that happened (Equoria-q4uem.10).
+  // No ceiling: stats are never capped (owner ruling R8; Equoria-576c0 B2).
   let statGainApplied = false;
   if (statGain) {
     const { count } = await db.horse.updateMany({
-      where: { id: horseId, [statGain.stat]: { lt: 100 } },
+      where: { id: horseId },
       data: { [statGain.stat]: { increment: statGain.gain } },
     });
     statGainApplied = count === 1;
