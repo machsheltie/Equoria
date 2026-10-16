@@ -186,7 +186,8 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     // Round 4 cosmetic 2: each summary counter counts only its own violation class. Old format:
     // `deep-imports=` counted every R2 line; new: unmarked cross-module deep imports only, with
     // separate backslash=, cjs-files= and shared-violations= counters.
-    expect(res.out).toMatch(/ deep-imports=0 \(marked \d+ listed \d+\)/);
+    // WS4 S6: R2 is strict — no hk739 markers remain and the deepImports section is empty.
+    expect(res.out).toMatch(/ deep-imports=0 \(marked 0 listed 0/);
     expect(res.out).toMatch(/backslash=0/);
     expect(res.out).toMatch(/cjs-files=0/);
     expect(res.out).toMatch(/shared-violations=0/);
@@ -249,7 +250,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     );
   });
 
-  it('R2 (M1): an Equoria-hk739-marked deep import that is not pinned in the allow-list FAILS by its key', () => {
+  it('R2 (S6, strict): an Equoria-hk739-marked deep import now FAILS as a plain deep import — no marker is honoured (old contract: marked + pinned passed)', () => {
     const plant = plantFile(
       `economy/${PLANT_TOKEN}marked_${RUN_ID}.mjs`,
       "// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: sentinel plant\nimport { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
@@ -257,12 +258,13 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     const res = runCheck();
     expect(res.status).toBe(1);
     const rel = relPosix(plant);
-    expect(res.out).not.toMatch(new RegExp(`R2 ${esc(rel)}:2 cross-module deep import`)); // honoured as marked…
-    expect(res.out).toMatch(new RegExp(`R2-allowlist ${esc(rel)}:2 marked deep import .*not listed`)); // …but must be pinned
-    expect(res.out).toContain(`"${rel} -> backend/modules/bank/controllers/bankController.mjs"`);
+    expect(res.out).toMatch(
+      new RegExp(`R2 ${esc(rel)}:2 cross-module deep import of backend/modules/bank/controllers/bankController\\.mjs`),
+    );
+    expect(res.out).not.toMatch(/R2-allowlist .*marked deep import/);
   });
 
-  it('R2 (M1): a stale deepImports allow-list entry FAILS (the list only shrinks)', () => {
+  it('R2 (S6): the retired deepImports allow-list section must stay empty — any entry FAILS as stale', () => {
     const key = `backend/modules/economy/${PLANT_TOKEN}gone_${RUN_ID}.mjs -> backend/modules/bank/index.mjs`;
     const res = runWithExtraAllowlistEntry('deepImports', key);
     expect(res.status).toBe(1);

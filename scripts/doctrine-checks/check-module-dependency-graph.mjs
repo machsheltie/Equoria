@@ -12,11 +12,10 @@
  *       Every elementary cycle is printed as `a -> b -> a` with one file:line per edge.
  *   R2  Cross-module imports go through the barrel modules/<n>/index.mjs. A deep import
  *       (any other file of another module, a module-root specifier, or a dynamic
- *       import() of one) fails, UNLESS the line before it carries the existing marker
- *       `eslint-disable-next-line no-restricted-imports -- Equoria-hk739` (the TDZ
- *       carve-outs) AND the `<file> -> <target>` pair is pinned in
- *       module-dependency-graph-allowlist.json (deepImports). A pinned pair that no longer
- *       exists fails too: the list only shrinks. WS4 S6 empties it and makes R2 strict.
+ *       import() of one) fails. STRICT since WS4 S6: no marker is honoured — the nine
+ *       Equoria-hk739 TDZ carve-outs import the horses barrel now — and the allow-list's
+ *       deepImports section is retired and must stay empty (any entry is stale and fails);
+ *       the summary reports leftover marker lines, which must be 0.
  *       Also under R2, because the graph cannot see such a target: a dynamic import()
  *       whose first argument is not a plain single- or double-quoted string literal
  *       (template literal, variable, join(__dirname, …)); any createRequire(…) or
@@ -618,7 +617,7 @@ let dynamicEdges = 0;
 let nonliteralCount = 0;
 let commonjsCount = 0;
 let lexerCount = 0;
-const markedDeep = new Map(); // key "<file> -> <target>" -> where
+let markerLines = 0; // leftover `eslint-disable-next-line no-restricted-imports -- Equoria-hk739` lines (must be 0 since WS4 S6)
 const sharedHops = new Map(); // shared file -> Set(importing modules)
 
 let cjsFiles = 0;
@@ -634,6 +633,7 @@ for (const file of files) {
     );
   }
   const { sites, nonliteral, commonjs, issues, rawLines } = importSites(file);
+  markerLines += rawLines.filter((l) => R2_MARKER_RE.test(l)).length;
   for (const is of issues) {
     lexerCount += 1;
     violations.push(
@@ -678,21 +678,12 @@ for (const file of files) {
       const isBarrel =
         r === `backend/modules/${toModule}/index.mjs` && /\/index\.mjs$/.test(s.spec);
       if (!isBarrel) {
-        const prev = rawLines[s.line - 2] || '';
-        if (R2_MARKER_RE.test(prev)) {
-          const key = `${rel(file)} -> ${r}`;
-          markedDeep.set(key, where);
-          if (!(key in deepImportsListed)) {
-            violations.push(
-              `R2-allowlist ${where} marked deep import of ${r} is not listed in ${ALLOWLIST_NAME} (deepImports); key "${key}"`
-            );
-          }
-        } else {
-          deepImportCount += 1;
-          violations.push(
-            `R2 ${where} cross-module deep import of ${r}; import modules/${toModule}/index.mjs (the barrel) instead`
-          );
-        }
+        // WS4 S6: R2 is strict — no marker is honoured (the nine Equoria-hk739 carve-outs
+        // import the horses barrel now), so every cross-module deep import is a violation.
+        deepImportCount += 1;
+        violations.push(
+          `R2 ${where} cross-module deep import of ${r}; import modules/${toModule}/index.mjs (the barrel) instead`
+        );
       }
       continue;
     }
@@ -702,12 +693,11 @@ for (const file of files) {
     }
   }
 }
+// deepImports is retired (WS4 S6): R2 honours no marker, so every entry is stale.
 for (const key of Object.keys(deepImportsListed)) {
-  if (!markedDeep.has(key)) {
-    violations.push(
-      `R2-allowlist stale entry "${key}" — no such marked deep import on disk; delete it (the list only shrinks)`
-    );
-  }
+  violations.push(
+    `R2-allowlist stale entry "${key}" — R2 is strict since WS4 S6 (no marker is honoured); delete it (this section stays empty)`
+  );
 }
 
 // R1: strongly connected components (Tarjan), then elementary cycles inside each.
@@ -1103,7 +1093,7 @@ const summary =
   // lexer-failsafe are the other R2 classes in module files; shared-violations covers the
   // shared-layer non-literal/CommonJS findings.
   `modules=${modules.length} files=${files.length} edges=${crossEdges} (dynamic ${dynamicEdges}) nonliteral-dynamic=${nonliteralCount} commonjs=${commonjsCount} cjs-files=${cjsFiles} backslash=${backslashCount} lexer-failsafe=${lexerCount} shared-files=${sharedFiles.length} shared-violations=${sharedViolationCount} ` +
-  `cycles=${cycleCount} deep-imports=${deepImportCount} (marked ${markedDeep.size} listed ${Object.keys(deepImportsListed).length}) ` +
+  `cycles=${cycleCount} deep-imports=${deepImportCount} (marked ${markerLines} listed ${Object.keys(deepImportsListed).length}, both must be 0) ` +
   `star-exports=${starExports} http-in-barrel=${httpInBarrel} closure-checked=${closureChecked} closure-hits=${closureHits} (testBlockControllers listed ${Object.keys(testBlockListed).length}, must be 0) ` +
   `upward=${violations.filter((v) => v.startsWith('R5 ')).length} warn=${warns.length}`;
 

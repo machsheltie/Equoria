@@ -53,12 +53,12 @@ to fix the underlying problem. It is not a license to weaken the check.
   stripped as spans (strings, template and regex literals kept), so a
   commented-out import is not an edge and `/* x */ import …` is. R1 no
   cross-module cycle (every elementary cycle printed with a file:line per edge);
-  R2 cross-module imports go through `modules/<n>/index.mjs` — a deep import
-  fails unless the line before it carries the existing
-  `eslint-disable-next-line no-restricted-imports -- Equoria-hk739` TDZ marker
-  AND its `<file> -> <target>` pair is pinned in
-  `module-dependency-graph-allowlist.json` (`deepImports`; S6 empties it and
-  makes R2 strict); also under R2, because the graph cannot see such a target:
+  R2 cross-module imports go through `modules/<n>/index.mjs` — every deep import
+  fails, STRICTLY since WS4 S6: no `eslint-disable … Equoria-hk739` marker is
+  honoured (the nine TDZ carve-outs import the horses barrel now), the
+  allow-list's `deepImports` section is retired and must stay empty, and the
+  summary's `marked` count of leftover marker lines must be 0; also under R2,
+  because the graph cannot see such a target:
   a dynamic `import()` whose first argument is not a plain single- or
   double-quoted string literal (a template literal, a variable,
   `join(__dirname, …)`), any `createRequire(…)` or `require(…)` call (the repo is
