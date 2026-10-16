@@ -57,9 +57,9 @@ to fix the underlying problem. It is not a license to weaken the check.
   fails, STRICTLY since WS4 S6: no `eslint-disable … Equoria-hk739` marker is
   honoured (the nine TDZ carve-outs import the horses barrel now), the
   allow-list's `deepImports` section is retired and must stay empty, and a
-  leftover marker line fails by itself (`R2 leftover Equoria-hk739 marker
-line(s): N — delete them …` with each file:line; the summary's `marked` count
-  is 0 on a clean tree); also under R2,
+  leftover marker line fails by itself
+  (`R2 leftover Equoria-hk739 marker line(s): N — delete them …` with each
+  file:line; the summary's `marked` count is 0 on a clean tree); also under R2,
   because the graph cannot see such a target:
   a dynamic `import()` whose first argument is not a plain single- or
   double-quoted string literal (a template literal, a variable,
