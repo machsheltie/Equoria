@@ -142,6 +142,11 @@ const MIGRATED = [
   // in commitTrainingSession. A client-facing player-state mutation, so it is
   // wrapped for the retryable 503.
   ['modules/training/services/trainingSessionTx.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-q4uem.9 slice 1 — listHorseAtStud + unlistHorseAtStud. Each listing
+  // write is a guarded claim pinning the CURRENT owner (an old owner's request
+  // that passed the read-only ownership check before a sale can no longer touch
+  // the buyer's horse), so each is a player-state mutation wrapped for the 503.
+  ['modules/horses/controllers/horseStudController.mjs', { wrapped: 2, totalTx: 2 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites

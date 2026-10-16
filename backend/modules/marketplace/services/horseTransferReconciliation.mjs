@@ -439,9 +439,29 @@ export async function reconcileStaffOnHorseTransfer(tx, { horseId }) {
 }
 
 /**
+ * A stud listing is the OWNER's decision, not a property of the horse (owner
+ * rulings, Stacey 2026-10-02 and 2026-10-15: the player decides whether her
+ * stallion stands at stud and for what fee; selling or transferring a
+ * stallion clears its listing). Without this the buyer inherited the previous
+ * owner's public listing and price (Equoria-q4uem.9). Same reset GDPR erasure
+ * applies (gdprHorseLineageErasure.mjs). Unconditional: a horse that was not
+ * at stud already holds these values.
+ *
+ * @param {object} tx - the surrounding interactive Prisma transaction client
+ * @param {{ horseId: number }} params
+ */
+export async function clearStudListingOnTransfer(tx, { horseId }) {
+  // HORSE row already claimed by the caller — no new lock taken.
+  await tx.horse.update({
+    where: { id: horseId },
+    data: { studStatus: 'Not at Stud', studFee: 0 },
+  });
+}
+
+/**
  * Everything the outgoing owner keeps when a horse changes hands: their tack
- * comes off and goes back to their inventory, and their staff stop working on
- * a horse they no longer own.
+ * comes off and goes back to their inventory, their staff stop working on
+ * a horse they no longer own, and their stud listing ends.
  *
  * Ordered to the repository's lock ruling — `User` row (the seller's inventory)
  * before the `Horse` row before the assignment rows — even though both the User
@@ -454,6 +474,7 @@ export async function reconcileStaffOnHorseTransfer(tx, { horseId }) {
 export async function reconcileHorseOnTransfer(tx, { horseId, sellerId }) {
   const tack = await returnTackToSeller(tx, { horseId, sellerId });
   const staff = await reconcileStaffOnHorseTransfer(tx, { horseId });
+  await clearStudListingOnTransfer(tx, { horseId });
 
   // Test-only seam, AFTER every reconciliation write and before the sale record
   // and ledger rows. A test barrier that throws here proves the tack return and

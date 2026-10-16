@@ -3,10 +3,28 @@
  *
  * Equoria-xod8b (child A of Equoria-mh937): extracted from horseController.mjs.
  * Owns stud-listing endpoints (Equoria-q072).
- * No behavior changes — functions moved verbatim.
+ *
+ * Equoria-q4uem.9 (owner rulings, Stacey 2026-10-02 / 2026-10-15): the PLAYER
+ * decides whether her stallion stands at stud and for what fee, and a sale
+ * clears the listing. `requireOwnership` only READS the horse; an old owner's
+ * request that passed it before a sale used to land a plain
+ * `update({ where: { id } })` on the buyer's horse afterwards (re-list,
+ * re-price or unlist). Every listing write is now a guarded claim that pins the
+ * CURRENT owner — `updateMany` with `userId: req.user.id` in the WHERE, inside
+ * a retryable transaction — and a claim that matches no row answers the same
+ * 404 the ownership middleware gives a horse the caller does not own.
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+
+const STUD_LISTING_SELECT = { id: true, name: true, sex: true, studStatus: true, studFee: true };
+const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a moment.';
+
+/** Same body `requireOwnership('horse')` sends for a horse the caller cannot see (CWE-639). */
+function horseNotFound() {
+  return Object.assign(new Error('Horse not found'), { statusCode: 404 });
+}
 
 /**
  * List a stallion at stud (Equoria-q072).
@@ -37,11 +55,22 @@ export async function listHorseAtStud(req, res) {
       });
     }
 
-    const updated = await prisma.horse.update({
-      where: { id: req.horse.id },
-      data: { studStatus: 'At Public Stud', studFee },
-      select: { id: true, name: true, sex: true, studStatus: true, studFee: true },
-    });
+    const horseId = req.horse.id;
+    const ownerId = req.user.id;
+    const updated = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        // Guarded claim: the caller must STILL own this stallion at write time.
+        const claim = await tx.horse.updateMany({
+          where: { id: horseId, userId: ownerId, sex: 'Stallion' },
+          data: { studStatus: 'At Public Stud', studFee },
+        });
+        if (claim.count !== 1) {
+          throw horseNotFound();
+        }
+        return tx.horse.findUnique({ where: { id: horseId }, select: STUD_LISTING_SELECT });
+      }),
+      { message: BUSY_MESSAGE },
+    );
 
     logger.info(
       `[horseController.listHorseAtStud] horse ${updated.id} listed at stud for fee ${studFee}`,
@@ -53,6 +82,9 @@ export async function listHorseAtStud(req, res) {
       data: updated,
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     logger.error(
       `[horseController.listHorseAtStud] Error: ${error.message}\nStack: ${error.stack}`,
     );
@@ -73,11 +105,22 @@ export async function unlistHorseAtStud(req, res) {
       return res.status(500).json({ success: false, message: 'Internal server error' });
     }
 
-    const updated = await prisma.horse.update({
-      where: { id: req.horse.id },
-      data: { studStatus: 'Not at Stud', studFee: 0 },
-      select: { id: true, name: true, sex: true, studStatus: true, studFee: true },
-    });
+    const horseId = req.horse.id;
+    const ownerId = req.user.id;
+    const updated = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        // Guarded claim: the caller must STILL own this horse at write time.
+        const claim = await tx.horse.updateMany({
+          where: { id: horseId, userId: ownerId },
+          data: { studStatus: 'Not at Stud', studFee: 0 },
+        });
+        if (claim.count !== 1) {
+          throw horseNotFound();
+        }
+        return tx.horse.findUnique({ where: { id: horseId }, select: STUD_LISTING_SELECT });
+      }),
+      { message: BUSY_MESSAGE },
+    );
 
     logger.info(`[horseController.unlistHorseAtStud] horse ${updated.id} unlisted from stud`);
 
@@ -87,6 +130,9 @@ export async function unlistHorseAtStud(req, res) {
       data: updated,
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     logger.error(
       `[horseController.unlistHorseAtStud] Error: ${error.message}\nStack: ${error.stack}`,
     );
