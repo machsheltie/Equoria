@@ -36,7 +36,9 @@
  * PLANTED-VIOLATION proof (OPTIMAL_FIX §2): the tests below construct synthetic
  * sources and assert the detector FIRES on a re-created definition / re-wired
  * import — proving it is not vacuously-true — and does NOT fire on a comment-only
- * mention or on the kept updateHorseStat symbol.
+ * mention or on an updateHorseStat definition (a stat writer, not a money writer;
+ * it no longer exists in production since Equoria-q4uem.7 S2, and the negative
+ * control below keeps the detector from flagging it if one is ever written).
  *
  * Pure static-analysis test: reads source files, regex-scans. No DB, no imports
  * of the scanned modules.
@@ -153,7 +155,7 @@ describe('Equoria-709qm — legacy non-ledger money writers stay removed', () =>
     expect(forbiddenRefsIn(commentOnly)).toEqual([]);
   });
 
-  test('detector does NOT flag the kept updateHorseStat symbol (NEGATIVE CONTROL)', () => {
+  test('detector does NOT flag an updateHorseStat definition (no longer exists in production; NEGATIVE CONTROL)', () => {
     const keptSymbol = `
       async function updateHorseStat(horseId, statName, increase = 1) { return null; }
       export { updateHorseStat };

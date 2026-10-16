@@ -57,6 +57,8 @@ beforeAll(async () => {
   stable = await prisma.stable.create({ data: { name: `HC Stable ${TOKEN}` } });
   // Horses before user and stable for the FK ordering.
   cleanup.add(() => prisma.horse.deleteMany({ where: { userId: owner.id } }), 'horses');
+  // Ownerless horses are found through the test's own stable.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { stableId: stable.id } }), 'ownerless horses');
   cleanup.add(() => prisma.stable.delete({ where: { id: stable.id } }), 'stable');
   cleanup.add(() => prisma.user.delete({ where: { id: owner.id } }), 'user');
 }, 30000);
@@ -71,16 +73,21 @@ describe('createHorse input shapes persist the same relations for any name', () 
       () => ({ breed: { connect: { id: breed.id } }, userId: owner.id, stableId: stable.id }),
     ],
     ['breed as a number + ownerId + stableId', () => ({ breed: breed.id, ownerId: owner.id, stableId: stable.id })],
+    [
+      'breed.connect + stableId, no owner',
+      () => ({ breed: { connect: { id: breed.id } }, stableId: stable.id }),
+      () => null,
+    ],
   ];
   const names = ['Ordinary', 'Test Horse', 'Full Horse'];
 
-  for (const [label, shape] of shapes) {
+  for (const [label, shape, expectedOwner = () => owner.id] of shapes) {
     for (const name of names) {
       it(`${label}, named '${name}'`, async () => {
         const horse = await createHorse({ ...base(name), ...shape() });
         expect(await persisted(horse.id)).toEqual({
           breedId: breed.id,
-          userId: owner.id,
+          userId: expectedOwner(),
           stableId: stable.id,
         });
       });
