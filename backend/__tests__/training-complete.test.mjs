@@ -40,16 +40,16 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login } from '../../auth/index.mjs';
-import { authenticateToken } from '../../../middleware/auth.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import { register, login } from '../modules/auth/controllers/authController.mjs';
+import { authenticateToken } from '../middleware/auth.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { createSequentially } from '../../../tests/helpers/createSequentially.mjs'; // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { createSequentially } from '../tests/helpers/createSequentially.mjs'; // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 // Equoria-d3ena: fail-loud, scoped teardown so a cleanup failure turns the
 // suite RED instead of leaking fixtures into the canonical DB (CLAUDE.md §2).
-import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 /**
  * Extract cookie value from Set-Cookie header array

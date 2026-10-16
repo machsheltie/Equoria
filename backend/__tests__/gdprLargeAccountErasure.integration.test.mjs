@@ -57,13 +57,14 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import bcrypt from 'bcryptjs';
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { eraseUserAccount, ERASURE_TX_OPTIONS } from '../services/gdprAccountService.mjs';
-import { enterShow, settleShowFeeEscrow } from '../../competition/index.mjs';
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { eraseUserAccount, ERASURE_TX_OPTIONS } from '../modules/users/services/gdprAccountService.mjs';
+import { enterShow } from '../modules/competition/shows/showController.mjs';
+import { settleShowFeeEscrow } from '../modules/competition/shows/showEscrowTx.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SERVICE_PATH = resolve(__dirname, '..', 'services', 'gdprAccountService.mjs');
+const SERVICE_PATH = resolve(__dirname, '..', 'modules', 'users', 'services', 'gdprAccountService.mjs');
 
 // Unique per run: the dev database is shared with other agents/suites, so every
 // row this file creates carries this prefix and is removed by collected id.

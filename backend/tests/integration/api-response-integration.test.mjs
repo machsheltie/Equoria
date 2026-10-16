@@ -38,7 +38,7 @@
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login } from '../../modules/auth/index.mjs';
+import { register, login } from '../../modules/auth/controllers/authController.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
 import { responseHandler, ApiResponse as _ApiResponse } from '../../utils/apiResponse.mjs';

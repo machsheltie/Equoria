@@ -33,7 +33,7 @@ import logger from '../utils/logger.mjs';
 import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
-import { createShow, enterShow } from '../modules/competition/index.mjs';
+import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
 import { reapStaleExecutingShows, STALE_CLAIM_THRESHOLD_MS } from '../services/jobs/impl/showExecutionReaper.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-c7mx0-reaper';

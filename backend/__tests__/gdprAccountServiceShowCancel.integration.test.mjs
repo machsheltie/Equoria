@@ -29,11 +29,11 @@ import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { eraseUserAccount } from '../services/gdprAccountService.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
-import { createShow, enterShow } from '../../competition/index.mjs';
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { eraseUserAccount } from '../modules/users/services/gdprAccountService.mjs';
+import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../modules/economy/index.mjs';
+import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-shsgd';
 

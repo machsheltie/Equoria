@@ -73,8 +73,13 @@ describe('module-import TDZ circular-dependency sentinel (Equoria-hk739)', () =>
     expect(typeof authController.buildStarterSettings).toBe('function');
   });
 
-  it('auth barrel surfaces register; authRoutes (the cycle re-entry point) links as a route module', () => {
-    expect(typeof authBarrel.register).toBe('function');
+  it('auth barrel links without surfacing register; authRoutes (the cycle re-entry point) links as a route module', () => {
+    // Old contract: the auth barrel surfaced the controller handler `register`. New ruling
+    // (Equoria-q4uem.4, WS4 S5-pre): no barrel re-exports a controller in any block, so the
+    // barrel is still the module-link-time TDZ probe (it links and carries its constants) and
+    // `register` is reached through authController.mjs, asserted above.
+    expect(typeof authBarrel.ALLOWED_PREFERENCE_KEYS).toBe('object');
+    expect(authBarrel.register).toBeUndefined();
     expect(typeof authRoutes).toBe('function'); // express Router default, imported directly (WS4 S4)
   });
 

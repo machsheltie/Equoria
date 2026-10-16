@@ -11,6 +11,4 @@
 
 // No production consumer imports this module through the barrel today.
 
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
-export { sendMessage } from './controllers/messageController.mjs';
+export {};

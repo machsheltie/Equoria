@@ -43,7 +43,7 @@ import { fileURLToPath } from 'url';
 import { randomBytes } from 'node:crypto';
 import _YAML from 'js-yaml';
 import { body } from 'express-validator';
-import { register, login } from '../../modules/auth/index.mjs';
+import { register, login } from '../../modules/auth/controllers/authController.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
 import documentationRoutes from '../../modules/docs/routes/documentationRoutes.mjs';

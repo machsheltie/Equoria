@@ -40,7 +40,7 @@
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import express from 'express';
-import { register, login } from '../../modules/auth/index.mjs';
+import { register, login } from '../../modules/auth/controllers/authController.mjs';
 import { body } from 'express-validator';
 import prisma from '../../../packages/database/prismaClient.mjs';
 

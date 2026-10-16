@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getCurrentWeekStart } from '../../../modules/bank/index.mjs';
+import { getCurrentWeekStart } from '../controllers/bankController.mjs';
 
 const easternFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/New_York',

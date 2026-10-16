@@ -17,15 +17,15 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import http from 'node:http';
-import app from '../../../app.mjs';
-import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
-import { createNotification } from '../../../utils/notificationService.mjs';
-import { userListenerCount, getActiveConnectionMetrics } from '../../../services/eventBus.mjs';
+import app from '../app.mjs';
+import { createTestUser, cleanupTestData } from '../tests/helpers/testAuth.mjs';
+import { createNotification } from '../utils/notificationService.mjs';
+import { userListenerCount, getActiveConnectionMetrics } from '../services/eventBus.mjs';
 // Equoria-lewrv: exercise the REAL DM send producer (real controller, real
 // prisma, real event bus — no mocks) to prove a sent DM emits a 'message'
 // SSE frame to the recipient and not the sender.
-import { sendMessage } from '../../community/index.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import { sendMessage } from '../modules/community/controllers/messageController.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 /** Poll until predicate true or timeout — avoids order-dependent fixed waits. */
 async function waitFor(predicate, { timeout = 4000, interval = 50 } = {}) {

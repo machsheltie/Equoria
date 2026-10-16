@@ -18,8 +18,3 @@ export { getResultsByHorse } from './services/resultModelService.mjs';
 // req/res or a synthetic `{ body: { showIds } }`, and wired by shows/showRoutes.mjs
 // as POST /shows/execute. Moved out of the controller file in WS4 S4 (review M2).
 export { executeClosedShows } from './shows/showExecutionService.mjs';
-
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
-export { createShow, enterShow } from './shows/showController.mjs';
-export { settleShowFeeEscrow } from './shows/showEscrowTx.mjs';

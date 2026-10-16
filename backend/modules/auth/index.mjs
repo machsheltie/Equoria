@@ -10,7 +10,3 @@
  */
 
 export { ALLOWED_PREFERENCE_KEYS, STARTER_CRAFTING_MATERIALS } from './constants/authConstants.mjs';
-
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
-export { login, register } from './controllers/authController.mjs';

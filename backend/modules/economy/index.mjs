@@ -22,7 +22,3 @@ export {
   recordTransactionTx,
 } from './services/financialLedgerService.mjs';
 export { TACK_INVENTORY, resolveTackBonus } from './tackShop/services/tackInventory.mjs';
-
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
-export { purchaseTackItem, unequipDecoration } from './tackShop/controllers/tackShopController.mjs';

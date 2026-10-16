@@ -10,10 +10,10 @@
     "Key: `<importing file> -> <imported file>` (repo-relative POSIX paths). WS4 S6 converts",
     "them to barrel imports, makes rule R2 strict and empties this section.",
     "",
-    "testBlockControllers — controller handlers re-exported from a barrel INSIDE a block",
-    "opened by the label `// Test-consumed only (… Equoria-7t1tn` (consumed only by other",
-    "modules' tests; controller ruling 3a). Key: `<module>.<exported name>`. Equoria-7t1tn",
-    "moves those tests into the owning module and empties this section.",
+    "testBlockControllers — RETIRED (WS4 S5-pre, controller ruling): no barrel re-exports a controller",
+    "in any block any more, so this section must stay empty; any entry is stale and fails the gate.",
+    "Non-controller test-block names (services/data consumed only by other modules' tests) remain",
+    "in the barrels until Equoria-7t1tn moves those tests into the owning module.",
     "",
     "Every entry MUST carry a `reason` (>= 40 chars) and an `issue` (Equoria-…)."
   ],
@@ -55,50 +55,5 @@
       "issue": "Equoria-hk739"
     }
   },
-  "testBlockControllers": {
-    "auth.login": {
-      "reason": "Controller handler consumed only by training/__tests__/training-complete; stays in the labelled test block until that test moves (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    },
-    "auth.register": {
-      "reason": "Controller handler consumed only by training/__tests__/training-complete; stays in the labelled test block until that test moves (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    },
-    "bank.getCurrentWeekStart": {
-      "reason": "Controller export consumed only by users/__tests__/bankControllerUtils; stays in the labelled test block until that test moves (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    },
-    "community.sendMessage": {
-      "reason": "Controller handler consumed only by events/__tests__/eventStream.integration; stays in the labelled test block until that test moves (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    },
-    "competition.createShow": {
-      "reason": "Controller handler consumed only by backend/__tests__/showEscrowMoneyConservation.integration; stays in the labelled test block until that test moves.",
-      "issue": "Equoria-7t1tn"
-    },
-    "competition.enterShow": {
-      "reason": "Controller handler consumed only by backend/__tests__/showEscrowMoneyConservation.integration; stays in the labelled test block until that test moves.",
-      "issue": "Equoria-7t1tn"
-    },
-    "crafting.craftItem": {
-      "reason": "Controller handler consumed only by marketplace/__tests__/craftingSystem; stays in the labelled test block until that test moves (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    },
-    "crafting.getMaterials_endpoint": {
-      "reason": "Controller handler consumed only by marketplace/__tests__/craftingSystem; stays in the labelled test block until that test moves (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    },
-    "crafting.getRecipes": {
-      "reason": "Controller handler consumed only by marketplace/__tests__/craftingSystem; stays in the labelled test block until that test moves (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    },
-    "economy.purchaseTackItem": {
-      "reason": "Controller handler consumed only by marketplace/__tests__/tackShopController and buyHorseTackReconciliation.integration; stays in the labelled test block until those tests move (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    },
-    "economy.unequipDecoration": {
-      "reason": "Controller handler consumed only by marketplace/__tests__/tackShopController and buyHorseTackReconciliation.integration; stays in the labelled test block until those tests move (ruling 3a).",
-      "issue": "Equoria-7t1tn"
-    }
-  }
+  "testBlockControllers": {}
 }
