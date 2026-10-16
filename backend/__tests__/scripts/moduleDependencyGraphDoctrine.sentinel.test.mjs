@@ -47,104 +47,29 @@
  */
 
 import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
-import { spawnSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-module-dependency-graph.mjs');
-const ALLOWLIST = path.join(REPO_ROOT, 'scripts/doctrine-checks/module-dependency-graph-allowlist.json');
-const MODULES = path.join(REPO_ROOT, 'backend/modules');
-const UTILS = path.join(REPO_ROOT, 'backend/utils');
-const RUN_ID = `${process.pid}-${randomBytes(4).toString('hex')}`;
-const PLANT_TOKEN = '_ws4graphplant_';
-const PLANT_MODULE = `${PLANT_TOKEN}${RUN_ID}`;
-const PLANT_MODULE_B = `${PLANT_TOKEN}${RUN_ID}b`;
-const TEST_LABEL =
-  "// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests\n// into the owning module, after which these lines go).\n";
-const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const relPosix = abs => path.relative(REPO_ROOT, abs).split(path.sep).join('/');
-const PM = `backend/modules/${PLANT_MODULE}`;
-const PMB = `backend/modules/${PLANT_MODULE_B}`;
-
-/** Every path this suite creates (files and EVERY new directory), removed deepest-first in afterEach. */
-const planted = [];
-
-function plantFile(relFromModules, content) {
-  const abs = path.join(MODULES, relFromModules);
-  // Record every directory that does not exist yet, shallowest first, so the reverse
-  // order of `planted` removes the deepest first and no parent is left behind (M7).
-  const missing = [];
-  for (let dir = path.dirname(abs); !fs.existsSync(dir); dir = path.dirname(dir)) {
-    missing.unshift(dir);
-  }
-  for (const dir of missing) {
-    fs.mkdirSync(dir);
-    planted.push(dir);
-  }
-  fs.writeFileSync(abs, content);
-  planted.push(abs);
-  return abs;
-}
-
-function cleanupPlants() {
-  for (const p of [...planted].reverse()) {
-    fs.rmSync(p, { recursive: true, force: true });
-  }
-  for (const p of planted) {
-    expect(fs.existsSync(p)).toBe(false);
-  }
-  planted.length = 0;
-}
-
-/** No file or directory carrying the plant token under backend/modules (two levels) or backend/utils. */
-function strayPlants() {
-  const found = [];
-  for (const top of fs.readdirSync(MODULES)) {
-    if (top.includes(PLANT_TOKEN)) {
-      found.push(top);
-    }
-    const abs = path.join(MODULES, top);
-    if (fs.statSync(abs).isDirectory()) {
-      for (const inner of fs.readdirSync(abs)) {
-        if (inner.includes(PLANT_TOKEN)) {
-          found.push(`${top}/${inner}`);
-        }
-      }
-    }
-  }
-  for (const name of fs.readdirSync(UTILS)) {
-    if (name.includes(PLANT_TOKEN)) {
-      found.push(`utils/${name}`);
-    }
-  }
-  return found;
-}
-
-function runCheck(args = []) {
-  const res = spawnSync('node', [CHECK, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
-  return { status: res.status, out: `${res.stdout}\n${res.stderr}` };
-}
-
-/** Run the check with one extra allow-list entry, then restore the file byte-for-byte. */
-function runWithExtraAllowlistEntry(section, key) {
-  const original = fs.readFileSync(ALLOWLIST, 'utf8');
-  try {
-    const json = JSON.parse(original);
-    json[section][key] = {
-      reason: 'Sentinel plant: a pinned entry that no longer matches anything on disk (stale).',
-      issue: 'Equoria-q4uem.4',
-    };
-    fs.writeFileSync(ALLOWLIST, `${JSON.stringify(json, null, 2)}\n`);
-    return runCheck();
-  } finally {
-    fs.writeFileSync(ALLOWLIST, original);
-    expect(fs.readFileSync(ALLOWLIST, 'utf8')).toBe(original);
-  }
-}
+import { isReservedScratchPlantPathSegment } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
+import {
+  CHECK,
+  ALLOWLIST,
+  MODULES,
+  RUN_ID,
+  PLANT_TOKEN,
+  PLANT_MODULE,
+  PLANT_MODULE_B,
+  TEST_LABEL,
+  esc,
+  relPosix,
+  PM,
+  PMB,
+  planted,
+  plantFile,
+  cleanupPlants,
+  strayPlants,
+  runCheck,
+  runWithExtraAllowlistEntry,
+} from '../helpers/moduleDependencyGraphDoctrinePlants.mjs';
 
 const WRITER_NOTE = '// sentinel plant; removed by afterEach\n';
 const CTRL = `${PM}/controllers/epigeneticFlagController.mjs`;
@@ -776,5 +701,77 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(fs.existsSync(sub)).toBe(false);
     expect(fs.existsSync(top)).toBe(false);
     expect(strayPlants()).toEqual([]);
+  });
+
+  // Equoria-rfv9j (found in the S6 push window): under the two-lane sharded gate, sibling
+  // scripts-dir sentinels plant and delete files under backend/modules while THIS suite's gate is
+  // reading the tree. Observed: moduleBarrelBoundaryEslint's `_v8l96_sentinel_*` plants vanished
+  // between the gate's directory walk and its read -> ENOENT crash -> three arms here failed.
+  // The gate now (F1) tolerates ONLY ENOENT at the walk/read/stat and reports vanished entries as
+  // WARNs, and (F2) skips the reserved scratch names of OTHER suites (shared predicate, precedent
+  // Equoria-27lqy) while keeping its OWN `_ws4graphplant_` plants visible (F3), so no arm here
+  // goes vacuous.
+  it('rfv9j F1: a listed entry that vanishes before the read (dangling symlink) is a WARN and the gate stays OK — not a crash', () => {
+    const link = path.join(MODULES, 'economy', `${PLANT_TOKEN}vanish_${RUN_ID}.mjs`);
+    try {
+      fs.symlinkSync(`./${PLANT_TOKEN}vanished_target_${RUN_ID}.mjs`, link, 'file');
+    } catch (err) {
+      if (err && (err.code === 'EPERM' || err.code === 'EACCES')) {
+        // No symlink privilege on this machine (Windows without Developer Mode): the wiring arm
+        // below still pins the tolerant read; say so loudly instead of failing on privilege.
+        console.warn(`[sentinel] rfv9j F1: cannot create a symlink here (${err.code}); the wiring arm covers F1`);
+        return;
+      }
+      throw err;
+    }
+    planted.push(link);
+    expect(fs.lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(fs.existsSync(link)).toBe(false); // dangling: a read of the listed entry is ENOENT
+    const res = runCheck();
+    expect(res.out).not.toMatch(/Error: ENOENT/);
+    expect(res.status).toBe(0);
+    expect(res.out).toMatch(new RegExp(`WARN vanished entry ${esc(relPosix(link))}`));
+    expect(res.out).toMatch(/ vanished=1 /);
+  });
+
+  it('rfv9j F2: a FOREIGN sentinel plant (reserved `_v8l96_sentinel` name) carrying a cross-module deep import is skipped with a WARN — the gate stays OK', () => {
+    const plant = plantFile(
+      `competition/_v8l96_sentinel_ws4race_${RUN_ID}.mjs`,
+      "import { x } from '../horses/services/horseService.mjs';\nexport const y = x;\n",
+    );
+    const res = runCheck();
+    expect(res.out).not.toMatch(/cross-module deep import/);
+    expect(res.status).toBe(0);
+    expect(res.out).toMatch(new RegExp(`WARN skipped foreign sentinel plant ${esc(relPosix(plant))}`));
+    expect(res.out).toMatch(/ foreign-skipped=1 /);
+  });
+
+  it("rfv9j F3: the reserved-name skip is for FOREIGN plants only — this suite's own plants stay visible to its gate (no arm goes vacuous) while other scanners skip them", () => {
+    const own = `${PLANT_TOKEN}x_${RUN_ID}.mjs`;
+    expect(isReservedScratchPlantPathSegment(own)).toBe(true); // noCommonJsInMjs / noDeprecatedDbIndexImport skip my plants
+    expect(isReservedScratchPlantPathSegment(own, [PLANT_TOKEN])).toBe(false); // my gate names its own token
+    expect(isReservedScratchPlantPathSegment('_v8l96_sentinel_cross_deep.mjs', [PLANT_TOKEN])).toBe(true);
+    expect(isReservedScratchPlantPathSegment('horseService.mjs', [PLANT_TOKEN])).toBe(false);
+    expect(fs.readFileSync(CHECK, 'utf8')).toMatch(/OWN_PLANT_TOKENS = \[\s*'_ws4graphplant_'/);
+    // End to end: an own plant IS still seen by the gate (the R2 arm above would be vacuous otherwise).
+    const plant = plantFile(
+      `economy/${PLANT_TOKEN}seen_${RUN_ID}.mjs`,
+      "import { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:1 cross-module deep import`));
+    expect(res.out).not.toMatch(/foreign-skipped=[1-9]/);
+  });
+
+  it('rfv9j wiring: the gate routes its directory walk and every walked-file read through the shared ENOENT-tolerant helpers and the reserved-name skip', () => {
+    const src = fs.readFileSync(CHECK, 'utf8');
+    expect(src).toContain("from '../lib/doctrine-scan-patterns.mjs'");
+    expect(src).toContain('readdirSyncTolerant(');
+    expect(src).toContain('readScannedFileSyncTolerant(');
+    expect(src).toContain('isReservedScratchPlantPathSegment(');
+    // Only the allow-list JSON (a tracked config file, never a plant) is read directly.
+    expect(src.match(/fs\.readFileSync\(/g) ?? []).toEqual(['fs.readFileSync(']);
+    expect(src).toMatch(/fs\.readFileSync\(ALLOWLIST_PATH/);
   });
 });

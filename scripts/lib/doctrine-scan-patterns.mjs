@@ -302,6 +302,14 @@ export function isPlantArtifactBasename(name) {
 // tree to detect (their sentinel-positive arms plant synthetic STRINGS, not
 // on-disk files), so excluding foreign scratch names removes no real coverage.
 //
+// Equoria-rfv9j: a gate whose OWN sentinel does plant on-disk files under a
+// reserved token (check-module-dependency-graph.mjs <- `_ws4graphplant_`) passes
+// its own token(s) as `ownTokens`: names carrying an own token are NOT skipped
+// (its planted-violation arms keep seeing them), every other reserved name is.
+// check-horse-name-gated.mjs needs no exemption: it walks through walkFiles(),
+// which consults only isPlantArtifactBasename(), so `_ws4hnplant_` stays visible
+// to it while the in-process scanners above skip it.
+//
 // The match is a substring test on the reserved token roots. Real tracked
 // source never contains these tokens in its basename (they are sentinel-scratch
 // inventions), so the exclusion cannot hide a genuine CommonJS / db-index
@@ -312,9 +320,12 @@ const RESERVED_SCRATCH_PLANT_TOKENS = [
   '_q7lqz_vanished_scan_scratch', // doctrineScanVanishedFile.sentinel.test.mjs (dir name)
   '__planted_', // checkNoPlaceholderTests.sentinel.test.mjs
   '_sentinel_plant', // generic convention reservation
+  '_ws4graphplant_', // moduleDependencyGraphDoctrine.sentinel.test.mjs (its own gate exempts it via ownTokens)
+  '_ws4hnplant_', // horseNameGatedDoctrine.sentinel.test.mjs (its gate walks via walkFiles: unaffected)
 ];
 
-export function isReservedScratchPlantPathSegment(name) {
+export function isReservedScratchPlantPathSegment(name, ownTokens = []) {
+  if (ownTokens.some((tok) => name.includes(tok))) return false; // the caller's own plant: visible
   if (isPlantArtifactBasename(name)) return true;
   return RESERVED_SCRATCH_PLANT_TOKENS.some((tok) => name.includes(tok));
 }

@@ -102,9 +102,14 @@ to fix the underlying problem. It is not a license to weaken the check.
   `reason` and an `issue`. Shared-layer round trips (a
   `backend/utils|services` file that modules import and that imports a module
   back) and a barrel-less directory under `modules/` print as `WARN` only, with
-  no exit-code effect and no baseline (controller ruling Q9a). Fewer than 10
-  modules or 50 files parsed, or a missing allow-list file, is a failure, not a
-  pass. `--closure <file>` prints a file's transitive import closure.
+  no exit-code effect and no baseline (controller ruling Q9a); so do the two
+  concurrency notices of Equoria-rfv9j — a listed entry that vanished before
+  its read (`vanished=N`) and another suite's reserved scratch plant skipped by
+  name (`foreign-skipped=N`; shared list in
+  `scripts/lib/doctrine-scan-patterns.mjs`, the gate's own `_ws4graphplant_`
+  plants stay visible). Fewer than 10 modules or 50 files parsed, or a missing
+  allow-list file, is a failure, not a pass. `--closure <file>` prints a file's
+  transitive import closure.
   Sentinel-positive:
   `backend/__tests__/scripts/moduleDependencyGraphDoctrine.sentinel.test.mjs`.
 - `check-horse-name-gated.mjs` reads the import braces with comments stripped and

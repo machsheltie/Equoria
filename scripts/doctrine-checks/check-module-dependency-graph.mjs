@@ -87,6 +87,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  isReservedScratchPlantPathSegment,
+  readScannedFileSyncTolerant,
+  readdirSyncTolerant,
+} from '../lib/doctrine-scan-patterns.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
@@ -95,6 +100,23 @@ const MODULES_DIR = path.join(BACKEND, 'modules');
 const ALLOWLIST_PATH = path.join(HERE, 'module-dependency-graph-allowlist.json');
 const ALLOWLIST_NAME = path.basename(ALLOWLIST_PATH);
 const TAG = '[module-dependency-graph]';
+const LABEL = 'module-dependency-graph'; // notice label for the shared ENOENT-tolerant readers
+// Equoria-rfv9j: under the two-lane sharded gate, sibling scripts-dir sentinels plant and delete
+// files under backend/modules while this gate reads the tree. The walk skips the reserved scratch
+// names of OTHER suites (shared list, precedent Equoria-27lqy) but never this gate's OWN sentinel
+// plants, and a listed entry that vanishes before its read is a WARN, not a crash.
+const OWN_PLANT_TOKENS = ['_ws4graphplant_'];
+const vanished = []; // entries removed between the directory walk and the read (WARN; not counted)
+const skippedForeign = []; // other suites' transient plants skipped by reserved name (WARN; not scanned)
+/** stat that tolerates ONLY a vanished path (returns null); every other error is rethrown. */
+function statTolerant(p) {
+  try {
+    return fs.statSync(p);
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
 
 const R2_MARKER_RE = /eslint-disable-next-line no-restricted-imports -- Equoria-hk739/;
 const ROUTE_PATH_RE = /\/routes\/|Routes\.mjs$/;
@@ -114,8 +136,12 @@ const httpKind = (r) =>
   ROUTE_PATH_RE.test(r) ? 'route' : CONTROLLER_PATH_RE.test(r) ? 'controller' : null;
 
 function walk(dir, out = []) {
-  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+  for (const ent of readdirSyncTolerant(dir, { withFileTypes: true }, LABEL)) {
     const full = path.join(dir, ent.name);
+    if (isReservedScratchPlantPathSegment(ent.name, OWN_PLANT_TOKENS)) {
+      skippedForeign.push(full); // another suite's transient plant (Equoria-rfv9j): not this tree
+      continue;
+    }
     if (ent.isDirectory()) {
       if (ent.name === '__tests__' || ent.name === 'node_modules') continue;
       walk(full, out);
@@ -373,8 +399,7 @@ const COMMONJS_RE = /\b(createRequire|require)\s*\(/g;
 function resolveSpec(fromFile, spec) {
   if (!spec.startsWith('.')) return null; // bare package import
   let target = path.resolve(path.dirname(fromFile), spec);
-  if (fs.existsSync(target) && fs.statSync(target).isDirectory())
-    target = path.join(target, 'index.mjs');
+  if (statTolerant(target)?.isDirectory()) target = path.join(target, 'index.mjs');
   if (!fs.existsSync(target))
     for (const ext of ['.mjs', '.js']) if (fs.existsSync(target + ext)) return target + ext;
   return target; // may not exist; still classified by path
@@ -396,7 +421,15 @@ const keywordIndex = (m) => m.index + /^[\n;}]?[ \t]*/.exec(m[0])[0].length;
 const siteCache = new Map();
 function importSites(file) {
   if (siteCache.has(file)) return siteCache.get(file);
-  const raw = fs.readFileSync(file, 'utf8');
+  const raw = readScannedFileSyncTolerant(file, LABEL);
+  if (raw === null) {
+    // Removed between the walk and this read (a sibling sentinel's transient plant, Equoria-rfv9j):
+    // not part of the tree — surfaced as a WARN in the summary, never as a violation.
+    vanished.push(file);
+    const empty = { sites: [], nonliteral: [], commonjs: [], issues: [], rawLines: [] };
+    siteCache.set(file, empty);
+    return empty;
+  }
   const { code, spans, issues } = stripComments(raw);
   const sites = [];
   const nonliteral = [];
@@ -471,7 +504,7 @@ const directCache = new Map();
 function directImports(file) {
   if (directCache.has(file)) return directCache.get(file);
   let out = [];
-  if (fs.existsSync(file) && fs.statSync(file).isFile() && SOURCE_EXT_RE.test(file)) {
+  if (statTolerant(file)?.isFile() && SOURCE_EXT_RE.test(file)) {
     out = importSites(file)
       .sites.map((s) => s.target)
       .filter((t) => t && isRepoFile(t));
@@ -625,6 +658,8 @@ let cjsFiles = 0;
 let deepImportCount = 0;
 for (const file of files) {
   const fromModule = moduleOf(file);
+  const { sites, nonliteral, commonjs, issues, rawLines } = importSites(file);
+  if (vanished.includes(file)) continue; // Equoria-rfv9j: gone before its read — nothing to judge
   if (file.endsWith('.cjs')) {
     // Round 4, M1: the repo is ESM-only; a CommonJS module under backend/modules is a
     // bridge the graph cannot see through, so it fails outright.
@@ -633,7 +668,6 @@ for (const file of files) {
       `R2 ${rel(file)}:1 CommonJS module file (.cjs) under backend/modules; the repo is ESM-only — convert it to .mjs`
     );
   }
-  const { sites, nonliteral, commonjs, issues, rawLines } = importSites(file);
   rawLines.forEach((l, i) => {
     if (R2_MARKER_RE.test(l)) {
       markerLines += 1;
@@ -874,15 +908,16 @@ function classifyTarget(absTarget, wanted, depth = 0, visited = new Set()) {
   const r = rel(absTarget);
   const direct = httpKind(r);
   if (direct) return { kind: direct, chain: [r] };
-  if (
-    depth >= MAX_CHAIN_DEPTH ||
-    visited.has(absTarget) ||
-    !fs.existsSync(absTarget) ||
-    fs.statSync(absTarget).isDirectory()
-  )
+  const targetStat = statTolerant(absTarget);
+  if (depth >= MAX_CHAIN_DEPTH || visited.has(absTarget) || !targetStat || targetStat.isDirectory())
     return null;
   visited.add(absTarget);
-  const { code } = stripComments(fs.readFileSync(absTarget, 'utf8'));
+  const rawTarget = readScannedFileSyncTolerant(absTarget, LABEL);
+  if (rawTarget === null) {
+    vanished.push(absTarget); // Equoria-rfv9j
+    return null;
+  }
+  const { code } = stripComments(rawTarget);
   const all = wanted.includes('*');
   const follow = (spec, nextWanted) => {
     const next = resolveSpec(absTarget, spec);
@@ -953,7 +988,11 @@ const BARREL_STMT_RE = new RegExp(
 );
 for (const mod of modules) {
   const barrel = path.join(MODULES_DIR, mod, 'index.mjs');
-  const raw = fs.readFileSync(barrel, 'utf8');
+  const raw = readScannedFileSyncTolerant(barrel, LABEL);
+  if (raw === null) {
+    vanished.push(barrel); // Equoria-rfv9j: a transient module directory lost its barrel mid-run
+    continue;
+  }
   const { code, spans } = stripComments(raw);
   STAR_EXPORT_RE.lastIndex = 0;
   let m;
@@ -1055,8 +1094,7 @@ const sharedFiles = [...closureVisited]
     return (
       r.startsWith('backend/') &&
       !r.startsWith('backend/modules/') &&
-      fs.existsSync(f) &&
-      fs.statSync(f).isFile()
+      Boolean(statTolerant(f)?.isFile())
     );
   })
   .sort();
@@ -1087,7 +1125,8 @@ for (const key of Object.keys(testBlockListed)) {
 for (const [shared, importers] of [...sharedHops.entries()].sort((a, b) =>
   rel(a[0]).localeCompare(rel(b[0]))
 )) {
-  if (!fs.existsSync(shared) || fs.statSync(shared).isDirectory()) continue;
+  const sharedStat = statTolerant(shared);
+  if (!sharedStat || sharedStat.isDirectory()) continue;
   for (const s of importSites(shared).sites) {
     if (!s.target) continue;
     const toModule = moduleOf(s.target);
@@ -1100,6 +1139,19 @@ for (const [shared, importers] of [...sharedHops.entries()].sort((a, b) =>
   }
 }
 
+// Equoria-rfv9j: concurrency notices — what another suite planted and removed while this gate ran.
+// WARN only (no exit-code effect): neither kind is part of the tree being judged.
+for (const f of vanished) {
+  warns.push(
+    `WARN vanished entry ${rel(f)} — removed between the directory walk and the read (a sibling sentinel's transient plant); not counted`
+  );
+}
+for (const f of skippedForeign) {
+  warns.push(
+    `WARN skipped foreign sentinel plant ${rel(f)} — reserved scratch name of another suite (scripts/lib/doctrine-scan-patterns.mjs); not scanned`
+  );
+}
+
 const summary =
   // Each counter counts only its own violations (round 4 cosmetic 2): deep-imports is the
   // unmarked cross-module deep imports; cjs-files, commonjs, nonliteral-dynamic, backslash and
@@ -1108,7 +1160,7 @@ const summary =
   `modules=${modules.length} files=${files.length} edges=${crossEdges} (dynamic ${dynamicEdges}) nonliteral-dynamic=${nonliteralCount} commonjs=${commonjsCount} cjs-files=${cjsFiles} backslash=${backslashCount} lexer-failsafe=${lexerCount} shared-files=${sharedFiles.length} shared-violations=${sharedViolationCount} ` +
   `cycles=${cycleCount} deep-imports=${deepImportCount} (marked ${markerLines} listed ${Object.keys(deepImportsListed).length}, both must be 0) ` +
   `star-exports=${starExports} http-in-barrel=${httpInBarrel} closure-checked=${closureChecked} closure-hits=${closureHits} (testBlockControllers listed ${Object.keys(testBlockListed).length}, must be 0) ` +
-  `upward=${violations.filter((v) => v.startsWith('R5 ')).length} warn=${warns.length}`;
+  `upward=${violations.filter((v) => v.startsWith('R5 ')).length} vanished=${vanished.length} foreign-skipped=${skippedForeign.length} warn=${warns.length}`;
 
 for (const w of warns) console.log(`${TAG} ${w}`);
 if (violations.length) {
