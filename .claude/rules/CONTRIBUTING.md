@@ -83,6 +83,9 @@ copy a command, threshold, path, or pattern without checking its current source.
   because it exists.
 - The ESLint boundary is authoritative. If the desired symbol is not exported,
   update the module barrel instead of bypassing the rule.
+- Barrels are named-export service contracts: no `export *`, no routes or
+  controllers. Only `backend/app/routers.mjs` wires route modules; cross-domain
+  reads live in `backend/app/queries/` and import through barrels.
 
 ## Test organization and fixtures
 

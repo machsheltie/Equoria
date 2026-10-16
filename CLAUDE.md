@@ -168,7 +168,7 @@ planning output. Retrieve the smallest relevant source when needed.
 - Frontend: `npm run test:frontend`
 - Types: `npm run typecheck`
 - Lint: `npm run lint`
-- Doctrine: `bash scripts/doctrine-checks/run-all.sh`
+- Doctrine: `bash scripts/doctrine-checks/run-all.sh` (includes `check-module-dependency-graph.mjs`, the module boundary gate; also runs pre-push)
 - Orphan cleanup/check: `npm run test:reap`
 
 Use live package scripts as authority. Run checks sequentially and only in
