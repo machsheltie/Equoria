@@ -37,6 +37,7 @@ import {
   MINIMAL_SENSITIVITY,
   OUTSIDE_CRITICAL_PERIODS_RECOMMENDATION,
   QUALITY_SCORES,
+  REPORT_RECOMMENDATIONS,
   REPORT_TRAITS,
   RESIDUAL_SENSITIVITY,
   RESIDUAL_SENSITIVITY_DAYS,
@@ -92,11 +93,11 @@ export async function loadEnvironmentalTriggerSnapshot(
   const [horse, interactions] = await Promise.all([
     client.horse.findUnique({
       where: { id: horseId },
-      select: { dateOfBirth: true, stressLevel: true, bondScore: true, epigeneticFlags: true },
+      select: { dateOfBirth: true, stressLevel: true, bondScore: true },
     }),
     client.groomInteraction.findMany({
       where: { foalId: horseId },
-      include: { groom: { select: { epigeneticInfluenceType: true, skillLevel: true } } },
+      include: { groom: { select: { epigeneticInfluenceType: true } } },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     }),
   ]);
@@ -190,8 +191,10 @@ export function traitExpressionProbability(
   traitName,
   detected = detectTriggers(snapshot),
 ) {
-  triggerThresholds(snapshot); // the horse must exist (same error as before)
   const { horseId, horse, now } = snapshot;
+  if (!horse) {
+    throw new Error(`Horse not found: ${horseId}`);
+  }
   const baseProbability = BASE_EXPRESSION_PROBABILITY;
 
   let environmentalModifier = 1.0;
@@ -410,7 +413,10 @@ function presentFactors(interactions, possibleFactors) {
     if (rule.countBelow !== undefined) {
       return interactions.length < rule.countBelow;
     }
-    return interactions.length > rule.countAbove;
+    if (rule.countAbove !== undefined) {
+      return interactions.length > rule.countAbove;
+    }
+    throw new Error(`Unknown factor presence rule for ${factor}: ${JSON.stringify(rule)}`);
   });
 }
 
@@ -440,26 +446,33 @@ function analyzeCumulativeEffects(interactions) {
 }
 
 function reportRecommendations(triggers, thresholds, criticalPeriod, traitProbabilities) {
+  const {
+    highSensitivity,
+    strongTrigger,
+    criticalPeriod: critical,
+    highProbabilityTraits,
+  } = REPORT_RECOMMENDATIONS;
   const recommendations = [];
-  if (thresholds.sensitivity > 0.7) {
-    recommendations.push(
-      'Horse is highly sensitive to environmental triggers - use gentle approaches',
-    );
+  if (thresholds.sensitivity > highSensitivity.above) {
+    recommendations.push(highSensitivity.text);
   }
   triggers.detectedTriggers.forEach(trigger => {
-    if (trigger.strength > 0.6) {
-      recommendations.push(
-        `Strong ${trigger.name.toLowerCase()} detected - adjust care accordingly`,
-      );
+    if (trigger.strength > strongTrigger.above) {
+      recommendations.push(strongTrigger.text.replace('{trigger}', trigger.name.toLowerCase()));
     }
   });
-  if (criticalPeriod.sensitivityLevel > 0.7) {
-    recommendations.push('Currently in critical developmental period - extra care required');
+  if (criticalPeriod.sensitivityLevel > critical.above) {
+    recommendations.push(critical.text);
   }
-  const highProbTraits = traitProbabilities.filter(t => t.finalProbability > 0.6);
+  const highProbTraits = traitProbabilities.filter(
+    t => t.finalProbability > highProbabilityTraits.above,
+  );
   if (highProbTraits.length > 0) {
     recommendations.push(
-      `High probability for traits: ${highProbTraits.map(t => t.traitName).join(', ')}`,
+      highProbabilityTraits.text.replace(
+        '{traits}',
+        highProbTraits.map(t => t.traitName).join(', '),
+      ),
     );
   }
   return recommendations;

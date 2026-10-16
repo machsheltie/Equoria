@@ -29,31 +29,26 @@ export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
     name: 'Stress Inducing Environment',
     factors: ['loud_noises', 'unfamiliar_surroundings', 'rough_handling', 'time_pressure'],
     traits_affected: ['fearful', 'reactive', 'insecure', 'fragile'],
-    threshold_modifier: 0.8, // Lower threshold = more sensitive
   },
   confidence_building: {
     name: 'Confidence Building Environment',
     factors: ['calm_atmosphere', 'patient_handling', 'positive_reinforcement', 'gradual_exposure'],
     traits_affected: ['brave', 'confident', 'social', 'curious'],
-    threshold_modifier: 1.2, // Higher threshold = less sensitive
   },
   social_stimulation: {
     name: 'Social Stimulation Environment',
     factors: ['multiple_handlers', 'group_activities', 'varied_interactions', 'social_exposure'],
     traits_affected: ['social', 'affectionate', 'outgoing'],
-    threshold_modifier: 1.0,
   },
   isolation_stress: {
     name: 'Isolation Stress Environment',
     factors: ['limited_contact', 'minimal_interaction', 'solitary_confinement', 'neglect'],
     traits_affected: ['antisocial', 'withdrawn', 'insecure'],
-    threshold_modifier: 0.7,
   },
   sensory_enrichment: {
     name: 'Sensory Enrichment Environment',
     factors: ['varied_textures', 'different_sounds', 'visual_stimulation', 'tactile_experiences'],
     traits_affected: ['curious', 'intelligent', 'adaptable'],
-    threshold_modifier: 1.1,
   },
   routine_stability: {
     name: 'Routine Stability Environment',
@@ -64,7 +59,6 @@ export const ENVIRONMENTAL_TRIGGERS = deepFreeze({
       'stable_routine',
     ],
     traits_affected: ['calm', 'patient', 'stable'],
-    threshold_modifier: 1.3,
   },
 });
 
@@ -275,3 +269,19 @@ export const CRITICAL_PERIOD_RECOMMENDATIONS = deepFreeze({
 });
 export const OUTSIDE_CRITICAL_PERIODS_RECOMMENDATION =
   'Outside critical periods - continue normal development activities';
+
+// The full report's closing recommendations, in order. Each fires when its value
+// is strictly above `above`; `{trigger}` is the trigger's name in lower case and
+// `{traits}` the qualifying trait names joined by ', '.
+export const REPORT_RECOMMENDATIONS = deepFreeze({
+  highSensitivity: {
+    above: 0.7,
+    text: 'Horse is highly sensitive to environmental triggers - use gentle approaches',
+  },
+  strongTrigger: { above: 0.6, text: 'Strong {trigger} detected - adjust care accordingly' },
+  criticalPeriod: {
+    above: 0.7,
+    text: 'Currently in critical developmental period - extra care required',
+  },
+  highProbabilityTraits: { above: 0.6, text: 'High probability for traits: {traits}' },
+});
