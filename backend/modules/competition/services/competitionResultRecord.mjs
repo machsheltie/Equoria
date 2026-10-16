@@ -17,8 +17,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 const isPlainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /**
- * `statGains` as an object. The executors store an object; the dead
- * resultModelService.saveResult stored a JSON string, so a string is parsed.
+ * `statGains` as an object. The executors store an object;
+ * resultModelService.saveResult (no production callers) stored a JSON string,
+ * so a string is parsed.
  * Anything unparseable reads as nothing.
  */
 function statGainsObject(raw) {
@@ -66,6 +67,24 @@ export function readConformationAward(raw) {
   return { ribbon: value.ribbon, titlePoints: value.titlePoints };
 }
 
+/**
+ * What a result's `statGains` recorded, split by discipline: a conformation
+ * result carries a ribbon award, every other result a stat gain. Every results
+ * read projects through this one function so they cannot drift apart.
+ *
+ * @param {string} discipline - CompetitionResult.discipline.
+ * @param {unknown} statGains - CompetitionResult.statGains.
+ * @returns {{ statGain: { stat: string, gain: number } | null,
+ *   conformationAward: { ribbon: string, titlePoints: number } | null }}
+ */
+export function readRecordedAwards(discipline, statGains) {
+  const isConformation = discipline === 'conformation';
+  return {
+    statGain: isConformation ? null : readStatGain(statGains),
+    conformationAward: isConformation ? readConformationAward(statGains) : null,
+  };
+}
+
 const toNumberOrNull = value => (value === null || value === undefined ? null : Number(value));
 const toIsoOrNull = value => (value ? new Date(value).toISOString() : null);
 
@@ -83,7 +102,7 @@ function toPlacement(raw) {
  */
 export function toResultView(row, viewerId) {
   const isViewerHorse = Boolean(viewerId) && row.horse?.userId === viewerId;
-  const isConformation = row.discipline === 'conformation';
+  const { statGain, conformationAward } = readRecordedAwards(row.discipline, row.statGains);
   return {
     resultId: row.id,
     horseId: row.horseId,
@@ -95,8 +114,8 @@ export function toResultView(row, viewerId) {
     prizeWon: toNumberOrNull(row.prizeWon),
     runDate: toIsoOrNull(row.runDate),
     horsePointsAwarded: row.horsePointsAwarded ?? null,
-    statGain: isViewerHorse && !isConformation ? readStatGain(row.statGains) : null,
-    conformationAward: isConformation ? readConformationAward(row.statGains) : null,
+    statGain: isViewerHorse ? statGain : null,
+    conformationAward,
   };
 }
 
@@ -192,7 +211,6 @@ function horseShowStatus(show, result) {
  * @returns {object}
  */
 export function toHorseShowRow(show, result) {
-  const isConformation = (result?.discipline ?? show.discipline) === 'conformation';
   return {
     showId: show.id,
     showName: show.name ?? result?.showName ?? null,
@@ -202,8 +220,9 @@ export function toHorseShowRow(show, result) {
     placement: result ? toPlacement(result.placement) : null,
     horsePointsAwarded: result?.horsePointsAwarded ?? null,
     winnings: result ? toNumberOrNull(result.prizeWon) : null,
-    statGain: result && !isConformation ? readStatGain(result.statGains) : null,
-    conformationAward: result && isConformation ? readConformationAward(result.statGains) : null,
+    ...(result
+      ? readRecordedAwards(result.discipline, result.statGains)
+      : { statGain: null, conformationAward: null }),
   };
 }
 

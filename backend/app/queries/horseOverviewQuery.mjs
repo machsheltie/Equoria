@@ -6,11 +6,7 @@
  * backend/modules/horses/controllers/horseOverviewController.mjs; behaviour, responses and status
  * codes are unchanged.
  */
-import {
-  getResultsByHorse,
-  readStatGain,
-  readConformationAward,
-} from '../../modules/competition/index.mjs';
+import { getResultsByHorse, readRecordedAwards } from '../../modules/competition/index.mjs';
 import { getAnyRecentTraining } from '../../modules/training/index.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import logger from '../../utils/logger.mjs';
@@ -50,9 +46,7 @@ export async function getHorseHistory(req, res) {
       prize: result.prizeWon,
       // statGains holds a ridden stat gain or a conformation ribbon (an object; a
       // JSON string on legacy rows). JSON.parse on the object answered 500.
-      statGain: result.discipline === 'conformation' ? null : readStatGain(result.statGains),
-      conformationAward:
-        result.discipline === 'conformation' ? readConformationAward(result.statGains) : null,
+      ...readRecordedAwards(result.discipline, result.statGains),
       runDate: result.runDate,
       createdAt: result.createdAt,
     }));

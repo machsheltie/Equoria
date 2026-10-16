@@ -4,7 +4,8 @@
  * GET /api/v1/horses/:id/history ran `JSON.parse(result.statGains)` on every
  * result. Prisma returns that JSONB column as an object, so any horse with a
  * recorded stat gain (written by the nightly executor since q4uem.10 A1) or a
- * conformation ribbon answered 500. Only the dead resultModelService.saveResult
+ * conformation ribbon answered 500. Only resultModelService.saveResult (no
+ * production callers)
  * ever stored a JSON *string* there.
  *
  * The reader now goes through the competition result guards, which accept the
@@ -97,7 +98,7 @@ beforeAll(async () => {
     data: [
       resultFor(horses.ridden, 'Dressage', { stat: 'focus', gain: 1 }),
       resultFor(horses.ribbon, 'conformation', { ribbon: 'Blue', titlePoints: 10 }),
-      // The form the dead saveResult wrote: a JSON string inside the JSONB column.
+      // The form saveResult (no production callers) wrote: a JSON string in the JSONB column.
       resultFor(horses.legacy, 'Dressage', JSON.stringify({ stat: 'speed', gain: 1 })),
       resultFor(horses.none, 'Dressage'),
     ],

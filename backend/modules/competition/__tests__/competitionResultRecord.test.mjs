@@ -38,7 +38,7 @@ describe('readStatGain', () => {
   });
 });
 
-describe('legacy JSON-string statGains (written by the dead resultModelService.saveResult)', () => {
+describe('legacy JSON-string statGains (written by resultModelService.saveResult, no production callers)', () => {
   it('reads a stringified stat gain or ribbon, and rejects an unparseable string', () => {
     expect(readStatGain(JSON.stringify({ stat: 'speed', gain: 1 }))).toEqual({ stat: 'speed', gain: 1 });
     expect(readConformationAward(JSON.stringify({ ribbon: 'Blue', titlePoints: 10 }))).toEqual({
