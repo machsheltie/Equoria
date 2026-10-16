@@ -20,6 +20,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -208,6 +209,74 @@ const HISTORIES = {
       { stressChange: 0, bondingChange: -2, quality: 'fair', duration: 9, taskType: 'grooming' },
     ],
   ],
+  // Three interactions share one createdAt (`tie`): their order is decided by
+  // id (insertion order), which the snapshot reads explicitly.
+  tied: [
+    [
+      2,
+      0,
+      {
+        stressChange: 3,
+        bondingChange: -1,
+        quality: 'poor',
+        duration: 12,
+        taskType: 'bathing',
+        tie: true,
+      },
+    ],
+    [
+      2,
+      1,
+      {
+        stressChange: -1,
+        bondingChange: 3,
+        quality: 'excellent',
+        duration: 40,
+        taskType: 'desensitization',
+        tie: true,
+      },
+    ],
+    [
+      2,
+      0,
+      {
+        stressChange: 0,
+        bondingChange: 1,
+        quality: 'good',
+        duration: 31,
+        taskType: 'grooming',
+        interactionType: 'enrichment',
+        tie: true,
+      },
+    ],
+    [
+      5,
+      1,
+      {
+        stressChange: 2,
+        bondingChange: 2,
+        quality: 'excellent',
+        duration: 22,
+        taskType: 'showground_exposure',
+      },
+    ],
+    [
+      9,
+      0,
+      { stressChange: 4, bondingChange: -2, quality: 'poor', duration: 9, taskType: 'bathing' },
+    ],
+    [
+      12,
+      1,
+      {
+        stressChange: -2,
+        bondingChange: 3,
+        quality: 'excellent',
+        duration: 65,
+        taskType: 'trust_building',
+      },
+    ],
+  ],
 };
 
 // [key, ageDays, stressLevel, bondScore, history]
@@ -224,6 +293,7 @@ const FOALS = [
   ['residual', 125, 2, 20, 'mixed'],
   ['minimal', 160, 8, 45, 'confident'],
   ['mature', 400, 5, 35, 'mixed'],
+  ['tied', 30, 5, 20, 'tied'],
 ];
 
 export const PROBABILITY_TRAITS = [
@@ -274,8 +344,9 @@ export async function buildTriggerFixtures(prisma, token, colour) {
         ...colour(),
         name: `TestFixture-EnvTrig-${key}-${token}`,
         sex: 'Filly',
-        // Mid-day offset keeps the day count stable whatever the run time.
-        dateOfBirth: new Date(now - ageDays * DAY - 6 * 60 * 60 * 1000),
+        // A @db.Date column: store the Eastern game-calendar date ageDays back,
+        // which is how getHorseAgeDays counts age, at any run time.
+        dateOfBirth: gameCalendarDate(new Date(now), -ageDays),
         age: 0,
         userId: user.id,
         stressLevel,
@@ -285,7 +356,7 @@ export async function buildTriggerFixtures(prisma, token, colour) {
     horses.push([key, horse.id]);
     labels.set(`horse:${horse.id}`, key);
     for (const [n, [daysAgo, g, fields]] of HISTORIES[history].entries()) {
-      const createdAt = new Date(now - daysAgo * DAY - (n + 1) * 60 * 1000);
+      const createdAt = new Date(now - daysAgo * DAY - (fields.tie ? 1 : n + 1) * 60 * 1000);
       await prisma.groomInteraction.create({
         data: {
           interactionType: fields.interactionType ?? 'daily_care',
@@ -318,7 +389,8 @@ export async function cleanupTriggerFixtures(prisma, fx) {
 const MISSING_HORSE_ID = 2000000001;
 
 function normalize(value, labels, key = '') {
-  if (value instanceof Date) {
+  // Prisma returns Dates from another realm under the Jest VM: test the tag, not instanceof.
+  if (Object.prototype.toString.call(value) === '[object Date]') {
     return labels.get(`date:${value.getTime()}`) ?? '<now>';
   }
   if (Array.isArray(value)) {

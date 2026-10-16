@@ -9,7 +9,8 @@
  * One report must read: the horse once (1 SELECT on horses) and its groom
  * interactions once (1 SELECT on groom_interactions, plus the 1 SELECT on grooms
  * Prisma issues for the included groom). Before S4 the report re-read them for
- * every section and every evaluated trait (about 33 statements).
+ * every section and every evaluated trait: 27 SELECTs (horses 10,
+ * groom_interactions 9, grooms 8; Prisma batches some same-tick findUnique calls).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
