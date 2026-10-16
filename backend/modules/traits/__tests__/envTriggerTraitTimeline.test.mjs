@@ -9,15 +9,15 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import {
-  detectEnvironmentalTriggers,
-  calculateTriggerThresholds,
-  evaluateTraitExpressionProbability,
-  processSeasonalTriggers,
-  analyzeStressEnvironmentTriggers,
-  trackCumulativeExposure,
-  assessCriticalPeriodSensitivity,
   generateEnvironmentalReport,
+  loadEnvironmentalTriggerSnapshot,
+  criticalPeriodSensitivity,
+  cumulativeExposure,
+  detectTriggers,
+  traitExpressionProbability,
+  triggerThresholds,
 } from '../services/environmentalTriggerSystem.mjs';
+const analyze = async (horseId, project, ...rest) => project(await loadEnvironmentalTriggerSnapshot(horseId), ...rest);
 import { generateTraitTimeline, getTraitTimelineSummary } from '../services/traitTimelineService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -63,7 +63,7 @@ afterAll(() => cleanup.run(), 30000);
 
 describe('detectEnvironmentalTriggers', () => {
   it('returns empty trigger set for horse with no interactions', async () => {
-    const result = await detectEnvironmentalTriggers(horse.id);
+    const result = await analyze(horse.id, detectTriggers);
     expect(result.horseId).toBe(horse.id);
     expect(Array.isArray(result.detectedTriggers)).toBe(true);
     expect(result.detectedTriggers).toHaveLength(0);
@@ -76,11 +76,11 @@ describe('detectEnvironmentalTriggers', () => {
 
 describe('calculateTriggerThresholds', () => {
   it('throws for non-existent horse', async () => {
-    await expect(calculateTriggerThresholds(999999999)).rejects.toThrow();
+    await expect(analyze(999999999, triggerThresholds)).rejects.toThrow();
   });
 
   it('returns threshold shape for newborn foal', async () => {
-    const result = await calculateTriggerThresholds(horse.id);
+    const result = await analyze(horse.id, triggerThresholds);
     expect(result.horseId).toBe(horse.id);
     expect(typeof result.baseThreshold).toBe('number');
     expect(typeof result.ageInDays).toBe('number');
@@ -91,14 +91,14 @@ describe('calculateTriggerThresholds', () => {
   });
 
   it('newborn has high sensitivity (finalThreshold < 0.5)', async () => {
-    const result = await calculateTriggerThresholds(horse.id);
+    const result = await analyze(horse.id, triggerThresholds);
     expect(result.finalThreshold).toBeLessThan(0.5);
   });
 });
 
 describe('evaluateTraitExpressionProbability', () => {
   it('returns probability shape for brave trait', async () => {
-    const result = await evaluateTraitExpressionProbability(horse.id, 'brave');
+    const result = await analyze(horse.id, traitExpressionProbability, 'brave');
     expect(result.horseId).toBe(horse.id);
     expect(result.traitName).toBe('brave');
     expect(typeof result.baseProbability).toBe('number');
@@ -110,43 +110,15 @@ describe('evaluateTraitExpressionProbability', () => {
   });
 
   it('returns probability shape for fearful trait', async () => {
-    const result = await evaluateTraitExpressionProbability(horse.id, 'fearful');
+    const result = await analyze(horse.id, traitExpressionProbability, 'fearful');
     expect(typeof result.expressionLikelihood).toBe('string');
     expect(Array.isArray(result.relevantTriggers)).toBe(true);
   });
 });
 
-describe('processSeasonalTriggers', () => {
-  it('throws for invalid season', async () => {
-    await expect(processSeasonalTriggers(horse.id, 'notaseason')).rejects.toThrow();
-  });
-
-  it('returns seasonal shape for spring', async () => {
-    const result = await processSeasonalTriggers(horse.id, 'spring');
-    expect(result.horseId).toBe(horse.id);
-    expect(result.season).toBe('spring');
-    expect(Array.isArray(result.seasonalFactors)).toBe(true);
-    expect(typeof result.seasonalInfluence).toBe('object');
-    expect(result.analysisTimestamp).toBeInstanceOf(Date);
-  });
-});
-
-describe('analyzeStressEnvironmentTriggers', () => {
-  it('returns stress analysis for horse with no interactions', async () => {
-    const result = await analyzeStressEnvironmentTriggers(horse.id);
-    expect(result.horseId).toBe(horse.id);
-    expect(typeof result.stressLevel).toBe('number');
-    expect(Array.isArray(result.stressTriggers)).toBe(true);
-    expect(result.stressTriggers).toHaveLength(0);
-    expect(result.triggerIntensity).toBe(0);
-    expect(result.stressfulInteractionCount).toBe(0);
-    expect(Array.isArray(result.recommendedInterventions)).toBe(true);
-  });
-});
-
 describe('trackCumulativeExposure', () => {
   it('returns zero exposure for horse with no interactions', async () => {
-    const result = await trackCumulativeExposure(horse.id);
+    const result = await analyze(horse.id, cumulativeExposure);
     expect(result.horseId).toBe(horse.id);
     expect(result.totalExposure).toBe(0);
     expect(typeof result.exposureByType).toBe('object');
@@ -157,7 +129,7 @@ describe('trackCumulativeExposure', () => {
 
 describe('assessCriticalPeriodSensitivity', () => {
   it('returns sensitivity analysis for newborn foal', async () => {
-    const result = await assessCriticalPeriodSensitivity(horse.id);
+    const result = await analyze(horse.id, criticalPeriodSensitivity);
     expect(result.horseId).toBe(horse.id);
     expect(typeof result.currentAge).toBe('number');
     expect(Array.isArray(result.criticalPeriods)).toBe(true);
@@ -169,7 +141,7 @@ describe('assessCriticalPeriodSensitivity', () => {
   });
 
   it('newborn has active critical periods', async () => {
-    const result = await assessCriticalPeriodSensitivity(horse.id);
+    const result = await analyze(horse.id, criticalPeriodSensitivity);
     expect(result.activeWindows.length).toBeGreaterThan(0);
     expect(result.sensitivityLevel).toBeGreaterThan(0);
   });
@@ -291,45 +263,45 @@ describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
   // ── calculateTriggerThresholds ageModifier ──────────────────────────────────
 
   it('calculateTriggerThresholds: ageModifier=0.7 for horse 10 days old (8-30d bracket)', async () => {
-    const result = await calculateTriggerThresholds(horse10d.id);
+    const result = await analyze(horse10d.id, triggerThresholds);
     expect(result.ageModifier).toBe(0.7);
     expect(result.ageInDays).toBeGreaterThanOrEqual(9);
     expect(result.ageInDays).toBeLessThanOrEqual(11);
   });
 
   it('calculateTriggerThresholds: ageModifier=0.8 for horse 60 days old (31-90d bracket)', async () => {
-    const result = await calculateTriggerThresholds(horse60d.id);
+    const result = await analyze(horse60d.id, triggerThresholds);
     expect(result.ageModifier).toBe(0.8);
   });
 
   it('calculateTriggerThresholds: ageModifier=1.0 for horse 100 days old (>90d bracket)', async () => {
-    const result = await calculateTriggerThresholds(horse100d.id);
+    const result = await analyze(horse100d.id, triggerThresholds);
     expect(result.ageModifier).toBe(1.0);
   });
 
   // ── evaluateTraitExpressionProbability ageModifier + expressionLikelihood ───
 
   it('evaluateTraitExpressionProbability: ageModifier=1.2 for horse 60 days old (31-90d)', async () => {
-    const result = await evaluateTraitExpressionProbability(horse60d.id, 'calm');
+    const result = await analyze(horse60d.id, traitExpressionProbability, 'calm');
     expect(result.ageModifier).toBe(1.2);
   });
 
   it('evaluateTraitExpressionProbability: ageModifier=0.8 for horse 100 days old (>90d)', async () => {
-    const result = await evaluateTraitExpressionProbability(horse100d.id, 'patient');
+    const result = await analyze(horse100d.id, traitExpressionProbability, 'patient');
     expect(result.ageModifier).toBe(0.8);
   });
 
   it('expressionLikelihood=unlikely for horse 60d with calm trait (finalP≈0.12)', async () => {
     // stressLevel=0: stressModifier=Math.max(0.5, 1.0-0/30)=1.0; no interactions → envModifier=1.0
     // finalP = 0.1 * 1.0 * 1.2 * 1.0 = 0.12 → 0.1 ≤ 0.12 < 0.3 → 'unlikely'
-    const result = await evaluateTraitExpressionProbability(horse60d.id, 'calm');
+    const result = await analyze(horse60d.id, traitExpressionProbability, 'calm');
     expect(result.expressionLikelihood).toBe('unlikely');
   });
 
   it('expressionLikelihood=very_unlikely for horse 100d with neutral trait (finalP≈0.08)', async () => {
     // 'patient' is not in negativeTraits or positiveTraits → stressModifier=1.0
     // finalP = 0.1 * 1.0 * 0.8 * 1.0 = 0.08 → < 0.1 → 'very_unlikely'
-    const result = await evaluateTraitExpressionProbability(horse100d.id, 'patient');
+    const result = await analyze(horse100d.id, traitExpressionProbability, 'patient');
     expect(result.expressionLikelihood).toBe('very_unlikely');
   });
 
@@ -337,33 +309,23 @@ describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
 
   it('sensitivityLevel=0.3 when daysSinceLastPeriod=5 (horse 125 days old)', async () => {
     // independence_development ends at day 120; 125-120=5 < 30 → 0.3
-    const result = await assessCriticalPeriodSensitivity(horse125d.id);
+    const result = await analyze(horse125d.id, criticalPeriodSensitivity);
     expect(result.activeWindows).toHaveLength(0);
     expect(result.sensitivityLevel).toBe(0.3);
   });
 
   it('sensitivityLevel=0.1 when daysSinceLastPeriod=40 (horse 160 days old)', async () => {
     // independence_development ends at day 120; 160-120=40 ≥ 30 → 0.1
-    const result = await assessCriticalPeriodSensitivity(horse160d.id);
+    const result = await analyze(horse160d.id, criticalPeriodSensitivity);
     expect(result.activeWindows).toHaveLength(0);
     expect(result.sensitivityLevel).toBe(0.1);
   });
 });
 
-// ── analyzeStressEnvironmentTriggers — stressful interactions (Equoria-jkht) ──
-// Creates a horse with stressLevel=8 plus 4 groomInteractions:
-//   taskType='bathing':  stressChange=4,4 → avgStress=4 > 3  → severity='high'
-//   taskType='feeding':  stressChange=2,3 → avgStress=2.5 > 2 → severity='moderate'
-// Covers:
-//   • interactions.length > 0 path in analyzeStressEnvironmentTriggers
-//   • avgStress > 3 → severity='high'
-//   • 2 < avgStress ≤ 3 → severity='moderate'
-//   • stressLevel > 7 → extra interventions in generateStressInterventions
-//   • severity='high' → "Avoid..." intervention
-//   • else → "Use extra caution..." intervention
-//   • trackCumulativeExposure non-empty path + calculateInteractionExposure stressChange>2 branch
+// ── stressful interactions (Equoria-jkht) ──
+// Covers the trackCumulativeExposure non-empty path and the exposure stressChange>2 branch.
 
-describe('analyzeStressEnvironmentTriggers — stressful interactions (Equoria-jkht)', () => {
+describe('stressful interactions (Equoria-jkht)', () => {
   let stressUser;
   let stressGroom;
   let stressHorse;
@@ -468,45 +430,8 @@ describe('analyzeStressEnvironmentTriggers — stressful interactions (Equoria-j
     await stressCleanup.run();
   }, 30000);
 
-  it('stressfulInteractionCount=4 (all 4 have stressChange > 0)', async () => {
-    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
-    expect(result.stressfulInteractionCount).toBe(4);
-    expect(result.triggerIntensity).toBeGreaterThan(0);
-  });
-
-  it('stressTriggers includes severity=high for bathing (avgStress=4 > 3)', async () => {
-    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
-    const highTrigger = result.stressTriggers.find(t => t.trigger === 'bathing');
-    expect(highTrigger).toBeDefined();
-    expect(highTrigger.severity).toBe('high');
-    expect(highTrigger.averageStressIncrease).toBe(4);
-  });
-
-  it('stressTriggers includes severity=moderate for feeding (avgStress=2.5)', async () => {
-    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
-    const moderateTrigger = result.stressTriggers.find(t => t.trigger === 'feeding');
-    expect(moderateTrigger).toBeDefined();
-    expect(moderateTrigger.severity).toBe('moderate');
-    expect(moderateTrigger.averageStressIncrease).toBe(2.5);
-  });
-
-  it('recommendedInterventions includes immediate-stress-reduction when stressLevel=8 (> 7)', async () => {
-    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
-    expect(result.recommendedInterventions.some(r => r.includes('Immediate stress reduction'))).toBe(true);
-  });
-
-  it('recommendedInterventions includes Avoid message for high-severity bathing trigger', async () => {
-    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
-    expect(result.recommendedInterventions.some(r => r.includes('Avoid bathing'))).toBe(true);
-  });
-
-  it('recommendedInterventions includes extra-caution message for moderate feeding trigger', async () => {
-    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
-    expect(result.recommendedInterventions.some(r => r.includes('extra caution with feeding'))).toBe(true);
-  });
-
   it('trackCumulativeExposure returns non-zero exposure for horse with 4 interactions', async () => {
-    const result = await trackCumulativeExposure(stressHorse.id);
+    const result = await analyze(stressHorse.id, cumulativeExposure);
     expect(result.totalExposure).toBeGreaterThan(0);
     expect(result.exposureTimeline).toHaveLength(4);
     expect(Object.keys(result.exposureByType).length).toBeGreaterThan(0);

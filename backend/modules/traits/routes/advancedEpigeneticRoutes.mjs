@@ -21,10 +21,11 @@ import logger from '../../../utils/logger.mjs';
 
 // Import advanced epigenetic services
 import {
-  detectEnvironmentalTriggers,
-  calculateTriggerThresholds,
-  evaluateTraitExpressionProbability,
+  detectTriggers,
   generateEnvironmentalReport,
+  loadEnvironmentalTriggerSnapshot,
+  traitExpressionProbability,
+  triggerThresholds,
 } from '../services/environmentalTriggerSystem.mjs';
 
 import {
@@ -107,7 +108,7 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      const triggers = await detectEnvironmentalTriggers(horseId);
+      const triggers = detectTriggers(await loadEnvironmentalTriggerSnapshot(horseId));
 
       logger.info(`Environmental triggers detected for horse ${horseId} by user ${req.user.id}`);
 
@@ -139,7 +140,7 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      const thresholds = await calculateTriggerThresholds(horseId);
+      const thresholds = triggerThresholds(await loadEnvironmentalTriggerSnapshot(horseId));
 
       logger.info(`Trigger thresholds calculated for horse ${horseId} by user ${req.user.id}`);
 
@@ -173,7 +174,10 @@ router.post(
       const horseId = parseInt(req.params.id);
       const { traitName } = req.body;
 
-      const probability = await evaluateTraitExpressionProbability(horseId, traitName);
+      const probability = traitExpressionProbability(
+        await loadEnvironmentalTriggerSnapshot(horseId),
+        traitName,
+      );
 
       logger.info(
         `Trait expression probability evaluated for horse ${horseId} (${traitName}) by user ${req.user.id}`,
