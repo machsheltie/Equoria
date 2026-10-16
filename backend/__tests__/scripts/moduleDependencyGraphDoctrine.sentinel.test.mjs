@@ -364,9 +364,12 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it("R2 (round 4, M1): a .cjs file under backend/modules fails outright, and the reviewer's bridge plant is caught", () => {
+    // The fixture text is built from parts so the Equoria-6gcvi no-CommonJS sentinel's text
+    // scan of every backend *.mjs does not read this STRING as a real `module.exports =`;
+    // the planted bridge.cjs itself is plain CommonJS.
     const bridge = plantFile(
       `${PLANT_MODULE}/bridge.cjs`,
-      "module.exports = require('./controllers/aController.mjs');\n",
+      `${'module'}.exports = require('./controllers/aController.mjs');\n`,
     );
     plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './bridge.cjs';\n");
     const res = runCheck();
