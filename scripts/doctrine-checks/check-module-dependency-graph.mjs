@@ -38,6 +38,16 @@
  *       evaluated the controller); the `// Test-consumed only (… Equoria-7t1tn` label
  *       may still head NON-controller names consumed only by other modules' tests, and
  *       the allow-list's testBlockControllers section is retired and must stay empty.
+ *       The barrel's OWN import sites that the statement scanner does not model (a
+ *       dynamic import() inside an exported function, a side-effect import) are
+ *       closure-checked too, blamed on the barrel's own line; when a bad line in one
+ *       barrel cascades into other barrels' closures, that ORIGIN line is reported
+ *       first and each cascade cites it (round 4, I).
+ *   Scope additions (round 4): .js and .cjs files under backend/modules are scanned, and
+ *       any .cjs file there fails outright (the repo is ESM-only; a literal require('…')
+ *       is still followed as a closure edge so a bridge cannot hide a controller) (M1);
+ *       every shared-layer file (backend/utils, backend/services, …) that a barrel
+ *       closure walks through gets the non-literal import() and CommonJS checks (M2).
  *   R5  No upward import: a module file may not import backend/app/**.
  *   WARN (no exit-code effect, no baseline; controller ruling Q9a): shared-layer round
  *       trips — a backend/{utils,services,…} file that modules import and that itself
@@ -98,7 +108,8 @@ const MIN_REASON_LENGTH = 40;
 const ISSUE_REF_RE = /^Equoria-[A-Za-z0-9._-]+$/;
 
 const rel = (p) => path.relative(REPO_ROOT, p).split(path.sep).join('/');
-const isTestPath = (p) => /[\\/]__tests__[\\/]/.test(p) || /\.(test|spec)\.(mjs|js)$/.test(p);
+const isTestPath = (p) => /[\\/]__tests__[\\/]/.test(p) || /\.(test|spec)\.(mjs|js|cjs)$/.test(p);
+const SOURCE_EXT_RE = /\.(mjs|js|cjs)$/;
 const isRepoFile = (abs) => !rel(abs).startsWith('..') && !/[\\/]node_modules[\\/]/.test(abs);
 const httpKind = (r) =>
   ROUTE_PATH_RE.test(r) ? 'route' : CONTROLLER_PATH_RE.test(r) ? 'controller' : null;
@@ -109,7 +120,7 @@ function walk(dir, out = []) {
     if (ent.isDirectory()) {
       if (ent.name === '__tests__' || ent.name === 'node_modules') continue;
       walk(full, out);
-    } else if (/\.(mjs|js)$/.test(ent.name) && !isTestPath(full)) {
+    } else if (SOURCE_EXT_RE.test(ent.name) && !isTestPath(full)) {
       out.push(full);
     }
   }
@@ -430,10 +441,25 @@ function importSites(file) {
   while ((m = COMMONJS_RE.exec(code))) {
     if (inSpans(spans, m.index)) continue;
     const end = code.indexOf('\n', m.index);
+    const line = lineOf(code, m.index);
     commonjs.push({
-      line: lineOf(code, m.index),
+      line,
       snippet: code.slice(m.index, end === -1 ? m.index + 60 : Math.min(end, m.index + 60)).trim(),
     });
+    // A literal require('…') is still an edge the closure must follow (round 4, M1: a .cjs
+    // bridge between a barrel and a controller), on top of being a violation.
+    if (m[1] === 'require') {
+      let j = m.index + m[0].length;
+      while (j < code.length && /\s/.test(code[j])) j += 1;
+      const q = code[j];
+      if (q === "'" || q === '"') {
+        const close = code.indexOf(q, j + 1);
+        if (close !== -1 && close < (end === -1 ? code.length : end)) {
+          const spec = code.slice(j + 1, close);
+          sites.push({ spec, target: resolveSpec(file, spec), line, dynamic: true });
+        }
+      }
+    }
   }
   const result = { sites, nonliteral, commonjs, issues, rawLines: raw.split('\n') };
   siteCache.set(file, result);
@@ -445,7 +471,7 @@ const directCache = new Map();
 function directImports(file) {
   if (directCache.has(file)) return directCache.get(file);
   let out = [];
-  if (fs.existsSync(file) && fs.statSync(file).isFile() && /\.(mjs|js)$/.test(file)) {
+  if (fs.existsSync(file) && fs.statSync(file).isFile() && SOURCE_EXT_RE.test(file)) {
     out = importSites(file)
       .sites.map((s) => s.target)
       .filter((t) => t && isRepoFile(t));
@@ -459,6 +485,8 @@ function directImports(file) {
  * module or controller file reached, with the path from `start`, or null.
  */
 const closureHitCache = new Map();
+/** Every file any barrel closure has walked (round 4, M2: shared-layer files get the "cannot see" checks). */
+const closureVisited = new Set();
 function closureHttpHit(start) {
   if (closureHitCache.has(start)) return closureHitCache.get(start);
   const parent = new Map([[start, null]]);
@@ -466,6 +494,7 @@ function closureHttpHit(start) {
   let hit = null;
   while (queue.length && !hit) {
     const f = queue.shift();
+    closureVisited.add(f);
     const kind = httpKind(rel(f));
     if (kind) {
       hit = { kind, file: f };
@@ -591,8 +620,17 @@ let lexerCount = 0;
 const markedDeep = new Map(); // key "<file> -> <target>" -> where
 const sharedHops = new Map(); // shared file -> Set(importing modules)
 
+let cjsFiles = 0;
 for (const file of files) {
   const fromModule = moduleOf(file);
+  if (file.endsWith('.cjs')) {
+    // Round 4, M1: the repo is ESM-only; a CommonJS module under backend/modules is a
+    // bridge the graph cannot see through, so it fails outright.
+    cjsFiles += 1;
+    violations.push(
+      `R2 ${rel(file)}:1 CommonJS module file (.cjs) under backend/modules; the repo is ESM-only — convert it to .mjs`
+    );
+  }
   const { sites, nonliteral, commonjs, issues, rawLines } = importSites(file);
   for (const is of issues) {
     lexerCount += 1;
@@ -876,6 +914,32 @@ let starExports = 0;
 let httpInBarrel = 0;
 let closureChecked = 0;
 let closureHits = 0;
+// R4 lines are emitted origin-first: a barrel's own bad line before the barrels whose
+// closures merely walk through it (round 4, I).
+const r4Direct = [];
+const r4Cascade = [];
+/** The line in `barrelAbs` whose import target is `nextRel` (for origin blame). */
+const barrelLineImporting = (barrelAbs, nextRel) =>
+  importSites(barrelAbs).sites.find((s) => s.target && rel(s.target) === nextRel)?.line;
+/** Record a closure hit; a path through another barrel is a cascade that cites that barrel's line. */
+function closureViolation(where, what, target, hit) {
+  const base = `R4 ${where} barrel ${what}: the import closure of ${rel(target)} reaches ${hit.kind} ${hit.file} (${hit.path.join(' -> ')}) — barrel names must not evaluate the HTTP layer`;
+  const inner = hit.path.slice(1, -1);
+  let originIdx = -1;
+  for (let i = inner.length - 1; i >= 0; i -= 1) {
+    if (/^backend\/modules\/[^/]+\/index\.mjs$/.test(inner[i])) {
+      originIdx = i;
+      break;
+    }
+  }
+  if (originIdx === -1) {
+    r4Direct.push(base);
+    return;
+  }
+  const originRel = inner[originIdx];
+  const line = barrelLineImporting(path.join(REPO_ROOT, originRel), hit.path[originIdx + 2]);
+  r4Cascade.push(`${base} — via origin ${originRel}:${line ?? '?'}`);
+}
 const STAR_EXPORT_RE = new RegExp(`${B}export\\s*\\*`, 'g');
 const BARREL_STMT_RE = new RegExp(
   `${B}export\\s*\\{([^}]*)\\}\\s*from\\s*(['"])([^'"\\n]*)\\2|${B}import\\s([^;'"\`]*?)from\\s*(['"])([^'"\\n]*)\\5|${B}import\\s*(['"])([^'"\\n]*)\\7`,
@@ -894,12 +958,14 @@ for (const mod of modules) {
       `R3 ${rel(barrel)}:${matchLine(code, m)} \`export *\` in a barrel; list the names the consumers need`
     );
   }
+  const handledLines = new Set();
   BARREL_STMT_RE.lastIndex = 0;
   while ((m = BARREL_STMT_RE.exec(code))) {
     if (inSpans(spans, keywordIndex(m))) continue;
     const isReExport = m[1] !== undefined;
     const spec = m[3] ?? m[6] ?? m[8];
     const line = matchLine(code, m);
+    handledLines.add(line);
     const where = `${rel(barrel)}:${line}`;
     const bs = backslashViolation(where, spec);
     if (bs) {
@@ -923,13 +989,13 @@ for (const mod of modules) {
       const via = cls.chain.length > 1 ? ` via ${cls.chain.join(' -> ')}` : '';
       httpInBarrel += 1;
       if (cls.kind === 'route') {
-        violations.push(
+        r4Direct.push(
           `R4 ${where} barrel ${isReExport ? 're-exports' : 'imports'} a route module (${spec}${via}); backend/app/routers.mjs wires routes directly`
         );
       } else {
         // WS4 S5-pre (controller ruling): no controller in ANY barrel block — the former
         // labelled test-block exemption was a real runtime coupling, not a label.
-        violations.push(
+        r4Direct.push(
           `R4 ${where} barrel ${isReExport ? `re-exports controller name(s) ${localNames.join(', ')}` : 'imports a controller file'} ${via ? via.trim() : `from ${spec}`}; controllers are never barrel exports, in any block`
         );
       }
@@ -941,10 +1007,66 @@ for (const mod of modules) {
     if (hit) {
       httpInBarrel += 1;
       closureHits += 1;
-      violations.push(
-        `R4 ${where} barrel ${isReExport ? `re-exports ${localNames.join(', ')} from ${spec}` : `imports ${spec}`}: the import closure of ${rel(target)} reaches ${hit.kind} ${hit.file} (${hit.path.join(' -> ')}) — barrel names must not evaluate the HTTP layer`
+      closureViolation(
+        where,
+        isReExport ? `re-exports ${localNames.join(', ')} from ${spec}` : `imports ${spec}`,
+        target,
+        hit
       );
     }
+  }
+  // Round 4, I: the barrel's OWN import sites that the statement scanner does not model —
+  // a dynamic import() inside an exported function, for instance — are closure-checked
+  // too, and the blame lands on the barrel's own line.
+  for (const s of importSites(barrel).sites) {
+    if (handledLines.has(s.line) || !s.target) continue;
+    const where = `${rel(barrel)}:${s.line}`;
+    const bs = backslashViolation(where, s.spec);
+    if (bs) {
+      violations.push(bs);
+      continue;
+    }
+    closureChecked += 1;
+    const hit = closureHttpHit(s.target);
+    if (hit) {
+      httpInBarrel += 1;
+      closureHits += 1;
+      closureViolation(
+        where,
+        `${s.dynamic ? 'dynamically imports' : 'imports'} ${s.spec}`,
+        s.target,
+        hit
+      );
+    }
+  }
+}
+violations.push(...r4Direct, ...r4Cascade);
+// Round 4, M2: every shared-layer file a module closure walked through (backend/utils,
+// backend/services, …) gets the "cannot see" checks — a hidden target there hides it from the graph.
+const sharedFiles = [...closureVisited]
+  .filter((f) => {
+    const r = rel(f);
+    return (
+      r.startsWith('backend/') &&
+      !r.startsWith('backend/modules/') &&
+      fs.existsSync(f) &&
+      fs.statSync(f).isFile()
+    );
+  })
+  .sort();
+for (const f of sharedFiles) {
+  const { nonliteral, commonjs } = importSites(f);
+  for (const nl of nonliteral) {
+    nonliteralCount += 1;
+    violations.push(
+      `R2 ${rel(f)}:${nl.line} dynamic import() whose specifier is not a plain quoted string literal (${nl.snippet}); a module closure walks this shared file and the graph cannot see its target`
+    );
+  }
+  for (const cj of commonjs) {
+    commonjsCount += 1;
+    violations.push(
+      `R2 ${rel(f)}:${cj.line} CommonJS-style loading (${cj.snippet}) in a shared-layer file a module closure walks; the graph cannot see its target`
+    );
   }
 }
 // testBlockControllers is retired (WS4 S5-pre): no barrel may re-export a controller, so every entry is stale.
@@ -972,7 +1094,7 @@ for (const [shared, importers] of [...sharedHops.entries()].sort((a, b) =>
 }
 
 const summary =
-  `modules=${modules.length} files=${files.length} edges=${crossEdges} (dynamic ${dynamicEdges}) nonliteral-dynamic=${nonliteralCount} commonjs=${commonjsCount} lexer-failsafe=${lexerCount} ` +
+  `modules=${modules.length} files=${files.length} edges=${crossEdges} (dynamic ${dynamicEdges}) nonliteral-dynamic=${nonliteralCount} commonjs=${commonjsCount} cjs-files=${cjsFiles} lexer-failsafe=${lexerCount} shared-files=${sharedFiles.length} ` +
   `cycles=${cycleCount} deep-imports=${violations.filter((v) => v.startsWith('R2 ')).length} (marked ${markedDeep.size} listed ${Object.keys(deepImportsListed).length}) ` +
   `star-exports=${starExports} http-in-barrel=${httpInBarrel} closure-checked=${closureChecked} closure-hits=${closureHits} (testBlockControllers listed ${Object.keys(testBlockListed).length}, must be 0) ` +
   `upward=${violations.filter((v) => v.startsWith('R5 ')).length} warn=${warns.length}`;

@@ -12,8 +12,11 @@
  *                      in module-dependency-graph-allowlist.json; a stale allow-list entry
  *   R2 non-literal  -> dynamic import() whose specifier is a template literal, a plain
  *                      backtick literal or a join(__dirname, …) call (S5 review I1); also one
- *                      hidden behind a regex literal after an `if (…)` header (round 2, minor 9)
+ *                      hidden behind a regex literal after an `if (…)` header (round 2, minor 9);
+ *                      also in a SHARED-LAYER file a module closure walks through (round 4, M2)
  *   R2 CommonJS     -> createRequire(…) / require(…) in an ESM-only module file (round 2, minor 8)
+ *                      or in a shared-layer file a module closure walks through (round 4, M2);
+ *                      any .cjs file under backend/modules fails outright (round 4, M1)
  *   R2 backslash    -> an import specifier containing `\` (S5 review M4)
  *   R2 lexer        -> fail-closed on an unterminated template literal and on a template
  *                      literal that CONTAINS import/export/require text the scanners would
@@ -24,20 +27,23 @@
  *                      controller reached THROUGH proxy files by any re-export shape (S5 review
  *                      M2, round 2 evasion 7, round 3: `export const X = binding[.member]`,
  *                      semicolon-less `export default`), and — closure-based (round 3) — ANY
- *                      production-block name whose target's static import closure reaches a
- *                      route module or controller, with the path reported; a controller under
- *                      the `// Test-consumed only (… Equoria-7t1tn` label fails outright too
- *                      (WS4 S5-pre: no controller in any barrel block); any entry left in the
- *                      retired testBlockControllers section fails; a route module inside the
- *                      test block fails
+ *                      barrel name whose target's static import closure reaches a route module
+ *                      or controller, with the path reported; the barrel's OWN import sites,
+ *                      including a dynamic import() inside an exported function, are closure-
+ *                      checked and blamed on the barrel's own line (round 4, I); when one barrel's
+ *                      bad line cascades into other barrels' closures the ORIGIN line is reported
+ *                      first and the cascades name it (round 4, I); a controller under the
+ *                      `// Test-consumed only (… Equoria-7t1tn` label fails outright too (WS4
+ *                      S5-pre: no controller in any barrel block); any entry left in the retired
+ *                      testBlockControllers section fails; a route module inside the test block fails
  *   R5 upward       -> module file importing backend/app/routers.mjs
  *   --closure       -> three pure services evaluate no route module or controller file
  *
  * Plant hygiene (lessons from Equoria-or7o5 and S5 review M7): every plant has a unique,
  * per-run file or directory name; EVERY directory the suite creates is recorded and removed
  * deepest-first in afterEach; the suite asserts after each cleanup and at the end that no
- * plant path remains under backend/modules. The allow-list JSON is edited only by two arms,
- * which restore it byte-for-byte and assert that they did.
+ * plant path remains under backend/modules or backend/utils. The allow-list JSON is edited
+ * only by two arms, which restore it byte-for-byte and assert that they did.
  */
 
 import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
@@ -52,14 +58,17 @@ const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
 const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-module-dependency-graph.mjs');
 const ALLOWLIST = path.join(REPO_ROOT, 'scripts/doctrine-checks/module-dependency-graph-allowlist.json');
 const MODULES = path.join(REPO_ROOT, 'backend/modules');
+const UTILS = path.join(REPO_ROOT, 'backend/utils');
 const RUN_ID = `${process.pid}-${randomBytes(4).toString('hex')}`;
 const PLANT_TOKEN = '_ws4graphplant_';
 const PLANT_MODULE = `${PLANT_TOKEN}${RUN_ID}`;
+const PLANT_MODULE_B = `${PLANT_TOKEN}${RUN_ID}b`;
 const TEST_LABEL =
   "// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests\n// into the owning module, after which these lines go).\n";
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const relPosix = abs => path.relative(REPO_ROOT, abs).split(path.sep).join('/');
 const PM = `backend/modules/${PLANT_MODULE}`;
+const PMB = `backend/modules/${PLANT_MODULE_B}`;
 
 /** Every path this suite creates (files and EVERY new directory), removed deepest-first in afterEach. */
 const planted = [];
@@ -91,7 +100,7 @@ function cleanupPlants() {
   planted.length = 0;
 }
 
-/** No file or directory carrying the plant token anywhere under backend/modules (two levels). */
+/** No file or directory carrying the plant token under backend/modules (two levels) or backend/utils. */
 function strayPlants() {
   const found = [];
   for (const top of fs.readdirSync(MODULES)) {
@@ -105,6 +114,11 @@ function strayPlants() {
           found.push(`${top}/${inner}`);
         }
       }
+    }
+  }
+  for (const name of fs.readdirSync(UTILS)) {
+    if (name.includes(PLANT_TOKEN)) {
+      found.push(`utils/${name}`);
     }
   }
   return found;
@@ -168,6 +182,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.out).toMatch(/nonliteral-dynamic=0/);
     expect(res.out).toMatch(/commonjs=0/);
     expect(res.out).toMatch(/closure-checked=\d+/);
+    expect(res.out).toMatch(/shared-files=[1-9]\d*/); // the shared layer really is scanned (round 4, M2)
   });
 
   it('R1: FAILS on a planted cross-module cycle and prints it with the plant file:line', () => {
@@ -348,6 +363,45 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:3 CommonJS-style loading \\(require\\(`));
   });
 
+  it("R2 (round 4, M1): a .cjs file under backend/modules fails outright, and the reviewer's bridge plant is caught", () => {
+    const bridge = plantFile(
+      `${PLANT_MODULE}/bridge.cjs`,
+      "module.exports = require('./controllers/aController.mjs');\n",
+    );
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './bridge.cjs';\n");
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(`R2 ${esc(relPosix(bridge))}:1 CommonJS module file \\(\\.cjs\\) under backend/modules`),
+    );
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports a from \\./bridge\\.cjs: the import closure of ${esc(relPosix(bridge))} reaches controller`,
+      ),
+    );
+  });
+
+  it('R2 (round 4, M2): a non-literal dynamic import() and a require() in SHARED-LAYER files that a module closure walks are flagged', () => {
+    const helper1 = plantFile(`../utils/${PLANT_TOKEN}helper1_${RUN_ID}.mjs`, 'export const h1 = (p) => import(p);\n');
+    const helper2 = plantFile(
+      `../utils/${PLANT_TOKEN}helper2_${RUN_ID}.mjs`,
+      "export const h2 = () => require('node:fs');\n",
+    );
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { s } from './services/s.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/s.mjs`,
+      `import { h1 } from '../../../utils/${PLANT_TOKEN}helper1_${RUN_ID}.mjs';\nimport { h2 } from '../../../utils/${PLANT_TOKEN}helper2_${RUN_ID}.mjs';\nexport const s = () => [h1, h2];\n`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R2 ${esc(relPosix(helper1))}:1 dynamic import\\(\\) whose specifier is not a plain quoted string literal`,
+      ),
+    );
+    expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(helper2))}:1 CommonJS-style loading \\(require\\(`));
+  });
+
   it('R2 (M4): FAILS on an import specifier containing a backslash', () => {
     const plant = plantFile(`economy/${PLANT_TOKEN}bslash_${RUN_ID}.mjs`, "import '..\\\\bank\\\\index.mjs';\n");
     const res = runCheck();
@@ -406,6 +460,44 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(new RegExp(`R4 ${esc(PM)}/index\\.mjs:1 barrel imports a controller file`));
+  });
+
+  it("R4 (round 4, I): a dynamic import() of a controller inside an exported function of the barrel is closure-checked and blamed on the barrel's own line", () => {
+    plantFile(
+      `${PLANT_MODULE}/index.mjs`,
+      "export const zzr3revLazy = () => import('./controllers/leaderboardController.mjs');\n",
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel dynamically imports \\./controllers/leaderboardController\\.mjs: the import closure of ${esc(PM)}/controllers/leaderboardController\\.mjs reaches controller`,
+      ),
+    );
+  });
+
+  it('R4 (round 4, I): a cascade names the ORIGIN barrel line first and the cascading barrel cites it', () => {
+    plantFile(`${PLANT_MODULE_B}/index.mjs`, "export { b } from './controllers/bController.mjs';\n");
+    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './services/a.mjs';\n");
+    plantFile(
+      `${PLANT_MODULE}/services/a.mjs`,
+      `import { b } from '../../${PLANT_MODULE_B}/index.mjs';\nexport const a = () => b();\n`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    const origin = res.out.indexOf(
+      `R4 ${PMB}/index.mjs:1 barrel re-exports controller name(s) b from ./controllers/bController.mjs`,
+    );
+    const cascade = res.out.indexOf(
+      `R4 ${PM}/index.mjs:1 barrel re-exports a from ./services/a.mjs: the import closure of`,
+    );
+    expect(origin).toBeGreaterThanOrEqual(0);
+    expect(cascade).toBeGreaterThan(origin);
+    expect(res.out).toMatch(
+      new RegExp(
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports a from \\./services/a\\.mjs: .*— via origin ${esc(PMB)}/index\\.mjs:1`,
+      ),
+    );
   });
 
   it('R4 (M2): a controller reached THROUGH a re-export-only proxy file is caught, with the chain named', () => {

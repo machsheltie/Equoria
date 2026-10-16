@@ -4,7 +4,7 @@
  * Unit test of the SSE client hook's lifecycle. A mocked EventSource is
  * used here — acceptable for a UNIT test of the hook (real SSE end-to-end
  * behavior is covered by the backend real-DB integration test
- * backend/modules/events/__tests__/eventStream.integration.test.mjs).
+ * backend/__tests__/eventStream.integration.test.mjs).
  *
  * Asserts: opens with withCredentials at the correct URL; invalidates the
  * notification query keys on a server event; registers a listener for every

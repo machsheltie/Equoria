@@ -4,7 +4,7 @@
  * Real-DB integration coverage for the forum-reply SSE producer added to
  * forumController.createPost. No mocks: real Express app, real prisma writes,
  * real event bus. Mirrors the DM 'message' producer coverage in
- * modules/events/__tests__/eventStream.integration.test.mjs (Equoria-lewrv).
+ * __tests__/eventStream.integration.test.mjs (Equoria-lewrv).
  *
  * Asserts:
  *   1. a reply by user B to user A's thread emits an `event: forum_reply`

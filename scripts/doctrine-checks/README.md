@@ -84,7 +84,17 @@ to fix the underlying problem. It is not a license to weaken the check.
   tackShopController); the `// Test-consumed only (… Equoria-7t1tn` label may
   still head NON-controller names consumed only by other modules' tests, and the
   allow-list's `testBlockControllers` section is retired and must stay empty (any
-  entry fails); R5 no module file imports `backend/app/**`. The `deepImports`
+  entry fails); the barrel's OWN import sites that the statement scanner does not
+  model (a dynamic `import()` inside an exported function, a side-effect import)
+  are closure-checked too and blamed on the barrel's own line, and when one
+  barrel's bad line cascades into other barrels' closures the ORIGIN line is
+  reported first and each cascade cites it (round 4); `.js` and `.cjs` files under
+  `backend/modules` are scanned and any `.cjs` there fails outright (ESM-only; a
+  literal `require('…')` is still followed as a closure edge, so a CommonJS
+  bridge cannot hide a controller); every shared-layer file (`backend/utils`,
+  `backend/services`, …) that a barrel closure walks through gets the
+  non-literal `import()` and CommonJS checks as well (`shared-files=` in the
+  summary); R5 no module file imports `backend/app/**`. The `deepImports`
   allow-list section may only SHRINK: an unpinned marked import fails, and so does
   a pinned pair that no longer matches anything on disk; every entry needs a
   `reason` and an `issue`. Shared-layer round trips (a

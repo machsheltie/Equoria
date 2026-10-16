@@ -6,7 +6,7 @@
  * prisma writes, real event bus, real notificationService. Mirrors the
  * forum-reply producer coverage (forumReplySseProducer.integration.test.mjs,
  * Equoria-pwwuz) and the DM 'message' producer coverage
- * (modules/events/__tests__/eventStream.integration.test.mjs, Equoria-lewrv).
+ * (__tests__/eventStream.integration.test.mjs, Equoria-lewrv).
  *
  * transferLeadership is the ONE club event with a single, well-defined
  * recipient: the member promoted to president by ANOTHER user's action
