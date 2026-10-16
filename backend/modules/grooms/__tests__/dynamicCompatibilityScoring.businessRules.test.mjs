@@ -17,12 +17,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import {
-  calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
-  predictInteractionOutcome,
-  getOptimalGroomRecommendations,
-  analyzeCompatibilityTrends,
+  compatibilityTrends,
+  predictInteraction,
+  scoreCompatibility,
 } from '../services/dynamicCompatibilityScoring.mjs';
+import { analyzePair, rankFor } from './helpers/dynamicCompatibilityGrid.mjs';
 
 describe('Dynamic Compatibility Scoring', () => {
   let testUser;
@@ -174,7 +174,7 @@ describe('Dynamic Compatibility Scoring', () => {
         recentInteractions: [],
       };
 
-      const compatibility = await calculateDynamicCompatibility(calmGroom.id, fearfulHorse.id, context);
+      const compatibility = await analyzePair(calmGroom.id, fearfulHorse.id, scoreCompatibility, context);
 
       expect(compatibility).toBeDefined();
       expect(compatibility.overallScore).toBeGreaterThan(0.7); // High compatibility
@@ -201,7 +201,7 @@ describe('Dynamic Compatibility Scoring', () => {
         recentInteractions: [],
       };
 
-      const compatibility = await calculateDynamicCompatibility(energeticGroom.id, fearfulHorse.id, context);
+      const compatibility = await analyzePair(energeticGroom.id, fearfulHorse.id, scoreCompatibility, context);
 
       expect(compatibility.overallScore).toBeLessThan(0.4); // Low compatibility
       expect(compatibility.stressSituationModifier).toBeLessThan(1.0); // Penalty for high stress
@@ -221,7 +221,7 @@ describe('Dynamic Compatibility Scoring', () => {
         recentInteractions: [],
       };
 
-      const compatibility = await calculateDynamicCompatibility(methodicalGroom.id, moderateHorse.id, context);
+      const compatibility = await analyzePair(methodicalGroom.id, moderateHorse.id, scoreCompatibility, context);
 
       expect(compatibility.overallScore).toBeGreaterThan(0.5);
       expect(compatibility.overallScore).toBeLessThan(0.8);
@@ -244,8 +244,8 @@ describe('Dynamic Compatibility Scoring', () => {
         recentInteractions: [],
       };
 
-      const expertCompatibility = await calculateDynamicCompatibility(expertGroom.id, horse.id, context);
-      const noviceCompatibility = await calculateDynamicCompatibility(noviceGroom.id, horse.id, context);
+      const expertCompatibility = await analyzePair(expertGroom.id, horse.id, scoreCompatibility, context);
+      const noviceCompatibility = await analyzePair(noviceGroom.id, horse.id, scoreCompatibility, context);
 
       expect(expertCompatibility.experienceBonus).toBeGreaterThan(noviceCompatibility.experienceBonus);
       expect(expertCompatibility.overallScore).toBeGreaterThan(noviceCompatibility.overallScore);
@@ -301,7 +301,7 @@ describe('Dynamic Compatibility Scoring', () => {
         environmentalFactors: ['quiet', 'familiar'],
       };
 
-      const prediction = await predictInteractionOutcome(calmGroom.id, fearfulHorse.id, context);
+      const prediction = await analyzePair(calmGroom.id, fearfulHorse.id, predictInteraction, context);
 
       expect(prediction).toBeDefined();
       expect(prediction.predictedBondingChange).toBeDefined();
@@ -327,7 +327,7 @@ describe('Dynamic Compatibility Scoring', () => {
         environmentalFactors: ['noisy'],
       };
 
-      const prediction = await predictInteractionOutcome(energeticGroom.id, fearfulHorse.id, context);
+      const prediction = await analyzePair(energeticGroom.id, fearfulHorse.id, predictInteraction, context);
 
       expect(prediction.predictedBondingChange).toBeLessThan(2); // Low bonding gain
       expect(prediction.predictedStressChange).toBeGreaterThan(1); // Stress increase
@@ -346,7 +346,7 @@ describe('Dynamic Compatibility Scoring', () => {
         environmentalFactors: ['quiet'],
       };
 
-      const recommendations = await getOptimalGroomRecommendations(horse.id, context);
+      const recommendations = await rankFor(horse.id, context);
 
       expect(recommendations).toBeDefined();
       expect(Array.isArray(recommendations.rankedGrooms)).toBe(true);
@@ -376,7 +376,7 @@ describe('Dynamic Compatibility Scoring', () => {
         environmentalFactors: ['stimulating'],
       };
 
-      const recommendations = await getOptimalGroomRecommendations(horse.id, context);
+      const recommendations = await rankFor(horse.id, context);
 
       expect(recommendations.alternativeOptions.length).toBeGreaterThan(0);
       expect(recommendations.contextualNotes).toBeDefined();
@@ -408,7 +408,7 @@ describe('Dynamic Compatibility Scoring', () => {
         });
       }
 
-      const trends = await analyzeCompatibilityTrends(groom.id, horse.id);
+      const trends = await analyzePair(groom.id, horse.id, compatibilityTrends);
 
       expect(trends).toBeDefined();
       expect(trends.overallTrend).toBeDefined();

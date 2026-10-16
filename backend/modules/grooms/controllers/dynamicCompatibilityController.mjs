@@ -17,11 +17,12 @@ import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { AppError } from '../../../errors/index.mjs';
 import {
-  calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
-  predictInteractionOutcome,
-  getOptimalGroomRecommendations,
-  analyzeCompatibilityTrends,
+  compatibilityTrends,
+  loadCompatibilityInputs,
+  predictInteraction,
+  rankGrooms,
+  scoreCompatibility,
 } from '../services/dynamicCompatibilityScoring.mjs';
 import {
   GROOM_HORSE_COMPATIBILITY_TASK_TYPES,
@@ -73,7 +74,11 @@ export async function calculateCompatibility(req, res) {
     }
 
     // Calculate dynamic compatibility
-    const compatibility = await calculateDynamicCompatibility(groomId, horseId, context);
+    const compatibility = scoreCompatibility(
+      await loadCompatibilityInputs(horseId, { groomIds: [groomId] }),
+      groomId,
+      context,
+    );
 
     logger.info(
       `[dynamicCompatibilityController.calculateCompatibility] Compatibility calculated: ${compatibility.overallScore.toFixed(3)} (${compatibility.recommendationLevel})`,
@@ -166,7 +171,11 @@ export async function predictOutcome(req, res) {
       });
     }
 
-    const prediction = await predictInteractionOutcome(groomId, horseId, context);
+    const prediction = predictInteraction(
+      await loadCompatibilityInputs(horseId, { groomIds: [groomId] }),
+      groomId,
+      context,
+    );
 
     logger.info(
       `[dynamicCompatibilityController.predictOutcome] Outcome predicted: ${prediction.predictedQuality} quality, ${prediction.successProbability.toFixed(2)} success probability`,
@@ -217,7 +226,10 @@ export async function getRecommendations(req, res) {
       });
     }
 
-    const recommendations = await getOptimalGroomRecommendations(horseId, context);
+    const recommendations = rankGrooms(
+      await loadCompatibilityInputs(horseId, { ownerGrooms: true }),
+      context,
+    );
 
     logger.info(
       `[dynamicCompatibilityController.getRecommendations] Found ${recommendations.rankedGrooms.length} groom recommendations`,
@@ -250,7 +262,10 @@ export async function getCompatibilityTrends(req, res) {
       `[dynamicCompatibilityController.getCompatibilityTrends] Analyzing trends for groom ${groomId} and horse ${horseId}`,
     );
 
-    const trends = await analyzeCompatibilityTrends(parseInt(groomId), parseInt(horseId));
+    const trends = compatibilityTrends(
+      await loadCompatibilityInputs(parseInt(horseId), { groomIds: [parseInt(groomId)] }),
+      parseInt(groomId),
+    );
 
     logger.info(
       `[dynamicCompatibilityController.getCompatibilityTrends] Trends analyzed: ${trends.overallTrend} trend with ${trends.dataPoints} data points`,

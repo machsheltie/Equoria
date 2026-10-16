@@ -220,11 +220,7 @@ const PERSONALITY_TRAIT_DEFINITIONS = {
   },
 };
 
-/**
- * Get detailed personality traits for a specific groom
- * @param {number} groomId - ID of the groom
- * @returns {Object} Detailed personality traits and characteristics
- */
+/** Read a groom and return its personality traits (personalityTraitsFor). */
 export async function getGroomPersonalityTraits(groomId) {
   const groom = await prisma.groom.findUnique({
     where: { id: groomId },
@@ -234,7 +230,6 @@ export async function getGroomPersonalityTraits(groomId) {
       epigeneticInfluenceType: true,
       experience: true,
       level: true,
-      skillLevel: true,
     },
   });
 
@@ -242,16 +237,19 @@ export async function getGroomPersonalityTraits(groomId) {
     throw new Error(`Groom not found: ${groomId}`);
   }
 
+  return personalityTraitsFor(groom);
+}
+
+/** A groom row's personality traits, scaled by experience; throws for an unknown type. Pure. */
+export function personalityTraitsFor(groom) {
   const personalityDef = PERSONALITY_TRAIT_DEFINITIONS[groom.epigeneticInfluenceType];
   if (!personalityDef) {
     throw new Error(`Unknown personality type: ${groom.epigeneticInfluenceType}`);
   }
 
-  // Calculate experience level and trait strength
   const experienceLevel = calculateExperienceLevel(groom.experience);
   const traitStrength = calculateTraitStrength(groom.experience, groom.level);
 
-  // Apply experience modifiers to traits
   const enhancedTraits = personalityDef.traits.map(trait => ({
     ...trait,
     strength: traitStrength,
@@ -612,7 +610,7 @@ function calculateTraitCompatibility(trait, horseFlags) {
 /**
  * Calculate overall compatibility between groom and horse
  */
-function calculateOverallCompatibility(groomTraits, horse) {
+export function calculateOverallCompatibility(groomTraits, horse) {
   if (asFlagArray(horse.epigeneticFlags).length === 0) {
     return 0.6; // Neutral compatibility for horses with no flags
   }

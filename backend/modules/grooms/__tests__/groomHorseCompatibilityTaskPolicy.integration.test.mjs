@@ -24,11 +24,8 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import dynamicCompatibilityRoutes from '../routes/dynamicCompatibilityRoutes.mjs';
-import {
-  calculateDynamicCompatibility,
-  predictInteractionOutcome,
-  getOptimalGroomRecommendations,
-} from '../services/dynamicCompatibilityScoring.mjs';
+import { predictInteraction, scoreCompatibility } from '../services/dynamicCompatibilityScoring.mjs';
+import { analyzePair, rankFor } from './helpers/dynamicCompatibilityGrid.mjs';
 import { getPersonalityTraitDefinitions, calculatePersonalityModifiers } from '../services/groomPersonalityTraits.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -258,7 +255,9 @@ describe('task modifiers', () => {
   it('scorer applies the table for every task and personality through real grooms', async () => {
     for (const [taskType, byPersonality] of Object.entries(EXPECTED_TASK_MODIFIERS)) {
       for (const [personality, expected] of Object.entries(byPersonality)) {
-        const result = await calculateDynamicCompatibility(groomsByPersonality[personality].id, horse.id, { taskType });
+        const result = await analyzePair(groomsByPersonality[personality].id, horse.id, scoreCompatibility, {
+          taskType,
+        });
         expect({ taskType, personality, modifier: result.taskSpecificModifier }).toEqual({
           taskType,
           personality,
@@ -282,7 +281,7 @@ describe('unsupported task types are rejected, never defaulted', () => {
 
   it("old input 'grooming' (formerly scored a silent 1.0; now rejected per Equoria-q4uem.3): the scorer throws a 400", async () => {
     await expect(
-      calculateDynamicCompatibility(groomsByPersonality.calm.id, horse.id, { taskType: 'grooming' }),
+      analyzePair(groomsByPersonality.calm.id, horse.id, scoreCompatibility, { taskType: 'grooming' }),
     ).rejects.toMatchObject({ message: 'Unsupported compatibility task type: grooming', statusCode: 400 });
   });
 
@@ -302,13 +301,13 @@ describe('unsupported task types are rejected, never defaulted', () => {
       message: `Unsupported compatibility task type: ${UNSUPPORTED_TASK}`,
       statusCode: 400,
     };
-    await expect(calculateDynamicCompatibility(groomsByPersonality.calm.id, horse.id, context)).rejects.toMatchObject(
+    await expect(analyzePair(groomsByPersonality.calm.id, horse.id, scoreCompatibility, context)).rejects.toMatchObject(
       unsupported,
     );
-    await expect(predictInteractionOutcome(groomsByPersonality.calm.id, horse.id, context)).rejects.toMatchObject(
+    await expect(analyzePair(groomsByPersonality.calm.id, horse.id, predictInteraction, context)).rejects.toMatchObject(
       unsupported,
     );
-    await expect(getOptimalGroomRecommendations(horse.id, context)).rejects.toMatchObject(unsupported);
+    await expect(rankFor(horse.id, context)).rejects.toMatchObject(unsupported);
   });
 
   it('the policy lookup throws a 400 for an unsupported task or personality', async () => {
@@ -412,8 +411,8 @@ describe('trait task bonuses through the full scorer (characterization)', () => 
     async (taskType, personality, getHorse, policyModifier, overall, taskEffectiveness) => {
       const groomId = groomsByPersonality[personality].id;
       const horseId = getHorse().id;
-      const task = await calculateDynamicCompatibility(groomId, horseId, { taskType });
-      const control = await calculateDynamicCompatibility(groomId, horseId, { taskType: 'coat_check' });
+      const task = await analyzePair(groomId, horseId, scoreCompatibility, { taskType });
+      const control = await analyzePair(groomId, horseId, scoreCompatibility, { taskType: 'coat_check' });
       const taskMods = await calculatePersonalityModifiers(groomId, horseId, taskType);
       const controlMods = await calculatePersonalityModifiers(groomId, horseId, 'coat_check');
 

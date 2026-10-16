@@ -8,12 +8,12 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import {
-  analyzeCompatibilityTrends,
-  getOptimalGroomRecommendations,
-  calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
-  predictInteractionOutcome,
+  compatibilityTrends,
+  predictInteraction,
+  scoreCompatibility,
 } from '../services/dynamicCompatibilityScoring.mjs';
+import { analyzePair, rankFor } from './helpers/dynamicCompatibilityGrid.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -76,7 +76,7 @@ const CONTEXT = { taskType: 'coat_check', timeOfDay: 'morning', weather: 'sunny'
 
 describe('analyzeCompatibilityTrends', () => {
   it('returns insufficient_data for groom+horse with no interactions', async () => {
-    const result = await analyzeCompatibilityTrends(groom.id, horse.id);
+    const result = await analyzePair(groom.id, horse.id, compatibilityTrends);
 
     expect(result).toBeDefined();
     expect(result.overallTrend).toBe('insufficient_data');
@@ -85,7 +85,7 @@ describe('analyzeCompatibilityTrends', () => {
   });
 
   it('returns insufficient_data for unknown ids', async () => {
-    const result = await analyzeCompatibilityTrends(999999999, 999999998);
+    const result = await analyzePair(999999999, 999999998, compatibilityTrends);
 
     expect(result).toBeDefined();
     expect(result.overallTrend).toBe('insufficient_data');
@@ -96,7 +96,7 @@ describe('analyzeCompatibilityTrends', () => {
 
 describe('getOptimalGroomRecommendations', () => {
   it('returns recommendation structure including test groom', async () => {
-    const result = await getOptimalGroomRecommendations(horse.id, CONTEXT);
+    const result = await rankFor(horse.id, CONTEXT);
 
     expect(result).toBeDefined();
     expect(Array.isArray(result.rankedGrooms)).toBe(true);
@@ -108,7 +108,7 @@ describe('getOptimalGroomRecommendations', () => {
 
 describe('calculateDynamicCompatibility', () => {
   it('returns compatibility score between 0 and 1.5', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, CONTEXT);
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, CONTEXT);
 
     expect(result).toBeDefined();
     expect(typeof result.overallScore).toBe('number');
@@ -117,7 +117,7 @@ describe('calculateDynamicCompatibility', () => {
   });
 
   it('returns a recommendationLevel string', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, CONTEXT);
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, CONTEXT);
 
     expect(typeof result.recommendationLevel).toBe('string');
     expect(['highly_recommended', 'recommended', 'acceptable', 'not_recommended']).toContain(
@@ -141,7 +141,7 @@ describe('analyzeCompatibilityFactors', () => {
 
 describe('predictInteractionOutcome', () => {
   it('returns prediction object for known groom+horse', async () => {
-    const result = await predictInteractionOutcome(groom.id, horse.id, CONTEXT);
+    const result = await analyzePair(groom.id, horse.id, predictInteraction, CONTEXT);
 
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
@@ -154,7 +154,7 @@ describe('predictInteractionOutcome', () => {
 
 describe('calculateDynamicCompatibility — stressSituationModifier branches (Equoria-jkht)', () => {
   it('stressSituationModifier=1.1 when horseCurrentStress=1 (≤ 3)', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 1,
@@ -163,7 +163,7 @@ describe('calculateDynamicCompatibility — stressSituationModifier branches (Eq
   });
 
   it('stressSituationModifier=1.0 when horseCurrentStress=5 (≤ 6)', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 5,
@@ -172,7 +172,7 @@ describe('calculateDynamicCompatibility — stressSituationModifier branches (Eq
   });
 
   it('stressSituationModifier=0.9 when horseCurrentStress=7 (≤ 8)', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 7,
@@ -181,7 +181,7 @@ describe('calculateDynamicCompatibility — stressSituationModifier branches (Eq
   });
 
   it('stressSituationModifier=0.7 when horseCurrentStress=9 (> 8)', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 9,
@@ -195,7 +195,7 @@ describe('calculateDynamicCompatibility — stressSituationModifier branches (Eq
 
 describe('calculateDynamicCompatibility — timeOfDayModifier branches (Equoria-jkht)', () => {
   it('timeOfDayModifier=1.1 for timeOfDay=morning', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
     });
@@ -203,7 +203,7 @@ describe('calculateDynamicCompatibility — timeOfDayModifier branches (Equoria-
   });
 
   it('timeOfDayModifier=1.0 for timeOfDay=afternoon', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'afternoon',
     });
@@ -211,7 +211,7 @@ describe('calculateDynamicCompatibility — timeOfDayModifier branches (Equoria-
   });
 
   it('timeOfDayModifier=0.95 for timeOfDay=evening', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'evening',
     });
@@ -375,27 +375,27 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
   afterAll(() => cleanup.run(), 30000);
 
   it('overallTrend=improving when compatibility scores increase (slope > 0.05)', async () => {
-    const result = await analyzeCompatibilityTrends(trendGroom.id, improvingHorse.id);
+    const result = await analyzePair(trendGroom.id, improvingHorse.id, compatibilityTrends);
     expect(result.overallTrend).toBe('improving');
     expect(result.dataPoints).toBe(3);
     expect(result.trendStrength).toBeGreaterThan(0);
   });
 
   it('overallTrend=declining when compatibility scores decrease (slope < -0.05)', async () => {
-    const result = await analyzeCompatibilityTrends(trendGroom.id, decliningHorse.id);
+    const result = await analyzePair(trendGroom.id, decliningHorse.id, compatibilityTrends);
     expect(result.overallTrend).toBe('declining');
     expect(result.dataPoints).toBe(3);
   });
 
   it('overallTrend=stable when all compatibility scores are equal (slope = 0)', async () => {
-    const result = await analyzeCompatibilityTrends(trendGroom.id, stableHorse.id);
+    const result = await analyzePair(trendGroom.id, stableHorse.id, compatibilityTrends);
     expect(result.overallTrend).toBe('stable');
     expect(result.dataPoints).toBe(3);
     expect(result.trendStrength).toBeLessThan(0.1);
   });
 
   it('returns full trend data fields (improvementRate, stabilityScore, projectedCompatibility) when dataPoints >= 3', async () => {
-    const result = await analyzeCompatibilityTrends(trendGroom.id, improvingHorse.id);
+    const result = await analyzePair(trendGroom.id, improvingHorse.id, compatibilityTrends);
     expect(typeof result.improvementRate).toBe('number');
     expect(typeof result.stabilityScore).toBe('number');
     expect(typeof result.projectedCompatibility).toBe('number');
@@ -511,7 +511,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   afterAll(() => cleanup.run(), 30000);
 
   it('recommendationLevel=acceptable: stress=7 + evening context', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'evening',
       horseCurrentStress: 7,
@@ -522,7 +522,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('recommendationLevel=not_recommended: stress=9 + chaotic environment', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'evening',
       horseCurrentStress: 9,
@@ -533,7 +533,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('recommendationLevel=highly_recommended: high-experience groom morning low-stress', async () => {
-    const result = await calculateDynamicCompatibility(highExpGroom.id, branchHorse.id, {
+    const result = await analyzePair(highExpGroom.id, branchHorse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 1,
@@ -543,11 +543,11 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('calculateEnvironmentalModifier: quiet factor multiplies by 1.1', async () => {
-    const base = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const base = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
     });
-    const withQuiet = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const withQuiet = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['quiet'],
@@ -558,7 +558,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('calculateEnvironmentalModifier: noisy factor multiplies by 0.9', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['noisy'],
@@ -567,7 +567,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('calculateEnvironmentalModifier: familiar factor multiplies by 1.1', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['familiar'],
@@ -576,7 +576,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('calculateEnvironmentalModifier: unfamiliar factor multiplies by 0.9', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['unfamiliar'],
@@ -585,7 +585,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('calculateEnvironmentalModifier: structured factor multiplies by 1.05', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['structured'],
@@ -594,7 +594,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('calculateEnvironmentalModifier: stimulating factor leaves modifier at 1.0', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['stimulating'],
@@ -603,7 +603,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('calculateTimeOfDayModifier default branch: unknown timeOfDay returns 1.0', async () => {
-    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+    const result = await analyzePair(groom.id, horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'midnight',
     });
@@ -611,7 +611,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   });
 
   it('calculateHistoricalModifier non-1.0: existing interactions produce modifier != 1.0', async () => {
-    const result = await calculateDynamicCompatibility(highExpGroom.id, branchHorse.id, {
+    const result = await analyzePair(highExpGroom.id, branchHorse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
     });
@@ -623,7 +623,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   it('methodical groom: high-experience score is in valid range (exercises outer cap false branch)', async () => {
     // methodical groom with high experience → experienceBonus=1.9
     // A fresh horse has baseCompatibility > 0.5 so the outer condition is false — exercises that branch
-    const result = await calculateDynamicCompatibility(methodicalGroom.id, branchHorse.id, {
+    const result = await analyzePair(methodicalGroom.id, branchHorse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 1,
@@ -773,7 +773,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   // ── getOptimalGroomRecommendations: empty grooms (lines 348-354, 948-949) ──
 
   it('getOptimalGroomRecommendations: horse owner has no grooms → empty rankedGrooms (line 348-354)', async () => {
-    const result = await getOptimalGroomRecommendations(rr7NoGroomHorse.id, {
+    const result = await rankFor(rr7NoGroomHorse.id, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
     });
@@ -785,7 +785,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   // ── calculateDynamicCompatibility: default env factor (line 562) ──────────
 
   it('calculateDynamicCompatibility: unknown environmental factor → default switch arm (line 562)', async () => {
-    const result = await calculateDynamicCompatibility(rr7MethodicalGroom.id, rr7Horse.id, {
+    const result = await analyzePair(rr7MethodicalGroom.id, rr7Horse.id, scoreCompatibility, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       environmentalFactors: ['rainy'],
@@ -835,7 +835,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   // ── predictInteractionOutcome: high stress recommendation (line 839) ──────
 
   it('predictInteractionOutcome: horseCurrentStress=9 → stress recommendation added (line 839)', async () => {
-    const result = await predictInteractionOutcome(rr7MethodicalGroom.id, rr7StressHorse.id, {
+    const result = await analyzePair(rr7MethodicalGroom.id, rr7StressHorse.id, predictInteraction, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 9,
@@ -848,7 +848,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   // ── getOptimalGroomRecommendations: high stress contextual note (line 962) ─
 
   it('getOptimalGroomRecommendations: horseCurrentStress=9 → contextual note about stress (line 962)', async () => {
-    const result = await getOptimalGroomRecommendations(rr7StressHorse.id, {
+    const result = await rankFor(rr7StressHorse.id, {
       taskType: 'coat_check',
       timeOfDay: 'morning',
       horseCurrentStress: 9,
