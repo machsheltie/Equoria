@@ -84,6 +84,7 @@
  * Auto-runs via scripts/doctrine-checks/run-all.sh by file-name pattern (pre-push, CI).
  */
 
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -116,6 +117,34 @@ function statTolerant(p) {
     if (err && err.code === 'ENOENT') return null;
     throw err;
   }
+}
+/**
+ * The skipped reserved-name paths that git TRACKS (repo-relative, POSIX, sorted). The skip is for
+ * transients only: a committed file carrying a reserved scratch-plant name would otherwise be hidden
+ * for good, so it is an R2 violation. No skipped path → no git call. git unavailable or failing →
+ * fail closed: the gate cannot prove the skipped names were transients (rfv9j round, M1).
+ */
+function trackedReservedPlantNames(paths) {
+  if (paths.length === 0) return [];
+  const relPaths = paths.map(rel);
+  const res = spawnSync('git', ['ls-files', '--', ...relPaths], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  if (res.error || res.status !== 0) {
+    const why = res.error
+      ? res.error.code || res.error.message
+      : `exit ${res.status}: ${(res.stderr || '').trim()}`;
+    console.error(
+      `${TAG} FAIL — git ls-files unavailable (${why}); cannot prove the ${paths.length} skipped reserved-name path(s) are untracked transients: ${relPaths.join(', ')}`
+    );
+    process.exit(2);
+  }
+  return res.stdout
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .sort();
 }
 
 const R2_MARKER_RE = /eslint-disable-next-line no-restricted-imports -- Equoria-hk739/;
@@ -600,9 +629,16 @@ const testBlockListed =
     ? allowlist.testBlockControllers
     : {};
 
-const moduleDirs = fs
-  .readdirSync(MODULES_DIR, { withFileTypes: true })
-  .filter((d) => d.isDirectory() && d.name !== '__tests__' && d.name !== 'node_modules')
+// Another suite's reserved-name plant directory is never a module, barrel or not (rfv9j round, M2);
+// walk() reports it once as a skipped foreign plant.
+const moduleDirs = readdirSyncTolerant(MODULES_DIR, { withFileTypes: true }, LABEL)
+  .filter(
+    (d) =>
+      d.isDirectory() &&
+      d.name !== '__tests__' &&
+      d.name !== 'node_modules' &&
+      !isReservedScratchPlantPathSegment(d.name, OWN_PLANT_TOKENS)
+  )
   .map((d) => d.name)
   .sort();
 // A module is a directory with a barrel; a barrel-less directory under modules/ is anomalous
@@ -1150,6 +1186,10 @@ for (const f of skippedForeign) {
   warns.push(
     `WARN skipped foreign sentinel plant ${rel(f)} — reserved scratch name of another suite (scripts/lib/doctrine-scan-patterns.mjs); not scanned`
   );
+}
+// The skip must never hide committed source: anything skipped that git tracks is a violation.
+for (const tracked of trackedReservedPlantNames(skippedForeign)) {
+  violations.push(`R2 tracked file carries a reserved scratch-plant name: ${tracked}`);
 }
 
 const summary =

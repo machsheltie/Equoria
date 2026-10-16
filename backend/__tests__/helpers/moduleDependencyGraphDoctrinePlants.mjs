@@ -1,13 +1,13 @@
 /**
  * Plant, hygiene and run helpers of backend/__tests__/scripts/moduleDependencyGraphDoctrine.sentinel.test.mjs
- * (Equoria-q4uem.4). Moved here unchanged when the sentinel crossed the 800-line test cap
- * (Equoria-rfv9j round); jest collects only *.test.mjs files, so this module is never a suite.
+ * (Equoria-q4uem.4). Moved here (Equoria-rfv9j round); cleanupPlants now asserts absence via lstat
+ * and strayPlants tolerates a foreign directory vanishing (ENOENT only). jest collects only
+ * *.test.mjs files, so this module is never a suite.
  *
  * Plant hygiene (Equoria-or7o5, S5 review M7): every plant has a unique per-run name; EVERY
- * directory created is recorded in `planted` and removed deepest-first by cleanupPlants(), which
- * asserts absence with lstat (a dangling symlink plant counts as present); strayPlants() scans
- * backend/modules (two levels) and backend/utils for the plant token and tolerates ONLY a foreign
- * directory vanishing mid-scan (Equoria-rfv9j). The gate names the same token in OWN_PLANT_TOKENS.
+ * directory created is recorded in `planted` and removed deepest-first by cleanupPlants(); strayPlants()
+ * scans backend/modules (two levels) and backend/utils for the plant token. The gate names the same
+ * token in OWN_PLANT_TOKENS.
  */
 
 import { expect } from '@jest/globals';
@@ -132,6 +132,11 @@ export function strayPlants() {
 export function runCheck(args = []) {
   const res = spawnSync('node', [CHECK, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
   return { status: res.status, out: `${res.stdout}\n${res.stderr}` };
+}
+
+/** A git command in the repo (used by the rfv9j M1 arm to simulate a tracked reserved-name file). */
+export function gitInRepo(args) {
+  return spawnSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' });
 }
 
 /** Run the check with one extra allow-list entry, then restore the file byte-for-byte. */

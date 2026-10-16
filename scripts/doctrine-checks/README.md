@@ -107,9 +107,11 @@ to fix the underlying problem. It is not a license to weaken the check.
   its read (`vanished=N`) and another suite's reserved scratch plant skipped by
   name (`foreign-skipped=N`; shared list in
   `scripts/lib/doctrine-scan-patterns.mjs`, the gate's own `_ws4graphplant_`
-  plants stay visible). Fewer than 10 modules or 50 files parsed, or a missing
-  allow-list file, is a failure, not a pass. `--closure <file>` prints a file's
-  transitive import closure.
+  plants stay visible; a skipped name that git tracks is an R2 violation —
+  committed source may not carry a reserved scratch-plant name — and without
+  git the gate fails closed). Fewer than 10 modules or 50 files parsed, or a
+  missing allow-list file, is a failure, not a pass. `--closure <file>` prints a
+  file's transitive import closure.
   Sentinel-positive:
   `backend/__tests__/scripts/moduleDependencyGraphDoctrine.sentinel.test.mjs`.
 - `check-horse-name-gated.mjs` reads the import braces with comments stripped and

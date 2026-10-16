@@ -708,17 +708,21 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   // reading the tree. Observed: moduleBarrelBoundaryEslint's `_v8l96_sentinel_*` plants vanished
   // between the gate's directory walk and its read -> ENOENT crash -> three arms here failed.
   // The gate now (F1) tolerates ONLY ENOENT at the walk/read/stat and reports vanished entries as
-  // WARNs, and (F2) skips the reserved scratch names of OTHER suites (shared predicate, precedent
-  // Equoria-27lqy) while keeping its OWN `_ws4graphplant_` plants visible (F3), so no arm here
-  // goes vacuous.
+  // WARNs, and (F2) skips the reserved scratch names of OTHER suites while keeping its OWN
+  // `_ws4graphplant_` plants visible (F3), so no arm here goes vacuous. The two arms below use the
+  // OWN token and therefore live here, serial with every other own-token plant; the foreign-name
+  // arms (F2, tracked names, plant directories, wiring) live in
+  // moduleDependencyGraphForeignPlants.sentinel.test.mjs, written to be robust to this suite's
+  // plants being live in the other lane. Counts are asserted as "at least mine" because a sibling
+  // suite's transient may be on disk at the same instant.
   it('rfv9j F1: a listed entry that vanishes before the read (dangling symlink) is a WARN and the gate stays OK — not a crash', () => {
     const link = path.join(MODULES, 'economy', `${PLANT_TOKEN}vanish_${RUN_ID}.mjs`);
     try {
       fs.symlinkSync(`./${PLANT_TOKEN}vanished_target_${RUN_ID}.mjs`, link, 'file');
     } catch (err) {
       if (err && (err.code === 'EPERM' || err.code === 'EACCES')) {
-        // No symlink privilege on this machine (Windows without Developer Mode): the wiring arm
-        // below still pins the tolerant read; say so loudly instead of failing on privilege.
+        // No symlink privilege on this machine (Windows without Developer Mode): the wiring arm in
+        // the foreign-plants suite still pins the tolerant read; say so instead of failing on privilege.
         console.warn(`[sentinel] rfv9j F1: cannot create a symlink here (${err.code}); the wiring arm covers F1`);
         return;
       }
@@ -731,19 +735,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     expect(res.out).not.toMatch(/Error: ENOENT/);
     expect(res.status).toBe(0);
     expect(res.out).toMatch(new RegExp(`WARN vanished entry ${esc(relPosix(link))}`));
-    expect(res.out).toMatch(/ vanished=1 /);
-  });
-
-  it('rfv9j F2: a FOREIGN sentinel plant (reserved `_v8l96_sentinel` name) carrying a cross-module deep import is skipped with a WARN — the gate stays OK', () => {
-    const plant = plantFile(
-      `competition/_v8l96_sentinel_ws4race_${RUN_ID}.mjs`,
-      "import { x } from '../horses/services/horseService.mjs';\nexport const y = x;\n",
-    );
-    const res = runCheck();
-    expect(res.out).not.toMatch(/cross-module deep import/);
-    expect(res.status).toBe(0);
-    expect(res.out).toMatch(new RegExp(`WARN skipped foreign sentinel plant ${esc(relPosix(plant))}`));
-    expect(res.out).toMatch(/ foreign-skipped=1 /);
+    expect(res.out).toMatch(/ vanished=[1-9]\d* /);
   });
 
   it("rfv9j F3: the reserved-name skip is for FOREIGN plants only — this suite's own plants stay visible to its gate (no arm goes vacuous) while other scanners skip them", () => {
@@ -761,17 +753,5 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:1 cross-module deep import`));
-    expect(res.out).not.toMatch(/foreign-skipped=[1-9]/);
-  });
-
-  it('rfv9j wiring: the gate routes its directory walk and every walked-file read through the shared ENOENT-tolerant helpers and the reserved-name skip', () => {
-    const src = fs.readFileSync(CHECK, 'utf8');
-    expect(src).toContain("from '../lib/doctrine-scan-patterns.mjs'");
-    expect(src).toContain('readdirSyncTolerant(');
-    expect(src).toContain('readScannedFileSyncTolerant(');
-    expect(src).toContain('isReservedScratchPlantPathSegment(');
-    // Only the allow-list JSON (a tracked config file, never a plant) is read directly.
-    expect(src.match(/fs\.readFileSync\(/g) ?? []).toEqual(['fs.readFileSync(']);
-    expect(src).toMatch(/fs\.readFileSync\(ALLOWLIST_PATH/);
   });
 });
