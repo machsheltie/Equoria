@@ -8,13 +8,13 @@ import { describe, it, expect } from '@jest/globals';
 import {
   calculateCurrentWeather,
   getSeasonalFactors,
-  calculateEnvironmentalTriggers,
-  calculateEnvironmentalImpact,
   generateWeatherForecast,
   calculateComfortZone,
-  assessEnvironmentalStress,
   getEnvironmentalHistory,
+  buildEnvironmentalSnapshot,
+  assessHorseEnvironment,
 } from '../services/environmentalFactorEngineService.mjs';
+const assess = (d, l, h, w) => assessHorseEnvironment(buildEnvironmentalSnapshot(d, l, { weather: w }), h);
 
 // Shared helpers
 const makeLocation = (overrides = {}) => ({
@@ -223,7 +223,7 @@ describe('calculateComfortZone', () => {
 // ---------------------------------------------------------------------------
 describe('calculateEnvironmentalTriggers', () => {
   it('returns expected shape', () => {
-    const r = calculateEnvironmentalTriggers(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).triggers;
     expect(typeof r.activeTriggersCount).toBe('number');
     expect(Array.isArray(r.triggerTypes)).toBe(true);
     expect(typeof r.intensity).toBe('number');
@@ -232,32 +232,32 @@ describe('calculateEnvironmentalTriggers', () => {
   });
 
   it('traitExpressionProbability is between 0 and 1', () => {
-    const r = calculateEnvironmentalTriggers(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).triggers;
     expect(r.traitExpressionProbability).toBeGreaterThanOrEqual(0);
     expect(r.traitExpressionProbability).toBeLessThanOrEqual(1);
   });
 
   it('hot weather triggers heat_stress', () => {
     const hotWeather = { ...neutralWeather, temperature: 40, conditions: 'sunny' };
-    const r = calculateEnvironmentalTriggers(makeSummerDate(), makeLocation(), baseHorse, hotWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, hotWeather).triggers;
     expect(r.triggerTypes).toContain('heat_stress');
   });
 
   it('cold weather triggers cold_stress', () => {
     const coldWeather = { ...neutralWeather, temperature: -10, conditions: 'sunny' };
-    const r = calculateEnvironmentalTriggers(makeWinterDate(), makeLocation(), baseHorse, coldWeather);
+    const r = assess(makeWinterDate(), makeLocation(), baseHorse, coldWeather).triggers;
     expect(r.triggerTypes).toContain('cold_stress');
   });
 
   it('stormy conditions add storm_stress trigger', () => {
     const stormyWeather = { ...neutralWeather, conditions: 'stormy', precipitation: 0.9, windSpeed: 35 };
-    const r = calculateEnvironmentalTriggers(makeSummerDate(), makeLocation(), baseHorse, stormyWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, stormyWeather).triggers;
     expect(r.triggerTypes).toContain('storm_stress');
   });
 
   it('high humidity triggers high_humidity', () => {
     const humidWeather = { ...neutralWeather, humidity: 90 };
-    const r = calculateEnvironmentalTriggers(makeSummerDate(), makeLocation(), baseHorse, humidWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, humidWeather).triggers;
     expect(r.triggerTypes).toContain('high_humidity');
   });
 
@@ -265,13 +265,13 @@ describe('calculateEnvironmentalTriggers', () => {
     const stormyWeather = { ...neutralWeather, conditions: 'stormy', precipitation: 0.9, windSpeed: 35 };
     const calmHorse = { traits: ['calm'] };
     const nervousHorse = { traits: ['nervous'] };
-    const calmResult = calculateEnvironmentalTriggers(makeSummerDate(), makeLocation(), calmHorse, stormyWeather);
-    const nervousResult = calculateEnvironmentalTriggers(makeSummerDate(), makeLocation(), nervousHorse, stormyWeather);
+    const calmResult = assess(makeSummerDate(), makeLocation(), calmHorse, stormyWeather).triggers;
+    const nervousResult = assess(makeSummerDate(), makeLocation(), nervousHorse, stormyWeather).triggers;
     expect(calmResult.intensity).toBeLessThan(nervousResult.intensity);
   });
 
   it('activeTriggersCount matches triggerTypes length', () => {
-    const r = calculateEnvironmentalTriggers(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).triggers;
     expect(r.activeTriggersCount).toBe(r.triggerTypes.length);
   });
 });
@@ -281,7 +281,7 @@ describe('calculateEnvironmentalTriggers', () => {
 // ---------------------------------------------------------------------------
 describe('calculateEnvironmentalImpact', () => {
   it('returns expected shape', () => {
-    const r = calculateEnvironmentalImpact(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).impact;
     expect(typeof r.overallImpact).toBe('number');
     expect(typeof r.healthEffect).toBe('number');
     expect(typeof r.developmentEffect).toBe('number');
@@ -292,19 +292,19 @@ describe('calculateEnvironmentalImpact', () => {
   });
 
   it('overallImpact is clamped to -100..100', () => {
-    const r = calculateEnvironmentalImpact(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).impact;
     expect(r.overallImpact).toBeGreaterThanOrEqual(-100);
     expect(r.overallImpact).toBeLessThanOrEqual(100);
   });
 
   it('healthEffect is clamped to -20..20', () => {
-    const r = calculateEnvironmentalImpact(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).impact;
     expect(r.healthEffect).toBeGreaterThanOrEqual(-20);
     expect(r.healthEffect).toBeLessThanOrEqual(20);
   });
 
   it('statModifiers includes speed, stamina, agility, intelligence', () => {
-    const r = calculateEnvironmentalImpact(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).impact;
     expect(typeof r.statModifiers.speed).toBe('number');
     expect(typeof r.statModifiers.stamina).toBe('number');
     expect(typeof r.statModifiers.agility).toBe('number');
@@ -314,8 +314,8 @@ describe('calculateEnvironmentalImpact', () => {
   it('stormy weather produces lower overallImpact than sunny', () => {
     const sunnyWeather = { ...neutralWeather, conditions: 'sunny' };
     const stormyWeather = { ...neutralWeather, conditions: 'stormy' };
-    const sunny = calculateEnvironmentalImpact(makeSummerDate(), makeLocation(), baseHorse, sunnyWeather);
-    const stormy = calculateEnvironmentalImpact(makeSummerDate(), makeLocation(), baseHorse, stormyWeather);
+    const sunny = assess(makeSummerDate(), makeLocation(), baseHorse, sunnyWeather).impact;
+    const stormy = assess(makeSummerDate(), makeLocation(), baseHorse, stormyWeather).impact;
     expect(stormy.overallImpact).toBeLessThan(sunny.overallImpact);
   });
 });
@@ -369,7 +369,7 @@ describe('generateWeatherForecast', () => {
 // ---------------------------------------------------------------------------
 describe('assessEnvironmentalStress', () => {
   it('returns expected shape', () => {
-    const r = assessEnvironmentalStress(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).stress;
     expect(typeof r.stressLevel).toBe('number');
     expect(Array.isArray(r.stressFactors)).toBe(true);
     expect(typeof r.severity).toBe('string');
@@ -379,27 +379,27 @@ describe('assessEnvironmentalStress', () => {
   });
 
   it('stressLevel is between 0 and 100', () => {
-    const r = assessEnvironmentalStress(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).stress;
     expect(r.stressLevel).toBeGreaterThanOrEqual(0);
     expect(r.stressLevel).toBeLessThanOrEqual(100);
   });
 
   it('severity is one of low/moderate/high/critical', () => {
     const valid = new Set(['low', 'moderate', 'high', 'critical']);
-    const r = assessEnvironmentalStress(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).stress;
     expect(valid.has(r.severity)).toBe(true);
   });
 
   it('extreme heat weather raises stressLevel', () => {
     const extreme = { ...neutralWeather, temperature: 50, windSpeed: 35, conditions: 'stormy' };
-    const normal = assessEnvironmentalStress(makeSummerDate(), makeLocation(), baseHorse, neutralWeather);
-    const stressed = assessEnvironmentalStress(makeSummerDate(), makeLocation(), baseHorse, extreme);
+    const normal = assess(makeSummerDate(), makeLocation(), baseHorse, neutralWeather).stress;
+    const stressed = assess(makeSummerDate(), makeLocation(), baseHorse, extreme).stress;
     expect(stressed.stressLevel).toBeGreaterThan(normal.stressLevel);
   });
 
   it('severe weather produces high/critical severity', () => {
     const extreme = { ...neutralWeather, temperature: 50, windSpeed: 35, conditions: 'stormy', humidity: 95 };
-    const r = assessEnvironmentalStress(makeSummerDate(), makeLocation(), baseHorse, extreme);
+    const r = assess(makeSummerDate(), makeLocation(), baseHorse, extreme).stress;
     expect(['high', 'critical']).toContain(r.severity);
   });
 });

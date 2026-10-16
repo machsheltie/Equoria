@@ -5,10 +5,10 @@ import {
   calculateComfortZone,
   generateWeatherForecast,
   getEnvironmentalHistory,
-  calculateEnvironmentalTriggers,
-  calculateEnvironmentalImpact,
-  assessEnvironmentalStress,
+  buildEnvironmentalSnapshot,
+  assessHorseEnvironment,
 } from '../services/environmentalFactorEngineService.mjs';
+const assess = (d, l, h, w) => assessHorseEnvironment(buildEnvironmentalSnapshot(d, l, { weather: w }), h);
 
 // Day-of-year reference (getSeason boundaries):
 // spring: day 80-171  (Mar 21 – Jun 20)  → use Apr 15 = day ~105
@@ -335,7 +335,7 @@ describe('calculateEnvironmentalTriggers', () => {
   const baseHorse = { traits: [] };
 
   it('returns expected shape: activeTriggersCount, triggerTypes, intensity, traitExpressionProbability', () => {
-    const result = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse).triggers;
     expect(typeof result.activeTriggersCount).toBe('number');
     expect(Array.isArray(result.triggerTypes)).toBe(true);
     expect(typeof result.intensity).toBe('number');
@@ -349,32 +349,32 @@ describe('calculateEnvironmentalTriggers', () => {
   it('heat_stress trigger fires when weather temperature exceeds comfort max', () => {
     // Force hot weather via weather override
     const hotWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const result = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).triggers;
     expect(result.triggerTypes).toContain('heat_stress');
     expect(result.intensity).toBeGreaterThan(0);
   });
 
   it('cold_stress trigger fires when temperature is below comfort min', () => {
     const coldWeather = { temperature: -20, humidity: 70, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const result = calculateEnvironmentalTriggers(WINTER_DATE, LOCATION, baseHorse, coldWeather);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse, coldWeather).triggers;
     expect(result.triggerTypes).toContain('cold_stress');
   });
 
   it('high_humidity trigger fires when humidity exceeds comfort max', () => {
     const humidWeather = { temperature: 20, humidity: 99, precipitation: 0.3, windSpeed: 5, conditions: 'cloudy' };
-    const result = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse, humidWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, humidWeather).triggers;
     expect(result.triggerTypes).toContain('high_humidity');
   });
 
   it('strong_wind trigger fires when windSpeed > 20', () => {
     const windyWeather = { temperature: 20, humidity: 50, precipitation: 0, windSpeed: 40, conditions: 'cloudy' };
-    const result = calculateEnvironmentalTriggers(SPRING_DATE, LOCATION, baseHorse, windyWeather);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse, windyWeather).triggers;
     expect(result.triggerTypes).toContain('strong_wind');
   });
 
   it('storm_stress trigger fires for stormy conditions', () => {
     const stormyWeather = { temperature: 15, humidity: 60, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const result = calculateEnvironmentalTriggers(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather);
+    const result = assess(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather).triggers;
     expect(result.triggerTypes).toContain('storm_stress');
     // storm recommendations should appear (intensity > 0)
     expect(
@@ -384,28 +384,28 @@ describe('calculateEnvironmentalTriggers', () => {
 
   it('wet_conditions trigger fires for rainy conditions', () => {
     const rainyWeather = { temperature: 15, humidity: 65, precipitation: 0.5, windSpeed: 10, conditions: 'rainy' };
-    const result = calculateEnvironmentalTriggers(AUTUMN_DATE, LOCATION, baseHorse, rainyWeather);
+    const result = assess(AUTUMN_DATE, LOCATION, baseHorse, rainyWeather).triggers;
     expect(result.triggerTypes).toContain('wet_conditions');
   });
 
   it('seasonal_stress trigger fires during summer (stressLevel=35 > 30)', () => {
     // Summer stressLevel=35 which is > 30
     const neutralWeather = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 8, conditions: 'sunny' };
-    const result = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse, neutralWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, neutralWeather).triggers;
     expect(result.triggerTypes).toContain('seasonal_stress');
   });
 
   it('no seasonal_stress trigger during spring (stressLevel=15 <= 30)', () => {
     const neutralWeather = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 8, conditions: 'sunny' };
-    const result = calculateEnvironmentalTriggers(SPRING_DATE, LOCATION, baseHorse, neutralWeather);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse, neutralWeather).triggers;
     expect(result.triggerTypes).not.toContain('seasonal_stress');
   });
 
   it('calm trait reduces intensity when storm_stress triggers', () => {
     const calmHorse = { traits: ['calm'] };
     const stormyWeather = { temperature: 15, humidity: 60, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const base = calculateEnvironmentalTriggers(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather);
-    const calm = calculateEnvironmentalTriggers(AUTUMN_DATE, LOCATION, calmHorse, stormyWeather);
+    const base = assess(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather).triggers;
+    const calm = assess(AUTUMN_DATE, LOCATION, calmHorse, stormyWeather).triggers;
     // calm horse (modifier 0.7) should have lower intensity
     expect(calm.intensity).toBeLessThan(base.intensity);
   });
@@ -413,44 +413,44 @@ describe('calculateEnvironmentalTriggers', () => {
   it('nervous trait increases intensity when triggers are present', () => {
     const nervousHorse = { traits: ['nervous'] };
     const hotWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const base = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
-    const nervous = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, nervousHorse, hotWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).triggers;
+    const nervous = assess(SUMMER_DATE, LOCATION, nervousHorse, hotWeather).triggers;
     expect(nervous.intensity).toBeGreaterThan(base.intensity);
   });
 
   it('heat_tolerant trait reduces intensity when heat_stress fires', () => {
     const heatTolerantHorse = { traits: ['heat_tolerant'] };
     const hotWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const base = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
-    const tolerant = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, heatTolerantHorse, hotWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).triggers;
+    const tolerant = assess(SUMMER_DATE, LOCATION, heatTolerantHorse, hotWeather).triggers;
     expect(tolerant.intensity).toBeLessThan(base.intensity);
   });
 
   it('cold_tolerant trait reduces intensity when cold_stress fires', () => {
     const coldTolerantHorse = { traits: ['cold_tolerant'] };
     const coldWeather = { temperature: -20, humidity: 70, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const base = calculateEnvironmentalTriggers(WINTER_DATE, LOCATION, baseHorse, coldWeather);
-    const tolerant = calculateEnvironmentalTriggers(WINTER_DATE, LOCATION, coldTolerantHorse, coldWeather);
+    const base = assess(WINTER_DATE, LOCATION, baseHorse, coldWeather).triggers;
+    const tolerant = assess(WINTER_DATE, LOCATION, coldTolerantHorse, coldWeather).triggers;
     expect(tolerant.intensity).toBeLessThan(base.intensity);
   });
 
   it('hardy trait reduces intensity', () => {
     const hardyHorse = { traits: ['hardy'] };
     const stormyWeather = { temperature: 15, humidity: 60, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const base = calculateEnvironmentalTriggers(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather);
-    const hardy = calculateEnvironmentalTriggers(AUTUMN_DATE, LOCATION, hardyHorse, stormyWeather);
+    const base = assess(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather).triggers;
+    const hardy = assess(AUTUMN_DATE, LOCATION, hardyHorse, stormyWeather).triggers;
     expect(hardy.intensity).toBeLessThan(base.intensity);
   });
 
   it('uses weather override instead of computing weather when provided', () => {
     const overrideWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const result = calculateEnvironmentalTriggers(WINTER_DATE, LOCATION, baseHorse, overrideWeather);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse, overrideWeather).triggers;
     expect(result.weather.temperature).toBe(50); // override used, not computed
   });
 
   it('recommendation generated for heat_stress (priority depends on intensity)', () => {
     const hotWeather = { temperature: 60, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const result = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).triggers;
     const heatRec = result.recommendations.find(r => r.action.toLowerCase().includes('water'));
     expect(heatRec).toBeDefined();
     // priority is 'high' when intensity > 50, else 'medium'
@@ -468,7 +468,7 @@ describe('calculateEnvironmentalTriggers', () => {
       windSpeed: 35,
       conditions: 'stormy',
     };
-    const result = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, nervousHorse, hotHumidStormyWeather);
+    const result = assess(SUMMER_DATE, LOCATION, nervousHorse, hotHumidStormyWeather).triggers;
     // nervous + stormy + heat + humidity + wind → intensity well above 50
     const heatRec = result.recommendations.find(r => r.action.toLowerCase().includes('water'));
     if (heatRec && result.intensity > 50) {
@@ -481,7 +481,7 @@ describe('calculateEnvironmentalTriggers', () => {
 
   it('recommendation generated for cold_stress', () => {
     const coldWeather = { temperature: -20, humidity: 70, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const result = calculateEnvironmentalTriggers(WINTER_DATE, LOCATION, baseHorse, coldWeather);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse, coldWeather).triggers;
     const coldRec = result.recommendations.find(
       r => r.action.toLowerCase().includes('shelter') || r.action.toLowerCase().includes('blanket'),
     );
@@ -490,14 +490,14 @@ describe('calculateEnvironmentalTriggers', () => {
 
   it('recommendation generated for high_humidity', () => {
     const humidWeather = { temperature: 20, humidity: 99, precipitation: 0.3, windSpeed: 5, conditions: 'cloudy' };
-    const result = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse, humidWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, humidWeather).triggers;
     const humidRec = result.recommendations.find(r => r.action.toLowerCase().includes('ventilat'));
     expect(humidRec).toBeDefined();
   });
 
   it('high-intensity monitoring recommendation generated when intensity > 60', () => {
     const extremeWeather = { temperature: 70, humidity: 99, precipitation: 0.9, windSpeed: 50, conditions: 'stormy' };
-    const result = calculateEnvironmentalTriggers(SUMMER_DATE, LOCATION, baseHorse, extremeWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, extremeWeather).triggers;
     const monitorRec = result.recommendations.find(r => r.action.toLowerCase().includes('monitor'));
     expect(monitorRec).toBeDefined();
   });
@@ -509,7 +509,7 @@ describe('calculateEnvironmentalImpact', () => {
   const baseHorse = { traits: [] };
 
   it('returns expected shape: overallImpact, statModifiers, healthEffect, developmentEffect, performanceEffect', () => {
-    const result = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse).impact;
     expect(typeof result.overallImpact).toBe('number');
     expect(result.overallImpact).toBeGreaterThanOrEqual(-100);
     expect(result.overallImpact).toBeLessThanOrEqual(100);
@@ -526,25 +526,25 @@ describe('calculateEnvironmentalImpact', () => {
   });
 
   it('healthEffect is clamped to [-20, 20]', () => {
-    const result = calculateEnvironmentalImpact(WINTER_DATE, LOCATION, baseHorse);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse).impact;
     expect(result.healthEffect).toBeGreaterThanOrEqual(-20);
     expect(result.healthEffect).toBeLessThanOrEqual(20);
   });
 
   it('developmentEffect is clamped to [-50, 50]', () => {
-    const result = calculateEnvironmentalImpact(SUMMER_DATE, LOCATION, baseHorse);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse).impact;
     expect(result.developmentEffect).toBeGreaterThanOrEqual(-50);
     expect(result.developmentEffect).toBeLessThanOrEqual(50);
   });
 
   it('performanceEffect is clamped to [-30, 30]', () => {
-    const result = calculateEnvironmentalImpact(AUTUMN_DATE, LOCATION, baseHorse);
+    const result = assess(AUTUMN_DATE, LOCATION, baseHorse).impact;
     expect(result.performanceEffect).toBeGreaterThanOrEqual(-30);
     expect(result.performanceEffect).toBeLessThanOrEqual(30);
   });
 
   it('returns weather and seasonalFactors in result', () => {
-    const result = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse).impact;
     expect(result.weather).toBeDefined();
     expect(result.seasonalFactors).toBeDefined();
   });
@@ -552,15 +552,15 @@ describe('calculateEnvironmentalImpact', () => {
   it('stormy weather override produces negative overallImpact', () => {
     // conditionImpact['stormy'] = -30
     const stormyWeather = { temperature: 18, humidity: 50, precipitation: 0.8, windSpeed: 30, conditions: 'stormy' };
-    const result = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, stormyWeather);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse, stormyWeather).impact;
     expect(result.overallImpact).toBeLessThan(0);
   });
 
   it('rainy conditions apply -15 impact modifier', () => {
     const rainyWeather = { temperature: 18, humidity: 60, precipitation: 0.5, windSpeed: 10, conditions: 'rainy' };
     const sunnyWeather = { temperature: 18, humidity: 60, precipitation: 0, windSpeed: 10, conditions: 'sunny' };
-    const rainy = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, rainyWeather);
-    const sunny = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, sunnyWeather);
+    const rainy = assess(SPRING_DATE, LOCATION, baseHorse, rainyWeather).impact;
+    const sunny = assess(SPRING_DATE, LOCATION, baseHorse, sunnyWeather).impact;
     // rainy = -15 condition penalty vs sunny = +10 condition bonus → rainy should be lower
     expect(rainy.overallImpact).toBeLessThan(sunny.overallImpact);
   });
@@ -568,22 +568,22 @@ describe('calculateEnvironmentalImpact', () => {
   it('foggy conditions apply -10 impact modifier', () => {
     const foggyWeather = { temperature: 18, humidity: 60, precipitation: 0, windSpeed: 5, conditions: 'foggy' };
     const sunnyWeather = { temperature: 18, humidity: 60, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const foggy = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, foggyWeather);
-    const sunny = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, sunnyWeather);
+    const foggy = assess(SPRING_DATE, LOCATION, baseHorse, foggyWeather).impact;
+    const sunny = assess(SPRING_DATE, LOCATION, baseHorse, sunnyWeather).impact;
     expect(foggy.overallImpact).toBeLessThan(sunny.overallImpact);
   });
 
   it('cloudy conditions apply 0 impact modifier', () => {
     const cloudyWeather = { temperature: 18, humidity: 60, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const result = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, cloudyWeather);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse, cloudyWeather).impact;
     expect(typeof result.overallImpact).toBe('number');
   });
 
   it('adaptable trait reduces negative environmental impact', () => {
     const adaptableHorse = { traits: ['adaptable'] };
     const stormyWeather = { temperature: 18, humidity: 50, precipitation: 0.8, windSpeed: 30, conditions: 'stormy' };
-    const base = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, stormyWeather);
-    const adaptable = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, adaptableHorse, stormyWeather);
+    const base = assess(SPRING_DATE, LOCATION, baseHorse, stormyWeather).impact;
+    const adaptable = assess(SPRING_DATE, LOCATION, adaptableHorse, stormyWeather).impact;
     // adaptable modifier 0.9 applied to negative base → less negative
     expect(adaptable.overallImpact).toBeGreaterThan(base.overallImpact);
   });
@@ -591,8 +591,8 @@ describe('calculateEnvironmentalImpact', () => {
   it('sensitive trait amplifies negative environmental impact', () => {
     const sensitiveHorse = { traits: ['sensitive'] };
     const stormyWeather = { temperature: 18, humidity: 50, precipitation: 0.8, windSpeed: 30, conditions: 'stormy' };
-    const base = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, stormyWeather);
-    const sensitive = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, sensitiveHorse, stormyWeather);
+    const base = assess(SPRING_DATE, LOCATION, baseHorse, stormyWeather).impact;
+    const sensitive = assess(SPRING_DATE, LOCATION, sensitiveHorse, stormyWeather).impact;
     // sensitive modifier 1.2 applied to negative base → more negative
     expect(sensitive.overallImpact).toBeLessThan(base.overallImpact);
   });
@@ -600,8 +600,8 @@ describe('calculateEnvironmentalImpact', () => {
   it('heat_tolerant trait reduces impact in hot weather (temp > 30)', () => {
     const heatTolerantHorse = { traits: ['heat_tolerant'] };
     const hotWeather = { temperature: 40, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const base = calculateEnvironmentalImpact(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
-    const tolerant = calculateEnvironmentalImpact(SUMMER_DATE, LOCATION, heatTolerantHorse, hotWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).impact;
+    const tolerant = assess(SUMMER_DATE, LOCATION, heatTolerantHorse, hotWeather).impact;
     // heat_tolerant modifier 0.7 for temp > 30 → less negative
     expect(tolerant.overallImpact).toBeGreaterThan(base.overallImpact);
   });
@@ -609,8 +609,8 @@ describe('calculateEnvironmentalImpact', () => {
   it('cold_tolerant trait reduces impact in cold weather (temp < 10)', () => {
     const coldTolerantHorse = { traits: ['cold_tolerant'] };
     const coldWeather = { temperature: 0, humidity: 70, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const base = calculateEnvironmentalImpact(WINTER_DATE, LOCATION, baseHorse, coldWeather);
-    const tolerant = calculateEnvironmentalImpact(WINTER_DATE, LOCATION, coldTolerantHorse, coldWeather);
+    const base = assess(WINTER_DATE, LOCATION, baseHorse, coldWeather).impact;
+    const tolerant = assess(WINTER_DATE, LOCATION, coldTolerantHorse, coldWeather).impact;
     expect(tolerant.overallImpact).toBeGreaterThan(base.overallImpact);
   });
 
@@ -618,14 +618,14 @@ describe('calculateEnvironmentalImpact', () => {
     // Winter stressLevel=30, so stressLevel > 30 is false, but season='winter' check is at != summer
     // Actually the service checks: season === 'winter' && stressLevel > 30 — winter is exactly 30
     // So we must also check the summer heat_stress path. Let's verify both paths work.
-    const result = calculateEnvironmentalImpact(WINTER_DATE, LOCATION, baseHorse);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse).impact;
     expect(Array.isArray(result.recommendations)).toBe(true);
   });
 
   it('positive impact generates take-advantage recommendation (overallImpact > 30)', () => {
     // Spring + optimal weather → positive impact
     const optimalWeather = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 8, conditions: 'sunny' };
-    const result = calculateEnvironmentalImpact(SPRING_DATE, LOCATION, baseHorse, optimalWeather);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse, optimalWeather).impact;
     if (result.overallImpact > 30) {
       const trainingRec = result.recommendations.find(r => r.action.toLowerCase().includes('training'));
       expect(trainingRec).toBeDefined();
@@ -637,7 +637,7 @@ describe('calculateEnvironmentalImpact', () => {
 
   it('uses weather override when provided', () => {
     const override = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 8, conditions: 'sunny' };
-    const result = calculateEnvironmentalImpact(WINTER_DATE, LOCATION, baseHorse, override);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse, override).impact;
     expect(result.weather.temperature).toBe(18);
   });
 });
@@ -648,7 +648,7 @@ describe('assessEnvironmentalStress', () => {
   const baseHorse = { traits: [], age: 5, health: 80 };
 
   it('returns expected shape: stressLevel, stressFactors, severity, mitigationRecommendations, timeToRecovery', () => {
-    const result = assessEnvironmentalStress(SPRING_DATE, LOCATION, baseHorse);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse).stress;
     expect(typeof result.stressLevel).toBe('number');
     expect(result.stressLevel).toBeGreaterThanOrEqual(0);
     expect(result.stressLevel).toBeLessThanOrEqual(100);
@@ -663,14 +663,14 @@ describe('assessEnvironmentalStress', () => {
 
   it('severity=low under mild spring conditions', () => {
     const mildWeather = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 8, conditions: 'sunny' };
-    const result = assessEnvironmentalStress(SPRING_DATE, LOCATION, baseHorse, mildWeather);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse, mildWeather).stress;
     expect(result.severity).toBe('low');
     expect(result.stressLevel).toBeLessThan(30);
   });
 
   it('severity=moderate when stress >= 30 and < 60', () => {
     // Need moderate: add some triggers. Winter stress but not extreme.
-    const result = assessEnvironmentalStress(WINTER_DATE, LOCATION, baseHorse);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse).stress;
     // Winter stressLevel may hit moderate depending on conditions
     expect(['low', 'moderate', 'high', 'critical']).toContain(result.severity);
   });
@@ -678,80 +678,80 @@ describe('assessEnvironmentalStress', () => {
   it('Extreme heat adds stressLevel 30 and "Extreme heat exposure" factor', () => {
     // stressThresholds.temperature.high = tempMax + 5 = 35 for base horse → temp > 35
     const hotWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const result = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).stress;
     expect(result.stressFactors).toContain('Extreme heat exposure');
   });
 
   it('Extreme cold adds stressLevel 25 and "Extreme cold exposure" factor', () => {
     // stressThresholds.temperature.low = tempMin - 5 = 0 → temp < 0
     const coldWeather = { temperature: -10, humidity: 70, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const result = assessEnvironmentalStress(WINTER_DATE, LOCATION, baseHorse, coldWeather);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse, coldWeather).stress;
     expect(result.stressFactors).toContain('Extreme cold exposure');
   });
 
   it('High humidity stress adds factor when humidity > stressThreshold (70+15=85)', () => {
     const humidWeather = { temperature: 20, humidity: 90, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const result = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, humidWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, humidWeather).stress;
     expect(result.stressFactors).toContain('High humidity stress');
   });
 
   it('Strong wind stress adds factor when windSpeed > 25', () => {
     const windyWeather = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 30, conditions: 'cloudy' };
-    const result = assessEnvironmentalStress(SPRING_DATE, LOCATION, baseHorse, windyWeather);
+    const result = assess(SPRING_DATE, LOCATION, baseHorse, windyWeather).stress;
     expect(result.stressFactors).toContain('Strong wind stress');
   });
 
   it('Stormy conditions add "Storm-related stress" factor', () => {
     const stormyWeather = { temperature: 15, humidity: 60, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const result = assessEnvironmentalStress(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather);
+    const result = assess(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather).stress;
     expect(result.stressFactors).toContain('Storm-related stress');
   });
 
   it('calm trait reduces final stress level (modifier 0.8)', () => {
     const calmHorse = { traits: ['calm'], age: 5, health: 80 };
     const stormyWeather = { temperature: 50, humidity: 90, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const base = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, stormyWeather);
-    const calm = assessEnvironmentalStress(SUMMER_DATE, LOCATION, calmHorse, stormyWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, stormyWeather).stress;
+    const calm = assess(SUMMER_DATE, LOCATION, calmHorse, stormyWeather).stress;
     expect(calm.stressLevel).toBeLessThan(base.stressLevel);
   });
 
   it('nervous trait increases stress level (modifier 1.3)', () => {
     const nervousHorse = { traits: ['nervous'], age: 5, health: 80 };
     const hotWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const base = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
-    const nervous = assessEnvironmentalStress(SUMMER_DATE, LOCATION, nervousHorse, hotWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).stress;
+    const nervous = assess(SUMMER_DATE, LOCATION, nervousHorse, hotWeather).stress;
     expect(nervous.stressLevel).toBeGreaterThanOrEqual(base.stressLevel);
   });
 
   it('hardy trait reduces stress level (modifier 0.7)', () => {
     const hardyHorse = { traits: ['hardy'], age: 5, health: 80 };
     const stormyWeather = { temperature: 50, humidity: 90, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const base = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, stormyWeather);
-    const hardy = assessEnvironmentalStress(SUMMER_DATE, LOCATION, hardyHorse, stormyWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, stormyWeather).stress;
+    const hardy = assess(SUMMER_DATE, LOCATION, hardyHorse, stormyWeather).stress;
     expect(hardy.stressLevel).toBeLessThan(base.stressLevel);
   });
 
   it('sensitive trait increases stress level (modifier 1.2)', () => {
     const sensitiveHorse = { traits: ['sensitive'], age: 5, health: 80 };
     const hotWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const base = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
-    const sensitive = assessEnvironmentalStress(SUMMER_DATE, LOCATION, sensitiveHorse, hotWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).stress;
+    const sensitive = assess(SUMMER_DATE, LOCATION, sensitiveHorse, hotWeather).stress;
     expect(sensitive.stressLevel).toBeGreaterThanOrEqual(base.stressLevel);
   });
 
   it('resilient trait reduces stress level (modifier 0.6)', () => {
     const resilientHorse = { traits: ['resilient'], age: 5, health: 80 };
     const stormyWeather = { temperature: 50, humidity: 90, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const base = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, stormyWeather);
-    const resilient = assessEnvironmentalStress(SUMMER_DATE, LOCATION, resilientHorse, stormyWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, stormyWeather).stress;
+    const resilient = assess(SUMMER_DATE, LOCATION, resilientHorse, stormyWeather).stress;
     expect(resilient.stressLevel).toBeLessThan(base.stressLevel);
   });
 
   it('timeToRecovery is shorter for hardy horse than base horse', () => {
     const hardyHorse = { traits: ['hardy'], age: 5, health: 80 };
     const stormyWeather = { temperature: 50, humidity: 90, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const base = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, stormyWeather);
-    const hardy = assessEnvironmentalStress(SUMMER_DATE, LOCATION, hardyHorse, stormyWeather);
+    const base = assess(SUMMER_DATE, LOCATION, baseHorse, stormyWeather).stress;
+    const hardy = assess(SUMMER_DATE, LOCATION, hardyHorse, stormyWeather).stress;
     // Hardy reduces recovery by 0.7 and stress by 0.7 → both lower
     expect(hardy.timeToRecovery).toBeLessThanOrEqual(base.timeToRecovery);
   });
@@ -760,8 +760,8 @@ describe('assessEnvironmentalStress', () => {
     const stormyWeather = { temperature: 50, humidity: 90, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
     const youngHorse = { traits: [], age: 3, health: 80 };
     const oldHorse = { traits: [], age: 20, health: 80 };
-    const young = assessEnvironmentalStress(SUMMER_DATE, LOCATION, youngHorse, stormyWeather);
-    const old = assessEnvironmentalStress(SUMMER_DATE, LOCATION, oldHorse, stormyWeather);
+    const young = assess(SUMMER_DATE, LOCATION, youngHorse, stormyWeather).stress;
+    const old = assess(SUMMER_DATE, LOCATION, oldHorse, stormyWeather).stress;
     // Age factor: >15 → 1.2, <5 → 0.8 → old should have longer recovery time
     expect(old.timeToRecovery).toBeGreaterThan(young.timeToRecovery);
   });
@@ -770,15 +770,15 @@ describe('assessEnvironmentalStress', () => {
     const stormyWeather = { temperature: 50, humidity: 90, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
     const healthyHorse = { traits: [], age: 8, health: 90 };
     const sickHorse = { traits: [], age: 8, health: 50 };
-    const healthy = assessEnvironmentalStress(SUMMER_DATE, LOCATION, healthyHorse, stormyWeather);
-    const sick = assessEnvironmentalStress(SUMMER_DATE, LOCATION, sickHorse, stormyWeather);
+    const healthy = assess(SUMMER_DATE, LOCATION, healthyHorse, stormyWeather).stress;
+    const sick = assess(SUMMER_DATE, LOCATION, sickHorse, stormyWeather).stress;
     // health >80 → factor 0.9, health <60 → factor 1.2
     expect(sick.timeToRecovery).toBeGreaterThan(healthy.timeToRecovery);
   });
 
   it('critical mitigation recommendation generated for Extreme heat exposure', () => {
     const hotWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const result = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, hotWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).stress;
     const heatRec = result.mitigationRecommendations.find(r => r.action.toLowerCase().includes('cool'));
     expect(heatRec).toBeDefined();
     expect(heatRec.priority).toBe('critical');
@@ -786,7 +786,7 @@ describe('assessEnvironmentalStress', () => {
 
   it('critical mitigation recommendation generated for Extreme cold exposure', () => {
     const coldWeather = { temperature: -10, humidity: 70, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const result = assessEnvironmentalStress(WINTER_DATE, LOCATION, baseHorse, coldWeather);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse, coldWeather).stress;
     const coldRec = result.mitigationRecommendations.find(r => r.action.toLowerCase().includes('shelter'));
     expect(coldRec).toBeDefined();
     expect(coldRec.priority).toBe('critical');
@@ -794,7 +794,7 @@ describe('assessEnvironmentalStress', () => {
 
   it('high priority mitigation recommendation generated for stressLevel > 60', () => {
     const extremeWeather = { temperature: 50, humidity: 95, precipitation: 0.9, windSpeed: 35, conditions: 'stormy' };
-    const result = assessEnvironmentalStress(SUMMER_DATE, LOCATION, baseHorse, extremeWeather);
+    const result = assess(SUMMER_DATE, LOCATION, baseHorse, extremeWeather).stress;
     if (result.stressLevel > 60) {
       const highPriorityRecs = result.mitigationRecommendations.filter(r => r.priority === 'high');
       expect(highPriorityRecs.length).toBeGreaterThan(0);
@@ -807,7 +807,7 @@ describe('assessEnvironmentalStress', () => {
   it('nervous horse with stressLevel > 40 gets calming supplement recommendation', () => {
     const nervousHorse = { traits: ['nervous'], age: 5, health: 80 };
     const hotWeather = { temperature: 50, humidity: 90, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const result = assessEnvironmentalStress(SUMMER_DATE, LOCATION, nervousHorse, hotWeather);
+    const result = assess(SUMMER_DATE, LOCATION, nervousHorse, hotWeather).stress;
     if (result.stressLevel > 40) {
       const calmingRec = result.mitigationRecommendations.find(r => r.action.toLowerCase().includes('calm'));
       expect(calmingRec).toBeDefined();
@@ -818,7 +818,7 @@ describe('assessEnvironmentalStress', () => {
 
   it('uses weather override when provided', () => {
     const override = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 8, conditions: 'sunny' };
-    const result = assessEnvironmentalStress(WINTER_DATE, LOCATION, baseHorse, override);
+    const result = assess(WINTER_DATE, LOCATION, baseHorse, override).stress;
     expect(result.weather.temperature).toBe(18);
   });
 });

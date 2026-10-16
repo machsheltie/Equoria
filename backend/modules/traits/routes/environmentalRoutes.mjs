@@ -14,14 +14,11 @@ import { fetchOwnedHorsesForEnvironmentalImpact } from '../services/environmenta
 
 // Import environmental services
 import {
-  calculateCurrentWeather,
-  getSeasonalFactors,
-  calculateEnvironmentalTriggers,
-  calculateEnvironmentalImpact,
+  assessHorseEnvironment,
+  buildEnvironmentalSnapshot,
+  calculateComfortZone,
   generateWeatherForecast,
   getEnvironmentalHistory,
-  calculateComfortZone,
-  assessEnvironmentalStress,
 } from '../services/environmentalFactorEngineService.mjs';
 
 const router = express.Router();
@@ -87,8 +84,10 @@ router.get(
         `[environmentalRoutes.current] Getting current conditions for ${location.latitude}, ${location.longitude}`,
       );
 
-      const currentWeather = calculateCurrentWeather(new Date(), location);
-      const seasonalFactors = getSeasonalFactors(new Date());
+      const { weather: currentWeather, seasonal: seasonalFactors } = buildEnvironmentalSnapshot(
+        new Date(),
+        location,
+      );
 
       res.json({
         success: true,
@@ -237,6 +236,9 @@ router.post(
         `[environmentalRoutes.calculate-impact] Calculating impact for ${horses.length} horses`,
       );
 
+      // One environment for the whole request: every horse and every section
+      // of its result sees the same weather and season (Equoria-q4uem.7 S3).
+      const snapshot = buildEnvironmentalSnapshot(new Date(), location);
       const results = [];
       for (const horse of horses) {
         const horseData = {
@@ -262,10 +264,10 @@ router.post(
           },
         };
 
-        const impact = calculateEnvironmentalImpact(new Date(), location, horseData);
-        const triggers = calculateEnvironmentalTriggers(new Date(), location, horseData);
-        const stress = assessEnvironmentalStress(new Date(), location, horseData);
-        const comfortZone = calculateComfortZone(horseData);
+        const { impact, triggers, stress, comfortZone } = assessHorseEnvironment(
+          snapshot,
+          horseData,
+        );
 
         results.push({
           horseId: horse.id,

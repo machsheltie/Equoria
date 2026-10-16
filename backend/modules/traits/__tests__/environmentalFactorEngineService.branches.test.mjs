@@ -16,9 +16,10 @@ import {
   calculateCurrentWeather,
   getEnvironmentalHistory,
   generateWeatherForecast,
-  calculateEnvironmentalImpact,
-  calculateEnvironmentalTriggers,
+  buildEnvironmentalSnapshot,
+  assessHorseEnvironment,
 } from '../services/environmentalFactorEngineService.mjs';
+const assess = (d, l, h, w) => assessHorseEnvironment(buildEnvironmentalSnapshot(d, l, { weather: w }), h);
 
 // ─── Location presets ────────────────────────────────────────────────────────
 
@@ -104,7 +105,7 @@ describe('calculateCurrentWeather — determineWeatherConditions dry-sunny branc
 
   it('calculateEnvironmentalImpact with desert summer uses correct conditions', () => {
     const baseHorse = { traits: [] };
-    const result = calculateEnvironmentalImpact(SUMMER_DATE, DESERT_LOCATION, baseHorse);
+    const result = assess(SUMMER_DATE, DESERT_LOCATION, baseHorse).impact;
     expect(typeof result.overallImpact).toBe('number');
     expect(result.overallImpact).toBeGreaterThanOrEqual(-100);
     expect(result.overallImpact).toBeLessThanOrEqual(100);
@@ -183,7 +184,7 @@ describe('generateImpactRecommendations — overallImpact < -50', () => {
       windSpeed: 8,
       conditions: 'cloudy',
     };
-    const result = calculateEnvironmentalImpact(SUMMER_DATE, TEMPERATE_LOCATION, baseHorse, extremeHeatWeather);
+    const result = assess(SUMMER_DATE, TEMPERATE_LOCATION, baseHorse, extremeHeatWeather).impact;
     // With temp=50, summer growthModifier=1.0 (no seasonal bonus), humidity diff=0, condition=0
     // overallImpact before trait = -64 + 0 + 0 + 0 = -64 → triggers < -50 branch
     expect(result.overallImpact).toBeLessThan(-50);
@@ -204,7 +205,7 @@ describe('generateImpactRecommendations — overallImpact < -50', () => {
     // tempDiff = |-15-18| = 33 → impact -= 66
     // conditionImpact stormy = -30
     // Total well below -50 → facility rec fires
-    const result = calculateEnvironmentalImpact(WINTER_DATE, TEMPERATE_LOCATION, baseHorse, stormyFreezeWeather);
+    const result = assess(WINTER_DATE, TEMPERATE_LOCATION, baseHorse, stormyFreezeWeather).impact;
     expect(result.overallImpact).toBeLessThan(-50);
     const facilityRec = result.recommendations.find(r => r.action.toLowerCase().includes('facility'));
     expect(facilityRec).toBeDefined();
@@ -232,7 +233,7 @@ describe('generateImpactRecommendations — overallImpact > 30', () => {
     };
     // Use spring transition date (Mar 21 = start of spring, day 80)
     const springTransitionDate = new Date('2025-03-21');
-    const result = calculateEnvironmentalImpact(springTransitionDate, TEMPERATE_LOCATION, baseHorse, optimalWeather);
+    const result = assess(springTransitionDate, TEMPERATE_LOCATION, baseHorse, optimalWeather).impact;
     // With transition: growth effect strong → overallImpact may exceed 30
     if (result.overallImpact > 30) {
       const trainingRec = result.recommendations.find(r => r.action.toLowerCase().includes('training'));
@@ -241,12 +242,7 @@ describe('generateImpactRecommendations — overallImpact > 30', () => {
     } else {
       // Not quite enough — try heat_tolerant horse with optimal weather in spring
       const heatTolerantHorse = { traits: ['heat_tolerant'] };
-      const result2 = calculateEnvironmentalImpact(
-        springTransitionDate,
-        TEMPERATE_LOCATION,
-        heatTolerantHorse,
-        optimalWeather,
-      );
+      const result2 = assess(springTransitionDate, TEMPERATE_LOCATION, heatTolerantHorse, optimalWeather).impact;
       expect(typeof result2.overallImpact).toBe('number');
       expect(Array.isArray(result2.recommendations)).toBe(true);
     }
@@ -268,7 +264,7 @@ describe('generateImpactRecommendations — overallImpact > 30', () => {
       conditions: 'sunny',
     };
     const springStartDate = new Date('2025-03-21'); // day 80 = exact spring start → in transition
-    const result = calculateEnvironmentalImpact(springStartDate, TEMPERATE_LOCATION, baseHorse, optimalWeather);
+    const result = assess(springStartDate, TEMPERATE_LOCATION, baseHorse, optimalWeather).impact;
     // Either fires (overallImpact > 30) or doesn't — both branches must be tested
     expect(typeof result.overallImpact).toBe('number');
     expect(Array.isArray(result.recommendations)).toBe(true);
@@ -296,7 +292,7 @@ describe('generateImpactRecommendations — winter + stressLevel > 30', () => {
       windSpeed: 10,
       conditions: 'cloudy',
     };
-    const result = calculateEnvironmentalImpact(WINTER_DATE, TEMPERATE_LOCATION, baseHorse, winterWeather);
+    const result = assess(WINTER_DATE, TEMPERATE_LOCATION, baseHorse, winterWeather).impact;
     expect(result.seasonalFactors.season).toBe('winter');
     expect(result.seasonalFactors.stressLevel).toBe(30);
     // With stressLevel === 30 (not > 30), the winter feed/shelter rec should NOT appear
@@ -316,7 +312,7 @@ describe('generateImpactRecommendations — winter + stressLevel > 30', () => {
       windSpeed: 5,
       conditions: 'sunny',
     };
-    const result = calculateEnvironmentalImpact(SUMMER_DATE, TEMPERATE_LOCATION, baseHorse, hotWeather);
+    const result = assess(SUMMER_DATE, TEMPERATE_LOCATION, baseHorse, hotWeather).impact;
     expect(result.seasonalFactors.season).toBe('summer');
     // If heat_stress trigger is present, the summer branch may fire
     expect(typeof result.overallImpact).toBe('number');
@@ -452,7 +448,7 @@ describe('generateWeatherForecast — assessForecastImpact branches', () => {
 describe('no-regression: existing exported functions still work', () => {
   it('calculateEnvironmentalTriggers with winter date tropical returns valid shape', () => {
     const baseHorse = { traits: [] };
-    const result = calculateEnvironmentalTriggers(WINTER_DATE, TROPICAL_LOCATION, baseHorse);
+    const result = assess(WINTER_DATE, TROPICAL_LOCATION, baseHorse).triggers;
     expect(typeof result.intensity).toBe('number');
     expect(Array.isArray(result.triggerTypes)).toBe(true);
     expect(typeof result.traitExpressionProbability).toBe('number');

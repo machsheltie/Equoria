@@ -13,13 +13,13 @@ import _logger from '../../utils/logger.mjs';
 import {
   calculateCurrentWeather,
   getSeasonalFactors,
-  calculateEnvironmentalTriggers,
-  calculateEnvironmentalImpact,
   generateWeatherForecast,
   getEnvironmentalHistory as _getEnvironmentalHistory,
   calculateComfortZone,
-  assessEnvironmentalStress,
+  buildEnvironmentalSnapshot,
+  assessHorseEnvironment,
 } from '../../modules/traits/services/environmentalFactorEngineService.mjs';
+const assess = (d, l, h, w) => assessHorseEnvironment(buildEnvironmentalSnapshot(d, l, { weather: w }), h);
 
 // Helper function to calculate seasonal temperature averages
 function calculateSeasonalAverage(startDate, days, location) {
@@ -189,7 +189,7 @@ describe('🌤️ Environmental Factor Engine', () => {
 
   describe('⚡ Environmental Triggers', () => {
     test('should calculate environmental triggers for trait expression', () => {
-      const triggers = calculateEnvironmentalTriggers(testDate, testLocation, testHorse);
+      const triggers = assess(testDate, testLocation, testHorse).triggers;
 
       expect(triggers).toHaveProperty('activeTriggersCount');
       expect(triggers).toHaveProperty('triggerTypes');
@@ -222,8 +222,8 @@ describe('🌤️ Environmental Factor Engine', () => {
       };
 
       // Mock weather calculation for testing
-      const stressTriggersExtreme = calculateEnvironmentalTriggers(testDate, testLocation, testHorse, extremeWeather);
-      const stressTriggersMild = calculateEnvironmentalTriggers(testDate, testLocation, testHorse, mildWeather);
+      const stressTriggersExtreme = assess(testDate, testLocation, testHorse, extremeWeather).triggers;
+      const stressTriggersMild = assess(testDate, testLocation, testHorse, mildWeather).triggers;
 
       expect(stressTriggersExtreme.intensity).toBeGreaterThan(stressTriggersMild.intensity);
       expect(stressTriggersExtreme.activeTriggersCount).toBeGreaterThan(stressTriggersMild.activeTriggersCount);
@@ -247,13 +247,8 @@ describe('🌤️ Environmental Factor Engine', () => {
         conditions: 'sunny',
       };
 
-      const sensitiveTriggersHot = calculateEnvironmentalTriggers(
-        testDate,
-        testLocation,
-        heatSensitiveHorse,
-        hotWeather,
-      );
-      const tolerantTriggersHot = calculateEnvironmentalTriggers(testDate, testLocation, heatTolerantHorse, hotWeather);
+      const sensitiveTriggersHot = assess(testDate, testLocation, heatSensitiveHorse, hotWeather).triggers;
+      const tolerantTriggersHot = assess(testDate, testLocation, heatTolerantHorse, hotWeather).triggers;
 
       expect(sensitiveTriggersHot.intensity).toBeGreaterThan(tolerantTriggersHot.intensity);
     });
@@ -261,7 +256,7 @@ describe('🌤️ Environmental Factor Engine', () => {
 
   describe('🎯 Environmental Impact Calculation', () => {
     test('should calculate environmental impact on horse development', () => {
-      const impact = calculateEnvironmentalImpact(testDate, testLocation, testHorse);
+      const impact = assess(testDate, testLocation, testHorse).impact;
 
       expect(impact).toHaveProperty('overallImpact');
       expect(impact).toHaveProperty('statModifiers');
@@ -306,8 +301,8 @@ describe('🌤️ Environmental Factor Engine', () => {
         conditions: 'stormy',
       };
 
-      const idealImpact = calculateEnvironmentalImpact(testDate, testLocation, testHorse, idealConditions);
-      const harshImpact = calculateEnvironmentalImpact(testDate, testLocation, testHorse, harshConditions);
+      const idealImpact = assess(testDate, testLocation, testHorse, idealConditions).impact;
+      const harshImpact = assess(testDate, testLocation, testHorse, harshConditions).impact;
 
       expect(idealImpact.overallImpact).toBeGreaterThan(harshImpact.overallImpact);
       expect(idealImpact.healthEffect).toBeGreaterThan(harshImpact.healthEffect);
@@ -405,7 +400,7 @@ describe('🌤️ Environmental Factor Engine', () => {
 
   describe('⚠️ Environmental Stress Assessment', () => {
     test('should assess environmental stress levels', () => {
-      const stressAssessment = assessEnvironmentalStress(testDate, testLocation, testHorse);
+      const stressAssessment = assess(testDate, testLocation, testHorse).stress;
 
       expect(stressAssessment).toHaveProperty('stressLevel');
       expect(stressAssessment).toHaveProperty('stressFactors');
@@ -429,7 +424,7 @@ describe('🌤️ Environmental Factor Engine', () => {
         conditions: 'stormy',
       };
 
-      const stressAssessment = assessEnvironmentalStress(testDate, testLocation, testHorse, highStressWeather);
+      const stressAssessment = assess(testDate, testLocation, testHorse, highStressWeather).stress;
 
       expect(stressAssessment.severity).not.toBe('low');
       expect(stressAssessment.mitigationRecommendations.length).toBeGreaterThan(0);
