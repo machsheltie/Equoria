@@ -41,6 +41,10 @@
  * two pushes). loginTimingOracle moves for the same reason; TimingAnchor
  * stays in the lanes — it asserts bcrypt.compare invocation, not time.
  *
+ * TREE LANE (Equoria-rfv9j): suites that plant files in, or scan, the shared
+ * working tree run only in lane 1, as one serial stream; lane 2 gets only the
+ * remaining hash shards. Set, rationale and balancing: tree-lane-plan.mjs.
+ *
  * GATE LOCK (Equoria-hqrqk, systemconstraints.md §3): before touching the
  * database this runner takes a machine-wide LOCAL lock file (scripts/gate-lock.mjs,
  * under the OS temp dir, shared by every worktree). A second gate started from
@@ -105,6 +109,7 @@ import {
   resolveExitStatus,
 } from './gate-lock.mjs';
 import { buildOwnershipSteps } from './gate-ownership-steps.mjs';
+import { chunk, planTreeLanes, suiteTailPattern } from './tree-lane-plan.mjs';
 import jestConfig from '../jest.config.mjs';
 
 const args = process.argv.slice(2);
@@ -173,15 +178,6 @@ const canonicalSet = new Set(
   CANONICAL_DB_SUITES.map(rel => normalizePath(path.join(BACKEND, rel))),
 );
 
-// A backend-relative suite path as a regex that matches the absolute path on
-// both separators (Jest matches ignore patterns against the OS-native path).
-function suiteTailPattern(rel) {
-  return `${rel
-    .split('/')
-    .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, match => `\\${match}`))
-    .join('[\\\\/]')}$`;
-}
-
 // The CLI flag REPLACES the config array rather than extending it (measured
 // 2026-09-14: load/perf suites leaked into lane shards), so the live config
 // patterns are re-supplied alongside the canonical exclusions. Jest's CLI
@@ -213,14 +209,6 @@ function listTestFiles() {
     .filter(f => f.endsWith('.test.mjs') || f.endsWith('.test.js'));
 }
 
-function chunk(arr, n) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += n) {
-    out.push(arr.slice(i, i + n));
-  }
-  return out;
-}
-
 // Discovery manifest: the set every batch's executed suites must reconcile to.
 //
 // ADMISSION BOUNDARY (audit 2026-09-16 P2): discovery shells out to
@@ -231,6 +219,7 @@ function chunk(arr, n) {
 let discovered = [];
 let discoveredSet = new Set();
 let batches = [];
+let laneBatches = [];
 
 function discoverAndPlan() {
   discovered = listTestFiles();
@@ -239,15 +228,26 @@ function discoverAndPlan() {
   }
   discoveredSet = new Set(discovered.map(normalizePath));
 
+  if (JEST_SHARDS && LANES > 1) {
+    const plan = planTreeLanes({
+      discovered,
+      backendDir: BACKEND,
+      isCanonical: f => canonicalSet.has(normalizePath(f)),
+      restShards: JEST_SHARDS,
+      restArgs: [...canonicalIgnoreArgs, ...(pattern ? [pattern] : [])],
+    });
+    laneBatches = plan.lanes;
+    batches = laneBatches.flat();
+    return console.log(
+      `[shard] ${discovered.length} suites: ${plan.treeFiles.length} tree-touching in lane 1 only, the rest in ` +
+        `${JEST_SHARDS} hash shards; lane 1 ${laneBatches[0].length} / lane 2 ${laneBatches[1].length} batches (heap ${HEAP_MB}MB, cap ${BATCH_TIMEOUT_MS / 1000}s each).`,
+    );
+  }
   batches = JEST_SHARDS
     ? Array.from({ length: JEST_SHARDS }, (_, index) => ({
         index,
         label: `shard ${index + 1}/${JEST_SHARDS}`,
-        jestArgs: [
-          `--shard=${index + 1}/${JEST_SHARDS}`,
-          ...canonicalIgnoreArgs,
-          ...(pattern ? [pattern] : []),
-        ],
+        jestArgs: [`--shard=${index + 1}/${JEST_SHARDS}`, ...(pattern ? [pattern] : [])],
       }))
     : chunk(discovered, BATCH_SIZE).map((batch, index) => ({
         index,
@@ -267,6 +267,9 @@ function discoverAndPlan() {
         `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
     );
   }
+  // Round-robin assignment keeps each lane a contiguous serial stream.
+  laneBatches = Array.from({ length: LANES }, () => []);
+  batches.forEach((batch, i) => laneBatches[i % LANES].push(batch));
 }
 
 const totals = {
@@ -505,11 +508,8 @@ async function main() {
       laneEnvs.push({ ...process.env });
     }
 
-    // Round-robin assignment keeps each lane a contiguous serial stream.
-    const perLane = Array.from({ length: LANES }, () => []);
-    batches.forEach((batch, i) => perLane[i % LANES].push(batch));
     await Promise.all(
-      perLane.map((laneBatches, i) => runLane(laneBatches, laneEnvs[i], `lane ${i + 1}/${LANES}`)),
+      laneBatches.map((stream, i) => runLane(stream, laneEnvs[i], `lane ${i + 1}/${LANES}`)),
     );
 
     if (LANES > 1) {
