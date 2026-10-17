@@ -27,6 +27,7 @@ import {
   startEmailCapture,
   stopEmailCapture,
   removeTicketEmails,
+  settledTicketEmails,
 } from './helpers/staffFixtures.mjs';
 
 const TICKETS = `${STAFF_API}/tickets`;
@@ -108,6 +109,13 @@ describe('Erasing a former steward (Equoria-2yugk)', () => {
       adminDevice,
     );
     expect(demoted.status).toBe(200);
+
+    // The filing's post-commit email delivery finishes first. Erasure locks the
+    // ticket's outbox rows (scrubTicketEmailFilerTx); a delivery that finds its
+    // row locked leaves it to the scheduled job, which tests never run, so the
+    // row would stay unsent and teardown would wait on it (Equoria-46v2s).
+    const emails = await settledTicketEmails(ticketId);
+    expect(emails.find(row => row.recipientId === admin.id)).toMatchObject({ status: 'sent', attempts: 1 });
 
     let erased;
     let failure;
