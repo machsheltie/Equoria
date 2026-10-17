@@ -54,12 +54,12 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
   // 'Test Breed' was shared across four test files, including
   // tests/groomProgression.test.mjs which deletes by that exact name in
   // beforeEach/afterEach. Cross-suite ordering with --maxWorkers=1 +
-  // --retryTimes=1 + worker recycling caused intermittent failures here
-  // when this suite's captured testBreed.id pointed to a row deleted by
-  // groomProgression. A per-suite random prefix gives us exclusive
-  // ownership: no other suite's name-based delete can touch our row, and
-  // the random suffix prevents leftover-from-prior-run collisions even
-  // within this suite's own retries.
+  // worker recycling caused intermittent failures here when this suite's
+  // captured testBreed.id pointed to a row deleted by groomProgression. A
+  // per-suite random prefix gives us exclusive ownership: no other suite's
+  // name-based delete can touch our row, and the random suffix prevents
+  // leftover-from-prior-run collisions. (The runner's --retryTimes=1 of that
+  // era never took effect and has been removed: Equoria-i4aen. Tests run once.)
   const SUITE_BREED_PREFIX = `OWASPSuite_${randomBytes(6).toString('hex')}_Breed`;
 
   beforeAll(async () => {

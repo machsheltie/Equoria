@@ -85,9 +85,10 @@
  * suite that silently never ran fails the run even if every executed test
  * passed (Equoria-bu9c4).
  *
- * --retryTimes=1 below is accepted by the Jest 30 CLI but consumed by nothing
- * (measured 2026-09-14, Equoria-bu9c4): it is a no-op kept only until retries
- * are reworked. Do not rely on it.
+ * NO RETRIES (Equoria-i4aen): every batch runs each test once. A
+ * `--retryTimes=1` flag used to sit in the argv below; the installed Jest 30
+ * accepted it but consumed nothing (batch JSONs showed invocations=1), so it was
+ * removed rather than made effective: owner rules forbid retrying to get a pass.
  *
  * Exit code: 0 if every batch passed and accounting reconciled; 1 otherwise.
  */
@@ -317,7 +318,6 @@ function runBatch(batch, jsonFile, env) {
         '--experimental-vm-modules',
         JEST,
         '--runInBand',
-        '--retryTimes=1',
         '--json',
         `--outputFile=${jsonFile}`,
         ...batch.jestArgs,

@@ -118,16 +118,10 @@ function uniqueTestIp(testName) {
 
 describe('/api/v1/auth/login authRateLimiter — real-path no-bypass coverage (Equoria-ocn9)', () => {
   // Code-review chunk-A note: rate-limit assertions are deterministic given
-  // fresh per-test IPs and counter buckets. The project-wide `--retryTimes=1`
-  // re-runs failing tests in the SAME Jest worker, where the in-memory
-  // rate-limit store and SEEN_TEST_IPS Map persist across attempts — so a
-  // retry would use the same IP as the first attempt, hit a hot bucket,
-  // and return 429 immediately. The `uniqueTestIp` cache is preserved
-  // for cross-test collision detection (worth keeping), but the retry
-  // failure mode would be best addressed by the project switching this
-  // suite to `--retryTimes=0` at the runner level (jest.retryTimes is
-  // ESM-restricted and not callable here). For now, suite is deterministic
-  // and we accept the rare retry-amplified flake.
+  // fresh per-test IPs and counter buckets. The `uniqueTestIp` cache is kept
+  // for cross-test collision detection. Tests run exactly once: the runner's
+  // former `--retryTimes=1` never took effect under Jest 30 and has been
+  // removed (Equoria-i4aen), so no retry can reuse a hot IP bucket.
 
   let __csrf__;
 
