@@ -38,12 +38,12 @@ const STUD_KEYS = [
   'imageUrl',
   'name',
   'owner',
+  'revealedTraits',
   'salePrice',
   'sex',
   'stats',
   'studFee',
   'studMode',
-  'traits',
 ];
 const STAT_KEYS = ['agility', 'boldness', 'intelligence', 'precision', 'speed', 'stamina', 'strength'];
 
@@ -195,7 +195,7 @@ describe('marketplace stud listings (Equoria-q4uem.9 slice 5)', () => {
     expect(res.status).toBe(200);
     expect(JSON.stringify(res.body)).not.toContain(SECRET);
     const entry = res.body.data.studs.find(s => s.id === pub.id);
-    expect(entry.traits).toEqual({ positive: [REVEALED], negative: [], hidden: [] });
+    expect(entry.revealedTraits).toEqual({ positive: [REVEALED], negative: [] });
   });
 
   it('filters: mode, fee range, breedId and sort by fee; pagination totals', async () => {
@@ -217,5 +217,43 @@ describe('marketplace stud listings (Equoria-q4uem.9 slice 5)', () => {
     expect(paged.body.data.studs.map(s => s.id)).toEqual([cheap.id]);
     expect(paged.body.data.pagination).toEqual({ page: 1, limit: 1, total: 3, totalPages: 3 });
     expect(badMode.status).toBe(400);
+  });
+
+  it.each(['newest', 'fee_asc', 'fee_desc', 'youngest'])(
+    'pagination (%s): with tied fees, walking every page yields each stud exactly once',
+    async sort => {
+      const created = [];
+      for (let i = 0; i < 5; i += 1) {
+        created.push(
+          await horse({ ownerId: studOwner.user.id, studStatus: 'At Public Stud', studFee: i % 2 ? 0 : null }),
+        );
+      }
+      const seen = [];
+      for (let page = 1; page <= 3; page += 1) {
+        const res = await get(viewer.token, `/api/v1/marketplace/studs?name=${run}&limit=2&page=${page}&sort=${sort}`);
+        expect(res.status).toBe(200);
+        seen.push(...res.body.data.studs.map(s => s.id));
+      }
+      expect(seen.sort((a, b) => a - b)).toEqual(created.map(h => h.id).sort((a, b) => a - b));
+    },
+  );
+
+  it.each([
+    ['mode=__proto__'],
+    ['mode=constructor'],
+    ['sort=__proto__'],
+    ['sort=constructor'],
+    ['breedId=99999999999'],
+    ['minFee=99999999999'],
+    ['maxFee=-1'],
+    ['minAge=99999999'],
+    ['maxAge=abc'],
+    ['name=a&name=b'],
+  ])('rejects %s with 400 and the standard body', async query => {
+    const res = await get(viewer.token, `/api/v1/marketplace/studs?${query}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(typeof res.body.message).toBe('string');
   });
 });

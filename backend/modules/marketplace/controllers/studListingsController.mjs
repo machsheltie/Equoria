@@ -21,17 +21,71 @@ import { toPredictionView } from '../../breeding/index.mjs';
 const STUD_MODES = Object.freeze({ public: 'At Public Stud', private: 'At Private Stud' });
 const MODE_BY_STATUS = Object.freeze({ 'At Public Stud': 'public', 'At Private Stud': 'private' });
 
-// A null studFee is a legacy 0, so it sorts with the cheapest.
+// A null studFee is a legacy 0, so it sorts with the cheapest. Every order ends
+// on `id` so ties (common: every unpriced stud reads as 0) page deterministically.
 const ORDER_BY = Object.freeze({
-  fee_asc: { studFee: { sort: 'asc', nulls: 'first' } },
-  fee_desc: { studFee: { sort: 'desc', nulls: 'last' } },
-  youngest: { age: 'asc' },
-  newest: { createdAt: 'desc' },
+  fee_asc: [{ studFee: { sort: 'asc', nulls: 'first' } }, { id: 'asc' }],
+  fee_desc: [{ studFee: { sort: 'desc', nulls: 'last' } }, { id: 'asc' }],
+  youngest: [{ age: 'asc' }, { id: 'asc' }],
+  newest: [{ createdAt: 'desc' }, { id: 'asc' }],
 });
 
-function intParam(value) {
-  const parsed = parseInt(value, 10);
-  return Number.isInteger(parsed) ? parsed : undefined;
+const INT4_MAX = 2147483647;
+/** Game-year age bound that keeps birthDateForAge a valid date. */
+const MAX_AGE_YEARS = 1000;
+
+class BadQuery extends Error {}
+
+function bad(message) {
+  return new BadQuery(message);
+}
+
+/** A repeated query parameter arrives as an array: refuse it rather than guess. */
+function single(query, key) {
+  const value = query[key];
+  if (Array.isArray(value) || (value !== undefined && typeof value !== 'string')) {
+    throw bad(`${key} must be given once`);
+  }
+  return value;
+}
+
+/** A non-negative whole number within `max`, or undefined when absent. */
+function boundedInt(query, key, max) {
+  const value = single(query, key);
+  if (value === undefined || value === '') {
+    return undefined;
+  }
+  if (!/^\d+$/.test(value) || Number(value) > max) {
+    throw bad(`${key} must be a whole number from 0 to ${max}`);
+  }
+  return Number(value);
+}
+
+/** Own-key lookup so `__proto__` / `constructor` are rejected, never resolved. */
+function ownValue(table, key, label) {
+  if (!Object.hasOwn(table, key)) {
+    throw bad(`${label} must be one of: ${Object.keys(table).join(', ')}`);
+  }
+  return table[key];
+}
+
+/** Validate the whole query up front; every refusal is a 400 with the standard body. */
+function parseStudQuery(query) {
+  const mode = single(query, 'mode') ?? 'all';
+  const sort = single(query, 'sort') ?? 'newest';
+  return {
+    name: single(query, 'name'),
+    breed: single(query, 'breed'),
+    breedId: boundedInt(query, 'breedId', INT4_MAX),
+    minAge: boundedInt(query, 'minAge', MAX_AGE_YEARS),
+    maxAge: boundedInt(query, 'maxAge', MAX_AGE_YEARS),
+    minFee: boundedInt(query, 'minFee', INT4_MAX),
+    maxFee: boundedInt(query, 'maxFee', INT4_MAX),
+    page: boundedInt(query, 'page', INT4_MAX),
+    limit: boundedInt(query, 'limit', INT4_MAX),
+    statuses: mode === 'all' ? Object.values(STUD_MODES) : [ownValue(STUD_MODES, mode, 'mode')],
+    orderBy: ownValue(ORDER_BY, sort, 'sort'),
+  };
 }
 
 /** The public stud entry. `view` is already projected. */
@@ -56,12 +110,11 @@ function toStudListing(view) {
       intelligence: view.intelligence ?? 0,
       boldness: view.boldness ?? 0,
     },
-    // As this viewer may see them: revealed traits; `hidden` is always empty
-    // after the projection (S-Q9).
-    traits: {
+    // Revealed traits are public (S-Q9); the projection has already removed
+    // every unrevealed one.
+    revealedTraits: {
       positive: traits.positive ?? [],
       negative: traits.negative ?? [],
-      hidden: traits.hidden ?? [],
     },
     displayedHealth: getDisplayedHealth(view),
     imageUrl: view.imageUrl,
@@ -79,27 +132,19 @@ function toStudListing(view) {
 export async function browseStudListings(req, res) {
   try {
     const viewerId = req.user.id;
-    const {
-      name,
-      breed,
-      breedId,
-      minAge,
-      maxAge,
-      minFee,
-      maxFee,
-      mode = 'all',
-      sort = 'newest',
-    } = req.query;
-
-    const statuses = mode === 'all' ? Object.values(STUD_MODES) : [STUD_MODES[mode]];
-    if (statuses.includes(undefined)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "mode must be 'public', 'private' or 'all'" });
+    let params;
+    try {
+      params = parseStudQuery(req.query);
+    } catch (error) {
+      if (error instanceof BadQuery) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+      throw error;
     }
+    const { name, breed, breedId, minAge, maxAge, minFee, maxFee, statuses, orderBy } = params;
 
-    const pageNum = Math.max(1, intParam(req.query.page) || 1);
-    const pageSize = Math.min(100, Math.max(1, intParam(req.query.limit) || 20));
+    const pageNum = Math.max(1, params.page || 1);
+    const pageSize = Math.min(100, Math.max(1, params.limit || 20));
 
     // Listed stallions of OTHER players only; an ownerless (erased) horse is never listed.
     const where = {
@@ -110,22 +155,22 @@ export async function browseStudListings(req, res) {
     if (name) {
       where.name = { contains: name, mode: 'insensitive' };
     }
-    if (intParam(breedId) !== undefined) {
-      where.breedId = intParam(breedId);
+    if (breedId !== undefined) {
+      where.breedId = breedId;
     } else if (breed) {
       where.breed = { name: { contains: breed, mode: 'insensitive' } };
     }
     // Same game-year age convention as the sale browse (birthDateForAge).
-    if (intParam(minAge) !== undefined) {
-      where.dateOfBirth = { ...where.dateOfBirth, lte: birthDateForAge(intParam(minAge)) };
+    if (minAge !== undefined) {
+      where.dateOfBirth = { ...where.dateOfBirth, lte: birthDateForAge(minAge) };
     }
-    if (intParam(maxAge) !== undefined) {
-      where.dateOfBirth = { ...where.dateOfBirth, gte: birthDateForAge(intParam(maxAge)) };
+    if (maxAge !== undefined) {
+      where.dateOfBirth = { ...where.dateOfBirth, gte: birthDateForAge(maxAge) };
     }
     // A null studFee is a legacy row meaning 0 (design R5).
     const feeRange = {
-      ...(intParam(minFee) !== undefined ? { gte: intParam(minFee) } : {}),
-      ...(intParam(maxFee) !== undefined ? { lte: intParam(maxFee) } : {}),
+      ...(minFee !== undefined ? { gte: minFee } : {}),
+      ...(maxFee !== undefined ? { lte: maxFee } : {}),
     };
     if (Object.keys(feeRange).length > 0) {
       const zeroInRange = (feeRange.gte ?? 0) <= 0 && (feeRange.lte ?? 0) >= 0;
@@ -137,7 +182,7 @@ export async function browseStudListings(req, res) {
     const [horses, total] = await Promise.all([
       prisma.horse.findMany({
         where,
-        orderBy: ORDER_BY[sort] ?? ORDER_BY.newest,
+        orderBy,
         skip: (pageNum - 1) * pageSize,
         take: pageSize,
         include: {
