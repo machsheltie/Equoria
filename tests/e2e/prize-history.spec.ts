@@ -27,7 +27,52 @@
  * Sentinel-positive: on the pre-fix tree the error case renders "No transactions
  * yet" (the false empty), so this spec FAILS RED before the fix and PASSES after.
  */
-import { test, expect } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
+import { createSeededPlayerSession, type SeededPlayerSession } from './fixtures/seededPlayer';
+import {
+  removeSeededPrizeResult,
+  seedPrizeResult,
+  type SeededPrizeResult,
+} from './fixtures/prizeHistory';
+
+// Equoria-g3n8c / Equoria-0vhop (item 1): the filter this spec drives only
+// renders when the player HAS prize history, and nothing in an E2E run creates
+// any for the shared account. The spec therefore runs as its own player
+// (tests/e2e/fixtures/seededPlayer.ts) whose onboarding starter horse is given
+// one completed-show result (tests/e2e/fixtures/prizeHistory.ts). The
+// assertions are unchanged.
+const test = base.extend<
+  object,
+  { seededPlayer: SeededPlayerSession; seededPrize: SeededPrizeResult }
+>({
+  seededPlayer: [
+    async ({ browser }, use) => {
+      const player = await createSeededPlayerSession(browser);
+      await use(player);
+      await player.context.close();
+    },
+    { scope: 'worker' },
+  ],
+  seededPrize: [
+    async ({ seededPlayer }, use) => {
+      const res = await seededPlayer.request.get('/api/v1/horses');
+      expect(res.ok(), `GET /api/v1/horses for the seeded player returned ${res.status()}`).toBe(
+        true
+      );
+      const body = (await res.json()) as { data?: Array<{ id: number }> } | Array<{ id: number }>;
+      const horses = Array.isArray(body) ? body : (body.data ?? []);
+      expect(horses.length, 'the seeded player must own its onboarding starter horse').toBe(1);
+      const seeded = await seedPrizeResult(horses[0].id);
+      await use(seeded);
+      await removeSeededPrizeResult(seeded);
+    },
+    { scope: 'worker' },
+  ],
+  storageState: async ({ seededPlayer, seededPrize: _seededPrize }, use) => {
+    // Depends on seededPrize so the result exists before the page opens.
+    await use(seededPlayer.storageStatePath);
+  },
+});
 
 test.describe('Prize history — four-state (Equoria-x6l44)', () => {
   test.beforeEach(() => {
