@@ -22,6 +22,7 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -158,11 +159,45 @@ function removePlant(abs, createdDirs) {
   }
 }
 
+// Every file (not directory) under `dir`, recursively.
+function filesUnder(dir) {
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap(entry => (entry.isDirectory() ? filesUnder(path.join(dir, entry.name)) : [path.join(dir, entry.name)]));
+}
+
+// The test-owned token directory a plant path runs through, if any: the first
+// directory segment carrying the __ml7jj_ token (e.g.
+// backend/modules/__ml7jj_inscope_70pb9__). Plants whose token is only in the
+// file name have none.
+function tokenDirOf(abs) {
+  const segments = path.relative(REPO_ROOT, abs).split(path.sep);
+  const at = segments.slice(0, -1).findIndex(segment => segment.includes('__ml7jj_'));
+  return at === -1 ? null : path.join(REPO_ROOT, ...segments.slice(0, at + 1));
+}
+
+// Equoria-ctmat follow-up: a checkout that ran this sentinel before 6c2943b6b
+// still holds the token directory, empty. It is test-owned, so an empty one is
+// removed before planting (otherwise the plant adopts it as real tree and
+// leaves it behind). One holding FILES is not ours to delete: fail loud and
+// name them.
+function clearStaleTokenDir(tokenDir) {
+  if (!tokenDir || !fs.existsSync(tokenDir)) {
+    return;
+  }
+  const files = filesUnder(tokenDir);
+  if (files.length > 0) {
+    throw new Error(`stale sentinel token directory ${tokenDir} holds files, refusing to plant: ${files.join(', ')}`);
+  }
+  fs.rmSync(tokenDir, { recursive: true });
+}
+
 // Plant a file, run a check, assert it FIRES *on our plant*, then remove the
 // file and assert the check no longer reports *our plant* — robust to
 // concurrent foreign fixtures in the shared scan tree (Equoria-d2wbw).
 function expectFiresThenClean(relPath, contents, scriptBasename) {
   const abs = path.join(REPO_ROOT, relPath);
+  clearStaleTokenDir(tokenDirOf(abs));
   const createdDirs = missingAncestorDirs(abs);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, contents, 'utf-8');
@@ -193,6 +228,7 @@ function expectIgnoredOutOfScope(relPath, contents, scriptBasename) {
   const abs = path.join(REPO_ROOT, relPath);
   // Record which ancestor directories did not exist so we can remove the ones
   // we create, leaving the real tree untouched.
+  clearStaleTokenDir(tokenDirOf(abs));
   const createdDirs = missingAncestorDirs(abs);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, contents, 'utf-8');
@@ -388,6 +424,31 @@ describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
     // backend/modules/__ml7jj_inscope_70pb9__/ left behind reads as a module
     // without a barrel to the module-graph gate.
     expect(fs.existsSync(path.join(REPO_ROOT, 'backend/modules/__ml7jj_inscope_70pb9__'))).toBe(false);
+  });
+  test('cleanup-routes: an EMPTY stale token dir left by a pre-ctmat run is cleared, then removed with the plant', () => {
+    // Equoria-ctmat follow-up: checkouts that ran the sentinel before 6c2943b6b
+    // still hold an empty backend/modules/__ml7jj_inscope_70pb9__/routes/. The
+    // plant must not adopt it as pre-existing tree and leave it behind.
+    const stale = path.join(REPO_ROOT, 'backend/modules/__ml7jj_inscope_70pb9__');
+    fs.mkdirSync(path.join(stale, 'routes'), { recursive: true });
+    expectFiresThenClean(
+      'backend/modules/__ml7jj_inscope_70pb9__/routes/r.mjs',
+      CLEANUP_ROUTE,
+      'check-no-cleanup-routes.mjs',
+    );
+    expect(fs.existsSync(stale)).toBe(false);
+  });
+  test('a stale token dir holding a FILE fails loud, naming it, and is left untouched', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ctmat-stale-'));
+    try {
+      const keep = path.join(root, '__ml7jj_inscope_70pb9__', 'routes', 'keep.mjs');
+      fs.mkdirSync(path.dirname(keep), { recursive: true });
+      fs.writeFileSync(keep, '// not a sentinel plant\n', 'utf-8');
+      expect(() => clearStaleTokenDir(path.join(root, '__ml7jj_inscope_70pb9__'))).toThrow(keep);
+      expect(fs.existsSync(keep)).toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
   test('cleanup-routes: route inside an __tests__ dir is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
