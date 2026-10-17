@@ -8,7 +8,7 @@
  *  AC4: Training session — initiate to result displayed
  *  AC5: Competition entry — select horse → confirm → result displayed
  */
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Browser, type Page, type TestInfo } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { readTestCredentials } from './helpers/credentials';
@@ -257,7 +257,7 @@ test.describe('AC5: Competition Entry', () => {
   test('competition entry flow: select horse in modal → click Enter → API 200', async ({
     page,
     browser,
-  }) => {
+  }, testInfo) => {
     // The entry flow lives entirely inside CompetitionDetailModal:
     //   1. Click a competition card → modal opens
     //   2. Pick a horse via competition-entry-horse-select (native <select>)
@@ -272,57 +272,93 @@ test.describe('AC5: Competition Entry', () => {
     // this flow entered the starter horse without one. Hire and assign a rider
     // through the real marketplace API first.
     expect(horseId, 'global-setup must provide the starter horse id').toBeTruthy();
-    // The rider hired here is dismissed at the end (finally below): the shared
-    // E2E account has a rider roster cap of 2, and a leaked rider per attempt
-    // filled it, so rider-dismiss and rider-trainer-unassign could not hire
-    // (Equoria-g3n8c).
+    // The rider hired here is dismissed whatever happens after the hire (the
+    // outer finally): the shared E2E account has a rider roster cap of 2, and a
+    // leaked rider per attempt filled it, so the retry, rider-dismiss and
+    // rider-trainer-unassign could not hire (Equoria-g3n8c).
     let hiredRiderId: number | undefined;
-    const session: AuthedSession = await createAuthedSession(browser);
+    let testError: unknown;
     try {
-      const marketRes = await session.request.get('/api/v1/riders/marketplace');
-      expect(marketRes.ok(), `GET /api/v1/riders/marketplace returned ${marketRes.status()}`).toBe(
-        true
-      );
-      type Riders = { riders?: Array<{ marketplaceId: string; weeklyRate: number }> };
-      const market = (await marketRes.json()) as Riders & { data?: Riders };
-      const riders = market.data?.riders ?? market.riders ?? [];
-      expect(riders.length).toBeGreaterThan(0);
-      const cheapest = riders.reduce((a, b) => (b.weeklyRate < a.weeklyRate ? b : a));
-      const hireRes = await csrfMutate(session, 'POST', '/api/v1/riders/marketplace/hire', {
-        marketplaceId: cheapest.marketplaceId,
-      });
-      expect(hireRes.ok(), `rider hire returned ${hireRes.status()}`).toBe(true);
-      type Hired = { rider?: { id: number } };
-      const hired = (await hireRes.json()) as Hired & { data?: Hired };
-      hiredRiderId = hired.data?.rider?.id ?? hired.rider?.id;
-      const assignRes = await csrfMutate(session, 'POST', '/api/v1/riders/assignments', {
-        riderId: hiredRiderId,
-        horseId: Number(horseId),
-      });
-      expect(assignRes.ok(), `rider assignment returned ${assignRes.status()}`).toBe(true);
-    } finally {
-      await session.context.close();
-    }
+      const session: AuthedSession = await createAuthedSession(browser);
+      try {
+        const marketRes = await session.request.get('/api/v1/riders/marketplace');
+        expect(
+          marketRes.ok(),
+          `GET /api/v1/riders/marketplace returned ${marketRes.status()}`
+        ).toBe(true);
+        type Riders = { riders?: Array<{ marketplaceId: string; weeklyRate: number }> };
+        const market = (await marketRes.json()) as Riders & { data?: Riders };
+        const riders = market.data?.riders ?? market.riders ?? [];
+        expect(riders.length).toBeGreaterThan(0);
+        const cheapest = riders.reduce((a, b) => (b.weeklyRate < a.weeklyRate ? b : a));
+        const hireRes = await csrfMutate(session, 'POST', '/api/v1/riders/marketplace/hire', {
+          marketplaceId: cheapest.marketplaceId,
+        });
+        expect(hireRes.ok(), `rider hire returned ${hireRes.status()}`).toBe(true);
+        type Hired = { rider?: { id: number } };
+        const hired = (await hireRes.json()) as Hired & { data?: Hired };
+        hiredRiderId = hired.data?.rider?.id ?? hired.rider?.id;
+        const assignRes = await csrfMutate(session, 'POST', '/api/v1/riders/assignments', {
+          riderId: hiredRiderId,
+          horseId: Number(horseId),
+        });
+        expect(assignRes.ok(), `rider assignment returned ${assignRes.status()}`).toBe(true);
+      } finally {
+        await session.context.close();
+      }
 
-    try {
-      await enterSeededRiddenShow(page, horseId);
+      await enterSeededRiddenShow(page, String(horseId));
+    } catch (error) {
+      testError = error;
+      throw error;
     } finally {
       if (hiredRiderId !== undefined) {
-        const cleanup = await createAuthedSession(browser);
-        try {
-          const dismissRes = await csrfMutate(
-            cleanup,
-            'DELETE',
-            `/api/v1/riders/${hiredRiderId}/dismiss`
-          );
-          expect(dismissRes.ok(), `rider dismiss returned ${dismissRes.status()}`).toBe(true);
-        } finally {
-          await cleanup.context.close();
-        }
+        await dismissHiredRider(browser, hiredRiderId, testError, testInfo);
       }
     }
   });
 });
+
+/**
+ * Dismiss the rider the entry flow hired, through the real dismiss route.
+ * A failed dismissal fails a test that otherwise passed. If the test already
+ * failed, the dismissal failure is attached and logged instead, so it never
+ * replaces the original error.
+ */
+async function dismissHiredRider(
+  browser: Browser,
+  riderId: number,
+  testError: unknown,
+  testInfo: TestInfo
+) {
+  let dismissError: unknown;
+  try {
+    const cleanup = await createAuthedSession(browser);
+    try {
+      const dismissRes = await csrfMutate(cleanup, 'DELETE', `/api/v1/riders/${riderId}/dismiss`);
+      expect(
+        dismissRes.ok(),
+        `rider dismiss returned ${dismissRes.status()}: ${await dismissRes.text()}`
+      ).toBe(true);
+    } finally {
+      await cleanup.context.close();
+    }
+  } catch (error) {
+    dismissError = error;
+  }
+  if (dismissError === undefined) {
+    return;
+  }
+  if (testError === undefined) {
+    throw dismissError;
+  }
+  const detail = dismissError instanceof Error ? dismissError.message : String(dismissError);
+  console.error(`[core-game-flows] cleanup: dismissing rider ${riderId} failed: ${detail}`);
+  await testInfo.attach('rider-dismiss-cleanup-failure', {
+    body: `Dismissing rider ${riderId} failed after the test had already failed:\n${detail}`,
+    contentType: 'text/plain',
+  });
+}
 
 /**
  * Enter the starter horse in one of global-setup's seeded RIDDEN shows through
@@ -333,7 +369,7 @@ test.describe('AC5: Competition Entry', () => {
  * so it sorts first), and the ridden-entry endpoint refuses conformation shows
  * by design (400). The old version clicked `cards.first()` (Equoria-g3n8c).
  */
-async function enterSeededRiddenShow(page: Page, horseId: string | number | undefined) {
+async function enterSeededRiddenShow(page: Page, horseId: string) {
   await page.goto('/competitions', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-testid="competition-browser-page"]', { timeout: 20000 });
 
@@ -351,29 +387,15 @@ async function enterSeededRiddenShow(page: Page, horseId: string | number | unde
     timeout: 10000,
   });
 
-  // Select horse from the inline horse-select inside the modal
+  // Select the global-setup starter horse. It must be offered: a missing
+  // starter horse is a setup failure, never a reason to enter another horse.
   const horseSelect = page.locator('[data-testid="competition-entry-horse-select"]');
   await expect(horseSelect).toBeVisible({ timeout: 10000 });
-  if (horseId) {
-    // Pre-select the global-setup starter horse if available in the list
-    const valueExists = await horseSelect
-      .locator(`option[value="${horseId}"]`)
-      .count()
-      .then((c) => c > 0);
-    if (valueExists) {
-      await horseSelect.selectOption({ value: String(horseId) });
-    } else {
-      // Fall back to the first real option (index 1 skips the placeholder)
-      const optionValues = await horseSelect
-        .locator('option[value]')
-        .evaluateAll((opts: HTMLOptionElement[]) =>
-          opts.map((o) => o.value).filter((v) => v !== '')
-        );
-      if (optionValues.length > 0) {
-        await horseSelect.selectOption({ value: optionValues[0] });
-      }
-    }
-  }
+  await expect(
+    horseSelect.locator(`option[value="${horseId}"]`),
+    `the entry modal must offer the global-setup starter horse ${horseId}`
+  ).toHaveCount(1);
+  await horseSelect.selectOption({ value: horseId });
 
   // Intercept entry POST before clicking — proves the real API was called
   const entryPost = page.waitForResponse(
