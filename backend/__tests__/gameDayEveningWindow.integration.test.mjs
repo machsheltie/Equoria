@@ -161,12 +161,15 @@ describe.each(EVENINGS)('the Eastern evening window (%s) — Equoria-4urzd', (_l
     await prisma.foalDevelopment.create({ data: { foalId: today.id, currentDay: 0 } });
 
     const [foalYesterday, foalToday] = [await loadHorse(yesterday.id), await loadHorse(today.id)];
-    const [resultToday] = await at(now, async () => [
+    const [resultToday, resultYesterday] = await at(now, async () => [
       await cronJobService.evaluateFoalTraits(foalToday),
       await cronJobService.evaluateFoalTraits(foalYesterday),
     ]);
 
     expect(resultToday).toMatchObject({ traitsRevealed: 0, reason: 'day_not_elapsed' });
+    // Day 0 elapsed: the pass evaluated it (reveals are random, so not pinned) and advanced.
+    expect(resultYesterday.reason).not.toBe('day_not_elapsed');
+    expect(resultYesterday).toMatchObject({ currentDay: 1 });
     expect((await loadHorse(today.id)).foalDevelopment.currentDay).toBe(0);
     expect((await loadHorse(yesterday.id)).foalDevelopment.currentDay).toBe(1);
   });
