@@ -72,7 +72,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         ...fixtureColor(),
         name: `GPT-TestHorse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         userId: testUser.id,
-        dateOfBirth: gameCalendarDate(new Date(), -0), // 0 days old (newborn for imprinting)
+        dateOfBirth: gameCalendarDate(new Date()), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 65,
         stressLevel: 20,

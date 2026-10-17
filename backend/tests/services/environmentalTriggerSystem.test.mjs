@@ -27,6 +27,7 @@ import {
   traitExpressionProbability,
   triggerThresholds,
 } from '../../modules/traits/services/environmentalTriggerSystem.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 const analyze = async (horseId, project, ...rest) => project(await loadEnvironmentalTriggerSnapshot(horseId), ...rest);
 
 describe('Environmental Trigger System', () => {
@@ -37,9 +38,9 @@ describe('Environmental Trigger System', () => {
   beforeAll(async () => {
     // Create test horses with different ages and environmental exposures
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const oneWeekAgo = gameCalendarDate(now, -7);
+    const twoWeeksAgo = gameCalendarDate(now, -14);
+    const oneMonthAgo = gameCalendarDate(now, -30);
 
     await prisma.$transaction(
       async tx => {

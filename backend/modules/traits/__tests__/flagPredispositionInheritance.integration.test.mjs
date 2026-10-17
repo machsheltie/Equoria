@@ -104,7 +104,7 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
     // Parents are adults (age irrelevant to predisposition — only their
     // epigeneticFlags are read). Predisposed parents BOTH carry 'affectionate';
     // control parents carry NO flags.
-    const adultDob = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const adultDob = gameCalendarDate(new Date(), -60);
     predisposedSire = await createTestHorse(
       prisma,
       {
@@ -153,7 +153,7 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
     // Foals: born ~7 real days ago → ~1 game-year (inside the 0-3yr window).
     // bondScore = 50 meets the affectionate bond threshold; the day-count is
     // what we hold borderline. Identical for both foals.
-    const foalDob = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const foalDob = gameCalendarDate(new Date(), -7);
     predisposedFoal = await createTestHorse(
       prisma,
       {

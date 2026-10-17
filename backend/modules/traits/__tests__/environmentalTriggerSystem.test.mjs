@@ -42,6 +42,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // and horses are deleted before the user (Horse.userId onDelete: Restrict,
 // schema:282).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 // ── No-fixture pure paths ─────────────────────────────────────────────────────
 
@@ -98,7 +99,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
       },
     });
 
-    const daysAgo = days => new Date(ts - days * 24 * 60 * 60 * 1000);
+    const daysAgo = days => gameCalendarDate(new Date(ts), -days);
 
     etsHorseNewborn = await prisma.horse.create({
       data: {

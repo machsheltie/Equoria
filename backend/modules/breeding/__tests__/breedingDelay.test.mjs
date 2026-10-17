@@ -24,7 +24,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
+import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -67,7 +67,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
       create: { name: 'Thoroughbred', description: 'Shared test breed' },
     });
 
-    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const sire = await prisma.horse.create({
       data: {
         ...fixtureColor(),

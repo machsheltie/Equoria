@@ -37,7 +37,7 @@ const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 // dateOfBirth is a date-only column: store the Eastern game date, as production writers do.
 const gameDaysAgo = n => gameCalendarDate(new Date(), -n);
 const hoursAgo = n => new Date(Date.now() - n * 60 * 60 * 1000);
-const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
+const yearsAgo = n => gameCalendarDate(new Date(), -Math.round(n * 365.25));
 
 // Equoria-z183: epigenetic eligibility is gated on canonical GAME-years
 // (1 game-week = 1 game-year, floor(ageDays / 7)), not calendar years. A

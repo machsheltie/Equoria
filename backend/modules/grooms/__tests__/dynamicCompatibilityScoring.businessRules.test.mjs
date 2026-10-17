@@ -23,6 +23,7 @@ import {
   scoreCompatibility,
 } from '../services/dynamicCompatibilityScoring.mjs';
 import { analyzePair, rankFor } from './helpers/dynamicCompatibilityGrid.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Dynamic Compatibility Scoring', () => {
   let testUser;
@@ -32,7 +33,7 @@ describe('Dynamic Compatibility Scoring', () => {
   beforeAll(async () => {
     // Create test horses with different temperaments and stress levels
     const now = new Date();
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = gameCalendarDate(now, -30);
 
     await prisma.$transaction(
       async tx => {

@@ -175,6 +175,7 @@ describe('withAgeYears (serializer decorator)', () => {
   test('adds ageYears=3 for a horse with dateOfBirth 21 days ago (lvjy AC)', () => {
     // AC: create horse with dob 21 days ago via API, fetch, assert ageYears===3
     const dob = new Date(fixedNow.getTime() - 21 * MS_PER_DAY);
+    // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { id: 42, name: 'Test', dateOfBirth: dob };
     const decorated = withAgeYears(horse, fixedNow);
     expect(decorated.ageYears).toBe(3);
@@ -189,6 +190,7 @@ describe('withAgeYears (serializer decorator)', () => {
 
   test('does not mutate the input horse object', () => {
     const dob = new Date(fixedNow.getTime() - 14 * MS_PER_DAY);
+    // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { id: 7, dateOfBirth: dob };
     const before = { ...horse };
     withAgeYears(horse, fixedNow);
@@ -198,6 +200,7 @@ describe('withAgeYears (serializer decorator)', () => {
 
   test('preserves the legacy age field if present (transitional)', () => {
     const dob = new Date(fixedNow.getTime() - 21 * MS_PER_DAY);
+    // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { id: 1, age: 99, dateOfBirth: dob };
     const decorated = withAgeYears(horse, fixedNow);
     expect(decorated.age).toBe(99); // transitional: backend keeps age until lvjy fully rolls out

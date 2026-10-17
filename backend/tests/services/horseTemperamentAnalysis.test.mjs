@@ -28,6 +28,7 @@ import {
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 import { createSequentially } from '../helpers/createSequentially.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Horse Temperament Analysis', () => {
   let testUser;
@@ -79,7 +80,7 @@ describe('Horse Temperament Analysis', () => {
 
     // Create test horses with different flag patterns and interaction histories
     const now = new Date();
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = gameCalendarDate(now, -30);
 
     testHorses = await createSequentially([
       // Nervous/reactive horse

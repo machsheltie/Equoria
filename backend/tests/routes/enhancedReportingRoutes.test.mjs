@@ -49,6 +49,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Enhanced Reporting API Routes', () => {
   const cleanup = createCleanupTracker();
@@ -128,9 +129,9 @@ describe('Enhanced Reporting API Routes', () => {
 
     // Create test horses with different developmental stages and traits
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const oneWeekAgo = gameCalendarDate(now, -7);
+    const oneMonthAgo = gameCalendarDate(now, -30);
+    const twoMonthsAgo = gameCalendarDate(now, -60);
 
     const horseSpecs = [
       // Young foal with developing traits

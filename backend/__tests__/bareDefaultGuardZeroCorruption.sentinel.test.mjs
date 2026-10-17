@@ -38,6 +38,7 @@ import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { getDiscoveryProgress } from '../utils/traitDiscovery.mjs';
 import { assessBreedingPairCompatibility } from '../modules/breeding/services/genetics/breedingCompatibility.mjs';
 import { calculatePairwiseDistance } from '../modules/breeding/services/genetics/geneticDiversityMetrics.mjs';
+import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = resolve(__dirname, '..');
@@ -66,7 +67,7 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
     });
     userId = user.id;
 
-    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const zeroStats = { speed: 0, stamina: 0, agility: 0, intelligence: 0 };
 
     const calmUnbonded = await createTestHorse(

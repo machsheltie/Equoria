@@ -34,11 +34,10 @@
  *   `mockLogger.error` is replaced by the deterministic observable it stands in
  *   for: `result.errors === 1` (errors++ and logger.error sit on the same
  *   branch in processHorseBirthdays).
- * - No global Date mock: fixtures are anchored to live `Date.now()` offsets
- *   (sibling-suite precedent horseAgingSystem.test.mjs) instead of swapping the
- *   global Date constructor. `calculateAgeFromBirth` reads the live clock with
- *   no injection seam, so a relative dob ("7d6h ago") makes the day-delta
- *   stable regardless of when the suite runs — no clock isolation needed.
+ * - No global Date mock: fixture dobs are Eastern dates N game days before
+ *   today (gameCalendarDate, Equoria-1lk00) instead of swapping the global
+ *   Date constructor. `calculateAgeFromBirth` counts Eastern game days, so the
+ *   age is exactly N whenever the suite runs — no clock isolation needed.
  * - Math.random: KEPT as a minimal `jest.spyOn(Math, 'random')`. The trait roll
  *   in evaluateEpigeneticTagsFromFoalTasks is `Math.random() * 100 < chance`
  *   PER trait; the production function takes only (taskLog, streak) — there is
@@ -89,14 +88,10 @@ import cronJobService from '../../../services/cronJobs.mjs';
 // built to absorb. We assert it against a real id that does not exist, with no
 // DB mock. See the Error Handling describe block below for the full rationale.
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
-// One real day in ms — used to anchor fixture dateOfBirth relative to live now.
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-const ONE_HOUR_MS = 60 * 60 * 1000;
-
-// born `(days)d + 6h` ago: the +6h keeps the floored day-delta stable for the
-// whole UTC day window in which the suite runs (no global Date mock needed).
-const bornDaysAgo = days => new Date(Date.now() - (days * ONE_DAY_MS + 6 * ONE_HOUR_MS));
+// born `days` Eastern game days ago, as a date-only value (Equoria-1lk00).
+const bornDaysAgo = days => gameCalendarDate(new Date(), -days);
 
 const randHex = () => randomBytes(4).toString('hex');
 
@@ -156,7 +151,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0.15);
 
       // Create foal turning 1 game-year old (7 days = 1 game-year) with a
-      // comprehensive task history. dob is 7d6h ago so calculateAgeFromBirth
+      // comprehensive task history. dob is 7 game days ago so calculateAgeFromBirth
       // floors to exactly 7 days → calculatedAge = floor(7/7) = 1. Stored
       // age 0 → birthday fires; prevAgeInDays = 0*7 = 0 < 7 and newAge = 7 >= 7,
       // so the age-1 milestone gate (previousAge < 7 && newAge >= 7) fires.
@@ -239,7 +234,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       // Create multiple horses with different scenarios. dob offsets are live-
       // now-relative so day-deltas are stable without a Date mock.
       const horses = await createSequentially([
-        // Foal turning 1 game-year old (milestone): 7d6h ago → calc 1, stored 0.
+        // Foal turning 1 game-year old (milestone): 7 game days ago → calc 1, stored 0.
         () =>
           prisma.horse.create({
             data: {
@@ -255,7 +250,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               epigeneticModifiers: { positive: [], negative: [], hidden: [] },
             },
           }),
-        // Horse turning 3 game-years (birthday, no counted milestone): 21d6h
+        // Horse turning 3 game-years (birthday, no counted milestone): 21 game days
         // ago → calc 3, stored 2. Minimal data so milestone eligibility resolves
         // ineligible (no task_log / trait_milestones) — matches original intent.
         () =>
@@ -270,7 +265,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               breedId: testBreed.id,
             },
           }),
-        // Horse with no birthday (correct stored age): 31d6h ago → calc 4,
+        // Horse with no birthday (correct stored age): 31 game days ago → calc 4,
         // stored 4 → calculatedAge === storedAge → not counted.
         () =>
           prisma.horse.create({
@@ -321,7 +316,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       // trait assigned. Deterministic given the controlled roll.
       jest.spyOn(Math, 'random').mockReturnValue(0.5);
 
-      // Create foal with minimal development (7d6h ago → calc 1, stored 0).
+      // Create foal with minimal development (7 game days ago → calc 1, stored 0).
       const foal = await prisma.horse.create({
         data: {
           ...fixtureColor(),
@@ -363,7 +358,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       // keep the case fully deterministic regardless of code-path changes.
       jest.spyOn(Math, 'random').mockReturnValue(0.1);
 
-      // Create foal with no development history (7d6h ago → calc 1, stored 0).
+      // Create foal with no development history (7 game days ago → calc 1, stored 0).
       const foal = await prisma.horse.create({
         data: {
           ...fixtureColor(),
@@ -413,7 +408,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
     afterEach(() => cleanupTestHorses(prisma, retirementHorseIds));
 
     it('ages a 147-day-old horse to 21 game-years and counts the retirement milestone via the cron entrypoint', async () => {
-      // dob 147d6h ago → ageInDays floors to 147 → calculatedAge = floor(147/7)
+      // dob 147 game days ago → ageInDays floors to 147 → calculatedAge = floor(147/7)
       // = 21. Stored age 20 → birthday fires with prevAgeInDays = 20*7 = 140
       // and newAge = 147, so the retirement gate (previousAge < 147 &&
       // newAge >= 147) fires — and it is the ONLY gate in that window.

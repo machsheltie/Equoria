@@ -71,6 +71,7 @@ import { feedHorse } from '../services/horseFeedService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { startOfGameDay } from '../../../utils/horseHealth.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const FEED_SERVICE_SRC = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), '../services/horseFeedService.mjs'),
@@ -205,7 +206,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
       create: { name: 'Thoroughbred', description: 'Shared test breed' },
     });
 
-    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const sire = await prisma.horse.create({
       data: {
         ...fixtureColor(),

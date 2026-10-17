@@ -78,10 +78,10 @@ describe('Weekly Flag Evaluation Service', () => {
 
     // Create test horses of different ages
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const twoYearsAgo = new Date(now.getTime() - 2 * 365.24 * 24 * 60 * 60 * 1000);
-    const fourYearsAgo = new Date(now.getTime() - 4 * 365.24 * 24 * 60 * 60 * 1000);
+    const oneWeekAgo = gameCalendarDate(now, -7);
+    const oneMonthAgo = gameCalendarDate(now, -30);
+    const twoYearsAgo = gameCalendarDate(now, -Math.round(2 * 365.24));
+    const fourYearsAgo = gameCalendarDate(now, -Math.round(4 * 365.24));
 
     testHorses = await Promise.all([
       // Young foal (1 week old) - eligible for flag evaluation

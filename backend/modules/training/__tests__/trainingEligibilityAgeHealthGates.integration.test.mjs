@@ -24,12 +24,12 @@ import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { canTrain } from '../controllers/trainingController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
-const GAME_YEAR_MS = 7 * 24 * 60 * 60 * 1000;
-// Backdate dateOfBirth to a whole game-age with a +1 day buffer so floor()
-// lands cleanly inside the intended game-year and never rounds down near the
-// day boundary (mirrors the existing training-suite convention).
-const gameAgeDob = years => new Date(Date.now() - (years * GAME_YEAR_MS + 24 * 60 * 60 * 1000));
+// Backdate dateOfBirth to a whole game-age plus one day, as an Eastern
+// date-only value (Equoria-1lk00), so the horse sits inside the intended
+// game-year rather than on its first day.
+const gameAgeDob = years => gameCalendarDate(new Date(), -(years * 7 + 1));
 
 let testUser;
 let testBreedId;

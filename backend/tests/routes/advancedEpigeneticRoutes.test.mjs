@@ -49,6 +49,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Advanced Epigenetic API Routes', () => {
   const cleanup = createCleanupTracker();
@@ -126,8 +127,8 @@ describe('Advanced Epigenetic API Routes', () => {
 
     // Create test horses at different developmental stages
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const oneWeekAgo = gameCalendarDate(now, -7);
+    const oneMonthAgo = gameCalendarDate(now, -30);
 
     // Young foal for developmental windows
     const youngFoal = await prisma.horse.create({

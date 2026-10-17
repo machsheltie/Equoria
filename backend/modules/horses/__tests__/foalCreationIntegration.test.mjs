@@ -39,6 +39,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
 // fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 // Import the real app — no mocks
 const app = (await import('../../../app.mjs')).default;
@@ -97,7 +98,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     });
 
     // Create a real sire (adult stallion)
-    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     testSire = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -116,7 +117,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     });
 
     // Create a real dam (adult mare)
-    const fourYearsAgo = new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000);
+    const fourYearsAgo = gameCalendarDate(new Date(), -4 * 365);
     testDam = await prisma.horse.create({
       data: {
         ...fixtureColor(),

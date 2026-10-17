@@ -27,6 +27,7 @@ import {
 } from '../services/temporaryFlagSystem.mjs';
 import { applyEnvironmentalEventFlag } from '../services/environmentalTriggerSystem.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const randHex = () => Math.random().toString(16).slice(2, 10);
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -48,7 +49,7 @@ describe('temporary epigenetic flags — real DB (Equoria-yzqhj.5)', () => {
       },
     });
 
-    const dob = new Date(Date.now() - 7 * MS_PER_DAY);
+    const dob = gameCalendarDate(new Date(), -7);
     const horseA = await createTestHorse(
       prisma,
       {

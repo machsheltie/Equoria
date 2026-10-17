@@ -45,7 +45,7 @@ const cleanup = createCleanupTracker();
 const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 // dateOfBirth is a date-only column: store the Eastern game date, as production writers do.
 const gameDaysAgo = n => gameCalendarDate(new Date(), -n);
-const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
+const yearsAgo = n => gameCalendarDate(new Date(), -Math.round(n * 365.25));
 
 // Equoria-wpqr/z183: epigenetic flag evaluation gates on canonical
 // GAME-years (1 game-week = 1 game-year, floor(ageDays / 7)). A horse is

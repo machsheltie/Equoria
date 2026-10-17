@@ -21,7 +21,7 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { runFoalingJob, createFoalFromPregnancy } from '../services/foalingService.mjs';
-import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
+import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -60,7 +60,7 @@ async function createMareSirePair({
   damName = 'B5Dam',
   sireName = 'B5Sire',
 }) {
-  const fiveYearsAgo = new Date(Date.now() - 5 * 365 * DAY_MS);
+  const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
   const sire = await prisma.horse.create({
     data: {
       ...fixtureColor(),
@@ -357,7 +357,7 @@ describe('runFoalingJob (B5)', () => {
     const user = await createUser('isolation');
     createdUserIds.push(user.id);
 
-    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * DAY_MS);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const validSire = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -589,7 +589,7 @@ describe('runFoalingJob (B5)', () => {
     // Build parents with known genotypes so we can assert inheritance, not
     // random generation. Both parents homozygous chestnut (e/e at extension)
     // means every foal MUST be e/e — deterministic regardless of rng.
-    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * DAY_MS);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     // eslint-disable-next-line equoria/no-raw-test-horse-create -- deterministic color-inheritance sentinel: both parents set an explicit homozygous-chestnut colorGenotype + non-null phenotype on purpose; a fixtureColor() spread would be overridden and is not the point. No NULL-phenotype risk.
     const sire = await prisma.horse.create({
       data: {

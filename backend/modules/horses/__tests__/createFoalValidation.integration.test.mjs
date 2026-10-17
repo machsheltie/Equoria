@@ -269,6 +269,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     const sevenDaysAgo = new Date(gameDaysAgo(7).getTime() + MS_PER_DAY - 1);
     await prisma.horse.update({
       where: { id: adultMare.id },
+      // doctrine-allow: utc-date-only-fixture — 23:59:59.999 on the Eastern date on purpose; the date-only column drops the time
       data: { lastBredDate: sevenDaysAgo },
     });
     const res = await postFoals({

@@ -332,6 +332,7 @@ const RESERVED_SCRATCH_PLANT_TOKENS = [
   '_file_size_doctrine_sentinel', // fileSizeThresholdDoctrine.sentinel.test.mjs (dirs)
   '__ml7jj_inscope_70pb9__', // doctrineScanPatterns.sentinel.test.mjs
   '__ml7jj_oos_70pb9__', // doctrineScanPatterns.sentinel.test.mjs
+  '__1lk00_utcdob_plant_', // utcDateOnlyFixturesDoctrine.sentinel.test.mjs (its check walks via walkFiles: unaffected)
 ];
 
 export function isReservedScratchPlantPathSegment(name, ownTokens = []) {

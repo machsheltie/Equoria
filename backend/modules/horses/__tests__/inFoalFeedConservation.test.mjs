@@ -57,6 +57,7 @@ import { feedHorse } from '../services/horseFeedService.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const START_UNITS = 100;
 
@@ -135,7 +136,7 @@ describe('feedHorse — in-foal feed conservation, exact equality (Equoria-qi1ns
       create: { name: 'Thoroughbred', description: 'Shared test breed' },
     });
 
-    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
     const sire = await prisma.horse.create({
       data: {
         ...fixtureColor(),

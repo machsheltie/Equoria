@@ -25,6 +25,7 @@ import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { runFoalingJob, createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FIXTURE_PREFIX = 'TestFixture-bvddn20';
@@ -40,7 +41,7 @@ function dropConstraint() {
 }
 
 async function createPregnantMare(label) {
-  const dob = new Date(Date.now() - 5 * 365 * DAY_MS);
+  const dob = gameCalendarDate(new Date(), -5 * 365);
   const sire = await prisma.horse.create({
     data: {
       ...fixtureColor(),

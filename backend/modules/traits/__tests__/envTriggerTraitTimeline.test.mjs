@@ -24,6 +24,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 let user;
 let horse;
@@ -238,7 +239,7 @@ describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
           ...fixtureColor(),
           name,
           sex: 'Filly',
-          dateOfBirth: new Date(ts - daysAgo * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(new Date(ts), -daysAgo),
           age: 0,
           userId: ageUser.id,
         },

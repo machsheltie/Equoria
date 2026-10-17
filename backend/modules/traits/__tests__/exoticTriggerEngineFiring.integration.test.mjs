@@ -30,6 +30,7 @@ import { evaluateExoticUnlocks } from '../../../utils/ultraRareTriggerEngine.mjs
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const cleanup = createCleanupTracker();
 const DAY = 24 * 60 * 60 * 1000;
@@ -114,7 +115,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-Shadow-${ts}`,
       sex: 'Colt',
-      dateOfBirth: new Date(ts - 900 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -900),
       age: 2,
       userId: user.id,
     },
@@ -155,7 +156,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-ShadowNeg-${ts}`,
       sex: 'Colt',
-      dateOfBirth: new Date(ts - 900 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -900),
       age: 2,
       userId: user.id,
     },
@@ -194,7 +195,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-Ghost-${ts}`,
       sex: 'Mare',
-      dateOfBirth: new Date(ts - 1200 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -1200),
       age: 3,
       userId: user.id,
       bondScore: 10, // snapshot < 30
@@ -226,7 +227,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-GhostNeg-${ts}`,
       sex: 'Mare',
-      dateOfBirth: new Date(ts - 1200 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -1200),
       age: 3,
       userId: user.id,
       bondScore: 10,
@@ -259,7 +260,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-Soul-${ts}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(ts - 1000 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -1000),
       age: 2,
       userId: user.id,
       daysGroomedInARow: 10, // >= 7 → perfectCareHistory snapshot TRUE
@@ -284,7 +285,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-SoulNeg-${ts}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(ts - 1000 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -1000),
       age: 2,
       userId: user.id,
       daysGroomedInARow: 0, // < 7 → perfectCareHistory snapshot FALSE
@@ -309,7 +310,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-SireUR-${ts}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(ts - 5 * 365 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -5 * 365),
       age: 5,
       userId: user.id,
       ultraRareTraits: { ultraRare: [{ name: 'Phoenix-Born' }], exotic: [] },
@@ -320,7 +321,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-DamUR-${ts}`,
       sex: 'Mare',
-      dateOfBirth: new Date(ts - 4 * 365 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -4 * 365),
       age: 4,
       userId: user.id,
       ultraRareTraits: { ultraRare: [{ name: 'Iron-Willed' }], exotic: [] },
@@ -331,7 +332,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-DamPlain-${ts}`,
       sex: 'Mare',
-      dateOfBirth: new Date(ts - 4 * 365 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -4 * 365),
       age: 4,
       userId: user.id,
       ultraRareTraits: { ultraRare: [], exotic: [] },
@@ -342,7 +343,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-Fey-${ts}`,
       sex: 'Filly',
-      dateOfBirth: new Date(ts - 30 * DAY), // young foal
+      dateOfBirth: gameCalendarDate(new Date(ts), -30), // young foal
       age: 0,
       userId: user.id,
       sireId: sireUR.id,
@@ -357,7 +358,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-FeyNeg-${ts}`,
       sex: 'Filly',
-      dateOfBirth: new Date(ts - 30 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -30),
       age: 0,
       userId: user.id,
       sireId: sireUR.id,
@@ -372,7 +373,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-TwinSire-${ts}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(ts - 5 * 365 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -5 * 365),
       age: 5,
       userId: user.id,
     },
@@ -382,12 +383,12 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-TwinDam-${ts}`,
       sex: 'Mare',
-      dateOfBirth: new Date(ts - 4 * 365 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -4 * 365),
       age: 4,
       userId: user.id,
     },
   });
-  const twinDob = new Date(ts - 200 * DAY);
+  const twinDob = gameCalendarDate(new Date(ts), -200);
   twinA = await prisma.horse.create({
     data: {
       ...fixtureColor(),
@@ -426,7 +427,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ExFire-DreamNeg-${ts}`,
       sex: 'Filly',
-      dateOfBirth: new Date(ts - 200 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -200),
       age: 0,
       userId: user.id,
       sireId: twinSire.id,

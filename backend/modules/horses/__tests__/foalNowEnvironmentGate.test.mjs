@@ -41,9 +41,10 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
-const FIVE_YEARS_AGO = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+const FIVE_YEARS_AGO = gameCalendarDate(new Date(), -5 * 365);
 
 describe('POST /horses/:id/foal-now — environment gate (Equoria-bhf6n, real DB)', () => {
   let csrf;

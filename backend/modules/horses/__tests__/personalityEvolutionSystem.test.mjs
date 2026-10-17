@@ -27,6 +27,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // children-before-parents (GroomInteraction onDelete: Cascade; Horse.userId /
 // Groom.userId onDelete: Restrict — users last).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 let user;
 let horse;
@@ -314,7 +315,7 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
         ...fixtureColor(),
         name: `TestFixture-PES-HorseNervous-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -Math.round(2 * 365.25)),
         age: 2,
         userId: evUser.id,
         temperament: 'nervous',
@@ -326,7 +327,7 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
         ...fixtureColor(),
         name: `TestFixture-PES-HorseDeveloping-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -Math.round(2 * 365.25)),
         age: 2,
         userId: evUser.id,
         temperament: 'developing',
@@ -489,7 +490,7 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
         ...fixtureColor(),
         name: `TestFixture-PES-RR7-HorseDummy-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(ts - 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -Math.round(365.25)),
         age: 1,
         userId: rr7User.id,
       },
@@ -502,7 +503,7 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
         ...fixtureColor(),
         name: `TestFixture-PES-RR7-HorseSpirited-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -Math.round(2 * 365.25)),
         age: 2,
         userId: rr7User.id,
         temperament: 'spirited',

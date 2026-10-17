@@ -25,6 +25,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from '../helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import * as horseAgingImpl from '../../services/jobs/impl/horseAging.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
 const DAYS_PER_GAME_YEAR = 7;
@@ -64,13 +65,11 @@ describe('INTEGRATION: horseAging impl module (Equoria-urqic.3.1) — real DB', 
   }, 120000);
 
   /** Create a horse born `gameYears * 7` days ago with a deliberately stale
-   * stored age, so the aging run detects a birthday. A +12h buffer is added so
-   * the computed game-year age sits comfortably INSIDE the year rather than
-   * exactly on the floor() boundary (where sub-day clock granularity could flip
-   * the result). */
+   * stored age, so the aging run detects a birthday. The dob is the Eastern
+   * date `gameYears * 7` game days back (Equoria-1lk00): a date-only value has
+   * no time of day, so no sub-day buffer is needed. */
   async function makeStaleHorse(gameYears, storedAge) {
-    const halfDayMs = 12 * 60 * 60 * 1000;
-    const dob = new Date(Date.now() - (gameYears * DAYS_PER_GAME_YEAR * 24 * 60 * 60 * 1000 + halfDayMs));
+    const dob = gameCalendarDate(new Date(), -gameYears * DAYS_PER_GAME_YEAR);
     return createTestHorse(
       prisma,
       {

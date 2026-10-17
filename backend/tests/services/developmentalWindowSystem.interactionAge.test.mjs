@@ -41,6 +41,7 @@ describe('assessMilestoneProgress — interactionAge in-window filter (Equoria-k
   it('counts an interaction inside an open window (currentAge inside window range)', () => {
     // Foal born 25 days ago (real time). currentAge = 25 game-days.
     const dob = new Date(Date.now() - 25 * 24 * 60 * 60 * 1000);
+    // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { dateOfBirth: dob };
 
     // Use early_socialization (startDay:1, endDay:21) but mark currentAge as
@@ -78,6 +79,7 @@ describe('assessMilestoneProgress — interactionAge in-window filter (Equoria-k
     // window whose startDay is 1. Without this assertion, a too-permissive
     // divisor would also pass the first test for the wrong reason.
     const dob = new Date(Date.now() - 25 * 24 * 60 * 60 * 1000);
+    // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { dateOfBirth: dob };
 
     const milestoneName = 'environmental_comfort';
@@ -99,6 +101,7 @@ describe('assessMilestoneProgress — interactionAge in-window filter (Equoria-k
     // uses the correct 1000*60*60*24 divisor. This test guards that branch so
     // a future "harmonize the two" refactor cannot silently re-break it.
     const dob = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000);
+    // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { dateOfBirth: dob };
 
     const milestoneName = 'environmental_comfort';

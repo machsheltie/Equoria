@@ -13,6 +13,7 @@ import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -40,7 +41,7 @@ describe('SENTINEL: foal born → foal_born Notification', () => {
       create: { name: 'Thoroughbred', description: 'sentinel test breed' },
     });
 
-    const dob = new Date(Date.now() - 5 * 365 * DAY_MS);
+    const dob = gameCalendarDate(new Date(), -5 * 365);
 
     sire = await prisma.horse.create({
       data: {

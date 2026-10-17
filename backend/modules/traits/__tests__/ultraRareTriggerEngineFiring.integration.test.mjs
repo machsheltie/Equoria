@@ -20,6 +20,7 @@ import { evaluateUltraRareTriggers } from '../../../utils/ultraRareTriggerEngine
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const cleanup = createCleanupTracker();
 
@@ -63,7 +64,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-URFire-BornLeader-${ts}`,
       sex: 'Filly',
-      dateOfBirth: new Date(ts - 400 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -400),
       age: 1,
       userId: user.id,
       temperament: 'Steady',
@@ -109,7 +110,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-URFire-BornLeaderNeg-${ts}`,
       sex: 'Filly',
-      dateOfBirth: new Date(ts - 400 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -400),
       age: 1,
       userId: user.id,
       temperament: 'Steady',
@@ -146,7 +147,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-URFire-Stormtouched-${ts}`,
       sex: 'Colt',
-      dateOfBirth: new Date(ts - 300 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -300),
       age: 1,
       userId: user.id,
       temperament: 'Reactive',
@@ -193,7 +194,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-URFire-StormtouchedNeg-${ts}`,
       sex: 'Colt',
-      dateOfBirth: new Date(ts - 300 * DAY),
+      dateOfBirth: gameCalendarDate(new Date(ts), -300),
       age: 1,
       userId: user.id,
       temperament: 'Calm', // NOT reactive → Stormtouched FALSE

@@ -25,6 +25,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const randHex = () => Math.random().toString(16).slice(2, 10);
 
@@ -46,7 +47,7 @@ describe('weeklyFlagEvaluation cron handler — real DB (Equoria-yzqhj.2)', () =
     });
 
     // Eligible: born ~7 real days ago → ~1 game-year (inside the 0-3 window).
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = gameCalendarDate(new Date(), -7);
     const foal = await createTestHorse(
       prisma,
       {
@@ -63,7 +64,7 @@ describe('weeklyFlagEvaluation cron handler — real DB (Equoria-yzqhj.2)', () =
     eligibleFoalId = foal.id;
 
     // Ineligible: born ~40 real days ago → ~5 game-years (past the 0-3 window).
-    const fortyDaysAgo = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
+    const fortyDaysAgo = gameCalendarDate(new Date(), -40);
     const adult = await createTestHorse(
       prisma,
       {

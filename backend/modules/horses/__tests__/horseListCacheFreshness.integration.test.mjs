@@ -31,6 +31,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-gf4kd';
 const ORIGIN = 'http://localhost:3000';
@@ -101,7 +102,7 @@ describe('the horse list reflects changes immediately (Equoria-gf4kd, Equoria-34
 
   it('a newborn foal appears in its owner’s stable straight away', async () => {
     const { user: owner, token } = await makeOwner();
-    const dob = new Date(Date.now() - 5 * 365 * DAY_MS);
+    const dob = gameCalendarDate(new Date(), -5 * 365);
     const sire = await createTestHorse({
       name: `${FIXTURE_PREFIX}-sire-${tag}`,
       userId: owner.id,

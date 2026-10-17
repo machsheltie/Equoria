@@ -20,6 +20,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 // Import the app (no mocking - full integration testing)
 const app = (await import('../../app.mjs')).default;
@@ -62,7 +63,7 @@ describe('Trait Routes Integration Tests', () => {
       });
 
       // Create real test horse in database owned by test user
-      const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000);
+      const twoYearsAgo = gameCalendarDate(new Date(), -2 * 365);
       testHorse = await prisma.horse.create({
         data: {
           ...fixtureColor(),

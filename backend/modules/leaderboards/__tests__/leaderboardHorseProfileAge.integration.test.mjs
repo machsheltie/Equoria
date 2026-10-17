@@ -86,6 +86,7 @@ describe('INTEGRATION: GET /api/v1/leaderboards/horse/:horseId age field (Equori
     const horse = await createTestHorse({
       name: `RkldUtc_${Date.now()}`,
       userId,
+      // doctrine-allow: utc-date-only-fixture — an intra-day instant on purpose; the test proves the time of day is ignored
       dateOfBirth: dob,
     });
     horseIds.push(horse.id);

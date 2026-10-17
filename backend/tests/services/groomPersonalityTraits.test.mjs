@@ -23,6 +23,7 @@ import {
   updatePersonalityTraits,
   getPersonalityTraitDefinitions,
 } from '../../modules/grooms/services/groomPersonalityTraits.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Groom Personality Trait System', () => {
   let testUser;
@@ -32,7 +33,7 @@ describe('Groom Personality Trait System', () => {
   beforeAll(async () => {
     // Create test horses with different temperaments
     const now = new Date();
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = gameCalendarDate(now, -30);
 
     await prisma.$transaction(
       async tx => {
