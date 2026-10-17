@@ -21,6 +21,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
@@ -256,6 +257,80 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
       expect(one.status).toBe(200);
       expect(one.body.data.breedingCooldownEndsAt).toBe(expected);
     });
+  });
+
+  // Review round: boundary, DST and a cross-check against the real breeding
+  // guard. Every expected instant is written by hand (not computed with the
+  // production gameTime helpers), so the expectation is independent of them.
+  // lastBredDate is a date-only column: a calendar date stored as UTC midnight.
+  describe('cooldown boundary, DST and the real guard (hand-written instants)', () => {
+    const calendarDate = ymd => new Date(`${ymd}T00:00:00.000Z`);
+
+    async function cooldownOf(owner, mare) {
+      const res = await detail(owner.token(), mare.id);
+      expect(res.status).toBe(200);
+      return res.body.data.breedingCooldownEndsAt;
+    }
+
+    async function breed(owner, stallion, mare) {
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${owner.token()}`] });
+      return request(app)
+        .post('/api/v1/horses/foals')
+        .set('Authorization', `Bearer ${owner.token()}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ sireId: stallion.id, damId: mare.id });
+    }
+
+    it('at 00:05 EDT on 2026-10-20: bred 6 Eastern days ago -> ends 2026-10-21 00:00 EDT; bred exactly 7 days ago -> null', async () => {
+      jest.useFakeTimers({ now: new Date('2026-10-20T04:05:00.000Z'), doNotFake: REAL_EXCEPT_DATE });
+      const owner = await player('owner');
+      const six = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-10-14') });
+      const seven = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-10-13') });
+
+      expect(await cooldownOf(owner, six)).toBe('2026-10-21T04:00:00.000Z');
+      expect(await cooldownOf(owner, seven)).toBeNull();
+    });
+
+    it('spring forward (2026-03-08): bred 2026-03-04 -> ends 2026-03-11 00:00 EDT = 04:00Z', async () => {
+      jest.useFakeTimers({ now: new Date('2026-03-08T12:00:00.000Z'), doNotFake: REAL_EXCEPT_DATE });
+      const owner = await player('owner');
+      const mare = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-03-04') });
+
+      expect(await cooldownOf(owner, mare)).toBe('2026-03-11T04:00:00.000Z');
+    });
+
+    it('fall back (2026-11-01): bred 2026-10-26 -> ends 2026-11-02 00:00 EST = 05:00Z', async () => {
+      jest.useFakeTimers({ now: new Date('2026-11-01T12:00:00.000Z'), doNotFake: REAL_EXCEPT_DATE });
+      const owner = await player('owner');
+      const mare = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-10-26') });
+
+      expect(await cooldownOf(owner, mare)).toBe('2026-11-02T05:00:00.000Z');
+    });
+
+    it.each([
+      ['23:55 EDT, the last minutes of day 6', '2026-10-20T03:55:00.000Z', false],
+      ['00:05 EDT, the first minutes of day 7', '2026-10-20T04:05:00.000Z', true],
+    ])(
+      'cross-check at %s: the field is null exactly when the real breeding guard allows the breeding',
+      async (_label, instant, guardAllows) => {
+        jest.useFakeTimers({ now: new Date(instant), doNotFake: REAL_EXCEPT_DATE });
+        const owner = await player('owner');
+        const stallion = await horse({ ownerId: owner.user.id, sex: 'Stallion' });
+        const mare = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-10-13') });
+
+        const field = await cooldownOf(owner, mare);
+        const bred = await breed(owner, stallion, mare);
+
+        expect(field === null).toBe(guardAllows);
+        expect(bred.status).toBe(guardAllows ? 200 : 400);
+        if (!guardAllows) {
+          expect(field).toBe('2026-10-20T04:00:00.000Z');
+          expect(bred.body.message).toMatch(/breeding cooldown/);
+        }
+      },
+    );
   });
 
   it('inFoal reflects the pregnancy; the detail endpoint carries the same new fields', async () => {
