@@ -69,36 +69,35 @@ const disciplineStatMapping: Record<string, string[]> = {
 };
 
 /**
- * Calculates eligibility status for a horse
+ * Pre-checks a horse against the server's entry rules, using only data this
+ * component has (Equoria-576c0 B9). The server's shared checkEntryEligibility
+ * is the authority; reasons here repeat its messages word for word.
+ *
+ * Checked here: already entered, injured, age 3-20. NOT checked here, because
+ * this component has no rider or gait data: the rider rule (C10) and Gaited's
+ * gaiting rule (C12). Those are left to the server, whose refusal message is
+ * shown to the player on entry.
+ *
+ * Old contract: the same four checks, with an "under 20" wording that
+ * contradicted the rule (a 20-year-old may enter) and messages that differed
+ * from the server's.
  */
-function calculateEligibility(
+export function calculateEligibility(
   horse: Horse,
   alreadyEnteredIds: Set<number>
 ): { status: EligibilityStatus; reason?: string } {
-  // Check if already entered
   if (alreadyEnteredIds.has(horse.id)) {
-    return {
-      status: 'already-entered',
-      reason: 'This horse is already entered in this competition',
-    };
+    return { status: 'already-entered', reason: 'Horse is already entered in this show' };
   }
-
-  // Check health status
   if (horse.health === 'injured') {
-    return { status: 'injured', reason: 'Horse must be healthy to compete' };
+    return { status: 'injured', reason: 'Injured horses cannot compete' };
   }
-
-  // Check age - too young (under 3)
   if (horse.age < 3) {
-    return { status: 'too-young', reason: 'Horse must be at least 3 years old' };
+    return { status: 'too-young', reason: 'Horse must be at least 3 years old to compete' };
   }
-
-  // Check age - too old (over 20)
   if (horse.age > 20) {
-    return { status: 'too-old', reason: 'Horse must be under 20 years old' };
+    return { status: 'too-old', reason: 'Horses over 20 years old cannot compete' };
   }
-
-  // Horse is eligible
   return { status: 'eligible' };
 }
 
