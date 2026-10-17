@@ -37,6 +37,7 @@ import {
   DEVELOPMENTAL_WINDOWS,
   MILESTONE_TYPES,
 } from './enhancedMilestoneEvaluationSystem.mjs';
+import { getHorseAgeDays } from './horseAge.mjs';
 
 /**
  * GAME-DESIGN UNIT CONTRACT (Equoria-son6 / Equoria-j9ip):
@@ -467,9 +468,9 @@ export async function processFoalMilestoneEvaluations(options = {}) {
   let errors = 0;
 
   for (const foal of foals) {
-    const ageInDays = Math.floor(
-      (Date.now() - new Date(foal.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
-    );
+    // Equoria-kha18: whole Eastern game days, as evaluateEnhancedMilestone reads it.
+    // A millisecond delta from the date-only dob ran a day ahead from 20:00 ET.
+    const ageInDays = getHorseAgeDays(foal.dateOfBirth);
 
     for (const milestoneType of Object.values(MILESTONE_TYPES)) {
       const window = DEVELOPMENTAL_WINDOWS[milestoneType];
