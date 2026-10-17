@@ -20,6 +20,7 @@ import logger from '../../../utils/logger.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { organizeByGenerations } from './lineageTree.mjs';
+import { toPredictionView } from './predictionHorseView.mjs';
 import {
   calculateGeneticDiversityMetrics,
   calculateInbreedingCoefficient,
@@ -51,17 +52,22 @@ export async function generateLineageBreedingRecommendations(
     `[lineageBreedingRecommendations.generateLineageBreedingRecommendations] Generating recommendations for stallion ${stallionId} and mare ${mareId}`,
   );
 
-  // Get detailed horse data
-  const [stallion, mare] = await Promise.all([
-    prisma.horse.findUnique({
-      where: { id: stallionId },
-      include: { competitionResults: true },
-    }),
-    prisma.horse.findUnique({
-      where: { id: mareId },
-      include: { competitionResults: true },
-    }),
-  ]);
+  // Get detailed horse data. The roots go through toPredictionView with the
+  // viewer too (no unrevealed hidden traits; no competition records of a horse
+  // the viewer does not own), so this no longer leans on the route's
+  // both-owned precondition (q4uem.9 slice 4 hardening).
+  const [stallion, mare] = (
+    await Promise.all([
+      prisma.horse.findUnique({
+        where: { id: stallionId },
+        include: { competitionResults: true },
+      }),
+      prisma.horse.findUnique({
+        where: { id: mareId },
+        include: { competitionResults: true },
+      }),
+    ])
+  ).map(row => toPredictionView(row, { viewerId }));
 
   if (!stallion || !mare) {
     // Equoria-4xwyi: throw a TYPED 404 (AppError, statusCode 404) instead of a
@@ -79,7 +85,7 @@ export async function generateLineageBreedingRecommendations(
 
   // Calculate various metrics
   const diversityMetrics = await calculateGeneticDiversityMetrics(lineageData);
-  const inbreedingCoeff = await calculateInbreedingCoefficient(stallionId, mareId);
+  const inbreedingCoeff = await calculateInbreedingCoefficient(stallionId, mareId, { viewerId });
   const performanceAnalysis = await analyzeLineagePerformance(lineageData);
 
   // Calculate compatibility score
