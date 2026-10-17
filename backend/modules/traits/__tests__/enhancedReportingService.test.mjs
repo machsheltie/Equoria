@@ -33,7 +33,6 @@ import {
 } from '../services/enhancedReportingService.mjs';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
 function makeHorse(overrides = {}) {
   return {
     id: 1,

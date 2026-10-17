@@ -831,8 +831,7 @@ describe('Developmental Window System', () => {
       });
       // Create 2 interactions during early_socialization window (interactionAge=10)
       // so interactions.length >= 2 is true when environmental_comfort is assessed
-      const birthDate = gameCalendarDate(now, -135);
-      const dayTen = new Date(birthDate.getTime() + 10 * 24 * 60 * 60 * 1000);
+      const dayTen = new Date(over135DayHorse.dateOfBirth.getTime() + 10 * 24 * 60 * 60 * 1000);
       await prisma.groomInteraction.create({
         data: {
           groomId: rr7BiiiGroom.id,
