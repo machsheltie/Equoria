@@ -14,7 +14,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
-import { withoutUnrevealedTraits } from './predictionHorseView.mjs';
+import { toPredictionView } from './predictionHorseView.mjs';
 
 /**
  * Generate hierarchical lineage tree structure
@@ -23,14 +23,20 @@ import { withoutUnrevealedTraits } from './predictionHorseView.mjs';
  * @param {number} maxGenerations - Maximum generations to trace
  * @returns {Object} Tree structure with nodes and relationships
  */
-export async function generateLineageTree(stallionId, mareId, maxGenerations = 3) {
+export async function generateLineageTree(
+  stallionId,
+  mareId,
+  maxGenerations = 3,
+  { viewerId } = {},
+) {
   logger.info(
     `[lineageTree.generateLineageTree] Generating tree for stallion ${stallionId} and mare ${mareId}, ${maxGenerations} generations`,
   );
 
-  // Get the parent horses. Owner ruling S-Q9 (2026-10-16): every row the tree
-  // is built from has its unrevealed hidden traits removed on load
-  // (Equoria-q4uem.9 slice 4) — roots, ancestors and the generation lists.
+  // Get the parent horses. Every row the tree is built from goes through
+  // toPredictionView on load — roots, ancestors and the generation lists: no
+  // unrevealed hidden traits (ruling S-Q9) and, given a viewer, no competition
+  // records of horses that viewer does not own (design §0; q4uem.9 slice 4b).
   const [stallion, mare] = (
     await Promise.all([
       prisma.horse.findUnique({
@@ -50,7 +56,7 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
         },
       }),
     ])
-  ).map(withoutUnrevealedTraits);
+  ).map(row => toPredictionView(row, { viewerId }));
 
   if (!stallion || !mare) {
     logger.warn('[lineageTree.generateLineageTree] Missing parent horses');
@@ -79,7 +85,7 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
           include: { sire: true, dam: true, competitionResults: true },
         })
       : [];
-  const ancestorById = new Map(ancestorRows.map(h => [h.id, withoutUnrevealedTraits(h)]));
+  const ancestorById = new Map(ancestorRows.map(h => [h.id, toPredictionView(h, { viewerId })]));
   // Seed the map with the two roots so buildHorseNode can find them by id.
   ancestorById.set(stallion.id, stallion);
   ancestorById.set(mare.id, mare);
@@ -95,7 +101,7 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
   };
 
   // Organize by generations
-  tree.generations = await organizeByGenerations(stallionId, mareId, maxGenerations);
+  tree.generations = await organizeByGenerations(stallionId, mareId, maxGenerations, { viewerId });
   tree.totalHorses = tree.generations.reduce((total, gen) => total + gen.horses.length, 0);
 
   logger.info(
@@ -228,7 +234,7 @@ async function collectAncestorIdsBFS(seedIds, maxRemainingDepth) {
  * @param {number} maxGenerations - Maximum generations
  * @returns {Array} Array of generation objects
  */
-export async function organizeByGenerations(stallionId, mareId, maxGenerations) {
+export async function organizeByGenerations(stallionId, mareId, maxGenerations, { viewerId } = {}) {
   const generations = [];
   const processed = new Set();
   let currentGeneration = [stallionId, mareId];
@@ -254,7 +260,7 @@ export async function organizeByGenerations(stallionId, mareId, maxGenerations) 
             include: { competitionResults: true },
           })
         : [];
-    const byId = new Map(fetched.map(h => [h.id, withoutUnrevealedTraits(h)]));
+    const byId = new Map(fetched.map(h => [h.id, toPredictionView(h, { viewerId })]));
 
     const horses = [];
     const nextGeneration = [];
@@ -316,12 +322,17 @@ export async function organizeByGenerations(stallionId, mareId, maxGenerations) 
  * @param {number} maxGenerations - Maximum generations
  * @returns {Object} Visualization data structure
  */
-export async function createVisualizationData(stallionId, mareId, maxGenerations = 3) {
+export async function createVisualizationData(
+  stallionId,
+  mareId,
+  maxGenerations = 3,
+  { viewerId } = {},
+) {
   logger.info(
     `[lineageTree.createVisualizationData] Creating visualization for stallion ${stallionId} and mare ${mareId}`,
   );
 
-  const tree = await generateLineageTree(stallionId, mareId, maxGenerations);
+  const tree = await generateLineageTree(stallionId, mareId, maxGenerations, { viewerId });
   const nodes = [];
   const edges = [];
 

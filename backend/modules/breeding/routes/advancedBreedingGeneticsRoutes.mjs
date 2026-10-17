@@ -122,11 +122,9 @@ router.post(
       // Add lineage analysis if requested
       let lineageAnalysis = null;
       if (includeLineage) {
-        const lineageTree = await generateLineageTree(
-          parseInt(stallionId),
-          parseInt(mareId),
-          generations,
-        );
+        const lineageTree = await generateLineageTree(+stallionId, +mareId, generations, {
+          viewerId: userId,
+        });
         lineageAnalysis = {
           diversityImpact: calculateGeneticDiversityImpact(stallion, mare, lineageTree),
           multiGenerationalPredictions: calculateMultiGenerationalPredictions(
@@ -211,10 +209,10 @@ router.get(
 
       const [lineageTree, diversityMetrics, performanceAnalysis, visualizationData] =
         await Promise.all([
-          generateLineageTree(parseInt(stallionId), parseInt(mareId), generations),
+          generateLineageTree(+stallionId, +mareId, generations, { viewerId: userId }),
           calculateGeneticDiversityMetrics([{ generation: 0, horses: [stallion, mare] }]),
           analyzeLineagePerformance([{ generation: 0, horses: [stallion, mare] }]),
-          createVisualizationData(parseInt(stallionId), parseInt(mareId), generations),
+          createVisualizationData(+stallionId, +mareId, generations, { viewerId: userId }),
         ]);
 
       // Equoria-245bt: the intentional per-horse lineage-analysis signal, best-effort (never fails

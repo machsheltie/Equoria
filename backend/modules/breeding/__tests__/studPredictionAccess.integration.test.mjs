@@ -22,7 +22,7 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { sharedBreed, makePlayer, makeHorse, sendJson } from './helpers/studBookingFixtures.mjs';
+import { sharedBreed, makePlayer, makeHorse, sendJson, tag } from './helpers/studBookingFixtures.mjs';
 
 const PREFIX = 'TestFixture-q4uem9-predict';
 const SECRETS = ['q4uem9StudSecret', 'q4uem9MareSecret', 'q4uem9GrandsireSecret'];
@@ -241,6 +241,116 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
       expect(res.body.data.expectedTraits.likelyTraits).toEqual(
         expect.arrayContaining(['q4uem9StudRevealed', 'q4uem9MareRevealed']),
       );
+    });
+  });
+
+  describe("design §0 default (slice 4b): other players' competition records are withheld; the caller's own are kept", () => {
+    const SHOW = {
+      grandsire: 'q4uem9-GrandsireShow',
+      stud: 'q4uem9-StudShow',
+      mare: 'q4uem9-MareShow',
+      ownStallion: 'q4uem9-OwnStallionShow',
+    };
+    let show;
+
+    async function record(horseId, showName, disciplineScore) {
+      await prisma.competitionResult.create({
+        data: {
+          horseId,
+          showId: show.id,
+          score: 88,
+          placement: '1st',
+          discipline: 'Racing',
+          runDate: new Date(Date.now() - 86400000),
+          showName,
+          prizeWon: 500,
+        },
+      });
+      await prisma.horse.update({ where: { id: horseId }, data: { disciplineScores: { Racing: disciplineScore } } });
+    }
+
+    function findNode(node, id) {
+      if (!node) {
+        return null;
+      }
+      if (node.id === id) {
+        return node;
+      }
+      return findNode(node.sire, id) ?? findNode(node.dam, id);
+    }
+
+    beforeEach(async () => {
+      show = await prisma.show.create({
+        data: {
+          name: `${PREFIX}-show-${tag()}`,
+          discipline: 'Racing',
+          levelMin: 1,
+          levelMax: 20,
+          entryFee: 0,
+          prize: 1000,
+          runDate: new Date(Date.now() - 86400000),
+        },
+      });
+      const showId = show.id;
+      cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId } }), 'competitionResults');
+      cleanup.add(() => prisma.show.deleteMany({ where: { id: showId } }), 'show');
+      await record(grandsire.id, SHOW.grandsire, 71);
+      await record(stud.id, SHOW.stud, 72);
+      await record(mare.id, SHOW.mare, 73);
+    });
+
+    it("lineage-analysis: the stud stallion and the third player's grandsire carry no records; the mare keeps hers; shapes stay arrays/objects", async () => {
+      const res = await ENDPOINTS.lineage(mareOwner.token, stud.id, mare.id);
+
+      expect(res.status).toBe(200);
+      const text = JSON.stringify(res.body);
+      expect(text).not.toContain(SHOW.stud);
+      expect(text).not.toContain(SHOW.grandsire);
+      expect(text).toContain(SHOW.mare);
+
+      const root = res.body.data.lineageTree.root;
+      const studNode = root.stallion;
+      const grandsireNode = findNode(root.stallion, grandsire.id);
+      expect(grandsireNode).not.toBeNull();
+      for (const node of [studNode, grandsireNode]) {
+        expect(node.competitionResults).toEqual([]);
+        expect(node.disciplineScores).toEqual({});
+      }
+      expect(root.mare.competitionResults).toHaveLength(1);
+      expect(root.mare.disciplineScores).toEqual({ Racing: 73 });
+
+      for (const generation of res.body.data.lineageTree.generations) {
+        for (const h of generation.horses) {
+          expect(Array.isArray(h.competitionResults)).toBe(true);
+          expect(typeof h.disciplineScores).toBe('object');
+          if (h.id !== mare.id) {
+            expect(h.competitionResults).toEqual([]);
+            expect(h.disciplineScores).toEqual({});
+          }
+        }
+      }
+    });
+
+    it("genetic-probability with lineage: no record of the stud or the third player's grandsire in the response", async () => {
+      const res = await ENDPOINTS.geneticProbability(mareOwner.token, stud.id, mare.id);
+
+      expect(res.status).toBe(200);
+      const text = JSON.stringify(res.body);
+      expect(text).not.toContain(SHOW.stud);
+      expect(text).not.toContain(SHOW.grandsire);
+    });
+
+    it("the caller's OWN stallion keeps its records (only other players' horses are withheld)", async () => {
+      const ownStallion = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion', sireId: grandsire.id });
+      await record(ownStallion.id, SHOW.ownStallion, 74);
+
+      const res = await ENDPOINTS.lineage(mareOwner.token, ownStallion.id, mare.id);
+
+      expect(res.status).toBe(200);
+      const root = res.body.data.lineageTree.root;
+      expect(root.stallion.competitionResults).toHaveLength(1);
+      expect(root.stallion.disciplineScores).toEqual({ Racing: 74 });
+      expect(findNode(root.stallion, grandsire.id).competitionResults).toEqual([]);
     });
   });
 

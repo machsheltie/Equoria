@@ -7,7 +7,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { withoutUnrevealedTraits } from './predictionHorseView.mjs';
+import { toPredictionView } from './predictionHorseView.mjs';
 
 /**
  * Owner ruling S9 (Stacey, 2026-10-15): predictions are allowed for a stallion
@@ -64,8 +64,9 @@ export async function getUserHorseIds(userId) {
  * Access for the pair predictions (Equoria-q4uem.9 slice 4): the MARE must be
  * the caller's; the STALLION must be the caller's or listed at stud (public or
  * private, ruling S9). Anything else is null, which callers answer with the
- * same 404 a missing horse gets (CWE-639). Both rows come back with every
- * unrevealed hidden trait removed (ruling S-Q9) and in a fixed order — the
+ * same 404 a missing horse gets (CWE-639). Both rows come back through
+ * toPredictionView (no unrevealed hidden traits, S-Q9; no competition records
+ * of a horse the caller does not own, design §0) and in a fixed order — the
  * findMany above does not promise one, and destructuring it as
  * [stallion, mare] could swap them.
  *
@@ -87,8 +88,8 @@ export async function resolveBreedingPairAccess(stallionId, mareId, userId) {
     return null;
   }
   return {
-    stallion: withoutUnrevealedTraits(stallion),
-    mare: withoutUnrevealedTraits(mare),
+    stallion: toPredictionView(stallion, { viewerId: userId }),
+    mare: toPredictionView(mare, { viewerId: userId }),
     stallionOwned,
   };
 }

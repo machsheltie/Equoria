@@ -14,9 +14,11 @@
  * still look for (they do not exist on the Horse model today — Equoria-3867b)
  * are emptied too, so fixing those readers later cannot reopen the leak.
  *
- * Competition data (competitionResults, disciplineScores) is NOT touched here:
- * whether other players' competition records are shown is an open owner
- * question (q4uem.9 slice 4 report). When it is ruled, it is added here.
+ * Competition data (competitionResults, disciplineScores) of a horse the
+ * VIEWER does not own is withheld by `toPredictionView` — design §0 default
+ * (q4uem.9 slice 4b) until the owner rules on the open question (keep private
+ * / show publicly / show a summary). SHOW_OTHER_PLAYERS_COMPETITION_DATA is
+ * the single point that flips it.
  */
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
@@ -59,4 +61,49 @@ export function withoutUnrevealedTraits(horse) {
     view.dam = withoutHidden(horse.dam);
   }
   return view;
+}
+
+/**
+ * Open owner question (q4uem.9 slice 4 report, option A is this default):
+ * other players' competition records are withheld from breeding predictions.
+ * Flip to `true` only on the owner's ruling.
+ */
+export const SHOW_OTHER_PLAYERS_COMPETITION_DATA = false;
+
+function withoutCompetition(horse) {
+  const view = { ...horse };
+  if ('competitionResults' in horse) {
+    view.competitionResults = [];
+  }
+  if ('disciplineScores' in horse) {
+    view.disciplineScores = {};
+  }
+  return view;
+}
+
+/**
+ * The view breeding predictions compute with, for one viewer: unrevealed
+ * hidden traits removed for every horse (S-Q9) and, while the competition
+ * default stands, competition records removed for every horse the viewer does
+ * not own (the caller's own horses keep theirs). Empty values replace removed
+ * ones (`[]` / `{}`) so response shapes stay stable for the frontend.
+ * Without a `viewerId` only the hidden-trait rule applies.
+ *
+ * @param {object | null | undefined} horse
+ * @param {{ viewerId?: string }} [options]
+ */
+export function toPredictionView(horse, { viewerId } = {}) {
+  const view = withoutUnrevealedTraits(horse);
+  if (!view || viewerId === undefined || SHOW_OTHER_PLAYERS_COMPETITION_DATA) {
+    return view;
+  }
+  const scoped = row => (row && row.userId !== viewerId ? withoutCompetition(row) : row);
+  const result = scoped(view);
+  if (view.sire && typeof view.sire === 'object') {
+    result.sire = scoped(view.sire);
+  }
+  if (view.dam && typeof view.dam === 'object') {
+    result.dam = scoped(view.dam);
+  }
+  return result;
 }
