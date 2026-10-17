@@ -37,6 +37,7 @@ import {
   HORSE_SEX,
   HORSE_SEX_VALUES,
   HORSE_TEMPERAMENT,
+  HORSE_TEMPERAMENT_VALUES,
   DISCIPLINES,
   DISCIPLINE_VALUES,
   GROOM_SPECIALTIES,
@@ -56,6 +57,7 @@ import {
   isValidScore,
   isValidDisciplineScore,
 } from '../../constants/schema.mjs';
+import { TEMPERAMENTS } from '../../modules/competition/index.mjs';
 
 describe('🏇 UNIT: Schema Constants Validation', () => {
   describe('Horse Sex Constants', () => {
@@ -83,18 +85,32 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
   });
 
   describe('Horse Temperament Constants', () => {
-    it('should have all required temperament values', () => {
-      expect(HORSE_TEMPERAMENT.CALM).toBe('Calm');
-      expect(HORSE_TEMPERAMENT.SPIRITED).toBe('Spirited');
-      expect(HORSE_TEMPERAMENT.NERVOUS).toBe('Nervous');
-      expect(HORSE_TEMPERAMENT.AGGRESSIVE).toBe('Aggressive');
-      expect(HORSE_TEMPERAMENT.DOCILE).toBe('Docile');
-      expect(HORSE_TEMPERAMENT.UNPREDICTABLE).toBe('Unpredictable');
+    // Owner ruling (Stacey, 2026-10-15/16; Equoria-576c0 B6): the temperaments are
+    // the 11 of the owner's competition matrix. Old contract: six values,
+    // including 'Docile' and 'Unpredictable', which are not among the 11.
+    it("should have exactly the owner's 11 temperaments", () => {
+      expect(HORSE_TEMPERAMENT).toEqual({
+        SPIRITED: 'Spirited',
+        NERVOUS: 'Nervous',
+        CALM: 'Calm',
+        BOLD: 'Bold',
+        STEADY: 'Steady',
+        INDEPENDENT: 'Independent',
+        REACTIVE: 'Reactive',
+        STUBBORN: 'Stubborn',
+        PLAYFUL: 'Playful',
+        LAZY: 'Lazy',
+        AGGRESSIVE: 'Aggressive',
+      });
+      expect(HORSE_TEMPERAMENT_VALUES).toEqual([...TEMPERAMENTS]);
     });
 
     it('should validate temperament correctly', () => {
       expect(isValidTemperament('Calm')).toBe(true);
       expect(isValidTemperament('Spirited')).toBe(true);
+      expect(isValidTemperament('Bold')).toBe(true);
+      expect(isValidTemperament('Docile')).toBe(false);
+      expect(isValidTemperament('Unpredictable')).toBe(false);
       expect(isValidTemperament('Invalid')).toBe(false);
     });
   });

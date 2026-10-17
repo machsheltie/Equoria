@@ -45,16 +45,27 @@ export {
 /**
  * Horse temperament constants
  */
-export const HORSE_TEMPERAMENT = {
-  CALM: 'Calm',
+// The owner's 11 temperaments, in the column order of her competition matrix
+// (EquoriaBible/RelevantFiles/Equoria_Temperament_Competition_Matrix.xlsx;
+// Equoria-576c0 B6). The one list: modules/competition/rules/disciplineRules.mjs
+// takes TEMPERAMENTS from here (the competition barrel already imports this
+// file, so the reverse import would be a cycle). Was six values including
+// 'Docile' and 'Unpredictable', which are not among the 11.
+export const HORSE_TEMPERAMENT = Object.freeze({
   SPIRITED: 'Spirited',
   NERVOUS: 'Nervous',
+  CALM: 'Calm',
+  BOLD: 'Bold',
+  STEADY: 'Steady',
+  INDEPENDENT: 'Independent',
+  REACTIVE: 'Reactive',
+  STUBBORN: 'Stubborn',
+  PLAYFUL: 'Playful',
+  LAZY: 'Lazy',
   AGGRESSIVE: 'Aggressive',
-  DOCILE: 'Docile',
-  UNPREDICTABLE: 'Unpredictable',
-};
+});
 
-export const HORSE_TEMPERAMENT_VALUES = Object.values(HORSE_TEMPERAMENT);
+export const HORSE_TEMPERAMENT_VALUES = Object.freeze(Object.values(HORSE_TEMPERAMENT));
 
 /**
  * Horse health status constants

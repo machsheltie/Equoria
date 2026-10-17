@@ -156,7 +156,10 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
       `[competitionScoring] show ${show.id ?? 'unknown'}: discipline "${show.discipline}" is not a competition discipline; scored on the flat 5-stat average`,
     );
   }
-  return entries.map(entry => {
+  // Horses scored with a 0 temperament term because theirs is missing or not
+  // one of the 11 (O5 interim); logged once for the show below.
+  const unrecognizedTemperamentHorseIds = [];
+  const scored = entries.map(entry => {
     const h = entry.horse;
     // Equoria-507mt: stat columns are NOT NULL at the schema layer
     // (migration 20260530130000_507mt_horse_stats_nonnull). The prior
@@ -199,15 +202,13 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
     }
     // Temperament (R1, B6): +5 / 0 / -5 from the owner's matrix. A null or
     // unknown-name temperament contributes 0, as every horse did before B6,
-    // and is logged (O5 interim, approved 2026-10-17). A legacy discipline has
+    // and is logged once per show (O5 interim, approved 2026-10-17). A legacy discipline has
     // no matrix row and was already logged above, so it contributes 0 quietly.
     let temperamentTerm = 0;
     if (weighted) {
       const percent = temperamentPercent(show.discipline, h.temperament);
       if (percent === null) {
-        logger.error(
-          `[competitionScoring] show ${show.id ?? 'unknown'}: horse ${h.id ?? entry.horseId} has no recognized temperament (${JSON.stringify(h.temperament ?? null)}); temperament term 0`,
-        );
+        unrecognizedTemperamentHorseIds.push(h.id ?? entry.horseId);
       } else {
         temperamentTerm = percent;
       }
@@ -219,6 +220,12 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
 
     return { entry, score: applyPercentTerms(base, percentTerms), assignment };
   });
+  if (unrecognizedTemperamentHorseIds.length > 0) {
+    logger.error(
+      `[competitionScoring] show ${show.id ?? 'unknown'}: ${unrecognizedTemperamentHorseIds.length} horse(s) with no recognized temperament scored with a 0 temperament term: ${unrecognizedTemperamentHorseIds.join(', ')}`,
+    );
+  }
+  return scored;
 }
 
 /**

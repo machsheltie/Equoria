@@ -13,6 +13,8 @@
  * competition one.
  */
 
+import { HORSE_TEMPERAMENT_VALUES } from '../../../constants/schema.mjs';
+
 /** [50% primary, 30% secondary, 20% tertiary] per competition discipline. */
 export const DISCIPLINE_STATS = Object.freeze({
   'Western Pleasure': Object.freeze(['focus', 'obedience', 'intelligence']),
@@ -68,20 +70,9 @@ export function getDisciplineStats(discipline) {
 /**
  * The 11 temperaments, in the column order of the owner's matrix
  * (EquoriaBible/RelevantFiles/Equoria_Temperament_Competition_Matrix.xlsx).
+ * The one list is constants/schema.mjs HORSE_TEMPERAMENT.
  */
-export const TEMPERAMENTS = Object.freeze([
-  'Spirited',
-  'Nervous',
-  'Calm',
-  'Bold',
-  'Steady',
-  'Independent',
-  'Reactive',
-  'Stubborn',
-  'Playful',
-  'Lazy',
-  'Aggressive',
-]);
+export const TEMPERAMENTS = HORSE_TEMPERAMENT_VALUES;
 
 /**
  * Temperament effect per ridden discipline: 1 Positive, 0 Neutral, -1 Negative.
