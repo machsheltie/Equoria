@@ -25,7 +25,7 @@ import {
   getShowForEntry,
   CONFORMATION_ENTRY_ONLY_MESSAGE,
 } from '../services/competitionRouteQueries.mjs';
-import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
+import { sendEntryRefusal } from '../services/entryEligibility.mjs';
 // The 23 competition disciplines, from the one bible table (Equoria-576c0 B3 review).
 import { isKnownDiscipline } from '../rules/disciplineRules.mjs';
 
@@ -242,25 +242,37 @@ export async function enterShow(req, res) {
     const { horseId } = req.body;
 
     if (!horseId || typeof horseId !== 'number') {
-      return res.status(400).json({ success: false, message: 'horseId is required' });
+      return res
+        .status(400)
+        .json({ success: false, code: 'HORSE_ID_REQUIRED', message: 'horseId is required' });
     }
 
-    // Same select as POST /competition/enter (incl. the g8qg0 level bracket).
+    // Same select as POST /competition/enter.
     const show = await getShowForEntry(showId);
 
     if (!show) {
-      return res.status(404).json({ success: false, message: 'Show not found' });
+      return res
+        .status(404)
+        .json({ success: false, code: 'SHOW_NOT_FOUND', message: 'Show not found' });
     }
     if (show.showType === 'conformation') {
-      return res.status(400).json({ success: false, message: CONFORMATION_ENTRY_ONLY_MESSAGE });
+      return res.status(400).json({
+        success: false,
+        code: 'CONFORMATION_ENTRY_ONLY',
+        message: CONFORMATION_ENTRY_ONLY_MESSAGE,
+      });
     }
     if (show.status !== 'open') {
-      return res
-        .status(409)
-        .json({ success: false, message: 'This show is no longer accepting entries' });
+      return res.status(409).json({
+        success: false,
+        code: 'SHOW_NOT_OPEN',
+        message: 'This show is no longer accepting entries',
+      });
     }
     if (show.closeDate && new Date(show.closeDate) <= new Date()) {
-      return res.status(409).json({ success: false, message: 'Entry period has closed' });
+      return res
+        .status(409)
+        .json({ success: false, code: 'ENTRY_PERIOD_CLOSED', message: 'Entry period has closed' });
     }
     // Equoria-nx8t1 R3: entries are UNLIMITED — no maxEntries cap is enforced.
 
@@ -269,27 +281,17 @@ export async function enterShow(req, res) {
     // a byte-identical 404 in both cases (CWE-639 hardening, Equoria-bik1).
     const horse = await prisma.horse.findFirst({
       where: { id: horseId, userId },
-      // Equoria-g8qg0: horseXp feeds the level-bracket check (floor(xp/100)+1).
-      select: { id: true, name: true, userId: true, age: true, healthStatus: true, horseXp: true },
+      select: { id: true, name: true, userId: true },
     });
 
     if (!horse) {
-      return res.status(404).json({ success: false, message: 'Horse not found' });
-    }
-    if (horse.age < 3) {
       return res
-        .status(400)
-        .json({ success: false, message: 'Horse must be at least 3 years old to compete' });
+        .status(404)
+        .json({ success: false, code: 'HORSE_NOT_FOUND', message: 'Horse not found' });
     }
-    if (String(horse.healthStatus).toLowerCase() === 'injured') {
-      return res.status(400).json({ success: false, message: 'Injured horses cannot compete' });
-    }
-
-    // Equoria-g8qg0: compute the entrant's XP-bracket level (pinned mapping
-    // floor(horseXp/100)+1). The bracket comparison itself happens INSIDE the
-    // entry tx (enterShowAtomicTx) alongside the 8pb6w status predicate, so an
-    // out-of-bracket entry rolls back with the wallet untouched and no entry.
-    const horseLevel = getHorseXpLevel(horse.horseXp);
+    // Equoria-576c0 B9: the horse's entry rules (age 3-20, rider, Gaited, double
+    // entry, injured) run inside enterShowAtomicTx through the shared
+    // checkEntryEligibility, the same check as POST /competition/enter.
 
     // Equoria-nx8t1 R7: atomically debit the entrant the entryFee, CREDIT the
     // show escrow, and create the entry — all in one transaction so a fee can
@@ -300,31 +302,27 @@ export async function enterShow(req, res) {
     // entry-window guard can be exercised deterministically.
     let entry;
     try {
-      entry = await enterShowAtomicTx({ show, showId, horseId, userId, horseLevel });
+      entry = await enterShowAtomicTx({ show, showId, horseId, userId });
     } catch (txError) {
-      // Equoria-g8qg0: horse's level is outside the show's advertised bracket.
-      // Nothing was debited and no entry was created (the guard runs first in
-      // the tx, so this is a full rollback). Surface a clear 400 naming the
-      // bracket and the horse's level.
-      if (txError.message === 'OUT_OF_BRACKET') {
-        return res.status(400).json({
-          success: false,
-          message: `This show is restricted to horses at level ${show.levelMin}${
-            show.levelMax !== show.levelMin ? `–${show.levelMax}` : ''
-          }. This horse is level ${horseLevel}.`,
-        });
+      // A refused entry rolled back in full (the rules run first in the tx).
+      if (sendEntryRefusal(res, txError)) {
+        return res;
       }
       if (txError.message === 'INSUFFICIENT_FUNDS') {
-        return res
-          .status(402)
-          .json({ success: false, message: 'Insufficient funds for entry fee' });
+        return res.status(402).json({
+          success: false,
+          code: 'INSUFFICIENT_FUNDS',
+          message: 'Insufficient funds for entry fee',
+        });
       }
       // Equoria-8pb6w: the show was claimed by the executor between the pre-tx
       // guard and the tx-internal status recheck — reject the late entry.
       if (txError.message === 'ENTRY_CLOSED') {
-        return res
-          .status(409)
-          .json({ success: false, message: 'This show is no longer accepting entries' });
+        return res.status(409).json({
+          success: false,
+          code: 'SHOW_NOT_OPEN',
+          message: 'This show is no longer accepting entries',
+        });
       }
       throw txError;
     }
@@ -337,9 +335,11 @@ export async function enterShow(req, res) {
       return res.status(503).json({ success: false, message: error.message });
     }
     if (error.code === 'P2002') {
-      return res
-        .status(409)
-        .json({ success: false, message: 'Horse is already entered in this show' });
+      return res.status(409).json({
+        success: false,
+        code: 'ALREADY_ENTERED',
+        message: 'Horse is already entered in this show',
+      });
     }
     logger.error('showController.enterShow error:', error);
     return res.status(500).json({ success: false, message: 'Failed to enter show' });

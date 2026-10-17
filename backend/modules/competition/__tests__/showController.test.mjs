@@ -16,6 +16,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import * as eligible from '../../../__tests__/helpers/eligibleCompetitor.mjs'; // B9 entry rules
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -52,12 +53,13 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-ShowHorse-${Date.now()}`,
       sex: 'Stallion',
-      dateOfBirth: new Date('2018-01-01'),
+      dateOfBirth: eligible.competitionDateOfBirth(),
       age: 7,
       userId: user.id,
       healthStatus: 'healthy',
     },
   });
+  await eligible.giveEligibleRider(prisma, { horseId: horse.id, userId: user.id }, cleanup);
 
   // ── executeClosedShows fixtures ────────────────────────────────────────────
   execUser = await prisma.user.create({
@@ -404,7 +406,7 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
         ...fixtureColor(),
         name: `TestFixture-YoungHorse-${Date.now()}`,
         sex: 'Colt',
-        dateOfBirth: new Date('2025-01-01'),
+        dateOfBirth: eligible.competitionDateOfBirth(1),
         age: 1,
         userId: user.id,
         healthStatus: 'healthy',
@@ -418,7 +420,7 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
         ...fixtureColor(),
         name: `TestFixture-InjuredHorse-${Date.now()}`,
         sex: 'Mare',
-        dateOfBirth: new Date('2018-01-01'),
+        dateOfBirth: eligible.competitionDateOfBirth(),
         age: 7,
         userId: user.id,
         healthStatus: 'injured',
@@ -462,10 +464,8 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
     });
     feeShowId = feeShow.id;
 
-    // Scoped, fail-loud cleanup (Equoria-1ohys). This inner afterAll runs before
-    // the module-level afterAll deletes `user`, so the owned horses are removed
-    // first (Horse.userId is onDelete:Restrict). A cleanup failure now fails the
-    // suite instead of being swallowed.
+    // Scoped, fail-loud cleanup (Equoria-1ohys): this inner afterAll runs before the
+    // module one deletes `user`, so owned horses go first (Horse.userId Restrict).
     validationCleanup.add(
       () => (ageTestHorseId ? prisma.horse.delete({ where: { id: ageTestHorseId } }) : undefined),
       'ageTestHorse',
@@ -574,15 +574,14 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
         ...fixtureColor(),
         name: `TestFixture-BrokeHorse-${Date.now()}`,
         sex: 'Stallion',
-        dateOfBirth: new Date('2018-01-01'),
+        dateOfBirth: eligible.competitionDateOfBirth(),
         age: 7,
         userId: brokeUser.id,
         healthStatus: 'healthy',
       },
     });
-    // Register on the suite's fail-loud tracker (Equoria-1ohys) instead of a
-    // swallowed try/finally delete. FK order: horse before its owner
-    // (Horse.userId is onDelete:Restrict).
+    await eligible.giveEligibleRider(prisma, { horseId: brokeHorse.id, userId: brokeUser.id }, cleanup);
+    // Fail-loud tracker (Equoria-1ohys); horse before its owner (Restrict FK).
     validationCleanup.add(() => prisma.horse.delete({ where: { id: brokeHorse.id } }), 'brokeHorse');
     validationCleanup.add(() => prisma.user.delete({ where: { id: brokeUser.id } }), 'brokeUser');
 

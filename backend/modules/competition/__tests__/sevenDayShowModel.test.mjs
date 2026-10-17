@@ -26,6 +26,10 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+// Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
+// (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
+// rider. Fixture-only; no assertion changed.
+import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -37,6 +41,7 @@ let entrantHorse;
 const showIds = [];
 let entrantHorseId;
 let creatorHorseId;
+const riderIds = [];
 const cleanup = createCleanupTracker();
 
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
@@ -71,26 +76,28 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-nx8-EntrantHorse-${Date.now()}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2018-01-01'),
+      dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: entrant.id,
       healthStatus: 'healthy',
     },
   });
   entrantHorseId = entrantHorse.id;
+  await giveEligibleRider(prisma, { horseId: entrantHorse.id, userId: entrant.id }, riderIds);
 
   const creatorHorse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
       name: `TestFixture-nx8-CreatorHorse-${Date.now()}`,
       sex: 'Stallion',
-      dateOfBirth: new Date('2018-01-01'),
+      dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: creator.id,
       healthStatus: 'healthy',
     },
   });
   creatorHorseId = creatorHorse.id;
+  await giveEligibleRider(prisma, { horseId: creatorHorse.id, userId: creator.id }, riderIds);
 
   // Scoped, fail-loud cleanup (Equoria-1ohys). showIds is populated by the
   // tests, so the closures read it at run() time (afterAll). FK order: per-show
@@ -117,6 +124,7 @@ beforeAll(async () => {
       await prisma.horse.delete({ where: { id: creatorHorseId } });
     }
   }, 'creatorHorse');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
   cleanup.add(() => (entrant ? prisma.user.delete({ where: { id: entrant.id } }) : undefined), 'entrant');
   cleanup.add(() => (creator ? prisma.user.delete({ where: { id: creator.id } }) : undefined), 'creator');
 }, 30000);
@@ -389,7 +397,7 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
           ...fixtureColor(),
           name: `TestFixture-nx8-bulk-${i}-${Date.now()}`,
           sex: 'Mare',
-          dateOfBirth: new Date('2018-01-01'),
+          dateOfBirth: competitionDateOfBirth(),
           age: 7,
           userId: entrant.id,
           healthStatus: 'healthy',
@@ -397,6 +405,7 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
       });
       // Track for fail-loud cleanup in this describe's afterAll (Equoria-1ohys).
       bulkHorseIds.push(h.id);
+      await giveEligibleRider(prisma, { horseId: h.id, userId: entrant.id }, riderIds);
       const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
       const res = await request(app)
         .post(`/api/v1/shows/${showId}/enter`)

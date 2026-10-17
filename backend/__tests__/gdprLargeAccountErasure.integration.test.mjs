@@ -61,6 +61,10 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { eraseUserAccount, ERASURE_TX_OPTIONS } from '../modules/users/services/gdprAccountService.mjs';
 import { enterShow } from '../modules/competition/shows/showController.mjs';
 import { settleShowFeeEscrow } from '../modules/competition/shows/showEscrowTx.mjs';
+// Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
+// (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
+// rider. Fixture-only; no assertion changed.
+import { competitionDateOfBirth, giveEligibleRider } from '../__tests__/helpers/eligibleCompetitor.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -82,6 +86,7 @@ const GENERATIONS = 30;
 const created = {
   userIds: [],
   horseIds: [],
+  riderIds: [],
   showIds: [],
   clubIds: [],
   threadIds: [],
@@ -346,6 +351,7 @@ afterAll(async () => {
       .catch(warn);
     await prisma.horse.deleteMany({ where: { id: { in: created.horseIds } } }).catch(warn);
   }
+  await prisma.rider.deleteMany({ where: { id: { in: created.riderIds } } });
   if (created.userIds.length) {
     await prisma.user.deleteMany({ where: { id: { in: created.userIds } } }).catch(warn);
   }
@@ -563,8 +569,17 @@ describe('INTEGRATION: erasure survives a PRESERVED horse that carries an entry 
 
     // The stallion the surviving player's foal descends from — so the lineage
     // rule PRESERVES it rather than deleting it, and its entry cannot cascade.
-    ancestor = await makeHorse(owner.id, 'hr0jw-ancestor', { sex: 'Stallion' });
-    foal = await makeHorse(other.id, 'hr0jw-foal', { sireId: ancestor.id });
+    ancestor = await makeHorse(owner.id, 'hr0jw-ancestor', {
+      sex: 'Stallion',
+      dateOfBirth: competitionDateOfBirth(10),
+    });
+    foal = await makeHorse(other.id, 'hr0jw-foal', {
+      sireId: ancestor.id,
+      dateOfBirth: competitionDateOfBirth(5),
+    });
+    // Both enter the show below, so each has an eligible rider (C10).
+    await giveEligibleRider(prisma, { horseId: ancestor.id, userId: owner.id }, created.riderIds);
+    await giveEligibleRider(prisma, { horseId: foal.id, userId: other.id }, created.riderIds);
 
     // A show the OTHER player hosts. Created directly (not via createShow) so
     // it starts with zero escrow: every coin this fixture puts into

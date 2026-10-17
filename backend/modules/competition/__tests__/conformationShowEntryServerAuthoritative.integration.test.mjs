@@ -11,15 +11,15 @@
  *
  * Owner ruling 2026-10-05: conformation entry behaves like a regular show
  * entry — the configured fee is debited into show escrow, and the closing date
- * and XP-level bracket are enforced — with conformation's own rules (assigned
+ * are enforced (the XP-level bracket too, until owner ruling R9 removed XP
+ * from entry; Equoria-576c0 B9) — with conformation's own rules (assigned
  * groom, weanlings allowed) kept on top.
  *
  * The invariant this file locks: a conformation ShowEntry exists only if, in
  * ONE transaction, the entrant was debited exactly the show's entryFee, the
  * same amount was credited to show escrow (Show.feeEscrow + an escrow ledger
  * row) and recorded on the entrant's ledger, `feePaid` equals that fee, the
- * show was open and inside its window, and the horse's XP level was in the
- * bracket. Any refusal leaves wallet, escrow, ledger and entries untouched;
+ * show was open and inside its window. Any refusal leaves wallet, escrow, ledger and entries untouched;
  * duplicate and concurrent attempts charge at most once.
  *
  * Why these assertions detect the old defect: the pre-fix controller returned
@@ -256,17 +256,19 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
     expectUnchanged(await snapshot(entrant, show), before);
   });
 
-  it('refuses a horse outside the show’s XP-level bracket (400) with no side effects', async () => {
-    // horseXp 0 → level 1; the show only takes levels 5–10.
+  // Owner ruling R9 (2026-10-15; Equoria-576c0 B9): entering a show has nothing
+  // to do with XP. Old contract (ruling 2026-10-05 with Equoria-g8qg0): a horse
+  // whose XP level fell outside the show's bracket was refused 400. The level
+  // returns with B8, from the score, never from XP.
+  it('accepts a horse whatever its XP, even outside the old XP-level bracket (R9)', async () => {
+    // horseXp 0 was level 1 under the old mapping; the show is labelled 5–10.
     const entrant = await makeEntrant('bracket', { horseXp: 0 });
     const show = await makeShow({ levelMin: 5, levelMax: 10 });
-    const before = await snapshot(entrant, show);
 
     const res = await enter(entrant, show);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/level/i);
-    expectUnchanged(await snapshot(entrant, show), before);
+    expect(res.status).toBe(201);
+    expect(await prisma.showEntry.count({ where: { showId: show.id } })).toBe(1);
   });
 
   it('a repeated entry of the same horse is refused (409) and charges only once', async () => {

@@ -28,6 +28,10 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+// Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
+// (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
+// rider. Fixture-only; no assertion changed.
+import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -40,6 +44,7 @@ let entrantToken;
 let entrantHorseId;
 let creatorHorseId;
 const showIds = [];
+const riderIds = [];
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
@@ -72,26 +77,28 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-kacla-EntrantHorse-${Date.now()}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2018-01-01'),
+      dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: entrant.id,
       healthStatus: 'healthy',
     },
   });
   entrantHorseId = entrantHorse.id;
+  await giveEligibleRider(prisma, { horseId: entrantHorse.id, userId: entrant.id }, riderIds);
 
   const creatorHorse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
       name: `TestFixture-kacla-CreatorHorse-${Date.now()}`,
       sex: 'Stallion',
-      dateOfBirth: new Date('2018-01-01'),
+      dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: creator.id,
       healthStatus: 'healthy',
     },
   });
   creatorHorseId = creatorHorse.id;
+  await giveEligibleRider(prisma, { horseId: creatorHorse.id, userId: creator.id }, riderIds);
 
   // Scoped, fail-loud cleanup (Equoria-1ohys). showIds is populated by the
   // tests, so the closures read it at run() time (afterAll). FK order: per-show
@@ -118,6 +125,7 @@ beforeAll(async () => {
       await prisma.horse.delete({ where: { id: creatorHorseId } });
     }
   }, 'creatorHorse');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
   cleanup.add(() => (entrant ? prisma.user.delete({ where: { id: entrant.id } }) : undefined), 'entrant');
   cleanup.add(() => (creator ? prisma.user.delete({ where: { id: creator.id } }) : undefined), 'creator');
 }, 30000);

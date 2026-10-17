@@ -34,12 +34,17 @@ import { eraseUserAccount } from '../modules/users/services/gdprAccountService.m
 import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../modules/economy/index.mjs';
 import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
+// (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
+// rider. Fixture-only; no assertion changed.
+import { competitionDateOfBirth, giveEligibleRider } from '../__tests__/helpers/eligibleCompetitor.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-shsgd';
 
 const createdUserIds = [];
 const createdHorseIds = [];
 const createdShowIds = [];
+const createdRiderIds = [];
 
 async function makeUser(money, suffix) {
   const tag = randomBytes(4).toString('hex');
@@ -64,7 +69,7 @@ async function makeHorse(ownerId) {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2018-06-15'),
+      dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: ownerId,
       healthStatus: 'healthy',
@@ -77,6 +82,7 @@ async function makeHorse(ownerId) {
     },
   });
   createdHorseIds.push(h.id);
+  await giveEligibleRider(prisma, { horseId: h.id, userId: ownerId }, createdRiderIds);
   return h;
 }
 
@@ -142,6 +148,7 @@ afterAll(async () => {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.rider.deleteMany({ where: { id: { in: createdRiderIds } } });
     await prisma.user
       .deleteMany({ where: { id: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));

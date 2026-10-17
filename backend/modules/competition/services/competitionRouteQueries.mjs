@@ -19,7 +19,7 @@ import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
 } from '../../economy/index.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-import { isHorseWithinLevelBracket } from '../../../utils/horseCompetitionLevel.mjs';
+import { checkEntryEligibility } from './entryEligibility.mjs';
 import { openForEntriesWhere } from '../shows/showEscrowTx.mjs';
 
 export async function listShowsPaginated({ where, skip, take }) {
@@ -88,6 +88,8 @@ export function getShowForEntry(showId) {
     select: {
       id: true,
       showType: true,
+      // Equoria-576c0 B9: C12 (Gaited shows need gaiting).
+      discipline: true,
       status: true,
       closeDate: true,
       entryFee: true,
@@ -124,22 +126,15 @@ export function enterShowDeferredTx({
   showId,
   horseId,
   userId,
-  horseLevel,
   groomId = null,
   groomSnapshot = null,
 }) {
   return withRetryableTxMapping(
     prisma.$transaction(
       async tx => {
-        // Equoria-g8qg0: enforce the show's advertised level bracket (levelMin
-        // <= horseLevel <= levelMax; horseLevel = floor(horseXp/100)+1 per the
-        // pinned mapping). Checked FIRST — before any money moves — so an
-        // out-of-bracket attempt leaves the wallet untouched and creates no
-        // ShowEntry. INSIDE the tx alongside the 8pb6w status predicate below,
-        // byte-identical to showController.enterShowAtomicTx.
-        if (!isHorseWithinLevelBracket(horseLevel, show.levelMin, show.levelMax)) {
-          throw new Error('OUT_OF_BRACKET');
-        }
+        // Equoria-576c0 B9: the shared entry rules, FIRST — before any money
+        // moves — and INSIDE the tx (the same call as enterShowAtomicTx).
+        await checkEntryEligibility(tx, { show, showId, horseId, userId });
         if (show.entryFee > 0) {
           const debited = await tx.user.updateMany({
             where: { id: userId, money: { gte: show.entryFee } },

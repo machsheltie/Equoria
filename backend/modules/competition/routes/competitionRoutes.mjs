@@ -12,7 +12,7 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { getCompetitionEligibilitySummary } from '../../../logic/enhancedCompetitionSimulation.mjs';
 import { getDisciplineConfig, calculateHorseLevel } from '../../../utils/competitionLogic.mjs';
 import { COMPETITION_DISCIPLINES, isKnownDiscipline } from '../rules/disciplineRules.mjs';
-import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
+import { sendEntryRefusal } from '../services/entryEligibility.mjs';
 import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -22,7 +22,6 @@ import {
   getShowEntriesWithHorseStats,
   getShowForEntry,
   CONFORMATION_ENTRY_ONLY_MESSAGE,
-  hasExistingShowEntry,
   enterShowDeferredTx,
 } from '../services/competitionRouteQueries.mjs';
 import { parsePaginationParams, buildPaginatedResponse } from '../../../utils/paginationHelper.mjs';
@@ -376,9 +375,8 @@ router.post(
         `[competitionRoutes.POST /enter] User ${userId} entering horse ${horseId} in show ${showId}`,
       );
 
-      // Ownership validated by requireOwnership middleware (Equoria-8ug7).
-      // The resolved Horse row is attached to req.horse — no second query.
-      const horse = req.horse;
+      // Ownership validated by requireOwnership middleware (Equoria-8ug7); the
+      // entry rules read the horse inside the entry transaction (B9).
 
       // ── Equoria-kacla: DEFERRED ENTRY ONLY ──────────────────────────────
       // This endpoint used to write a pre-scored row into competitionResult
@@ -393,10 +391,16 @@ router.post(
       const show = await getShowForEntry(showId);
 
       if (!show) {
-        return res.status(404).json({ success: false, message: 'Show not found' });
+        return res
+          .status(404)
+          .json({ success: false, code: 'SHOW_NOT_FOUND', message: 'Show not found' });
       }
       if (show.showType === 'conformation') {
-        return res.status(400).json({ success: false, message: CONFORMATION_ENTRY_ONLY_MESSAGE });
+        return res.status(400).json({
+          success: false,
+          code: 'CONFORMATION_ENTRY_ONLY',
+          message: CONFORMATION_ENTRY_ONLY_MESSAGE,
+        });
       }
 
       // 7-day window guards (nx8t1): only an open show inside its entry
@@ -404,70 +408,41 @@ router.post(
       if (show.status !== 'open') {
         return res.status(409).json({
           success: false,
+          code: 'SHOW_NOT_OPEN',
           message: 'This show is no longer accepting entries',
         });
       }
       if (show.closeDate && new Date(show.closeDate) <= new Date()) {
         return res.status(409).json({
           success: false,
+          code: 'ENTRY_PERIOD_CLOSED',
           message: 'Entry period has closed',
         });
       }
 
-      // Health/age eligibility (mirrors canonical enterShow).
-      if (typeof horse.age === 'number' && horse.age < 3) {
-        return res.status(400).json({
-          success: false,
-          message: 'Horse must be at least 3 years old to compete',
-        });
-      }
-      if (String(horse.healthStatus).toLowerCase() === 'injured') {
-        return res.status(400).json({
-          success: false,
-          message: 'Injured horses cannot compete',
-        });
-      }
-
-      // Already entered? Canonical uniqueness lives on ShowEntry
-      // (@@unique([showId, horseId])).
-      const alreadyEntered = await hasExistingShowEntry(showId, horseId);
-      if (alreadyEntered) {
-        return res.status(409).json({
-          success: false,
-          message: 'Horse is already entered in this competition',
-        });
-      }
+      // Equoria-576c0 B9: the horse's entry rules (age 3-20, rider, Gaited,
+      // double entry, injured) run inside enterShowDeferredTx through the
+      // shared checkEntryEligibility, the same check as POST /shows/:id/enter.
 
       // Equoria-nx8t1 R7: atomically debit the entrant the entryFee, CREDIT
       // the show creator the same amount, and create the canonical ShowEntry
       // — all in one transaction. The conditional updateMany (money >=
       // entryFee) is the atomic insufficient-funds guard and closes a
       // concurrent-spend race.
-      // Equoria-g8qg0: the entrant's XP-bracket level (pinned mapping
-      // floor(horseXp/100)+1). req.horse is the full owned row (requireOwnership
-      // does no select), so horseXp is present. The bracket comparison runs
-      // INSIDE enterShowDeferredTx alongside the 8pb6w status predicate.
-      const horseLevel = getHorseXpLevel(horse.horseXp);
 
       let entry;
       try {
         // Service-layer atomic deferred-entry transaction (Equoria-becrm)
-        entry = await enterShowDeferredTx({ show, showId, horseId, userId, horseLevel });
+        entry = await enterShowDeferredTx({ show, showId, horseId, userId });
       } catch (txError) {
-        // Equoria-g8qg0: horse's level is outside the show's advertised bracket.
-        // Guard runs first in the tx → full rollback (wallet untouched, no
-        // ShowEntry). Surface a clear 400 naming the bracket and horse level.
-        if (txError.message === 'OUT_OF_BRACKET') {
-          return res.status(400).json({
-            success: false,
-            message: `This show is restricted to horses at level ${show.levelMin}${
-              show.levelMax !== show.levelMin ? `–${show.levelMax}` : ''
-            }. This horse is level ${horseLevel}.`,
-          });
+        // A refused entry rolled back in full (the rules run first in the tx).
+        if (sendEntryRefusal(res, txError)) {
+          return res;
         }
         if (txError.message === 'INSUFFICIENT_FUNDS') {
           return res.status(402).json({
             success: false,
+            code: 'INSUFFICIENT_FUNDS',
             message: 'Insufficient funds for entry fee',
           });
         }
@@ -477,13 +452,15 @@ router.post(
         if (txError.message === 'ENTRY_CLOSED') {
           return res.status(409).json({
             success: false,
+            code: 'SHOW_NOT_OPEN',
             message: 'This show is no longer accepting entries',
           });
         }
         if (txError.code === 'P2002') {
           return res.status(409).json({
             success: false,
-            message: 'Horse is already entered in this competition',
+            code: 'ALREADY_ENTERED',
+            message: 'Horse is already entered in this show',
           });
         }
         throw txError;

@@ -48,6 +48,10 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // canonical DB. The tracker re-raises so a cleanup failure is a TEST failure
 // and gets fixed at the source.
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
+// Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
+// (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
+// rider. Fixture-only; no assertion changed.
+import { competitionDateOfBirth, giveEligibleRider } from '../../__tests__/helpers/eligibleCompetitor.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -88,8 +92,11 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     await cleanupTestData();
   });
 
+  const riderIds = [];
+
   afterAll(async () => {
     await cleanupTestData();
+    await prisma.rider.deleteMany({ where: { id: { in: riderIds } } });
     // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
@@ -254,7 +261,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
           breed: { connect: { id: breed.id } },
           user: { connect: { id: testUser.id } },
           sex: 'Stallion',
-          dateOfBirth: new Date('2019-01-01'),
+          dateOfBirth: competitionDateOfBirth(5),
           healthStatus: 'Excellent',
           // Equoria-kacla: the canonical cron `executeClosedShows` scores
           // off the raw stat columns (speed/stamina/agility/precision/
@@ -283,6 +290,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       });
     });
 
+    await giveEligibleRider(prisma, { horseId: competitionHorse.id, userId: testUser.id }, riderIds);
     expect(competitionHorse.disciplineScores.Racing).toBe(75);
     expect(competitionHorse.age).toBeGreaterThanOrEqual(3);
 

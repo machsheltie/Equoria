@@ -16,6 +16,10 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, createTestShow, cleanupTestData } from '../helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
+// (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
+// rider. Fixture-only; no assertion changed.
+import { competitionDateOfBirth, giveEligibleRider } from '../../__tests__/helpers/eligibleCompetitor.mjs';
 describe('🚀 INTEGRATION: Competition API Endpoints', () => {
   // Equoria-rnbzn: __csrf__ is bound to the main test user (authToken) AFTER
   // the user exists. csrfProtection resolves the sessionIdentifier from
@@ -27,6 +31,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
   let __testUser; // captured for state, but not directly read
   let testHorse;
   let testShow;
+  const riderIds = [];
   let authToken;
 
   // Equoria-g8iu2: RESILIENT FIXTURE MATERIALISATION.
@@ -111,6 +116,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         userId: testUserId,
         name: `${fixtureTag}-horse`,
         age: 5, // 5 game-years — Equoria-8y0v
+        dateOfBirth: competitionDateOfBirth(5),
         speed: 80,
         stamina: 75,
         focus: 70,
@@ -128,6 +134,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
           'Show Jumping': 90,
         },
       });
+      await giveEligibleRider(prisma, { horseId: testHorse.id, userId: testUserId }, riderIds);
     } else {
       testHorse = liveHorse;
     }
@@ -159,6 +166,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
   afterAll(async () => {
     await cleanupTestData();
+    await prisma.rider.deleteMany({ where: { id: { in: riderIds } } });
   });
 
   describe('🎯 GET /api/v1/competition/disciplines', () => {
@@ -337,7 +345,11 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         .expect(409);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Horse is already entered in this competition');
+      // Equoria-576c0 B9: both entry paths share one checkEntryEligibility, so one
+      // message and a stable code. Old contract: this path alone said "...in this
+      // competition".
+      expect(response.body.code).toBe('ALREADY_ENTERED');
+      expect(response.body.message).toBe('Horse is already entered in this show');
     });
 
     test('should reject invalid input', async () => {

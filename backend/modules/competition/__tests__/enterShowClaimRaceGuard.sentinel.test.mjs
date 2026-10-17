@@ -41,11 +41,10 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { enterShowAtomicTx } from '../shows/showEscrowTx.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
-// Equoria-g8qg0: both entry txs now require the entrant's XP-bracket level.
-// These open shows are levelMin:1/levelMax:999 and the horses are level 1, so
-// passing the real level keeps the entry in-bracket and lets the 8pb6w status
-// guard (ENTRY_CLOSED) remain the thing under test here.
-import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
+// Equoria-576c0 B9: both entry txs run the shared entry rules first (age 3-20,
+// an eligible rider; the XP bracket is gone, R9). The horses are eligible, so
+// the 8pb6w status guard (ENTRY_CLOSED) remains the thing under test here.
+import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const PREFIX = 'TestFixture-8pb6w-raceguard';
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
@@ -56,6 +55,7 @@ let entrantHorse;
 const userIds = [];
 const horseIds = [];
 const showIds = [];
+const riderIds = [];
 const cleanup = createCleanupTracker();
 
 async function makeUser(money, suffix) {
@@ -79,13 +79,14 @@ async function makeHorse(ownerId) {
       ...fixtureColor(),
       name: `${PREFIX}-horse-${uid()}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2018-06-15'),
+      dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: ownerId,
       healthStatus: 'healthy',
     },
   });
   horseIds.push(h.id);
+  await giveEligibleRider(prisma, { horseId: h.id, userId: ownerId }, riderIds);
   return h;
 }
 
@@ -151,7 +152,6 @@ async function assertRejectsClosed(enterFn, entryFee) {
       showId: show.id,
       horseId: entrantHorse.id,
       userId: entrant.id,
-      horseLevel: getHorseXpLevel(entrantHorse.horseXp),
     }),
   ).rejects.toThrow('ENTRY_CLOSED');
 
@@ -184,7 +184,6 @@ async function assertAcceptsOpenFree(enterFn) {
     showId: show.id,
     horseId: horse.id,
     userId: entrant.id,
-    horseLevel: getHorseXpLevel(horse.horseXp),
   });
 
   expect(created).toBeTruthy();
@@ -209,6 +208,7 @@ beforeAll(async () => {
     }
   }, 'shows');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
   cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransactions');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 }, 60000);

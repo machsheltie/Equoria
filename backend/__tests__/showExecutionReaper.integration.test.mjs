@@ -33,6 +33,10 @@ import logger from '../utils/logger.mjs';
 import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
+// (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
+// rider. Fixture-only; no assertion changed.
+import { competitionDateOfBirth, giveEligibleRider } from '../__tests__/helpers/eligibleCompetitor.mjs';
 import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
 import { reapStaleExecutingShows, STALE_CLAIM_THRESHOLD_MS } from '../services/jobs/impl/showExecutionReaper.mjs';
 
@@ -46,6 +50,7 @@ let entrantHorses;
 const createdUserIds = [];
 const createdHorseIds = [];
 const createdShowIds = [];
+const createdRiderIds = [];
 
 function fakeRes() {
   // Minimal Express res shim for direct controller invocation (established
@@ -88,7 +93,7 @@ async function makeHorse(ownerId) {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2018-06-15'),
+      dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: ownerId,
       healthStatus: 'healthy',
@@ -101,6 +106,7 @@ async function makeHorse(ownerId) {
     },
   });
   createdHorseIds.push(h.id);
+  await giveEligibleRider(prisma, { horseId: h.id, userId: ownerId }, createdRiderIds);
   return h;
 }
 
@@ -201,6 +207,7 @@ afterAll(async () => {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.rider.deleteMany({ where: { id: { in: createdRiderIds } } });
     await prisma.user
       .deleteMany({ where: { id: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));

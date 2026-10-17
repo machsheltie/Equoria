@@ -28,11 +28,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
-// Equoria-g8qg0: enterShowDeferredTx now requires the entrant's XP-bracket
-// level. Fixture horses are level 1 (default horseXp 0) and the shows are
-// bracket [1,10], so passing the real level keeps entries in-bracket and this
-// suite continues to exercise ONLY the escrow money-flow it is about.
-import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
+// Equoria-576c0 B9: enterShowDeferredTx runs the shared entry rules first (age
+// 3-20, an eligible rider; the XP bracket is gone, R9). Fixture horses are
+// eligible, so this suite still exercises ONLY the escrow money-flow.
+import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-jnk6r-escrow';
 
@@ -42,6 +41,7 @@ let entrantHorse;
 const createdUserIds = [];
 const createdHorseIds = [];
 const createdShowIds = [];
+const createdRiderIds = [];
 
 async function snapMoney(userIds) {
   if (userIds.length === 0) {
@@ -80,13 +80,14 @@ async function makeHorse(ownerId) {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
-      dateOfBirth: new Date('2018-06-15'),
+      dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: ownerId,
       healthStatus: 'healthy',
     },
   });
   createdHorseIds.push(h.id);
+  await giveEligibleRider(prisma, { horseId: h.id, userId: ownerId }, createdRiderIds);
   return h;
 }
 
@@ -131,6 +132,7 @@ afterAll(async () => {
       .deleteMany({ where: { id: { in: createdHorseIds } } })
       .catch(err => console.warn(`[cleanup] horse: ${err.message}`));
   }
+  await prisma.rider.deleteMany({ where: { id: { in: createdRiderIds } } });
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
@@ -167,7 +169,6 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
       showId: show.id,
       horseId: entrantHorse.id,
       userId: entrant.id,
-      horseLevel: getHorseXpLevel(entrantHorse.horseXp),
     });
     expect(entry).toBeTruthy();
     expect(entry.feePaid).toBe(entryFee);
@@ -197,7 +198,6 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
       showId: show.id,
       horseId: entrantHorse.id,
       userId: entrant.id,
-      horseLevel: getHorseXpLevel(entrantHorse.horseXp),
     });
     const totalAfter = (await snapMoney(userIds)) + (await snapSystem());
     expect(totalAfter).toBe(totalBefore);
@@ -217,7 +217,6 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
       showId: show.id,
       horseId: creatorHorse.id,
       userId: creator.id,
-      horseLevel: getHorseXpLevel(creatorHorse.horseXp),
     });
     const creatorAfter = await prisma.user.findUnique({ where: { id: creator.id }, select: { money: true } });
     const escrowAfter = await prisma.systemAccount.findUnique({

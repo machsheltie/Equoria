@@ -19,7 +19,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
-import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
+import { sendEntryRefusal } from '../services/entryEligibility.mjs';
 import {
   validateConformationEntry,
   conformationGroomSnapshot,
@@ -189,13 +189,13 @@ export async function enterConformationShow(req, res) {
 
     // Equoria-mwjst (owner ruling 2026-10-05: conformation entry follows the
     // regular-show rules). The canonical entry transaction — the one behind
-    // POST /competition/enter — enforces the XP-level bracket, debits exactly
+    // POST /competition/enter — runs the shared entry rules (for conformation
+    // only the double-entry rule, C11; Equoria-576c0 B9), debits exactly
     // the configured entryFee with a guarded update, credits show escrow with
     // its ledger rows, re-checks the entry window and creates the entry with
     // feePaid = entryFee, all in ONE transaction; any refusal rolls all of it
     // back. Conformation keeps its own groom/health/age-class rules above, so
     // the ridden age-3 minimum is deliberately not applied.
-    const horseLevel = getHorseXpLevel(horse.horseXp);
     let entry;
     try {
       // The entry keeps this groom for settlement (owner ruling 2026-10-12),
@@ -205,18 +205,12 @@ export async function enterConformationShow(req, res) {
         showId,
         horseId,
         userId,
-        horseLevel,
         groomId: groom.id,
         groomSnapshot: conformationGroomSnapshot(groom),
       });
     } catch (txError) {
-      if (txError.message === 'OUT_OF_BRACKET') {
-        return res.status(400).json({
-          success: false,
-          message: `This show is restricted to horses at level ${show.levelMin}${
-            show.levelMax !== show.levelMin ? `–${show.levelMax}` : ''
-          }. This horse is level ${horseLevel}.`,
-        });
+      if (sendEntryRefusal(res, txError)) {
+        return res;
       }
       if (txError.message === 'INSUFFICIENT_FUNDS') {
         return res
