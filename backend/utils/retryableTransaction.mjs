@@ -8,7 +8,17 @@
  *   - "Unable to start a transaction in the given time." (maxWait pool-acquire)
  *   - "Transaction already closed: … the timeout for this transaction was
  *     5000 ms, however N ms passed …" (interactive timeout exceeded)
- * Both mean "the server was momentarily too busy to finish the transaction" —
+ * A third transient class (Equoria-l9bde) is a CONFLICT Postgres resolves by
+ * aborting one side: a deadlock (SQLSTATE 40P01) or a serialization failure
+ * (40001). Measured on Prisma here: a serializable write conflict surfaces as
+ * `P2034` ("Transaction failed due to a write conflict or a deadlock"); a
+ * deadlock inside an interactive transaction surfaces as a
+ * PrismaClientUnknownRequestError whose message carries
+ * `PostgresError { code: "40P01", message: "deadlock detected" }`; raw queries
+ * report `P2010` with "Code: `40P01`" and adapters may put it in `meta.code`.
+ * The same request succeeds when repeated, so it is retryable too. NO
+ * automatic retry is added (owner rule): this only maps the error.
+ * All three mean "the server was momentarily too busy to finish the transaction" —
  * a retryable condition that should map to HTTP 503 ("busy, retry shortly"),
  * NOT 500 (500 wrongly signals a permanent fault and tells clients NOT to
  * retry). The CI Load Contention advisory job surfaced exactly these.
@@ -69,31 +79,42 @@ export class RetryableTransactionError extends AppError {
   }
 }
 
+/** Postgres SQLSTATEs for a conflict it resolved by aborting one transaction. */
+const CONFLICT_SQLSTATES = new Set(['40P01', '40001']);
+
 /**
  * Classify a thrown error as a TRANSIENT, RETRYABLE Prisma interactive-
- * transaction timeout (vs. a genuine fault).
+ * transaction failure (vs. a genuine fault): a timeout (P2028), or a deadlock /
+ * serialization conflict Postgres aborted (P2034, SQLSTATE 40P01 / 40001).
  *
  * MUST stay narrow: genuine pre-condition errors (404/400 thrown inside the
  * txn) and other Prisma faults (e.g. P2002) MUST return false so they keep
  * surfacing as their own status / 500 — masking a real bug behind a 503 is the
- * failure mode this guard must never introduce (CLAUDE.md §3). Primary signal
- * is the P2028 code; the message regex is a belt-and-braces fallback for the
- * two known timeout phrasings in case a driver/version surfaces them without
- * the code.
+ * failure mode this guard must never introduce (CLAUDE.md §3). Primary signals
+ * are the P2028 / P2034 codes and a 40P01 / 40001 SQLSTATE in `meta.code`; the
+ * message regexes are the fallback for the known phrasings, and match a
+ * SQLSTATE only in its `code: "40P01"` / "Code: `40P01`" form, never a bare
+ * number that could be an id.
  *
  * @param {unknown} err
- * @returns {boolean} true iff `err` is a retryable transaction-timeout error
+ * @returns {boolean} true iff `err` is a retryable transaction failure
  */
 export function isRetryableTxError(err) {
   if (!err || typeof err !== 'object') {
     return false;
   }
-  if (err.code === 'P2028') {
+  if (err.code === 'P2028' || err.code === 'P2034') {
+    return true;
+  }
+  if (CONFLICT_SQLSTATES.has(err.meta?.code)) {
     return true;
   }
   const message = typeof err.message === 'string' ? err.message : '';
-  return /unable to start a transaction|transaction already closed|transaction api error/i.test(
-    message,
+  return (
+    /unable to start a transaction|transaction already closed|transaction api error/i.test(
+      message,
+    ) ||
+    /code:\s*["'`](40P01|40001)["'`]|deadlock detected|could not serialize access/i.test(message)
   );
 }
 

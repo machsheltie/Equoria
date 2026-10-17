@@ -39,10 +39,9 @@
  * `passwordController.resetPassword` are bound by the same rule — both revoke
  * pending changes through `revokePendingEmailChanges` BEFORE they write the
  * User row. If either side flipped, two concurrent transactions on one account
- * could deadlock (T1: User(u) then token X; T2: token X then User(u)), and
- * Postgres 40P01 surfaces as Prisma P2034, which `isRetryableTxError`
- * deliberately does not classify — so the loser would be an opaque 500 rather
- * than a retryable failure. `txTokenBeforeUserLockOrder.sentinel.test.mjs`
+ * could deadlock (T1: User(u) then token X; T2: token X then User(u)): Postgres
+ * aborts one with 40P01, and that request fails (as a retryable 503 since
+ * Equoria-l9bde, but it still fails). `txTokenBeforeUserLockOrder.sentinel.test.mjs`
  * pins the order in all three files.
  *
  * Tokens stay hashed at rest per ADR-006 — the raw value exists only in the

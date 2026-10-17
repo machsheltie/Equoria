@@ -178,9 +178,10 @@ export const changePassword = async (req, res, next) => {
     // lock-acquisition order. `confirmEmailChange` and `verifyEmailToken` both
     // take token rows first and the User row after; if this path took the User
     // row first it would be their deadlock partner (T1: User(u) then token X;
-    // T2: token X then User(u) -> Postgres 40P01 -> Prisma P2034, which
-    // `isRetryableTxError` deliberately does NOT classify, so the loser would
-    // surface as an opaque 500). Do not move the revoke below the user update.
+    // T2: token X then User(u) -> Postgres 40P01, and one of the two requests
+    // fails; since Equoria-l9bde the loser gets a retryable 503 rather than a
+    // 500, but the right order avoids the failure). Do not move the revoke
+    // below the user update.
     await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         await revokePendingEmailChanges(tx, req.user.id, user.email);
