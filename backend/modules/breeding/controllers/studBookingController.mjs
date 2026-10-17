@@ -49,54 +49,18 @@ import {
   pendingRequestMessage,
 } from '../../horses/index.mjs';
 import { recordTransactionTx } from '../../economy/index.mjs';
-
-const PUBLIC_STUD = 'At Public Stud';
-const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a moment.';
-
-/**
- * Same body for a stallion that does not exist and one that is not at public
- * stud, so the endpoint cannot be used to probe which horse ids exist.
- */
-const STALLION_UNAVAILABLE = { success: false, message: 'Stallion not available at stud' };
-const MARE_NOT_FOUND = { success: false, message: 'Mare not found' };
-
-class BookingRefusal extends Error {
-  /**
-   * @param {number} status
-   * @param {object} body - the exact response body
-   */
-  constructor(status, body) {
-    super(body.message);
-    this.status = status;
-    this.body = body;
-  }
-}
-
-/** A guarded pin or claim matched no row; resolved to a response after the rollback. */
-class ClaimLost extends Error {
-  constructor(which) {
-    super(which);
-    this.which = which;
-  }
-}
-
-function feeOf(horse) {
-  return horse.studFee ?? 0;
-}
-
-/** A null studFee is a legacy row meaning 0 (design R5): the pin accepts either. */
-function feePredicate(fee) {
-  return fee === 0 ? { OR: [{ studFee: 0 }, { studFee: null }] } : { studFee: fee };
-}
-
-function feeChanged(studFee) {
-  return new BookingRefusal(409, {
-    success: false,
-    code: 'STUD_FEE_CHANGED',
-    message: `This stallion's stud fee is now ${studFee}. Confirm the new fee to book.`,
-    data: { studFee },
-  });
-}
+import {
+  PUBLIC_STUD,
+  BUSY_MESSAGE,
+  STALLION_UNAVAILABLE,
+  MARE_NOT_FOUND,
+  BookingRefusal,
+  ClaimLost,
+  feeOf,
+  feePredicate,
+  feeChanged,
+  resolveLostClaim,
+} from '../services/studBookingShared.mjs';
 
 /**
  * POST /api/v1/studs/:sireId/bookings
@@ -355,6 +319,7 @@ export async function bookPublicStud(req, res) {
           requesterId,
           stallionOwnerId,
           expectedStudFee,
+          studStatus: PUBLIC_STUD,
         });
         return res.status(status).json(body);
       } catch (readError) {
@@ -370,39 +335,4 @@ export async function bookPublicStud(req, res) {
     logger.error(`[studBooking] bookPublicStud failed: ${error.message}`);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
-}
-
-/**
- * After a rolled-back booking whose guarded pin or claim matched no row, read
- * the committed state once and say why (design §3.1 step 7).
- *
- * @returns {Promise<[number, object]>} the status and the exact response body
- */
-async function resolveLostClaim(
-  which,
-  { sireId, damId, requesterId, stallionOwnerId, expectedStudFee },
-) {
-  if (which === 'SIRE') {
-    const sire = await prisma.horse.findUnique({
-      where: { id: sireId },
-      select: { userId: true, studStatus: true, studFee: true },
-    });
-    if (
-      sire &&
-      sire.userId === stallionOwnerId &&
-      sire.studStatus === PUBLIC_STUD &&
-      feeOf(sire) !== expectedStudFee
-    ) {
-      return [409, feeChanged(feeOf(sire)).body];
-    }
-    return [404, STALLION_UNAVAILABLE];
-  }
-  const dam = await prisma.horse.findUnique({
-    where: { id: damId },
-    select: { userId: true, name: true },
-  });
-  if (!dam || dam.userId !== requesterId) {
-    return [404, MARE_NOT_FOUND];
-  }
-  return [400, { success: false, message: `${dam.name} is already in foal.` }];
 }

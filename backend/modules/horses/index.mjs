@@ -22,6 +22,11 @@ export {
   pregnancyClaimData,
   pendingRequestMessage,
 } from './services/breedingPairRules.mjs';
+// Equoria-q4uem.9: a sale ends the stallion's pending stud requests and the mare's (marketplace).
+export {
+  declinePendingRequestsForSire,
+  cancelPendingRequestForMare,
+} from './services/studRequestCleanup.mjs';
 export { runFoalingJob } from './services/foalingService.mjs';
 export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
 export { decayHoofConditions } from './services/hoofConditionDecayService.mjs';

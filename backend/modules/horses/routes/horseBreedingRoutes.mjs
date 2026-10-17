@@ -97,7 +97,7 @@ router.post(
 /**
  * POST /horses/:id/stud-listing  (Equoria-q072)
  * List a stallion at stud with a fee.
- * Body: { studFee: number (non-negative integer) }
+ * Body: { studFee: number (non-negative integer), mode?: 'public' | 'private' }
  *
  * Security: requireOwnership('horse') validates the user owns the horse.
  * Controller enforces sex === 'Stallion' and studFee shape.
@@ -114,6 +114,11 @@ router.post(
       .bail()
       .isInt({ min: 0 })
       .withMessage('studFee must be a non-negative integer'),
+    // Equoria-q4uem.9 (owner ruling 2026-10-15): Public Stud or Private Stud.
+    body('mode')
+      .optional()
+      .isIn(['public', 'private'])
+      .withMessage("mode must be 'public' or 'private'"),
   ],
   handleValidationErrors,
   requireOwnership('horse'),

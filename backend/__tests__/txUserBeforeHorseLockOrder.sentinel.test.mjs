@@ -126,6 +126,10 @@ const GUARDED_FILES = [
   // stallion owner (User rows, ascending id) before pinning the sire and
   // claiming the dam (Horse rows).
   'modules/breeding/controllers/studBookingController.mjs',
+  // Equoria-q4uem.9 slice 3: approving a private stud request debits the mare
+  // owner and credits the stallion owner before pinning the sire and claiming
+  // the dam.
+  'modules/breeding/controllers/studRequestController.mjs',
 ];
 
 describe('SENTINEL: User rows are locked before Horse rows inside a transaction', () => {

@@ -62,6 +62,8 @@
  */
 
 import { TACK_INVENTORY } from '../../economy/index.mjs';
+import { declinePendingRequestsForSire, cancelPendingRequestForMare } from '../../horses/index.mjs';
+import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
 import { CRAFTING_RECIPES } from '../../crafting/index.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 // Same-module internal (NOT part of the marketplace public API): the test-only
@@ -475,6 +477,13 @@ export async function reconcileHorseOnTransfer(tx, { horseId, sellerId }) {
   const tack = await returnTackToSeller(tx, { horseId, sellerId });
   const staff = await reconcileStaffOnHorseTransfer(tx, { horseId });
   await clearStudListingOnTransfer(tx, { horseId });
+  // Owner rulings 2026-10-16: a sold stallion's pending private requests are
+  // declined (S-Q2) and a sold mare's pending request is cancelled (S-Q4).
+  // The caller finalizes these notifications after its commit.
+  const studNotifications = [
+    ...(await declinePendingRequestsForSire(tx, { sireId: horseId, reason: 'STALLION_SOLD' })),
+    ...(await cancelPendingRequestForMare(tx, { damId: horseId, reason: 'MARE_TRANSFERRED' })),
+  ];
 
   // Test-only seam, AFTER every reconciliation write and before the sale record
   // and ledger rows. A test barrier that throws here proves the tack return and
@@ -488,7 +497,18 @@ export async function reconcileHorseOnTransfer(tx, { horseId, sellerId }) {
     sellerId,
   });
 
-  return { ...tack, ...staff };
+  return {
+    ...tack,
+    ...staff,
+    // The caller chains this onto its committed transaction promise
+    // (`.then(finalizeAfterCommit)`): createNotificationTx's contract.
+    finalizeAfterCommit: committed => {
+      for (const note of studNotifications) {
+        finalizeNotificationAfterCommit(note.userId, note.type, note.payload);
+      }
+      return committed;
+    },
+  };
 }
 
 export default reconcileHorseOnTransfer;

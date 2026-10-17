@@ -21,6 +21,11 @@ import {
   RetryableTransactionError,
 } from '../../../utils/retryableTransaction.mjs';
 import { AppError } from '../../../errors/index.mjs';
+import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
+import { declinePendingRequestsForSire } from '../services/studRequestCleanup.mjs';
+
+/** Owner ruling 2026-10-15: the stallion owner chooses Public Stud or Private Stud. */
+const STUD_STATUS_BY_MODE = Object.freeze({ public: 'At Public Stud', private: 'At Private Stud' });
 
 const STUD_LISTING_SELECT = { id: true, name: true, sex: true, studStatus: true, studFee: true };
 const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a moment.';
@@ -53,9 +58,13 @@ function sendMappedError(res, error) {
 }
 
 /**
- * List a stallion at stud (Equoria-q072).
+ * List a stallion at stud (Equoria-q072), or change its fee or mode.
  * POST /api/v1/horses/:id/stud-listing
- * Body: { studFee: number (non-negative integer) }
+ * Body: { studFee: number (non-negative integer), mode?: 'public' | 'private' (default 'public') }
+ *
+ * Owner ruling S-Q2 (2026-10-16): leaving Private Stud (here: switching to
+ * Public) declines its pending requests in the same transaction; a fee change
+ * that stays Private leaves them (S6 pins the requested fee).
  */
 export async function listHorseAtStud(req, res) {
   try {
@@ -81,25 +90,49 @@ export async function listHorseAtStud(req, res) {
       });
     }
 
+    const mode = req.body?.mode ?? 'public';
+    const studStatus = STUD_STATUS_BY_MODE[mode];
+    if (!studStatus) {
+      return res
+        .status(400)
+        .json({ success: false, message: "mode must be 'public' or 'private'" });
+    }
+
     const horseId = req.horse.id;
     const ownerId = req.user.id;
-    const updated = await withRetryableTxMapping(
+    const { updated, notifications } = await withRetryableTxMapping(
       prisma.$transaction(
         async tx => {
           // Guarded claim: the caller must STILL own this stallion at write time.
           const claim = await tx.horse.updateMany({
             where: { id: horseId, userId: ownerId, sex: 'Stallion' },
-            data: { studStatus: 'At Public Stud', studFee },
+            data: { studStatus, studFee },
           });
           if (claim.count !== 1) {
             throw horseNotFound();
           }
-          return tx.horse.findUnique({ where: { id: horseId }, select: STUD_LISTING_SELECT });
+          const declined =
+            studStatus === STUD_STATUS_BY_MODE.private
+              ? []
+              : await declinePendingRequestsForSire(tx, {
+                  sireId: horseId,
+                  reason: 'LISTING_CHANGED',
+                });
+          return {
+            updated: await tx.horse.findUnique({
+              where: { id: horseId },
+              select: STUD_LISTING_SELECT,
+            }),
+            notifications: declined,
+          };
         },
         { timeout: 30000 },
       ),
       { message: BUSY_MESSAGE },
     );
+    for (const note of notifications) {
+      finalizeNotificationAfterCommit(note.userId, note.type, note.payload);
+    }
 
     logger.info(
       `[horseController.listHorseAtStud] horse ${updated.id} listed at stud for fee ${studFee}`,
@@ -137,7 +170,7 @@ export async function unlistHorseAtStud(req, res) {
 
     const horseId = req.horse.id;
     const ownerId = req.user.id;
-    const updated = await withRetryableTxMapping(
+    const { updated, notifications } = await withRetryableTxMapping(
       prisma.$transaction(
         async tx => {
           // Guarded claim: the caller must STILL own this horse at write time.
@@ -148,12 +181,26 @@ export async function unlistHorseAtStud(req, res) {
           if (claim.count !== 1) {
             throw horseNotFound();
           }
-          return tx.horse.findUnique({ where: { id: horseId }, select: STUD_LISTING_SELECT });
+          // Owner ruling S-Q2 (2026-10-16): unlisting declines pending requests.
+          const declined = await declinePendingRequestsForSire(tx, {
+            sireId: horseId,
+            reason: 'LISTING_CHANGED',
+          });
+          return {
+            updated: await tx.horse.findUnique({
+              where: { id: horseId },
+              select: STUD_LISTING_SELECT,
+            }),
+            notifications: declined,
+          };
         },
         { timeout: 30000 },
       ),
       { message: BUSY_MESSAGE },
     );
+    for (const note of notifications) {
+      finalizeNotificationAfterCommit(note.userId, note.type, note.payload);
+    }
 
     logger.info(`[horseController.unlistHorseAtStud] horse ${updated.id} unlisted from stud`);
 

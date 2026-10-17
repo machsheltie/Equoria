@@ -15,6 +15,7 @@
  */
 
 import { randomBytes } from 'node:crypto';
+import { URLSearchParams } from 'node:url';
 import request from 'supertest';
 
 import app from '../../../../app.mjs';
@@ -179,10 +180,18 @@ export async function disconnectLockClient() {
  *
  * @param {(tx: object) => Promise<unknown>} rowWrite - the uncommitted change
  * @param {() => Promise<T>} action - the request(s) under test
- * @param {{ blockedSessions?: number }} [options]
+ * `whileBlocked`, if given, runs after the wait is observed and BEFORE the
+ * held transaction commits — e.g. a cancel that must land while an approval
+ * is parked on the mare row.
+ *
+ * @param {{ blockedSessions?: number, whileBlocked?: () => Promise<unknown> }} [options]
  * @returns {Promise<T>}
  */
-export async function holdRowLockUntil(rowWrite, action, { blockedSessions = 1 } = {}) {
+export async function holdRowLockUntil(
+  rowWrite,
+  action,
+  { blockedSessions = 1, whileBlocked } = {},
+) {
   let actionPromise;
   await getLockClient().$transaction(
     async tx => {
@@ -219,6 +228,9 @@ export async function holdRowLockUntil(rowWrite, action, { blockedSessions = 1 }
         }
         await new Promise(resolve => setTimeout(resolve, 25));
       }
+      if (whileBlocked) {
+        await whileBlocked();
+      }
     },
     { timeout: LOCK_WAIT_TIMEOUT_MS + 10000 },
   );
@@ -249,6 +261,61 @@ export function registerCleanup(cleanup, { userIds, horseIds }) {
     () => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }),
     'userTransactions',
   );
+  // Sales of fixture horses (HorseSale.horse is Restrict) go before the horses.
+  cleanup.add(
+    () => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds } } }),
+    'horseSales',
+  );
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+}
+
+async function sendJson(method, path, token, body) {
+  const csrf = await csrfFor(token);
+  const agent = request(app);
+  const req = agent[method](path)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Origin', ORIGIN)
+    .set('Cookie', csrf.cookieHeader)
+    .set('X-CSRF-Token', csrf.csrfToken);
+  return (body === undefined ? req : req.send(body)).then(
+    res => ({ status: res.status, body: res.body }),
+    err => ({ status: 0, body: { message: String(err?.message ?? err) } }),
+  );
+}
+
+/** POST /api/v1/studs/:sireId/requests (private stud). Settled. */
+export function requestPrivateStud(token, sireId, body) {
+  return sendJson('post', `/api/v1/studs/${sireId}/requests`, token, body);
+}
+
+/** POST /api/v1/studs/requests/:id/(approve|reject|cancel). Settled. */
+export function actOnRequest(token, requestId, action) {
+  return sendJson('post', `/api/v1/studs/requests/${requestId}/${action}`, token, {});
+}
+
+/** GET /api/v1/studs/requests?… Settled. */
+export function listStudRequests(token, query) {
+  const qs = new URLSearchParams(query).toString();
+  return sendJson('get', `/api/v1/studs/requests?${qs}`, token);
+}
+
+/** POST /api/v1/horses/:id/stud-listing { studFee, mode }. Settled. */
+export function listAtStud(token, horseId, body) {
+  return sendJson('post', `/api/v1/horses/${horseId}/stud-listing`, token, body);
+}
+
+/** DELETE /api/v1/horses/:id/stud-listing. Settled. */
+export function unlistAtStud(token, horseId) {
+  return sendJson('delete', `/api/v1/horses/${horseId}/stud-listing`, token);
+}
+
+/** GET /api/v1/account/export (the player's GDPR export). Settled. */
+export function exportAccount(token) {
+  return sendJson('get', '/api/v1/account/export', token);
+}
+
+/** POST /api/v1/marketplace/buy/:horseId. Settled. */
+export function buyHorseHttp(token, horseId) {
+  return sendJson('post', `/api/v1/marketplace/buy/${horseId}`, token, {});
 }

@@ -33,6 +33,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { eraseOrAnonymizeOwnedHorses } from './gdprHorseLineageErasure.mjs';
+import { exportBreedingRecords, closeBreedingRecordsForErasureTx } from './gdprBreedingRecords.mjs';
 import { scrubTicketEmailFilerTx } from '../../staff/index.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
@@ -159,6 +160,7 @@ export async function buildUserDataExport(userId) {
       asSeller: horseSalesAsSeller,
       asBuyer: horseSalesAsBuyer,
     },
+    breedingRecords: await exportBreedingRecords(userId), // Equoria-q4uem.9, both sides
   };
 }
 
@@ -315,6 +317,8 @@ export async function eraseUserAccount(userId) {
         // be deleted (HorseSale.horse is Restrict).
         await tx.horseSale.deleteMany({ where: { horseId: { in: horseIds } } });
       }
+
+      await closeBreedingRecordsForErasureTx(tx, userId); // Equoria-q4uem.9: kept for the counterparty
 
       // ── Shows hosted/created by the user (Equoria-shsgd) ──────────────────
       // PROACTIVE CANCEL+REFUND for non-executed shows whose creator is

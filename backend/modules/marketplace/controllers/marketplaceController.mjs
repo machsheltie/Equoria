@@ -317,6 +317,7 @@ export async function buyHorse(req, res) {
       return res.status(400).json({ success: false, message: 'Invalid horseId' });
     }
 
+    let finalizeAfterCommit = committed => committed; // stud-request notices (q4uem.9)
     const result = await withRetryableTxMapping(
       prisma.$transaction(
         async tx => {
@@ -409,9 +410,8 @@ export async function buyHorse(req, res) {
             });
           }
 
-          // Equoria-6p398.6 / .12: the seller's rider, trainer and tack are
-          // theirs, not fittings on the horse — see the service for why.
-          await reconcileHorseOnTransfer(tx, { horseId, sellerId });
+          // Equoria-6p398.6/.12, q4uem.9: what the seller keeps and what a sale ends — see the service.
+          ({ finalizeAfterCommit } = await reconcileHorseOnTransfer(tx, { horseId, sellerId }));
 
           const saleRecord = await tx.horseSale.create({
             data: {
@@ -460,7 +460,7 @@ export async function buyHorse(req, res) {
         { timeout: 30000 },
       ), // 30s — 7+ DB ops can exceed 5s default under full-suite load
       { message: 'The marketplace is busy right now, please retry in a moment.' },
-    );
+    ).then(finalizeAfterCommit);
 
     await createNotification(buyerId, 'horse_purchased', {
       horseName: result.horseName,

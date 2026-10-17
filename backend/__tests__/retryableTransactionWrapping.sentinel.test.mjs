@@ -155,6 +155,10 @@ const MIGRATED = [
   // pregnancy claim and the BreedingRecord now commit as one wrapped
   // transaction (the claim was a bare updateMany).
   ['modules/horses/controllers/horseFoalingController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-q4uem.9 slice 3 — the private request queue: request, approve and
+  // the post-rollback decline; reject/cancel share one closeRequest transaction.
+  ['modules/breeding/controllers/studRequestController.mjs', { wrapped: 3, totalTx: 3 }],
+  ['modules/breeding/controllers/studRequestQueueController.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites
