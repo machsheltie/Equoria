@@ -8,7 +8,7 @@
  *  AC4: Training session — initiate to result displayed
  *  AC5: Competition entry — select horse → confirm → result displayed
  */
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { readTestCredentials } from './helpers/credentials';
@@ -272,6 +272,11 @@ test.describe('AC5: Competition Entry', () => {
     // this flow entered the starter horse without one. Hire and assign a rider
     // through the real marketplace API first.
     expect(horseId, 'global-setup must provide the starter horse id').toBeTruthy();
+    // The rider hired here is dismissed at the end (finally below): the shared
+    // E2E account has a rider roster cap of 2, and a leaked rider per attempt
+    // filled it, so rider-dismiss and rider-trainer-unassign could not hire
+    // (Equoria-g3n8c).
+    let hiredRiderId: number | undefined;
     const session: AuthedSession = await createAuthedSession(browser);
     try {
       const marketRes = await session.request.get('/api/v1/riders/marketplace');
@@ -289,8 +294,9 @@ test.describe('AC5: Competition Entry', () => {
       expect(hireRes.ok(), `rider hire returned ${hireRes.status()}`).toBe(true);
       type Hired = { rider?: { id: number } };
       const hired = (await hireRes.json()) as Hired & { data?: Hired };
+      hiredRiderId = hired.data?.rider?.id ?? hired.rider?.id;
       const assignRes = await csrfMutate(session, 'POST', '/api/v1/riders/assignments', {
-        riderId: hired.data?.rider?.id ?? hired.rider?.id,
+        riderId: hiredRiderId,
         horseId: Number(horseId),
       });
       expect(assignRes.ok(), `rider assignment returned ${assignRes.status()}`).toBe(true);
@@ -298,59 +304,92 @@ test.describe('AC5: Competition Entry', () => {
       await session.context.close();
     }
 
-    await page.goto('/competitions', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('[data-testid="competition-browser-page"]', { timeout: 20000 });
-
-    // Competitions must exist — absent data is a setup failure, not a skip condition
-    const cards = page.locator('[data-testid="competition-card"]');
-    await expect(cards.first()).toBeVisible({ timeout: 15000 });
-
-    // Open detail modal
-    await cards.first().click();
-    await expect(page.locator('[data-testid="competition-detail-modal"]')).toBeVisible({
-      timeout: 10000,
-    });
-
-    // Select horse from the inline horse-select inside the modal
-    const horseSelect = page.locator('[data-testid="competition-entry-horse-select"]');
-    await expect(horseSelect).toBeVisible({ timeout: 10000 });
-    if (horseId) {
-      // Pre-select the global-setup starter horse if available in the list
-      const valueExists = await horseSelect
-        .locator(`option[value="${horseId}"]`)
-        .count()
-        .then((c) => c > 0);
-      if (valueExists) {
-        await horseSelect.selectOption({ value: String(horseId) });
-      } else {
-        // Fall back to the first real option (index 1 skips the placeholder)
-        const optionValues = await horseSelect
-          .locator('option[value]')
-          .evaluateAll((opts: HTMLOptionElement[]) =>
-            opts.map((o) => o.value).filter((v) => v !== '')
+    try {
+      await enterSeededRiddenShow(page, horseId);
+    } finally {
+      if (hiredRiderId !== undefined) {
+        const cleanup = await createAuthedSession(browser);
+        try {
+          const dismissRes = await csrfMutate(
+            cleanup,
+            'DELETE',
+            `/api/v1/riders/${hiredRiderId}/dismiss`
           );
-        if (optionValues.length > 0) {
-          await horseSelect.selectOption({ value: optionValues[0] });
+          expect(dismissRes.ok(), `rider dismiss returned ${dismissRes.status()}`).toBe(true);
+        } finally {
+          await cleanup.context.close();
         }
       }
     }
-
-    // Intercept entry POST before clicking — proves the real API was called
-    const entryPost = page.waitForResponse(
-      (resp) =>
-        resp.url().includes('/api/v1/competition/enter') && resp.request().method() === 'POST',
-      { timeout: 15000 }
-    );
-
-    // Enter Competition button must be enabled (disabled = ineligible horse = real failure)
-    const enterBtn = page.locator('[data-testid="enter-competition-button"]');
-    await expect(enterBtn).toBeEnabled({ timeout: 10000 });
-    await enterBtn.click();
-
-    const entryResp = await entryPost;
-    expect(
-      entryResp.ok(),
-      `POST /api/v1/competition/enter returned ${entryResp.status()}`
-    ).toBeTruthy();
   });
 });
+
+/**
+ * Enter the starter horse in one of global-setup's seeded RIDDEN shows through
+ * CompetitionDetailModal, and require the real entry POST to succeed.
+ *
+ * The card must be a ridden show: the first card on the page is global-setup's
+ * seeded CONFORMATION show (`E2E-Conformation-<userId>`, run date 2020-01-01,
+ * so it sorts first), and the ridden-entry endpoint refuses conformation shows
+ * by design (400). The old version clicked `cards.first()` (Equoria-g3n8c).
+ */
+async function enterSeededRiddenShow(page: Page, horseId: string | number | undefined) {
+  await page.goto('/competitions', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-testid="competition-browser-page"]', { timeout: 20000 });
+
+  // Competitions must exist — absent data is a setup failure, not a skip condition
+  const cards = page.locator('[data-testid="competition-card"]');
+  await expect(cards.first()).toBeVisible({ timeout: 15000 });
+  const riddenCard = cards.filter({ hasText: /E2E Dressage Show \d+/ }).first();
+  await expect(riddenCard, 'global-setup must seed an E2E Dressage show').toBeVisible({
+    timeout: 15000,
+  });
+
+  // Open detail modal
+  await riddenCard.click();
+  await expect(page.locator('[data-testid="competition-detail-modal"]')).toBeVisible({
+    timeout: 10000,
+  });
+
+  // Select horse from the inline horse-select inside the modal
+  const horseSelect = page.locator('[data-testid="competition-entry-horse-select"]');
+  await expect(horseSelect).toBeVisible({ timeout: 10000 });
+  if (horseId) {
+    // Pre-select the global-setup starter horse if available in the list
+    const valueExists = await horseSelect
+      .locator(`option[value="${horseId}"]`)
+      .count()
+      .then((c) => c > 0);
+    if (valueExists) {
+      await horseSelect.selectOption({ value: String(horseId) });
+    } else {
+      // Fall back to the first real option (index 1 skips the placeholder)
+      const optionValues = await horseSelect
+        .locator('option[value]')
+        .evaluateAll((opts: HTMLOptionElement[]) =>
+          opts.map((o) => o.value).filter((v) => v !== '')
+        );
+      if (optionValues.length > 0) {
+        await horseSelect.selectOption({ value: optionValues[0] });
+      }
+    }
+  }
+
+  // Intercept entry POST before clicking — proves the real API was called
+  const entryPost = page.waitForResponse(
+    (resp) =>
+      resp.url().includes('/api/v1/competition/enter') && resp.request().method() === 'POST',
+    { timeout: 15000 }
+  );
+
+  // Enter Competition button must be enabled (disabled = ineligible horse = real failure)
+  const enterBtn = page.locator('[data-testid="enter-competition-button"]');
+  await expect(enterBtn).toBeEnabled({ timeout: 10000 });
+  await enterBtn.click();
+
+  const entryResp = await entryPost;
+  expect(
+    entryResp.ok(),
+    `POST /api/v1/competition/enter returned ${entryResp.status()}`
+  ).toBeTruthy();
+}
