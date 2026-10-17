@@ -168,4 +168,37 @@ describe.each(EVENINGS)('groom bonus eligibility on Eastern game days (%s) — E
 
     expect(result).toMatchObject({ milestoneWindowDays: 4, totalCoverageDays: 3 });
   });
+
+  // An empty window (foal born today, Eastern) has no coverage to measure. The
+  // result was 0 / 0 = NaN, which already failed the 75% check; it is now 0, so
+  // the same "not eligible" outcome is stated instead of falling out of NaN.
+  it('a foal born today has an empty window: coverage 0, not eligible', async () => {
+    const foal = await makeFoal(now, 0);
+    const groom = await makeGroom();
+    const thisMorning = easternHour(now, 0, 9);
+    await prisma.groomAssignment.create({
+      data: { foalId: foal.id, groomId: groom.id, startDate: thisMorning, isActive: true },
+    });
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: foal.id,
+        groomId: groom.id,
+        interactionType: 'grooming',
+        duration: 30,
+        bondingChange: 10,
+        timestamp: thisMorning,
+      },
+    });
+
+    const result = await at(now, () => checkBonusEligibility(foal.id, groom.id));
+
+    expect(result).toMatchObject({
+      milestoneWindowDays: 0,
+      totalCoverageDays: 0,
+      coveragePercentage: 0,
+      averageBondScore: 60,
+      eligible: false,
+      reason: 'Insufficient assignment coverage',
+    });
+  });
 });

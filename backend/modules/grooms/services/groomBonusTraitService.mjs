@@ -216,7 +216,9 @@ export async function checkBonusEligibility(horseId, groomId) {
     totalCoverageDays += coverageDays;
   }
 
-  const coveragePercentage = totalCoverageDays / milestoneWindowDays;
+  // An empty window (foal born today) has no coverage to measure: 0, so the
+  // 75% requirement is not met, the outcome 0 / 0 = NaN already produced.
+  const coveragePercentage = milestoneWindowDays > 0 ? totalCoverageDays / milestoneWindowDays : 0;
 
   // Get average bond score from interactions
   const interactions = await prisma.groomInteraction.findMany({
