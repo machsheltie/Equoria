@@ -26,11 +26,12 @@ import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { getHorseAgeYears } from '../utils/horseAge.mjs';
 import {
-  ENTRY_REFUSALS,
   ageRefusal,
+  entryRefusalMessage,
   evaluateEntryRules,
   gaitingRefusal,
   loadActiveAssignments,
+  loadActiveDisciplineTypes,
   riderRefusal,
 } from '../utils/competitionEntryRules.mjs';
 import {
@@ -137,12 +138,21 @@ export async function getCompetitionEligibilitySummary(
 ) {
   try {
     const assignment = (await loadActiveAssignments(db, [horse.id])).get(horse.id);
-    const code = evaluateEntryRules({ show: { discipline }, horse, assignment, userId, now });
+    const activeTypes = (await loadActiveDisciplineTypes(db, [horse.id])).get(horse.id);
+    const code = evaluateEntryRules({
+      show: { discipline },
+      horse,
+      assignment,
+      activeTypes,
+      userId,
+      now,
+    });
     const disciplineConfig = getDisciplineConfig(discipline);
 
     return {
       eligible: code === null,
-      refusal: code ? { code, message: ENTRY_REFUSALS[code].message } : null,
+      refusal: code ? { code, message: entryRefusalMessage(code, { activeTypes }) } : null,
+      activeDisciplineTypes: activeTypes,
       horseLevel: calculateHorseLevel(horse, discipline),
       ageEligible: ageRefusal(horse.dateOfBirth, now) === null,
       riderEligible: riderRefusal(assignment, userId) === null,
@@ -161,6 +171,7 @@ export async function getCompetitionEligibilitySummary(
     return {
       eligible: false,
       refusal: null,
+      activeDisciplineTypes: [],
       horseLevel: 1,
       ageEligible: false,
       riderEligible: false,

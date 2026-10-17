@@ -29,6 +29,7 @@ const rand = () => randomBytes(6).toString('hex');
 const cleanup = createCleanupTracker();
 const horseIds = [];
 const riderIds = [];
+const showIds = [];
 let user;
 let token;
 
@@ -44,6 +45,8 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'entries');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
   cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
@@ -126,5 +129,38 @@ describe('GET /competition/eligibility follows the entry rules (B9)', () => {
       gaitScores: { walk: 60, trot: 60, canter: 60, gallop: 60, gaiting: [{ name: 'Rack', score: 70 }] },
     });
     expect(await summary(gaited.id, 'Gaited')).toMatchObject({ eligible: true, traitEligible: true });
+  });
+
+  // Equoria-576c0 B10: at most 3 discipline types active at once.
+  it('a 4th discipline type is not eligible while 3 are active; an active type is', async () => {
+    const horse = await makeHorse();
+    const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    for (const discipline of ['Dressage', 'Racing', 'Show Jumping']) {
+      const show = await prisma.show.create({
+        data: {
+          name: `TestFixture-b10el-${rand()}`,
+          discipline,
+          entryFee: 0,
+          prize: 0,
+          levelMin: 1,
+          levelMax: 999,
+          runDate: future,
+          closeDate: future,
+          openDate: new Date(),
+          status: 'open',
+          createdByUserId: user.id,
+        },
+      });
+      showIds.push(show.id);
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+    }
+    expect(await summary(horse.id, 'Western Pleasure')).toMatchObject({
+      eligible: false,
+      activeDisciplineTypes: ['Dressage', 'Racing', 'Show Jumping'],
+      refusal: { code: 'DISCIPLINE_TYPE_LIMIT' },
+    });
+    expect(await summary(horse.id, 'Racing')).toMatchObject({ eligible: true, refusal: null });
   });
 });

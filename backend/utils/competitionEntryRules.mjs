@@ -25,6 +25,8 @@ import { getHorseAgeYears } from './horseAge.mjs';
 
 export const MIN_ENTRY_AGE_YEARS = 3;
 export const MAX_ENTRY_AGE_YEARS = 20;
+/** At most this many discipline types active at once (owner entry rules; B10). */
+export const MAX_ACTIVE_DISCIPLINE_TYPES = 3;
 
 /** Stable refusal codes with their HTTP status and player-facing message. */
 export const ENTRY_REFUSALS = Object.freeze({
@@ -48,7 +50,65 @@ export const ENTRY_REFUSALS = Object.freeze({
     message: 'Gaited shows require a horse with gaiting ability',
   }),
   ALREADY_ENTERED: Object.freeze({ status: 409, message: 'Horse is already entered in this show' }),
+  DISCIPLINE_TYPE_LIMIT: Object.freeze({
+    status: 400,
+    message:
+      'This horse already has shows in 3 discipline types. A new type can be entered once every show of one of them has run.',
+  }),
 });
+
+/**
+ * The player-facing message for a refusal. DISCIPLINE_TYPE_LIMIT names the
+ * horse's active types when they are known.
+ * @param {keyof ENTRY_REFUSALS} code
+ * @param {{ activeTypes?: string[] }} [context]
+ */
+export function entryRefusalMessage(code, { activeTypes } = {}) {
+  if (code === 'DISCIPLINE_TYPE_LIMIT' && activeTypes?.length) {
+    return `This horse already has shows in ${activeTypes.length} discipline types (${activeTypes.join(', ')}). A new type can be entered once every show of one of them has run.`;
+  }
+  return ENTRY_REFUSALS[code].message;
+}
+
+/**
+ * A show's discipline type for the 3-type limit (C13): conformation and parade
+ * each count as one type; a ridden show's type is its discipline.
+ * @param {{ showType?: string|null, discipline?: string|null }} show
+ * @returns {string}
+ */
+export function disciplineTypeOf(show) {
+  if (show.showType === 'conformation') {
+    return 'Conformation';
+  }
+  if (show.showType === 'parade') {
+    return 'Parade';
+  }
+  return show.discipline;
+}
+
+/**
+ * Each horse's ACTIVE discipline types: the types of the shows it is entered in
+ * whose status is not 'completed' (open or executing: entered, not yet run and
+ * settled; the executor marks a show completed when it settles). Sorted, unique.
+ * Works with the prisma client or a tx client.
+ *
+ * @param {object} db
+ * @param {number[]} horseIds
+ * @returns {Promise<Map<number, string[]>>}
+ */
+export async function loadActiveDisciplineTypes(db, horseIds) {
+  const byHorse = new Map(horseIds.map(id => [id, new Set()]));
+  if (horseIds.length > 0) {
+    const rows = await db.showEntry.findMany({
+      where: { horseId: { in: horseIds }, show: { status: { not: 'completed' } } },
+      select: { horseId: true, show: { select: { showType: true, discipline: true } } },
+    });
+    for (const row of rows) {
+      byHorse.get(row.horseId)?.add(disciplineTypeOf(row.show));
+    }
+  }
+  return new Map([...byHorse].map(([id, types]) => [id, [...types].sort()]));
+}
 
 function hasGaiting(gaitScores) {
   return (
@@ -130,6 +190,17 @@ export function riderRefusal(assignment, userId) {
   return null;
 }
 
+/**
+ * The 3-type limit: a show of an active type is always fine; a new type only
+ * while fewer than 3 types are active. A refusal code or null.
+ */
+export function disciplineTypeRefusal(show, activeTypes = []) {
+  if (activeTypes.includes(disciplineTypeOf(show))) {
+    return null;
+  }
+  return activeTypes.length >= MAX_ACTIVE_DISCIPLINE_TYPES ? 'DISCIPLINE_TYPE_LIMIT' : null;
+}
+
 /** C12 Gaited rule: a refusal code or null. */
 export function gaitingRefusal(discipline, gaitScores) {
   return discipline === 'Gaited' && !hasGaiting(gaitScores) ? 'GAITING_REQUIRED' : null;
@@ -148,6 +219,8 @@ export function gaitingRefusal(discipline, gaitScores) {
  * @param {{ rider?: { retired?: boolean, userId?: string|null } }|null|undefined}
  *   input.assignment - the horse's active assignment (loadActiveAssignments)
  * @param {boolean} [input.alreadyEntered]
+ * @param {string[]} [input.activeTypes] - the horse's active discipline types
+ *   (loadActiveDisciplineTypes)
  * @param {string} input.userId - the horse's owner
  * @param {Date} [input.now]
  * @returns {keyof ENTRY_REFUSALS | null}
@@ -157,6 +230,7 @@ export function evaluateEntryRules({
   horse,
   assignment,
   alreadyEntered = false,
+  activeTypes = [],
   userId,
   now = new Date(),
 }) {
@@ -164,12 +238,15 @@ export function evaluateEntryRules({
     return 'ALREADY_ENTERED';
   }
   if (show.showType === 'conformation') {
-    return null; // C11: conformation's own age 0+ / groom rules live in its controller.
+    // C11: conformation's own age 0+ / groom rules live in its controller; it
+    // still counts as one discipline type (C13).
+    return disciplineTypeRefusal(show, activeTypes);
   }
   return (
     ageRefusal(horse?.dateOfBirth, now) ??
     healthRefusal(horse?.healthStatus) ??
     riderRefusal(assignment, userId) ??
-    gaitingRefusal(show.discipline, horse?.gaitScores)
+    gaitingRefusal(show.discipline, horse?.gaitScores) ??
+    disciplineTypeRefusal(show, activeTypes)
   );
 }

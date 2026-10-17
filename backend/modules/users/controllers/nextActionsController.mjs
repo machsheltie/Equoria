@@ -51,6 +51,7 @@ import {
   ENTRY_RULE_HORSE_SELECT,
   evaluateEntryRules,
   loadActiveAssignments,
+  loadActiveDisciplineTypes,
 } from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
@@ -232,8 +233,9 @@ export async function getNextActions(req, res) {
     // needs gaiting, not already entered, not injured. XP never gates entry (R9).
     if (horses.length > 0 && openShows.length > 0) {
       const horseIds = horses.map(h => h.id);
-      const [assignments, entries] = await Promise.all([
+      const [assignments, activeTypes, entries] = await Promise.all([
         loadActiveAssignments(prisma, horseIds),
+        loadActiveDisciplineTypes(prisma, horseIds),
         prisma.showEntry.findMany({
           where: { horseId: { in: horseIds }, showId: { in: openShows.map(s => s.id) } },
           select: { showId: true, horseId: true },
@@ -248,6 +250,7 @@ export async function getNextActions(req, res) {
               horse: h,
               assignment: assignments.get(h.id),
               alreadyEntered: entered.has(`${show.id}:${h.id}`),
+              activeTypes: activeTypes.get(h.id),
               userId,
               now,
             }) === null,

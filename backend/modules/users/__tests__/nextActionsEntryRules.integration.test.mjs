@@ -36,7 +36,9 @@ let riderlessUser;
 let xpUser;
 let xpHorse;
 let show;
+let limitedUser;
 
+cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'entries');
 cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
 cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
 cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
@@ -118,6 +120,31 @@ beforeAll(async () => {
 
   xpUser = await makeUser();
   xpHorse = await makeHorse(xpUser, { horseXp: 0 }); // old XP level 1
+
+  // B10: a horse already active in 3 other discipline types; the fixture show
+  // above (Dressage) would be its 4th type.
+  limitedUser = await makeUser();
+  const limited = await makeHorse(limitedUser);
+  for (const discipline of ['Racing', 'Show Jumping', 'Western Pleasure']) {
+    const other = await prisma.show.create({
+      data: {
+        name: `TestFixture-b10na-${rand()}`,
+        discipline,
+        entryFee: 0,
+        prize: 0,
+        levelMin: 1,
+        levelMax: 999,
+        runDate: new Date(now + 3 * 24 * 60 * 60 * 1000),
+        status: 'open',
+        openDate: new Date(now - 60 * 1000),
+        closeDate: new Date(now + 3 * 24 * 60 * 60 * 1000),
+      },
+    });
+    showIds.push(other.id);
+    await prisma.showEntry.create({
+      data: { showId: other.id, horseId: limited.id, userId: limitedUser.id, feePaid: 0 },
+    });
+  }
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);
@@ -135,5 +162,10 @@ describe('the compete suggestion uses the entry rules (B9)', () => {
     const compete = await competeActions(xpUser);
     expect(compete).toHaveLength(1);
     expect(compete[0]).toMatchObject({ horseId: xpHorse.id, metadata: { showId: show.id } });
+  });
+
+  it('does not suggest a show that would be a 4th discipline type (B10)', async () => {
+    const compete = await competeActions(limitedUser);
+    expect(compete.every(a => a.metadata?.showId !== show.id)).toBe(true);
   });
 });

@@ -12,16 +12,18 @@
 import {
   ENTRY_REFUSALS,
   ENTRY_RULE_HORSE_SELECT,
+  entryRefusalMessage,
   evaluateEntryRules,
   loadActiveAssignments,
+  loadActiveDisciplineTypes,
 } from '../../../utils/competitionEntryRules.mjs';
 
 export { ENTRY_REFUSALS } from '../../../utils/competitionEntryRules.mjs';
 
 /** Thrown inside the entry transaction; rolls the entry back. */
 export class EntryRefusalError extends Error {
-  constructor(code) {
-    super(ENTRY_REFUSALS[code].message);
+  constructor(code, message = ENTRY_REFUSALS[code].message) {
+    super(message);
     this.name = 'EntryRefusalError';
     this.code = code;
     this.status = ENTRY_REFUSALS[code].status;
@@ -45,6 +47,13 @@ export async function checkEntryEligibility(
   tx,
   { show, showId, horseId, userId, now = new Date() },
 ) {
+  // The 3-type limit (B10) counts the horse's entries, so two concurrent
+  // entries for new types must not both read the same count. Lock the owner's
+  // User row, then the horse row, in the repository's lock order (User ->
+  // Horse): every entry for this horse serializes here, and the paid path's
+  // later User debit already holds this lock, so no order is inverted.
+  await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+  await tx.$queryRaw`SELECT id FROM "horses" WHERE id = ${horseId} FOR UPDATE`;
   const existing = await tx.showEntry.findFirst({
     where: { showId, horseId },
     select: { id: true },
@@ -54,16 +63,18 @@ export async function checkEntryEligibility(
     ? await tx.horse.findUnique({ where: { id: horseId }, select: ENTRY_RULE_HORSE_SELECT })
     : null;
   const assignment = ridden ? (await loadActiveAssignments(tx, [horseId])).get(horseId) : null;
+  const activeTypes = (await loadActiveDisciplineTypes(tx, [horseId])).get(horseId);
   const code = evaluateEntryRules({
     show,
     horse,
     assignment,
     alreadyEntered: existing !== null,
+    activeTypes,
     userId,
     now,
   });
   if (code) {
-    throw new EntryRefusalError(code);
+    throw new EntryRefusalError(code, entryRefusalMessage(code, { activeTypes }));
   }
 }
 
