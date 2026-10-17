@@ -280,6 +280,12 @@ describe('INTEGRATION: GET /api/v1/events/stream — SSE transport (Equoria-rgyv
   });
 
   it('tracks the active SSE connection count via getActiveConnectionMetrics (Equoria-fsuys)', async () => {
+    // Equoria-87k0g: a client close() reaches the server's req 'close' cleanup
+    // only on a later event-loop turn, so streams an earlier test closed can
+    // still be counted here. Wait until the gauge matches the streams this file
+    // still holds open (fails loud if the server never releases them).
+    const settled = await waitFor(() => getActiveConnectionMetrics().total === openReqs.size);
+    expect(settled).toBe(true);
     const before = getActiveConnectionMetrics().total;
     const s1 = await openStream(tokenA);
     await waitFor(() => userListenerCount(userA.id) >= 1);
