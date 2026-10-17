@@ -50,6 +50,10 @@ export const ENTRY_REFUSALS = Object.freeze({
     message: 'Gaited shows require a horse with gaiting ability',
   }),
   ALREADY_ENTERED: Object.freeze({ status: 409, message: 'Horse is already entered in this show' }),
+  SHOW_UNDATED: Object.freeze({
+    status: 409,
+    message: 'This show has no closing date and is not taking entries',
+  }),
   DISCIPLINE_TYPE_LIMIT: Object.freeze({
     status: 400,
     message:
@@ -90,6 +94,9 @@ export function disciplineTypeOf(show) {
  * Each horse's ACTIVE discipline types: the types of the shows it is entered in
  * whose status is not 'completed' (open or executing: entered, not yet run and
  * settled; the executor marks a show completed when it settles). Sorted, unique.
+ * An undated RIDDEN show (closeDate null) never runs (the executor only picks
+ * closeDate <= now) and refuses new entries, so a legacy entry in one does not
+ * count; a conformation show runs 7 days from createdAt, so it always counts.
  * Works with the prisma client or a tx client.
  *
  * @param {object} db
@@ -100,7 +107,13 @@ export async function loadActiveDisciplineTypes(db, horseIds) {
   const byHorse = new Map(horseIds.map(id => [id, new Set()]));
   if (horseIds.length > 0) {
     const rows = await db.showEntry.findMany({
-      where: { horseId: { in: horseIds }, show: { status: { not: 'completed' } } },
+      where: {
+        horseId: { in: horseIds },
+        show: {
+          status: { not: 'completed' },
+          OR: [{ closeDate: { not: null } }, { showType: 'conformation' }],
+        },
+      },
       select: { horseId: true, show: { select: { showType: true, discipline: true } } },
     });
     for (const row of rows) {
@@ -236,6 +249,12 @@ export function evaluateEntryRules({
 }) {
   if (alreadyEntered) {
     return 'ALREADY_ENTERED';
+  }
+  // Owner ruling (2026-10-05/07/12): undated shows refuse entry. Only a show
+  // snapshot that carries closeDate is judged (the eligibility summary has no
+  // show); conformation keeps its own schedule (7 days from createdAt).
+  if (show.showType !== 'conformation' && show.closeDate === null) {
+    return 'SHOW_UNDATED';
   }
   if (show.showType === 'conformation') {
     // C11: conformation's own age 0+ / groom rules live in its controller; it

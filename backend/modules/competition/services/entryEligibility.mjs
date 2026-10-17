@@ -48,12 +48,19 @@ export async function checkEntryEligibility(
   { show, showId, horseId, userId, now = new Date() },
 ) {
   // The 3-type limit (B10) counts the horse's entries, so two concurrent
-  // entries for new types must not both read the same count. Lock the owner's
-  // User row, then the horse row, in the repository's lock order (User ->
-  // Horse): every entry for this horse serializes here, and the paid path's
-  // later User debit already holds this lock, so no order is inverted.
-  await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
-  await tx.$queryRaw`SELECT id FROM "horses" WHERE id = ${horseId} FOR UPDATE`;
+  // entries for new types must not both read the same count. A guarded no-op
+  // update of the owner's User row takes its row lock: every entry for the
+  // horse (only its owner can enter it) serializes here, and the paid path's
+  // later User debit is already under this lock. No horse lock: feeding and a
+  // zero-prize settlement take Horse -> User, so locking the horse after the
+  // User row here could deadlock with them.
+  const serialized = await tx.user.updateMany({
+    where: { id: userId },
+    data: { money: { increment: 0 } },
+  });
+  if (serialized.count !== 1) {
+    throw new Error(`Entrant ${userId} not found`);
+  }
   const existing = await tx.showEntry.findFirst({
     where: { showId, horseId },
     select: { id: true },

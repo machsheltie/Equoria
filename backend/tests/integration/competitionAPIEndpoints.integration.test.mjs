@@ -154,6 +154,8 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         prize: 1000,
         hostUserId: testUserId,
         runDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        // Owner ruling (2026-10-05/07/12; Equoria-576c0 B10 review): undated shows refuse entry, so the fixture show has a closing date (old fixture: none).
+        closeDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
     } else {
       testShow = liveShow;

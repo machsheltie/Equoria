@@ -302,6 +302,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         name: 'Integration Test Championship',
         discipline: 'Racing',
         runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        // Owner ruling (2026-10-05/07/12; Equoria-576c0 B10 review): undated shows refuse entry, so the fixture show has a closing date (old fixture: none).
+        closeDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         entryFee: 500,
         prize: 10000,
         levelMin: 1, // Minimum level requirement

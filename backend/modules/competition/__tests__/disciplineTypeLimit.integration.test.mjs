@@ -68,7 +68,7 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 60000);
 
-async function makeShow(discipline, { showType = 'ridden' } = {}) {
+async function makeShow(discipline, { showType = 'ridden', undated = false } = {}) {
   const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const show = await prisma.show.create({
     data: {
@@ -80,7 +80,7 @@ async function makeShow(discipline, { showType = 'ridden' } = {}) {
       levelMin: 1,
       levelMax: 999,
       runDate: future,
-      closeDate: future,
+      closeDate: undated ? null : future,
       openDate: new Date(Date.now() - 60 * 1000),
       status: 'open',
       createdByUserId: user.id,
@@ -116,6 +116,17 @@ async function enter(showId, horseId) {
     .set('Cookie', csrf.cookieHeader)
     .set('X-CSRF-Token', csrf.csrfToken)
     .send({ horseId });
+}
+
+async function enterViaCompetition(showId, horseId) {
+  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  return request(app)
+    .post('/api/v1/competition/enter')
+    .set('Origin', ORIGIN)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Cookie', csrf.cookieHeader)
+    .set('X-CSRF-Token', csrf.csrfToken)
+    .send({ horseId, showId });
 }
 
 async function enterAll(horse, disciplines) {
@@ -214,6 +225,36 @@ describe('at most 3 discipline types active at once (B10, C13)', () => {
     });
     expect(entered).toBe(1);
   }, 60000);
+});
+
+// Owner ruling (2026-10-05/07/12): undated shows refuse entry. The executor only
+// runs a ridden show whose closeDate has passed, so an undated ridden show never
+// runs; an entry in one would keep its type active forever.
+describe('undated ridden shows (B10 review)', () => {
+  it('refuses entry into a ridden show with no closing date, on both paths', async () => {
+    const horse = await makeHorse();
+    const undated = await makeShow('Dressage', { undated: true });
+    for (const res of [await enter(undated.id, horse.id), await enterViaCompetition(undated.id, horse.id)]) {
+      expect({ status: res.status, code: res.body.code, message: res.body.message }).toEqual({
+        status: 409,
+        code: 'SHOW_UNDATED',
+        message: 'This show has no closing date and is not taking entries',
+      });
+    }
+    expect(await prisma.showEntry.count({ where: { showId: undated.id } })).toBe(0);
+  });
+
+  it('legacy entries in undated ridden shows do not count toward the 3-type limit', async () => {
+    const horse = await makeHorse();
+    for (const discipline of ['Racing', 'Show Jumping', 'Western Pleasure']) {
+      const legacy = await makeShow(discipline, { undated: true });
+      await prisma.showEntry.create({
+        data: { showId: legacy.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+    }
+    const dated = await makeShow('Dressage');
+    expect((await enter(dated.id, horse.id)).status).toBe(201);
+  });
 });
 
 /**
