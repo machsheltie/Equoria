@@ -10,7 +10,8 @@
  *
  * The two engines differ ON PURPOSE for the rest of the formula, but BOTH
  * apply the SAME rider flag-compatibility adjustment to the rider percents
- * before invoking `applyRiderModifiers`. Pre-pqdte that block was literally
+ * before using them (the instant simulator through `applyRiderModifiers`; the
+ * nightly scorer as one summed percent term, Equoria-576c0 B5). Pre-pqdte that block was literally
  * copy-pasted, including the two cap constants:
  *     const RIDER_BONUS_CAP = 0.1;   // mirrors riderBonus.mjs BONUS_CAP
  *     const RIDER_PENALTY_CAP = 0.08;// mirrors riderBonus.mjs PENALTY_CAP
@@ -36,12 +37,7 @@
  * are intentional, not duplication.
  */
 
-import {
-  BONUS_CAP,
-  PENALTY_CAP,
-  applyRiderModifiers,
-  computeRiderModifiers,
-} from '../../../utils/riderBonus.mjs';
+import { BONUS_CAP, PENALTY_CAP, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { calculateRiderFlagCompatibility } from '../../../utils/riderFlagCompatibility.mjs';
 import logger from '../../../utils/logger.mjs';
 import { DISCIPLINE_STATS, isKnownDiscipline } from '../rules/disciplineRules.mjs';
@@ -59,6 +55,32 @@ import { DISCIPLINE_STATS, isKnownDiscipline } from '../rules/disciplineRules.mj
 export function weightedDisciplineBase(horse, discipline) {
   const [primary, secondary, tertiary] = DISCIPLINE_STATS[discipline];
   return (5 * horse[primary] + 3 * horse[secondary] + 2 * horse[tertiary]) / 10;
+}
+
+/**
+ * One luck roll: +1..+10% in whole percents, never zero or negative (owner
+ * ruling C1; Equoria-576c0 B5). Clamped so a seam returning 1 or less than 0
+ * still yields a legal roll.
+ * @param {Function} rng - Returns a number in [0, 1).
+ * @returns {number} Whole percent 1..10.
+ */
+export function rollLuckPercent(rng) {
+  return Math.max(1, Math.min(10, 1 + Math.floor(rng() * 10)));
+}
+
+/**
+ * Apply the summed modifier percentages once (owner ruling C2):
+ * round(base x (1 + sum / 100)), x.5 or more up, x.4 or less down. Float
+ * noise below a millionth is dropped first so an exact x.5 is not read as
+ * x.4999 (rider percents carry fractions such as 9.72).
+ * @param {number} base - The ridden base (B4a).
+ * @param {number[]} percentTerms - Each modifier in percent (luck, rider, ...).
+ * @returns {number} Non-negative whole score.
+ */
+export function applyPercentTerms(base, percentTerms) {
+  const sum = percentTerms.reduce((total, term) => total + term, 0);
+  const raw = (base * (100 + sum)) / 100;
+  return Math.max(0, Math.round(Number(raw.toFixed(6))));
 }
 
 /**
@@ -106,15 +128,18 @@ export function applyRiderCompatibility({
 /**
  * Score the entries of a nightly (cron-path) show (extracted from
  * executeClosedShows, Equoria-c7mx0): the discipline's 50/30/20 base
- * (Equoria-576c0 B4a; was a flat 5-stat average), ±9 luck, then rider
- * modifiers with flag compatibility, rounded once (x.5 up).
+ * (Equoria-576c0 B4a; was a flat 5-stat average) times (1 + the summed
+ * modifier percents), rounded once, x.5 up (B5, owner rulings C1/C2). The
+ * terms are luck (+1..+10%) and the rider's bonus minus penalty (with flag
+ * compatibility). Before B5, luck was ±9 points added to the base and the
+ * rider was a second multiplication.
  *
  * @param {Object} input
  * @param {Object} input.show    - Show row (discipline read).
  * @param {Array}  input.entries - ShowEntry rows incl. `horse` stats.
  * @param {Map}    input.assignmentByHorseId - horseId -> active RiderAssignment.
- * @param {Function} [input.rng] - Luck RNG (default Math.random); tests pass a
- *   fixed value (0.5 gives zero luck). The luck formula is unchanged.
+ * @param {Function} [input.rng] - Luck RNG (default Math.random), called once
+ *   per entry; tests pass a fixed value (0 gives +1%, 0.5 gives +6%).
  * @returns {Array<{entry: Object, score: number, assignment: Object|undefined}>}
  */
 export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Math.random }) {
@@ -138,8 +163,7 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
     const base = weighted
       ? weightedDisciplineBase(h, show.discipline)
       : (h.speed + h.stamina + h.agility + h.precision + h.boldness) / 5;
-    const luck = (rng() - 0.5) * 18; // ±9%
-    const subtotal = Math.max(0, base + luck);
+    const luckPercent = rollLuckPercent(rng); // one roll per horse per competition (C1)
 
     // Apply rider modifiers if an active rider is assigned to this horse.
     // computeRiderModifiers returns 0/0 for missing/null/malformed input —
@@ -169,9 +193,11 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
         );
       }
     }
-    const scoreWithRider = applyRiderModifiers(subtotal, bonusPercent, penaltyPercent);
+    // C2: each modifier as a percent, summed, applied once. B6 adds the
+    // temperament term (±5) to this list; health follows with O1.
+    const percentTerms = [luckPercent, (bonusPercent - penaltyPercent) * 100];
 
-    return { entry, score: Math.max(0, Math.round(scoreWithRider)), assignment };
+    return { entry, score: applyPercentTerms(base, percentTerms), assignment };
   });
 }
 

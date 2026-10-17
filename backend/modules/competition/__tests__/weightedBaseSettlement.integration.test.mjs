@@ -12,8 +12,9 @@
  * wins 83 to 35.
  *
  * Real DB, TestFixture- fixtures, id-scoped fail-loud cleanup. The executor is
- * scoped by body.showIds; luck is neutralized through its scoreRng option
- * (rng() = 0.5 => luck 0), and no stat-gain roll succeeds (statGainRng 0.999).
+ * scoped by body.showIds; luck is pinned through its scoreRng option to the
+ * lowest roll, +1% (Owner rulings C1/C2 (2026-10-16, Equoria-576c0 B5); old contract: rng() = 0.5
+ * gave luck 0, scores 83 and 35), and no stat-gain roll succeeds (statGainRng 0.999).
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
@@ -113,7 +114,7 @@ describe('nightly settlement scores the discipline’s 50/30/20 base (B4a)', () 
     });
 
     await executeClosedShows({ body: { showIds: [show.id] } }, null, {
-      scoreRng: () => 0.5,
+      scoreRng: () => 0,
       statGainRng: () => 0.999,
     });
 
@@ -123,8 +124,8 @@ describe('nightly settlement scores the discipline’s 50/30/20 base (B4a)', () 
     });
     const byHorse = new Map(results.map(r => [r.horseId, r]));
     expect(byHorse.get(specialist.id)).toMatchObject({ placement: '1' });
-    expect(Number(byHorse.get(specialist.id).score)).toBe(83);
+    expect(Number(byHorse.get(specialist.id).score)).toBe(84); // 83 x 1.01 = 83.83
     expect(byHorse.get(allRounder.id)).toMatchObject({ placement: '2' });
-    expect(Number(byHorse.get(allRounder.id).score)).toBe(35);
+    expect(Number(byHorse.get(allRounder.id).score)).toBe(35); // 35 x 1.01 = 35.35
   }, 60000);
 });

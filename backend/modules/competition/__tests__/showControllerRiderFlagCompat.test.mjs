@@ -11,8 +11,11 @@
  * executeClosedShows before applyRiderModifiers.
  *
  * This is a real-DB test (CLAUDE.md "no mocks ever") with TestFixture-scoped
- * cleanup. The ONLY mock is Math.random — pinned to 0.5 so the +-9% luck term
- * (luck = (random - 0.5) * 18) is exactly 0. With luck pinned, the per-entry
+ * cleanup. The ONLY mock is Math.random — pinned to 0.5 so the luck term is
+ * fixed: +6% under owner rulings C1/C2 (Equoria-576c0 B5; luck = 1 +
+ * floor(0.5 * 10) whole percent, summed with the rider percent and applied
+ * once). Old contract: luck = (random - 0.5) * 18 = 0 points, then the rider
+ * multiplier. With luck pinned, the per-entry
  * score is fully deterministic, so the score delta between two identical-stat,
  * identical-rider horses that differ ONLY in epigeneticFlags is attributable
  * SOLELY to the rider flag-compatibility modifier (sentinel isolation).
@@ -163,7 +166,7 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 30000);
 
 beforeEach(() => {
-  // Pin luck to its midpoint: luck = (0.5 - 0.5) * 18 = 0. Scores deterministic.
+  // Pin luck: 1 + floor(0.5 * 10) = +6% (C1, B5). Scores deterministic.
   jest.spyOn(Math, 'random').mockReturnValue(0.5);
 });
 
@@ -226,12 +229,13 @@ describe('executeClosedShows — rider flag-compatibility (Equoria-grys6)', () =
     expect(flaggedScore).toBeDefined();
     expect(noFlagScore).toBeDefined();
 
-    // base = 100, luck = 0 -> subtotal = 100. Rider bonus = 0.090, penalty = 0.
-    // No-flag: applyRiderModifiers(100, 0.090, 0) = 100 * 1.090 = 109.0 -> round 109
+    // C1/C2 (B5): base = 100, luck = +6%, rider bonus = 0.090, penalty = 0.
+    // No-flag: 100 * (1 + 0.06 + 0.090) = 115.0 -> 115
     // Flagged (+4 net -> factor 1.08): bonus 0.090 * 1.08 = 0.0972 ->
-    //   100 * 1.0972 = 109.72 -> round 110
-    expect(noFlagScore).toBe(109);
-    expect(flaggedScore).toBe(110);
+    //   100 * (1 + 0.06 + 0.0972) = 115.72 -> 116
+    // (Old contract: luck 0, then x (1 + bonus): 109 and 110.)
+    expect(noFlagScore).toBe(115);
+    expect(flaggedScore).toBe(116);
 
     // And the strict relationship — the flagged horse is strictly higher, and
     // the gap is the rider-compat term, not any base-path effect.
@@ -248,9 +252,9 @@ describe('executeClosedShows — rider flag-compatibility (Equoria-grys6)', () =
 
     // With NO rider, computeRiderModifiers returns 0/0; the compat guard only
     // runs when assignment?.rider is present, so flags never touch the score.
-    // base 100, luck 0, no rider -> 100 exactly for BOTH.
-    expect(noFlagNoRider).toBe(100);
-    expect(flaggedNoRider).toBe(100);
+    // base 100, luck +6% (C1, B5), no rider -> 106 exactly for BOTH (old: luck 0 -> 100).
+    expect(noFlagNoRider).toBe(106);
+    expect(flaggedNoRider).toBe(106);
     expect(flaggedNoRider).toBe(noFlagNoRider);
   }, 60000);
 });
