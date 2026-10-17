@@ -5,7 +5,7 @@
  * and racing red accents set the tone.
  */
 
-import { type JSX, useState, useCallback, useEffect, useRef } from 'react';
+import { type JSX, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trophy } from 'lucide-react';
@@ -37,6 +37,13 @@ type BrowserTab = 'ridden' | 'conformation';
 
 const CompetitionBrowserPage = (): JSX.Element => {
   const { data, isLoading, error, refetch } = useCompetitions();
+  // The list endpoint returns every open show; the Conformation tab takes the
+  // conformation ones, so the Ridden tab must not offer them (their entry goes
+  // through the conformation route; the ridden route refuses them, Equoria-g3n8c).
+  const riddenCompetitions = useMemo(
+    () => (data ?? []).filter((c) => c.showType !== 'conformation'),
+    [data]
+  );
   const { data: horses = [] } = useHorses();
   const { refetchProfile } = useAuth();
   const queryClient = useQueryClient();
@@ -267,7 +274,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
 
             {/* Competition List */}
             <CompetitionList
-              competitions={data || []}
+              competitions={riddenCompetitions}
               isLoading={isLoading}
               onCompetitionClick={handleCompetitionClick}
               title="Available Competitions"
