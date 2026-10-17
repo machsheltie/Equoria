@@ -1,11 +1,40 @@
-import { test, expect } from '@playwright/test';
-import { readTestCredentials } from './helpers/credentials';
+import { test as base, expect } from '@playwright/test';
+import { createSeededPlayerSession, type SeededPlayerSession } from './fixtures/seededPlayer';
 
-// Credentials are read from process.env via the credentials helper —
-// no filesystem I/O (Equoria-sf4h, Story 21-8 AC1 follow-up).
-function readCredentials() {
-  return readTestCredentials();
-}
+// Equoria-g3n8c / Equoria-0vhop: this spec needs a player whose feed inventory
+// is EMPTY and whose horse has not been fed today. The shared global-setup
+// account has neither: feed-stat-gain-notifications (which sorts earlier)
+// buys feed for it, and global-setup's conformation seed marks its horse fed
+// today. So the spec runs as its own player, registered and onboarded over the
+// real API (tests/e2e/fixtures/seededPlayer.ts), with that player's onboarding
+// starter horse. The assertions are unchanged.
+type StarterHorse = { starterHorseId: number };
+const test = base.extend<object, { seededPlayer: SeededPlayerSession } & StarterHorse>({
+  seededPlayer: [
+    async ({ browser }, use) => {
+      const player = await createSeededPlayerSession(browser);
+      await use(player);
+      await player.context.close();
+    },
+    { scope: 'worker' },
+  ],
+  starterHorseId: [
+    async ({ seededPlayer }, use) => {
+      const res = await seededPlayer.request.get('/api/v1/horses');
+      expect(res.ok(), `GET /api/v1/horses for the seeded player returned ${res.status()}`).toBe(
+        true
+      );
+      const body = (await res.json()) as { data?: Array<{ id: number }> } | Array<{ id: number }>;
+      const horses = Array.isArray(body) ? body : (body.data ?? []);
+      expect(horses.length, 'the seeded player must own its onboarding starter horse').toBe(1);
+      await use(horses[0].id);
+    },
+    { scope: 'worker' },
+  ],
+  storageState: async ({ seededPlayer }, use) => {
+    await use(seededPlayer.storageStatePath);
+  },
+});
 
 // Tests must run in order: empty-state assertion depends on inventory being
 // empty, which is only true before the buy/equip/feed test runs.
@@ -17,10 +46,8 @@ test.describe.serial('Feed System Phase A — full loop', () => {
 
   test('empty-state: equip page shows empty-state copy when no feed in inventory', async ({
     page,
+    starterHorseId: testHorseId,
   }) => {
-    const { testHorseId } = readCredentials();
-    expect(testHorseId, 'global-setup must seed testHorseId').toBeDefined();
-
     await page.goto(`/horses/${testHorseId}/equip`, { waitUntil: 'load' });
     // Wait for the GET /equippable query to settle so the feed section is
     // populated (loading spinner gone) before we assert empty-state copy.
@@ -39,10 +66,10 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     await expect(page).toHaveURL(/\/feed-shop$/);
   });
 
-  test('buy → equip → feed → see remaining count', async ({ page }) => {
-    const { testHorseId } = readCredentials();
-    expect(testHorseId, 'global-setup must seed testHorseId').toBeDefined();
-
+  test('buy → equip → feed → see remaining count', async ({
+    page,
+    starterHorseId: testHorseId,
+  }) => {
     // Step 1: navigate to feed shop, buy a default pack of basic (100 units)
     await page.goto('/feed-shop', { waitUntil: 'load' });
     await expect(page.getByTestId('feed-tier-basic')).toBeVisible();
