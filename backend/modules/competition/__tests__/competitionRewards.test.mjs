@@ -46,24 +46,40 @@ describe('getRelevantStats', () => {
     expect(getRelevantStats('Dressage')).toEqual(['precision', 'focus', 'obedience']);
   });
 
-  it('returns default Racing stats for unknown discipline', () => {
-    expect(getRelevantStats('Unknown Discipline')).toEqual(['speed', 'stamina', 'focus']);
+  // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+  // Old contract: an unknown discipline silently got the Racing stats. New: an error.
+  it('throws for an unknown discipline instead of returning the Racing stats', () => {
+    expect(() => getRelevantStats('Unknown Discipline')).toThrow(/Unknown competition discipline/);
   });
 
+  // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+  // Old contract: the list held Trail / English Pleasure / Driving, which are not
+  // bible disciplines. New: the 23 bible disciplines.
   it('returns 3 stats for every known discipline', () => {
     const disciplines = [
-      'Racing',
-      'Show Jumping',
-      'Dressage',
-      'Cross Country',
-      'Hunter',
-      'Barrel Racing',
+      'Western Pleasure',
       'Reining',
       'Cutting',
-      'Trail',
-      'Western Pleasure',
-      'English Pleasure',
-      'Driving',
+      'Barrel Racing',
+      'Roping',
+      'Team Penning',
+      'Rodeo',
+      'Hunter',
+      'Saddleseat',
+      'Endurance',
+      'Eventing',
+      'Dressage',
+      'Show Jumping',
+      'Vaulting',
+      'Polo',
+      'Cross Country',
+      'Combined Driving',
+      'Fine Harness',
+      'Gaited',
+      'Gymkhana',
+      'Steeplechase',
+      'Racing',
+      'Harness Racing',
     ];
     for (const d of disciplines) {
       expect(getRelevantStats(d)).toHaveLength(3);
@@ -157,20 +173,33 @@ describe('competitionRewards — deterministic _rngFn & exhaustive coverage (mer
   }
 
   describe('getRelevantStats — every supported discipline', () => {
+    // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+    // Old contract: Trail / English Pleasure / Driving were "supported". New: the 23.
     it('returns an array of 3 strings for every supported discipline', () => {
       const disciplines = [
-        'Racing',
-        'Show Jumping',
-        'Dressage',
-        'Cross Country',
-        'Hunter',
-        'Barrel Racing',
+        'Western Pleasure',
         'Reining',
         'Cutting',
-        'Trail',
-        'Western Pleasure',
-        'English Pleasure',
-        'Driving',
+        'Barrel Racing',
+        'Roping',
+        'Team Penning',
+        'Rodeo',
+        'Hunter',
+        'Saddleseat',
+        'Endurance',
+        'Eventing',
+        'Dressage',
+        'Show Jumping',
+        'Vaulting',
+        'Polo',
+        'Cross Country',
+        'Combined Driving',
+        'Fine Harness',
+        'Gaited',
+        'Gymkhana',
+        'Steeplechase',
+        'Racing',
+        'Harness Racing',
       ];
       for (const discipline of disciplines) {
         const stats = getRelevantStats(discipline);

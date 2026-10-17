@@ -13,7 +13,7 @@ import {
   getUserRankHistory,
   captureRankSnapshots,
 } from '../controllers/leaderboardController.mjs';
-import { getAllDisciplines } from '../../../utils/competitionLogic.mjs';
+import { isKnownDiscipline } from '../../competition/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -479,7 +479,7 @@ router.get(
       .optional()
       .isString()
       .custom(value => {
-        if (value && !getAllDisciplines().includes(value)) {
+        if (value && !isKnownDiscipline(value)) {
           throw new Error('Invalid discipline');
         }
         return true;

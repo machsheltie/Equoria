@@ -1,4 +1,5 @@
 import logger from './logger.mjs';
+import { getDisciplineStats } from '../modules/competition/index.mjs';
 
 /**
  * Calculate prize distribution for competition winners
@@ -14,27 +15,14 @@ function calculatePrizeDistribution(totalPrize) {
 }
 
 /**
- * Get the relevant stats for a discipline (used for stat gains)
+ * The three stats a discipline's post-show gain may raise: the discipline's
+ * bible stats (owner ruling R8; Equoria-576c0 B3), picked with equal odds.
  * @param {string} discipline - Competition discipline
- * @returns {Array} - Array of stat names relevant to the discipline
+ * @returns {readonly string[]}
+ * @throws {Error} For an unknown discipline (no Racing fallback).
  */
 function getRelevantStats(discipline) {
-  const statMap = {
-    Racing: ['speed', 'stamina', 'focus'],
-    'Show Jumping': ['balance', 'agility', 'boldness'],
-    Dressage: ['precision', 'focus', 'obedience'],
-    'Cross Country': ['stamina', 'boldness', 'balance'],
-    Hunter: ['balance', 'precision', 'obedience'],
-    'Barrel Racing': ['speed', 'agility', 'focus'],
-    Reining: ['agility', 'intelligence', 'obedience'],
-    Cutting: ['agility', 'intelligence', 'focus'],
-    Trail: ['intelligence', 'obedience', 'balance'],
-    'Western Pleasure': ['obedience', 'precision', 'balance'],
-    'English Pleasure': ['precision', 'obedience', 'balance'],
-    Driving: ['obedience', 'intelligence', 'stamina'],
-  };
-
-  return statMap[discipline] || ['speed', 'stamina', 'focus']; // Default to Racing stats
+  return getDisciplineStats(discipline);
 }
 
 /**

@@ -6,6 +6,7 @@
  */
 
 import logger from './logger.mjs';
+import { DISCIPLINE_STATS } from '../modules/competition/index.mjs';
 
 /**
  * Calculate competition score based on horse attributes and discipline
@@ -261,120 +262,97 @@ export function calculatePlacements(competitionEntries) {
  * @returns {Object} Discipline configuration object
  */
 function getDisciplineConfigurations() {
-  return {
+  const configs = {
     'Western Pleasure': {
-      stats: ['obedience', 'focus', 'precision'],
       beneficial: ['calm', 'peopleTrusting', 'focused', 'intelligent'],
       detrimental: ['nervous', 'aggressive', 'stubborn'],
     },
     Reining: {
-      stats: ['precision', 'agility', 'focus'],
       beneficial: ['athletic', 'focused', 'intelligent', 'agile'],
       detrimental: ['clumsy', 'nervous', 'stubborn'],
     },
     Cutting: {
-      stats: ['agility', 'strength', 'intelligence'],
       beneficial: ['intelligent', 'athletic', 'brave', 'focused'],
       detrimental: ['slow', 'nervous', 'fearful'],
     },
     'Barrel Racing': {
-      stats: ['speed', 'agility', 'stamina'],
       beneficial: ['fast', 'athletic', 'focused', 'brave'],
       detrimental: ['slow', 'clumsy', 'nervous'],
     },
     Roping: {
-      stats: ['strength', 'precision', 'focus'],
       beneficial: ['focused', 'precise', 'fast', 'intelligent'],
       detrimental: ['clumsy', 'nervous', 'slow'],
     },
     'Team Penning': {
-      stats: ['intelligence', 'agility', 'obedience'],
       beneficial: ['intelligent', 'athletic', 'resilient', 'focused'],
       detrimental: ['slow', 'weak', 'nervous'],
     },
     Rodeo: {
-      stats: ['strength', 'agility', 'endurance'],
       beneficial: ['brave', 'athletic', 'resilient', 'powerful'],
       detrimental: ['fearful', 'weak', 'nervous'],
     },
     Hunter: {
-      stats: ['precision', 'endurance', 'agility'],
       beneficial: ['balanced', 'precise', 'intelligent', 'calm'],
       detrimental: ['clumsy', 'nervous', 'aggressive'],
     },
     Saddleseat: {
-      stats: ['flexibility', 'obedience', 'precision'],
       beneficial: ['flexible', 'balanced', 'peopleTrusting', 'focused'],
       detrimental: ['stiff', 'clumsy', 'stubborn'],
     },
     Endurance: {
-      stats: ['endurance', 'stamina', 'speed'],
       beneficial: ['resilient', 'intelligent', 'fast', 'focused'],
       detrimental: ['weak', 'slow', 'lazy'],
     },
     Eventing: {
-      stats: ['endurance', 'precision', 'agility'],
       beneficial: ['brave', 'athletic', 'resilient', 'focused'],
       detrimental: ['fearful', 'weak', 'nervous'],
     },
     Dressage: {
-      stats: ['precision', 'obedience', 'focus'],
       beneficial: ['focused', 'intelligent', 'calm', 'peopleTrusting'],
       detrimental: ['nervous', 'aggressive', 'stubborn'],
     },
     'Show Jumping': {
-      stats: ['agility', 'precision', 'intelligence'],
       beneficial: ['brave', 'athletic', 'focused', 'powerful'],
       detrimental: ['nervous', 'clumsy', 'fearful'],
     },
     Vaulting: {
-      stats: ['strength', 'flexibility', 'endurance'],
       beneficial: ['flexible', 'balanced', 'calm', 'peopleTrusting'],
       detrimental: ['stiff', 'nervous', 'aggressive'],
     },
     Polo: {
-      stats: ['speed', 'agility', 'intelligence'],
       beneficial: ['fast', 'brave', 'athletic', 'focused'],
       detrimental: ['slow', 'fearful', 'clumsy'],
     },
     'Cross Country': {
-      stats: ['endurance', 'intelligence', 'agility'],
       beneficial: ['brave', 'athletic', 'resilient', 'intelligent'],
       detrimental: ['nervous', 'weak', 'fearful'],
     },
     'Combined Driving': {
-      stats: ['obedience', 'strength', 'focus'],
       beneficial: ['peopleTrusting', 'resilient', 'focused', 'intelligent'],
       detrimental: ['stubborn', 'nervous', 'weak'],
     },
     'Fine Harness': {
-      stats: ['precision', 'flexibility', 'obedience'],
       beneficial: ['flexible', 'precise', 'balanced', 'focused'],
       detrimental: ['stiff', 'clumsy', 'nervous'],
     },
     Gaited: {
-      stats: ['flexibility', 'obedience', 'focus'],
       beneficial: ['flexible', 'balanced', 'gaited', 'calm'],
       detrimental: ['stiff', 'clumsy', 'nervous'],
       requiresTrait: 'gaited',
     },
     Gymkhana: {
-      stats: ['speed', 'flexibility', 'stamina'],
       beneficial: ['fast', 'flexible', 'focused', 'athletic'],
       detrimental: ['slow', 'stiff', 'nervous'],
     },
     Steeplechase: {
-      stats: ['speed', 'endurance', 'stamina'],
       beneficial: ['resilient', 'brave', 'balanced', 'athletic'],
       detrimental: ['weak', 'fearful', 'clumsy'],
     },
     Racing: {
-      stats: ['speed', 'stamina', 'intelligence'],
       beneficial: ['fast', 'athletic', 'focused', 'brave', 'resilient'],
       detrimental: ['slow', 'lazy', 'nervous'],
     },
     'Harness Racing': {
-      stats: ['speed', 'precision', 'endurance'],
       beneficial: ['fast', 'precise', 'resilient', 'focused'],
       detrimental: ['slow', 'clumsy', 'weak'],
     },
@@ -384,6 +362,27 @@ function getDisciplineConfigurations() {
       detrimental: ['stubborn', 'aggressive', 'nervous'],
     },
   };
+  // Competition stats come from the one bible table (owner ruling R8; Racing's
+  // tertiary is Focus per ruling C6). 'Obedience Training' is a training
+  // discipline: it keeps its own stats and is not a competition discipline.
+  for (const [discipline, stats] of Object.entries(DISCIPLINE_STATS)) {
+    configs[discipline].stats = [...stats];
+  }
+  return configs;
+}
+
+/**
+ * The configuration of a known discipline. A name outside the table is an
+ * error, never the Racing configuration (Equoria-576c0 B3).
+ * @param {string} discipline
+ * @returns {Object}
+ */
+function configFor(discipline) {
+  const config = getDisciplineConfigurations()[discipline];
+  if (!config) {
+    throw new Error(`Unknown discipline: ${discipline}`);
+  }
+  return config;
 }
 
 /**
@@ -394,9 +393,7 @@ function getDisciplineConfigurations() {
  */
 export function calculateHorseLevel(horse, discipline) {
   try {
-    // Get discipline configuration (need to redeclare since it's in function scope above)
-    const disciplineConfig = getDisciplineConfigurations();
-    const disciplineMap = disciplineConfig[discipline] || disciplineConfig['Racing'];
+    const disciplineMap = configFor(discipline);
     const { stats } = disciplineMap;
 
     // Calculate base stat score (weighted average of 3 discipline stats)
@@ -483,8 +480,7 @@ export function checkAgeRequirements(horse) {
  */
 export function checkTraitRequirements(horse, discipline) {
   try {
-    const disciplineConfig = getDisciplineConfigurations();
-    const disciplineMap = disciplineConfig[discipline] || disciplineConfig['Racing'];
+    const disciplineMap = configFor(discipline);
 
     if (!disciplineMap.requiresTrait) {
       return true; // No special trait required
@@ -521,8 +517,7 @@ export function calculateStatGain(placement, discipline) {
     }
 
     // Get discipline stats
-    const disciplineConfig = getDisciplineConfigurations();
-    const disciplineMap = disciplineConfig[discipline] || disciplineConfig['Racing'];
+    const disciplineMap = configFor(discipline);
     const availableStats = disciplineMap.stats;
 
     // Randomly select one of the 3 discipline stats
@@ -553,8 +548,7 @@ export function getAllDisciplines() {
  * @returns {Object} Discipline configuration
  */
 export function getDisciplineConfig(discipline) {
-  const disciplineConfig = getDisciplineConfigurations();
-  return disciplineConfig[discipline] || disciplineConfig['Racing'];
+  return configFor(discipline);
 }
 
 export default {

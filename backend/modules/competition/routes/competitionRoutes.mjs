@@ -10,11 +10,8 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 // removed (410 Gone) and /enter now performs a canonical deferred ShowEntry.
 // getCompetitionEligibilitySummary is still used by GET /eligibility.
 import { getCompetitionEligibilitySummary } from '../../../logic/enhancedCompetitionSimulation.mjs';
-import {
-  getAllDisciplines,
-  getDisciplineConfig,
-  calculateHorseLevel,
-} from '../../../utils/competitionLogic.mjs';
+import { getDisciplineConfig, calculateHorseLevel } from '../../../utils/competitionLogic.mjs';
+import { COMPETITION_DISCIPLINES, isKnownDiscipline } from '../rules/disciplineRules.mjs';
 import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
@@ -593,12 +590,11 @@ router.get(
       );
 
       // Validate discipline
-      const availableDisciplines = getAllDisciplines();
-      if (!availableDisciplines.includes(discipline)) {
+      if (!isKnownDiscipline(discipline)) {
         return res.status(400).json({
           success: false,
           message: 'Invalid discipline',
-          availableDisciplines,
+          availableDisciplines: COMPETITION_DISCIPLINES,
         });
       }
 
@@ -648,7 +644,7 @@ router.use('/conformation', conformationShowRoutes);
  */
 router.get('/disciplines', queryRateLimiter, async (req, res) => {
   try {
-    const disciplines = getAllDisciplines();
+    const disciplines = [...COMPETITION_DISCIPLINES];
     const disciplineDetails = disciplines.map(discipline => ({
       name: discipline,
       config: getDisciplineConfig(discipline),

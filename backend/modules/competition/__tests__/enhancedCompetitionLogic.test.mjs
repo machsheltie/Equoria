@@ -214,11 +214,14 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
       expect(disciplines).toContain('Barrel Racing');
     });
 
+    // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+    // Old contract: Racing speed/stamina/intelligence, Dressage precision/obedience/focus,
+    // Western Pleasure obedience/focus/precision, Gaited flexibility/obedience/focus.
     test('should have correct stats for each discipline', () => {
-      expect(getDisciplineConfig('Racing').stats).toEqual(['speed', 'stamina', 'intelligence']);
-      expect(getDisciplineConfig('Dressage').stats).toEqual(['precision', 'obedience', 'focus']);
-      expect(getDisciplineConfig('Western Pleasure').stats).toEqual(['obedience', 'focus', 'precision']);
-      expect(getDisciplineConfig('Gaited').stats).toEqual(['flexibility', 'obedience', 'focus']);
+      expect(getDisciplineConfig('Racing').stats).toEqual(['speed', 'stamina', 'focus']);
+      expect(getDisciplineConfig('Dressage').stats).toEqual(['precision', 'focus', 'obedience']);
+      expect(getDisciplineConfig('Western Pleasure').stats).toEqual(['focus', 'obedience', 'intelligence']);
+      expect(getDisciplineConfig('Gaited').stats).toEqual(['flexibility', 'balance', 'obedience']);
     });
 
     test('should have Gaited trait requirement for Gaited discipline', () => {

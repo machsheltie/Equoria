@@ -10,7 +10,7 @@
   "backend/modules/breeding/services/breedingPredictionService.mjs": 650,
   "backend/modules/community/__tests__/clubController.test.mjs": 981,
   "backend/modules/competition/__tests__/showController.test.mjs": 922,
-  "backend/modules/competition/routes/competitionRoutes.mjs": 675,
+  "backend/modules/competition/routes/competitionRoutes.mjs": 671,
   "backend/modules/grooms/__tests__/dynamicCompatibilityScoring.test.mjs": 859,
   "backend/modules/grooms/routes/groomRoutes.mjs": 674,
   "backend/modules/grooms/services/groomPersonalityTraits.mjs": 691,
