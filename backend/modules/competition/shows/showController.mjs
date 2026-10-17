@@ -26,32 +26,8 @@ import {
   CONFORMATION_ENTRY_ONLY_MESSAGE,
 } from '../services/competitionRouteQueries.mjs';
 import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
-
-const VALID_DISCIPLINES = [
-  'Western Pleasure',
-  'Reining',
-  'Cutting',
-  'Barrel Racing',
-  'Roping',
-  'Team Penning',
-  'Rodeo',
-  'Hunter',
-  'Saddleseat',
-  'Endurance',
-  'Eventing',
-  'Dressage',
-  'Show Jumping',
-  'Vaulting',
-  'Polo',
-  'Cross Country',
-  'Combined Driving',
-  'Fine Harness',
-  'Gaited',
-  'Gymkhana',
-  'Steeplechase',
-  'Racing',
-  'Harness Racing',
-];
+// The 23 competition disciplines, from the one bible table (Equoria-576c0 B3 review).
+import { isKnownDiscipline } from '../rules/disciplineRules.mjs';
 
 // ── BA-2 / Equoria-nx8t1: Create a 7-day deferred-window show ──────────────────
 //
@@ -79,7 +55,7 @@ export async function createShow(req, res) {
         .status(400)
         .json({ success: false, message: 'Show name must be at least 2 characters' });
     }
-    if (!discipline || !VALID_DISCIPLINES.includes(discipline)) {
+    if (!discipline || !isKnownDiscipline(discipline)) {
       return res.status(400).json({ success: false, message: 'Invalid discipline' });
     }
     if (

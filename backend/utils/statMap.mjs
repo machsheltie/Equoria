@@ -5,35 +5,14 @@
  * - Secondary stat (30% weight)
  * - Tertiary stat (20% weight)
  *
- * Available stat categories:
- * speed, stamina, agility, balance, precision, intelligence,
- * boldness, flexibility, obedience, focus
+ * The table itself lives in one place, the competition module's
+ * rules/disciplineRules.mjs (the bible's 23 disciplines, owner ruling R8; Racing
+ * tertiary Focus, ruling C6). This file keeps its null-on-unknown helpers for
+ * getStatScore, traitEffects and training (Equoria-576c0 B3 review).
  */
-const statMap = {
-  'Western Pleasure': ['focus', 'obedience', 'intelligence'],
-  Reining: ['agility', 'precision', 'focus'],
-  Cutting: ['intelligence', 'agility', 'boldness'],
-  'Barrel Racing': ['speed', 'agility', 'obedience'],
-  Roping: ['precision', 'focus', 'speed'],
-  'Team Penning': ['intelligence', 'agility', 'stamina'],
-  Rodeo: ['boldness', 'agility', 'stamina'],
-  Hunter: ['balance', 'precision', 'intelligence'],
-  Saddleseat: ['flexibility', 'balance', 'obedience'],
-  Endurance: ['stamina', 'intelligence', 'speed'],
-  Eventing: ['stamina', 'boldness', 'agility'],
-  Dressage: ['precision', 'focus', 'obedience'],
-  'Show Jumping': ['balance', 'agility', 'boldness'],
-  Vaulting: ['flexibility', 'balance', 'obedience'],
-  Polo: ['speed', 'boldness', 'agility'],
-  'Cross Country': ['stamina', 'boldness', 'intelligence'],
-  'Combined Driving': ['obedience', 'stamina', 'focus'],
-  'Fine Harness': ['flexibility', 'precision', 'balance'],
-  Gaited: ['flexibility', 'balance', 'obedience'],
-  Gymkhana: ['speed', 'flexibility', 'focus'],
-  Steeplechase: ['stamina', 'boldness', 'balance'],
-  Racing: ['speed', 'stamina', 'focus'],
-  'Harness Racing': ['speed', 'precision', 'stamina'],
-};
+import { DISCIPLINE_STATS, isKnownDiscipline } from '../modules/competition/index.mjs';
+
+const statMap = DISCIPLINE_STATS;
 
 /**
  * Get the stat configuration for a specific discipline
@@ -41,7 +20,7 @@ const statMap = {
  * @returns {Array|null} - Array of [primary, secondary, tertiary] stats or null if discipline not found
  */
 function getStatsForDiscipline(discipline) {
-  return statMap[discipline] || null;
+  return isKnownDiscipline(discipline) ? statMap[discipline] : null;
 }
 
 /**
@@ -67,7 +46,7 @@ function getAllStatCategories() {
  * @returns {boolean} - True if discipline exists, false otherwise
  */
 function isDisciplineValid(discipline) {
-  return discipline in statMap;
+  return isKnownDiscipline(discipline);
 }
 
 export {

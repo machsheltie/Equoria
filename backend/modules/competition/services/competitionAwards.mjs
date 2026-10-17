@@ -31,6 +31,8 @@ import { addXpToUserCore } from '../../users/index.mjs';
 // calculateStatGains is a shared util (ordinal-keyed) with an injectable RNG seam
 // (_rngFn) — reuse it rather than reinventing the chance/stat-selection logic.
 import { calculateStatGains } from '../../../utils/competitionRewards.mjs';
+import logger from '../../../utils/logger.mjs';
+import { isKnownDiscipline } from '../rules/disciplineRules.mjs';
 
 /**
  * Award table. Horse Points (stored as `horseXp`) are 10 / 5 / 3 for 1st / 2nd /
@@ -96,6 +98,7 @@ export function computePlacementAwards(placementNumber) {
  * @param {number} params.placementNumber - 1-based finishing position.
  * @param {string} params.discipline - Show discipline (reason strings + stat map).
  * @param {string} [params.horseName] - Horse name for the user-XP reason string.
+ * @param {number} [params.showId] - Show id, named in the unknown-discipline log.
  * @param {Function} [params.rng] - Injectable RNG (defaults Math.random); tests
  *   pass () => 0 (always gain) / () => 0.999 (never gain).
  * @returns {Promise<{awards:object, statGain:{stat:string,gain:number}|null, statGainApplied:boolean}>}
@@ -103,7 +106,7 @@ export function computePlacementAwards(placementNumber) {
  */
 export async function awardPlacementProgression(
   db,
-  { horseId, ownerId, placementNumber, discipline, horseName, rng = Math.random },
+  { horseId, ownerId, placementNumber, discipline, horseName, showId, rng = Math.random },
 ) {
   const awards = computePlacementAwards(placementNumber);
 
@@ -128,8 +131,20 @@ export async function awardPlacementProgression(
   // 3. Stat gain — top-3 only, chance-gated. calculateStatGains returns
   // { stat, gain } or null; `stat` comes from a hardcoded discipline->stats map
   // (allow-listed constants — safe to interpolate as a column key).
-  const statGain =
-    awards.statGainChance > 0 ? calculateStatGains(awards.ordinal, discipline, rng) : null;
+  // A show row whose discipline is outside the 23 (a legacy name) still settles:
+  // only its random stat gain is skipped, because there is no stat to raise.
+  // Throwing here would abort the entry's tx and the whole nightly run
+  // (Equoria-576c0 B3 review).
+  let statGain = null;
+  if (awards.statGainChance > 0) {
+    if (isKnownDiscipline(discipline)) {
+      statGain = calculateStatGains(awards.ordinal, discipline, rng);
+    } else {
+      logger.error(
+        `[competitionAwards] show ${showId ?? 'unknown'}: discipline "${discipline}" is not a competition discipline; stat gain skipped for horse ${horseId}, placement and awards kept`,
+      );
+    }
+  }
   // statGainApplied: whether the stat really rose (the cap-safe update matched a
   // row). The result record stores only a gain that happened (Equoria-q4uem.10).
   let statGainApplied = false;

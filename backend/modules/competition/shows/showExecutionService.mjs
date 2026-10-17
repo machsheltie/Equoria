@@ -66,8 +66,14 @@ async function clearStagedOrdering(showId) {
  * Equoria-rsss0 (test-isolation): an OPTIONAL `req.body.showIds` array narrows the scan
  * to those ids (still gated on status 'open' AND closeDate <= now), so a test settles
  * only its own shows. Production callers pass no req, so the scan stays global.
+ *
+ * `options.statGainRng` (in-process callers only; the HTTP route's third
+ * argument is Express's `next`, which carries no such property) is handed to
+ * awardPlacementProgression as its stat-gain RNG, so a test can force the roll.
+ * Omitted, the roll uses Math.random as before (Equoria-576c0 B3 review).
  */
-export async function executeClosedShows(req, res) {
+export async function executeClosedShows(req, res, options) {
+  const statGainRng = typeof options?.statGainRng === 'function' ? options.statGainRng : undefined;
   try {
     const now = new Date();
 
@@ -298,6 +304,8 @@ export async function executeClosedShows(req, res) {
             placementNumber: placement,
             discipline: show.discipline,
             horseName,
+            showId: show.id,
+            ...(statGainRng ? { rng: statGainRng } : {}),
           });
           // Equoria-q4uem.10 (owner ruling R6): the result records what it awarded.
           await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
