@@ -151,7 +151,7 @@ describe('addXpToHorse() — validation errors', () => {
 // ── addXpToHorse — success path ───────────────────────────────────────────────
 
 describe('addXpToHorse() — success path', () => {
-  it('adds XP and returns new totals with statPointsGained when crossing 100xp threshold', async () => {
+  it('adds XP and returns new totals (a stat point is credited per 1,000 Horse Points, C15)', async () => {
     const result = await addXpToHorse(xpHorse.id, 100, 'test competition win');
     expect(result.success).toBe(true);
     expect(result.xpGained).toBe(100);

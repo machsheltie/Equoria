@@ -96,8 +96,8 @@ export async function addXpToHorseCore(db, horseId, amount, reason) {
   const xpAfter = updated.horseXp;
   // statPointsGained derived from the ATOMIC post-increment value and its exact
   // pre-value (xpAfter - amount). Correct under concurrency because the row lock
-  // from the update above serializes competing awards, so the 100-XP threshold is
-  // credited exactly once no matter how the awards interleave.
+  // from the update above serializes competing awards, so each 1,000-Horse-Point
+  // threshold is credited exactly once no matter how the awards interleave.
   const gained =
     calculateAvailableStatPoints(xpAfter) - calculateAvailableStatPoints(xpAfter - amount);
 
