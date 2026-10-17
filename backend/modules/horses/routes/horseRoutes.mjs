@@ -20,8 +20,10 @@ import {
 import {
   listHorses,
   getRecentResultsForHorses,
+  getPendingStudRequestsForDams,
   updateHorse,
 } from '../services/horseRouteQueries.mjs';
+import { breedingStateFields } from '../services/breedingPairRules.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';
@@ -124,6 +126,12 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
       }
     }
 
+    // Equoria-q4uem.9 slice 6 (S-Q4): the pending stud request holding a mare
+    // is shown to her OWNER only — an admin listing another player's horses
+    // gets null for it.
+    const ownedIds = horses.filter(h => h.userId === req.user.id).map(h => h.id);
+    const pendingByDam = await getPendingStudRequestsForDams(ownedIds);
+
     res.set('Cache-Control', 'no-store');
     res.json({
       success: true,
@@ -132,6 +140,8 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
         const firstPlaceWins = firstPlaceWinsByHorse.get(h.id) ?? 0;
         return {
           ...withAgeYears(withHealth(h)),
+          studFee: h.studFee ?? 0,
+          ...breedingStateFields(h, pendingByDam.get(h.id) ?? null),
           // Explicit null (not undefined) so the frontend key always exists
           // and deriveLatestChapter can branch on its presence.
           latestEvent: latestEventByHorse.get(h.id) ?? null,
@@ -250,10 +260,16 @@ router.get(
       // requireOwnership middleware loads req.horse with all columns by
       // default, so dateOfBirth is already present for withAgeYears.
       const horse = withAgeYears(withHealth(req.horse));
+      // Equoria-q4uem.9 slice 6: requireOwnership means the caller owns this
+      // horse, so the pending stud request (S-Q4) is theirs to see.
+      const pendingByDam = await getPendingStudRequestsForDams([req.horse.id]);
 
       res.json({
         success: true,
-        data: horse,
+        data: {
+          ...horse,
+          ...breedingStateFields(req.horse, pendingByDam.get(req.horse.id) ?? null),
+        },
       });
     } catch (error) {
       logger.error(`[horseRoutes] Error getting horse: ${error.message}`);

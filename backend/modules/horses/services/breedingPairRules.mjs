@@ -24,7 +24,11 @@ import logger from '../../../utils/logger.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from '../../../utils/horseAge.mjs';
-import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import {
+  calendarDateDayIndex,
+  gameCalendarDate,
+  startOfGameDayIndex,
+} from '../../../utils/gameTime.mjs';
 
 /** Minimum breeding age in game-years (PRD-08 s2.5). 3 game-years = 21 real days. */
 export const MIN_BREEDING_AGE_YEARS = 3;
@@ -221,4 +225,47 @@ export function pregnancyClaimData({ sireId, name, effectiveBreedId, now }) {
 /** Owner ruling S-Q4 (Stacey, 2026-10-16): the 409 every other breeding path answers. */
 export function pendingRequestMessage(damName) {
   return `${damName} has a pending stud request. Cancel it before breeding her elsewhere.`;
+}
+
+/**
+ * When a MARE's breeding cooldown ends, or null (Equoria-q4uem.9 slice 6).
+ * Mares only — a stallion never has one (owner rulings 2026-10-02 / S-Q1
+ * 2026-10-16). The same Eastern day arithmetic the breeding guard uses: she is
+ * on cooldown while the Eastern game day is before bred-day +
+ * DAM_BREEDING_COOLDOWN_DAYS, so it ends at 00:00 Eastern that day
+ * (lastBredDate is a date-only column: calendarDateDayIndex, never UTC ms).
+ *
+ * @param {{ sex?: string, lastBredDate?: Date|string|null }} horse
+ * @param {Date} [now]
+ * @returns {string | null} ISO instant, or null when not a mare or not on cooldown
+ */
+export function damBreedingCooldownEndsAt(horse, now = new Date()) {
+  if (horse?.sex !== 'Mare' || !horse.lastBredDate) {
+    return null;
+  }
+  const ends = startOfGameDayIndex(
+    calendarDateDayIndex(horse.lastBredDate) + DAM_BREEDING_COOLDOWN_DAYS,
+  );
+  return ends.getTime() > now.getTime() ? ends.toISOString() : null;
+}
+
+/**
+ * The breeding-state fields the horse list and detail add (slice 6):
+ * mare-only cooldown end, in-foal flag, and — for the horse's OWNER only —
+ * the pending private stud request holding her (S-Q4). `pending` is the
+ * PENDING BreedingRecord for this dam, or null; pass null for a viewer who
+ * does not own the horse.
+ *
+ * @param {object} horse
+ * @param {{ id: number, sireId: number|null, sireName: string } | null} pending
+ * @param {Date} [now]
+ */
+export function breedingStateFields(horse, pending, now = new Date()) {
+  return {
+    breedingCooldownEndsAt: damBreedingCooldownEndsAt(horse, now),
+    inFoal: Boolean(horse.inFoalSinceDate),
+    pendingStudRequest: pending
+      ? { id: pending.id, stallionId: pending.sireId, stallionName: pending.sireName }
+      : null,
+  };
 }

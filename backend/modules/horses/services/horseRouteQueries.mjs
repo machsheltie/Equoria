@@ -60,6 +60,12 @@ export const HORSE_LIST_SELECT = Object.freeze({
   currentTitle: true,
   breedingValueBoost: true,
   phenotype: true,
+  // Equoria-q4uem.9 slice 6: the player's stud listing and the breeding state
+  // the list derives breedingCooldownEndsAt / inFoal from.
+  studStatus: true,
+  studFee: true,
+  lastBredDate: true,
+  inFoalSinceDate: true,
   breed: { select: { id: true, name: true } },
   user: { select: { id: true, username: true } },
 });
@@ -79,6 +85,24 @@ export function listHorses(where, { take, skip }) {
     select: HORSE_LIST_SELECT,
     orderBy: { createdAt: 'desc' },
   });
+}
+
+/**
+ * The PENDING private stud request holding each of these mares (at most one
+ * per mare: the partial unique index), keyed by dam id. Equoria-q4uem.9 slice 6.
+ *
+ * @param {number[]} damIds
+ * @returns {Promise<Map<number, { id: number, damId: number, sireId: number|null, sireName: string }>>}
+ */
+export async function getPendingStudRequestsForDams(damIds) {
+  if (damIds.length === 0) {
+    return new Map();
+  }
+  const rows = await prisma.breedingRecord.findMany({
+    where: { damId: { in: damIds }, status: 'PENDING' },
+    select: { id: true, damId: true, sireId: true, sireName: true },
+  });
+  return new Map(rows.map(r => [r.damId, r]));
 }
 
 /**
