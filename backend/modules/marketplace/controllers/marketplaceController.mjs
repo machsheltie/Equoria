@@ -22,6 +22,7 @@ import {
 // delay-only interleaving seam used by the finding-4 concurrency regressions.
 import { __TESTING_ONLY_awaitMarketplaceRaceBarrier as awaitRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
 import { reconcileHorseOnTransfer } from '../services/horseTransferReconciliation.mjs';
+import { parseOr400, parseSaleQuery } from '../services/listingQueryParams.mjs';
 
 import {
   canonicalizeHorseSex,
@@ -58,22 +59,14 @@ const STORE_PRICE = 1000;
 export async function browseListings(req, res) {
   try {
     const userId = req.user.id;
-    const {
-      name,
-      breed,
-      breedId,
-      sex,
-      minAge,
-      maxAge,
-      minPrice,
-      maxPrice,
-      sort = 'newest',
-      page = '1',
-      limit = '20',
-    } = req.query;
+    const { params, sent } = parseOr400(res, parseSaleQuery, req.query);
+    if (sent) {
+      return undefined;
+    }
+    const { name, breed, breedId, sex, minAge, maxAge, minPrice, maxPrice, orderBy } = params;
 
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const pageNum = Math.max(1, params.page || 1);
+    const pageSize = Math.min(100, Math.max(1, params.limit || 20));
     const skip = (pageNum - 1) * pageSize;
 
     const where = {
@@ -86,8 +79,8 @@ export async function browseListings(req, res) {
     }
     // breedId (exact FK, sent by the UI's breed Select) wins over the legacy
     // `breed` name-substring param when both are present.
-    if (breedId !== undefined && Number.isInteger(parseInt(breedId, 10))) {
-      where.breedId = parseInt(breedId, 10);
+    if (breedId !== undefined) {
+      where.breedId = breedId;
     } else if (breed) {
       where.breed = { name: { contains: breed, mode: 'insensitive' } };
     }
@@ -125,34 +118,16 @@ export async function browseListings(req, res) {
     // maxAge old means born on or after now - maxAge*7 days. (Using calendar years
     // here would exclude every correctly-aged horse, whose dob is only weeks ago.)
     if (minAge !== undefined) {
-      const cutoff = birthDateForAge(parseInt(minAge, 10));
-      where.dateOfBirth = { ...where.dateOfBirth, lte: cutoff };
+      where.dateOfBirth = { ...where.dateOfBirth, lte: birthDateForAge(minAge) };
     }
     if (maxAge !== undefined) {
-      const cutoff = birthDateForAge(parseInt(maxAge, 10));
-      where.dateOfBirth = { ...where.dateOfBirth, gte: cutoff };
+      where.dateOfBirth = { ...where.dateOfBirth, gte: birthDateForAge(maxAge) };
     }
     if (minPrice !== undefined) {
-      where.salePrice = { ...where.salePrice, gte: parseInt(minPrice, 10) };
+      where.salePrice = { ...where.salePrice, gte: minPrice };
     }
     if (maxPrice !== undefined) {
-      where.salePrice = { ...where.salePrice, lte: parseInt(maxPrice, 10) };
-    }
-
-    let orderBy;
-    switch (sort) {
-      case 'price_asc':
-        orderBy = { salePrice: 'asc' };
-        break;
-      case 'price_desc':
-        orderBy = { salePrice: 'desc' };
-        break;
-      case 'youngest':
-        orderBy = { age: 'asc' };
-        break;
-      case 'newest':
-      default:
-        orderBy = { createdAt: 'desc' };
+      where.salePrice = { ...where.salePrice, lte: maxPrice };
     }
 
     const [horses, total] = await Promise.all([

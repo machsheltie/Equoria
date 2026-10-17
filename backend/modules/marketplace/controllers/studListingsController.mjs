@@ -17,6 +17,14 @@ import logger from '../../../utils/logger.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { toPredictionView } from '../../breeding/index.mjs';
+import {
+  INT4_MAX,
+  MAX_AGE_YEARS,
+  boundedInt,
+  ownValue,
+  parseOr400,
+  single,
+} from '../services/listingQueryParams.mjs';
 
 const STUD_MODES = Object.freeze({ public: 'At Public Stud', private: 'At Private Stud' });
 const MODE_BY_STATUS = Object.freeze({ 'At Public Stud': 'public', 'At Private Stud': 'private' });
@@ -29,45 +37,6 @@ const ORDER_BY = Object.freeze({
   youngest: [{ age: 'asc' }, { id: 'asc' }],
   newest: [{ createdAt: 'desc' }, { id: 'asc' }],
 });
-
-const INT4_MAX = 2147483647;
-/** Game-year age bound that keeps birthDateForAge a valid date. */
-const MAX_AGE_YEARS = 1000;
-
-class BadQuery extends Error {}
-
-function bad(message) {
-  return new BadQuery(message);
-}
-
-/** A repeated query parameter arrives as an array: refuse it rather than guess. */
-function single(query, key) {
-  const value = query[key];
-  if (Array.isArray(value) || (value !== undefined && typeof value !== 'string')) {
-    throw bad(`${key} must be given once`);
-  }
-  return value;
-}
-
-/** A non-negative whole number within `max`, or undefined when absent. */
-function boundedInt(query, key, max) {
-  const value = single(query, key);
-  if (value === undefined || value === '') {
-    return undefined;
-  }
-  if (!/^\d+$/.test(value) || Number(value) > max) {
-    throw bad(`${key} must be a whole number from 0 to ${max}`);
-  }
-  return Number(value);
-}
-
-/** Own-key lookup so `__proto__` / `constructor` are rejected, never resolved. */
-function ownValue(table, key, label) {
-  if (!Object.hasOwn(table, key)) {
-    throw bad(`${label} must be one of: ${Object.keys(table).join(', ')}`);
-  }
-  return table[key];
-}
 
 /** Validate the whole query up front; every refusal is a 400 with the standard body. */
 function parseStudQuery(query) {
@@ -132,14 +101,9 @@ function toStudListing(view) {
 export async function browseStudListings(req, res) {
   try {
     const viewerId = req.user.id;
-    let params;
-    try {
-      params = parseStudQuery(req.query);
-    } catch (error) {
-      if (error instanceof BadQuery) {
-        return res.status(400).json({ success: false, message: error.message });
-      }
-      throw error;
+    const { params, sent } = parseOr400(res, parseStudQuery, req.query);
+    if (sent) {
+      return undefined;
     }
     const { name, breed, breedId, minAge, maxAge, minFee, maxFee, statuses, orderBy } = params;
 
