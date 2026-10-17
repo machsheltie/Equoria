@@ -259,7 +259,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
 
     // breed — Stallion matched; a stallion has no cooldown (Equoria-kha18), so cooldownEndsAt is null.
     expect(byType.breed.horseId).toBe(stallionId);
-    expect(new Date(byType.breed.metadata.cooldownEndsAt).getTime()).toBeLessThan(Date.now());
+    expect(byType.breed.metadata.cooldownEndsAt).toBeNull();
 
     // groom-foal — foalAge in days (~3), horseId is the foal.
     expect(byType['groom-foal'].horseId).toBe(foalId);

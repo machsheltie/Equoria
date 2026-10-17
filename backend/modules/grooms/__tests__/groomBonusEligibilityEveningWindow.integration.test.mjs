@@ -202,3 +202,51 @@ describe.each(EVENINGS)('groom bonus eligibility on Eastern game days (%s) — E
     });
   });
 });
+
+// The change is not confined to the evening (Equoria-kha18 review). Calendar-day
+// semantics shift eligibility at EVERY hour: the window used to open at
+// now - N x 24h and coverage was floor(delta / 24h). This pins the reviewer's
+// daytime scenario at 15:00 Eastern. Kept as the owner's day-boundary ruling;
+// awaiting her confirmation.
+const DAYTIMES = [
+  ['summer, 15:00 EDT', new Date('2026-10-16T19:00:00.000Z')],
+  ['winter, 15:00 EST', new Date('2026-12-11T20:00:00.000Z')],
+];
+
+describe.each(DAYTIMES)('groom bonus eligibility on Eastern game days at %s — the all-hours shift', (_label, now) => {
+  it('a 4-game-day-old foal: a 23:00 assignment three game days ago covers 3 of 4 days (was 2, 50%), a 09:00 birth-day interaction counts (was outside), so eligible', async () => {
+    const foal = await makeFoal(now, 4);
+    const groom = await makeGroom();
+    await prisma.groomAssignment.create({
+      data: {
+        foalId: foal.id,
+        groomId: groom.id,
+        startDate: easternHour(now, -3, 23),
+        isActive: true,
+      },
+    });
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: foal.id,
+        groomId: groom.id,
+        interactionType: 'grooming',
+        duration: 30,
+        bondingChange: 10,
+        timestamp: easternHour(now, -4, 9),
+      },
+    });
+
+    const result = await at(now, () => checkBonusEligibility(foal.id, groom.id));
+
+    // Old rolling count: floor(2d 16h / 24h) = 2 days = 50%; the window opened at
+    // 15:00 on the birth day, after the 09:00 interaction (bond 50, not eligible).
+    expect(result).toMatchObject({
+      milestoneWindowDays: 4,
+      totalCoverageDays: 3,
+      coveragePercentage: 0.75,
+      interactionCount: 1,
+      averageBondScore: 60,
+      eligible: true,
+    });
+  });
+});

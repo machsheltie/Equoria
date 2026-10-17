@@ -240,7 +240,8 @@ export function pendingRequestMessage(damName) {
  * @returns {string | null} ISO instant, or null when not a mare or not on cooldown
  */
 export function damBreedingCooldownEndsAt(horse, now = new Date()) {
-  if (horse?.sex !== 'Mare' || !horse.lastBredDate) {
+  // Case-insensitive, as next-actions reads sex (Equoria-kha18 review).
+  if (String(horse?.sex).toLowerCase() !== 'mare' || !horse.lastBredDate) {
     return null;
   }
   const ends = startOfGameDayIndex(
