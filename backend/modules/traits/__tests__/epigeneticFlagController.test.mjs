@@ -11,6 +11,7 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { generateTestToken, generateAdminToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -132,7 +133,7 @@ describe('GET /api/v1/flags/horses/:id/flags', () => {
   // (floor(ageDays / 7)), NOT calendar-years (ageDays / 365.25). A horse
   // born 35 real days ago is 5 game-years old, not ~0.10 calendar-years.
   it('reports ageInYears in canonical game-years, not calendar-years', async () => {
-    const thirtyFiveDaysAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
+    const thirtyFiveDaysAgo = gameCalendarDate(new Date(), -35); // date-only dob: the Eastern date
     const youngHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),

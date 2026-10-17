@@ -18,6 +18,7 @@ import { analyzeCarePatterns } from '../../utils/carePatternAnalysis.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 // Equoria-1ohys: fail-loud scoped per-test cleanup. Replaces the prior
 // `rmHorse(...)`-in-finally that used a silent no-op catch arm — a swallowed
 // horse delete would leak a fixture into the canonical DB (CLAUDE.md §2).
@@ -33,6 +34,8 @@ const cleanup = createCleanupTracker();
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
 const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+// dateOfBirth is a date-only column: store the Eastern game date, as production writers do.
+const gameDaysAgo = n => gameCalendarDate(new Date(), -n);
 const hoursAgo = n => new Date(Date.now() - n * 60 * 60 * 1000);
 const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
 
@@ -46,7 +49,7 @@ const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
 // floor(14/7) = 2 game-years → eligible) so pattern fixtures exercise the
 // real eligible path. Interaction fixtures reach back to daysAgo(11)
 // inside windows scoped by an explicit evaluationDate, which remain valid.
-const ELIGIBLE_DOB = () => daysAgo(14);
+const ELIGIBLE_DOB = () => gameDaysAgo(14);
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -156,7 +159,7 @@ describe('analyzeCarePatterns', () => {
   // calendar math (eligible would be true, ageInYears ≈ 0.10) and passes
   // on the game-years fix (eligible:false, ageInYears === 5).
   test('SENTINEL: 35-day-old horse is 5 game-years and ineligible (old calendar math gave 0.10 yr → wrongly eligible)', async () => {
-    const horse = await mkHorse('Z183Sentinel', { dateOfBirth: daysAgo(35) });
+    const horse = await mkHorse('Z183Sentinel', { dateOfBirth: gameDaysAgo(35) });
     const result = await analyzeCarePatterns(horse.id, new Date());
 
     expect(result.eligible).toBe(false);
@@ -170,7 +173,7 @@ describe('analyzeCarePatterns', () => {
   // floor(14 / 7) = 2 game-years) is still inside the developmental
   // window and remains eligible. Confirms the gate uses game-years.
   test('14-day-old horse is 2 game-years and eligible', async () => {
-    const horse = await mkHorse('Z183Eligible', { dateOfBirth: daysAgo(14) });
+    const horse = await mkHorse('Z183Eligible', { dateOfBirth: gameDaysAgo(14) });
     const result = await analyzeCarePatterns(horse.id, new Date());
 
     expect(result.eligible).toBe(true);

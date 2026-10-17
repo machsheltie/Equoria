@@ -32,6 +32,7 @@ import {
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 import { createSequentially } from '../helpers/createSequentially.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Developmental Window System', () => {
   let testUser;
@@ -73,11 +74,11 @@ describe('Developmental Window System', () => {
 
     // Create test horses at different developmental stages
     const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = gameCalendarDate(now, -1);
+    const oneWeekAgo = gameCalendarDate(now, -7);
+    const twoWeeksAgo = gameCalendarDate(now, -14);
+    const oneMonthAgo = gameCalendarDate(now, -30);
+    const threeMonthsAgo = gameCalendarDate(now, -90);
 
     testHorses = await createSequentially([
       // Newborn foal - imprinting window
@@ -530,7 +531,7 @@ describe('Developmental Window System', () => {
           ...fixtureColor(),
           name: `TestFixture-DWS-60Day-${Date.now()}`,
           sex: 'Filly',
-          dateOfBirth: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(now, -60),
           userId: rr7BranchUser.id,
           stressLevel: 3,
           bondScore: 20,
@@ -542,7 +543,7 @@ describe('Developmental Window System', () => {
           ...fixtureColor(),
           name: `TestFixture-DWS-YngFear-${Date.now()}`,
           sex: 'Colt',
-          dateOfBirth: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(now, -7),
           userId: rr7BranchUser.id,
           stressLevel: 6,
           bondScore: 10,
@@ -669,7 +670,7 @@ describe('Developmental Window System', () => {
           ...fixtureColor(),
           name: `TestFixture-DWS-40Day-${Date.now()}`,
           sex: 'Colt',
-          dateOfBirth: new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(now, -40),
           userId: rr7BiiUser.id,
           stressLevel: 8,
           bondScore: 10,
@@ -681,7 +682,7 @@ describe('Developmental Window System', () => {
           ...fixtureColor(),
           name: `TestFixture-DWS-NBHighStress-${Date.now()}`,
           sex: 'Filly',
-          dateOfBirth: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(now, -1),
           userId: rr7BiiUser.id,
           stressLevel: 8,
           bondScore: 5,
@@ -797,7 +798,7 @@ describe('Developmental Window System', () => {
           ...fixtureColor(),
           name: `TestFixture-DWS-18Day-${Date.now()}`,
           sex: 'Filly',
-          dateOfBirth: new Date(now.getTime() - 18 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(now, -18),
           userId: rr7BiiiUser.id,
           stressLevel: 3,
           bondScore: 15,
@@ -809,7 +810,7 @@ describe('Developmental Window System', () => {
           ...fixtureColor(),
           name: `TestFixture-DWS-21Day-${Date.now()}`,
           sex: 'Colt',
-          dateOfBirth: new Date(now.getTime() - 21 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(now, -21),
           userId: rr7BiiiUser.id,
           stressLevel: 3,
           bondScore: 20,
@@ -821,7 +822,7 @@ describe('Developmental Window System', () => {
           ...fixtureColor(),
           name: `TestFixture-DWS-135Day-${Date.now()}`,
           sex: 'Filly',
-          dateOfBirth: new Date(now.getTime() - 135 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(now, -135),
           userId: rr7BiiiUser.id,
           stressLevel: 3,
           bondScore: 30,
@@ -830,7 +831,7 @@ describe('Developmental Window System', () => {
       });
       // Create 2 interactions during early_socialization window (interactionAge=10)
       // so interactions.length >= 2 is true when environmental_comfort is assessed
-      const birthDate = new Date(now.getTime() - 135 * 24 * 60 * 60 * 1000);
+      const birthDate = gameCalendarDate(now, -135);
       const dayTen = new Date(birthDate.getTime() + 10 * 24 * 60 * 60 * 1000);
       await prisma.groomInteraction.create({
         data: {

@@ -33,6 +33,8 @@
 
 import { jest, describe, beforeAll, beforeEach, afterAll, expect, it } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 
 // Import the actual controller - no complex mocking
@@ -81,9 +83,10 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     // days, so getHorseAge() == floor(realDays / 7). Back-date dateOfBirth in
     // GAME-years (N * 7 days ago), not calendar years — otherwise a horse stored
     // as age:4 would compute to ~208 game-years and break the horseAge assertions.
-    const GAME_YEAR_MS = 7 * 24 * 60 * 60 * 1000;
+    // dateOfBirth is date-only: birthDateForAge stores the Eastern game date, as
+    // production writers do, so the age holds at any hour (Equoria-4urzd).
     // 4 game-years old: 28 days ago (eligible: age >= 3)
-    const fourYearsAgo = new Date(Date.now() - 4 * GAME_YEAR_MS);
+    const fourYearsAgo = birthDateForAge(4);
 
     testHorseEligible = await prisma.horse.create({
       data: {
@@ -103,7 +106,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     testHorse4Years = testHorseEligible;
 
     // Create additional adult horse (3 game-years old): 21 days ago (eligible)
-    const threeYearsAgo = new Date(Date.now() - 3 * GAME_YEAR_MS);
+    const threeYearsAgo = birthDateForAge(3);
 
     testHorseAdult = await prisma.horse.create({
       data: {
@@ -125,7 +128,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     // 14 days = exactly 2 game-years; add a 1-day buffer (15 days) so floor()
     // reliably returns 2 and never rounds down to 1 near the boundary, while
     // staying below 21 days (3 game-years) so the horse remains under-age.
-    const twoYearsAgo = new Date(Date.now() - (2 * GAME_YEAR_MS + 24 * 60 * 60 * 1000));
+    const twoYearsAgo = gameCalendarDate(new Date(), -15);
 
     testHorseYoung = await prisma.horse.create({
       data: {
@@ -264,7 +267,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         data: {
           ...fixtureColor(),
           name: 'Old Training Horse',
-          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years (28 days) — Equoria-vdw5/ffsi
+          dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
           sex: 'Stallion',
           userId: testUser.id,
           breedId: testBreedId,
@@ -331,7 +334,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         data: {
           ...fixtureColor(),
           name: 'Edge Case Horse',
-          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years (28 days) — Equoria-vdw5/ffsi
+          dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
           sex: 'Mare',
           userId: testUser.id,
           breedId: testBreedId,
@@ -475,7 +478,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         data: {
           ...fixtureColor(),
           name: 'Expired Cooldown Horse',
-          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years (28 days) — Equoria-vdw5/ffsi
+          dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
           sex: 'Stallion',
           userId: testUser.id,
           breedId: testBreedId,
@@ -551,7 +554,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         data: {
           ...fixtureColor(),
           name: 'Edge Case Horse',
-          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years (28 days) — Equoria-vdw5/ffsi
+          dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
           sex: 'Stallion',
           userId: testUser.id,
           breedId: testBreedId,

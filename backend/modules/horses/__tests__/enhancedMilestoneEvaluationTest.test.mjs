@@ -17,6 +17,7 @@ import { randomBytes } from 'node:crypto';
 import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvaluation.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -41,7 +42,7 @@ describe('evaluateEnhancedMilestone — mature horse (age >= 3 years)', () => {
   const matureHorse = {
     id: 999999997,
     name: 'TestMatureHorse',
-    dateOfBirth: new Date(Date.now() - 1200 * 24 * 60 * 60 * 1000), // 1200 days old
+    dateOfBirth: gameCalendarDate(new Date(), -1200), // 1200 days old
     age: 3,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     bondScore: 50,
@@ -74,7 +75,7 @@ describe('evaluateEnhancedMilestone — 1095d gate boundary (Equoria-l06yb senti
   const makeHorse = (ageInDays, id) => ({
     id,
     name: `TestGateBoundary-${ageInDays}`,
-    dateOfBirth: new Date(Date.now() - ageInDays * 24 * 60 * 60 * 1000),
+    dateOfBirth: gameCalendarDate(new Date(), -ageInDays),
     age: Math.floor(ageInDays / 7),
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     bondScore: 50,
@@ -146,7 +147,7 @@ describe('evaluateEnhancedMilestone — with groom object', () => {
   const youngHorse = {
     id: 999999995,
     name: 'TestYoungHorse',
-    dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
+    dateOfBirth: gameCalendarDate(new Date(), -30), // 30 days old
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     bondScore: 40,
@@ -171,12 +172,14 @@ describe('evaluateEnhancedMilestone — with groom object', () => {
 
 const milestoneData = { type: 'growth', completed: true, score: 70 };
 const daysAgo = d => new Date(Date.now() - d * 24 * 60 * 60 * 1000);
+// dateOfBirth is a date-only column: store the Eastern game date, as production writers do.
+const gameDaysAgo = d => gameCalendarDate(new Date(), -d);
 
 describe('evaluateEnhancedMilestone — age category branches', () => {
   it('weanling + juvenile at 200 days', async () => {
     const horse = {
       id: -1,
-      dateOfBirth: daysAgo(200),
+      dateOfBirth: gameDaysAgo(200),
       age: 0,
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
@@ -188,7 +191,7 @@ describe('evaluateEnhancedMilestone — age category branches', () => {
   it('yearling + adolescent at 400 days', async () => {
     const horse = {
       id: -1,
-      dateOfBirth: daysAgo(400),
+      dateOfBirth: gameDaysAgo(400),
       age: 1,
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
@@ -200,7 +203,7 @@ describe('evaluateEnhancedMilestone — age category branches', () => {
   it('two_year_old + young_adult at 800 days', async () => {
     const horse = {
       id: -1,
-      dateOfBirth: daysAgo(800),
+      dateOfBirth: gameDaysAgo(800),
       age: 2,
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
@@ -212,7 +215,7 @@ describe('evaluateEnhancedMilestone — age category branches', () => {
   it('foal + fear_period at 100 days', async () => {
     const horse = {
       id: -1,
-      dateOfBirth: daysAgo(100),
+      dateOfBirth: gameDaysAgo(100),
       age: 0,
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
@@ -227,7 +230,7 @@ describe('evaluateEnhancedMilestone — age category branches', () => {
 describe('evaluateEnhancedMilestone — care consistency bonus', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: daysAgo(50),
+    dateOfBirth: gameDaysAgo(50),
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
@@ -260,7 +263,7 @@ describe('evaluateEnhancedMilestone — care consistency bonus', () => {
 describe('evaluateEnhancedMilestone — care quality thresholds', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: daysAgo(60),
+    dateOfBirth: gameDaysAgo(60),
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
@@ -312,7 +315,7 @@ describe('evaluateEnhancedMilestone — care quality thresholds', () => {
 describe('evaluateEnhancedMilestone — bond stability branches', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: daysAgo(70),
+    dateOfBirth: gameDaysAgo(70),
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
@@ -362,7 +365,7 @@ describe('evaluateEnhancedMilestone — bond stability branches', () => {
 describe('evaluateEnhancedMilestone — stress management branches', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: daysAgo(80),
+    dateOfBirth: gameDaysAgo(80),
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
@@ -402,7 +405,7 @@ describe('evaluateEnhancedMilestone — stress management branches', () => {
 describe('evaluateEnhancedMilestone — personality bonus branches', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: daysAgo(45),
+    dateOfBirth: gameDaysAgo(45),
     age: 0,
     temperament: 'nervous',
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },

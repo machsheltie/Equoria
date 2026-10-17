@@ -12,6 +12,7 @@ import dotenv from 'dotenv';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -153,7 +154,7 @@ describe('Training Model', () => {
       // Sentinel: the calendar-year formula returns 0 for a horse born
       // 35 real days ago, yet it is canonically 5 game-years old (35 / 7).
       // If getHorseAge ever regresses to calendar math this fails.
-      const thirtyFiveDaysAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
+      const thirtyFiveDaysAgo = gameCalendarDate(new Date(), -35); // date-only dob: the Eastern date
       const youngHorse = await prisma.horse.create({
         data: {
           ...fixtureColor(),

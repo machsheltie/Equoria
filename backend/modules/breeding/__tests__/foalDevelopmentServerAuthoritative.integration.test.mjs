@@ -39,6 +39,7 @@ import { randomBytes } from 'node:crypto';
 
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
@@ -61,7 +62,7 @@ async function makeFoal({ bornDaysAgo = 0 } = {}) {
     userId: owner.id,
     age: 0,
     sex: 'Filly',
-    dateOfBirth: new Date(Date.now() - bornDaysAgo * 24 * 60 * 60 * 1000),
+    dateOfBirth: gameCalendarDate(new Date(), -bornDaysAgo),
   });
   await prisma.foalDevelopment.create({
     data: { foalId: foal.id, currentDay: 0, bondingLevel: 50, stressLevel: 20, completedActivities: {} },

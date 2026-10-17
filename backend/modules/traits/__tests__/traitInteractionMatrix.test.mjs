@@ -10,6 +10,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -149,8 +150,8 @@ describe('generateInteractionMatrix temporalModel section (was modelTemporalInte
         money: 1000,
       },
     });
-    // Exactly 90 game-days old (UTC date-only arithmetic in horseAge.mjs).
-    const dob = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    // Exactly 90 game-days old (date-only arithmetic on the Eastern game calendar, horseAge.mjs).
+    const dob = gameCalendarDate(new Date(), -90); // date-only: the Eastern date
     const matureHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),

@@ -18,7 +18,7 @@
  * already null on the wire). Only values that legitimately differ per run are normalized: the
  * analysis timestamps (wall clock) and the fixture horse id (database serial).
  * Horse age is deterministic because each fixture's date of birth is a whole
- * number of UTC days before today.
+ * number of Eastern game days before today (Equoria-4urzd).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -27,11 +27,10 @@ import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Representative trait states: empty, synergistic, conflicting with high
 // stress and low bond, many traits with emergent properties at maturity, an
@@ -123,14 +122,13 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
     });
 
     const now = new Date();
-    const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     for (const [key, fixture] of Object.entries(FIXTURES)) {
       const horse = await prisma.horse.create({
         data: {
           ...fixtureColor(),
           name: `TestFixture-WS5Char-${key}-${suffix}`,
           sex: 'Filly',
-          dateOfBirth: new Date(todayUtc - fixture.ageDays * DAY_MS),
+          dateOfBirth: gameCalendarDate(now, -fixture.ageDays),
           age: 0,
           userId: user.id,
           stressLevel: fixture.stressLevel,
@@ -145,7 +143,7 @@ describe('trait interaction analysis characterization (Equoria-q4uem.5)', () => 
         ...fixtureColor(),
         name: `TestFixture-WS5Char-foreign-${suffix}`,
         sex: 'Filly',
-        dateOfBirth: new Date(todayUtc),
+        dateOfBirth: gameCalendarDate(now),
         age: 0,
         userId: otherUser.id,
         epigeneticFlags: ['brave'],

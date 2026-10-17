@@ -15,8 +15,9 @@
  *
  * The invariant this file locks: a development day is evaluated and advanced
  * only after it has fully elapsed — `currentDay` never exceeds the foal's age in
- * whole UTC calendar days (getHorseAgeDays, Equoria-vdw5, the same age the
- * canonical enrichment day uses). Extra runs on the same day are no-ops, and the
+ * whole Eastern calendar days (getHorseAgeDays, Equoria-vdw5; Eastern game clock
+ * per the owner's 2026-10-09 ruling — this file said UTC days before; the same
+ * age the canonical enrichment day uses). Extra runs on the same day are no-ops, and the
  * advance itself refuses to move past the elapsed days whoever calls it.
  *
  * This file drives the per-foal pass the admin route and the cron both reach,
@@ -34,13 +35,13 @@ import cronJobService from '../services/cronJobs.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { cleanupTestHorses } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const PREFIX = `TestFixture-3i34b-${randomBytes(4).toString('hex')}`;
-const DAY_MS = 24 * 60 * 60 * 1000;
 const createdFoalIds = [];
 let owner;
 
-/** A foal born `daysAgo` UTC days ago with a development record at `currentDay`. */
+/** A foal born `daysAgo` Eastern game days ago (date-only dob, written as production writes it) with a development record at `currentDay`. */
 async function makeFoal(daysAgo, currentDay = 0) {
   const foal = await prisma.horse.create({
     data: {
@@ -48,7 +49,7 @@ async function makeFoal(daysAgo, currentDay = 0) {
       name: `${PREFIX}-${createdFoalIds.length}`,
       sex: 'Filly',
       age: 0,
-      dateOfBirth: new Date(Date.now() - daysAgo * DAY_MS),
+      dateOfBirth: gameCalendarDate(new Date(), -daysAgo),
       bondScore: 50,
       stressLevel: 20,
       user: { connect: { id: owner.id } },
@@ -128,7 +129,7 @@ describe('no premature foal aging (Equoria-3i34b)', () => {
     expect(afterExtra.epigeneticModifiers).toEqual(afterFirst.epigeneticModifiers);
   });
 
-  it('the development day never runs ahead of the foal’s age in UTC days', async () => {
+  it('the development day never runs ahead of the foal’s age in game days', async () => {
     const foal = await makeFoal(3);
 
     const days = [];

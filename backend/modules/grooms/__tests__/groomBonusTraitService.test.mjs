@@ -22,6 +22,7 @@ import {
   getUserGroomsWithBonusTraits,
 } from '../services/groomBonusTraitService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -51,7 +52,7 @@ beforeAll(async () => {
   });
 
   // Horse born 30 days ago → milestoneWindowDays = Math.min(30, 30) = 30
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = gameCalendarDate(new Date(), -30); // date-only dob: the Eastern date
   const twentyNineDaysAgo = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 

@@ -18,6 +18,7 @@ import {
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameDateParts } from '../../../utils/gameTime.mjs';
 
 const PREFIX = 'TestFixture-DailyCare-';
 
@@ -254,14 +255,14 @@ describe('isGroomAvailableToday', () => {
 
   it('returns false when today is blocked in availability', () => {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const today = dayNames[new Date().getDay()];
+    const today = dayNames[gameDateParts(new Date()).weekday]; // the Eastern game day, not the host clock
     const result = isGroomAvailableToday({ is_active: true, availability: { [today]: false } });
     expect(result).toBe(false);
   });
 
   it('returns true when today is explicitly set to true in availability', () => {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const today = dayNames[new Date().getDay()];
+    const today = dayNames[gameDateParts(new Date()).weekday]; // the Eastern game day, not the host clock
     const result = isGroomAvailableToday({ is_active: true, availability: { [today]: true } });
     expect(result).toBe(true);
   });

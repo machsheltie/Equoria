@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import {
   TRAIT_DEFINITIONS,
   TRAIT_CONFLICTS,
@@ -220,7 +221,7 @@ describe('applyGroomTraitInfluence', () => {
   //
   // 14 real-days-ago dateOfBirth → floor(14/7)=2 game-years → < 3 → epigenetic.
   // 35 real-days-ago dateOfBirth → floor(35/7)=5 game-years → >= 3 → NOT.
-  const dob = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const dob = days => gameCalendarDate(new Date(), -days).toISOString(); // date-only: the Eastern date
   const youngHorse = { id: 1, dateOfBirth: dob(14) }; // 2 game-years
   const oldHorse = { id: 2, dateOfBirth: dob(35) }; // 5 game-years
 

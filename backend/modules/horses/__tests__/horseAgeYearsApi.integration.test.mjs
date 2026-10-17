@@ -20,10 +20,10 @@ import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 
 import app from '../../../app.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-ageYears-lvjy';
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 let owner;
 let token;
@@ -45,7 +45,7 @@ beforeAll(async () => {
     name: `${FIXTURE_PREFIX}-21d-${tag}`,
     userId: owner.id,
     age: 99, // deliberately wrong cached age — proves ageYears comes from dob, not cache
-    dateOfBirth: new Date(Date.now() - 21 * MS_PER_DAY),
+    dateOfBirth: gameCalendarDate(new Date(), -21),
   });
 
   // dateOfBirth = today - 7 days → ageYears === 1
@@ -53,7 +53,7 @@ beforeAll(async () => {
     name: `${FIXTURE_PREFIX}-7d-${tag}`,
     userId: owner.id,
     age: 0, // deliberately wrong cached age
-    dateOfBirth: new Date(Date.now() - 7 * MS_PER_DAY),
+    dateOfBirth: gameCalendarDate(new Date(), -7),
   });
 }, 120000);
 

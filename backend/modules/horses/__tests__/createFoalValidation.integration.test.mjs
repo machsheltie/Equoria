@@ -19,19 +19,21 @@ import bcrypt from 'bcryptjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const app = (await import('../../../app.mjs')).default;
 const rand = () => randomBytes(4).toString('hex');
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-function utcDaysAgo(n) {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() - n);
-  return d;
+// dateOfBirth and lastBredDate are date-only columns on the Eastern game
+// calendar (owner ruling 2026-10-09): store the Eastern date `n` game days
+// back, exactly as production writers do (Equoria-4urzd).
+function gameDaysAgo(n) {
+  return gameCalendarDate(new Date(), -n);
 }
 
 function dobForAgeYears(ageYears) {
-  return utcDaysAgo(ageYears * 7);
+  return gameDaysAgo(ageYears * 7);
 }
 
 describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
@@ -244,7 +246,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
   it('rejects dam re-breed within 7-day cooldown (bred 3 days ago) with 400', async () => {
     await prisma.horse.update({
       where: { id: adultMare.id },
-      data: { lastBredDate: utcDaysAgo(3) },
+      data: { lastBredDate: gameDaysAgo(3) },
     });
     const res = await postFoals({
       name: `TFmhdul-Cooldown_${ts}`,
@@ -259,10 +261,12 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
     expect(dbDam.inFoalSinceDate).toBeNull();
   });
 
-  it('allows breeding when lastBredDate is exactly 7 UTC calendar days ago', async () => {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setUTCHours(23, 59, 59, 999);
-    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+  // Old contract: "exactly 7 UTC calendar days ago". Owner ruling 2026-10-09:
+  // every day count is an Eastern calendar day, so the cooldown is 7 Eastern
+  // game days. The value still carries 23:59:59.999 on that date to prove the
+  // date-only column ignores the time of day.
+  it('allows breeding when lastBredDate is exactly 7 Eastern game days ago', async () => {
+    const sevenDaysAgo = new Date(gameDaysAgo(7).getTime() + MS_PER_DAY - 1);
     await prisma.horse.update({
       where: { id: adultMare.id },
       data: { lastBredDate: sevenDaysAgo },

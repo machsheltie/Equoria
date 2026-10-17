@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import {
   generateTraitHistoryInsights,
   generateEpigeneticRecommendations,
@@ -37,7 +38,7 @@ function makeHorse(overrides = {}) {
   return {
     id: 1,
     name: 'TestHorse',
-    dateOfBirth: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000), // 400 days ago → mature
+    dateOfBirth: gameCalendarDate(new Date(), -400), // 400 days ago → mature
     bondScore: 30,
     stressLevel: 3,
     epigeneticFlags: ['curious', 'bold'],
@@ -162,7 +163,7 @@ describe('generateEpigeneticRecommendations', () => {
 
   it('returns default when horse is well-managed', () => {
     const horse = makeHorse({
-      dateOfBirth: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -400),
       stressLevel: 3,
       bondScore: 40,
     });
@@ -172,7 +173,7 @@ describe('generateEpigeneticRecommendations', () => {
 
   it('adds critical period recommendation for < 30 days old', () => {
     const horse = makeHorse({
-      dateOfBirth: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -10),
       stressLevel: 3,
       bondScore: 40,
     });
@@ -182,7 +183,7 @@ describe('generateEpigeneticRecommendations', () => {
 
   it('adds socialization recommendation for 30-89 days old', () => {
     const horse = makeHorse({
-      dateOfBirth: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -60),
       stressLevel: 3,
       bondScore: 40,
     });
@@ -320,25 +321,25 @@ describe('generateStableOverview', () => {
   });
 
   it('categorizes newborn (< 30 days)', () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -5) });
     const overview = generateStableOverview([horse]);
     expect(overview.ageDistribution.newborn).toBe(1);
   });
 
   it('categorizes young (30-89 days)', () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -60) });
     const overview = generateStableOverview([horse]);
     expect(overview.ageDistribution.young).toBe(1);
   });
 
   it('categorizes juvenile (90-364 days)', () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -200) });
     const overview = generateStableOverview([horse]);
     expect(overview.ageDistribution.juvenile).toBe(1);
   });
 
   it('categorizes mature (>= 365 days)', () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -400) });
     const overview = generateStableOverview([horse]);
     expect(overview.ageDistribution.mature).toBe(1);
   });
@@ -402,22 +403,22 @@ describe('analyzeTraitDistribution', () => {
 
 describe('analyzeDevelopmentalStages', () => {
   it('increments critical for < 14 days old', () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -5) });
     expect(analyzeDevelopmentalStages([horse]).critical).toBe(1);
   });
 
   it('increments developing for 14-59 days old', () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -30) });
     expect(analyzeDevelopmentalStages([horse]).developing).toBe(1);
   });
 
   it('increments stable for 60-364 days old', () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -180) });
     expect(analyzeDevelopmentalStages([horse]).stable).toBe(1);
   });
 
   it('increments mature for >= 365 days old', () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -400) });
     expect(analyzeDevelopmentalStages([horse]).mature).toBe(1);
   });
 });
@@ -673,14 +674,14 @@ describe('generateDetailedReport', () => {
   });
 
   it('includes developmentalAnalysis with ageCategory and developmentalStage', async () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -400) });
     const report = await generateDetailedReport(horse);
     expect(report.developmentalAnalysis.ageCategory).toBe('mature');
     expect(report.developmentalAnalysis.developmentalStage).toBe('mature_expression');
   });
 
   it('ageCategory is newborn for < 30 days', async () => {
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -5) });
     const report = await generateDetailedReport(horse);
     expect(report.developmentalAnalysis.ageCategory).toBe('newborn');
     expect(report.developmentalAnalysis.developmentalStage).toBe('critical_period');
@@ -727,7 +728,7 @@ describe('generateComparisonInsights', () => {
 describe('generateDetailedReport — ageCategory young and juvenile (Equoria-jkht)', () => {
   it('ageCategory is young + active_development for 30-day-old horse', async () => {
     // 30 days: ageCategory=young (<90), developmentalStage=active_development (<60)
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -30) });
     const report = await generateDetailedReport(horse);
     expect(report.developmentalAnalysis.ageCategory).toBe('young');
     expect(report.developmentalAnalysis.developmentalStage).toBe('active_development');
@@ -735,7 +736,7 @@ describe('generateDetailedReport — ageCategory young and juvenile (Equoria-jkh
 
   it('ageCategory is young + stabilization for 60-day-old horse', async () => {
     // 60 days: ageCategory=young (<90), developmentalStage=stabilization (60 is NOT <60)
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -60) });
     const report = await generateDetailedReport(horse);
     expect(report.developmentalAnalysis.ageCategory).toBe('young');
     expect(report.developmentalAnalysis.developmentalStage).toBe('stabilization');
@@ -743,7 +744,7 @@ describe('generateDetailedReport — ageCategory young and juvenile (Equoria-jkh
 
   it('ageCategory is juvenile + stabilization for 200-day-old horse', async () => {
     // 200 days: ageCategory=juvenile (<365), developmentalStage=stabilization (<365)
-    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000) });
+    const horse = makeHorse({ dateOfBirth: gameCalendarDate(new Date(), -200) });
     const report = await generateDetailedReport(horse);
     expect(report.developmentalAnalysis.ageCategory).toBe('juvenile');
     expect(report.developmentalAnalysis.developmentalStage).toBe('stabilization');

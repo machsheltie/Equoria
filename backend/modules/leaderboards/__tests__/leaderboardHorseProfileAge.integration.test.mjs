@@ -3,7 +3,7 @@
  *
  * Equoria-rkld — GET /api/v1/leaderboards/horse/:horseId must compute the `age`
  * field via the canonical getHorseAgeYears() helper (game-years: 7 real days
- * = 1 game-year, date-only UTC), NOT raw `Math.floor(ms / 365.25 days)`
+ * = 1 game-year, date-only on the Eastern game calendar), NOT raw `Math.floor(ms / 365.25 days)`
  * calendar math.
  *
  * Sentinel: a horse whose dateOfBirth is exactly 35 days ago is 5 game-years
@@ -25,6 +25,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse } from '../../../tests/helpers/testAuth.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('INTEGRATION: GET /api/v1/leaderboards/horse/:horseId age field (Equoria-rkld)', () => {
   let token;
@@ -54,9 +55,8 @@ describe('INTEGRATION: GET /api/v1/leaderboards/horse/:horseId age field (Equori
   }, 120000);
 
   it('returns game-year age (floor(days/7)) — 35-day-old horse is 5 game-years, not 0 calendar-years', async () => {
-    const day = 24 * 60 * 60 * 1000;
     // 35 days ago → 5 game-years. Raw /365.25 calendar math would give 0.
-    const dob = new Date(Date.now() - 35 * day);
+    const dob = gameCalendarDate(new Date(), -35); // date-only: the Eastern date
     const horse = await createTestHorse({
       name: `RkldSentinel_${Date.now()}`,
       userId,

@@ -27,6 +27,7 @@ import { evaluateHorseFlags, batchEvaluateFlags, getEligibleHorses } from '../..
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 // Equoria-1ohys: fail-loud scoped per-test cleanup. Replaces the prior
 // `rmHorse(...)`-in-finally that used a silent no-op catch arm — a swallowed
 // horse delete would leak a fixture into the canonical DB (CLAUDE.md §2).
@@ -42,6 +43,8 @@ const cleanup = createCleanupTracker();
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
 const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+// dateOfBirth is a date-only column: store the Eastern game date, as production writers do.
+const gameDaysAgo = n => gameCalendarDate(new Date(), -n);
 const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
 
 // Equoria-wpqr/z183: epigenetic flag evaluation gates on canonical
@@ -52,7 +55,7 @@ const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
 // bug. Use a deliberately game-young DOB (14 real days → 2 game-years →
 // eligible) so flag-trigger assertions exercise the real eligible path.
 // Interaction fixtures reach back to daysAgo(6), still after a 14-day birth.
-const ELIGIBLE_DOB = () => daysAgo(14);
+const ELIGIBLE_DOB = () => gameDaysAgo(14);
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -307,7 +310,7 @@ describe('evaluateHorseFlags', () => {
   // returned success/eligible. Fails on old calendar math, passes on the
   // game-years fix.
   test('SENTINEL: 35-day-old horse is 5 game-years and rejected (old calendar math gave 0.10 yr → wrongly eligible)', async () => {
-    const horse = await mkHorse('WpqrSentinel', { dateOfBirth: daysAgo(35), age: 5 });
+    const horse = await mkHorse('WpqrSentinel', { dateOfBirth: gameDaysAgo(35), age: 5 });
     const result = await evaluateHorseFlags(horse.id);
 
     expect(result.success).toBe(false);
@@ -441,12 +444,12 @@ describe('getEligibleHorses', () => {
   // and was wrongly returned as eligible. Fails on old math, passes on fix.
   test('SENTINEL: 35-day-old horse (5 game-years) excluded from getEligibleHorses (old calendar window wrongly included it)', async () => {
     const tooOldGameYears = await mkHorse('WpqrEligSentinel', {
-      dateOfBirth: daysAgo(35),
+      dateOfBirth: gameDaysAgo(35),
       age: 5,
       epigeneticFlags: [],
     });
     const stillEligible = await mkHorse('WpqrEligOk', {
-      dateOfBirth: daysAgo(14),
+      dateOfBirth: gameDaysAgo(14),
       age: 2,
       epigeneticFlags: [],
     });

@@ -19,6 +19,7 @@ import {
   generateDevelopmentalForecast,
 } from '../services/developmentalWindowSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -245,7 +246,7 @@ describe('developmentalWindowSystem — closed windows + coordinateMultiWindowDe
         ...fixtureColor(),
         name: `TestFixture-DevWindowOld-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(ts - 35 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -35),
         age: 35,
         userId: oldUser.id,
       },
@@ -364,7 +365,7 @@ describe('developmentalWindowSystem — fear_period branches + evaluateTraitDeve
         ...fixtureColor(),
         name: `TestFixture-DevWindowFear-${ts}`,
         sex: 'Colt',
-        dateOfBirth: new Date(ts - 9 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -9),
         age: 9,
         userId: fearUser.id,
       },
@@ -525,7 +526,7 @@ describe('assessWindowClosure — futureImpact=moderate for 15-day horse (Equori
         ...fixtureColor(),
         name: `TestFixture-DW15-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(ts - 15 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -15),
         age: 15,
         userId: user15.id,
       },
@@ -575,7 +576,7 @@ describe('calculateWindowSensitivity — sensitivityLevel=low for 30-day high-st
         ...fixtureColor(),
         name: `TestFixture-DW30-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(ts - 30 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -30),
         age: 30,
         userId: user30.id,
         stressLevel: 10,
@@ -679,7 +680,7 @@ describe('developmentalWindowSystem — 65-day horse: social_hierarchy closed (E
         ...fixtureColor(),
         name: `TestFixture-DW65-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(ts - 65 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -65),
         age: 65,
         userId: user65.id,
         stressLevel: 0,
@@ -741,7 +742,7 @@ describe('developmentalWindowSystem — 125-day horse: independence_development 
         ...fixtureColor(),
         name: `TestFixture-DW125-${ts}`,
         sex: 'Colt',
-        dateOfBirth: new Date(ts - 125 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(ts), -125),
         age: 125,
         userId: user125.id,
         stressLevel: 0,
