@@ -18,12 +18,13 @@
  * oey96.28 and tracked on Equoria-1e6no.
  *
  * REAL DB, NO MOCKS (Constitution §3). Determinism against the shared canonical
- * DB is achieved by pinning fixture horses to UNREACHABLE XP-bracket levels
- * (>= 1500). Player-created shows cap at level 999 (showController.createShow
- * validates `lvl < 1 || lvl > 999`), so a level-1500+ horse can NEVER be
- * eligible for any REAL open show — only for the fixture show a given arm
- * creates at that exact level. Each arm uses a distinct unreachable level so
- * fixture shows from other arms cannot cross-contaminate.
+ * DB (Equoria-576c0 B9): `compete` now applies the entry rules
+ * (utils/competitionEntryRules), and XP no longer gates entry (R9). A horse
+ * with no rider can enter no show, so every horse that must NOT compete is
+ * riderless; a horse that must compete gets a game-age dateOfBirth and an
+ * eligible rider, and its arm's fixture show closes in two minutes, so it is
+ * the soonest-closing open show the suggestion names. (Old contract: the
+ * isolation pinned horses to unreachable XP-bracket levels >= 1500.)
  *
  * Cleanup is registered BEFORE seeding (scoped to id-collector arrays) so a
  * mid-seed failure still removes every fixture it created — no leak into the
@@ -40,6 +41,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -73,10 +75,11 @@ async function makeOpenShow(level, showIds) {
       levelMax: level,
       entryFee: 100,
       prize: 1000,
-      runDate: new Date(now.getTime() + 3 * MS_PER_DAY),
+      // Closes in two minutes: the soonest-closing open show (B9 isolation).
+      runDate: new Date(now.getTime() + 2 * 60 * 1000),
       status: 'open',
       openDate: now,
-      closeDate: new Date(now.getTime() + 3 * MS_PER_DAY),
+      closeDate: new Date(now.getTime() + 2 * 60 * 1000),
     },
   });
   showIds.push(show.id);
@@ -166,14 +169,14 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
     user = await makeUser(userIds);
     show = await makeOpenShow(1500, showIds);
 
-    // Trainable + breedable Stallion, level 1500 (matches ONLY the fixture show).
+    // Trainable + breedable Stallion, entry-eligible (game age 5, a rider).
     const stallion = await createTestHorse(
       prisma,
       {
         name: `TestFixture-nextact-stallion-${rand()}`,
         sex: 'Stallion',
         age: 5,
-        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        dateOfBirth: competitionDateOfBirth(5),
         healthStatus: 'Excellent',
         horseXp: xpForLevel(1500),
         trainingCooldown: cooldownEndedAt,
@@ -183,6 +186,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
       horseIds,
     );
     stallionId = stallion.id;
+    await giveEligibleRider(prisma, { horseId: stallion.id, userId: user.id }, cleanup);
 
     // Injured Mare — canonical 'Injured' value (default health is 'Excellent').
     const mare = await createTestHorse(
@@ -294,7 +298,7 @@ describe('GET /api/v1/next-actions — check-results off viewedAt (Equoria-oey96
         age: 5,
         dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
         healthStatus: 'Excellent',
-        // Unreachable bracket level → no compete pollution. Rig → no breed.
+        // No rider → no compete pollution (B9). Rig → no breed.
         horseXp: xpForLevel(1900),
         // Cooldown still running → no train, so check-results stands alone.
         trainingCooldown: new Date(now.getTime() + 2 * MS_PER_DAY),
@@ -350,7 +354,7 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
   const now = new Date();
 
   beforeAll(async () => {
-    // POSITIVE: eligible horse (level 1600) + a fixture open show at [1600,1600].
+    // POSITIVE: entry-eligible horse (game age 5, a rider) + a fixture open show.
     posUser = await makeUser(userIds);
     posShow = await makeOpenShow(1600, showIds);
     await createTestHorse(
@@ -359,16 +363,16 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
         name: `TestFixture-nextact-posH-${rand()}`,
         sex: 'Rig',
         age: 5,
-        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        dateOfBirth: competitionDateOfBirth(5),
         healthStatus: 'Excellent',
         horseXp: xpForLevel(1600),
         userId: posUser.id,
       },
       horseIds,
-    );
+    ).then(h => giveEligibleRider(prisma, { horseId: h.id, userId: posUser.id }, cleanup));
 
-    // NEGATIVE: eligible-by-age/health horse at level 1700, NO fixture show.
-    // No real or fixture open show can accept level 1700 → compete must NOT fire.
+    // NEGATIVE: a horse with no rider can enter no open show → compete must NOT
+    // fire (B9; old contract: an unreachable XP level 1700 with no fixture show).
     negUser = await makeUser(userIds);
     await createTestHorse(
       prisma,
@@ -392,7 +396,7 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
     expect(res.status).toBe(200);
     const compete = res.body.data.actions.filter(a => a.type === 'compete');
     expect(compete.length).toBeGreaterThanOrEqual(1);
-    // level-1600 horse is eligible for exactly ONE open show — the fixture.
+    // The fixture show is the soonest-closing open show the horse can enter.
     expect(compete.some(a => a.metadata?.showId === posShow.id)).toBe(true);
   });
 

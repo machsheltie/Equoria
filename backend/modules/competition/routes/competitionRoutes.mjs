@@ -566,7 +566,6 @@ router.get(
         `[competitionRoutes.GET /eligibility] Checking eligibility for horse ${horseId} in ${discipline}`,
       );
 
-      // Validate discipline
       if (!isKnownDiscipline(discipline)) {
         return res.status(400).json({
           success: false,
@@ -575,8 +574,9 @@ router.get(
         });
       }
 
-      // Get eligibility summary
-      const eligibility = getCompetitionEligibilitySummary(horse, discipline);
+      const eligibility = await getCompetitionEligibilitySummary(horse, discipline, {
+        userId: req.user.id,
+      });
 
       logger.info(
         `[competitionRoutes.GET /eligibility] Horse ${horseId} eligibility checked for ${discipline}`,

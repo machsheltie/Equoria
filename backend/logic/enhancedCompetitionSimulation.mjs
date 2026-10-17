@@ -23,11 +23,20 @@
  */
 
 import logger from '../utils/logger.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { getHorseAgeYears } from '../utils/horseAge.mjs';
+import {
+  ENTRY_REFUSALS,
+  ageRefusal,
+  evaluateEntryRules,
+  gaitingRefusal,
+  loadActiveAssignments,
+  riderRefusal,
+} from '../utils/competitionEntryRules.mjs';
 import {
   calculateHorseLevel,
   checkAgeRequirements,
   checkTraitRequirements,
-  getAllDisciplines,
   getDisciplineConfig,
 } from '../utils/competitionLogic.mjs';
 
@@ -108,25 +117,39 @@ export async function validateCompetitionEntry(horse, show, user) {
 }
 
 /**
- * Get competition eligibility summary for a horse
- * @param {Object} horse - Horse object
+ * Get competition eligibility summary for a horse (GET /competition/eligibility).
+ *
+ * Equoria-576c0 B9: the verdict comes from the entry transaction's own rules
+ * (utils/competitionEntryRules), so this never calls a horse eligible for an
+ * entry the server refuses. Old contract: ageEligible was 3-21 from the age
+ * column, traitEligible an epigenetic 'gaited' trait, no rider check and no
+ * overall verdict. There is no show here, so "already entered" is not judged.
+ *
+ * @param {Object} horse - Horse row (dateOfBirth, healthStatus, gaitScores, ...)
  * @param {string} discipline - Competition discipline
- * @returns {Object} Eligibility summary
+ * @param {{ userId: string, db?: object, now?: Date }} options - the owner, for C10
+ * @returns {Promise<Object>} Eligibility summary
  */
-export function getCompetitionEligibilitySummary(horse, discipline) {
+export async function getCompetitionEligibilitySummary(
+  horse,
+  discipline,
+  { userId, db = prisma, now = new Date() } = {},
+) {
   try {
-    const horseLevel = calculateHorseLevel(horse, discipline);
-    const ageEligible = checkAgeRequirements(horse);
-    const traitEligible = checkTraitRequirements(horse, discipline);
+    const assignment = (await loadActiveAssignments(db, [horse.id])).get(horse.id);
+    const code = evaluateEntryRules({ show: { discipline }, horse, assignment, userId, now });
     const disciplineConfig = getDisciplineConfig(discipline);
 
     return {
-      horseLevel,
-      ageEligible,
-      traitEligible,
+      eligible: code === null,
+      refusal: code ? { code, message: ENTRY_REFUSALS[code].message } : null,
+      horseLevel: calculateHorseLevel(horse, discipline),
+      ageEligible: ageRefusal(horse.dateOfBirth, now) === null,
+      riderEligible: riderRefusal(assignment, userId) === null,
+      traitEligible: gaitingRefusal(discipline, horse.gaitScores) === null,
       requiredTrait: disciplineConfig.requiresTrait || null,
       disciplineStats: disciplineConfig.stats,
-      currentAge: horse.age,
+      currentAge: getHorseAgeYears(horse.dateOfBirth, now),
       healthStatus: horse.healthStatus,
       disciplineScore: horse.disciplineScores?.[discipline] || 0,
     };
@@ -136,8 +159,11 @@ export function getCompetitionEligibilitySummary(horse, discipline) {
       error.message,
     );
     return {
+      eligible: false,
+      refusal: null,
       horseLevel: 1,
       ageEligible: false,
+      riderEligible: false,
       traitEligible: false,
       requiredTrait: null,
       disciplineStats: [],
@@ -147,10 +173,3 @@ export function getCompetitionEligibilitySummary(horse, discipline) {
     };
   }
 }
-
-export default {
-  validateCompetitionEntry,
-  getCompetitionEligibilitySummary,
-  getAllDisciplines,
-  getDisciplineConfig,
-};

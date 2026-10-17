@@ -166,7 +166,7 @@ export async function createShow(req, res) {
   } catch (error) {
     // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
     if (error?.status === 503) {
-      return res.status(503).json({ success: false, message: error.message });
+      return res.status(503).json({ success: false, code: 'SERVICE_BUSY', message: error.message });
     }
     if (error.code === 'P2002') {
       return res
@@ -174,7 +174,9 @@ export async function createShow(req, res) {
         .json({ success: false, message: 'A show with that name already exists' });
     }
     logger.error('showController.createShow error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to create show' });
+    return res
+      .status(500)
+      .json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to create show' });
   }
 }
 
@@ -225,7 +227,9 @@ export async function getShows(req, res) {
     });
   } catch (error) {
     logger.error('showController.getShows error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to fetch shows' });
+    return res
+      .status(500)
+      .json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to fetch shows' });
   }
 }
 
@@ -332,7 +336,7 @@ export async function enterShow(req, res) {
   } catch (error) {
     // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
     if (error?.status === 503) {
-      return res.status(503).json({ success: false, message: error.message });
+      return res.status(503).json({ success: false, code: 'SERVICE_BUSY', message: error.message });
     }
     if (error.code === 'P2002') {
       return res.status(409).json({
@@ -342,6 +346,8 @@ export async function enterShow(req, res) {
       });
     }
     logger.error('showController.enterShow error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to enter show' });
+    return res
+      .status(500)
+      .json({ success: false, code: 'INTERNAL_ERROR', message: 'Failed to enter show' });
   }
 }

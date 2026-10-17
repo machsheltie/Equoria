@@ -48,9 +48,10 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  getHorseXpLevel,
-  isHorseWithinLevelBracket,
-} from '../../../utils/horseCompetitionLevel.mjs';
+  ENTRY_RULE_HORSE_SELECT,
+  evaluateEntryRules,
+  loadActiveAssignments,
+} from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 
 // Story 23.4 priority table. 1 = highest.
@@ -117,7 +118,8 @@ export async function getNextActions(req, res) {
         trainingCooldown: true,
         lastBredDate: true,
         sex: true,
-        horseXp: true,
+        // The entry rules (Equoria-576c0 B9): dateOfBirth, healthStatus, gaitScores.
+        ...ENTRY_RULE_HORSE_SELECT,
       },
     });
 
@@ -152,13 +154,14 @@ export async function getNextActions(req, res) {
     let openShows = [];
     try {
       openShows = await prisma.show.findMany({
-        where: { status: 'open', closeDate: { gt: now } },
+        // Ridden shows only: a conformation entry needs a groom, which this hub
+        // cannot judge, so it is not suggested here (Equoria-576c0 B9).
+        where: { status: 'open', closeDate: { gt: now }, showType: { not: 'conformation' } },
         select: {
           id: true,
           name: true,
           discipline: true,
-          levelMin: true,
-          levelMax: true,
+          showType: true,
           closeDate: true,
         },
         orderBy: { closeDate: 'asc' },
@@ -230,14 +233,30 @@ export async function getNextActions(req, res) {
     }
 
     // ── compete (priority 4) — the most-urgent open show the user can enter ───
-    // Reuses the canonical show-entry eligibility (age >= 3, not injured, horse
-    // XP-bracket level within the show's [levelMin, levelMax]) from
-    // horseCompetitionLevel.mjs so this path can't drift from enterShow.
-    const competeReadyHorses = horses.filter(h => isActiveAge(h.age) && !isInjured(h.healthStatus));
-    if (competeReadyHorses.length > 0) {
+    // The entry transaction's own rules (utils/competitionEntryRules,
+    // Equoria-576c0 B9): age 3-20 from dateOfBirth, an eligible rider, Gaited
+    // needs gaiting, not already entered, not injured. XP never gates entry (R9).
+    if (horses.length > 0 && openShows.length > 0) {
+      const horseIds = horses.map(h => h.id);
+      const [assignments, entries] = await Promise.all([
+        loadActiveAssignments(prisma, horseIds),
+        prisma.showEntry.findMany({
+          where: { horseId: { in: horseIds }, showId: { in: openShows.map(s => s.id) } },
+          select: { showId: true, horseId: true },
+        }),
+      ]);
+      const entered = new Set(entries.map(e => `${e.showId}:${e.horseId}`));
       for (const show of openShows) {
-        const eligible = competeReadyHorses.find(h =>
-          isHorseWithinLevelBracket(getHorseXpLevel(h.horseXp), show.levelMin, show.levelMax),
+        const eligible = horses.find(
+          h =>
+            evaluateEntryRules({
+              show,
+              horse: h,
+              assignment: assignments.get(h.id),
+              alreadyEntered: entered.has(`${show.id}:${h.id}`),
+              userId,
+              now,
+            }) === null,
         );
         if (eligible) {
           actions.push({
