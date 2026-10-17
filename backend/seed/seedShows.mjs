@@ -45,6 +45,9 @@ async function createShow(showData) {
         entryFee: showData.entryFee,
         prize: showData.prize,
         runDate: showData.runDate,
+        // Entries close when the show runs, as createShow sets it; an undated
+        // show could never be entered (owner ruling 2026-10-05/07/12: undated shows refuse entry (Equoria-576c0 B10)).
+        closeDate: showData.closeDate ?? showData.runDate,
       },
     });
     console.log(`✅ Created show: ${show.name} (ID: ${show.id})`);

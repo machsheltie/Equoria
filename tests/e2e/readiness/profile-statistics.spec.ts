@@ -87,6 +87,10 @@ test('profile Game-Statistics cards render real non-zero values with no bypass h
       entryFee: 100,
       prize: 1000,
       runDate: new Date(Date.now() - 86400000),
+      // A show that has run and recorded a result: dated and completed, so it is
+      // neither undated nor picked up again by the executor (owner ruling 2026-10-05/07/12: undated shows refuse entry (Equoria-576c0 B10)).
+      closeDate: new Date(Date.now() - 86400000),
+      status: 'completed',
     },
   });
   await prisma.competitionResult.create({

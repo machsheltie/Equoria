@@ -362,7 +362,11 @@ async function seedShows() {
       console.log(`  Skip existing show: ${showData.name}`);
       continue;
     }
-    const s = await prisma.show.create({ data: showData });
+    // Entries close when the show runs, as createShow sets it; an undated show
+    // could never be entered (owner ruling 2026-10-05/07/12: undated shows refuse entry (Equoria-576c0 B10)).
+    const s = await prisma.show.create({
+      data: { ...showData, closeDate: showData.closeDate ?? showData.runDate },
+    });
     console.log(`  Created show: ${s.name} (ID: ${s.id})`);
   }
 }
