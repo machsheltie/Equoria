@@ -20,6 +20,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { NotFoundError } from '../../../errors/index.mjs';
 
@@ -186,8 +187,13 @@ export async function checkBonusEligibility(horseId, groomId) {
     throw new Error(`Horse with ID ${horseId} not found`);
   }
 
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+  const now = new Date();
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth, now);
   const milestoneWindowDays = Math.min(ageInDays, 30); // Consider up to 30 days for milestone window
+  // Equoria-kha18: the window is whole Eastern game days, opening at 00:00
+  // Eastern `milestoneWindowDays` game days ago (the birth day for a foal under
+  // 30 days), not `now - days * 24h`, which opened it in the evening from 20:00 ET.
+  const windowStart = startOfGameDayIndex(gameDayIndex(now) - milestoneWindowDays);
 
   // Get groom assignment coverage
   const assignments = await prisma.groomAssignment.findMany({
@@ -195,7 +201,7 @@ export async function checkBonusEligibility(horseId, groomId) {
       groomId,
       foalId: horseId,
       startDate: {
-        gte: new Date(Date.now() - milestoneWindowDays * 24 * 60 * 60 * 1000),
+        gte: windowStart,
       },
     },
     select: { startDate: true, endDate: true },
@@ -204,9 +210,9 @@ export async function checkBonusEligibility(horseId, groomId) {
   // Calculate coverage percentage
   let totalCoverageDays = 0;
   for (const assignment of assignments) {
-    const startDate = new Date(assignment.startDate);
-    const endDate = assignment.endDate ? new Date(assignment.endDate) : new Date();
-    const coverageDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+    const endDate = assignment.endDate ?? now;
+    // Equoria-kha18: game days covered, counted on the Eastern calendar.
+    const coverageDays = gameDayIndex(endDate) - gameDayIndex(assignment.startDate);
     totalCoverageDays += coverageDays;
   }
 
@@ -218,7 +224,7 @@ export async function checkBonusEligibility(horseId, groomId) {
       groomId,
       foalId: horseId, // GroomInteraction uses foalId instead of horseId
       timestamp: {
-        gte: new Date(Date.now() - milestoneWindowDays * 24 * 60 * 60 * 1000),
+        gte: windowStart,
       },
     },
     select: { bondingChange: true }, // GroomInteraction uses bondingChange instead of bondingScore
