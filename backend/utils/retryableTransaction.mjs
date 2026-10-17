@@ -92,9 +92,9 @@ const CONFLICT_SQLSTATES = new Set(['40P01', '40001']);
  * surfacing as their own status / 500 — masking a real bug behind a 503 is the
  * failure mode this guard must never introduce (CLAUDE.md §3). Primary signals
  * are the P2028 / P2034 codes and a 40P01 / 40001 SQLSTATE in `meta.code`; the
- * message regexes are the fallback for the known phrasings, and match a
- * SQLSTATE only in its `code: "40P01"` / "Code: `40P01`" form, never a bare
- * number that could be an id.
+ * message regexes are the fallback for the known phrasings. The conflict ones
+ * apply only to an error Prisma raised and match a SQLSTATE only in its
+ * `code: "40P01"` form, never a bare number that could be an id.
  *
  * @param {unknown} err
  * @returns {boolean} true iff `err` is a retryable transaction failure
@@ -110,11 +110,25 @@ export function isRetryableTxError(err) {
     return true;
   }
   const message = typeof err.message === 'string' ? err.message : '';
+  if (
+    /unable to start a transaction|transaction already closed|transaction api error/i.test(message)
+  ) {
+    return true;
+  }
+  // The conflict phrasings count only on an error Prisma raised (e.g. the
+  // PrismaClientUnknownRequestError a model-query deadlock surfaces as), never
+  // on an app error or a plain Error that merely mentions a deadlock.
   return (
-    /unable to start a transaction|transaction already closed|transaction api error/i.test(
-      message,
-    ) ||
+    isPrismaError(err) &&
     /code:\s*["'`](40P01|40001)["'`]|deadlock detected|could not serialize access/i.test(message)
+  );
+}
+
+/** An error raised by the Prisma client: a PrismaClient* class, or a Pxxxx code. */
+function isPrismaError(err) {
+  return (
+    (typeof err.name === 'string' && err.name.startsWith('PrismaClient')) ||
+    (typeof err.code === 'string' && /^P\d{4}$/.test(err.code))
   );
 }
 

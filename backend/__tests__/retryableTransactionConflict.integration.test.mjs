@@ -28,6 +28,7 @@ import {
   RetryableTransactionError,
 } from '../utils/retryableTransaction.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { AppError } from '../errors/index.mjs';
 
 const TAG = `l9bde-${randomBytes(4).toString('hex')}`;
 const cleanup = createCleanupTracker();
@@ -142,5 +143,12 @@ describe('transient transaction conflicts map to the retryable 503 (Equoria-l9bd
     expect(isRetryableTxError({ code: 'P2025', message: 'Horse 40001 not found' })).toBe(false);
     expect(isRetryableTxError(new Error('User 40P01 does not exist'))).toBe(false);
     expect(isRetryableTxError({ code: 'P2002', meta: { target: ['email'] } })).toBe(false);
+  });
+
+  it('reads the conflict phrases only on a Prisma error: a plain Error or an AppError saying "deadlock detected" is not retryable', () => {
+    expect(isRetryableTxError(new Error('deadlock detected in the stable roster'))).toBe(false);
+    expect(isRetryableTxError(new AppError('deadlock detected', 409))).toBe(false);
+    expect(isRetryableTxError(new Error('PostgresError { code: "40P01" } quoted in a log line'))).toBe(false);
+    expect(isRetryableTxError(new Error('could not serialize access due to concurrent update'))).toBe(false);
   });
 });
