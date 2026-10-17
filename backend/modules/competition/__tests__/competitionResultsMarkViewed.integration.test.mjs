@@ -29,6 +29,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -102,7 +103,7 @@ describe('POST /api/v1/competition/results/viewed (Equoria-oey96.28)', () => {
         name: `TestFixture-markviewed-${label}-${rand()}`,
         sex: 'Rig',
         age: 5,
-        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
         userId: user.id,
       },

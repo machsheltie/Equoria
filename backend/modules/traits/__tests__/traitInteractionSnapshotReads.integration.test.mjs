@@ -27,6 +27,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 let observedClient = null;
 const appClientHandle = new Proxy(
@@ -96,7 +97,7 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
         ...fixtureColor(),
         name: `TestFixture-WS5Reads-${suffix}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -40),
         age: 0,
         userId: user.id,
         stressLevel: 8,

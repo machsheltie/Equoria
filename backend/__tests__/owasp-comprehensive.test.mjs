@@ -29,6 +29,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-4dva: real production SSRF-guard — A10 tests now exercise this
 // instead of the previous assertion-free placeholder it() bodies.
 import { validateOutboundUrl, assertSafeOutboundUrl } from '../utils/ssrfGuard.mjs';
+import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -105,7 +106,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
         name: 'OWASP Test Horse',
         breed: { connect: { id: testBreed.id } },
         sex: 'Stallion',
-        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365), // 5 years old
         user: { connect: { id: testUser.id } },
       },
     });
@@ -500,7 +501,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
             name: 'Other User Horse',
             breed: { connect: { id: ownershipTestBreed.id } },
             sex: 'Mare',
-            dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+            dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
             user: { connect: { id: otherUser.id } },
           },
         });

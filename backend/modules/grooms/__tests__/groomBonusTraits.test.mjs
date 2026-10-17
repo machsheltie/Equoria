@@ -26,6 +26,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Groom Bonus Traits System', () => {
   let __csrf__;
@@ -91,7 +92,7 @@ describe('Groom Bonus Traits System', () => {
         ...fixtureColor(),
         name: `GBT-TestHorse_${uid()}`,
         sex: 'colt',
-        dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
+        dateOfBirth: gameCalendarDate(new Date(), -30), // 30 days old
         temperament: 'spirited',
         userId: testUser.id,
         breedId: testBreed.id,

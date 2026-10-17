@@ -25,6 +25,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -100,11 +101,11 @@ describe('browseListings filters — name/sex/breedId (Equoria-cvsfk)', () => {
     // sex filters. Born one game-year ago (1 game year = 7 real days) so the
     // age filters can be shown to be the lever that excludes them.
     const delta = await mk(`${PREFIX}-Delta`, 'Filly', breedA.id, {
-      dateOfBirth: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -7),
       age: 1,
     });
     const epsilon = await mk(`${PREFIX}-Epsilon`, 'Colt', breedB.id, {
-      dateOfBirth: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -7),
       age: 1,
     });
     createdHorseIds.push(alpha.id, beta.id, gamma.id, delta.id, epsilon.id);

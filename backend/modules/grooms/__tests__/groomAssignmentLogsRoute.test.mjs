@@ -15,6 +15,7 @@ import app from '../../../app.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const PREFIX = `TestFixture-GroomAssLog-${UNIQUE}-`;
@@ -46,7 +47,7 @@ beforeAll(async () => {
       name: `${PREFIX}Horse`,
       sex: 'Mare',
       age: 1,
-      dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -365),
       breed: { connect: { id: breed.id } },
       user: { connect: { id: testUser.id } },
     },

@@ -17,6 +17,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Groom Salary System', () => {
   let testUser;
@@ -50,7 +51,7 @@ describe('Groom Salary System', () => {
         ...fixtureColor(),
         name: `TestFixture-SalaryHorse-${testSuffix}`,
         userId: testUser.id,
-        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365), // 5 years old
         age: 5,
         sex: 'Stallion',
         healthStatus: 'Excellent',

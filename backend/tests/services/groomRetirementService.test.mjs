@@ -53,6 +53,7 @@ import { createSequentially } from '../helpers/createSequentially.mjs';
 // fails across the module realms --experimental-vm-modules creates, which is
 // load-order dependent (green alone, red in a shard).
 import { realDateOrReason } from '../../__tests__/helpers/expectRealDate.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Groom Retirement Service', () => {
   let testUser;
@@ -77,7 +78,7 @@ describe('Groom Retirement Service', () => {
         ...fixtureColor(),
         name: `Test Horse ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+        dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 50,
         stressLevel: 30,

@@ -37,6 +37,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Foal Task Logging Integration', () => {
   // Equoria-plw0h: per-user CSRF binding derives the sessionIdentifier from
@@ -319,7 +320,7 @@ describe('Foal Task Logging Integration', () => {
             ...fixtureColor(),
             name: `${taskType} Test Foal ${testCounter}`,
             sex: 'Colt',
-            dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
+            dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year ago
             age: 1, // 1 game-year old (post Equoria-son6: Horse.age is game-years)
             userId: testUser.id,
             bondScore: 50,

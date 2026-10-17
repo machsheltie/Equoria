@@ -61,6 +61,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createHorse } from '../services/horseCreation.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const STORE_PRICE = 1000; // mirrors marketplaceController.STORE_PRICE
@@ -403,7 +404,7 @@ describe('Finding 2 — internal createHorse callers still work', () => {
     breedId: seededBreedId,
     sex: 'Mare',
     age: 3,
-    dateOfBirth: new Date(Date.now() - 3 * 7 * 24 * 60 * 60 * 1000).toISOString(),
+    dateOfBirth: gameCalendarDate(new Date(), -3 * 7).toISOString(),
     healthStatus: 'Excellent',
   });
 

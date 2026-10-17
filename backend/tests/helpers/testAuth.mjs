@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { fetchCsrf } from './csrfHelper.mjs';
 import { fixtureColor } from './fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const DEFAULT_ORIGIN = 'http://localhost:3000';
 
@@ -186,7 +187,7 @@ export async function createTestHorse(horseData = {}) {
     breed: { connect: { id: breed.id } },
     age: 5,
     sex: 'Mare',
-    dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years ago
+    dateOfBirth: gameCalendarDate(new Date(), -5 * 365), // 5 years ago
     speed: 50,
     stamina: 50,
     focus: 50,

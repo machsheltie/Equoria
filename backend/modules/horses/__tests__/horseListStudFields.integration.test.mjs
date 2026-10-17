@@ -27,7 +27,6 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 
 const PREFIX = 'TestFixture-q4uem9-listfields';
-const FIVE_YEARS_MS = 5 * 365 * 24 * 60 * 60 * 1000;
 
 // The list item's keys before slice 6 (HORSE_LIST_SELECT + withHealth +
 // withAgeYears + the latest-event/championship fields): all must remain.
@@ -128,7 +127,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
         ...fixtureColor(),
         name: `${PREFIX}-${sex}-${tag()}`,
         sex,
-        dateOfBirth: new Date(Date.now() - FIVE_YEARS_MS),
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         age: 5,
         breedId: breed.id,
         userId: ownerId,

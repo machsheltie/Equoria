@@ -29,6 +29,7 @@ import { generateTestToken } from '../helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../helpers/csrfHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { calculatePhenotype, generateMarkings } from '../../modules/horses/index.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -113,7 +114,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
       data: {
         name: `BCPSire_${ts}`,
         sex: 'Stallion',
-        dateOfBirth: new Date(Date.now() - 6 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -Math.round(6 * 365.25)),
         age: 6,
         userId: owner.id,
         colorGenotype: FULL_GENOTYPE_HET,
@@ -127,7 +128,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
       data: {
         name: `BCPDam_${ts}`,
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 5 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -Math.round(5 * 365.25)),
         age: 5,
         userId: owner.id,
         colorGenotype: FULL_GENOTYPE_HET,
@@ -149,7 +150,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
       data: {
         name: `BCPLegacyDam_${ts}`,
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 7 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -Math.round(7 * 365.25)),
         age: 7,
         userId: owner.id,
         phenotype: legacyPhenotype,

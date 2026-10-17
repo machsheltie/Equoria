@@ -29,6 +29,7 @@ import cronJobService from '../services/cronJobs.mjs';
 // foalDevelopment.deleteMany silent no-op catch arm) — a swallowed delete would
 // leak fixtures into the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
 
@@ -80,7 +81,7 @@ describe('INTEGRATION: foalDevelopment.currentDay auto-advance (Equoria-3lb8q)',
         // Equoria-3i34b (owner ruling 2026-10-06, "NO PREMATURE AGING"): a day
         // only advances once it has elapsed, so these foals have lived ten
         // days — enough for every step below. A just-born foal no longer moves.
-        dateOfBirth: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -10),
         age: 0,
         userId: user.id,
         bondScore,

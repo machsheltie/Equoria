@@ -41,6 +41,7 @@ import {
   evaluateTraitMilestones,
   // getMilestoneSummary - unused import removed
 } from '../../utils/milestoneTraitEvaluator.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
   describe('Milestone Eligibility Validation', () => {
@@ -66,7 +67,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         id: 2,
         name: 'Developing Horse',
         age: 2, // Exactly 2 game-years
-        dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -730),
         healthStatus: 'Excellent',
       };
 
@@ -83,7 +84,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         id: 3,
         name: 'Mature Horse',
         age: 3, // Exactly 3 game-years
-        dateOfBirth: new Date(Date.now() - 1095 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -1095),
         healthStatus: 'Good',
       };
 
@@ -100,7 +101,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         id: 4,
         name: 'Very Young Horse',
         age: 0, // Newborn (< 1 game-year) — not a milestone age
-        dateOfBirth: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -200),
         healthStatus: 'Good',
       };
 
@@ -117,7 +118,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         id: 5,
         name: 'Old Horse',
         age: 5, // Over 3 game-years (past all milestones)
-        dateOfBirth: new Date(Date.now() - 2000 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -2000),
         healthStatus: 'Good',
       };
 

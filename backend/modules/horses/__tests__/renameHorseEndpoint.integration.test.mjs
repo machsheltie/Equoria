@@ -52,6 +52,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { renameHorseById } from '../services/renameHorseService.mjs';
 import { horseNameRejectionReason, unnamedNameIsAcceptable, UNNAMED_HORSE_NAME } from '../services/horseNamePolicy.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-qkgfh1';
@@ -102,7 +103,7 @@ async function makeHorse(user, name, extra = {}) {
       ...fixtureColor(),
       name,
       sex: 'Mare',
-      dateOfBirth: new Date(Date.now() - 5 * 365 * DAY_MS),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
       breedId: breed.id,
       userId: user.id,

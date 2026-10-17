@@ -49,6 +49,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { runFoalingJob } from '../../modules/horses/index.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../__tests__/helpers/createTestHorse.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -115,7 +116,7 @@ async function main() {
       {
         name: `LoadFixture-cron-sire-${stamp}`,
         sex: 'Stallion',
-        dateOfBirth: new Date(Date.now() - 6 * 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -6 * 365),
         userId: user.id,
         breedId: breed.id,
       },
@@ -129,7 +130,7 @@ async function main() {
         {
           name: `LoadFixture-cron-mare-${stamp}-${i}`,
           sex: 'Mare',
-          dateOfBirth: new Date(Date.now() - 6 * 365 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(new Date(), -6 * 365),
           userId: user.id,
           breedId: breed.id,
           inFoalSinceDate: inFoalSince,

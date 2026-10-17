@@ -32,6 +32,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
   let __csrf__;
@@ -71,7 +72,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         ...fixtureColor(),
         name: `GPT-TestHorse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         userId: testUser.id,
-        dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
+        dateOfBirth: gameCalendarDate(new Date(), -0), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 65,
         stressLevel: 20,

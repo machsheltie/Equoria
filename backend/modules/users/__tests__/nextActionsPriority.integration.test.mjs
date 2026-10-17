@@ -44,6 +44,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -182,7 +183,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
         healthStatus: 'Excellent',
         horseXp: xpForLevel(1500),
         trainingCooldown: cooldownEndedAt,
-        lastBredDate: new Date(now.getTime() - 40 * MS_PER_DAY), // a stallion: never on cooldown
+        lastBredDate: gameCalendarDate(now, -40), // a stallion: never on cooldown
         userId: user.id,
       },
       horseIds,
@@ -197,7 +198,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
         name: `TestFixture-nextact-mare-${rand()}`,
         sex: 'Mare',
         age: 5,
-        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Injured',
         horseXp: xpForLevel(1500),
         userId: user.id,
@@ -213,7 +214,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
         name: `TestFixture-nextact-foal-${rand()}`,
         sex: 'Colt',
         age: 0,
-        dateOfBirth: new Date(now.getTime() - 3 * MS_PER_DAY),
+        dateOfBirth: gameCalendarDate(now, -3),
         healthStatus: 'Excellent',
         userId: user.id,
       },
@@ -298,7 +299,7 @@ describe('GET /api/v1/next-actions — check-results off viewedAt (Equoria-oey96
         name: `TestFixture-nextact-${label}-${rand()}`,
         sex: 'Rig',
         age: 5,
-        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
         // No rider → no compete pollution (B9). Rig → no breed.
         horseXp: xpForLevel(1900),
@@ -382,7 +383,7 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
         name: `TestFixture-nextact-negH-${rand()}`,
         sex: 'Rig',
         age: 5,
-        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
         horseXp: xpForLevel(1700),
         userId: negUser.id,
@@ -431,10 +432,10 @@ describe('GET /api/v1/next-actions — Stallion breed, never on cooldown (Equori
         name: `TestFixture-nextact-studOff-${rand()}`,
         sex: 'Stallion',
         age: 5,
-        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
         horseXp: xpForLevel(1750), // unreachable level → no compete pollution
-        lastBredDate: new Date(now.getTime() - 40 * MS_PER_DAY),
+        lastBredDate: gameCalendarDate(now, -40),
         userId: offUser.id,
       },
       horseIds,
@@ -449,10 +450,10 @@ describe('GET /api/v1/next-actions — Stallion breed, never on cooldown (Equori
         name: `TestFixture-nextact-studOn-${rand()}`,
         sex: 'Stallion',
         age: 5,
-        dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+        dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
         horseXp: xpForLevel(1750),
-        lastBredDate: new Date(now.getTime() - 5 * MS_PER_DAY),
+        lastBredDate: gameCalendarDate(now, -5),
         userId: onUser.id,
       },
       horseIds,
@@ -497,7 +498,7 @@ describe('GET /api/v1/next-actions — caps at 10 actions (Equoria-oey96.28)', (
           name: `TestFixture-nextact-cap-${i}-${rand()}`,
           sex: 'Rig',
           age: 5,
-          dateOfBirth: new Date(now.getTime() - 5 * 365 * MS_PER_DAY),
+          dateOfBirth: gameCalendarDate(now, -5 * 365),
           healthStatus: 'Excellent',
           horseXp: xpForLevel(1800),
           userId: user.id,

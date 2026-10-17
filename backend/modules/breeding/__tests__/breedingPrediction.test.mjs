@@ -28,6 +28,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Breeding Prediction System', () => {
   let __csrf__;
@@ -85,7 +86,7 @@ describe('Breeding Prediction System', () => {
         ...fixtureColor(),
         name: `TestStallion_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'stallion',
-        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365), // 5 years old
         temperament: 'spirited',
         userId: testUser.id,
         breedId: testBreed.id,
@@ -99,7 +100,7 @@ describe('Breeding Prediction System', () => {
         ...fixtureColor(),
         name: `TestMare_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'mare',
-        dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
+        dateOfBirth: gameCalendarDate(new Date(), -4 * 365), // 4 years old
         temperament: 'calm',
         userId: testUser.id,
         breedId: testBreed.id,

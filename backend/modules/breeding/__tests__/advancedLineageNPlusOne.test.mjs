@@ -28,6 +28,7 @@ import { generateLineageTree } from '../services/advancedLineageAnalysisService.
 // Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterAll
 // instead of being swallowed (the leak class that trips horseColorNullSentinel).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 // Build a 4-generation pedigree:
 //   gen0: 1 stallion + 1 mare (roots)
@@ -56,7 +57,7 @@ async function makeHorse(name, sex, sireId = null, damId = null) {
       ...fixtureColor(),
       name: `${SCOPE}-${name}-${RUN}`,
       sex,
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
       userId: user.id,
       sireId,

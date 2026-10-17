@@ -2,12 +2,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import logger from '../utils/logger.mjs';
-import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 // Equoria-hlnik: seeded horses must use one of the 11 canonical temperament
 // types (temperamentService.mjs). The live seed-create path uses the same
 // breed-weighted generator the register/advanceOnboarding paths use (the
 // o7pnn convention) so dev databases never contain non-canonical temperaments.
 import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import { birthDateForAge } from '../utils/horseAge.mjs';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -271,7 +271,7 @@ const seedHorses = async (prisma, users) => {
       sex: 'Stallion',
       finalDisplayColor: 'Bay',
       // 1 game-year = 7 real days; a 3 game-year horse is born 21 real days ago.
-      dateOfBirth: new Date(Date.now() - 3 * MS_PER_GAME_YEAR),
+      dateOfBirth: birthDateForAge(3),
       breedId: createdBreeds.find(b => b.name === 'Thoroughbred')?.id,
       userId: user.id,
       stableId: 1, // Default stable
@@ -291,7 +291,7 @@ const seedHorses = async (prisma, users) => {
       sex: 'Mare',
       finalDisplayColor: 'Chestnut',
       // 1 game-year = 7 real days; a 5 game-year horse is born 35 real days ago.
-      dateOfBirth: new Date(Date.now() - 5 * MS_PER_GAME_YEAR),
+      dateOfBirth: birthDateForAge(5),
       breedId: createdBreeds.find(b => b.name === 'Arabian')?.id,
       userId: user.id,
       stableId: 1, // Default stable

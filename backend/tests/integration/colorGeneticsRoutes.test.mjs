@@ -20,6 +20,7 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', () => {
   let __csrf__;
@@ -71,7 +72,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
       data: {
         name: `CGColorHorse_${ts}`,
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
         age: 4,
         userId: testUser.id,
         colorGenotype: {
@@ -98,7 +99,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
       data: {
         name: `CGLegacyHorse_${ts}`,
         sex: 'Stallion',
-        dateOfBirth: new Date(Date.now() - 5 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -Math.round(5 * 365.25)),
         age: 5,
         userId: testUser.id,
         // intentionally no colorGenotype / phenotype

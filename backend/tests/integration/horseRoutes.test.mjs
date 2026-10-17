@@ -16,6 +16,8 @@ import { generateTestToken } from '../helpers/authHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
+
 describe('Horse Routes Integration Tests', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -50,7 +52,7 @@ describe('Horse Routes Integration Tests', () => {
           ...fixtureColor(),
           name: `TrainableHorse_${ts}`,
           sex: 'Mare',
-          dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
           age: 4,
           userId: u.id,
         },
@@ -60,7 +62,7 @@ describe('Horse Routes Integration Tests', () => {
           ...fixtureColor(),
           name: `FoalHorse_${ts}`,
           sex: 'Stallion',
-          dateOfBirth: new Date(Date.now() - 1 * 365.25 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(new Date(), -Math.round(1 * 365.25)),
           age: 1,
           userId: u.id,
         },

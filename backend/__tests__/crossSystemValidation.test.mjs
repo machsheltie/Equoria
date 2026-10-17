@@ -20,6 +20,7 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 describe('Cross-System Boundary Validation', () => {
   let testUser;
@@ -62,7 +63,7 @@ describe('Cross-System Boundary Validation', () => {
         breed: { connect: { id: testBreed.id } },
         user: { connect: { id: testUser.id } },
         sex: 'mare',
-        dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -4 * 365),
         healthStatus: 'Excellent',
       },
     });

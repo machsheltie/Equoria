@@ -23,11 +23,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const PREFIX = 'TestFixture-q4uem9-studsearch';
 const SECRET = 'q4uem9StudSearchSecret';
 const REVEALED = 'q4uem9StudSearchRevealed';
-const FIVE_YEARS_MS = 5 * 365 * 24 * 60 * 60 * 1000;
 
 const STUD_KEYS = [
   'age',
@@ -86,7 +86,7 @@ describe('marketplace stud listings (Equoria-q4uem.9 slice 5)', () => {
         ...fixtureColor(),
         name: `${PREFIX}-${run}-${tag()}`,
         sex,
-        dateOfBirth: new Date(Date.now() - FIVE_YEARS_MS),
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         age: 5,
         breedId: breed.id,
         userId: ownerId,

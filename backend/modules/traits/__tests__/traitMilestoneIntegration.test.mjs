@@ -24,6 +24,7 @@ import { getFoalCareSummary } from '../../../utils/foalTaskLogManager.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const PREFIX = 'TestFixture-TraitMilestone-';
 const USER_ID = `${PREFIX}user`;
@@ -53,7 +54,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `${PREFIX}Foal`,
       sex: 'Colt',
-      dateOfBirth: new Date(Date.now() - 360 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -360),
       age: 360,
       user: { connect: { id: USER_ID } },
       bondScore: 75,

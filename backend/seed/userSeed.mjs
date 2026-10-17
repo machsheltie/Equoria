@@ -2,10 +2,10 @@ import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
-import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 // Equoria-o7pnn: seeded horses must arrive with a permanent breed-weighted
 // temperament so dev databases never contain NULL-temperament horses.
 import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import { birthDateForAge } from '../utils/horseAge.mjs';
 
 /**
  * Creates a test user with horses for development and testing
@@ -70,7 +70,7 @@ async function seedUserWithHorses() {
           name: 'Thunder',
           age: 4,
           // 7 real days = 1 game year (PATTERN_LIBRARY horse-age convention).
-          dateOfBirth: new Date(Date.now() - 4 * MS_PER_GAME_YEAR),
+          dateOfBirth: birthDateForAge(4),
           // Scalar FK: the app prisma client
           // (packages/database/prismaClient.mjs) persists FKs via scalar
           // columns and THROWS on relation-connect syntax (Equoria-b9zgr
@@ -91,7 +91,7 @@ async function seedUserWithHorses() {
         data: {
           name: 'Lightning',
           age: 5,
-          dateOfBirth: new Date(Date.now() - 5 * MS_PER_GAME_YEAR),
+          dateOfBirth: birthDateForAge(5),
           breedId: breed.id,
           userId: testUser.id,
           sex: 'mare',
@@ -108,7 +108,7 @@ async function seedUserWithHorses() {
         data: {
           name: 'Young Star',
           age: 2,
-          dateOfBirth: new Date(Date.now() - 2 * MS_PER_GAME_YEAR),
+          dateOfBirth: birthDateForAge(2),
           breedId: breed.id,
           userId: testUser.id,
           sex: 'colt',

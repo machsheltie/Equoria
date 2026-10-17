@@ -24,9 +24,9 @@ import { buildDatabaseUrl } from '../../../../../packages/database/dbPoolConfig.
 import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
 
 export const ORIGIN = 'http://localhost:3000';
-const FIVE_YEARS_MS = 5 * 365 * 24 * 60 * 60 * 1000;
 
 export function tag() {
   return randomBytes(6).toString('hex');
@@ -61,7 +61,7 @@ export async function makeHorse(prefix, { ownerId, sex, breedId, ...overrides })
       ...fixtureColor(),
       name: `${prefix}-${sex}-${tag()}`,
       sex,
-      dateOfBirth: new Date(Date.now() - FIVE_YEARS_MS),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
       breedId,
       userId: ownerId,

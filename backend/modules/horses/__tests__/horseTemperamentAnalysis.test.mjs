@@ -17,10 +17,10 @@ import {
   detectTemperamentChanges,
 } from '../services/horseTemperamentAnalysis.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// Equoria-odjt: a CI-proven colorGenotype+phenotype, so no NULL-phenotype fixture leaks.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 let user;
 let horse;
@@ -306,7 +306,7 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
         ...fixtureColor(),
         name: `TestFixture-HT-InterHorse-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -30),
         age: 30,
         userId: interUser.id,
         epigeneticFlags: [],

@@ -32,6 +32,7 @@ import { generateGeneticBreedingRecommendations, generateLineageBreedingRecommen
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 let user;
 let stallion;
@@ -59,7 +60,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-BarrelCollision-Stallion-${ts}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -4 * 365),
       age: 4,
       userId: user.id,
       speed: 72,
@@ -73,7 +74,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-BarrelCollision-Mare-${ts}`,
       sex: 'Mare',
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
       userId: user.id,
       speed: 60,

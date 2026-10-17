@@ -35,6 +35,8 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import bcrypt from 'bcryptjs';
 import app from '../../../app.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -781,7 +783,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
         ...fixtureColor(),
         name: `SireTest_${timestamp}`,
         age: 5,
-        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         sex: 'stallion',
         breedId,
         userId: testUserId,
@@ -795,7 +797,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
         ...fixtureColor(),
         name: `DamTest_${timestamp}`,
         age: 5,
-        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         sex: 'mare',
         breedId,
         userId: testUserId,
@@ -971,7 +973,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
         ...fixtureColor(),
         name: `OtherUserSire_${timestamp}`,
         age: 5,
-        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         sex: 'stallion',
         breedId,
         userId: otherUser.id,
@@ -1021,7 +1023,7 @@ describe('createHorseFromRequest — breeding inheritance integration', () => {
         ...fixtureColor(),
         name: `OtherUserDam_${timestamp}`,
         age: 5,
-        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         sex: 'mare',
         breedId,
         userId: otherUser.id,

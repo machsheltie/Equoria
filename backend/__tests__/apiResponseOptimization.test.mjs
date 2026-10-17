@@ -38,6 +38,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 describe('API Response Optimization System', () => {
   let testUserId;
@@ -77,7 +78,7 @@ describe('API Response Optimization System', () => {
           breedId: testBreed.id,
           sex: i % 2 === 0 ? 'Stallion' : 'Mare',
           age: 3 + (i % 10),
-          dateOfBirth: new Date(Date.now() - (3 + (i % 10)) * 365 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(new Date(), -(3 + (i % 10)) * 365),
           healthStatus: 'Good',
           temperament: 'confident',
           epigeneticFlags: ['BRAVE', 'INTELLIGENT'],

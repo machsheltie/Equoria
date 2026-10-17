@@ -29,6 +29,7 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const GENETICS_BUDGET_MS = 300;
@@ -83,7 +84,7 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
       data: {
         name: `CGPerfHorse_${ts}`,
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
         age: 4,
         userId: perfUser.id,
         colorGenotype: FULL_GENOTYPE,

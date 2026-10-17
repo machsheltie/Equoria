@@ -26,6 +26,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // it instead of a swallowed try/finally. horses -> user
 // (Horse.userId onDelete: Restrict, schema:282).
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 let user;
 let foal;
@@ -61,7 +62,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-FlagEvalMature-${Date.now()}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
       age: 4,
       userId: user.id,
     },

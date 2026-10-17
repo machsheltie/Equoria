@@ -29,6 +29,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // delete error leaks fixtures into the canonical DB; the tracker re-throws so the
 // suite goes red at the source instead of tripping a downstream sentinel later.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 // ── Shared fixture state ──────────────────────────────────────────────────────
 
@@ -216,7 +217,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-URTExt-Sire-${ts}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
       userId: sharedUser.id,
     },
@@ -227,7 +228,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-URTExt-Dam-${ts}`,
       sex: 'Mare',
-      dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -4 * 365),
       age: 4,
       userId: sharedUser.id,
     },

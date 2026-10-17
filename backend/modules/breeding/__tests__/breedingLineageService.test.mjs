@@ -26,6 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 let user;
 let stallion;
@@ -49,7 +50,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-BreedLinStallion-${Date.now()}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
       userId: user.id,
     },
@@ -60,7 +61,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-BreedLinMare-${Date.now()}`,
       sex: 'Mare',
-      dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -4 * 365),
       age: 4,
       userId: user.id,
     },

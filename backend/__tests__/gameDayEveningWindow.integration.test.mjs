@@ -120,6 +120,8 @@ afterAll(async () => {
 describe.each(EVENINGS)('the Eastern evening window (%s) — Equoria-4urzd', (_label, now) => {
   it('a horse written 3 game-years old reads 3 after the date-only round trip; a UTC-date dob reads one day short', async () => {
     const eastern = await makeHorse({ dateOfBirth: birthDateForAge(3, now) });
+    // The UTC-date pattern on purpose: it proves the instant is in the window.
+    // doctrine-allow: utc-date-only-fixture
     const utcDated = await makeHorse({ dateOfBirth: new Date(now.getTime() - 21 * DAY_MS) });
 
     const stored = await loadHorse(eastern.id);

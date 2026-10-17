@@ -24,6 +24,7 @@ import {
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 import { createSequentially } from '../helpers/createSequentially.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Groom Legacy Service', () => {
   let testUser;
@@ -60,7 +61,7 @@ describe('Groom Legacy Service', () => {
         ...fixtureColor(),
         name: testHorseName,
         sex: 'Stallion',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+        dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 50,
         stressLevel: 30,

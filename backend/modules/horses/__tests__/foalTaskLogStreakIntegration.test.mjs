@@ -36,6 +36,7 @@ import {
 } from '../../../utils/foalTaskLogManager.mjs';
 import { calculateTraitPoints } from '../../../config/taskInfluenceConfig.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Foal Task Log and Streak Data Integration', () => {
   let testUser, testFoal;
@@ -86,7 +87,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
           ...fixtureColor(),
           name: 'Test Foal Integration',
           sex: 'Filly',
-          dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months ago
+          dateOfBirth: gameCalendarDate(new Date(), -180), // 6 months ago
           age: 180,
           user: {
             connect: { id: testUser.id },

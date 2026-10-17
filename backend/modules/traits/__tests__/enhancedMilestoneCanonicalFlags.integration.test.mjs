@@ -29,6 +29,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { getHorseWithActiveGroomAssignments } from '../services/epigeneticTraitQueries.mjs';
 import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvaluation.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const CANONICAL_FLAGS = ['brave', 'confident']; // real epigeneticFlagDefinitions.mjs names
 const milestoneData = { type: 'imprinting', completed: true, score: 80 };
@@ -65,7 +66,7 @@ describe('Equoria-oey96.32: milestone path surfaces CANONICAL flags, not the stu
       {
         name: `TestFixture-oey9632-${randomBytes(4).toString('hex')}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000), // 100 days
+        dateOfBirth: gameCalendarDate(new Date(), -100), // 100 days
         age: 0,
         userId: user.id,
         epigeneticFlags: CANONICAL_FLAGS,
@@ -92,7 +93,7 @@ describe('Equoria-oey96.32: milestone path surfaces CANONICAL flags, not the stu
       {
         name: `TestFixture-oey9632-empty-${randomBytes(4).toString('hex')}`,
         sex: 'Colt',
-        dateOfBirth: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -100),
         age: 0,
         userId: user.id,
         epigeneticFlags: [],

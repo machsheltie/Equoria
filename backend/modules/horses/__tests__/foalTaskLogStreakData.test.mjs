@@ -31,6 +31,7 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Foal Task Log and Streak Data', () => {
   // Reference date anchor for all test date calculations
@@ -86,7 +87,7 @@ describe('Foal Task Log and Streak Data', () => {
         ...fixtureColor(),
         name: 'Test Foal Task Log',
         sex: 'Colt',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 real year ago
+        dateOfBirth: gameCalendarDate(new Date(), -365), // 1 real year ago
         age: 1, // game-years (post Equoria-son6: Horse.age is game-years, not days)
         user: {
           connect: { id: testUser.id },

@@ -27,6 +27,7 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // prior test's side effect. logTraitAssignment writes a genuine DB row through
 // the same code path the log-trait endpoint uses.
 import { logTraitAssignment } from '../../modules/traits/index.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Epigenetic Trait System Integration Tests', () => {
   let testUser;
@@ -533,7 +534,7 @@ describe('Trait History Service', () => {
         ...fixtureColor(),
         name: 'ServiceTest Horse',
         userId: testUser.id,
-        dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
+        dateOfBirth: gameCalendarDate(new Date(), -30), // 30 days old
         age: 0,
         sex: 'Stallion',
       },

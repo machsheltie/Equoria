@@ -18,6 +18,7 @@ import {
   processHorseForFlagEvaluation,
   getEligibleHorsesForFlagEvaluation,
 } from '../../services/weeklyFlagEvaluationService.mjs';
+import { gameCalendarDate } from '../../backend/utils/gameTime.mjs';
 
 describe('Weekly Flag Evaluation Service', () => {
   let testUser;
@@ -223,7 +224,7 @@ describe('Weekly Flag Evaluation Service', () => {
           name: `Test Horse Max Flags ${Date.now()}`,
           breedId: testBreed.id,
           sex: 'Filly',
-          dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 1 month old
+          dateOfBirth: gameCalendarDate(new Date(), -30), // 1 month old
           userId: testUser.id,
           bondScore: 20,
           stressLevel: 3,

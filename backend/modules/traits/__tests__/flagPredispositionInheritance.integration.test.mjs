@@ -37,6 +37,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { evaluateHorseFlags } from '../../../utils/flagEvaluationEngine.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const randHex = () => Math.random().toString(16).slice(2, 10);
 
@@ -241,7 +242,7 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
       {
         name: `TestFixture-flagpre-orphan-${randHex()}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -7),
         userId: user.id,
         bondScore: 50,
         stressLevel: 5,

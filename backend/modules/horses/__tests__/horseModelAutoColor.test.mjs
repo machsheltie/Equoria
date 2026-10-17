@@ -13,6 +13,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createHorse } from '../services/horseCreation.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const PREFIX = `TestFixture-AutoColor-${UNIQUE}-`;
@@ -40,7 +41,7 @@ describe('horseModel.createHorse — auto color genetics (Equoria-ennm)', () => 
       age: 3,
       sex: 'Mare',
       breedId: breed.id,
-      dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -3 * 365),
     });
     createdHorseIds.push(horse.id);
 
@@ -75,7 +76,7 @@ describe('horseModel.createHorse — auto color genetics (Equoria-ennm)', () => 
       age: 3,
       sex: 'Stallion',
       breed: { connect: { id: breed.id } },
-      dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -3 * 365),
     });
     createdHorseIds.push(horse.id);
 
@@ -100,7 +101,7 @@ describe('horseModel.createHorse — auto color genetics (Equoria-ennm)', () => 
       age: 3,
       sex: 'Mare',
       breedId: breed.id,
-      dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -3 * 365),
       colorGenotype: explicitGenotype,
       phenotype: explicitPhenotype,
     });

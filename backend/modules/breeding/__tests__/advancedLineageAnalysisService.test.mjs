@@ -23,6 +23,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterAll
 // instead of being swallowed (the leak class that trips horseColorNullSentinel).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -263,7 +264,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-AdvLineage-Stallion-${ts}`,
       sex: 'Stallion',
-      dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -4 * 365),
       age: 4,
       userId: user.id,
       speed: 72,
@@ -277,7 +278,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `TestFixture-AdvLineage-Mare-${ts}`,
       sex: 'Mare',
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       age: 5,
       userId: user.id,
       speed: 60,

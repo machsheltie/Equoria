@@ -14,6 +14,7 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Enhanced Groom Assignment System Integration Tests', () => {
   // Equoria-2gqir: per-user CSRF (Equoria-plw0h) — the CSRF token MUST be
@@ -73,7 +74,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         ...fixtureColor(),
         name: 'Assignment Test Horse 1',
         sex: 'Stallion',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+        dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 30,
         stressLevel: 40,
@@ -85,7 +86,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         ...fixtureColor(),
         name: 'Assignment Test Horse 2',
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
+        dateOfBirth: gameCalendarDate(new Date(), -730), // 2 years old
         userId: testUser.id,
         bondScore: 45,
         stressLevel: 25,
@@ -301,7 +302,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           ...fixtureColor(),
           name: 'Other User Horse',
           sex: 'Stallion',
-          dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+          dateOfBirth: gameCalendarDate(new Date(), -365),
           userId: otherUser.id,
         },
       });
@@ -458,7 +459,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
             // a future sweep is name-based, and the suffix avoids collisions.
             name: `TestFixture-jjzem-limit-${suffix}-${i + 1}`,
             sex: 'Stallion',
-            dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+            dateOfBirth: gameCalendarDate(new Date(), -365),
             userId: testUser.id,
           },
         });

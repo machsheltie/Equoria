@@ -19,6 +19,7 @@ import { assignGroom } from '../../modules/grooms/controllers/groomAssignmentHan
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { createSequentially } from '../helpers/createSequentially.mjs'; // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 
 // ─── plain response capture ───────────────────────────────────────────────────
@@ -141,7 +142,7 @@ describe('Groom Workflow Integration Tests', () => {
         ...fixtureColor(),
         name: `Test Foal ${suffix}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -365),
         age: 1, // 1 game-year (post Equoria-son6: Horse.age is game-years; foal does enrichment tasks 0-2yr)
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
@@ -161,7 +162,7 @@ describe('Groom Workflow Integration Tests', () => {
         ...fixtureColor(),
         name: `Test Young Horse ${suffix}`,
         sex: 'Colt',
-        dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -2 * 365),
         age: 2, // 2 game-years (post Equoria-son6: Horse.age is game-years; does foal grooming tasks 1-3yr)
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
@@ -181,7 +182,7 @@ describe('Groom Workflow Integration Tests', () => {
         ...fixtureColor(),
         name: `Test Adult Horse ${suffix}`,
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -4 * 365),
         age: 28,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },

@@ -14,6 +14,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 describe('Enhanced Groom Interactions Integration Tests', () => {
   // Equoria-rnbzn: __csrf__ is bound to testUser (authToken) AFTER the user
@@ -72,7 +73,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         ...fixtureColor(),
         name: 'Enhanced Test Horse',
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+        dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
         userId: testUser.id,
         bondScore: 25,
         stressLevel: 40,
@@ -246,7 +247,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           ...fixtureColor(),
           name: 'Basic Care Test Horse',
           sex: 'Mare',
-          dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+          dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
           userId: testUser.id,
           bondScore: 25,
           stressLevel: 40,
@@ -316,7 +317,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           ...fixtureColor(),
           name: 'Second Test Horse',
           sex: 'Mare',
-          dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+          dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
           userId: testUser.id,
           bondScore: 30,
           stressLevel: 35,
@@ -358,7 +359,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           ...fixtureColor(),
           name: 'Third Test Horse',
           sex: 'Mare',
-          dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+          dateOfBirth: gameCalendarDate(new Date(), -365), // 1 year old
           userId: testUser.id,
           bondScore: 20,
           stressLevel: 50,

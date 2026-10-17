@@ -21,6 +21,7 @@ import { createHorse } from '../services/horseCreation.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const UNIQUE = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
@@ -40,7 +41,7 @@ beforeAll(async () => {
       name: `Sire_AtBirth_${UNIQUE}`,
       sex: 'Stallion',
       age: 5,
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       breed: { connect: { id: breed.id } },
       healthStatus: 'Good',
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
@@ -53,7 +54,7 @@ beforeAll(async () => {
       name: `Dam_AtBirth_${UNIQUE}`,
       sex: 'Mare',
       age: 5,
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       breed: { connect: { id: breed.id } },
       healthStatus: 'Good',
       stressLevel: 25,
@@ -126,7 +127,7 @@ describe('Horse Model epigeneticModifiers contract — Real Database', () => {
       name: `Adult_NoAtBirth_${UNIQUE}`,
       sex: 'Mare',
       age: 5,
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
       breed: { connect: { id: breed.id } },
       sireId: sire.id,
       damId: dam.id,

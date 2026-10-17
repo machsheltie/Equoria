@@ -27,6 +27,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 // Minimal groomCareHistory stub used by functions that accept it but don't branch on it
 const emptyHistory = { totalInteractions: 0, taskDiversity: 0, averageQuality: 0, interactions: [] };
@@ -226,7 +227,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
         ...fixtureColor(),
         name: `TestFixture-EMES-TooOld-${ts}`,
         sex: 'Colt',
-        dateOfBirth: new Date(Date.now() - 1100 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -1100),
         age: 1100,
         userId: fixtureUser.id,
       },
@@ -238,7 +239,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
         ...fixtureColor(),
         name: `TestFixture-EMES-WrongWindow-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -30),
         age: 30,
         userId: fixtureUser.id,
       },

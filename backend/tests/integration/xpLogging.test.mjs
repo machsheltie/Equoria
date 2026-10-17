@@ -19,6 +19,7 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup — a failed delete must turn the suite
 // RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const UNIQUE = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
@@ -56,7 +57,7 @@ beforeAll(async () => {
       ...fixtureColor(),
       name: `XPHorse_${UNIQUE}`,
       sex: 'Mare',
-      dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years ago
+      dateOfBirth: gameCalendarDate(new Date(), -4 * 365), // 4 years ago
       age: 4,
       breed: { connect: { id: breed.id } },
       user: { connect: { id: testUser.id } },

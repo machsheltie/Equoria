@@ -10,7 +10,6 @@
 import { readFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
-import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
@@ -27,6 +26,7 @@ import logger from '../utils/logger.mjs';
 // at creation — the "temperament is permanent" invariant.
 // Equoria-94z3m: both symbols now resolve through the horses module barrel.
 import { generateStoreStats, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import { birthDateForAge } from '../utils/horseAge.mjs';
 
 // Pre-load the breed-starter-stats JSON so we can filter the breed pool
 // down to ONLY breeds that have a profile. The DB may contain test-leftover
@@ -139,7 +139,7 @@ async function seedPerformanceHorses() {
       horses.push({
         name: `PerfHorse${user.id}_${i}`,
         sex: Math.random() > 0.5 ? 'Stallion' : 'Mare',
-        dateOfBirth: new Date(Date.now() - age * MS_PER_GAME_YEAR), // Age in weeks
+        dateOfBirth: birthDateForAge(age), // Age in weeks
         breedId: breed.id,
         userId: user.id,
         // Equoria-o7pnn: permanent breed-weighted temperament mapped per row

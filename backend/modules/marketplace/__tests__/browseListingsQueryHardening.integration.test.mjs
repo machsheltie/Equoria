@@ -26,9 +26,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const PREFIX = 'TestFixture-dnpe4-salebrowse';
-const FIVE_YEARS_MS = 5 * 365 * 24 * 60 * 60 * 1000;
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -63,7 +63,7 @@ describe('sale browse query hardening (Equoria-dnpe4)', () => {
         ...fixtureColor(),
         name: `${PREFIX}-${run}-${tag()}`,
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - FIVE_YEARS_MS),
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
         age: 5,
         userId: seller.id,
         forSale: true,

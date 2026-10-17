@@ -21,6 +21,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from '../helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import * as foalTraitImpl from '../../services/jobs/impl/foalTraitEvaluation.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
 
@@ -65,7 +66,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
         // Equoria-3i34b (owner ruling 2026-10-06, "NO PREMATURE AGING"): the
         // development day only advances once it has elapsed, so these foals
         // have lived ten days. A just-born foal no longer moves.
-        dateOfBirth: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -10),
         age: 0,
         userId: user.id,
         bondScore,

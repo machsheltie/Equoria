@@ -26,6 +26,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 describe('Legacy Score Trait Integration System', () => {
   let __csrf__;
@@ -87,7 +88,7 @@ describe('Legacy Score Trait Integration System', () => {
         ...fixtureColor(),
         name: `LegacyTraitTest_Horse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'stallion',
-        dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
+        dateOfBirth: gameCalendarDate(new Date(), -4 * 365), // 4 years old
         temperament: 'spirited',
         userId: testUser.id,
         breedId: testBreed.id,
