@@ -67,13 +67,15 @@ async function clearStagedOrdering(showId) {
  * to those ids (still gated on status 'open' AND closeDate <= now), so a test settles
  * only its own shows. Production callers pass no req, so the scan stays global.
  *
- * `options.statGainRng` (in-process callers only; the HTTP route's third
- * argument is Express's `next`, which carries no such property) is handed to
- * awardPlacementProgression as its stat-gain RNG, so a test can force the roll.
- * Omitted, the roll uses Math.random as before (Equoria-576c0 B3 review).
+ * `options.statGainRng` and `options.scoreRng` (in-process callers only; the
+ * HTTP route's third argument is Express's `next`, which carries no such
+ * property) are handed to awardPlacementProgression as its stat-gain RNG and
+ * to scoreShowEntries as its luck RNG, so a test can force the rolls. Omitted,
+ * both use Math.random as before (Equoria-576c0 B3 review, B4a).
  */
 export async function executeClosedShows(req, res, options) {
   const statGainRng = typeof options?.statGainRng === 'function' ? options.statGainRng : undefined;
+  const scoreRng = typeof options?.scoreRng === 'function' ? options.scoreRng : undefined;
   try {
     const now = new Date();
 
@@ -114,6 +116,11 @@ export async function executeClosedShows(req, res, options) {
                 balance: true,
                 precision: true,
                 boldness: true,
+                // Every stat a discipline can weigh (Equoria-576c0 B4a).
+                intelligence: true,
+                flexibility: true,
+                obedience: true,
+                focus: true,
                 // Equoria-grys6: needed for rider flag-compatibility bias below.
                 epigeneticFlags: true,
               },
@@ -151,7 +158,12 @@ export async function executeClosedShows(req, res, options) {
         const assignmentByHorseId = new Map(riderAssignments.map(ra => [ra.horseId, ra]));
 
         // Score (extracted verbatim to competitionScoring.mjs) + rank.
-        const scored = scoreShowEntries({ show, entries, assignmentByHorseId });
+        const scored = scoreShowEntries({
+          show,
+          entries,
+          assignmentByHorseId,
+          ...(scoreRng ? { rng: scoreRng } : {}),
+        });
         scored.sort((a, b) => b.score - a.score);
         stagedOrdering = scored.map(({ entry, score, assignment }, i) => ({
           horseId: entry.horseId,

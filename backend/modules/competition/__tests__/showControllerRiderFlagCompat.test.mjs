@@ -50,7 +50,10 @@ const createdShowIds = [];
 const createdRiderIds = [];
 const createdHorseIds = [];
 
-// Stats chosen so base = (speed+stamina+agility+precision+boldness)/5 = 100.
+// Stats chosen so base = 100. Owner ruling R8 (Equoria-576c0 B4a): the base is
+// the discipline's 50/30/20 (Dressage: precision, focus, obedience). Old
+// contract: the flat average of speed/stamina/agility/precision/boldness, so
+// focus and obedience were never set; every stat is now 100, base still 100.
 // A base of 100 gives the integer Math.round enough headroom that the
 // rider-compat delta crosses a rounding boundary deterministically.
 const STAT_BASE = {
@@ -65,6 +68,10 @@ const STAT_BASE = {
   balance: 100,
   precision: 100,
   boldness: 100,
+  intelligence: 100,
+  flexibility: 100,
+  obedience: 100,
+  focus: 100,
 };
 
 // Rider config producing an EXACT bonus of 0.090 (below the 0.10 BONUS_CAP so

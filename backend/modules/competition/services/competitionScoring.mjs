@@ -6,7 +6,7 @@
  *   1. backend/logic/simulateCompetition.mjs (rich, instant-path simulator —
  *      full stats / traits / tack / health / stress / luck pipeline).
  *   2. backend/modules/competition/shows/showExecutionService.mjs#executeClosedShows
- *      (the nightly 7-day-show cron — simple 5-stat avg + luck + rider).
+ *      (the nightly 7-day-show cron — 50/30/20 discipline base + luck + rider; B4a).
  *
  * The two engines differ ON PURPOSE for the rest of the formula, but BOTH
  * apply the SAME rider flag-compatibility adjustment to the rider percents
@@ -28,7 +28,7 @@
  * Scope note (AC §1 — "Single scoreCompetitionEntry function"):
  * The two engines apply substantively different scoring formulas (the full
  * sim uses 50/30/20 weighted stats + traits + tack + health + stress, the
- * cron uses a flat 5-stat average + luck only). They are not realistically
+ * cron uses the 50/30/20 base + luck + rider only). They are not realistically
  * unifiable into a single scorer without changing product semantics. The
  * pragmatic interpretation of "single scoring function the two engines
  * consume" is this module: the rider flag-compat fragment was the only
@@ -44,6 +44,22 @@ import {
 } from '../../../utils/riderBonus.mjs';
 import { calculateRiderFlagCompatibility } from '../../../utils/riderFlagCompatibility.mjs';
 import logger from '../../../utils/logger.mjs';
+import { DISCIPLINE_STATS, isKnownDiscipline } from '../rules/disciplineRules.mjs';
+
+/**
+ * The ridden base: 50% primary + 30% secondary + 20% tertiary of the
+ * discipline's bible stats (owner ruling R8, BIBLE 13:45-73; Equoria-576c0 B4a).
+ * Integer tenths, so an exact x.5 stays x.5 for the final round-half-up
+ * (0.5*75 + 0.3*70 + 0.2*70 in floating point need not be exactly 72.5).
+ * Not rounded here: the score is rounded once, at the end.
+ * @param {Object} horse - Horse row with the discipline's three stats.
+ * @param {string} discipline - One of the 23 competition disciplines.
+ * @returns {number}
+ */
+export function weightedDisciplineBase(horse, discipline) {
+  const [primary, secondary, tertiary] = DISCIPLINE_STATS[discipline];
+  return (5 * horse[primary] + 3 * horse[secondary] + 2 * horse[tertiary]) / 10;
+}
 
 /**
  * Apply behavioral-flag rider compatibility (Equoria-yzqhj.6, grys6) to the
@@ -88,17 +104,29 @@ export function applyRiderCompatibility({
 }
 
 /**
- * Score the entries of a nightly (cron-path) show — extracted VERBATIM from
- * executeClosedShows (Equoria-c7mx0; formula unchanged: 5-stat average ±9%
- * luck, then rider modifiers with flag compatibility).
+ * Score the entries of a nightly (cron-path) show (extracted from
+ * executeClosedShows, Equoria-c7mx0): the discipline's 50/30/20 base
+ * (Equoria-576c0 B4a; was a flat 5-stat average), ±9 luck, then rider
+ * modifiers with flag compatibility, rounded once (x.5 up).
  *
  * @param {Object} input
  * @param {Object} input.show    - Show row (discipline read).
  * @param {Array}  input.entries - ShowEntry rows incl. `horse` stats.
  * @param {Map}    input.assignmentByHorseId - horseId -> active RiderAssignment.
+ * @param {Function} [input.rng] - Luck RNG (default Math.random); tests pass a
+ *   fixed value (0.5 gives zero luck). The luck formula is unchanged.
  * @returns {Array<{entry: Object, score: number, assignment: Object|undefined}>}
  */
-export function scoreShowEntries({ show, entries, assignmentByHorseId }) {
+export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Math.random }) {
+  // A show row whose discipline is outside the 23 (a legacy name) keeps the
+  // pre-B4a flat 5-stat average, so the show still settles instead of failing
+  // the nightly run.
+  const weighted = isKnownDiscipline(show.discipline);
+  if (!weighted) {
+    logger.error(
+      `[competitionScoring] show ${show.id ?? 'unknown'}: discipline "${show.discipline}" is not a competition discipline; scored on the flat 5-stat average`,
+    );
+  }
   return entries.map(entry => {
     const h = entry.horse;
     // Equoria-507mt: stat columns are NOT NULL at the schema layer
@@ -107,8 +135,10 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId }) {
     // a bug masked by the fact that no production path ever inserted
     // NULL. The schema lock makes that impossible; the readers stop
     // pretending NULL is meaningful.
-    const base = (h.speed + h.stamina + h.agility + h.precision + h.boldness) / 5;
-    const luck = (Math.random() - 0.5) * 18; // ±9%
+    const base = weighted
+      ? weightedDisciplineBase(h, show.discipline)
+      : (h.speed + h.stamina + h.agility + h.precision + h.boldness) / 5;
+    const luck = (rng() - 0.5) * 18; // ±9%
     const subtotal = Math.max(0, base + luck);
 
     // Apply rider modifiers if an active rider is assigned to this horse.

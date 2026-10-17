@@ -43,7 +43,10 @@ beforeAll(async () => {
     },
   });
 
-  // Two horses with IDENTICAL stats so any score delta is rider-attributable
+  // Two horses with IDENTICAL stats so any score delta is rider-attributable.
+  // Owner ruling R8 (Equoria-576c0 B4a): the base is the discipline's 50/30/20
+  // (Dressage: precision, focus, obedience). Old contract: the flat average of
+  // five stats, so focus/obedience were never set; all ten are now 70, base 70.
   const horseStats = {
     ...fixtureColor(),
     sex: 'Mare',
@@ -57,6 +60,10 @@ beforeAll(async () => {
     balance: 70,
     precision: 70,
     boldness: 70,
+    intelligence: 70,
+    flexibility: 70,
+    obedience: 70,
+    focus: 70,
   };
 
   horseWithRider = await prisma.horse.create({
