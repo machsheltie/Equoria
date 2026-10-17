@@ -9,7 +9,7 @@
  *  AC5: Competition entry — select horse → confirm → result displayed
  */
 import { test, expect } from '@playwright/test';
-import { createAuthedSession, type AuthedSession } from './helpers/api';
+import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { readTestCredentials } from './helpers/credentials';
 import { assertValidNextTrainingDate } from './helpers/training';
@@ -256,6 +256,7 @@ test.describe('AC5: Competition Entry', () => {
 
   test('competition entry flow: select horse in modal → click Enter → API 200', async ({
     page,
+    browser,
   }) => {
     // The entry flow lives entirely inside CompetitionDetailModal:
     //   1. Click a competition card → modal opens
@@ -265,6 +266,37 @@ test.describe('AC5: Competition Entry', () => {
     // There is no separate EntryConfirmationModal in the current UI.
     const creds = readCredentials();
     const horseId = creds.testHorseId;
+
+    // Ruling C10 (owner, 2026-10-16; Equoria-576c0 B9): entering a show needs an
+    // eligible rider assigned to the horse. Old contract: entry ignored riders, so
+    // this flow entered the starter horse without one. Hire and assign a rider
+    // through the real marketplace API first.
+    expect(horseId, 'global-setup must provide the starter horse id').toBeTruthy();
+    const session: AuthedSession = await createAuthedSession(browser);
+    try {
+      const marketRes = await session.request.get('/api/v1/riders/marketplace');
+      expect(marketRes.ok(), `GET /api/v1/riders/marketplace returned ${marketRes.status()}`).toBe(
+        true
+      );
+      type Riders = { riders?: Array<{ marketplaceId: string; weeklyRate: number }> };
+      const market = (await marketRes.json()) as Riders & { data?: Riders };
+      const riders = market.data?.riders ?? market.riders ?? [];
+      expect(riders.length).toBeGreaterThan(0);
+      const cheapest = riders.reduce((a, b) => (b.weeklyRate < a.weeklyRate ? b : a));
+      const hireRes = await csrfMutate(session, 'POST', '/api/v1/riders/marketplace/hire', {
+        marketplaceId: cheapest.marketplaceId,
+      });
+      expect(hireRes.ok(), `rider hire returned ${hireRes.status()}`).toBe(true);
+      type Hired = { rider?: { id: number } };
+      const hired = (await hireRes.json()) as Hired & { data?: Hired };
+      const assignRes = await csrfMutate(session, 'POST', '/api/v1/riders/assignments', {
+        riderId: hired.data?.rider?.id ?? hired.rider?.id,
+        horseId: Number(horseId),
+      });
+      expect(assignRes.ok(), `rider assignment returned ${assignRes.status()}`).toBe(true);
+    } finally {
+      await session.context.close();
+    }
 
     await page.goto('/competitions', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-testid="competition-browser-page"]', { timeout: 20000 });

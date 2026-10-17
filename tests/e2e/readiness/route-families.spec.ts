@@ -232,6 +232,39 @@ test('all beta route families execute real read and write flows', async ({ page,
   expect(pregnancy.pregnancyStarted ?? true).toBe(true);
   expect(Number(pregnancy.damId ?? starterHorseId)).toBe(starterHorseId);
 
+  // Ruling C10 (owner, 2026-10-16; Equoria-576c0 B9): a horse needs an eligible
+  // rider (active assignment, not retired, employed by the owner) to enter a show.
+  // Old contract: entry ignored riders, so this spec hired and assigned its rider
+  // after the show entry. The hire and assignment now come first; the
+  // assignment is still removed after the entry, with the same checks.
+  const riderMarket = unwrapData<{ riders: Array<{ marketplaceId: string; weeklyRate: number }> }>(
+    await expectOk(
+      await page.request.get('/api/v1/riders/marketplace'),
+      'GET /api/v1/riders/marketplace'
+    )
+  );
+  expect(riderMarket.riders.length).toBeGreaterThan(0);
+  const cheapestRider = riderMarket.riders.reduce((cheapest, rider) =>
+    rider.weeklyRate < cheapest.weeklyRate ? rider : cheapest
+  );
+  const riderHire = unwrapData<{ rider: { id: number } }>(
+    await expectOk(
+      await csrfRequest(page, 'POST', '/api/v1/riders/marketplace/hire', {
+        marketplaceId: cheapestRider.marketplaceId,
+      }),
+      'POST /api/v1/riders/marketplace/hire'
+    )
+  );
+  const riderAssignment = unwrapData<{ id: number }>(
+    await expectOk(
+      await csrfRequest(page, 'POST', '/api/v1/riders/assignments', {
+        riderId: riderHire.rider.id,
+        horseId: starterHorseId,
+        notes: 'Production readiness assignment',
+      }),
+      'POST /api/v1/riders/assignments'
+    )
+  );
   const showJson = await expectOk(
     await csrfRequest(page, 'POST', '/api/v1/shows/create', {
       name: `Readiness Show ${suffix}`,
@@ -329,34 +362,6 @@ test('all beta route families execute real read and write flows', async ({ page,
     'POST /api/v1/crafting/craft'
   );
 
-  const riderMarket = unwrapData<{ riders: Array<{ marketplaceId: string; weeklyRate: number }> }>(
-    await expectOk(
-      await page.request.get('/api/v1/riders/marketplace'),
-      'GET /api/v1/riders/marketplace'
-    )
-  );
-  expect(riderMarket.riders.length).toBeGreaterThan(0);
-  const cheapestRider = riderMarket.riders.reduce((cheapest, rider) =>
-    rider.weeklyRate < cheapest.weeklyRate ? rider : cheapest
-  );
-  const riderHire = unwrapData<{ rider: { id: number } }>(
-    await expectOk(
-      await csrfRequest(page, 'POST', '/api/v1/riders/marketplace/hire', {
-        marketplaceId: cheapestRider.marketplaceId,
-      }),
-      'POST /api/v1/riders/marketplace/hire'
-    )
-  );
-  const riderAssignment = unwrapData<{ id: number }>(
-    await expectOk(
-      await csrfRequest(page, 'POST', '/api/v1/riders/assignments', {
-        riderId: riderHire.rider.id,
-        horseId: starterHorseId,
-        notes: 'Production readiness assignment',
-      }),
-      'POST /api/v1/riders/assignments'
-    )
-  );
   await expectOk(
     await csrfRequest(page, 'DELETE', `/api/v1/riders/assignments/${riderAssignment.id}`),
     'DELETE /api/v1/riders/assignments/:id'
