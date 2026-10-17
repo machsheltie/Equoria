@@ -11,7 +11,7 @@
  *                       still has `viewedAt` NULL
  *   3. train          — a horse whose training cooldown expired
  *   4. compete        — an OPEN show the user has an eligible horse for
- *   5. breed          — a Mare OR Stallion off the 30-day breeding cooldown
+ *   5. breed          — a Stallion, or a Mare off her breeding cooldown
  *   6. groom-foal      — an active foal development record
  *   7. visit-vet      — an injured horse
  *
@@ -53,6 +53,7 @@ import {
   loadActiveAssignments,
 } from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
 
 // Story 23.4 priority table. 1 = highest.
 const SPEC_PRIORITY = Object.freeze({
@@ -71,12 +72,6 @@ const MAX_ACTIONS = 10;
 // Minimum active age for training / competing / breeding (mirrors enterShow /
 // trainingController — the horses schema stores `age` as an Int column).
 const MIN_ACTIVE_AGE = 3;
-
-// 30-day breeding cooldown, in ms. This mirrors the canonical rule in
-// backend/middleware/gameIntegrity.mjs (`breedingCooldown = 30 days`). Both
-// sites inline the literal; extracting one shared constant is filed as
-// Equoria-igx6d.
-const BREEDING_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Case-insensitive injured check — the canonical persisted value is 'Injured'
 // (Horse.healthStatus default 'Excellent'). enterShow uses the same
@@ -104,7 +99,6 @@ export async function getNextActions(req, res) {
     }
 
     const now = new Date();
-    const nowMs = now.getTime();
     const actions = [];
 
     // Query 1 — user's horses with the fields every action type needs.
@@ -276,7 +270,11 @@ export async function getNextActions(req, res) {
       }
     }
 
-    // ── breed (priority 5) — one per Mare/Stallion off the 30-day cooldown ────
+    // ── breed (priority 5) — one per Stallion, and per Mare off her cooldown ──
+    // The breeding guard's own rule (Equoria-kha18; owner rulings 2026-10-02 /
+    // S-Q1 2026-10-16): only a mare has a cooldown, 7 Eastern game days from
+    // lastBredDate. A breed action is only offered once it is over, so its
+    // cooldownEndsAt is always null.
     for (const h of horses) {
       const sex = h.sex?.toLowerCase();
       if (
@@ -284,18 +282,13 @@ export async function getNextActions(req, res) {
         isActiveAge(h.age) &&
         !isInjured(h.healthStatus)
       ) {
-        const lastBredMs = h.lastBredDate ? new Date(h.lastBredDate).getTime() : null;
-        const offCooldown = lastBredMs === null || nowMs - lastBredMs >= BREEDING_COOLDOWN_MS;
-        if (offCooldown) {
+        if (damBreedingCooldownEndsAt(h, now) === null) {
           actions.push({
             type: 'breed',
             priority: SPEC_PRIORITY.breed,
             horseId: h.id,
             horseName: h.name,
-            metadata: {
-              cooldownEndsAt:
-                lastBredMs === null ? null : new Date(lastBredMs + BREEDING_COOLDOWN_MS),
-            },
+            metadata: { cooldownEndsAt: null },
           });
         }
       }

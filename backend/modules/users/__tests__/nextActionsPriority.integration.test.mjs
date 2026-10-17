@@ -4,7 +4,9 @@
  * Proves the endpoint implements the Story 23.4 priority table (docs/epics.md
  * :724-735) for the four items in scope for oey96.28:
  *   - open-show gating for `compete` (metadata.showId sourced from a real open Show)
- *   - `breed` matches Mare AND Stallion, off the real 30-day breeding cooldown
+ *   - `breed` matches Mare AND Stallion; only a mare has a cooldown (7 Eastern
+ *     game days, owner rulings 2026-10-02 / S-Q1 2026-10-16; Equoria-kha18 —
+ *     old contract: a 30-day cooldown on both sexes)
  *   - per-type `metadata` (cooldownEndsAt / showId / foalAge)
  *   - cap of 10 (was 6), with per-entity action emission and priority ordering
  *   - `check-results` (spec priority 2) off the real CompetitionResult.viewedAt
@@ -180,7 +182,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
         healthStatus: 'Excellent',
         horseXp: xpForLevel(1500),
         trainingCooldown: cooldownEndedAt,
-        lastBredDate: new Date(now.getTime() - 40 * MS_PER_DAY), // off 30-day cooldown
+        lastBredDate: new Date(now.getTime() - 40 * MS_PER_DAY), // a stallion: never on cooldown
         userId: user.id,
       },
       horseIds,
@@ -255,7 +257,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
     expect(byType.compete.metadata.showId).toBe(show.id);
     expect(byType.compete.horseId).toBe(stallionId);
 
-    // breed — Stallion matched; cooldownEndsAt = lastBredDate + 30d (in the past).
+    // breed — Stallion matched; a stallion has no cooldown (Equoria-kha18), so cooldownEndsAt is null.
     expect(byType.breed.horseId).toBe(stallionId);
     expect(new Date(byType.breed.metadata.cooldownEndsAt).getTime()).toBeLessThan(Date.now());
 
@@ -408,9 +410,9 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
   });
 });
 
-// ─── Arm C: Stallion breed + real 30-day cooldown ────────────────────────────
+// ─── Arm C: Stallion breed — no cooldown for stallions (Equoria-kha18) ───────
 
-describe('GET /api/v1/next-actions — Stallion breed off/on cooldown (Equoria-oey96.28)', () => {
+describe('GET /api/v1/next-actions — Stallion breed, never on cooldown (Equoria-oey96.28, Equoria-kha18)', () => {
   const cleanup = createCleanupTracker();
   const horseIds = [];
   const userIds = [];
@@ -421,7 +423,7 @@ describe('GET /api/v1/next-actions — Stallion breed off/on cooldown (Equoria-o
   const now = new Date();
 
   beforeAll(async () => {
-    // Stallion off cooldown (bred 40d ago) → breed emitted.
+    // Stallion bred 40d ago → breed emitted.
     offUser = await makeUser(userIds);
     await createTestHorse(
       prisma,
@@ -438,7 +440,8 @@ describe('GET /api/v1/next-actions — Stallion breed off/on cooldown (Equoria-o
       horseIds,
     );
 
-    // Stallion in cooldown (bred 5d ago) → breed NOT emitted.
+    // Stallion bred 5d ago → breed emitted too: only a mare has a cooldown
+    // (Equoria-kha18; old contract: held by a 30-day cooldown).
     onUser = await makeUser(userIds);
     await createTestHorse(
       prisma,
@@ -458,16 +461,16 @@ describe('GET /api/v1/next-actions — Stallion breed off/on cooldown (Equoria-o
 
   afterAll(() => cleanup.run(), 60000);
 
-  it('emits breed for a Stallion off the 30-day cooldown', async () => {
+  it('emits breed for a Stallion bred 40 days ago', async () => {
     const res = await getActions(offUser);
     const breed = res.body.data.actions.filter(a => a.type === 'breed');
     expect(breed).toHaveLength(1);
   });
 
-  it('does NOT emit breed for a Stallion still within the 30-day cooldown', async () => {
+  it('emits breed for a Stallion bred 5 days ago: a stallion is never held by a cooldown', async () => {
     const res = await getActions(onUser);
     const breed = res.body.data.actions.filter(a => a.type === 'breed');
-    expect(breed).toHaveLength(0);
+    expect(breed).toHaveLength(1);
   });
 });
 

@@ -17,10 +17,12 @@ export { getFoalDevelopment } from './models/foalModel.mjs';
 export { calculateOverallConformation } from './services/conformationService.mjs';
 // Equoria-q4uem.9: breeding's stud-booking controller applies the same breeding rules and
 // pregnancy claim as the own-pair route (one set of rules, one set of messages).
+// Equoria-kha18: users' next-actions asks the same mare-only cooldown rule.
 export {
   validateBreedingPair,
   pregnancyClaimData,
   pendingRequestMessage,
+  damBreedingCooldownEndsAt,
 } from './services/breedingPairRules.mjs';
 // Equoria-q4uem.9: a sale ends the stallion's pending stud requests and the mare's (marketplace).
 export {
