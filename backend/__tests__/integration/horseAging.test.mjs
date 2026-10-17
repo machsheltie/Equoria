@@ -41,6 +41,7 @@ import cronJobService from '../../services/cronJobs.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const NAME_PREFIX = 'AgingRegression-';
 
@@ -93,18 +94,11 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
    * Stored age starts at 0 so the cron always detects a change to write.
    */
   const ageHorseByDays = async (label, daysOld) => {
-    // Equoria-zy625: anchor dob to NOON, `daysOld` UTC-calendar-days before
-    // today. The aging cron uses date-only UTC arithmetic (Equoria-vdw5
-    // getHorseAgeYears), which counts whole UTC calendar days between
-    // startOfUtcDay(dob) and startOfUtcDay(now). A noon anchor makes that
-    // diff exactly `daysOld` regardless of the wall-clock time the suite
-    // runs. The prior `Date.now() - daysOld*MS_PER_DAY - BUFFER_MS` tipped
-    // the fixture across a UTC-day boundary when run shortly after UTC
-    // midnight (the 6h buffer was designed for the OLD ms-based age math).
-    const now = new Date();
-    const dateOfBirth = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysOld, 12, 0, 0, 0),
-    );
+    // Equoria-kha18: dob is `daysOld` Eastern game days before today, as a
+    // date-only value. The aging pass counts whole Eastern calendar days
+    // (owner ruling); the previous UTC-calendar anchor (Equoria-zy625) landed
+    // on the next Eastern date from 20:00 ET and read one day short there.
+    const dateOfBirth = gameCalendarDate(new Date(), -daysOld);
     const horse = await prisma.horse.create({
       data: {
         ...fixtureColor(),

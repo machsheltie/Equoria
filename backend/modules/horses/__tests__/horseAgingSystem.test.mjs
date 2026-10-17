@@ -24,8 +24,12 @@ import logger from '../../../utils/logger.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
-const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+// Equoria-kha18: a dob N Eastern game days ago, as a date-only value (the
+// owner ruling: day counts are Eastern calendar days). `Date.now() - N days`
+// lands on the next Eastern date from 20:00 ET and read one day short there.
+const daysAgo = days => gameCalendarDate(new Date(), -days);
 
 describe('calculateAgeFromBirth', () => {
   it('returns 0 for a horse born today', () => {
@@ -54,7 +58,8 @@ describe('calculateAgeFromBirth', () => {
 
   it('accepts a custom currentDate as second argument', () => {
     const dob = new Date('2020-01-01');
-    const current = new Date('2020-01-11');
+    // Noon Eastern on Jan 11 (Equoria-kha18): 2020-01-11T00:00Z is still Jan 10 in Eastern.
+    const current = new Date('2020-01-11T17:00:00Z');
     expect(calculateAgeFromBirth(dob, current)).toBe(10);
   });
 

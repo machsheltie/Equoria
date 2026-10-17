@@ -61,6 +61,8 @@ const DAYS_PER_GAME_YEAR = 7;
 /**
  * Calculate age in REAL-TIME days from date of birth.
  * Used internally by milestone day-threshold checks (7, 14, 21, 147 days).
+ * Equoria-kha18: whole Eastern game days (getHorseAgeDays), never a
+ * millisecond delta, which ran a day ahead of the date-only dob from 20:00 ET.
  *
  * @param {Date} dateOfBirth - Horse's date of birth
  * @param {Date} currentDate - Current date (default: now)
@@ -76,10 +78,7 @@ export function calculateAgeFromBirth(dateOfBirth, currentDate = new Date()) {
       return 0;
     }
 
-    const diffTime = currentTime - birthTime;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    return Math.max(0, diffDays);
+    return getHorseAgeDays(dateOfBirth, currentDate);
   } catch (error) {
     logger.error(`[horseAgingSystem.calculateAgeFromBirth] Error: ${error.message}`);
     return 0;

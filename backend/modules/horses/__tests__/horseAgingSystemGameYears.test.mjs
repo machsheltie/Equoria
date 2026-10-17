@@ -19,8 +19,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
-const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+// Equoria-kha18: a dob N Eastern game days ago, as a date-only value (the
+// owner ruling: day counts are Eastern calendar days). `Date.now() - N days`
+// lands on the next Eastern date from 20:00 ET and read one day short there.
+const daysAgo = days => gameCalendarDate(new Date(), -days);
 
 describe('calculateAgeInGameYears (Equoria-son6)', () => {
   it('returns 0 for DOB today', () => {

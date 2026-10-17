@@ -16,6 +16,9 @@
  *   - horseAgingSystem.processFoalMilestoneEvaluations aged a foal as
  *     floor((Date.now() - dob) / day), one day too old in that window, so
  *     milestone windows opened a day early and closed a day early.
+ *   - horseAgingSystem.calculateAgeFromBirth (behind updateHorseAge, which
+ *     writes Horse.age in game-years) was the same millisecond delta, so a
+ *     6-game-day-old foal was written 1 game-year old in the evening.
  *
  * Instants pinned inside the window:
  *   - summer: 2026-10-17T00:30Z = Fri 2026-10-16 20:30 EDT
@@ -30,7 +33,7 @@ import { randomBytes } from 'node:crypto';
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import { getEligibleHorses } from '../utils/flagEvaluationEngine.mjs';
-import { processFoalMilestoneEvaluations } from '../utils/horseAgingSystem.mjs';
+import { processFoalMilestoneEvaluations, updateHorseAge } from '../utils/horseAgingSystem.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 import { getHorseAgeDays } from '../utils/horseAge.mjs';
 import { cleanupTestHorses } from './helpers/createTestHorse.mjs';
@@ -145,5 +148,23 @@ describe.each(EVENINGS)('Eastern day counts for foals (%s) — Equoria-kha18', (
 
     // Day 28 is the last day of confidence/reactivity (22-28); day 29 is in no window.
     expect(result).toMatchObject({ totalProcessed: 1, milestonesEvaluated: 1, errors: 0 });
+  });
+
+  it('the aging pass keeps a foal born 6 game days ago at 0 game-years and ages one born 7 days ago to 1', async () => {
+    const six = await makeHorse(gameCalendarDate(now, -6));
+    const seven = await makeHorse(gameCalendarDate(now, -7));
+
+    const [sixResult, sevenResult] = await at(now, async () => [
+      await updateHorseAge(six.id),
+      await updateHorseAge(seven.id),
+    ]);
+
+    expect(sixResult).toMatchObject({ ageUpdated: false, newAge: 0 });
+    expect(sevenResult).toMatchObject({ ageUpdated: true, newAge: 1 });
+    const stored = await prisma.horse.findMany({
+      where: { id: { in: [six.id, seven.id] } },
+      select: { id: true, age: true },
+    });
+    expect(Object.fromEntries(stored.map(h => [h.id, h.age]))).toEqual({ [six.id]: 0, [seven.id]: 1 });
   });
 });
