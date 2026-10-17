@@ -42,24 +42,25 @@ export const validateHorseData = (horseData, isUpdate = false) => {
     }
   }
 
-  // Stat validation (prevent stat hacking)
-  const statFields = [
-    'precision',
-    'strength',
-    'speed',
-    'agility',
-    'endurance',
-    'intelligence',
-    'personality',
-  ];
+  // Stat validation (prevent stat hacking). Stats must be non-negative numbers
+  // but have no upper bound: stats are never capped (owner ruling R8,
+  // 2026-10-15). 'personality' keeps its old 0-100 bound.
+  const statFields = ['precision', 'strength', 'speed', 'agility', 'endurance', 'intelligence'];
   for (const stat of statFields) {
     if (sanitized[stat] !== undefined) {
       const value = parseInt(sanitized[stat]);
-      if (isNaN(value) || value < 0 || value > 100) {
-        errors.push(`${stat} must be between 0 and 100`);
+      if (isNaN(value) || value < 0) {
+        errors.push(`${stat} must be a non-negative number`);
       }
       sanitized[stat] = value;
     }
+  }
+  if (sanitized.personality !== undefined) {
+    const value = parseInt(sanitized.personality);
+    if (isNaN(value) || value < 0 || value > 100) {
+      errors.push('personality must be between 0 and 100');
+    }
+    sanitized.personality = value;
   }
 
   // Financial validation

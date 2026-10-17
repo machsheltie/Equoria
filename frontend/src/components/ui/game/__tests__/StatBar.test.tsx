@@ -65,9 +65,20 @@ describe('StatBar', () => {
     expect(screen.getByText('55kg')).toBeInTheDocument();
   });
 
-  it('(a) clamps value above max to max', () => {
+  // Owner ruling R8 (Stacey, 2026-10-15): "Stats should NOT be capped. EVER."
+  // Old contract: a value above max printed as max (150 showed "100"). New: the
+  // printed number is the true value; only the bar fill stops at full width.
+  it('(a) prints the true value above max; only the bar fill is clamped', () => {
     render(<StatBar label="Stat" value={150} max={100} />);
-    expect(screen.getByText('100')).toBeInTheDocument();
+    expect(screen.getByText('150')).toBeInTheDocument();
+    expect(screen.queryByText('100')).not.toBeInTheDocument();
+  });
+
+  it('(a) a stat of 101 prints 101 with the bar at full width', () => {
+    render(<StatBar label="Speed" value={101} />);
+    expect(screen.getByText('101')).toBeInTheDocument();
+    const indicator = screen.getByRole('progressbar').firstElementChild as HTMLElement;
+    expect(indicator.style.transform).toBe('translateX(-0%)');
   });
 
   it('(a) clamps negative value to 0', () => {

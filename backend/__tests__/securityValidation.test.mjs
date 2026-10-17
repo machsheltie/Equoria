@@ -356,10 +356,13 @@ describe('validateHorseData — additional branches', () => {
     expect(errors.some(e => e.includes('speed'))).toBe(true);
   });
 
-  it('rejects stat value above 100', () => {
-    const { isValid, errors } = validateHorseData({ agility: 101 });
-    expect(isValid).toBe(false);
-    expect(errors.some(e => e.includes('agility'))).toBe(true);
+  // Owner ruling R8 (Stacey, 2026-10-15): "Stats should NOT be capped. EVER."
+  // Old contract: a stat above 100 was rejected. New: there is no upper bound.
+  it('accepts a stat value above 100 (stats are never capped)', () => {
+    const { isValid, errors, sanitized } = validateHorseData({ agility: 101 });
+    expect(errors).toEqual([]);
+    expect(isValid).toBe(true);
+    expect(sanitized.agility).toBe(101);
   });
 
   it('accepts stat values at boundary 0 and 100', () => {

@@ -6,6 +6,9 @@
  *  ✅ Track: var(--bg-midnight) background
  *  ✅ Glow: box-shadow activates when value >= max (uses --glow-stat-max token)
  *
+ * Stats are never capped (owner ruling R8, 2026-10-15): the printed number is
+ * the true value; only the bar fill stops at full width.
+ *
  * All colours use CSS custom property tokens — no raw rgba literals (spec AC).
  * Native role=progressbar markup for accessibility (replaces the retired Radix progress package, Equoria-rkgq9.6).
  */
@@ -37,7 +40,8 @@ export function StatBar({
   size = 'md',
   className,
 }: StatBarProps) {
-  const clamped = Math.min(Math.max(value, 0), max);
+  const shown = Math.max(value, 0);
+  const clamped = Math.min(shown, max);
   const pct = max > 0 ? (clamped / max) * 100 : 0;
   const atMax = clamped >= max;
 
@@ -56,6 +60,7 @@ export function StatBar({
         aria-valuemin={0}
         aria-valuemax={max}
         aria-valuenow={clamped}
+        aria-valuetext={`${shown}${unit}`}
         aria-label={label}
       >
         <div
@@ -70,7 +75,7 @@ export function StatBar({
 
       {showValue && (
         <span className="text-xs shrink-0 w-10 text-right tabular-nums text-[var(--text-primary)]">
-          {clamped}
+          {shown}
           {unit}
         </span>
       )}
