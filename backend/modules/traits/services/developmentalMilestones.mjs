@@ -13,6 +13,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { calendarDateDayIndex, gameDayIndex } from '../../../utils/gameTime.mjs';
 import {
   DEVELOPMENTAL_WINDOWS,
   DEVELOPMENTAL_MILESTONES,
@@ -93,6 +94,15 @@ export async function trackDevelopmentalMilestones(horseId) {
 }
 
 /**
+ * The foal's age in Eastern game days when the interaction happened
+ * (Equoria-kha18): the interaction instant's Eastern date minus the date-only
+ * dob. A millisecond delta ran a day ahead from 20:00 ET. Negative before birth.
+ */
+function interactionFoalDay(interaction, horse) {
+  return gameDayIndex(interaction.createdAt) - calendarDateDayIndex(horse.dateOfBirth);
+}
+
+/**
  * Assess milestone progress
  */
 export function assessMilestoneProgress(milestoneName, milestone, interactions, currentAge, horse) {
@@ -102,9 +112,7 @@ export function assessMilestoneProgress(milestoneName, milestone, interactions, 
   if (currentAge > window.endDay) {
     // Assess based on interactions during the window
     const windowInteractions = interactions.filter(interaction => {
-      const interactionAge = Math.floor(
-        (interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-      );
+      const interactionAge = interactionFoalDay(interaction, horse);
       return interactionAge >= window.startDay && interactionAge <= window.endDay;
     });
 
@@ -126,9 +134,7 @@ export function assessMilestoneProgress(milestoneName, milestone, interactions, 
   } else if (currentAge >= window.startDay) {
     // Currently in window - assess progress
     const windowInteractions = interactions.filter(interaction => {
-      const interactionAge = Math.floor(
-        (interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-      );
+      const interactionAge = interactionFoalDay(interaction, horse);
       return interactionAge >= window.startDay;
     });
 
