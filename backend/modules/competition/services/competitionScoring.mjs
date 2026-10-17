@@ -40,7 +40,11 @@
 import { BONUS_CAP, PENALTY_CAP, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { calculateRiderFlagCompatibility } from '../../../utils/riderFlagCompatibility.mjs';
 import logger from '../../../utils/logger.mjs';
-import { DISCIPLINE_STATS, isKnownDiscipline } from '../rules/disciplineRules.mjs';
+import {
+  DISCIPLINE_STATS,
+  isKnownDiscipline,
+  temperamentPercent,
+} from '../rules/disciplineRules.mjs';
 
 /**
  * The ridden base: 50% primary + 30% secondary + 20% tertiary of the
@@ -130,9 +134,9 @@ export function applyRiderCompatibility({
  * executeClosedShows, Equoria-c7mx0): the discipline's 50/30/20 base
  * (Equoria-576c0 B4a; was a flat 5-stat average) times (1 + the summed
  * modifier percents), rounded once, x.5 up (B5, owner rulings C1/C2). The
- * terms are luck (+1..+10%) and the rider's bonus minus penalty (with flag
- * compatibility). Before B5, luck was ±9 points added to the base and the
- * rider was a second multiplication.
+ * terms are luck (+1..+10%), the rider's bonus minus penalty (with flag
+ * compatibility) and temperament (+5 / 0 / -5, B6). Before B5, luck was ±9
+ * points added to the base and the rider was a second multiplication.
  *
  * @param {Object} input
  * @param {Object} input.show    - Show row (discipline read).
@@ -193,9 +197,25 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
         );
       }
     }
-    // C2: each modifier as a percent, summed, applied once. B6 adds the
-    // temperament term (±5) to this list; health follows with O1.
-    const percentTerms = [luckPercent, (bonusPercent - penaltyPercent) * 100];
+    // Temperament (R1, B6): +5 / 0 / -5 from the owner's matrix. A null or
+    // unknown-name temperament contributes 0, as every horse did before B6,
+    // and is logged (O5 interim, approved 2026-10-17). A legacy discipline has
+    // no matrix row and was already logged above, so it contributes 0 quietly.
+    let temperamentTerm = 0;
+    if (weighted) {
+      const percent = temperamentPercent(show.discipline, h.temperament);
+      if (percent === null) {
+        logger.error(
+          `[competitionScoring] show ${show.id ?? 'unknown'}: horse ${h.id ?? entry.horseId} has no recognized temperament (${JSON.stringify(h.temperament ?? null)}); temperament term 0`,
+        );
+      } else {
+        temperamentTerm = percent;
+      }
+    }
+
+    // C2: each modifier as a percent, summed, applied once. Health follows
+    // with O1.
+    const percentTerms = [luckPercent, (bonusPercent - penaltyPercent) * 100, temperamentTerm];
 
     return { entry, score: applyPercentTerms(base, percentTerms), assignment };
   });

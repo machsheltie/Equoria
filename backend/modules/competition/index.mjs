@@ -17,6 +17,9 @@ export {
   COMPETITION_DISCIPLINES,
   isKnownDiscipline,
   getDisciplineStats,
+  TEMPERAMENTS,
+  TEMPERAMENT_MATRIX,
+  temperamentPercent,
 } from './rules/disciplineRules.mjs';
 export { isValidConformationClass } from './services/conformationShowScoring.mjs';
 export { getResultsByHorse } from './services/resultModelService.mjs';

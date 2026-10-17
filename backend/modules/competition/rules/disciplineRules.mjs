@@ -64,3 +64,77 @@ export function getDisciplineStats(discipline) {
   }
   return DISCIPLINE_STATS[discipline];
 }
+
+/**
+ * The 11 temperaments, in the column order of the owner's matrix
+ * (EquoriaBible/RelevantFiles/Equoria_Temperament_Competition_Matrix.xlsx).
+ */
+export const TEMPERAMENTS = Object.freeze([
+  'Spirited',
+  'Nervous',
+  'Calm',
+  'Bold',
+  'Steady',
+  'Independent',
+  'Reactive',
+  'Stubborn',
+  'Playful',
+  'Lazy',
+  'Aggressive',
+]);
+
+/**
+ * Temperament effect per ridden discipline: 1 Positive, 0 Neutral, -1 Negative.
+ * Owner ruling R1 (2026-10-15); the cells of the matrix's "Matrix" sheet
+ * govern (O4, 2026-10-16), generated from the xlsx on 2026-10-17 (Equoria-576c0
+ * B6). Conformation and parade rows are not in the sheet yet (O3).
+ */
+// prettier-ignore
+export const TEMPERAMENT_MATRIX = Object.freeze({
+  'Western Pleasure': Object.freeze({ Spirited: 0, Nervous: -1, Calm: 1, Bold: 0, Steady: 1, Independent: -1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: 1, Aggressive: -1 }),
+  Reining: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 1, Independent: 0, Reactive: 0, Stubborn: -1, Playful: -1, Lazy: -1, Aggressive: -1 }),
+  Cutting: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 1, Bold: 1, Steady: 0, Independent: 1, Reactive: 1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: 0 }),
+  'Barrel Racing': Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 0, Reactive: 0, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Roping: Object.freeze({ Spirited: 0, Nervous: -1, Calm: 1, Bold: 1, Steady: 1, Independent: 1, Reactive: 0, Stubborn: -1, Playful: -1, Lazy: -1, Aggressive: -1 }),
+  'Team Penning': Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 1, Reactive: 0, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Rodeo: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 1, Independent: 0, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Hunter: Object.freeze({ Spirited: -1, Nervous: -1, Calm: 1, Bold: 0, Steady: 1, Independent: 0, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: 0, Aggressive: -1 }),
+  Saddleseat: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: -1, Reactive: 0, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Endurance: Object.freeze({ Spirited: 0, Nervous: -1, Calm: 1, Bold: 1, Steady: 1, Independent: 1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Eventing: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 1, Bold: 1, Steady: 0, Independent: 1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Dressage: Object.freeze({ Spirited: 0, Nervous: -1, Calm: 1, Bold: 0, Steady: 1, Independent: -1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: 0, Aggressive: -1 }),
+  'Show Jumping': Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 0, Reactive: 0, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Vaulting: Object.freeze({ Spirited: -1, Nervous: -1, Calm: 1, Bold: 0, Steady: 1, Independent: 0, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: 0, Aggressive: -1 }),
+  Polo: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 1, Reactive: 0, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: 0 }),
+  'Cross Country': Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  'Combined Driving': Object.freeze({ Spirited: 0, Nervous: -1, Calm: 1, Bold: 1, Steady: 1, Independent: -1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  'Fine Harness': Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: -1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Gaited: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 1, Bold: 0, Steady: 0, Independent: 0, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: -1 }),
+  Gymkhana: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 1, Bold: 1, Steady: 0, Independent: 0, Reactive: 0, Stubborn: -1, Playful: 1, Lazy: -1, Aggressive: -1 }),
+  Steeplechase: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: 0 }),
+  'Harness Racing': Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 0, Steady: 1, Independent: 0, Reactive: -1, Stubborn: -1, Playful: -1, Lazy: -1, Aggressive: 0 }),
+  Racing: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 0, Reactive: 0, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: 0 }),
+});
+
+/** Percent per matrix effect (R1): Positive +5, Neutral 0, Negative -5. */
+const TEMPERAMENT_EFFECT_PERCENT = 5;
+
+/**
+ * The temperament percent term for a ridden discipline.
+ *
+ * @param {string} discipline - One of the 23 competition disciplines.
+ * @param {string|null|undefined} temperament - One of the 11 (exact name).
+ * @returns {number|null} +5, 0 or -5; null when the temperament is missing or
+ *   not one of the 11, or the discipline has no matrix row. The caller decides
+ *   what null means; nothing here invents a temperament.
+ */
+export function temperamentPercent(discipline, temperament) {
+  if (!isKnownDiscipline(discipline) || typeof temperament !== 'string') {
+    return null;
+  }
+  const row = TEMPERAMENT_MATRIX[discipline];
+  if (!Object.hasOwn(row, temperament)) {
+    return null;
+  }
+  return row[temperament] * TEMPERAMENT_EFFECT_PERCENT;
+}

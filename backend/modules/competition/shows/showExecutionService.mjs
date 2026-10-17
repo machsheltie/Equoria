@@ -121,6 +121,8 @@ export async function executeClosedShows(req, res, options) {
                 flexibility: true,
                 obedience: true,
                 focus: true,
+                // The temperament percent term (Equoria-576c0 B6).
+                temperament: true,
                 // Equoria-grys6: needed for rider flag-compatibility bias below.
                 epigeneticFlags: true,
               },
