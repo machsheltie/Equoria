@@ -7,7 +7,9 @@
  * stat tracking. This test creates two horses with identical stats, assigns
  * an elite Rider to one, runs `executeClosedShows`, and asserts the
  * rider-assigned horse's score is higher than the unassigned horse's score
- * averaged across multiple runs (the ±9% luck noise washes out at N runs).
+ * across many runs. Since Equoria-576c0 B5 (owner rulings C1/C2) the score is
+ * round(base x (1 + luck% + rider%)), luck a whole +1..+10% per horse per
+ * show, so the rider's percent is summed with luck and applied once.
  *
  * Failing-test-first per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §1:
  *   Before the fix, the rider-assigned horse scores no better than the
@@ -138,20 +140,21 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
    * proportion, and (b) derive the pass threshold from a binomial bound rather
    * than a hand-picked number.
    *
-   * Model of each independent head-to-head run (both horses base = 70):
-   *   noRider score = round(70 + U1),  U1 ~ Uniform[-9, +9]   (RANDOM_LUCK ±9%)
-   *   rider  score  = round((70 + U2) * 1.10), U2 ~ Uniform[-9, +9]
+   * Model of each independent head-to-head run (both horses base = 70; B5,
+   * owner rulings C1/C2):
+   *   noRider score = round(70 * (1 + L1/100)),       L1 uniform on 1..10
+   *   rider  score  = round(70 * (1 + (L2 + 10)/100)), L2 uniform on 1..10
    * The elite rider's modifier is experienced(+3%) + level10(+3.6%) +
    * prestige100(+4%) + methodical/Dressage-high(+2%) = 12.6%, capped at the
-   * BONUS_CAP of 10% by computeRiderModifiers. A 5M-trial Monte Carlo of this
-   * exact model gives P(rider strictly wins) ≈ 0.784.
+   * BONUS_CAP of 10% by computeRiderModifiers. Exact enumeration of the 100
+   * (L1, L2) pairs: the rider always wins (lowest rider 77.7 -> 78 beats the
+   * highest no-rider 77), so P(rider strictly wins) = 1 and riderWins = 300.
    *
-   * With N = 300 and p = 0.784: mean = 235.2, sd = sqrt(N·p·(1−p)) ≈ 7.13.
-   * The pass threshold MIN_RIDER_WINS = 199 sits at (mean − 5.08·sd) — a real
-   * (healthy) modifier dips below it with probability < 1e-6, so no flake.
-   * Under the null hypothesis of NO edge (broken modifier ⇒ p = 0.5, mean =
-   * 150, null-sd ≈ 8.66), the threshold 199 is 5.66 null-sd ABOVE the 50%
-   * center — a broken/zero modifier fails this assertion essentially always.
+   * Under the null hypothesis of NO edge (broken modifier, rider term 0),
+   * exact enumeration gives P(strict win) = 0.42 (ties are common with
+   * whole-percent luck): mean 126, null-sd ≈ 8.55, so the threshold
+   * MIN_RIDER_WINS = 199 is ≈ 8.5 null-sd ABOVE it — a broken/zero modifier
+   * fails this assertion essentially always.
    * The test therefore stays MEANINGFUL (detects a broken modifier) while no
    * longer flaking on normal RNG variance.
    *
@@ -162,7 +165,8 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
    */
   it('elite rider wins a statistically-bounded majority of head-to-head runs vs no-rider horse', async () => {
     const RUNS = 300;
-    // Binomial lower bound: mean(235.2) − ~5σ for the true p≈0.784 model.
+    // Binomial bound: the healthy model wins all 300 (p = 1, B5); the no-edge
+    // null averages 126, ≈ 8.5σ below this threshold.
     // Far below the rider's expected wins, far above the no-edge null (150).
     const MIN_RIDER_WINS = 199;
 
@@ -262,13 +266,13 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
     const avgRider = totalRiderScore / RUNS;
     const avgNoRider = totalNoRiderScore / RUNS;
 
-    // Primary statistical assertion: the rider's win count clears a ~5σ lower
-    // bound for the true p≈0.784 model — reliable under healthy variance, but
-    // 5.66 null-σ above the no-edge (p=0.5) center, so a broken modifier fails.
+    // Primary statistical assertion: the healthy model (p = 1 since B5) always
+    // clears it, and it sits ≈ 8.5 null-σ above the no-edge center (p = 0.42),
+    // so a broken modifier fails.
     expect(riderWins).toBeGreaterThanOrEqual(MIN_RIDER_WINS);
 
-    // Average advantage should be materially positive — luck is symmetric so
-    // averages converge to the rider's ~10% bonus contribution.
+    // Average advantage should be materially positive — both horses draw luck
+    // from the same +1..+10%, so averages differ by the rider's ~10% term.
     expect(avgRider).toBeGreaterThan(avgNoRider);
   }, 180000);
 });
