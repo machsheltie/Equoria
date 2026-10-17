@@ -38,9 +38,12 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { addXpToHorse } from '../services/horseXpModelService.mjs';
+// Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
+// allocation. Old contract: 100. The point amounts below are the old scenarios at
+// the new scale; every assertion keeps its meaning.
 
 const CONCURRENCY = 10;
-const XP_EACH = 15; // 10 x 15 = 150 -> crosses the 100-XP stat-point threshold once
+const XP_EACH = 150; // 10 x 150 = 1500 -> crosses the 1,000-point stat-point threshold once
 
 // A NUL character (char code 0), built at runtime so the SOURCE file contains no
 // literal NUL byte. It is a valid JS string that passes addXpToHorse's reason
@@ -115,12 +118,12 @@ describe('INTEGRATION: addXpToHorse atomic XP award (Equoria-geo1a)', () => {
     const eventSum = events.reduce((sum, e) => sum + e.amount, 0);
 
     // XP conservation: all N increments applied (pre-fix: last-writer-wins loses most).
-    expect(after.horseXp).toBe(CONCURRENCY * XP_EACH); // 150
+    expect(after.horseXp).toBe(CONCURRENCY * XP_EACH); // 1500
     // Audit consistency: one event per award, and horseXp == SUM(events) (base was 0).
     expect(events.length).toBe(CONCURRENCY); // 10
-    expect(eventSum).toBe(CONCURRENCY * XP_EACH); // 150
+    expect(eventSum).toBe(CONCURRENCY * XP_EACH); // 1500
     expect(after.horseXp).toBe(eventSum);
-    // Stat-point conservation: 0 -> 150 crosses the 100 threshold exactly once.
+    // Stat-point conservation: 0 -> 1500 crosses the 1,000 threshold exactly once.
     expect(after.availableStatPoints).toBe(1);
   }, 120000);
 
@@ -144,21 +147,21 @@ describe('INTEGRATION: addXpToHorse atomic XP award (Equoria-geo1a)', () => {
   }, 120000);
 
   it('happy path preserved: a single award increments XP, gains the threshold point, and writes one event', async () => {
-    const horse = await makeHorse(95, 0);
+    const horse = await makeHorse(995, 0);
 
     const result = await addXpToHorse(horse.id, 10, 'TestFixture-geo1a-single');
 
     expect(result.success).toBe(true);
-    expect(result.currentXP).toBe(105);
+    expect(result.currentXP).toBe(1005);
     expect(result.xpGained).toBe(10);
-    expect(result.statPointsGained).toBe(1); // 95 -> 105 crosses 100
+    expect(result.statPointsGained).toBe(1); // 995 -> 1005 crosses 1,000
     expect(result.availableStatPoints).toBe(1);
 
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
       select: { horseXp: true, availableStatPoints: true },
     });
-    expect(after.horseXp).toBe(105);
+    expect(after.horseXp).toBe(1005);
     expect(after.availableStatPoints).toBe(1);
 
     const events = await prisma.horseXpEvent.findMany({ where: { horseId: horse.id } });

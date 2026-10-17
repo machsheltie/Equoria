@@ -82,8 +82,6 @@ export async function getHorseXpStatus(req, res) {
     // Calculate XP progression info
     const currentXP = data.horseXp || 0;
     const availableStatPoints = data.availableStatPoints || 0;
-    const nextStatPointAt = (Math.floor(currentXP / 100) + 1) * 100;
-    const xpToNextStatPoint = nextStatPointAt - currentXP;
 
     logger.info(
       `[horseXpController.getHorseXpStatus] Retrieved XP status for horse ${data.name} (ID: ${horseId})`,
@@ -96,8 +94,8 @@ export async function getHorseXpStatus(req, res) {
         horseName: data.name,
         currentXP,
         availableStatPoints,
-        nextStatPointAt,
-        xpToNextStatPoint,
+        // One threshold for every reader (owner ruling C15; Equoria-576c0 B13).
+        ...horseXpModel.statPointProgress(currentXP),
       },
     });
   } catch (error) {

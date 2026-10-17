@@ -49,7 +49,10 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { addXpToHorseCore } from '../services/horseXpModelService.mjs';
+import { addXpToHorseCore, HORSE_POINTS_PER_STAT_POINT as P } from '../services/horseXpModelService.mjs';
+// Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
+// allocation. Old contract: 100. The point amounts below are the old scenarios at
+// the new scale; every assertion keeps its meaning.
 
 const ORIGIN = 'http://localhost:3000';
 const BASE_SPEED = 50;
@@ -245,21 +248,21 @@ describe('the internal XP service remains the only horse-XP source and is unchan
     // calls inside the show executor's per-entry transaction, with the same
     // shape of amount (server-computed) and reason (server-composed).
     const result = await prisma.$transaction(tx =>
-      addXpToHorseCore(tx, earnedHorse.id, 100, 'Competition: 1st place in Dressage'),
+      addXpToHorseCore(tx, earnedHorse.id, P, 'Competition: 1st place in Dressage'),
     );
 
-    expect(result.newXp).toBe(100);
+    expect(result.newXp).toBe(P);
     expect(result.statPointsGained).toBe(1);
     expect(result.newAvailableStatPoints).toBe(1);
 
     const after = await readXpState(earnedHorse.id);
-    expect(after.horseXp).toBe(100);
+    expect(after.horseXp).toBe(P);
     expect(after.availableStatPoints).toBe(1);
     // XP and its audit row commit together: horseXp == SUM(HorseXpEvent.amount).
     expect(after.events).toBe(1);
 
     const [event] = await prisma.horseXpEvent.findMany({ where: { horseId: earnedHorse.id } });
-    expect(event.amount).toBe(100);
+    expect(event.amount).toBe(P);
     expect(event.reason).toBe('Competition: 1st place in Dressage');
   }, 60000);
 });
@@ -275,7 +278,7 @@ describe('owners keep XP reads and earned-stat allocation', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.currentXP).toBe(100);
+    expect(res.body.data.currentXP).toBe(P);
     expect(res.body.data.availableStatPoints).toBe(1);
   }, 60000);
 
@@ -287,7 +290,7 @@ describe('owners keep XP reads and earned-stat allocation', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.events.length).toBe(1);
-    expect(res.body.data.events[0].amount).toBe(100);
+    expect(res.body.data.events[0].amount).toBe(P);
   }, 60000);
 
   it('the owner can spend the earned stat point via POST /:id/allocate-stat', async () => {
@@ -304,7 +307,7 @@ describe('owners keep XP reads and earned-stat allocation', () => {
     expect(after.speed).toBe(BASE_SPEED + 1);
     expect(after.availableStatPoints).toBe(0);
     // Spending a point must not rewrite XP or the audit trail.
-    expect(after.horseXp).toBe(100);
+    expect(after.horseXp).toBe(P);
     expect(after.events).toBe(1);
   }, 60000);
 

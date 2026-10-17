@@ -5,7 +5,9 @@
  * Separate from user XP system - horses earn their own XP from competitions and training.
  *
  * Business Rules:
- * - Every 100 Horse XP allows +1 stat point allocation to any horse stat
+ * - Every 1,000 Horse Points allow +1 stat point allocation to any horse stat
+ *   (owner ruling C15, 2026-10-16; was 100). Allocations already stored on a
+ *   horse are kept (owner ruling 2026-10-07: no data conversion).
  * - Horses earn XP from competition participation (separate from user XP)
  * - Stat points can be allocated to any of the 10 core horse stats
  * - All XP events are logged for auditing and analytics
@@ -21,8 +23,12 @@ import logger from '../../../utils/logger.mjs';
 import { DatabaseError } from '../../../errors/index.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 
-// Horse XP System Constants
-const XP_PER_STAT_POINT = 100;
+/**
+ * Horse Points per stat allocation (owner ruling C15; bible 13). The one
+ * source: the status response carries it as `pointsPerStatPoint`, which the
+ * frontend progress bar reads.
+ */
+export const HORSE_POINTS_PER_STAT_POINT = 1000;
 
 // Valid horse stats that can receive stat point allocations
 const VALID_HORSE_STATS = HORSE_STAT_VALUES;
@@ -33,8 +39,23 @@ const VALID_HORSE_STATS = HORSE_STAT_VALUES;
  * @returns {number} Total available stat points
  */
 function calculateAvailableStatPoints(horseXp) {
-  const earnedStatPoints = Math.floor(horseXp / XP_PER_STAT_POINT);
+  const earnedStatPoints = Math.floor(horseXp / HORSE_POINTS_PER_STAT_POINT);
   return earnedStatPoints;
+}
+
+/**
+ * Progress toward the next stat allocation for a horse with `currentXP` points.
+ * @param {number} currentXP
+ * @returns {{ nextStatPointAt: number, xpToNextStatPoint: number, pointsPerStatPoint: number }}
+ */
+export function statPointProgress(currentXP) {
+  const nextStatPointAt =
+    (Math.floor(currentXP / HORSE_POINTS_PER_STAT_POINT) + 1) * HORSE_POINTS_PER_STAT_POINT;
+  return {
+    nextStatPointAt,
+    xpToNextStatPoint: nextStatPointAt - currentXP,
+    pointsPerStatPoint: HORSE_POINTS_PER_STAT_POINT,
+  };
 }
 
 /**
@@ -358,8 +379,6 @@ export async function getHorseXpStatus(horseId) {
     // Calculate XP progression info
     const currentXP = horse.horseXp || 0;
     const availableStatPoints = horse.availableStatPoints || 0;
-    const nextStatPointAt = (Math.floor(currentXP / XP_PER_STAT_POINT) + 1) * XP_PER_STAT_POINT;
-    const xpToNextStatPoint = nextStatPointAt - currentXP;
 
     return {
       success: true,
@@ -368,8 +387,7 @@ export async function getHorseXpStatus(horseId) {
         horseName: horse.name,
         currentXP,
         availableStatPoints,
-        nextStatPointAt,
-        xpToNextStatPoint,
+        ...statPointProgress(currentXP),
       },
     };
   } catch (error) {

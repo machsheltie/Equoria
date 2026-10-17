@@ -29,6 +29,8 @@ export interface HorseLevelInfo {
   availableStatPoints: number;
   nextStatPointAt: number;
   xpToNextStatPoint: number;
+  /** Horse Points per stat allocation (owner ruling C15: 1,000), from the server. */
+  pointsPerStatPoint: number;
 }
 
 /**

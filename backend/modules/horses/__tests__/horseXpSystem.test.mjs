@@ -13,7 +13,11 @@ import {
   allocateStatPoint,
   getHorseXpHistory,
   validateStatName,
+  HORSE_POINTS_PER_STAT_POINT as P,
 } from '../services/horseXpModelService.mjs';
+// Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
+// allocation. Old contract: 100. The point amounts below are the old scenarios at
+// the new scale; every assertion keeps its meaning.
 
 const PREFIX = 'TestFixture-HorseXpSys-';
 const USER_ID = 'test-user-horse-xp-sys';
@@ -58,29 +62,29 @@ afterAll(async () => {
 describe('Horse XP System - Core Business Logic', () => {
   describe('addXpToHorse', () => {
     it('should add XP to horse and calculate available stat points correctly', async () => {
-      const horse = await mkHorse('AddXp1', { horseXp: 50, availableStatPoints: 0 });
-      const result = await addXpToHorse(horse.id, 100, 'Competition participation');
+      const horse = await mkHorse('AddXp1', { horseXp: P / 2, availableStatPoints: 0 });
+      const result = await addXpToHorse(horse.id, P, 'Competition participation');
 
       expect(result.success).toBe(true);
-      expect(result.currentXP).toBe(150);
+      expect(result.currentXP).toBe(1.5 * P);
       expect(result.availableStatPoints).toBe(1);
-      expect(result.xpGained).toBe(100);
+      expect(result.xpGained).toBe(P);
       expect(result.statPointsGained).toBe(1);
     });
 
     it('should handle multiple stat points correctly (200+ XP)', async () => {
-      const horse = await mkHorse('AddXp2', { horseXp: 50, availableStatPoints: 0 });
-      const result = await addXpToHorse(horse.id, 200, 'Major competition win');
+      const horse = await mkHorse('AddXp2', { horseXp: P / 2, availableStatPoints: 0 });
+      const result = await addXpToHorse(horse.id, 2 * P, 'Major competition win');
 
       expect(result.success).toBe(true);
-      expect(result.currentXP).toBe(250);
+      expect(result.currentXP).toBe(2.5 * P);
       expect(result.availableStatPoints).toBe(2);
       expect(result.statPointsGained).toBe(2);
     });
 
     it('should preserve existing stat points when adding XP', async () => {
-      const horse = await mkHorse('AddXp3', { horseXp: 150, availableStatPoints: 1 });
-      const result = await addXpToHorse(horse.id, 100, 'Training session');
+      const horse = await mkHorse('AddXp3', { horseXp: 1.5 * P, availableStatPoints: 1 });
+      const result = await addXpToHorse(horse.id, P, 'Training session');
 
       expect(result.success).toBe(true);
       expect(result.availableStatPoints).toBe(2);

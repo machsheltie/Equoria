@@ -23,6 +23,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
+// allocation. Old contract: 100. The point amounts below are the old scenarios at
+// the new scale; every assertion keeps its meaning.
 
 describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', () => {
   let testHorseId;
@@ -86,26 +89,26 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
   });
 
   describe('Competition Integration', () => {
-    it('should award stat points when horse reaches 100 XP', async () => {
+    it('should award stat points when horse reaches 1,000 Horse Points', async () => {
       // Setup re-seeded via the live addXpToHorse (the dead awardCompetitionXp was
       // removed, Equoria-576c0 B1); same amounts as before, assertions unchanged.
       const { addXpToHorse } = await import('../services/horseXpModelService.mjs');
 
-      // Award enough XP to get stat points (100 XP = 1 stat point)
-      await addXpToHorse(testHorseId, 30, 'Test seed: competition 1');
-      await addXpToHorse(testHorseId, 30, 'Test seed: competition 2');
-      const result3 = await addXpToHorse(testHorseId, 27, 'Test seed: competition 3');
+      // Award enough points for a stat point (1,000 points = 1 stat point)
+      await addXpToHorse(testHorseId, 300, 'Test seed: competition 1');
+      await addXpToHorse(testHorseId, 300, 'Test seed: competition 2');
+      const result3 = await addXpToHorse(testHorseId, 270, 'Test seed: competition 3');
 
-      // Total: 30 + 30 + 27 = 87 XP (not enough yet)
-      expect(result3.currentXP).toBe(87);
+      // Total: 300 + 300 + 270 = 870 points (not enough yet)
+      expect(result3.currentXP).toBe(870);
       expect(result3.statPointsGained).toBe(0);
 
-      // One more competition to push over 100
-      const result4 = await addXpToHorse(testHorseId, 25, 'Test seed: competition 4');
+      // One more competition to push over 1,000
+      const result4 = await addXpToHorse(testHorseId, 250, 'Test seed: competition 4');
 
-      // Total: 87 + 25 = 112 XP (should get 1 stat point)
+      // Total: 870 + 250 = 1120 points (should get 1 stat point)
       expect(result4.success).toBe(true);
-      expect(result4.currentXP).toBe(112);
+      expect(result4.currentXP).toBe(1120);
       expect(result4.statPointsGained).toBe(1);
 
       // Verify in database
@@ -113,7 +116,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
         where: { id: testHorseId },
       });
 
-      expect(updatedHorse.horseXp).toBe(112);
+      expect(updatedHorse.horseXp).toBe(1120);
       expect(updatedHorse.availableStatPoints).toBe(1);
     });
   });
@@ -122,23 +125,23 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
     it('should get horse XP status directly from model', async () => {
       // First, give the horse some XP
       const { addXpToHorse, getHorseXpStatus } = await import('../services/horseXpModelService.mjs');
-      await addXpToHorse(testHorseId, 150, 'Test XP');
+      await addXpToHorse(testHorseId, 1500, 'Test XP');
 
       const result = await getHorseXpStatus(testHorseId);
 
       expect(result.success).toBe(true);
       expect(result.data.horseId).toBe(testHorseId);
       expect(result.data.horseName).toBe('XP Test Horse');
-      expect(result.data.currentXP).toBe(150);
-      expect(result.data.availableStatPoints).toBe(1); // 150 XP = 1 stat point
-      expect(result.data.nextStatPointAt).toBe(200);
-      expect(result.data.xpToNextStatPoint).toBe(50);
+      expect(result.data.currentXP).toBe(1500);
+      expect(result.data.availableStatPoints).toBe(1); // 1500 points = 1 stat point
+      expect(result.data.nextStatPointAt).toBe(2000);
+      expect(result.data.xpToNextStatPoint).toBe(500);
     });
 
     it('should allocate stat points directly via model', async () => {
       // Give horse some stat points
       const { addXpToHorse, allocateStatPoint } = await import('../services/horseXpModelService.mjs');
-      await addXpToHorse(testHorseId, 200, 'Test XP for stat allocation');
+      await addXpToHorse(testHorseId, 2000, 'Test XP for stat allocation');
 
       // Get initial speed stat
       const initialHorse = await prisma.horse.findUnique({
@@ -146,7 +149,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
         select: { speed: true, availableStatPoints: true },
       });
 
-      expect(initialHorse.availableStatPoints).toBe(2); // 200 XP = 2 stat points
+      expect(initialHorse.availableStatPoints).toBe(2); // 2000 points = 2 stat points
 
       // Allocate 1 stat point to speed
       const result = await allocateStatPoint(testHorseId, 'speed');
@@ -208,17 +211,17 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       const { addXpToHorse, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } =
         await import('../services/horseXpModelService.mjs');
 
-      await addXpToHorse(testHorseId, 30, 'Test seed: competition 1'); // 30 XP
-      await addXpToHorse(testHorseId, 27, 'Test seed: competition 2'); // 27 XP
-      await addXpToHorse(testHorseId, 30, 'Test seed: competition 3'); // 30 XP
-      await addXpToHorse(testHorseId, 25, 'Test seed: competition 4'); // 25 XP
-      // Total: 112 XP = 1 stat point
+      await addXpToHorse(testHorseId, 300, 'Test seed: competition 1'); // 300 points
+      await addXpToHorse(testHorseId, 270, 'Test seed: competition 2'); // 270 points
+      await addXpToHorse(testHorseId, 300, 'Test seed: competition 3'); // 300 points
+      await addXpToHorse(testHorseId, 250, 'Test seed: competition 4'); // 250 points
+      // Total: 1120 points = 1 stat point
 
       // Step 3: Check XP status via model
       const xpStatusResult = await getHorseXpStatus(testHorseId);
 
       expect(xpStatusResult.success).toBe(true);
-      expect(xpStatusResult.data.currentXP).toBe(112);
+      expect(xpStatusResult.data.currentXP).toBe(1120);
       expect(xpStatusResult.data.availableStatPoints).toBe(1);
 
       // Step 4: Allocate stat point via model
@@ -234,7 +237,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
         select: { horseXp: true, availableStatPoints: true, speed: true },
       });
 
-      expect(horse.horseXp).toBe(112);
+      expect(horse.horseXp).toBe(1120);
       expect(horse.availableStatPoints).toBe(0);
       expect(horse.speed).toBe(initialSpeed + 1);
 

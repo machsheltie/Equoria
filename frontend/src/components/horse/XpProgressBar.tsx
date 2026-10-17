@@ -39,8 +39,15 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
   // Derived progress (only valid once data has loaded).
   const hasData = Boolean(xpData);
   const level = xpData ? xpData.availableStatPoints + 1 : 0;
-  const xpInCurrentLevel = xpData ? xpData.currentXP - xpData.availableStatPoints * 100 : 0;
-  const progressPercentage = xpData ? Math.round((xpInCurrentLevel / 100) * 100) : 0;
+  // Progress since the last allocation threshold. The threshold comes from the
+  // server (owner ruling C15: 1,000 Horse Points per allocation); the bar holds
+  // no number of its own (Equoria-576c0 B13).
+  const pointsPerStatPoint = xpData?.pointsPerStatPoint ?? 0;
+  const xpInCurrentLevel = xpData ? pointsPerStatPoint - xpData.xpToNextStatPoint : 0;
+  const progressPercentage =
+    xpData && pointsPerStatPoint > 0
+      ? Math.round((xpInCurrentLevel / pointsPerStatPoint) * 100)
+      : 0;
   const xpToNext = xpData ? xpData.xpToNextStatPoint : Number.POSITIVE_INFINITY;
 
   // Meaningful-progress triggers (Spec 11.3.10), sourced from REAL useHorseXP

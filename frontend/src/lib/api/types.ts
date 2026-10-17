@@ -318,14 +318,8 @@ export interface HorseTrainingAnalytics {
   trainingFrequency: Record<string, unknown>;
 }
 
-export interface HorseXP {
-  horseId: number;
-  horseName: string;
-  currentXP: number;
-  availableStatPoints: number;
-  nextStatPointAt: number;
-  xpToNextStatPoint: number;
-}
+/** GET /api/v1/horses/:id/xp — one shape, defined in ./xp (Equoria-576c0 B13). */
+export type { HorseLevelInfo as HorseXP } from './xp';
 
 export interface HorseXPEvent {
   id: number;
