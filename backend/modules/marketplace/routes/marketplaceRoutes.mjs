@@ -11,7 +11,7 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 // rate-limiting allows a 50-parallel-request script to flood the DB even when
 // the atomic-claim correctly rejects all-but-one. mutationRateLimiter is the
 // standard write-mutation limiter (semantically the AC's "standardRateLimiter").
-import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import {
   browseListings,
   listHorse,
@@ -21,6 +21,7 @@ import {
   saleHistory,
   buyStoreHorse,
 } from '../controllers/marketplaceController.mjs';
+import { browseStudListings } from '../controllers/studListingsController.mjs';
 
 const router = express.Router();
 
@@ -29,6 +30,8 @@ router.use(authenticateToken);
 
 // Browse listings
 router.get('/', browseListings);
+// Equoria-q4uem.9 slice 5: stud stallions (public and private) in the horse search.
+router.get('/studs', queryRateLimiter, browseStudListings);
 
 // Seller flow
 // CWE-639: requireOwnership with from:'body' validates horseId from req.body,
