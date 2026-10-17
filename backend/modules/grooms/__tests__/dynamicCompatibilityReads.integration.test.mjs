@@ -32,13 +32,14 @@ globalThis.__prisma = appClientHandle;
 const { default: prisma, PrismaClient } = await import('../../../../packages/database/prismaClient.mjs');
 const { buildDatabaseUrl } = await import('../../../../packages/database/dbPoolConfig.mjs');
 
-const statements = [];
 observedClient = new PrismaClient({
   datasources: { db: { url: buildDatabaseUrl(process.env.DATABASE_URL, process.env) } },
   log: [{ emit: 'event', level: 'query' }],
   errorFormat: 'minimal',
 });
-observedClient.$on('query', event => statements.push(event.query));
+// Waits for each measured call's query events; see the helper (Equoria-hajbq).
+const { createQueryEventRecorder } = await import('../../../__tests__/helpers/queryEventRecorder.mjs');
+const recorder = createQueryEventRecorder(observedClient);
 
 const { loadCompatibilityInputs, rankGrooms, scoreCompatibility } =
   await import('../services/dynamicCompatibilityScoring.mjs');
@@ -46,8 +47,8 @@ const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs')
 const { buildCompatibilityFixtures, cleanupCompatibilityFixtures } =
   await import('./helpers/dynamicCompatibilityGrid.mjs');
 
-const selects = () => statements.filter(sql => /^SELECT\b/i.test(sql));
-const selectsOn = table => selects().filter(sql => sql.includes(`FROM "public"."${table}"`));
+const selects = statements => statements.filter(sql => /^SELECT\b/i.test(sql));
+const selectsOn = (statements, table) => selects(statements).filter(sql => sql.includes(`FROM "public"."${table}"`));
 const CONTEXT = {
   taskType: 'trust_building',
   environmentalFactors: ['quiet', 'familiar', 'structured'],
@@ -64,25 +65,27 @@ afterAll(() => cleanupCompatibilityFixtures(prisma, fx), 60000);
 
 describe('dynamic compatibility reads one input set', () => {
   it('ranks five grooms with one read each of the horse, the grooms and the interactions', async () => {
-    statements.length = 0;
-    const ranked = rankGrooms(await loadCompatibilityInputs(fx.horses.nervous.id, { ownerGrooms: true }), CONTEXT);
+    const { result: ranked, statements } = await recorder.measure(async () =>
+      rankGrooms(await loadCompatibilityInputs(fx.horses.nervous.id, { ownerGrooms: true }), CONTEXT),
+    );
 
     expect(ranked.rankedGrooms).toHaveLength(5);
-    expect(selectsOn('horses')).toHaveLength(1);
-    expect(selectsOn('grooms')).toHaveLength(1);
-    expect(selectsOn('groom_interactions')).toHaveLength(1);
-    expect(selects()).toHaveLength(3);
+    expect(selectsOn(statements, 'horses')).toHaveLength(1);
+    expect(selectsOn(statements, 'grooms')).toHaveLength(1);
+    expect(selectsOn(statements, 'groom_interactions')).toHaveLength(1);
+    expect(selects(statements)).toHaveLength(3);
   }, 60000);
 
   it('scores one pair with three reads', async () => {
-    statements.length = 0;
-    const score = scoreCompatibility(
-      await loadCompatibilityInputs(fx.horses.nervous.id, { groomIds: [fx.grooms.calm.id] }),
-      fx.grooms.calm.id,
-      CONTEXT,
+    const { result: score, statements } = await recorder.measure(async () =>
+      scoreCompatibility(
+        await loadCompatibilityInputs(fx.horses.nervous.id, { groomIds: [fx.grooms.calm.id] }),
+        fx.grooms.calm.id,
+        CONTEXT,
+      ),
     );
 
     expect(typeof score.overallScore).toBe('number');
-    expect(selects()).toHaveLength(3);
+    expect(selects(statements)).toHaveLength(3);
   }, 60000);
 });

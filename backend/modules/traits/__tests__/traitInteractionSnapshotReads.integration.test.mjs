@@ -47,27 +47,27 @@ globalThis.__prisma = appClientHandle;
 const { default: prisma, PrismaClient } = await import('../../../../packages/database/prismaClient.mjs');
 const { buildDatabaseUrl } = await import('../../../../packages/database/dbPoolConfig.mjs');
 
-const statements = [];
 observedClient = new PrismaClient({
   datasources: { db: { url: buildDatabaseUrl(process.env.DATABASE_URL, process.env) } },
   log: [{ emit: 'event', level: 'query' }],
   errorFormat: 'minimal',
 });
-observedClient.$on('query', event => statements.push(event.query));
+// Waits for each measured call's query events; see the helper (Equoria-hajbq).
+const { createQueryEventRecorder } = await import('../../../__tests__/helpers/queryEventRecorder.mjs');
+const recorder = createQueryEventRecorder(observedClient);
 
 const { default: app } = await import('../../../app.mjs');
 const { generateInteractionMatrix } = await import('../services/traitInteractionMatrix.mjs');
 const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs');
 const { createCleanupTracker } = await import('../../../__tests__/helpers/failLoudCleanup.mjs');
 
-function horseStateReads() {
+function horseStateReads(statements) {
   return statements.filter(sql => /^SELECT\b/i.test(sql) && sql.includes('FROM "public"."horses"'));
 }
 
 async function measure(fn) {
-  statements.length = 0;
-  const result = await fn();
-  return { result, reads: horseStateReads() };
+  const { result, statements } = await recorder.measure(fn);
+  return { result, statements, reads: horseStateReads(statements) };
 }
 
 describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)', () => {
@@ -115,7 +115,7 @@ describe('trait interaction analysis reads one horse snapshot (Equoria-q4uem.5)'
     request(app).get(path).set('Origin', 'http://localhost:3000').set('Authorization', `Bearer ${authToken}`);
 
   it('the counter observes the app: a request emits SQL through the observed client', async () => {
-    const { result } = await measure(() => get(`/api/v1/horses/${horse.id}/trait-stability`));
+    const { result, statements } = await measure(() => get(`/api/v1/horses/${horse.id}/trait-stability`));
     expect(result.status).toBe(200);
     expect(statements.some(sql => sql.includes('FROM "public"."horses"'))).toBe(true);
   });

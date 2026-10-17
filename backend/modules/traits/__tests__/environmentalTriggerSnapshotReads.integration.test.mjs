@@ -34,19 +34,21 @@ globalThis.__prisma = appClientHandle;
 const { default: prisma, PrismaClient } = await import('../../../../packages/database/prismaClient.mjs');
 const { buildDatabaseUrl } = await import('../../../../packages/database/dbPoolConfig.mjs');
 
-const statements = [];
 observedClient = new PrismaClient({
   datasources: { db: { url: buildDatabaseUrl(process.env.DATABASE_URL, process.env) } },
   log: [{ emit: 'event', level: 'query' }],
   errorFormat: 'minimal',
 });
-observedClient.$on('query', event => statements.push(event.query));
+// Waits for each measured call's query events; see the helper (Equoria-hajbq).
+const { createQueryEventRecorder } = await import('../../../__tests__/helpers/queryEventRecorder.mjs');
+const recorder = createQueryEventRecorder(observedClient);
 
 const { generateEnvironmentalReport } = await import('../services/environmentalTriggerSystem.mjs');
 const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs');
 const { buildTriggerFixtures, cleanupTriggerFixtures } = await import('./helpers/environmentalTriggerGrid.mjs');
 
-const selectsOn = table => statements.filter(sql => /^SELECT\b/i.test(sql) && sql.includes(`FROM "public"."${table}"`));
+const selectsOn = (statements, table) =>
+  statements.filter(sql => /^SELECT\b/i.test(sql) && sql.includes(`FROM "public"."${table}"`));
 
 let fx;
 
@@ -60,14 +62,13 @@ afterAll(() => cleanupTriggerFixtures(prisma, fx), 60000);
 describe('generateEnvironmentalReport reads one snapshot', () => {
   it('reads the horse once and its interactions once', async () => {
     const [, horseId] = fx.horses.find(([key]) => key === 'curious');
-    statements.length = 0;
-    const report = await generateEnvironmentalReport(horseId);
+    const { result: report, statements } = await recorder.measure(() => generateEnvironmentalReport(horseId));
 
     expect(report.traitExpressionProbabilities).toHaveLength(7);
     expect(report.cumulativeExposure.exposureTimeline.length).toBeGreaterThan(0);
-    expect(selectsOn('horses')).toHaveLength(1);
-    expect(selectsOn('groom_interactions')).toHaveLength(1);
-    expect(selectsOn('grooms')).toHaveLength(1);
+    expect(selectsOn(statements, 'horses')).toHaveLength(1);
+    expect(selectsOn(statements, 'groom_interactions')).toHaveLength(1);
+    expect(selectsOn(statements, 'grooms')).toHaveLength(1);
     expect(statements.filter(sql => /^SELECT\b/i.test(sql))).toHaveLength(3);
   }, 60000);
 });
