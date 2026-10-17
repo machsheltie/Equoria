@@ -126,18 +126,51 @@ function outputNamesPath(output, relPath) {
   return base.length > 0 && normOut.includes(base);
 }
 
+// The ancestor directories of `abs` that do not exist yet, deepest first:
+// exactly the directories a plant at `abs` will create.
+function missingAncestorDirs(abs) {
+  const created = [];
+  let probe = path.dirname(abs);
+  while (probe.startsWith(REPO_ROOT) && probe !== REPO_ROOT && !fs.existsSync(probe)) {
+    created.push(probe);
+    probe = path.dirname(probe);
+  }
+  return created;
+}
+
+// Remove a plant and every directory it created, deepest first (Equoria-ctmat:
+// an empty backend/modules/__ml7jj_inscope_70pb9__/ left behind read as a
+// module without a barrel to the module-graph gate). Fails LOUD: only a
+// directory that is already gone is tolerated; one that cannot be removed
+// (for example because something else was written into it) throws.
+function removePlant(abs, createdDirs) {
+  fs.rmSync(abs, { force: true });
+  for (const dir of createdDirs) {
+    try {
+      fs.rmdirSync(dir);
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw new Error(`plant cleanup could not remove ${dir}: ${error.message}`, {
+          cause: error,
+        });
+      }
+    }
+  }
+}
+
 // Plant a file, run a check, assert it FIRES *on our plant*, then remove the
 // file and assert the check no longer reports *our plant* — robust to
 // concurrent foreign fixtures in the shared scan tree (Equoria-d2wbw).
 function expectFiresThenClean(relPath, contents, scriptBasename) {
   const abs = path.join(REPO_ROOT, relPath);
+  const createdDirs = missingAncestorDirs(abs);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, contents, 'utf-8');
   let fired;
   try {
     fired = runCheck(scriptBasename);
   } finally {
-    fs.rmSync(abs, { force: true });
+    removePlant(abs, createdDirs);
   }
   // gate fired AND it fired specifically because of OUR planted violation
   expect(fired.code).not.toBe(0);
@@ -160,27 +193,14 @@ function expectIgnoredOutOfScope(relPath, contents, scriptBasename) {
   const abs = path.join(REPO_ROOT, relPath);
   // Record which ancestor directories did not exist so we can remove the ones
   // we create, leaving the real tree untouched.
-  const createdDirs = [];
-  let probe = path.dirname(abs);
-  while (probe.startsWith(REPO_ROOT) && probe !== REPO_ROOT && !fs.existsSync(probe)) {
-    createdDirs.push(probe);
-    probe = path.dirname(probe);
-  }
+  const createdDirs = missingAncestorDirs(abs);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, contents, 'utf-8');
   let result;
   try {
     result = runCheck(scriptBasename);
   } finally {
-    fs.rmSync(abs, { force: true });
-    // Remove directories we created (deepest first), only if now empty.
-    for (const d of createdDirs) {
-      try {
-        fs.rmdirSync(d);
-      } catch {
-        // not empty / already gone — leave it
-      }
-    }
+    removePlant(abs, createdDirs);
   }
   // The out-of-scope file must not appear in the check's violation output.
   expect(outputNamesPath(result.output, relPath)).toBe(false);
@@ -364,6 +384,10 @@ describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
       CLEANUP_ROUTE,
       'check-no-cleanup-routes.mjs',
     );
+    // Equoria-ctmat: the plant's directories go with it — an empty
+    // backend/modules/__ml7jj_inscope_70pb9__/ left behind reads as a module
+    // without a barrel to the module-graph gate.
+    expect(fs.existsSync(path.join(REPO_ROOT, 'backend/modules/__ml7jj_inscope_70pb9__'))).toBe(false);
   });
   test('cleanup-routes: route inside an __tests__ dir is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
