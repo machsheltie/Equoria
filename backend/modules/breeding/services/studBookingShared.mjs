@@ -19,13 +19,20 @@ export const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a 
 /**
  * Same body for a stallion that does not exist and one that is not at stud in
  * the mode asked for, so the endpoints cannot be used to probe which horse ids
- * exist (design review M-1).
+ * exist (design review M-1). Every 404 here carries the AppError body shape
+ * ({ success, message, status: 'fail' }) that requireOwnership and the other
+ * AppError 404s send, so the shape gives nothing away either.
  */
 export const STALLION_UNAVAILABLE = Object.freeze({
   success: false,
   message: 'Stallion not available at stud',
+  status: 'fail',
 });
-export const MARE_NOT_FOUND = Object.freeze({ success: false, message: 'Mare not found' });
+export const MARE_NOT_FOUND = Object.freeze({
+  success: false,
+  message: 'Mare not found',
+  status: 'fail',
+});
 
 /** A refusal with its exact response body; thrown out of a transaction so it rolls back. */
 export class BookingRefusal extends Error {
@@ -109,7 +116,11 @@ export async function resolveLostClaim(
 
 // ── Private-request helpers (shared by the request and queue controllers) ──
 
-export const REQUEST_NOT_FOUND = Object.freeze({ success: false, message: 'Request not found' });
+export const REQUEST_NOT_FOUND = Object.freeze({
+  success: false,
+  message: 'Request not found',
+  status: 'fail',
+});
 export const REQUEST_NOT_PENDING = Object.freeze({
   success: false,
   code: 'REQUEST_NOT_PENDING',

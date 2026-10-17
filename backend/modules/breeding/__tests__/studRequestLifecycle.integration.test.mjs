@@ -89,11 +89,12 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     await disconnectLockClient();
   });
 
-  it("listing mode: 'private' lists At Private Stud, 'public' (or no mode) At Public Stud", async () => {
+  it("listing mode: 'private' / 'public' set the mode; a FIRST listing without mode is Public", async () => {
     const publicListing = await listAtStud(studOwner.token, stud.id, { studFee: FEE, mode: 'public' });
     expect(publicListing.body.data.studStatus).toBe('At Public Stud');
-    const defaultListing = await listAtStud(studOwner.token, stud.id, { studFee: FEE });
-    expect(defaultListing.body.data.studStatus).toBe('At Public Stud');
+    expect((await unlistAtStud(studOwner.token, stud.id)).status).toBe(200);
+    const firstListing = await listAtStud(studOwner.token, stud.id, { studFee: FEE });
+    expect(firstListing.body.data.studStatus).toBe('At Public Stud');
     const bad = await listAtStud(studOwner.token, stud.id, { studFee: FEE, mode: 'secret' });
     expect(bad.status).toBe(400);
   });
@@ -126,6 +127,20 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
 
     expect(res.status).toBe(200);
     expect(await recordOf(requestId)).toMatchObject({ status: 'PENDING', fee: FEE });
+  });
+
+  it('review fix: a fee edit that omits mode keeps a Private stallion Private and its requests PENDING', async () => {
+    // Today's StudSaleTab sends { studFee } only; a fee edit must not flip the mode.
+    const requestId = await pendingRequest();
+
+    const res = await listAtStud(studOwner.token, stud.id, { studFee: FEE * 2 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ studStatus: 'At Private Stud', studFee: FEE * 2 });
+    expect(await recordOf(requestId)).toMatchObject({ status: 'PENDING', fee: FEE });
+    expect(
+      await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'stud_request_declined' } }),
+    ).toBe(0);
   });
 
   it('a sale of the stallion resets its listing and declines its pending requests (STALLION_SOLD)', async () => {

@@ -60,7 +60,8 @@ function sendMappedError(res, error) {
 /**
  * List a stallion at stud (Equoria-q072), or change its fee or mode.
  * POST /api/v1/horses/:id/stud-listing
- * Body: { studFee: number (non-negative integer), mode?: 'public' | 'private' (default 'public') }
+ * Body: { studFee: number (non-negative integer), mode?: 'public' | 'private' }
+ * (mode omitted: the current mode is kept; a first listing is Public)
  *
  * Owner ruling S-Q2 (2026-10-16): leaving Private Stud (here: switching to
  * Public) declines its pending requests in the same transaction; a fee change
@@ -90,9 +91,12 @@ export async function listHorseAtStud(req, res) {
       });
     }
 
-    const mode = req.body?.mode ?? 'public';
-    const studStatus = STUD_STATUS_BY_MODE[mode];
-    if (!studStatus) {
+    // An omitted mode KEEPS the stallion's current mode (a fee edit must not
+    // flip a Private stallion to Public and decline its requests); only a
+    // horse with no listing yet defaults to Public. Resolved in the tx below.
+    const mode = req.body?.mode;
+    const requestedStatus = mode === undefined ? null : STUD_STATUS_BY_MODE[mode];
+    if (mode !== undefined && !requestedStatus) {
       return res
         .status(400)
         .json({ success: false, message: "mode must be 'public' or 'private'" });
@@ -103,6 +107,15 @@ export async function listHorseAtStud(req, res) {
     const { updated, notifications } = await withRetryableTxMapping(
       prisma.$transaction(
         async tx => {
+          const current = await tx.horse.findUnique({
+            where: { id: horseId },
+            select: { studStatus: true },
+          });
+          const studStatus =
+            requestedStatus ??
+            (Object.values(STUD_STATUS_BY_MODE).includes(current?.studStatus)
+              ? current.studStatus
+              : STUD_STATUS_BY_MODE.public);
           // Guarded claim: the caller must STILL own this stallion at write time.
           const claim = await tx.horse.updateMany({
             where: { id: horseId, userId: ownerId, sex: 'Stallion' },

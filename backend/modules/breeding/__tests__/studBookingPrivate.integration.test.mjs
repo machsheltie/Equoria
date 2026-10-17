@@ -35,7 +35,9 @@ import {
 
 const PREFIX = 'TestFixture-q4uem9-privstud';
 const FEE = 700;
-const UNAVAILABLE_404 = { success: false, message: 'Stallion not available at stud' };
+// Every 404 these endpoints send carries the AppError body shape (status: 'fail'),
+// identical across causes so ids cannot be probed.
+const UNAVAILABLE_404 = { success: false, message: 'Stallion not available at stud', status: 'fail' };
 
 describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem.9)', () => {
   const cleanup = createCleanupTracker();
@@ -194,7 +196,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
           send,
         );
         expect(res.status).toBe(404);
-        expect(res.body).toEqual({ success: false, message: 'Mare not found' });
+        expect(res.body).toEqual({ success: false, message: 'Mare not found', status: 'fail' });
         expect(await prisma.breedingRecord.count({ where: { damId: mare.id } })).toBe(0);
       });
 
@@ -308,6 +310,32 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       expect(await recordOf(requestId)).toMatchObject({ status: 'COMPLETED' });
     });
 
+    it('design test 19, approve racing a reject: the reject lands while the approval waits on the mare; only the reject takes effect', async () => {
+      const requestId = await request();
+      let rejected;
+
+      const approved = await holdRowLockUntil(
+        tx => tx.horse.update({ where: { id: mare.id }, data: { name: mare.name } }),
+        () => actOnRequest(studOwner.token, requestId, 'approve'),
+        {
+          whileBlocked: async () => {
+            rejected = await actOnRequest(studOwner.token, requestId, 'reject');
+          },
+        },
+      );
+
+      expect(rejected.status).toBe(200);
+      expect(approved.status).toBe(409);
+      expect(approved.body.code).toBe('REQUEST_NOT_PENDING');
+      expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'REJECTED' });
+      expect(await moneyOf(mareOwner.user.id)).toBe(5000);
+      expect(await moneyOf(studOwner.user.id)).toBe(100);
+      expect(await prisma.userTransaction.count({ where: { userId: { in: userIds } } })).toBe(0);
+      expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
+      expect(await notesOf(mareOwner.user.id, 'stud_request_approved')).toHaveLength(0);
+      expect(await notesOf(mareOwner.user.id, 'stud_request_declined')).toHaveLength(1);
+    });
+
     it('approve racing a cancel: the cancel lands while the approval waits on the mare; the approval rolls back', async () => {
       const requestId = await request();
       let cancelled;
@@ -372,7 +400,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
 
       for (const r of results) {
         expect(r.status).toBe(404);
-        expect(r.body).toEqual({ success: false, message: 'Request not found' });
+        expect(r.body).toEqual({ success: false, message: 'Request not found', status: 'fail' });
       }
       expect(await recordOf(requestId)).toMatchObject({ status: 'PENDING' });
     });
