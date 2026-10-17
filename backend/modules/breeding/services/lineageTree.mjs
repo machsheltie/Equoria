@@ -14,6 +14,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
+import { withoutUnrevealedTraits } from './predictionHorseView.mjs';
 
 /**
  * Generate hierarchical lineage tree structure
@@ -27,25 +28,29 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
     `[lineageTree.generateLineageTree] Generating tree for stallion ${stallionId} and mare ${mareId}, ${maxGenerations} generations`,
   );
 
-  // Get the parent horses
-  const [stallion, mare] = await Promise.all([
-    prisma.horse.findUnique({
-      where: { id: stallionId },
-      include: {
-        sire: true,
-        dam: true,
-        competitionResults: true,
-      },
-    }),
-    prisma.horse.findUnique({
-      where: { id: mareId },
-      include: {
-        sire: true,
-        dam: true,
-        competitionResults: true,
-      },
-    }),
-  ]);
+  // Get the parent horses. Owner ruling S-Q9 (2026-10-16): every row the tree
+  // is built from has its unrevealed hidden traits removed on load
+  // (Equoria-q4uem.9 slice 4) — roots, ancestors and the generation lists.
+  const [stallion, mare] = (
+    await Promise.all([
+      prisma.horse.findUnique({
+        where: { id: stallionId },
+        include: {
+          sire: true,
+          dam: true,
+          competitionResults: true,
+        },
+      }),
+      prisma.horse.findUnique({
+        where: { id: mareId },
+        include: {
+          sire: true,
+          dam: true,
+          competitionResults: true,
+        },
+      }),
+    ])
+  ).map(withoutUnrevealedTraits);
 
   if (!stallion || !mare) {
     logger.warn('[lineageTree.generateLineageTree] Missing parent horses');
@@ -74,7 +79,7 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
           include: { sire: true, dam: true, competitionResults: true },
         })
       : [];
-  const ancestorById = new Map(ancestorRows.map(h => [h.id, h]));
+  const ancestorById = new Map(ancestorRows.map(h => [h.id, withoutUnrevealedTraits(h)]));
   // Seed the map with the two roots so buildHorseNode can find them by id.
   ancestorById.set(stallion.id, stallion);
   ancestorById.set(mare.id, mare);
@@ -249,7 +254,7 @@ export async function organizeByGenerations(stallionId, mareId, maxGenerations) 
             include: { competitionResults: true },
           })
         : [];
-    const byId = new Map(fetched.map(h => [h.id, h]));
+    const byId = new Map(fetched.map(h => [h.id, withoutUnrevealedTraits(h)]));
 
     const horses = [];
     const nextGeneration = [];

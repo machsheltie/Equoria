@@ -270,7 +270,8 @@ export function registerCleanup(cleanup, { userIds, horseIds }) {
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
 }
 
-async function sendJson(method, path, token, body) {
+/** Any authenticated JSON request through the real app (real CSRF). Settled. */
+export async function sendJson(method, path, token, body) {
   const csrf = await csrfFor(token);
   const agent = request(app);
   const req = agent[method](path)

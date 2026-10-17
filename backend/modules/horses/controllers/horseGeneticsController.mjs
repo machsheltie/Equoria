@@ -331,7 +331,14 @@ export async function getBreedingColorPrediction(req, res) {
     const [sire, dam] = await Promise.all([
       prisma.horse.findUnique({
         where: { id: sireId },
-        select: { id: true, name: true, colorGenotype: true, userId: true, breedId: true },
+        select: {
+          id: true,
+          name: true,
+          colorGenotype: true,
+          userId: true,
+          breedId: true,
+          studStatus: true,
+        },
       }),
       prisma.horse.findUnique({
         where: { id: damId },
@@ -339,8 +346,15 @@ export async function getBreedingColorPrediction(req, res) {
       }),
     ]);
 
-    // AC5: Ownership enforcement — 404 for both not-found and not-owned
-    if (!sire || sire.userId !== req.user.id) {
+    // AC5: Ownership enforcement — 404 for both not-found and not-owned.
+    // Equoria-q4uem.9 slice 4 (owner ruling S9, 2026-10-15): the lethal-white
+    // and coat odds are also allowed for another player's stallion at public
+    // or private stud. The dam must always be the caller's.
+    const sireAvailable =
+      sire &&
+      (sire.userId === req.user.id ||
+        ['At Public Stud', 'At Private Stud'].includes(sire.studStatus));
+    if (!sireAvailable) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found',

@@ -52,18 +52,31 @@ export async function recordLineageAnalysisPerformed(horseId, metadata = {}) {
  * breeding pair (Equoria-245bt). Best-effort + logged: a signal-write failure
  * must never fail the caller's primary lineage-analysis response.
  *
+ * Equoria-q4uem.9 slice 4: a mare owner may analyse her mare with ANOTHER
+ * player's stud stallion; that analysis must not write the stallion's signal
+ * (it feeds that owner's perk reveal), so the caller passes
+ * `recordStallion: false` when the stallion is not theirs.
+ *
  * @param {number} stallionId
  * @param {number} mareId
  * @param {number} generations - pedigree depth analyzed
+ * @param {{ recordStallion?: boolean }} [options]
  */
-export async function recordLineageAnalysisForPair(stallionId, mareId, generations) {
+export async function recordLineageAnalysisForPair(
+  stallionId,
+  mareId,
+  generations,
+  { recordStallion = true } = {},
+) {
   try {
     await Promise.all([
-      recordLineageAnalysisPerformed(stallionId, {
-        pairedWith: mareId,
-        generations,
-        role: 'stallion',
-      }),
+      recordStallion
+        ? recordLineageAnalysisPerformed(stallionId, {
+            pairedWith: mareId,
+            generations,
+            role: 'stallion',
+          })
+        : null,
       recordLineageAnalysisPerformed(mareId, { pairedWith: stallionId, generations, role: 'mare' }),
     ]);
   } catch (err) {

@@ -14,7 +14,9 @@ import AppError from '../../../errors/AppError.mjs';
 import {
   validateBatchHorseOwnership,
   getUserHorseIds,
+  resolveBreedingPairAccess,
 } from '../services/breedingOwnershipQueries.mjs';
+import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 // Equoria-245bt: lineage-analysis signal persistence (via the traits barrel — public-API boundary).
 import { recordLineageAnalysisForPair } from '../../traits/index.mjs';
 
@@ -72,6 +74,10 @@ const validateRequest = (req, res, next) => {
  */
 const validateBatchOwnership = (horseIds, userId) => validateBatchHorseOwnership(horseIds, userId);
 
+/** The pair 404: identical for a missing horse and one the caller may not analyse (CWE-639). */
+const pairNotFound = res =>
+  res.status(404).json({ success: false, error: 'One or both horses not found' });
+
 // ===== ENHANCED GENETIC PROBABILITY ROUTES =====
 
 /**
@@ -82,6 +88,7 @@ const validateBatchOwnership = (horseIds, userId) => validateBatchHorseOwnership
  */
 router.post(
   '/breeding/genetic-probability',
+  queryRateLimiter,
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
@@ -99,16 +106,13 @@ router.post(
         `[advancedBreedingGeneticsRoutes.genetic-probability] User ${userId} calculating for stallion ${stallionId} and mare ${mareId}`,
       );
 
-      // Validate ownership of both horses atomically
-      const horses = await validateBatchOwnership([stallionId, mareId], userId);
-      if (!horses) {
-        return res.status(404).json({
-          success: false,
-          error: 'One or both horses not found',
-        });
+      // q4uem.9: mare = caller's; stallion = caller's or at stud (S9); hidden traits removed (S-Q9)
+      const access = await resolveBreedingPairAccess(stallionId, mareId, userId);
+      if (!access) {
+        return pairNotFound(res);
       }
 
-      const [stallion, mare] = horses;
+      const { stallion, mare } = access;
 
       const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
 
@@ -176,6 +180,7 @@ router.post(
  */
 router.get(
   '/breeding/lineage-analysis/:stallionId/:mareId',
+  queryRateLimiter,
   authenticateToken,
   [
     param('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
@@ -196,16 +201,13 @@ router.get(
         `[advancedBreedingGeneticsRoutes.lineage-analysis] User ${userId} analyzing lineage for stallion ${stallionId} and mare ${mareId}`,
       );
 
-      // Validate ownership of both horses atomically
-      const horses = await validateBatchOwnership([stallionId, mareId], userId);
-      if (!horses) {
-        return res.status(404).json({
-          success: false,
-          error: 'One or both horses not found',
-        });
+      // q4uem.9: mare = caller's; stallion = caller's or at stud (S9); hidden traits removed (S-Q9)
+      const access = await resolveBreedingPairAccess(stallionId, mareId, userId);
+      if (!access) {
+        return pairNotFound(res);
       }
 
-      const [stallion, mare] = horses;
+      const { stallion, mare } = access;
 
       const [lineageTree, diversityMetrics, performanceAnalysis, visualizationData] =
         await Promise.all([
@@ -215,10 +217,12 @@ router.get(
           createVisualizationData(parseInt(stallionId), parseInt(mareId), generations),
         ]);
 
-      // Equoria-245bt: the DELIBERATE action that sets the intentional per-horse
-      // lineage-analysis signal for BOTH horses — best-effort, never fails the
-      // analysis response (see recordLineageAnalysisForPair).
-      await recordLineageAnalysisForPair(parseInt(stallionId), parseInt(mareId), generations);
+      // Equoria-245bt: the intentional per-horse lineage-analysis signal, best-effort (never fails
+      // the response) and only for the caller's OWN horses — a stranger's analysis never writes
+      // another player's stallion's perk-reveal state (q4uem.9 slice 4).
+      await recordLineageAnalysisForPair(parseInt(stallionId), parseInt(mareId), generations, {
+        recordStallion: access.stallionOwned,
+      });
 
       res.json({
         success: true,
@@ -375,6 +379,7 @@ router.post(
  */
 router.post(
   '/genetics/inbreeding-analysis',
+  queryRateLimiter,
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
@@ -390,13 +395,10 @@ router.post(
         `[advancedBreedingGeneticsRoutes.inbreeding-analysis] User ${userId} analyzing inbreeding for stallion ${stallionId} and mare ${mareId}`,
       );
 
-      // Validate ownership of both horses atomically
-      const horses = await validateBatchOwnership([stallionId, mareId], userId);
-      if (!horses) {
-        return res.status(404).json({
-          success: false,
-          error: 'One or both horses not found',
-        });
+      // q4uem.9: mare = caller's; stallion = caller's or at stud (S9); hidden traits removed (S-Q9)
+      const access = await resolveBreedingPairAccess(stallionId, mareId, userId);
+      if (!access) {
+        return pairNotFound(res);
       }
 
       const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(
@@ -527,6 +529,7 @@ router.post(
  */
 router.post(
   '/genetics/breeding-compatibility',
+  queryRateLimiter,
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
@@ -542,13 +545,10 @@ router.post(
         `[advancedBreedingGeneticsRoutes.breeding-compatibility] User ${userId} assessing compatibility for stallion ${stallionId} and mare ${mareId}`,
       );
 
-      // Validate ownership of both horses atomically
-      const horses = await validateBatchOwnership([stallionId, mareId], userId);
-      if (!horses) {
-        return res.status(404).json({
-          success: false,
-          error: 'One or both horses not found',
-        });
+      // q4uem.9: mare = caller's; stallion = caller's or at stud (S9); hidden traits removed (S-Q9)
+      const access = await resolveBreedingPairAccess(stallionId, mareId, userId);
+      if (!access) {
+        return pairNotFound(res);
       }
 
       // Import the compatibility assessment function

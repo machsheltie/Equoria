@@ -1,0 +1,254 @@
+/**
+ * Breeding predictions for a mare and another player's stud stallion, with
+ * unrevealed hidden traits withheld (Equoria-q4uem.9 slice 4; Equoria-3867b).
+ *
+ * Owner rulings (Stacey): 2026-10-15 S9 — predictions (genetic odds,
+ * lineage, lethal-white) are allowed for public AND private stud stallions;
+ * 2026-10-16 S-Q6 — inbreeding and compatibility analyses too; S-Q9 — a
+ * revealed trait is public forever, to everyone, on stallions and ancestors;
+ * an UNREVEALED hidden trait stays hidden (for every horse, the caller's own
+ * included).
+ *
+ * Leak-proof method, per endpoint the breeding page uses:
+ *   1. No unrevealed hidden trait NAME appears anywhere in the response JSON
+ *      (stallion, mare, a third player's grandsire).
+ *   2. Nothing can be INFERRED from them: the response is identical, value
+ *      for value, to the response after every hidden list is emptied.
+ *
+ * Real DB, real HTTP, real CSRF, scoped fail-loud fixtures.
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { sharedBreed, makePlayer, makeHorse, sendJson } from './helpers/studBookingFixtures.mjs';
+
+const PREFIX = 'TestFixture-q4uem9-predict';
+const SECRETS = ['q4uem9StudSecret', 'q4uem9MareSecret', 'q4uem9GrandsireSecret'];
+
+const mods = (revealed, secret) => ({ positive: [revealed], negative: [], hidden: [secret] });
+
+/** Every endpoint the breeding page calls for a pair (frontend/src/lib/api/breedingPrediction.ts). */
+const ENDPOINTS = {
+  geneticProbability: (token, stallionId, mareId) =>
+    sendJson('post', '/api/v1/breeding/genetic-probability', token, {
+      stallionId,
+      mareId,
+      includeLineage: true,
+      generations: 3,
+    }),
+  lineage: (token, stallionId, mareId) =>
+    sendJson('get', `/api/v1/breeding/lineage-analysis/${stallionId}/${mareId}?generations=3`, token),
+  inbreeding: (token, stallionId, mareId) =>
+    sendJson('post', '/api/v1/genetics/inbreeding-analysis', token, { stallionId, mareId }),
+  compatibility: (token, stallionId, mareId) =>
+    sendJson('post', '/api/v1/genetics/breeding-compatibility', token, { stallionId, mareId }),
+  colorPrediction: (token, stallionId, mareId) =>
+    sendJson('post', '/api/v1/horses/breeding/color-prediction', token, {
+      sireId: stallionId,
+      damId: mareId,
+    }),
+};
+
+/** Drop values that legitimately change between two identical calls. */
+function stable(body) {
+  return JSON.parse(
+    JSON.stringify(body, (key, value) =>
+      ['timestamp', 'generatedAt', 'analyzedAt', 'calculatedAt', 'createdAt', 'updatedAt'].includes(key)
+        ? undefined
+        : value,
+    ),
+  );
+}
+
+describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-q4uem.9 slice 4)', () => {
+  const cleanup = createCleanupTracker();
+  let breed;
+  let mareOwner;
+  let studOwner;
+  let thirdPlayer;
+  let grandsire;
+  let stud;
+  let mare;
+  const userIds = [];
+  const horseIds = [];
+
+  async function player(role) {
+    const p = await makePlayer(PREFIX, role, 1000);
+    userIds.push(p.user.id);
+    return p;
+  }
+
+  async function horse(spec) {
+    const h = await makeHorse(PREFIX, { breedId: breed.id, ...spec });
+    horseIds.push(h.id);
+    return h;
+  }
+
+  async function clearAllHidden() {
+    for (const h of [stud, mare, grandsire]) {
+      const row = await prisma.horse.findUnique({ where: { id: h.id }, select: { epigeneticModifiers: true } });
+      await prisma.horse.update({
+        where: { id: h.id },
+        data: { epigeneticModifiers: { ...row.epigeneticModifiers, hidden: [] } },
+      });
+    }
+  }
+
+  beforeEach(async () => {
+    userIds.length = 0;
+    horseIds.length = 0;
+    breed = await sharedBreed();
+    mareOwner = await player('mareOwner');
+    studOwner = await player('studOwner');
+    thirdPlayer = await player('thirdPlayer');
+    grandsire = await horse({
+      ownerId: thirdPlayer.user.id,
+      sex: 'Stallion',
+      epigeneticModifiers: mods('q4uem9GrandsireRevealed', 'q4uem9GrandsireSecret'),
+    });
+    stud = await horse({
+      ownerId: studOwner.user.id,
+      sex: 'Stallion',
+      sireId: grandsire.id,
+      studStatus: 'At Public Stud',
+      studFee: 10,
+      epigeneticModifiers: mods('q4uem9StudRevealed', 'q4uem9StudSecret'),
+    });
+    mare = await horse({
+      ownerId: mareOwner.user.id,
+      sex: 'Mare',
+      epigeneticModifiers: mods('q4uem9MareRevealed', 'q4uem9MareSecret'),
+    });
+    const ids = horseIds;
+    const users = userIds;
+    // Lineage FKs are Restrict: break them before the horses go.
+    cleanup.add(
+      () => prisma.horse.updateMany({ where: { id: { in: ids } }, data: { sireId: null, damId: null } }),
+      'lineage',
+    );
+    cleanup.add(
+      () => prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: { in: ids } } }),
+      'ultraRareTraitEvents',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: users } } }), 'users');
+  });
+
+  afterEach(async () => {
+    await cleanup.run();
+  });
+
+  describe('access', () => {
+    it.each(Object.keys(ENDPOINTS))(
+      '%s: the mare owner gets 200 for a PUBLIC stud stallion she does not own',
+      async name => {
+        const res = await ENDPOINTS[name](mareOwner.token, stud.id, mare.id);
+        expect(res.status).toBe(200);
+      },
+    );
+
+    it.each(Object.keys(ENDPOINTS))('%s: S9 also allows a PRIVATE stud stallion', async name => {
+      await prisma.horse.update({ where: { id: stud.id }, data: { studStatus: 'At Private Stud' } });
+      const res = await ENDPOINTS[name](mareOwner.token, stud.id, mare.id);
+      expect(res.status).toBe(200);
+    });
+
+    it.each(Object.keys(ENDPOINTS))(
+      "%s: an unlisted stallion of another player, or someone else's mare, stays 404",
+      async name => {
+        await prisma.horse.update({ where: { id: stud.id }, data: { studStatus: 'Not at Stud' } });
+        const unlisted = await ENDPOINTS[name](mareOwner.token, stud.id, mare.id);
+        await prisma.horse.update({ where: { id: stud.id }, data: { studStatus: 'At Public Stud' } });
+        const foreignMare = await ENDPOINTS[name](studOwner.token, stud.id, mare.id);
+        expect(unlisted.status).toBe(404);
+        expect(foreignMare.status).toBe(404);
+      },
+    );
+  });
+
+  it('the other genetics endpoints that read whole horse rows stay owner-only: a stud stallion the caller does not own gets 404', async () => {
+    const results = await Promise.all([
+      sendJson('post', '/api/v1/breeding/breeding-recommendations', mareOwner.token, {
+        stallionId: stud.id,
+        mareId: mare.id,
+      }),
+      sendJson('post', '/api/v1/genetics/population-analysis', mareOwner.token, {
+        horseIds: [stud.id, mare.id],
+      }),
+      sendJson('post', '/api/v1/genetics/optimal-breeding', mareOwner.token, {
+        horseIds: [stud.id, mare.id],
+      }),
+    ]);
+    for (const res of results) {
+      expect(res.status).toBe(404);
+      for (const secret of SECRETS) {
+        expect(JSON.stringify(res.body)).not.toContain(secret);
+      }
+    }
+  });
+
+  describe('S-Q9: unrevealed hidden traits never reach the caller, by name or by inference', () => {
+    it.each(Object.keys(ENDPOINTS))(
+      '%s (stud pair): no unrevealed trait name in the response, and the response equals the one with every hidden list emptied',
+      async name => {
+        const withHidden = await ENDPOINTS[name](mareOwner.token, stud.id, mare.id);
+        expect(withHidden.status).toBe(200);
+        const text = JSON.stringify(withHidden.body);
+        for (const secret of SECRETS) {
+          expect(text).not.toContain(secret);
+        }
+
+        await clearAllHidden();
+        const withoutHidden = await ENDPOINTS[name](mareOwner.token, stud.id, mare.id);
+
+        expect(stable(withHidden.body)).toEqual(stable(withoutHidden.body));
+      },
+    );
+
+    it.each(Object.keys(ENDPOINTS))(
+      "%s (own pair): the caller's own unrevealed traits are withheld too",
+      async name => {
+        const ownStallion = await horse({
+          ownerId: mareOwner.user.id,
+          sex: 'Stallion',
+          sireId: grandsire.id,
+          epigeneticModifiers: mods('q4uem9StudRevealed', 'q4uem9StudSecret'),
+        });
+
+        const withHidden = await ENDPOINTS[name](mareOwner.token, ownStallion.id, mare.id);
+        expect(withHidden.status).toBe(200);
+        for (const secret of SECRETS) {
+          expect(JSON.stringify(withHidden.body)).not.toContain(secret);
+        }
+
+        await prisma.horse.update({
+          where: { id: ownStallion.id },
+          data: { epigeneticModifiers: { positive: ['q4uem9StudRevealed'], negative: [], hidden: [] } },
+        });
+        await clearAllHidden();
+        const withoutHidden = await ENDPOINTS[name](mareOwner.token, ownStallion.id, mare.id);
+
+        expect(stable(withHidden.body)).toEqual(stable(withoutHidden.body));
+      },
+    );
+
+    it("revealed traits stay visible to everyone (S-Q9): the compatibility forecast names both parents' revealed traits", async () => {
+      const res = await ENDPOINTS.compatibility(mareOwner.token, stud.id, mare.id);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.expectedTraits.likelyTraits).toEqual(
+        expect.arrayContaining(['q4uem9StudRevealed', 'q4uem9MareRevealed']),
+      );
+    });
+  });
+
+  it("lineage analysis records the perk-reveal signal only for the caller's own horse (the mare), never the stallion", async () => {
+    const res = await ENDPOINTS.lineage(mareOwner.token, stud.id, mare.id);
+
+    expect(res.status).toBe(200);
+    expect(await prisma.ultraRareTraitEvent.count({ where: { horseId: stud.id } })).toBe(0);
+    expect(await prisma.ultraRareTraitEvent.count({ where: { horseId: mare.id } })).toBe(1);
+  });
+});

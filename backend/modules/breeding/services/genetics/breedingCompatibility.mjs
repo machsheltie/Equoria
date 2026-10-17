@@ -19,6 +19,7 @@ import logger from '../../../../utils/logger.mjs';
 
 import { calculateAdvancedGeneticDiversity } from './geneticDiversityMetrics.mjs';
 import { calculateDetailedInbreedingCoefficient } from './inbreedingAnalysis.mjs';
+import { withoutUnrevealedTraits } from '../predictionHorseView.mjs';
 
 // Re-export for back-compat: the facade exports
 // calculateDetailedInbreedingCoefficient from this module to preserve the
@@ -69,11 +70,16 @@ export async function assessBreedingPairCompatibility(stallionId, mareId) {
     throw new Error('One or both horses not found');
   }
 
-  const geneticCompatibility = calculateGeneticCompatibility(stallion, mare);
-  const diversityImpact = calculateDiversityImpact(stallion, mare);
+  // Owner ruling S-Q9 (2026-10-16): unrevealed hidden traits never count
+  // toward a forecast anyone can read (Equoria-q4uem.9 slice 4).
+  const stallionView = withoutUnrevealedTraits(stallion);
+  const mareView = withoutUnrevealedTraits(mare);
+
+  const geneticCompatibility = calculateGeneticCompatibility(stallionView, mareView);
+  const diversityImpact = calculateDiversityImpact(stallionView, mareView);
   const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(stallionId, mareId);
   const inbreedingRisk = inbreedingAnalysis.coefficient;
-  const expectedTraits = predictOffspringTraits(stallion, mare);
+  const expectedTraits = predictOffspringTraits(stallionView, mareView);
   const overallScore = calculateCompatibilityScore(
     geneticCompatibility,
     diversityImpact,
