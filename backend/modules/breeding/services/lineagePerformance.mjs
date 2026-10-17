@@ -62,10 +62,13 @@ export async function analyzeLineagePerformance(lineageData) {
         ? Object.values(horse.stats).reduce((sum, val) => sum + val, 0) /
           Object.keys(horse.stats).length
         : 50;
-      const avgDiscipline = horse.disciplineScores
-        ? Object.values(horse.disciplineScores).reduce((sum, val) => sum + val, 0) /
-          Object.keys(horse.disciplineScores).length
-        : 50;
+      // No discipline scores (null, or the `{}` a withheld record becomes —
+      // q4uem.9 slice 4) reads as it always did for an unscored horse: 50.
+      const disciplineValues = Object.values(asFlagObject(horse.disciplineScores));
+      const avgDiscipline =
+        disciplineValues.length > 0
+          ? disciplineValues.reduce((sum, val) => sum + val, 0) / disciplineValues.length
+          : 50;
 
       const performanceScore = (avgStats + avgDiscipline) / 2;
 

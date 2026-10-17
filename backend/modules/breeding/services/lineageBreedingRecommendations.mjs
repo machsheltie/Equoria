@@ -38,9 +38,15 @@ import { analyzeLineagePerformance } from './lineagePerformance.mjs';
  * generateGeneticBreedingRecommendations.
  * @param {number} stallionId - Stallion ID
  * @param {number} mareId - Mare ID
+ * @param {{ viewerId?: string }} [options] - the caller; ancestors they do not
+ *   own contribute no competition data (design §0; q4uem.9 slice 4 round 2)
  * @returns {Object} Breeding recommendations and analysis
  */
-export async function generateLineageBreedingRecommendations(stallionId, mareId) {
+export async function generateLineageBreedingRecommendations(
+  stallionId,
+  mareId,
+  { viewerId } = {},
+) {
   logger.info(
     `[lineageBreedingRecommendations.generateLineageBreedingRecommendations] Generating recommendations for stallion ${stallionId} and mare ${mareId}`,
   );
@@ -69,7 +75,7 @@ export async function generateLineageBreedingRecommendations(stallionId, mareId)
   }
 
   // Get lineage data
-  const lineageData = await organizeByGenerations(stallionId, mareId, 3);
+  const lineageData = await organizeByGenerations(stallionId, mareId, 3, { viewerId });
 
   // Calculate various metrics
   const diversityMetrics = await calculateGeneticDiversityMetrics(lineageData);

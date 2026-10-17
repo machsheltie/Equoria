@@ -23,6 +23,8 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { sharedBreed, makePlayer, makeHorse, sendJson, tag } from './helpers/studBookingFixtures.mjs';
+import advancedBreedingGeneticsRoutes from '../routes/advancedBreedingGeneticsRoutes.mjs';
+import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 
 const PREFIX = 'TestFixture-q4uem9-predict';
 const SECRETS = ['q4uem9StudSecret', 'q4uem9MareSecret', 'q4uem9GrandsireSecret'];
@@ -295,7 +297,8 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
       cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId } }), 'competitionResults');
       cleanup.add(() => prisma.show.deleteMany({ where: { id: showId } }), 'show');
       await record(grandsire.id, SHOW.grandsire, 71);
-      await record(stud.id, SHOW.stud, 72);
+      // The stud scores HIGHER than the mare, so a leak shows as a max/average above 73.
+      await record(stud.id, SHOW.stud, 90);
       await record(mare.id, SHOW.mare, 73);
     });
 
@@ -340,6 +343,46 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
       expect(text).not.toContain(SHOW.grandsire);
     });
 
+    it('genetic-probability: the stud’s discipline score cannot be derived (potentialScore is the mare’s own 73)', async () => {
+      const res = await ENDPOINTS.geneticProbability(mareOwner.token, stud.id, mare.id);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.disciplineProbabilities.Racing).toMatchObject({
+        potentialScore: 73,
+        inheritanceStrength: 'moderate',
+      });
+    });
+
+    it('lineage-analysis performanceAnalysis has no stud contribution; the unscored stud reads as an unscored horse always did', async () => {
+      const res = await ENDPOINTS.lineage(mareOwner.token, stud.id, mare.id);
+
+      expect(res.status).toBe(200);
+      const performance = res.body.data.performanceAnalysis;
+      expect(performance.generationalTrends[0].averageDisciplines).toEqual({ Racing: 73 });
+      const studPerformer = performance.performanceMetrics.topPerformers.find(p => p.id === stud.id);
+      // This analysis receives raw horse rows (no `stats` object -> 50) and
+      // "no discipline scores" falls back to 50, as an unscored horse always
+      // did; before the fix the withheld `{}` produced 0/0 = NaN -> null.
+      expect(studPerformer.performanceScore).toBe(50);
+    });
+
+    it('breeding-recommendations (own pair): a scored third-party ancestor’s exact score never appears', async () => {
+      const ownStallion = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion', sireId: grandsire.id });
+      await prisma.horse.update({ where: { id: mare.id }, data: { disciplineScores: null } });
+      await prisma.horse.update({ where: { id: grandsire.id }, data: { disciplineScores: { Racing: 67 } } });
+
+      const res = await sendJson('post', '/api/v1/breeding/breeding-recommendations', mareOwner.token, {
+        stallionId: ownStallion.id,
+        mareId: mare.id,
+      });
+
+      expect(res.status).toBe(200);
+      // The grandsire is the ONLY scored horse in the lineage: any discipline
+      // strength or likely discipline could only have come from its record.
+      expect(res.body.data.strengths.filter(x => x.type === 'discipline')).toEqual([]);
+      expect(res.body.data.expectedOutcomes.likelyDisciplines).toEqual([]);
+    });
+
     it("the caller's OWN stallion keeps its records (only other players' horses are withheld)", async () => {
       const ownStallion = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion', sireId: grandsire.id });
       await record(ownStallion.id, SHOW.ownStallion, 74);
@@ -353,6 +396,44 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
       expect(findNode(root.stallion, grandsire.id).competitionResults).toEqual([]);
     });
   });
+
+  it('review item 5: the pair keeps its roles even when the mare has the lower id (parental contributions are not swapped)', async () => {
+    const ownStallion = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion', speed: 11 });
+    await prisma.horse.update({ where: { id: mare.id }, data: { speed: 22 } });
+    expect(mare.id).toBeLessThan(ownStallion.id);
+
+    const res = await ENDPOINTS.geneticProbability(mareOwner.token, ownStallion.id, mare.id);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.statProbabilities.speed.parentalContribution).toEqual({ stallion: 11, mare: 22 });
+  });
+
+  it('review item 6: the four advanced prediction routes carry queryRateLimiter', () => {
+    const paths = [
+      '/breeding/genetic-probability',
+      '/breeding/lineage-analysis/:stallionId/:mareId',
+      '/genetics/inbreeding-analysis',
+      '/genetics/breeding-compatibility',
+    ];
+    for (const path of paths) {
+      const layer = advancedBreedingGeneticsRoutes.stack.find(l => l.route?.path === path);
+      expect(layer).toBeDefined();
+      expect(layer.route.stack.map(s => s.handle)).toContain(queryRateLimiter);
+    }
+  });
+
+  it.each(Object.keys(ENDPOINTS))(
+    'review item 6, %s: two horses of other players answer the same 404 as two missing horses',
+    async name => {
+      const othersMare = await horse({ ownerId: thirdPlayer.user.id, sex: 'Mare' });
+      const others = await ENDPOINTS[name](mareOwner.token, stud.id, othersMare.id);
+      const missing = await ENDPOINTS[name](mareOwner.token, 2147483000, 2147483001);
+
+      expect(others.status).toBe(404);
+      expect(missing.status).toBe(404);
+      expect(others.body).toEqual(missing.body);
+    },
+  );
 
   it("lineage analysis records the perk-reveal signal only for the caller's own horse (the mare), never the stallion", async () => {
     const res = await ENDPOINTS.lineage(mareOwner.token, stud.id, mare.id);

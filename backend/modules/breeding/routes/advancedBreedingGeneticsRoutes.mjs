@@ -273,10 +273,9 @@ router.post(
         });
       }
 
-      const recommendations = await generateLineageBreedingRecommendations(
-        parseInt(stallionId),
-        parseInt(mareId),
-      );
+      const recommendations = await generateLineageBreedingRecommendations(+stallionId, +mareId, {
+        viewerId: userId,
+      });
 
       res.json({
         success: true,

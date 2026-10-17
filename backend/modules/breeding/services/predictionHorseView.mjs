@@ -87,17 +87,22 @@ function withoutCompetition(horse) {
  * default stands, competition records removed for every horse the viewer does
  * not own (the caller's own horses keep theirs). Empty values replace removed
  * ones (`[]` / `{}`) so response shapes stay stable for the frontend.
- * Without a `viewerId` only the hidden-trait rule applies.
+ *
+ * FAILS CLOSED (review, slice 4 round 2): without a `viewerId` nobody counts as
+ * the owner, so EVERY horse's competition records are removed. A caller that
+ * needs the caller's own records must pass the viewer; forgetting it can lose
+ * data, never leak it.
  *
  * @param {object | null | undefined} horse
  * @param {{ viewerId?: string }} [options]
  */
 export function toPredictionView(horse, { viewerId } = {}) {
   const view = withoutUnrevealedTraits(horse);
-  if (!view || viewerId === undefined || SHOW_OTHER_PLAYERS_COMPETITION_DATA) {
+  if (!view || SHOW_OTHER_PLAYERS_COMPETITION_DATA) {
     return view;
   }
-  const scoped = row => (row && row.userId !== viewerId ? withoutCompetition(row) : row);
+  const scoped = row =>
+    row && (viewerId === undefined || row.userId !== viewerId) ? withoutCompetition(row) : row;
   const result = scoped(view);
   if (view.sire && typeof view.sire === 'object') {
     result.sire = scoped(view.sire);
