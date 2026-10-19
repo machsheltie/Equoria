@@ -27,7 +27,10 @@
  *     replaced the prior SQL-sleep "delay padding", which was a literal
  *     no-op that did NOT mirror the user-branch UPDATE+INSERT cost. (b) the
  *     email send is fire-and-forget AFTER the response so the SMTP RTT does
- *     not encode registration-state.
+ *     not encode registration-state. (c) Equoria-jeci6: both branches wait
+ *     for FORGOT_PASSWORD_MIN_RESPONSE_MS from handler entry before
+ *     answering, and a failed token save answers the same 200 (no 503
+ *     status oracle).
  *   - Equoria-54sk7: the reset-token lookup compares a SHA-256 hash of the
  *     submitted token against the stored hash inside Postgres
  *     (WHERE "tokenHash" = ${hash}), NOT via a hand-rolled JS string/byte
@@ -46,6 +49,7 @@
 
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -58,6 +62,34 @@ import { revokePendingEmailChanges } from '../services/emailChangeService.mjs';
 import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+// Equoria-jeci6 (owner ruling J-1, 2026-10-19): forgot-password never answers
+// sooner than this, on either branch. The registered branch does more work than
+// the unknown branch (token transaction, email template), so without a floor
+// its response time reveals whether an email is registered. Pinned in code,
+// not read from env, for the same reason the anchor cost is pinned. Basis:
+// measured p99 of the whole request is ~361 ms on the dev laptop (80 quiet
+// samples, 2026-10-19), and the worst ever logged under contention was 612 ms.
+// forgotPasswordResponseFloor.sentinel.test.mjs reads this export.
+export const FORGOT_PASSWORD_MIN_RESPONSE_MS = 1000;
+
+/**
+ * Wait until `startedAt + FORGOT_PASSWORD_MIN_RESPONSE_MS` (hrtime). Loops
+ * because a Node timer can fire up to a millisecond early against hrtime. If
+ * the work already took longer, return at once and log the overrun, so a
+ * breach of the timing guarantee shows in the server log.
+ */
+async function waitForResponseFloor(startedAt) {
+  const deadline = startedAt + BigInt(FORGOT_PASSWORD_MIN_RESPONSE_MS) * 1_000_000n;
+  const overNs = process.hrtime.bigint() - deadline;
+  if (overNs > 0n) {
+    logger.warn('[forgotPassword] timing floor exceeded', { overMs: Number(overNs / 1_000_000n) });
+    return;
+  }
+  for (let now = process.hrtime.bigint(); now < deadline; now = process.hrtime.bigint()) {
+    await sleep(Math.ceil(Number(deadline - now) / 1e6));
+  }
+}
 
 // Equoria-54sk7: constant-time CPU anchor for the forgotPassword timing
 // mitigation. The no-user branch must perform work equivalent to the user
@@ -233,6 +265,8 @@ export const changePassword = async (req, res, next) => {
 };
 
 export const forgotPassword = async (req, res, next) => {
+  // Equoria-jeci6: the response floor counts from handler entry.
+  const startedAt = process.hrtime.bigint();
   try {
     const { email } = req.body;
 
@@ -268,6 +302,7 @@ export const forgotPassword = async (req, res, next) => {
           email,
         },
       );
+      await waitForResponseFloor(startedAt);
       return res.status(200).json({
         success: true,
         message: responseMessage,
@@ -298,49 +333,70 @@ export const forgotPassword = async (req, res, next) => {
     // (never string-spliced into the SQL text), so the SQL-injection surface
     // is closed at the driver layer. SQL operators / casts (NOW(), ||,
     // ::interval) stay as literal template text outside the bindings.
-    // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (AppError
-    // subclass) so the isAppError-gated next(error) below forwards it as 503.
-    await withRetryableTxMapping(
-      prisma.$transaction(async tx => {
-        await tx.$executeRaw`
-        UPDATE password_reset_tokens
-        SET "usedAt" = NOW()
-        WHERE "userId" = ${user.id} AND "usedAt" IS NULL`;
-        await tx.$executeRaw`
-        INSERT INTO password_reset_tokens
-          ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
-        VALUES (
-          ${tokenHash},
-          ${user.id},
-          ${user.email},
-          NOW() + (${String(ttlSeconds)} || ' seconds')::interval,
-          ${ipAddress},
-          ${userAgent}
-        )`;
-      }),
-      { message: 'Password reset service is busy right now, please retry in a moment.' },
-    );
-
-    // Equoria-dv1lv: the email-send was the dominant timing-side-channel
-    // because the outbound SMTP/transactional-mail call adds tens to
-    // hundreds of ms that the no-user branch never paid. Fire-and-forget
-    // it AFTER the controller has already responded so the response
-    // duration no longer encodes registered-vs-unregistered. Errors are
-    // swallowed into the log; the token row is already persisted so the
-    // user can retry from the UI if delivery fails. Pairs with the
-    // !user branch's constant-time padding (see above) for two-sided
-    // defense against email enumeration via timing.
-    emailService.sendPasswordResetEmail(user.email, rawToken, user).catch(err => {
-      logger.error(
-        `[passwordController.forgotPassword] Email send failed (token still persisted): ${err.message}`,
+    // Equoria-7x9po maps a transient P2028/deadlock failure to a retryable
+    // 503 error. Equoria-jeci6 (owner ruling J-2 option a, 2026-10-19): this
+    // handler must NOT surface it. Only this branch writes, so a 503 here would
+    // tell a caller the email is registered. Any failure to save the token is
+    // logged (never with the email address), no reset email is sent, and the
+    // caller gets the same 200 as an unknown email. The player retries if no
+    // email arrives, the same policy as a failed email send.
+    let tokenSaved = true;
+    try {
+      await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          await tx.$executeRaw`
+          UPDATE password_reset_tokens
+          SET "usedAt" = NOW()
+          WHERE "userId" = ${user.id} AND "usedAt" IS NULL`;
+          await tx.$executeRaw`
+          INSERT INTO password_reset_tokens
+            ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
+          VALUES (
+            ${tokenHash},
+            ${user.id},
+            ${user.email},
+            NOW() + (${String(ttlSeconds)} || ' seconds')::interval,
+            ${ipAddress},
+            ${userAgent}
+          )`;
+        }),
+        { message: 'Password reset service is busy right now, please retry in a moment.' },
       );
-    });
+    } catch (saveError) {
+      tokenSaved = false;
+      const message = String(saveError?.message ?? saveError)
+        .split(user.email)
+        .join('[email]');
+      logger.error('[forgotPassword] reset token not saved; answered 200 anyway', {
+        userId: user.id,
+        code: saveError?.code,
+        name: saveError?.name,
+        message,
+      });
+    }
 
-    logger.info('[passwordController.forgotPassword] Password reset email queued', {
-      userId: user.id,
-      email: user.email,
-    });
+    if (tokenSaved) {
+      // Equoria-dv1lv: the email-send was the dominant timing-side-channel
+      // because the outbound SMTP/transactional-mail call adds tens to
+      // hundreds of ms that the no-user branch never paid. Fire-and-forget
+      // it so the response duration no longer encodes
+      // registered-vs-unregistered. Errors are swallowed into the log; the
+      // token row is already persisted so the user can retry from the UI if
+      // delivery fails. The response floor (Equoria-jeci6) absorbs the
+      // synchronous part of the send.
+      emailService.sendPasswordResetEmail(user.email, rawToken, user).catch(err => {
+        logger.error(
+          `[passwordController.forgotPassword] Email send failed (token still persisted): ${err.message}`,
+        );
+      });
 
+      logger.info('[passwordController.forgotPassword] Password reset email queued', {
+        userId: user.id,
+        email: user.email,
+      });
+    }
+
+    await waitForResponseFloor(startedAt);
     return res.status(200).json({
       success: true,
       message: responseMessage,
