@@ -24,10 +24,27 @@ import { endSession, hasCachedSession, isSessionExpiredError } from './sessionEn
  * server's answer, not a transient failure: retrying it can never succeed.
  * Network errors and 5xx (statusCode 0 or >= 500) still get up to 3 retries.
  */
-function shouldRetry(failureCount: number, error: unknown): boolean {
+function isClientError(error: unknown): boolean {
   const statusCode = (error as ApiError | undefined)?.statusCode;
-  if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) return false;
+  return typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500;
+}
+
+function shouldRetry(failureCount: number, error: unknown): boolean {
+  if (isClientError(error)) return false;
   return failureCount < 3;
+}
+
+/**
+ * Equoria-v61q2: a `retryOnMount` for queries whose page shows a loading gate
+ * and then mounts a child that subscribes to the same query. By default a
+ * newly mounted observer re-fetches a query that is in error with no data;
+ * that re-fetch resets it to `pending`, the parent's gate unmounts the child,
+ * the 4xx comes back, the child mounts again — a request loop (~95/s on
+ * /foals/:id for a horse past foal age). A 4xx is the server's answer, so it
+ * is never re-fetched on mount; a network error or 5xx still is.
+ */
+export function retryOnMountUnlessClientError(query: { state: { error: unknown } }): boolean {
+  return !isClientError(query.state.error);
 }
 
 export function createAppQueryClient(): QueryClient {

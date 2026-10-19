@@ -36,7 +36,16 @@ const FoalDetailPage: React.FC = () => {
     data: development,
     isLoading: loadingDev,
     error: devError,
+    errorUpdateCount: devErrorCount,
   } = useFoalDevelopment(isValidId ? foalId : 0);
+
+  // Equoria-v61q2: the full-page loading gate covers only the FIRST
+  // development fetch. FoalDevelopmentTracker (below) subscribes to the same
+  // query; when it mounts after an error it may re-fetch, which puts the query
+  // back to `pending`. Re-showing the gate then unmounted the tracker, the error
+  // came back, the tracker mounted again: a request loop. Once the query has
+  // errored, the tracker shows its own inline loading and error instead.
+  const firstDevLoad = loadingDev && devErrorCount === 0;
 
   // Shared async-state primitives (D-15/D-16) replace the local
   // glass-panel/rounded-2xl error recipes and the local spinner.
@@ -50,7 +59,7 @@ const FoalDetailPage: React.FC = () => {
     );
   }
 
-  if (loadingFoal || loadingDev) {
+  if (loadingFoal || firstDevLoad) {
     return <SectionLoading label="Loading foal" minHeight="240px" />;
   }
 
