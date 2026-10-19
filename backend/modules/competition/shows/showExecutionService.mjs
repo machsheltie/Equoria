@@ -20,7 +20,7 @@ import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { SYSTEM_ACCOUNT_SHOW_ESCROW, debitSystemAccountOrThrow } from '../../economy/index.mjs';
 // Equoria-8pb6w: the two escrow-touching transactions live in a sibling module
 // (extracted for deterministic testability + file-size discipline).
-import { settleShowFeeEscrow } from './showEscrowTx.mjs';
+import { refundUnpaidPrizeShareInTx, settleShowFeeEscrow } from './showEscrowTx.mjs';
 import { settleDueConformationShows } from '../services/conformationShowService.mjs';
 // Equoria-c7mx0: scoring extracted verbatim to the shared scoring service;
 // readStagedOrdering implements the 2026-07-06 staged-ordering replay contract.
@@ -207,6 +207,19 @@ export async function executeClosedShows(req, res, options) {
 
       const totalPrize = Math.max(0, show.prize);
       const prizeSlots = [0.5, 0.3, 0.2]; // 1st/2nd/3rd shares
+      const prizeFor = placement => Math.floor(totalPrize * (prizeSlots[placement - 1] ?? 0));
+
+      // Equoria-w7fnz (owner ruling 2026-10-19): with fewer than 3 entrants the
+      // unpaid share goes back to the creator. Placed shares round down as
+      // always; the refund is the rest of the escrow, so placed + refund ==
+      // prizeEscrow exactly. Only an escrow-funded show (the same test the
+      // payout uses below) has escrow to refund. Paid inside the 1st-place tx,
+      // so the [showId, horseId] result guard makes it exactly-once.
+      const placedTotal = stagedOrdering.reduce((sum, s) => sum + prizeFor(s.placement), 0);
+      const unpaidPrizeShare =
+        stagedOrdering.length < prizeSlots.length && show.prizeEscrow >= totalPrize
+          ? show.prizeEscrow - placedTotal
+          : 0;
 
       // Equoria-koodu: CLAIM-THEN-PROCESS pattern. Mark the show 'completed'
       // BEFORE processing entries. If any entry's writes fail, the cron tick
@@ -236,8 +249,7 @@ export async function executeClosedShows(req, res, options) {
       // execution).
       const resultOps = stagedOrdering.map(async staged => {
         const { horseId, userId, horseName, placement, riderId } = staged;
-        const prizeShare = prizeSlots[placement - 1] ?? 0;
-        const prize = Math.floor(totalPrize * prizeShare);
+        const prize = prizeFor(placement);
 
         await prisma.$transaction(async tx => {
           // Create competition result (row shape owned by competitionResultRecord)
@@ -276,6 +288,13 @@ export async function executeClosedShows(req, res, options) {
             await tx.user.update({
               where: { id: userId },
               data: { money: { increment: prize } },
+            });
+          }
+          if (placement === 1) {
+            await refundUnpaidPrizeShareInTx(tx, {
+              showId: show.id,
+              creatorId: show.createdByUserId,
+              amount: unpaidPrizeShare,
             });
           }
 

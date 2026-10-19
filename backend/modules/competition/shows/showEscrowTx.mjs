@@ -6,6 +6,8 @@
  * Equoria-8pb6w sentinels exercise deterministically:
  *   - enterShowAtomicTx     — the canonical POST /shows/:id/enter entry tx.
  *   - settleShowFeeEscrow   — the executeClosedShows fee-settlement tx.
+ * plus refundUnpaidPrizeShareInTx, the unpaid-prize-share refund that runs
+ * inside the executor's first-place payout tx (Equoria-w7fnz).
  *
  * Both are pulled out of showController so a test can call them directly
  * (enterShowAtomicTx with a stale `show` snapshot; settleShowFeeEscrow with an
@@ -155,6 +157,39 @@ export async function settleShowFeeEscrowInTx(tx, showId) {
     return;
   }
   await moveFeeEscrow(tx, showId, settled);
+}
+
+/**
+ * Refund a show's unpaid prize share to its creator (Equoria-w7fnz; owner ruling
+ * 2026-10-19: with fewer than 3 entrants the unpaid share goes back to the
+ * creator). Runs inside the caller's payout transaction: debits
+ * SystemAccount[show_escrow], decrements the show's prizeEscrow and credits the
+ * creator by `amount`, all with `tx`.
+ *
+ * No creator (a GDPR-erased creator, or a seeded show) is unruled: the amount is
+ * left where it is.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {{ showId: number, creatorId: string|null, amount: number }} refund
+ */
+export async function refundUnpaidPrizeShareInTx(tx, { showId, creatorId, amount }) {
+  if (!creatorId || amount <= 0) {
+    return;
+  }
+  await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, amount, {
+    category: 'show_refund_unpaid_prize',
+    description: `Unpaid prize share refund for show ${showId}`,
+    linkedUserId: creatorId,
+    metadata: { showId },
+  });
+  await tx.show.update({
+    where: { id: showId },
+    data: { prizeEscrow: { decrement: amount } },
+  });
+  await tx.user.update({
+    where: { id: creatorId },
+    data: { money: { increment: amount } },
+  });
 }
 
 /** The show's fee escrow and creator, or null when there is nothing to settle. */
