@@ -26,13 +26,14 @@
  * Real app, real DB, scoped fixture user, scoped cleanup by userId.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 import * as passwordController from '../controllers/passwordController.mjs';
 
 // Namespace import: if the export is ever removed this reads undefined and the
@@ -104,4 +105,29 @@ describe('Sentinel: forgot-password response floor (Equoria-jeci6)', () => {
       .map(s => ({ branch: s.branch, ms: Math.round(s.ms) }));
     expect(early).toEqual([]);
   }, 60000);
+
+  // Owner ruling 2026-10-19: server logs on the forgot-password path carry a
+  // masked address (first character + *** + @domain), never the raw one.
+  it('forgot-password logs carry only masked email addresses, on both branches', async () => {
+    const unknownEmail = `${EMAIL_PREFIX}-nobody-${randomBytes(6).toString('hex')}@example.com`;
+    const spies = ['info', 'warn', 'error'].map(level => jest.spyOn(logger, level));
+    let loggedText;
+    try {
+      await timedForgot(knownEmail);
+      await timedForgot(unknownEmail);
+      loggedText = JSON.stringify(
+        spies.flatMap(spy => spy.mock.calls),
+        (_k, v) => (v instanceof Error ? { message: v.message, stack: v.stack } : v),
+      ).toLowerCase();
+    } finally {
+      for (const spy of spies) {
+        spy.mockRestore();
+      }
+    }
+
+    expect(loggedText).not.toContain(knownEmail);
+    expect(loggedText).not.toContain(unknownEmail);
+    // The lines were observed, in masked form.
+    expect(loggedText).toContain('t***@example.com');
+  }, 30000);
 });

@@ -86,6 +86,29 @@ export function maskEmailAddress(raw) {
   return `${firstCharacter}***${normalized.slice(at)}`;
 }
 
+// An address-shaped token: no whitespace, quotes, brackets or separators on
+// either side of one `@`. Deliberately broad (any case, any characters a
+// driver might echo), because a missed address leaks and an over-match only
+// masks a little extra text.
+const EMAIL_IN_TEXT = /[^\s@<>()[\]{}"'`,;:\\]+@[^\s@<>()[\]{}"'`,;:\\]+/g;
+
+/**
+ * Mask every address inside free text, such as an error message headed for a
+ * server log (owner ruling 2026-10-19: logs never carry a raw email address;
+ * the auth-wide sweep is Equoria-5vyuh). Each address becomes the
+ * `maskEmailAddress` form whatever its case, so this does not depend on
+ * knowing which address to look for.
+ *
+ * @param {unknown} text
+ * @returns {string|null|undefined} the masked text; null/undefined pass through.
+ */
+export function maskEmailsInText(text) {
+  if (text === null || text === undefined) {
+    return text;
+  }
+  return String(text).replace(EMAIL_IN_TEXT, match => maskEmailAddress(match) ?? '***');
+}
+
 /**
  * The authoritative guard for every ordinary profile-update surface.
  *

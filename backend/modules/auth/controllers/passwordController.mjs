@@ -60,6 +60,7 @@ import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 import { revokePendingEmailChanges } from '../services/emailChangeService.mjs';
 import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
+import { maskEmailAddress, maskEmailsInText } from '../../../utils/emailIdentityPolicy.mjs';
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -72,6 +73,17 @@ const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 // samples, 2026-10-19), and the worst ever logged under contention was 612 ms.
 // forgotPasswordResponseFloor.sentinel.test.mjs reads this export.
 export const FORGOT_PASSWORD_MIN_RESPONSE_MS = 1000;
+
+// Equoria-jeci6 fix round 1: the registered branch's token save is bounded so
+// a contended save (row lock, slow statement, busy pool) fails well before the
+// floor and the floor still covers it. Without a bound it could wait up to
+// Prisma's default 5000 ms, and that long answer would mark a real account.
+// Budget: pre-save work p99 ~355 ms + pool wait 100 ms + save 500 ms < 1000 ms.
+// Prisma's interactive timeout alone does NOT interrupt a statement blocked on
+// a lock (measured: it waited until the lock was released), so the save also
+// sets a transaction-local Postgres statement_timeout.
+const TOKEN_SAVE_TIMEOUT_MS = 500;
+const TOKEN_SAVE_MAX_POOL_WAIT_MS = 100;
 
 /**
  * Wait until `startedAt + FORGOT_PASSWORD_MIN_RESPONSE_MS` (hrtime). Loops
@@ -296,10 +308,11 @@ export const forgotPassword = async (req, res, next) => {
       // padding here (the prior SQL-sleep no-op is removed). Do NOT
       // short-circuit BEFORE the anchor above — that re-introduces the
       // enumeration oracle (same failure mode as authController login).
+      // Owner ruling 2026-10-19: logs carry a masked address, never the raw one.
       logger.info(
         '[passwordController.forgotPassword] Password reset requested for unknown email',
         {
-          email,
+          email: maskEmailAddress(email),
         },
       );
       await waitForResponseFloor(startedAt);
@@ -343,35 +356,37 @@ export const forgotPassword = async (req, res, next) => {
     let tokenSaved = true;
     try {
       await withRetryableTxMapping(
-        prisma.$transaction(async tx => {
-          await tx.$executeRaw`
-          UPDATE password_reset_tokens
-          SET "usedAt" = NOW()
-          WHERE "userId" = ${user.id} AND "usedAt" IS NULL`;
-          await tx.$executeRaw`
-          INSERT INTO password_reset_tokens
-            ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
-          VALUES (
-            ${tokenHash},
-            ${user.id},
-            ${user.email},
-            NOW() + (${String(ttlSeconds)} || ' seconds')::interval,
-            ${ipAddress},
-            ${userAgent}
-          )`;
-        }),
+        prisma.$transaction(
+          async tx => {
+            // Transaction-local (is_local = true), so it ends with this save.
+            await tx.$queryRaw`SELECT set_config('statement_timeout', ${`${TOKEN_SAVE_TIMEOUT_MS}ms`}, true)`;
+            await tx.$executeRaw`
+            UPDATE password_reset_tokens
+            SET "usedAt" = NOW()
+            WHERE "userId" = ${user.id} AND "usedAt" IS NULL`;
+            await tx.$executeRaw`
+            INSERT INTO password_reset_tokens
+              ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
+            VALUES (
+              ${tokenHash},
+              ${user.id},
+              ${user.email},
+              NOW() + (${String(ttlSeconds)} || ' seconds')::interval,
+              ${ipAddress},
+              ${userAgent}
+            )`;
+          },
+          { timeout: TOKEN_SAVE_TIMEOUT_MS, maxWait: TOKEN_SAVE_MAX_POOL_WAIT_MS },
+        ),
         { message: 'Password reset service is busy right now, please retry in a moment.' },
       );
     } catch (saveError) {
       tokenSaved = false;
-      const message = String(saveError?.message ?? saveError)
-        .split(user.email)
-        .join('[email]');
       logger.error('[forgotPassword] reset token not saved; answered 200 anyway', {
         userId: user.id,
         code: saveError?.code,
         name: saveError?.name,
-        message,
+        message: maskEmailsInText(saveError?.message ?? saveError),
       });
     }
 
@@ -386,13 +401,13 @@ export const forgotPassword = async (req, res, next) => {
       // synchronous part of the send.
       emailService.sendPasswordResetEmail(user.email, rawToken, user).catch(err => {
         logger.error(
-          `[passwordController.forgotPassword] Email send failed (token still persisted): ${err.message}`,
+          `[passwordController.forgotPassword] Email send failed (token still persisted): ${maskEmailsInText(err?.message)}`,
         );
       });
 
       logger.info('[passwordController.forgotPassword] Password reset email queued', {
         userId: user.id,
-        email: user.email,
+        email: maskEmailAddress(user.email),
       });
     }
 
@@ -402,7 +417,14 @@ export const forgotPassword = async (req, res, next) => {
       message: responseMessage,
     });
   } catch (error) {
-    logger.error('[passwordController.forgotPassword] Error:', error);
+    // A Prisma error here can echo the query arguments (the email), so only
+    // masked text reaches the log.
+    logger.error('[passwordController.forgotPassword] Error:', {
+      name: error?.name,
+      code: error?.code,
+      message: maskEmailsInText(error?.message ?? error),
+      stack: maskEmailsInText(error?.stack),
+    });
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }

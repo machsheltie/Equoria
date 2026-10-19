@@ -21,6 +21,7 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 import { createGmailApiTransport, readGmailConfig } from './gmailApiTransport.mjs';
 import { SUPPORT_EMAIL, generateEmailTemplate, generatePlainTextEmail } from './emailTemplates.mjs';
+import { maskEmailAddress } from './emailIdentityPolicy.mjs';
 
 // Email configuration
 const EMAIL_CONFIG = {
@@ -320,7 +321,7 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
     });
 
     logger.info('[EmailService] Password reset email (DEV MODE - not sent)', {
-      to: email,
+      to: maskEmailAddress(email), // owner ruling 2026-10-19: logs carry a masked address
       subject,
       resetUrl,
       htmlLength: htmlEmail.length,
@@ -343,7 +344,7 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
   });
 
   logger.info('[EmailService] Password reset email sent', {
-    to: email,
+    to: maskEmailAddress(email), // owner ruling 2026-10-19: logs carry a masked address
     messageId: info?.messageId,
   });
 
