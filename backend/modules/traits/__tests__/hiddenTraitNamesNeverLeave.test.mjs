@@ -14,6 +14,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
+import express from 'express';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -22,6 +23,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { hiddenTraitResponseGuard } from '../../../middleware/hiddenTraitResponseGuard.mjs';
 
 // Two hidden names: one with a trait definition, one without (peopleTrusting
 // has no definition, so no reveal can ever select it — it stays hidden).
@@ -139,6 +141,25 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
     });
   });
 
+  // Fix round 1 (review C1): one loaded row sent more than once in a body
+  // (a parent shared by siblings, a row echoed in two places) must be
+  // scrubbed at every occurrence. No live route does this today, so the real
+  // guard is mounted on a minimal app that echoes a real database row.
+  describe('response guard on a repeated row', () => {
+    it('a horse row repeated in one body names no hidden trait at any occurrence', async () => {
+      const row = await prisma.horse.findUnique({ where: { id: foal.id } });
+      const echo = express();
+      echo.use(hiddenTraitResponseGuard);
+      echo.get('/repeat', (req, res) =>
+        res.json({ data: { horse: row, foals: [{ dam: row }, { dam: row }], again: [row] } }),
+      );
+      const res = await request(echo).get('/repeat');
+      expectNoHiddenNames(res);
+      expect(res.body.data.foals[1].dam.epigeneticModifiers.hiddenCount).toBe(2);
+      expect(res.body.data.again[0].epigeneticModifiers.hiddenCount).toBe(2);
+    });
+  });
+
   describe('trait endpoints', () => {
     it('GET /traits/horse/:id keeps the hidden count and names no hidden trait', async () => {
       const res = await get(`/api/v1/traits/horse/${foal.id}`);
@@ -160,11 +181,59 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
     });
   });
 
+  // Owner ruling 2026-10-19 (fix round 1): the fixed per-condition trait-name
+  // hint lists ("revealableTraits") are not sent. They are not the horse's
+  // traits and read as hints about hidden ones.
+  describe('discovery responses carry no per-condition trait hint lists', () => {
+    it('GET /trait-discovery/progress/:id', async () => {
+      const res = await get(`/api/v1/trait-discovery/progress/${foal.id}`);
+      expect(res.status).toBe(200);
+      expect(JSON.stringify(res.body)).not.toContain('revealableTraits');
+    });
+
+    it('GET /trait-discovery/conditions', async () => {
+      const res = await get('/api/v1/trait-discovery/conditions');
+      expect(res.status).toBe(200);
+      expect(res.body.data.conditions.length).toBeGreaterThan(0);
+      expect(JSON.stringify(res.body)).not.toContain('revealableTraits');
+    });
+
+    it('POST /trait-discovery/check-conditions/:id', async () => {
+      const res = await post(`/api/v1/trait-discovery/check-conditions/${foal.id}`, {});
+      expect(res.status).toBe(200);
+      expect(JSON.stringify(res.body)).not.toContain('revealableTraits');
+    });
+  });
+
   describe('breeding data', () => {
     it('GET /horses/:id/breeding-data names no hidden trait', async () => {
       const res = await get(`/api/v1/horses/${foal.id}/breeding-data`);
       expectNoHiddenNames(res);
       expect(res.body.data.breedingData.epigeneticFlags.hiddenCount).toBe(2);
+    });
+
+    // Owner ruling 2026-10-19 (fix round 1): the per-category counts must not
+    // come from history rows of traits still hidden on the horse.
+    it('GET /horses/:id/breeding-data counts no history row of a still-hidden trait', async () => {
+      const horse = await makeFoal({
+        epigeneticModifiers: { positive: ['athletic'], negative: [], hidden: ['bold', 'sensitive'] },
+      });
+      await prisma.traitHistoryLog.createMany({
+        data: ['athletic', 'bold', 'sensitive'].map((traitName, i) => ({
+          horseId: horse.id,
+          traitName,
+          sourceType: 'milestone',
+          ageInDays: i,
+        })),
+      });
+      const res = await get(`/api/v1/horses/${horse.id}/breeding-data`);
+      expect(res.status).toBe(200);
+      const { traitSummary, flagInheritanceScore } = res.body.data.breedingData;
+      expect(traitSummary.totalTraits).toBe(1);
+      expect(traitSummary.rareTraits).toBe(0); // sensitive is rare, and hidden
+      expect(traitSummary.traitsByCategory).toMatchObject({ physical: 1, boldness: 0, empathy: 0 });
+      expect(flagInheritanceScore.flags).toMatchObject({ physical: 1, boldness: 0, empathy: 0 });
+      expect(flagInheritanceScore.dominantCategories).toEqual(['physical']);
     });
 
     it('POST /genetics/population-analysis names no hidden trait', async () => {

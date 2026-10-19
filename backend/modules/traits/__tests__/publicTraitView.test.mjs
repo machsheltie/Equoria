@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
+import { runInNewContext } from 'node:vm';
 import {
   hiddenTraitSet,
   publicTraitModifiers,
@@ -81,6 +82,50 @@ describe('withPublicTraitModifiers', () => {
     const out = withPublicTraitModifiers(body);
     expect(out).toBe(body);
     expect(out.data[0].when).toBe(when);
+  });
+
+  // Fix round 1 (review C1): a shared, non-cyclic reference must be scrubbed
+  // at EVERY occurrence, not only the first.
+  it('scrubs a parent row shared by two siblings at both occurrences', () => {
+    const dam = { id: 1, epigeneticModifiers: STORED };
+    const out = withPublicTraitModifiers({
+      foals: [
+        { id: 2, dam },
+        { id: 3, dam },
+      ],
+    });
+    expect(JSON.stringify(out)).not.toMatch(/bold|zenith/);
+    expect(out.foals[1].dam.epigeneticModifiers.hiddenCount).toBe(2);
+    expect(out.foals[0].dam).toBe(out.foals[1].dam);
+  });
+
+  it('scrubs an array that appears twice in one body at both occurrences', () => {
+    const rows = [{ id: 1, epigeneticModifiers: STORED }];
+    const out = withPublicTraitModifiers({ a: rows, b: { again: rows } });
+    expect(JSON.stringify(out)).not.toMatch(/bold|zenith/);
+    expect(out.b.again[0].epigeneticModifiers.hiddenCount).toBe(2);
+  });
+
+  it('scrubs a row built in another realm (as Prisma rows are under Jest)', () => {
+    const foreign = runInNewContext(
+      "({ id: 1, epigeneticModifiers: { positive: [], negative: [], hidden: ['zenith'] } })",
+    );
+    const out = withPublicTraitModifiers({ data: foreign });
+    expect(JSON.stringify(out)).not.toMatch(/zenith/);
+    expect(out.data.epigeneticModifiers.hiddenCount).toBe(1);
+  });
+
+  it('terminates on a true cycle and leaves no raw hidden list reachable', () => {
+    const horse = { id: 1, epigeneticModifiers: STORED };
+    const foal = { id: 2, dam: horse };
+    horse.foals = [foal]; // horse -> foals[0] -> dam -> horse
+    const out = withPublicTraitModifiers({ data: horse });
+    expect(out.data.epigeneticModifiers.hiddenCount).toBe(2);
+    // Walking the cycle from the output must reach the scrubbed copy, never
+    // the raw input row.
+    expect(out.data.foals[0].dam).toBe(out.data);
+    expect(out.data.foals[0].dam.epigeneticModifiers.hidden).toBeUndefined();
+    expect(horse.epigeneticModifiers).toBe(STORED); // input untouched
   });
 });
 

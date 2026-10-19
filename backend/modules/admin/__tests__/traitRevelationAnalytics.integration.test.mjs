@@ -132,6 +132,17 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     expect(res.status).toBe(403);
   });
 
+  // Owner ruling 2026-10-19 (Equoria-6dace fix round 1): only the admin role
+  // may see hidden traits; moderators may not. This report counts trait names
+  // from history, hidden ones included, so a moderator must be refused.
+  it('rejects a moderator with 403 (admin only)', async () => {
+    const modUser = await makeUser('moderator');
+    await prisma.user.update({ where: { id: modUser.id }, data: { role: 'moderator' } });
+    const modToken = generateTestToken({ id: modUser.id, role: 'moderator' });
+    const res = await request(app).get(ROUTE).set('Authorization', `Bearer ${modToken}`);
+    expect(res.status).toBe(403);
+  });
+
   it('rejects an unauthenticated request with 401', async () => {
     const res = await request(app).get(ROUTE);
     expect(res.status).toBe(401);

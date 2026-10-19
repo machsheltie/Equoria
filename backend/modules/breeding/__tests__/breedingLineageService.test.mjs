@@ -8,13 +8,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import {
-  calculateInheritanceProbabilities,
-  calculateFlagInheritanceScore,
-  calculateTemperamentInfluence,
-  predictOffspringTraits,
-  generateBreedingData,
-} from '../services/breedingPredictionService.mjs';
+import { calculateTemperamentInfluence, generateBreedingData } from '../services/breedingPredictionService.mjs';
 import {
   generateLineageTree,
   calculateGeneticDiversityMetrics,
@@ -80,29 +74,9 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 30000);
 
 // ── breedingPredictionService ─────────────────────────────────────────────────
-
-describe('calculateInheritanceProbabilities', () => {
-  it('returns summary shape for pair with no trait history', async () => {
-    const result = await calculateInheritanceProbabilities(stallion.id, mare.id);
-    expect(result.stallionId).toBe(stallion.id);
-    expect(result.mareId).toBe(mare.id);
-    expect(Array.isArray(result.traitProbabilities)).toBe(true);
-    expect(result.traitProbabilities).toHaveLength(0);
-    expect(typeof result.summary).toBe('object');
-  });
-});
-
-describe('calculateFlagInheritanceScore', () => {
-  it('returns flag score shape for pair with no traits', async () => {
-    const result = await calculateFlagInheritanceScore(stallion.id, mare.id);
-    expect(result.stallionId).toBe(stallion.id);
-    expect(result.mareId).toBe(mare.id);
-    expect(typeof result.stallionFlags).toBe('object');
-    expect(typeof result.mareFlags).toBe('object');
-    expect(typeof result.combinedScore).toBe('number');
-    expect(result.calculatedAt).toBeInstanceOf(Date);
-  });
-});
+// calculateInheritanceProbabilities / calculateFlagInheritanceScore /
+// predictOffspringTraits were deleted with their tests (owner ruling
+// 2026-10-19, Equoria-6dace fix round 1).
 
 describe('calculateTemperamentInfluence', () => {
   it('throws for non-existent horse IDs', async () => {
@@ -117,18 +91,6 @@ describe('calculateTemperamentInfluence', () => {
     expect(Array.isArray(result.predictedOffspringTemperament)).toBe(true);
     expect(typeof result.traitInfluenceModifiers).toBe('object');
     expect(result.calculatedAt).toBeInstanceOf(Date);
-  });
-});
-
-describe('predictOffspringTraits', () => {
-  it('returns prediction shape for pair with no traits', async () => {
-    const result = await predictOffspringTraits(stallion.id, mare.id);
-    expect(result.stallionId).toBe(stallion.id);
-    expect(result.mareId).toBe(mare.id);
-    expect(typeof result.categoryProbabilities).toBe('object');
-    expect(typeof result.estimatedTraitCount).toBe('object');
-    expect(typeof result.estimatedTraitCount.min).toBe('number');
-    expect(typeof result.estimatedTraitCount.max).toBe('number');
   });
 });
 

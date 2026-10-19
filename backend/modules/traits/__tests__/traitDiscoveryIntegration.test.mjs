@@ -435,7 +435,9 @@ describe('Trait Discovery API Integration Tests', () => {
         expect(condition).toHaveProperty('key');
         expect(condition).toHaveProperty('name');
         expect(condition).toHaveProperty('description');
-        expect(condition).toHaveProperty('revealableTraits');
+        // Owner ruling 2026-10-19 (Equoria-6dace): the per-condition trait-name
+        // hint lists are no longer sent.
+        expect(condition).not.toHaveProperty('revealableTraits');
         expect(condition).toHaveProperty('category');
       });
 

@@ -157,7 +157,6 @@ router.get(
           description: condition.description,
           met: !!isMetCondition,
           progress: isMetCondition ? 100 : 0,
-          revealableTraits: condition.revealableTraits,
         };
       });
 
@@ -200,11 +199,12 @@ router.get('/conditions', async (req, res) => {
   try {
     logger.info('[traitDiscoveryRoutes] GET /conditions - Getting discovery conditions');
 
+    // No per-condition trait-name hint lists in any discovery response (owner
+    // ruling 2026-10-19, Equoria-6dace).
     const conditions = Object.entries(DISCOVERY_CONDITIONS).map(([key, condition]) => ({
       key,
       name: condition.name,
       description: condition.description,
-      revealableTraits: condition.revealableTraits,
       category: categorizeCondition(key),
     }));
 
@@ -270,7 +270,6 @@ router.post(
           description: condition.description,
           met: !!isMetCondition,
           progress: isMetCondition ? 100 : 0,
-          revealableTraits: condition.revealableTraits,
         };
       });
 

@@ -66,65 +66,105 @@ export function visibleTraitKeys(modifiers) {
   return [...view.positive, ...view.negative];
 }
 
+// A plain object from ANY realm: its prototype is null or some realm's
+// Object.prototype (whose own prototype is null). Comparing with this realm's
+// Object.prototype alone missed rows built in another realm (Prisma rows under
+// Jest's VM), which then went out unscrubbed (fix round 1). Class instances
+// (Date, Decimal, Buffer) still fail the check.
 function isPlainObject(value) {
   if (value === null || typeof value !== 'object') {
     return false;
   }
   const proto = Object.getPrototypeOf(value);
-  return proto === Object.prototype || proto === null;
+  return proto === null || Object.getPrototypeOf(proto) === null;
 }
 
-function scrub(value, seen) {
-  if (Array.isArray(value)) {
-    if (seen.has(value)) {
-      return value;
+const isContainer = value => Array.isArray(value) || isPlainObject(value);
+const holdsModifiers = (node, key) =>
+  key === 'epigeneticModifiers' &&
+  !Array.isArray(node) &&
+  node[key] &&
+  typeof node[key] === 'object';
+
+/**
+ * The containers that must be copied: every object holding an
+ * `epigeneticModifiers` value, and every container from which one can be
+ * reached. Computed over the whole graph (reverse edges from each holder), so
+ * a shared or cyclic reference is classified the same at every occurrence.
+ */
+function containersToCopy(root) {
+  const parentsOf = new Map(); // child container -> Set of parent containers
+  const holders = [];
+  const visited = new Set();
+  const stack = isContainer(root) ? [root] : [];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (visited.has(node)) {
+      continue;
     }
-    seen.add(value);
-    let copy = null;
-    value.forEach((item, i) => {
-      const next = scrub(item, seen);
-      if (next !== item) {
-        copy ??= [...value];
-        copy[i] = next;
+    visited.add(node);
+    for (const key of Object.keys(node)) {
+      if (holdsModifiers(node, key)) {
+        holders.push(node);
+        continue; // the value is replaced whole; nothing inside it is sent
       }
-    });
-    return copy ?? value;
-  }
-  if (!isPlainObject(value)) {
-    // Dates, Decimals, Buffers and primitives carry no trait list.
-    return value;
-  }
-  if (seen.has(value)) {
-    return value;
-  }
-  seen.add(value);
-  let copy = null;
-  for (const key of Object.keys(value)) {
-    const item = value[key];
-    const next =
-      key === 'epigeneticModifiers' && item && typeof item === 'object'
-        ? publicTraitModifiers(item)
-        : scrub(item, seen);
-    if (next !== item) {
-      copy ??= { ...value };
-      copy[key] = next;
+      const child = node[key];
+      if (isContainer(child)) {
+        if (!parentsOf.has(child)) {
+          parentsOf.set(child, new Set());
+        }
+        parentsOf.get(child).add(node);
+        stack.push(child);
+      }
     }
   }
-  return copy ?? value;
+  const copy = new Set();
+  const pending = [...holders];
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (copy.has(node)) {
+      continue;
+    }
+    copy.add(node);
+    pending.push(...(parentsOf.get(node) ?? []));
+  }
+  return copy;
 }
 
 /**
  * `body` with every `epigeneticModifiers` object (at any depth, in objects and
- * arrays) replaced by its public view. Copy-on-write: unchanged branches keep
- * their identity and the input is never mutated, so a cached object handed to
- * res.json is not altered for the next reader.
+ * arrays) replaced by its public view. Copy-on-write: only containers that
+ * lead to such a value are copied, unchanged branches keep their identity and
+ * the input is never mutated, so a cached object handed to res.json is not
+ * altered for the next reader.
+ *
+ * A container that appears more than once (a parent row shared by siblings,
+ * or a true cycle) maps to ONE copy, memoised per input object and registered
+ * before its children are built, so every occurrence — and every path round a
+ * cycle — reaches the scrubbed copy, never the raw row (fix round 1, C1).
  *
  * @template T
  * @param {T} body
  * @returns {T}
  */
 export function withPublicTraitModifiers(body) {
-  return scrub(body, new WeakSet());
+  const toCopy = containersToCopy(body);
+  const memo = new Map();
+  const build = value => {
+    if (!toCopy.has(value)) {
+      return value; // primitives, Dates, Decimals and branches with no trait list
+    }
+    if (memo.has(value)) {
+      return memo.get(value);
+    }
+    const out = Array.isArray(value) ? [] : {};
+    memo.set(value, out);
+    for (const key of Object.keys(value)) {
+      out[key] = holdsModifiers(value, key) ? publicTraitModifiers(value[key]) : build(value[key]);
+    }
+    return out;
+  };
+  return build(body);
 }
 
 /**

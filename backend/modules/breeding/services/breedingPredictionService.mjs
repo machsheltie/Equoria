@@ -1,36 +1,28 @@
 /**
  * Breeding Prediction Service
  *
- * Service for calculating inheritance probabilities and breeding predictions based on
- * parent trait development history. This service provides epigenetic preview functionality
- * for the breeding screen, analyzing trait inheritance, flag inheritance scores, and
- * child prediction algorithms.
+ * The per-horse breeding data summary (GET /horses/:id/breeding-data) and the
+ * temperament compatibility of a pair.
  *
- * Features:
- * - Inheritance probability logic based on trait_history_log
- * - Trait summary generation for breeding parents
- * - Flag inheritance score calculation
- * - Epigenetic flag analysis and inheritance prediction
- * - Temperament and influence modifier calculations
- * - Child prediction algorithms with probability ranges
+ * Owner ruling 2026-10-19 (Equoria-6dace fix round 1): the pair inheritance
+ * functions that read BOTH parents' raw trait history — another player's
+ * hidden traits included — had no caller and were deleted
+ * (calculateInheritanceProbabilities, calculateFlagInheritanceScore,
+ * predictOffspringTraits). Breeding predictions live in the prediction
+ * services, which read through predictionHorseView.
  *
  * Business Rules:
- * - Flag inheritance odds capped at 50% without trait stacking
- * - Trait stacking can increase probabilities up to 75%
- * - Only traits before age 4 are considered for inheritance
- * - Preview is an estimate with confidence levels
+ * - Only traits before age 4 are considered
+ * - History rows of traits still hidden on the horse are not counted
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { NotFoundError } from '../../../errors/index.mjs';
-import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
+import { hiddenTraitSet, publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
 
 // Constants for inheritance calculations
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days
-const BASE_INHERITANCE_RATE = 25; // Base 25% inheritance chance
-const MAX_INHERITANCE_RATE = 75; // Maximum with stacking
-const MAX_SINGLE_TRAIT_RATE = 50; // Maximum without stacking
 
 // Trait categorization for prediction
 const TRAIT_CATEGORIES = {
@@ -69,210 +61,18 @@ const NEGATIVE_TRAITS = [
 ];
 
 /**
- * Calculate inheritance probabilities from parent trait history
- * @param {number} stallionId - ID of the stallion
- * @param {number} mareId - ID of the mare
- * @returns {Object} Inheritance probability analysis
- */
-export async function calculateInheritanceProbabilities(stallionId, mareId) {
-  logger.info(
-    `[breedingPredictionService.calculateInheritanceProbabilities] Calculating inheritance for stallion ${stallionId} and mare ${mareId}`,
-  );
-
-  // Get trait history for both parents (before age 4)
-  const stallionTraits = await prisma.traitHistoryLog.findMany({
-    where: {
-      horseId: stallionId,
-      ageInDays: { lt: AGE_CUTOFF_DAYS },
-    },
-    orderBy: { ageInDays: 'asc' },
-  });
-
-  const mareTraits = await prisma.traitHistoryLog.findMany({
-    where: {
-      horseId: mareId,
-      ageInDays: { lt: AGE_CUTOFF_DAYS },
-    },
-    orderBy: { ageInDays: 'asc' },
-  });
-
-  // Combine all traits and calculate inheritance probabilities
-  const allTraits = [...stallionTraits, ...mareTraits];
-  const traitMap = new Map();
-
-  // Process each trait and calculate inheritance probability
-  allTraits.forEach(trait => {
-    const key = trait.traitName;
-    if (!traitMap.has(key)) {
-      traitMap.set(key, {
-        traitName: trait.traitName,
-        stallionHas: false,
-        mareHas: false,
-        stallionData: null,
-        mareData: null,
-        isRare: RARE_TRAITS.includes(trait.traitName),
-        isNegative: NEGATIVE_TRAITS.includes(trait.traitName),
-        isEpigenetic: trait.isEpigenetic,
-      });
-    }
-
-    const traitData = traitMap.get(key);
-    if (trait.horseId === stallionId) {
-      traitData.stallionHas = true;
-      traitData.stallionData = trait;
-    } else {
-      traitData.mareHas = true;
-      traitData.mareData = trait;
-    }
-  });
-
-  // Calculate probabilities for each trait
-  const traitProbabilities = Array.from(traitMap.values())
-    .map(trait => {
-      let probability = 0;
-      let hasStacking = false;
-      let stackingBonus = 0;
-
-      if (trait.stallionHas && trait.mareHas) {
-        // Both parents have trait - stacking bonus
-        probability = BASE_INHERITANCE_RATE + 25; // 50% base for both parents
-        stackingBonus = 15; // Additional 15% for stacking
-        probability = Math.min(probability + stackingBonus, MAX_INHERITANCE_RATE);
-        hasStacking = true;
-      } else if (trait.stallionHas || trait.mareHas) {
-        // One parent has trait
-        probability = BASE_INHERITANCE_RATE;
-
-        // Bonus for rare traits
-        if (trait.isRare) {
-          probability += 10;
-        }
-
-        // Penalty for negative traits
-        if (trait.isNegative) {
-          probability -= 5;
-        }
-
-        // Bonus for epigenetic traits
-        if (trait.isEpigenetic) {
-          probability += 5;
-        }
-
-        probability = Math.min(probability, MAX_SINGLE_TRAIT_RATE);
-      }
-
-      return {
-        traitName: trait.traitName,
-        probability: Math.max(0, probability),
-        hasStacking,
-        stackingBonus,
-        isRare: trait.isRare,
-        isNegative: trait.isNegative,
-        isEpigenetic: trait.isEpigenetic,
-        parentSources: {
-          stallion: trait.stallionHas,
-          mare: trait.mareHas,
-        },
-        sourceData: {
-          stallion: trait.stallionData,
-          mare: trait.mareData,
-        },
-      };
-    })
-    .filter(trait => trait.probability > 0);
-
-  // Calculate summary statistics
-  const summary = {
-    totalTraitsConsidered: traitProbabilities.length,
-    epigeneticTraits: traitProbabilities.filter(t => t.isEpigenetic).length,
-    rareTraits: traitProbabilities.filter(t => t.isRare).length,
-    negativeTraits: traitProbabilities.filter(t => t.isNegative).length,
-    stackingTraits: traitProbabilities.filter(t => t.hasStacking).length,
-    averageInheritanceChance:
-      traitProbabilities.length > 0
-        ? traitProbabilities.reduce((sum, t) => sum + t.probability, 0) / traitProbabilities.length
-        : 0,
-  };
-
-  const result = {
-    stallionId,
-    mareId,
-    traitProbabilities,
-    summary,
-    hasInsufficientData: traitProbabilities.length === 0,
-    calculatedAt: new Date(),
-  };
-
-  logger.info(
-    `[breedingPredictionService.calculateInheritanceProbabilities] Calculated ${traitProbabilities.length} trait probabilities`,
-  );
-
-  return result;
-}
-
-/**
- * Calculate flag inheritance score based on trait categories
- * @param {number} stallionId - ID of the stallion
- * @param {number} mareId - ID of the mare
- * @returns {Object} Flag inheritance analysis
- */
-export async function calculateFlagInheritanceScore(stallionId, mareId) {
-  logger.info(
-    `[breedingPredictionService.calculateFlagInheritanceScore] Calculating flag inheritance for stallion ${stallionId} and mare ${mareId}`,
-  );
-
-  const inheritanceData = await calculateInheritanceProbabilities(stallionId, mareId);
-
-  // Categorize traits by type
-  const inheritanceCategories = {};
-  Object.keys(TRAIT_CATEGORIES).forEach(category => {
-    inheritanceCategories[category] = 0;
-  });
-
-  inheritanceData.traitProbabilities.forEach(trait => {
-    Object.entries(TRAIT_CATEGORIES).forEach(([category, traits]) => {
-      if (traits.includes(trait.traitName)) {
-        inheritanceCategories[category] += trait.probability;
-      }
-    });
-  });
-
-  // Calculate flag scores for each parent
-  const stallionFlags = await calculateIndividualFlags(stallionId);
-  const mareFlags = await calculateIndividualFlags(mareId);
-
-  // Calculate combined inheritance score
-  const combinedScore =
-    Object.values(inheritanceCategories).reduce((sum, score) => sum + score, 0) /
-    Object.keys(inheritanceCategories).length;
-
-  const result = {
-    stallionId,
-    mareId,
-    stallionFlags,
-    mareFlags,
-    inheritanceCategories,
-    combinedScore,
-    calculatedAt: new Date(),
-  };
-
-  logger.info(
-    `[breedingPredictionService.calculateFlagInheritanceScore] Calculated flag inheritance score: ${combinedScore.toFixed(1)}`,
-  );
-
-  return result;
-}
-
-/**
  * Calculate individual flag scores for a horse
  * @param {number} horseId - ID of the horse
+ * @param {string[]} hiddenTraits - traits hidden on the horse now; their history
+ *   rows are not counted (owner ruling 2026-10-19, Equoria-6dace)
  * @returns {Object} Individual flag analysis
  */
-async function calculateIndividualFlags(horseId) {
+async function calculateIndividualFlags(horseId, hiddenTraits) {
   const traits = await prisma.traitHistoryLog.findMany({
     where: {
       horseId,
       ageInDays: { lt: AGE_CUTOFF_DAYS },
+      traitName: { notIn: hiddenTraits },
     },
   });
 
@@ -382,62 +182,6 @@ export async function calculateTemperamentInfluence(stallionId, mareId) {
 }
 
 /**
- * Predict offspring traits with probability ranges
- * @param {number} stallionId - ID of the stallion
- * @param {number} mareId - ID of the mare
- * @returns {Object} Offspring trait predictions
- */
-export async function predictOffspringTraits(stallionId, mareId) {
-  logger.info(
-    `[breedingPredictionService.predictOffspringTraits] Predicting offspring traits for stallion ${stallionId} and mare ${mareId}`,
-  );
-
-  const inheritanceData = await calculateInheritanceProbabilities(stallionId, mareId);
-  const flagData = await calculateFlagInheritanceScore(stallionId, mareId);
-
-  // Calculate category probabilities
-  const categoryProbabilities = flagData.inheritanceCategories;
-
-  // Estimate trait count based on parent trait counts
-  const parentTraitCounts = inheritanceData.summary.totalTraitsConsidered;
-  const estimatedTraitCount = {
-    min: Math.max(1, Math.floor(parentTraitCounts * 0.3)),
-    max: Math.min(8, Math.ceil(parentTraitCounts * 0.7)),
-    expected: Math.round(parentTraitCounts * 0.5),
-  };
-
-  // Calculate confidence level
-  const confidenceLevel = inheritanceData.hasInsufficientData
-    ? 'low'
-    : parentTraitCounts >= 6
-      ? 'high'
-      : parentTraitCounts >= 3
-        ? 'medium'
-        : 'low';
-
-  const result = {
-    stallionId,
-    mareId,
-    categoryProbabilities,
-    estimatedTraitCount,
-    confidenceLevel,
-    isEstimate: true,
-    parentTraitData: {
-      totalParentTraits: parentTraitCounts,
-      epigeneticTraits: inheritanceData.summary.epigeneticTraits,
-      rareTraits: inheritanceData.summary.rareTraits,
-    },
-    calculatedAt: new Date(),
-  };
-
-  logger.info(
-    `[breedingPredictionService.predictOffspringTraits] Predicted ${estimatedTraitCount.expected} traits with ${confidenceLevel} confidence`,
-  );
-
-  return result;
-}
-
-/**
  * Generate comprehensive breeding data for a horse
  * @param {number} horseId - ID of the horse
  * @returns {Object} Complete breeding data summary
@@ -470,11 +214,15 @@ export async function generateBreedingData(horseId) {
     throw new NotFoundError('Horse', horseId);
   }
 
-  // Get trait history for summary
+  // Get trait history for summary. Rows naming a trait still hidden on the
+  // horse are not counted: per-category counts would hint at it (owner ruling
+  // 2026-10-19, Equoria-6dace).
+  const hiddenTraits = [...hiddenTraitSet(horse.epigeneticModifiers)];
   const traitHistory = await prisma.traitHistoryLog.findMany({
     where: {
       horseId,
       ageInDays: { lt: AGE_CUTOFF_DAYS },
+      traitName: { notIn: hiddenTraits },
     },
     orderBy: { ageInDays: 'asc' },
   });
@@ -510,7 +258,7 @@ export async function generateBreedingData(horseId) {
   });
 
   // Calculate individual flag inheritance score
-  const flagInheritanceScore = await calculateIndividualFlags(horseId);
+  const flagInheritanceScore = await calculateIndividualFlags(horseId, hiddenTraits);
 
   // Unrevealed hidden traits: a count only, never named (Equoria-6dace).
   const { positive, negative, hiddenCount } = publicTraitModifiers(horse.epigeneticModifiers);
