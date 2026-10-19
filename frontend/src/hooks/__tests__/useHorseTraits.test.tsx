@@ -59,10 +59,8 @@ const realHorseTraits = {
         },
       },
     ],
-    hidden: [
-      { name: '???', definition: null },
-      { name: '???', definition: null },
-    ],
+    // Equoria-6dace: the backend sends a COUNT of hidden traits, never names.
+    hiddenCount: 2,
   },
   summary: { totalTraits: 4, visibleTraits: 2, hiddenTraits: 2 },
 };

@@ -22,6 +22,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { hiddenTraitSet } from '../../../utils/publicTraitView.mjs';
 // Equoria-fe9k: canonical days→game-years conversion. The introspection
 // response previously divided AGE_CUTOFF_DAYS by 365 (calendar-years),
 // drifting from the game-year cadence used everywhere else.
@@ -133,6 +134,16 @@ export async function calculateTraitScore(horseId) {
   // Calculate groom care consistency score (max 5 points)
   const groomCareScore = calculateGroomCareConsistency(milestoneData);
 
+  // The score below counts every logged trait, as before (an owner question,
+  // see Equoria-6dace report). The name lists sent back leave out traits still
+  // hidden on the horse: those are never named, to anyone (Equoria-6dace).
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { epigeneticModifiers: true },
+  });
+  const hidden = hiddenTraitSet(horse?.epigeneticModifiers);
+  const shown = rows => rows.filter(t => !hidden.has(t.traitName));
+
   // Calculate total trait score
   const totalScore = Math.max(
     0,
@@ -149,14 +160,14 @@ export async function calculateTraitScore(horseId) {
       rareTraits: rareTraitScore,
       groomCareConsistency: groomCareScore,
       negativeTraitPenalty,
-      traitsConsidered: traitsConsidered.map(t => ({
+      traitsConsidered: shown(traitsConsidered).map(t => ({
         name: t.traitName,
         sourceType: t.sourceType,
         ageInDays: t.ageInDays,
         isRare: RARE_TRAITS.includes(t.traitName),
         isNegative: NEGATIVE_TRAITS.includes(t.traitName),
       })),
-      traitsExcluded: traitsExcluded.map(t => ({
+      traitsExcluded: shown(traitsExcluded).map(t => ({
         name: t.traitName,
         ageInDays: t.ageInDays,
         reason: 'Too old (after age 4)',
@@ -168,8 +179,8 @@ export async function calculateTraitScore(horseId) {
         bondScore: m.bondScore,
       })),
       sourceTypes: Array.from(sourceTypes),
-      rareTraitNames: rareTraits.map(t => t.traitName),
-      negativeTraitNames: negativeTraits.map(t => t.traitName),
+      rareTraitNames: shown(rareTraits).map(t => t.traitName),
+      negativeTraitNames: shown(negativeTraits).map(t => t.traitName),
     },
   };
 

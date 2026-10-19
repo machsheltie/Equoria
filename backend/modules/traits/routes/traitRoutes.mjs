@@ -179,8 +179,8 @@ router.post(
  *                           type: array
  *                         negative:
  *                           type: array
- *                         hidden:
- *                           type: array
+ *                         hiddenCount:
+ *                           type: integer
  *                     summary:
  *                       type: object
  *       400:

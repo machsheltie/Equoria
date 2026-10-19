@@ -8,6 +8,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { visibleTraitHistoryWhere } from './visibleTraitHistory.mjs';
 
 /**
  * Logs a trait assignment to the history
@@ -105,8 +106,10 @@ export async function getTraitHistory(horseId, options = {}) {
     }
   }
 
+  // Rows naming a trait still hidden on the horse are never returned
+  // (Equoria-6dace); the summaries below build on this read too.
   const history = await prisma.traitHistoryLog.findMany({
-    where: whereClause,
+    where: await visibleTraitHistoryWhere(whereClause),
     include: {
       horse: {
         select: { name: true, dateOfBirth: true },

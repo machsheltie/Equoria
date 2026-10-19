@@ -24,6 +24,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { NotFoundError } from '../../../errors/index.mjs';
+import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
 
 // Constants for inheritance calculations
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days
@@ -511,15 +512,13 @@ export async function generateBreedingData(horseId) {
   // Calculate individual flag inheritance score
   const flagInheritanceScore = await calculateIndividualFlags(horseId);
 
-  // Extract epigenetic flags from horse data
+  // Unrevealed hidden traits: a count only, never named (Equoria-6dace).
+  const { positive, negative, hiddenCount } = publicTraitModifiers(horse.epigeneticModifiers);
   const epigeneticFlags = {
-    positive: horse.epigeneticModifiers?.positive || [],
-    negative: horse.epigeneticModifiers?.negative || [],
-    hidden: horse.epigeneticModifiers?.hidden || [],
-    totalFlags:
-      (horse.epigeneticModifiers?.positive?.length || 0) +
-      (horse.epigeneticModifiers?.negative?.length || 0) +
-      (horse.epigeneticModifiers?.hidden?.length || 0),
+    positive,
+    negative,
+    hiddenCount,
+    totalFlags: positive.length + negative.length + hiddenCount,
   };
 
   // Calculate temperament influence data

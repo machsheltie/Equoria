@@ -3,17 +3,23 @@
  *
  * Wraps the seven prisma calls used by enhancedReportingRoutes.mjs so
  * the routes layer no longer imports prisma directly (Equoria-becrm).
+ *
+ * Every trait-history read here feeds a response, so each leaves out rows
+ * naming a trait still hidden on the horse (Equoria-6dace,
+ * visibleTraitHistory.mjs).
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { visibleTraitHistoryWhere, withVisibleTraitHistoryLogs } from './visibleTraitHistory.mjs';
 
 /**
  * Fetch a trait-history log filtered by the caller's where-conditions
- * (trait type / sourceType / timestamp range), newest first.
+ * (horseId plus sourceType / timestamp range), newest first. Rows naming a
+ * trait still hidden on the horse are left out (Equoria-6dace).
  */
-export function findTraitHistoryByWhere(whereConditions) {
+export async function findTraitHistoryByWhere(whereConditions) {
   return prisma.traitHistoryLog.findMany({
-    where: whereConditions,
+    where: await visibleTraitHistoryWhere(whereConditions),
     orderBy: { timestamp: 'desc' },
   });
 }
@@ -25,13 +31,14 @@ export function findTraitHistoryByWhere(whereConditions) {
  * @param {number} horseId
  * @returns {Promise<object|null>}
  */
-export function getHorseWithTraitHistoryLogs(horseId) {
-  return prisma.horse.findUnique({
+export async function getHorseWithTraitHistoryLogs(horseId) {
+  const horse = await prisma.horse.findUnique({
     where: { id: horseId },
     include: {
       traitHistoryLogs: { orderBy: { timestamp: 'desc' } },
     },
   });
+  return withVisibleTraitHistoryLogs(horse);
 }
 
 /**
@@ -39,9 +46,9 @@ export function getHorseWithTraitHistoryLogs(horseId) {
  *
  * @param {number} horseId
  */
-export function findTraitHistoryForTimeline(horseId) {
+export async function findTraitHistoryForTimeline(horseId) {
   return prisma.traitHistoryLog.findMany({
-    where: { horseId },
+    where: await visibleTraitHistoryWhere({ horseId }),
     orderBy: { timestamp: 'asc' },
   });
 }
@@ -70,11 +77,12 @@ export function findGroomInteractionsForTimeline(horseId) {
  *
  * @param {string|number} userId
  */
-export function findUserHorsesWithTraitLogs(userId) {
-  return prisma.horse.findMany({
+export async function findUserHorsesWithTraitLogs(userId) {
+  const horses = await prisma.horse.findMany({
     where: { userId },
     include: { traitHistoryLogs: true },
   });
+  return horses.map(withVisibleTraitHistoryLogs);
 }
 
 /**
@@ -94,5 +102,5 @@ export async function findOwnedHorsesWithTraitLogs(horseIds, userId) {
     },
     include: { traitHistoryLogs: true },
   });
-  return horses.length === horseIds.length ? horses : null;
+  return horses.length === horseIds.length ? horses.map(withVisibleTraitHistoryLogs) : null;
 }

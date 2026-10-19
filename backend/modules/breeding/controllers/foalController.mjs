@@ -25,6 +25,7 @@ import { getFoalDevelopment } from '../../horses/index.mjs';
 import { ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { revealTraits } from '../../../utils/traitDiscovery.mjs';
+import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
 import { computeAgeStage } from '../../../utils/foalAgeUtils.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
@@ -134,7 +135,8 @@ export async function getFoalHandler(req, res) {
         bondScore: foal.bondScore,
         stressLevel: foal.stressLevel,
         epigeneticFlags: foal.epigeneticFlags || [],
-        epigeneticModifiers: foal.epigeneticModifiers || { positive: [], negative: [], hidden: [] },
+        // Unrevealed hidden traits are never named, to anyone (Equoria-6dace).
+        epigeneticModifiers: publicTraitModifiers(foal.epigeneticModifiers),
       },
     });
   } catch (error) {
@@ -247,19 +249,16 @@ export async function revealFoalTraitsHandler(req, res) {
       select: { epigeneticModifiers: true },
     });
 
-    const modifiers = foal?.epigeneticModifiers ?? {
-      positive: [],
-      negative: [],
-      hidden: [],
-    };
-    const visibleTraits = [...(modifiers.positive || []), ...(modifiers.negative || [])];
+    // Only the traits just revealed may be named; the ones still hidden are a
+    // count (Equoria-6dace).
+    const modifiers = publicTraitModifiers(foal?.epigeneticModifiers);
 
     res.json({
       success: true,
       data: {
-        traits: visibleTraits,
+        traits: [...modifiers.positive, ...modifiers.negative],
         revealed: discovery?.revealed || [],
-        hidden: modifiers.hidden || [],
+        hiddenCount: modifiers.hiddenCount,
       },
     });
   } catch (error) {

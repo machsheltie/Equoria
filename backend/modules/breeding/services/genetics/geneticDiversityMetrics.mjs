@@ -18,6 +18,7 @@
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
+import { withoutUnrevealedTraits } from '../predictionHorseView.mjs';
 
 // ── Public API: composite diversity ─────────────────────────────────────────
 
@@ -31,20 +32,24 @@ export async function calculateAdvancedGeneticDiversity(horseIds) {
     `[geneticDiversityMetrics.calculateAdvancedGeneticDiversity] Analyzing ${horseIds.length} horses`,
   );
 
-  const horses = await prisma.horse.findMany({
-    where: { id: { in: horseIds } },
-    select: {
-      id: true,
-      name: true,
-      epigeneticModifiers: true,
-      speed: true,
-      stamina: true,
-      agility: true,
-      intelligence: true,
-      sireId: true,
-      damId: true,
-    },
-  });
+  // Unrevealed hidden traits never reach this analysis or its output (S-Q9,
+  // Equoria-6dace): neither shown nor inferable from a score that counted them.
+  const horses = (
+    await prisma.horse.findMany({
+      where: { id: { in: horseIds } },
+      select: {
+        id: true,
+        name: true,
+        epigeneticModifiers: true,
+        speed: true,
+        stamina: true,
+        agility: true,
+        intelligence: true,
+        sireId: true,
+        damId: true,
+      },
+    })
+  ).map(withoutUnrevealedTraits);
 
   if (horses.length === 0) {
     return getDefaultDiversityMetrics();

@@ -9,6 +9,7 @@ import { getTraitDefinition } from './epigeneticTraits.mjs';
 import { isFoalAge, FOAL_LIMITS } from '../constants/schema.mjs';
 import { MS_PER_WEEK } from './../constants/time.mjs';
 import { NotFoundError } from '../errors/index.mjs';
+import { publicTraitModifiers } from './publicTraitView.mjs';
 
 /**
  * Discovery conditions that trigger trait revelation
@@ -302,7 +303,7 @@ export async function revealTraits(horseId, options = {}) {
     })),
     totalHiddenBefore: hiddenTraits.length,
     totalHiddenAfter: updatedTraits.hidden.length,
-    updatedTraits,
+    updatedTraits: publicTraitModifiers(updatedTraits), // sent to clients (Equoria-6dace)
     message: `Discovered ${traitsToReveal.length} new trait${traitsToReveal.length > 1 ? 's' : ''}!`,
   };
 }
@@ -572,10 +573,9 @@ export async function getDiscoveryProgress(horseId) {
     ...(epigeneticModifiers.positive || []),
     ...(epigeneticModifiers.negative || []),
   ];
-  const allTraits = [...visibleTraits, ...hiddenTraits];
 
   const totalPossibleTraits = Object.keys(DISCOVERY_CONDITIONS).length;
-  const discoveredTraits = allTraits.length;
+  const discoveredTraits = visibleTraits.length + hiddenTraits.length;
   const progressPercentage = Math.round((discoveredTraits / totalPossibleTraits) * 100);
 
   // Get current stats for condition checking
@@ -594,7 +594,7 @@ export async function getDiscoveryProgress(horseId) {
     discoveredTraits,
     totalPossibleTraits,
     progressPercentage,
-    traits: allTraits,
+    traits: visibleTraits, // hidden ones are only counted (Equoria-6dace)
     hiddenTraitsCount: hiddenTraits.length,
     visibleTraitsCount: visibleTraits.length,
     currentStats,

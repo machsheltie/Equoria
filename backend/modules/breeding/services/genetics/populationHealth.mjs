@@ -12,6 +12,7 @@
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
+import { withoutUnrevealedTraits } from '../predictionHorseView.mjs';
 
 import {
   calculateAdvancedGeneticDiversity,
@@ -112,10 +113,14 @@ export async function analyzePopulationInbreeding(horseIds) {
  * @returns {Promise<Array<Object>>}
  */
 export async function identifyPopulationBottlenecks(horseIds) {
-  const horses = await prisma.horse.findMany({
-    where: { id: { in: horseIds } },
-    select: { id: true, name: true, epigeneticModifiers: true, sireId: true, damId: true },
-  });
+  // Unrevealed hidden traits never reach this analysis or its output (S-Q9,
+  // Equoria-6dace): neither shown nor inferable from a score that counted them.
+  const horses = (
+    await prisma.horse.findMany({
+      where: { id: { in: horseIds } },
+      select: { id: true, name: true, epigeneticModifiers: true, sireId: true, damId: true },
+    })
+  ).map(withoutUnrevealedTraits);
 
   const bottlenecks = [];
 

@@ -19,6 +19,7 @@
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
+import { withoutUnrevealedTraits } from '../predictionHorseView.mjs';
 
 import {
   GENETIC_ACTION_CODES,
@@ -40,22 +41,26 @@ export async function analyzeGeneticTrends(horseIds) {
     `[recommendationGenerators.analyzeGeneticTrends] Analyzing trends for ${horseIds.length} horses`,
   );
 
-  const horses = await prisma.horse.findMany({
-    where: { id: { in: horseIds } },
-    select: {
-      id: true,
-      name: true,
-      dateOfBirth: true,
-      epigeneticModifiers: true,
-      speed: true,
-      stamina: true,
-      agility: true,
-      intelligence: true,
-      sireId: true,
-      damId: true,
-    },
-    orderBy: { dateOfBirth: 'asc' },
-  });
+  // Unrevealed hidden traits never reach this analysis or its output (S-Q9,
+  // Equoria-6dace): neither shown nor inferable from a score that counted them.
+  const horses = (
+    await prisma.horse.findMany({
+      where: { id: { in: horseIds } },
+      select: {
+        id: true,
+        name: true,
+        dateOfBirth: true,
+        epigeneticModifiers: true,
+        speed: true,
+        stamina: true,
+        agility: true,
+        intelligence: true,
+        sireId: true,
+        damId: true,
+      },
+      orderBy: { dateOfBirth: 'asc' },
+    })
+  ).map(withoutUnrevealedTraits);
 
   const generationMap = {};
   horses.forEach(horse => {
@@ -262,17 +267,21 @@ export async function trackGeneticDiversityOverTime(horseIds) {
     `[recommendationGenerators.trackGeneticDiversityOverTime] Tracking diversity for ${horseIds.length} horses`,
   );
 
-  const horses = await prisma.horse.findMany({
-    where: { id: { in: horseIds } },
-    select: {
-      id: true,
-      name: true,
-      dateOfBirth: true,
-      createdAt: true,
-      epigeneticModifiers: true,
-    },
-    orderBy: { dateOfBirth: 'asc' },
-  });
+  // Unrevealed hidden traits never reach this analysis or its output (S-Q9,
+  // Equoria-6dace): neither shown nor inferable from a score that counted them.
+  const horses = (
+    await prisma.horse.findMany({
+      where: { id: { in: horseIds } },
+      select: {
+        id: true,
+        name: true,
+        dateOfBirth: true,
+        createdAt: true,
+        epigeneticModifiers: true,
+      },
+      orderBy: { dateOfBirth: 'asc' },
+    })
+  ).map(withoutUnrevealedTraits);
 
   const timeline = [];
   const yearGroups = {};

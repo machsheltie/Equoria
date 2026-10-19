@@ -7,7 +7,7 @@
  * whose response shapes are documented inline:
  *
  *  - GET  /api/v1/traits/horse/:horseId           → authoritative positive /
- *      negative / hidden classification + per-trait definition (description,
+ *      negative classification + a hidden COUNT + per-trait definition (description,
  *      rarity, category, type). This is the single source of truth for a
  *      trait's beneficial-vs-detrimental valence (definition.type / which
  *      bucket the name is in) — NOT a client-side stat-sign guess.
@@ -66,7 +66,8 @@ export interface RawHorseTraits {
   traits?: {
     positive?: RawEnhancedTrait[];
     negative?: RawEnhancedTrait[];
-    hidden?: RawEnhancedTrait[];
+    /** Count only: the backend never names an unrevealed trait (Equoria-6dace). */
+    hiddenCount?: number;
   };
   summary?: {
     totalTraits?: number;
@@ -190,9 +191,9 @@ export function mapHorseTraits(raw: RawHorseTraits | null | undefined): HorseTra
   const buckets = raw?.traits;
   const positive = mapBucket(buckets?.positive, 'positive');
   const negative = mapBucket(buckets?.negative, 'negative');
-  const hiddenCount = Array.isArray(buckets?.hidden)
-    ? buckets!.hidden!.filter((r) => !!r && typeof r.name === 'string').length
-    : 0;
+  const rawHidden = buckets?.hiddenCount;
+  const hiddenCount =
+    typeof rawHidden === 'number' && Number.isInteger(rawHidden) && rawHidden > 0 ? rawHidden : 0;
   return {
     positive,
     negative,

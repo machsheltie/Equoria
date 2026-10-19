@@ -10,6 +10,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
+import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
 
 // TTL constants (in seconds)
 const TRAIT_DEFINITIONS_TTL = 600; // 10 minutes — static reference data
@@ -160,25 +161,15 @@ export async function getHorseTraits(req, res) {
       });
     }
 
-    // Parse and enhance traits with definitions
-    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+    // Visible traits with definitions; unrevealed hidden traits are a count
+    // only, never named, to anyone (Equoria-6dace).
+    const traits = publicTraitModifiers(horse.epigeneticModifiers);
+    const withDefinition = trait => ({ name: trait, definition: getTraitDefinition(trait) });
 
     const enhancedTraits = {
-      positive:
-        traits.positive?.map(trait => ({
-          name: trait,
-          definition: getTraitDefinition(trait),
-        })) || [],
-      negative:
-        traits.negative?.map(trait => ({
-          name: trait,
-          definition: getTraitDefinition(trait),
-        })) || [],
-      hidden:
-        traits.hidden?.map(trait => ({
-          name: trait,
-          definition: getTraitDefinition(trait),
-        })) || [],
+      positive: traits.positive.map(withDefinition),
+      negative: traits.negative.map(withDefinition),
+      hiddenCount: traits.hiddenCount,
     };
 
     res.status(200).json({
@@ -193,11 +184,9 @@ export async function getHorseTraits(req, res) {
         traits: enhancedTraits,
         summary: {
           totalTraits:
-            enhancedTraits.positive.length +
-            enhancedTraits.negative.length +
-            enhancedTraits.hidden.length,
+            enhancedTraits.positive.length + enhancedTraits.negative.length + traits.hiddenCount,
           visibleTraits: enhancedTraits.positive.length + enhancedTraits.negative.length,
-          hiddenTraits: enhancedTraits.hidden.length,
+          hiddenTraits: traits.hiddenCount,
         },
       },
     });

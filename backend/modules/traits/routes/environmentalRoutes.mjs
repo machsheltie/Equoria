@@ -10,6 +10,7 @@ import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
+import { visibleTraitKeys } from '../../../utils/publicTraitView.mjs';
 import { fetchOwnedHorsesForEnvironmentalImpact } from '../services/environmentalHorseService.mjs';
 
 // Import environmental services
@@ -424,7 +425,9 @@ router.get(
           horseId: horse.id,
           horseName: horse.name,
           comfortZone,
-          traits: horseData.traits,
+          // The comfort zone counts every trait the horse has; the list sent
+          // back names only the visible ones (Equoria-6dace).
+          traits: visibleTraitKeys(horse.epigeneticModifiers),
         },
       });
     } catch (error) {

@@ -23,6 +23,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { visibleTraitHistoryWhere } from './visibleTraitHistory.mjs';
 // Equoria-fe9k: canonical days→game-years conversion (1 game-week = 1
 // game-year). Replaces the legacy `/ 365` calendar-year math so the
 // "years" age bucket matches the rest of the game's age semantics.
@@ -77,14 +78,15 @@ export async function generateTraitTimeline(horseId) {
     `[traitTimelineService.generateTraitTimeline] Generating trait timeline for horse ${horseId}`,
   );
 
-  // Get trait history for traits gained before age 4
+  // Get trait history for traits gained before age 4. Here and below, rows
+  // naming a trait still hidden on the horse are left out (Equoria-6dace).
   const traitHistory = await prisma.traitHistoryLog.findMany({
-    where: {
+    where: await visibleTraitHistoryWhere({
       horseId,
       ageInDays: {
         lt: AGE_CUTOFF_DAYS,
       },
-    },
+    }),
     include: {
       groom: {
         select: { id: true, name: true, speciality: true, epigeneticInfluenceType: true },
@@ -95,12 +97,12 @@ export async function generateTraitTimeline(horseId) {
 
   // Get excluded traits (after age 4)
   const excludedTraits = await prisma.traitHistoryLog.findMany({
-    where: {
+    where: await visibleTraitHistoryWhere({
       horseId,
       ageInDays: {
         gte: AGE_CUTOFF_DAYS,
       },
-    },
+    }),
     select: { traitName: true, ageInDays: true, sourceType: true },
     orderBy: { ageInDays: 'asc' },
   });

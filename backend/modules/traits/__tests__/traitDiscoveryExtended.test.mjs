@@ -502,7 +502,10 @@ describe('getDiscoveryProgress() — success path', () => {
     expect(result.hiddenTraitsCount).toBeGreaterThanOrEqual(0);
     expect(result.visibleTraitsCount).toBeGreaterThanOrEqual(0);
     expect(result.discoveredTraits).toBe(result.hiddenTraitsCount + result.visibleTraitsCount);
-    expect(result.traits).toHaveLength(result.discoveredTraits);
+    // Equoria-6dace (owner ruling 2026-10-16): `traits` names the visible
+    // traits only; the hidden ones are hiddenTraitsCount.
+    expect(result.traits).toHaveLength(result.visibleTraitsCount);
+    expect(result.traits).not.toContain('calm');
   }, 10000);
 });
 

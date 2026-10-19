@@ -227,10 +227,13 @@ describe('Trait Routes Integration Tests', () => {
       const { traits } = response.body.data;
       expect(traits).toHaveProperty('positive');
       expect(traits).toHaveProperty('negative');
-      expect(traits).toHaveProperty('hidden');
+      // Equoria-6dace (owner ruling 2026-10-16): unrevealed hidden traits are
+      // a count, never a list of names.
+      expect(traits).not.toHaveProperty('hidden');
       expect(Array.isArray(traits.positive)).toBe(true);
       expect(Array.isArray(traits.negative)).toBe(true);
-      expect(Array.isArray(traits.hidden)).toBe(true);
+      expect(Number.isInteger(traits.hiddenCount)).toBe(true);
+      expect(traits.hiddenCount).toBe(response.body.data.summary.hiddenTraits);
 
       // Check trait structure
       if (traits.positive.length > 0) {

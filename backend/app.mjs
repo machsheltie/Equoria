@@ -94,6 +94,8 @@ import {
   performanceMonitoring,
 } from './middleware/responseOptimization.mjs';
 import { createCompressionMiddleware } from './services/apiResponseOptimizationService.mjs';
+// Equoria-6dace: unrevealed hidden trait names never leave the server.
+import { hiddenTraitResponseGuard } from './middleware/hiddenTraitResponseGuard.mjs';
 import {
   createResourceManagementMiddleware,
   memoryMonitoringMiddleware,
@@ -277,6 +279,9 @@ app.use(createCompressionMiddleware());
 app.use(responseOptimization());
 app.use(paginationMiddleware());
 app.use(performanceMonitoring());
+// Registered after the response wrappers above so it runs FIRST when a route
+// calls res.json: every later step (ETag, size checks) sees the public body.
+app.use(hiddenTraitResponseGuard);
 
 // Memory and resource management middleware
 app.use(
