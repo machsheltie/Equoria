@@ -296,12 +296,13 @@ function isValidGenotype(genotype) {
  * Returns a probability chart of possible offspring coat colors.
  * Controller handles DB fetching and ownership — calls pure-function service.
  *
- * @param {object} req - Express request with body { sireId, damId, foalBreedId? }
+ * @param {object} req - Express request with body { sireId, damId }. The foal's breed is
+ *   always the dam's (parents share a breed; owner ruling 2026-10-20, Equoria-5nwwf).
  * @param {object} res - Express response
  */
 export async function getBreedingColorPrediction(req, res) {
   try {
-    const { sireId, damId, foalBreedId } = req.body;
+    const { sireId, damId } = req.body;
 
     // Self-cross guard (Equoria-eef8): reject sireId === damId with 400
     // BEFORE any DB work — pattern documented in PATTERN_LIBRARY.md
@@ -362,13 +363,12 @@ export async function getBreedingColorPrediction(req, res) {
       });
     }
 
-    // Resolve foal breed profile (default to dam's breed)
-    const resolvedBreedId = foalBreedId || dam.breedId;
+    // The foal's breed profile is the dam's breed: nobody chooses a foal's breed.
     let foalBreedProfile = null;
-    if (resolvedBreedId) {
+    if (dam.breedId) {
       // Use raw SQL to bypass stale Prisma client DMMF that may not include breedGeneticProfile
       const breedRows = await prisma.$queryRaw`
-        SELECT "breedGeneticProfile" FROM breeds WHERE id = ${resolvedBreedId}
+        SELECT "breedGeneticProfile" FROM breeds WHERE id = ${dam.breedId}
       `;
       foalBreedProfile = breedRows[0]?.breedGeneticProfile ?? null;
     }

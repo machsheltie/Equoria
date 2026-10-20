@@ -377,7 +377,6 @@ export async function approveStudRequest(req, res) {
               where: { id: dam.id, userId: mareOwnerId, inFoalSinceDate: null },
               data: pregnancyClaimData({
                 sireId: sire.id,
-                effectiveBreedId: verdict.effectiveBreedId,
                 now,
               }),
             });

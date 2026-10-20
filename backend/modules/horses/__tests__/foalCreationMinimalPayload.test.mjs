@@ -68,7 +68,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
   let breedThoroughbred, breedAbaga;
   let stallion, mare, secondMare, crossBredStallion;
   let otherStallion, otherMare;
-  let breedlessMare, profilelessMare, breedWithoutProfile;
+  let breedlessMare, profilelessMare, profilelessStallion, breedWithoutProfile;
   const createdFoalIds = [];
 
   beforeAll(async () => {
@@ -165,6 +165,11 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
     profilelessMare = await prisma.horse.create({
       data: adult(`TestFixture-6w3ur-ProfilelessDam_${ts}`, 'Mare', player.id, breedWithoutProfile.id),
     });
+    // Equoria-5nwwf: sire and dam must share a breed, so a profile-less mare needs a
+    // profile-less stallion of her own breed to reach the profile check at all.
+    profilelessStallion = await prisma.horse.create({
+      data: adult(`TestFixture-6w3ur-ProfilelessSire_${ts}`, 'Stallion', player.id, breedWithoutProfile.id),
+    });
 
     // Scoped, fail-loud cleanup in dependency order. Foal-dependent rows first,
     // then every horse owned by the two fixture users in ONE id-scoped
@@ -260,15 +265,12 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(dbDam.lastBredDate).toBeTruthy();
       // No pending NAME was sent, so none is stored — the foaling job derives it.
       expect(dbDam.pendingFoalName).toBeNull();
-      // The BREED is different, and deliberately so as of Equoria-m9lz1 fix
-      // round 3 (finding 7): the controller now stores the VALIDATED EFFECTIVE
-      // breed it just checked, which with no breedId supplied is the dam's own.
-      // Previously it stored null here and the foaling job re-derived the breed
-      // from `dam.breedId` as it read SEVEN DAYS LATER — so conception-time and
-      // birth-time agreement rested on `breedId` not being in the
-      // PUT /horses/:id allowlist. Pinning it at conception is the point; a null
-      // here is now the regression, not the expectation.
-      expect(dbDam.pendingFoalBreedId).toBe(mare.breedId);
+      // The BREED is stored nowhere (Equoria-5nwwf, owner ruling 2026-10-20). Equoria-
+      // m9lz1 fix round 3 had pinned the validated breed on the dam at conception
+      // (`pendingFoalBreedId` = mare.breedId); the ruling replaces that: nobody
+      // chooses a foal's breed, the pair must share one, and the foaling job reads
+      // it from the parents. A non-null value here is now the regression.
+      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
 
     it('names the foal `unnamed` and takes the breed from the dam when the player sent neither', async () => {
@@ -289,7 +291,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(foal.userId).toBe(player.id);
     });
 
-    it('still honours an explicit name and breedId when one is supplied', async () => {
+    it('still honours an explicit name, and ignores a breedId (Equoria-5nwwf: nobody chooses a foal breed)', async () => {
       const explicitName = `6w3ur-Named_${ts}`;
       const res = await postFoals({
         sireId: stallion.id,
@@ -301,7 +303,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(res.status).toBe(200);
       const dbDam = await prisma.horse.findUnique({ where: { id: secondMare.id } });
       expect(dbDam.pendingFoalName).toBe(explicitName);
-      expect(dbDam.pendingFoalBreedId).toBe(breedAbaga.id);
+      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
   });
 
@@ -402,22 +404,26 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(dbDam.inFoalSinceDate).toBeNull();
     });
 
-    it('rejects a non-positive breedId', async () => {
+    // Equoria-5nwwf: there is no breedId field any more, so there is nothing to
+    // reject about one. These two cases used to assert a 400 for a non-positive and
+    // for a nonexistent breedId; they now pin that the field is neither validated
+    // nor read, whatever it holds.
+    it('does not validate or read a non-positive breedId', async () => {
       const res = await postFoals({ sireId: stallion.id, damId: mare.id, breedId: 0 });
-      expect(res.status).toBe(400);
-      expect(res.body.message).toBe('Validation failed');
+      expect(res.status).toBe(200);
 
       const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
-      expect(dbDam.inFoalSinceDate).toBeNull();
+      expect(dbDam.inFoalSinceDate).toBeTruthy();
+      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
 
-    it('rejects a breedId that does not exist', async () => {
+    it('does not validate or read a breedId that does not exist', async () => {
       const res = await postFoals({ sireId: stallion.id, damId: mare.id, breedId: 2147483600 });
-      expect(res.status).toBe(400);
-      expect(res.body.message).toMatch(/No breed found for id/);
+      expect(res.status).toBe(200);
 
       const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
-      expect(dbDam.inFoalSinceDate).toBeNull();
+      expect(dbDam.inFoalSinceDate).toBeTruthy();
+      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
   });
 
@@ -455,24 +461,27 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(dbDam.pendingFoalBreedId).toBeNull();
     });
 
-    it('lets a breedless dam breed when the player supplies a real breedId', async () => {
-      // The check is on the breed that will actually be USED, not on the dam's
-      // own column — so supplying one must still work. This keeps the fix from
-      // being over-broad.
+    it('does not let a breedId rescue a breedless dam (Equoria-5nwwf: no one chooses the foal breed)', async () => {
+      // This case used to assert that a real breedId let a breedless dam breed.
+      // The ruling removes the breedId: the foal's breed is the parents', so a dam
+      // with no breed on record cannot be bred whatever the request says.
       const res = await postFoals({
         sireId: stallion.id,
         damId: breedlessMare.id,
         breedId: breedThoroughbred.id,
       });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe(
+        `${breedlessMare.name} has no breed on record, so there is no telling what her foal would be. Her breed needs to be on her record before she can be bred.`,
+      );
       const dbDam = await prisma.horse.findUnique({ where: { id: breedlessMare.id } });
-      expect(dbDam.inFoalSinceDate).toBeTruthy();
-      expect(dbDam.pendingFoalBreedId).toBe(breedThoroughbred.id);
+      expect(dbDam.inFoalSinceDate).toBeNull();
+      expect(dbDam.lastBredDate).toBeNull();
     });
 
     it('refuses a dam whose breed has no breed profile and claims no pregnancy', async () => {
-      const res = await postFoals({ sireId: stallion.id, damId: profilelessMare.id });
+      const res = await postFoals({ sireId: profilelessStallion.id, damId: profilelessMare.id });
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
@@ -487,20 +496,20 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       expect(dbDam.lastBredDate).toBeNull();
     });
 
-    it('refuses a supplied breedId whose breed has no breed profile', async () => {
+    it('is not steered by a breedId naming a breed with no breed profile (Equoria-5nwwf)', async () => {
+      // This case used to assert a 400 for a SUPPLIED breedId with no profile. The
+      // supplied value no longer exists: the pair's own breed is checked, and it
+      // has a profile, so the pregnancy starts and the foal will be that breed.
       const res = await postFoals({
         sireId: stallion.id,
         damId: mare.id,
         breedId: breedWithoutProfile.id,
       });
 
-      expect(res.status).toBe(400);
-      expect(res.body.message).toBe(
-        `${breedWithoutProfile.name} has no breed profile on file, so a foal of that breed cannot be born yet.`,
-      );
+      expect(res.status).toBe(200);
       const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
-      expect(dbDam.inFoalSinceDate).toBeNull();
-      expect(dbDam.lastBredDate).toBeNull();
+      expect(dbDam.inFoalSinceDate).toBeTruthy();
+      expect(dbDam.pendingFoalBreedId).toBeNull();
     });
 
     // The controller separates "this breed has no profile" (400, the player's
@@ -530,27 +539,23 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
     });
   });
 
-  describe('crossbreeding', () => {
-    // There is no crossbreed-permission rule anywhere in the backend today (no
-    // isCrossbreedAllowed, no breed-compatibility gate). A mixed-breed pair is
-    // therefore ACCEPTED and the foal resolves to the DAM's breed. This test
-    // documents that as the live contract so a future silent change is caught;
-    // it is not an endorsement of unrestricted crossbreeding.
-    it('accepts a mixed-breed pair and resolves the foal to the dam breed', async () => {
+  describe('a pair of two breeds', () => {
+    // Equoria-5nwwf (owner ruling, Stacey 2026-10-20): sire and dam must be the
+    // same breed. This case used to document the opposite: "no crossbreed-
+    // permission rule exists, so a mixed-breed pair is ACCEPTED and the foal
+    // resolves to the dam's breed". That contract is retired. (Authorised
+    // crossbreeds are a later owner design; nothing here anticipates them.)
+    it('is refused in plain words and starts no pregnancy', async () => {
       expect(crossBredStallion.breedId).not.toBe(mare.breedId);
 
       const res = await postFoals({ sireId: crossBredStallion.id, damId: mare.id });
-      expect(res.status).toBe(200);
 
-      const foaled = await postFoalNow(mare.id);
-      expect(foaled.status).toBe(201);
-      const foalId = foaled.body.data.foalId;
-      createdFoalIds.push(foalId);
-
-      const foal = await prisma.horse.findUnique({ where: { id: foalId } });
-      expect(foal.breedId).toBe(mare.breedId);
-      expect(foal.sireId).toBe(crossBredStallion.id);
-      expect(foal.damId).toBe(mare.id);
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/must be the same breed to breed/);
+      const dbDam = await prisma.horse.findUnique({ where: { id: mare.id } });
+      expect(dbDam.inFoalSinceDate).toBeNull();
+      expect(dbDam.pregnancySireId).toBeNull();
+      expect(dbDam.lastBredDate).toBeNull();
     });
   });
 });

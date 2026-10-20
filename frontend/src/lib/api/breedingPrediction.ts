@@ -178,10 +178,10 @@ export const breedingPredictionApi = {
    * AC6 legacy-horse case: when either parent lacks colorGenotype, the response
    * returns `{ success: true, data: null }` — caller MUST handle null data.
    *
-   * @param payload sireId/damId required, foalBreedId optional (defaults to dam's breed)
+   * @param payload sireId and damId. The foal's breed is always the dam's; there is no override.
    * @returns BreedingColorPredictionResult | null (null = AC6 legacy horse)
    */
-  getColorPrediction: (payload: { sireId: number; damId: number; foalBreedId?: number }) =>
+  getColorPrediction: (payload: { sireId: number; damId: number }) =>
     apiClient.post<BreedingColorPredictionResult | null>(
       '/api/v1/horses/breeding/color-prediction',
       payload

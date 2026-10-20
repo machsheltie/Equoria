@@ -97,7 +97,6 @@ export interface TrainingResult {
 export interface BreedRequest {
   sireId: number;
   damId: number;
-  breedId?: number;
 }
 
 /**

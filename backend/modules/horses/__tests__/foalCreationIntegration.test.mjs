@@ -232,10 +232,12 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     expect(dbDam.pregnancyFeedingsByTier).toEqual({});
     expect(dbDam.lastBredDate).toBeTruthy();
 
-    // Wjxw: pendingFoalName and pendingFoalBreedId must be persisted so the
-    // foaling job can honour caller intent at delivery time.
+    // Wjxw: pendingFoalName must be persisted so the foaling job can honour
+    // caller intent at delivery time. Equoria-5nwwf (owner ruling 2026-10-20):
+    // the foal's breed is NOT caller intent — it is the parents' breed — so no
+    // pendingFoalBreedId is stored (this asserted testBreed.id before the ruling).
     expect(dbDam.pendingFoalName).toBe(foalData.name);
-    expect(dbDam.pendingFoalBreedId).toBe(testBreed.id);
+    expect(dbDam.pendingFoalBreedId).toBeNull();
   });
 
   it('should reject a second pregnancy while the mare is already in foal', async () => {
@@ -446,7 +448,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
   // ── Equoria-wjxw: pendingFoalName / pendingFoalBreedId persistence ───────────
 
-  it('should persist pendingFoalName and pendingFoalBreedId on the dam after createFoal', async () => {
+  it('should persist pendingFoalName on the dam after createFoal and store no foal breed (Equoria-5nwwf)', async () => {
     await resetDamPregnancy();
 
     const pendingName = `PendingFoal_${ts}`;
@@ -463,7 +465,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     const dbDam = await prisma.horse.findUnique({ where: { id: testDam.id } });
     expect(dbDam.pendingFoalName).toBe(pendingName);
-    expect(dbDam.pendingFoalBreedId).toBe(testBreed.id);
+    expect(dbDam.pendingFoalBreedId).toBeNull();
   });
 
   it('should create foal with name and breedId from pending fields when foaling job runs', async () => {

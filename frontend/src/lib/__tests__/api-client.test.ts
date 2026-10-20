@@ -474,28 +474,6 @@ describe('API Client - HttpOnly Cookie Support', () => {
       );
     });
 
-    it('includes optional foalBreedId in the request body when provided', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ status: 'success', data: null }),
-      });
-
-      await breedingPredictionApi.getColorPrediction({
-        sireId: 11,
-        damId: 22,
-        foalBreedId: 7,
-      });
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/horses/breeding/color-prediction'),
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ sireId: 11, damId: 22, foalBreedId: 7 }),
-        })
-      );
-    });
-
     it('omits foalBreedId from body when not provided', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

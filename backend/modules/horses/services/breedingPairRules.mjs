@@ -15,7 +15,10 @@
  *   - the DAM is off cooldown: DAM_BREEDING_COOLDOWN_DAYS after lastBredDate.
  *     Mares only; stallions have no cooldown or limit (owner rulings 2026-07-02,
  *     2026-10-02, S2 2026-10-15; S-Q1 2026-10-16 keeps 7 days)
- *   - the foal's effective breed exists and has a breed profile (Equoria-6w3ur)
+ *   - sire and dam are the SAME breed, and the foal is always born that breed
+ *     (owner ruling, Stacey 2026-10-20, Equoria-5nwwf). Nobody chooses a foal's
+ *     breed; there are no grade horses and no crossbreeds.
+ *   - the foal's breed exists and has a breed profile (Equoria-6w3ur)
  *   - the dam is not already in foal (advisory; the guarded claim is the race
  *     guard — Equoria-9gsxg)
  */
@@ -51,12 +54,12 @@ function refuse(status, message, kind) {
  * Check a sire/dam pair against every breeding rule, in the order createFoal
  * always applied them. Reads only (the breed row).
  *
- * @param {{ sire: object, dam: object, breedId?: unknown, client?: object }} params
+ * @param {{ sire: object, dam: object, client?: object }} params
  *   `client` may be a transaction client so the breed read joins the caller's tx.
- * @returns {Promise<{ ok: true, effectiveBreedId: number }
+ * @returns {Promise<{ ok: true }
  *   | { ok: false, status: 400 | 500, message: string, kind: 'sire' | 'mare' | 'pair' | 'server' }>}
  */
-export async function validateBreedingPair({ sire, dam, breedId, client = prisma }) {
+export async function validateBreedingPair({ sire, dam, client = prisma }) {
   // Critical-health gate (Equoria-2e7e): mirrors conformationShowController's A12 check.
   if (getDisplayedHealth(sire) === 'critical') {
     logger.info(`[breedingPairRules] Rejected: sire ${sire.id} is in critical health`);
@@ -122,26 +125,19 @@ export async function validateBreedingPair({ sire, dam, breedId, client = prisma
     }
   }
 
-  // ── BREED PRECONDITION (Equoria-6w3ur) ──────────────────────────────────
-  // Validate the breed the foal will ACTUALLY be born with: a supplied breedId
-  // is optional pending intent; otherwise the foaling job derives the breed
-  // from the dam (`foalingService.createFoalFromPregnancy`). A null, unknown or
+  // ── SAME BREED, AND THE FOAL'S BREED (Equoria-5nwwf; Equoria-6w3ur) ──────
+  // Owner ruling (Stacey, 2026-10-20): sire and dam must be the same breed and
+  // the foal is born that breed. There is no caller-chosen breed and no
+  // authorised-crossbreed exception. Because Gaited is inherited only through
+  // the breed, this rule also keeps Gaited inside its breed.
+  //
+  // The foal's breed must also be one foaling can build: a null, unknown or
   // profile-less breed would make the foaling job throw SEVEN DAYS LATER and
   // retry forever (a permanently stuck pregnancy), so it is refused here,
   // BEFORE any claim stamps the cooldown.
-  let normalizedBreedId = null;
-  if (breedId !== undefined && breedId !== null && breedId !== '') {
-    normalizedBreedId = Number.parseInt(breedId, 10);
-    if (!Number.isInteger(normalizedBreedId) || normalizedBreedId <= 0) {
-      return refuse(400, 'breedId must be a positive integer', 'pair');
-    }
-  }
-
-  const effectiveBreedId = normalizedBreedId ?? dam.breedId ?? null;
-  if (!Number.isInteger(effectiveBreedId) || effectiveBreedId <= 0) {
-    logger.info(
-      `[breedingPairRules] Rejected: dam ${dam.id} has no breed on record and no breedId was supplied`,
-    );
+  const foalBreedId = dam.breedId ?? null;
+  if (!Number.isInteger(foalBreedId) || foalBreedId <= 0) {
+    logger.info(`[breedingPairRules] Rejected: dam ${dam.id} has no breed on record`);
     // COPY EDITORS — this message is REACHABLE and its wording is load-bearing
     // (Equoria-m9lz1 fix round 3, finding 5): it says only what is true — the
     // missing fact is on the mare's record — and promises no control the
@@ -153,12 +149,23 @@ export async function validateBreedingPair({ sire, dam, breedId, client = prisma
     );
   }
 
+  if (sire.breedId !== foalBreedId) {
+    logger.info(
+      `[breedingPairRules] Rejected: sire ${sire.id} (breed ${sire.breedId ?? 'none'}) and dam ${dam.id} (breed ${foalBreedId}) are different breeds`,
+    );
+    return refuse(
+      400,
+      `${dam.name} and ${sire.name} are not the same breed. A mare and stallion must be the same breed to breed.`,
+      'pair',
+    );
+  }
+
   const breedRecord = await client.breed.findUnique({
-    where: { id: effectiveBreedId },
+    where: { id: foalBreedId },
     select: { name: true },
   });
   if (!breedRecord?.name) {
-    return refuse(400, `No breed found for id ${effectiveBreedId}`, 'pair');
+    return refuse(400, `No breed found for id ${foalBreedId}`, 'pair');
   }
 
   // The breed's NAME must have a usable profile: foaling calls the same loader
@@ -173,7 +180,7 @@ export async function validateBreedingPair({ sire, dam, breedId, client = prisma
     // broken profile SOURCE is a server outage (500), never the mare's fault.
     if (profileError.cause) {
       logger.error(
-        `[breedingPairRules] Breed profile source unavailable while checking breed ${effectiveBreedId} ("${breedRecord.name}") — ${profileError.message}`,
+        `[breedingPairRules] Breed profile source unavailable while checking breed ${foalBreedId} ("${breedRecord.name}") — ${profileError.message}`,
       );
       return refuse(
         500,
@@ -183,7 +190,7 @@ export async function validateBreedingPair({ sire, dam, breedId, client = prisma
     }
 
     logger.error(
-      `[breedingPairRules] Rejected: breed ${effectiveBreedId} ("${breedRecord.name}") has no usable breed profile — ${profileError.message}`,
+      `[breedingPairRules] Rejected: breed ${foalBreedId} ("${breedRecord.name}") has no usable breed profile — ${profileError.message}`,
     );
     return refuse(
       400,
@@ -199,26 +206,26 @@ export async function validateBreedingPair({ sire, dam, breedId, client = prisma
     return refuse(400, `${dam.name} is already in foal.`, 'mare');
   }
 
-  return { ok: true, effectiveBreedId };
+  return { ok: true };
 }
 
 /**
  * The column values the guarded pregnancy claim writes on the dam. Everything
  * that must happen exactly once per pregnancy rides on that ONE statement:
  * the claim itself, the sire, the empty per-tier feed counters, the cooldown
- * stamp (date-only column: the Eastern date) and the pending foal intent —
- * the VALIDATED EFFECTIVE breed, pinned at conception (Equoria-m9lz1).
+ * stamp (date-only column: the Eastern date) and the pending foal name. The
+ * foal's breed is NOT stored: it is always the parents' breed, read at foaling
+ * (Equoria-5nwwf).
  *
- * @param {{ sireId: number, name?: string | null, effectiveBreedId: number, now: Date }} params
+ * @param {{ sireId: number, name?: string | null, now: Date }} params
  */
-export function pregnancyClaimData({ sireId, name, effectiveBreedId, now }) {
+export function pregnancyClaimData({ sireId, name, now }) {
   return {
     inFoalSinceDate: now,
     pregnancySireId: sireId,
     pregnancyFeedingsByTier: {},
     lastBredDate: gameCalendarDate(now),
     pendingFoalName: name ?? null,
-    pendingFoalBreedId: effectiveBreedId,
   };
 }
 

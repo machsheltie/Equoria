@@ -42,16 +42,13 @@ import { useColorPrediction } from '@/hooks/api/useColorPrediction';
 export interface ColorPredictionChartProps {
   sireId: number | null | undefined;
   damId: number | null | undefined;
-  /** Optional breed override; defaults to dam's breed server-side. */
-  foalBreedId?: number;
 }
 
 export default function ColorPredictionChart({
   sireId,
   damId,
-  foalBreedId,
 }: ColorPredictionChartProps): JSX.Element | null {
-  const { data, isLoading, error } = useColorPrediction(sireId, damId, foalBreedId);
+  const { data, isLoading, error } = useColorPrediction(sireId, damId);
 
   // Self-cross or missing parents: render nothing — parent UI should not even
   // mount this when the pair is incomplete, but defend defensively.

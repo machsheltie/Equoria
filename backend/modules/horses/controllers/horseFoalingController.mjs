@@ -47,14 +47,16 @@ function claimFailure(code, details = {}) {
  */
 export async function createFoal(req, res) {
   try {
-    const { name, breedId, sireId, damId } = req.body;
+    const { name, sireId, damId } = req.body;
 
     logger.info(
       `[horseController.createFoal] Beginning pregnancy: sire ${sireId}, dam ${damId} (foal name "${name}")`,
     );
 
-    // sireId and damId are required; name and breedId are optional and stored as
-    // pending intent on the dam for the foaling job to honour when the foal is born.
+    // sireId and damId are required; name is optional and stored as pending
+    // intent on the dam for the foaling job to honour when the foal is born. The
+    // foal's breed is never a request field: it is the parents' breed, and the
+    // pair must share one (owner ruling 2026-10-20, Equoria-5nwwf).
     if (!sireId || !damId) {
       return res.status(400).json({
         success: false,
@@ -85,7 +87,7 @@ export async function createFoal(req, res) {
     // Every breeding rule, in its long-standing order and wording. All checks
     // run BEFORE any DB mutation; a refusal starts no pregnancy and stamps no
     // cooldown.
-    const verdict = await validateBreedingPair({ sire, dam, breedId });
+    const verdict = await validateBreedingPair({ sire, dam });
     if (!verdict.ok) {
       return res
         .status(verdict.status)
@@ -133,7 +135,6 @@ export async function createFoal(req, res) {
               data: pregnancyClaimData({
                 sireId: sire.id,
                 name,
-                effectiveBreedId: verdict.effectiveBreedId,
                 now,
               }),
             });

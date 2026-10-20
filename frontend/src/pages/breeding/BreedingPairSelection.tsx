@@ -196,10 +196,11 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       }
       // Equoria-6w3ur: the request is the PAIR the player chose, and nothing
       // else. No owner id — the authenticated session identifies the owner and
-      // the route discards any body-supplied `userId`. No `name`/`breedId`
-      // either: nobody names an unborn foal here, so the server derives the
-      // foal's provisional name and its breed from the dam when the foaling
-      // job materialises it (foalingService.createFoalFromPregnancy).
+      // the route discards any body-supplied `userId`. No `name` either:
+      // nobody names an unborn foal here, so the server derives the foal's
+      // provisional name when the foaling job materialises it. There is no
+      // breed to send: a mare and stallion must be the same breed, and the foal
+      // is born that breed (Equoria-5nwwf).
       const response = await breedingApi.breedFoal({
         sireId: selectedSire.id,
         damId: selectedDam.id,

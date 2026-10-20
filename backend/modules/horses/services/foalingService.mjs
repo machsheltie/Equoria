@@ -239,7 +239,7 @@ async function gatherLineage(sireId, damId, generations) {
  *
  * @param {object} params
  * @param {number} params.damId - id of the in-foal mare
- * @param {object} [params.options] - { name?, breedId?, sex?, ownerId?,
+ * @param {object} [params.options] - { name?, sex?, ownerId?,
  *   userId?, playerId?, stableId?, healthStatus?, positiveTraitChance?,
  *   negativeTraitChance?, rng?, damSnapshot?, sireSnapshot?, dueBy? }.
  *   The bonus chance fields are produced by
@@ -341,13 +341,14 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     }
   }
 
-  // Resolve breed: caller option > pendingFoalBreedId on dam > dam's own breed.
-  const requestedBreedId =
-    options.breedId !== undefined
-      ? Number.parseInt(options.breedId, 10)
-      : (dam.pendingFoalBreedId ?? dam.breedId);
+  // The foal is its parents' breed; nobody chooses it (Equoria-5nwwf). A pre-ruling
+  // pregnancy with a sire of another breed still foals, as the dam's (a throw strands her).
+  const requestedBreedId = dam.breedId;
   if (!Number.isInteger(requestedBreedId) || requestedBreedId <= 0) {
     throw new Error(`createFoalFromPregnancy: invalid breedId ${requestedBreedId}`);
+  }
+  if (sire.breedId !== requestedBreedId) {
+    logger.warn(`[foalingService] dam ${damId} and sire ${sireId} differ in breed`);
   }
   // Raw SQL is used for breedGeneticProfile because the Prisma DMMF may not
   // include the JSONB column on every code path; mirrors horseRoutes.mjs.
@@ -569,7 +570,6 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
       pregnancySireId: true,
       pregnancyFeedingsByTier: true,
       pendingFoalName: true,
-      pendingFoalBreedId: true,
     },
   });
 
@@ -599,7 +599,6 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
           rng,
           userId: snapshot.userId,
           name: snapshot.pendingFoalName ?? undefined,
-          breedId: snapshot.pendingFoalBreedId ?? undefined,
         },
       });
       foalsBorn += 1;

@@ -130,12 +130,11 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     }
 
     // Initiate the 7-day pregnancy via API (bypasses the UI breeding flow which
-    // is covered by breeding.spec.ts). Per Equoria-wjxw, POST /api/v1/horses/foals
-    // now requires `name` and `breedId` so the foaling job can persist the
-    // player's pending foal intent (horseRoutes.mjs:1149-1154).
+    // is covered by breeding.spec.ts). The optional `name` is the player's pending
+    // foal intent (Equoria-wjxw). There is no breed field: the foal is born its
+    // parents' breed, and the pair must share one (Equoria-5nwwf).
     const pregnancyRes = await csrfMutate(session, 'POST', '/api/v1/horses/foals', {
       name: `${mareName} Foal`,
-      breedId,
       sireId: stallionId,
       damId: mareId,
     });

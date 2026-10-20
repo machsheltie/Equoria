@@ -88,10 +88,6 @@ router.post(
   [
     body('sireId').isInt({ min: 1 }).withMessage('sireId must be a positive integer'),
     body('damId').isInt({ min: 1 }).withMessage('damId must be a positive integer'),
-    body('foalBreedId')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('foalBreedId must be a positive integer'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -106,9 +102,6 @@ router.post(
     // Convert string body values to integers
     req.body.sireId = parseInt(req.body.sireId, 10);
     req.body.damId = parseInt(req.body.damId, 10);
-    if (req.body.foalBreedId) {
-      req.body.foalBreedId = parseInt(req.body.foalBreedId, 10);
-    }
 
     try {
       await getBreedingColorPrediction(req, res);

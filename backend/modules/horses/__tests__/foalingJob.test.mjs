@@ -469,11 +469,15 @@ describe('runFoalingJob (B5)', () => {
     expect(refreshedDam.pendingFoalName).toBeNull();
   });
 
-  it('pendingFoalBreedId: foaling job uses caller-specified breed for the foal, not dam breed', async () => {
+  // Equoria-5nwwf (owner ruling 2026-10-20): nobody chooses a foal's breed. This
+  // case used to assert that a breed left on the dam as `pendingFoalBreedId` WON
+  // over the dam's own breed; the ruling retires that: the foal is born its
+  // parents' breed, and a pre-ruling pendingFoalBreedId is ignored (and cleared).
+  it('a pendingFoalBreedId left on the dam is ignored: the foal is born the breed of the parents', async () => {
     const user = await createUser('pfbreed');
     createdUserIds.push(user.id);
 
-    // Upsert a second breed to use as the foal's intended breed.
+    // A different breed left on the dam by a pregnancy that began before the ruling.
     const foalBreed = await prisma.breed.upsert({
       where: { name: 'American Quarter Horse' },
       update: {},
@@ -487,7 +491,6 @@ describe('runFoalingJob (B5)', () => {
       pregnancyFeedingsByTier: {},
     });
 
-    // Foal should be born as the caller-specified breed, not the dam's breed.
     await prisma.horse.update({
       where: { id: dam.id },
       data: { pendingFoalBreedId: foalBreed.id },
@@ -498,15 +501,15 @@ describe('runFoalingJob (B5)', () => {
 
     const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
     expect(foals.length).toBe(1);
-    expect(foals[0].breedId).toBe(foalBreed.id);
-    expect(foals[0].breedId).not.toBe(breedId);
+    expect(foals[0].breedId).toBe(breedId);
+    expect(foals[0].breedId).not.toBe(foalBreed.id);
 
     // pendingFoalBreedId should be cleared after foaling.
     const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
     expect(refreshedDam.pendingFoalBreedId).toBeNull();
   });
 
-  it('createFoalFromPregnancy direct call: reads pendingFoalName/pendingFoalBreedId from dam when options omit them', async () => {
+  it('createFoalFromPregnancy direct call: reads pendingFoalName from the dam when options omit it; the breed is that of the parents (Equoria-5nwwf)', async () => {
     const user = await createUser('directpend');
     createdUserIds.push(user.id);
 
@@ -534,12 +537,79 @@ describe('runFoalingJob (B5)', () => {
     const result = await createFoalFromPregnancy({ damId: dam.id, options: {} });
 
     expect(result.foal.name).toBe('DirectCallFoalSentinel');
-    expect(result.foal.breedId).toBe(pendingBreed.id);
+    expect(result.foal.breedId).toBe(breedId);
+    expect(result.foal.breedId).not.toBe(pendingBreed.id);
 
     // dam reset must clear pendingFoal fields.
     const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
     expect(refreshedDam.pendingFoalName).toBeNull();
     expect(refreshedDam.pendingFoalBreedId).toBeNull();
+  });
+
+  it("createFoalFromPregnancy takes no breed from its caller: the foal is born the dam's breed (Equoria-5nwwf)", async () => {
+    const user = await createUser('nocallerbreed');
+    createdUserIds.push(user.id);
+
+    const otherBreed = await prisma.breed.upsert({
+      where: { name: 'Arabian' },
+      update: {},
+      create: { name: 'Arabian', description: 'B5 wjxw direct-call sentinel' },
+    });
+
+    const { dam } = await createMareSirePair({
+      userId: user.id,
+      breedId,
+      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      pregnancyFeedingsByTier: {},
+    });
+
+    const result = await createFoalFromPregnancy({
+      damId: dam.id,
+      options: { breedId: otherBreed.id },
+    });
+
+    expect(result.foal.breedId).toBe(breedId);
+    expect(result.foal.breedId).not.toBe(otherBreed.id);
+  });
+
+  it("a pregnancy begun before the ruling with a sire of another breed still foals, as the dam's breed (Equoria-5nwwf)", async () => {
+    // Throwing would leave the mare in foal for ever; existing data is not changed.
+    const user = await createUser('legacymismatch');
+    createdUserIds.push(user.id);
+
+    const otherBreed = await prisma.breed.upsert({
+      where: { name: 'Arabian' },
+      update: {},
+      create: { name: 'Arabian', description: 'B5 wjxw direct-call sentinel' },
+    });
+    const otherBreedSire = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `LegacyMismatchSire_${Math.random().toString(36).slice(2, 6)}`,
+        sex: 'Stallion',
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
+        age: 5,
+        breedId: otherBreed.id,
+        userId: user.id,
+        healthStatus: 'Good',
+      },
+    });
+    const { dam } = await createMareSirePair({
+      userId: user.id,
+      breedId,
+      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      pregnancyFeedingsByTier: {},
+      pregnancySireId: otherBreedSire.id,
+    });
+
+    const result = await runFoalingJob();
+
+    expect(result.errors.filter(e => e.damId === dam.id)).toEqual([]);
+    const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
+    expect(foals.length).toBe(1);
+    expect(foals[0].breedId).toBe(breedId);
+    expect(foals[0].sireId).toBe(otherBreedSire.id);
+    expect((await prisma.horse.findUnique({ where: { id: dam.id } })).inFoalSinceDate).toBeNull();
   });
 
   // 31E-1a/31E-2 follow-up (Equoria-e8zj): foaling job must wire color genetics

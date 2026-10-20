@@ -31,8 +31,7 @@ import {
 
 export const colorPredictionQueryKeys = {
   root: ['breeding-prediction', 'color'] as const,
-  pair: (sireId: number, damId: number, foalBreedId?: number) =>
-    ['breeding-prediction', 'color', sireId, damId, foalBreedId ?? null] as const,
+  pair: (sireId: number, damId: number) => ['breeding-prediction', 'color', sireId, damId] as const,
 };
 
 /**
@@ -40,7 +39,6 @@ export const colorPredictionQueryKeys = {
  *
  * @param sireId       Sire horse ID (must be > 0 to enable the query)
  * @param damId        Dam horse ID (must be > 0 to enable the query)
- * @param foalBreedId  Optional breed override (defaults to dam's breed server-side)
  *
  * @returns UseQueryResult<BreedingColorPredictionResult | null>
  *   - `data === null` indicates the AC6 legacy-horse case
@@ -48,8 +46,7 @@ export const colorPredictionQueryKeys = {
  */
 export function useColorPrediction(
   sireId: number | null | undefined,
-  damId: number | null | undefined,
-  foalBreedId?: number
+  damId: number | null | undefined
 ): UseQueryResult<BreedingColorPredictionResult | null, ApiError> {
   const validSire = typeof sireId === 'number' && sireId > 0;
   const validDam = typeof damId === 'number' && damId > 0;
@@ -57,16 +54,11 @@ export function useColorPrediction(
   const distinctParents = validSire && validDam && sireId !== damId;
 
   return useQuery<BreedingColorPredictionResult | null, ApiError>({
-    queryKey: colorPredictionQueryKeys.pair(
-      (sireId as number) ?? 0,
-      (damId as number) ?? 0,
-      foalBreedId
-    ),
+    queryKey: colorPredictionQueryKeys.pair((sireId as number) ?? 0, (damId as number) ?? 0),
     queryFn: () =>
       breedingPredictionApi.getColorPrediction({
         sireId: sireId as number,
         damId: damId as number,
-        ...(typeof foalBreedId === 'number' ? { foalBreedId } : {}),
       }),
     enabled: distinctParents,
     staleTime: 10 * 60 * 1000, // 10 minutes — deterministic genetics

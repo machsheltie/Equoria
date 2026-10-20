@@ -58,16 +58,18 @@ function stripClientOwnerFields(req, _res, next) {
  * on every path that accepts one.
  */
 const validateFoalCreation = [
-  // Equoria-6w3ur: `name` and `breedId` are OPTIONAL pending intent, not
-  // requirements. Since the Phase-B delayed-foaling redesign the player breeds
-  // a PAIR — the foal itself is materialised 7 days later by the foaling job,
-  // which derives the missing values (`foalingService.createFoalFromPregnancy`:
-  // name -> the dam-derived fallback, breed -> dam.breedId). `createFoal` has
-  // treated both as optional since that redesign; this chain had not caught up,
-  // so the real breeding surface — which posts only the chosen sire and dam —
-  // got a hard 400 "Breed ID must be a positive integer" and no player could
-  // breed. Keep the FORMAT rules: a supplied value must still be sane, and the
-  // controller separately verifies a supplied breedId exists.
+  // Equoria-6w3ur: `name` is OPTIONAL pending intent, not a requirement. Since
+  // the Phase-B delayed-foaling redesign the player breeds a PAIR — the foal
+  // itself is materialised 7 days later by the foaling job, which derives the
+  // missing values (`foalingService.createFoalFromPregnancy`: name -> the
+  // dam-derived fallback). This chain once demanded `breedId` too, so the real
+  // breeding surface — which posts only the chosen sire and dam — got a hard
+  // 400 and no player could breed.
+  //
+  // Equoria-5nwwf (owner ruling 2026-10-20): there is no `breedId` field at all.
+  // A foal is always born the breed of its parents, and the pair must share one
+  // (`validateBreedingPair`). A `breedId` a client still sends is not validated
+  // and not read.
   //
   // Equoria-qkgfh.1: the name's FORMAT rule is now the shared one, so
   // PUT /horses/:id and PATCH /horses/:id/name cannot diverge from this path on
@@ -92,7 +94,6 @@ const validateFoalCreation = [
   //   and it was proved non-inert by re-planting the hazard: dropping `optional`
   //   here fails 12 of its cases. If it ever goes red, start in this region.
   horseNameBodyRule({ optional: true }),
-  body('breedId').optional().isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
   body('sireId').isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
   body('damId').isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),
   body('sex')
@@ -181,7 +182,7 @@ router.post(
   async (req, res) => {
     try {
       // No owner is written into the body: `createFoal` reads only
-      // { name, breedId, sireId, damId } and takes the owner from `req.user`
+      // { name, sireId, damId } and takes the owner from `req.user`
       // through the ownership middleware above. The previous
       // `req.body.userId = req.user.id` line was dead once
       // `stripClientOwnerFields` guaranteed the field's absence, and leaving a

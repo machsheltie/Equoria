@@ -178,7 +178,7 @@ export async function bookPublicStud(req, res) {
           const claimDam = async () => {
             const claimed = await tx.horse.updateMany({
               where: { id: damId, userId: requesterId, inFoalSinceDate: null },
-              data: pregnancyClaimData({ sireId, effectiveBreedId: verdict.effectiveBreedId, now }),
+              data: pregnancyClaimData({ sireId, now }),
             });
             if (claimed.count !== 1) {
               throw new ClaimLost('DAM');

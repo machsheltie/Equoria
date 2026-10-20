@@ -135,7 +135,6 @@ async function main() {
           breedId: breed.id,
           inFoalSinceDate: inFoalSince,
           pregnancySireId: sire.id,
-          pendingFoalBreedId: breed.id,
         },
         createdHorseIds,
       );

@@ -273,7 +273,6 @@ export function setup() {
       `${API_URL}/api/v1/horses/foals`,
       JSON.stringify({
         name: `LoadFixture Foal ${stamp}`,
-        breedId,
         sireId: stallionId,
         damId: mareId,
       }),
