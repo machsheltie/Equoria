@@ -8,7 +8,7 @@
  *   GET  /api/v1/auth/verification-status    authenticated
  *
  * Token issuance + storage + lookup live in
- * `backend/utils/emailVerificationService.mjs` — this controller is a thin
+ * `backend/modules/auth/services/emailVerificationService.mjs` — this controller is a thin
  * HTTP veneer over that service, plus the fire-and-forget welcome /
  * verification email send via `backend/utils/emailService.mjs`.
  */
@@ -20,7 +20,7 @@ import {
   verifyEmailToken,
   resendVerificationEmail,
   checkVerificationStatus,
-} from '../../../utils/emailVerificationService.mjs';
+} from '../services/emailVerificationService.mjs';
 import emailService from '../../../utils/emailService.mjs';
 
 /**

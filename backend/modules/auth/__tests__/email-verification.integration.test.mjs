@@ -16,7 +16,7 @@ import {
   resetRateLimitStore,
 } from '../../../__tests__/config/test-helpers.mjs';
 import { randomBytes } from 'node:crypto';
-import { generateVerificationToken, hashVerificationToken } from '../../../utils/emailVerificationService.mjs';
+import { generateVerificationToken, hashVerificationToken } from '../services/emailVerificationService.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';

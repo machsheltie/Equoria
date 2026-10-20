@@ -16,12 +16,15 @@
  */
 
 import crypto from 'crypto';
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from './logger.mjs';
-import { AppError } from '../errors/index.mjs';
-import { withRetryableTxMapping, RetryableTransactionError } from './retryableTransaction.mjs';
-import { normalizeEmailAddress } from './emailIdentityPolicy.mjs';
-import { retireStaffCheckinCodesTx } from '../modules/staff/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import { AppError } from '../../../errors/index.mjs';
+import {
+  withRetryableTxMapping,
+  RetryableTransactionError,
+} from '../../../utils/retryableTransaction.mjs';
+import { normalizeEmailAddress } from '../../../utils/emailIdentityPolicy.mjs';
+import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
 
 // Email verification configuration
 const EMAIL_CONFIG = {

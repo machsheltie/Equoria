@@ -132,7 +132,7 @@ export function analyzeTokenBeforeUser(source) {
 const GUARDED_FILES = [
   'modules/auth/controllers/passwordController.mjs',
   'modules/auth/services/emailChangeService.mjs',
-  'utils/emailVerificationService.mjs',
+  'modules/auth/services/emailVerificationService.mjs',
 ];
 
 describe('SENTINEL: token rows are locked before the User row inside a transaction', () => {

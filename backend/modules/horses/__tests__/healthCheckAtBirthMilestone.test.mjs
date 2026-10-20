@@ -19,7 +19,7 @@ import {
   TRAIT_THRESHOLDS,
   MILESTONE_TRAIT_POOLS,
 } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
-import { generateVerificationToken, hashVerificationToken } from '../../../utils/emailVerificationService.mjs';
+import { generateVerificationToken, hashVerificationToken } from '../../auth/index.mjs';
 
 // ── HealthCheck ───────────────────────────────────────────────────────────────
 

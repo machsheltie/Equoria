@@ -115,7 +115,7 @@ const MIGRATED = [
   // comments). All three are wrapped:1 / totalTx:1.
   ['modules/competition/services/conformationShowService.mjs', { wrapped: 1, totalTx: 1 }],
   ['utils/tokenRotationService.mjs', { wrapped: 1, totalTx: 1 }],
-  ['utils/emailVerificationService.mjs', { wrapped: 1, totalTx: 1 }],
+  ['modules/auth/services/emailVerificationService.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-6p398.1 (2026-09 audit, Finding 1) — new wrapped sites. equipItem
   // and unequipItem became transactional (ownership check + inventory decision
   // + both horse tack changes + the settings write must commit together), and

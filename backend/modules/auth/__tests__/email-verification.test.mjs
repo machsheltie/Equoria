@@ -17,7 +17,7 @@ import {
   cleanupExpiredTokens,
   getTokenInfo,
   hashVerificationToken,
-} from '../../../utils/emailVerificationService.mjs';
+} from '../services/emailVerificationService.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../../../__tests__/config/test-helpers.mjs';

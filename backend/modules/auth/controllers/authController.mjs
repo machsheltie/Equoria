@@ -50,7 +50,7 @@ import { createStarterHorseForNewUser } from '../services/onboardingService.mjs'
 // checkVerificationStatus moved to emailVerificationController.mjs.
 // Only `createVerificationToken` is still needed here (register issues
 // the first verification token at signup).
-import { createVerificationToken } from '../../../utils/emailVerificationService.mjs';
+import { createVerificationToken } from '../services/emailVerificationService.mjs';
 import emailService from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import {

@@ -63,7 +63,7 @@ import {
   MAX_PENDING_VERIFICATION_TOKENS,
   VERIFICATION_RESEND_COOLDOWN_MS,
   VERIFICATION_TOKEN_PURPOSE,
-} from '../../../utils/emailVerificationService.mjs';
+} from '../services/emailVerificationService.mjs';
 import { decryptField } from '../../../utils/fieldEncryption.mjs';
 import * as mfaService from './mfaService.mjs';
 import * as mfaLockoutService from './mfaLockoutService.mjs';

@@ -37,7 +37,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { encryptField } from '../../../utils/fieldEncryption.mjs';
-import { VERIFICATION_RESEND_COOLDOWN_MS } from '../../../utils/emailVerificationService.mjs';
+import { VERIFICATION_RESEND_COOLDOWN_MS } from '../services/emailVerificationService.mjs';
 import { maskEmailAddress } from '../../../utils/emailIdentityPolicy.mjs';
 
 const ORIGIN = 'http://localhost:3000';
