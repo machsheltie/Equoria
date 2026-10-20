@@ -363,49 +363,5 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         await prisma.horse.deleteMany({ where: { id: horseWithoutTemperament.id } });
       });
     });
-
-    describe('POST /api/milestones/evaluate-milestone (with personality impact)', () => {
-      it('should evaluate milestone with personality effects', async () => {
-        // Create groom assignment
-        await prisma.groomAssignment.create({
-          data: {
-            groomId: testGroom.id,
-            foalId: testHorse.id,
-            userId: testUser.id,
-            isActive: true,
-            priority: 5, // High priority (1-5 scale)
-            notes: 'Test assignment for milestone',
-          },
-        });
-
-        // Equoria-obufp: bind CSRF to the authenticated user used on this
-        // mutation (per-user CSRF binding, Equoria-plw0h) — anonymous issuance
-        // would 403. authToken is `Bearer <jwt>`; the raw jwt is the cookie value.
-        const rawToken = authToken.replace(/^Bearer /, '');
-        const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${rawToken}`] });
-
-        const response = await request(app)
-          .post('/api/v1/milestones/evaluate-milestone')
-          .set('Origin', 'http://localhost:3000')
-          .set('Authorization', authToken)
-          .set('Cookie', csrf.cookieHeader)
-          .set('X-CSRF-Token', csrf.csrfToken)
-          .send({
-            horseId: testHorse.id,
-            milestoneType: 'imprinting',
-            forceReevaluate: true,
-          })
-          .expect(200);
-
-        expect(response.body.success).toBe(true);
-        expect(response.body.data).toBeDefined();
-        expect(response.body.data.milestoneLogId).toBeDefined();
-        expect(response.body.data.modifiersApplied).toBeDefined();
-        expect(response.body.data.modifiersApplied.personalityEffects).toBeDefined();
-        expect(response.body.data.modifiersApplied.personalityEffects.personalityMatchScore).toBe(2); // Strong match
-        expect(response.body.data.modifiersApplied.personalityEffects.personalityEffectApplied).toBe(true);
-        expect(response.body.data.modifiersApplied.personalityEffects.personalityCompatibility.isMatch).toBe(true);
-      });
-    });
   });
 });

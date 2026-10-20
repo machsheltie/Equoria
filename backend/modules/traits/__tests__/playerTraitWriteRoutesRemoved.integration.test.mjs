@@ -23,6 +23,8 @@
  *   - POST /ultra-rare-traits/groom/:id/assign-perks → Groom.rareTraitPerks
  *   - POST /personality-evolution/horse/:id/evolve   → Horse.temperament
  *   - POST /personality-evolution/batch-evolve       → Horse.temperament
+ *   - POST /milestones/evaluate-milestone            → MilestoneTraitLog and
+ *     UltraRareTraitEvent rows, scored from a body-supplied bondScore/taskLog
  * They are gone: an authenticated owner with a valid CSRF pair gets the app's
  * JSON "Route not found" 404, and the stores are untouched. On the old code
  * each request reached its handler (200/201/4xx with a handler body), so the
@@ -198,6 +200,17 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
       'POST /personality-evolution/batch-evolve',
       () => '/api/v1/personality-evolution/batch-evolve',
       () => ({ entities: [{ entityId: foal.id, entityType: 'horse' }] }),
+    ],
+    [
+      'POST /milestones/evaluate-milestone',
+      () => '/api/v1/milestones/evaluate-milestone',
+      () => ({
+        horseId: foal.id,
+        milestoneType: 'imprinting',
+        bondScore: 100,
+        taskLog: [],
+        forceReevaluate: true,
+      }),
     ],
   ];
 

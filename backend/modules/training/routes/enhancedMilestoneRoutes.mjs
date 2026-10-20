@@ -1,41 +1,27 @@
 /**
  * Enhanced Milestone Evaluation Routes
  *
- * API routes for the enhanced milestone evaluation system that integrates
- * groom care history, bond consistency, and task diversity into trait determination.
+ * Read-only API routes for the enhanced milestone evaluation system (status and
+ * definitions).
+ *
+ * No route here evaluates a milestone (Equoria-gu8jk; owner ruling 2026-10-20:
+ * players must never write traits for themselves). POST /evaluate-milestone,
+ * which wrote MilestoneTraitLog and UltraRareTraitEvent rows on demand and
+ * accepted a client-chosen bondScore / taskLog / forceReevaluate, was removed.
+ * Milestones are evaluated only by the daily milestone job
+ * (utils/horseAgingSystem.mjs → enhancedMilestoneEvaluationSystem).
  */
 
 import express from 'express';
 import {
-  evaluateMilestone,
   getMilestoneStatus,
   getMilestoneDefinitions,
-  validateMilestoneEvaluation,
   validateHorseIdParam,
 } from '../controllers/enhancedMilestoneController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 
 const router = express.Router();
-
-/**
- * POST /api/milestones/evaluate-milestone
- * Evaluate milestone for a horse with enhanced groom care integration
- *
- * Body:
- * - horseId: number (required) - ID of the horse to evaluate
- * - milestoneType: string (required) - Type of milestone (imprinting, socialization, etc.)
- * - groomId: number (optional) - ID of the groom involved
- * - bondScore: number (optional) - Override bond score for evaluation
- * - taskLog: array (optional) - Override task log for evaluation
- * - forceReevaluate: boolean (optional) - Force reevaluation if already completed
- */
-router.post(
-  '/evaluate-milestone',
-  authenticateToken,
-  validateMilestoneEvaluation,
-  evaluateMilestone,
-);
 
 /**
  * GET /api/milestones/milestone-status/:horseId
