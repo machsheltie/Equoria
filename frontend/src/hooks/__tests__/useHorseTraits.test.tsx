@@ -1,7 +1,8 @@
 /**
  * Unit Tests: useHorseTraits hooks + pure mappers
  *
- * Covers Equoria-hriey (discovery-status hook + discover mutation),
+ * Covers Equoria-hriey (discovery-status hook; the discover mutation and its
+ * cases were removed by Equoria-gu8jk — players never reveal traits),
  * Equoria-6rf97 (authoritative positive/negative classification), and the
  * data feeding Equoria-vpgmc (detail modal).
  *
@@ -9,7 +10,7 @@
  * NOT vi.mock of the api-client. This exercises the real api-client fetch +
  * `{ success, data }` unwrap and the hook mappers against the ACTUAL backend
  * JSON shapes (verified against traitController.mjs getHorseTraits /
- * getDiscoveryStatus / discoverTraits).
+ * getDiscoveryStatus).
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -20,7 +21,6 @@ import { ReactNode } from 'react';
 import {
   useHorseTraits,
   useHorseTraitDiscoveryStatus,
-  useDiscoverTraits,
   mapHorseTraits,
   mapDiscoveryStatus,
   humanizeTraitKey,
@@ -224,43 +224,5 @@ describe('useHorseTraits hooks', () => {
     const { result } = renderHook(() => useHorseTraits(0), { wrapper });
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(result.current.fetchStatus).toBe('idle');
-  });
-
-  it('useDiscoverTraits posts /traits/discover/:id and resolves with revealed traits', async () => {
-    server.use(
-      http.post(`${base}/api/v1/traits/discover/42`, () =>
-        HttpResponse.json({
-          success: true,
-          message: 'Discovered 1 trait',
-          data: {
-            horseId: 42,
-            traitsRevealed: [{ traitKey: 'brave', traitName: 'brave', category: 'positive' }],
-            summary: { totalTraitsRevealed: 1, hiddenAfter: 1 },
-          },
-        })
-      )
-    );
-    const { result } = renderHook(() => useDiscoverTraits(42), { wrapper });
-    const res = await result.current.mutateAsync();
-    expect(res.summary?.totalTraitsRevealed).toBe(1);
-  });
-
-  it('useDiscoverTraits surfaces the real backend 400 eligibility message', async () => {
-    server.use(
-      http.post(`${base}/api/v1/traits/discover/7`, () =>
-        HttpResponse.json(
-          {
-            success: false,
-            message: 'Horse with ID 7 is not eligible for trait discovery (age: 1).',
-          },
-          { status: 400 }
-        )
-      )
-    );
-    const { result } = renderHook(() => useDiscoverTraits(7), { wrapper });
-    await expect(result.current.mutateAsync()).rejects.toMatchObject({
-      statusCode: 400,
-      message: /not eligible for trait discovery/i,
-    });
   });
 });

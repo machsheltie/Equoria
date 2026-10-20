@@ -7,8 +7,8 @@
  *   1. Open the Genetics tab on a real, owned horse (no bypass headers, real
  *      authenticated session from global-setup storageState).
  *   2. Hidden-trait surface: the Trait Discovery section + HiddenTraitIndicator
- *      render the "hidden → discovered" affordance from the real
- *      /traits/discovery-status backend.
+ *      render the hidden-trait count from the real /traits/discovery-status
+ *      backend, with no player "Discover Traits" control (Equoria-gu8jk).
  *   3. TraitDetailModal open → close: clicking a discovered (interactive)
  *      TraitCard opens the live trait-detail modal; the close button dismisses
  *      it.
@@ -141,12 +141,13 @@ test.describe('Trait Display — Genetics tab (Equoria-2xa8l)', () => {
       .then(() => true)
       .catch(() => false);
 
-    if (sawHidden) {
-      // Hidden traits exist → the Discover Traits affordance must be present
-      // (enabled, or pre-disabled with a real backend ineligibility reason).
-      const discoverBtn = page.locator('[data-testid="discover-traits-button"]');
-      await expect(discoverBtn).toBeVisible({ timeout: 5000 });
-    } else {
+    // Equoria-gu8jk. OLD CONTRACT: when hidden traits existed, a "Discover
+    // Traits" button had to be present. NEW RULING (owner, 2026-10-20): players
+    // never reveal traits — grooms will — so there is no discover control in
+    // either state.
+    await expect(page.locator('[data-testid="discover-traits-button"]')).toHaveCount(0);
+
+    if (!sawHidden) {
       // No hidden traits → the indicator shows the all-discovered state.
       await expect(allDiscovered).toBeVisible({ timeout: 5000 });
     }

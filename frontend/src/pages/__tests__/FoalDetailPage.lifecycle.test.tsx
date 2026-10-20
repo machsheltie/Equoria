@@ -9,10 +9,10 @@
  * envelope unwrap, the GET /development → flat-normalizer path, and the
  * mutation → CSRF round trip → wire-payload contract end-to-end.
  *
- * Verifies that FoalDetailPage exposes the "Reveal Traits" action
- * (POST /api/v1/foals/:foalId/reveal-traits), and that it offers NO
- * "Advance Day" (the retired PUT /develop, Equoria-mwjst) and NO player-run
- * enrichment, stage activity or graduation (Equoria-fr2kg).
+ * Verifies that FoalDetailPage offers NO "Reveal Traits" (the retired
+ * POST /reveal-traits, Equoria-gu8jk), NO "Advance Day" (the retired
+ * PUT /develop, Equoria-mwjst) and NO player-run enrichment, stage activity or
+ * graduation (Equoria-fr2kg).
  *
  * Per 21R doctrine: no graceful skips, no fake values.
  *
@@ -21,12 +21,10 @@
  *   - GET  /:foalId             → { success, data: { id, name, sex, dateOfBirth, ageInDays, sireId, damId, ... } }
  *   - GET  /:foalId/development  → { success, data: { foal, development: { currentDay, bondingLevel, stressLevel } } }
  *   - GET  /:foalId/activities   → { success, data: [ { id, activity, ... } ] }
- *   - POST /:foalId/reveal-traits → { success, data: { traits, revealed, hidden } }
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -126,26 +124,25 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
       </QueryClientProvider>
     );
 
-  it('renders the Reveal Traits button and wires it to the reveal-traits boundary', async () => {
-    const user = userEvent.setup();
+  // Equoria-gu8jk. OLD CONTRACT: a "Reveal Traits" button POSTed
+  // /reveal-traits, so the PLAYER moved the foal's hidden traits into view on
+  // demand. NEW RULING (owner, 2026-10-20): players must never write traits for
+  // themselves — grooms will activate them — so the page offers no reveal
+  // control and never calls /reveal-traits.
+  it('offers no Reveal Traits control and never calls the reveal-traits boundary', async () => {
     let revealHit = false;
     server.use(
       http.post(foalPath('/reveal-traits'), () => {
         revealHit = true;
-        return HttpResponse.json({
-          success: true,
-          data: { traits: [], revealed: [], hidden: [] },
-        });
+        return HttpResponse.json({ success: false }, { status: 404 });
       })
     );
 
     renderPage();
 
-    const btn = await screen.findByRole('button', { name: /reveal traits/i });
-    expect(btn).toBeInTheDocument();
-
-    await user.click(btn);
-    await waitFor(() => expect(revealHit).toBe(true));
+    expect(await screen.findByTestId('development-tracker')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reveal/i })).not.toBeInTheDocument();
+    expect(revealHit).toBe(false);
   });
 
   // Equoria-fr2kg. OLD CONTRACT: an "Enrich" button opened a picker of the
@@ -164,7 +161,7 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('button', { name: /reveal traits/i })).toBeInTheDocument();
+    expect(await screen.findByTestId('development-tracker')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^enrich/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/choose an enrichment activity/i)).not.toBeInTheDocument();
     expect(enrichHit).toBe(false);
@@ -186,8 +183,8 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
 
     renderPage();
 
-    // The lifecycle actions have rendered (the page is loaded) ...
-    expect(await screen.findByRole('button', { name: /reveal traits/i })).toBeInTheDocument();
+    // The foal development UI has rendered (the page is loaded) ...
+    expect(await screen.findByTestId('development-tracker')).toBeInTheDocument();
     // ... and none of them advances the day.
     expect(screen.queryByRole('button', { name: /advance day/i })).not.toBeInTheDocument();
     expect(developHit).toBe(false);
@@ -209,7 +206,7 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('button', { name: /reveal traits/i })).toBeInTheDocument();
+    expect(await screen.findByTestId('development-tracker')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /graduat/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/graduated/i)).not.toBeInTheDocument();
     expect(graduateHit).toBe(false);

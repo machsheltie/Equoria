@@ -26,7 +26,6 @@ import {
 import {
   useHorseTraits,
   useHorseTraitDiscoveryStatus,
-  useDiscoverTraits,
   type HorseTrait,
 } from '../../hooks/useHorseTraits';
 import type { Horse } from './HorseDetailPageTypes';
@@ -40,15 +39,6 @@ import GeneticOverviewCard from './genetics/GeneticOverviewCard';
 import TraitInteractionsSection from './genetics/TraitInteractionsSection';
 import TraitTimelineSection from './genetics/TraitTimelineSection';
 import LineageSection from './genetics/LineageSection';
-
-/** Extract a human-readable message from an unknown thrown error/ApiError. */
-function errorMessage(err: unknown): string {
-  if (err && typeof err === 'object' && 'message' in err) {
-    const m = (err as { message?: unknown }).message;
-    if (typeof m === 'string' && m.length > 0) return m;
-  }
-  return 'Trait discovery failed. Please try again.';
-}
 
 /** Normalize a trait name/key to a comparable token for valence lookup. */
 function normalizeTraitToken(value: string): string {
@@ -78,11 +68,10 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // Authoritative trait classification (positive/negative/hidden) — Equoria-6rf97.
   const { data: classification } = useHorseTraits(horse.id);
 
-  // Hidden-trait discovery status — Equoria-hriey.
+  // Hidden-trait discovery status — Equoria-hriey. Read-only: there is no
+  // player "Discover Traits" button (Equoria-gu8jk; owner ruling 2026-10-20:
+  // players never reveal traits — grooms will, Equoria-09g33).
   const { data: discoveryStatus } = useHorseTraitDiscoveryStatus(horse.id);
-  const discoverMutation = useDiscoverTraits(horse.id);
-  const [discoverError, setDiscoverError] = useState<string | null>(null);
-  const [discoverMessage, setDiscoverMessage] = useState<string | null>(null);
 
   // Detail modal state — Equoria-vpgmc.
   const [selectedTrait, setSelectedTrait] = useState<HorseTrait | null>(null);
@@ -98,23 +87,6 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     }
     return map;
   }, [classification]);
-
-  const handleDiscover = async () => {
-    setDiscoverError(null);
-    setDiscoverMessage(null);
-    try {
-      const result = await discoverMutation.mutateAsync();
-      const revealed = result?.summary?.totalTraitsRevealed ?? result?.traitsRevealed?.length ?? 0;
-      setDiscoverMessage(
-        revealed > 0
-          ? `Discovered ${revealed} new trait${revealed !== 1 ? 's' : ''}!`
-          : 'No new traits were ready to be discovered yet.'
-      );
-    } catch (err) {
-      // Surface the REAL backend eligibility reason (e.g. age ineligibility).
-      setDiscoverError(errorMessage(err));
-    }
-  };
 
   // Filter and sort state.
   // Equoria-e1ccb: the epigenetic-insights endpoint (traitAnalysis.traits =
@@ -239,68 +211,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Hidden Traits & Discovery Section (Equoria-hriey) */}
       {discoveryStatus && (
         <div data-testid="hidden-traits-section">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="type-section-heading">Trait Discovery</h3>
-            {discoveryStatus.hiddenTraits > 0 &&
-              (() => {
-                // Equoria-9zmc4: pre-disable when the backend says the horse is
-                // not yet eligible (canDiscover === false), surfacing the reason
-                // as a tooltip/hint BEFORE the round-trip. The real backend 400
-                // path (handleDiscover catch) remains the fallback for races
-                // where eligibility changes between fetch and click.
-                const ineligible = discoveryStatus.canDiscover === false;
-                const reason = discoveryStatus.cannotDiscoverReason;
-                const isDisabled = discoverMutation.isPending || ineligible;
-                return (
-                  <button
-                    type="button"
-                    data-testid="discover-traits-button"
-                    onClick={handleDiscover}
-                    disabled={isDisabled}
-                    title={ineligible ? reason : undefined}
-                    aria-disabled={isDisabled}
-                    aria-describedby={ineligible ? 'discover-ineligible-hint' : undefined}
-                    className="btn-cobalt text-sm px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {discoverMutation.isPending ? 'Discovering…' : 'Discover Traits'}
-                  </button>
-                );
-              })()}
-          </div>
-
-          {/* Pre-eligibility hint (Equoria-9zmc4) — shown when the backend has
-              already declared the horse not yet eligible, so the user sees the
-              reason without clicking and triggering a 400. */}
-          {discoveryStatus.hiddenTraits > 0 &&
-            discoveryStatus.canDiscover === false &&
-            discoveryStatus.cannotDiscoverReason && (
-              <div
-                id="discover-ineligible-hint"
-                data-testid="discover-ineligible-hint"
-                className="mb-3 p-3 rounded-lg border border-[var(--alpha-gold-primary-30)] bg-[var(--alpha-gold-primary-10)] text-sm text-[rgb(220,235,255)]"
-              >
-                {discoveryStatus.cannotDiscoverReason}
-              </div>
-            )}
-
-          {discoverError && (
-            <div
-              data-testid="discover-error"
-              role="alert"
-              className="mb-3 p-3 rounded-lg border border-[var(--role-danger-border)] bg-[var(--badge-danger-bg)] text-sm text-[var(--status-danger)]"
-            >
-              {discoverError}
-            </div>
-          )}
-          {discoverMessage && (
-            <div
-              data-testid="discover-message"
-              role="status"
-              className="mb-3 p-3 rounded-lg border border-[var(--role-success-border)] bg-[var(--badge-success-bg)] text-sm text-[var(--status-success)]"
-            >
-              {discoverMessage}
-            </div>
-          )}
+          <h3 className="type-section-heading mb-4">Trait Discovery</h3>
 
           <HiddenTraitIndicator discoveryStatus={discoveryStatus} />
         </div>

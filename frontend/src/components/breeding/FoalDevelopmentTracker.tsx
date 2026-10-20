@@ -3,12 +3,15 @@
  *
  * Full foal development interface:
  *  - DevelopmentTracker (age-stage timeline + bond score)
- *  - Trait reveal with CinematicMoment (lifetime-first; Story 18-4 / Epic 29-3)
+ *  - Discovered traits
  *  - Activity log
  *
  * No player-run enrichment, stage activities or graduation (Equoria-fr2kg;
  * owner ruling 2026-10-14/15: foal enrichment is the groom's job, and there
- * is no graduation).
+ * is no graduation). No "Reveal Traits" button either (Equoria-gu8jk; owner
+ * ruling 2026-10-20: players never reveal traits — grooms will). With it went
+ * the reveal CinematicMoment and reward toast it drove, and the actions row it
+ * was the last control in.
  *
  * ──────────────────────────────────────────────────────────────────────────
  * RELATIONSHIP TO foal/DevelopmentTracker.tsx (Equoria-rpnq4)
@@ -17,8 +20,7 @@
  *
  *  - THIS file (breeding/FoalDevelopmentTracker): the CONTAINER /
  *    orchestrator. Owns all the API hooks (useFoal, useFoalDevelopment,
- *    useRevealFoalTraits, …), the trait-reveal CinematicMoment, and the
- *    activity log. This is the
+ *    useFoalActivities) and the activity log. This is the
  *    component wired into FoalDetailPage.
  *
  *  - foal/DevelopmentTracker: the dumb PRESENTATIONAL "view" it renders —
@@ -31,17 +33,10 @@
  * ──────────────────────────────────────────────────────────────────────────
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
-import { Dna, ChevronDown, ChevronUp } from 'lucide-react';
-import {
-  useFoal,
-  useFoalActivities,
-  useFoalDevelopment,
-  useRevealFoalTraits,
-} from '@/hooks/api/useBreeding';
-import CinematicMoment from '@/components/feedback/CinematicMoment';
-import { useRewardToast } from '@/components/feedback';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useFoal, useFoalActivities, useFoalDevelopment } from '@/hooks/api/useBreeding';
 import DevelopmentTracker from '@/components/foal/DevelopmentTracker';
 
 interface FoalDevelopmentTrackerProps {
@@ -53,34 +48,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
   const { data: development, isLoading: loadingDev, error: devError } = useFoalDevelopment(foalId);
   const { data: activities } = useFoalActivities(foalId);
 
-  const revealTraits = useRevealFoalTraits(foalId);
-
-  const { notify } = useRewardToast();
-
   const [showLog, setShowLog] = useState(false);
-  const [showTraitCinematic, setShowTraitCinematic] = useState(false);
-
-  // Cinematic on trait reveal (Story 18-4 / Epic 29-3) + reward toast
-  // (Equoria-55bo.1, Spec 11.3.10). Trait discovery is a meaningful
-  // personal-progress event sourced from the real useRevealFoalTraits
-  // mutation result — fired once per successful reveal.
-  useEffect(() => {
-    if (revealTraits.isSuccess) {
-      setShowTraitCinematic(true);
-      const latestTrait =
-        foal?.traits && foal.traits.length > 0
-          ? String(foal.traits[foal.traits.length - 1])
-          : undefined;
-      notify({
-        type: 'trait',
-        title: 'New Trait Discovered!',
-        message: latestTrait
-          ? `${foal?.name ?? 'Your foal'} revealed: ${latestTrait}.`
-          : `${foal?.name ?? 'Your foal'} revealed a new trait.`,
-        meaningful: true,
-      });
-    }
-  }, [revealTraits.isSuccess, foal?.traits, foal?.name, notify]);
 
   const isLoading = loadingFoal || loadingDev;
 
@@ -138,23 +106,10 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
           </div>
         )}
 
-        {/* Actions row */}
-        <div className="flex flex-wrap gap-2">
-          {/* Reveal traits */}
-          <button
-            type="button"
-            onClick={() => revealTraits.mutate()}
-            disabled={revealTraits.isPending}
-            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[var(--role-info-bg)] border border-[var(--role-info-border)] text-[var(--role-info-text)] hover:bg-[var(--role-info-border)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
-          >
-            <Dna className="h-3.5 w-3.5" />
-            {revealTraits.isPending ? 'Revealing…' : 'Reveal Traits'}
-          </button>
-
-          {/* No "Advance Day" (Equoria-mwjst; owner ruling 2026-10-05): a foal
-              waits out its full development week — the nightly job moves the
-              day, never the player. */}
-        </div>
+        {/* No foal actions: no "Advance Day" (Equoria-mwjst; owner ruling
+            2026-10-05 — the nightly job moves the day, never the player) and
+            no "Reveal Traits" (Equoria-gu8jk; owner ruling 2026-10-20 —
+            players never reveal traits). */}
 
         {/* Traits display */}
         {foal?.traits && foal.traits.length > 0 && (
@@ -222,20 +177,6 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
           </div>
         )}
       </div>
-
-      {/* Cinematic trait reveal (Story 18-4 / Epic 29-3) */}
-      {showTraitCinematic && (
-        <CinematicMoment
-          variant="trait-discovery"
-          title="New Trait Discovered!"
-          subtitle={
-            foal?.traits && foal.traits.length > 0
-              ? String(foal.traits[foal.traits.length - 1])
-              : undefined
-          }
-          onDismiss={() => setShowTraitCinematic(false)}
-        />
-      )}
     </>
   );
 };

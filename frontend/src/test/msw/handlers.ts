@@ -80,7 +80,6 @@
  * GET    /api/v1/foals/:id                          foal detail
  * GET    /api/v1/foals/:id/development              development status
  * GET    /api/v1/foals/:id/activities              available activities
- * POST   /api/v1/foals/:id/reveal-traits           reveal hidden traits
  * PUT    /api/v1/foals/:id/develop                  apply development milestone
  * POST   /api/v1/genetics/inbreeding-analysis       inbreeding coefficient
  * POST   /api/v1/genetics/breeding-compatibility    compatibility score

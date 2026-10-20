@@ -26,8 +26,8 @@
  *    testable.
  *
  *  - breeding/FoalDevelopmentTracker: the CONTAINER / orchestrator. Owns
- *    the API hooks (useFoal, useFoalDevelopment, useRevealFoalTraits, …),
- *    trait-reveal CinematicMoment, and the activity log. It RENDERS this
+ *    the API hooks (useFoal, useFoalDevelopment, useFoalActivities) and the
+ *    activity log. It RENDERS this
  *    view and is the one wired into FoalDetailPage.
  *
  * If you need data/mutations → edit breeding/FoalDevelopmentTracker.

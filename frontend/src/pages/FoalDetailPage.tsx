@@ -3,12 +3,13 @@
  *
  * Page rendered at /foals/:id. Loads the foal record + development
  * data via the existing useFoal / useFoalDevelopment hooks and displays
- * a summary card plus the foal development UI (FoalDevelopmentTracker),
- * which exposes Reveal Traits (POST /api/foals/:foalId/reveal-traits).
- * There is deliberately no "Advance Day": foals wait out their full
- * development week (Equoria-mwjst). There is no player-run enrichment,
- * stage activity or graduation either (Equoria-fr2kg; owner ruling
- * 2026-10-14/15: foal enrichment is the groom's job, no graduation).
+ * a summary card plus the foal development UI (FoalDevelopmentTracker).
+ * There is no "Reveal Traits" (Equoria-gu8jk; owner ruling 2026-10-20:
+ * players never reveal traits). There is deliberately no "Advance Day":
+ * foals wait out their full development week (Equoria-mwjst). There is no
+ * player-run enrichment, stage activity or graduation either (Equoria-fr2kg;
+ * owner ruling 2026-10-14/15: foal enrichment is the groom's job, no
+ * graduation).
  *
  * Equoria-p3g0 (initial page), Equoria-bi6i (lifecycle UI wired in).
  */
@@ -111,9 +112,9 @@ const FoalDetailPage: React.FC = () => {
       </Surface>
 
       {/*
-       * Foal development (Equoria-bi6i). FoalDevelopmentTracker owns the
-       * Reveal Traits button, its mutation and cache invalidation — see
-       * useRevealFoalTraits in frontend/src/hooks/api/useBreeding.ts.
+       * Foal development (Equoria-bi6i). FoalDevelopmentTracker shows the
+       * development timeline, discovered traits and activity log; it has no
+       * player actions (Equoria-mwjst, Equoria-fr2kg, Equoria-gu8jk).
        */}
       <FoalDevelopmentTracker foalId={foalId} />
     </PageContainer>

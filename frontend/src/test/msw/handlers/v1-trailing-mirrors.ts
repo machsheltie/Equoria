@@ -5,7 +5,7 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 /**
  * Trailing v1 mirror handlers — registered LAST in the exported `handlers`
  * array (after clubs). Covers: training status/trainable, grooms-by-user,
- * foal detail/development/activities/reveal-traits, and breeding
+ * foal detail/development/activities, and breeding
  * prediction (breeding-data, lineage-analysis). First-match-wins order
  * preserved.
  */
@@ -78,7 +78,6 @@ export const v1TrailingMirrorHandlers = [
   // useFoal calls /api/v1/foals/:id
   // useFoalDevelopment calls /api/v1/foals/:id/development
   // useFoalActivities calls /api/v1/foals/:id/activities
-  // useRevealFoalTraits calls POST /api/v1/foals/:id/reveal-traits
   http.get(`${base}/api/v1/foals/:id`, ({ params }) =>
     HttpResponse.json({
       success: true,
@@ -115,9 +114,6 @@ export const v1TrailingMirrorHandlers = [
         { id: 1, activity: 'trust_building', duration: 30, createdAt: '2025-12-02T00:00:00Z' },
       ],
     })
-  ),
-  http.post(`${base}/api/v1/foals/:id/reveal-traits`, () =>
-    HttpResponse.json({ success: true, data: { traits: ['brave', 'athletic'] } })
   ),
 
   // ── v1 Breeding prediction mirrors ────────────────────────────────────────

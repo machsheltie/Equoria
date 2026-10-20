@@ -64,15 +64,7 @@ export const useFoalActivities = (foalId: number) =>
     staleTime: 15 * 1000,
   });
 
-export const useRevealFoalTraits = (foalId: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation<{ traits: string[] }, ApiError>({
-    mutationFn: () => breedingApi.revealTraits(foalId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: breedingKeys.foal(foalId) });
-    },
-  });
-};
+// No useRevealFoalTraits: players never reveal traits (Equoria-gu8jk; owner
+// ruling 2026-10-20). POST /foals/:id/reveal-traits was removed.
 
 export const breedingQueryKeys = breedingKeys;

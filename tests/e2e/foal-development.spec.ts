@@ -19,9 +19,9 @@ import { seedOwnedHorses } from './fixtures/ownedHorses';
  *    skip gestation via the owner-scoped POST /api/v1/horses/:id/foal-now to
  *    mint a real foal owned by the session user (Equoria-6w3ur).
  *  - The newborn foal starts at currentDay 0 / maxDay 6 with no traits.
- *    We exercise the real reveal-traits hook from this state, and prove the
- *    retired develop endpoint cannot move the development day
- *    (Equoria-mwjst).
+ *    We prove the retired develop endpoint cannot move the development day
+ *    (Equoria-mwjst) and the retired reveal-traits endpoint is gone
+ *    (Equoria-gu8jk; owner ruling 2026-10-20: players never reveal traits).
  *
  * Player-run enrichment, stage activities and graduation were removed
  * (Equoria-fr2kg; owner ruling 2026-10-14/15: foal enrichment is the groom's
@@ -212,43 +212,30 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
       timeout: 10000,
     });
 
-    // FoalDevelopmentTracker renders Reveal Traits. There is NO Advance Day
-    // (Equoria-mwjst, owner ruling 2026-10-05: foals wait out their full
-    // development week).
-    await expect(page.getByRole('button', { name: /Reveal Traits/i })).toBeVisible({
+    // FoalDevelopmentTracker renders the development timeline. There is NO
+    // Advance Day (Equoria-mwjst, owner ruling 2026-10-05: foals wait out their
+    // full development week) and NO Reveal Traits (Equoria-gu8jk).
+    await expect(page.getByTestId('development-tracker')).toBeVisible({
       timeout: 15000,
     });
     await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Reveal Traits/i })).toHaveCount(0);
   });
 
-  test('Reveal Traits button fires POST /reveal-traits and updates UI', async ({ page }) => {
+  // Equoria-gu8jk. OLD CONTRACT: a "Reveal Traits" button POSTed
+  // /reveal-traits and the server moved hidden traits into view on demand.
+  // NEW RULING (owner, 2026-10-20): players must never write traits for
+  // themselves — grooms will activate them — so the page offers no reveal
+  // control and the endpoint is gone.
+  test('the player cannot reveal traits: no control, and POST /reveal-traits is gone', async ({
+    page,
+  }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('development-tracker')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: /Reveal Traits/i })).toHaveCount(0);
 
-    const revealBtn = page.getByRole('button', { name: /Reveal Traits/i });
-    await expect(revealBtn).toBeVisible({ timeout: 20000 });
-    await expect(revealBtn).toBeEnabled();
-
-    const revealResp = page.waitForResponse(
-      (resp) =>
-        resp.url().includes(`/api/v1/foals/${foalId}/reveal-traits`) &&
-        resp.request().method() === 'POST',
-      { timeout: 30000 }
-    );
-
-    await revealBtn.click();
-
-    const resp = await revealResp;
-    // Real backend may return 200 (traits revealed) or 4xx if there's
-    // nothing to reveal yet — both are HONEST production responses. We
-    // assert the UI ROUNDTRIPPED the mutation; we don't assert traits
-    // were necessarily discovered (that depends on backend state).
-    expect(
-      [200, 201, 400, 403, 409].includes(resp.status()),
-      `Reveal traits returned unexpected status ${resp.status()}`
-    ).toBeTruthy();
-
-    // Button is no longer in pending state after the mutation settles.
-    await expect(revealBtn).toBeEnabled({ timeout: 10000 });
+    const res = await csrfMutate(session, 'POST', `/api/v1/foals/${foalId}/reveal-traits`, {});
+    expect(res.status(), 'the retired reveal-traits endpoint must not exist').toBe(404);
   });
 
   // Equoria-mwjst. OLD CONTRACT (vulnerable): an "Advance Day" button sent
@@ -259,9 +246,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('button', { name: /Reveal Traits/i })).toBeVisible({
-      timeout: 20000,
-    });
+    await expect(page.getByTestId('development-tracker')).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /Advance Day/i })).toHaveCount(0);
 
     const readDevelopment = async () => {
@@ -294,9 +279,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     page,
   }) => {
     await page.goto(`/foals/${foalId}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('button', { name: /Reveal Traits/i })).toBeVisible({
-      timeout: 20000,
-    });
+    await expect(page.getByTestId('development-tracker')).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: /Enrich/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Graduat/i })).toHaveCount(0);
     await expect(page.getByText(/Available activities/i)).toHaveCount(0);

@@ -6,7 +6,6 @@
  * - useFoal: returns Foal from GET /api/foals/:id
  * - useFoalDevelopment: returns FoalDevelopment from GET /api/foals/:id/development
  * - useFoalActivities: returns FoalActivity[] from GET /api/foals/:id/activities
- * - useRevealFoalTraits: POST /api/foals/:id/reveal-traits mutation succeeds
  * - breedingQueryKeys: correct query key structure
  *
  * Uses MSW (Mock Service Worker) — no prop overrides or manual mocks.
@@ -22,7 +21,6 @@ import {
   useFoal,
   useFoalDevelopment,
   useFoalActivities,
-  useRevealFoalTraits,
   breedingQueryKeys,
 } from '../useBreeding';
 
@@ -114,24 +112,9 @@ describe('useFoalActivities', () => {
 // the player's chosen activity to /enrich. NEW RULING (owner, 2026-10-14/15):
 // foal enrichment is the groom's job, so no player enrichment hook exists.
 
-// ─── useRevealFoalTraits mutation ─────────────────────────────────────────────
-
-describe('useRevealFoalTraits', () => {
-  it('mutation succeeds and returns traits array (AC: 6)', async () => {
-    const { result } = renderHook(() => useRevealFoalTraits(10), { wrapper: createWrapper() });
-    await act(async () => {
-      result.current.mutate();
-    });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.traits).toBeDefined();
-    expect(Array.isArray(result.current.data?.traits)).toBe(true);
-  });
-
-  it('mutation is in idle state before firing', () => {
-    const { result } = renderHook(() => useRevealFoalTraits(10), { wrapper: createWrapper() });
-    expect(result.current.isIdle).toBe(true);
-  });
-});
+// useRevealFoalTraits was removed (Equoria-gu8jk). OLD CONTRACT: the hook
+// POSTed /foals/:id/reveal-traits to reveal hidden traits on demand. NEW RULING
+// (owner, 2026-10-20): players never reveal traits, so no reveal hook exists.
 
 // ─── breedingQueryKeys ────────────────────────────────────────────────────────
 

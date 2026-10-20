@@ -14,25 +14,20 @@
  *  - GET  /api/v1/traits/discovery-status/:horseId → discovery progress counts
  *      + canDiscover eligibility, mapped to the @/types/traits
  *      TraitDiscoveryStatus shape consumed by HiddenTraitIndicator.
- *  - POST /api/v1/traits/discover/:horseId         → triggers discovery. On a
- *      backend 400 the real eligibility message is surfaced (ApiError.message),
- *      never a mocked / no-op success.
+ *
+ * There is no discover/reveal call: players never reveal traits (Equoria-gu8jk;
+ * owner ruling 2026-10-20). POST /traits/discover/:horseId and the
+ * useDiscoverTraits mutation were removed.
  *
  * Backend route handlers (read-only references, verified at build time):
  *   backend/modules/traits/controllers/traitController.mjs
- *     getHorseTraits (l.122), getDiscoveryStatus (l.290), discoverTraits (l.21)
+ *     getHorseTraits, getDiscoveryStatus
  *
  * The path prefix is `/api/v1/` per the Epic 20 api-client convention
  * (authRouter is mounted on both `/api` and `/api/v1/v1` in backend/app.mjs).
  */
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  UseQueryResult,
-  UseMutationResult,
-} from '@tanstack/react-query';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type { TraitDiscoveryStatus } from '@/types/traits';
 
@@ -88,27 +83,6 @@ export interface RawDiscoveryStatus {
     total?: number;
   };
   canDiscover?: boolean;
-}
-
-/** POST /traits/discover/:id → data */
-export interface RawDiscoverResult {
-  horseId?: number;
-  horseName?: string;
-  conditionsMet?: unknown[];
-  traitsRevealed?: Array<{
-    traitKey?: string;
-    traitName?: string;
-    category?: string;
-    revealedBy?: string;
-    definition?: RawTraitDefinition | null;
-  }>;
-  hiddenTraitsRemaining?: number;
-  summary?: {
-    totalConditionsMet?: number;
-    totalTraitsRevealed?: number;
-    hiddenBefore?: number;
-    hiddenAfter?: number;
-  };
 }
 
 /* ============================================================================
@@ -284,9 +258,6 @@ export const horseTraitsApi = {
     );
     return mapDiscoveryStatus(raw);
   },
-  discoverTraits: async (horseId: number): Promise<RawDiscoverResult> => {
-    return apiClient.post<RawDiscoverResult>(`/api/v1/traits/discover/${horseId}`, {});
-  },
 };
 
 /* ============================================================================
@@ -322,25 +293,5 @@ export function useHorseTraitDiscoveryStatus(
     queryFn: () => horseTraitsApi.getDiscoveryStatus(horseId),
     enabled: options?.enabled !== false && !!horseId,
     staleTime: options?.staleTime ?? 60 * 1000,
-  });
-}
-
-/**
- * Trigger trait discovery (hriey). On success invalidates the trait,
- * discovery-status, and epigenetic-insights caches so the UI reflects newly
- * revealed traits. On a backend 400 the rejection propagates with the real
- * eligibility message (ApiError.message) for the caller to surface.
- */
-export function useDiscoverTraits(
-  horseId: number
-): UseMutationResult<RawDiscoverResult, Error, void> {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => horseTraitsApi.discoverTraits(horseId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['horse', horseId, 'traits'] });
-      queryClient.invalidateQueries({ queryKey: ['horse', horseId, 'trait-discovery-status'] });
-      queryClient.invalidateQueries({ queryKey: ['horse', horseId, 'epigenetic-insights'] });
-    },
   });
 }

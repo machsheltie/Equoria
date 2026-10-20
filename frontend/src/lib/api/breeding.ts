@@ -12,10 +12,11 @@
  *   GET  /api/v1/foals/:foalId                  → Foal
  *   GET  /api/v1/foals/:foalId/development      → FoalDevelopment | null
  *   GET  /api/v1/foals/:foalId/activities       → FoalActivity[]
- *   POST /api/v1/foals/:foalId/reveal-traits    → { traits }
  *
  * No player-run enrichment, activity or graduation calls (Equoria-fr2kg;
- * owner ruling 2026-10-14/15: foal enrichment is the groom's job).
+ * owner ruling 2026-10-14/15: foal enrichment is the groom's job), and no
+ * trait reveal call (Equoria-gu8jk; owner ruling 2026-10-20: players never
+ * reveal traits).
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -80,8 +81,5 @@ export const breedingApi = {
   },
   getFoalActivities: (foalId: number) => {
     return apiClient.get<FoalActivity[]>(`/api/v1/foals/${foalId}/activities`);
-  },
-  revealTraits: (foalId: number) => {
-    return apiClient.post<{ traits: string[] }>(`/api/v1/foals/${foalId}/reveal-traits`);
   },
 };
