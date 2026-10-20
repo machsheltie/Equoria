@@ -54,11 +54,11 @@ Equoria is a horse breeding, raising, training, staffing, competition, and stabl
 
 The core loop is **breed → raise → train → compete → reinvest**, played over game-years rather than minutes.
 
-- 7 real UTC days = 1 game year.
+- 7 real days (Eastern calendar days) = 1 game year.
 - Training has a global 7-day cooldown: one discipline per horse per week.
 - Breeding has a one-game-year cooldown per dam.
 - Horses compete from ages 3–20 and retire at 21.
-- Server-side UTC jobs govern aging, cooldowns, payroll, and shows; device clocks do not.
+- Server-side jobs on the owner's Eastern time (America/New_York, following daylight saving) govern aging, cooldowns, payroll, and shows; device clocks do not.
 - Genetics genuinely computes per-locus outcomes, lethal-combination filtering, and renormalized probabilities.
 - Epigenetic traits emerge from how a foal is raised rather than being mere flavor rolled at birth.
 - Competition outcomes must reward the horse the player bred and developed: relevant stats, training, traits, tack/care, and staff should matter. Luck may create suspense between near peers; it must not erase earned differences or make breeding and training decorative.
@@ -70,9 +70,8 @@ These are explicit owner decisions, not suggestions inferred from an old balance
 - A new account starts with **10,000 gameplay coins**. The weekly Bank claim is **5,000 gameplay coins**.
 - Do not invent a system conception fee, horse-market listing fee, sale commission, or stud-fee house cut. A horse's sale cost is the seller's chosen price. Cross-owner breeding uses the player's chosen stud fee when that system is available; breeding horses already owned by the same stable remains free.
 - A show creator may enter her own horses. This is intended play, not an abuse condition to “correct.”
-- Show brackets use the horse's XP level, `floor(horseXp / 100) + 1`, and are enforced by the server. Do not replace this with a stat-composite level formula without a new owner decision.
 - Equoria has no single active horse, companion relationship meter, chapter structure, or Stable quest progression. A player may concurrently manage 5–200+ horses.
-- A horse may enter as many qualifying shows as its owner chooses, and a player may manually enter hundreds of shows in a night. Competition eligibility belongs to the selected show's discipline, level, age range, and rules.
+- A horse may enter as many qualifying shows as its owner chooses in up to three disciplines at a time, and a player may manually enter hundreds of shows in a night. Competition eligibility belongs to the selected show's discipline, level, age range, and rules.
 - Organization may accelerate discovery, but meaningful horse work remains player-performed. Do not add batch feeding, grooming, shoeing, veterinary care, training, breeding, selling, or show entry.
 - Detailed old proposals about re-pricing, new gates, bound currency, salaries, marketplace expiry, scoring pipelines, or alternate progression curves are not approved merely because they appear in an audit or formula document.
 
@@ -158,8 +157,8 @@ Installed dependencies describe repository history, **not product permission**.
 
 - **React, TypeScript, and Vite:** implementation foundation; they do not dictate appearance.
 - **TanStack Query:** approved for server-state fetching and caching; it has no visual authority.
-- **Tailwind:** approved as a low-level styling engine using Equoria's tokens. Tailwind defaults, starter layouts, and common dashboard recipes are not approved design direction.
-- **shadcn/ui and Radix UI:** rejected as Equoria's component strategy or visual/structural default. Do not add, copy, reinstall, or introduce new imports. Use existing Equoria-owned primitives or appropriate semantic HTML. If complex accessible behavior needs a new dependency or a replacement component, present the options to the user before implementation.
+- **Tailwind CSS:** rejected (owner ruling 2026-10-01), together with its config, `tailwindcss-animate`, and the `class-variance-authority` / `clsx` / `tailwind-merge` helpers. Existing utility classes are legacy migration inventory, not approved styling. New and reworked code is styled with authored CSS that consumes Equoria's tokens in `tokens.css`; do not add new utility classes. Removal is tracked in Equoria-efso8.
+- **shadcn/ui and Radix UI:** rejected as Equoria's component strategy or visual/structural default. Do not add, copy, reinstall, or introduce new imports. The shadcn vocabulary (`buttonVariants`, `asChild`, `cn`, the lowercase `components/ui/*.tsx` file set) is legacy inventory under the same removal (Equoria-efso8); do not convert it one-to-one into plain CSS. Use appropriate semantic HTML and the Equoria primitives the owner directs. If complex accessible behavior needs a new dependency or a replacement component, present the options to the user before implementation.
 - **`sonner`:** not an approved feedback architecture. Do not use or import it. Routine feedback belongs contextually in the affected workflow or game log; meaningful rewards get authored game moments.
 - **Recharts, Chart.js, and `react-chartjs-2`:** not approved for player-facing visualization. Do not use or import them for pedigrees, traits, performance, breeding outcomes, or other game information. Prefer purpose-built HTML, CSS Grid, accessible tables, timelines, ledgers, and inline SVG where the game concept calls for them.
 - **Lucide:** utility icon vocabulary only. It may clarify controls but may not carry a page's identity or replace illustration, typography, composition, or game-specific motifs.
