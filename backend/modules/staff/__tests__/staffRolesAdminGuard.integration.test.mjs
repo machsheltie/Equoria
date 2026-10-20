@@ -259,10 +259,18 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
         for (;;) {
           // pg_stat_activity is snapshotted once per transaction; refresh it.
           await tx.$executeRaw`SELECT pg_stat_clear_snapshot()`;
+          // Only sessions queued behind THIS holder count, directly or behind
+          // the other revoke: a lock wait in another Jest worker's test must not
+          // release the holder early (Equoria-8kbfl).
           const [{ n }] = await tx.$queryRaw`
-            SELECT count(*)::int AS n FROM pg_stat_activity
-            WHERE datname = current_database() AND wait_event_type = 'Lock'
-              AND query LIKE ${'UPDATE "public"."User" SET "role"%'}`;
+            WITH RECURSIVE queued(pid) AS (
+              SELECT pid FROM pg_stat_activity
+              WHERE pg_backend_pid() = ANY(pg_blocking_pids(pid))
+              UNION
+              SELECT a.pid FROM pg_stat_activity a
+              JOIN queued q ON q.pid = ANY(pg_blocking_pids(a.pid))
+            )
+            SELECT count(*)::int AS n FROM queued`;
           if (n >= 2) {
             break;
           }

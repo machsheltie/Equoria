@@ -314,8 +314,8 @@ describe('both entry routes keep the same books (Equoria-mwjst)', () => {
 });
 
 /**
- * Wait until `count` other sessions of this database are blocked on a row
- * lock. A barrier on the real lock, not a timer.
+ * Wait until `count` sessions are queued behind the lock held by `client`'s
+ * transaction. A barrier on the real lock, not a timer.
  */
 async function waitForLockWaiters(client, count, timeoutMs = 20000) {
   const deadline = Date.now() + timeoutMs;
@@ -323,9 +323,17 @@ async function waitForLockWaiters(client, count, timeoutMs = 20000) {
     // Inside a transaction Postgres keeps serving its first statistics
     // snapshot; clear it so every poll sees the sessions as they are now.
     await client.$executeRaw`SELECT pg_stat_clear_snapshot()`;
+    // Only sessions queued behind this holder count, directly or behind each
+    // other; another Jest worker's lock wait must not (Equoria-8kbfl).
     const [{ waiting }] = await client.$queryRaw`
-      SELECT COUNT(*)::int AS waiting FROM pg_stat_activity
-      WHERE datname = current_database() AND wait_event_type = 'Lock'`;
+      WITH RECURSIVE queued(pid) AS (
+        SELECT pid FROM pg_stat_activity
+        WHERE pg_backend_pid() = ANY(pg_blocking_pids(pid))
+        UNION
+        SELECT a.pid FROM pg_stat_activity a
+        JOIN queued q ON q.pid = ANY(pg_blocking_pids(a.pid))
+      )
+      SELECT COUNT(*)::int AS waiting FROM queued`;
     if (waiting >= count) {
       return;
     }

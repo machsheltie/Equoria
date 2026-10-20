@@ -267,9 +267,19 @@ export async function raceUnderLock(lock, starters, timeoutMs = 20_000) {
       for (;;) {
         // pg_stat_activity is snapshotted once per transaction; refresh it.
         await tx.$executeRaw`SELECT pg_stat_clear_snapshot()`;
+        // Count only the sessions queued behind THIS holder, directly or behind
+        // another queued starter. Any lock wait in the database would also
+        // count a wait from another Jest worker's test, letting a starter run
+        // to completion before the next one leaves (Equoria-8kbfl).
         const [{ n }] = await tx.$queryRaw`
-          SELECT count(*)::int AS n FROM pg_stat_activity
-          WHERE datname = current_database() AND wait_event_type = 'Lock'`;
+          WITH RECURSIVE queued(pid) AS (
+            SELECT pid FROM pg_stat_activity
+            WHERE pg_backend_pid() = ANY(pg_blocking_pids(pid))
+            UNION
+            SELECT a.pid FROM pg_stat_activity a
+            JOIN queued q ON q.pid = ANY(pg_blocking_pids(a.pid))
+          )
+          SELECT count(*)::int AS n FROM queued`;
         const settled = tracked.filter(t => t.settled).length;
         if (n + settled >= tracked.length) {
           if (tracked.length === starters.length) {

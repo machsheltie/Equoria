@@ -132,10 +132,12 @@ describe('A ticket about an account names a player only (STAFF-CR-02)', () => {
     const written = new Promise(resolve => {
       promotionWritten = resolve;
     });
+    let promotionPid;
     // The promotion has written the role but not committed.
     const promotion = prisma.$transaction(
       async tx => {
         await tx.user.update({ where: { id: player.id }, data: { role: 'moderator' } });
+        [{ pid: promotionPid }] = await tx.$queryRaw`SELECT pg_backend_pid() AS pid`;
         promotionWritten();
         await held;
       },
@@ -147,12 +149,13 @@ describe('A ticket about an account names a player only (STAFF-CR-02)', () => {
     const filing = file(ticketAbout({ targetType: 'user', targetId: player.id })).finally(() => {
       filingState.settled = true;
     });
-    // Wait until the filing is either done or queued behind the promotion's row lock.
+    // Wait until the filing is either done or queued behind the promotion's row
+    // lock. Only a session the promotion itself blocks counts: any FOR UPDATE
+    // wait in the database would also count another Jest worker's (Equoria-8kbfl).
     const waitingOnLock = async () => {
       const [row] = await prisma.$queryRaw`
         SELECT count(*)::int AS n FROM pg_stat_activity
-        WHERE datname = current_database() AND wait_event_type = 'Lock'
-          AND query LIKE '%FOR UPDATE%'`;
+        WHERE ${promotionPid}::int = ANY(pg_blocking_pids(pid))`;
       return row.n > 0;
     };
     const deadline = Date.now() + 20_000;
