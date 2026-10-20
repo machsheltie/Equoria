@@ -197,9 +197,27 @@ export async function executeClosedShows(req, res, options) {
       }
 
       if (entries.length === 0) {
-        await prisma.show.update({
-          where: { id: show.id },
-          data: { status: 'completed', executedAt: now, claimedAt: null },
+        // Equoria-w7fnz fix round 1 (owner ruling 2026-10-19): no entrants =>
+        // the full prize escrow goes back to the creator, in the same tx as the
+        // completion. The status-scoped claim (executing -> completed) and the
+        // live prizeEscrow read make a re-run refund nothing more.
+        await prisma.$transaction(async tx => {
+          const completed = await tx.show.updateMany({
+            where: { id: show.id, status: 'executing' },
+            data: { status: 'completed', executedAt: now, claimedAt: null },
+          });
+          if (completed.count !== 1) {
+            return;
+          }
+          const live = await tx.show.findUnique({
+            where: { id: show.id },
+            select: { prizeEscrow: true, createdByUserId: true },
+          });
+          await refundUnpaidPrizeShareInTx(tx, {
+            showId: show.id,
+            creatorId: live.createdByUserId,
+            amount: live.prizeEscrow,
+          });
         });
         await clearStagedOrdering(show.id);
         continue;
@@ -207,7 +225,14 @@ export async function executeClosedShows(req, res, options) {
 
       const totalPrize = Math.max(0, show.prize);
       const prizeSlots = [0.5, 0.3, 0.2]; // 1st/2nd/3rd shares
-      const prizeFor = placement => Math.floor(totalPrize * (prizeSlots[placement - 1] ?? 0));
+      // Placed shares round down. Equoria-w7fnz fix round 1 (owner ruling
+      // 2026-10-19): with 3+ entrants the rounding remainder goes to the winner,
+      // so 1st = prize - 2nd - 3rd and the three shares sum to the whole prize.
+      const floorShare = placement => Math.floor(totalPrize * (prizeSlots[placement - 1] ?? 0));
+      const prizeFor = placement =>
+        placement === 1 && stagedOrdering.length >= prizeSlots.length
+          ? totalPrize - floorShare(2) - floorShare(3)
+          : floorShare(placement);
 
       // Equoria-w7fnz (owner ruling 2026-10-19): with fewer than 3 entrants the
       // unpaid share goes back to the creator. Placed shares round down as
