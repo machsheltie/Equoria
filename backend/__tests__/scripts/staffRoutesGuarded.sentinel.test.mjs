@@ -460,6 +460,32 @@ describe('check-staff-routes-guarded: time-back and jobs.hold are mounted nowher
     expect(where(scanFreshProofCapabilityUse(root))).toEqual(['alias.mjs:2', 'any.mjs:2', 'member.mjs:2']);
   });
 
+  // Equoria-fvdru: a capability the scan cannot read, or a guard it cannot
+  // follow, could be time-back or jobs.hold, so it fails closed.
+  test('a non-literal capability or a guard taken by reference fails', () => {
+    const root = mirror({
+      'modules/admin/routes/const.mjs': `${IMPORT}const CAP = 'time-back';\nrouter.post('/a', requireStaffCapability(CAP), h);\n`,
+      'modules/admin/routes/list.mjs': `${IMPORT}router.post('/b', requireAnyStaffCapability(['warn', CAPS[0]]), h);\n`,
+      'modules/admin/routes/listvar.mjs': `${IMPORT}router.post('/c', requireAnyStaffCapability(CAPS), h);\n`,
+      'modules/admin/routes/spread.mjs': `${IMPORT}router.post('/d', requireStaffCapability(...caps), h);\n`,
+      'modules/admin/routes/template.mjs': `${IMPORT}router.post('/e', requireStaffCapability(\`time-\${x}\`), h);\n`,
+      'modules/admin/routes/alias.mjs': `${IMPORT}const g = requireStaffCapability;\nrouter.post('/f', g('time-back'), h);\n`,
+      'modules/admin/routes/member.mjs':
+        "import * as staff from '../../staff/index.mjs';\nconst { requireStaffCapability: g } = staff;\nrouter.post('/g', g('jobs.hold'), h);\n",
+      'modules/admin/routes/reexport.mjs': `${IMPORT}export { requireStaffCapability as guard };\n`,
+    });
+    expect(where(scanFreshProofCapabilityUse(root))).toEqual([
+      'alias.mjs:2',
+      'const.mjs:3',
+      'list.mjs:2',
+      'listvar.mjs:2',
+      'member.mjs:2',
+      'reexport.mjs:2',
+      'spread.mjs:2',
+      'template.mjs:2',
+    ]);
+  });
+
   test('other capabilities, tests and node_modules pass', () => {
     const root = mirror({
       'modules/admin/routes/fine.mjs': `${IMPORT}router.post('/x', requireAnyStaffCapability(['warn', 'ban.ip']), h);\n`,
@@ -492,8 +518,15 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     expect(at).toBeGreaterThanOrEqual(0);
     return [text.replace(from, to), text.slice(0, at).split('\n').length];
   };
-  const scanWith = ({ routers = REAL_ROUTERS, app = REAL_APP }) =>
-    scanStaffMount(mirror({ 'app/routers.mjs': routers, 'app.mjs': app }));
+  // app.mjs's own relative imports, mirrored so the middleware classification can read them.
+  const APP_DEPS = Object.fromEntries(
+    [...REAL_APP.matchAll(/from '\.\/([^']+)'/g)].map(([, rel]) => [
+      rel,
+      readFileSync(path.join(BACKEND, rel), 'utf8'),
+    ]),
+  );
+  const scanWith = ({ routers = REAL_ROUTERS, app = REAL_APP, files = {} }) =>
+    scanStaffMount(mirror({ ...APP_DEPS, ...files, 'app/routers.mjs': routers, 'app.mjs': app }));
   const where = failures => failures.map(f => `${path.basename(f.file)}:${f.line}`);
 
   test('the real routers.mjs and app.mjs pass, in place and mirrored', () => {
@@ -582,6 +615,60 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
   ])('app.mjs ordering: %s fails', (_name, line) => {
     const withoutAuth = line === AUTH_MOUNT ? REAL_APP.replace(AUTH_MOUNT, '') : REAL_APP;
     const [app, at] = edit(withoutAuth, APP_MOUNT, `${line}${APP_MOUNT}`);
+    expect(where(scanWith({ app }))).toContain(`app.mjs:${at}`);
+  });
+
+  // Equoria-fvdru: a Router imported from a middleware directory under a name
+  // without 'route' in it is not middleware. The import goes first, the use
+  // directly above the staff mount.
+  const ROUTES_IMPORT = "import r from '../modules/x/routes/xRoutes.mjs';\n";
+  test.each([
+    [
+      'a Router built in utils',
+      "import perfMetrics from './utils/performanceMonitor.mjs';",
+      "app.use('/api', perfMetrics);",
+    ],
+    [
+      'a middleware module re-exporting a routes module',
+      "import metrics from './utils/metrics.mjs';",
+      'app.use(metrics);',
+      { 'utils/metrics.mjs': "export { default } from '../modules/x/routes/xRoutes.mjs';\n" },
+    ],
+    [
+      'a middleware module passing an imported router on',
+      "import metrics from './utils/metrics.mjs';",
+      "app.use('/', metrics);",
+      { 'utils/metrics.mjs': `${ROUTES_IMPORT}export default r;\n` },
+    ],
+    [
+      'a Router factory taken by reference',
+      "import metrics from './utils/metrics.mjs';",
+      'app.use(metrics);',
+      {
+        'utils/metrics.mjs':
+          "import express from 'express';\nconst make = express['Router'];\nexport default make();\n",
+      },
+    ],
+    ['a middleware import that does not resolve', "import ghost from './middleware/ghost.mjs';", 'app.use(ghost);'],
+  ])('app.mjs ordering: %s above the staff mount fails', (_name, importLine, useLine, files = {}) => {
+    const [withImport] = edit(
+      REAL_APP,
+      "import express from 'express';\n",
+      `import express from 'express';\n${importLine}\n`,
+    );
+    const [app, at] = edit(withImport, APP_MOUNT, `${useLine}\n${APP_MOUNT}`);
+    expect(where(scanWith({ app, files }))).toContain(`app.mjs:${at}`);
+  });
+
+  // Equoria-fvdru: publicRouter is mounted ahead of the staff Router, so app.mjs
+  // may name it only in the single app.use('/', publicRouter).
+  test.each([
+    ['a pathless publicRouter.use above the staff mount', 'publicRouter.use(h);\n'],
+    ['a covering publicRouter.use above the staff mount', "publicRouter.use('/api', h);\n"],
+    ['publicRouter aliased', 'const pr = publicRouter;\n'],
+    ['publicRouter mounted a second time', "app.use('/', publicRouter);\n"],
+  ])('app.mjs: %s fails on the added line', (_name, line) => {
+    const [app, at] = edit(REAL_APP, APP_MOUNT, `${line}${APP_MOUNT}`);
     expect(where(scanWith({ app }))).toContain(`app.mjs:${at}`);
   });
 

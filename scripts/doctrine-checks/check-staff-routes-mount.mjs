@@ -26,11 +26,13 @@
 // and every argument of a covering use() must be an identifier or call bound
 // to an import from backend/{middleware,config,services,utils}/ or from cors,
 // helmet or cookie-parser, express.json/urlencoded/raw/text, or a local const
-// built from one; a name matching /route|router/i never counts as middleware.
-// Anything unclassifiable fails closed. The single exception is
-// `app.use('/', publicRouter)`, allowed because routers.mjs pins every
-// publicRouter registration to a static path that does not cover
-// /api/v1/staff. Before the staff mount `app` may only be passed to
+// built from one; a name matching /route|router/i never counts as middleware,
+// nor does an import from a module that names Router, imports or re-exports
+// from a path naming a route, or cannot be read. Anything unclassifiable fails
+// closed. The single exception is `app.use('/', publicRouter)`, allowed
+// because routers.mjs pins every publicRouter registration to a static path
+// that does not cover /api/v1/staff; app.mjs names publicRouter nowhere else.
+// Before the staff mount `app` may only be passed to
 // setupSwaggerDocs (middleware/swaggerSetup.mjs, which registers /api-docs).
 //
 // In both files, no other route-method or use() call may name a path under
@@ -98,6 +100,26 @@ const MIDDLEWARE_PACKAGES = new Set(['cors', 'helmet', 'cookie-parser']);
 const EXPRESS_MIDDLEWARE = new Set(['json', 'urlencoded', 'raw', 'text']);
 const ROUTERISH = /route|router/i;
 
+/**
+ * Could the module at `file` hand out a Router (Equoria-fvdru)? True when it
+ * names Router at all, imports or re-exports from a path naming a route, or
+ * cannot be read: a router never passes as middleware for want of 'route' in
+ * its binding name.
+ */
+function mayExportRouter(file) {
+  let nodes;
+  try {
+    ({ nodes } = load(file));
+  } catch {
+    return true;
+  }
+  return nodes.some((n) => {
+    if (n.type === 'Identifier') return n.name === 'Router';
+    const v = isStringLiteral(n) ? n.value : n.type === 'TemplateElement' ? n.value.cooked : null;
+    return v === 'Router' || (v?.startsWith('.') && ROUTERISH.test(v));
+  });
+}
+
 /** Is `name` bound to middleware: a middleware-module import, or a const built from one? */
 function isMiddlewareName(idx, file, backendRoot, name, depth = 0) {
   if (ROUTERISH.test(name) || depth > 3) return false;
@@ -107,8 +129,9 @@ function isMiddlewareName(idx, file, backendRoot, name, depth = 0) {
     const src = String(stmt.source.value);
     if (MIDDLEWARE_PACKAGES.has(src)) return true;
     if (!src.startsWith('.')) return false;
-    const rel = path.relative(backendRoot, path.resolve(path.dirname(file), src));
-    return MIDDLEWARE_DIRS.includes(rel.split(path.sep)[0]);
+    const target = path.resolve(path.dirname(file), src);
+    const rel = path.relative(backendRoot, target);
+    return MIDDLEWARE_DIRS.includes(rel.split(path.sep)[0]) && !mayExportRouter(target);
   }
   const decl = idx.ast.body
     .filter((st) => st.type === 'VariableDeclaration' && st.kind === 'const')
@@ -511,6 +534,18 @@ export function checkAppFile(file, backendRoot) {
           p.key.name === 'publicRouter' &&
           p.value.type === 'Identifier'
       );
+    // publicRouter runs ahead of the staff Router, so it is named only in the
+    // single app.use('/', publicRouter) (Equoria-fvdru).
+    const pubRefs = pub ? references(idx, pub.value.name, new Set([pub.value])) : [];
+    for (const r of pubRefs) {
+      const atRoot = (args) =>
+        args.length === 2 && isStringLiteral(args[0]) && args[0].value === '/' && args[1] === r;
+      if (
+        pubRefs.length !== 1 ||
+        !isUseStatement(idx.parents.get(idx.parents.get(r)), 'app', atRoot)
+      )
+        fail(r.loc.start.line, `${r.name} may only appear once, in app.use('/', ${r.name})`);
+    }
     checkCoveringBeforeMount(idx, file, backendRoot, mountCall, pub?.value ?? null, fail);
   }
   return failures;

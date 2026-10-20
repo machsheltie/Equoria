@@ -34,6 +34,10 @@
 //    aside) may call requireStaffCapability / requireAnyStaffCapability naming
 //    'time-back' or 'jobs.hold' - imported, aliased or reached as a member -
 //    so neither capability can be mounted on an admin or any other route.
+//    What the scan cannot read fails closed (Equoria-fvdru): a capability
+//    that is not a string literal (a const, a spread, a template with
+//    expressions), or a guard read other than as a call's callee (aliased,
+//    destructured, passed on, re-exported under another name).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -417,7 +421,8 @@ function backendSourceFiles(dir, out = []) {
 
 /**
  * STAFF-CR-06 everywhere: any capability-guard call under backend/ whose
- * literal capability (direct, or in the array) is a fresh-proof capability.
+ * literal capability (direct, or in the array) is a fresh-proof capability,
+ * plus every guard call or guard reference the scan cannot read.
  * Returns [{file, line, reason}].
  */
 export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
@@ -446,17 +451,47 @@ export function scanFreshProofCapabilityUse(backendRoot = BACKEND_DIR) {
         locals.add(n.local.name);
       }
     }
+    const isGuardRef = (c) =>
+      (c?.type === 'Identifier' && locals.has(c.name)) ||
+      (c?.type === 'MemberExpression' &&
+        CAPABILITY_GUARD_NAMES.has(c.computed ? staticPath(c.property) : c.property.name));
+    const unfollowable = (n, why) =>
+      failures.push({
+        file,
+        line: n.loc.start.line,
+        reason: `${why}; unable to prove it does not mount time-back or jobs.hold (Equoria-fvdru)`,
+      });
     for (const n of parsed.nodes) {
-      if (n.type !== 'CallExpression') continue;
-      const c = n.callee;
-      const isGuard =
-        (c.type === 'Identifier' && locals.has(c.name)) ||
-        (c.type === 'MemberExpression' &&
-          CAPABILITY_GUARD_NAMES.has(c.computed ? staticPath(c.property) : c.property.name));
-      if (!isGuard) continue;
+      // A guard read anywhere but as a call's callee (aliased, destructured,
+      // passed on) is a call this scan cannot follow.
+      const p = parsed.parents.get(n);
+      const read =
+        (n.type === 'Identifier' &&
+          locals.has(n.name) &&
+          !(p.type === 'MemberExpression' && p.property === n && !p.computed) &&
+          !(
+            p.type === 'Property' &&
+            (p.key === n || parsed.parents.get(p).type === 'ObjectPattern')
+          ) &&
+          !/^(Import\w*Specifier|FunctionDeclaration)$/.test(p.type) &&
+          !(p.type === 'ExportSpecifier' && CAPABILITY_GUARD_NAMES.has(p.exported.name))) ||
+        (n.type === 'MemberExpression' && isGuardRef(n)) ||
+        (n.type === 'Property' &&
+          (p.type === 'ObjectPattern'
+            ? CAPABILITY_GUARD_NAMES.has(n.computed ? staticPath(n.key) : n.key.name)
+            : n.shorthand && locals.has(n.key.name)));
+      if (read && !(p.type === 'CallExpression' && p.callee === n)) {
+        unfollowable(n, 'a capability guard taken by reference');
+        continue;
+      }
+      if (n.type !== 'CallExpression' || !isGuardRef(n.callee)) continue;
       const named = n.arguments.flatMap((a) =>
         a.type === 'ArrayExpression' ? a.elements.map((e) => staticPath(e)) : [staticPath(a)]
       );
+      if (named.some((cap) => cap === null)) {
+        unfollowable(n, 'a capability that is not a string literal');
+        continue;
+      }
       const hit = named.find((cap) => FRESH_PROOF_CAPABILITIES.includes(cap));
       if (hit) {
         failures.push({
