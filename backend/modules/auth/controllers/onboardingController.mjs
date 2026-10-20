@@ -233,6 +233,20 @@ export const advanceOnboarding = async (req, res, next) => {
       typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
     const currentStep =
       typeof currentSettings.onboardingStep === 'number' ? currentSettings.onboardingStep : 0;
+    // Equoria-gu8jk (owner ruling 2026-10-20: players must never write traits
+    // for themselves). OLD: a horse payload rewrote the player's oldest horse —
+    // name, breed, sex, stats — and drew a FRESH temperament on every call, at
+    // any step and after onboarding had finished, so the wizard could be
+    // replayed until the wanted temperament came up. NEW: the starter horse is
+    // chosen once, while the wizard is the player's current step (step 0, not
+    // completed — the only state OnboardingGuard shows the wizard in). The
+    // tour's own advances (no horse payload) are unaffected.
+    if (
+      hasHorseCustomization &&
+      !(currentSettings.completedOnboarding === false && currentStep === 0)
+    ) {
+      throw new AppError('Your starter horse has already been chosen.', 409);
+    }
     // Owner ruling 2026-09-30 (Equoria-bvddn.31): finishing the wizard (horse
     // customization) hands the player INTO the 9-step spotlight tour at step 1
     // with completedOnboarding false; it no longer jumps to 10/true. Math.max keeps
