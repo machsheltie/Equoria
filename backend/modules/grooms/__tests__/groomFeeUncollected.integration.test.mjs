@@ -19,11 +19,13 @@
  *
  * HOW THE FAULT IS INJECTED — a REAL Postgres fault, no mocks. A second connection
  * holds `SELECT ... FOR UPDATE` on the fixture user's row. The fee transaction's
- * atomic debit (`debitMoneyOrThrow` → `user.updateMany`) blocks on that row lock
- * until the transaction's own 30s timeout aborts it. That is exactly the shape of
- * the fault the issue describes: a genuine, non-funds throw from the database,
- * arriving after the transaction has begun. The lock is scoped to this file's own
- * fixture user, so no other row and no other agent's work is touched.
+ * atomic debit (`debitMoneyOrThrow` → `user.updateMany`) blocks on that row lock,
+ * and the holder then cancels the blocked statement (`pg_cancel_backend`). That is
+ * exactly the shape of the fault the issue describes: a genuine, non-funds throw
+ * from the database, arriving after the transaction has begun. (It used to wait
+ * 40s for the transaction's own 30s timeout to raise the same kind of error.) The
+ * lock is scoped to this file's own fixture user, so no other row and no other
+ * agent's work is touched.
  *
  * WHAT THESE TESTS CANNOT SEE: they do not prove anything about WHICH errors are
  * transient, they do not exercise the cron entry point, and they do not cover what
@@ -149,23 +151,40 @@ describe('Equoria-2ti1j — a non-funds throw must not grant a free week of staf
     const payWeekStart = getPayWeekStart(WEEK_ONE);
     const moneyBefore = (await prisma.user.findUnique({ where: { id: user.id } })).money;
 
-    // A second connection takes the fixture user's row lock and holds it for longer
-    // than the fee transaction's 30s timeout, so the debit inside that transaction
-    // blocks and the transaction aborts with a genuine, non-funds database error.
-    // The hold MUST outlast that 30s deadline with margin: Prisma does not abort a
-    // statement that is blocked in Postgres — it raises P2028 ("a query cannot be
-    // executed on an expired transaction") when the blocked statement finally
-    // returns, and then rolls the transaction back. A hold that ends at ~30s is a
-    // photo finish the debit can win, so this holds the lock for 40s.
+    // A second connection takes the fixture user's row lock, so the debit inside
+    // the fee transaction blocks. Once it is queued behind this lock, the holder
+    // cancels that blocked statement (pg_cancel_backend): Postgres raises a
+    // genuine, non-funds database error ("canceling statement due to user
+    // request") inside the fee transaction, which then rolls back. Before, the
+    // holder waited 40s for the fee transaction's own 30s timeout to produce the
+    // same kind of error; the path under test is identical, the wait is not.
+    let lockTaken;
+    const taken = new Promise(resolve => {
+      lockTaken = resolve;
+    });
     const lockHeld = prisma.$transaction(
       async tx => {
         await tx.$executeRaw`SELECT id FROM "User" WHERE id = ${user.id} FOR UPDATE`;
-        await sleep(40000);
+        lockTaken();
+        const deadline = Date.now() + 20000;
+        for (;;) {
+          // Inside a transaction pg_stat_activity is a frozen snapshot; refresh it.
+          await tx.$executeRaw`SELECT pg_stat_clear_snapshot()`;
+          const blocked = await tx.$queryRaw`
+            SELECT pid FROM pg_stat_activity WHERE pg_backend_pid() = ANY(pg_blocking_pids(pid))`;
+          if (blocked.length > 0) {
+            await tx.$queryRaw`SELECT pg_cancel_backend(${blocked[0].pid}::int)::text AS cancelled`;
+            return;
+          }
+          if (Date.now() > deadline) {
+            throw new Error('the fee debit never queued behind the held lock');
+          }
+          await sleep(25);
+        }
       },
-      { timeout: 120000, maxWait: 30000 },
+      { timeout: 30000 },
     );
-    // Give the lock holder time to actually take the lock before the pass starts.
-    await sleep(1000);
+    await taken;
 
     let results;
     try {

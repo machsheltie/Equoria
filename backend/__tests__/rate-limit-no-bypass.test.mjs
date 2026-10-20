@@ -19,7 +19,7 @@
  *
  * Each test uses a unique `X-Forwarded-For` IP so it gets its own rate-limit
  * bucket (Express has `trust proxy` enabled at app.mjs:270). This isolates
- * rate-limit state across tests so the 200-attempt flood in test 1 doesn't
+ * rate-limit state across tests so the failed-login flood in test 1 doesn't
  * pollute the shared 127.0.0.1 bucket used by other suites.
  *
  * What we prove:
@@ -46,12 +46,13 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
  * temporarily during the flood test so it can trip 429 within a reasonable
  * number of requests, then restore the original.
  *
- * Why narrow vs hammer 1001+: 1001 sequential supertest calls is ~15s of
- * pure HTTP turnaround; 50 is ~0.5s. Narrowing exercises exactly the same
- * production code path (createRateLimiter / express-rate-limit / the auth
- * route's mounted middleware) — the cap is just lower, not bypassed.
+ * Why narrow vs hammer 1001+: narrowing exercises exactly the same production
+ * code path (createRateLimiter / express-rate-limit / the auth route's mounted
+ * middleware) — the cap is just lower, not bypassed. Every failed login now runs
+ * the login timing anchor (a real bcrypt compare, ~0.3s), so the cap is kept
+ * small: 50 took ~17s for nothing the test needs; 5 trips the same 429.
  */
-const TEST_FLOOD_MAX = 50;
+const TEST_FLOOD_MAX = 5;
 const TEST_FLOOD_HEADROOM = 5;
 
 const BYPASS_HEADERS = [

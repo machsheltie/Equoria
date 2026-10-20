@@ -801,15 +801,20 @@ describe('FR36: distinct colorName coverage (Equoria-vst9)', () => {
     const lociEntries = Object.entries(LOCUS_VARIANTS);
     const distinct = new Set();
     let combos = 0;
+    // Every combination is still checked; the misses are collected and asserted
+    // once, because three expect() calls per combination dominated the run time.
+    const unresolved = [];
 
     for (const genotype of cartesian(lociEntries)) {
       combos += 1;
       const { colorName } = calculatePhenotype(genotype);
-      expect(typeof colorName).toBe('string');
-      expect(colorName.length).toBeGreaterThan(0);
-      expect(colorName).not.toBe('Unknown'); // non-empty genotype must resolve
+      // A non-empty genotype must resolve to a real name.
+      if (typeof colorName !== 'string' || colorName.length === 0 || colorName === 'Unknown') {
+        unresolved.push({ genotype, colorName });
+      }
       distinct.add(colorName);
     }
+    expect(unresolved).toEqual([]);
 
     // Combo count guard: ensure the enumeration actually ran the full
     // Cartesian product (catches an accidental early-return / empty loop

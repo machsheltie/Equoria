@@ -89,15 +89,31 @@ async function timedForgotPassword(email) {
   return Number(end - start) / 1e6; // ms
 }
 
-describe('forgotPassword timing oracle (Equoria-dv1lv, Equoria-3cuv9)', () => {
-  it('SENTINEL: median response time for known-good vs unknown email is within 3x', async () => {
+// Both sentinels judge the same measurements, so they are taken once and
+// shared: every request now waits out the forgot-password response floor
+// (Equoria-jeci6, >= 1 s), and sampling twice doubled the file's run time
+// for no extra evidence. Taken on first use, so either test also runs alone.
+let sharedSamples = null;
+function samplesOnce() {
+  sharedSamples ??= (async () => {
     const goodSamples = [];
     const badSamples = [];
+    // Warm-up to defeat JIT / pool-connection cold start dominating sample 0.
+    await timedForgotPassword(user.email);
+    await timedForgotPassword(`warmup-${randomBytes(4).toString('hex')}@example.com`);
     for (let i = 0; i < N_SAMPLES; i++) {
       // Interleave so any system-wide warm-up affects both samples equally.
       goodSamples.push(await timedForgotPassword(user.email));
       badSamples.push(await timedForgotPassword(`unknown-${randomBytes(4).toString('hex')}@example.com`));
     }
+    return { goodSamples, badSamples };
+  })();
+  return sharedSamples;
+}
+
+describe('forgotPassword timing oracle (Equoria-dv1lv, Equoria-3cuv9)', () => {
+  it('SENTINEL: median response time for known-good vs unknown email is within 3x', async () => {
+    const { goodSamples, badSamples } = await samplesOnce();
     const goodMedian = median(goodSamples);
     const badMedian = median(badSamples);
 
@@ -132,15 +148,7 @@ describe('forgotPassword timing oracle (Equoria-dv1lv, Equoria-3cuv9)', () => {
     //   - the constant-time anchor is moved INTO one branch only / removed
     //     (re-introducing a measurable known-vs-unknown gap).
     // The 20ms bound matches the AC literal for Equoria-3cuv9.
-    const goodSamples = [];
-    const badSamples = [];
-    // Warm-up to defeat JIT / pool-connection cold start dominating sample 0.
-    await timedForgotPassword(user.email);
-    await timedForgotPassword(`warmup-${randomBytes(4).toString('hex')}@example.com`);
-    for (let i = 0; i < N_SAMPLES; i++) {
-      goodSamples.push(await timedForgotPassword(user.email));
-      badSamples.push(await timedForgotPassword(`unknown-${randomBytes(4).toString('hex')}@example.com`));
-    }
+    const { goodSamples, badSamples } = await samplesOnce();
     const goodMedian = median(goodSamples);
     const badMedian = median(badSamples);
     const delta = Math.abs(goodMedian - badMedian);

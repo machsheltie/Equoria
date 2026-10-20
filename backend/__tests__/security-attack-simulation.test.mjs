@@ -468,8 +468,11 @@ describe('Security Attack Simulation Tests', () => {
       it('should have rate limiting configured on login endpoint (brute force protection)', async () => {
         const requests = [];
 
-        // Attempt 20 rapid login attempts (simulating brute force)
-        for (let i = 0; i < 20; i++) {
+        // Rapid login attempts (simulating brute force). This checks the limiter's
+        // headers on every response; tripping the 429 itself is proven in
+        // rate-limit-no-bypass.test.mjs. Each failed login runs the ~0.3s login
+        // timing anchor, so three attempts carry the check that twenty did.
+        for (let i = 0; i < 3; i++) {
           requests.push(
             request(app)
               .post('/api/v1/auth/login')
