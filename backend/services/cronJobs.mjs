@@ -234,9 +234,10 @@ class CronJobService {
    * @param {Object} newTraits
    * @param {number} currentDay
    * @param {Object} [foal] - Full foal record (for bondScore / stressLevel)
+   * @param {Object} [tx] - The caller's transaction (Equoria-mwjst)
    */
-  async logTraitRevelation(foalId, foalName, newTraits, currentDay, foal = null) {
-    return foalTraitImpl.logTraitRevelation(foalId, foalName, newTraits, currentDay, foal);
+  async logTraitRevelation(foalId, foalName, newTraits, currentDay, foal = null, tx = null) {
+    return foalTraitImpl.logTraitRevelation(foalId, foalName, newTraits, currentDay, foal, tx);
   }
 
   /**

@@ -59,6 +59,18 @@ export const ENTRY_REFUSALS = Object.freeze({
     message:
       'This horse already has shows in 3 discipline types. A new type can be entered once every show of one of them has run.',
   }),
+  // Equoria-mwjst: re-checked inside the entry transaction. Not-found and
+  // not-yours stay one answer (CWE-639).
+  HORSE_NOT_FOUND: Object.freeze({ status: 404, message: 'Horse not found' }),
+  GROOM_NOT_ON_STAFF: Object.freeze({
+    status: 400,
+    message: 'Groom not found or not on your staff',
+  }),
+  GROOM_CANNOT_WORK: Object.freeze({ status: 400, message: 'This groom cannot work right now' }),
+  CONFORMATION_INELIGIBLE: Object.freeze({
+    status: 400,
+    message: 'Horse does not meet conformation show entry requirements',
+  }),
 });
 
 /**

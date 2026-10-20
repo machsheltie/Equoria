@@ -333,47 +333,46 @@ describe('calculateConformationShowScore — null horse (Equoria-vc7v)', () => {
 
 describe('validateConformationEntry — pure-input branches (Equoria-jkht)', () => {
   it('returns early with Horse/groom required when horse is null (lines 325-332)', async () => {
-    const result = await validateConformationEntry(null, { id: 1 }, 'Mares', 'uid');
+    const result = await validateConformationEntry(null, { id: 1 }, 'uid');
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('Horse and groom are required');
     expect(result.assignment).toBeNull();
     expect(result.ageClass).toBeNull();
   });
 
-  it('pushes invalid-class error and groom-not-assigned error when class is bad and ids are null', async () => {
+  it('pushes groom-not-assigned error when ids are null', async () => {
     const horse = { id: null, age: 2, healthStatus: 'Good', stressLevel: 5, conformationScores: { head: 70 } };
     const groom = { id: null };
-    const result = await validateConformationEntry(horse, groom, 'BadClass', 'uid');
+    const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('not a valid conformation show class'))).toBe(true);
     expect(result.errors.some(e => e.includes('Groom must be assigned'))).toBe(true);
   });
 
   it('pushes age-invalid error when horse.age < 0 (line 389-391)', async () => {
     const horse = { id: null, age: -1, healthStatus: 'Good', stressLevel: 5, conformationScores: null };
     const groom = { id: null };
-    const result = await validateConformationEntry(horse, groom, 'Mares', 'uid');
+    const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.errors.some(e => e.includes('invalid'))).toBe(true);
   });
 
   it('pushes health error when healthStatus is not Excellent or Good (lines 398-401)', async () => {
     const horse = { id: null, age: 2, healthStatus: 'Injured', stressLevel: 5, conformationScores: null };
     const groom = { id: null };
-    const result = await validateConformationEntry(horse, groom, 'Mares', 'uid');
+    const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.errors.some(e => e.includes('healthy'))).toBe(true);
   });
 
   it('adds stress warning when stressLevel > 80 (lines 404-406)', async () => {
     const horse = { id: null, age: 2, healthStatus: 'Good', stressLevel: 90, conformationScores: null };
     const groom = { id: null };
-    const result = await validateConformationEntry(horse, groom, 'Mares', 'uid');
+    const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.warnings.some(w => w.includes('stress'))).toBe(true);
   });
 
   it('adds no-conformationScores warning when conformationScores is null (lines 409-411)', async () => {
     const horse = { id: null, age: 2, healthStatus: 'Excellent', stressLevel: 5, conformationScores: null };
     const groom = { id: null };
-    const result = await validateConformationEntry(horse, groom, 'Mares', 'uid');
+    const result = await validateConformationEntry(horse, groom, 'uid');
     expect(result.warnings.some(w => w.includes('conformation scores'))).toBe(true);
   });
 
@@ -390,7 +389,7 @@ describe('validateConformationEntry — pure-input branches (Equoria-jkht)', () 
         },
       },
     );
-    const result = await validateConformationEntry(throwingHorse, { id: null }, 'Mares', 'uid');
+    const result = await validateConformationEntry(throwingHorse, { id: null }, 'uid');
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('Validation error occurred');
   });
@@ -564,7 +563,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
       // IDs are non-null integers but no groomAssignment exists for them → query fires (line 337), returns null
       const horse = { id: 999999997, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
       const groom = { id: 999999997 };
-      const result = await validateConformationEntry(horse, groom, 'Mares', cssUser.id);
+      const result = await validateConformationEntry(horse, groom, cssUser.id);
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.includes('Groom must be assigned'))).toBe(true);
     });
@@ -576,7 +575,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
     it('line 355 true arm: pushes "at least N days" error when groom assignment is < MIN_GROOM_ASSIGNMENT_DAYS old', async () => {
       const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
       const groom = { id: cssFreshGroom.id };
-      const result = await validateConformationEntry(horse, groom, 'Mares', cssUser.id);
+      const result = await validateConformationEntry(horse, groom, cssUser.id);
       expect(result.errors.some(e => e.includes('at least'))).toBe(true);
     });
 
@@ -584,7 +583,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
       // cssOldGroom assignment was created 10 days ago → daysSinceAssignment >= 2 → no error
       const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
       const groom = { id: cssOldGroom.id };
-      const result = await validateConformationEntry(horse, groom, 'Mares', cssUser.id);
+      const result = await validateConformationEntry(horse, groom, cssUser.id);
       expect(result.errors.every(e => !e.includes('at least'))).toBe(true);
       expect(result.valid).toBe(true);
       expect(result.assignment).not.toBeNull();

@@ -208,7 +208,8 @@ describe('enterConformationShow (real DB)', () => {
       expect(body.data.horseId).toBe(horse.id);
       expect(body.data.showId).toBe(show.id);
       expect(body.data.ageClass).toBeTruthy();
-      expect(body.data.className).toBe('Mares');
+      // Entry takes no class (owner ruling 2026-10-20); one sent by an older client is not echoed.
+      expect(body.data).not.toHaveProperty('className');
 
       // Verify the DB row was actually created.
       const persisted = await prisma.showEntry.findFirst({
@@ -407,29 +408,6 @@ describe('enterConformationShow (real DB)', () => {
       const body = res.jsonValue;
       expect(body.success).toBe(false);
       expect(body.errors.some(e => /at least/i.test(e))).toBe(true);
-    });
-  });
-
-  describe('G3 — invalid className returns 400', () => {
-    it('returns 400 when className is not a valid conformation class', async () => {
-      const user = await createUser();
-      const horse = await createHorse(user.id);
-      const groom = await createGroom(user.id);
-      const show = await createConformationShow();
-      await createGroomAssignment(groom.id, horse.id, user.id);
-
-      const req = buildReq({
-        user: { id: user.id },
-        body: { horseId: horse.id, groomId: groom.id, showId: show.id, className: 'Dressage' },
-      });
-      const res = buildRes();
-
-      await enterConformationShow(req, res);
-
-      expect(res.statusValue).toBe(400);
-      const body = res.jsonValue;
-      expect(body.success).toBe(false);
-      expect(body.errors.some(e => /not a valid conformation show class/i.test(e))).toBe(true);
     });
   });
 });

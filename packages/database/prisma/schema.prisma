@@ -1005,6 +1005,9 @@ model FoalDevelopment {
   completedMilestones Json      @default("{}")
   /// BB-4: Whether the foal window is still open
   isActive            Boolean   @default(true)
+  /// Equoria-mwjst: when day 6, the final development day, was evaluated. Set
+  /// once; the nightly trait job never evaluates the foal again after it.
+  finalDayEvaluatedAt DateTime?
   /// Last interaction timestamp (for WYAG feed)
   lastInteractionAt   DateTime?
   /// Foreign key — foalId maps to horse.id for the foal

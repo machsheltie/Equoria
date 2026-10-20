@@ -57,7 +57,6 @@ const validateEnterBody = [
   body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
   body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
   body('showId').isInt({ min: 1 }).withMessage('showId must be a positive integer'),
-  body('className').isString().trim().notEmpty().withMessage('className is required'),
 ];
 
 const validateHorseIdParam = [

@@ -1,13 +1,14 @@
 /**
  * ConformationEntryModal (Equoria-e0cn)
  *
- * Surfaces the conformation show entry flow: pick a horse + groom + className,
- * check eligibility (warnings, blocking errors, ageClass, groomAssigned), and
- * submit on confirm.
+ * Surfaces the conformation show entry flow: pick a horse + groom, check
+ * eligibility (warnings, blocking errors, ageClass, groomAssigned), and submit
+ * on confirm. There is no class to pick: conformation classes are not settled
+ * yet (owner ruling 2026-10-20, Equoria-mwjst).
  *
  * Backend contract (controller: conformationShowController.mjs):
  *   GET  /api/v1/competition/conformation/eligibility/:horseId
- *   POST /api/v1/competition/conformation/enter { horseId, groomId, showId, className }
+ *   POST /api/v1/competition/conformation/enter { horseId, groomId, showId }
  *
  * Uses GameDialog (migrated from BaseModal — Equoria-o5hub.13, DECISIONS.md §8)
  * to inherit focus management, escape close, portal rendering, and ARIA roles
@@ -16,7 +17,7 @@
  * the real API and renders backend-sourced eligibility reasons verbatim.
  */
 
-import { type JSX, useState, useMemo } from 'react';
+import { type JSX, useState } from 'react';
 import {
   GameDialog,
   GameDialogContent,
@@ -51,15 +52,6 @@ export interface ConformationEntryModalProps {
   onSuccess?: () => void;
 }
 
-// Conformation className options derive from horse sex; the backend's
-// validateConformationEntry accepts these exact strings.
-function classOptionsForSex(sex: string | undefined): string[] {
-  const s = (sex ?? '').toLowerCase();
-  if (s === 'mare' || s === 'female') return ['Mares', 'Geldings'];
-  if (s === 'stallion' || s === 'male') return ['Stallions', 'Geldings'];
-  return ['Mares', 'Stallions', 'Geldings'];
-}
-
 export default function ConformationEntryModal({
   isOpen,
   onClose,
@@ -70,8 +62,6 @@ export default function ConformationEntryModal({
   const { user } = useAuth();
   const userId = user?.id;
 
-  const classOptions = useMemo(() => classOptionsForSex(horse.sex), [horse.sex]);
-  const [className, setClassName] = useState<string>(classOptions[0]);
   const [groomId, setGroomId] = useState<number | ''>('');
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -94,7 +84,6 @@ export default function ConformationEntryModal({
         horseId: horse.id,
         groomId,
         showId: show.id,
-        className,
       });
       onSuccess?.();
       onClose();
@@ -106,11 +95,7 @@ export default function ConformationEntryModal({
 
   const eligibilityBlocking = eligData != null && !eligData.eligible;
   const submitDisabled =
-    enterMutation.isPending ||
-    eligLoading ||
-    eligibilityBlocking ||
-    typeof groomId !== 'number' ||
-    !className;
+    enterMutation.isPending || eligLoading || eligibilityBlocking || typeof groomId !== 'number';
 
   return (
     <GameDialog
@@ -189,23 +174,6 @@ export default function ConformationEntryModal({
                 )}
               </div>
             )}
-
-            <label className="block">
-              <span className="block text-sm font-medium text-gray-700">Class</span>
-              <select
-                value={className}
-                onChange={(e) => setClassName(e.target.value)}
-                disabled={enterMutation.isPending}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
-                data-testid="conformation-class-select"
-              >
-                {classOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </label>
 
             <label className="block">
               <span className="block text-sm font-medium text-gray-700">Groom</span>

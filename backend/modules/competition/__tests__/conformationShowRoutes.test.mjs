@@ -124,17 +124,6 @@ describe('conformationShowRoutes', () => {
       expect(res.status).toBe(400);
     });
 
-    it('rejects empty className', async () => {
-      const app = makeApp();
-      const res = await auth(request(app).post('/conformation/enter')).send({
-        horseId: 1,
-        groomId: 1,
-        showId: 1,
-        className: '',
-      });
-      expect(res.status).toBe(400);
-    });
-
     it('rejects missing groomId', async () => {
       const app = makeApp();
       const res = await auth(request(app).post('/conformation/enter')).send({

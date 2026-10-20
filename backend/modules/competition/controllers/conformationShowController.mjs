@@ -22,7 +22,7 @@ import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { sendEntryRefusal } from '../services/entryEligibility.mjs';
 import {
   validateConformationEntry,
-  conformationGroomSnapshot,
+  checkConformationEntryInTx,
 } from '../services/conformationShowService.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 
@@ -47,12 +47,13 @@ async function resolveOwnedHorse(req, horseId, userId) {
 /**
  * Register a horse entry into a conformation show.
  *
- * Body: { horseId, groomId, showId, className }
+ * Body: { horseId, groomId, showId }
  * - horseId: must be owned by the authenticated user
  * - groomId: must be on the authenticated user's STAFF (Equoria-ypb7d.2: players
  *   engage grooms, they never own them)
  * - showId: must reference a show with showType === 'conformation'
- * - className: valid conformation sex/category class (e.g. 'Mares', 'Stallions')
+ * There is no class: conformation classes are not settled yet, and entry takes
+ * none (owner ruling 2026-10-20, Equoria-mwjst).
  *
  * Returns 201 on success with entry data including ageClass.
  */
@@ -70,7 +71,7 @@ export async function enterConformationShow(req, res) {
       });
     }
 
-    const { horseId, groomId, showId, className } = req.body;
+    const { horseId, groomId, showId } = req.body;
     const userId = req.user?.id;
 
     logger.info(
@@ -174,7 +175,7 @@ export async function enterConformationShow(req, res) {
     }
 
     // Run full validation via service layer
-    const result = await validateConformationEntry(horse, groom, className, userId);
+    const result = await validateConformationEntry(horse, groom, userId);
     if (!result.valid) {
       logger.warn(
         `[conformationShowController.POST /enter] Entry validation failed for horse ${horseId}: ${result.errors.join(', ')}`,
@@ -194,19 +195,28 @@ export async function enterConformationShow(req, res) {
     // the configured entryFee with a guarded update, credits show escrow with
     // its ledger rows, re-checks the entry window and creates the entry with
     // feePaid = entryFee, all in ONE transaction; any refusal rolls all of it
-    // back. Conformation keeps its own groom/health/age-class rules above, so
-    // the ridden age-3 minimum is deliberately not applied.
+    // back. Conformation keeps its own groom/health/age-class rules, so the
+    // ridden age-3 minimum is deliberately not applied.
+    //
+    // The checks above are only a fast refusal. checkConformationEntryInTx
+    // decides them again inside the transaction, on the rows as they are when
+    // the fee is taken: the horse still this player's, the groom still on
+    // staff, allowed to work and assigned, the horse still eligible
+    // (Equoria-mwjst). The entry keeps that groom for settlement (owner ruling
+    // 2026-10-12), with a snapshot of its scoring fields in case the groom row
+    // is deleted.
     let entry;
+    let decided;
     try {
-      // The entry keeps this groom for settlement (owner ruling 2026-10-12),
-      // with a snapshot of its scoring fields in case the groom row is deleted.
       entry = await enterShowDeferredTx({
         show,
         showId,
         horseId,
         userId,
-        groomId: groom.id,
-        groomSnapshot: conformationGroomSnapshot(groom),
+        prepareEntry: async tx => {
+          decided = await checkConformationEntryInTx(tx, { horseId, groomId: groom.id, userId });
+          return decided;
+        },
       });
     } catch (txError) {
       if (sendEntryRefusal(res, txError)) {
@@ -233,19 +243,19 @@ export async function enterConformationShow(req, res) {
     }
 
     logger.info(
-      `[conformationShowController.POST /enter] Entry created: id=${entry.id} horse=${horseId} show=${showId} ageClass=${result.ageClass} feePaid=${entry.feePaid}`,
+      `[conformationShowController.POST /enter] Entry created: id=${entry.id} horse=${horseId} show=${showId} ageClass=${decided.ageClass} feePaid=${entry.feePaid}`,
     );
 
+    // ageClass and warnings as decided inside the entry transaction.
     return res.status(201).json({
       success: true,
       data: {
         entryId: entry.id,
         horseId,
         showId,
-        ageClass: result.ageClass,
-        className,
+        ageClass: decided.ageClass,
         feePaid: entry.feePaid,
-        warnings: result.warnings,
+        warnings: decided.warnings,
       },
     });
   } catch (error) {
@@ -312,9 +322,8 @@ export async function checkConformationEligibility(req, res) {
       groom = await prisma.groom.findUnique({ where: { id: assignment.groomId } });
     }
 
-    // Run eligibility check via service layer using placeholder class
-    // 'Mares' is used as a placeholder — class validation is not the focus of eligibility
-    const result = await validateConformationEntry(horse, groom, 'Mares', userId);
+    // Run eligibility check via service layer
+    const result = await validateConformationEntry(horse, groom, userId);
 
     logger.info(
       `[conformationShowController.GET /eligibility] Horse ${horseId}: eligible=${result.valid} groomAssigned=${!!assignment}`,

@@ -466,6 +466,52 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     const riddenAfter = await prisma.show.findUnique({ where: { id: ridden.id } });
     expect(riddenAfter.status).toBe('open');
   });
+
+  // Codex Sol review 2026-10-20 (verification gap): the reverse direction.
+  it('a conformation show that fails does not stop a due ridden show from settling, once', async () => {
+    const { show, entrants } = await dueShowWithTwoEntries();
+    // The same unscoreable legacy entry as above: this conformation show fails.
+    await prisma.$executeRaw`UPDATE "show_entries" SET "groomId" = NULL, "groomSnapshot" = NULL
+      WHERE "showId" = ${show.id} AND "horseId" = ${entrants[1].horse.id}`;
+    await prisma.groomAssignment.update({
+      where: { id: entrants[1].assignment.id },
+      data: { isActive: false },
+    });
+    const ridden = await createTestShow({
+      name: `${FIXTURE_PREFIX}-ridden-ok`,
+      discipline: 'Dressage',
+      status: 'open',
+      entryFee: 0,
+      prize: 0,
+      levelMin: 1,
+      levelMax: 10,
+      openDate: new Date(Date.now() - 8 * DAY_MS),
+      closeDate: new Date(Date.now() - 60 * 60 * 1000),
+      runDate: new Date(Date.now() - 60 * 60 * 1000),
+    });
+    const before = await rewardState(show, entrants);
+
+    // The conformation failure still reaches the nightly job as a failure ...
+    await expect(executeClosedShows({ body: { showIds: [show.id, ridden.id] } })).rejects.toThrow(
+      new RegExp(`settlement failed for show\\(s\\) ${show.id}\\b`),
+    );
+
+    // ... but the due ridden show settled, and a second run does not settle it again.
+    const riddenAfter = await prisma.show.findUnique({ where: { id: ridden.id } });
+    expect(riddenAfter.status).toBe('completed');
+    expect(riddenAfter.executedAt).not.toBeNull();
+    await expect(executeClosedShows({ body: { showIds: [show.id, ridden.id] } })).rejects.toThrow(
+      new RegExp(`settlement failed for show\\(s\\) ${show.id}\\b`),
+    );
+    const riddenAgain = await prisma.show.findUnique({ where: { id: ridden.id } });
+    expect(riddenAgain.executedAt).toEqual(riddenAfter.executedAt);
+
+    // The conformation show waits, unsettled, with its fees held.
+    const after = await rewardState(show, entrants);
+    expectNothingAwarded(after);
+    expect(after.feeEscrow).toBe(2 * ENTRY_FEE);
+    expect(after.hostMoney).toBe(before.hostMoney);
+  });
 });
 
 // ===========================================================================

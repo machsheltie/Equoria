@@ -21,7 +21,6 @@ export interface ConformationShowEntryPayload {
   horseId: number;
   groomId: number;
   showId: number;
-  className: string;
 }
 
 export interface ConformationShowEntryResult {
@@ -29,7 +28,6 @@ export interface ConformationShowEntryResult {
   horseId: number;
   showId: number;
   ageClass: string;
-  className: string;
   /** The entry fee actually debited (the show's configured fee). */
   feePaid: number;
   warnings: string[];

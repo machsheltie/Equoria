@@ -13,9 +13,11 @@ import { visibleTraitHistoryWhere } from './visibleTraitHistory.mjs';
 /**
  * Logs a trait assignment to the history
  * @param {Object} traitData - Data about the trait assignment
+ * @param {Object} [client] - Prisma client or interactive transaction; pass the
+ *   caller's tx so the history row commits with the trait it records.
  * @returns {Object} Created trait history log entry
  */
-export async function logTraitAssignment(traitData) {
+export async function logTraitAssignment(traitData, client = prisma) {
   const {
     horseId,
     traitName,
@@ -29,7 +31,7 @@ export async function logTraitAssignment(traitData) {
   } = traitData;
 
   // Calculate horse age in days
-  const horse = await prisma.horse.findUnique({
+  const horse = await client.horse.findUnique({
     where: { id: horseId },
     select: { dateOfBirth: true },
   });
@@ -41,7 +43,7 @@ export async function logTraitAssignment(traitData) {
   const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
   // Create the trait history log entry
-  const historyEntry = await prisma.traitHistoryLog.create({
+  const historyEntry = await client.traitHistoryLog.create({
     data: {
       horseId,
       traitName,

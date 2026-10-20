@@ -6,22 +6,31 @@
 // cooldown, a foal development day): those are fixture helpers too, and the
 // reset-last-fed one let any owner farm permanent stat rolls.
 //
-// Scans backend/routes/ and backend/modules/.../routes for router method calls
-// whose path matches FORBIDDEN_CLEANUP_PATH_PATTERNS ("/test/cleanup",
-// "/cleanup-tests", "/__cleanup", ...) or FORBIDDEN_STATE_REWIND_PATH_PATTERNS
-// ("/reset-last-*", "/advance-day", "/skip-cooldown", ...). Skips files in
-// __tests__/ and tests/ directories.
+// Scans backend/routes/, backend/modules/ and backend/app/ for any STRING
+// LITERAL (single, double or template quoted) that matches
+// FORBIDDEN_CLEANUP_PATH_PATTERNS ("/test/cleanup", "/cleanup-tests",
+// "/__cleanup", ...) or FORBIDDEN_STATE_REWIND_PATH_PATTERNS ("/reset-last-*",
+// "/advance-day", "/skip-cooldown", ...). Skips files in __tests__/ and tests/
+// directories.
+//
+// Why every literal and not only `router.<method>('<path>'` (Codex Sol review
+// 2026-10-20, Equoria-mwjst): a route can be registered as
+// router.route('/x').post(...), on an aliased router (`const r = express.Router()`,
+// `r.post(...)`), or from a path constant (`const P = '/x'; router.post(P, ...)`).
+// Each of those still spells the forbidden path as a literal somewhere in the
+// file, so scanning literals catches all of them. Comments are not scanned.
+// Out of reach: a path assembled at runtime ('/reset-' + 'last-fed'); none of
+// the forbidden shapes has a legitimate reason to be built that way.
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Single source of truth for scan DATA (Equoria-4iudq). Structural scan logic
-// stays here; the forbidden path patterns + route regex live in the shared
+// stays here; the forbidden path patterns live in the shared
 // module so they cannot drift between Node doctrine checks.
 import {
   FORBIDDEN_CLEANUP_PATH_PATTERNS,
   FORBIDDEN_STATE_REWIND_PATH_PATTERNS,
-  makeRouteRegex,
   walkFiles,
   readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
@@ -37,8 +46,40 @@ const SCAN_ROOTS = [
   path.join(REPO_ROOT, 'backend', 'app'),
 ];
 
-// Match: router.<method>('<path>' OR app.<method>('<path>'
-const ROUTE_RE = makeRouteRegex();
+// Strip comments, keeping strings verbatim and every newline (so line numbers
+// hold), then yield each string literal with its offset. A small lexer, not a
+// regex over raw text: a quote inside a comment, or `//` inside a string,
+// must not derail it.
+function* stringLiterals(source) {
+  let i = 0;
+  const n = source.length;
+  while (i < n) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (ch === '/' && next === '/') {
+      while (i < n && source[i] !== '\n') i++;
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      const end = source.indexOf('*/', i + 2);
+      i = end === -1 ? n : end + 2;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      const start = i;
+      i++;
+      while (i < n && source[i] !== ch) {
+        if (source[i] === '\\') i++;
+        else if (ch !== '`' && source[i] === '\n') break; // unterminated: stop at line end
+        i++;
+      }
+      yield { text: source.slice(start + 1, i), index: start };
+      i++;
+      continue;
+    }
+    i++;
+  }
+}
 
 const FORBIDDEN_PATH_PATTERNS = [
   ...FORBIDDEN_CLEANUP_PATH_PATTERNS.map((re) => ({ re, kind: 'test-cleanup' })),
@@ -66,19 +107,16 @@ for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
   // (with a one-line notice) and rethrows anything else — never a silent catch.
   const content = readScannedFileSyncTolerant(file, 'no-cleanup-routes');
   if (content === null) continue;
-  ROUTE_RE.lastIndex = 0;
-  let match;
-  while ((match = ROUTE_RE.exec(content)) !== null) {
-    const routePath = match[1];
+  for (const literal of stringLiterals(content)) {
     for (const { re, kind } of FORBIDDEN_PATH_PATTERNS) {
-      if (re.test(routePath)) {
+      if (re.test(literal.text)) {
         // Compute line number.
-        const upto = content.slice(0, match.index);
+        const upto = content.slice(0, literal.index);
         const lineNum = upto.split(/\r?\n/).length;
         failures.push({
           file: path.relative(REPO_ROOT, file),
           line: lineNum,
-          route: routePath,
+          route: literal.text,
           kind,
         });
       }

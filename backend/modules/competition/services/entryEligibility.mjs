@@ -22,11 +22,13 @@ export { ENTRY_REFUSALS } from '../../../utils/competitionEntryRules.mjs';
 
 /** Thrown inside the entry transaction; rolls the entry back. */
 export class EntryRefusalError extends Error {
-  constructor(code, message = ENTRY_REFUSALS[code].message) {
+  constructor(code, message = ENTRY_REFUSALS[code].message, errors = null) {
     super(message);
     this.name = 'EntryRefusalError';
     this.code = code;
     this.status = ENTRY_REFUSALS[code].status;
+    // The individual reasons, when the refusal has several (conformation rules).
+    this.errors = errors;
   }
 }
 
@@ -39,8 +41,8 @@ export class EntryRefusalError extends Error {
  * @param {{ showType?: string, discipline?: string }} input.show
  * @param {number} input.showId
  * @param {number} input.horseId
- * @param {string} input.userId - the entrant (the horse's owner; ownership is
- *   checked by the caller before the transaction)
+ * @param {string} input.userId - the entrant, who must own the horse (checked
+ *   here, under the entrant's User row lock)
  * @param {Date} [input.now]
  */
 export async function checkEntryEligibility(
@@ -60,6 +62,16 @@ export async function checkEntryEligibility(
   });
   if (serialized.count !== 1) {
     throw new Error(`Entrant ${userId} not found`);
+  }
+  // Equoria-mwjst: ownership is decided here, under that lock, not by the
+  // request's earlier read. A sale always writes the seller's User row (its
+  // credit, even at price 0) before it moves the horse, so a sale and this
+  // entry are ordered by the same lock: a horse sold first reads as not ours
+  // and is refused; one entered first is sold with its entry already paid by
+  // the player who owned it.
+  const owned = await tx.horse.findFirst({ where: { id: horseId, userId }, select: { id: true } });
+  if (!owned) {
+    throw new EntryRefusalError('HORSE_NOT_FOUND');
   }
   const existing = await tx.showEntry.findFirst({
     where: { showId, horseId },
@@ -93,6 +105,11 @@ export function sendEntryRefusal(res, error) {
   if (!(error instanceof EntryRefusalError)) {
     return false;
   }
-  res.status(error.status).json({ success: false, code: error.code, message: error.message });
+  res.status(error.status).json({
+    success: false,
+    code: error.code,
+    message: error.message,
+    ...(error.errors ? { errors: error.errors } : {}),
+  });
   return true;
 }

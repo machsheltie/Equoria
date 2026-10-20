@@ -4,23 +4,12 @@
  * Wraps the prisma calls used by competitionRoutes.mjs so the routes layer
  * no longer imports prisma directly (Equoria-becrm).
  *
- * Note: the enter-show transaction (`enterShowDeferredTx`) is intentionally
- * kept here rather than pushed into the existing show services because the
- * route's semantics — debit/credit + ShowEntry create + ledger record in a
- * single tx — are specific to this deferred-entry endpoint and mirror
- * `showController.enterShow` only at the route layer. Future consolidation
- * with the canonical enterShow should be tracked separately.
+ * `enterShowDeferredTx` is this route's name for the one show-entry
+ * transaction, shows/showEscrowTx.enterShowTx (consolidated in Equoria-mwjst).
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  recordTransaction,
-  creditSystemAccount,
-  SYSTEM_ACCOUNT_SHOW_ESCROW,
-} from '../../economy/index.mjs';
-import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-import { checkEntryEligibility } from './entryEligibility.mjs';
-import { openForEntriesWhere } from '../shows/showEscrowTx.mjs';
+import { enterShowTx } from '../shows/showEscrowTx.mjs';
 
 export async function listShowsPaginated({ where, skip, take }) {
   const [shows, total] = await Promise.all([
@@ -110,110 +99,14 @@ export async function hasExistingShowEntry(showId, horseId) {
 }
 
 /**
- * Atomic deferred-entry transaction (Equoria-nx8t1 R7 + Equoria-jnk6r escrow).
+ * POST /api/v1/competition/enter's (and the conformation entry's) name for the
+ * one show-entry transaction, showEscrowTx.enterShowTx (Equoria-mwjst: both
+ * entry routes run the same body, so wallet debit, escrow credit, feeEscrow,
+ * feePaid, the ShowEntry and both ledger rows are identical on either path).
  *
- * Equoria-jnk6r (sibling of si69u): routes the entry fee through
- * SystemAccount[show_escrow] + per-show feeEscrow column instead of crediting
- * the creator's wallet directly. The /api/competition/enter route (used by
- * the live frontend competitionsApi.enter) shared the pre-si69u bypass:
- * GDPR-deleting the creator mid-show silently destroyed fee money with no
- * audit row, and the show executor (which expects feeEscrow > 0 to pay
- * creator OR burn) had nothing to settle. The post-fix path is byte-identical
- * to showController.enterShow.
+ * `prepareEntry(tx)` is the conformation entry's in-transaction rules; it
+ * returns the presenting groom (Equoria-mwjst).
  */
-export function enterShowDeferredTx({
-  show,
-  showId,
-  horseId,
-  userId,
-  groomId = null,
-  groomSnapshot = null,
-}) {
-  return withRetryableTxMapping(
-    prisma.$transaction(
-      async tx => {
-        // Equoria-576c0 B9: the shared entry rules, FIRST — before any money
-        // moves — and INSIDE the tx (the same call as enterShowAtomicTx).
-        await checkEntryEligibility(tx, { show, showId, horseId, userId });
-        if (show.entryFee > 0) {
-          const debited = await tx.user.updateMany({
-            where: { id: userId, money: { gte: show.entryFee } },
-            data: { money: { decrement: show.entryFee } },
-          });
-          if (debited.count === 0) {
-            throw new Error('INSUFFICIENT_FUNDS');
-          }
-          // Equoria-jnk6r: route the entry fee to SystemAccount[show_escrow]
-          // instead of directly to the creator's wallet. At show execute time
-          // the accumulated feeEscrow is paid out to the creator IF they still
-          // exist; otherwise it's burned via SystemAccount[burn] (handled by
-          // showExecutionService.executeClosedShows). Self-entry is still recorded
-          // into escrow — the escrow is a different counterparty, so the
-          // self-entry really is a transfer worth recording.
-          await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
-            category: 'show_entry_fee_escrow',
-            description: `Entry fee for show ${showId}`,
-            linkedUserId: userId,
-            metadata: { showId, horseId },
-          });
-        }
-
-        // Equoria-8pb6w: atomic entry-window guard (byte-identical to
-        // showController.enterShowAtomicTx). A status-scoped conditional
-        // updateMany (increment == entryFee, 0 for a free show) BOTH applies the
-        // feeEscrow increment AND re-checks status='open' INSIDE the tx, taking a
-        // row lock. count===0 => the executor already claimed the show
-        // ('open' -> 'executing') between the pre-tx guard and now => throw
-        // ENTRY_CLOSED to roll back the fee debit + escrow credit + entry
-        // (surfaced as HTTP 409 by the route). Free shows carry no natural
-        // increment, so increment:0 still performs the status-scoped lock+recheck.
-        // Equoria-mwjst: the same shared predicate re-checks the open/close
-        // window, so an entry can never commit outside it.
-        const stillOpen = await tx.show.updateMany({
-          where: openForEntriesWhere(showId),
-          data: { feeEscrow: { increment: show.entryFee } },
-        });
-        if (stillOpen.count === 0) {
-          throw new Error('ENTRY_CLOSED');
-        }
-
-        // groomId/groomSnapshot: the conformation entry's presenting groom and its
-        // scoring fields as entered (both null for ridden; a Json column takes no
-        // plain null, so the snapshot is omitted rather than passed as null).
-        const createdEntry = await tx.showEntry.create({
-          data: {
-            showId,
-            horseId,
-            userId,
-            feePaid: show.entryFee,
-            groomId,
-            ...(groomSnapshot ? { groomSnapshot } : {}),
-          },
-        });
-
-        if (show.entryFee > 0) {
-          const refreshed = await tx.user.findUnique({
-            where: { id: userId },
-            select: { money: true },
-          });
-          await recordTransaction(
-            {
-              userId,
-              type: 'debit',
-              amount: show.entryFee,
-              category: 'competition_entry',
-              description: `Entry fee for show ${showId}`,
-              balanceAfter: refreshed?.money ?? 0,
-              metadata: { horseId, showId, entryId: createdEntry.id },
-            },
-            tx,
-          );
-        }
-
-        return createdEntry;
-      },
-      { timeout: 30000 },
-    ),
-    { message: 'Show entry service is busy right now, please retry in a moment.' },
-  );
+export function enterShowDeferredTx({ show, showId, horseId, userId, prepareEntry = null }) {
+  return enterShowTx({ show, showId, horseId, userId, prepareEntry });
 }

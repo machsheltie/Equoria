@@ -470,7 +470,6 @@ describe('validateConformationEntry (real DB)', () => {
   let user;
   let horse; // POJO matching horse.id in DB
   let groom; // POJO matching groom.id in DB
-  let validClass;
 
   beforeAll(async () => {
     await cleanupValidationFixtures();
@@ -542,19 +541,18 @@ describe('validateConformationEntry (real DB)', () => {
       showHandlingSkill: 'skilled',
       personality: 'gentle',
     };
-    validClass = CONFORMATION_CLASSES.MARES;
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(cleanupValidationFixtures, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   test('passes when all requirements are met', async () => {
-    const result = await validateConformationEntry(horse, groom, validClass, user.id);
+    const result = await validateConformationEntry(horse, groom, user.id);
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
 
   test('assigns correct age class for valid horse', async () => {
-    const result = await validateConformationEntry(horse, groom, validClass, user.id);
+    const result = await validateConformationEntry(horse, groom, user.id);
     expect(result.ageClass).toBe(CONFORMATION_AGE_CLASSES.JUNIOR);
   });
 
@@ -562,7 +560,7 @@ describe('validateConformationEntry (real DB)', () => {
     // Use POJO IDs that don't match any real assignment.
     const otherHorse = { ...horse, id: 999999998 };
     const otherGroom = { ...groom, id: 999999999 };
-    const result = await validateConformationEntry(otherHorse, otherGroom, validClass, user.id);
+    const result = await validateConformationEntry(otherHorse, otherGroom, user.id);
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('Groom must be assigned to this horse before entering conformation shows');
   });
@@ -624,7 +622,6 @@ describe('validateConformationEntry (real DB)', () => {
         temperament: 'calm',
       },
       { id: g.id, name: 'RecentGroom', userId: u.id, showHandlingSkill: 'skilled', personality: 'gentle' },
-      validClass,
       u.id,
     );
     expect(result.valid).toBe(false);
@@ -633,33 +630,33 @@ describe('validateConformationEntry (real DB)', () => {
 
   test('rejects when horse health is not Excellent or Good', async () => {
     const sickHorse = { ...horse, health: 'Poor' };
-    const result = await validateConformationEntry(sickHorse, groom, validClass, user.id);
+    const result = await validateConformationEntry(sickHorse, groom, user.id);
     expect(result.valid).toBe(false);
     expect(result.errors.some(e => e.toLowerCase().includes('health'))).toBe(true);
   });
 
   test('rejects "Injured" health', async () => {
     const injuredHorse = { ...horse, health: 'Injured' };
-    const result = await validateConformationEntry(injuredHorse, groom, validClass, user.id);
+    const result = await validateConformationEntry(injuredHorse, groom, user.id);
     expect(result.valid).toBe(false);
   });
 
   test('rejects "Fair" health', async () => {
     const fairHorse = { ...horse, health: 'Fair' };
-    const result = await validateConformationEntry(fairHorse, groom, validClass, user.id);
+    const result = await validateConformationEntry(fairHorse, groom, user.id);
     expect(result.valid).toBe(false);
   });
 
   test('accepts horse with age 0 (Weanling)', async () => {
     const weanling = { ...horse, age: 0, health: 'Excellent' };
-    const result = await validateConformationEntry(weanling, groom, validClass, user.id);
+    const result = await validateConformationEntry(weanling, groom, user.id);
     expect(result.valid).toBe(true);
     expect(result.ageClass).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
   });
 
   test('rejects horse with age < 0 (invalid age)', async () => {
     const negativeAge = { ...horse, age: -1 };
-    const result = await validateConformationEntry(negativeAge, groom, validClass, user.id);
+    const result = await validateConformationEntry(negativeAge, groom, user.id);
     expect(result.valid).toBe(false);
     expect(result.errors.some(e => e.toLowerCase().includes('age'))).toBe(true);
   });
@@ -677,32 +674,26 @@ describe('validateConformationEntry (real DB)', () => {
   // ownership branch, not its presence).
   test('does not assert ownership — enforced upstream by controller (CWE-639 architecture)', async () => {
     const notMyHorse = { ...horse, userId: 'other-user' };
-    const result = await validateConformationEntry(notMyHorse, groom, validClass, user.id);
+    const result = await validateConformationEntry(notMyHorse, groom, user.id);
     expect(result.errors).not.toContain('You do not own this horse');
     expect(result.errors).not.toContain('You do not own this groom');
   });
 
   test('does not assert groom ownership — enforced upstream (CWE-639 architecture)', async () => {
     const notMyGroom = { ...groom, userId: 'other-user' };
-    const result = await validateConformationEntry(horse, notMyGroom, validClass, user.id);
+    const result = await validateConformationEntry(horse, notMyGroom, user.id);
     expect(result.errors).not.toContain('You do not own this groom');
     expect(result.errors).not.toContain('You do not own this horse');
   });
 
-  test('rejects invalid conformation class', async () => {
-    const result = await validateConformationEntry(horse, groom, 'Dressage', user.id);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('not a valid conformation show class'))).toBe(true);
-  });
-
   test('includes warning for missing conformationScores but does not reject', async () => {
     const horseNoScores = { ...horse, conformationScores: null };
-    const result = await validateConformationEntry(horseNoScores, groom, validClass, user.id);
+    const result = await validateConformationEntry(horseNoScores, groom, user.id);
     expect(result.warnings.some(w => w.toLowerCase().includes('conformation scores'))).toBe(true);
   });
 
   test('returns assignment on success', async () => {
-    const result = await validateConformationEntry(horse, groom, validClass, user.id);
+    const result = await validateConformationEntry(horse, groom, user.id);
     expect(result.assignment).toBeDefined();
     expect(result.assignment.groomId).toBe(groom.id);
     expect(result.assignment.foalId).toBe(horse.id);

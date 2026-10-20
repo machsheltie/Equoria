@@ -356,6 +356,36 @@ describe('check-no-cleanup-routes.mjs forbids server-clock rewind routes (Equori
     );
   });
 
+  // Codex Sol review 2026-10-20: every registration form, not only
+  // router.<method>('<literal>'). Each plant spells the path differently.
+  test.each([
+    ['router.route() chain', "router.route('/:id/reset-last-fed').post((req, res) => res.end());\n"],
+    [
+      'an aliased router',
+      "const horseRouter = express.Router();\nhorseRouter.post('/:id/reset-last-fed', (req, res) => res.end());\n",
+    ],
+    [
+      'a path constant',
+      "const RESET_PATH = '/:id/reset-last-fed';\nrouter.post(RESET_PATH, (req, res) => res.end());\n",
+    ],
+    ['a template-literal path', 'router.post(`/:foalId/advance-day`, (req, res) => res.end());\n'],
+    ['a double-quoted path on app', 'app.put("/horses/:id/skip-cooldown", (req, res) => res.end());\n'],
+  ])('fires on a rewind route registered through %s', (_form, contents) => {
+    expectFiresThenClean(
+      'backend/modules/horses/routes/__mwjst_rewind_forms_70pb9__.mjs',
+      contents,
+      'check-no-cleanup-routes.mjs',
+    );
+  });
+
+  test('does not fire on a forbidden path that appears only in a comment', () => {
+    expectIgnoredOutOfScope(
+      'backend/modules/horses/routes/__mwjst_rewind_comment_70pb9__.mjs',
+      "// The old router.post('/:id/reset-last-fed') route was removed (Equoria-mwjst).\n/* '/:foalId/advance-day' too. */\nexport const x = 1;\n",
+      'check-no-cleanup-routes.mjs',
+    );
+  });
+
   test('a rewind route inside an __tests__ dir is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
       'backend/modules/horses/__tests__/__mwjst_rewind_oos_70pb9__.mjs',

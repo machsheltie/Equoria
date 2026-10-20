@@ -528,20 +528,19 @@ describe('API Client - HttpOnly Cookie Support', () => {
             horseId: 1,
             showId: 2,
             ageClass: 'mature',
-            className: 'Mares',
             warnings: [],
           },
         }),
       });
 
-      await conformationShowsApi.enter({ horseId: 1, groomId: 3, showId: 2, className: 'Mares' });
+      await conformationShowsApi.enter({ horseId: 1, groomId: 3, showId: 2 });
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/v1/competition/conformation/enter'),
         expect.objectContaining({
           method: 'POST',
           credentials: 'include',
-          body: JSON.stringify({ horseId: 1, groomId: 3, showId: 2, className: 'Mares' }),
+          body: JSON.stringify({ horseId: 1, groomId: 3, showId: 2 }),
         })
       );
     });

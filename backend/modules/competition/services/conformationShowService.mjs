@@ -26,16 +26,18 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { settleShowFeeEscrowInTx } from '../shows/showEscrowTx.mjs';
+import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { checkGroomMayWork } from '../../../utils/groomWorkRules.mjs';
+import { EntryRefusalError } from './entryEligibility.mjs';
 
 import {
   CONFORMATION_SHOW_CONFIG,
   SCORE_NEUTRAL_CONFORMATION_CLASS,
-  isValidConformationClass,
   getConformationAgeClass,
   calculateConformationShowScore,
   resolveReward,
   resolveTitle,
-  applyBreedingValueBoost,
+  BREEDING_BOOST_CAP,
 } from './conformationShowScoring.mjs';
 
 // Re-export the pure scoring + reward surface so existing consumers
@@ -110,8 +112,11 @@ export class ConformationGroomMissingError extends Error {
 /**
  * Validate conformation show entry requirements — AC3, AC4.
  *
+ * There is no class to choose: conformation classes are not settled yet (owner
+ * ruling 2026-10-20, Equoria-mwjst), so entry takes none and scoring is
+ * class-neutral.
+ *
  * Rejects if:
- *  - className is not a valid conformation sex/category class
  *  - horse is not owned by userId
  *  - groom is not on userId's staff (Equoria-ypb7d.2: `Groom.userId` is an
  *    engagement, not ownership — players never own grooms)
@@ -124,11 +129,11 @@ export class ConformationGroomMissingError extends Error {
  *
  * @param {Object} horse
  * @param {Object} groom
- * @param {string} className
  * @param {string} userId
+ * @param {Object} [client] - Prisma client or the entry transaction
  * @returns {Promise<{valid: boolean, errors: string[], warnings: string[], assignment: Object|null, ageClass: string|null}>}
  */
-export async function validateConformationEntry(horse, groom, className, userId) {
+export async function validateConformationEntry(horse, groom, userId, client = prisma) {
   try {
     if (!horse || !groom) {
       return {
@@ -142,11 +147,6 @@ export async function validateConformationEntry(horse, groom, className, userId)
 
     const errors = [];
     const warnings = [];
-
-    // Validate class
-    if (!isValidConformationClass(className)) {
-      errors.push(`${className} is not a valid conformation show class`);
-    }
 
     // Ownership validated upstream by the controller via findOwnedResource
     // (conformationShowController.mjs:enterConformationShow). The horse and
@@ -168,7 +168,7 @@ export async function validateConformationEntry(horse, groom, className, userId)
       groom.id !== null &&
       groom.id !== undefined
     ) {
-      assignment = await prisma.groomAssignment.findFirst({
+      assignment = await client.groomAssignment.findFirst({
         where: {
           groomId: groom.id,
           foalId: horse.id,
@@ -237,6 +237,56 @@ export async function validateConformationEntry(horse, groom, className, userId)
       ageClass: null,
     };
   }
+}
+
+/**
+ * The conformation entry rules, decided INSIDE the entry transaction
+ * (Equoria-mwjst). The request's earlier reads are only a fast refusal; this is
+ * the authority. Runs after the shared entry rules have locked the entrant's
+ * User row and confirmed the horse is still theirs, and before any money moves.
+ *
+ * The groom row is locked so a release or an unpaid-fee marking cannot land
+ * between this check and the entry's commit (both write the Groom row; neither
+ * takes the User row, so User -> Groom here cannot deadlock with them). Every
+ * rule then reads the rows as they are now: the groom still on the entrant's
+ * staff, allowed to work (checkGroomMayWork: not retired, active, fee paid),
+ * assigned to the horse long enough, and the horse not in critical health and
+ * otherwise eligible (validateConformationEntry, on this transaction).
+ *
+ * @param {Object} tx - the entry transaction
+ * @param {{ horseId: number, groomId: number, userId: string }} input
+ * @returns {Promise<{ groomId: number, groomSnapshot: Object, ageClass: string|null, warnings: string[] }>}
+ * @throws {EntryRefusalError}
+ */
+export async function checkConformationEntryInTx(tx, { horseId, groomId, userId }) {
+  const locked = await tx.$queryRaw`
+    SELECT "id" FROM "grooms" WHERE "id" = ${groomId} AND "userId" = ${userId} FOR UPDATE`;
+  if (locked.length !== 1) {
+    throw new EntryRefusalError('GROOM_NOT_ON_STAFF');
+  }
+  const groom = await tx.groom.findUnique({ where: { id: groomId } });
+  const work = checkGroomMayWork(groom);
+  if (!work.allowed) {
+    throw new EntryRefusalError('GROOM_CANNOT_WORK', work.reason);
+  }
+
+  const horse = await tx.horse.findUnique({ where: { id: horseId } });
+  if (getDisplayedHealth(horse) === 'critical') {
+    throw new EntryRefusalError(
+      'CONFORMATION_INELIGIBLE',
+      `${horse.name} is in critical health and cannot enter competitions. Feed and vet to restore health.`,
+    );
+  }
+  const result = await validateConformationEntry(horse, groom, userId, tx);
+  if (!result.valid) {
+    throw new EntryRefusalError('CONFORMATION_INELIGIBLE', undefined, result.errors);
+  }
+  return {
+    groomId: groom.id,
+    groomSnapshot: conformationGroomSnapshot(groom),
+    ageClass: result.ageClass,
+    warnings: result.warnings,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -350,7 +400,9 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         const entries = await tx.showEntry.findMany({
           where: { showId },
           include: { horse: true, groom: true },
-          orderBy: { createdAt: 'asc' },
+          // id breaks createdAt ties, so equal scores place the same way on
+          // every run (Equoria-mwjst).
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         });
 
         // Resolve the groom (handler) for every entry. Owner ruling 2026-10-12:
@@ -408,18 +460,21 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
           // (`{ increment }` → `SET titlePoints = titlePoints + n`) and the title
           // is derived from the value the update RETURNS, so two settlements
           // that share a horse cannot clobber each other's points.
-          // breedingValueBoost keeps its precomputed-write behaviour.
-          const newBoost = applyBreedingValueBoost(
-            horse.breedingValueBoost ?? 0,
-            breedingBoostDelta,
-          );
+          // Equoria-mwjst: breedingValueBoost likewise — a capped increment
+          // evaluated by the database on the row as it is now (the same rule as
+          // applyBreedingValueBoost), never an absolute value computed from the
+          // horse this settlement loaded, which a concurrent settlement may
+          // already have boosted.
+          if (breedingBoostDelta > 0) {
+            await tx.$executeRaw`
+              UPDATE "horses"
+              SET "breedingValueBoost" = LEAST("breedingValueBoost" + ${breedingBoostDelta}, ${BREEDING_BOOST_CAP})
+              WHERE "id" = ${horse.id}`;
+          }
 
           const updatedHorse = await tx.horse.update({
             where: { id: horse.id },
-            data: {
-              titlePoints: { increment: tpAwarded },
-              breedingValueBoost: newBoost,
-            },
+            data: { titlePoints: { increment: tpAwarded } },
           });
 
           const newTitle = resolveTitle(updatedHorse.titlePoints);
@@ -452,7 +507,7 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
             ribbon,
             titlePoints: tpAwarded,
             newTitle,
-            breedingValueBoost: newBoost,
+            breedingValueBoost: updatedHorse.breedingValueBoost,
           });
         }
 

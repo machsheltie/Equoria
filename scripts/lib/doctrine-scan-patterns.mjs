@@ -32,7 +32,7 @@
 // -----------------------------------------------------------------------------
 
 // Path-string fragments that mark a route as test-cleanup infrastructure.
-// Matched against the route path captured by ROUTE_RE below.
+// Matched against every string literal in the scanned route trees (Equoria-mwjst).
 export const FORBIDDEN_CLEANUP_PATH_PATTERNS = [
   /\/test\/cleanup/i,
   /\/cleanup-tests?\b/i,
@@ -48,21 +48,13 @@ export const FORBIDDEN_CLEANUP_PATH_PATTERNS = [
 // directly in the test database instead. Origins: POST /horses/:id/reset-last-fed
 // (rewound lastFedDate → same-day re-feeding, Codex scan 2026-10-02 Finding 1)
 // and POST /foals/:foalId/advance-day (owner-triggered development day).
-// Scanned by check-no-cleanup-routes.mjs with the same route regex and scope.
+// Scanned by check-no-cleanup-routes.mjs over the same literals and scope.
 export const FORBIDDEN_STATE_REWIND_PATH_PATTERNS = [
   /\/reset-last-[a-z]/i,
   /\/advance-day\b/i,
   /\/(?:skip|reset|clear)-cooldowns?\b/i,
   /\/(?:rewind|backdate|fast-forward)\b/i,
 ];
-
-// Match: router.<method>('<path>' OR app.<method>('<path>'
-// A factory (not a shared mutable RegExp) so each call site gets a fresh
-// lastIndex — the /g flag is stateful and sharing one instance across files
-// would corrupt iteration order.
-export function makeRouteRegex() {
-  return /\b(?:router|app)\s*\.\s*(?:get|post|put|patch|delete|all)\s*\(\s*['"`]([^'"`]+)['"`]/g;
-}
 
 // -----------------------------------------------------------------------------
 // 2. Backend DB-mock scan (check-no-db-mocks.mjs)

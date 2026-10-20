@@ -29,7 +29,7 @@ describe('useEnterConformationShow — cache invalidation (Equoria-bvddn.33)', (
       http.post(`${base}/api/v1/competition/conformation/enter`, () =>
         HttpResponse.json({
           success: true,
-          data: { entryId: 1, horseId: 5, showId: 9, className: 'Mares' },
+          data: { entryId: 1, horseId: 5, showId: 9 },
         })
       )
     );
@@ -40,7 +40,7 @@ describe('useEnterConformationShow — cache invalidation (Equoria-bvddn.33)', (
     const { result } = renderHook(() => useEnterConformationShow(), { wrapper: wrapper(qc) });
 
     await act(async () => {
-      result.current.mutate({ horseId: 5, groomId: 3, showId: 9, className: 'Mares' });
+      result.current.mutate({ horseId: 5, groomId: 3, showId: 9 });
       await new Promise((r) => setTimeout(r, 100));
     });
 

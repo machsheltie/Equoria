@@ -97,7 +97,10 @@ const MIGRATED = [
   ['modules/community/controllers/clubController.mjs', { wrapped: 1, totalTx: 2 }],
   ['modules/economy/feedShop/controllers/feedShopController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/users/services/gdprAccountService.mjs', { wrapped: 1, totalTx: 1 }],
-  ['modules/competition/services/competitionRouteQueries.mjs', { wrapped: 1, totalTx: 1 }],
+  // competitionRouteQueries.mjs no longer holds a $transaction: its entry tx
+  // (enterShowDeferredTx) became showEscrowTx.enterShowTx, the one entry
+  // transaction for both routes (Equoria-mwjst), pinned wrapped on the
+  // showEscrowTx.mjs row above.
   ['modules/grooms/services/groomLegacyService.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-95yrv fix round 1 (F1) added these two: BOTH assignment doors became
   // transactional, because the ten-horse cap and the create it guards have to be one
