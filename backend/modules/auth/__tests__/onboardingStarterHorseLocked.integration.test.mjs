@@ -16,8 +16,11 @@
  * payload is refused with 409 and nothing changes. The tour's own advances
  * (no horse payload) are untouched.
  *
- * It also locks that protected trait fields in the wizard body are ignored:
- * the starter horse gets a game-drawn temperament and empty trait stores.
+ * The body is allow-listed to { horseName, breedId, gender } (fix round 1 of
+ * the task review; brief step 3: "allow-list; reject with 400"). OLD: protected
+ * trait fields in the wizard body were silently ignored and the wizard still
+ * answered 200. NEW: any other field, every protected trait field included, is
+ * refused with 400 and no horse is written.
  *
  * Real database, real HTTP, real CSRF. No mocks. Fixtures removed by id.
  */
@@ -132,38 +135,43 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
     expect(res.body.data.step).toBe(2);
   });
 
-  it('ignores protected trait fields in the wizard body (step 0)', async () => {
-    const { user, advance } = await playerWith({ completedOnboarding: false, onboardingStep: 0 });
+  it.each([
+    ['temperament', PLANTED_TEMPERAMENT],
+    ['personality', 'TestFixture-planted-personality'],
+    ['epigeneticModifiers', { positive: ['legendaryBloodline'], negative: [], hidden: [] }],
+    ['epigeneticFlags', ['brave']],
+    ['temporaryEpigeneticFlags', [{ flag: 'brave', expiresAt: '2099-01-01', source: 'player' }]],
+    ['ultraRareTraits', { ultraRare: [{ name: 'phoenixBorn' }], exotic: [] }],
+  ])('refuses { %s } in the wizard body (step 0) with 400 and writes no horse', async (field, value) => {
+    const settings = { completedOnboarding: false, onboardingStep: 0 };
+    const { user, advance } = await playerWith(settings);
 
     const res = await advance({
       horseName: 'Wizard Star',
       breedId: breeds[0].id,
       gender: 'Mare',
-      temperament: PLANTED_TEMPERAMENT,
-      personality: 'TestFixture-planted-personality',
-      epigeneticModifiers: { positive: ['legendaryBloodline'], negative: [], hidden: [] },
-      epigeneticFlags: ['brave'],
-      temporaryEpigeneticFlags: [{ flag: 'brave', expiresAt: '2099-01-01', source: 'player' }],
-      ultraRareTraits: { ultraRare: [{ name: 'phoenixBorn' }], exotic: [] },
+      [field]: value,
     });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(await prisma.horse.count({ where: { userId: user.id } })).toBe(0);
+    const after = await prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } });
+    expect(after.settings).toMatchObject(settings);
+  });
+
+  it('still accepts the frontend wizard body { horseName, breedId, gender } at step 0 (control)', async () => {
+    const { user, advance } = await playerWith({ completedOnboarding: false, onboardingStep: 0 });
+
+    const res = await advance({ horseName: 'Wizard Star', breedId: breeds[0].id, gender: 'Mare' });
 
     expect(res.status).toBe(200);
     const horse = await prisma.horse.findFirst({
       where: { userId: user.id },
-      select: {
-        temperament: true,
-        personality: true,
-        epigeneticModifiers: true,
-        epigeneticFlags: true,
-        temporaryEpigeneticFlags: true,
-        ultraRareTraits: true,
-      },
+      select: { temperament: true, epigeneticModifiers: true, epigeneticFlags: true },
     });
     expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
-    expect(horse.personality).toBeNull();
     expect(horse.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
     expect(horse.epigeneticFlags).toEqual([]);
-    expect(horse.temporaryEpigeneticFlags).toEqual([]);
-    expect(horse.ultraRareTraits).toEqual({ ultraRare: [], exotic: [] });
   });
 });

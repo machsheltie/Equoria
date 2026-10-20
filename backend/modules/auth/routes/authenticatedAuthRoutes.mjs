@@ -17,6 +17,7 @@ import {
 } from '../../../middleware/validationErrorHandler.mjs';
 import { authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
 import { profileRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { allowOnlyBodyFields } from '../../../middleware/bodyFieldAllowList.mjs';
 import * as authController from '../controllers/authController.mjs';
 import { strongPasswordChain } from '../validators/strongPasswordChain.mjs';
 
@@ -120,7 +121,16 @@ router.get('/verification-status', authController.getVerificationStatus);
 router.post('/complete-onboarding', profileRateLimiter, authController.completeOnboarding);
 
 // POST /auth/advance-onboarding
-router.post('/advance-onboarding', profileRateLimiter, authController.advanceOnboarding);
+// Equoria-gu8jk: the body is allow-listed to the wizard's { horseName, breedId,
+// gender } (the tour's own advances send {}). Any other field — a protected
+// trait field such as `temperament` included — is refused with 400 (owner
+// ruling 2026-10-20: players never write traits).
+router.post(
+  '/advance-onboarding',
+  profileRateLimiter,
+  allowOnlyBodyFields(['horseName', 'breedId', 'gender']),
+  authController.advanceOnboarding,
+);
 
 // PATCH /auth/profile/preferences
 router.patch('/profile/preferences', profileRateLimiter, authController.updateUserPreferences);

@@ -8,19 +8,23 @@
  *   - PUT  /horses/:id                     req.body is the Prisma `data`; the
  *                                          allow-list is empty, so every
  *                                          protected field is refused with 400.
- *   - POST /marketplace/store/buy          reads only { breedId, sex }; a body
- *                                          carrying trait fields buys an
- *                                          ordinary store horse.
- *   - POST /grooms/:id/legacy/create       reads only the protégé's own
- *                                          profile fields; bonusTraitMap is the
- *                                          game's legacy perk and rareTraitPerks
- *                                          stays empty whatever the body says.
+ *   - POST /marketplace/store/buy          allow-list { breedId, sex }; any
+ *                                          other field (every protected trait
+ *                                          field included) is refused with 400.
+ *   - POST /grooms/:id/legacy/create       allow-list of the protégé's own
+ *                                          profile fields; bonusTraitMap,
+ *                                          rareTraitPerks and traitsShaped are
+ *                                          refused with 400.
  *
  * (POST /auth/advance-onboarding is covered by
  * modules/auth/__tests__/onboardingStarterHorseLocked.integration.test.mjs.)
  *
- * These routes were already closed to these fields before Equoria-gu8jk; the
- * file is the regression guard the ruling asks for, one per route.
+ * PUT /horses/:id was already closed before Equoria-gu8jk. Fix round 1 of the
+ * task review: store buy and legacy create used to IGNORE extra fields (the
+ * write was safe, the request still answered 201); brief step 3 asks for an
+ * allow-list that REJECTS them with 400, so they now do. Each refusal case
+ * also proves nothing was written; a control case per route proves the allowed
+ * body still succeeds.
  *
  * Real database, real HTTP, real CSRF. No mocks. Fixtures removed by id.
  */
@@ -147,11 +151,34 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
     },
   );
 
-  it('POST /marketplace/store/buy ignores trait fields in the body', async () => {
+  async function playerWallet() {
+    const u = await prisma.user.findUnique({ where: { id: player.id }, select: { money: true } });
+    return u.money;
+  }
+
+  it.each(Object.entries(PROTECTED_HORSE_FIELDS))(
+    'POST /marketplace/store/buy refuses { %s } with 400: no horse, no charge',
+    async (field, value) => {
+      const horsesBefore = await prisma.horse.count({ where: { userId: player.id } });
+      const moneyBefore = await playerWallet();
+
+      const res = await send('post', '/api/v1/marketplace/store/buy', {
+        breedId: storeBreedId,
+        sex: 'Mare',
+        [field]: value,
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(await prisma.horse.count({ where: { userId: player.id } })).toBe(horsesBefore);
+      expect(await playerWallet()).toBe(moneyBefore);
+    },
+  );
+
+  it('POST /marketplace/store/buy still sells with the frontend body { breedId, sex } (control)', async () => {
     const res = await send('post', '/api/v1/marketplace/store/buy', {
       breedId: storeBreedId,
       sex: 'Mare',
-      ...PROTECTED_HORSE_FIELDS,
     });
 
     expect(res.status).toBe(201);
@@ -162,47 +189,64 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
     });
     expect(bought.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
     expect(bought.epigeneticFlags).toEqual([]);
-    expect(bought.temporaryEpigeneticFlags).toEqual([]);
     expect(bought.ultraRareTraits).toEqual({ ultraRare: [], exotic: [] });
-    expect(bought.temperament).not.toBe(PROTECTED_HORSE_FIELDS.temperament);
-    expect(bought.personality).toBeNull();
   });
 
-  it('POST /grooms/:id/legacy/create ignores bonusTraitMap / rareTraitPerks in the body', async () => {
-    const mentor = await prisma.groom.create({
-      data: {
-        name: `TestFixture-gu8jk-mentor-${randomBytes(4).toString('hex')}`,
-        speciality: 'foal_care',
-        personality: 'calm',
-        userId: player.id,
-        level: 8,
-        experience: 2000,
-        retired: true,
-      },
-    });
-    groomIds.push(mentor.id);
-
-    const res = await send('post', `/api/v1/grooms/${mentor.id}/legacy/create`, {
+  describe('POST /grooms/:id/legacy/create', () => {
+    let mentor;
+    const PROTEGE = {
       name: 'TestFixture Protege',
       personality: 'calm',
       skillLevel: 'novice',
       speciality: 'foal_care',
-      bonusTraitMap: { legendaryBloodline: 0.3, playerInjected: 1 },
-      rareTraitPerks: { 'fey-touched': { revealed: true, triggerCount: 9 } },
-      traitsShaped: ['legendaryBloodline'],
+    };
+
+    beforeAll(async () => {
+      mentor = await prisma.groom.create({
+        data: {
+          name: `TestFixture-gu8jk-mentor-${randomBytes(4).toString('hex')}`,
+          speciality: 'foal_care',
+          personality: 'calm',
+          userId: player.id,
+          level: 8,
+          experience: 2000,
+          retired: true,
+        },
+      });
+      groomIds.push(mentor.id);
     });
 
-    expect(res.status).toBe(201);
-    const link = await prisma.groomLegacyLog.findFirst({ where: { retiredGroomId: mentor.id } });
-    expect(link).not.toBeNull();
-    groomIds.push(link.legacyGroomId);
-    const protege = await prisma.groom.findUnique({
-      where: { id: link.legacyGroomId },
-      select: { bonusTraitMap: true, rareTraitPerks: true },
+    it.each([
+      ['bonusTraitMap', { legendaryBloodline: 0.3, playerInjected: 1 }],
+      ['rareTraitPerks', { 'fey-touched': { revealed: true, triggerCount: 9 } }],
+      ['traitsShaped', ['legendaryBloodline']],
+    ])('refuses { %s } with 400 and creates no protégé', async (field, value) => {
+      const groomsBefore = await prisma.groom.count({ where: { userId: player.id } });
+
+      const res = await send('post', `/api/v1/grooms/${mentor.id}/legacy/create`, {
+        ...PROTEGE,
+        [field]: value,
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(await prisma.groom.count({ where: { userId: player.id } })).toBe(groomsBefore);
+      expect(await prisma.groomLegacyLog.count({ where: { retiredGroomId: mentor.id } })).toBe(0);
     });
-    expect(protege.rareTraitPerks).toEqual({});
-    expect(protege.bonusTraitMap).not.toHaveProperty('playerInjected');
-    expect(protege.bonusTraitMap).not.toHaveProperty('legendaryBloodline');
-    expect(protege.bonusTraitMap).toMatchObject({ legacyMentor: mentor.name });
+
+    it("still creates the protégé from its own profile fields (control); perks are the game's", async () => {
+      const res = await send('post', `/api/v1/grooms/${mentor.id}/legacy/create`, PROTEGE);
+
+      expect(res.status).toBe(201);
+      const link = await prisma.groomLegacyLog.findFirst({ where: { retiredGroomId: mentor.id } });
+      expect(link).not.toBeNull();
+      groomIds.push(link.legacyGroomId);
+      const protege = await prisma.groom.findUnique({
+        where: { id: link.legacyGroomId },
+        select: { bonusTraitMap: true, rareTraitPerks: true },
+      });
+      expect(protege.rareTraitPerks).toEqual({});
+      expect(protege.bonusTraitMap).toMatchObject({ legacyMentor: mentor.name });
+    });
   });
 });

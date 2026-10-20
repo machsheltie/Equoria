@@ -27,6 +27,7 @@ import {
 } from '../services/groomLegacyService.mjs';
 import logger from '../../../utils/logger.mjs';
 import { handleValidationErrors } from './_groomRouteHelpers.mjs';
+import { allowOnlyBodyFields } from '../../../middleware/bodyFieldAllowList.mjs';
 
 const router = express.Router();
 
@@ -139,6 +140,18 @@ router.get(
  */
 router.post(
   '/:id/legacy/create',
+  // Equoria-gu8jk: only the protégé's own profile fields. bonusTraitMap is the
+  // game's legacy perk and rareTraitPerks / traitsShaped are never player-set,
+  // so those (and any other unlisted field) are refused with 400.
+  allowOnlyBodyFields([
+    'name',
+    'personality',
+    'skillLevel',
+    'speciality',
+    'sessionRate',
+    'bio',
+    'availability',
+  ]),
   param('id').isInt().withMessage('Groom ID must be an integer'),
   body('name')
     .isLength({ min: 2, max: 100 })

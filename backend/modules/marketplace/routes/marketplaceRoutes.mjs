@@ -12,6 +12,7 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 // the atomic-claim correctly rejects all-but-one. mutationRateLimiter is the
 // standard write-mutation limiter (semantically the AC's "standardRateLimiter").
 import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { allowOnlyBodyFields } from '../../../middleware/bodyFieldAllowList.mjs';
 import {
   browseListings,
   listHorse,
@@ -44,7 +45,16 @@ router.get('/my-listings', myListings);
 router.get('/history', saleHistory);
 
 // Store flow — static path before :horseId to avoid route conflict
-router.post('/store/buy', mutationRateLimiter, buyStoreHorse);
+// Equoria-gu8jk: the body is allow-listed to { breedId, sex }. Any other field —
+// a protected trait field such as `temperament` or `epigeneticModifiers`
+// included — is refused with 400 (owner ruling 2026-10-20: players never write
+// traits). The store draws temperament itself and sells horses with no traits.
+router.post(
+  '/store/buy',
+  mutationRateLimiter,
+  allowOnlyBodyFields(['breedId', 'sex']),
+  buyStoreHorse,
+);
 
 // Buyer flow (user-to-user)
 router.post('/buy/:horseId', mutationRateLimiter, buyHorse);
