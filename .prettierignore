@@ -27,3 +27,8 @@ packages/database/prisma/migrations/
 # Generated / binary
 *.lock
 *.dll.node
+
+# Owner-authored design documents: never reformat (Stacey, 2026-10-07: "Do not alter this file")
+docs/features/13_Competitions_shows_Event_Scoring_DEEP.md
+docs/features/competitiontemperamentmatrix.md
+equoria-security-fix-handoff-2026-10-02.md

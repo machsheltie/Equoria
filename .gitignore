@@ -226,3 +226,6 @@ backend/load-test-*.json
 .bmad-loop/cache/
 .bmad-loop/policy.toml
 _bmad/render/
+
+# Microsoft Word lock files (created while a document is open)
+~$*

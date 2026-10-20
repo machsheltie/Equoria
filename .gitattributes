@@ -34,3 +34,7 @@
 # Native Node.js addons — mark as binary to prevent text normalization
 # Fixes Windows lint-staged stash-pop failure when rollup native binary is held by a process
 *.node binary
+
+# Owner-authored design documents: store byte-for-byte, never normalise line endings
+docs/features/13_Competitions_shows_Event_Scoring_DEEP.md -text
+docs/features/competitiontemperamentmatrix.md -text
