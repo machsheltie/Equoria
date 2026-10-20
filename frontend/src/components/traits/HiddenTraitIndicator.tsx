@@ -2,7 +2,7 @@
  * HiddenTraitIndicator Component
  *
  * Displays indicator for undiscovered traits with discovery hints
- * and progress tracking. Provides clues to help users discover hidden traits.
+ * and progress tracking.
  *
  * Story 6-6: Epigenetic Trait System
  */
@@ -93,35 +93,10 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
         </div>
       )}
 
-      {/* Generic Encouragement */}
-      {showHint && !discoveryStatus.nextDiscoveryHint && (
-        <div className="rounded-lg border border-purple-500/30 bg-[rgba(15,35,70,0.4)] p-4">
-          <div className="flex items-start gap-2">
-            <Sparkles className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-purple-300 mb-1">How to Discover Traits</p>
-              <ul className="text-sm text-slate-400 space-y-1">
-                <li className="flex items-start gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
-                  <span>Complete developmental milestones</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
-                  <span>Engage in enrichment activities</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
-                  <span>Maintain consistent care quality</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
-                  <span>Compete in various disciplines</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* No generic "How to Discover Traits" list (Equoria-gu8jk; owner ruling
+          2026-10-20): players never reveal traits — grooms will — so telling
+          them how to discover traits asked for something impossible. No
+          replacement is designed here; the owner decides. */}
 
       {/* Mystery Trait Cards */}
       <div className="grid grid-cols-3 gap-2 mt-4">

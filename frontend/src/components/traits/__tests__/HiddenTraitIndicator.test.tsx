@@ -9,7 +9,7 @@
  * - Hidden traits display
  * - Progress bar rendering and calculation
  * - Discovery hint display
- * - Generic encouragement display
+ * - No generic "How to Discover Traits" guidance (removed, Equoria-gu8jk)
  * - Mystery trait cards (up to 6 visible, overflow handling)
  * - Props handling (showProgress, showHint)
  * - Integration with calculateDiscoveryProgress helper
@@ -196,17 +196,19 @@ describe('HiddenTraitIndicator Component', () => {
       discoveryProgress: 30,
     };
 
-    it('should show generic encouragement when no hint provided', () => {
+    // Equoria-gu8jk. OLD CONTRACT: with no backend hint, the indicator showed a
+    // "How to Discover Traits" list (milestones, enrichment activities, care,
+    // competing). NEW RULING (owner, 2026-10-20): players never reveal traits —
+    // grooms will — and player enrichment no longer exists, so the list told
+    // players to do something impossible. It is removed; no replacement is
+    // designed here (the owner decides).
+    it('shows no "How to Discover Traits" guidance when no hint is provided', () => {
       render(<HiddenTraitIndicator discoveryStatus={noHintStatus} />);
-      expect(screen.getByText('How to Discover Traits')).toBeInTheDocument();
-    });
-
-    it('should show all discovery methods', () => {
-      render(<HiddenTraitIndicator discoveryStatus={noHintStatus} />);
-      expect(screen.getByText(/Complete developmental milestones/i)).toBeInTheDocument();
-      expect(screen.getByText(/Engage in enrichment activities/i)).toBeInTheDocument();
-      expect(screen.getByText(/Maintain consistent care quality/i)).toBeInTheDocument();
-      expect(screen.getByText(/Compete in various disciplines/i)).toBeInTheDocument();
+      expect(screen.queryByText('How to Discover Traits')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Engage in enrichment activities/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Complete developmental milestones/i)).not.toBeInTheDocument();
+      // The rest of the indicator still renders.
+      expect(screen.getByText('Hidden Traits')).toBeInTheDocument();
     });
 
     it('should hide generic encouragement when showHint is false', () => {
