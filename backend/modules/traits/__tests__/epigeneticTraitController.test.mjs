@@ -1,7 +1,8 @@
 /**
  * epigeneticTraitRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: definitions, history, summary, breeding-insights, log-trait, evaluate-milestone.
+ * Covers: definitions, history, summary, breeding-insights, evaluate-milestone.
+ * (POST /log-trait was removed by Equoria-gu8jk — players never write trait history.)
  * Routes live under authRouter at /api/v1/epigenetic-traits.
  */
 
@@ -174,81 +175,6 @@ describe('GET /api/v1/epigenetic-traits/breeding-insights/:horseId', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app).get(`/api/v1/epigenetic-traits/breeding-insights/${horse.id}`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/epigenetic-traits/log-trait ────────────────────────────────────
-
-describe('POST /api/v1/epigenetic-traits/log-trait', () => {
-  it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/epigenetic-traits/log-trait')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 400 for invalid sourceType', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/epigenetic-traits/log-trait')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, traitName: 'calm', sourceType: 'invalid-source' });
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/epigenetic-traits/log-trait')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: 999999999, traitName: 'calm', sourceType: 'milestone' });
-
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 201 when logging a valid trait for an owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/epigenetic-traits/log-trait')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, traitName: 'calm', sourceType: 'milestone' });
-
-    expect(res.status).toBe(201);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 401 without auth', async () => {
-    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
-    // before csrfProtection runs, so no accessToken-bound token is needed.
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post('/api/v1/epigenetic-traits/log-trait')
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, traitName: 'calm', sourceType: 'milestone' });
 
     expect(res.status).toBe(401);
   });

@@ -435,11 +435,15 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
     },
   );
 
-  it("lineage analysis records the perk-reveal signal only for the caller's own horse (the mare), never the stallion", async () => {
+  // OLD CONTRACT (Equoria-245bt / q4uem.9 slice 4): a lineage analysis wrote a
+  // `_lineage_analysis` UltraRareTraitEvent for the caller's own mare (never the
+  // stud stallion). NEW RULING (Equoria-gu8jk, owner 2026-10-20): players never
+  // write traits or trait events, so the analysis writes no event row at all.
+  it('lineage analysis writes no UltraRareTraitEvent for either horse', async () => {
     const res = await ENDPOINTS.lineage(mareOwner.token, stud.id, mare.id);
 
     expect(res.status).toBe(200);
     expect(await prisma.ultraRareTraitEvent.count({ where: { horseId: stud.id } })).toBe(0);
-    expect(await prisma.ultraRareTraitEvent.count({ where: { horseId: mare.id } })).toBe(1);
+    expect(await prisma.ultraRareTraitEvent.count({ where: { horseId: mare.id } })).toBe(0);
   });
 });

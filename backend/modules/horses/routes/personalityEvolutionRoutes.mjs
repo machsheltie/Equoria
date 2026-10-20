@@ -6,28 +6,30 @@
  *
  * Routes:
  * - POST /groom/:groomId/evolve - Evolve groom personality
- * - POST /horse/:horseId/evolve - Evolve horse temperament
  * - GET /:entityType/:entityId/triggers - Get evolution triggers
  * - GET /:entityType/:entityId/stability - Analyze personality stability
  * - GET /:entityType/:entityId/predict - Predict future evolution
  * - GET /:entityType/:entityId/history - Get evolution history
  * - POST /apply-effects - REMOVED, answers 410 (Equoria-bvddn.4: unauthorized no-op stub)
- * - POST /batch-evolve - Batch process multiple entities (ownership-checked per entity)
+ *
+ * No route here changes a horse's temperament (Equoria-gu8jk; owner ruling
+ * 2026-10-20: players must never write traits for themselves).
+ * POST /horse/:horseId/evolve and POST /batch-evolve (whose 'horse' entities
+ * ran the same temperament write) were removed. The groom evolve route stays:
+ * it writes nothing (applyPersonalityEvolutionEffects only builds a summary).
  */
 
 import express from 'express';
-import { body, param, query, validationResult } from 'express-validator';
+import { param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   evolveGroomPersonalityController,
-  evolveHorseTemperamentController,
   getEvolutionTriggersController,
   getPersonalityStabilityController,
   predictPersonalityEvolutionController,
   getPersonalityEvolutionHistoryController,
-  batchEvolvePersonalitiesController,
 } from '../controllers/personalityEvolutionController.mjs';
 
 const router = express.Router();
@@ -63,18 +65,6 @@ router.post(
   validateRequest,
   requireOwnership('groom', { idParam: 'groomId' }),
   evolveGroomPersonalityController,
-);
-
-/**
- * Evolve horse temperament based on care history
- * POST /api/personality-evolution/horse/:horseId/evolve
- */
-router.post(
-  '/horse/:horseId/evolve',
-  [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
-  validateRequest,
-  requireOwnership('horse', { idParam: 'horseId' }),
-  evolveHorseTemperamentController,
 );
 
 /**
@@ -176,27 +166,6 @@ router.post('/apply-effects', (req, res) => {
       'Manual personality evolution effect application has been removed. Evolution effects are applied automatically by the server during groom/horse evolution.',
   });
 });
-
-/**
- * Batch process personality evolution for multiple entities
- * POST /api/personality-evolution/batch-evolve
- */
-router.post(
-  '/batch-evolve',
-  [
-    body('entities')
-      .isArray({ min: 1, max: 50 })
-      .withMessage('Entities must be an array with 1-50 items'),
-    body('entities.*.entityId')
-      .isInt({ min: 1 })
-      .withMessage('Each entity ID must be a positive integer'),
-    body('entities.*.entityType')
-      .isIn(['groom', 'horse'])
-      .withMessage('Each entity type must be either "groom" or "horse"'),
-  ],
-  validateRequest,
-  batchEvolvePersonalitiesController,
-);
 
 /**
  * Get personality evolution system configuration

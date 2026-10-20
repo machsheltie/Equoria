@@ -1,22 +1,21 @@
 /**
  * Ultra-Rare & Exotic Traits API Routes
- * Handles API endpoints for ultra-rare and exotic trait management
- * Includes trait discovery, groom perk assignment, and trait effect queries
+ * Read-only endpoints: trait definitions, a horse's ultra-rare traits and
+ * events, a groom's revealed perks, and trait-effect calculations.
+ *
+ * No route here writes ultra-rare traits, their events or groom perks
+ * (Equoria-gu8jk; owner ruling 2026-10-20: players must never write traits for
+ * themselves). POST /evaluate/:horseId (which logged UltraRareTraitEvent rows
+ * on demand) and POST /groom/:groomId/assign-perks (which wrote
+ * Groom.rareTraitPerks) were removed. Ultra-rare evaluation runs only after the
+ * daily milestone job (ultraRareTraitEvaluationService).
  */
 
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
-import {
-  evaluateUltraRareTriggers,
-  evaluateExoticUnlocks,
-} from '../../../utils/ultraRareTriggerEngine.mjs';
-import {
-  assignRareTraitBoosterPerks,
-  getRevealedPerks,
-  applyRareTraitBoosterEffects as _applyRareTraitBoosterEffects,
-} from '../../../utils/groomRareTraitPerks.mjs';
+import { getRevealedPerks } from '../../../utils/groomRareTraitPerks.mjs';
 import {
   getAllUltraRareTraits,
   getAllExoticTraits,
@@ -28,12 +27,7 @@ import {
   hasUltraRareAbility as _hasUltraRareAbility,
 } from '../../../utils/ultraRareMechanicalEffects.mjs';
 import logger from '../../../utils/logger.mjs';
-import {
-  logUltraRareTraitEvaluation,
-  getHorseWithUltraRareTraits,
-  getGroomForRareTraitPerks,
-  hasLineageAnalysisBeenPerformed,
-} from '../services/ultraRareTraitQueries.mjs';
+import { getHorseWithUltraRareTraits } from '../services/ultraRareTraitQueries.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 const router = express.Router();
@@ -79,81 +73,6 @@ router.get('/definitions', async (req, res) => {
     });
   }
 });
-
-/**
- * POST /api/ultra-rare-traits/evaluate/:horseId
- * Evaluate ultra-rare and exotic trait triggers for a horse
- */
-router.post(
-  '/evaluate/:horseId',
-  authenticateToken,
-  [
-    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('evaluationContext')
-      .optional()
-      .isObject()
-      .withMessage('Evaluation context must be an object'),
-  ],
-  validateRequest,
-  requireOwnership('horse', { idParam: 'horseId' }),
-  async (req, res) => {
-    try {
-      const { horseId } = req.params;
-      const { evaluationContext = {} } = req.body;
-
-      // Horse ownership already validated by requireOwnership middleware
-      const horse = req.validatedResources?.horse;
-      if (!horse) {
-        logger.error('[ultraRareTraitRoutes.evaluate] Horse not found in validated resources');
-        return res.status(404).json({
-          success: false,
-          message: 'Horse not found or you do not own this horse',
-        });
-      }
-
-      // Equoria-245bt: source the intentional per-horse lineage-analysis signal
-      // from the persisted event log and fold it into the evaluation context so
-      // the rare-trait perk reveal ('lineage_analysis_or_2_triggers') can honour
-      // a deliberate lineage analysis. The persisted signal is authoritative and
-      // cannot be forged by a client-supplied evaluationContext body value.
-      const lineageAnalysisPerformed = await hasLineageAnalysisBeenPerformed(parseInt(horseId));
-      const enrichedContext = { ...evaluationContext, lineageAnalysisPerformed };
-
-      // Evaluate ultra-rare triggers
-      const ultraRareResults = await evaluateUltraRareTriggers(parseInt(horseId), enrichedContext);
-
-      // Evaluate exotic unlocks
-      const exoticResults = await evaluateExoticUnlocks(parseInt(horseId), enrichedContext);
-
-      // Log evaluation events (service-layer, Equoria-becrm)
-      const allResults = [...ultraRareResults, ...exoticResults];
-      for (const result of allResults) {
-        await logUltraRareTraitEvaluation({
-          horseId: parseInt(horseId),
-          result,
-          evaluationContext: enrichedContext,
-        });
-      }
-
-      res.json({
-        success: true,
-        data: {
-          ultraRareResults,
-          exoticResults,
-          totalTriggered: allResults.length,
-          evaluationContext: enrichedContext,
-        },
-      });
-    } catch (error) {
-      logger.error(`[ultraRareTraitRoutes] Error evaluating traits: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to evaluate ultra-rare traits',
-        error: error.message,
-      });
-    }
-  },
-);
 
 /**
  * GET /api/ultra-rare-traits/horse/:horseId
@@ -216,60 +135,6 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Failed to retrieve horse ultra-rare traits',
-        error: error.message,
-      });
-    }
-  },
-);
-
-/**
- * POST /api/ultra-rare-traits/groom/:groomId/assign-perks
- * Assign rare trait booster perks to a groom
- */
-router.post(
-  '/groom/:groomId/assign-perks',
-  authenticateToken,
-  [param('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer')],
-  validateRequest,
-  requireOwnership('groom', { idParam: 'groomId' }),
-  async (req, res) => {
-    try {
-      const { groomId } = req.params;
-
-      // Groom ownership already validated by requireOwnership middleware
-      // Need to re-fetch with additional fields for perk assignment
-      // (service-layer fetch, Equoria-becrm)
-      const groom = await getGroomForRareTraitPerks(parseInt(groomId));
-
-      if (!groom) {
-        logger.error(
-          '[ultraRareTraitRoutes.assign-perks] Groom not found after ownership validation',
-        );
-        return res.status(404).json({
-          success: false,
-          message: 'Groom not found',
-        });
-      }
-
-      // Assign rare trait booster perks
-      const assignedPerks = await assignRareTraitBoosterPerks(parseInt(groomId), groom);
-
-      res.json({
-        success: true,
-        data: {
-          groom: {
-            id: groom.id,
-            name: groom.name,
-          },
-          assignedPerks,
-          perkCount: Object.keys(assignedPerks).length,
-        },
-      });
-    } catch (error) {
-      logger.error(`[ultraRareTraitRoutes] Error assigning groom perks: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to assign rare trait booster perks',
         error: error.message,
       });
     }

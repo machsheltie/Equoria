@@ -1,7 +1,8 @@
 /**
  * ultraRareTraitRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: definitions, horse traits, evaluate triggers.
+ * Covers: definitions, horse traits, effects/calculate. (POST /evaluate/:horseId
+ * was removed by Equoria-gu8jk — players never log ultra-rare trait events.)
  * Routes live under authRouter at /api/v1/ultra-rare-traits (authRouter is
  * mounted at /api/v1 in backend/app.mjs:290; ultraRareTraitRoutes at
  * /ultra-rare-traits in backend/app/routers.mjs:178). The canonical path is
@@ -130,68 +131,6 @@ describe('GET /api/v1/ultra-rare-traits/horse/:horseId', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app).get(`/api/v1/ultra-rare-traits/horse/${horse.id}`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/ultra-rare-traits/evaluate/:horseId ───────────────────────────
-
-describe('POST /api/v1/ultra-rare-traits/evaluate/:horseId', () => {
-  it('returns 200 when evaluating triggers for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/ultra-rare-traits/evaluate/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ evaluationContext: {} });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(Array.isArray(res.body.data.ultraRareResults)).toBe(true);
-    expect(Array.isArray(res.body.data.exoticResults)).toBe(true);
-    expect(typeof res.body.data.totalTriggered).toBe('number');
-  });
-
-  it('returns 400 for invalid horseId', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/ultra-rare-traits/evaluate/not-a-number')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/ultra-rare-traits/evaluate/999999999')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/ultra-rare-traits/evaluate/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
 
     expect(res.status).toBe(401);
   });

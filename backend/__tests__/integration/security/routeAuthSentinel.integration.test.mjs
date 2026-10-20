@@ -96,13 +96,16 @@ const REPRESENTATIVE_MUTATIONS = [
     path: '/api/v1/bank/claim',
     body: {},
   },
-  // authRouter — breeding/foal mutation. Equoria-fr2kg: was POST
+  // authRouter — breeding mutation. Equoria-fr2kg: was POST
   // /foals/1/activity, removed with player-run foal activities (owner ruling
-  // 2026-10-14/15); POST /reveal-traits is the surviving foal mutation.
+  // 2026-10-14/15); it then pointed at POST /foals/1/reveal-traits, removed by
+  // Equoria-gu8jk (owner ruling 2026-10-20: players never reveal traits). The
+  // /foals router has no mutation left, so the breeding category is now
+  // represented by POST /horses/foals (begin a pregnancy for an owned pair).
   {
-    label: 'POST /api/v1/foals/1/reveal-traits (authRouter — foal trait reveal)',
+    label: 'POST /api/v1/horses/foals (authRouter — breed a pair)',
     method: 'post',
-    path: '/api/v1/foals/1/reveal-traits',
+    path: '/api/v1/horses/foals',
     body: {},
   },
   // authRouter — crafting (jk9oj.2 target router)

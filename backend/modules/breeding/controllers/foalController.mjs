@@ -8,7 +8,10 @@
  *   GET  /api/foals/:foalId               — get foal record (basic)
  *   GET  /api/foals/:foalId/development   — get foal development data
  *   GET  /api/foals/:foalId/activities    — get foal activity log
- *   POST /api/foals/:foalId/reveal-traits — trigger trait discovery for the foal
+ *
+ * The former POST /reveal-traits handler was removed (Equoria-gu8jk; owner
+ * ruling 2026-10-20: players must never write traits for themselves — traits
+ * will be activated by grooms, not a player button).
  *
  * The former PUT /develop (client-set day/bond/stress) and POST /advance-day
  * handlers were removed (Equoria-mwjst): foals wait out the full development
@@ -24,7 +27,6 @@ import { validationResult } from 'express-validator';
 import { getFoalDevelopment } from '../../horses/index.mjs';
 import { ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { revealTraits } from '../../../utils/traitDiscovery.mjs';
 import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
 import { computeAgeStage } from '../../../utils/foalAgeUtils.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -194,75 +196,6 @@ export async function getFoalActivitiesHandler(req, res) {
     });
   } catch (error) {
     logger.error(`[foalController] GET /api/foals/:foalId/activities error: ${error.message}`);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-}
-
-/**
- * POST /api/foals/:foalId/reveal-traits
- * Trigger trait discovery for a foal. Returns currently-discovered (positive + negative)
- * traits plus any newly-revealed traits found in the same run.
- *
- * Equoria-xgf0
- */
-export async function revealFoalTraitsHandler(req, res) {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { foalId } = req.params;
-    const parsedFoalId = parseInt(foalId, 10);
-    logger.info(`[foalController] POST /api/foals/${parsedFoalId}/reveal-traits`);
-
-    // Try to run discovery — if no hidden traits, this returns { revealed: [] }
-    let discovery;
-    try {
-      discovery = await revealTraits(parsedFoalId, { checkAllConditions: true });
-    } catch (discoveryError) {
-      // Equoria-ywsid: detect the not-found case by TYPE (revealTraits now throws
-      // a typed NotFoundError -> AppError statusCode 404) rather than the fragile
-      // error.message.includes('not found') string-sniff (the Equoria-93lhj
-      // antipattern). AppError.isAppError is used (not instanceof) so detection
-      // survives module-cache duplication — the codebase standard. Fail-closed:
-      // any OTHER error (e.g. the 'not eligible for trait discovery' state error,
-      // or a future unexpected failure) is NOT a 404 — it falls through to the
-      // best-effort branch below (log + return current visible traits with no
-      // newly-revealed traits), exactly as before.
-      if (AppError.isAppError(discoveryError) && discoveryError.statusCode === 404) {
-        return res.status(404).json({ success: false, message: 'Foal not found' });
-      }
-      logger.warn(
-        `[foalController] revealTraits failed for foal ${parsedFoalId}: ${discoveryError.message}`,
-      );
-      discovery = { revealed: [] };
-    }
-
-    // Always return the current full set of visible traits as ground-truth.
-    const foal = await prisma.horse.findUnique({
-      where: { id: parsedFoalId },
-      select: { epigeneticModifiers: true },
-    });
-
-    // Only the traits just revealed may be named; the ones still hidden are a
-    // count (Equoria-6dace).
-    const modifiers = publicTraitModifiers(foal?.epigeneticModifiers);
-
-    res.json({
-      success: true,
-      data: {
-        traits: [...modifiers.positive, ...modifiers.negative],
-        revealed: discovery?.revealed || [],
-        hiddenCount: modifiers.hiddenCount,
-      },
-    });
-  } catch (error) {
-    logger.error(`[foalController] POST /api/foals/:foalId/reveal-traits error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }

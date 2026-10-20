@@ -81,16 +81,6 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
   });
 
   describe('Authentication Requirements', () => {
-    test('should require authentication for flag evaluation', async () => {
-      const response = await request(app)
-        .post('/api/v1/flags/evaluate')
-        .set('Origin', 'http://localhost:3000')
-        .set('Origin', 'http://localhost:3000')
-        .send({ horseId: 123 });
-
-      expect(response.status).toBe(401);
-    });
-
     test('should require authentication for horse flags', async () => {
       const response = await request(app)
         .get('/api/v1/flags/horses/123/flags')
@@ -133,7 +123,6 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     test('should have all required endpoints mounted', async () => {
       // Test that all endpoints exist and respond (even if with auth errors)
       const endpoints = [
-        { method: 'post', path: '/api/v1/flags/evaluate' },
         { method: 'get', path: '/api/v1/flags/horses/123/flags' },
         { method: 'get', path: '/api/v1/flags/definitions' },
         { method: 'post', path: '/api/v1/flags/batch-evaluate' },

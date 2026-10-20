@@ -13,23 +13,20 @@
  * fey-touched perk is the only booster whose revealCondition is
  * 'lineage_analysis_or_2_triggers', so it is the perk under test.
  *
- * Real-DB half: the persistence + query helpers
- * (recordLineageAnalysisPerformed / hasLineageAnalysisBeenPerformed) are
- * exercised against the canonical DB with a scoped TestFixture- horse and
- * id-scoped, cascade-covered cleanup — proving the intentional per-horse
- * signal round-trips through the existing UltraRareTraitEvent event log with
- * NO schema migration.
+ * The former real-DB half (recordLineageAnalysisPerformed /
+ * hasLineageAnalysisBeenPerformed round-trip through UltraRareTraitEvent) was
+ * removed with those helpers by Equoria-gu8jk (owner ruling 2026-10-20: players
+ * never write traits or trait events; GET /breeding/lineage-analysis no longer
+ * records a signal row). The pure reveal-condition threading below is the
+ * engine contract and stays.
  *
  * Sentinel discipline (OPTIMAL_FIX_DISCIPLINE §2): each case asserts the reveal
  * FIRES when it should and STAYS FALSE when it should not — not merely that the
  * happy path passes.
  */
 
-import { describe, it, expect, afterAll } from '@jest/globals';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { describe, it, expect } from '@jest/globals';
 import { applyRareTraitBoosterEffects, RARE_TRAIT_BOOSTER_PERKS } from '../../../utils/groomRareTraitPerks.mjs';
-import { recordLineageAnalysisPerformed, hasLineageAnalysisBeenPerformed } from '../services/ultraRareTraitQueries.mjs';
 
 // fey-touched is the ONLY perk with revealCondition 'lineage_analysis_or_2_triggers'.
 const FEY_PERK = 'fey-touched';
@@ -120,62 +117,4 @@ describe('lineage_analysis_or_2_triggers reveal — conditions threading (Equori
     // after_2_successful_triggers ignores the lineage signal → still hidden at count 1.
     expect(groomData.rareTraitPerks[PHOENIX_PERK].revealed).toBe(false);
   });
-});
-
-describe('lineage-analysis signal persistence round-trip (Equoria-245bt, real DB)', () => {
-  const createdHorseIds = [];
-
-  afterAll(async () => {
-    // Cascade on UltraRareTraitEvent.horseId cleans the events; id-scoped delete.
-    await cleanupTestHorses(prisma, createdHorseIds);
-  }, 30000);
-
-  it('hasLineageAnalysisBeenPerformed is false BEFORE any analysis, true AFTER', async () => {
-    const horse = await createTestHorse(
-      prisma,
-      {
-        name: `TestFixture-lineageSignal-${Date.now()}`,
-        sex: 'Mare',
-        dateOfBirth: new Date('2020-01-01'),
-      },
-      createdHorseIds,
-    );
-
-    // Before the deliberate action: no signal.
-    await expect(hasLineageAnalysisBeenPerformed(horse.id)).resolves.toBe(false);
-
-    // The deliberate action persists the signal.
-    const event = await recordLineageAnalysisPerformed(horse.id, {
-      pairedWith: 12345,
-      generations: 3,
-    });
-    expect(event.eventType).toBe('lineage_analysis');
-    expect(event.horseId).toBe(horse.id);
-
-    // After: the signal is queryable.
-    await expect(hasLineageAnalysisBeenPerformed(horse.id)).resolves.toBe(true);
-  }, 30000);
-
-  it('the persisted signal drives the reveal end-to-end (query → conditions → reveal)', async () => {
-    const horse = await createTestHorse(
-      prisma,
-      {
-        name: `TestFixture-lineageReveal-${Date.now()}`,
-        sex: 'Stallion',
-        dateOfBirth: new Date('2019-06-01'),
-      },
-      createdHorseIds,
-    );
-
-    await recordLineageAnalysisPerformed(horse.id, { generations: 2 });
-
-    // Source the signal exactly as the evaluate route does.
-    const lineageAnalysisPerformed = await hasLineageAnalysisBeenPerformed(horse.id);
-    expect(lineageAnalysisPerformed).toBe(true);
-
-    const groomData = groomWithFey({ triggerCount: 0, revealed: false });
-    applyRareTraitBoosterEffects(FEY_TRAIT, 0.05, groomData, { lineageAnalysisPerformed });
-    // triggerCount is 1 (< 2) after the call, so ONLY the sourced signal reveals it.
-    expect(groomData.rareTraitPerks[FEY_PERK].revealed).toBe(true);
-  }, 30000);
 });

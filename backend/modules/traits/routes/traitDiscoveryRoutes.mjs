@@ -1,18 +1,18 @@
+/**
+ * Trait discovery routes — read-only (progress, conditions, status).
+ *
+ * No route here reveals or writes traits (Equoria-gu8jk; owner ruling
+ * 2026-10-20: players must never write traits for themselves).
+ * POST /discover/batch, POST /discover/:horseId and POST /batch-discover were
+ * removed. Traits will be activated by grooms (Equoria-09g33).
+ */
 import express from 'express';
-import { body, param, validationResult } from 'express-validator';
-import {
-  batchRevealTraits,
-  getDiscoveryProgress,
-  DISCOVERY_CONDITIONS,
-} from '../../../utils/traitDiscovery.mjs';
-import {
-  discoverTraits,
-  getDiscoveryStatus,
-  batchDiscoverTraits,
-} from '../controllers/traitController.mjs';
+import { param, validationResult } from 'express-validator';
+import { getDiscoveryProgress, DISCOVERY_CONDITIONS } from '../../../utils/traitDiscovery.mjs';
+import { getDiscoveryStatus } from '../controllers/traitController.mjs';
 import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { requireOwnership, validateBatchOwnership } from '../../../middleware/ownership.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
@@ -20,104 +20,6 @@ const router = express.Router();
 
 // Apply authentication to all routes
 router.use(authenticateToken);
-
-/**
- * POST /api/traits/discover/batch
- * Trigger trait discovery for multiple horses
- * NOTE: This route must come BEFORE /discover/:horseId to avoid route conflicts
- */
-router.post(
-  '/discover/batch',
-  [
-    body('horseIds')
-      .isArray({ min: 1, max: 10 })
-      .withMessage('horseIds must be an array with 1-10 elements')
-      .custom(horseIds => {
-        if (!horseIds.every(id => Number.isInteger(Number(id)) && Number(id) > 0)) {
-          throw new Error('All horse IDs must be positive integers');
-        }
-        return true;
-      }),
-  ],
-  async (req, res) => {
-    try {
-      // Check for validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: errors.array()[0].msg, // Use specific error message
-          errors: errors.array(),
-        });
-      }
-
-      const { horseIds } = req.body;
-      const userId = req.user.id;
-      logger.info(
-        `[traitDiscoveryRoutes] POST /discover/batch - Processing ${horseIds.length} horses for user ${userId}`,
-      );
-
-      // Validate ownership for the entire batch in a single query
-      // (Equoria-xqyu: replaced N sequential findOwnedResource calls with one
-      // validateBatchOwnership IN-clause query — same atomicity, much less
-      // round-trip cost for larger batches).
-      const parsedHorseIds = horseIds.map(id => parseInt(id, 10));
-      const ownedHorses = await validateBatchOwnership('horse', parsedHorseIds, userId);
-      const ownedIds = new Set(ownedHorses.map(h => h.id));
-      const validatedHorses = parsedHorseIds.filter(id => ownedIds.has(id));
-      const ownershipErrors = parsedHorseIds
-        .filter(id => !ownedIds.has(id))
-        .map(id => ({
-          horseId: id,
-          error: 'Horse not found or you do not own this horse',
-        }));
-
-      // If no horses are valid, return error
-      if (validatedHorses.length === 0) {
-        // CWE-639: 404 (not 403) so cross-user enumeration cannot use status
-        // code as a side-channel. Per-horse error messages are already
-        // disclosure-resistant via findOwnedResource above (single message
-        // for not-found + not-owned).
-        return res.status(404).json({
-          success: false,
-          message: 'No valid horses found - all horses failed ownership validation',
-          errors: ownershipErrors,
-        });
-      }
-
-      // Process only validated horses
-      const results = await batchRevealTraits(validatedHorses);
-
-      const summary = {
-        totalHorses: horseIds.length,
-        validatedHorses: validatedHorses.length,
-        ownershipErrors: ownershipErrors.length,
-        successfulDiscoveries: results.filter(r => !r.error).length,
-        failedDiscoveries: results.filter(r => r.error).length,
-        totalTraitsRevealed: results.reduce((sum, r) => sum + (r.traitsRevealed?.length || 0), 0),
-      };
-
-      res.json({
-        success: true,
-        message: `Batch discovery completed for ${validatedHorses.length} validated horses`,
-        data: {
-          results,
-          ownershipErrors,
-          summary,
-        },
-      });
-    } catch (error) {
-      logger.error(`[traitDiscoveryRoutes] POST /discover/batch error: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error during batch trait discovery',
-      });
-    }
-  },
-);
-
-// NOTE: Individual horse discovery route moved to traitRoutes.mjs to avoid conflicts
-// The /discover/:horseId route is now handled by traitRoutes.mjs
 
 /**
  * GET /api/traits/progress/:horseId
@@ -336,22 +238,6 @@ function categorizeCondition(conditionKey) {
 }
 
 /**
- * POST /api/trait-discovery/discover/:horseId
- * Trigger trait discovery for a specific horse
- */
-router.post(
-  '/discover/:horseId',
-  [
-    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('checkEnrichment').optional().isBoolean().withMessage('checkEnrichment must be a boolean'),
-    body('forceCheck').optional().isBoolean().withMessage('forceCheck must be a boolean'),
-    handleValidationErrors,
-  ],
-  requireOwnership('horse', { idParam: 'horseId' }),
-  discoverTraits,
-);
-
-/**
  * GET /api/trait-discovery/discovery-status/:horseId
  * Get discovery status and conditions for a horse
  */
@@ -363,28 +249,6 @@ router.get(
   ],
   requireOwnership('horse', { idParam: 'horseId' }),
   getDiscoveryStatus,
-);
-
-/**
- * POST /api/trait-discovery/batch-discover
- * Trigger trait discovery for multiple horses
- */
-router.post(
-  '/batch-discover',
-  [
-    body('horseIds')
-      .isArray({ min: 1, max: 10 })
-      .withMessage('horseIds must be an array with 1-10 elements')
-      .custom(horseIds => {
-        if (!horseIds.every(id => Number.isInteger(Number(id)) && Number(id) > 0)) {
-          throw new Error('All horse IDs must be positive integers');
-        }
-        return true;
-      }),
-    body('checkEnrichment').optional().isBoolean().withMessage('checkEnrichment must be a boolean'),
-    handleValidationErrors,
-  ],
-  batchDiscoverTraits,
 );
 
 export default router;

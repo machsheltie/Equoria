@@ -1,6 +1,8 @@
 /**
  * Trait Routes Integration Tests
- * Tests for trait discovery API endpoints
+ * Tests for the read-only trait API endpoints. (POST /traits/discover/:horseId
+ * and /traits/batch-discover were removed by Equoria-gu8jk — players never
+ * reveal traits — and their cases went with them.)
  *
  * Testing Approach: Balanced Mocking - Real Database Integration
  * - Uses REAL database operations for horses, breeds, users
@@ -16,7 +18,6 @@ import { createTestUser } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
@@ -26,13 +27,6 @@ import { gameCalendarDate } from '../../utils/gameTime.mjs';
 const app = (await import('../../app.mjs')).default;
 
 describe('Trait Routes Integration Tests', () => {
-  // Equoria-d3ena: __csrf__ is fetched AFTER the user/token exist and bound to
-  // that user (extraCookies: accessToken). The POST trait endpoints below
-  // authenticate via the Bearer token, so csrfProtection resolves the
-  // sessionIdentifier from req.user.id; a token issued without the user's
-  // accessToken binds to the fallback salt and 403s the legitimate mutation.
-  let __csrf__;
-
   let testHorse;
   let testBreed;
   let authToken;
@@ -50,9 +44,6 @@ describe('Trait Routes Integration Tests', () => {
 
       testUser = auth.user;
       authToken = auth.token;
-
-      // Bind the CSRF token to this user (per-user CSRF, Equoria-plw0h).
-      __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
       // Create real test breed in database
       testBreed = await prisma.breed.create({
@@ -128,81 +119,6 @@ describe('Trait Routes Integration Tests', () => {
     // Reset any mocks before each test (minimal mocking approach)
     jest.clearAllMocks();
     // Note: Using real database operations, no Prisma mocks needed
-  });
-
-  describe('POST /api/v1/traits/discover/:horseId', () => {
-    it('should trigger trait discovery successfully', async () => {
-      const response = await request(app)
-        .post(`/api/v1/traits/discover/${testHorse.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          checkEnrichment: true,
-          forceCheck: false,
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('horseId', testHorse.id);
-      expect(response.body.data).toHaveProperty('horseName', testHorse.name);
-      expect(response.body.data).toHaveProperty('traitsRevealed');
-      expect(response.body.data).toHaveProperty('conditionsMet');
-      expect(response.body.data).toHaveProperty('updatedTraits');
-
-      // Should have discovered at least one trait due to high bond score and low stress
-      expect(response.body.data.revealed.length).toBeGreaterThan(0);
-    });
-
-    it('should return validation error for invalid horse ID', async () => {
-      const response = await request(app)
-        .post('/api/v1/traits/discover/invalid')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({})
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Horse ID must be a positive integer');
-      expect(response.body.errors).toBeDefined();
-    });
-
-    it('should return 404 for non-existent horse', async () => {
-      const response = await request(app)
-        .post('/api/v1/traits/discover/99999')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          checkEnrichment: true,
-          forceCheck: false,
-        })
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Horse not found');
-    });
-
-    it('should handle optional parameters correctly', async () => {
-      const response = await request(app)
-        .post(`/api/v1/traits/discover/${testHorse.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          checkEnrichment: false,
-          forceCheck: true,
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('traitsRevealed');
-    });
   });
 
   describe('GET /api/v1/traits/horse/:horseId', () => {
@@ -372,101 +288,6 @@ describe('Trait Routes Integration Tests', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse not found');
-    });
-  });
-
-  describe('POST /api/v1/traits/batch-discover', () => {
-    it('should process batch discovery successfully', async () => {
-      const response = await request(app)
-        .post('/api/v1/traits/batch-discover')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseIds: [testHorse.id],
-          checkEnrichment: true,
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('results');
-      expect(response.body.data).toHaveProperty('errors');
-      expect(response.body.data).toHaveProperty('summary');
-      expect(Array.isArray(response.body.data.results)).toBe(true);
-      expect(Array.isArray(response.body.data.errors)).toBe(true);
-
-      const { summary } = response.body.data;
-      expect(summary).toHaveProperty('processed');
-      expect(summary).toHaveProperty('failed');
-      expect(summary).toHaveProperty('totalRevealed');
-    });
-
-    it('should return validation error for empty horse IDs array', async () => {
-      const response = await request(app)
-        .post('/api/v1/traits/batch-discover')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseIds: [],
-        })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('horseIds must be an array with 1-10 elements');
-    });
-
-    it('should return validation error for too many horse IDs', async () => {
-      const tooManyIds = Array.from({ length: 11 }, (_, i) => i + 1);
-
-      const response = await request(app)
-        .post('/api/v1/traits/batch-discover')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseIds: tooManyIds,
-        })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('horseIds must be an array with 1-10 elements');
-    });
-
-    it('should return validation error for invalid horse IDs', async () => {
-      const response = await request(app)
-        .post('/api/v1/traits/batch-discover')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseIds: ['invalid', 'ids'],
-        })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('All horse IDs must be positive integers');
-    });
-
-    it('should handle mix of valid and invalid horse IDs', async () => {
-      const response = await request(app)
-        .post('/api/v1/traits/batch-discover')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseIds: [testHorse.id, 99999], // One valid, one invalid
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.results.length).toBe(1); // Only valid horse processed
-      expect(response.body.data.errors.length).toBe(1); // One error for invalid horse
     });
   });
 });

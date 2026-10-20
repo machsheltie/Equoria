@@ -7,22 +7,18 @@
  * based on care patterns and trigger conditions.
  *
  * 📋 BUSINESS RULES:
- * - POST /flags/evaluate - Evaluate flags for a specific horse
+ * - No player endpoint assigns flags (Equoria-gu8jk): POST /flags/evaluate and
+ *   its evaluateFlags handler were removed; the weekly flag job assigns them
  * - GET /horses/:id/flags - Get all flags for a horse
  * - Requires authentication for all endpoints
  * - Validates horse ownership for user operations
  * - Supports admin operations for batch evaluation
  */
 
-import { validationResult } from 'express-validator';
 import _prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
-import {
-  evaluateHorseFlags,
-  batchEvaluateFlags as batchEvaluateFlagsEngine,
-} from '../../../utils/flagEvaluationEngine.mjs';
+import { batchEvaluateFlags as batchEvaluateFlagsEngine } from '../../../utils/flagEvaluationEngine.mjs';
 import {
   getAllFlagDefinitions,
   getFlagDefinition,
@@ -35,59 +31,6 @@ import {
   generateStableOverview,
 } from '../services/enhancedReportingService.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
-
-/**
- * Evaluate epigenetic flags for a horse
- * POST /api/flags/evaluate
- */
-export async function evaluateFlags(req, res) {
-  try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { horseId } = req.body;
-    const userId = req.user.id;
-
-    logger.info(`[epigeneticFlagController.evaluateFlags] Evaluating flags for horse ${horseId}`);
-
-    // Validate horse ownership (atomic) - admin bypass handled by middleware
-    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found or you do not own this horse',
-      });
-    }
-
-    // Perform flag evaluation
-    const evaluationResult = await evaluateHorseFlags(parseInt(horseId));
-
-    // Log the evaluation
-    logger.info(
-      `[epigeneticFlagController] Flag evaluation completed for horse ${horseId} by user ${userId}`,
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Flag evaluation completed successfully',
-      data: evaluationResult,
-    });
-  } catch (error) {
-    logger.error(`[epigeneticFlagController.evaluateFlags] Error: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error during flag evaluation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-}
 
 /**
  * Get epigenetic flags for a horse
@@ -414,7 +357,6 @@ export async function getFlagAnalytics(req, res) {
 }
 
 export default {
-  evaluateFlags,
   getHorseFlags,
   getFlagDefinitions,
   batchEvaluateFlags,

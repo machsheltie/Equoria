@@ -37,10 +37,10 @@ const NON_EXISTENT_HORSE_ID = 999_999_999;
 let app;
 let testUser;
 let rateLimitActivityUser;
-let rateLimitRevealUser;
+let rateLimitRecordUser;
 let authToken;
 let activityToken;
-let revealToken;
+let recordToken;
 
 // Per-suite fail-loud cleanup queue; drained in afterAll (Equoria-1ohys).
 const cleanup = createCleanupTracker();
@@ -71,24 +71,24 @@ beforeAll(async () => {
       lastName: 'Activity',
     },
   });
-  rateLimitRevealUser = await prisma.user.create({
+  rateLimitRecordUser = await prisma.user.create({
     data: {
       username: `foalAuthRLE_${ts}`,
       email: `foalAuthRLE_${ts}@test.com`,
       password: hashed,
       firstName: 'RL',
-      lastName: 'Reveal',
+      lastName: 'Record',
     },
   });
 
   authToken = buildToken(testUser);
   activityToken = buildToken(rateLimitActivityUser);
-  revealToken = buildToken(rateLimitRevealUser);
+  recordToken = buildToken(rateLimitRecordUser);
 
   // Equoria-1ohys: register scoped, fail-loud deletes for the 3 fixture users.
   // These users own no horses (no Horse.userId Restrict to order around), so a
   // plain id-scoped user delete is the correct teardown.
-  for (const u of [testUser, rateLimitActivityUser, rateLimitRevealUser]) {
+  for (const u of [testUser, rateLimitActivityUser, rateLimitRecordUser]) {
     cleanup.add(() => prisma.user.delete({ where: { id: u.id } }), `user#${u.id}`);
   }
 
@@ -124,14 +124,15 @@ describe('Foal routes auth enforcement (real DB)', () => {
 
   // Equoria-fr2kg: the unauthenticated enrichment and activity cases pointed
   // at POST /enrichment and POST /activity, which were removed (owner ruling
-  // 2026-10-14/15: foal enrichment is the groom's job). They now probe the
-  // surviving foal mutation (POST /reveal-traits) and the activity-log read
-  // (GET /activities), with the same 401 + message assertions.
-  it('rejects unauthenticated access to foal trait reveal', async () => {
+  // 2026-10-14/15: foal enrichment is the groom's job). They then probed
+  // POST /reveal-traits and GET /activities. Equoria-gu8jk removed
+  // POST /reveal-traits too (owner ruling 2026-10-20: players never reveal
+  // traits), so the first case now probes the foal record read (GET /:foalId),
+  // with the same 401 + message assertions.
+  it('rejects unauthenticated access to the foal record', async () => {
     const response = await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/reveal-traits`)
+      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}`)
       .set('Origin', 'http://localhost:3000')
-      .send({})
       .expect(401);
 
     expect(response.body.success).toBe(false);
@@ -154,9 +155,10 @@ describe('Foal routes auth enforcement (real DB)', () => {
   // so the case could only re-prove auth, never anything about the route.
 
   // Equoria-fr2kg: the two rate-limit cases drove POST /activity and POST
-  // /enrichment, both removed. They now drive the surviving foal endpoints
-  // (GET /activities and POST /reveal-traits) with the same 429 + message
-  // assertions, so foalRateLimiter coverage is kept, not lost.
+  // /enrichment, both removed. They then drove GET /activities and POST
+  // /reveal-traits; Equoria-gu8jk removed POST /reveal-traits, so the second
+  // case now drives the foal record read (GET /:foalId) with the same 429 +
+  // message assertions, so foalRateLimiter coverage is kept, not lost.
   it('rate limits the foal activity log — 429 on Nth+1 request', async () => {
     // First two requests count toward the per-user limit (any status is fine
     // — controller may 404 on the bogus horse id, that's not the contract).
@@ -180,24 +182,21 @@ describe('Foal routes auth enforcement (real DB)', () => {
     expect(response.body.message).toContain('Foal action limit exceeded');
   });
 
-  it('rate limits foal trait reveal — 429 on Nth+1 request', async () => {
+  it('rate limits the foal record read — 429 on Nth+1 request', async () => {
     await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/reveal-traits`)
+      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}`)
       .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${revealToken}`)
-      .send({});
+      .set('Authorization', `Bearer ${recordToken}`);
 
     await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/reveal-traits`)
+      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}`)
       .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${revealToken}`)
-      .send({});
+      .set('Authorization', `Bearer ${recordToken}`);
 
     const response = await request(app)
-      .post(`/api/foals/${NON_EXISTENT_HORSE_ID}/reveal-traits`)
+      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}`)
       .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${revealToken}`)
-      .send({})
+      .set('Authorization', `Bearer ${recordToken}`)
       .expect(429);
 
     expect(response.body.success).toBe(false);

@@ -27,7 +27,6 @@
   "backend/modules/training/controllers/trainingController.mjs": 727,
   "backend/modules/traits/__tests__/enhancedReportingService.test.mjs": 910,
   "backend/modules/traits/__tests__/environmentalFactorEngineService.test.mjs": 848,
-  "backend/modules/traits/routes/traitRoutes.mjs": 706,
   "backend/modules/traits/services/enhancedReportingService.mjs": 817,
   "backend/modules/users/controllers/userController.mjs": 631,
   "backend/scripts/performance-regression-tests.mjs": 616,

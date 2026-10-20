@@ -1,17 +1,21 @@
 /**
  * Trait Management Routes
- * API endpoints for trait discovery, revelation, and management
+ * API endpoints for reading a horse's traits and their effects.
+ *
+ * No route here reveals or writes traits (Equoria-gu8jk; owner ruling
+ * 2026-10-20: players must never write traits for themselves).
+ * POST /discover/:horseId and POST /batch-discover, which moved hidden traits
+ * into the visible lists on demand, were removed. Traits will be activated by
+ * grooms (Equoria-09g33), not by a player button.
  */
 
 import express from 'express';
-import { body, param, query, validationResult } from 'express-validator';
+import { param, query, validationResult } from 'express-validator';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
-  discoverTraits,
   getHorseTraits,
   getTraitDefinitions,
   getDiscoveryStatus,
-  batchDiscoverTraits,
 } from '../controllers/traitController.mjs';
 import {
   analyzeHorseTraitImpact,
@@ -51,87 +55,6 @@ const handleValidationErrors = (req, res, next) => {
  *   name: Traits
  *   description: Horse trait discovery and management endpoints
  */
-
-/**
- * @swagger
- * /api/traits/discover/{horseId}:
- *   post:
- *     summary: Trigger trait discovery for a specific horse
- *     tags: [Traits]
- *     parameters:
- *       - in: path
- *         name: horseId
- *         required: true
- *         schema:
- *           type: integer
- *           minimum: 1
- *         description: ID of the horse
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               checkEnrichment:
- *                 type: boolean
- *                 default: true
- *                 description: Whether to check enrichment activities for discovery
- *               forceCheck:
- *                 type: boolean
- *                 default: false
- *                 description: Force check even if recently checked
- *     responses:
- *       200:
- *         description: Trait discovery completed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     horseId:
- *                       type: integer
- *                     horseName:
- *                       type: string
- *                     revealed:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           trait:
- *                             type: string
- *                           definition:
- *                             type: object
- *                           discoveryReason:
- *                             type: string
- *                     conditions:
- *                       type: array
- *                     updatedTraits:
- *                       type: object
- *       400:
- *         description: Invalid horse ID
- *       404:
- *         description: Horse not found
- *       500:
- *         description: Internal server error
- */
-router.post(
-  '/discover/:horseId',
-  [
-    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    body('checkEnrichment').optional().isBoolean().withMessage('checkEnrichment must be a boolean'),
-    body('forceCheck').optional().isBoolean().withMessage('forceCheck must be a boolean'),
-    handleValidationErrors,
-    requireOwnership('horse', { idParam: 'horseId' }),
-  ],
-  discoverTraits,
-);
 
 /**
  * @swagger
@@ -305,77 +228,6 @@ router.get(
     requireOwnership('horse', { idParam: 'horseId' }),
   ],
   getDiscoveryStatus,
-);
-
-/**
- * @swagger
- * /api/traits/batch-discover:
- *   post:
- *     summary: Trigger trait discovery for multiple horses
- *     tags: [Traits]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - horseIds
- *             properties:
- *               horseIds:
- *                 type: array
- *                 items:
- *                   type: integer
- *                   minimum: 1
- *                 minItems: 1
- *                 maxItems: 10
- *                 description: Array of horse IDs (max 10)
- *               checkEnrichment:
- *                 type: boolean
- *                 default: true
- *                 description: Whether to check enrichment activities
- *     responses:
- *       200:
- *         description: Batch discovery completed
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     results:
- *                       type: array
- *                     errors:
- *                       type: array
- *                     summary:
- *                       type: object
- *       400:
- *         description: Invalid request data
- *       500:
- *         description: Internal server error
- */
-router.post(
-  '/batch-discover',
-  [
-    body('horseIds')
-      .isArray({ min: 1, max: 10 })
-      .withMessage('horseIds must be an array with 1-10 elements')
-      .custom(value => {
-        if (!value.every(id => Number.isInteger(id) && id > 0)) {
-          throw new Error('All horse IDs must be positive integers');
-        }
-        return true;
-      }),
-    body('checkEnrichment').optional().isBoolean().withMessage('checkEnrichment must be a boolean'),
-    handleValidationErrors,
-  ],
-  batchDiscoverTraits,
 );
 
 /**

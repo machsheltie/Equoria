@@ -10,6 +10,12 @@
  * against the real test database, and asserts the serialised body names none
  * of the horse's still-hidden traits. Each also asserts a 200 so an error
  * response cannot pass by accident.
+ *
+ * The former "reveal: only the traits just revealed may be named" cases called
+ * POST /foals/:id/reveal-traits, /traits/batch-discover and
+ * /trait-discovery/discover/batch; those routes were removed by Equoria-gu8jk
+ * (owner ruling 2026-10-20: players never reveal traits), so the cases went
+ * with them.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -282,36 +288,6 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
     it('GET /users/:id/stable-epigenetic-report names no hidden trait', async () => {
       const res = await get(`/api/v1/users/${user.id}/stable-epigenetic-report`);
       expectNoHiddenNames(res);
-    });
-  });
-
-  describe('reveal: only the traits just revealed may be named', () => {
-    // bond 85 / stress 15 meets the bond and stress discovery conditions;
-    // bold (common) is the only hidden trait any condition can select, so a
-    // reveal moves bold and leaves peopleTrusting hidden.
-    const revealable = { bondScore: 85, stressLevel: 15 };
-    const hiddenPair = { positive: [], negative: [], hidden: ['bold', 'peopleTrusting'] };
-
-    it('POST /foals/:id/reveal-traits names the revealed trait, never the still-hidden one', async () => {
-      const horse = await makeFoal({ ...revealable, epigeneticModifiers: hiddenPair });
-      const res = await post(`/api/v1/foals/${horse.id}/reveal-traits`, {});
-      expectNoHiddenNames(res, ['peopleTrusting']);
-      expect(res.body.data.traits).toEqual(['bold']);
-      expect(res.body.data.hiddenCount).toBe(1);
-    });
-
-    it('POST /traits/batch-discover names no still-hidden trait', async () => {
-      const horse = await makeFoal({ ...revealable, epigeneticModifiers: hiddenPair });
-      const res = await post('/api/v1/traits/batch-discover', { horseIds: [horse.id] });
-      expectNoHiddenNames(res, ['peopleTrusting']);
-      expect(res.body.data.summary.totalRevealed).toBe(1);
-    });
-
-    it('POST /trait-discovery/discover/batch names no still-hidden trait', async () => {
-      const horse = await makeFoal({ ...revealable, epigeneticModifiers: hiddenPair });
-      const res = await post('/api/v1/trait-discovery/discover/batch', { horseIds: [horse.id] });
-      expectNoHiddenNames(res, ['peopleTrusting']);
-      expect(res.body.data.summary.totalTraitsRevealed).toBe(1);
     });
   });
 });

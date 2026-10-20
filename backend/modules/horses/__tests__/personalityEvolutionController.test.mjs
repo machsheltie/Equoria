@@ -9,17 +9,17 @@
  * are testable without DB access. Ownership 404 paths use non-existent IDs.
  *
  * Equoria-rr7 coverage sprint — module controller branches.
+ * The evolveHorseTemperamentController and batchEvolvePersonalitiesController
+ * cases were removed with those handlers (Equoria-gu8jk).
  */
 
 import { describe, it, expect } from '@jest/globals';
 import {
   evolveGroomPersonalityController,
-  evolveHorseTemperamentController,
   getEvolutionTriggersController,
   getPersonalityStabilityController,
   predictPersonalityEvolutionController,
   getPersonalityEvolutionHistoryController,
-  batchEvolvePersonalitiesController,
 } from '../controllers/personalityEvolutionController.mjs';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -297,88 +297,6 @@ describe('getPersonalityEvolutionHistoryController', () => {
 // backend/modules/horses/__tests__/personalityEvolutionController.integration.test.mjs
 // for the route-closure regression coverage.
 
-// ─── batchEvolvePersonalitiesController ──────────────────────────────────────
-
-describe('batchEvolvePersonalitiesController', () => {
-  it('returns 400 when entities is not an array', async () => {
-    const req = {
-      body: { entities: 'not-array' },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await batchEvolvePersonalitiesController(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-    expect(res.bodyValue.message).toMatch(/entities array.*required/i);
-  });
-
-  it('returns 400 when entities is an empty array', async () => {
-    const req = {
-      body: { entities: [] },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await batchEvolvePersonalitiesController(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('returns 400 when entities is undefined', async () => {
-    const req = {
-      body: {},
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await batchEvolvePersonalitiesController(req, res);
-
-    expect(res.statusValue).toBe(400);
-    expect(res.bodyValue.success).toBe(false);
-  });
-
-  it('processes batch with invalid entityType and reports failure', async () => {
-    const req = {
-      body: {
-        entities: [{ entityId: NON_EXISTENT_ID, entityType: 'invalid_type' }],
-      },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await batchEvolvePersonalitiesController(req, res);
-
-    // Should return 200 with result showing failure for this entity
-    expect(res.statusValue).toBe(200);
-    expect(res.bodyValue.success).toBe(true);
-    expect(res.bodyValue.data.results[0].result.success).toBe(false);
-    expect(res.bodyValue.data.results[0].result.error).toMatch(/invalid entity type/i);
-  });
-
-  it('summary counts match results array', async () => {
-    const req = {
-      body: {
-        entities: [
-          { entityId: NON_EXISTENT_ID, entityType: 'invalid_type' },
-          { entityId: NON_EXISTENT_ID + 1, entityType: 'invalid_type' },
-        ],
-      },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await batchEvolvePersonalitiesController(req, res);
-
-    expect(res.statusValue).toBe(200);
-    const summary = res.bodyValue.data.summary;
-    expect(summary.total).toBe(2);
-    expect(summary.successful + summary.failed).toBe(2);
-  });
-});
-
 // ─── evolveGroomPersonalityController — does not crash on non-existent ID ─────
 
 describe('evolveGroomPersonalityController', () => {
@@ -392,24 +310,6 @@ describe('evolveGroomPersonalityController', () => {
     await evolveGroomPersonalityController(req, res);
 
     // Service may return data or throw; controller should handle both
-    expect([200, 500]).toContain(res.statusValue);
-    expect(res.bodyValue).toBeDefined();
-    expect(typeof res.bodyValue.success).toBe('boolean');
-  });
-});
-
-// ─── evolveHorseTemperamentController — does not crash on non-existent ID ─────
-
-describe('evolveHorseTemperamentController', () => {
-  it('returns 200 or 500 without crashing on non-existent horse ID', async () => {
-    const req = {
-      params: { horseId: String(NON_EXISTENT_ID) },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await evolveHorseTemperamentController(req, res);
-
     expect([200, 500]).toContain(res.statusValue);
     expect(res.bodyValue).toBeDefined();
     expect(typeof res.bodyValue.success).toBe('boolean');

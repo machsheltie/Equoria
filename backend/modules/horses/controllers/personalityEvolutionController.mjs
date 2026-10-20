@@ -6,17 +6,18 @@
  *
  * Business Rules:
  * - Groom personalities evolve based on interaction patterns and experience
- * - Horse temperaments evolve based on care history and environmental factors
  * - Evolution requires minimum thresholds and consistency patterns
  * - Provides prediction and analysis capabilities for strategic planning
- * - Supports both individual and batch evolution processing
+ * - No handler here changes a horse's temperament (Equoria-gu8jk; owner ruling
+ *   2026-10-20: players must never write traits for themselves). The
+ *   evolveHorseTemperamentController and batchEvolvePersonalitiesController
+ *   handlers were removed with their routes.
  */
 
 import logger from '../../../utils/logger.mjs';
-import { findOwnedResource, validateBatchOwnership } from '../../../middleware/ownership.mjs';
+import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import {
   evolveGroomPersonality,
-  evolveHorseTemperament,
   calculatePersonalityEvolutionTriggers,
   analyzePersonalityStability,
   predictPersonalityEvolution,
@@ -73,39 +74,6 @@ export async function evolveGroomPersonalityController(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to process groom personality evolution',
-      error: error.message,
-    });
-  }
-}
-
-/**
- * Evolve horse temperament based on care history
- * POST /api/personality-evolution/horse/:horseId/evolve
- */
-export async function evolveHorseTemperamentController(req, res) {
-  try {
-    const { horseId } = req.params;
-
-    logger.info(
-      `[personalityEvolutionController.evolveHorseTemperamentController] Processing horse evolution for ID: ${horseId}`,
-    );
-
-    const result = await evolveHorseTemperament(parseInt(horseId));
-
-    res.status(200).json({
-      success: true,
-      message: result.temperamentEvolved
-        ? 'Horse temperament evolution completed successfully'
-        : 'Horse temperament evolution not triggered',
-      data: result,
-    });
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionController.evolveHorseTemperamentController] Error: ${error.message}`,
-    );
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process horse temperament evolution',
       error: error.message,
     });
   }
@@ -307,146 +275,6 @@ export async function getPersonalityEvolutionHistoryController(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve personality evolution history',
-      error: error.message,
-    });
-  }
-}
-
-/**
- * Batch process personality evolution for multiple entities
- * POST /api/personality-evolution/batch-evolve
- *
- * Equoria-bvddn.4 (audit 2026-09-25): this previously evolved ANY entityId
- * the caller passed with no ownership check at all — the single-horse/groom
- * `/evolve` routes gate through `requireOwnership`, but batch-evolve called
- * `evolveGroomPersonality`/`evolveHorseTemperament` directly. Those functions
- * persist unconditionally (personalityEvolutionSystem.mjs:201 writes
- * `horse.temperament` with no owner filter), so a player could rewrite a
- * victim horse's temperament (or read a victim groom's care-quality data via
- * the returned `result`) by naming any id they didn't own.
- *
- * Fix mirrors the batch-ownership pattern already used by
- * traitDiscoveryRoutes.mjs POST /discover/batch: validate ownership for both
- * entity types up front with `validateBatchOwnership` (one IN-clause query
- * per type instead of N `requireOwnership` round trips), then only evolve
- * entities the caller owns. A foreign or nonexistent id is never evolved and
- * gets the SAME generic message this controller already uses for the
- * single-entity 404s (`notFoundOrNotYours`) — CWE-639: it cannot be told
- * apart from "doesn't exist", so batch-evolve cannot be used as an ownership
- * oracle. An invalid `entityType` (defense in depth; the route's
- * express-validator `isIn(['groom','horse'])` already rejects this over
- * HTTP) keeps its original per-item "Invalid entity type" result untouched.
- */
-export async function batchEvolvePersonalitiesController(req, res) {
-  try {
-    const { entities } = req.body;
-    const userId = req.user?.id;
-
-    if (!Array.isArray(entities) || entities.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Entities array is required and must not be empty',
-      });
-    }
-
-    logger.info(
-      `[personalityEvolutionController.batchEvolvePersonalitiesController] Processing batch evolution for ${entities.length} entities`,
-    );
-
-    const groomIds = [
-      ...new Set(
-        entities
-          .filter(e => e.entityType === 'groom')
-          .map(e => parseInt(e.entityId, 10))
-          .filter(id => !Number.isNaN(id)),
-      ),
-    ];
-    const horseIds = [
-      ...new Set(
-        entities
-          .filter(e => e.entityType === 'horse')
-          .map(e => parseInt(e.entityId, 10))
-          .filter(id => !Number.isNaN(id)),
-      ),
-    ];
-
-    const [ownedGrooms, ownedHorses] = await Promise.all([
-      groomIds.length ? validateBatchOwnership('groom', groomIds, userId) : [],
-      horseIds.length ? validateBatchOwnership('horse', horseIds, userId) : [],
-    ]);
-    const ownedGroomIds = new Set(ownedGrooms.map(g => g.id));
-    const ownedHorseIds = new Set(ownedHorses.map(h => h.id));
-
-    const results = [];
-
-    for (const entity of entities) {
-      if (entity.entityType !== 'groom' && entity.entityType !== 'horse') {
-        results.push({
-          entityId: entity.entityId,
-          entityType: entity.entityType,
-          result: { success: false, error: 'Invalid entity type' },
-        });
-        continue;
-      }
-
-      const entityId = parseInt(entity.entityId, 10);
-      const owned =
-        entity.entityType === 'groom' ? ownedGroomIds.has(entityId) : ownedHorseIds.has(entityId);
-
-      if (!owned) {
-        results.push({
-          entityId: entity.entityId,
-          entityType: entity.entityType,
-          result: { success: false, error: notFoundOrNotYours(entity.entityType) },
-        });
-        continue;
-      }
-
-      try {
-        const result =
-          entity.entityType === 'groom'
-            ? await evolveGroomPersonality(entityId)
-            : await evolveHorseTemperament(entityId);
-
-        results.push({
-          entityId: entity.entityId,
-          entityType: entity.entityType,
-          result,
-        });
-      } catch (error) {
-        results.push({
-          entityId: entity.entityId,
-          entityType: entity.entityType,
-          result: { success: false, error: error.message },
-        });
-      }
-    }
-
-    const successCount = results.filter(r => r.result.success).length;
-    const evolutionCount = results.filter(
-      r => r.result.personalityEvolved || r.result.temperamentEvolved,
-    ).length;
-
-    res.status(200).json({
-      success: true,
-      message: `Batch evolution completed. ${successCount}/${entities.length} processed successfully, ${evolutionCount} evolved`,
-      data: {
-        results,
-        summary: {
-          total: entities.length,
-          successful: successCount,
-          evolved: evolutionCount,
-          failed: entities.length - successCount,
-        },
-      },
-    });
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionController.batchEvolvePersonalitiesController] Error: ${error.message}`,
-    );
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process batch personality evolution',
       error: error.message,
     });
   }

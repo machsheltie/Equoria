@@ -2,7 +2,8 @@
  * traitController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: getTraitDefinitions, getTraitCompetitionEffects, getHorseTraits,
- * getDiscoveryStatus, discoverTraits.
+ * getDiscoveryStatus. (discoverTraits and its POST /traits/discover/:horseId
+ * route were removed by Equoria-gu8jk — players never reveal traits.)
  * Routes live under authRouter (mounted at /api/v1) at /api/v1/traits.
  */
 
@@ -12,7 +13,6 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -179,56 +179,6 @@ describe('GET /api/v1/traits/discovery-status/:horseId', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app).get(`/api/v1/traits/discovery-status/${horse.id}`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/traits/discover/:horseId ───────────────────────────────────
-
-describe('POST /api/v1/traits/discover/:horseId', () => {
-  it('returns 200 or result for owned horse', async () => {
-    // Per-user CSRF (Equoria-plw0h): authenticated mutation binds the issued
-    // token to the same user via the accessToken cookie so the validate-time
-    // sessionIdentifier (req.user.id from the Bearer header) matches.
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/traits/discover/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    // Either 200 (traits discovered / already discovered) or 4xx (horse too young, etc.)
-    // Just confirm it's not 401 or 500
-    expect(res.status).not.toBe(401);
-    expect(res.status).not.toBe(500);
-  });
-
-  it('returns 400 for non-numeric horseId', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/traits/discover/notanumber')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 401 without auth', async () => {
-    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
-    // before csrfProtection runs, so no accessToken-bound token is needed.
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/traits/discover/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
 
     expect(res.status).toBe(401);
   });

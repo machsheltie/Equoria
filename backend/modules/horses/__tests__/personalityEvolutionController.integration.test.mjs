@@ -4,9 +4,11 @@
  * backend/tests/controllers/personalityEvolutionController.test.mjs was merged
  * in here, its canonical home per CONTRIBUTING.md module-test co-location).
  *
- * Covers: evolveGroomPersonality, evolveHorseTemperament, getEvolutionTriggers,
+ * Covers: evolveGroomPersonality, getEvolutionTriggers,
  * getPersonalityStability, predictPersonalityEvolution, getEvolutionHistory,
- * applyEvolutionEffects, batchEvolve, getPersonalityConfig.
+ * applyEvolutionEffects, getPersonalityConfig. (The horse-temperament evolve
+ * and batch-evolve routes were removed by Equoria-gu8jk — players never change
+ * a horse's temperament.)
  * Routes live under authRouter at /api/v1/personality-evolution (Equoria-vivsi:
  * the unversioned /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the
  * canonical surface — verified in backend/app.mjs:290 + backend/app/routers.mjs:191).
@@ -496,83 +498,6 @@ describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {
   });
 });
 
-// ─── POST /api/v1/personality-evolution/horse/:horseId/evolve ────────────────
-
-describe('POST /api/personality-evolution/horse/:horseId/evolve', () => {
-  it('returns 200 when evolving temperament for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/personality-evolution/horse/${horse.id}/evolve`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    // 200 success or 400 (no evolution triggered) are both acceptable
-    expect([200, 400]).toContain(res.status);
-    expect(res.body.success !== undefined).toBe(true);
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/personality-evolution/horse/999999999/evolve')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    // Intentionally NOT forwarding accessToken (see groom evolve 401 case).
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/personality-evolution/horse/${horse.id}/evolve`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: success-path response-shape — message + boolean
-  // temperamentEvolved.
-  it('evolves horse temperament successfully (message + boolean temperamentEvolved)', async () => {
-    const res = await request(app)
-      .post(`/api/v1/personality-evolution/horse/${horse.id}/evolve`)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrfPair.cookieHeader)
-      .set('X-CSRF-Token', csrfPair.csrfToken)
-      .expect(200);
-
-    expect(res.body.success).toBe(true);
-    expect(res.body.message).toContain('evolution');
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.success).toBe(true);
-    expect(typeof res.body.data.temperamentEvolved).toBe('boolean');
-  });
-
-  // Equoria-fefh2.40 migrated: 400 for an invalid (non-numeric) horse id.
-  it('returns 400 for an invalid horse ID', async () => {
-    const res = await request(app)
-      .post('/api/v1/personality-evolution/horse/invalid/evolve')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrfPair.cookieHeader)
-      .set('X-CSRF-Token', csrfPair.csrfToken)
-      .expect(400);
-
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain('Validation failed');
-  });
-});
-
 // ─── POST /api/v1/personality-evolution/apply-effects ────────────────────────
 // Equoria-bvddn.4 (audit 2026-09-25): this route was commented "admin
 // function" but carried no requireRole('admin') check — any authenticated
@@ -635,49 +560,5 @@ describe('POST /api/personality-evolution/apply-effects', () => {
       .send({ entityId: groom.id, entityType: 'groom', evolutionType: 'trait_strengthening' });
 
     expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/personality-evolution/batch-evolve ─────────────────────────
-// Equoria-fefh2.40 migrated: NO co-located HTTP version existed before this.
-
-describe('POST /api/personality-evolution/batch-evolve', () => {
-  it('processes batch evolution successfully', async () => {
-    const batchData = {
-      entities: [
-        { entityId: groom.id, entityType: 'groom' },
-        { entityId: horse.id, entityType: 'horse' },
-      ],
-    };
-
-    const res = await request(app)
-      .post('/api/v1/personality-evolution/batch-evolve')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrfPair.cookieHeader)
-      .set('X-CSRF-Token', csrfPair.csrfToken)
-      .send(batchData)
-      .expect(200);
-
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.results).toBeDefined();
-    expect(Array.isArray(res.body.data.results)).toBe(true);
-    expect(res.body.data.results).toHaveLength(2);
-    expect(res.body.data.summary).toBeDefined();
-  });
-
-  it('returns 400 for empty entities array', async () => {
-    const res = await request(app)
-      .post('/api/v1/personality-evolution/batch-evolve')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrfPair.cookieHeader)
-      .set('X-CSRF-Token', csrfPair.csrfToken)
-      .send({ entities: [] })
-      .expect(400);
-
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain('Validation failed');
   });
 });

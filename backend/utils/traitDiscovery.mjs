@@ -169,8 +169,8 @@ export async function revealTraits(horseId, options = {}) {
 
   if (!horse) {
     // Equoria-ywsid: throw a TYPED NotFoundError (AppError subclass, statusCode
-    // 404) for the missing-horse case so the controller (revealFoalTraitsHandler)
-    // can detect not-found by type (AppError.isAppError + statusCode===404)
+    // 404) for the missing-horse case so a caller (formerly
+    // revealFoalTraitsHandler, removed by Equoria-gu8jk) can detect not-found by type (AppError.isAppError + statusCode===404)
     // rather than the fragile error.message.includes('not found') string-sniff
     // (the Equoria-93lhj antipattern). NotFoundError('Horse', horseIdInt) yields
     // the identical message 'Horse with ID <id> not found', so any existing

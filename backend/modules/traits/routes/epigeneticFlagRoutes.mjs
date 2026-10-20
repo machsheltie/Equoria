@@ -7,17 +7,21 @@
  * flag evaluation, retrieval, and care pattern analysis.
  *
  * 📋 API ENDPOINTS:
- * - POST /api/flags/evaluate - Evaluate flags for a horse
  * - GET /api/horses/:id/flags - Get horse flags
  * - GET /api/flags/definitions - Get flag definitions
  * - POST /api/flags/batch-evaluate - Batch evaluate (admin)
  * - GET /api/horses/:id/care-patterns - Get care patterns (debug)
+ *
+ * No player route assigns flags (Equoria-gu8jk; owner ruling 2026-10-20:
+ * players must never write traits for themselves). POST /evaluate, which let an
+ * owner run the flag engine on demand, was removed; flags are assigned by the
+ * weekly flag job (services/jobs/impl/flagEvaluation.mjs) and the admin-only
+ * batch evaluation below.
  */
 
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import {
-  evaluateFlags,
   getHorseFlags,
   getFlagDefinitions,
   batchEvaluateFlags,
@@ -29,13 +33,6 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const router = express.Router();
-
-/**
- * Validation middleware for flag evaluation
- */
-const validateFlagEvaluation = [
-  body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-];
 
 /**
  * Validation middleware for horse ID parameter
@@ -63,26 +60,6 @@ const validateFlagTypeQuery = [
     .isIn(['positive', 'negative', 'adaptive'])
     .withMessage('Flag type must be positive, negative, or adaptive'),
 ];
-
-/**
- * POST /api/flags/evaluate
- * Evaluate epigenetic flags for a specific horse
- *
- * @body {number} horseId - ID of the horse to evaluate
- * @returns {Object} Evaluation results with newly assigned flags
- */
-router.post('/evaluate', authenticateToken, validateFlagEvaluation, async (req, res) => {
-  try {
-    await evaluateFlags(req, res);
-  } catch (error) {
-    logger.error(`[epigeneticFlagRoutes] Error in /evaluate: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
-  }
-});
 
 /**
  * GET /api/horses/:id/flags

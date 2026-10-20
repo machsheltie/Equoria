@@ -293,11 +293,12 @@ function shouldRevealPerk(perkData, perkDef, conditions = {}) {
       return triggerCount >= 2;
 
     case 'lineage_analysis_or_2_triggers':
-      // Equoria-245bt: the lineage-analysis half of this OR condition is now
-      // wired. `conditions.lineageAnalysisPerformed` is the intentional
-      // per-horse signal (a deliberate lineage-analysis compute was run for the
-      // horse's pedigree — see recordLineageAnalysisPerformed). Either the
-      // signal OR two successful triggers reveals the perk.
+      // Equoria-245bt: `conditions.lineageAnalysisPerformed` is the lineage
+      // half of this OR condition. Either it OR two successful triggers
+      // reveals the perk. Its player-written source (a `_lineage_analysis`
+      // UltraRareTraitEvent recorded by GET /breeding/lineage-analysis) was
+      // removed by Equoria-gu8jk (players never write trait events), so no
+      // live caller supplies it today.
       return Boolean(conditions?.lineageAnalysisPerformed) || triggerCount >= 2;
 
     default:

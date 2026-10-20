@@ -10,7 +10,8 @@
  *   - Equoria-m55h — ultraRareTraitRoutes /effects/calculate
  *   - Equoria-qpeg — enhancedReportingRoutes /horses/compare-epigenetics
  *   - Equoria-msh4 — environmentalRoutes /environment/calculate-impact
- *   - Equoria-q4yy — traitDiscoveryRoutes /discover/batch
+ *   - Equoria-q4yy — traitDiscoveryRoutes /discover/batch (route removed by
+ *     Equoria-gu8jk — players never reveal traits — so its case went with it)
  *   - Equoria-5w2v — groomAssignmentService.validateAssignmentEligibility
  */
 
@@ -256,39 +257,6 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
 
       expect(resMissing.status).toBe(404);
       expect(resMissing.body).toEqual(resCrossUser.body);
-    });
-  });
-
-  // ─── Equoria-q4yy ────────────────────────────────────────────────────────
-  describe('traitDiscoveryRoutes POST /api/v1/trait-discovery/discover/batch (all-fail)', () => {
-    it('returns 404 (not 403) when all horses fail ownership; per-horse messages disclosure-resistant', async () => {
-      const resAllForeign = await request(app)
-        .post('/api/v1/trait-discovery/discover/batch')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseIds: [horseB.id] });
-
-      expect(resAllForeign.status).toBe(404);
-      expect(resAllForeign.body.success).toBe(false);
-
-      const resAllMissing = await request(app)
-        .post('/api/v1/trait-discovery/discover/batch')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseIds: [NONEXISTENT_ID] });
-
-      expect(resAllMissing.status).toBe(404);
-      // Per-horse error message is the same for both not-exists and not-yours
-      // (already disclosure-resistant via findOwnedResource — see route).
-      // The per-horse `horseId` field will differ (different IDs), but the
-      // error string for each is identical.
-      const fErr = resAllForeign.body.errors[0]?.error;
-      const mErr = resAllMissing.body.errors[0]?.error;
-      expect(fErr).toBe(mErr);
     });
   });
 

@@ -26,7 +26,6 @@ import {
 } from '../../utils/ultraRareMechanicalEffects.mjs';
 
 import { randomBytes } from 'node:crypto';
-import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
@@ -44,7 +43,6 @@ const TEST_USERNAME = `ultrararetester${SUFFIX}`;
 const TEST_EMAIL = `ultrararetester-${SUFFIX}@example.com`;
 
 describe('Ultra-Rare & Exotic Traits System', () => {
-  let __csrf__;
   let testUser;
   let testToken;
   let testHorse;
@@ -128,15 +126,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         userId: testUser.id,
       },
     });
-
-    // Equoria-5uuze: per-user CSRF binding. The mutating endpoints below
-    // authenticate via `Authorization: Bearer ${testToken}`, so csrfProtection
-    // resolves sessionIdentifier to testUser.id (req.user.id). The CSRF token
-    // must be issued under that same identifier — fetch it with the access
-    // cookie carrying the same JWT so getCsrfToken's tryPopulateUserFromAccessCookie
-    // binds the token to testUser.id. Without this the token would bind to the
-    // CSRF_SESSION_SALT fallback and the mutation would 403.
-    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${testToken}`] });
   });
 
   afterAll(async () => {
@@ -352,27 +341,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       expect(response.body.data.totalCount).toBe(10); // 5 ultra-rare + 5 exotic
     });
 
-    test('POST /api/v1/ultra-rare-traits/evaluate/:horseId should evaluate traits for owned horse', async () => {
-      const response = await request(app)
-        .post(`/api/v1/ultra-rare-traits/evaluate/${testHorse.id}`)
-        .set('Authorization', `Bearer ${testToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          evaluationContext: {
-            triggerSource: 'milestone_completion',
-          },
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.ultraRareResults).toBeDefined();
-      expect(response.body.data.exoticResults).toBeDefined();
-      expect(Array.isArray(response.body.data.ultraRareResults)).toBe(true);
-      expect(Array.isArray(response.body.data.exoticResults)).toBe(true);
-    });
-
     test('GET /api/v1/ultra-rare-traits/horse/:horseId should return horse ultra-rare traits', async () => {
       const response = await request(app)
         .get(`/api/v1/ultra-rare-traits/horse/${testHorse.id}`)
@@ -385,21 +353,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       expect(response.body.data.traits).toBeDefined();
       expect(response.body.data.traits.ultraRare).toBeDefined();
       expect(response.body.data.traits.exotic).toBeDefined();
-    });
-
-    test('POST /api/v1/ultra-rare-traits/groom/:groomId/assign-perks should assign perks to owned groom', async () => {
-      const response = await request(app)
-        .post(`/api/v1/ultra-rare-traits/groom/${testGroom.id}/assign-perks`)
-        .set('Authorization', `Bearer ${testToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.groom.id).toBe(testGroom.id);
-      expect(response.body.data.assignedPerks).toBeDefined();
-      expect(typeof response.body.data.assignedPerks).toBe('object');
     });
 
     test('should reject unauthorized access to horse traits', async () => {

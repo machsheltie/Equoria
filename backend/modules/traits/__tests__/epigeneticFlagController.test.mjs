@@ -1,8 +1,9 @@
 /**
  * epigeneticFlagController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: evaluateFlags, getHorseFlags, getFlagDefinitions, batchEvaluateFlags,
- * getCarePatterns.
+ * Covers: getHorseFlags, getFlagDefinitions, batchEvaluateFlags,
+ * getCarePatterns. (evaluateFlags and POST /flags/evaluate were removed by
+ * Equoria-gu8jk — players never assign flags.)
  * Routes live under authRouter at /api/v1/flags.
  */
 
@@ -191,52 +192,6 @@ describe('GET /api/v1/flags/horses/:id/care-patterns', () => {
   });
 });
 
-// ─── POST /api/v1/flags/evaluate ─────────────────────────────────────────────────
-
-describe('POST /api/v1/flags/evaluate', () => {
-  it('returns 200 when evaluating flags for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/flags/evaluate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-
-  it('returns 400 when horseId is missing', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/flags/evaluate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 401 without auth', async () => {
-    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
-    // before csrfProtection runs, so no accessToken-bound token is needed.
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post('/api/v1/flags/evaluate')
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id });
-
-    expect(res.status).toBe(401);
-  });
-});
-
 // ─── POST /api/v1/flags/batch-evaluate ──────────────────────────────────────────
 
 describe('POST /api/v1/flags/batch-evaluate', () => {
@@ -355,24 +310,5 @@ describe('GET /api/v1/flags/definitions — type query filter', () => {
 
     // Validation middleware rejects invalid type
     expect([200, 400]).toContain(res.status);
-  });
-});
-
-// ─── POST /api/v1/flags/evaluate — 404 path (line 56) ───────────────────────────
-
-describe('POST /api/v1/flags/evaluate — non-existent horse 404', () => {
-  it('returns 404 when horse does not exist (covers controller line 56)', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/flags/evaluate')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: 999999998 });
-
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toMatch(/not found/i);
   });
 });

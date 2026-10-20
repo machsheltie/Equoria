@@ -17,8 +17,6 @@ import {
   resolveBreedingPairAccess,
 } from '../services/breedingOwnershipQueries.mjs';
 import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
-// Equoria-245bt: lineage-analysis signal persistence (via the traits barrel — public-API boundary).
-import { recordLineageAnalysisForPair } from '../../traits/index.mjs';
 
 // Import genetic services
 // Equoria-emkv6: all four genetics functions live in the module-local service
@@ -215,12 +213,10 @@ router.get(
           createVisualizationData(+stallionId, +mareId, generations, { viewerId: userId }),
         ]);
 
-      // Equoria-245bt: the intentional per-horse lineage-analysis signal, best-effort (never fails
-      // the response) and only for the caller's OWN horses — a stranger's analysis never writes
-      // another player's stallion's perk-reveal state (q4uem.9 slice 4).
-      await recordLineageAnalysisForPair(parseInt(stallionId), parseInt(mareId), generations, {
-        recordStallion: access.stallionOwned,
-      });
+      // A lineage analysis is a read. It no longer records a `_lineage_analysis`
+      // UltraRareTraitEvent for the caller's horses (Equoria-245bt signal removed
+      // by Equoria-gu8jk; owner ruling 2026-10-20: players never write traits or
+      // trait events).
 
       res.json({
         success: true,

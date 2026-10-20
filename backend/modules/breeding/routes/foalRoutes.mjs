@@ -14,6 +14,10 @@
  * (Equoria-fr2kg; owner ruling 2026-10-14/15: foal enrichment is the groom's
  * job, and there is no graduation). POST /:foalId/activity, /enrichment,
  * /enrich and /graduate were removed.
+ *
+ * No route here reveals or writes a foal's traits either (Equoria-gu8jk; owner
+ * ruling 2026-10-20: players must never write traits for themselves).
+ * POST /:foalId/reveal-traits was removed; traits will be activated by grooms.
  */
 
 import express from 'express';
@@ -27,7 +31,6 @@ import {
   getFoalHandler,
   getFoalDevelopmentHandler,
   getFoalActivitiesHandler,
-  revealFoalTraitsHandler,
 } from '../controllers/foalController.mjs';
 
 const router = express.Router();
@@ -70,19 +73,6 @@ router.get(
   [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
   requireOwnership('foal', { idParam: 'foalId' }),
   getFoalDevelopmentHandler,
-);
-
-/**
- * POST /api/foals/:foalId/reveal-traits
- * Trigger trait discovery for a foal.
- *
- * Equoria-xgf0
- */
-router.post(
-  '/:foalId/reveal-traits',
-  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
-  requireOwnership('foal', { idParam: 'foalId' }),
-  revealFoalTraitsHandler,
 );
 
 export default router;

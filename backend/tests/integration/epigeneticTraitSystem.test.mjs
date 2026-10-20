@@ -25,7 +25,8 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // wipes inherited rows for order-independence, so each read test must seed its
 // OWN epigenetic trait via the real service before querying — not rely on a
 // prior test's side effect. logTraitAssignment writes a genuine DB row through
-// the same code path the log-trait endpoint uses.
+// the same service the nightly foal job uses (the player log-trait endpoint was
+// removed by Equoria-gu8jk).
 import { logTraitAssignment } from '../../modules/traits/index.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
@@ -172,7 +173,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
   });
 
   // Equoria-2gqir: seed a real Affectionate epigenetic traitHistoryLog row for
-  // the read-side endpoints. Uses the same service the /log-trait endpoint uses,
+  // the read-side endpoints. Uses the same service the nightly foal job uses,
   // so the DB state the read tests assert against is genuine — not fabricated.
   // Each read test calls this in its own arrange step because beforeEach wipes
   // the table (order-independence, Equoria-enles).
@@ -253,36 +254,6 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(response.body.data).toHaveProperty('currentGroom', testGroom.name);
       expect(response.body.data).toHaveProperty('milestoneResult');
       expect(response.body.data.careHistoryIncluded).toBe(true);
-    });
-
-    test('POST /api/v1/epigenetic-traits/log-trait should log trait assignment', async () => {
-      const traitData = {
-        horseId: testHorse.id,
-        traitName: 'Affectionate',
-        sourceType: 'groom',
-        sourceId: testGroom.id.toString(),
-        influenceScore: 3.5,
-        isEpigenetic: true,
-        groomId: testGroom.id,
-        bondScore: 25,
-        stressLevel: 2,
-      };
-
-      const response = await request(app)
-        .post('/api/v1/epigenetic-traits/log-trait')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(traitData)
-        .expect(201);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('id');
-      expect(response.body.data.traitName).toBe('Affectionate');
-      expect(response.body.data.sourceType).toBe('groom');
-      expect(response.body.data.isEpigenetic).toBe(true);
-      expect(response.body.data.influenceScore).toBe(3);
     });
 
     test('GET /api/v1/epigenetic-traits/history/:horseId should return trait history', async () => {
@@ -431,20 +402,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .expect(400);
 
-      // Invalid trait logging data — authed mutation, carries per-user CSRF so
-      // we reach (and assert) the validation 400, not a CSRF 403.
-      await request(app)
-        .post('/api/v1/epigenetic-traits/log-trait')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseId: 'invalid',
-          traitName: '',
-          sourceType: 'invalid_source',
-        })
-        .expect(400);
+      // The former POST /log-trait validation half was removed with that route
+      // (Equoria-gu8jk; owner ruling 2026-10-20: players never write trait
+      // history).
     });
   });
 

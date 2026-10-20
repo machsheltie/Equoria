@@ -1,120 +1,21 @@
 /**
  * Trait Management Controller
- * Handles trait discovery, revelation, and management operations
+ * Read-only trait handlers: a horse's traits, trait definitions and discovery
+ * status.
+ *
+ * The discoverTraits / batchDiscoverTraits handlers were removed with their
+ * routes (Equoria-gu8jk; owner ruling 2026-10-20: players must never write
+ * traits for themselves).
  */
 
-import { revealTraits } from '../../../utils/traitDiscovery.mjs';
 import { getTraitDefinition, getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
-import { isFoalAge, FOAL_LIMITS } from '../../../constants/schema.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
 import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
 
 // TTL constants (in seconds)
 const TRAIT_DEFINITIONS_TTL = 600; // 10 minutes — static reference data
-
-/**
- * POST /api/traits/discover/:horseId
- * Trigger trait discovery for a specific horse
- */
-export async function discoverTraits(req, res) {
-  try {
-    const { horseId } = req.params;
-    const { checkEnrichment = true, forceCheck = false } = req.body;
-
-    // Validate horse ID
-    const parsedHorseId = parseInt(horseId, 10);
-    if (isNaN(parsedHorseId) || parsedHorseId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid horse ID. Must be a positive integer.',
-        data: null,
-      });
-    }
-
-    logger.info(
-      `[traitController.discoverTraits] Triggering trait discovery for horse ${parsedHorseId}`,
-    );
-
-    // Horse ownership already validated by requireOwnership middleware
-    // Middleware attaches validated horse to req.validatedResources
-    const horse = req.validatedResources?.horse || null;
-
-    if (!horse) {
-      logger.error(
-        `[traitController.discoverTraits] Horse not found in validated resources for horse ${horseId}`,
-      );
-      return res.status(404).json({
-        success: false,
-        message: `Horse with ID ${horseId} not found`,
-        data: null,
-      });
-    }
-
-    // Check if horse is eligible for trait discovery
-    // Foals (under 3) can discover any traits, adults (3+) can discover mature traits
-    const isEligibleForTraitDiscovery = isFoalAge(horse.age) || horse.age >= FOAL_LIMITS.ADULT_AGE;
-
-    if (!isEligibleForTraitDiscovery) {
-      return res.status(400).json({
-        success: false,
-        message: `Horse with ID ${parsedHorseId} is not eligible for trait discovery (age: ${horse.age}).`,
-        data: null,
-      });
-    }
-
-    // Perform trait discovery
-    const discoveryResult = await revealTraits(parsedHorseId, {
-      checkEnrichment,
-      forceCheck,
-    });
-
-    // Log discovery event
-    if (discoveryResult.revealed.length > 0) {
-      logger.info(
-        `[traitController.discoverTraits] Discovered ${discoveryResult.revealed.length} traits for horse ${parsedHorseId} (${horse.name})`,
-      );
-    }
-
-    const revealedTraits = discoveryResult.traitsRevealed || discoveryResult.revealed || [];
-
-    res.status(200).json({
-      success: true,
-      message: discoveryResult.message,
-      data: {
-        horseId: parsedHorseId,
-        horseName: horse.name,
-        conditionsMet: discoveryResult.conditionsMet || discoveryResult.conditions || [],
-        traitsRevealed: revealedTraits.map(trait => ({
-          traitKey: trait.trait || trait.name,
-          traitName: trait.trait || trait.name,
-          category: trait.definition?.type || 'unknown',
-          revealedBy: trait.discoveryReason || 'discovery condition met',
-          definition: trait.definition,
-        })),
-        revealed: revealedTraits, // For backward compatibility
-        updatedTraits: revealedTraits, // For backward compatibility
-        hiddenTraitsRemaining: discoveryResult.totalHiddenAfter || 0,
-        summary: {
-          totalConditionsMet: (discoveryResult.conditionsMet || discoveryResult.conditions || [])
-            .length,
-          totalTraitsRevealed: revealedTraits.length,
-          hiddenBefore: discoveryResult.totalHiddenBefore || 0,
-          hiddenAfter: discoveryResult.totalHiddenAfter || 0,
-        },
-      },
-    });
-  } catch (error) {
-    logger.error(`[traitController.discoverTraits] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to discover traits',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-  }
-}
 
 /**
  * GET /api/traits/horse/:horseId
@@ -357,93 +258,6 @@ export async function getDiscoveryStatus(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get discovery status',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-  }
-}
-
-/**
- * POST /api/traits/batch-discover
- * Trigger trait discovery for multiple horses
- */
-export async function batchDiscoverTraits(req, res) {
-  try {
-    const { horseIds, checkEnrichment = true } = req.body;
-    const userId = req.user?.id;
-
-    // Validate input
-    if (!Array.isArray(horseIds) || horseIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'horseIds must be a non-empty array',
-        data: null,
-      });
-    }
-
-    if (horseIds.length > 10) {
-      return res.status(400).json({
-        success: false,
-        message: 'Maximum 10 horses can be processed at once',
-        data: null,
-      });
-    }
-
-    logger.info(
-      `[traitController.batchDiscoverTraits] Processing batch discovery for ${horseIds.length} horses`,
-    );
-
-    const results = [];
-    const errors = [];
-
-    // Process each horse with ownership validation
-    for (const horseId of horseIds) {
-      try {
-        const parsedHorseId = parseInt(horseId, 10);
-        if (isNaN(parsedHorseId) || parsedHorseId <= 0) {
-          errors.push({ horseId, error: 'Invalid horse ID' });
-          continue;
-        }
-
-        // Validate horse ownership atomically (single-query validation)
-        const horse = await findOwnedResource('horse', parsedHorseId, userId);
-        if (!horse) {
-          errors.push({ horseId: parsedHorseId, error: 'Horse not found or not owned by user' });
-          continue;
-        }
-
-        const discoveryResult = await revealTraits(parsedHorseId, { checkEnrichment });
-        results.push({
-          horseId: parsedHorseId,
-          ...discoveryResult,
-        });
-      } catch (error) {
-        logger.error(
-          `[traitController.batchDiscoverTraits] Error processing horse ${horseId}: ${error.message}`,
-        );
-        errors.push({ horseId, error: error.message });
-      }
-    }
-
-    const totalRevealed = results.reduce((sum, result) => sum + (result.revealed?.length || 0), 0);
-
-    res.status(200).json({
-      success: true,
-      message: `Batch discovery completed. Revealed ${totalRevealed} traits across ${results.length} horses.`,
-      data: {
-        results,
-        errors,
-        summary: {
-          processed: results.length,
-          failed: errors.length,
-          totalRevealed,
-        },
-      },
-    });
-  } catch (error) {
-    logger.error(`[traitController.batchDiscoverTraits] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process batch discovery',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
