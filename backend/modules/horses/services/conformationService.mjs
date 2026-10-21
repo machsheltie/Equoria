@@ -79,7 +79,7 @@ export function generateConformationScores(breedName) {
   if (!conformation) {
     throw new Error(
       `breedProfiles.json entry for "${breedName}" is missing rating_profiles.conformation. ` +
-        'Regenerate via backend/scripts/generateBreedProfiles.mjs or fix the hand-tuned entry.',
+        'Fix the hand-tuned entry in backend/data/breedProfiles.json.',
     );
   }
 

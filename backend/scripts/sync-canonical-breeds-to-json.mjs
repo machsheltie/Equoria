@@ -6,8 +6,8 @@
  * conformationService / gaitService / temperamentService via breedProfileLoader).
  *
  * Only the 12 canonical breeds are touched — the remaining ~297 non-canonical
- * breed entries in breedProfiles.json (generated from category templates by
- * generate-breed-profiles.mjs) are preserved untouched.
+ * breed entries in breedProfiles.json (hand-tuned by the owner; the template
+ * generators were deleted 2026-10-21) are preserved untouched.
  *
  * After this script runs:
  *   - JSON values for Thoroughbred, Arabian, American Saddlebred, National Show Horse,

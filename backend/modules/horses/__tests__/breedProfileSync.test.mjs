@@ -8,8 +8,8 @@
  *
  * Reconciled 2026-05-15 (Equoria-is28): backend/scripts/sync-canonical-breeds-to-json.mjs
  * copies rating_profiles + temperament_weights + starter_stats from .mjs into JSON for
- * the 12 canonical breeds. Non-canonical breeds (~297 entries) retain their category-
- * template values from generate-breed-profiles.mjs and are NOT touched by the sync.
+ * the 12 canonical breeds. Non-canonical breeds (~297 entries) are hand-tuned by the
+ * owner in breedProfiles.json and are NOT touched by the sync.
  *
  * What this test enforces:
  *   1. All 12 canonical breeds are present by name in breedProfiles.json.
