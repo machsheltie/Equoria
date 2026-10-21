@@ -53,12 +53,21 @@ export const TRAINER_SKILL_BONUS = Object.freeze({
 // personality × temperament compatibility, decimals in [−0.04, +0.04].
 // Unlisted (valid) pairs = 0. Every cell is explicit — NO wildcard sentinel —
 // so an unknown key can never leak a value. Focused tests pin every cell and
-// the defensive unknown-key behavior.
+// the defensive unknown-key behavior. Owner ruling 2026-10-21: Driven keeps
+// Playful's cells; Willing (eager to please, takes instruction well) fits
+// encouraging and technical trainers.
 export const TRAINER_COMPATIBILITY = Object.freeze({
-  focused: Object.freeze({ Playful: 0.03, Spirited: 0.02, Reactive: 0.02, Lazy: -0.02 }),
-  encouraging: Object.freeze({ Nervous: 0.04, Lazy: 0.03, Playful: 0.02, Aggressive: -0.02 }),
+  focused: Object.freeze({ Driven: 0.03, Spirited: 0.02, Reactive: 0.02, Lazy: -0.02 }),
+  encouraging: Object.freeze({
+    Nervous: 0.04,
+    Willing: 0.04,
+    Lazy: 0.03,
+    Driven: 0.02,
+    Aggressive: -0.02,
+  }),
   technical: Object.freeze({
     Calm: 0.03,
+    Willing: 0.03,
     Steady: 0.03,
     Independent: 0.02,
     Reactive: -0.03,
@@ -78,7 +87,7 @@ export const TRAINER_COMPATIBILITY = Object.freeze({
 // from the matrix keys, so the two can never drift apart.
 const CANONICAL_TRAINER_PERSONALITIES = new Set(Object.keys(TRAINER_COMPATIBILITY));
 
-// Canonical horse temperaments (the 11). Intentionally duplicated from the
+// Canonical horse temperaments (the 12). Intentionally duplicated from the
 // horses module's TEMPERAMENT_TYPES to keep this trainer service a LEAF (no
 // heavyweight cross-module barrel import for a validation list) — the same
 // rationale riderBonus.mjs uses for duplicating RIDER_PERSONALITY_DATA. Drift is
@@ -90,10 +99,11 @@ export const TRAINER_CANONICAL_TEMPERAMENTS = Object.freeze([
   'Calm',
   'Bold',
   'Steady',
+  'Willing',
   'Independent',
   'Reactive',
   'Stubborn',
-  'Playful',
+  'Driven',
   'Lazy',
   'Aggressive',
 ]);
@@ -110,7 +120,7 @@ function clamp(value, min, max) {
  * @param {Object|null} params.trainer - Trainer row (skillLevel, level,
  *   speciality, personality, retired) or null.
  * @param {string} params.discipline - The training discipline (e.g. "Dressage").
- * @param {string|null} params.horseTemperament - One of the 11 temperaments, or null.
+ * @param {string|null} params.horseTemperament - One of the 12 temperaments, or null.
  * @returns {{ bonusPercent: number, penaltyPercent: number }} Both ≥ 0, capped.
  */
 export function computeTrainerModifiers({ trainer, discipline, horseTemperament } = {}) {

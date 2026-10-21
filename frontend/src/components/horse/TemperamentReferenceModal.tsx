@@ -2,9 +2,10 @@
  * TemperamentReferenceModal
  *
  * Equoria-876o — frontend consumer for GET /api/v1/horses/temperament-definitions.
- * Renders all 11 temperaments with their descriptions, training/competition
- * modifiers, and best-matched groom personalities so players can learn what
- * each temperament means and how it affects gameplay.
+ * Renders all 12 temperaments with their descriptions and best-matched groom
+ * personalities so players can learn what each temperament means. Owner ruling
+ * 2026-10-21: temperaments have no training or ridden/conformation modifiers,
+ * so those rows were removed.
  *
  * Triggered from the HorseDetailPage temperament line (Equoria-8k7k).
  *
@@ -31,12 +32,6 @@ export interface TemperamentReferenceModalProps {
   onClose: () => void;
   highlightTemperament?: string | null;
 }
-
-const formatPercent = (mod: number): string => {
-  if (mod === 0) return '0%';
-  const sign = mod > 0 ? '+' : '';
-  return `${sign}${Math.round(mod * 100)}%`;
-};
 
 const TemperamentReferenceModal = ({
   isOpen,
@@ -111,32 +106,6 @@ const TemperamentReferenceModal = ({
                         {def.prevalenceNote}
                       </p>
                     )}
-                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                      <div>
-                        <dt className="inline text-role-secondary">Training XP: </dt>
-                        <dd className="inline font-medium text-role-primary">
-                          {formatPercent(def.trainingModifiers.xpModifier)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="inline text-role-secondary">Training score: </dt>
-                        <dd className="inline font-medium text-role-primary">
-                          {formatPercent(def.trainingModifiers.scoreModifier)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="inline text-role-secondary">Ridden score: </dt>
-                        <dd className="inline font-medium text-role-primary">
-                          {formatPercent(def.competitionModifiers.riddenModifier)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="inline text-role-secondary">Conformation: </dt>
-                        <dd className="inline font-medium text-role-primary">
-                          {formatPercent(def.competitionModifiers.conformationModifier)}
-                        </dd>
-                      </div>
-                    </dl>
                     {def.bestGroomPersonalities.length > 0 && (
                       <p className="text-xs text-role-secondary mt-2">
                         Best with grooms:{' '}

@@ -24,7 +24,7 @@
   "backend/modules/leaderboards/controllers/leaderboardController.mjs": 814,
   "backend/modules/leaderboards/routes/leaderboardRoutes.mjs": 827,
   "backend/modules/marketplace/controllers/marketplaceController.mjs": 742,
-  "backend/modules/training/controllers/trainingController.mjs": 628,
+  "backend/modules/training/controllers/trainingController.mjs": 604,
   "backend/modules/traits/__tests__/enhancedReportingService.test.mjs": 910,
   "backend/modules/traits/__tests__/environmentalFactorEngineService.test.mjs": 848,
   "backend/modules/traits/services/enhancedReportingService.mjs": 817,
@@ -44,7 +44,7 @@
   "frontend/src/components/competition/CompetitionResultsModal.tsx": 713,
   "frontend/src/components/competition/PrizeTransactionHistory.tsx": 824,
   "frontend/src/components/onboarding/BreedSelector.tsx": 746,
-  "frontend/src/lib/api/types.ts": 612,
+  "frontend/src/lib/api/types.ts": 602,
   "frontend/src/lib/utils/__tests__/training-utils.test.ts": 904,
   "frontend/src/pages/__tests__/RegisterPage.test.tsx": 1226
 }

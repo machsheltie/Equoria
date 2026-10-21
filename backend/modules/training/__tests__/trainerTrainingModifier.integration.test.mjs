@@ -14,8 +14,15 @@
  *   computeTrainerModifiers({ trainer, discipline, horseTemperament })
  *     → { bonusPercent, penaltyPercent }
  *   applied to the discipline-score GAIN only (not user XP, not stat-gain
- *   chance), composed traits → temperament → trainer with a SINGLE terminal
- *   round: gain = max(1, round(5·(1+trait)·(1+temp)·(1+net))).
+ *   chance), composed traits → trainer with a SINGLE terminal round:
+ *   gain = max(1, round(5·(1+trait)·(1+net))).
+ *
+ * Owner ruling 2026-10-21: a horse's temperament has no training modifier.
+ * Old contract: a temperament stage sat between traits and trainer,
+ * gain = max(1, round(5·(1+trait)·(1+temp)·(1+net))), so T1's Calm control
+ * gained 6 and T3b pinned rounding with Bold's +0.05. The expected values
+ * below are recomputed without it; the trainer's compat with the horse's
+ * temperament (trainer fit) is unchanged.
  *
  * This suite drives the REAL train endpoint against the REAL DB (no mocks) and
  * proves the two-arm contract the issue mandates:
@@ -24,7 +31,7 @@
  *      control. On pre-fix master both arms are identical → this FAILS.
  *   T2: mismatched/incompatible trainer engages the penalty path (net < 0),
  *      surfaced honestly in the payload; the gain never exceeds the control.
- *   T3: composition-order pin — trait × temperament × trainer, single round.
+ *   T3: composition-order pin — trait × trainer, single round.
  *   T7: no-trainer control gain is byte-identical to pre-feature behavior.
  *   T8: the response payload surfaces the trainerModifier breakdown.
  *   T9: user XP is unchanged by the trainer (trainer touches score only).
@@ -193,10 +200,10 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     expect(control.success).toBe(true);
     expect(trained.success).toBe(true);
 
-    // Calm scoreModifier +0.10; base 5. Control: round(5·1.10) = 6.
-    // Trained: round(5·1.10·1.20) = round(6.6) = 7. 7 > 6.
-    expect(control.disciplineScoreIncrease).toBe(6);
-    expect(trained.disciplineScoreIncrease).toBe(7);
+    // No temperament modifier (owner ruling 2026-10-21); base 5. Control: 5.
+    // Trained: round(5·1.20) = 6. 6 > 5. (Old contract: Calm +0.10 → 6 vs 7.)
+    expect(control.disciplineScoreIncrease).toBe(5);
+    expect(trained.disciplineScoreIncrease).toBe(6);
     expect(trained.disciplineScoreIncrease).toBeGreaterThan(control.disciplineScoreIncrease);
 
     // T8 (payload honesty): the trainer contribution is surfaced, not folded in.
@@ -241,11 +248,13 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     expect(mismatch.disciplineScoreIncrease).toBeLessThanOrEqual(control.disciplineScoreIncrease);
   });
 
-  // ── T3: composition-order pin (trait × temperament × trainer, single round) ─
-  it('T3: composition is trait → temperament → trainer with ONE terminal round', async () => {
-    // intelligent trait (trainingXpModifier +0.25) + Calm temperament (+0.10) +
-    // technical/expert/L10/Dressage trainer (compat +0.03 → net clamps to +0.20).
-    // gain = max(1, round(5 · 1.25 · 1.10 · 1.20)) = round(8.25) = 8.
+  // ── T3: composition-order pin (trait × trainer, single round) ────────────
+  it('T3: composition is trait → trainer with ONE terminal round', async () => {
+    // intelligent trait (trainingXpModifier +0.25) + Calm temperament (no
+    // training modifier, owner ruling 2026-10-21) + technical/expert/L10/Dressage
+    // trainer (compat +0.03 → net clamps to +0.20).
+    // gain = max(1, round(5 · 1.25 · 1.20)) = round(7.5) = 8.
+    // (Old contract with Calm +0.10: round(8.25) = 8.)
     const horse = await makeHorse('t3-pin', {
       temperament: 'Calm',
       positiveTraits: ['intelligent'],
@@ -266,26 +275,29 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
 
   // ── T3b: the SINGLE terminal round is load-bearing (divergence pin) ─────────
   it('T3b: single terminal round differs from per-stage rounding (regression pin)', async () => {
-    // No trait; Bold temperament (+0.05); a `patient` developing trainer with
-    // NO discipline match and NO Bold compat entry → net = +0.05.
-    //   single round : round(5 · 1.05 · 1.05)        = round(5.5125) = 6
-    //   per-stage    : round(round(5 · 1.05) · 1.05) = round(5 · 1.05) = round(5.25) = 5
-    // A refactor back to per-stage rounding would yield 5 and fail here — this
-    // is the sentinel the worked-example T3 (which coincides at 8 under both
-    // rounding schemes) does NOT provide.
-    const horse = await makeHorse('t3b-round', { temperament: 'Bold' });
+    // intelligent trait (+0.25); no temperament; a `patient` developing trainer
+    // with NO discipline match → net = +0.05.
+    //   single round : round(5 · 1.25 · 1.05)        = round(6.5625) = 7
+    //   per-stage    : round(round(5 · 1.25) · 1.05) = round(6 · 1.05) = round(6.3) = 6
+    // A refactor back to per-stage rounding would yield 6 and fail here — this
+    // is the sentinel the worked-example T3 does NOT provide. Old contract used
+    // Bold's +0.05 temperament stage (6 vs 5); owner ruling 2026-10-21 removed it.
+    const horse = await makeHorse('t3b-round', {
+      temperament: null,
+      positiveTraits: ['intelligent'],
+    });
     await assignTrainer(horse.id, {
       skillLevel: 'developing', // +0.05
       level: 1, // +0
       speciality: 'Racing', // ≠ Dressage → no match
-      personality: 'patient', // no Bold compat entry → 0
+      personality: 'patient', // null temperament → no compat → 0
     });
 
     const result = await trainHorse(horse.id, 'Dressage');
 
     expect(result.success).toBe(true);
     expect(result.trainerModifier.net).toBeCloseTo(0.05, 10);
-    expect(result.disciplineScoreIncrease).toBe(6); // single-round; per-stage would be 5
+    expect(result.disciplineScoreIncrease).toBe(7); // single-round; per-stage would be 6
   });
 
   // ── T7: no-trainer control gain is byte-identical to pre-feature behavior ──
@@ -298,7 +310,8 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     expect(result.success).toBe(true);
     expect(result.disciplineScoreIncrease).toBe(5);
     expect(result.trainerModifier).toEqual({ bonusPercent: 0, penaltyPercent: 0, net: 0 });
-    expect(result.temperamentEffects).toBeNull();
+    // Owner ruling 2026-10-21: no temperamentEffects in the result (old contract: null here).
+    expect(result).not.toHaveProperty('temperamentEffects');
   });
 
   // ── T8 (route surface): trainRouteHandler emits the trainerModifier ────────
@@ -379,6 +392,26 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     expect(unguarded.penaltyPercent).toBeCloseTo(0.04, 10);
   });
 
+  // Owner ruling 2026-10-21: Driven keeps Playful's trainer fit (focused +0.03,
+  // encouraging +0.02); Willing fits encouraging (+0.04) and technical (+0.03).
+  // A novice, level-1, unmatched trainer is +0.02, so the compat is the rest.
+  it.each([
+    ['focused', 'Driven', 0.05],
+    ['encouraging', 'Driven', 0.04],
+    ['encouraging', 'Willing', 0.06],
+    ['technical', 'Willing', 0.05],
+    ['competitive', 'Willing', 0.02],
+    ['focused', 'Playful', 0.02],
+  ])('trainer fit: %s trainer + %s horse → bonus %d', (personality, temperament, bonus) => {
+    const result = computeTrainerModifiers({
+      trainer: { skillLevel: 'novice', level: 1, speciality: 'Racing', personality },
+      discipline: 'Dressage',
+      horseTemperament: temperament,
+    });
+    expect(result.bonusPercent).toBeCloseTo(bonus, 10);
+    expect(result.penaltyPercent).toBe(0);
+  });
+
   it('T6 (retired defensive): retired trainer → { 0, penalty cap }, never net-positive', () => {
     const result = computeTrainerModifiers({
       // Even an otherwise-elite matched trainer is a dead-end once retired.
@@ -411,7 +444,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
   });
 
   it('drift sentinel: trainer-local canonical temperaments === horses TEMPERAMENT_TYPES', () => {
-    // The compat guard duplicates the 11-temperament list to keep the trainer
+    // The compat guard duplicates the 12-temperament list to keep the trainer
     // service a leaf (no heavyweight horses-barrel import). If the horses module
     // ever adds/renames a temperament, this fails so the duplicate is updated.
     expect([...TRAINER_CANONICAL_TEMPERAMENTS].sort()).toEqual([...TEMPERAMENT_TYPES].sort());

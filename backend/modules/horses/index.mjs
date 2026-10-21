@@ -49,9 +49,7 @@ export { calculatePhenotype } from './services/phenotypeCalculationService.mjs';
 export {
   DEFAULT_TEMPERAMENT_BREED,
   generateTemperamentWithDefault,
-  getTemperamentCompetitionModifiers,
   getTemperamentGroomSynergy,
-  getTemperamentTrainingModifiers,
 } from './services/temperamentService.mjs';
 
 // Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
@@ -66,7 +64,4 @@ export {
   validateConformationScores,
 } from './services/conformationService.mjs';
 export { getLegacyScoreDefinitions } from './services/legacyScoreCalculator.mjs';
-export {
-  TEMPERAMENT_GROOM_SYNERGY,
-  TEMPERAMENT_TRAINING_MODIFIERS,
-} from './services/temperamentService.mjs';
+export { TEMPERAMENT_GROOM_SYNERGY } from './services/temperamentService.mjs';

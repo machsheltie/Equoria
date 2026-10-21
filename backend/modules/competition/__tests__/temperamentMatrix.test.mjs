@@ -9,8 +9,14 @@
  *
  * SHEET below is an independent copy of that sheet's 24 discipline rows, in the
  * sheet's own words and column order, generated from the xlsx (read-only) on
- * 2026-10-17. Every one of the 24 x 11 = 264 cells is checked against
+ * 2026-10-17. Every one of the 24 x 12 = 288 cells is checked against
  * rules/disciplineRules.mjs.
+ *
+ * Owner ruling 2026-10-21: Playful was renamed Driven and Willing was added.
+ * Old contract: 11 temperaments, 24 x 11 = 264 cells. SHEET_HEADER and SHEET
+ * were regenerated from her updated Matrix sheet (read-only) that day.
+ * Pleasure Driving is the 24th discipline (owner ruling 2026-10-21; old
+ * contract: 23 rows).
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -27,39 +33,39 @@ const SHEET_HEADER = [
   'Calm',
   'Bold',
   'Steady',
+  'Willing',
   'Independent',
   'Reactive',
   'Stubborn',
-  'Playful',
+  'Driven',
   'Lazy',
   'Aggressive',
 ];
 const SHEET = [
-  'Western Pleasure\tNeutral\tNegative\tPositive\tNeutral\tPositive\tNegative\tNegative\tNegative\tNeutral\tPositive\tNegative',
-  'Reining\tPositive\tNegative\tNeutral\tPositive\tPositive\tNeutral\tNeutral\tNegative\tNegative\tNegative\tNegative',
-  'Cutting\tPositive\tNegative\tPositive\tPositive\tNeutral\tPositive\tPositive\tNegative\tNeutral\tNegative\tNeutral',
-  'Barrel Racing\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNeutral\tNeutral\tNegative\tNeutral\tNegative\tNegative',
-  'Roping\tNeutral\tNegative\tPositive\tPositive\tPositive\tPositive\tNeutral\tNegative\tNegative\tNegative\tNegative',
-  'Team Penning\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tNeutral\tNegative\tNeutral\tNegative\tNegative',
-  'Rodeo\tPositive\tNegative\tNeutral\tPositive\tPositive\tNeutral\tNegative\tNegative\tNeutral\tNegative\tNegative',
-  'Hunter\tNegative\tNegative\tPositive\tNeutral\tPositive\tNeutral\tNegative\tNegative\tNeutral\tNeutral\tNegative',
-  'Saddleseat\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNegative\tNeutral\tNegative\tNeutral\tNegative\tNegative',
-  'Endurance\tNeutral\tNegative\tPositive\tPositive\tPositive\tPositive\tNegative\tNegative\tNeutral\tNegative\tNegative',
-  'Eventing\tPositive\tNegative\tPositive\tPositive\tNeutral\tPositive\tNegative\tNegative\tNeutral\tNegative\tNegative',
-  'Dressage\tNeutral\tNegative\tPositive\tNeutral\tPositive\tNegative\tNegative\tNegative\tNeutral\tNeutral\tNegative',
-  'Show Jumping\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNeutral\tNeutral\tNegative\tNeutral\tNegative\tNegative',
-  'Vaulting\tNegative\tNegative\tPositive\tNeutral\tPositive\tNeutral\tNegative\tNegative\tNeutral\tNeutral\tNegative',
-  'Polo\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tNeutral\tNegative\tNeutral\tNegative\tNeutral',
-  'Cross Country\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tNegative\tNegative\tNeutral\tNegative\tNegative',
-  'Combined Driving\tNeutral\tNegative\tPositive\tPositive\tPositive\tNegative\tNegative\tNegative\tNeutral\tNegative\tNegative',
-  'Fine Harness\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNegative\tNegative\tNegative\tNeutral\tNegative\tNegative',
-  'Gaited\tPositive\tNegative\tPositive\tNeutral\tNeutral\tNeutral\tNegative\tNegative\tNeutral\tNegative\tNegative',
-  'Gymkhana\tPositive\tNegative\tPositive\tPositive\tNeutral\tNeutral\tNeutral\tNegative\tPositive\tNegative\tNegative',
-  'Steeplechase\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tNegative\tNegative\tNeutral\tNegative\tNeutral',
-  'Harness Racing\tPositive\tNegative\tNeutral\tNeutral\tPositive\tNeutral\tNegative\tNegative\tNegative\tNegative\tNeutral',
-  'Racing\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNeutral\tNeutral\tNegative\tNeutral\tNegative\tNeutral',
-  // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23. The owner's row, Playful from her Driven cell.
-  'Pleasure Driving\tPositive\tNegative\tPositive\tPositive\tPositive\tNeutral\tNegative\tNegative\tNegative\tNeutral\tNegative',
+  'Western Pleasure\tNeutral\tNegative\tPositive\tNeutral\tPositive\tPositive\tNegative\tNegative\tNegative\tNegative\tPositive\tNegative',
+  'Reining\tPositive\tNegative\tNeutral\tPositive\tPositive\tPositive\tNeutral\tNeutral\tNegative\tNeutral\tNegative\tNegative',
+  'Cutting\tPositive\tNegative\tPositive\tPositive\tNeutral\tNeutral\tPositive\tPositive\tNegative\tNeutral\tNegative\tNeutral',
+  'Barrel Racing\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tPositive\tNeutral\tNegative\tPositive\tNegative\tNegative',
+  'Roping\tNeutral\tNegative\tPositive\tPositive\tPositive\tPositive\tPositive\tNeutral\tNegative\tNeutral\tNegative\tNegative',
+  'Team Penning\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNeutral\tPositive\tNeutral\tNegative\tNeutral\tNegative\tNegative',
+  'Rodeo\tPositive\tNegative\tNeutral\tPositive\tPositive\tNeutral\tNeutral\tNegative\tNegative\tPositive\tNegative\tNegative',
+  'Hunter\tNegative\tNegative\tPositive\tNeutral\tPositive\tPositive\tNeutral\tNegative\tNegative\tNegative\tNeutral\tNegative',
+  'Saddleseat\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tNegative\tNeutral\tNegative\tNeutral\tNegative\tNegative',
+  'Endurance\tNeutral\tNegative\tPositive\tPositive\tPositive\tNeutral\tPositive\tNegative\tNegative\tPositive\tNegative\tNegative',
+  'Eventing\tPositive\tNegative\tPositive\tPositive\tNeutral\tPositive\tPositive\tNegative\tNegative\tNeutral\tNegative\tNegative',
+  'Dressage\tNeutral\tNegative\tPositive\tNeutral\tPositive\tPositive\tNegative\tNegative\tNegative\tNegative\tNeutral\tNegative',
+  'Show Jumping\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tNeutral\tNeutral\tNegative\tNeutral\tNegative\tNegative',
+  'Vaulting\tNegative\tNegative\tPositive\tNeutral\tPositive\tPositive\tNeutral\tNegative\tNegative\tNegative\tNeutral\tNegative',
+  'Polo\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNeutral\tPositive\tNeutral\tNegative\tPositive\tNegative\tNeutral',
+  'Cross Country\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tPositive\tNegative\tNegative\tPositive\tNegative\tNegative',
+  'Combined Driving\tNeutral\tNegative\tPositive\tPositive\tPositive\tPositive\tNegative\tNegative\tNegative\tNegative\tNegative\tNegative',
+  'Fine Harness\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tNegative\tNegative\tNegative\tNegative\tNegative\tNegative',
+  'Gaited\tPositive\tNegative\tPositive\tPositive\tNeutral\tPositive\tNeutral\tNegative\tNegative\tNeutral\tNegative\tNegative',
+  'Gymkhana\tPositive\tNegative\tPositive\tPositive\tNeutral\tPositive\tNeutral\tNeutral\tNegative\tPositive\tNegative\tNegative',
+  'Steeplechase\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNeutral\tPositive\tNegative\tNegative\tPositive\tNegative\tNeutral',
+  'Harness Racing\tPositive\tNegative\tNeutral\tNeutral\tPositive\tNeutral\tNeutral\tNegative\tNegative\tPositive\tNegative\tNeutral',
+  'Racing\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNeutral\tNeutral\tNeutral\tNegative\tPositive\tNegative\tNeutral',
+  'Pleasure Driving\tPositive\tNegative\tPositive\tPositive\tPositive\tPositive\tNeutral\tNegative\tNegative\tNegative\tNeutral\tNegative',
 ];
 const PERCENT = { Positive: 5, Neutral: 0, Negative: -5 };
 
@@ -69,7 +75,7 @@ const cells = SHEET.flatMap(line => {
 });
 
 describe("the temperament matrix is the owner's Matrix sheet (R1, O4)", () => {
-  it("has the 11 temperaments in the sheet's order", () => {
+  it("has the 12 temperaments in the sheet's order", () => {
     expect(TEMPERAMENTS).toEqual(SHEET_HEADER);
   });
 
@@ -78,8 +84,8 @@ describe("the temperament matrix is the owner's Matrix sheet (R1, O4)", () => {
     expect(Object.keys(TEMPERAMENT_MATRIX).sort()).toEqual([...COMPETITION_DISCIPLINES].sort());
   });
 
-  it('matches all 264 cells: Positive +5, Neutral 0, Negative -5', () => {
-    expect(cells).toHaveLength(264);
+  it('matches all 288 cells: Positive +5, Neutral 0, Negative -5', () => {
+    expect(cells).toHaveLength(288);
     const mismatches = cells.filter(c => temperamentPercent(c.discipline, c.temperament) !== PERCENT[c.value]);
     expect(mismatches).toEqual([]);
   });

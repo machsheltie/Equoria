@@ -45,7 +45,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import ConformationTab from '../components/horse/ConformationTab';
 // Equoria-aa6b — walk/trot/canter/gallop + breed-specific gait scores tab
 import GaitsTab from '../components/horse/GaitsTab';
-// Equoria-876o — reference modal for the 11 temperament definitions
+// Equoria-876o — reference modal for the 12 temperament definitions
 import TemperamentReferenceModal from '../components/horse/TemperamentReferenceModal';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { useAuth } from '@/contexts/AuthContext';

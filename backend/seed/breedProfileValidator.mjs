@@ -64,8 +64,9 @@ export const EXPECTED_GAITS = Object.freeze(['walk', 'trot', 'canter', 'gallop']
 
 /**
  * Canonical temperament_weights keys every breed profile must carry. All 312
- * source files store exactly these 11 keys, each an integer, summing to 100
- * (verified 2026-06-02, Equoria-4xwj1 source audit). These are the same 11
+ * source files store exactly these 12 keys, each an integer, summing to 100
+ * (verified 2026-06-02, Equoria-4xwj1 source audit; owner ruling 2026-10-21
+ * renamed Playful to Driven and added Willing). These are the same 12
  * temperament categories the game's temperament system uses.
  *
  * Exported (Equoria-4xwj1) so the source-completeness sentinel shares ONE
@@ -81,10 +82,11 @@ export const EXPECTED_TEMPERAMENT_WEIGHT_KEYS = Object.freeze([
   'Calm',
   'Bold',
   'Steady',
+  'Willing',
   'Independent',
   'Reactive',
   'Stubborn',
-  'Playful',
+  'Driven',
   'Lazy',
   'Aggressive',
 ]);
@@ -109,7 +111,7 @@ export const EXPECTED_TEMPERAMENT_WEIGHT_SUM = 100;
  *   - rating_profiles.gaits has the 4 required gaits (walk/trot/canter/gallop)
  *     with finite means; gaiting score required for is_gaited_breed=true and
  *     forbidden for is_gaited_breed=false
- *   - temperament_weights is an 11-key map of integers summing to 100
+ *   - temperament_weights is a 12-key map of integers summing to 100
  *
  * @param {number} _breedId - reserved for future breed-specific rules
  * @param {object} profile  - the profile to validate

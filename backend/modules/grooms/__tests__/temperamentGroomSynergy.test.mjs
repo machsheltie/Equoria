@@ -68,8 +68,22 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
       expect(getTemperamentGroomSynergy('Stubborn', 'strict')).toBe(0.15);
     });
 
-    it('Playful + energetic → +0.15', () => {
-      expect(getTemperamentGroomSynergy('Playful', 'energetic')).toBe(0.15);
+    // Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments).
+    // Old contract: Playful + energetic → +0.15. Driven keeps that cell; Willing is new.
+    it('Driven + energetic → +0.15', () => {
+      expect(getTemperamentGroomSynergy('Driven', 'energetic')).toBe(0.15);
+    });
+
+    it('Willing + gentle → +0.15', () => {
+      expect(getTemperamentGroomSynergy('Willing', 'gentle')).toBe(0.15);
+    });
+
+    it('Willing + patient → +0.10', () => {
+      expect(getTemperamentGroomSynergy('Willing', 'patient')).toBe(0.1);
+    });
+
+    it('Playful is no longer a temperament → 0', () => {
+      expect(getTemperamentGroomSynergy('Playful', 'energetic')).toBe(0);
     });
 
     it('Lazy + energetic → +0.10', () => {
@@ -256,7 +270,8 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
   // ─── Data integrity test ──────────────────────────────────────────────────
 
   describe('TEMPERAMENT_GROOM_SYNERGY data integrity (Task 4.13)', () => {
-    it('all 11 keys in TEMPERAMENT_GROOM_SYNERGY match TEMPERAMENT_TYPES array', () => {
+    // Old contract: 11 keys. Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments).
+    it('all 12 keys in TEMPERAMENT_GROOM_SYNERGY match TEMPERAMENT_TYPES array', () => {
       const synergyKeys = Object.keys(TEMPERAMENT_GROOM_SYNERGY).sort();
       const temperamentTypesKeys = [...TEMPERAMENT_TYPES].sort();
       expect(synergyKeys).toEqual(temperamentTypesKeys);

@@ -165,7 +165,7 @@ export const horsesApi = {
         gaiting: { name: string; score: number }[] | null;
       };
     } | null>(`/api/v1/horses/${horseId}/gaits`),
-  // Equoria-876o — temperament reference definitions (all 11 types)
+  // Equoria-876o — temperament reference definitions (all 12 types)
   getTemperamentDefinitions: () =>
     apiClient.get<{
       count: number;
@@ -173,8 +173,6 @@ export const horsesApi = {
         name: string;
         description: string;
         prevalenceNote: string;
-        trainingModifiers: { xpModifier: number; scoreModifier: number };
-        competitionModifiers: { riddenModifier: number; conformationModifier: number };
         bestGroomPersonalities: string[];
       }[];
     }>(`/api/v1/horses/temperament-definitions`),

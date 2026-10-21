@@ -2,8 +2,9 @@
  * React Query Hook for Temperament Reference Data
  *
  * Equoria-876o — surfaces GET /api/v1/horses/temperament-definitions so the
- * frontend can show players what the 11 temperaments mean and how each
- * affects gameplay (training, competition, groom synergy).
+ * frontend can show players what the 12 temperaments mean and which groom
+ * personalities suit each (owner ruling 2026-10-21: no training or
+ * ridden/conformation modifiers).
  *
  * The data is purely static reference content, so we use a long staleTime
  * (1 hour) and gcTime (24 hours).
@@ -16,8 +17,6 @@ export interface TemperamentDefinition {
   name: string;
   description: string;
   prevalenceNote: string;
-  trainingModifiers: { xpModifier: number; scoreModifier: number };
-  competitionModifiers: { riddenModifier: number; conformationModifier: number };
   bestGroomPersonalities: string[];
 }
 

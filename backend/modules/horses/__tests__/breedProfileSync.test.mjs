@@ -15,7 +15,8 @@
  *   1. All 12 canonical breeds are present by name in breedProfiles.json.
  *   2. Both stores have the same 8 conformation region keys for each breed.
  *   3. Both stores have the same 5 gait keys for each breed.
- *   4. Both stores have the same 11 temperament weight keys for each breed.
+ *   4. Both stores have the same 12 temperament weight keys for each breed
+ *      (Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments). Old contract: 11).
  *   5. is_gaited_breed flag is consistent between both stores (game mechanic).
  *   6. NEW (Equoria-is28): exact mean / std_dev equality for conformation regions,
  *      gaits, and temperament weights across both stores. If a contributor edits one
@@ -52,10 +53,11 @@ const EXPECTED_TEMPERAMENT_KEYS = [
   'Calm',
   'Bold',
   'Steady',
+  'Willing',
   'Independent',
   'Reactive',
   'Stubborn',
-  'Playful',
+  'Driven',
   'Lazy',
   'Aggressive',
 ];
@@ -117,7 +119,7 @@ describe('Gait keys — structural sync between both stores', () => {
 // ---------------------------------------------------------------------------
 describe('Temperament weight keys — structural sync between both stores', () => {
   for (const breed of CANONICAL_BREEDS) {
-    it(`breed "${breed.name}" (ID ${breed.id}) — same 11 temperament keys in both stores`, () => {
+    it(`breed "${breed.name}" (ID ${breed.id}) — same 12 temperament keys in both stores`, () => {
       const mjsTw = BREED_GENETIC_PROFILES[breed.id].temperament_weights;
       const jsonTw = JSON_PROFILES[breed.name].temperament_weights;
 

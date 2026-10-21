@@ -59,16 +59,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -132,16 +133,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 11,
+      "Nervous": 6,
+      "Calm": 11,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -205,16 +207,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 5,
+      "Independent": 16,
+      "Reactive": 5,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -281,17 +284,18 @@
       "gaited_gait_registry": ["Tolt"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Akhal-Teke": {
@@ -354,16 +358,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 28,
-      "Nervous": 14,
-      "Calm": 4,
-      "Bold": 16,
-      "Steady": 6,
-      "Independent": 6,
-      "Reactive": 14,
+      "Spirited": 20,
+      "Nervous": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 6,
+      "Independent": 8,
+      "Reactive": 8,
       "Stubborn": 4,
-      "Playful": 5,
-      "Lazy": 2,
+      "Driven": 16,
+      "Lazy": 1,
       "Aggressive": 1
     }
   },
@@ -427,17 +432,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
+      "Spirited": 8,
+      "Nervous": 3,
       "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 14,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 3,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Altai": {
@@ -500,16 +506,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 7,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -573,17 +580,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "American Bashkir Curly": {
@@ -646,17 +654,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
+      "Spirited": 6,
+      "Nervous": 3,
       "Calm": 18,
-      "Bold": 10,
+      "Bold": 14,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "American Belgian Draft": {
@@ -721,15 +730,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "American Cream Draft": {
@@ -794,15 +804,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 23,
+      "Bold": 10,
+      "Steady": 21,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "American Indian Horse": {
@@ -865,17 +876,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 14,
       "Steady": 18,
+      "Willing": 10,
       "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "American Paint Horse": {
@@ -938,15 +950,16 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 28,
-      "Nervous": 14,
-      "Calm": 4,
-      "Bold": 16,
-      "Steady": 6,
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 15,
+      "Steady": 17,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 14,
+      "Reactive": 4,
       "Stubborn": 4,
-      "Playful": 5,
+      "Driven": 12,
       "Lazy": 2,
       "Aggressive": 1
     }
@@ -1011,16 +1024,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 2,
-      "Calm": 35,
-      "Bold": 10,
-      "Steady": 30,
-      "Independent": 5,
-      "Reactive": 2,
-      "Stubborn": 2,
-      "Playful": 2,
-      "Lazy": 1,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 14,
+      "Steady": 18,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 14,
+      "Lazy": 2,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -1137,16 +1151,17 @@
       "gaited_gait_registry": ["Slow Gait", "Rack"]
     },
     "temperament_weights": {
-      "Spirited": 35,
-      "Nervous": 10,
+      "Spirited": 18,
+      "Nervous": 5,
       "Calm": 10,
-      "Bold": 15,
-      "Steady": 10,
-      "Independent": 5,
-      "Reactive": 10,
-      "Stubborn": 2,
-      "Playful": 2,
-      "Lazy": 0,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -1261,16 +1276,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Andalusian": {
@@ -1333,16 +1349,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 30,
+      "Spirited": 16,
       "Nervous": 5,
-      "Calm": 15,
+      "Calm": 12,
       "Bold": 15,
-      "Steady": 20,
+      "Steady": 14,
+      "Willing": 10,
       "Independent": 5,
-      "Reactive": 5,
-      "Stubborn": 2,
-      "Playful": 2,
-      "Lazy": 0,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 11,
+      "Lazy": 1,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -1456,17 +1473,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 11,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Anglo-Arabian": {
@@ -1529,16 +1547,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 28,
-      "Nervous": 14,
-      "Calm": 4,
-      "Bold": 16,
-      "Steady": 6,
+      "Spirited": 20,
+      "Nervous": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 10,
       "Independent": 6,
-      "Reactive": 14,
+      "Reactive": 6,
       "Stubborn": 4,
-      "Playful": 5,
-      "Lazy": 2,
+      "Driven": 16,
+      "Lazy": 1,
       "Aggressive": 1
     }
   },
@@ -1602,17 +1621,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 4,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Appaloosa": {
@@ -1675,16 +1695,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 5,
-      "Calm": 25,
-      "Bold": 15,
-      "Steady": 20,
-      "Independent": 10,
-      "Reactive": 5,
-      "Stubborn": 4,
-      "Playful": 5,
-      "Lazy": 0,
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 14,
+      "Steady": 18,
+      "Willing": 11,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 5,
+      "Driven": 12,
+      "Lazy": 2,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -1798,16 +1819,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 40,
-      "Nervous": 10,
-      "Calm": 5,
-      "Bold": 20,
-      "Steady": 5,
-      "Independent": 10,
-      "Reactive": 5,
-      "Stubborn": 2,
-      "Playful": 2,
-      "Lazy": 0,
+      "Spirited": 22,
+      "Nervous": 6,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
+      "Reactive": 8,
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -1921,17 +1943,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 2,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 15,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 10,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Arenberg-Nordkirchen": {
@@ -1994,17 +2017,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 9,
+      "Nervous": 3,
+      "Calm": 17,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 14,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 3,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Asturcón": {
@@ -2068,16 +2092,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Australian Draught": {
@@ -2140,17 +2165,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Australian Stock Horse": {
@@ -2213,17 +2239,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 14,
+      "Steady": 17,
+      "Willing": 12,
+      "Independent": 7,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Austrian Warmblood": {
@@ -2287,16 +2314,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
+      "Nervous": 4,
+      "Calm": 13,
+      "Bold": 14,
       "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 10,
       "Lazy": 2,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Auvergne": {
@@ -2359,17 +2387,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 21,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 9,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Auxois": {
@@ -2432,17 +2461,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
+      "Steady": 22,
+      "Willing": 14,
+      "Independent": 4,
+      "Reactive": 2,
+      "Stubborn": 7,
+      "Driven": 8,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Axios": {
@@ -2505,16 +2535,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 11,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -2578,16 +2609,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 5,
+      "Independent": 16,
+      "Reactive": 5,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -2651,17 +2683,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
+      "Spirited": 9,
+      "Nervous": 3,
+      "Calm": 15,
+      "Bold": 14,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Baise horse": {
@@ -2725,16 +2758,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 11,
+      "Reactive": 4,
+      "Stubborn": 9,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Bale": {
@@ -2797,16 +2831,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -2870,16 +2905,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -2943,16 +2979,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 13,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -3016,16 +3053,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 3,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -3089,16 +3127,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 28,
-      "Nervous": 14,
-      "Calm": 4,
-      "Bold": 16,
-      "Steady": 6,
-      "Independent": 6,
-      "Reactive": 14,
+      "Spirited": 20,
+      "Nervous": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 6,
+      "Independent": 8,
+      "Reactive": 8,
       "Stubborn": 4,
-      "Playful": 5,
-      "Lazy": 2,
+      "Driven": 16,
+      "Lazy": 1,
       "Aggressive": 1
     }
   },
@@ -3163,16 +3202,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 11,
+      "Steady": 16,
+      "Willing": 7,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Bashkir horse": {
@@ -3235,16 +3275,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 12,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 14,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -3308,17 +3349,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
+      "Spirited": 8,
+      "Nervous": 3,
       "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Bold": 13,
+      "Steady": 15,
+      "Willing": 14,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 3,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Bavarian Warmblood": {
@@ -3381,17 +3423,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 4,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Belgian Draft": {
@@ -3456,15 +3499,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 16,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Belgian Sport Horse": {
@@ -3527,17 +3571,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Belgian Trotter": {
@@ -3600,17 +3645,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 18,
+      "Nervous": 8,
+      "Calm": 8,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
+      "Reactive": 8,
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Belgian Warmblood": {
@@ -3673,17 +3719,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 4,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Bhutia Horse": {
@@ -3747,16 +3794,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Black Forest Horse": {
@@ -3819,17 +3867,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 3,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Blazer horse": {
@@ -3892,17 +3941,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 14,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Boerperd": {
@@ -3965,17 +4015,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 17,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Borana": {
@@ -4038,16 +4089,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 15,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -4112,16 +4164,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 3,
+      "Calm": 17,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Boulonnais": {
@@ -4184,17 +4237,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
+      "Bold": 10,
+      "Steady": 19,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Brandenburger": {
@@ -4257,17 +4311,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 3,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Brazilian Sport Horse": {
@@ -4330,17 +4385,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Breton horse": {
@@ -4403,17 +4459,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 19,
+      "Bold": 11,
+      "Steady": 20,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "British Warmblood": {
@@ -4476,17 +4533,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 16,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Brumby": {
@@ -4549,16 +4607,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -4622,17 +4681,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 9,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 14,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Burguete horse": {
@@ -4695,17 +4755,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 21,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 9,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Burmese Horse": {
@@ -4769,16 +4830,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Canadian Pacer": {
@@ -4841,17 +4903,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 14,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Canadian horse": {
@@ -4914,17 +4977,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 5,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 15,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Carolina Marsh Tacky": {
@@ -4987,17 +5051,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 10,
       "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Cartujano": {
@@ -5060,17 +5125,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Caspian horse": {
@@ -5133,17 +5199,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 9,
+      "Nervous": 3,
+      "Calm": 17,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 14,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 3,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Castillonnais": {
@@ -5206,16 +5273,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 11,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 5,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -5279,17 +5347,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Cerbat Mustang": {
@@ -5352,16 +5421,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 7,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -5425,16 +5495,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 11,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -5498,17 +5569,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 13,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Chernomor horse": {
@@ -5571,16 +5643,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 13,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -5644,17 +5717,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 14,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 11,
+      "Independent": 7,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Chinese Mongolian": {
@@ -5717,16 +5791,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -5790,17 +5865,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 11,
+      "Independent": 7,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Cleveland Bay": {
@@ -5863,17 +5939,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 15,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 4,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Clydesdale": {
@@ -5938,15 +6015,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 16,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Coldblood Trotter": {
@@ -6009,17 +6087,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 18,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 8,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Colorado Ranger": {
@@ -6082,17 +6161,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 15,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Comtois horse": {
@@ -6155,17 +6235,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 5,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 21,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Corsican horse": {
@@ -6229,16 +6310,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 11,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Costa Rican Saddle Horse": {
@@ -6301,17 +6383,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Criollo": {
@@ -6375,15 +6458,16 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 14,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -6447,17 +6531,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 14,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 9,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Cuban Criollo": {
@@ -6520,17 +6605,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 11,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Cumberland Island": {
@@ -6593,16 +6679,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -6667,16 +6754,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 3,
+      "Calm": 13,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Danish Warmblood": {
@@ -6739,17 +6827,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Danube Delta": {
@@ -6812,16 +6901,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 7,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -6885,17 +6975,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Datong horse": {
@@ -6958,17 +7049,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 17,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Dolehest": {
@@ -7031,17 +7123,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Dongola horse": {
@@ -7104,17 +7197,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 20,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 7,
+      "Independent": 7,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Dutch Draft": {
@@ -7177,17 +7271,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 3,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 16,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Dutch Harness": {
@@ -7250,17 +7345,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 18,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 8,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Dutch Warmblood": {
@@ -7323,17 +7419,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "East Bulgarian": {
@@ -7396,17 +7493,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Estonian Draft": {
@@ -7471,15 +7569,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 9,
+      "Steady": 23,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Estonian Native": {
@@ -7542,17 +7641,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 19,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 14,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 3,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Ethiopian Horse": {
@@ -7615,16 +7715,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 15,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -7688,17 +7789,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
+      "Spirited": 9,
+      "Nervous": 3,
+      "Calm": 18,
       "Bold": 12,
-      "Steady": 10,
-      "Independent": 12,
-      "Reactive": 6,
-      "Stubborn": 16,
-      "Playful": 8,
-      "Lazy": 2,
-      "Aggressive": 0
+      "Steady": 16,
+      "Willing": 14,
+      "Independent": 8,
+      "Reactive": 3,
+      "Stubborn": 6,
+      "Driven": 7,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Finnhorse": {
@@ -7762,16 +7864,17 @@
     },
     "temperament_weights": {
       "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 3,
+      "Calm": 20,
+      "Bold": 10,
+      "Steady": 20,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 12,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Fjord horse": {
@@ -7834,17 +7937,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 18,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 16,
+      "Independent": 8,
+      "Reactive": 3,
+      "Stubborn": 4,
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Flemish": {
@@ -7907,17 +8011,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 3,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 16,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 8,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Fleuve": {
@@ -7980,16 +8085,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 3,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -8056,17 +8162,18 @@
       "gaited_gait_registry": ["Rack"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
-      "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 13,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Foutanké": {
@@ -8129,16 +8236,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 7,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -8202,17 +8310,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 13,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Freiberger": {
@@ -8275,17 +8384,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 21,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 9,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "French Trotter": {
@@ -8348,17 +8458,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 19,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 17,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Friesian": {
@@ -8421,17 +8532,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
+      "Spirited": 12,
+      "Nervous": 4,
       "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Furioso-North Star": {
@@ -8494,17 +8606,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 16,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Galiceno": {
@@ -8567,17 +8680,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Gelderland": {
@@ -8640,17 +8754,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Giara Horse": {
@@ -8714,16 +8829,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Gidran": {
@@ -8786,17 +8902,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Groningen Horse": {
@@ -8859,17 +8976,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Hackney Horse": {
@@ -8932,17 +9050,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 18,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 8,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Haflinger": {
@@ -9005,17 +9124,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
+      "Spirited": 8,
+      "Nervous": 4,
+      "Calm": 16,
       "Bold": 12,
-      "Steady": 10,
-      "Independent": 12,
-      "Reactive": 6,
-      "Stubborn": 16,
-      "Playful": 8,
-      "Lazy": 2,
-      "Aggressive": 0
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 12,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Hanoverian horse": {
@@ -9078,17 +9198,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 12,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Heck horse": {
@@ -9151,16 +9272,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 8,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -9224,16 +9346,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 11,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -9297,17 +9420,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 19,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 14,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 3,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Hequ horse": {
@@ -9370,16 +9494,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 13,
+      "Steady": 13,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -9443,16 +9568,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 13,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -9516,17 +9642,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 21,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 9,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Hispano-Árabe": {
@@ -9589,17 +9716,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 4,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 7,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Holsteiner": {
@@ -9663,16 +9791,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 11,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Horro": {
@@ -9735,16 +9864,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -9808,17 +9938,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 11,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Icelandic horse": {
@@ -9884,17 +10015,18 @@
       "gaited_gait_registry": ["Tolt", "Flying Pace"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 14,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Indian Country-bred": {
@@ -9957,17 +10089,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 11,
+      "Nervous": 4,
+      "Calm": 15,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Iomud": {
@@ -10030,17 +10163,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 20,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 7,
+      "Independent": 7,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Irish Draught": {
@@ -10104,16 +10238,17 @@
     },
     "temperament_weights": {
       "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 3,
+      "Calm": 20,
+      "Bold": 12,
+      "Steady": 20,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Irish Sport (Hunter)": {
@@ -10177,16 +10312,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 11,
+      "Bold": 16,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Italian Heavy Draft": {
@@ -10251,15 +10387,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 14,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 9,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Italian Trotter": {
@@ -10322,17 +10459,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 19,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 17,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Jaca Navarra": {
@@ -10396,16 +10534,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 11,
+      "Reactive": 4,
+      "Stubborn": 9,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Jeju horse": {
@@ -10468,17 +10607,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 11,
+      "Nervous": 4,
+      "Calm": 15,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Jutland horse": {
@@ -10541,17 +10681,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 3,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 16,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Kabarda (Kabardin)": {
@@ -10614,16 +10755,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 11,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -10687,16 +10829,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -10760,16 +10903,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -10833,16 +10977,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -10906,17 +11051,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 20,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 7,
+      "Independent": 7,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Karabakh (Azer At)": {
@@ -10979,17 +11125,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 21,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 5,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Karachai horse": {
@@ -11052,16 +11199,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 11,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -11128,17 +11276,18 @@
       "gaited_gait_registry": ["Revaal"]
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 16,
       "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Kazakh Horse": {
@@ -11201,16 +11350,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -11277,17 +11427,18 @@
       "gaited_gait_registry": ["Single-Foot"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 13,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Kiger Mustang": {
@@ -11350,16 +11501,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -11423,17 +11575,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 13,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Kisber Felver": {
@@ -11496,17 +11649,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 11,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Kiso horse": {
@@ -11570,16 +11724,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Kladruber": {
@@ -11642,17 +11797,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 3,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Knabstrupper": {
@@ -11715,17 +11871,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 13,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Konik": {
@@ -11789,16 +11946,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 5,
+      "Independent": 12,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Kundudo horse": {
@@ -11861,16 +12019,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -11934,16 +12093,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 13,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -12007,17 +12167,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Kyrgyz Horse": {
@@ -12080,16 +12241,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -12153,17 +12315,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 5,
+      "Nervous": 3,
+      "Calm": 20,
+      "Bold": 10,
+      "Steady": 20,
+      "Willing": 15,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Lipizzan": {
@@ -12226,17 +12389,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
+      "Spirited": 12,
+      "Nervous": 4,
       "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Lithuanian Heavy Draft": {
@@ -12301,15 +12465,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 14,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 9,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Ljutomer Trotter": {
@@ -12372,17 +12537,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 19,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 17,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Lokai": {
@@ -12445,16 +12611,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -12519,16 +12686,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 11,
+      "Reactive": 4,
+      "Stubborn": 9,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Lusitano": {
@@ -12591,16 +12759,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 25,
+      "Spirited": 16,
       "Nervous": 5,
       "Calm": 10,
-      "Bold": 20,
-      "Steady": 15,
+      "Bold": 16,
+      "Steady": 13,
+      "Willing": 10,
       "Independent": 5,
-      "Reactive": 10,
-      "Stubborn": 5,
-      "Playful": 4,
-      "Lazy": 0,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -12715,16 +12884,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 3,
+      "Calm": 13,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "M'Bayar": {
@@ -12787,16 +12957,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 13,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -12860,16 +13031,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 11,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 5,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -12933,17 +13105,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Malopolski": {
@@ -13006,17 +13179,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Mangalarga": {
@@ -13082,17 +13256,18 @@
       "gaited_gait_registry": ["Marcha Picada", "Marcha Batida"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 17,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Mangalarga Marchador": {
@@ -13158,17 +13333,18 @@
       "gaited_gait_registry": ["Marcha Picada", "Marcha Batida"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 13,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Maremmano": {
@@ -13231,17 +13407,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
+      "Spirited": 9,
+      "Nervous": 3,
+      "Calm": 15,
+      "Bold": 14,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Marismeño": {
@@ -13304,17 +13481,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 15,
+      "Steady": 17,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Marwari horse": {
@@ -13380,17 +13558,18 @@
       "gaited_gait_registry": ["Revaal"]
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 16,
       "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Mecklenburger": {
@@ -13453,17 +13632,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 3,
+      "Calm": 13,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Medimurje": {
@@ -13526,17 +13706,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Menorquín horse": {
@@ -13599,17 +13780,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Merens (Merens horse)": {
@@ -13672,17 +13854,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 19,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 14,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 3,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Messara horse": {
@@ -13745,17 +13928,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 11,
+      "Independent": 7,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Miquelon horse": {
@@ -13819,16 +14003,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 3,
+      "Calm": 17,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Monterufolino": {
@@ -13892,16 +14077,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Morab": {
@@ -13964,17 +14150,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 18,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 8,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Morgan USA": {
@@ -14037,17 +14224,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 12,
+      "Nervous": 4,
+      "Calm": 14,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Mountain Pleasure": {
@@ -14113,17 +14301,18 @@
       "gaited_gait_registry": ["Single-Foot"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 13,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Moyle horse": {
@@ -14186,16 +14375,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -14259,17 +14449,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Mustang": {
@@ -14332,16 +14523,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -14405,16 +14597,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 15,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -14478,16 +14671,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 13,
+      "Steady": 13,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -14554,15 +14748,16 @@
       "gaited_gait_registry": ["Slow Gait", "Rack"]
     },
     "temperament_weights": {
-      "Spirited": 25,
+      "Spirited": 18,
       "Nervous": 5,
-      "Calm": 10,
-      "Bold": 20,
-      "Steady": 8,
-      "Independent": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 6,
       "Reactive": 5,
-      "Stubborn": 5,
-      "Playful": 15,
+      "Stubborn": 4,
+      "Driven": 12,
       "Lazy": 1,
       "Aggressive": 1
     },
@@ -14677,16 +14872,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 7,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -14750,17 +14946,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 11,
+      "Independent": 7,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Nivernais": {
@@ -14823,17 +15020,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 3,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 16,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 8,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Nokota horse": {
@@ -14896,16 +15094,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -14970,16 +15169,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Nonius": {
@@ -15042,17 +15242,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Nooitgedachter": {
@@ -15115,17 +15316,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 13,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Nordlandshest": {
@@ -15188,17 +15390,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
+      "Spirited": 8,
+      "Nervous": 3,
       "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 15,
       "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Noriker horse": {
@@ -15263,15 +15466,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 16,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Norman Cob": {
@@ -15334,17 +15538,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
-      "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
+      "Bold": 10,
+      "Steady": 19,
+      "Willing": 14,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Novoalexandrian Draft": {
@@ -15407,17 +15612,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 3,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 23,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Novokirghiz": {
@@ -15480,16 +15686,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -15553,17 +15760,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 5,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 15,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Ogaden": {
@@ -15626,16 +15834,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 15,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -15700,16 +15909,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 3,
+      "Calm": 13,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Orlov Trotter": {
@@ -15772,17 +15982,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 19,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 7,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Ostfriesen": {
@@ -15845,17 +16056,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Paint Horse": {
@@ -15918,16 +16130,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 15,
-      "Nervous": 5,
-      "Calm": 25,
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
       "Bold": 15,
-      "Steady": 20,
-      "Independent": 5,
-      "Reactive": 5,
-      "Stubborn": 3,
-      "Playful": 5,
-      "Lazy": 1,
+      "Steady": 17,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -16044,17 +16257,18 @@
       "gaited_gait_registry": ["Marcha Picada", "Marcha Batida"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 17,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Paso Fino": {
@@ -16120,17 +16334,18 @@
       "gaited_gait_registry": ["Paso Corto", "Paso Largo", "Paso Fino"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 18,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Pentro horse": {
@@ -16193,17 +16408,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Percheron": {
@@ -16268,15 +16484,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 20,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 10,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Persano": {
@@ -16339,17 +16556,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Peruvian Paso": {
@@ -16415,17 +16633,18 @@
       "gaited_gait_registry": ["Paso Llano", "Sobreandando"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 14,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Pfalz Ardenner": {
@@ -16488,17 +16707,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 3,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 16,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 8,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Pintabian": {
@@ -16561,17 +16781,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 18,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 8,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Pleven": {
@@ -16634,17 +16855,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Poitevin": {
@@ -16707,17 +16929,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
+      "Steady": 22,
+      "Willing": 14,
+      "Independent": 4,
+      "Reactive": 2,
+      "Stubborn": 7,
+      "Driven": 8,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Pony Of The Americas": {
@@ -16780,16 +17003,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 5,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 10,
-      "Steady": 25,
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 16,
+      "Bold": 14,
+      "Steady": 18,
+      "Willing": 13,
       "Independent": 5,
-      "Reactive": 2,
-      "Stubborn": 5,
-      "Playful": 10,
-      "Lazy": 5,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -16903,17 +17127,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Pottok": {
@@ -16977,16 +17202,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 11,
+      "Reactive": 4,
+      "Stubborn": 9,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Priob": {
@@ -17049,16 +17275,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 11,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 5,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -17122,16 +17349,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -17195,17 +17423,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 21,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 5,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Qatgani": {
@@ -17268,16 +17497,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 15,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -17341,17 +17571,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
+      "Spirited": 9,
+      "Nervous": 3,
+      "Calm": 15,
+      "Bold": 14,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Racking": {
@@ -17417,17 +17648,18 @@
       "gaited_gait_registry": ["Rack"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 18,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Retuerta horse": {
@@ -17490,16 +17722,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 3,
+      "Independent": 17,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -17563,17 +17796,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 14,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 9,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Rhinelander horse": {
@@ -17636,17 +17870,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Riwoche horse": {
@@ -17710,16 +17945,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Rocky Mountain": {
@@ -17785,17 +18021,18 @@
       "gaited_gait_registry": ["Single-Foot"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 14,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Romanian Sport Horse": {
@@ -17858,17 +18095,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 11,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Russian Don": {
@@ -17931,17 +18169,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 15,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Russian Heavy Draft": {
@@ -18004,17 +18243,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 3,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 23,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Russian Trotter": {
@@ -18077,17 +18317,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 19,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 17,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Salernitano": {
@@ -18150,17 +18391,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 4,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Samolaco horse": {
@@ -18224,16 +18466,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 3,
+      "Calm": 17,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Sanfratellano": {
@@ -18296,17 +18539,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Santa Cruz Island": {
@@ -18369,16 +18613,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -18443,16 +18688,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 7,
+      "Independent": 11,
+      "Reactive": 4,
+      "Stubborn": 9,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Sardinian Anglo-Arab": {
@@ -18515,17 +18761,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 4,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 7,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Schleswig Coldblood": {
@@ -18590,15 +18837,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 14,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 9,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Selale": {
@@ -18661,16 +18909,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 9,
+      "Bold": 15,
+      "Steady": 12,
+      "Willing": 4,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -18734,17 +18983,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 11,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Selle Français": {
@@ -18807,17 +19057,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 4,
+      "Calm": 11,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Senner": {
@@ -18880,17 +19131,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 17,
+      "Nervous": 5,
+      "Calm": 9,
+      "Bold": 15,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 5,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Shagya Arabian": {
@@ -18953,16 +19205,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 28,
-      "Nervous": 14,
-      "Calm": 4,
-      "Bold": 16,
-      "Steady": 6,
+      "Spirited": 18,
+      "Nervous": 8,
+      "Calm": 8,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
       "Independent": 6,
-      "Reactive": 14,
+      "Reactive": 8,
       "Stubborn": 4,
-      "Playful": 5,
-      "Lazy": 2,
+      "Driven": 16,
+      "Lazy": 1,
       "Aggressive": 1
     }
   },
@@ -19027,16 +19280,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Shire horse": {
@@ -19099,17 +19353,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 2,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 24,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Siciliano indigeno": {
@@ -19172,17 +19427,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 6,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 11,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Silesian horse": {
@@ -19245,17 +19501,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 7,
+      "Nervous": 3,
+      "Calm": 20,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Steady": 20,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Sindhi horse": {
@@ -19318,17 +19575,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 16,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 6,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Slovenian Coldblood": {
@@ -19391,17 +19649,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 14,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 9,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Sokolski horse": {
@@ -19464,17 +19723,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 3,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 16,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 8,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Sorraia": {
@@ -19537,16 +19797,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -19610,17 +19871,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 2,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 14,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 9,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Soviet Heavy Draft": {
@@ -19683,17 +19945,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 3,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 23,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 15,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Spanish Barb": {
@@ -19756,16 +20019,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 28,
-      "Nervous": 14,
-      "Calm": 4,
-      "Bold": 16,
-      "Steady": 6,
-      "Independent": 6,
-      "Reactive": 14,
+      "Spirited": 20,
+      "Nervous": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 7,
+      "Independent": 7,
+      "Reactive": 8,
       "Stubborn": 4,
-      "Playful": 5,
-      "Lazy": 2,
+      "Driven": 16,
+      "Lazy": 1,
       "Aggressive": 1
     }
   },
@@ -19829,17 +20093,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 15,
+      "Nervous": 5,
+      "Calm": 13,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Spanish Mustang": {
@@ -19902,16 +20167,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 2,
+      "Independent": 18,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -19975,17 +20241,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
+      "Spirited": 19,
       "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
+      "Calm": 6,
+      "Bold": 14,
+      "Steady": 8,
+      "Willing": 8,
+      "Independent": 6,
       "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 17,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Spiti Horse": {
@@ -20048,17 +20315,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 14,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Spotted Saddle horse": {
@@ -20124,17 +20392,18 @@
       "gaited_gait_registry": ["Rack", "Single-Foot"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 17,
+      "Nervous": 5,
+      "Calm": 11,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Standardbred": {
@@ -20200,17 +20469,18 @@
       "gaited_gait_registry": ["Trot", "Pace"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
-      "Calm": 22,
-      "Bold": 10,
-      "Steady": 22,
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 12,
       "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 14,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Suffolk Punch": {
@@ -20273,17 +20543,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 2,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 17,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Swedish Ardennes": {
@@ -20348,15 +20619,16 @@
     "temperament_weights": {
       "Spirited": 4,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 14,
       "Independent": 4,
       "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 6,
+      "Driven": 9,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Swedish Warmblood": {
@@ -20419,17 +20691,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Swiss Warmblood": {
@@ -20493,16 +20766,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 15,
+      "Steady": 15,
+      "Willing": 11,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Taishū horse": {
@@ -20566,16 +20840,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 10,
+      "Reactive": 4,
+      "Stubborn": 11,
+      "Driven": 6,
+      "Lazy": 5,
+      "Aggressive": 1
     }
   },
   "Tawleed": {
@@ -20638,16 +20913,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 16,
+      "Nervous": 6,
+      "Calm": 8,
+      "Bold": 14,
+      "Steady": 10,
+      "Willing": 10,
+      "Independent": 7,
+      "Reactive": 7,
+      "Stubborn": 4,
+      "Driven": 14,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -20714,17 +20990,18 @@
       "gaited_gait_registry": ["Flat Walk", "Running Walk"]
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 4,
+      "Spirited": 8,
+      "Nervous": 2,
       "Calm": 22,
       "Bold": 10,
       "Steady": 22,
-      "Independent": 6,
-      "Reactive": 4,
-      "Stubborn": 8,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 14,
+      "Independent": 4,
+      "Reactive": 2,
+      "Stubborn": 4,
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Tennessee Walking Horse": {
@@ -20790,16 +21067,17 @@
       "gaited_gait_registry": ["Flat Walk", "Running Walk"]
     },
     "temperament_weights": {
-      "Spirited": 5,
-      "Nervous": 1,
-      "Calm": 41,
-      "Bold": 5,
-      "Steady": 30,
-      "Independent": 3,
-      "Reactive": 1,
-      "Stubborn": 3,
-      "Playful": 5,
-      "Lazy": 5,
+      "Spirited": 8,
+      "Nervous": 2,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Willing": 14,
+      "Independent": 4,
+      "Reactive": 2,
+      "Stubborn": 4,
+      "Driven": 8,
+      "Lazy": 3,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -20913,17 +21191,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 14,
+      "Steady": 12,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Thoroughbred": {
@@ -20986,16 +21265,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 30,
-      "Nervous": 15,
-      "Calm": 3,
+      "Spirited": 25,
+      "Nervous": 10,
+      "Calm": 4,
       "Bold": 15,
-      "Steady": 5,
+      "Steady": 6,
+      "Willing": 3,
       "Independent": 5,
-      "Reactive": 15,
-      "Stubborn": 3,
-      "Playful": 5,
-      "Lazy": 3,
+      "Reactive": 10,
+      "Stubborn": 4,
+      "Driven": 16,
+      "Lazy": 1,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -21110,16 +21390,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
+      "Nervous": 3,
       "Calm": 18,
-      "Bold": 10,
+      "Bold": 12,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 5,
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Tokara horse": {
@@ -21183,14 +21464,15 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Nervous": 5,
+      "Calm": 15,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
+      "Steady": 15,
+      "Willing": 6,
+      "Independent": 12,
+      "Reactive": 5,
+      "Stubborn": 10,
+      "Driven": 6,
       "Lazy": 4,
       "Aggressive": 2
     }
@@ -21255,17 +21537,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 20,
+      "Bold": 12,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
+      "Willing": 12,
+      "Independent": 6,
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 8,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Tori horse": {
@@ -21329,16 +21612,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
+      "Nervous": 3,
       "Calm": 18,
-      "Bold": 10,
+      "Bold": 12,
       "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Trait du Nord": {
@@ -21401,17 +21685,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 4,
+      "Nervous": 2,
+      "Calm": 24,
       "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Steady": 22,
+      "Willing": 13,
+      "Independent": 4,
+      "Reactive": 2,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 8,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Trakehner": {
@@ -21474,17 +21759,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
+      "Spirited": 16,
       "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 12,
+      "Willing": 11,
+      "Independent": 5,
       "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 13,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Tushetian horse": {
@@ -21548,16 +21834,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Nervous": 5,
+      "Calm": 15,
+      "Bold": 12,
+      "Steady": 15,
+      "Willing": 10,
+      "Independent": 10,
+      "Reactive": 5,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Tuva horse": {
@@ -21620,16 +21907,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 6,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 12,
+      "Willing": 3,
+      "Independent": 16,
+      "Reactive": 6,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 3,
       "Aggressive": 2
     }
   },
@@ -21693,17 +21981,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 14,
+      "Steady": 14,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Unmol Horse": {
@@ -21766,16 +22055,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 16,
+      "Nervous": 6,
+      "Calm": 10,
+      "Bold": 15,
+      "Steady": 10,
+      "Willing": 7,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 6,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Driven": 12,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -21839,17 +22129,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 14,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 10,
+      "Independent": 10,
+      "Reactive": 5,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Ventasso": {
@@ -21913,16 +22204,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
+      "Nervous": 3,
       "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 11,
       "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 4,
+      "Stubborn": 5,
+      "Driven": 9,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Virginia Highlander": {
@@ -21985,17 +22277,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 12,
-      "Steady": 10,
-      "Independent": 12,
-      "Reactive": 6,
-      "Stubborn": 16,
-      "Playful": 8,
-      "Lazy": 2,
-      "Aggressive": 0
+      "Spirited": 8,
+      "Nervous": 3,
+      "Calm": 18,
+      "Bold": 10,
+      "Steady": 18,
+      "Willing": 15,
+      "Independent": 6,
+      "Reactive": 3,
+      "Stubborn": 6,
+      "Driven": 8,
+      "Lazy": 4,
+      "Aggressive": 1
     }
   },
   "Vlaamperd": {
@@ -22058,17 +22351,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 12,
+      "Nervous": 4,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 4,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Vladimir Heavy Draft": {
@@ -22131,17 +22425,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 4,
+      "Spirited": 6,
       "Nervous": 2,
-      "Calm": 30,
-      "Bold": 8,
-      "Steady": 32,
+      "Calm": 20,
+      "Bold": 12,
+      "Steady": 20,
+      "Willing": 14,
       "Independent": 4,
-      "Reactive": 2,
-      "Stubborn": 10,
-      "Playful": 4,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Reactive": 3,
+      "Stubborn": 5,
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Vyatka horse": {
@@ -22204,17 +22499,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
+      "Spirited": 8,
+      "Nervous": 4,
       "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 10,
+      "Independent": 10,
+      "Reactive": 4,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Waler": {
@@ -22277,17 +22573,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 12,
+      "Nervous": 4,
+      "Calm": 14,
+      "Bold": 18,
+      "Steady": 15,
+      "Willing": 9,
       "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 10,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Walkaloosa": {
@@ -22353,16 +22650,17 @@
       "gaited_gait_registry": ["Indian Shuffle"]
     },
     "temperament_weights": {
-      "Spirited": 5,
-      "Nervous": 1,
-      "Calm": 36,
-      "Bold": 10,
-      "Steady": 30,
-      "Independent": 3,
-      "Reactive": 1,
-      "Stubborn": 3,
-      "Playful": 5,
-      "Lazy": 5,
+      "Spirited": 10,
+      "Nervous": 3,
+      "Calm": 18,
+      "Bold": 12,
+      "Steady": 18,
+      "Willing": 14,
+      "Independent": 6,
+      "Reactive": 3,
+      "Stubborn": 4,
+      "Driven": 8,
+      "Lazy": 3,
       "Aggressive": 1
     },
     "starter_stats": {
@@ -22476,17 +22774,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 4,
+      "Calm": 14,
+      "Bold": 14,
+      "Steady": 14,
+      "Willing": 13,
+      "Independent": 5,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Welsh Cob Section D": {
@@ -22549,17 +22848,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 12,
-      "Steady": 10,
-      "Independent": 12,
-      "Reactive": 6,
-      "Stubborn": 16,
-      "Playful": 8,
+      "Spirited": 16,
+      "Nervous": 5,
+      "Calm": 10,
+      "Bold": 16,
+      "Steady": 12,
+      "Willing": 9,
+      "Independent": 6,
+      "Reactive": 5,
+      "Stubborn": 6,
+      "Driven": 12,
       "Lazy": 2,
-      "Aggressive": 0
+      "Aggressive": 1
     }
   },
   "Westphalian horse": {
@@ -22623,16 +22923,17 @@
     },
     "temperament_weights": {
       "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
+      "Nervous": 4,
+      "Calm": 12,
+      "Bold": 14,
       "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
+      "Willing": 12,
+      "Independent": 4,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 13,
       "Lazy": 2,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Wielkopolski": {
@@ -22695,17 +22996,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
-      "Nervous": 6,
-      "Calm": 14,
-      "Bold": 18,
+      "Spirited": 12,
+      "Nervous": 4,
+      "Calm": 15,
+      "Bold": 14,
       "Steady": 16,
-      "Independent": 6,
-      "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
+      "Willing": 11,
+      "Independent": 5,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
       "Lazy": 2,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Württemberger": {
@@ -22768,17 +23070,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 13,
+      "Nervous": 4,
+      "Calm": 14,
+      "Bold": 14,
+      "Steady": 16,
+      "Willing": 12,
+      "Independent": 4,
+      "Reactive": 4,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Xilingol horse": {
@@ -22841,16 +23144,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 12,
+      "Steady": 12,
+      "Willing": 7,
+      "Independent": 14,
+      "Reactive": 5,
+      "Stubborn": 8,
+      "Driven": 8,
+      "Lazy": 3,
       "Aggressive": 2
     }
   },
@@ -22915,15 +23219,16 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Nervous": 6,
+      "Calm": 14,
+      "Bold": 12,
+      "Steady": 12,
+      "Willing": 1,
+      "Independent": 20,
+      "Reactive": 5,
+      "Stubborn": 10,
+      "Driven": 6,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -22987,17 +23292,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 12,
+      "Nervous": 5,
+      "Calm": 14,
+      "Bold": 12,
+      "Steady": 14,
+      "Willing": 10,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 5,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 10,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Yonaguni horse": {
@@ -23060,17 +23366,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
+      "Spirited": 8,
+      "Nervous": 4,
+      "Calm": 20,
       "Bold": 10,
       "Steady": 18,
+      "Willing": 11,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 4,
       "Stubborn": 6,
-      "Playful": 8,
+      "Driven": 6,
       "Lazy": 4,
-      "Aggressive": 2
+      "Aggressive": 1
     }
   },
   "Zakynthos horse": {
@@ -23134,16 +23441,17 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Nervous": 5,
+      "Calm": 16,
+      "Bold": 12,
+      "Steady": 16,
+      "Willing": 9,
+      "Independent": 10,
+      "Reactive": 4,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Zangersheide": {
@@ -23206,17 +23514,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 14,
+      "Spirited": 18,
       "Nervous": 6,
-      "Calm": 14,
+      "Calm": 8,
       "Bold": 18,
-      "Steady": 16,
-      "Independent": 6,
+      "Steady": 10,
+      "Willing": 9,
+      "Independent": 5,
       "Reactive": 6,
-      "Stubborn": 6,
-      "Playful": 10,
-      "Lazy": 2,
-      "Aggressive": 2
+      "Stubborn": 4,
+      "Driven": 14,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Zaniskari": {
@@ -23279,17 +23588,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
+      "Spirited": 8,
+      "Nervous": 4,
       "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Bold": 14,
+      "Steady": 16,
+      "Willing": 8,
+      "Independent": 10,
+      "Reactive": 4,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 8,
+      "Lazy": 3,
+      "Aggressive": 1
     }
   },
   "Zweibrücker": {
@@ -23352,17 +23662,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 14,
+      "Nervous": 4,
+      "Calm": 13,
+      "Bold": 14,
+      "Steady": 15,
+      "Willing": 12,
+      "Independent": 5,
+      "Reactive": 5,
+      "Stubborn": 4,
+      "Driven": 12,
+      "Lazy": 1,
+      "Aggressive": 1
     }
   },
   "Žemaitukas": {
@@ -23425,17 +23736,18 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
+      "Spirited": 14,
+      "Nervous": 5,
+      "Calm": 12,
+      "Bold": 14,
+      "Steady": 14,
+      "Willing": 9,
       "Independent": 8,
-      "Reactive": 8,
+      "Reactive": 5,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Driven": 10,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   }
 }

@@ -349,20 +349,12 @@ paths:
                     type: object
                     required: [count, definitions]
                     properties:
-                      count: { type: integer, example: 11 }
+                      count: { type: integer, example: 12 }
                       definitions:
                         type: array
                         items:
                           type: object
-                          required:
-                            [
-                              name,
-                              description,
-                              prevalenceNote,
-                              trainingModifiers,
-                              competitionModifiers,
-                              bestGroomPersonalities,
-                            ]
+                          required: [name, description, prevalenceNote, bestGroomPersonalities]
                           properties:
                             name:
                               type: string
@@ -373,26 +365,6 @@ paths:
                             prevalenceNote:
                               type: string
                               description: 'Prose note on how common this temperament is in the population'
-                            trainingModifiers:
-                              type: object
-                              required: [xpModifier, scoreModifier]
-                              properties:
-                                xpModifier:
-                                  type: number
-                                  description: 'Multiplier applied to XP earned per training session (e.g. 1.10 = +10%)'
-                                scoreModifier:
-                                  type: number
-                                  description: 'Multiplier applied to per-stat training gain'
-                            competitionModifiers:
-                              type: object
-                              required: [riddenModifier, conformationModifier]
-                              properties:
-                                riddenModifier:
-                                  type: number
-                                  description: 'Multiplier on final score for ridden disciplines'
-                                conformationModifier:
-                                  type: number
-                                  description: 'Multiplier on final score for conformation/halter classes'
                             bestGroomPersonalities:
                               type: array
                               description: 'Groom personalities that pair positively with this temperament (synergy > 0). Empty when no personality has a positive synergy.'

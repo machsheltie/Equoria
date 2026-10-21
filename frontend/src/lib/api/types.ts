@@ -61,12 +61,6 @@ export interface TraitEffects {
   xpModifier: number;
 }
 
-export interface TemperamentEffects {
-  temperament: string;
-  xpModifier: number;
-  scoreModifier: number;
-}
-
 export interface TrainingResult {
   success: boolean;
   message: string;
@@ -77,13 +71,10 @@ export interface TrainingResult {
   // not emit it.
   xpAwarded?: number | null;
   // Equoria-o1x6g — the authoritative discipline-score delta computed by the
-  // backend (base +5, trait- and temperament-modified, floor-1). The frontend
+  // backend (base +5, trait- and trainer-modified, floor-1). The frontend
   // must read this instead of recomputing base+traitBonus, which drifts.
   disciplineScoreIncrease?: number | null;
   traitEffects?: TraitEffects;
-  // Equoria-npnw — temperament modifier attribution. Null when horse.temperament
-  // is null (legacy pre-31D-1 horses).
-  temperamentEffects?: TemperamentEffects | null;
   // Equoria-8vmdv: these are NOT deprecated — the prior "deprecated, will be
   // removed" label was inverted vs the real /train contract. The flat-shape
   // route handler (trainingController.mjs ~764) emits `updatedScore` +

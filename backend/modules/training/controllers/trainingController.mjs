@@ -4,7 +4,7 @@ import {
   getAnyRecentTraining,
   getTrainableHorses,
 } from '../services/trainingModelService.mjs';
-import { getHorseById, getTemperamentTrainingModifiers } from '../../horses/index.mjs';
+import { getHorseById } from '../../horses/index.mjs';
 import { commitTrainingSession } from '../services/trainingSessionTx.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
@@ -269,7 +269,8 @@ async function trainHorse(horseId, discipline) {
     const trainerNet = trainerModifier.bonusPercent - trainerModifier.penaltyPercent;
 
     // Discipline-score gain composed in a SINGLE terminal round
-    // (Equoria-oey96.7): traits → temperament → trainer. The previous code
+    // (Equoria-oey96.7): traits → trainer. Owner ruling 2026-10-21: a horse's
+    // temperament has no training modifier (it was a third stage). The previous code
     // rounded after EACH stage, which lost sub-integer modifiers and made the
     // composition order observable; one terminal round fixes both. Focused
     // integration tests pin the composition. XP is unaffected (trainer never touches XP)
@@ -279,28 +280,18 @@ async function trainHorse(horseId, discipline) {
       traitEffects.trainingXpModifier !== null && traitEffects.trainingXpModifier !== undefined
         ? traitEffects.trainingXpModifier
         : 0;
-    const temperamentMods = getTemperamentTrainingModifiers(horse.temperament);
-    const temperamentScoreMod = temperamentMods.scoreModifier ?? 0;
-
     const disciplineScoreIncrease = Math.max(
       1,
-      Math.round(
-        BASE_DISCIPLINE_GAIN * (1 + traitScoreMod) * (1 + temperamentScoreMod) * (1 + trainerNet),
-      ),
+      Math.round(BASE_DISCIPLINE_GAIN * (1 + traitScoreMod) * (1 + trainerNet)),
     );
 
-    // Trait-only delta (pre-temperament, pre-trainer) preserved for the
+    // Trait-only delta (pre-trainer) preserved for the
     // response contract's traitEffects.scoreModifier reporting field.
     const traitAdjustedScore = Math.round(BASE_DISCIPLINE_GAIN * (1 + traitScoreMod));
 
     if (traitScoreMod !== 0) {
       logger.info(
         `[trainingController.trainHorse] Trait training modifier applied to discipline score: ${(traitScoreMod * 100).toFixed(1)}%`,
-      );
-    }
-    if (temperamentScoreMod !== 0) {
-      logger.info(
-        `[trainingController.trainHorse] Temperament "${horse.temperament}" score modifier: ${(temperamentScoreMod * 100).toFixed(0)}%`,
       );
     }
     if (trainerNet !== 0) {
@@ -318,16 +309,8 @@ async function trainHorse(horseId, discipline) {
       baseXp = Math.round(baseXp * (1 + traitEffects.trainingXpModifier));
     }
 
-    // Capture post-trait, pre-temperament XP for accurate traitEffects reporting
+    // Post-trait XP for traitEffects reporting
     const traitAdjustedXp = baseXp;
-
-    // Apply temperament modifier to XP
-    if (temperamentMods.xpModifier !== 0) {
-      baseXp = Math.round(baseXp * (1 + temperamentMods.xpModifier));
-      logger.info(
-        `[trainingController.trainHorse] Temperament "${horse.temperament}" XP modifier: ${(temperamentMods.xpModifier * 100).toFixed(0)}%`,
-      );
-    }
     baseXp = Math.max(1, baseXp);
 
     const ownerId = horse.userId ?? null;
@@ -410,10 +393,10 @@ async function trainHorse(horseId, discipline) {
       success: true,
       updatedHorse,
       disciplineScoreIncrease,
-      // Equoria-o1x6g: surface the REAL awarded XP (post-trait, post-temperament,
-      // floor-1) so the route + frontend result modal can show the actual XP
-      // row instead of inferring it from traitEffects.xpModifier (a trait-only
-      // delta, not the awarded amount).
+      // Equoria-o1x6g: surface the REAL awarded XP (post-trait, floor-1) so the
+      // route + frontend result modal can show the actual XP row instead of
+      // inferring it from traitEffects.xpModifier (a trait-only delta, not the
+      // awarded amount).
       xpAwarded: baseXp,
       message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.`,
       nextEligible: nextEligible.toISOString(),
@@ -428,16 +411,9 @@ async function trainHorse(horseId, discipline) {
       },
       traitEffects: {
         appliedTraits: allTraits,
-        scoreModifier: traitAdjustedScore - 5, // trait-only delta (pre-temperament)
-        xpModifier: traitAdjustedXp - 5, // trait-only delta (pre-temperament)
+        scoreModifier: traitAdjustedScore - 5, // trait-only delta (pre-trainer)
+        xpModifier: traitAdjustedXp - 5, // trait-only delta
       },
-      temperamentEffects: horse.temperament
-        ? {
-            temperament: horse.temperament,
-            xpModifier: temperamentMods.xpModifier,
-            scoreModifier: temperamentMods.scoreModifier,
-          }
-        : null,
     };
   } catch (error) {
     logger.error(`[trainingController.trainHorse] Training failed: ${error.message}`);
@@ -578,23 +554,24 @@ async function trainRouteHandler(req, res) {
       // Use actual discipline score increase computed by trainHorse
       const actualIncrease = result.disciplineScoreIncrease ?? 5;
 
-      // Format response with trait and temperament effects information.
+      // Format response with trait effects information.
       // Equoria-o1x6g: the route previously DROPPED the real awarded XP and the
       // authoritative disciplineScoreIncrease that trainHorse() already
       // computed, leaving the XP row wired to traitEffects.xpModifier (a
       // trait-only delta, not the award) and scoreGain recomputed client-side
       // (drifting from the real value). Surface both. Existing fields
-      // (updatedScore, nextEligibleDate, traitEffects, temperamentEffects) are
-      // preserved verbatim — the frontend already relies on them.
+      // (updatedScore, nextEligibleDate, traitEffects) are preserved verbatim —
+      // the frontend already relies on them. temperamentEffects was removed by
+      // owner ruling 2026-10-21 (temperament has no training modifier).
       res.json({
         success: true,
         message: `${result.updatedHorse.name} trained in ${discipline}. +${actualIncrease} added.`,
         updatedScore,
         // Authoritative score delta computed by trainHorse (base +5, trait- and
-        // temperament-modified, floor-1). null-coalesced to 5 above for the
+        // trainer-modified, floor-1). null-coalesced to 5 above for the
         // message; surface the same value as a first-class field.
         disciplineScoreIncrease: actualIncrease,
-        // Real awarded XP (post-trait, post-temperament, floor-1). null only if
+        // Real awarded XP (post-trait, floor-1). null only if
         // trainHorse somehow omitted it (older return shape) — keep it explicit.
         xpAwarded: result.xpAwarded ?? null,
         // Equoria-oey96.7: { bonusPercent, penaltyPercent, net } trainer
@@ -603,7 +580,6 @@ async function trainRouteHandler(req, res) {
         trainerModifier: result.trainerModifier ?? null,
         nextEligibleDate: result.nextEligible,
         traitEffects: result.traitEffects,
-        temperamentEffects: result.temperamentEffects,
       });
     } else {
       // Return failure response for ineligible training

@@ -152,10 +152,11 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     });
 
     it('should correctly identify incompatible personality-temperament pairs', () => {
-      // Test RESERVED groom with PLAYFUL foal (should be incompatible)
+      // Test RESERVED groom with DRIVEN foal (should be incompatible).
+      // Owner ruling 2026-10-21: the Playful temperament is now Driven (old: PLAYFUL foal).
       const compatibility = calculatePersonalityCompatibility(
         GROOM_PERSONALITY_TYPES.RESERVED,
-        FOAL_TEMPERAMENT_TYPES.PLAYFUL,
+        FOAL_TEMPERAMENT_TYPES.DRIVEN,
         40,
       );
 

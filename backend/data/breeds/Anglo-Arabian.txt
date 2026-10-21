@@ -97,15 +97,16 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "is_gaited_breed": false
   },
   "temperament_weights": {
-    "Spirited": 26,
-    "Nervous": 10,
-    "Calm": 8,
-    "Bold": 16,
-    "Steady": 9,
+    "Spirited": 20,
+    "Nervous": 8,
+    "Calm": 6,
+    "Bold": 14,
+    "Steady": 8,
+    "Willing": 10,
     "Independent": 6,
-    "Reactive": 12,
-    "Stubborn": 3,
-    "Playful": 8,
+    "Reactive": 6,
+    "Stubborn": 4,
+    "Driven": 16,
     "Lazy": 1,
     "Aggressive": 1
   }

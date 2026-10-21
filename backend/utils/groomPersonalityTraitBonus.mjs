@@ -35,7 +35,10 @@ export const FOAL_TEMPERAMENT_TYPES = {
   REACTIVE: 'Reactive',
   STUBBORN: 'Stubborn',
   LAZY: 'Lazy',
-  PLAYFUL: 'Playful',
+  // Owner ruling 2026-10-21: the Playful temperament was renamed Driven, and
+  // Willing was added. (The Playful GROOM personality above is unchanged.)
+  DRIVEN: 'Driven',
+  WILLING: 'Willing',
   AGGRESSIVE: 'Aggressive',
   // Additional types from temperamentService — must be covered to avoid universal mismatch penalty
   CALM: 'Calm',
@@ -73,14 +76,14 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
   [GROOM_PERSONALITY_TYPES.ENERGETIC]: {
     idealMatches: [
       FOAL_TEMPERAMENT_TYPES.LAZY,
-      FOAL_TEMPERAMENT_TYPES.PLAYFUL,
+      FOAL_TEMPERAMENT_TYPES.DRIVEN,
       FOAL_TEMPERAMENT_TYPES.BOLD, // Energetic groom matches bold foal's confidence
       FOAL_TEMPERAMENT_TYPES.CALM, // Energetic groom can stimulate calm foals
     ],
     traitDevBonus: 1,
     stressMod: -5, // -5% stress
     bondModifier: 5,
-    description: 'Motivates lazy foals, matches energy with playful and bold ones',
+    description: 'Motivates lazy foals, matches energy with driven and bold ones',
   },
 
   [GROOM_PERSONALITY_TYPES.SOFT_SPOKEN]: {
@@ -88,11 +91,13 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
       FOAL_TEMPERAMENT_TYPES.AGGRESSIVE,
       FOAL_TEMPERAMENT_TYPES.SPIRITED,
       FOAL_TEMPERAMENT_TYPES.NERVOUS, // Quiet approach reduces anxiety in nervous foals
+      FOAL_TEMPERAMENT_TYPES.WILLING, // A gentle hand suits a foal eager to please
     ],
     traitDevBonus: 0,
     stressMod: -10, // -10% stress
     bondModifier: 0,
-    description: 'Gentle approach helps aggressive, spirited, and nervous foals feel secure',
+    description:
+      'Gentle approach helps aggressive, spirited, nervous, and willing foals feel secure',
   },
 
   [GROOM_PERSONALITY_TYPES.ASSERTIVE]: {
@@ -108,11 +113,11 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
   },
 
   [GROOM_PERSONALITY_TYPES.PLAYFUL]: {
-    idealMatches: [FOAL_TEMPERAMENT_TYPES.PLAYFUL, FOAL_TEMPERAMENT_TYPES.LAZY],
+    idealMatches: [FOAL_TEMPERAMENT_TYPES.DRIVEN, FOAL_TEMPERAMENT_TYPES.LAZY],
     traitDevBonus: 1,
     stressMod: -10, // -10% stress
     bondModifier: 10,
-    description: 'Creates engaging experiences for playful foals and motivates lazy ones',
+    description: 'Creates engaging experiences for driven foals and motivates lazy ones',
   },
 
   [GROOM_PERSONALITY_TYPES.METHODICAL]: {
@@ -129,11 +134,15 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
   },
 
   [GROOM_PERSONALITY_TYPES.AFFECTIONATE]: {
-    idealMatches: [FOAL_TEMPERAMENT_TYPES.STEADY, FOAL_TEMPERAMENT_TYPES.LAZY],
+    idealMatches: [
+      FOAL_TEMPERAMENT_TYPES.STEADY,
+      FOAL_TEMPERAMENT_TYPES.LAZY,
+      FOAL_TEMPERAMENT_TYPES.WILLING, // Praise and care suit a foal eager to please
+    ],
     traitDevBonus: 1,
     stressMod: -5, // -5% stress
     bondModifier: 10,
-    description: 'Nurturing care suits steady foals and encourages lazy ones',
+    description: 'Nurturing care suits steady and willing foals and encourages lazy ones',
   },
 
   [GROOM_PERSONALITY_TYPES.RESERVED]: {

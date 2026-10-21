@@ -6,11 +6,7 @@
  * No behavior changes — functions moved verbatim.
  */
 import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
-import {
-  TEMPERAMENT_TRAINING_MODIFIERS,
-  TEMPERAMENT_COMPETITION_MODIFIERS,
-  TEMPERAMENT_GROOM_SYNERGY,
-} from '../services/temperamentService.mjs';
+import { TEMPERAMENT_GROOM_SYNERGY } from '../services/temperamentService.mjs';
 import { predictBreedingColors } from '../services/breedingColorPredictionService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -21,7 +17,7 @@ import logger from '../../../utils/logger.mjs';
 const CANONICAL_PERSONALITIES = Object.freeze(['gentle', 'energetic', 'patient', 'strict']);
 
 /**
- * Static descriptions and prevalence notes for all 11 temperament types.
+ * Static descriptions and prevalence notes for all 12 temperament types.
  * Kept in the controller layer — does NOT belong in temperamentService (data separation).
  */
 const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
@@ -50,6 +46,12 @@ const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
       'Reliable and predictable. Rarely has exceptional or poor days — always performs as expected.',
     prevalenceNote: 'Well-distributed across working and sport horse breeds',
   },
+  // Owner ruling 2026-10-21: Willing is a new temperament.
+  Willing: {
+    description:
+      'Cooperative and eager to please. Takes direction readily and tries hard for a rider it trusts.',
+    prevalenceNote: 'Most common in draft and heavy breeds',
+  },
   Independent: {
     description:
       "Self-reliant and strong-willed. Doesn't always respond to rider cues, but thinks for itself.",
@@ -65,10 +67,11 @@ const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
       'Willful and resistant to direction. Training progress is slow but gains are permanent once made.',
     prevalenceNote: 'More common in pony and mule-influenced breeds',
   },
-  Playful: {
+  // Owner ruling 2026-10-21: Playful was renamed Driven.
+  Driven: {
     description:
-      'Enthusiastic and spirited, but struggles to maintain focus during structured training.',
-    prevalenceNote: 'Common in younger-spirited light horse breeds',
+      'Determined and hard-working. Gives full effort every time, though that drive can run ahead of the rider.',
+    prevalenceNote: 'Most common in racing, trotting and hot-blooded sport breeds',
   },
   Lazy: {
     description:
@@ -83,7 +86,9 @@ const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
 });
 
 /**
- * Get all temperament type definitions with training/competition modifiers and groom synergy.
+ * Get all temperament type definitions with groom synergy. Owner ruling
+ * 2026-10-21: temperaments have no training or ridden/conformation modifiers,
+ * so the definitions no longer carry them.
  * Returns static game data — no DB query, no auth required.
  * All data sourced from temperamentService constants.
  *
@@ -101,16 +106,6 @@ export async function getTemperamentDefinitions(req, res) {
       }
       const { description = name, prevalenceNote = '' } = desc ?? {};
 
-      const trainingMods = TEMPERAMENT_TRAINING_MODIFIERS[name];
-      if (!trainingMods) {
-        throw new Error(`Missing training modifiers for temperament: ${name}`);
-      }
-
-      const competitionMods = TEMPERAMENT_COMPETITION_MODIFIERS[name];
-      if (!competitionMods) {
-        throw new Error(`Missing competition modifiers for temperament: ${name}`);
-      }
-
       const synergyMap = TEMPERAMENT_GROOM_SYNERGY[name] ?? {};
 
       let bestGroomPersonalities;
@@ -126,14 +121,6 @@ export async function getTemperamentDefinitions(req, res) {
         name,
         description,
         prevalenceNote,
-        trainingModifiers: {
-          xpModifier: trainingMods.xpModifier,
-          scoreModifier: trainingMods.scoreModifier,
-        },
-        competitionModifiers: {
-          riddenModifier: competitionMods.riddenModifier,
-          conformationModifier: competitionMods.conformationModifier,
-        },
         bestGroomPersonalities,
       };
     });

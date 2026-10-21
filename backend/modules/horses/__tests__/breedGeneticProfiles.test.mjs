@@ -28,8 +28,12 @@ describe('Breed Genetic Profiles - Data Structure Validation', () => {
     }
   });
 
-  test('exactly 11 temperament types are defined', () => {
-    expect(TEMPERAMENT_TYPES).toHaveLength(11);
+  // Old contract: 11 types. Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments).
+  test('exactly 12 temperament types are defined', () => {
+    expect(TEMPERAMENT_TYPES).toHaveLength(12);
+    expect(TEMPERAMENT_TYPES).toContain('Willing');
+    expect(TEMPERAMENT_TYPES).toContain('Driven');
+    expect(TEMPERAMENT_TYPES).not.toContain('Playful');
     expect(TEMPERAMENT_TYPES).toContain('Spirited');
     expect(TEMPERAMENT_TYPES).toContain('Aggressive');
   });
@@ -295,7 +299,7 @@ describe('Breed Genetic Profiles - Temperament Weights', () => {
     expect(sum).toBe(100);
   });
 
-  test.each(ALL_BREED_IDS)('breed %i has all 11 temperament types', breedId => {
+  test.each(ALL_BREED_IDS)('breed %i has all 12 temperament types', breedId => {
     const weights = BREED_GENETIC_PROFILES[breedId].temperament_weights;
     for (const type of TEMPERAMENT_TYPES) {
       expect(weights).toHaveProperty(type);
@@ -304,26 +308,34 @@ describe('Breed Genetic Profiles - Temperament Weights', () => {
     }
   });
 
-  test('temperament weights match PRD-03 §7.3 for Thoroughbred (ID 1)', () => {
-    const w = BREED_GENETIC_PROFILES[1].temperament_weights;
-    expect(w.Spirited).toBe(30);
-    expect(w.Nervous).toBe(15);
-    expect(w.Calm).toBe(3);
-    expect(w.Bold).toBe(15);
-    expect(w.Steady).toBe(5);
-    expect(w.Independent).toBe(5);
-    expect(w.Reactive).toBe(15);
-    expect(w.Stubborn).toBe(3);
-    expect(w.Playful).toBe(5);
-    expect(w.Lazy).toBe(3);
-    expect(w.Aggressive).toBe(1);
+  // Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments). The owner set every breed's weights by
+  // hand in backend/data/breedProfiles.json. Old contract (PRD-03 §7.3):
+  // Thoroughbred Spirited 30 / Nervous 15 / Calm 3 / Bold 15 / Steady 5 /
+  // Independent 5 / Reactive 15 / Stubborn 3 / Playful 5 / Lazy 3 / Aggressive 1;
+  // Tennessee Walking Horse Spirited 5 / Calm 41 / Steady 30 / Aggressive 1.
+  test("temperament weights are the owner's for Thoroughbred (ID 1)", () => {
+    expect(BREED_GENETIC_PROFILES[1].temperament_weights).toEqual({
+      Spirited: 25,
+      Nervous: 10,
+      Calm: 4,
+      Bold: 15,
+      Steady: 6,
+      Willing: 3,
+      Independent: 5,
+      Reactive: 10,
+      Stubborn: 4,
+      Driven: 16,
+      Lazy: 1,
+      Aggressive: 1,
+    });
   });
 
-  test('temperament weights match PRD-03 §7.3 for Tennessee Walking Horse (ID 7)', () => {
+  test("temperament weights are the owner's for Tennessee Walking Horse (ID 7)", () => {
     const w = BREED_GENETIC_PROFILES[7].temperament_weights;
-    expect(w.Spirited).toBe(5);
-    expect(w.Calm).toBe(41);
-    expect(w.Steady).toBe(30);
+    expect(w.Spirited).toBe(8);
+    expect(w.Calm).toBe(22);
+    expect(w.Steady).toBe(22);
+    expect(w.Willing).toBe(14);
     expect(w.Aggressive).toBe(1);
   });
 
@@ -379,18 +391,22 @@ describe('Breed Genetic Profiles - Lusitano (ID 11)', () => {
     expect(BREED_GENETIC_PROFILES[11].rating_profiles.gaited_gait_registry).toBeNull();
   });
 
-  test('Lusitano temperament weights match source data and sum to 100', () => {
+  // Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments). Old contract: Spirited 25 / Nervous 5 /
+  // Calm 10 / Bold 20 / Steady 15 / Independent 5 / Reactive 10 / Stubborn 5 /
+  // Playful 4 / Lazy 0 / Aggressive 1. Now the owner's breedProfiles.json values.
+  test("Lusitano temperament weights are the owner's and sum to 100", () => {
     const w = BREED_GENETIC_PROFILES[11].temperament_weights;
-    expect(w.Spirited).toBe(25);
+    expect(w.Spirited).toBe(16);
     expect(w.Nervous).toBe(5);
     expect(w.Calm).toBe(10);
-    expect(w.Bold).toBe(20);
-    expect(w.Steady).toBe(15);
+    expect(w.Bold).toBe(16);
+    expect(w.Steady).toBe(13);
+    expect(w.Willing).toBe(10);
     expect(w.Independent).toBe(5);
-    expect(w.Reactive).toBe(10);
-    expect(w.Stubborn).toBe(5);
-    expect(w.Playful).toBe(4);
-    expect(w.Lazy).toBe(0);
+    expect(w.Reactive).toBe(6);
+    expect(w.Stubborn).toBe(4);
+    expect(w.Driven).toBe(13);
+    expect(w.Lazy).toBe(1);
     expect(w.Aggressive).toBe(1);
     const sum = Object.values(w).reduce((a, b) => a + b, 0);
     expect(sum).toBe(100);
@@ -503,7 +519,9 @@ describe('validateProfile - Runtime Validation', () => {
     const badProfile = JSON.parse(JSON.stringify(BREED_GENETIC_PROFILES[1]));
     badProfile.temperament_weights.ExtraType = 0;
     const errors = validateProfile(1, badProfile);
-    expect(errors.some(e => e.includes('temperament_weights has 12 keys, expected 11'))).toBe(true);
+    // Old contract: 12 keys vs expected 11. Owner ruling 2026-10-21 made 12 the
+    // canonical count (Playful renamed Driven, Willing added).
+    expect(errors.some(e => e.includes('temperament_weights has 13 keys, expected 12'))).toBe(true);
   });
 
   // EC-6: extra conformation regions

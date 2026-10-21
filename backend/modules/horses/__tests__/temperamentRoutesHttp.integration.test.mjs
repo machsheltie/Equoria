@@ -19,7 +19,8 @@
  *
  * Route ordering sentinel:
  *   GET /horses/temperament-definitions is public (no auth required, no
- *   ownership middleware) and returns the canonical 11-temperament catalog.
+ *   ownership middleware) and returns the canonical 12-temperament catalog
+ *   (Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments). Old contract: 11.)
  *   If the route is moved AFTER /:id/* routes, the request would be
  *   misrouted to a numeric-id handler (validateHorseId 400 or 401/404
  *   from auth/ownership) instead of returning 200 with the catalog.
@@ -60,9 +61,9 @@ describe('GET /api/v1/horses/temperament-definitions (HTTP chain)', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeTruthy();
-    expect(res.body.data.count).toBe(11);
+    expect(res.body.data.count).toBe(12);
     expect(Array.isArray(res.body.data.definitions)).toBe(true);
-    expect(res.body.data.definitions.length).toBe(11);
+    expect(res.body.data.definitions.length).toBe(12);
   });
 
   it('returns 401 when no Authorization header is sent (authRouter contract)', async () => {
@@ -72,7 +73,10 @@ describe('GET /api/v1/horses/temperament-definitions (HTTP chain)', () => {
     expect(res.body.success).toBe(false);
   });
 
-  it('each definition has the full typed shape (name, description, prevalenceNote, modifiers, bestGroomPersonalities)', async () => {
+  // Owner ruling 2026-10-21: temperaments have no training or ridden/conformation
+  // modifiers. Old contract: each definition carried trainingModifiers and
+  // competitionModifiers objects of numbers.
+  it('each definition has the full typed shape (name, description, prevalenceNote, bestGroomPersonalities)', async () => {
     const res = await request(app)
       .get(ENDPOINT)
       .set('Authorization', `Bearer ${userToken}`)
@@ -87,13 +91,8 @@ describe('GET /api/v1/horses/temperament-definitions (HTTP chain)', () => {
       expect(typeof def.description).toBe('string');
       expect(typeof def.prevalenceNote).toBe('string');
 
-      expect(def.trainingModifiers).toBeTruthy();
-      expect(typeof def.trainingModifiers.xpModifier).toBe('number');
-      expect(typeof def.trainingModifiers.scoreModifier).toBe('number');
-
-      expect(def.competitionModifiers).toBeTruthy();
-      expect(typeof def.competitionModifiers.riddenModifier).toBe('number');
-      expect(typeof def.competitionModifiers.conformationModifier).toBe('number');
+      expect(def).not.toHaveProperty('trainingModifiers');
+      expect(def).not.toHaveProperty('competitionModifiers');
 
       expect(Array.isArray(def.bestGroomPersonalities)).toBe(true);
     }
@@ -107,7 +106,7 @@ describe('GET /api/v1/horses/temperament-definitions (HTTP chain)', () => {
   // would be captured as the :id param. validateHorseId would then 400 on
   // non-numeric input, OR (without validateHorseId on a different :id route)
   // we'd hit the auth/ownership chain and get 401/404. Either way, NOT 200,
-  // and the response body would NOT contain `data.count === 11`.
+  // and the response body would NOT contain `data.count === 12`.
   //
   // The two assertions below — public-200 and exact catalog count — together
   // prove the static path is winning. If either fails after a refactor, this
@@ -122,12 +121,12 @@ describe('GET /api/v1/horses/temperament-definitions (HTTP chain)', () => {
     //   - validateHorseId would 400 with "Invalid horse ID"
     //   - auth middleware would 401 with "No token provided"
     //   - ownership middleware would 404 with "Horse not found"
-    // None of those produce `{ success: true, data: { count: 11, ... } }`.
+    // None of those produce `{ success: true, data: { count: 12, ... } }`.
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       success: true,
       data: {
-        count: 11,
+        count: 12,
       },
     });
     // Specifically guard against the "treated as :id" failure modes:

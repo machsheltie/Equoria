@@ -45,22 +45,24 @@ export {
 /**
  * Horse temperament constants
  */
-// The owner's 11 temperaments, in the column order of her competition matrix
+// The owner's 12 temperaments, in the column order of her competition matrix
 // (EquoriaBible/RelevantFiles/Equoria_Temperament_Competition_Matrix.xlsx;
 // Equoria-576c0 B6). The one list: modules/competition/rules/disciplineRules.mjs
 // takes TEMPERAMENTS from here (the competition barrel already imports this
 // file, so the reverse import would be a cycle). Was six values including
-// 'Docile' and 'Unpredictable', which are not among the 11.
+// 'Docile' and 'Unpredictable', which are not temperaments. Owner ruling
+// 2026-10-21: Playful was renamed Driven and Willing was added (was 11).
 export const HORSE_TEMPERAMENT = Object.freeze({
   SPIRITED: 'Spirited',
   NERVOUS: 'Nervous',
   CALM: 'Calm',
   BOLD: 'Bold',
   STEADY: 'Steady',
+  WILLING: 'Willing',
   INDEPENDENT: 'Independent',
   REACTIVE: 'Reactive',
   STUBBORN: 'Stubborn',
-  PLAYFUL: 'Playful',
+  DRIVEN: 'Driven',
   LAZY: 'Lazy',
   AGGRESSIVE: 'Aggressive',
 });

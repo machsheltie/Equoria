@@ -7,8 +7,11 @@
  *   res.json({
  *     success, message, updatedScore,
  *     nextEligibleDate: <ISO string>,   // NOTE: NOT `nextEligible`
- *     traitEffects, temperamentEffects,
+ *     traitEffects,
  *   });
+ *
+ * (Owner ruling 2026-10-21: temperamentEffects was removed from that response;
+ * a temperament has no training modifier.)
  *
  * i.e. a FLAT body (no `data` envelope), using the deprecated `nextEligibleDate`
  * field and a flat `updatedScore` — and crucially NO `nextEligible` and NO
@@ -56,7 +59,6 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
           xpAwarded: 5,
           nextEligibleDate: realIso,
           traitEffects: { appliedTraits: [], scoreModifier: 0, xpModifier: 0 },
-          temperamentEffects: null,
         })
       )
     );

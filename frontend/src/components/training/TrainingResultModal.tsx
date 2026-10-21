@@ -73,17 +73,6 @@ export interface TrainingResultModalProps {
    * null/undefined here routes to the "Date unavailable" empty state below.
    */
   nextTrainingDate: string | Date | null | undefined;
-
-  /**
-   * Equoria-npnw — temperament modifier attribution (null when horse has no
-   * temperament). When present, renders an expansion section below the score
-   * breakdown explaining the applied XP/score modifiers.
-   */
-  temperamentEffects?: {
-    temperament: string;
-    xpModifier: number;
-    scoreModifier: number;
-  } | null;
 }
 
 /**
@@ -123,7 +112,6 @@ const TrainingResultModal = ({
   newScore,
   xpGain,
   nextTrainingDate,
-  temperamentEffects,
 }: TrainingResultModalProps) => {
   // Format values for display
   const formattedDate = formatNextTrainingDate(nextTrainingDate);
@@ -205,35 +193,6 @@ const TrainingResultModal = ({
                 • XP: +{xpGain}
               </li>
             </ul>
-          </div>
-        )}
-
-        {/* Equoria-npnw — Temperament modifier attribution */}
-        {temperamentEffects && (
-          <div
-            className="mt-4 border-t border-[var(--glass-border)] pt-4"
-            data-testid="temperament-effects-section"
-          >
-            <h3 className="font-semibold text-[var(--text-primary)] mb-2">Temperament Modifier:</h3>
-            <p className="text-sm text-role-secondary" data-testid="temperament-effects-text">
-              <span
-                className="text-[var(--gold-primary)] font-medium"
-                data-testid="temperament-effects-name"
-              >
-                {temperamentEffects.temperament}
-              </span>{' '}
-              applied{' '}
-              <span data-testid="temperament-effects-xp">
-                {temperamentEffects.xpModifier > 0 ? '+' : ''}
-                {Math.round(temperamentEffects.xpModifier * 100)}% XP
-              </span>
-              ,{' '}
-              <span data-testid="temperament-effects-score">
-                {temperamentEffects.scoreModifier > 0 ? '+' : ''}
-                {Math.round(temperamentEffects.scoreModifier * 100)}% score
-              </span>
-              .
-            </p>
           </div>
         )}
 

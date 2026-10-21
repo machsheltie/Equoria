@@ -6,12 +6,9 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
+import * as temperamentService from '../services/temperamentService.mjs';
 import {
-  TEMPERAMENT_TRAINING_MODIFIERS,
-  TEMPERAMENT_COMPETITION_MODIFIERS,
   TEMPERAMENT_GROOM_SYNERGY,
-  getTemperamentTrainingModifiers,
-  getTemperamentCompetitionModifiers,
   getTemperamentGroomSynergy,
   weightedRandomSelect,
   generateTemperament,
@@ -21,50 +18,19 @@ import {
 import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
 
 // ---------------------------------------------------------------------------
-// TEMPERAMENT_TRAINING_MODIFIERS
+// Owner ruling 2026-10-21: a temperament has no training modifier and no
+// ridden/conformation modifier. Old contract: TEMPERAMENT_TRAINING_MODIFIERS
+// (xp/score per temperament, e.g. Lazy -0.2 XP) and
+// TEMPERAMENT_COMPETITION_MODIFIERS (ridden/conformation per temperament, e.g.
+// Bold +0.05 ridden), with getTemperamentTrainingModifiers /
+// getTemperamentCompetitionModifiers lookups. All four are gone.
 // ---------------------------------------------------------------------------
-describe('TEMPERAMENT_TRAINING_MODIFIERS', () => {
-  it('has entries for all 11 temperament types', () => {
-    expect(Object.keys(TEMPERAMENT_TRAINING_MODIFIERS)).toHaveLength(11);
-  });
-
-  it('each entry has xpModifier and scoreModifier', () => {
-    for (const [, mods] of Object.entries(TEMPERAMENT_TRAINING_MODIFIERS)) {
-      expect(typeof mods.xpModifier).toBe('number');
-      expect(typeof mods.scoreModifier).toBe('number');
-    }
-  });
-
-  it('Lazy has the most negative xpModifier (-0.2)', () => {
-    expect(TEMPERAMENT_TRAINING_MODIFIERS.Lazy.xpModifier).toBe(-0.2);
-  });
-
-  it('Spirited has a positive xpModifier', () => {
-    expect(TEMPERAMENT_TRAINING_MODIFIERS.Spirited.xpModifier).toBeGreaterThan(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TEMPERAMENT_COMPETITION_MODIFIERS
-// ---------------------------------------------------------------------------
-describe('TEMPERAMENT_COMPETITION_MODIFIERS', () => {
-  it('has entries for all 11 temperament types', () => {
-    expect(Object.keys(TEMPERAMENT_COMPETITION_MODIFIERS)).toHaveLength(11);
-  });
-
-  it('each entry has riddenModifier and conformationModifier', () => {
-    for (const [, mods] of Object.entries(TEMPERAMENT_COMPETITION_MODIFIERS)) {
-      expect(typeof mods.riddenModifier).toBe('number');
-      expect(typeof mods.conformationModifier).toBe('number');
-    }
-  });
-
-  it('Bold has the highest riddenModifier (0.05)', () => {
-    expect(TEMPERAMENT_COMPETITION_MODIFIERS.Bold.riddenModifier).toBe(0.05);
-  });
-
-  it('Calm has the highest conformationModifier (0.05)', () => {
-    expect(TEMPERAMENT_COMPETITION_MODIFIERS.Calm.conformationModifier).toBe(0.05);
+describe('no training or ridden/conformation temperament modifiers (owner ruling 2026-10-21)', () => {
+  it('exports none of the removed tables or lookups', () => {
+    expect(temperamentService).not.toHaveProperty('TEMPERAMENT_TRAINING_MODIFIERS');
+    expect(temperamentService).not.toHaveProperty('TEMPERAMENT_COMPETITION_MODIFIERS');
+    expect(temperamentService).not.toHaveProperty('getTemperamentTrainingModifiers');
+    expect(temperamentService).not.toHaveProperty('getTemperamentCompetitionModifiers');
   });
 });
 
@@ -72,8 +38,9 @@ describe('TEMPERAMENT_COMPETITION_MODIFIERS', () => {
 // TEMPERAMENT_GROOM_SYNERGY
 // ---------------------------------------------------------------------------
 describe('TEMPERAMENT_GROOM_SYNERGY', () => {
-  it('has entries for all 11 temperament types', () => {
-    expect(Object.keys(TEMPERAMENT_GROOM_SYNERGY)).toHaveLength(11);
+  // Old contract: 11. Owner ruling 2026-10-21: Playful renamed Driven, Willing added.
+  it('has entries for all 12 temperament types', () => {
+    expect(Object.keys(TEMPERAMENT_GROOM_SYNERGY)).toHaveLength(12);
   });
 
   it('Calm uses _any for universal synergy', () => {
@@ -82,88 +49,6 @@ describe('TEMPERAMENT_GROOM_SYNERGY', () => {
 
   it('Nervous has a negative synergy with strict personality', () => {
     expect(TEMPERAMENT_GROOM_SYNERGY.Nervous.strict).toBeLessThan(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// getTemperamentTrainingModifiers
-// ---------------------------------------------------------------------------
-describe('getTemperamentTrainingModifiers', () => {
-  it('returns zero modifiers for null', () => {
-    const result = getTemperamentTrainingModifiers(null);
-    expect(result.xpModifier).toBe(0);
-    expect(result.scoreModifier).toBe(0);
-  });
-
-  it('returns zero modifiers for undefined', () => {
-    const result = getTemperamentTrainingModifiers(undefined);
-    expect(result.xpModifier).toBe(0);
-    expect(result.scoreModifier).toBe(0);
-  });
-
-  it('returns zero modifiers for unknown temperament', () => {
-    const result = getTemperamentTrainingModifiers('UnknownTemperament');
-    expect(result.xpModifier).toBe(0);
-    expect(result.scoreModifier).toBe(0);
-  });
-
-  it('returns correct modifiers for Lazy', () => {
-    const result = getTemperamentTrainingModifiers('Lazy');
-    expect(result.xpModifier).toBe(-0.2);
-    expect(result.scoreModifier).toBe(-0.15);
-  });
-
-  it('returns correct modifiers for Calm', () => {
-    const result = getTemperamentTrainingModifiers('Calm');
-    expect(result.xpModifier).toBe(0.05);
-    expect(result.scoreModifier).toBe(0.1);
-  });
-
-  it('handles whitespace via trim', () => {
-    const result = getTemperamentTrainingModifiers('  Calm  ');
-    expect(result.xpModifier).toBe(0.05);
-  });
-
-  it('returns a copy (not the frozen original)', () => {
-    const result = getTemperamentTrainingModifiers('Spirited');
-    expect(() => {
-      result.xpModifier = 999;
-    }).not.toThrow();
-    expect(TEMPERAMENT_TRAINING_MODIFIERS.Spirited.xpModifier).not.toBe(999);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// getTemperamentCompetitionModifiers
-// ---------------------------------------------------------------------------
-describe('getTemperamentCompetitionModifiers', () => {
-  it('returns zero modifiers for null', () => {
-    const result = getTemperamentCompetitionModifiers(null);
-    expect(result.riddenModifier).toBe(0);
-    expect(result.conformationModifier).toBe(0);
-  });
-
-  it('returns zero modifiers for unknown temperament', () => {
-    const result = getTemperamentCompetitionModifiers('Unknown');
-    expect(result.riddenModifier).toBe(0);
-    expect(result.conformationModifier).toBe(0);
-  });
-
-  it('returns correct modifiers for Bold', () => {
-    const result = getTemperamentCompetitionModifiers('Bold');
-    expect(result.riddenModifier).toBe(0.05);
-    expect(result.conformationModifier).toBe(0.02);
-  });
-
-  it('returns correct modifiers for Nervous', () => {
-    const result = getTemperamentCompetitionModifiers('Nervous');
-    expect(result.riddenModifier).toBe(-0.05);
-    expect(result.conformationModifier).toBe(-0.05);
-  });
-
-  it('handles whitespace via trim', () => {
-    const result = getTemperamentCompetitionModifiers('  Bold  ');
-    expect(result.riddenModifier).toBe(0.05);
   });
 });
 

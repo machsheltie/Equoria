@@ -42,12 +42,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     // or null when the server omits it. We never fabricate a client-side guess;
     // null flows to the result modal's honest "Date unavailable" state.
     nextTrainingDate: string | null;
-    // Equoria-npnw — temperament modifier attribution for the result modal
-    temperamentEffects?: {
-      temperament: string;
-      xpModifier: number;
-      scoreModifier: number;
-    } | null;
   } | null>(null);
   const [trainingError, setTrainingError] = useState<string | null>(null);
 
@@ -181,8 +175,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         // a client-computed cooldown date masks a missing server value and lies
         // to the player about when training is actually available.
         nextTrainingDate: result.nextEligible ?? null,
-        // Equoria-npnw — surface temperament modifier attribution to the result modal
-        temperamentEffects: result.temperamentEffects ?? null,
       });
 
       // Open result modal
@@ -403,7 +395,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           newScore={trainingResult.newScore}
           xpGain={trainingResult.xpGain}
           nextTrainingDate={trainingResult.nextTrainingDate}
-          temperamentEffects={trainingResult.temperamentEffects}
         />
       )}
     </div>

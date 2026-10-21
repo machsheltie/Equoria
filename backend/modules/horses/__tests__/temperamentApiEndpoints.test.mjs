@@ -1,6 +1,6 @@
 // Tests for temperament definitions API endpoint (Story 31D-5).
-// Validates GET /temperament-definitions response structure, modifier values,
-// groom personality derivation, and field completeness.
+// Validates GET /temperament-definitions response structure, groom personality
+// derivation, and field completeness. Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments).
 // No Prisma mock needed — getTemperamentDefinitions does no DB queries.
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
@@ -29,9 +29,10 @@ function createMockRes() {
 describe('getTemperamentDefinitions', () => {
   beforeEach(() => {});
 
-  // === Task 3.1: Returns 200 with success: true and all 11 definitions ===
+  // === Task 3.1: Returns 200 with success: true and all 12 definitions ===
+  // Old contract: 11 definitions. Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments).
 
-  it('returns 200 with success: true and all 11 definitions', async () => {
+  it('returns 200 with success: true and all 12 definitions', async () => {
     const req = {};
     const res = createMockRes();
 
@@ -41,19 +42,19 @@ describe('getTemperamentDefinitions', () => {
     const payload = res.body;
     expect(payload.success).toBe(true);
     expect(payload.message).toBe('Temperament definitions retrieved successfully');
-    expect(payload.data.definitions).toHaveLength(11);
+    expect(payload.data.definitions).toHaveLength(12);
   });
 
-  // === Task 3.2: data.count equals 11 ===
+  // === Task 3.2: data.count equals 12 (old contract: 11) ===
 
-  it('returns data.count equal to 11', async () => {
+  it('returns data.count equal to 12', async () => {
     const req = {};
     const res = createMockRes();
 
     await getTemperamentDefinitions(req, res);
 
     const payload = res.body;
-    expect(payload.data.count).toBe(11);
+    expect(payload.data.count).toBe(12);
   });
 
   // === Task 3.3: Each definition has all required fields ===
@@ -69,75 +70,44 @@ describe('getTemperamentDefinitions', () => {
       expect(def).toHaveProperty('name');
       expect(def).toHaveProperty('description');
       expect(def).toHaveProperty('prevalenceNote');
-      expect(def).toHaveProperty('trainingModifiers');
-      expect(def.trainingModifiers).toHaveProperty('xpModifier');
-      expect(def.trainingModifiers).toHaveProperty('scoreModifier');
-      expect(def).toHaveProperty('competitionModifiers');
-      expect(def.competitionModifiers).toHaveProperty('riddenModifier');
-      expect(def.competitionModifiers).toHaveProperty('conformationModifier');
       expect(def).toHaveProperty('bestGroomPersonalities');
       expect(Array.isArray(def.bestGroomPersonalities)).toBe(true);
     }
   });
 
-  // === Task 3.4: Spirited training modifiers ===
+  // === Owner ruling 2026-10-21: no training or ridden/conformation modifiers ===
+  // Old contract (Tasks 3.4-3.7): each definition carried trainingModifiers
+  // { xpModifier, scoreModifier } and competitionModifiers { riddenModifier,
+  // conformationModifier } (e.g. Spirited 0.1/0.05, Lazy -0.2/-0.15, Bold
+  // 0.05/0.02, Nervous -0.05/-0.05). The owner ruled a temperament has no
+  // training modifier and no ridden/conformation modifier, so neither is served.
 
-  it('returns correct training modifiers for Spirited (xpModifier: 0.1, scoreModifier: 0.05)', async () => {
+  it('carries no training or ridden/conformation modifiers', async () => {
     const req = {};
     const res = createMockRes();
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.body.data;
-    const spirited = definitions.find(d => d.name === 'Spirited');
-    expect(spirited).toBeDefined();
-    expect(spirited.trainingModifiers.xpModifier).toBe(0.1);
-    expect(spirited.trainingModifiers.scoreModifier).toBe(0.05);
+    for (const def of res.body.data.definitions) {
+      expect(def).not.toHaveProperty('trainingModifiers');
+      expect(def).not.toHaveProperty('competitionModifiers');
+    }
   });
 
-  // === Task 3.5: Lazy training modifiers ===
-
-  it('returns correct training modifiers for Lazy (xpModifier: -0.2, scoreModifier: -0.15)', async () => {
+  it('describes Driven and Willing and names their best grooms', async () => {
     const req = {};
     const res = createMockRes();
 
     await getTemperamentDefinitions(req, res);
 
     const { definitions } = res.body.data;
-    const lazy = definitions.find(d => d.name === 'Lazy');
-    expect(lazy).toBeDefined();
-    expect(lazy.trainingModifiers.xpModifier).toBe(-0.2);
-    expect(lazy.trainingModifiers.scoreModifier).toBe(-0.15);
-  });
-
-  // === Task 3.6: Bold competition modifiers ===
-
-  it('returns correct competition modifiers for Bold (riddenModifier: 0.05, conformationModifier: 0.02)', async () => {
-    const req = {};
-    const res = createMockRes();
-
-    await getTemperamentDefinitions(req, res);
-
-    const { definitions } = res.body.data;
-    const bold = definitions.find(d => d.name === 'Bold');
-    expect(bold).toBeDefined();
-    expect(bold.competitionModifiers.riddenModifier).toBe(0.05);
-    expect(bold.competitionModifiers.conformationModifier).toBe(0.02);
-  });
-
-  // === Task 3.7: Nervous competition modifiers ===
-
-  it('returns correct competition modifiers for Nervous (riddenModifier: -0.05, conformationModifier: -0.05)', async () => {
-    const req = {};
-    const res = createMockRes();
-
-    await getTemperamentDefinitions(req, res);
-
-    const { definitions } = res.body.data;
-    const nervous = definitions.find(d => d.name === 'Nervous');
-    expect(nervous).toBeDefined();
-    expect(nervous.competitionModifiers.riddenModifier).toBe(-0.05);
-    expect(nervous.competitionModifiers.conformationModifier).toBe(-0.05);
+    const driven = definitions.find(d => d.name === 'Driven');
+    const willing = definitions.find(d => d.name === 'Willing');
+    expect(driven.description).toMatch(/^Determined and hard-working\./);
+    expect(driven.bestGroomPersonalities).toEqual(['energetic']);
+    expect(willing.description).toMatch(/^Cooperative and eager to please\./);
+    expect(willing.bestGroomPersonalities).toEqual(['gentle', 'patient']);
+    expect(definitions.find(d => d.name === 'Playful')).toBeUndefined();
   });
 
   // === Task 3.8: Spirited best groom personalities ===
@@ -208,10 +178,11 @@ describe('getTemperamentDefinitions', () => {
       'Calm',
       'Bold',
       'Steady',
+      'Willing',
       'Independent',
       'Reactive',
       'Stubborn',
-      'Playful',
+      'Driven',
       'Lazy',
       'Aggressive',
     ];

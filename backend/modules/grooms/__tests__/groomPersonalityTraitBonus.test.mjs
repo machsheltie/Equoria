@@ -13,6 +13,7 @@ import {
   getCompatibleGroomsForTemperament,
   validatePersonalityTemperament,
 } from '../../../utils/groomPersonalityTraitBonus.mjs';
+import { HORSE_TEMPERAMENT_VALUES } from '../../../constants/schema.mjs';
 
 // ---------------------------------------------------------------------------
 // Exported constants
@@ -39,6 +40,24 @@ describe('FOAL_TEMPERAMENT_TYPES', () => {
     expect(FOAL_TEMPERAMENT_TYPES.STEADY).toBe('Steady');
     expect(FOAL_TEMPERAMENT_TYPES.REACTIVE).toBe('Reactive');
     expect(FOAL_TEMPERAMENT_TYPES.STUBBORN).toBe('Stubborn');
+  });
+});
+
+// Owner ruling 2026-10-21: Playful renamed Driven, Willing added. Driven takes
+// the Playful foal's matches (Energetic, Playful grooms); Willing suits the
+// Soft-Spoken and Affectionate grooms.
+describe('foal temperaments follow the 12 (owner ruling 2026-10-21)', () => {
+  it("FOAL_TEMPERAMENT_TYPES is exactly the game's 12 temperaments", () => {
+    expect(Object.values(FOAL_TEMPERAMENT_TYPES).sort()).toEqual([...HORSE_TEMPERAMENT_VALUES].sort());
+  });
+
+  it('Driven and Willing foals have their ideal grooms', () => {
+    const names = temperament =>
+      getCompatibleGroomsForTemperament(temperament)
+        .map(g => g.personality)
+        .sort();
+    expect(names('Driven')).toEqual(['Energetic', 'Playful']);
+    expect(names('Willing')).toEqual(['Affectionate', 'Soft-Spoken']);
   });
 });
 

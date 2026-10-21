@@ -1,24 +1,22 @@
-// Unit and integration tests for temperament training modifiers (Story 31D-2) — real DB
+// Temperament has no effect on training — real DB.
 //
-// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted from
-// jest.unstable_mockModule of 8 modules (db, logger, trainingModel, horseModel,
-// userModel, xpLogModel, traitEffects, competitionLogic) to a real-DB
-// integration test against the equoria_test database.
+// Owner ruling 2026-10-21 (Stacey): "temperaments don't have any effect on
+// discipline training gain. It is a standard +5 for the selected discipline."
+// Old contract (Story 31D-2): TEMPERAMENT_TRAINING_MODIFIERS scaled the
+// discipline gain and XP per temperament (e.g. Calm +10% score -> +6, Lazy
+// -15% score -> +4, Stubborn -15% XP -> 4 XP), trainHorse() returned a
+// temperamentEffects block, and Lazy + eagerLearner stacked multiplicatively.
+// All of that is removed; these tests pin the new contract end-to-end.
 //
-// Sections:
-//   1. Pure unit tests for getTemperamentTrainingModifiers (no DB).
-//   2. Real-DB integration tests for trainHorse() exercising temperament
-//      modifier application end-to-end. Training never raises a horse stat
-//      (owner rulings 2026-10-19, 2026-10-21), so no RNG seam is needed.
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): a real-DB
+// integration test against the equoria_test database. Training never raises a
+// horse stat (owner rulings 2026-10-19, 2026-10-21), so no RNG seam is needed.
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  getTemperamentTrainingModifiers,
-  TEMPERAMENT_TRAINING_MODIFIERS,
-  TEMPERAMENT_TYPES,
-} from '../../../modules/horses/index.mjs';
+import * as horsesModule from '../../../modules/horses/index.mjs';
+import { TEMPERAMENT_TYPES } from '../../../modules/horses/index.mjs';
 import { trainHorse } from '../controllers/trainingController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -91,65 +89,20 @@ async function cleanupSuite() {
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// 1. Unit Tests: getTemperamentTrainingModifiers (pure function, no DB)
-// ═════════════════════════════════════════════════════════════════════════════
-
-describe('getTemperamentTrainingModifiers — unit tests', () => {
-  const expected = [
-    ['Spirited', { xpModifier: 0.1, scoreModifier: 0.05 }],
-    ['Nervous', { xpModifier: -0.1, scoreModifier: -0.05 }],
-    ['Calm', { xpModifier: 0.05, scoreModifier: 0.1 }],
-    ['Bold', { xpModifier: 0.05, scoreModifier: 0.05 }],
-    ['Steady', { xpModifier: 0.05, scoreModifier: 0.1 }],
-    ['Independent', { xpModifier: -0.05, scoreModifier: 0.0 }],
-    ['Reactive', { xpModifier: 0.0, scoreModifier: -0.05 }],
-    ['Stubborn', { xpModifier: -0.15, scoreModifier: -0.1 }],
-    ['Playful', { xpModifier: 0.05, scoreModifier: -0.05 }],
-    ['Lazy', { xpModifier: -0.2, scoreModifier: -0.15 }],
-    ['Aggressive', { xpModifier: -0.1, scoreModifier: -0.05 }],
-  ];
-
-  it.each(expected)('%s returns correct xpModifier and scoreModifier', (temperament, mods) => {
-    const result = getTemperamentTrainingModifiers(temperament);
-    expect(result.xpModifier).toBeCloseTo(mods.xpModifier, 10);
-    expect(result.scoreModifier).toBeCloseTo(mods.scoreModifier, 10);
+describe('the horses module no longer offers temperament training modifiers', () => {
+  it('exports neither the table nor the lookup', () => {
+    expect(horsesModule).not.toHaveProperty('TEMPERAMENT_TRAINING_MODIFIERS');
+    expect(horsesModule).not.toHaveProperty('getTemperamentTrainingModifiers');
   });
 
-  it('null returns { xpModifier: 0, scoreModifier: 0 }', () => {
-    expect(getTemperamentTrainingModifiers(null)).toEqual({ xpModifier: 0, scoreModifier: 0 });
+  it('the 12 temperaments include Willing and Driven, not Playful', () => {
+    expect(TEMPERAMENT_TYPES).toHaveLength(12);
+    expect(TEMPERAMENT_TYPES).toEqual(expect.arrayContaining(['Willing', 'Driven']));
+    expect(TEMPERAMENT_TYPES).not.toContain('Playful');
   });
-
-  it('undefined returns { xpModifier: 0, scoreModifier: 0 }', () => {
-    expect(getTemperamentTrainingModifiers(undefined)).toEqual({ xpModifier: 0, scoreModifier: 0 });
-  });
-
-  it('unknown string returns { xpModifier: 0, scoreModifier: 0 }', () => {
-    expect(getTemperamentTrainingModifiers('Fiery')).toEqual({ xpModifier: 0, scoreModifier: 0 });
-    expect(getTemperamentTrainingModifiers('')).toEqual({ xpModifier: 0, scoreModifier: 0 });
-    expect(getTemperamentTrainingModifiers('CALM')).toEqual({ xpModifier: 0, scoreModifier: 0 });
-  });
-
-  it('TEMPERAMENT_TRAINING_MODIFIERS contains exactly the 11 canonical types', () => {
-    const constantKeys = Object.keys(TEMPERAMENT_TRAINING_MODIFIERS).sort();
-    const canonicalKeys = [...TEMPERAMENT_TYPES].sort();
-    expect(constantKeys).toEqual(canonicalKeys);
-  });
-
-  it.each(Object.entries(TEMPERAMENT_TRAINING_MODIFIERS))(
-    '%s has numeric xpModifier and scoreModifier',
-    (_type, mods) => {
-      expect(typeof mods.xpModifier).toBe('number');
-      expect(typeof mods.scoreModifier).toBe('number');
-    },
-  );
 });
 
-// ═════════════════════════════════════════════════════════════════════════════
-// 2. Integration Tests: temperament modifier applied inside trainHorse() — real DB
-// ═════════════════════════════════════════════════════════════════════════════
-
-describe('trainHorse() — temperament modifier integration (real DB)', () => {
+describe('trainHorse() — every temperament gains exactly +5 (real DB)', () => {
   let breed;
 
   beforeAll(async () => {
@@ -159,210 +112,34 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
 
   afterAll(cleanupSuite);
 
-  it('Stubborn horse: XP and score both reduced — deltas verifiable end-to-end', async () => {
-    const user = await createUser();
-    const horse = await createHorse(user.id, breed.id, { temperament: 'Stubborn', disciplineScores: { Racing: 20 } });
-    const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
+  // The temperaments whose old modifiers moved the gain or XP the most, plus
+  // the two new ones and a horse with no temperament.
+  it.each(['Calm', 'Lazy', 'Stubborn', 'Spirited', 'Willing', 'Driven', null])(
+    '%s horse: discipline +5, user XP +5, no temperamentEffects',
+    async temperament => {
+      const user = await createUser();
+      const horse = await createHorse(user.id, breed.id, {
+        temperament,
+        disciplineScores: { Dressage: 20 },
+      });
+      const userBefore = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { xp: true },
+      });
 
-    const result = await trainHorse(horse.id, 'Racing');
+      const result = await trainHorse(horse.id, 'Dressage');
 
-    expect(result.success).toBe(true);
-    expect(result.temperamentEffects).toEqual({
-      temperament: 'Stubborn',
-      xpModifier: -0.15,
-      scoreModifier: -0.1,
-    });
+      expect(result.success).toBe(true);
+      expect(result.disciplineScoreIncrease).toBe(5);
+      expect(result).not.toHaveProperty('temperamentEffects');
 
-    // Verify real DB writes:
-    // - Score: base 5, after Stubborn -10%: Math.round(5 * 0.9) = 5 (rounding neutralises at base=5)
-    //   Math.max(1, 5) = 5, so disciplineScores.Racing should be 20 + 5 = 25
-    const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
-    expect(horseAfter.disciplineScores.Racing).toBeGreaterThanOrEqual(20); // increased
-    // - XP: base 5, after Stubborn -15%: Math.round(5 * 0.85) = Math.round(4.25) = 4
-    //   Math.max(1, 4) = 4. user.xp should increment by 4.
-    const userAfter = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-    expect(userAfter.xp - userBefore.xp).toBe(4);
-  });
-
-  it('Calm horse: XP stays 5 (rounding), score increases by 6 (delta from base 5)', async () => {
-    const user = await createUser();
-    const horse = await createHorse(user.id, breed.id, { temperament: 'Calm', disciplineScores: { Dressage: 0 } });
-    const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-
-    const result = await trainHorse(horse.id, 'Dressage');
-
-    expect(result.success).toBe(true);
-    expect(result.temperamentEffects).toEqual({
-      temperament: 'Calm',
-      xpModifier: 0.05,
-      scoreModifier: 0.1,
-    });
-
-    // XP: Math.round(5 * 1.05) = 5. Math.max(1, 5) = 5.
-    const userAfter = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-    expect(userAfter.xp - userBefore.xp).toBe(5);
-
-    // Score: Math.round(5 * 1.10) = Math.round(5.5) = 6. Math.max(1, 6) = 6.
-    const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
-    expect(horseAfter.disciplineScores.Dressage).toBe(6);
-  });
-
-  it('Lazy horse: result is successful and XP + score are each at least 1', async () => {
-    const user = await createUser();
-    const horse = await createHorse(user.id, breed.id, { temperament: 'Lazy', disciplineScores: { Racing: 0 } });
-    const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-
-    const result = await trainHorse(horse.id, 'Racing');
-
-    expect(result.success).toBe(true);
-    expect(result.temperamentEffects).toEqual({
-      temperament: 'Lazy',
-      xpModifier: -0.2,
-      scoreModifier: -0.15,
-    });
-
-    // XP: Math.round(5 * 0.80) = 4. Math.max(1, 4) = 4.
-    const userAfter = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-    expect(userAfter.xp - userBefore.xp).toBe(4);
-
-    // Score: Math.round(5 * 0.85) = Math.round(4.25) = 4. Math.max(1, 4) = 4.
-    const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
-    expect(horseAfter.disciplineScores.Racing).toBe(4);
-  });
-
-  it('null temperament: no modifier applied, temperamentEffects is null', async () => {
-    const user = await createUser();
-    const horse = await createHorse(user.id, breed.id, { temperament: null, disciplineScores: { Racing: 0 } });
-    const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-
-    const result = await trainHorse(horse.id, 'Racing');
-
-    expect(result.success).toBe(true);
-    expect(result.temperamentEffects).toBeNull();
-
-    // No modifier: XP = 5, score = 5.
-    const userAfter = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-    expect(userAfter.xp - userBefore.xp).toBe(5);
-    const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
-    expect(horseAfter.disciplineScores.Racing).toBe(5);
-  });
-
-  it('Reactive horse: xpModifier=0 guard skips XP branch, temperamentEffects still returned', async () => {
-    const user = await createUser();
-    const horse = await createHorse(user.id, breed.id, { temperament: 'Reactive', disciplineScores: { Racing: 0 } });
-    const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-
-    const result = await trainHorse(horse.id, 'Racing');
-
-    expect(result.success).toBe(true);
-    expect(result.temperamentEffects).toEqual({
-      temperament: 'Reactive',
-      xpModifier: 0.0,
-      scoreModifier: -0.05,
-    });
-
-    // xpModifier=0: XP stays at 5
-    const userAfter = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
-    expect(userAfter.xp - userBefore.xp).toBe(5);
-
-    // scoreModifier=-0.05: Math.round(5 * 0.95) = Math.round(4.75) = 5
-    const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
-    expect(horseAfter.disciplineScores.Racing).toBe(5);
-  });
-
-  // Old contract: a Spirited horse could also gain a stat (15% roll). New
-  // contract (owner rulings 2026-10-19, 2026-10-21): training never raises a stat.
-  it('Spirited horse gets its temperament effects and no stat gain', async () => {
-    const user = await createUser();
-    const horse = await createHorse(user.id, breed.id, { temperament: 'Spirited', disciplineScores: { Racing: 0 } });
-
-    const result = await trainHorse(horse.id, 'Racing');
-
-    expect(result.success).toBe(true);
-    expect(result).not.toHaveProperty('statGain');
-
-    expect(result.temperamentEffects).toEqual({
-      temperament: 'Spirited',
-      xpModifier: 0.1,
-      scoreModifier: 0.05,
-    });
-  });
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Equoria-lhsr — AC #6 stacking sentinel for temperament + trait modifiers
-  //
-  // Story 31D-2 AC #6: temperament modifiers stack MULTIPLICATIVELY with trait
-  // effects (sequential Math.round(base*(1+trait)) then *(1+temp)).
-  //
-  // This test pins the EXACT integer result that the sequential implementation
-  // produces. A refactor that combined them additively (base*(1+trait+temp))
-  // would produce a DIFFERENT integer and fail this test.
-  //
-  // Scenario: eagerLearner (trainingXpModifier=+0.25) + Lazy temperament
-  //   (xpModifier=-0.20, scoreModifier=-0.15) on a base of 5.
-  //
-  // Sequential (current impl):
-  //   XP    : Math.round(Math.round(5 * 1.25) * 0.80) = Math.round(6 * 0.80)
-  //         = Math.round(4.8) = 5
-  //   Score: Math.round(Math.round(5 * 1.25) * 0.85) = Math.round(6 * 0.85)
-  //         = Math.round(5.1) = 5
-  //
-  // Additive combine (regression):
-  //   XP    : Math.round(5 * (1 + 0.25 - 0.20)) = Math.round(5 * 1.05)
-  //         = Math.round(5.25) = 5  ← same! sentinel must use score path too
-  //   Score: Math.round(5 * (1 + 0.25 - 0.15)) = Math.round(5 * 1.10)
-  //         = Math.round(5.5)  = 6  ← DIFFERS from sequential (5)
-  //
-  // Either path on its own would fail the additive combine. We assert BOTH XP
-  // and score deltas to defend AC #6 from regressions on either branch.
-  // ───────────────────────────────────────────────────────────────────────────
-  it('Lazy + eagerLearner: temperament and trait stack multiplicatively (AC #6)', async () => {
-    const user = await createUser();
-    const horse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `${SUITE_PREFIX}-stack-${randomBytes(4).toString('hex')}`,
-        sex: 'Mare',
-        dateOfBirth: new Date('2020-01-01'),
-        age: 5,
-        temperament: 'Lazy',
-        epigeneticModifiers: { positive: ['eagerLearner'], negative: [], hidden: [] },
-        disciplineScores: { Dressage: 0 },
-        trainingCooldown: null,
-        breed: { connect: { id: breed.id } },
-        user: { connect: { id: user.id } },
-      },
-    });
-    const userBefore = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { xp: true },
-    });
-
-    const result = await trainHorse(horse.id, 'Dressage');
-
-    expect(result.success).toBe(true);
-    expect(result.temperamentEffects).toEqual({
-      temperament: 'Lazy',
-      xpModifier: -0.2,
-      scoreModifier: -0.15,
-    });
-
-    // Sequential expected values (AC #6 — current impl)
-    const expectedXp = Math.round(Math.round(5 * 1.25) * 0.8); // 5
-    const expectedScore = Math.round(Math.round(5 * 1.25) * 0.85); // 5
-
-    // Sentinel-positive: additive combine would produce score=6, so this MUST
-    // be 5 to defend AC #6 against the regression described in lhsr.
-    const additiveScoreRegression = Math.round(5 * (1 + 0.25 - 0.15)); // 6
-    expect(expectedScore).not.toBe(additiveScoreRegression); // sanity: sentinel actually distinguishes
-
-    const userAfter = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { xp: true },
-    });
-    expect(userAfter.xp - userBefore.xp).toBe(expectedXp);
-
-    const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
-    expect(horseAfter.disciplineScores.Dressage).toBe(expectedScore);
-  });
+      const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
+      expect(horseAfter.disciplineScores.Dressage).toBe(25);
+      const userAfter = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { xp: true },
+      });
+      expect(userAfter.xp - userBefore.xp).toBe(5);
+    },
+  );
 });

@@ -92,16 +92,17 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "is_gaited_breed": false
   },
   "temperament_weights": {
-    "Spirited": 3,
-    "Nervous": 3,
-    "Calm": 30,
-    "Bold": 6,
-    "Steady": 30,
+    "Spirited": 4,
+    "Nervous": 2,
+    "Calm": 23,
+    "Bold": 10,
+    "Steady": 21,
+    "Willing": 15,
     "Independent": 4,
     "Reactive": 2,
-    "Stubborn": 5,
-    "Playful": 4,
-    "Lazy": 12,
+    "Stubborn": 6,
+    "Driven": 8,
+    "Lazy": 4,
     "Aggressive": 1
   }
 }$json$::JSONB)

@@ -51,15 +51,24 @@ export const COMPETITION_DISCIPLINES = DISCIPLINE_VALUES;
 
 export type CompetitionDiscipline = Discipline;
 
-/** The horse temperaments used in temperament compatibility discovery */
+/**
+ * The horse temperaments used in temperament compatibility discovery: the
+ * game's 12 (backend constants/schema.mjs HORSE_TEMPERAMENT, owner ruling
+ * 2026-10-21). Was a made-up list of seven ("Bold/Confident", ...).
+ */
 export const HORSE_TEMPERAMENTS = [
-  'Bold/Confident',
-  'Nervous/Shy',
-  'Calm/Docile',
-  'Energetic/Spirited',
-  'Stubborn/Willful',
-  'Gentle/Sweet',
-  'Complex/Difficult',
+  'Spirited',
+  'Nervous',
+  'Calm',
+  'Bold',
+  'Steady',
+  'Willing',
+  'Independent',
+  'Reactive',
+  'Stubborn',
+  'Driven',
+  'Lazy',
+  'Aggressive',
 ] as const;
 
 export type HorseTemperament = (typeof HORSE_TEMPERAMENTS)[number];

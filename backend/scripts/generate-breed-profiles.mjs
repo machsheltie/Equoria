@@ -9,7 +9,7 @@
  *   - rating_profiles.gaits         (walk/trot/canter/gallop/gaiting)
  *   - rating_profiles.is_gaited_breed
  *   - rating_profiles.gaited_gait_registry
- *   - temperament_weights           (11 types summing to 100)
+ *   - temperament_weights           (12 types summing to 100)
  *   - category                      (draft|gaited|pony|sport|racing|general)
  *
  * The profile values come from category-level templates derived from
@@ -316,6 +316,11 @@ const GAIT_TEMPLATES = {
   pony: { walk: 72, trot: 72, canter: 70, gallop: 68, gaiting: null },
 };
 
+// Owner ruling 2026-10-21: Playful was renamed Driven and Willing was added.
+// The owner set every breed's real weights by hand in breedProfiles.json, and
+// no entry carries manualOverride, so re-running this generator would replace
+// her weights with these templates. Willing is 0 here: she has not set
+// template odds.
 const TEMPERAMENT_TEMPLATES = {
   general: {
     Spirited: 10,
@@ -323,10 +328,11 @@ const TEMPERAMENT_TEMPLATES = {
     Calm: 18,
     Bold: 10,
     Steady: 18,
+    Willing: 0,
     Independent: 8,
     Reactive: 8,
     Stubborn: 6,
-    Playful: 8,
+    Driven: 8,
     Lazy: 4,
     Aggressive: 2,
   },
@@ -336,10 +342,11 @@ const TEMPERAMENT_TEMPLATES = {
     Calm: 4,
     Bold: 16,
     Steady: 6,
+    Willing: 0,
     Independent: 6,
     Reactive: 14,
     Stubborn: 4,
-    Playful: 5,
+    Driven: 5,
     Lazy: 2,
     Aggressive: 1,
   },
@@ -349,10 +356,11 @@ const TEMPERAMENT_TEMPLATES = {
     Calm: 14,
     Bold: 18,
     Steady: 16,
+    Willing: 0,
     Independent: 6,
     Reactive: 6,
     Stubborn: 6,
-    Playful: 10,
+    Driven: 10,
     Lazy: 2,
     Aggressive: 2,
   },
@@ -362,10 +370,11 @@ const TEMPERAMENT_TEMPLATES = {
     Calm: 30,
     Bold: 8,
     Steady: 32,
+    Willing: 0,
     Independent: 4,
     Reactive: 2,
     Stubborn: 10,
-    Playful: 4,
+    Driven: 4,
     Lazy: 2,
     Aggressive: 2,
   },
@@ -375,10 +384,11 @@ const TEMPERAMENT_TEMPLATES = {
     Calm: 22,
     Bold: 10,
     Steady: 22,
+    Willing: 0,
     Independent: 6,
     Reactive: 4,
     Stubborn: 8,
-    Playful: 8,
+    Driven: 8,
     Lazy: 4,
     Aggressive: 2,
   },
@@ -388,10 +398,11 @@ const TEMPERAMENT_TEMPLATES = {
     Calm: 14,
     Bold: 12,
     Steady: 10,
+    Willing: 0,
     Independent: 12,
     Reactive: 6,
     Stubborn: 16,
-    Playful: 8,
+    Driven: 8,
     Lazy: 2,
     Aggressive: 0,
   },

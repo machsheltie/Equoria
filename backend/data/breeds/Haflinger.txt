@@ -87,17 +87,18 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "is_gaited_breed": false
   },
   "temperament_weights": {
-    "Spirited": 5,
-    "Nervous": 3,
-    "Calm": 28,
+    "Spirited": 8,
+    "Nervous": 4,
+    "Calm": 16,
     "Bold": 12,
-    "Steady": 30,
-    "Independent": 4,
-    "Reactive": 3,
-    "Stubborn": 4,
-    "Playful": 8,
-    "Lazy": 3,
-    "Aggressive": 0
+    "Steady": 15,
+    "Willing": 7,
+    "Independent": 10,
+    "Reactive": 4,
+    "Stubborn": 12,
+    "Driven": 6,
+    "Lazy": 5,
+    "Aggressive": 1
   }
 }$json$::JSONB)
 ON CONFLICT (name) DO UPDATE SET

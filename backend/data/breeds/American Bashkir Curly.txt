@@ -134,16 +134,17 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "gaited_gait_registry": ["Saddle Rack"]
   },
   "temperament_weights": {
-    "Spirited": 8,
-    "Nervous": 5,
-    "Calm": 20,
-    "Bold": 12,
-    "Steady": 22,
-    "Independent": 9,
+    "Spirited": 6,
+    "Nervous": 3,
+    "Calm": 18,
+    "Bold": 14,
+    "Steady": 18,
+    "Willing": 12,
+    "Independent": 6,
     "Reactive": 4,
-    "Stubborn": 6,
-    "Playful": 9,
-    "Lazy": 4,
+    "Stubborn": 4,
+    "Driven": 12,
+    "Lazy": 2,
     "Aggressive": 1
   }
 }$json$::JSONB)

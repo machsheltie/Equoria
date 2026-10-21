@@ -88,17 +88,19 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     // Owner ruling (Stacey, 2026-10-15/16; Equoria-576c0 B6): the temperaments are
     // the 11 of the owner's competition matrix. Old contract: six values,
     // including 'Docile' and 'Unpredictable', which are not among the 11.
-    it("should have exactly the owner's 11 temperaments", () => {
+    // Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments). Old contract: the 11, with PLAYFUL.
+    it("should have exactly the owner's 12 temperaments", () => {
       expect(HORSE_TEMPERAMENT).toEqual({
         SPIRITED: 'Spirited',
         NERVOUS: 'Nervous',
         CALM: 'Calm',
         BOLD: 'Bold',
         STEADY: 'Steady',
+        WILLING: 'Willing',
         INDEPENDENT: 'Independent',
         REACTIVE: 'Reactive',
         STUBBORN: 'Stubborn',
-        PLAYFUL: 'Playful',
+        DRIVEN: 'Driven',
         LAZY: 'Lazy',
         AGGRESSIVE: 'Aggressive',
       });

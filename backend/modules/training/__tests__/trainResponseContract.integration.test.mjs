@@ -172,6 +172,8 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
     expect(res.body).toHaveProperty('updatedScore');
     expect(res.body).toHaveProperty('nextEligibleDate');
     expect(res.body).toHaveProperty('traitEffects');
-    expect(res.body).toHaveProperty('temperamentEffects');
+    // Owner ruling 2026-10-21: temperament has no training modifier, so the
+    // response no longer carries temperamentEffects (old contract: present).
+    expect(res.body).not.toHaveProperty('temperamentEffects');
   });
 });

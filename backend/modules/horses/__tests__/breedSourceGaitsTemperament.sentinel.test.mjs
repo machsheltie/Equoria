@@ -245,7 +245,7 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     expect(failures).toEqual([]);
   });
 
-  it('every breed .txt has exactly the 11 temperament_weights keys, integer, summing to 100', () => {
+  it('every breed .txt has exactly the 12 temperament_weights keys, integer, summing to 100', () => {
     const failures = [];
     for (const { file, profile } of parsed) {
       const errs = findTemperamentErrors(profile);
@@ -263,20 +263,22 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     expect([...EXPECTED_GAITS].sort()).toEqual(['canter', 'gallop', 'trot', 'walk'].sort());
   });
 
-  it('the canonical temperament-weight key list under test is exactly the 11 expected keys', () => {
+  // Old contract: 11 keys including Playful. Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments).
+  it('the canonical temperament-weight key list under test is exactly the 12 expected keys', () => {
     expect([...EXPECTED_TEMPERAMENT_WEIGHT_KEYS].sort()).toEqual(
       [
         'Aggressive',
         'Bold',
         'Calm',
+        'Driven',
         'Independent',
         'Lazy',
         'Nervous',
-        'Playful',
         'Reactive',
         'Spirited',
         'Steady',
         'Stubborn',
+        'Willing',
       ].sort(),
     );
     expect(EXPECTED_TEMPERAMENT_WEIGHT_SUM).toBe(100);

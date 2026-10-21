@@ -3,29 +3,16 @@
 // and coat color genetics (allele_weights, allowed_alleles, shade_bias, marking_bias).
 // Source: PRD-02 §3.1/§3.2, PRD-03 §7.3, samples/BreedData/*.txt
 //
-// DATA VERSION: 5 (2026-05-14) — Equoria-jip9: per-region std_dev for 5 remaining placeholder breeds:
-//   - Thoroughbred (ID 1): racing selection pressure; gallop std_dev 4, shoulder std_dev 5
-//   - National Show Horse (ID 4): Arabian-Saddlebred show selection; gaiting/head/neck std_dev 5
-//   - Pony of the Americas (ID 5): composite Quarter Horse-type; moderate std_dev 7 throughout
-//   - Tennessee Walking Horse (ID 7): gait selection; walk/gaiting/shoulder std_dev 5
-//   - Walkaloosa (ID 10): cross-breed diversity; gaiting std_dev 7, back/hooves 8
-//
-// DATA VERSION: 4 (2026-03-27) — Pre-31D cleanup sprint:
-//   - Enriched Arabian, American Saddlebred, Appaloosa, Andalusian,
-//     American Quarter Horse, Paint Horse with real BreedData (per-region std_dev)
-//   - Added starter_stats (12 stats with mean + std_dev) for ALL 12 breeds
-//   - Updated temperament_weights from BreedData where available
+// Data history (per-region std_dev, BreedData enrichment): see git log.
 //
 // This file is the AUTHORITATIVE source of truth for breed genetic profiles.
 // The population script copies these values into the database.
 // If you need to change breed data, edit THIS file first, then re-run the population script.
 //
-// TEMPERAMENT NORMALIZATION POLICY:
-// Source SQL had weight-sum errors for 5 breeds. Fixes applied per breed:
-//   - National Show Horse (ID 4): sum 95→100 — Playful +3, Calm +2
-//   - Tennessee Walking Horse (ID 7): sum 99→100 — Calm +1
-//   - Walkaloosa (ID 10): sum 99→100 — Calm +1
-//   Breeds with BreedData files now use BreedData temperament_weights directly.
+// TEMPERAMENT WEIGHTS:
+// Owner ruling 2026-10-21: Playful was renamed Driven and Willing was added.
+// The owner set all 312 breeds' weights in backend/data/breedProfiles.json;
+// these 12 rows and backend/data/breeds/*.txt carry the same values.
 //
 // STD_DEV POLICY:
 // Each conformation region and gait has its own { mean, std_dev } object.
@@ -116,7 +103,7 @@ export const CANONICAL_BREEDS = [
 // BASE_BREED_PROFILES below, not from the deleted merge).
 
 /**
- * 11 temperament types used across all breeds.
+ * 12 temperament types used across all breeds.
  * Weights per breed sum to 100.
  */
 export const TEMPERAMENT_TYPES = [
@@ -125,10 +112,11 @@ export const TEMPERAMENT_TYPES = [
   'Calm',
   'Bold',
   'Steady',
+  'Willing',
   'Independent',
   'Reactive',
   'Stubborn',
-  'Playful',
+  'Driven',
   'Lazy',
   'Aggressive',
 ];
@@ -144,7 +132,7 @@ export const TEMPERAMENT_TYPES = [
  *   - rating_profiles.is_gaited_breed: boolean
  *   - rating_profiles.gaited_gait_registry: string[] | null
  *   - starter_stats: 12 horse stats with { mean, std_dev } for store purchases
- *   - temperament_weights: 11 types summing to 100
+ *   - temperament_weights: 12 types summing to 100
  */
 const BASE_BREED_PROFILES = {
   // Thoroughbred (ID 1) — High-energy racing breed
@@ -187,16 +175,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 16, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 30,
-      Nervous: 15,
-      Calm: 3,
+      Spirited: 25,
+      Nervous: 10,
+      Calm: 4,
       Bold: 15,
-      Steady: 5,
+      Steady: 6,
+      Willing: 3,
       Independent: 5,
-      Reactive: 15,
-      Stubborn: 3,
-      Playful: 5,
-      Lazy: 3,
+      Reactive: 10,
+      Stubborn: 4,
+      Driven: 16,
+      Lazy: 1,
       Aggressive: 1,
     },
   },
@@ -240,16 +229,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 13, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 40,
-      Nervous: 10,
-      Calm: 5,
-      Bold: 20,
-      Steady: 5,
-      Independent: 10,
-      Reactive: 5,
-      Stubborn: 2,
-      Playful: 2,
-      Lazy: 0,
+      Spirited: 22,
+      Nervous: 6,
+      Calm: 6,
+      Bold: 14,
+      Steady: 8,
+      Willing: 8,
+      Independent: 6,
+      Reactive: 8,
+      Stubborn: 4,
+      Driven: 16,
+      Lazy: 1,
       Aggressive: 1,
     },
   },
@@ -293,16 +283,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 15, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 35,
-      Nervous: 10,
+      Spirited: 18,
+      Nervous: 5,
       Calm: 10,
-      Bold: 15,
-      Steady: 10,
-      Independent: 5,
-      Reactive: 10,
-      Stubborn: 2,
-      Playful: 2,
-      Lazy: 0,
+      Bold: 12,
+      Steady: 14,
+      Willing: 12,
+      Independent: 6,
+      Reactive: 5,
+      Stubborn: 4,
+      Driven: 12,
+      Lazy: 1,
       Aggressive: 1,
     },
   },
@@ -347,15 +338,16 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 14, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 25,
+      Spirited: 18,
       Nervous: 5,
-      Calm: 10,
-      Bold: 20,
-      Steady: 8,
-      Independent: 5,
+      Calm: 12,
+      Bold: 12,
+      Steady: 14,
+      Willing: 10,
+      Independent: 6,
       Reactive: 5,
-      Stubborn: 5,
-      Playful: 15,
+      Stubborn: 4,
+      Driven: 12,
       Lazy: 1,
       Aggressive: 1,
     },
@@ -401,16 +393,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 14, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 5,
-      Nervous: 2,
-      Calm: 30,
-      Bold: 10,
-      Steady: 25,
+      Spirited: 8,
+      Nervous: 3,
+      Calm: 16,
+      Bold: 14,
+      Steady: 18,
+      Willing: 13,
       Independent: 5,
-      Reactive: 2,
-      Stubborn: 5,
-      Playful: 10,
-      Lazy: 5,
+      Reactive: 4,
+      Stubborn: 4,
+      Driven: 12,
+      Lazy: 2,
       Aggressive: 1,
     },
   },
@@ -454,16 +447,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 18, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 10,
-      Nervous: 5,
-      Calm: 25,
-      Bold: 15,
-      Steady: 20,
-      Independent: 10,
-      Reactive: 5,
-      Stubborn: 4,
-      Playful: 5,
-      Lazy: 0,
+      Spirited: 8,
+      Nervous: 3,
+      Calm: 16,
+      Bold: 14,
+      Steady: 18,
+      Willing: 11,
+      Independent: 6,
+      Reactive: 4,
+      Stubborn: 5,
+      Driven: 12,
+      Lazy: 2,
       Aggressive: 1,
     },
   },
@@ -508,16 +502,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 15, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 5,
-      Nervous: 1,
-      Calm: 41,
-      Bold: 5,
-      Steady: 30,
-      Independent: 3,
-      Reactive: 1,
-      Stubborn: 3,
-      Playful: 5,
-      Lazy: 5,
+      Spirited: 8,
+      Nervous: 2,
+      Calm: 22,
+      Bold: 10,
+      Steady: 22,
+      Willing: 14,
+      Independent: 4,
+      Reactive: 2,
+      Stubborn: 4,
+      Driven: 8,
+      Lazy: 3,
       Aggressive: 1,
     },
   },
@@ -561,16 +556,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 14, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 30,
+      Spirited: 16,
       Nervous: 5,
-      Calm: 15,
+      Calm: 12,
       Bold: 15,
-      Steady: 20,
+      Steady: 14,
+      Willing: 10,
       Independent: 5,
-      Reactive: 5,
-      Stubborn: 2,
-      Playful: 2,
-      Lazy: 0,
+      Reactive: 6,
+      Stubborn: 4,
+      Driven: 11,
+      Lazy: 1,
       Aggressive: 1,
     },
   },
@@ -614,16 +610,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 18, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 10,
-      Nervous: 2,
-      Calm: 35,
-      Bold: 10,
-      Steady: 30,
-      Independent: 5,
-      Reactive: 2,
-      Stubborn: 2,
-      Playful: 2,
-      Lazy: 1,
+      Spirited: 6,
+      Nervous: 3,
+      Calm: 16,
+      Bold: 14,
+      Steady: 18,
+      Willing: 12,
+      Independent: 6,
+      Reactive: 4,
+      Stubborn: 4,
+      Driven: 14,
+      Lazy: 2,
       Aggressive: 1,
     },
   },
@@ -668,16 +665,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 15, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 5,
-      Nervous: 1,
-      Calm: 36,
-      Bold: 10,
-      Steady: 30,
-      Independent: 3,
-      Reactive: 1,
-      Stubborn: 3,
-      Playful: 5,
-      Lazy: 5,
+      Spirited: 10,
+      Nervous: 3,
+      Calm: 18,
+      Bold: 12,
+      Steady: 18,
+      Willing: 14,
+      Independent: 6,
+      Reactive: 3,
+      Stubborn: 4,
+      Driven: 8,
+      Lazy: 3,
       Aggressive: 1,
     },
   },
@@ -721,16 +719,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 14, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 25,
+      Spirited: 16,
       Nervous: 5,
       Calm: 10,
-      Bold: 20,
-      Steady: 15,
+      Bold: 16,
+      Steady: 13,
+      Willing: 10,
       Independent: 5,
-      Reactive: 10,
-      Stubborn: 5,
-      Playful: 4,
-      Lazy: 0,
+      Reactive: 6,
+      Stubborn: 4,
+      Driven: 13,
+      Lazy: 1,
       Aggressive: 1,
     },
   },
@@ -774,16 +773,17 @@ const BASE_BREED_PROFILES = {
       strength: { mean: 18, std_dev: 3 },
     },
     temperament_weights: {
-      Spirited: 15,
-      Nervous: 5,
-      Calm: 25,
+      Spirited: 8,
+      Nervous: 3,
+      Calm: 16,
       Bold: 15,
-      Steady: 20,
-      Independent: 5,
-      Reactive: 5,
-      Stubborn: 3,
-      Playful: 5,
-      Lazy: 1,
+      Steady: 17,
+      Willing: 12,
+      Independent: 6,
+      Reactive: 4,
+      Stubborn: 4,
+      Driven: 12,
+      Lazy: 2,
       Aggressive: 1,
     },
   },
