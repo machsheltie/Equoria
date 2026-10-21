@@ -499,8 +499,8 @@ paths:
         prediction requires both parents to have genetics data. Callers MUST
         handle the null-data case.
 
-        Optional `foalBreedId` overrides the breed used to resolve the foal's
-        breed genetic profile (defaults to dam's breed).
+        The foal's breed genetic profile is always the dam's breed; there is
+        no breed override.
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -518,10 +518,6 @@ paths:
                   type: integer
                   minimum: 1
                   description: 'ID of the dam horse (must be owned by requester)'
-                foalBreedId:
-                  type: integer
-                  minimum: 1
-                  description: "Optional — overrides foal breed profile lookup (defaults to dam's breed)"
       responses:
         '200':
           description: 'Color prediction results (or null for legacy horses lacking genotype)'
