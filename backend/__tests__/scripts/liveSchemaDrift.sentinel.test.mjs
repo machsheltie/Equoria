@@ -58,11 +58,14 @@
  */
 
 import { describe, test, beforeAll, afterAll, expect } from '@jest/globals';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import pg from 'pg';
 
 import {
   CATALOG_SECTIONS,
   REFERENCE_DB_PREFIX,
+  REPO_ROOT,
   adminUrlFrom,
   assertReferenceDbName,
   deployMigrations,
@@ -278,7 +281,11 @@ describe('live-schema drift sentinel (Equoria-axyem.2)', () => {
     }
   });
 
-  test('CROSS-CHECK: the service creates NO indexes at all, which is what makes the empty list correct', () => {
+  test('CROSS-CHECK: the runtime index service is gone, which is what makes the empty list correct', () => {
+    // 2026-10-21: databaseOptimizationService.mjs itself was deleted as dead code
+    // (owner-approved). Its absence is the strongest form of "no runtime
+    // index-creation path"; recreating the file fails here before anything else.
+    expect(existsSync(path.join(REPO_ROOT, 'backend', 'services', 'databaseOptimizationService.mjs'))).toBe(false);
     // This cross-check used to prove every allow-listed name was one
     // databaseOptimizationService.mjs really creates, so an entry could not
     // outlive the DDL that justified it. Equoria-9xa92 removed that DDL, so it

@@ -26,7 +26,6 @@ import { randomBytes } from 'node:crypto';
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import cronJobService from '../services/cronJobs.mjs';
-import { isGroomAvailableToday } from '../utils/dailyCareAutomation.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 import { birthDateForAge, getHorseAgeDays, getHorseAgeYears } from '../utils/horseAge.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
@@ -175,12 +174,6 @@ describe.each(EVENINGS)('the Eastern evening window (%s) — Equoria-4urzd', (_l
     expect((await loadHorse(today.id)).foalDevelopment.currentDay).toBe(0);
     expect((await loadHorse(yesterday.id)).foalDevelopment.currentDay).toBe(1);
   });
-
-  it('a groom blocked on Friday is unavailable on Friday evening Eastern, though UTC is already Saturday', async () => {
-    await at(now, () => {
-      expect(now.getUTCDay()).toBe(6); // Saturday in UTC
-      expect(isGroomAvailableToday({ is_active: true, availability: { friday: false } })).toBe(false);
-      expect(isGroomAvailableToday({ is_active: true, availability: { saturday: false } })).toBe(true);
-    });
-  });
+  // (The groom-availability case tested utils/dailyCareAutomation.mjs, deleted
+  // 2026-10-21: grooms never act automatically; the player activates them.)
 });

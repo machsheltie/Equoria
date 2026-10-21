@@ -1,9 +1,8 @@
 /**
- * groomLegacyService + databaseOptimizationService unit tests
- * (Equoria-rr7 coverage sprint).
+ * groomLegacyService unit tests (Equoria-rr7 coverage sprint).
  *
- * groomLegacyService: DB fixture (user + groom).
- * databaseOptimizationService: mostly no DB needed (default benchmark path).
+ * groomLegacyService: DB fixture (user + groom). (The databaseOptimizationService
+ * half went with that dead file, deleted 2026-10-21.)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -14,10 +13,6 @@ import {
   checkLegacyEligibility,
   getUserLegacyHistory,
 } from '../services/groomLegacyService.mjs';
-import {
-  analyzeQueryPerformance,
-  benchmarkDatabaseOperations,
-} from '../../../services/databaseOptimizationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
@@ -100,30 +95,5 @@ describe('getUserLegacyHistory', () => {
     const result = await getUserLegacyHistory(user.id);
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(0);
-  });
-});
-
-// ── databaseOptimizationService ───────────────────────────────────────────────
-
-describe('analyzeQueryPerformance', () => {
-  it('throws for unknown query type', async () => {
-    await expect(analyzeQueryPerformance({ queryType: 'totally_unknown_type' })).rejects.toThrow();
-  });
-
-  it('returns performance shape for epigenetic_trait_search', async () => {
-    const result = await analyzeQueryPerformance({ queryType: 'epigenetic_trait_search' });
-    expect(result.queryType).toBe('epigenetic_trait_search');
-    expect(typeof result.executionTime).toBe('number');
-    expect(Array.isArray(result.recommendations)).toBe(true);
-  });
-});
-
-describe('benchmarkDatabaseOperations', () => {
-  it('returns default benchmark shape with no options', async () => {
-    const result = await benchmarkDatabaseOperations();
-    expect(typeof result.averageQueryTime).toBe('number');
-    expect(typeof result.p95QueryTime).toBe('number');
-    expect(typeof result.throughput).toBe('number');
-    expect(result.errorRate).toBe(0);
   });
 });

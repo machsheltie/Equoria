@@ -1,5 +1,5 @@
 /**
- * healthCheck + enhancedMilestoneEvaluationSystem constants
+ * enhancedMilestoneEvaluationSystem constants
  * + emailVerificationService (pure fns) unit tests (Equoria-rr7 coverage sprint).
  *
  * All tested functions are pure sync or self-contained with real-DB connectivity.
@@ -12,7 +12,6 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { HealthCheck } from '../../../utils/healthCheck.mjs';
 import {
   MILESTONE_TYPES,
   DEVELOPMENTAL_WINDOWS,
@@ -20,61 +19,6 @@ import {
   MILESTONE_TRAIT_POOLS,
 } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import { generateVerificationToken, hashVerificationToken } from '../../auth/index.mjs';
-
-// ── HealthCheck ───────────────────────────────────────────────────────────────
-
-describe('HealthCheck.checkDatabase', () => {
-  it('returns status healthy when DB is reachable', async () => {
-    const result = await HealthCheck.checkDatabase();
-    expect(typeof result.status).toBe('string');
-    expect(['healthy', 'unhealthy']).toContain(result.status);
-    expect(typeof result.message).toBe('string');
-    expect(typeof result.timestamp).toBe('string');
-  });
-});
-
-describe('HealthCheck.checkMemoryUsage', () => {
-  it('returns memory shape with rss and heap data', async () => {
-    const result = await HealthCheck.checkMemoryUsage();
-    expect(typeof result.status).toBe('string');
-    expect(typeof result.data.rss).toBe('string');
-    expect(typeof result.data.heapUsed).toBe('string');
-    expect(typeof result.data.heapTotal).toBe('string');
-    expect(typeof result.timestamp).toBe('string');
-  });
-});
-
-describe('HealthCheck.getUptime', () => {
-  it('returns uptime shape', () => {
-    const result = HealthCheck.getUptime();
-    expect(result.status).toBe('healthy');
-    expect(typeof result.data.uptime).toBe('string');
-    expect(typeof result.data.uptimeSeconds).toBe('number');
-    expect(result.data.uptimeSeconds).toBeGreaterThanOrEqual(0);
-  });
-});
-
-describe('HealthCheck.getSystemInfo', () => {
-  it('returns system info shape', async () => {
-    const result = await HealthCheck.getSystemInfo();
-    expect(result.status).toBe('healthy');
-    expect(typeof result.data.nodeVersion).toBe('string');
-    expect(typeof result.data.platform).toBe('string');
-    expect(typeof result.data.pid).toBe('number');
-  });
-});
-
-describe('HealthCheck.performFullHealthCheck', () => {
-  it('returns full check shape with database/memory/uptime/system', async () => {
-    const result = await HealthCheck.performFullHealthCheck();
-    expect(typeof result.status).toBe('string');
-    expect(['healthy', 'warning', 'unhealthy']).toContain(result.status);
-    expect(typeof result.checks.database).toBe('object');
-    expect(typeof result.checks.memory).toBe('object');
-    expect(typeof result.checks.uptime).toBe('object');
-    expect(typeof result.checks.system).toBe('object');
-  });
-});
 
 // ── enhancedMilestoneEvaluationSystem constants ───────────────────────────────
 

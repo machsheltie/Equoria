@@ -15,7 +15,6 @@
  * - Data retrieval: Show-based result queries with proper filtering
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. calculateCompetitionScore() - Real scoring algorithm with horse stats and traits
  * 2. saveResult() - Database persistence with relationship validation
  * 3. getResultsByShow() - Result retrieval with proper filtering and relationships
  * 4. Database integrity: Foreign key constraints, data consistency, concurrent operations
@@ -53,7 +52,6 @@ dotenv.config({ path: join(__dirname, '../../../.env.test') });
 // Import modules for testing
 const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
 const { saveResult, getResultsByShow } = await import('../services/resultModelService.mjs');
-const { calculateCompetitionScore } = await import('../../../utils/competitionScore.mjs');
 
 describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competition Workflow', () => {
   // Reference date anchor for all test date calculations
@@ -308,31 +306,9 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
     // prisma.$disconnect() removed — global teardown handles disconnection
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
-  describe('Competition Scoring Business Logic', () => {
-    it('CALCULATES realistic competition scores based on horse stats', async () => {
-      // VERIFY: Competition scoring function works correctly
-      const score1 = calculateCompetitionScore(testHorse1, 'Racing');
-      const score3 = calculateCompetitionScore(testHorse3, 'Racing');
-
-      expect(score1).toBeGreaterThan(0);
-      expect(score3).toBeGreaterThan(0);
-
-      // Higher stat horse should generally get higher score
-      expect(score1).toBeGreaterThan(score3);
-    });
-
-    it('APPLIES trait bonuses correctly in competition scoring', async () => {
-      // testHorse1 has 'discipline_affinity_racing' trait
-      const scoreWithTrait = calculateCompetitionScore(testHorse1, 'Racing');
-      const scoreWithoutTrait = calculateCompetitionScore(testHorse3, 'Racing');
-
-      expect(scoreWithTrait).toBeGreaterThan(0);
-      expect(scoreWithoutTrait).toBeGreaterThan(0);
-
-      // Horse with racing trait should score higher
-      expect(scoreWithTrait).toBeGreaterThan(scoreWithoutTrait);
-    });
-  });
+  // (The scoring describe tested utils/competitionScore.mjs, deleted 2026-10-21
+  // as dead code: no show ever scored through it. Live show scoring is tested
+  // by the show-execution and competitionScoring suites.)
 
   describe('Competition Result Persistence', () => {
     it('PERSISTS competition results in database correctly', async () => {

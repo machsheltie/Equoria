@@ -205,7 +205,6 @@ const CLASS_1_FILES = [
   'utils/traitDiscovery.mjs',
   'utils/applyEpigeneticTraitsAtBirth.mjs',
   'utils/enhancedMilestoneEvaluationSystem.mjs',
-  'utils/dailyCareAutomation.mjs',
   'modules/grooms/controllers/groomRosterController.mjs',
   'modules/grooms/controllers/groomInteractionController.mjs',
   'modules/grooms/controllers/enhancedGroomController.mjs',

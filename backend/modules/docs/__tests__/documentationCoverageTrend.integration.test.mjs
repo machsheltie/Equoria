@@ -21,7 +21,6 @@ import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import documentationRoutes from '../routes/documentationRoutes.mjs';
-import { responseHandler } from '../../../utils/apiResponse.mjs';
 import {
   recordCoverageSnapshot,
   getDocumentationCoverageTrend,
@@ -52,7 +51,6 @@ describe('Documentation Coverage Trend (Equoria-zr9kl)', () => {
 
     testApp = express();
     testApp.use(express.json());
-    testApp.use(responseHandler);
     testApp.use('/api/docs', documentationRoutes);
   }, 120000);
 

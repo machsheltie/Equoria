@@ -77,19 +77,15 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
 
   // ── SENTINEL: source-level enforcement of single source of truth ───────
   //
-  // Neither simulateCompetition.mjs nor showController.mjs may re-declare
+  // Neither the show executor nor showController.mjs may re-declare
   // RIDER_BONUS_CAP or RIDER_PENALTY_CAP locally. They must consume the
   // shared helper from competitionScoring.mjs (which itself imports the
   // canonical caps from riderBonus.mjs).
   //
   // If a future change re-introduces a local mirror cap, this test fails
   // and surfaces the drift before it can ship.
-  it('SENTINEL: simulateCompetition.mjs does NOT locally redeclare cap constants', () => {
-    const src = readFileSync(resolve(ROOT, 'logic/simulateCompetition.mjs'), 'utf8');
-    expect(src).not.toMatch(/const\s+RIDER_BONUS_CAP\s*=/);
-    expect(src).not.toMatch(/const\s+RIDER_PENALTY_CAP\s*=/);
-  });
-
+  // (logic/simulateCompetition.mjs, the old instant-path engine, was deleted as
+  // dead code on 2026-10-21; the show executor is the only engine left.)
   it('SENTINEL: showExecutionService.mjs and showController.mjs do NOT locally redeclare cap constants', () => {
     // Equoria-q4uem.4 (WS4 S4): the executor moved to showExecutionService.mjs; both files stay pinned.
     for (const rel of [
@@ -102,11 +98,7 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
     }
   });
 
-  it('SENTINEL: both engines consume the shared scoring service', () => {
-    // simulateCompetition applies the flag-compat step directly via the
-    // shared applyRiderCompatibility helper.
-    const simSrc = readFileSync(resolve(ROOT, 'logic/simulateCompetition.mjs'), 'utf8');
-    expect(simSrc).toMatch(/applyRiderCompatibility/);
+  it('SENTINEL: the show executor consumes the shared scoring service', () => {
     // The executor's entire cron-path scorer was extracted into the shared
     // service (Equoria-c7mx0): executeClosedShows (showExecutionService.mjs since
     // Equoria-q4uem.4) imports scoreShowEntries from competitionScoring.mjs, and

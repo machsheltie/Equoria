@@ -22,7 +22,6 @@ import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import userDocumentationRoutes from '../routes/userDocumentationRoutes.mjs';
-import { responseHandler } from '../../../utils/apiResponse.mjs';
 import { getUserDocumentationService } from '../../users/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,7 +36,6 @@ describe('User Documentation Routes', () => {
     // Create test Express app
     testApp = express();
     testApp.use(express.json());
-    testApp.use(responseHandler);
     testApp.use('/api/user-docs', userDocumentationRoutes);
 
     // Setup test documentation

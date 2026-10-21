@@ -1,91 +1,28 @@
 /**
  * flagInfluenceWired.sentinel.test.mjs (Equoria-yzqhj.1)
  *
- * Before this fix, epigenetic flags were computed + persisted to
- * Horse.epigeneticFlags but changed NO gameplay outcome — the
- * epigeneticFlagInfluence.mjs apply* functions had ZERO live callers.
+ * Before yzqhj.1, epigenetic flags were computed and persisted to
+ * Horse.epigeneticFlags but changed NO gameplay outcome.
  *
- * This sentinel proves the influence is now WIRED into the canonical live
- * scorers (OPTIMAL_FIX_DISCIPLINE §2 — fires on the real regression, not
- * merely passes on clean input):
+ * What is wired today (checked 2026-10-21): bonding (groomInteractionController,
+ * enhancedGroomController -> applyFlagInfluencesToBonding) and training
+ * (trainingController -> applyFlagInfluencesToTraining). These tests pin the
+ * helper behaviour those paths rely on.
  *
- *   1. Competition: a horse with a competitionBonus flag (`brave`) scores
- *      higher than an otherwise-identical unflagged horse (luck pinned).
- *   2. Competition: a competitionPenalty flag (`fearful`) scores lower.
- *   3. Bonding: a bondingResistance flag (`aloof`) reduces bond gain;
- *      a bondingRate flag (`affectionate`) raises it (module-level).
+ * NOT wired: competition. applyFlagInfluencesToCompetition has no live caller.
+ * This file used to "prove" competition wiring through utils/competitionScore.mjs,
+ * but no show ever scored through that file; it was deleted as dead code on
+ * 2026-10-21 and the gap is tracked for the owner's ruling (Equoria-k4j8r).
  *
- * No mocks: these call the real competitionScore + epigeneticFlagInfluence
- * functions. Luck is pinned via the _luckFn injection so the comparison is
- * deterministic. The DB-backed end-to-end proof (runEnhancedCompetition /
- * trainHorse / recordInteraction reading epigeneticFlags off a real row)
- * lives in the lead's serial integration gate; this worktree cannot run the
- * full real-DB suite (node_modules workspace deps unavailable).
+ * No mocks: real epigeneticFlagInfluence functions.
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { calculateCompetitionScoreDetailed } from '../../../utils/competitionScore.mjs';
 import {
   applyFlagInfluencesToCompetition,
   applyFlagInfluencesToTraining,
   applyFlagInfluencesToBonding,
 } from '../../../utils/epigeneticFlagInfluence.mjs';
-
-// A fixed-luck function so the ±9% random term is identical across runs.
-const pinnedLuck = () => 0.5; // → luckModifier 0 (0.5 * 0.18 - 0.09)
-
-function baseHorse(overrides = {}) {
-  return {
-    id: 1,
-    name: 'TestFixture-flag-influence',
-    speed: 80,
-    stamina: 80,
-    intelligence: 80,
-    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-    epigeneticFlags: [],
-    ...overrides,
-  };
-}
-
-describe('Epigenetic flag influence is WIRED into the live competition scorer (Equoria-yzqhj.1)', () => {
-  it('a brave (competitionBonus) horse scores HIGHER than an identical unflagged horse', () => {
-    const unflagged = calculateCompetitionScoreDetailed(baseHorse(), 'Racing', 'ridden', pinnedLuck);
-    const brave = calculateCompetitionScoreDetailed(
-      baseHorse({ epigeneticFlags: ['brave'] }),
-      'Racing',
-      'ridden',
-      pinnedLuck,
-    );
-    expect(brave.finalScore).toBeGreaterThan(unflagged.finalScore);
-    // flagImpact is surfaced for the response envelope
-    expect(brave.flagImpact).not.toBeNull();
-    expect(brave.flagImpact.totalModifier).toBeGreaterThan(0);
-    expect(unflagged.flagImpact).toBeNull();
-  });
-
-  it('a fearful (competitionPenalty) horse scores LOWER than an identical unflagged horse', () => {
-    const unflagged = calculateCompetitionScoreDetailed(baseHorse(), 'Racing', 'ridden', pinnedLuck);
-    const fearful = calculateCompetitionScoreDetailed(
-      baseHorse({ epigeneticFlags: ['fearful'] }),
-      'Racing',
-      'ridden',
-      pinnedLuck,
-    );
-    expect(fearful.finalScore).toBeLessThan(unflagged.finalScore);
-    expect(fearful.flagImpact.totalModifier).toBeLessThan(0);
-  });
-
-  it('an empty/absent flag array is a no-op on the score (boundary)', () => {
-    const none = calculateCompetitionScoreDetailed(baseHorse(), 'Racing', 'ridden', pinnedLuck);
-    const undef = calculateCompetitionScoreDetailed(
-      baseHorse({ epigeneticFlags: undefined }),
-      'Racing',
-      'ridden',
-      pinnedLuck,
-    );
-    expect(none.finalScore).toBe(undef.finalScore);
-  });
-});
 
 describe('Flag influence helpers behave for the training + bonding live paths (Equoria-yzqhj.1)', () => {
   it('confident raises training stat-gain efficiency (trainingEfficiency modifier)', () => {

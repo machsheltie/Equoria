@@ -29,7 +29,7 @@ import {
 } from './tokenCryptoHelpers.mjs';
 
 // Re-export the token-crypto surface so existing consumers
-// (sessionManagement, authController, cron tokenCleanupJob, the auth/groom/
+// (authController, cron tokenCleanupJob, the auth/groom/
 // health test suites that import hashRefreshToken / generateTokenFamily from
 // this service path) are unaffected by the Equoria-urqic.7 file-size split.
 // Public-export parity.

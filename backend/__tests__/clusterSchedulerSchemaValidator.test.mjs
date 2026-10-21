@@ -1,16 +1,12 @@
 /**
- * clusterManager + schemaValidator + dailyCareAutomation constants
- * unit tests (Equoria-rr7 coverage sprint).
+ * clusterManager unit tests (Equoria-rr7 coverage sprint).
  *
- * All tested exports are pure sync (cluster, scheduler control) or near-pure
- * (schemaValidator runs a simple DB round-trip; dailyCareAutomation constants).
- * No horse or user fixture needed.
+ * Pure sync exports; no fixture needed. (The schemaValidator and
+ * dailyCareAutomation parts went with those dead files, deleted 2026-10-21.)
  */
 
 import { describe, it, expect } from '@jest/globals';
 import { getWorkerCount, shouldUseCluster } from '../utils/clusterManager.mjs';
-import { validateDatabaseSchema } from '../utils/schemaValidator.mjs';
-import { DAILY_CARE_ROUTINES } from '../utils/dailyCareAutomation.mjs';
 
 // ── clusterManager ────────────────────────────────────────────────────────────
 
@@ -46,45 +42,5 @@ describe('shouldUseCluster', () => {
 
   it('respects CLUSTER_ENABLED=false', () => {
     expect(shouldUseCluster({ CLUSTER_ENABLED: 'false', NODE_ENV: 'production' })).toBe(false);
-  });
-});
-
-// ── schemaValidator ───────────────────────────────────────────────────────────
-
-describe('validateDatabaseSchema', () => {
-  it('returns a boolean (does not throw)', async () => {
-    const result = await validateDatabaseSchema({ throwOnError: false });
-    expect(typeof result).toBe('boolean');
-  });
-
-  it('is idempotent — second call also returns boolean without throwing', async () => {
-    await expect(validateDatabaseSchema()).resolves.not.toThrow();
-  });
-});
-
-// ── dailyCareAutomation constants ─────────────────────────────────────────────
-
-describe('DAILY_CARE_ROUTINES', () => {
-  it('contains standard routines with required fields', () => {
-    expect(typeof DAILY_CARE_ROUTINES).toBe('object');
-    expect(DAILY_CARE_ROUTINES.morning_care).toBeDefined();
-    expect(DAILY_CARE_ROUTINES.feeding).toBeDefined();
-    expect(DAILY_CARE_ROUTINES.grooming).toBeDefined();
-    expect(DAILY_CARE_ROUTINES.exercise).toBeDefined();
-    expect(DAILY_CARE_ROUTINES.evening_care).toBeDefined();
-  });
-
-  it('each routine has name, interactionType, duration, and priority', () => {
-    for (const [, routine] of Object.entries(DAILY_CARE_ROUTINES)) {
-      expect(typeof routine.name).toBe('string');
-      expect(typeof routine.interactionType).toBe('string');
-      expect(typeof routine.duration).toBe('number');
-      expect(typeof routine.priority).toBe('number');
-    }
-  });
-
-  it('priorities are ordered correctly (morning_care is priority 1)', () => {
-    expect(DAILY_CARE_ROUTINES.morning_care.priority).toBe(1);
-    expect(DAILY_CARE_ROUTINES.evening_care.priority).toBe(5);
   });
 });

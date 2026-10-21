@@ -23,7 +23,6 @@ import { cpSync, mkdtempSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import os from 'os';
 import documentationRoutes from '../routes/documentationRoutes.mjs';
-import { responseHandler } from '../../../utils/apiResponse.mjs';
 // authenticateToken import removed - not used in this file
 import { getApiDocumentationService } from '../../../services/apiDocumentationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -56,7 +55,6 @@ describe('Documentation Routes', () => {
     // Create test Express app
     testApp = express();
     testApp.use(express.json());
-    testApp.use(responseHandler);
     testApp.use('/api/docs', documentationRoutes);
 
     // Get documentation service

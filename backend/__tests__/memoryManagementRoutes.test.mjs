@@ -21,7 +21,6 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
 import memoryManagementRoutes from '../modules/admin/routes/memoryManagementRoutes.mjs';
-import { responseHandler } from '../utils/apiResponse.mjs';
 // authenticateToken import removed - not used in this file
 import {
   // getMemoryManager import removed - not used in this file
@@ -79,7 +78,6 @@ describe('Memory Management Routes', () => {
     // Create test Express app
     testApp = express();
     testApp.use(express.json());
-    testApp.use(responseHandler);
     testApp.use('/api/memory', memoryManagementRoutes);
 
     // Initialize memory management

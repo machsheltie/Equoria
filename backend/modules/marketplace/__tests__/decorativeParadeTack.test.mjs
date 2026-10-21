@@ -4,7 +4,6 @@
  * Covers:
  *   - TACK_INVENTORY decorative items shape and values
  *   - resolveTackBonus() with parade showType
- *   - simulateCompetition() parade scoring branch (presenceBonus × groomBondModifier)
  */
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
@@ -14,40 +13,6 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { TACK_INVENTORY, resolveTackBonus } from '../../economy/index.mjs';
-import { simulateCompetition } from '../../../logic/simulateCompetition.mjs';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/** Minimal horse for simulateCompetition */
-function makeHorse(overrides = {}) {
-  return {
-    id: 1,
-    name: 'TestHorse',
-    speed: 50,
-    stamina: 50,
-    agility: 50,
-    intelligence: 50,
-    precision: 50,
-    focus: 50,
-    boldness: 50,
-    flexibility: 50,
-    obedience: 50,
-    health: 'Good',
-    stress_level: 0,
-    tack: null,
-    rider: null,
-    trainingScore: 0,
-    trait: null,
-    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-    temperament: null,
-    ...overrides,
-  };
-}
-
-/** Ridden show */
-function makeShow(overrides = {}) {
-  return { discipline: 'Racing', showType: 'ridden', ...overrides };
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TACK_INVENTORY — decorative items shape
@@ -160,7 +125,7 @@ describe('resolveTackBonus() — parade presenceBonus', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// simulateCompetition — parade scoring branch
+// Parade show scoring — tack bonus
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('parade show scoring — tack bonus behavior', () => {
@@ -188,13 +153,5 @@ describe('parade show scoring — tack bonus behavior', () => {
   it('resolveTackBonus defaults showType to ridden — presenceBonus is 0', () => {
     const { presenceBonus } = resolveTackBonus({ decorations: ['parade-blanket'] });
     expect(presenceBonus).toBe(0);
-  });
-
-  it('simulateCompetition returns results array for a parade show', () => {
-    const horse = makeHorse({ tack: { decorations: ['show-ribbon'] } });
-    const show = makeShow({ showType: 'parade' });
-    const results = simulateCompetition([horse], show);
-    expect(results).toHaveLength(1);
-    expect(typeof results[0].score).toBe('number');
   });
 });

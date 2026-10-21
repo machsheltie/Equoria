@@ -10,7 +10,6 @@
  *   - competitionWorkflow.integration.test.mjs ('competitionuser')
  *   - leaderboardRoutes.test.mjs ('topplayer1/2/3' + name-based assertions)
  *   - documentation-system-integration.test.mjs ('docintegrationuser')
- *   - api-response-integration.test.mjs ('apiresponseintegrationuser')
  *   - health-monitoring-integration.test.mjs ('healthintegrationuser')
  *   - memory-management-integration.test.mjs ('memoryintegrationuser')
  *   - horseOverview.test.mjs ('testhorseoverviewuser')
@@ -56,7 +55,6 @@ const TARGET_FILES = [
   'competitionWorkflow.integration.test.mjs',
   'leaderboardRoutes.test.mjs',
   'documentation-system-integration.test.mjs',
-  'api-response-integration.test.mjs',
   'health-monitoring-integration.test.mjs',
   'memory-management-integration.test.mjs',
   'horseOverview.test.mjs',
