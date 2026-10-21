@@ -128,6 +128,18 @@ to fix the underlying problem. It is not a license to weaken the check.
   allowed. The `${DIRECT_URL:-$DATABASE_URL}` parameter-substitution fallback is
   not a swallow and is unaffected. Sentinel-positive:
   `backend/__tests__/railwayMigrateFailfastDoctrine.sentinel.test.mjs`.
+- `check-camelcase-naming.mjs` — shrink-only ratchet for the owner's strict
+  camelCase rule (Equoria-pjvp8). It counts snake_case and UPPER_SNAKE
+  identifiers, whole string values, JSON data keys and values, breed-seed
+  `$json$` keys and values, and Prisma enum values, field names and defaults.
+  The per-file baseline is `camelcase-naming-baseline.json`. A file may not
+  exceed its count. A file that drops below its count must lower it in the
+  same commit (`node scripts/doctrine-checks/check-camelcase-naming.mjs
+--shrink-baseline`). Comments, env-var names, module specifiers, Postgres
+  physical names and `camelcase-naming-allowlist.json` entries (each with a
+  reason) are exempt. `--report <file>` writes every occurrence as JSON.
+  Sentinel-positive:
+  `backend/__tests__/scripts/camelcaseNaming.sentinel.test.mjs`.
 
 ## Adding a new check
 

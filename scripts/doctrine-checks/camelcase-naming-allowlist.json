@@ -1,0 +1,93 @@
+{
+  "description": "Snake-case names Equoria does not own, so check-camelcase-naming.mjs never counts them (Equoria-pjvp8). Every entry needs a reason naming the outside owner. Postgres physical names (schema.prisma maps, migration identifiers) are exempt automatically.",
+  "patterns": [
+    {
+      "regex": "^FF_[A-Z0-9_]+$",
+      "reason": "feature-flag environment variables (backend/.env.example naming convention FF_<SCOPE>_<FEATURE_NAME>)"
+    },
+    { "regex": "^ERR_[A-Z0-9_]+$", "reason": "Node.js error codes" },
+    {
+      "regex": "^EQUORIA_SCAN_RE_[A-Z0-9_]+$",
+      "reason": "shell variable names defined in scripts/lib/beta-readiness-scans.sh"
+    },
+    {
+      "regex": "^idx_[a-z0-9_]+$",
+      "reason": "Postgres index names (SQL layer kept snake_case by owner ruling)"
+    },
+    {
+      "regex": "^[a-z][A-Za-z0-9_]*_(pkey|fkey|key|idx|check)$",
+      "reason": "Postgres constraint and index names (SQL layer kept snake_case by owner ruling)"
+    },
+    {
+      "regex": "^equoria_(test|lane|schema_ref|replay_sentinel)[a-z0-9_]*$",
+      "reason": "Postgres database names used by the test lanes and preflight"
+    },
+    {
+      "regex": "^lane_db_[0-9]+$",
+      "reason": "Postgres database names used by the gate-lock sentinel"
+    }
+  ],
+  "tokens": {
+    "node_modules": "npm directory name",
+    "child_process": "Node.js built-in module name",
+    "unstable_mockModule": "Jest API",
+    "string_contains": "Prisma JSON filter operator",
+    "connection_limit": "Prisma/Postgres connection-string parameter",
+    "pool_timeout": "Prisma/Postgres connection-string parameter",
+    "connect_timeout": "Prisma/Postgres connection-string parameter",
+    "statement_timeout": "Postgres setting",
+    "max_connections": "Postgres setting",
+    "table_name": "Postgres information_schema column",
+    "column_name": "Postgres information_schema column",
+    "constraint_name": "Postgres information_schema column",
+    "delete_rule": "Postgres information_schema column",
+    "data_type": "Postgres information_schema column",
+    "is_nullable": "Postgres information_schema column",
+    "migration_name": "Prisma _prisma_migrations column",
+    "http_req_duration": "k6 built-in metric",
+    "http_req_failed": "k6 built-in metric",
+    "http_reqs": "k6 built-in metric",
+    "used_memory_human": "Redis INFO field",
+    "used_memory_peak_human": "Redis INFO field",
+    "total_connections_received": "Redis INFO field",
+    "total_commands_processed": "Redis INFO field",
+    "evicted_keys": "Redis INFO field",
+    "keyspace_hits": "Redis INFO field",
+    "keyspace_misses": "Redis INFO field",
+    "access_token": "Google OAuth token endpoint field (backend/utils/gmailApiTransport.mjs)",
+    "refresh_token": "Google OAuth token endpoint field",
+    "expires_in": "Google OAuth token endpoint field",
+    "token_type": "Google OAuth token endpoint field",
+    "grant_type": "Google OAuth token endpoint field",
+    "client_id": "Google OAuth token endpoint field",
+    "client_secret": "Google OAuth token endpoint field",
+    "error_description": "Google OAuth error field",
+    "invalid_grant": "Google OAuth error code",
+    "utm_source": "standard URL campaign parameter",
+    "ABORT_ERR": "DOM/Node AbortError code",
+    "DO_NOT_COMMIT": "sentinel plant-artifact filename marker (scripts/lib/doctrine-scan-patterns.mjs)",
+    "SKIP_AUTH_FOR_TESTING": "environment variable name the beta gate forbids",
+    "ENABLE_DEBUG_ROUTES": "environment variable name the beta gate forbids",
+    "VITE_E2E_TEST": "environment variable name the bypass-header gate forbids",
+    "CORS_ORIGIN": "environment variable name (backend/scripts/validate-environment.mjs)",
+    "BCRYPT_ROUNDS": "environment variable name (backend/utils/envValidator.mjs)",
+    "AUTH_RATE_LIMIT_MAX": "environment variable name (backend/utils/envValidator.mjs)",
+    "JWT_EXPIRES_IN": "environment variable name (backend/utils/envValidator.mjs)",
+    "JWT_REFRESH_EXPIRES_IN": "environment variable name (backend/utils/envValidator.mjs)",
+    "TRAINING_COOLDOWN_DAYS": "environment variable name (backend/utils/envValidator.mjs)",
+    "BREEDING_COOLDOWN_DAYS": "environment variable name (backend/utils/envValidator.mjs)",
+    "ENABLE_AUDIT_LOGGING": "environment variable name (backend/utils/envValidator.mjs)",
+    "ENABLE_SECURITY_ALERTS": "environment variable name (backend/utils/envValidator.mjs)",
+    "__SET_LOCALLY__": "placeholder value convention in tracked .env example files",
+    "REPLACE_WITH_STRONG_PASSWORD": "placeholder value convention in tracked .env example files",
+    "REPLACE_WITH_YOUR_SECRET_KEY_32_CHARACTERS": "placeholder value convention in tracked .env example files",
+    "new_password": "snake_case request field the logger must still redact (requestLogger-redaction test input)",
+    "old_password": "snake_case request field the logger must still redact",
+    "current_password": "snake_case request field the logger must still redact",
+    "api_key": "snake_case request field the logger must still redact",
+    "private_key": "snake_case request field the logger must still redact",
+    "credit_card": "snake_case request field the logger must still redact",
+    "date_of_birth": "snake_case request field the logger must still redact",
+    "csrf_token": "snake_case request field the logger must still redact"
+  }
+}
