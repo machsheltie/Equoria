@@ -54,6 +54,7 @@ const DISCIPLINES = [
   'racing',
   'steeplechase',
   'harness-racing',
+  'pleasure-driving',
 ];
 
 function buildDisciplineScores(

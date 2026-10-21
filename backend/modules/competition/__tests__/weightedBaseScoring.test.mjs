@@ -94,7 +94,7 @@ describe('nightly scorer base: 50/30/20 of the discipline stats (B4a)', () => {
     expect(weightedDisciplineBase(horse({ precision: 74, focus: 72, obedience: 69 }), 'Dressage')).toBe(72.4);
   });
 
-  it('every one of the 23 disciplines scores its own weighted triple', () => {
+  it('every one of the 24 disciplines scores its own weighted triple', () => {
     for (const [discipline, [p, s, t]] of Object.entries(DISCIPLINE_STATS)) {
       const h = horse({ [p]: 100, [s]: 60, [t]: 20 });
       // 50 + 18 + 4 = 72 whatever the other stats are (they are all 50); x 1.01 = 72.72.

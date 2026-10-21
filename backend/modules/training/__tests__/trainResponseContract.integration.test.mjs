@@ -18,11 +18,10 @@
  *     response includes the keys statGain, xpAwarded, disciplineScoreIncrease.
  *     On pre-fix master these keys are ABSENT → this test FAILS there. After the
  *     fix they are present → it PASSES.
- *  2. statGain is present (a populated { stat, amount } object) when a stat is
- *     actually gained. The 15% stat-gain roll is forced deterministically by
- *     injecting `_randomFn = () => 0` (0 < statGainChance) into the service —
- *     the same injection point the controller already exposes — so the assertion
- *     is not flaky.
+ *  2. Owner rulings 2026-10-19 and 2026-10-21: training never raises a horse
+ *     stat, so statGain is no longer part of the contract (old contract: a
+ *     15% roll could return { stat, amount }). Neither trainHorse() nor the
+ *     route returns it.
  *  3. xpAwarded equals the real awarded XP (≥1) and disciplineScoreIncrease
  *     equals the authoritative score delta (≥1) the service computed.
  *
@@ -131,24 +130,18 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
     );
   }
 
-  it('trainHorse() returns statGain { stat, amount } when a stat is gained (forced roll)', async () => {
+  it('trainHorse() returns the real XP and score awards and no stat gain', async () => {
     const horse = await makeEligibleHorse(`TestFixture-o1x6g-svcgain-${suffix}`);
 
-    // _randomFn = () => 0 forces the 15% stat-gain roll to succeed (0 < chance)
-    // and deterministically selects the first relevant stat + a +1 amount.
-    const result = await trainHorse(horse.id, 'Dressage', () => 0);
+    const result = await trainHorse(horse.id, 'Dressage');
 
     expect(result.success).toBe(true);
-    // The real awarded fields the route previously dropped:
-    expect(result.statGain).not.toBeNull();
-    expect(typeof result.statGain.stat).toBe('string');
-    expect(result.statGain.stat.length).toBeGreaterThan(0);
-    expect(result.statGain.amount).toBeGreaterThanOrEqual(1);
+    expect(result).not.toHaveProperty('statGain');
     expect(result.xpAwarded).toBeGreaterThanOrEqual(1);
     expect(result.disciplineScoreIncrease).toBeGreaterThanOrEqual(1);
   });
 
-  it('trainRouteHandler emits statGain, xpAwarded, disciplineScoreIncrease (was lossy — Equoria-o1x6g)', async () => {
+  it('trainRouteHandler emits xpAwarded and disciplineScoreIncrease, and no statGain (was lossy — Equoria-o1x6g)', async () => {
     const horse = await makeEligibleHorse(`TestFixture-o1x6g-route-${suffix}`);
 
     const req = {
@@ -162,11 +155,10 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
 
-    // SENTINEL: these three keys must be PRESENT on the route response. On
-    // pre-fix master they were absent (the route dropped them), so this block
-    // fails there and passes after the fix. `toHaveProperty` asserts presence
-    // even when statGain's own value is null (no gain on this unforced roll).
-    expect(res.body).toHaveProperty('statGain');
+    // SENTINEL: these keys must be PRESENT on the route response. On pre-fix
+    // master they were absent (the route dropped them). statGain must be
+    // ABSENT: training never raises a stat (owner rulings 2026-10-19, 2026-10-21).
+    expect(res.body).not.toHaveProperty('statGain');
     expect(res.body).toHaveProperty('xpAwarded');
     expect(res.body).toHaveProperty('disciplineScoreIncrease');
 
@@ -175,13 +167,6 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
     expect(res.body.xpAwarded).toBeGreaterThanOrEqual(1);
     expect(typeof res.body.disciplineScoreIncrease).toBe('number');
     expect(res.body.disciplineScoreIncrease).toBeGreaterThanOrEqual(1);
-
-    // statGain is either null (no gain) or a populated { stat, amount } — never
-    // dropped. When present it must be well-formed.
-    if (res.body.statGain !== null) {
-      expect(typeof res.body.statGain.stat).toBe('string');
-      expect(res.body.statGain.amount).toBeGreaterThanOrEqual(1);
-    }
 
     // Existing fields the frontend already relies on must be preserved.
     expect(res.body).toHaveProperty('updatedScore');

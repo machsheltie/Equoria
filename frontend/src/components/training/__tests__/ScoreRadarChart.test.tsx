@@ -3,7 +3,7 @@
  *
  * Comprehensive tests for the Score Radar Chart component including:
  * - Chart rendering with ResponsiveContainer and RadarChart
- * - Data mapping for all 23 disciplines
+ * - Data mapping for all 24 disciplines
  * - Color coding by category (Western, English, Specialized, Racing)
  * - Tooltip functionality
  * - Legend display
@@ -172,12 +172,13 @@ describe('ScoreRadarChart', () => {
   });
 
   describe('Data Mapping Tests', () => {
-    it('includes all 23 disciplines in chart data', () => {
+    // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
+    it('includes all 24 disciplines in chart data', () => {
       render(<ScoreRadarChart disciplineScores={sampleScores} />);
       const chartData = getRadarChartProps()?.data;
 
       expect(chartData).toBeDefined();
-      expect(chartData.length).toBe(23);
+      expect(chartData.length).toBe(24);
     });
 
     it('maps discipline scores correctly', () => {
@@ -205,7 +206,7 @@ describe('ScoreRadarChart', () => {
       const chartData = getRadarChartProps()?.data;
 
       expect(chartData).toBeDefined();
-      expect(chartData.length).toBe(23);
+      expect(chartData.length).toBe(24);
       // All scores should be 0
       chartData.forEach((d: any) => {
         expect(d.score).toBe(0);
@@ -270,7 +271,7 @@ describe('ScoreRadarChart', () => {
       expect(specializedDiscipline.category).toBe('Specialized');
 
       const allSpecialized = chartData.filter((d: any) => d.category === 'Specialized');
-      expect(allSpecialized.length).toBe(7); // 7 Specialized disciplines
+      expect(allSpecialized.length).toBe(8); // Owner ruling 2026-10-21: Pleasure Driving joins Specialized. Old contract: 7.
     });
 
     it('assigns Racing disciplines red color', () => {
@@ -425,7 +426,7 @@ describe('ScoreRadarChart', () => {
       render(<ScoreRadarChart disciplineScores={undefined as any} />);
       const chartData = getRadarChartProps()?.data;
       expect(chartData).toBeDefined();
-      expect(chartData.length).toBe(23);
+      expect(chartData.length).toBe(24);
     });
   });
 });

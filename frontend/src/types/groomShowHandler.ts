@@ -66,26 +66,72 @@ export const HANDLER_SKILL_BONUSES: Record<HandlerSkillLevel, HandlerSkillBonus>
 
 /** Personality-discipline synergy bonuses (mirrors backend PERSONALITY_DISCIPLINE_SYNERGY) */
 export const PERSONALITY_DISCIPLINE_SYNERGY: Record<HandlerPersonality, PersonalitySynergy> = {
-  gentle: { beneficial: ['Dressage', 'Western Pleasure', 'Hunter', 'Saddleseat'], bonus: 0.03 },
-  energetic: { beneficial: ['Racing', 'Barrel Racing', 'Gymkhana', 'Steeplechase'], bonus: 0.04 },
+  gentle: {
+    beneficial: [
+      'Dressage',
+      'Western Pleasure',
+      'Hunter',
+      'Saddleseat',
+      'Pleasure Driving',
+      'Gaited',
+    ],
+    bonus: 0.03,
+  },
+  energetic: {
+    beneficial: ['Racing', 'Barrel Racing', 'Gymkhana', 'Steeplechase', 'Harness Racing'],
+    bonus: 0.04,
+  },
   patient: { beneficial: ['Endurance', 'Combined Driving', 'Obedience Training'], bonus: 0.035 },
-  strict: { beneficial: ['Show Jumping', 'Eventing', 'Reining', 'Cutting'], bonus: 0.045 },
+  strict: {
+    beneficial: ['Show Jumping', 'Eventing', 'Reining', 'Cutting', 'Roping', 'Team Penning'],
+    bonus: 0.045,
+  },
   calm: { beneficial: ['Dressage', 'Fine Harness', 'Vaulting'], bonus: 0.03 },
-  confident: { beneficial: ['Racing', 'Steeplechase', 'Cross Country', 'Polo'], bonus: 0.04 },
+  confident: {
+    beneficial: ['Racing', 'Steeplechase', 'Cross Country', 'Polo', 'Rodeo'],
+    bonus: 0.04,
+  },
 };
 
 /** Specialty-discipline bonuses (mirrors backend SPECIALTY_DISCIPLINE_BONUSES) */
 export const SPECIALTY_DISCIPLINE_BONUSES: Record<HandlerSpecialty, SpecialtyDisciplineBonus> = {
   showHandling: {
-    disciplines: ['Dressage', 'Show Jumping', 'Hunter', 'Saddleseat', 'Fine Harness'],
+    disciplines: [
+      'Dressage',
+      'Show Jumping',
+      'Hunter',
+      'Saddleseat',
+      'Fine Harness',
+      'Pleasure Driving',
+      'Gaited',
+      'Vaulting',
+    ],
     bonus: 0.06,
   },
-  racing: { disciplines: ['Racing', 'Steeplechase', 'Harness Racing'], bonus: 0.07 },
+  racing: { disciplines: ['Racing', 'Steeplechase', 'Harness Racing', 'Polo'], bonus: 0.07 },
   western: {
-    disciplines: ['Western Pleasure', 'Reining', 'Cutting', 'Barrel Racing', 'Roping'],
+    disciplines: [
+      'Western Pleasure',
+      'Reining',
+      'Cutting',
+      'Barrel Racing',
+      'Roping',
+      'Team Penning',
+      'Rodeo',
+      'Gymkhana',
+    ],
     bonus: 0.06,
   },
-  training: { disciplines: ['Obedience Training', 'Combined Driving'], bonus: 0.05 },
+  training: {
+    disciplines: [
+      'Obedience Training',
+      'Combined Driving',
+      'Endurance',
+      'Eventing',
+      'Cross Country',
+    ],
+    bonus: 0.05,
+  },
   foalCare: { disciplines: [], bonus: 0.02 },
   general: { disciplines: [], bonus: 0.01 },
 };

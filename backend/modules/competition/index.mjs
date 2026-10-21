@@ -10,7 +10,7 @@
  */
 
 export { applyRiderCompatibility } from './services/competitionScoring.mjs';
-// The competition discipline stat map (Equoria-576c0 B3): the bible's 23-discipline
+// The competition discipline stat map (Equoria-576c0 B3): the bible's 24-discipline
 // table. The shared stat-gain and competition-config helpers read it.
 export {
   DISCIPLINE_STATS,

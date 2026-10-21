@@ -11,6 +11,8 @@
  * Undiscovered slots show "?" placeholders.
  */
 
+import { DISCIPLINE_VALUES, type Discipline } from '@/constants/disciplines';
+
 export type DiscoveryCategory =
   | 'discipline_affinity'
   | 'temperament_compatibility'
@@ -44,34 +46,10 @@ export interface RiderDiscoveryProfile {
   nextDiscoveryAt?: number; // competitions until next reveal
 }
 
-/** The 23 competition disciplines used in discovery */
-export const COMPETITION_DISCIPLINES = [
-  'Dressage',
-  'Show Jumping',
-  'Cross Country',
-  'Eventing',
-  'Western Pleasure',
-  'Reining',
-  'Cutting',
-  'Barrel Racing',
-  'Pole Bending',
-  'Roping',
-  'Trail Riding',
-  'Endurance',
-  'Racing',
-  'Steeplechase',
-  'Hunter Under Saddle',
-  'Halter',
-  'In-Hand Trail',
-  'Liberty',
-  'Vaulting',
-  'Polo',
-  'Polocrosse',
-  'Team Penning',
-  'Natural Horsemanship',
-] as const;
+/** The competition disciplines used in discovery: the game's one list. */
+export const COMPETITION_DISCIPLINES = DISCIPLINE_VALUES;
 
-export type CompetitionDiscipline = (typeof COMPETITION_DISCIPLINES)[number];
+export type CompetitionDiscipline = Discipline;
 
 /** The horse temperaments used in temperament compatibility discovery */
 export const HORSE_TEMPERAMENTS = [

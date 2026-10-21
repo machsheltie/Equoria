@@ -53,7 +53,7 @@ import {
  * (0.5*75 + 0.3*70 + 0.2*70 in floating point need not be exactly 72.5).
  * Not rounded here: the score is rounded once, at the end.
  * @param {Object} horse - Horse row with the discipline's three stats.
- * @param {string} discipline - One of the 23 competition disciplines.
+ * @param {string} discipline - One of the 24 competition disciplines.
  * @returns {number}
  */
 export function weightedDisciplineBase(horse, discipline) {
@@ -147,7 +147,7 @@ export function applyRiderCompatibility({
  * @returns {Array<{entry: Object, score: number, assignment: Object|undefined}>}
  */
 export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Math.random }) {
-  // A show row whose discipline is outside the 23 (a legacy name) keeps the
+  // A show row whose discipline is outside the 24 (a legacy name) keeps the
   // pre-B4a flat 5-stat average, so the show still settles instead of failing
   // the nightly run.
   const weighted = isKnownDiscipline(show.discipline);

@@ -1,7 +1,7 @@
 /**
  * Shared discipline constants — mirrors backend/constants/schema.mjs DISCIPLINES
  *
- * Single source of truth for all 23 competition disciplines used in the game.
+ * Single source of truth for all 24 competition disciplines used in the game.
  * Import from here anywhere the discipline list is needed (filters, dropdowns,
  * training selectors, etc.) so that additions only require one change.
  */
@@ -30,6 +30,7 @@ export const DISCIPLINE_VALUES = [
   'Gymkhana',
   'Steeplechase',
   'Harness Racing',
+  'Pleasure Driving',
 ] as const;
 
 export type Discipline = (typeof DISCIPLINE_VALUES)[number];

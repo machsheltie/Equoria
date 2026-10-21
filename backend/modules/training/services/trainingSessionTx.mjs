@@ -8,13 +8,13 @@
  * part-way spent the week's cooldown with no gain, and a concurrent stat write
  * (e.g. a show payout) was overwritten by training's stale absolute value.
  *
- * Every write here commits or rolls back together, and the score and stat
- * gains are in-database increments on the committed row value. The caller
- * computes all inputs (modifiers, RNG rolls, XP amount) before calling.
+ * Every write here commits or rolls back together, and the score gain is an
+ * in-database increment on the committed row value. The caller computes all
+ * inputs (modifiers, XP amount) before calling. Training never writes a horse
+ * stat (owner rulings 2026-10-19 and 2026-10-21).
  */
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { addXpToUserCore } from '../../users/index.mjs';
-import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 
 // Thrown inside the transaction when the atomic cooldown claim loses the race,
@@ -31,7 +31,6 @@ const COOLDOWN_CLAIM_LOST = Symbol('trainingCooldownClaimLost');
  * @param {Date} p.cooldownNow - claim succeeds if trainingCooldown is null or <= this
  * @param {Date} p.nextEligible - the new trainingCooldown value
  * @param {number} p.disciplineScoreIncrease
- * @param {{stat:string, amount:number}|null} p.statGain
  * @returns {Promise<{trainingLog:object, updatedHorse:object, xpCore:object|null}|null>}
  *   null when the cooldown claim lost (nothing was written).
  */
@@ -44,14 +43,7 @@ export async function commitTrainingSession({
   cooldownNow,
   nextEligible,
   disciplineScoreIncrease,
-  statGain,
 }) {
-  // The stat column name is interpolated as an SQL identifier, so it must be a
-  // real horse stat (the caller's map is hardcoded, but fail closed).
-  if (statGain && !HORSE_STAT_VALUES.includes(statGain.stat)) {
-    throw new Error(`Invalid stat name: ${statGain.stat}`);
-  }
-
   try {
     return await withRetryableTxMapping(
       prisma.$transaction(async tx => {
@@ -96,17 +88,6 @@ export async function commitTrainingSession({
             to_jsonb(COALESCE(("disciplineScores" ->> ${discipline})::numeric, 0) + ${disciplineScoreIncrease}),
             true)
           WHERE "id" = ${horseId}`);
-
-        if (statGain) {
-          // stat += amount, capped at 100 in the database; a stat already at
-          // or above 100 is left untouched (never lowered).
-          const statCol = Prisma.raw(`"${statGain.stat}"`);
-          await tx.$executeRaw(Prisma.sql`
-            UPDATE "horses"
-            SET ${statCol} = CASE WHEN ${statCol} >= 100 THEN ${statCol}
-                                  ELSE LEAST(${statCol} + ${statGain.amount}, 100) END
-            WHERE "id" = ${horseId}`);
-        }
 
         const updatedHorse = await tx.horse.findUnique({
           where: { id: horseId },

@@ -97,14 +97,13 @@ export const createMockTrainingOverviewWithCooldown = () => {
 // canonical `nextEligible` from `nextEligibleDate` and `updatedScore` from the
 // flat field, so TrainingTab consumers (integration/confirmation/result/flow)
 // read the same values regardless. The real route already carries
-// statGain/xpAwarded/disciplineScoreIncrease (Equoria-o1x6g) — kept verbatim.
+// xpAwarded/disciplineScoreIncrease (Equoria-o1x6g) — kept verbatim.
 export const createMockTrainingResult = (disciplineId: string) => ({
   success: true,
   message: 'Training successful',
   updatedScore: 50,
   // Real backend emits the flat nextEligibleDate (ISO string), not nextEligible.
   nextEligibleDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-  statGain: { stat: 'speed', amount: 2, traitModified: false },
   xpAwarded: 25,
   disciplineScoreIncrease: 5,
   traitEffects: { appliedTraits: ['Fast Learner'], scoreModifier: 1, xpModifier: 25 },

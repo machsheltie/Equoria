@@ -13,7 +13,6 @@ export interface MockTrainingSession {
   discipline: string;
   trainedAt: string;
   cooldownUntil: string;
-  statGained: string;
   pointsGained: number;
 }
 
@@ -33,7 +32,6 @@ export function createMockTrainingSession(
     id: 1,
     horseId: 1,
     discipline: 'Dressage',
-    statGained: 'precision',
     pointsGained: 5,
     ...overrides,
     trainedAt,

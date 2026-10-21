@@ -31,8 +31,8 @@ import {
 
 describe('Training Utilities', () => {
   describe('DISCIPLINES Data', () => {
-    test('should have exactly 23 disciplines', () => {
-      expect(DISCIPLINES).toHaveLength(23);
+    test('should have exactly 24 disciplines', () => {
+      expect(DISCIPLINES).toHaveLength(24); // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
     });
 
     test('should have 7 Western disciplines', () => {
@@ -45,9 +45,9 @@ describe('Training Utilities', () => {
       expect(english).toHaveLength(6);
     });
 
-    test('should have 7 Specialized disciplines', () => {
+    test('should have 8 Specialized disciplines', () => {
       const specialized = DISCIPLINES.filter((d) => d.category === 'Specialized');
-      expect(specialized).toHaveLength(7);
+      expect(specialized).toHaveLength(8); // Owner ruling 2026-10-21: Pleasure Driving joins Specialized. Old contract: 7.
     });
 
     test('should have 3 Racing disciplines', () => {
@@ -94,7 +94,7 @@ describe('Training Utilities', () => {
 
     test('should return Specialized disciplines', () => {
       const disciplines = getDisciplinesByCategory('Specialized');
-      expect(disciplines).toHaveLength(7);
+      expect(disciplines).toHaveLength(8); // Owner ruling 2026-10-21: Pleasure Driving joins Specialized. Old contract: 7.
       expect(disciplines.every((d) => d.category === 'Specialized')).toBe(true);
     });
 
@@ -398,7 +398,7 @@ describe('Training Utilities', () => {
       const grouped = getDisciplinesGroupedByCategory();
       expect(grouped.Western).toHaveLength(7);
       expect(grouped.English).toHaveLength(6);
-      expect(grouped.Specialized).toHaveLength(7);
+      expect(grouped.Specialized).toHaveLength(8); // Owner ruling 2026-10-21: Pleasure Driving joins Specialized. Old contract: 7.
       expect(grouped.Racing).toHaveLength(3);
     });
 

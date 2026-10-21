@@ -8,7 +8,6 @@ import { getHorseById, getTemperamentTrainingModifiers } from '../../horses/inde
 import { commitTrainingSession } from '../services/trainingSessionTx.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
-import { applyFlagInfluencesToTraining } from '../../../utils/epigeneticFlagInfluence.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -166,7 +165,7 @@ async function computeCanTrain(parsedHorseId, discipline) {
  * @returns {Object} - Training result with success status, updated horse, and next eligible date
  * @throws {Error} - If validation fails or training is not allowed
  */
-async function trainHorse(horseId, discipline, _randomFn = Math.random) {
+async function trainHorse(horseId, discipline) {
   try {
     logger.info(
       `[trainingController.trainHorse] Attempting to train horse ${horseId} in ${discipline}`,
@@ -214,14 +213,13 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     }
 
     // Equoria-bvddn.17: a training session is ONE unit of work. Everything the
-    // session writes — owner XP, the cooldown claim, the TrainingLog row, the
-    // discipline-score gain and the stat gain — commits in a single
-    // transaction, so a failure at any step leaves the cooldown unclaimed and
-    // nothing half-applied. All inputs (modifiers, the RNG rolls, XP amount)
-    // are computed BEFORE the transaction; the transaction only writes.
-    // Score and stat gains are applied as in-database increments on the
-    // committed row value, never as a JS read-then-write, so a concurrent
-    // writer (e.g. a show payout's stat gain) is never overwritten.
+    // session writes — owner XP, the cooldown claim, the TrainingLog row and
+    // the discipline-score gain — commits in a single transaction, so a
+    // failure at any step leaves the cooldown unclaimed and nothing
+    // half-applied. All inputs (modifiers, XP amount) are computed BEFORE the
+    // transaction; the transaction only writes. The score gain is an
+    // in-database increment on the committed row value, never a JS
+    // read-then-write, so a concurrent writer is never overwritten.
     const parsedHorseId = parseInt(horseId, 10);
 
     // Equoria-0ihyi: the cooldown claim inside the transaction below is the
@@ -262,7 +260,7 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     // Equoria-oey96.7: trainer training modifier. Defensive — {0,0} for a
     // null/malformed trainer, so the no-trainer path is byte-identical to the
     // pre-feature behavior. Applies to the discipline-score GAIN only (NOT user
-    // XP, NOT the stat-gain chance), per the live trainer-modifier contract.
+    // XP), per the live trainer-modifier contract.
     const trainerModifier = computeTrainerModifiers({
       trainer: activeTrainer,
       discipline,
@@ -311,93 +309,8 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       );
     }
 
-    // Check for stat gain chance with trait effects
-    let statGainOccurred = false;
-    let statGainDetails = null;
-
-    // Base stat gain chance is 15% for training
-    let statGainChance = 0.15;
-
-    // Apply trait effects to stat gain chance
-    if (traitEffects.statGainChanceModifier) {
-      statGainChance = Math.max(
-        0,
-        Math.min(1, statGainChance + traitEffects.statGainChanceModifier),
-      );
-      logger.info(
-        `[trainingController.trainHorse] Stat gain chance modified by traits: ${(statGainChance * 100).toFixed(1)}%`,
-      );
-    }
-
-    // Apply epigenetic FLAG influence to training efficiency (Equoria-yzqhj.1).
-    // Behavioral flags (eagerLearner via trainingEfficiency modifier, etc.)
-    // earned from 0-3yr foal care now bias the stat-gain chance. The flag
-    // module clamps efficiency to [0,1]; we treat the net efficiency delta as
-    // an additive stat-gain-chance modifier (then re-clamp to [0,1]). This is
-    // the single live training consumer of the flag-influence module.
-    const flagTraining = applyFlagInfluencesToTraining(
-      statGainChance,
-      Array.isArray(horse.epigeneticFlags) ? horse.epigeneticFlags : [],
-    );
-    if (flagTraining.totalModifier !== 0) {
-      statGainChance = Math.max(0, Math.min(1, flagTraining.modifiedEfficiency));
-      logger.info(
-        `[trainingController.trainHorse] Stat gain chance modified by epigenetic flags: ${(statGainChance * 100).toFixed(1)}% (${flagTraining.totalModifier > 0 ? '+' : ''}${flagTraining.totalModifier.toFixed(3)})`,
-      );
-    }
-
-    // Roll for stat gain
-    if (_randomFn() < statGainChance) {
-      statGainOccurred = true;
-
-      // Determine which stat to improve based on discipline
-      const disciplineStatMap = {
-        'Western Pleasure': ['obedience', 'focus', 'precision'],
-        Reining: ['precision', 'agility', 'focus'],
-        Cutting: ['agility', 'strength', 'intelligence'],
-        'Barrel Racing': ['speed', 'agility', 'stamina'],
-        Roping: ['strength', 'precision', 'focus'],
-        'Team Penning': ['intelligence', 'agility', 'obedience'],
-        Rodeo: ['strength', 'agility', 'endurance'],
-        Hunter: ['precision', 'endurance', 'agility'],
-        Saddleseat: ['flexibility', 'obedience', 'precision'],
-        Endurance: ['endurance', 'stamina', 'speed'],
-        Eventing: ['endurance', 'precision', 'agility'],
-        Dressage: ['precision', 'focus', 'obedience'],
-        'Show Jumping': ['agility', 'precision', 'intelligence'],
-        Vaulting: ['strength', 'flexibility', 'endurance'],
-        Polo: ['speed', 'agility', 'intelligence'],
-        'Cross Country': ['endurance', 'intelligence', 'agility'],
-        'Combined Driving': ['obedience', 'strength', 'focus'],
-        'Fine Harness': ['precision', 'flexibility', 'obedience'],
-        Gaited: ['flexibility', 'obedience', 'focus'],
-        Gymkhana: ['speed', 'flexibility', 'stamina'],
-        Steeplechase: ['speed', 'endurance', 'stamina'],
-        Racing: ['speed', 'stamina', 'intelligence'],
-        'Harness Racing': ['speed', 'precision', 'stamina'],
-      };
-
-      const relevantStats = disciplineStatMap[discipline] || ['speed', 'stamina', 'focus'];
-      const statToImprove = relevantStats[Math.floor(_randomFn() * relevantStats.length)];
-
-      // Calculate stat gain amount (base 1-3 points, capped at 10 to prevent extreme trait values)
-      let statGainAmount = Math.floor(_randomFn() * 3) + 1;
-
-      // Apply trait effects to stat gain amount
-      if (traitEffects.baseStatBoost) {
-        statGainAmount += traitEffects.baseStatBoost;
-        logger.info(
-          `[trainingController.trainHorse] Stat gain boosted by traits: +${traitEffects.baseStatBoost}`,
-        );
-      }
-      statGainAmount = Math.min(10, statGainAmount);
-
-      statGainDetails = {
-        stat: statToImprove,
-        amount: statGainAmount,
-        traitModified: !!(traitEffects.statGainChanceModifier || traitEffects.baseStatBoost),
-      };
-    }
+    // Owner rulings 2026-10-19 and 2026-10-21: training adds to the trained
+    // discipline's score and never raises a horse stat, in every discipline.
 
     // Calculate XP award with trait effects
     let baseXp = 5;
@@ -433,7 +346,6 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       cooldownNow,
       nextEligible: nextEligibleClaim,
       disciplineScoreIncrease,
-      statGain: statGainDetails,
     });
     if (!txResult) {
       logger.info(
@@ -450,11 +362,6 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
 
     const { trainingLog, updatedHorse, xpCore } = txResult;
 
-    if (statGainDetails) {
-      logger.info(
-        `[trainingController.trainHorse] Stat gain: ${statGainDetails.stat} +${statGainDetails.amount}`,
-      );
-    }
     if (xpCore) {
       logger.info(
         `[trainingController.trainHorse] Awarded ${baseXp} XP to user ${ownerId} for training${xpCore.leveledUp ? ` - LEVEL UP to ${xpCore.currentLevel}!` : ''}`,
@@ -481,7 +388,7 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     // Fail-soft — trainer XP failure must not block the training result.
     if (activeTrainerId) {
       try {
-        await awardTrainerSessionXP(activeTrainerId, statGainOccurred);
+        await awardTrainerSessionXP(activeTrainerId);
       } catch (trainerXpErr) {
         logger.error(
           `[trainingController.trainHorse] Failed to award trainer XP for horse ${horseId}: ${trainerXpErr.message}`,
@@ -504,13 +411,12 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       updatedHorse,
       disciplineScoreIncrease,
       // Equoria-o1x6g: surface the REAL awarded XP (post-trait, post-temperament,
-      // floor-1) so the route + frontend stat-gain modal can show the actual XP
+      // floor-1) so the route + frontend result modal can show the actual XP
       // row instead of inferring it from traitEffects.xpModifier (a trait-only
       // delta, not the awarded amount).
       xpAwarded: baseXp,
-      message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.${statGainOccurred ? ` Stat gain: ${statGainDetails.stat} +${statGainDetails.amount}` : ''}`,
+      message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.`,
       nextEligible: nextEligible.toISOString(),
-      statGain: statGainOccurred ? statGainDetails : null,
       // Equoria-oey96.7: surface the trainer contribution honestly so the UI
       // can show the effect even in sessions where the single terminal round
       // absorbs the integer point delta. net can be negative (an incompatible
@@ -524,8 +430,6 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
         appliedTraits: allTraits,
         scoreModifier: traitAdjustedScore - 5, // trait-only delta (pre-temperament)
         xpModifier: traitAdjustedXp - 5, // trait-only delta (pre-temperament)
-        statGainChanceModifier: traitEffects.statGainChanceModifier || 0,
-        baseStatBoost: traitEffects.baseStatBoost || 0,
       },
       temperamentEffects: horse.temperament
         ? {
@@ -675,12 +579,11 @@ async function trainRouteHandler(req, res) {
       const actualIncrease = result.disciplineScoreIncrease ?? 5;
 
       // Format response with trait and temperament effects information.
-      // Equoria-o1x6g: the route previously DROPPED statGain, the real awarded
-      // XP, and the authoritative disciplineScoreIncrease that trainHorse()
-      // already computed. That left TrainingTab's stat-gain modal always empty,
-      // the XP row wired to traitEffects.xpModifier (a trait-only delta, not the
-      // award), and scoreGain recomputed client-side (drifting from the real
-      // value). Surface all three on the canonical contract. Existing fields
+      // Equoria-o1x6g: the route previously DROPPED the real awarded XP and the
+      // authoritative disciplineScoreIncrease that trainHorse() already
+      // computed, leaving the XP row wired to traitEffects.xpModifier (a
+      // trait-only delta, not the award) and scoreGain recomputed client-side
+      // (drifting from the real value). Surface both. Existing fields
       // (updatedScore, nextEligibleDate, traitEffects, temperamentEffects) are
       // preserved verbatim — the frontend already relies on them.
       res.json({
@@ -694,8 +597,6 @@ async function trainRouteHandler(req, res) {
         // Real awarded XP (post-trait, post-temperament, floor-1). null only if
         // trainHorse somehow omitted it (older return shape) — keep it explicit.
         xpAwarded: result.xpAwarded ?? null,
-        // { stat, amount, traitModified } when a stat was gained, else null.
-        statGain: result.statGain ?? null,
         // Equoria-oey96.7: { bonusPercent, penaltyPercent, net } trainer
         // contribution to the discipline-score gain (net can be negative;
         // {0,0,0} when no trainer). null only for an older trainHorse shape.

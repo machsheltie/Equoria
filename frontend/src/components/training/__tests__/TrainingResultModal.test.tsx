@@ -148,27 +148,9 @@ describe('TrainingResultModal', () => {
 
   // ==================== ADDITIONAL GAINS DISPLAY ====================
   describe('Additional Gains Display', () => {
-    it('should show stat gains when provided', () => {
-      render(<TrainingResultModal {...defaultProps} statGains={{ Precision: 2, Focus: 1 }} />);
-
-      expect(screen.getByTestId('additional-gains-section')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-gain-Precision')).toHaveTextContent('Precision: +2');
-    });
-
-    it('should display multiple stat gains correctly', () => {
-      const statGains = {
-        Precision: 2,
-        Focus: 1,
-        Speed: 3,
-      };
-
-      render(<TrainingResultModal {...defaultProps} statGains={statGains} />);
-
-      expect(screen.getByTestId('stat-gain-Precision')).toHaveTextContent('Precision: +2');
-      expect(screen.getByTestId('stat-gain-Focus')).toHaveTextContent('Focus: +1');
-      expect(screen.getByTestId('stat-gain-Speed')).toHaveTextContent('Speed: +3');
-    });
-
+    // Old contract: the modal listed training stat gains. New contract (owner
+    // rulings 2026-10-19, 2026-10-21): training never raises a stat; XP is the
+    // only additional gain.
     it('should show XP gain when provided', () => {
       render(<TrainingResultModal {...defaultProps} xpGain={25} />);
 
@@ -177,8 +159,8 @@ describe('TrainingResultModal', () => {
       expect(xpGain).toHaveClass('text-[var(--role-warning-text)]', 'font-semibold');
     });
 
-    it('should handle missing optional gains (statGains and xpGain undefined)', () => {
-      render(<TrainingResultModal {...defaultProps} statGains={undefined} xpGain={undefined} />);
+    it('should show no additional gains section without XP', () => {
+      render(<TrainingResultModal {...defaultProps} xpGain={undefined} />);
 
       expect(screen.queryByTestId('additional-gains-section')).not.toBeInTheDocument();
     });
@@ -323,29 +305,6 @@ describe('TrainingResultModal', () => {
       expect(screen.getByTestId('new-score')).toHaveTextContent('99999');
     });
 
-    it('should handle many stat gains (5+ stats)', () => {
-      const manyStats = {
-        Precision: 2,
-        Focus: 1,
-        Speed: 3,
-        Stamina: 2,
-        Agility: 1,
-        Intelligence: 1,
-      };
-
-      render(<TrainingResultModal {...defaultProps} statGains={manyStats} />);
-
-      const gainsList = screen.getByTestId('gains-list');
-      expect(gainsList.children.length).toBe(6);
-
-      expect(screen.getByTestId('stat-gain-Precision')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-gain-Focus')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-gain-Speed')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-gain-Stamina')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-gain-Agility')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-gain-Intelligence')).toBeInTheDocument();
-    });
-
     it('should handle multiple rapid open/close cycles', async () => {
       const { rerender } = render(<TrainingResultModal {...defaultProps} />);
 
@@ -462,26 +421,10 @@ describe('TrainingResultModal', () => {
       expect(screen.getByTestId('xp-gain')).toHaveTextContent('XP: +100');
     });
 
-    it('should show both stat gains and XP when both provided', () => {
-      render(<TrainingResultModal {...defaultProps} statGains={{ Precision: 2 }} xpGain={50} />);
+    it('lists XP as the only additional gain', () => {
+      render(<TrainingResultModal {...defaultProps} xpGain={50} />);
 
-      expect(screen.getByTestId('stat-gain-Precision')).toBeInTheDocument();
-      expect(screen.getByTestId('xp-gain')).toBeInTheDocument();
-    });
-  });
-
-  // ==================== EMPTY STAT GAINS ====================
-  describe('Empty Stat Gains', () => {
-    it('should not show additional gains section when statGains is empty object', () => {
-      render(<TrainingResultModal {...defaultProps} statGains={{}} />);
-
-      expect(screen.queryByTestId('additional-gains-section')).not.toBeInTheDocument();
-    });
-
-    it('should show section only with XP when statGains is empty but xpGain exists', () => {
-      render(<TrainingResultModal {...defaultProps} statGains={{}} xpGain={25} />);
-
-      expect(screen.getByTestId('additional-gains-section')).toBeInTheDocument();
+      expect(screen.getByTestId('gains-list').children.length).toBe(1);
       expect(screen.getByTestId('xp-gain')).toBeInTheDocument();
     });
   });

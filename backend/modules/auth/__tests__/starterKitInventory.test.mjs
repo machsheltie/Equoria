@@ -26,7 +26,7 @@ describe('STARTER_KIT_INVENTORY value lock (Equoria-oroi)', () => {
     expect(saddle).toBeDefined();
     expect(saddle.itemId).toBe('all-purpose-saddle');
     expect(saddle.name).toBe('All Purpose Saddle');
-    expect(saddle.bonus).toBe('+5 all disciplines');
+    expect(saddle.bonus).toBe('+2 all disciplines'); // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.
     expect(saddle.quantity).toBe(1);
   });
 
@@ -35,7 +35,7 @@ describe('STARTER_KIT_INVENTORY value lock (Equoria-oroi)', () => {
     expect(bridle).toBeDefined();
     expect(bridle.itemId).toBe('all-purpose-bridle');
     expect(bridle.name).toBe('All Purpose Bridle');
-    expect(bridle.bonus).toBe('+5 all disciplines');
+    expect(bridle.bonus).toBe('+2 all disciplines'); // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.
     expect(bridle.quantity).toBe(1);
   });
 

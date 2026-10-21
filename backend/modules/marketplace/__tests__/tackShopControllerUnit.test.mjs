@@ -135,21 +135,23 @@ describe('resolveTackBonus — catalog lookup path', () => {
   });
 
   it('resolves a valid bridle ID to its numericBonus (Equoria-slry: literal lock)', () => {
-    // spec-all-purpose-tack.md: all-purpose-bridle.numericBonus = 5.
+    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.
+    // (spec-all-purpose-tack.md had all-purpose-bridle.numericBonus = 5.)
     // Asserting literal value catches a regression that lowered the bonus
     // (e.g. 5 → 1) which the prior .toBeGreaterThan(0) check let through.
     const result = resolveTackBonus({ bridle: 'all-purpose-bridle' });
-    expect(result.bridleBonus).toBe(5);
+    expect(result.bridleBonus).toBe(2);
     expect(result.saddleBonus).toBe(0);
   });
 
   it('resolves both saddle and bridle together (Equoria-slry: literal lock)', () => {
-    // spec-all-purpose-tack.md: all-purpose-saddle.numericBonus = 5
-    // and all-purpose-bridle.numericBonus = 5. Literal asserts replace
+    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.
+    // (spec-all-purpose-tack.md had all-purpose-saddle.numericBonus = 5
+    // and all-purpose-bridle.numericBonus = 5.) Literal asserts replace
     // the prior .toBeGreaterThan(0) which would have passed a 1+1 regression.
     const result = resolveTackBonus({ saddle: 'all-purpose-saddle', bridle: 'all-purpose-bridle' });
-    expect(result.saddleBonus).toBe(5);
-    expect(result.bridleBonus).toBe(5);
+    expect(result.saddleBonus).toBe(2);
+    expect(result.bridleBonus).toBe(2);
   });
 
   it('returns 0 for unknown saddle ID', () => {

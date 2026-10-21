@@ -80,6 +80,7 @@ describe('getRelevantStats', () => {
       'Steeplechase',
       'Racing',
       'Harness Racing',
+      'Pleasure Driving',
     ];
     for (const d of disciplines) {
       expect(getRelevantStats(d)).toHaveLength(3);
@@ -200,6 +201,7 @@ describe('competitionRewards — deterministic _rngFn & exhaustive coverage (mer
         'Steeplechase',
         'Racing',
         'Harness Racing',
+        'Pleasure Driving',
       ];
       for (const discipline of disciplines) {
         const stats = getRelevantStats(discipline);

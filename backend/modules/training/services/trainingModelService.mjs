@@ -231,7 +231,7 @@ async function getTrainableHorses(userId) {
       return [];
     }
 
-    // All 23 disciplines — Gaited filtered per horse trait
+    // All 24 disciplines — Gaited filtered per horse trait
     const allDisciplines = getAllDisciplines();
 
     const allHorses = [];

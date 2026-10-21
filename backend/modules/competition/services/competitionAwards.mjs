@@ -131,7 +131,7 @@ export async function awardPlacementProgression(
   // 3. Stat gain — top-3 only, chance-gated. calculateStatGains returns
   // { stat, gain } or null; `stat` comes from a hardcoded discipline->stats map
   // (allow-listed constants — safe to interpolate as a column key).
-  // A show row whose discipline is outside the 23 (a legacy name) still settles:
+  // A show row whose discipline is outside the 24 (a legacy name) still settles:
   // only its random stat gain is skipped, because there is no stat to raise.
   // Throwing here would abort the entry's tx and the whole nightly run
   // (Equoria-576c0 B3 review).

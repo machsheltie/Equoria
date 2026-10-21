@@ -36,7 +36,7 @@ describe('LEGACY_TRAIT_KEY_MAP — every documented snake key maps to canonical 
   });
 });
 
-describe('disciplineAffinityKey — canonical PascalCase derivation for all 23 disciplines', () => {
+describe('disciplineAffinityKey — canonical PascalCase derivation for all 24 disciplines', () => {
   it('derives disciplineAffinityShowJumping from "Show Jumping"', () => {
     expect(disciplineAffinityKey('Show Jumping')).toBe('disciplineAffinityShowJumping');
   });

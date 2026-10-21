@@ -103,7 +103,6 @@ describe('TrainingTab — absent server nextEligible (Equoria-gzvwa)', () => {
           success: true,
           message: 'Training complete',
           updatedScore: 15,
-          statGain: { stat: 'precision', amount: 1 },
           xpAwarded: 5,
         })
       )
@@ -156,7 +155,6 @@ describe('TrainingTab — absent server nextEligible (Equoria-gzvwa)', () => {
           success: true,
           message: 'Training complete',
           updatedScore: 15,
-          statGain: { stat: 'precision', amount: 1 },
           xpAwarded: 5,
           // Real backend uses the flat (deprecated) nextEligibleDate field.
           nextEligibleDate: realDate,

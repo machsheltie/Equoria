@@ -3,7 +3,7 @@
  *
  * Celestial Night styled discipline picker for the training flow.
  * Features:
- *  - One flat alphabetical list of all 23 disciplines
+ *  - One flat alphabetical list of all 24 disciplines
  *  - The primary/secondary/tertiary stats each discipline uses
  *
  * Owner ruling 2026-10-07 (Stacey): the game never recommends or ranks
@@ -55,6 +55,7 @@ export const DISCIPLINE_STAT_MAP: Record<string, [string, string, string]> = {
   Steeplechase: ['speed', 'endurance', 'stamina'],
   Racing: ['speed', 'stamina', 'intelligence'],
   'Harness Racing': ['speed', 'precision', 'stamina'],
+  'Pleasure Driving': ['obedience', 'balance', 'focus'],
 };
 
 export const ALL_DISCIPLINES = Object.keys(DISCIPLINE_STAT_MAP).sort();

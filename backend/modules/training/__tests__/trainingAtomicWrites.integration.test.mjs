@@ -13,19 +13,20 @@
  *       un-parsed, the stat update threw, and the error was swallowed — the
  *       response claimed success with no stat gain (Equoria-bvddn.26).
  *
+ * Owner rulings 2026-10-19 and 2026-10-21: training never raises a horse stat,
+ * in any discipline, so (2) no longer has a training write to race; the stat
+ * tests below now pin that no stat moves at all.
+ *
  * Real DB, real trainHorse, no mocks. Failure (1) is injected with a real
- * Postgres CHECK constraint scoped to the fixture horse; interleaving (2) uses
- * a second real Postgres session in a worker thread (see
- * helpers/horseRowLockHolder.worker.mjs). `_randomFn` is trainHorse's existing
- * RNG seam: () => 0 forces a stat gain of +1 on the discipline's first stat.
+ * Postgres CHECK constraint scoped to the fixture horse.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { Worker } from 'node:worker_threads';
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { trainHorse } from '../controllers/trainingController.mjs';
+import { DISCIPLINE_VALUES, HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-bvddn17';
@@ -98,7 +99,7 @@ describe('trainHorse — all training writes commit or roll back together (Equor
     );
     let outcome;
     try {
-      outcome = await trainHorse(horse.id, 'Dressage', () => 0.999).then(
+      outcome = await trainHorse(horse.id, 'Dressage').then(
         value => ({ threw: false, value }),
         error => ({ threw: true, error }),
       );
@@ -119,75 +120,40 @@ describe('trainHorse — all training writes commit or roll back together (Equor
     expect(xpAfter).toBe(xpBefore);
   });
 
-  it('a concurrent stat write from another session is not overwritten by the training stat gain', async () => {
-    const horse = await createHorse('concurrent', { speed: 50 });
-    const flag = new SharedArrayBuffer(4);
-    const flagView = new Int32Array(flag);
-    const worker = new Worker(new URL('./helpers/horseRowLockHolder.worker.mjs', import.meta.url), {
-      workerData: {
-        connectionString: process.env.DATABASE_URL,
-        horseId: horse.id,
-        stat: 'speed',
-        amount: 5,
-        flag,
-      },
-    });
-    const workerDone = new Promise((resolve, reject) => {
-      worker.once('message', resolve);
-      worker.once('error', reject);
-    });
+  // Old contract: a 15% roll could raise one of the discipline's stats. New
+  // contract (owner rulings 2026-10-19, 2026-10-21): training only adds +5 to
+  // the trained discipline's score, in every discipline. Gaited is left out
+  // only because its own gate refuses a non-gaited fixture horse.
+  it('training in every discipline adds +5 to that discipline and moves no stat', async () => {
+    const statSelect = Object.fromEntries(HORSE_STAT_VALUES.map(stat => [stat, true]));
+    const disciplines = DISCIPLINE_VALUES.filter(d => d !== 'Gaited');
+    expect(disciplines).toContain('Pleasure Driving');
 
-    let triggered = false;
-    // () => 0 forces: stat gain roll passes, stat = Racing[0] = speed, amount = +1.
-    // On the FIRST RNG call (after training has decided to run, before its stat
-    // write) the other session takes the horse row lock; this thread blocks
-    // until it holds it.
-    const rng = () => {
-      if (!triggered) {
-        triggered = true;
-        worker.postMessage('lock');
-        Atomics.wait(flagView, 0, 0, 10000);
-        if (Atomics.load(flagView, 0) !== 1) {
-          throw new Error('row-lock holder worker failed to take the lock');
-        }
-      }
-      return 0;
-    };
+    for (const discipline of disciplines) {
+      const horse = await createHorse(`nostat-${discipline.replace(/\s+/g, '')}`);
+      const before = await prisma.horse.findUnique({ where: { id: horse.id }, select: statSelect });
 
-    let result;
-    try {
-      result = await trainHorse(horse.id, 'Racing', rng);
-    } finally {
-      const msg = triggered ? await workerDone : { done: false, error: 'rng never called' };
-      await worker.terminate();
-      expect(msg).toEqual({ done: true, sawWaiter: true });
+      const result = await trainHorse(horse.id, discipline);
+
+      expect([discipline, result.success]).toEqual([discipline, true]);
+      expect(result).not.toHaveProperty('statGain');
+      const after = await prisma.horse.findUnique({
+        where: { id: horse.id },
+        select: { ...statSelect, disciplineScores: true },
+      });
+      const { disciplineScores, ...stats } = after;
+      expect([discipline, stats]).toEqual([discipline, before]);
+      expect([discipline, disciplineScores]).toEqual([discipline, { [discipline]: 5 }]);
     }
+  }, 120000);
+
+  it('a numeric-string horseId trains and adds the discipline score (Equoria-bvddn.26)', async () => {
+    const horse = await createHorse('stringid');
+
+    const result = await trainHorse(String(horse.id), 'Racing');
 
     expect(result.success).toBe(true);
-    expect(result.statGain).toEqual(expect.objectContaining({ stat: 'speed', amount: 1 }));
-    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { speed: true } });
-    // 50 + 5 (other writer) + 1 (training) — neither gain lost.
-    expect(after.speed).toBe(56);
-  });
-
-  it('stat gain is applied when horseId arrives as a numeric string (Equoria-bvddn.26)', async () => {
-    const horse = await createHorse('stringid', { speed: 40 });
-
-    const result = await trainHorse(String(horse.id), 'Racing', () => 0);
-
-    expect(result.success).toBe(true);
-    expect(result.statGain).toEqual(expect.objectContaining({ stat: 'speed', amount: 1 }));
-    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { speed: true } });
-    expect(after.speed).toBe(41);
-  });
-
-  it('the stat gain is capped at 100 in the database', async () => {
-    const horse = await createHorse('cap', { speed: 100 });
-
-    const result = await trainHorse(horse.id, 'Racing', () => 0);
-
-    expect(result.success).toBe(true);
-    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { speed: true } });
-    expect(after.speed).toBe(100);
+    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { disciplineScores: true } });
+    expect(after.disciplineScores).toEqual({ Racing: 5 });
   });
 });

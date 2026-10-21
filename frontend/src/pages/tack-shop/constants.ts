@@ -6,6 +6,8 @@
  * page composition and its sub-components share one source of truth.
  */
 
+import { DISCIPLINE_VALUES } from '@/constants/disciplines';
+
 export type TackShopTab = 'horses' | 'shop';
 
 /** Fallback display names if backend doesn't provide them */
@@ -32,19 +34,8 @@ export const CATEGORY_ICONS: Record<string, string> = {
   breastplate: '🛡️',
 };
 
-export const DISCIPLINE_OPTIONS = [
-  'All',
-  'Dressage',
-  'Show Jumping',
-  'Cross-Country',
-  'Western Pleasure',
-  'Endurance',
-  'Racing',
-  'Eventing',
-  'Reining',
-  'Barrel Racing',
-  'Hunter',
-];
+/** 'All' plus every competition discipline. */
+export const DISCIPLINE_OPTIONS = ['All', ...DISCIPLINE_VALUES];
 
 /**
  * Tack tier badge styling — semantic role tokens (DECISIONS.md §7):

@@ -215,9 +215,12 @@ describe('RIDER_MARKETPLACE_CONFIG', () => {
     expect(sum).toBe(100);
   });
 
-  it('SPECIALTY_DISTRIBUTION sums to 100', () => {
-    const sum = Object.values(RIDER_MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION).reduce((a, b) => a + b, 0);
-    expect(sum).toBe(100);
+  // Owner ruling 2026-10-21: specialties are an even pick across every competition
+  // discipline. Old contract: a 6-discipline percentage spread summing to 100.
+  it('SPECIALTIES lists every competition discipline once', () => {
+    expect(RIDER_MARKETPLACE_CONFIG.SPECIALTIES).toHaveLength(24);
+    expect(new Set(RIDER_MARKETPLACE_CONFIG.SPECIALTIES).size).toBe(24);
+    expect(RIDER_MARKETPLACE_CONFIG.SPECIALTIES).toContain('Pleasure Driving');
   });
 
   it('has WEEKLY_RATE_RANGES for all skill levels', () => {
@@ -360,9 +363,12 @@ describe('TRAINER_MARKETPLACE_CONFIG', () => {
     expect(sum).toBe(100);
   });
 
-  it('SPECIALTY_DISTRIBUTION sums to 100', () => {
-    const sum = Object.values(TRAINER_MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION).reduce((a, b) => a + b, 0);
-    expect(sum).toBe(100);
+  // Owner ruling 2026-10-21: specialties are an even pick across every competition
+  // discipline. Old contract: a 6-discipline percentage spread summing to 100.
+  it('SPECIALTIES lists every competition discipline once', () => {
+    expect(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).toHaveLength(24);
+    expect(new Set(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).size).toBe(24);
+    expect(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).toContain('Pleasure Driving');
   });
 });
 

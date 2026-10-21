@@ -48,7 +48,7 @@ import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudClea
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-12-tackdoc';
 const LIST_PRICE = 400;
-const SHOP_SADDLE = 'all-purpose-saddle'; // 400, category `saddle`, +5
+const SHOP_SADDLE = 'all-purpose-saddle'; // 400, category `saddle`, +2 (Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.)
 const RIBBON = 'show-ribbon'; // 120, category `decorative`
 const BROWBAND = 'floral-browband'; // 160, category `decorative`
 
@@ -141,8 +141,8 @@ describe('Horse.tack document integrity around equip/unequip (Equoria-6p398.12)'
 
     const equipped = await readTack(horse.id);
     expect(equipped.saddle).toBe(SHOP_SADDLE);
-    expect(equipped.saddleBonus).toBe(5);
-    expect(resolveTackBonus(equipped).saddleBonus).toBe(5);
+    expect(equipped.saddleBonus).toBe(2);
+    expect(resolveTackBonus(equipped).saddleBonus).toBe(2);
 
     const record = (await inventoryOf(owner.token)).find(i => i.itemId === SHOP_SADDLE);
     expect(record).toBeDefined();

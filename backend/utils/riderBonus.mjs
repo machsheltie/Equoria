@@ -58,23 +58,35 @@ const RIDER_DISCIPLINE_AFFINITY = Object.freeze({
   daring: Object.freeze({
     Racing: 'high',
     'Show Jumping': 'high',
+    Steeplechase: 'high',
     'Cross Country': 'medium',
+    Polo: 'medium',
+    Rodeo: 'medium',
   }),
   methodical: Object.freeze({
     Dressage: 'high',
     'Western Pleasure': 'high',
+    'Pleasure Driving': 'high',
     Reining: 'medium',
+    'Fine Harness': 'medium',
+    Saddleseat: 'medium',
+    Hunter: 'medium',
   }),
   intuitive: Object.freeze({
-    'Trail Riding': 'high',
     Endurance: 'high',
-    'Natural Horsemanship': 'high',
+    Eventing: 'medium',
+    Vaulting: 'medium',
+    Gaited: 'medium',
+    'Combined Driving': 'medium',
   }),
   competitive: Object.freeze({
-    'Stadium Jumping': 'high',
     'Show Jumping': 'high',
     'Barrel Racing': 'high',
+    Gymkhana: 'high',
     Cutting: 'medium',
+    'Harness Racing': 'medium',
+    'Team Penning': 'medium',
+    Roping: 'medium',
   }),
 });
 

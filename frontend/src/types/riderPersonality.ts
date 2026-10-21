@@ -41,7 +41,10 @@ export const RIDER_PERSONALITY_DATA: Record<RiderPersonality, RiderPersonalityIn
     disciplineAffinities: [
       { discipline: 'Racing', magnitude: 'high' },
       { discipline: 'Show Jumping', magnitude: 'high' },
+      { discipline: 'Steeplechase', magnitude: 'high' },
       { discipline: 'Cross Country', magnitude: 'medium' },
+      { discipline: 'Polo', magnitude: 'medium' },
+      { discipline: 'Rodeo', magnitude: 'medium' },
     ],
     temperamentCompatibility: [
       { horseTemperament: 'Bold/Confident', rating: 'high' },
@@ -62,7 +65,11 @@ export const RIDER_PERSONALITY_DATA: Record<RiderPersonality, RiderPersonalityIn
     disciplineAffinities: [
       { discipline: 'Dressage', magnitude: 'high' },
       { discipline: 'Western Pleasure', magnitude: 'high' },
+      { discipline: 'Pleasure Driving', magnitude: 'high' },
       { discipline: 'Reining', magnitude: 'medium' },
+      { discipline: 'Fine Harness', magnitude: 'medium' },
+      { discipline: 'Saddleseat', magnitude: 'medium' },
+      { discipline: 'Hunter', magnitude: 'medium' },
     ],
     temperamentCompatibility: [
       { horseTemperament: 'Any Temperament', rating: 'high' },
@@ -82,9 +89,11 @@ export const RIDER_PERSONALITY_DATA: Record<RiderPersonality, RiderPersonalityIn
     description:
       'Reads horses naturally and adapts in real-time. Versatile across disciplines and temperaments.',
     disciplineAffinities: [
-      { discipline: 'Trail Riding', magnitude: 'high' },
       { discipline: 'Endurance', magnitude: 'high' },
-      { discipline: 'Natural Horsemanship', magnitude: 'high' },
+      { discipline: 'Eventing', magnitude: 'medium' },
+      { discipline: 'Vaulting', magnitude: 'medium' },
+      { discipline: 'Gaited', magnitude: 'medium' },
+      { discipline: 'Combined Driving', magnitude: 'medium' },
     ],
     temperamentCompatibility: [
       { horseTemperament: 'Nervous/Shy', rating: 'high' },
@@ -103,9 +112,13 @@ export const RIDER_PERSONALITY_DATA: Record<RiderPersonality, RiderPersonalityIn
     description:
       'Laser-focused on results. Thrives in high-profile events and against strong competition.',
     disciplineAffinities: [
-      { discipline: 'Stadium Jumping', magnitude: 'high' },
+      { discipline: 'Show Jumping', magnitude: 'high' },
       { discipline: 'Barrel Racing', magnitude: 'high' },
+      { discipline: 'Gymkhana', magnitude: 'high' },
       { discipline: 'Cutting', magnitude: 'medium' },
+      { discipline: 'Harness Racing', magnitude: 'medium' },
+      { discipline: 'Team Penning', magnitude: 'medium' },
+      { discipline: 'Roping', magnitude: 'medium' },
     ],
     temperamentCompatibility: [
       { horseTemperament: 'Bold/Experienced', rating: 'high' },

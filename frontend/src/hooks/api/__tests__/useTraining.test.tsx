@@ -16,7 +16,7 @@
  * the globally-registered csrf-token handler.
  *
  * Equoria-6uk35: the /training/train overrides return the REAL flat
- * trainRouteHandler body (updatedScore + nextEligibleDate + statGain +
+ * trainRouteHandler body (updatedScore + nextEligibleDate +
  * xpAwarded + disciplineScoreIncrease + traitEffects) — NOT the fictional
  * {nextEligible, updatedHorse.discipline_scores} shape the backend never
  * emits. The normalizer (`trainingApi.train`) maps the flat backend body to
@@ -69,11 +69,6 @@ describe('useTrainHorse', () => {
       disciplineScoreIncrease: 5,
       xpAwarded: 6,
       nextEligibleDate: '2026-02-06T10:00:00Z',
-      statGain: {
-        stat: 'agility',
-        amount: 3,
-        traitModified: false,
-      },
       traitEffects: {
         appliedTraits: ['Athletic'],
         scoreModifier: 5,
@@ -102,43 +97,6 @@ describe('useTrainHorse', () => {
     expect(body).toEqual({ horseId: 1, discipline: 'dressage' });
   });
 
-  it('should return training result with stat gains', async () => {
-    const mockResult = {
-      success: true,
-      message: 'Training complete',
-      updatedScore: 68,
-      disciplineScoreIncrease: 5,
-      xpAwarded: 6,
-      nextEligibleDate: '2026-02-06T10:00:00Z',
-      statGain: {
-        stat: 'speed',
-        amount: 2,
-        traitModified: true,
-      },
-      traitEffects: {
-        appliedTraits: ['Quick Learner'],
-        scoreModifier: 3,
-        xpModifier: 1.2,
-      },
-    };
-
-    server.use(
-      http.post(`${base}/api/v1/training/train`, () => HttpResponse.json({ data: mockResult }))
-    );
-
-    const { result } = renderHook(() => useTrainHorse(), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.mutate({ horseId: 1, discipline: 'jumping' });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(result.current.data?.statGain?.stat).toBe('speed');
-    expect(result.current.data?.statGain?.amount).toBe(2);
-    expect(result.current.data?.statGain?.traitModified).toBe(true);
-  });
-
   it('should return training result with trait effects', async () => {
     const mockResult = {
       success: true,
@@ -147,11 +105,6 @@ describe('useTrainHorse', () => {
       disciplineScoreIncrease: 5,
       xpAwarded: 6,
       nextEligibleDate: '2026-02-06T10:00:00Z',
-      statGain: {
-        stat: 'stamina',
-        amount: 4,
-        traitModified: false,
-      },
       traitEffects: {
         appliedTraits: ['Determined', 'Hardy'],
         scoreModifier: 8,
@@ -184,11 +137,6 @@ describe('useTrainHorse', () => {
       disciplineScoreIncrease: 5,
       xpAwarded: 6,
       nextEligibleDate: '2026-02-06T10:00:00Z',
-      statGain: {
-        stat: 'speed',
-        amount: 5,
-        traitModified: false,
-      },
     };
 
     server.use(
@@ -216,11 +164,6 @@ describe('useTrainHorse', () => {
       xpAwarded: 6,
       // Real backend emits the flat nextEligibleDate (ISO string).
       nextEligibleDate: '2026-02-13T10:00:00Z',
-      statGain: {
-        stat: 'agility',
-        amount: 2,
-        traitModified: false,
-      },
     };
 
     server.use(
@@ -269,11 +212,6 @@ describe('useTrainHorse', () => {
       disciplineScoreIncrease: 5,
       xpAwarded: 6,
       nextEligibleDate: '2026-02-06T10:00:00Z',
-      statGain: {
-        stat: 'agility',
-        amount: 2,
-        traitModified: false,
-      },
     };
 
     server.use(
@@ -292,7 +230,10 @@ describe('useTrainHorse', () => {
     expect(result.current.isSuccess).toBe(true);
   });
 
-  it('should handle missing stat gain gracefully', async () => {
+  // Old contract: statGain was null when no stat rose. New contract (owner
+  // rulings 2026-10-19, 2026-10-21): training never raises a stat, so the
+  // result has no statGain at all.
+  it('returns no stat gain', async () => {
     const mockResult = {
       success: true,
       message: 'Training complete',
@@ -300,7 +241,6 @@ describe('useTrainHorse', () => {
       disciplineScoreIncrease: 5,
       xpAwarded: 6,
       nextEligibleDate: '2026-02-06T10:00:00Z',
-      statGain: null,
     };
 
     server.use(
@@ -315,7 +255,7 @@ describe('useTrainHorse', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.statGain).toBeNull();
+    expect(result.current.data).not.toHaveProperty('statGain');
   });
 
   it('should handle missing trait effects gracefully', async () => {
@@ -326,11 +266,6 @@ describe('useTrainHorse', () => {
       disciplineScoreIncrease: 5,
       xpAwarded: 6,
       nextEligibleDate: '2026-02-06T10:00:00Z',
-      statGain: {
-        stat: 'agility',
-        amount: 2,
-        traitModified: false,
-      },
     };
 
     server.use(

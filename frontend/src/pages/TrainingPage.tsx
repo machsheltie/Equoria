@@ -44,7 +44,7 @@ const TrainingPage = () => {
     <PageContainer variant="wide" padded={false} className="pb-8" data-testid="training-page">
       <PageHeader
         title="Training Grounds"
-        subtitle="Hone your horses' skills across 23 disciplines. Each session pushes them closer to their potential."
+        subtitle="Hone your horses' skills across 24 disciplines. Each session pushes them closer to their potential."
         icon={<Swords className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
         breadcrumbs={
           <nav aria-label="Breadcrumb" className="flex items-center gap-2">

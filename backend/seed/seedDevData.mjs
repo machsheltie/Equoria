@@ -211,7 +211,7 @@ const SHOWS = [
   },
   {
     name: 'Celestial Cross-Country',
-    discipline: 'Cross-Country',
+    discipline: 'Cross Country',
     levelMin: 2,
     levelMax: 8,
     entryFee: 150,

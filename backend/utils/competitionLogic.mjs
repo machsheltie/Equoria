@@ -161,6 +161,11 @@ export function calculateCompetitionScore(disciplineScore, traits, age, discipli
         beneficial: ['fast', 'precise', 'resilient', 'focused'],
         detrimental: ['slow', 'clumsy', 'weak'],
       },
+      'Pleasure Driving': {
+        stats: ['obedience', 'balance', 'focus'],
+        beneficial: ['calm', 'peopleTrusting', 'balanced', 'focused'],
+        detrimental: ['nervous', 'stubborn', 'aggressive'],
+      },
       'Obedience Training': {
         stats: ['obedience', 'precision', 'intelligence'],
         beneficial: ['peopleTrusting', 'intelligent', 'focused', 'calm'],
@@ -355,6 +360,10 @@ function getDisciplineConfigurations() {
     'Harness Racing': {
       beneficial: ['fast', 'precise', 'resilient', 'focused'],
       detrimental: ['slow', 'clumsy', 'weak'],
+    },
+    'Pleasure Driving': {
+      beneficial: ['calm', 'peopleTrusting', 'balanced', 'focused'],
+      detrimental: ['nervous', 'stubborn', 'aggressive'],
     },
     'Obedience Training': {
       stats: ['obedience', 'precision', 'intelligence'],

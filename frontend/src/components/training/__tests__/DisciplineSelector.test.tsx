@@ -4,7 +4,7 @@ import '@testing-library/jest-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import DisciplineSelector from '../DisciplineSelector';
 
-// All 23 disciplines from backend
+// All 24 disciplines from backend (Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.)
 const ALL_DISCIPLINES = [
   'Barrel Racing',
   'Combined Driving',
@@ -18,6 +18,7 @@ const ALL_DISCIPLINES = [
   'Gymkhana',
   'Harness Racing',
   'Hunter',
+  'Pleasure Driving',
   'Polo',
   'Racing',
   'Reining',
@@ -62,8 +63,8 @@ describe('DisciplineSelector', () => {
     });
   });
 
-  describe('All 23 Disciplines', () => {
-    it('includes all 23 disciplines as buttons', () => {
+  describe('All 24 Disciplines', () => {
+    it('includes all 24 disciplines as buttons', () => {
       render(
         <DisciplineSelector selectedDiscipline="Dressage" onDisciplineChange={mockOnChange} />
       );
@@ -82,7 +83,7 @@ describe('DisciplineSelector', () => {
       });
     });
 
-    it('renders exactly 23 discipline buttons', () => {
+    it('renders exactly 24 discipline buttons', () => {
       render(
         <DisciplineSelector selectedDiscipline="Dressage" onDisciplineChange={mockOnChange} />
       );
@@ -92,14 +93,14 @@ describe('DisciplineSelector', () => {
       const disciplineMatches = allButtons.filter((btn) =>
         ALL_DISCIPLINES.some((d) => btn.textContent?.includes(d))
       );
-      // Account for possible duplicates (recommended + main list); assert covers all 23 disciplines
+      // Account for possible duplicates (recommended + main list); assert covers all 24 disciplines
       const renderedDisciplines = new Set<string>();
       disciplineMatches.forEach((btn) => {
         ALL_DISCIPLINES.forEach((d) => {
           if (btn.textContent?.includes(d)) renderedDisciplines.add(d);
         });
       });
-      expect(renderedDisciplines.size).toBe(23);
+      expect(renderedDisciplines.size).toBe(24);
     });
   });
 
@@ -165,7 +166,7 @@ describe('DisciplineSelector', () => {
       });
     });
 
-    it('falls back to all 23 disciplines when disciplines prop not provided', () => {
+    it('falls back to all 24 disciplines when disciplines prop not provided', () => {
       render(
         <DisciplineSelector selectedDiscipline="Dressage" onDisciplineChange={mockOnChange} />
       );
@@ -176,7 +177,7 @@ describe('DisciplineSelector', () => {
           if (btn.textContent?.includes(d)) renderedDisciplines.add(d);
         });
       });
-      expect(renderedDisciplines.size).toBe(23);
+      expect(renderedDisciplines.size).toBe(24);
     });
   });
 

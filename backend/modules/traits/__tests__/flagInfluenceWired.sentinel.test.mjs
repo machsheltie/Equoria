@@ -5,9 +5,12 @@
  * Horse.epigeneticFlags but changed NO gameplay outcome.
  *
  * What is wired today (checked 2026-10-21): bonding (groomInteractionController,
- * enhancedGroomController -> applyFlagInfluencesToBonding) and training
- * (trainingController -> applyFlagInfluencesToTraining). These tests pin the
- * helper behaviour those paths rely on.
+ * enhancedGroomController -> applyFlagInfluencesToBonding). These tests pin the
+ * helper behaviour that path relies on.
+ *
+ * NOT wired: training. applyFlagInfluencesToTraining only scaled the training
+ * stat-gain chance, and training no longer raises a stat (owner rulings
+ * 2026-10-19, 2026-10-21), so trainingController stopped calling it.
  *
  * NOT wired: competition. applyFlagInfluencesToCompetition has no live caller.
  * This file used to "prove" competition wiring through utils/competitionScore.mjs,
@@ -24,7 +27,7 @@ import {
   applyFlagInfluencesToBonding,
 } from '../../../utils/epigeneticFlagInfluence.mjs';
 
-describe('Flag influence helpers behave for the training + bonding live paths (Equoria-yzqhj.1)', () => {
+describe('Flag influence helpers behave (Equoria-yzqhj.1)', () => {
   it('confident raises training stat-gain efficiency (trainingEfficiency modifier)', () => {
     const flagged = applyFlagInfluencesToTraining(0.15, ['confident']);
     expect(flagged.modifiedEfficiency).toBeGreaterThan(0.15);

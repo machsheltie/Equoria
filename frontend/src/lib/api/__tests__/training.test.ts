@@ -41,10 +41,11 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
 
     // Mirror the ACTUAL trainRouteHandler response: flat, `nextEligibleDate`,
     // a flat `updatedScore`, and NO `nextEligible` / `updatedHorse`.
-    // Equoria-o1x6g: the route now ALSO emits statGain, xpAwarded, and
+    // Equoria-o1x6g: the route now ALSO emits xpAwarded and
     // disciplineScoreIncrease (previously dropped). They must pass through the
-    // normalizer untouched so TrainingTab can show the real stat-gain modal,
-    // the real XP row, and the authoritative score delta.
+    // normalizer untouched so TrainingTab can show the real XP row and the
+    // authoritative score delta. Training never raises a stat (owner rulings
+    // 2026-10-19, 2026-10-21), so there is no statGain.
     server.use(
       http.post(`${base}/api/v1/training/train`, () =>
         HttpResponse.json({
@@ -53,7 +54,6 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
           updatedScore: 45,
           disciplineScoreIncrease: 5,
           xpAwarded: 5,
-          statGain: { stat: 'precision', amount: 2, traitModified: false },
           nextEligibleDate: realIso,
           traitEffects: { appliedTraits: [], scoreModifier: 0, xpModifier: 0 },
           temperamentEffects: null,
@@ -78,7 +78,7 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
     // Equoria-o1x6g: the previously-dropped fields TrainingTab now reads.
     expect(result.disciplineScoreIncrease).toBe(5);
     expect(result.xpAwarded).toBe(5);
-    expect(result.statGain).toEqual({ stat: 'precision', amount: 2, traitModified: false });
+    expect(result).not.toHaveProperty('statGain');
   });
 
   it('does NOT derive updatedScore from a stray updatedHorse.discipline_scores (Equoria-xfdcg)', async () => {
@@ -97,7 +97,6 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
           // NO flat `updatedScore`.
           nextEligibleDate: '2026-02-06T10:00:00.000Z',
           updatedHorse: { id: 1, name: 'Thunder', discipline_scores: { Racing: 999 } },
-          statGain: { stat: 'speed', amount: 2, traitModified: false },
         })
       )
     );
@@ -107,7 +106,6 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
     // 999 from the dead path must NOT leak through; the only fallback is `?? 0`.
     expect(result.updatedScore).toBe(0);
     expect(result.nextEligibleDate).toBe('2026-02-06T10:00:00.000Z');
-    expect(result.statGain?.stat).toBe('speed');
   });
 
   it('derives updatedScore from the flat field when the backend sends it', async () => {
@@ -118,7 +116,6 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
           message: 'Thunder trained in Racing. +5 added.',
           updatedScore: 92,
           nextEligibleDate: '2026-02-06T10:00:00.000Z',
-          statGain: { stat: 'speed', amount: 2, traitModified: false },
         })
       )
     );
@@ -127,6 +124,5 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
 
     expect(result.updatedScore).toBe(92);
     expect(result.nextEligibleDate).toBe('2026-02-06T10:00:00.000Z');
-    expect(result.statGain?.stat).toBe('speed');
   });
 });

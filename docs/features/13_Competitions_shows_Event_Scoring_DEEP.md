@@ -67,6 +67,7 @@ Gymkhana	Speed	Flexibility	Focus
 Steeplechase	Stamina	Boldness	Balance
 Racing	Speed	Stamina	Focus
 Harness Racing	Speed	Precision	Stamina
+Pleasure Driving	Obedience	Balance	Focus
 
 Competition score components
 Component	Recovered rule
@@ -164,7 +165,7 @@ Added 5 October 2026 • source-audited against the re-uploaded historical files
 Evidence discipline. Evidence labels used in this deep pass: SOURCE-EXPLICIT means the uploaded historical material states the requirement directly; RECOVERED-CANON means the first reconstruction pass already preserved a user-directed rule from the earlier chat history; DERIVED-CONTRACT restates supported requirements as an implementation obligation without adding new balance; HISTORICAL/MOCKUP records a contemplated implementation or presentation but does not promote it to canon; OPEN means the source record does not resolve the decision.
 
 Competition catalog and eligibility
-•	[SOURCE-EXPLICIT] Discipline catalog recovered: Western Pleasure, Reining, Cutting, Barrel Racing, Roping, Team Penning, Rodeo; Hunter, Saddleseat, Dressage, Eventing, Show Jumping, Vaulting; Polo, Cross Country, Combined Driving, Fine Harness, Gaited, Gymkhana, Racing, Steeplechase, Harness Racing; Endurance.
+•	[SOURCE-EXPLICIT] Discipline catalog recovered: Western Pleasure, Reining, Cutting, Barrel Racing, Roping, Team Penning, Rodeo; Hunter, Saddleseat, Dressage, Eventing, Show Jumping, Vaulting; Polo, Cross Country, Combined Driving, Fine Harness, Gaited, Gymkhana, Racing, Steeplechase, Harness Racing; Endurance. Pleasure Driving added by the owner on 2026-10-21.
 •	[SOURCE-EXPLICIT] Entry requirements historically referenced age, health, training and assigned/eligible rider; later current rules must be used where they supersede early weekly caps/cooldowns.
 •	[DERIVED-CONTRACT] Event records must specify discipline, class/age/other eligibility, entry fee/prize, schedule/run time, capacity if any, scoring configuration and whether system/player-created/special/prestige/team.
 Processing and scoring contract

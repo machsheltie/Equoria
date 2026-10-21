@@ -2,11 +2,12 @@
  * disciplineRules.mjs (Equoria-576c0 B3)
  *
  * The one owner of the competition discipline stat map. Owner ruling R8
- * (Stacey, 2026-10-15): it is the competition bible's 23-discipline table
+ * (Stacey, 2026-10-15): it is the competition bible's 24-discipline table
  * (docs/features/13_Competitions_shows_Event_Scoring_DEEP.md, "Discipline stat
  * model"), each discipline weighted 50% / 30% / 20% across a primary, secondary
  * and tertiary stat. Ruling C6 (2026-10-16): Racing's tertiary stat is Focus,
- * as the bible table says.
+ * as the bible table says. Pleasure Driving (Obedience / Balance / Focus) was
+ * added by the owner on 2026-10-21.
  *
  * A name outside the table is an unknown discipline and an error; nothing falls
  * back to the Racing stats. 'Obedience Training' is a training discipline, not a
@@ -40,14 +41,15 @@ export const DISCIPLINE_STATS = Object.freeze({
   Steeplechase: Object.freeze(['stamina', 'boldness', 'balance']),
   Racing: Object.freeze(['speed', 'stamina', 'focus']),
   'Harness Racing': Object.freeze(['speed', 'precision', 'stamina']),
+  'Pleasure Driving': Object.freeze(['obedience', 'balance', 'focus']),
 });
 
-/** The 23 competition disciplines, in bible order. */
+/** The 24 competition disciplines, in bible order. */
 export const COMPETITION_DISCIPLINES = Object.freeze(Object.keys(DISCIPLINE_STATS));
 
 /**
  * @param {string} discipline
- * @returns {boolean} Whether `discipline` is one of the 23 (exact, case-sensitive name).
+ * @returns {boolean} Whether `discipline` is one of the 24 (exact, case-sensitive name).
  */
 export function isKnownDiscipline(discipline) {
   return typeof discipline === 'string' && Object.hasOwn(DISCIPLINE_STATS, discipline);
@@ -78,7 +80,8 @@ export const TEMPERAMENTS = HORSE_TEMPERAMENT_VALUES;
  * Temperament effect per ridden discipline: 1 Positive, 0 Neutral, -1 Negative.
  * Owner ruling R1 (2026-10-15); the cells of the matrix's "Matrix" sheet
  * govern (O4, 2026-10-16), generated from the xlsx on 2026-10-17 (Equoria-576c0
- * B6). Conformation and parade rows are not in the sheet yet (O3).
+ * B6). Conformation and parade rows are not in the sheet yet (O3). The
+ * Pleasure Driving row is the owner's, 2026-10-21.
  */
 // prettier-ignore
 export const TEMPERAMENT_MATRIX = Object.freeze({
@@ -105,6 +108,7 @@ export const TEMPERAMENT_MATRIX = Object.freeze({
   Steeplechase: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 1, Reactive: -1, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: 0 }),
   'Harness Racing': Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 0, Steady: 1, Independent: 0, Reactive: -1, Stubborn: -1, Playful: -1, Lazy: -1, Aggressive: 0 }),
   Racing: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 0, Independent: 0, Reactive: 0, Stubborn: -1, Playful: 0, Lazy: -1, Aggressive: 0 }),
+  'Pleasure Driving': Object.freeze({ Spirited: 1, Nervous: -1, Calm: 1, Bold: 1, Steady: 1, Independent: 0, Reactive: -1, Stubborn: -1, Playful: -1, Lazy: 0, Aggressive: -1 }),
 });
 
 /** Percent per matrix effect (R1): Positive +5, Neutral 0, Negative -5. */
@@ -113,7 +117,7 @@ const TEMPERAMENT_EFFECT_PERCENT = 5;
 /**
  * The temperament percent term for a ridden discipline.
  *
- * @param {string} discipline - One of the 23 competition disciplines.
+ * @param {string} discipline - One of the 24 competition disciplines.
  * @param {string|null|undefined} temperament - One of the 11 (exact name).
  * @returns {number|null} +5, 0 or -5; null when the temperament is missing or
  *   not one of the 11, or the discipline has no matrix row. The caller decides

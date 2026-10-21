@@ -61,7 +61,6 @@ const { computeTrainerModifiers, TRAINER_BONUS_CAP, TRAINER_PENALTY_CAP, TRAINER
 const { TEMPERAMENT_TYPES } = await import(join(__dirname, '../../horses/index.mjs'));
 
 const SUFFIX = randomBytes(6).toString('hex');
-const noStatGain = () => 0.99; // random ≥ 0.15 → stat-gain roll never fires
 
 function createRes() {
   return {
@@ -188,8 +187,8 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
       personality: 'technical',
     });
 
-    const control = await trainHorse(controlHorse.id, 'Dressage', noStatGain);
-    const trained = await trainHorse(trainedHorse.id, 'Dressage', noStatGain);
+    const control = await trainHorse(controlHorse.id, 'Dressage');
+    const trained = await trainHorse(trainedHorse.id, 'Dressage');
 
     expect(control.success).toBe(true);
     expect(trained.success).toBe(true);
@@ -226,8 +225,8 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
       personality: 'competitive',
     });
 
-    const control = await trainHorse(controlHorse.id, 'Dressage', noStatGain);
-    const mismatch = await trainHorse(mismatchHorse.id, 'Dressage', noStatGain);
+    const control = await trainHorse(controlHorse.id, 'Dressage');
+    const mismatch = await trainHorse(mismatchHorse.id, 'Dressage');
 
     expect(control.success).toBe(true);
     expect(mismatch.success).toBe(true);
@@ -258,7 +257,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
       personality: 'technical',
     });
 
-    const result = await trainHorse(horse.id, 'Dressage', noStatGain);
+    const result = await trainHorse(horse.id, 'Dressage');
 
     expect(result.success).toBe(true);
     expect(result.disciplineScoreIncrease).toBe(8);
@@ -282,7 +281,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
       personality: 'patient', // no Bold compat entry → 0
     });
 
-    const result = await trainHorse(horse.id, 'Dressage', noStatGain);
+    const result = await trainHorse(horse.id, 'Dressage');
 
     expect(result.success).toBe(true);
     expect(result.trainerModifier.net).toBeCloseTo(0.05, 10);
@@ -294,7 +293,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     // No trait, no trainer, null temperament → base gain exactly 5, exactly as
     // pre-feature master produced. This is the no-trainer path sentinel.
     const horse = await makeHorse('t7-plain', { temperament: null });
-    const result = await trainHorse(horse.id, 'Dressage', noStatGain);
+    const result = await trainHorse(horse.id, 'Dressage');
 
     expect(result.success).toBe(true);
     expect(result.disciplineScoreIncrease).toBe(5);

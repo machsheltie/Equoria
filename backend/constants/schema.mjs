@@ -107,6 +107,7 @@ export const DISCIPLINES = {
   GYMKHANA: 'Gymkhana',
   STEEPLECHASE: 'Steeplechase',
   HARNESS_RACING: 'Harness Racing',
+  PLEASURE_DRIVING: 'Pleasure Driving',
 };
 
 /**

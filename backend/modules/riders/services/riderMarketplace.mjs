@@ -7,6 +7,7 @@
  */
 
 import crypto from 'crypto';
+import { DISCIPLINE_VALUES } from '../../../constants/schema.mjs';
 
 // Marketplace configuration
 export const RIDER_MARKETPLACE_CONFIG = {
@@ -28,15 +29,9 @@ export const RIDER_MARKETPLACE_CONFIG = {
     experienced: 15,
   },
 
-  // Discipline specialties distribution
-  SPECIALTY_DISTRIBUTION: {
-    Dressage: 20,
-    'Show Jumping': 20,
-    'Cross-Country': 15,
-    Racing: 15,
-    'Western Pleasure': 15,
-    Endurance: 15,
-  },
+  // Discipline specialties: an even pick across every competition discipline
+  // (owner ruling 2026-10-21), so a new discipline appears without an edit here.
+  SPECIALTIES: DISCIPLINE_VALUES,
 };
 
 const PERSONALITIES = ['daring', 'methodical', 'intuitive', 'competitive'];
@@ -161,7 +156,8 @@ function generateBio(firstName, skillLevel, specialty) {
  */
 export function generateRandomRider() {
   const skillLevel = selectByDistribution(RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION);
-  const specialty = selectByDistribution(RIDER_MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION);
+  const { SPECIALTIES } = RIDER_MARKETPLACE_CONFIG;
+  const specialty = SPECIALTIES[Math.floor(Math.random() * SPECIALTIES.length)];
   const personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
   const { min, max } = RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES[skillLevel];
   const weeklyRate = Math.floor(Math.random() * (max - min + 1)) + min;

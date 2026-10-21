@@ -258,7 +258,7 @@ const traitEffects = {
   },
 
   // ===== DISCIPLINE AFFINITY TRAITS (§F / 9o3n7.5) =====
-  // The canonical disciplineAffinity<Discipline> entries for ALL 23 disciplines
+  // The canonical disciplineAffinity<Discipline> entries for ALL 24 disciplines
   // are GENERATED below from statMap + DISCIPLINES and merged into this map
   // (see buildDisciplineAffinityEffects). Generating them keeps the per-
   // discipline stat emphasis in lockstep with the competition scorer's statMap

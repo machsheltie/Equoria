@@ -2,7 +2,7 @@
  * Training Utilities
  *
  * Provides utility functions for the training system:
- * - Discipline data and categorization (23 disciplines, 4 categories)
+ * - Discipline data and categorization (24 disciplines, 4 categories)
  * - Score gain calculations
  * - Training eligibility checks
  * - Formatting helpers
@@ -21,7 +21,7 @@ export interface Discipline {
 }
 
 /**
- * Complete list of all 23 disciplines in Equoria
+ * Complete list of all 24 disciplines in Equoria
  * Organized by category for UI display
  */
 export const DISCIPLINES: Discipline[] = [
@@ -120,7 +120,7 @@ export const DISCIPLINES: Discipline[] = [
     primaryStats: ['stamina', 'intelligence', 'agility'],
   },
 
-  // Specialized Disciplines (7)
+  // Specialized Disciplines (8)
   {
     id: 'endurance',
     name: 'Endurance',
@@ -169,6 +169,13 @@ export const DISCIPLINES: Discipline[] = [
     category: 'Specialized',
     description: 'Timed games requiring speed and flexibility',
     primaryStats: ['speed', 'flexibility', 'stamina'],
+  },
+  {
+    id: 'pleasure-driving',
+    name: 'Pleasure Driving',
+    category: 'Specialized',
+    description: 'Driving in harness, judged on manners and a pleasant way of going',
+    primaryStats: ['obedience', 'balance', 'focus'],
   },
 
   // Racing Disciplines (3)

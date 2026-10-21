@@ -26,6 +26,7 @@ Gymkhana	+	–	+	+	0	0	0	–	+	–	–
 Steeplechase	+	–	0	+	0	+	–	–	0	–	0
 Harness Racing	+	–	0	0	+	0	–	–	–	–	0
 Racing	+	–	0	+	0	0	0	–	0	–	0
+Pleasure Driving	+	–	+	+	+	0	–	–	–	0	–
 
 Key judgment calls:
 

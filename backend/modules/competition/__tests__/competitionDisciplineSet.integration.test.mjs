@@ -58,11 +58,13 @@ afterAll(() => cleanup.run(), 60000);
 const get = path => request(app).get(path).set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
 
 describe('Obedience Training is not a competition discipline (R8)', () => {
-  it('GET /competition/disciplines lists the 23 bible disciplines and not Obedience Training', async () => {
+  // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
+  it('GET /competition/disciplines lists the 24 bible disciplines and not Obedience Training', async () => {
     const res = await get('/api/v1/competition/disciplines');
 
     expect(res.status).toBe(200);
-    expect(res.body.data.disciplines).toHaveLength(23);
+    expect(res.body.data.disciplines).toHaveLength(24);
+    expect(res.body.data.disciplines).toContain('Pleasure Driving');
     expect(res.body.data.disciplines).not.toContain('Obedience Training');
     expect(res.body.data.disciplines).toContain('Racing');
   });

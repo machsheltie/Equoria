@@ -20,6 +20,7 @@ import {
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
 } from '../modules/trainers/index.mjs';
+import { DISCIPLINE_VALUES } from '../constants/schema.mjs';
 
 // ─── TRAINER_MARKETPLACE_CONFIG ───────────────────────────────────────────────
 
@@ -54,9 +55,10 @@ describe('TRAINER_MARKETPLACE_CONFIG', () => {
     expect(total).toBe(100);
   });
 
-  it('SPECIALTY_DISTRIBUTION percentages sum to 100', () => {
-    const total = Object.values(TRAINER_MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION).reduce((s, v) => s + v, 0);
-    expect(total).toBe(100);
+  // Owner ruling 2026-10-21: specialties are an even pick across every competition
+  // discipline. Old contract: a 6-discipline percentage spread summing to 100.
+  it('SPECIALTIES is every competition discipline', () => {
+    expect(TRAINER_MARKETPLACE_CONFIG.SPECIALTIES).toEqual(DISCIPLINE_VALUES);
   });
 });
 
@@ -98,7 +100,7 @@ describe('generateRandomTrainer', () => {
   });
 
   it('speciality is one of the defined disciplines', () => {
-    const validSpecialties = Object.keys(TRAINER_MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION);
+    const validSpecialties = TRAINER_MARKETPLACE_CONFIG.SPECIALTIES;
     for (let i = 0; i < 20; i++) {
       const trainer = generateRandomTrainer();
       expect(validSpecialties).toContain(trainer.speciality);

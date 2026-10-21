@@ -24,6 +24,7 @@ import {
   getTraitCompetitionEffects,
 } from '../controllers/traitCompetitionController.mjs';
 import logger from '../../../utils/logger.mjs';
+import { DISCIPLINE_VALUES } from '../../../constants/schema.mjs';
 // Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
 // than inferring it from the authRouter mount comment. Idempotent with the
 // mount-level authenticateToken; the guard travels with the file if re-mounted.
@@ -292,31 +293,7 @@ router.get(
     query('discipline')
       .notEmpty()
       .withMessage('Discipline is required')
-      .isIn([
-        'Western Pleasure',
-        'Reining',
-        'Cutting',
-        'Barrel Racing',
-        'Roping',
-        'Team Penning',
-        'Rodeo',
-        'Hunter',
-        'Saddleseat',
-        'Endurance',
-        'Eventing',
-        'Dressage',
-        'Show Jumping',
-        'Vaulting',
-        'Polo',
-        'Cross Country',
-        'Combined Driving',
-        'Fine Harness',
-        'Gaited',
-        'Gymkhana',
-        'Steeplechase',
-        'Racing',
-        'Harness Racing',
-      ])
+      .isIn(DISCIPLINE_VALUES)
       .withMessage('Invalid discipline'),
     handleValidationErrors,
     requireOwnership('horse', { idParam: 'horseId' }),
@@ -522,34 +499,7 @@ router.get(
       .optional()
       .isIn(['positive', 'negative', 'all'])
       .withMessage('Type must be positive, negative, or all'),
-    query('discipline')
-      .optional()
-      .isIn([
-        'Western Pleasure',
-        'Reining',
-        'Cutting',
-        'Barrel Racing',
-        'Roping',
-        'Team Penning',
-        'Rodeo',
-        'Hunter',
-        'Saddleseat',
-        'Endurance',
-        'Eventing',
-        'Dressage',
-        'Show Jumping',
-        'Vaulting',
-        'Polo',
-        'Cross Country',
-        'Combined Driving',
-        'Fine Harness',
-        'Gaited',
-        'Gymkhana',
-        'Steeplechase',
-        'Racing',
-        'Harness Racing',
-      ])
-      .withMessage('Invalid discipline'),
+    query('discipline').optional().isIn(DISCIPLINE_VALUES).withMessage('Invalid discipline'),
     handleValidationErrors,
   ],
   getTraitCompetitionEffects,

@@ -60,11 +60,6 @@ export interface TrainingResultModalProps {
   newScore: number;
 
   /**
-   * Optional stat gains from training session
-   */
-  statGains?: { [stat: string]: number };
-
-  /**
    * Optional XP gain from training session
    */
   xpGain?: number;
@@ -126,7 +121,6 @@ const TrainingResultModal = ({
   baseScoreGain,
   traitBonus,
   newScore,
-  statGains,
   xpGain,
   nextTrainingDate,
   temperamentEffects,
@@ -134,8 +128,9 @@ const TrainingResultModal = ({
   // Format values for display
   const formattedDate = formatNextTrainingDate(nextTrainingDate);
   const scoreBreakdown = formatScoreBreakdown(baseScoreGain, traitBonus);
-  const hasAdditionalGains =
-    (statGains && Object.keys(statGains).length > 0) || (xpGain !== undefined && xpGain > 0);
+  // Training never raises a horse stat (owner rulings 2026-10-19, 2026-10-21);
+  // the only additional gain is the player's XP.
+  const hasAdditionalGains = xpGain !== undefined && xpGain > 0;
 
   return (
     <GameDialog
@@ -206,18 +201,9 @@ const TrainingResultModal = ({
           >
             <h3 className="font-semibold text-[var(--text-primary)] mb-2">Additional Gains:</h3>
             <ul className="space-y-1 text-sm" data-testid="gains-list">
-              {statGains &&
-                Object.entries(statGains).map(([stat, gain]) => (
-                  <li key={stat} className="text-role-secondary" data-testid={`stat-gain-${stat}`}>
-                    • {stat}:{' '}
-                    <span className="text-[var(--role-success-text)] font-medium">+{gain}</span>
-                  </li>
-                ))}
-              {xpGain !== undefined && xpGain > 0 && (
-                <li className="text-[var(--role-warning-text)] font-semibold" data-testid="xp-gain">
-                  • XP: +{xpGain}
-                </li>
-              )}
+              <li className="text-[var(--role-warning-text)] font-semibold" data-testid="xp-gain">
+                • XP: +{xpGain}
+              </li>
             </ul>
           </div>
         )}

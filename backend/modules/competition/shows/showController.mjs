@@ -26,7 +26,7 @@ import {
   CONFORMATION_ENTRY_ONLY_MESSAGE,
 } from '../services/competitionRouteQueries.mjs';
 import { sendEntryRefusal } from '../services/entryEligibility.mjs';
-// The 23 competition disciplines, from the one bible table (Equoria-576c0 B3 review).
+// The 24 competition disciplines, from the one bible table (Equoria-576c0 B3 review).
 import { isKnownDiscipline } from '../rules/disciplineRules.mjs';
 
 // ── BA-2 / Equoria-nx8t1: Create a 7-day deferred-window show ──────────────────

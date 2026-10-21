@@ -2,7 +2,7 @@
  * DisciplinePicker Component
  *
  * Grid-based interface for selecting training disciplines with:
- * - 23 disciplines organized into 4 categories (Western, English, Specialized, Racing)
+ * - 24 disciplines organized into 4 categories (Western, English, Specialized, Racing)
  * - Current score display for each discipline
  * - Visual feedback for selection (blue background)
  * - Disabled state for cooldown disciplines
@@ -15,7 +15,7 @@
  * (Epic 26-1 rebuild) are intentionally separate surfaces, NOT migration
  * debt. They serve different UX contexts:
  *   - DisciplinePicker — inline/embedded use on the horse-scoped training
- *     tab (pages/horse-detail/TrainingTab.tsx). Shows the FULL 23-discipline
+ *     tab (pages/horse-detail/TrainingTab.tsx). Shows the FULL 24-discipline
  *     grid with per-discipline current scores, optimized for picking a
  *     long-term training focus.
  *   - DisciplineSelector — modal/session use inside TrainingSessionModal.

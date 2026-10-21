@@ -37,7 +37,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     baseScoreGain: number;
     traitBonus: number;
     newScore: number;
-    statGains?: { [stat: string]: number };
     xpGain?: number;
     // Equoria-gzvwa — the authoritative server next-eligible value (ISO string)
     // or null when the server omits it. We never fabricate a client-side guess;
@@ -167,19 +166,12 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         selectedDiscipline
       );
 
-      // Map stat gain from the real backend result ({ stat, amount } | null).
-      const statGains: { [stat: string]: number } = {};
-      if (result.statGain) {
-        statGains[result.statGain.stat] = result.statGain.amount;
-      }
-
       // Set result for modal display
       setTrainingResult({
         scoreGain,
         baseScoreGain: baseGain,
         traitBonus,
         newScore: result.updatedScore ?? currentScore + scoreGain,
-        statGains: Object.keys(statGains).length > 0 ? statGains : undefined,
         // Equoria-o1x6g: the REAL awarded XP, not the trait-only delta
         // (traitEffects.xpModifier) it was previously wired to.
         xpGain: result.xpAwarded ?? undefined,
@@ -409,7 +401,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           baseScoreGain={trainingResult.baseScoreGain}
           traitBonus={trainingResult.traitBonus}
           newScore={trainingResult.newScore}
-          statGains={trainingResult.statGains}
           xpGain={trainingResult.xpGain}
           nextTrainingDate={trainingResult.nextTrainingDate}
           temperamentEffects={trainingResult.temperamentEffects}

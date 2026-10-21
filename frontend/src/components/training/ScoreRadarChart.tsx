@@ -1,7 +1,7 @@
 /**
  * ScoreRadarChart Component
  *
- * Visualizes all 23 discipline scores for a horse using a Recharts radar chart.
+ * Visualizes all 24 discipline scores for a horse using a Recharts radar chart.
  * Each axis represents one discipline, with scores ranging from 0-100.
  * Categories are color-coded: Western (orange), English (blue),
  * Specialized (purple), Racing (red).
@@ -86,7 +86,7 @@ const CustomTooltip = ({
  * ScoreRadarChart Component
  *
  * Displays a radar chart visualization of discipline scores for a horse.
- * All 23 disciplines are shown with their scores on axes from 0-100.
+ * All 24 disciplines are shown with their scores on axes from 0-100.
  *
  * @example
  * ```tsx
@@ -104,7 +104,7 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
   className = '',
 }) => {
   // Transform DISCIPLINES array into chart data format
-  // Maps all 23 disciplines with their scores (defaulting to 0 if missing)
+  // Maps all 24 disciplines with their scores (defaulting to 0 if missing)
   const chartData: ChartDataPoint[] = DISCIPLINES.map((disc) => ({
     discipline: disc.name,
     score: disciplineScores?.[disc.id] ?? 0,
@@ -118,7 +118,7 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
   // Hidden description for screen readers
   const descriptionId = 'radar-chart-description';
   const descriptionText =
-    'Radar chart showing scores for all 23 horse disciplines. ' +
+    'Radar chart showing scores for all 24 horse disciplines. ' +
     'Categories include Western, English, Specialized, and Racing disciplines. ' +
     'Scores range from 0 to 100 on each axis.';
 

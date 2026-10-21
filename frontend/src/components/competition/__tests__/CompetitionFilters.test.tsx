@@ -44,14 +44,15 @@ describe('CompetitionFilters', () => {
       expect(container).toBeInTheDocument();
     });
 
-    it('renders discipline dropdown with all 23 options plus "All"', () => {
+    it('renders discipline dropdown with all 24 options plus "All"', () => {
       render(<CompetitionFilters {...defaultProps} />);
       const select = screen.getByTestId('filter-discipline');
       expect(select).toBeInTheDocument();
 
-      // Should have 24 options (23 disciplines + "All")
+      // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
+      // Should have 25 options (24 disciplines + "All")
       const options = select.querySelectorAll('option');
-      expect(options).toHaveLength(24);
+      expect(options).toHaveLength(25);
 
       // First option should be "All Disciplines"
       expect(options[0].textContent).toBe('All Disciplines');

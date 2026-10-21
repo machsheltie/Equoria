@@ -47,6 +47,8 @@ const BIBLE = {
   Steeplechase: ['stamina', 'boldness', 'balance'],
   Racing: ['speed', 'stamina', 'focus'],
   'Harness Racing': ['speed', 'precision', 'stamina'],
+  // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
+  'Pleasure Driving': ['obedience', 'balance', 'focus'],
 };
 
 /** The stat calculateStatGains picks for a 1st place with a forced gain and a given pick. */
@@ -56,7 +58,7 @@ function pickedStat(discipline, pick) {
 }
 
 describe('DISCIPLINE_STATS — the bible table (R8, C6)', () => {
-  it('holds exactly the 23 bible disciplines with their primary, secondary and tertiary stats', () => {
+  it('holds exactly the 24 bible disciplines with their primary, secondary and tertiary stats', () => {
     expect(DISCIPLINE_STATS).toEqual(BIBLE);
     expect([...COMPETITION_DISCIPLINES].sort()).toEqual(Object.keys(BIBLE).sort());
   });

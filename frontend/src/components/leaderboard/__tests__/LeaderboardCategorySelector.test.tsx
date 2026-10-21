@@ -173,7 +173,7 @@ describe('LeaderboardCategorySelector', () => {
       expect(screen.getByTestId('discipline-selector')).toBeInTheDocument();
     });
 
-    it('discipline selector contains all 23 disciplines as options', () => {
+    it('discipline selector contains all 24 disciplines as options', () => {
       render(
         <LeaderboardCategorySelector
           {...defaultProps}
@@ -183,8 +183,8 @@ describe('LeaderboardCategorySelector', () => {
       );
       const selector = screen.getByTestId('discipline-selector');
       const options = within(selector).getAllByRole('option');
-      // 23 disciplines
-      expect(options.length).toBe(23);
+      // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
+      expect(options.length).toBe(24);
     });
 
     it('calls onDisciplineChange when a discipline is selected', async () => {

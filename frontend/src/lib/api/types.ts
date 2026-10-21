@@ -71,7 +71,6 @@ export interface TrainingResult {
   success: boolean;
   message: string;
   nextEligible: string | null;
-  statGain: StatGain | null;
   // Equoria-o1x6g — the REAL awarded XP for this session (post-trait,
   // post-temperament, floor-1). Distinct from traitEffects.xpModifier, which is
   // only the trait-attributable delta. Null on the legacy/mock path that does

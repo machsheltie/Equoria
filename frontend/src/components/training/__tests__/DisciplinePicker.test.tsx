@@ -2,7 +2,7 @@
  * Tests for DisciplinePicker Component
  *
  * Tests cover:
- * - Rendering all 23 disciplines and 4 categories
+ * - Rendering all 24 disciplines and 4 categories
  * - Discipline score display
  * - Selection interactions and visual states
  * - Disabled/cooldown discipline handling
@@ -42,12 +42,13 @@ describe('DisciplinePicker', () => {
 
   // ==================== RENDERING TESTS ====================
   describe('Rendering', () => {
-    it('should render all 23 disciplines', () => {
+    // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
+    it('should render all 24 disciplines', () => {
       render(<DisciplinePicker {...mockProps} />);
 
       // Verify all disciplines are present by checking button count
       const allButtons = screen.getAllByRole('button');
-      expect(allButtons).toHaveLength(23);
+      expect(allButtons).toHaveLength(24);
 
       // Verify specific disciplines with exact aria-label matching
       expect(
@@ -107,7 +108,8 @@ describe('DisciplinePicker', () => {
       });
     });
 
-    it('should render 7 Specialized disciplines', () => {
+    // Owner ruling 2026-10-21: Pleasure Driving joins Specialized. Old contract: 7.
+    it('should render 8 Specialized disciplines', () => {
       render(<DisciplinePicker {...mockProps} />);
 
       const specializedDisciplines = [
@@ -118,6 +120,7 @@ describe('DisciplinePicker', () => {
         'Fine Harness',
         'Gaited',
         'Gymkhana',
+        'Pleasure Driving',
       ];
 
       specializedDisciplines.forEach((name) => {
@@ -331,7 +334,7 @@ describe('DisciplinePicker', () => {
 
       // Check that all buttons have proper aria-labels with scores
       const allButtons = screen.getAllByRole('button');
-      expect(allButtons).toHaveLength(23);
+      expect(allButtons).toHaveLength(24);
 
       allButtons.forEach((button) => {
         expect(button).toHaveAttribute('aria-label');
@@ -575,11 +578,11 @@ describe('DisciplinePicker', () => {
       const englishButtons = within(englishSection as HTMLElement).getAllByRole('button');
       expect(englishButtons).toHaveLength(6);
 
-      // Specialized section should have 7 disciplines
+      // Specialized section should have 8 disciplines (Owner ruling 2026-10-21: Pleasure Driving joins Specialized. Old contract: 7.)
       const specializedHeading = screen.getByRole('heading', { name: /Specialized/i });
       const specializedSection = specializedHeading.closest('div');
       const specializedButtons = within(specializedSection as HTMLElement).getAllByRole('button');
-      expect(specializedButtons).toHaveLength(7);
+      expect(specializedButtons).toHaveLength(8);
 
       // Racing section should have 3 disciplines
       const racingHeading = screen.getByRole('heading', { name: /Racing/i });

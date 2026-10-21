@@ -7,9 +7,9 @@
  * "Matrix" (O4 resolved 2026-10-16: the Matrix cells govern; the Notes sheet is
  * commentary).
  *
- * SHEET below is an independent copy of that sheet's 23 discipline rows, in the
+ * SHEET below is an independent copy of that sheet's 24 discipline rows, in the
  * sheet's own words and column order, generated from the xlsx (read-only) on
- * 2026-10-17. Every one of the 23 x 11 = 253 cells is checked against
+ * 2026-10-17. Every one of the 24 x 11 = 264 cells is checked against
  * rules/disciplineRules.mjs.
  */
 
@@ -58,6 +58,8 @@ const SHEET = [
   'Steeplechase\tPositive\tNegative\tNeutral\tPositive\tNeutral\tPositive\tNegative\tNegative\tNeutral\tNegative\tNeutral',
   'Harness Racing\tPositive\tNegative\tNeutral\tNeutral\tPositive\tNeutral\tNegative\tNegative\tNegative\tNegative\tNeutral',
   'Racing\tPositive\tNegative\tNeutral\tPositive\tNeutral\tNeutral\tNeutral\tNegative\tNeutral\tNegative\tNeutral',
+  // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23. The owner's row, Playful from her Driven cell.
+  'Pleasure Driving\tPositive\tNegative\tPositive\tPositive\tPositive\tNeutral\tNegative\tNegative\tNegative\tNeutral\tNegative',
 ];
 const PERCENT = { Positive: 5, Neutral: 0, Negative: -5 };
 
@@ -71,13 +73,13 @@ describe("the temperament matrix is the owner's Matrix sheet (R1, O4)", () => {
     expect(TEMPERAMENTS).toEqual(SHEET_HEADER);
   });
 
-  it('has exactly the 23 competition disciplines', () => {
-    expect(SHEET).toHaveLength(23);
+  it('has exactly the 24 competition disciplines', () => {
+    expect(SHEET).toHaveLength(24);
     expect(Object.keys(TEMPERAMENT_MATRIX).sort()).toEqual([...COMPETITION_DISCIPLINES].sort());
   });
 
-  it('matches all 253 cells: Positive +5, Neutral 0, Negative -5', () => {
-    expect(cells).toHaveLength(253);
+  it('matches all 264 cells: Positive +5, Neutral 0, Negative -5', () => {
+    expect(cells).toHaveLength(264);
     const mismatches = cells.filter(c => temperamentPercent(c.discipline, c.temperament) !== PERCENT[c.value]);
     expect(mismatches).toEqual([]);
   });

@@ -7,6 +7,7 @@
  */
 
 import crypto from 'crypto';
+import { DISCIPLINE_VALUES } from '../../../constants/schema.mjs';
 
 export const TRAINER_MARKETPLACE_CONFIG = {
   DEFAULT_MARKETPLACE_SIZE: 6,
@@ -27,15 +28,9 @@ export const TRAINER_MARKETPLACE_CONFIG = {
     expert: 15,
   },
 
-  // Discipline specialty distribution
-  SPECIALTY_DISTRIBUTION: {
-    Dressage: 20,
-    'Show Jumping': 20,
-    'Cross-Country': 15,
-    Racing: 15,
-    'Western Pleasure': 15,
-    Endurance: 15,
-  },
+  // Discipline specialties: an even pick across every competition discipline
+  // (owner ruling 2026-10-21), so a new discipline appears without an edit here.
+  SPECIALTIES: DISCIPLINE_VALUES,
 };
 
 const PERSONALITIES = ['focused', 'encouraging', 'technical', 'competitive', 'patient'];
@@ -147,7 +142,8 @@ function generateBio(firstName, skillLevel, specialty) {
  */
 export function generateRandomTrainer() {
   const skillLevel = selectByDistribution(TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION);
-  const specialty = selectByDistribution(TRAINER_MARKETPLACE_CONFIG.SPECIALTY_DISTRIBUTION);
+  const { SPECIALTIES } = TRAINER_MARKETPLACE_CONFIG;
+  const specialty = SPECIALTIES[Math.floor(Math.random() * SPECIALTIES.length)];
   const personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
   const { min, max } = TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES[skillLevel];
   const sessionRate = Math.floor(Math.random() * (max - min + 1)) + min;

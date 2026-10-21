@@ -26,7 +26,7 @@ export const STARTER_KIT_INVENTORY = [
     itemId: 'all-purpose-saddle',
     category: 'saddle',
     name: 'All Purpose Saddle',
-    bonus: '+5 all disciplines',
+    bonus: '+2 all disciplines',
     quantity: 1,
   },
   {
@@ -34,7 +34,7 @@ export const STARTER_KIT_INVENTORY = [
     itemId: 'all-purpose-bridle',
     category: 'bridle',
     name: 'All Purpose Bridle',
-    bonus: '+5 all disciplines',
+    bonus: '+2 all disciplines',
     quantity: 1,
   },
 ];

@@ -16,8 +16,9 @@ import { disciplineAffinityKey } from '../../../utils/epigeneticTraitKeyMap.mjs'
 const disciplines = Object.values(DISCIPLINES);
 
 describe('§F discipline-affinity coverage — every discipline resolves', () => {
-  it('has 23 canonical disciplines', () => {
-    expect(disciplines.length).toBe(23);
+  // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
+  it('has 24 canonical disciplines', () => {
+    expect(disciplines.length).toBe(24);
   });
 
   it.each(disciplines)('disciplineAffinity for "%s" resolves to a rich effect entry', discipline => {

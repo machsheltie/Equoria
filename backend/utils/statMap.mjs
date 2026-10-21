@@ -6,7 +6,7 @@
  * - Tertiary stat (20% weight)
  *
  * The table itself lives in one place, the competition module's
- * rules/disciplineRules.mjs (the bible's 23 disciplines, owner ruling R8; Racing
+ * rules/disciplineRules.mjs (the bible's 24 disciplines, owner ruling R8; Racing
  * tertiary Focus, ruling C6). This file keeps its null-on-unknown helpers for
  * getStatScore, traitEffects and training (Equoria-576c0 B3 review).
  */

@@ -33,7 +33,7 @@ export const TACK_INVENTORY = [
     bonus: '+5 jumping score',
     numericBonus: 5,
     tier: 'quality',
-    disciplines: ['Show Jumping', 'Cross-Country'],
+    disciplines: ['Show Jumping', 'Cross Country'],
   },
   {
     id: 'all-purpose-saddle',
@@ -42,10 +42,12 @@ export const TACK_INVENTORY = [
     description:
       'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
     cost: 400,
-    bonus: '+5 all disciplines',
-    numericBonus: 5,
+    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
+    // empty list is how the shop filter shows an item under every discipline.
+    bonus: '+2 all disciplines',
+    numericBonus: 2,
     tier: 'basic',
-    disciplines: ['Dressage', 'Show Jumping', 'Cross-Country', 'Eventing', 'Hunter'],
+    disciplines: [],
     image: '/images/tack/allpurposesaddle.png',
   },
   // Legacy alias — kept for backwards compat during migration window; do not remove until all Horse.tack records are migrated
@@ -57,10 +59,12 @@ export const TACK_INVENTORY = [
     description:
       'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
     cost: 400,
-    bonus: '+5 all disciplines',
-    numericBonus: 5,
+    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
+    // empty list is how the shop filter shows an item under every discipline.
+    bonus: '+2 all disciplines',
+    numericBonus: 2,
     tier: 'basic',
-    disciplines: ['Dressage', 'Show Jumping', 'Cross-Country', 'Eventing', 'Hunter'],
+    disciplines: [],
     image: '/images/tack/allpurposesaddle.png',
   },
   {
@@ -108,18 +112,12 @@ export const TACK_INVENTORY = [
     description:
       'Versatile bridle suitable for general training and competition across disciplines.',
     cost: 300,
-    bonus: '+5 all disciplines',
-    numericBonus: 5,
+    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
+    // empty list is how the shop filter shows an item under every discipline.
+    bonus: '+2 all disciplines',
+    numericBonus: 2,
     tier: 'basic',
-    disciplines: [
-      'Dressage',
-      'Show Jumping',
-      'Cross-Country',
-      'Eventing',
-      'Hunter',
-      'Western Pleasure',
-      'Endurance',
-    ],
+    disciplines: [],
   },
   // Legacy alias — kept for backwards compat during migration window
   {
@@ -130,18 +128,12 @@ export const TACK_INVENTORY = [
     description:
       'Versatile bridle suitable for general training and competition across disciplines.',
     cost: 300,
-    bonus: '+5 all disciplines',
-    numericBonus: 5,
+    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
+    // empty list is how the shop filter shows an item under every discipline.
+    bonus: '+2 all disciplines',
+    numericBonus: 2,
     tier: 'basic',
-    disciplines: [
-      'Dressage',
-      'Show Jumping',
-      'Cross-Country',
-      'Eventing',
-      'Hunter',
-      'Western Pleasure',
-      'Endurance',
-    ],
+    disciplines: [],
   },
   {
     id: 'snaffle-bridle',
@@ -187,7 +179,7 @@ export const TACK_INVENTORY = [
     bonus: '+4 jumping score',
     numericBonus: 4,
     tier: 'quality',
-    disciplines: ['Show Jumping', 'Cross-Country', 'Eventing'],
+    disciplines: ['Show Jumping', 'Cross Country', 'Eventing'],
   },
   {
     id: 'racing-bridle',
@@ -249,7 +241,7 @@ export const TACK_INVENTORY = [
     bonus: '+2 comfort',
     numericBonus: 2,
     tier: 'quality',
-    disciplines: ['Endurance', 'Eventing', 'Cross-Country'],
+    disciplines: ['Endurance', 'Eventing', 'Cross Country'],
   },
 
   // ── Leg Wraps & Boots ────────────────────────────────────────────────────
@@ -274,7 +266,7 @@ export const TACK_INVENTORY = [
     bonus: '+2 protection',
     numericBonus: 2,
     tier: 'quality',
-    disciplines: ['Show Jumping', 'Cross-Country', 'Eventing'],
+    disciplines: ['Show Jumping', 'Cross Country', 'Eventing'],
   },
   {
     id: 'sport-medicine-boots',
@@ -286,7 +278,7 @@ export const TACK_INVENTORY = [
     bonus: '+3 protection',
     numericBonus: 3,
     tier: 'premium',
-    disciplines: ['Show Jumping', 'Cross-Country', 'Barrel Racing', 'Reining'],
+    disciplines: ['Show Jumping', 'Cross Country', 'Barrel Racing', 'Reining'],
   },
 
   // ── Girths ───────────────────────────────────────────────────────────────
@@ -336,7 +328,7 @@ export const TACK_INVENTORY = [
     bonus: '+2 control',
     numericBonus: 2,
     tier: 'quality',
-    disciplines: ['Show Jumping', 'Cross-Country', 'Eventing', 'Hunter'],
+    disciplines: ['Show Jumping', 'Cross Country', 'Eventing', 'Hunter'],
   },
 
   // ── Breastplates ─────────────────────────────────────────────────────────
@@ -349,7 +341,7 @@ export const TACK_INVENTORY = [
     bonus: '+2 stability',
     numericBonus: 2,
     tier: 'quality',
-    disciplines: ['Cross-Country', 'Eventing', 'Hunter', 'Steeplechase'],
+    disciplines: ['Cross Country', 'Eventing', 'Hunter', 'Steeplechase'],
   },
   {
     id: 'five-point-breastplate',
@@ -361,7 +353,7 @@ export const TACK_INVENTORY = [
     bonus: '+3 stability',
     numericBonus: 3,
     tier: 'premium',
-    disciplines: ['Cross-Country', 'Eventing', 'Steeplechase'],
+    disciplines: ['Cross Country', 'Eventing', 'Steeplechase'],
   },
 
   // ── Young Horse Prep (age-gated) ─────────────────────────────────────────

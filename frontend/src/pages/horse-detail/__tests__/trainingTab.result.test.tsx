@@ -118,7 +118,9 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
       });
     });
 
-    test('Shows stat gains if any', async () => {
+    // Old contract: the result listed a stat gain. New contract (owner rulings
+    // 2026-10-19, 2026-10-21): training never raises a stat.
+    test('Shows no stat gain', async () => {
       global.fetch = createFetchMock();
       const user = userEvent.setup();
 
@@ -141,8 +143,8 @@ describe('HorseDetailPage Training Tab — Result Display', () => {
 
       await waitFor(() => {
         const modal = screen.getByTestId('training-result-modal');
-        // Mock result includes speed stat gain
-        expect(within(modal).getByTestId('stat-gain-speed')).toBeInTheDocument();
+        expect(within(modal).getByTestId('new-score')).toBeInTheDocument();
+        expect(within(modal).queryAllByTestId(/^stat-gain-/)).toHaveLength(0);
       });
     });
 
