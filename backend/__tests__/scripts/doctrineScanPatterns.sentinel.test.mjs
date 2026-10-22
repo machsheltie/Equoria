@@ -293,6 +293,26 @@ describe('doctrine checks fire on planted violations after the shared-module ref
     }
   });
 
+  // Equoria-3khb1: the gate also scans the backend production tree, so a new
+  // middleware or route honouring an x-test-* header cannot ship silently.
+  test('check-no-bypass-headers.sh catches EVERY canonical bypass token planted in backend/middleware', () => {
+    for (const tok of BYPASS_HEADER_TOKENS) {
+      expectFiresThenClean(
+        'backend/middleware/__doctrine_jest_plant_70pb9__.mjs',
+        `export const skip = req => req.get('${tok}') === '1';\n`,
+        'check-no-bypass-headers.sh',
+      );
+    }
+  });
+
+  test('check-no-bypass-headers.sh ignores bypass literals inside backend test trees', () => {
+    expectIgnoredOutOfScope(
+      'backend/__tests__/__doctrine_jest_plant_70pb9__.test.mjs',
+      "const h = { 'x-test-skip-csrf': '1' };\n",
+      'check-no-bypass-headers.sh',
+    );
+  });
+
   test('check-no-db-mocks.mjs catches vi.mock of prisma in a backend MODULE __tests__ dir (broad scope)', () => {
     expectFiresThenClean(
       'backend/modules/horses/__tests__/__doctrine_jest_plant_70pb9__.test.mjs',

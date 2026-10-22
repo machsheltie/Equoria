@@ -102,7 +102,8 @@ equoria_scan_frontend_mock_data() {
   return 0
 }
 
-# 4. No bypass headers in E2E specs or the api-client. Guard files carry a
+# 4. No bypass headers in E2E specs, the api-client or (Equoria-3khb1) the
+#    backend production tree. Guard files carry a
 #    '// doctrine-allow: bypass-header-literal' marker and are filtered out.
 equoria_scan_bypass_headers() {
   if grep -rn "$EQUORIA_SCAN_RE_BYPASS_HEADER" \
@@ -111,6 +112,33 @@ equoria_scan_bypass_headers() {
     echo "FAIL: Bypass headers in E2E/api-client (violates 21R-3 production-parity policy)" >&2
     return 1
   fi
+  if [ -n "$(equoria_scan_bypass_headers_backend_matches)" ]; then
+    echo "FAIL: Bypass headers in the backend production tree (violates 21R-3 production-parity policy)" >&2
+    return 1
+  fi
+  return 0
+}
+
+# Bypass-header matches in the backend production tree (Equoria-3khb1), one
+# `path:line:text` per line; empty output means clean. The tree is what git
+# would ship: tracked files plus untracked-but-not-ignored ones (so a new file
+# is caught before its first commit). Git-ignored output (node_modules,
+# .jest-cache, coverage) is never read. Test trees (__tests__/, tests/,
+# __mocks__/) and *.test.* / *.spec.* files are excluded: suites there assert
+# ON the literals. Example env files ARE scanned; a prose mention carries the
+# per-line marker. Fails closed: if git cannot list the tree, the output is an
+# error line, which callers treat as a violation.
+equoria_scan_bypass_headers_backend_matches() {
+  local files
+  if ! files=$(git ls-files -co --exclude-standard -- backend 2>/dev/null); then
+    echo "backend/: git ls-files failed; the bypass-header scan cannot list the backend tree"
+    return 0
+  fi
+  printf '%s\n' "$files" \
+    | grep -Ev '(^|/)(__tests__|tests|__mocks__)/|\.(test|spec)\.[cm]?[jt]sx?$' \
+    | tr '\n' '\0' \
+    | xargs -0 -r grep -n -H "$EQUORIA_SCAN_RE_BYPASS_HEADER" -- 2>/dev/null \
+    | grep -v "^Binary" | grep -v -F "doctrine-allow: bypass-header-literal"
   return 0
 }
 
@@ -138,11 +166,24 @@ equoria_scan_sentinel_frontend_mock_data() {
 }
 
 equoria_scan_sentinel_bypass_headers() {
-  local sentinel="tests/e2e/__doctrine_sentinel_DO_NOT_COMMIT__.txt"
-  # Plant EVERY token in the canonical union, one at a time, and assert each is
-  # caught. This is the OPTIMAL_FIX_DISCIPLINE §2 sentinel-positive proof that
-  # the strengthened union (incl. x-test-bypass-ownership added in Equoria-4iudq)
-  # actually fires — not merely that the scan passes on a clean tree.
+  # Plant EVERY token in the canonical union, one at a time, in EVERY scanned
+  # tree (E2E specs and, since Equoria-3khb1, the backend production tree), and
+  # assert each is caught. This is the OPTIMAL_FIX_DISCIPLINE §2 sentinel-positive
+  # proof that the strengthened union (incl. x-test-bypass-ownership added in
+  # Equoria-4iudq) actually fires — not merely that the scan passes on a clean tree.
+  local sentinels=(
+    'tests/e2e/__doctrine_sentinel_DO_NOT_COMMIT__.txt'
+    'backend/middleware/__doctrine_sentinel_DO_NOT_COMMIT__.mjs'
+  )
+  local sentinel
+  for sentinel in "${sentinels[@]}"; do
+    equoria_scan_sentinel_bypass_headers_at "$sentinel" || return 1
+  done
+  return 0
+}
+
+equoria_scan_sentinel_bypass_headers_at() {
+  local sentinel="$1"
   local tokens=(
     'x-test-bypass-rate-limit'
     'x-test-skip-csrf'

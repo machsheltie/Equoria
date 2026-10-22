@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Doctrine: no bypass headers in E2E specs or frontend api-client.
+# Doctrine: no bypass headers in E2E specs, the frontend api-client or the
+# backend production tree (Equoria-3khb1).
 # Source: CLAUDE.md "21R Beta Readiness Doctrine" — "No bypass evidence".
 #
 # This check is intentionally absolute. There is no --exclude-dir flag and
 # no per-file allowlist. If a beta-readiness spec needs a bypass header,
 # that spec is broken and must be rewritten to use real auth/CSRF flows.
+# The one scoped carve-out is in the backend scan: backend test trees
+# (__tests__/, tests/, __mocks__/, *.test.*, *.spec.*) assert ON these
+# literals and are not production code (equoria_scan_bypass_headers_backend_matches).
 #
 # The ONLY exemption mechanism is a per-line comment marker on the same
 # line:  // doctrine-allow: bypass-header-literal
@@ -40,15 +44,18 @@ for p in "${PATHS[@]}"; do
   [ -e "$p" ] && existing+=("$p")
 done
 
-if [ ${#existing[@]} -eq 0 ]; then
-  exit 0
+matches=""
+if [ ${#existing[@]} -gt 0 ]; then
+  matches=$(grep -rn "$PATTERN" "${existing[@]}" 2>/dev/null | grep -v '^Binary' | grep -v -F "$MARKER" || true)
 fi
-
-matches=$(grep -rn "$PATTERN" "${existing[@]}" 2>/dev/null | grep -v '^Binary' | grep -v -F "$MARKER" || true)
+backend_matches=$(equoria_scan_bypass_headers_backend_matches)
+if [ -n "$backend_matches" ]; then
+  matches=$(printf '%s\n%s\n' "$matches" "$backend_matches" | sed '/^$/d')
+fi
 
 if [ -n "$matches" ]; then
   echo
-  echo "Bypass headers found in E2E or api-client (forbidden by 21R doctrine):"
+  echo "Bypass headers found in E2E, api-client or backend production code (forbidden by 21R doctrine):"
   echo "$matches"
   echo
   echo "If a line is part of a doctrine-enforcement guard, append:"
