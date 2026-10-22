@@ -24,6 +24,8 @@ import Currency from '@/components/ui/Currency';
 import { Input } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { CanonicalTabs } from '@/components/ui/game';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/hooks/useAuth';
@@ -38,6 +40,9 @@ import { getBreedName } from '@/lib/utils';
 
 type StableTab = 'profile' | 'legacy';
 
+/** Honest marker for a figure whose query has not (successfully) loaded. */
+const UNKNOWN = '—';
+
 interface HallOfFameEntry {
   id: string;
   name: string;
@@ -45,8 +50,9 @@ interface HallOfFameEntry {
   retiredAge: number;
   discipline: string;
   career: {
-    competitions: number;
-    wins: number;
+    /** null = history not loaded (pending or failed) — shown as "—", never 0 */
+    competitions: number | null;
+    wins: number | null;
     earnings: number;
   };
   icon: string;
@@ -57,19 +63,34 @@ interface StableProfile {
   founded: string;
   bio: string;
   banner: string;
+  /** null = unknown (query pending or failed) — shown as "—", never 0 */
   stats: {
-    totalHorses: number;
-    activeRacers: number;
-    competitionsEntered: number;
-    firstPlaceFinishes: number;
-    totalEarnings: number;
-    breedingPairs: number;
+    totalHorses: number | null;
+    activeRacers: number | null;
+    competitionsEntered: number | null;
+    firstPlaceFinishes: number | null;
+    totalEarnings: number | null;
+    breedingPairs: number | null;
   };
 }
 
+/** Where the roster query stands; empty is only reachable through 'ready'. */
+type RosterStatus = 'loading' | 'error' | 'ready';
+
+/** Section-level roster failure: honest message + a real retry (never an empty stable). */
+const RosterError: React.FC<{ error: unknown; onRetry: () => void }> = ({ error, onRetry }) => (
+  <ErrorState
+    title="Couldn't load your stable"
+    message={userMessageFor(error).message}
+    retry={{ label: 'Try Again', onClick: onRetry }}
+  />
+);
+
 const StableProfileTab: React.FC<{
   stable: StableProfile;
-  isLoading: boolean;
+  rosterStatus: RosterStatus;
+  rosterError: unknown;
+  onRetryRoster: () => void;
   isCareerStatsError: boolean;
   isEditing: boolean;
   draftStableName: string;
@@ -80,7 +101,9 @@ const StableProfileTab: React.FC<{
   isSaving: boolean;
 }> = ({
   stable,
-  isLoading,
+  rosterStatus,
+  rosterError,
+  onRetryRoster,
   isCareerStatsError,
   isEditing,
   draftStableName,
@@ -100,7 +123,7 @@ const StableProfileTab: React.FC<{
         <h2 className="type-section-heading">{stable.name}</h2>
         <p className="text-sm text-role-muted mt-1">Founded {stable.founded}</p>
         <p className="text-sm text-role-secondary mt-2 max-w-lg">
-          {isLoading ? 'Loading stable records...' : stable.bio}
+          {rosterStatus === 'loading' ? 'Loading stable records...' : stable.bio}
         </p>
       </div>
       {isEditing ? (
@@ -140,38 +163,49 @@ const StableProfileTab: React.FC<{
       )}
       {/* Decorative stat icons use the accent role uniformly (raw palette
           rose/orange/violet/pink removed per D-11/D-12). */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-testid="stable-stats">
-        <StatBlock
-          label="Total Horses"
-          value={stable.stats.totalHorses}
-          icon={<Heart className="w-4 h-4 text-[var(--gold-light)]" />}
-        />
-        <StatBlock
-          label="Active Racers"
-          value={stable.stats.activeRacers}
-          icon={<Flame className="w-4 h-4 text-[var(--gold-light)]" />}
-        />
-        <StatBlock
-          label="Competitions"
-          value={stable.stats.competitionsEntered}
-          icon={<Trophy className="w-4 h-4 text-[var(--gold-light)]" />}
-        />
-        <StatBlock
-          label="First Place Wins"
-          value={stable.stats.firstPlaceFinishes}
-          icon={<Award className="w-4 h-4 text-[var(--gold-light)]" />}
-        />
-        <StatBlock
-          label="Total Earnings"
-          value={<Currency amount={stable.stats.totalEarnings} />}
-          icon={<Star className="w-4 h-4 text-[var(--gold-light)]" />}
-        />
-        <StatBlock
-          label="Breeding Pairs"
-          value={stable.stats.breedingPairs}
-          icon={<Heart className="w-4 h-4 text-[var(--gold-light)]" />}
-        />
-      </div>
+      {rosterStatus === 'error' && <RosterError error={rosterError} onRetry={onRetryRoster} />}
+      {rosterStatus === 'loading' ? (
+        <SectionLoading label="Loading stable records" />
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-testid="stable-stats">
+          <StatBlock
+            label="Total Horses"
+            value={stable.stats.totalHorses ?? UNKNOWN}
+            icon={<Heart className="w-4 h-4 text-[var(--gold-light)]" />}
+          />
+          <StatBlock
+            label="Active Racers"
+            value={stable.stats.activeRacers ?? UNKNOWN}
+            icon={<Flame className="w-4 h-4 text-[var(--gold-light)]" />}
+          />
+          <StatBlock
+            label="Competitions"
+            value={stable.stats.competitionsEntered ?? UNKNOWN}
+            icon={<Trophy className="w-4 h-4 text-[var(--gold-light)]" />}
+          />
+          <StatBlock
+            label="First Place Wins"
+            value={stable.stats.firstPlaceFinishes ?? UNKNOWN}
+            icon={<Award className="w-4 h-4 text-[var(--gold-light)]" />}
+          />
+          <StatBlock
+            label="Total Earnings"
+            value={
+              stable.stats.totalEarnings === null ? (
+                UNKNOWN
+              ) : (
+                <Currency amount={stable.stats.totalEarnings} />
+              )
+            }
+            icon={<Star className="w-4 h-4 text-[var(--gold-light)]" />}
+          />
+          <StatBlock
+            label="Breeding Pairs"
+            value={stable.stats.breedingPairs ?? UNKNOWN}
+            icon={<Heart className="w-4 h-4 text-[var(--gold-light)]" />}
+          />
+        </div>
+      )}
     </div>
 
     {/* Quick Link to Stable */}
@@ -205,13 +239,22 @@ const StatBlock: React.FC<{
   </Surface>
 );
 
-const LegacyHallTab: React.FC<{ entries: HallOfFameEntry[] }> = ({ entries }) => (
+const LegacyHallTab: React.FC<{
+  entries: HallOfFameEntry[];
+  rosterStatus: RosterStatus;
+  rosterError: unknown;
+  onRetryRoster: () => void;
+}> = ({ entries, rosterStatus, rosterError, onRetryRoster }) => (
   <div className="space-y-4" data-testid="legacy-hall-tab">
     <p className="text-sm text-role-muted">
       Retired horses live on in the Hall of Fame, their careers immortalised for future generations.
     </p>
 
-    {entries.length === 0 ? (
+    {rosterStatus === 'loading' ? (
+      <SectionLoading label="Loading the Hall of Fame" />
+    ) : rosterStatus === 'error' ? (
+      <RosterError error={rosterError} onRetry={onRetryRoster} />
+    ) : entries.length === 0 ? (
       <div className="flex flex-col items-center justify-center min-h-48 text-center p-8">
         <Trophy className="w-12 h-12 text-role-disabled mb-4" />
         <h3 className="text-base font-semibold text-role-secondary mb-2">No Retired Horses Yet</h3>
@@ -238,7 +281,7 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
   // useHorseCompetitionHistory → history.statistics.wins, NOT a hardcoded
   // "featured" flag). A retired horse with zero career wins is in the hall
   // but does not get the ornate champion frame.
-  const isChampion = entry.career.wins > 0;
+  const isChampion = entry.career.wins !== null && entry.career.wins > 0;
 
   const card = (
     /* Static content — no hover affordance (D-05); Surface panel + role tokens */
@@ -265,11 +308,15 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
           {/* Career Stats — nested inside the panel → Surface subtle (no blur, §4) */}
           <div className="grid grid-cols-3 gap-3">
             <Surface variant="subtle" className="text-center p-2">
-              <p className="text-lg font-bold text-role-primary">{entry.career.competitions}</p>
+              <p className="text-lg font-bold text-role-primary">
+                {entry.career.competitions ?? UNKNOWN}
+              </p>
               <p className="text-xs text-role-muted">Competitions</p>
             </Surface>
             <Surface variant="subtle" className="text-center p-2">
-              <p className="text-lg font-bold text-[var(--gold-light)]">{entry.career.wins}</p>
+              <p className="text-lg font-bold text-[var(--gold-light)]">
+                {entry.career.wins ?? UNKNOWN}
+              </p>
               <p className="text-xs text-role-muted">Wins</p>
             </Surface>
             <Surface variant="subtle" className="text-center p-2">
@@ -303,7 +350,15 @@ const MyStablePage: React.FC = () => {
   const updateProfile = useUpdateProfile();
   const [isEditingStable, setIsEditingStable] = useState(false);
   const [draftStableName, setDraftStableName] = useState(user?.username ?? '');
-  const { data: horses = [], isLoading } = useHorses();
+  const {
+    data: horsesData,
+    isError: isHorsesError,
+    error: horsesError,
+    refetch: refetchHorses,
+  } = useHorses();
+  // The roster is UNKNOWN until it has loaded; a failure is not an empty stable.
+  const rosterStatus: RosterStatus = isHorsesError ? 'error' : horsesData ? 'ready' : 'loading';
+  const horses = horsesData ?? [];
 
   // Story 21S-4: real user-level career totals via /api/users/:userId/competition-stats
   // User.id is a UUID string (Equoria-ai6pw), so it can be passed through directly.
@@ -325,6 +380,7 @@ const MyStablePage: React.FC = () => {
   });
 
   const hallOfFameEntries: HallOfFameEntry[] = retiredHorses.map((horse, index) => {
+    // history stays undefined while pending or failed → career figures render "—"
     const history = retiredHorseHistories[index]?.data as CompetitionHistoryData | undefined;
     return {
       id: String(horse.id),
@@ -333,8 +389,8 @@ const MyStablePage: React.FC = () => {
       retiredAge: horse.ageYears ?? horse.age ?? 21,
       discipline: 'All disciplines',
       career: {
-        competitions: history?.statistics.totalCompetitions ?? 0,
-        wins: history?.statistics.wins ?? 0,
+        competitions: history ? history.statistics.totalCompetitions : null,
+        wins: history ? history.statistics.wins : null,
         // Equoria-8nmxm: dropped the `horse.earnings` fallback. Pre-fix
         // it referenced Horse.earnings (Decimal) — a column that was
         // never read elsewhere because the production writer (now fixed
@@ -359,28 +415,29 @@ const MyStablePage: React.FC = () => {
     0
   );
 
-  // Story 21S-4: competitionsEntered + firstPlaceFinishes now come from the
-  // backend aggregation. Falls back to 0 only while the query is pending.
-  // When the query has errored, we keep zeros for the numeric stats but also
-  // expose isCompetitionStatsError so the UI can render a visible notice.
-  const competitionsEntered = userCompetitionStats?.totalCompetitions ?? 0;
-  const firstPlaceFinishes = userCompetitionStats?.totalWins ?? 0;
+  // Story 21S-4: competitionsEntered + firstPlaceFinishes come from the backend
+  // aggregation. While that query is pending or has failed they are UNKNOWN
+  // ("—"), never 0; isCompetitionStatsError also drives a visible notice.
+  const competitionsEntered = userCompetitionStats ? userCompetitionStats.totalCompetitions : null;
+  const firstPlaceFinishes = userCompetitionStats ? userCompetitionStats.totalWins : null;
+  const rosterReady = rosterStatus === 'ready';
 
   const stable: StableProfile = {
     name: user?.username ? `${user.username}'s Stable` : 'My Stable',
     founded: 'active account',
-    bio:
-      horses.length > 0
+    bio: !rosterReady
+      ? ''
+      : horses.length > 0
         ? 'Live stable profile based on your current horses and account records.'
         : 'Your stable profile will grow as you add horses and enter competitions.',
     banner: 'EQ',
     stats: {
-      totalHorses: horses.length,
-      activeRacers,
+      totalHorses: rosterReady ? horses.length : null,
+      activeRacers: rosterReady ? activeRacers : null,
       competitionsEntered,
       firstPlaceFinishes,
-      totalEarnings,
-      breedingPairs,
+      totalEarnings: rosterReady ? totalEarnings : null,
+      breedingPairs: rosterReady ? breedingPairs : null,
     },
   };
 
@@ -435,7 +492,9 @@ const MyStablePage: React.FC = () => {
               content: (
                 <StableProfileTab
                   stable={stable}
-                  isLoading={isLoading}
+                  rosterStatus={rosterStatus}
+                  rosterError={horsesError}
+                  onRetryRoster={() => void refetchHorses()}
                   isCareerStatsError={isCompetitionStatsError}
                   isEditing={isEditingStable}
                   draftStableName={draftStableName}
@@ -451,7 +510,14 @@ const MyStablePage: React.FC = () => {
               value: 'legacy',
               label: 'Hall of Fame',
               icon: <Trophy className="w-4 h-4" />,
-              content: <LegacyHallTab entries={hallOfFameEntries} />,
+              content: (
+                <LegacyHallTab
+                  entries={hallOfFameEntries}
+                  rosterStatus={rosterStatus}
+                  rosterError={horsesError}
+                  onRetryRoster={() => void refetchHorses()}
+                />
+              ),
             },
           ]}
         />
