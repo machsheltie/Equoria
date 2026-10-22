@@ -24,7 +24,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { useAssignGroom, useGroomHorseSynergy } from '../hooks/api/useGrooms';
-import type { ApiError } from '@/lib/api-client';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
 import {
@@ -160,8 +160,9 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   };
 
   // Custom error handler
-  const handleMutationError = (err: ApiError) => {
-    setError(err.message);
+  const handleMutationError = (err: unknown) => {
+    // Class-mapped copy only: a server body can carry internals (§3).
+    setError(userMessageFor(err).message);
     setSuccess(false);
   };
 
@@ -230,7 +231,10 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
           {/* Error Message */}
           {error && (
-            <div className="bg-[var(--badge-danger-bg)] border border-[var(--role-danger-border)] rounded-[var(--radius-md)] p-4 mb-6 flex items-center">
+            <div
+              role="alert"
+              className="bg-[var(--badge-danger-bg)] border border-[var(--role-danger-border)] rounded-[var(--radius-md)] p-4 mb-6 flex items-center"
+            >
               <AlertCircle className="text-[var(--status-danger)] mr-3" size={20} />
               <p className="text-[var(--status-danger)]">{error}</p>
             </div>

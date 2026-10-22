@@ -137,8 +137,8 @@ export function useAssignGroom() {
     // (AssignGroomModal) already surfaces assign failures at the call site via
     // its own onError → inline error, and doctrine §2 mandates exactly ONE
     // feedback per mutation (hook OR call site, not both). Adding a hook toast
-    // would double the feedback. (The modal's inline error still renders the raw
-    // server message — a separate §3 leak tracked in Equoria-eivq9.)
+    // would double the feedback. (The modal maps the error through userMessageFor,
+    // so no server text reaches the player — Equoria-eivq9.)
   });
 }
 
