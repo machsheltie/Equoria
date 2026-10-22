@@ -42,6 +42,7 @@ import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { Button } from '@/components/ui/button';
 import { useActivityFeed, useUserProgress } from '../hooks/api/useUserProgress';
+import { useUserCompetitionStats } from '../hooks/api/useUserCompetitionStats';
 import { useRankHistory } from '../hooks/api/useRankHistory';
 import RankHistoryChart from '@/components/leaderboard/RankHistoryChart';
 
@@ -63,6 +64,14 @@ const ProfilePage: React.FC = () => {
     refetch: refetchProgress,
     isFetching: isProgressFetching,
   } = useUserProgress(userId);
+  // Competitions WON come from the competition-stats endpoint (`totalWins`);
+  // /progress only carries entries (`totalCompetitions`) — Equoria-4z3i9.
+  const {
+    data: competitionStats,
+    isLoading: isWinsLoading,
+    error: winsError,
+    refetch: refetchWins,
+  } = useUserCompetitionStats(profileData?.user?.id ?? null);
 
   // Rank-history time-series for the trend chart (Equoria-l332). The backend
   // endpoint is ownership-enforced, so we only ever request the signed-in
@@ -256,13 +265,28 @@ const ProfilePage: React.FC = () => {
                   size="sm"
                   isLoading={progressPending}
                 />
-                <StatisticsCard
-                  value={progressData?.totalCompetitions ?? 0}
-                  label="Competitions Won"
-                  type={StatisticType.COMPETITIONS_WON}
-                  size="sm"
-                  isLoading={progressPending}
-                />
+                {winsError && !competitionStats ? (
+                  // A failed read is not zero wins: say so, and offer the retry.
+                  <Surface variant="subtle" className="p-3 space-y-2">
+                    <InlineError message={userMessageFor(winsError).message} />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void refetchWins()}
+                    >
+                      Try Again
+                    </Button>
+                  </Surface>
+                ) : (
+                  <StatisticsCard
+                    value={competitionStats?.totalWins ?? 0}
+                    label="Competitions Won"
+                    type={StatisticType.COMPETITIONS_WON}
+                    size="sm"
+                    isLoading={isWinsLoading}
+                  />
+                )}
                 <StatisticsCard
                   value={breedingCount}
                   label="Breeding Count"
