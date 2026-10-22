@@ -24,7 +24,7 @@ import {
   groupEarningsByHorse,
   groupTopThreePlacementsByHorse,
   groupAveragePlacementByHorse,
-  groupDistinctHorseCount,
+  countDistinctHorses,
   getHorseProfileForLeaderboard,
 } from '../services/leaderboardCompetitionQueries.mjs';
 
@@ -33,10 +33,7 @@ const router = express.Router();
 /** Aliases for frontend compatibility (matches LeaderboardCategorySelector.tsx) */
 router.get('/level', auth, getTopPlayersByLevel);
 router.get('/prize-money', auth, getTopHorsesByEarnings);
-router.get('/win-rate', auth, (req, res, next) => {
-  req.query.metric = 'wins'; // Default win-rate to wins for now
-  getTopHorsesByPerformance(req, res, next);
-});
+router.get('/win-rate', auth, getTopHorsesByPerformance);
 router.get('/owner', auth, getTopPlayersByHorseEarnings);
 
 /**
@@ -296,23 +293,16 @@ router.get('/horses/earnings', auth, getTopHorsesByEarnings);
  * @swagger
  * /api/leaderboard/horses/performance:
  *   get:
- *     summary: Get top horses ranked by performance metrics
+ *     summary: Get top horses ranked by their best competition score
  *     tags: [Leaderboard]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: metric
- *         schema:
- *           type: string
- *           enum: [wins, placements, average_score]
- *           default: wins
- *         description: Performance metric to rank by
- *       - in: query
  *         name: discipline
  *         schema:
  *           type: string
- *         description: Filter by specific discipline
+ *         description: Only consider results from this discipline
  *       - in: query
  *         name: limit
  *         schema:
@@ -656,7 +646,7 @@ router.get(
       }
 
       // Get total count for pagination (service-layer, Equoria-becrm)
-      const totalCount = await groupDistinctHorseCount(whereClause);
+      const totalCount = await countDistinctHorses(whereClause);
 
       logger.info(
         `[leaderboardRoutes.GET /competition] Retrieved ${results.length} leaderboard entries`,
@@ -672,10 +662,10 @@ router.get(
             metric,
           },
           pagination: {
-            total: totalCount.length,
+            total: totalCount,
             limit: parseInt(limit),
             offset: parseInt(offset),
-            hasMore: parseInt(offset) + parseInt(limit) < totalCount.length,
+            hasMore: parseInt(offset) + parseInt(limit) < totalCount,
           },
         },
       });

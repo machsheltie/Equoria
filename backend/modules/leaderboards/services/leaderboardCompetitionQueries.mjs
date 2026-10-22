@@ -22,9 +22,11 @@ import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
  * @returns {Promise<Array<object>>}
  */
 export function fetchHorseDetailsByIds(horseIds) {
+  // Equoria-cmw85.16: only the three fields the routes read. An include would
+  // return every Horse column (a dozen JSONB blobs) for up to 100 horses.
   return prisma.horse.findMany({
     where: { id: { in: horseIds } },
-    include: { user: { select: { id: true, username: true } } },
+    select: { id: true, name: true, userId: true, user: { select: { id: true, username: true } } },
   });
 }
 
@@ -34,7 +36,7 @@ export function groupWinsByHorse(whereClause, { take, skip }) {
     by: ['horseId'],
     where: { ...whereClause, placement: '1' },
     _count: { id: true },
-    orderBy: { _count: { id: 'desc' } },
+    orderBy: [{ _count: { id: 'desc' } }, { horseId: 'asc' }],
     take,
     skip,
   });
@@ -46,7 +48,7 @@ export function groupEarningsByHorse(whereClause, { take, skip }) {
     by: ['horseId'],
     where: whereClause,
     _sum: { prizeWon: true },
-    orderBy: { _sum: { prizeWon: 'desc' } },
+    orderBy: [{ _sum: { prizeWon: 'desc' } }, { horseId: 'asc' }],
     take,
     skip,
   });
@@ -58,10 +60,57 @@ export function groupTopThreePlacementsByHorse(whereClause, { take, skip }) {
     by: ['horseId'],
     where: { ...whereClause, placement: { in: ['1', '2', '3'] } },
     _count: { id: true },
-    orderBy: { _count: { id: 'desc' } },
+    orderBy: [{ _count: { id: 'desc' } }, { horseId: 'asc' }],
     take,
     skip,
   });
+}
+
+/**
+ * Translate the route-built whereClause into SQL conditions. The translation is
+ * intentionally CLOSED: only the exact filter shapes the route builds
+ * (`placement: { not: null }`, optional `discipline` equality, optional
+ * `runDate: { gte }`) are supported, and anything else throws instead of being
+ * silently dropped from the SQL.
+ *
+ * @param {object} whereClause
+ * @param {string} caller - function name for error messages
+ * @returns {Array} Prisma.sql fragments, all of which must hold
+ */
+function whereToSqlConditions(whereClause, caller) {
+  const { placement, discipline, runDate, ...unsupported } = whereClause ?? {};
+  const unsupportedKeys = Object.keys(unsupported);
+  if (unsupportedKeys.length > 0) {
+    throw new Error(
+      `${caller}: unsupported filter key(s) in whereClause: ${unsupportedKeys.join(', ')} — extend the SQL translation before filtering on them`,
+    );
+  }
+  // The route always sends `placement: { not: null }`; any OTHER placement
+  // filter has no SQL translation here and must not be silently ignored.
+  if (
+    placement !== undefined &&
+    !(
+      placement !== null &&
+      typeof placement === 'object' &&
+      placement.not === null &&
+      Object.keys(placement).length === 1
+    )
+  ) {
+    throw new Error(`${caller}: only the \`placement: { not: null }\` filter is supported`);
+  }
+
+  const conditions = [Prisma.sql`"placement" IS NOT NULL`];
+  if (discipline !== undefined) {
+    conditions.push(Prisma.sql`"discipline" = ${discipline}`);
+  }
+  if (runDate !== undefined) {
+    const { gte, ...otherOps } = runDate ?? {};
+    if (gte === undefined || Object.keys(otherOps).length > 0) {
+      throw new Error(`${caller}: only the \`runDate: { gte }\` filter is supported`);
+    }
+    conditions.push(Prisma.sql`"runDate" >= ${new Date(gte)}`);
+  }
+  return conditions;
 }
 
 /**
@@ -100,47 +149,12 @@ export function groupTopThreePlacementsByHorse(whereClause, { take, skip }) {
  * @returns {Promise<Array<{ horseId: number, _avg: { placement: number }, _count: { id: number } }>>}
  */
 export async function groupAveragePlacementByHorse(whereClause, { take, skip }) {
-  const { placement, discipline, runDate, ...unsupported } = whereClause ?? {};
-  const unsupportedKeys = Object.keys(unsupported);
-  if (unsupportedKeys.length > 0) {
-    throw new Error(
-      `groupAveragePlacementByHorse: unsupported filter key(s) in whereClause: ${unsupportedKeys.join(', ')} — extend the SQL translation before filtering on them`,
-    );
-  }
-  // The route always sends `placement: { not: null }`; any OTHER placement
-  // filter has no SQL translation here and must not be silently ignored.
-  if (
-    placement !== undefined &&
-    !(
-      placement !== null &&
-      typeof placement === 'object' &&
-      placement.not === null &&
-      Object.keys(placement).length === 1
-    )
-  ) {
-    throw new Error(
-      'groupAveragePlacementByHorse: only the `placement: { not: null }` filter is supported',
-    );
-  }
-
   const conditions = [
-    Prisma.sql`"placement" IS NOT NULL`,
+    ...whereToSqlConditions(whereClause, 'groupAveragePlacementByHorse'),
     // Numeric guard: only rows whose placement starts with a digit enter
     // the average ('1', '2nd', '10th' — yes; 'DQ' — no).
     Prisma.sql`"placement" ~ '^[0-9]'`,
   ];
-  if (discipline !== undefined) {
-    conditions.push(Prisma.sql`"discipline" = ${discipline}`);
-  }
-  if (runDate !== undefined) {
-    const { gte, ...otherOps } = runDate ?? {};
-    if (gte === undefined || Object.keys(otherOps).length > 0) {
-      throw new Error(
-        'groupAveragePlacementByHorse: only the `runDate: { gte }` filter is supported',
-      );
-    }
-    conditions.push(Prisma.sql`"runDate" >= ${new Date(gte)}`);
-  }
 
   // Function-call form (`$queryRaw(Prisma.sql\`…\`)`) rather than the tagged
   // template — the in-repo convention for composed fragments (see
@@ -168,18 +182,20 @@ export async function groupAveragePlacementByHorse(whereClause, { take, skip }) 
 }
 
 /**
- * Total-distinct-horse count for pagination metadata. Returns an array
- * whose `.length` is the count of distinct horses matching the filter.
+ * Total-distinct-horse count for pagination metadata, counted in SQL
+ * (Equoria-4qpqb) instead of materialising one group per horse in Node.
  *
- * @param {object} whereClause
- * @returns {Promise<Array<{ horseId: number }>>}
+ * @param {object} whereClause - same closed filter shapes as the average branch
+ * @returns {Promise<number>} distinct horses with a result matching the filter
  */
-export function groupDistinctHorseCount(whereClause) {
-  return prisma.competitionResult.groupBy({
-    by: ['horseId'],
-    where: whereClause,
-    _count: { id: true },
-  });
+export async function countDistinctHorses(whereClause) {
+  const conditions = whereToSqlConditions(whereClause, 'countDistinctHorses');
+  const rows = await prisma.$queryRaw(Prisma.sql`
+    SELECT COUNT(DISTINCT "horseId")::int AS "horseCount"
+    FROM "competition_results"
+    WHERE ${Prisma.join(conditions, ' AND ')}
+  `);
+  return Number(rows[0]?.horseCount ?? 0);
 }
 
 /**

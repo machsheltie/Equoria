@@ -32,6 +32,44 @@
 import defaultPrisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
+const RANK_CATEGORIES = ['level', 'xp', 'horse-earnings', 'horse-performance'];
+
+/**
+ * The most recent snapshot rank per category, for rankChange
+ * (rankChange = previousRank - currentRank; positive means the rank improved).
+ *
+ * Equoria-cmw85.18: one indexed `findFirst` per category
+ * (user_rank_snapshots [userId, category, capturedAt DESC]) - at most four rows
+ * however deep the history is. This replaces reading the user's WHOLE snapshot
+ * history and deduping in JS. Prisma's `distinct` is not used: without the
+ * nativeDistinct preview it too reads every row first. Typed Prisma, as in the
+ * Equoria-3ear replacement of the raw DISTINCT ON.
+ * @param {string} userId
+ * @returns {Promise<Record<string, number>>} category -> latest rank
+ */
+export async function readLatestRankSnapshots(userId, prismaClient = defaultPrisma) {
+  const snapshotMap = {};
+  try {
+    const latest = await Promise.all(
+      RANK_CATEGORIES.map(category =>
+        prismaClient.userRankSnapshot.findFirst({
+          where: { userId, category },
+          orderBy: { capturedAt: 'desc' },
+          select: { category: true, rank: true },
+        }),
+      ),
+    );
+    for (const snapshot of latest) {
+      if (snapshot) {
+        snapshotMap[snapshot.category] = Number(snapshot.rank);
+      }
+    }
+  } catch (_snapshotErr) {
+    // Table may not exist in older envs - fall back to rankChange: 0
+  }
+  return snapshotMap;
+}
+
 /**
  * Given a Map of userId -> numeric total for the *participating* population,
  * return a function rank(total) = (# participating totals strictly greater)

@@ -3,11 +3,15 @@
  * Provides ranked lists of top-performing horses and users based on various metrics
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
-import { captureAllUserRankSnapshots } from '../services/userRankSnapshotService.mjs';
+import {
+  captureAllUserRankSnapshots,
+  readLatestRankSnapshots,
+} from '../services/userRankSnapshotService.mjs';
+import { isKnownDiscipline } from '../../competition/index.mjs';
 
 const CACHE_TTL = 300; // 5 minutes
 
@@ -22,9 +26,20 @@ const calculateTotalXpForLevel = level => {
   return (level - 1) * xpPerLevel;
 };
 
+/**
+ * Page window for a leaderboard. The documented `offset` (swagger) wins over
+ * `page` when it is a valid non-negative integer; `limit` is clamped by
+ * parsePaginationParams (Equoria-9svu0).
+ */
+const leaderboardPaging = (req, options) => {
+  const { limit, skip } = parsePaginationParams(req, options);
+  const offset = Number.parseInt(req.query.offset, 10);
+  return { limit, skip: Number.isInteger(offset) && offset >= 0 ? offset : skip };
+};
+
 // Controllers
 export const getTopUsersByLevel = async (req, res) => {
-  const { limit, skip } = parsePaginationParams(req, { defaultLimit: 10, maxLimit: 100 });
+  const { limit, skip } = leaderboardPaging(req, { defaultLimit: 10, maxLimit: 100 });
 
   try {
     const cacheKey = `leaderboard:top-users:level:${limit}:${skip}`;
@@ -35,7 +50,7 @@ export const getTopUsersByLevel = async (req, res) => {
           prisma.user.findMany({
             take: limit,
             skip,
-            orderBy: [{ level: 'desc' }, { xp: 'desc' }],
+            orderBy: [{ level: 'desc' }, { xp: 'desc' }, { id: 'asc' }],
             select: {
               id: true,
               username: true,
@@ -90,7 +105,7 @@ export const getTopUsersByLevel = async (req, res) => {
 
 export const getTopUsersByXP = async (req, res) => {
   const { period = 'all' } = req.query;
-  const { limit, skip } = parsePaginationParams(req, { defaultLimit: 10, maxLimit: 100 });
+  const { limit, skip } = leaderboardPaging(req, { defaultLimit: 10, maxLimit: 100 });
 
   try {
     const whereClause = {};
@@ -108,22 +123,25 @@ export const getTopUsersByXP = async (req, res) => {
     }
 
     const cacheKey = `leaderboard:top-users:xp:${period}:${limit}:${skip}`;
-    const [xpData, totalRecords] = await getCachedQuery(
+    const [xpData, totalUsers] = await getCachedQuery(
       cacheKey,
       async () => {
         const data = await prisma.xpEvent.groupBy({
           by: ['userId'],
           _sum: { amount: true },
           where: whereClause,
-          orderBy: { _sum: { amount: 'desc' } },
+          orderBy: [{ _sum: { amount: 'desc' } }, { userId: 'asc' }],
           take: limit,
           skip,
         });
-        const all = await prisma.xpEvent.groupBy({
-          by: ['userId'],
-          where: whereClause,
-        });
-        return [data, all];
+        // Equoria-4qpqb: the total is a SQL COUNT, not one group per user in memory.
+        const since = whereClause.timestamp?.gte;
+        const [{ cnt }] = await prisma.$queryRaw(Prisma.sql`
+          SELECT COUNT(DISTINCT "userId")::int AS cnt
+          FROM "xp_events"
+          ${since ? Prisma.sql`WHERE "timestamp" >= ${since}` : Prisma.empty}
+        `);
+        return [data, Number(cnt)];
       },
       CACHE_TTL,
     );
@@ -151,8 +169,8 @@ export const getTopUsersByXP = async (req, res) => {
         pagination: {
           limit,
           offset: skip,
-          total: totalRecords.length,
-          hasMore: skip + limit < totalRecords.length,
+          total: totalUsers,
+          hasMore: skip + limit < totalUsers,
         },
       },
     });
@@ -181,10 +199,16 @@ export const getTopUsersByXP = async (req, res) => {
  *   Step B: fetch horse + breed + owner display fields for those horseIds
  */
 export const getTopHorsesByPerformance = async (req, res) => {
-  const limit = 10;
+  // Equoria-9svu0: the documented limit (default 10, max 100), offset and
+  // discipline are honoured. An unknown discipline is a 400, as on /competition.
+  const { limit, skip } = leaderboardPaging(req, { defaultLimit: 10, maxLimit: 100 });
+  const { discipline } = req.query;
+  if (discipline !== undefined && !isKnownDiscipline(discipline)) {
+    return res.status(400).json({ success: false, message: 'Invalid discipline' });
+  }
 
   try {
-    const cacheKey = `leaderboard:top-horses:performance:${limit}`;
+    const cacheKey = `leaderboard:top-horses:performance:${discipline ?? 'all'}:${limit}:${skip}`;
 
     const rankings = await getCachedQuery(
       cacheKey,
@@ -192,9 +216,11 @@ export const getTopHorsesByPerformance = async (req, res) => {
         // Step A: MAX score per horse from competition results, top N descending
         const topScores = await prisma.competitionResult.groupBy({
           by: ['horseId'],
+          where: discipline ? { discipline } : {},
           _max: { score: true },
-          orderBy: { _max: { score: 'desc' } },
+          orderBy: [{ _max: { score: 'desc' } }, { horseId: 'asc' }],
           take: limit,
+          skip,
         });
 
         if (topScores.length === 0) {
@@ -218,7 +244,7 @@ export const getTopHorsesByPerformance = async (req, res) => {
         return topScores.map((entry, index) => {
           const horse = horseMap[entry.horseId];
           return {
-            rank: index + 1,
+            rank: skip + index + 1,
             horseId: entry.horseId,
             name: horse?.name || 'Unknown',
             breed: horse?.breed?.name || 'Unknown',
@@ -245,7 +271,7 @@ export const getTopHorsesByPerformance = async (req, res) => {
 
 export const getTopHorsesByEarnings = async (req, res) => {
   const { breed } = req.query;
-  const { limit, skip } = parsePaginationParams(req, { defaultLimit: 10, maxLimit: 100 });
+  const { limit, skip } = leaderboardPaging(req, { defaultLimit: 10, maxLimit: 100 });
 
   try {
     const whereClause = {
@@ -275,7 +301,7 @@ export const getTopHorsesByEarnings = async (req, res) => {
               },
             },
             where: whereClause,
-            orderBy: { totalEarnings: 'desc' },
+            orderBy: [{ totalEarnings: 'desc' }, { id: 'asc' }],
             take: limit,
             skip,
           }),
@@ -315,16 +341,18 @@ export const getTopHorsesByEarnings = async (req, res) => {
 };
 
 export const getTopUsersByHorseEarnings = async (req, res) => {
+  const { limit, skip } = leaderboardPaging(req, { defaultLimit: 10, maxLimit: 100 });
   try {
-    const cacheKey = 'leaderboard:top-users:horse-earnings';
+    const cacheKey = `leaderboard:top-users:horse-earnings:${limit}:${skip}`;
     const result = await getCachedQuery(
       cacheKey,
       () =>
         prisma.horse.groupBy({
           by: ['userId'],
           _sum: { totalEarnings: true },
-          orderBy: { _sum: { totalEarnings: 'desc' } },
-          take: 10,
+          orderBy: [{ _sum: { totalEarnings: 'desc' } }, { userId: 'asc' }],
+          take: limit,
+          skip,
         }),
       CACHE_TTL,
     );
@@ -338,7 +366,7 @@ export const getTopUsersByHorseEarnings = async (req, res) => {
     const userMap = Object.fromEntries(users.map(u => [u.id, u.username]));
 
     const rankings = result.map((entry, index) => ({
-      rank: index + 1,
+      rank: skip + index + 1,
       userId: entry.userId,
       name: userMap[entry.userId] || 'Unknown',
       totalEarnings: entry._sum.totalEarnings,
@@ -358,6 +386,8 @@ export const getTopUsersByHorseEarnings = async (req, res) => {
 export const getRecentWinners = async (req, res) => {
   try {
     const { discipline } = req.query;
+    // Documented: limit default 20, max 50 (Equoria-9svu0).
+    const { limit } = parsePaginationParams(req, { defaultLimit: 20, maxLimit: 50 });
     const whereClause = {
       OR: [{ placement: '1' }, { placement: '1st' }],
     };
@@ -366,14 +396,14 @@ export const getRecentWinners = async (req, res) => {
       whereClause.discipline = discipline;
     }
 
-    const cacheKey = `leaderboard:recent-winners:${discipline ?? 'all'}`;
+    const cacheKey = `leaderboard:recent-winners:${discipline ?? 'all'}:${limit}`;
     const results = await getCachedQuery(
       cacheKey,
       () =>
         prisma.competitionResult.findMany({
           where: whereClause,
-          orderBy: { runDate: 'desc' },
-          take: 10,
+          orderBy: [{ runDate: 'desc' }, { id: 'desc' }],
+          take: limit,
           select: {
             id: true,
             runDate: true,
@@ -494,117 +524,80 @@ export const getUserRankSummary = async (req, res) => {
 
     const userName = targetUser.username || 'Unknown';
 
-    // Total users — used as totalEntries for level + xp categories
-    const totalUsers = await prisma.user.count();
+    // Every count/aggregate below is independent of the others once the target
+    // user is known, so they run together (Equoria-cmw85.18); only the three
+    // "users ahead" counts need a target total first and form the second round.
+    const [
+      totalUsers, // totalEntries for the level + xp categories
+      usersAheadByLevel, // (level DESC, xp DESC): users strictly ahead
+      targetXpAgg, // total XP earned across all xpEvents
+      targetEarningsAgg,
+      targetPerfAgg, // primaryStat = MAX(competitionResult.score) over the user's horses
+      horseOwnerCount, // prefer distinct owners so it reads "rank 3 of N owners"
+      snapshotMap,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({
+        where: {
+          OR: [
+            { level: { gt: targetUser.level } },
+            { AND: [{ level: targetUser.level }, { xp: { gt: targetUser.xp } }] },
+          ],
+        },
+      }),
+      prisma.xpEvent.aggregate({ where: { userId: targetUser.id }, _sum: { amount: true } }),
+      prisma.horse.aggregate({ where: { userId: targetUser.id }, _sum: { totalEarnings: true } }),
+      prisma.competitionResult.aggregate({
+        where: { horse: { userId: targetUser.id } },
+        _max: { score: true },
+      }),
+      prisma.user.count({ where: { horses: { some: {} } } }),
+      readLatestRankSnapshots(userId),
+    ]);
 
-    // ─── Level rank ─────────────────────────────────────────────────────────
-    // Rank by (level DESC, xp DESC) — count users strictly ahead, then +1.
-    const usersAheadByLevel = await prisma.user.count({
-      where: {
-        OR: [
-          { level: { gt: targetUser.level } },
-          { AND: [{ level: targetUser.level }, { xp: { gt: targetUser.xp } }] },
-        ],
-      },
-    });
     const levelRank = usersAheadByLevel + 1;
-
-    // ─── XP rank ────────────────────────────────────────────────────────────
-    // Rank by total XP earned across all xpEvents. Sum for target user first,
-    // then use a raw SQL COUNT to avoid loading every user's xp into memory.
-    const targetXpAgg = await prisma.xpEvent.aggregate({
-      where: { userId: targetUser.id },
-      _sum: { amount: true },
-    });
     const targetXpTotal = targetXpAgg._sum.amount ?? 0;
-
-    // Count users whose xp total strictly exceeds the target user's total via
-    // a single indexed GROUP BY + HAVING query — no full table materialisation.
-    const xpAheadResult = await prisma.$queryRaw`
-      SELECT COUNT(*)::int AS cnt
-      FROM (
-        SELECT "userId", COALESCE(SUM(amount), 0) AS total_xp
-        FROM "xp_events"
-        GROUP BY "userId"
-        HAVING COALESCE(SUM(amount), 0) > ${targetXpTotal}
-      ) sub
-    `;
-    const usersAheadByXp = xpAheadResult[0]?.cnt ?? 0;
-    const xpRank = Number(usersAheadByXp) + 1;
-
-    // ─── Horse-earnings rank ────────────────────────────────────────────────
-    // Aggregate per-user horse earnings using a scoped SQL query — avoids
-    // loading every horse row into Node memory for a simple rank computation.
-    const targetEarningsAgg = await prisma.horse.aggregate({
-      where: { userId: targetUser.id },
-      _sum: { totalEarnings: true },
-    });
     const targetEarningsTotal = targetEarningsAgg._sum.totalEarnings ?? 0;
-
-    const earningsAheadResult = await prisma.$queryRaw`
-      SELECT COUNT(*)::int AS cnt
-      FROM (
-        SELECT "userId", COALESCE(SUM("totalEarnings"), 0) AS total_earnings
-        FROM "horses"
-        WHERE "userId" IS NOT NULL
-        GROUP BY "userId"
-        HAVING COALESCE(SUM("totalEarnings"), 0) > ${targetEarningsTotal}
-      ) sub
-    `;
-    const usersAheadByEarnings = earningsAheadResult[0]?.cnt ?? 0;
-    const earningsRank = Number(usersAheadByEarnings) + 1;
-
-    // ─── Horse-performance rank ────────────────────────────────────────────
-    // primaryStat = MAX(competitionResult.score) across horses owned by user.
-    // Use a raw SQL JOIN + GROUP BY to count users with a better max score —
-    // avoids pulling every competition result into Node memory.
-    const targetPerfAgg = await prisma.competitionResult.aggregate({
-      where: { horse: { userId: targetUser.id } },
-      _max: { score: true },
-    });
     const targetPerfMax = targetPerfAgg._max.score ? Number(targetPerfAgg._max.score) : 0;
 
-    const perfAheadResult = await prisma.$queryRaw`
-      SELECT COUNT(*)::int AS cnt
-      FROM (
-        SELECT h."userId", MAX(cr.score) AS best_score
-        FROM "competition_results" cr
-        JOIN "horses" h ON cr."horseId" = h.id
-        WHERE h."userId" IS NOT NULL
-        GROUP BY h."userId"
-        HAVING MAX(cr.score) > ${targetPerfMax}
-      ) sub
-    `;
-    const usersAheadByPerformance = perfAheadResult[0]?.cnt ?? 0;
-    const performanceRank = Number(usersAheadByPerformance) + 1;
-
-    // totalEntries denominator for horse-* categories — prefer distinct owner
-    // count so the display matches "rank 3 of N owners", not "of all users".
-    const horseOwnerCount = await prisma.user.count({
-      where: { horses: { some: {} } },
-    });
-
-    // Fetch the most recent snapshot per category so we can compute rankChange.
-    // rankChange = previousRank - currentRank (positive means rank improved).
-    // Typed Prisma replacement of the DISTINCT ON raw query (Equoria-3ear):
-    // pull rows ordered by capturedAt DESC, then dedupe-by-category in JS so
-    // the first occurrence (newest per category) wins. Avoids `$queryRaw`
-    // while preserving the original "latest snapshot per category" semantics.
-    const snapshotMap = {};
-    try {
-      const snapshots = await prisma.userRankSnapshot.findMany({
-        where: { userId },
-        select: { category: true, rank: true, capturedAt: true },
-        orderBy: { capturedAt: 'desc' },
-      });
-      for (const s of snapshots) {
-        if (!(s.category in snapshotMap)) {
-          snapshotMap[s.category] = Number(s.rank);
-        }
-      }
-    } catch (_snapshotErr) {
-      // Table may not exist in older envs — fall back to rankChange: 0
-    }
+    // Users strictly ahead, each a single GROUP BY + HAVING count (no full table
+    // materialisation): XP and earnings by per-user sums, performance by each
+    // owner's best score.
+    const [xpAheadResult, earningsAheadResult, perfAheadResult] = await Promise.all([
+      prisma.$queryRaw`
+        SELECT COUNT(*)::int AS cnt
+        FROM (
+          SELECT "userId", COALESCE(SUM(amount), 0) AS total_xp
+          FROM "xp_events"
+          GROUP BY "userId"
+          HAVING COALESCE(SUM(amount), 0) > ${targetXpTotal}
+        ) sub
+      `,
+      prisma.$queryRaw`
+        SELECT COUNT(*)::int AS cnt
+        FROM (
+          SELECT "userId", COALESCE(SUM("totalEarnings"), 0) AS total_earnings
+          FROM "horses"
+          WHERE "userId" IS NOT NULL
+          GROUP BY "userId"
+          HAVING COALESCE(SUM("totalEarnings"), 0) > ${targetEarningsTotal}
+        ) sub
+      `,
+      prisma.$queryRaw`
+        SELECT COUNT(*)::int AS cnt
+        FROM (
+          SELECT h."userId", MAX(cr.score) AS best_score
+          FROM "competition_results" cr
+          JOIN "horses" h ON cr."horseId" = h.id
+          WHERE h."userId" IS NOT NULL
+          GROUP BY h."userId"
+          HAVING MAX(cr.score) > ${targetPerfMax}
+        ) sub
+      `,
+    ]);
+    const xpRank = Number(xpAheadResult[0]?.cnt ?? 0) + 1;
+    const earningsRank = Number(earningsAheadResult[0]?.cnt ?? 0) + 1;
+    const performanceRank = Number(perfAheadResult[0]?.cnt ?? 0) + 1;
 
     const rankings = [
       {
