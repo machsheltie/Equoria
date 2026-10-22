@@ -428,7 +428,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       : generateGenotype(breedGeneticProfile, rng);
 
   // Phenotype: base color + markings (31E-1b / 31E-3).
-  const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
+  const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
   const markings =
     sirePhenotype && damPhenotype
       ? inheritMarkings(sirePhenotype, damPhenotype, breedGeneticProfile, baseColor.colorName, rng)
@@ -586,9 +586,8 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
     // next run; a parallel runner that foaled her first makes the claim match
     // nothing, which is a skip, not an error.
     try {
-      const { positiveChance, negativeChance } = calculatePregnancyEpigeneticChances(
-        snapshot.pregnancyFeedingsByTier,
-      );
+      const chances = calculatePregnancyEpigeneticChances(snapshot.pregnancyFeedingsByTier);
+      const { positiveChance, negativeChance } = chances;
 
       await createFoalFromPregnancy({
         damId,
