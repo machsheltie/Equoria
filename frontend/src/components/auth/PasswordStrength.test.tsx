@@ -33,7 +33,7 @@ describe('PasswordStrength', () => {
 
   it('renders all 5 requirement checks by default', () => {
     render(<PasswordStrength password="abc" />);
-    expect(screen.getByTestId('requirement-8-characters')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-12-characters')).toBeInTheDocument();
     expect(screen.getByTestId('requirement-lowercase')).toBeInTheDocument();
     expect(screen.getByTestId('requirement-uppercase')).toBeInTheDocument();
     expect(screen.getByTestId('requirement-number')).toBeInTheDocument();
@@ -45,9 +45,9 @@ describe('PasswordStrength', () => {
     expect(screen.queryByRole('list', { name: /password requirements/i })).not.toBeInTheDocument();
   });
 
-  it('marks 8+ characters requirement met when password is 8 chars', () => {
-    render(<PasswordStrength password="abcdefgh" />);
-    const item = screen.getByTestId('requirement-8-characters');
+  it('marks 12+ characters requirement met when password is 12 chars', () => {
+    render(<PasswordStrength password="abcdefghijkl" />);
+    const item = screen.getByTestId('requirement-12-characters');
     // Check icon reflects met state (Check icon present, not X)
     expect(item.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });

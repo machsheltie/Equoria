@@ -5,6 +5,9 @@
  * schema + strength meter were only exercised indirectly via RegisterPage
  * form submission. This file tests them directly.
  *
+ * Equoria-hh4dc: fixtures are 12 characters because the policy minimum is now 12
+ * (the server's; see validation-schemas.passwordPolicy.test.ts). They were 8.
+ *
  * AC (Equoria-8d5c):
  *  - hash-suffixed sample is NOT strong-valid and fails passwordSchema
  *  - bang-suffixed sample IS strong-valid and passes passwordSchema
@@ -30,19 +33,19 @@ describe('passwordSchema (Equoria-8d5c)', () => {
   it('special-char set equals the documented schema set @$!%*?&', () => {
     // Each schema special char makes an otherwise-conformant password pass.
     for (const ch of SCHEMA_SPECIAL_CHARS) {
-      const pw = `Abcdef1${ch}`;
+      const pw = `Abcdefghij1${ch}`;
       expect(passwordSchema.safeParse(pw).success).toBe(true);
     }
     // A char OUTSIDE the set (e.g. '#', '^', '-') does NOT satisfy the
     // special-char requirement.
     for (const ch of ['#', '^', '-', '_', '.']) {
-      const pw = `Abcdef1${ch}`;
+      const pw = `Abcdefghij1${ch}`;
       expect(passwordSchema.safeParse(pw).success).toBe(false);
     }
   });
 
   it('hash-suffixed sample is NOT strong-valid and fails passwordSchema', () => {
-    const hashSample = 'Abcdef1#';
+    const hashSample = 'Abcdefghij1#';
     expect(passwordSchema.safeParse(hashSample).success).toBe(false);
     // '#' is not a schema special char, so this is not "strong-valid"
     // (it cannot be both strong AND schema-valid).
@@ -52,7 +55,7 @@ describe('passwordSchema (Equoria-8d5c)', () => {
   });
 
   it('bang-suffixed sample IS strong-valid and passes passwordSchema', () => {
-    const bangSample = 'Abcdef1!';
+    const bangSample = 'Abcdefghij1!';
     expect(passwordSchema.safeParse(bangSample).success).toBe(true);
     const { label } = calculatePasswordStrength(bangSample);
     expect(label).toBe('strong');

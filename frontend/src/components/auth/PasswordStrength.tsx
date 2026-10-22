@@ -10,6 +10,7 @@
 import React, { useMemo } from 'react';
 import { Check, X } from 'lucide-react';
 import { calculatePasswordStrength } from '../../lib/validation-schemas';
+import { VALIDATION_RULES } from '../../lib/constants';
 
 // =============================================================================
 // Types
@@ -86,7 +87,7 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({
   // Calculate requirements status
   const requirements = useMemo<PasswordRequirements>(
     () => ({
-      minLength: password.length >= 8,
+      minLength: password.length >= VALIDATION_RULES.password.minLength,
       hasLowercase: /[a-z]/.test(password),
       hasUppercase: /[A-Z]/.test(password),
       hasNumber: /[0-9]/.test(password),
@@ -135,7 +136,10 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({
       {/* Requirements Checklist */}
       {showRequirements && (
         <div className="grid grid-cols-2 gap-1" role="list" aria-label="Password requirements">
-          <RequirementCheck met={requirements.minLength} label="8+ characters" />
+          <RequirementCheck
+            met={requirements.minLength}
+            label={`${VALIDATION_RULES.password.minLength}+ characters`}
+          />
           <RequirementCheck met={requirements.hasLowercase} label="Lowercase" />
           <RequirementCheck met={requirements.hasUppercase} label="Uppercase" />
           <RequirementCheck met={requirements.hasNumber} label="Number" />

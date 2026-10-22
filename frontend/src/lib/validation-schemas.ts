@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod';
+import { VALIDATION_RULES } from './constants';
 
 // =============================================================================
 // Base Field Schemas
@@ -61,11 +62,12 @@ export const usernameSchema = z
 /**
  * Password validation schema (full validation)
  *
- * Rules:
- * - Minimum 8 characters
+ * Rules (the server's, Equoria-hh4dc; strongPasswordChain.mjs):
+ * - 12 to 128 characters
  * - At least 1 lowercase letter (a-z)
  * - At least 1 uppercase letter (A-Z)
  * - At least 1 number (0-9)
+ * - At least 1 special character (@$!%*?&)
  *
  * Used for: Registration, Password Reset
  *
@@ -77,7 +79,8 @@ export const usernameSchema = z
  */
 export const passwordSchema = z
   .string()
-  .min(8, 'Password must be at least 8 characters')
+  .min(VALIDATION_RULES.password.minLength, 'Password must be at least 12 characters')
+  .max(VALIDATION_RULES.password.maxLength, 'Password must be at most 128 characters')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[0-9]/, 'Password must contain at least one number')

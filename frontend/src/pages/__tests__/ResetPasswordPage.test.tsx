@@ -326,7 +326,7 @@ describe('ResetPasswordPage', () => {
       await user.type(passwordInput, 'test');
 
       await waitFor(() => {
-        expect(screen.getByText('8+ characters')).toBeInTheDocument();
+        expect(screen.getByText('12+ characters')).toBeInTheDocument();
         expect(screen.getByText('Lowercase')).toBeInTheDocument();
         expect(screen.getByText('Uppercase')).toBeInTheDocument();
         expect(screen.getByText('Number')).toBeInTheDocument();
@@ -342,7 +342,7 @@ describe('ResetPasswordPage', () => {
 
       await waitFor(() => {
         // All requirements should be shown for this password
-        expect(screen.getByText('8+ characters')).toBeInTheDocument();
+        expect(screen.getByText('12+ characters')).toBeInTheDocument();
         expect(screen.getByText('Lowercase')).toBeInTheDocument();
         expect(screen.getByText('Uppercase')).toBeInTheDocument();
         expect(screen.getByText('Number')).toBeInTheDocument();
@@ -350,7 +350,7 @@ describe('ResetPasswordPage', () => {
 
       // Verify requirements are satisfied — met span uses --status-success token class.
       // Assert the class that the design-system token produces (D-11 compliant).
-      const lengthReq = screen.getByText('8+ characters');
+      const lengthReq = screen.getByText('12+ characters');
       const lowercaseReq = screen.getByText('Lowercase');
       const uppercaseReq = screen.getByText('Uppercase');
       const numberReq = screen.getByText('Number');
@@ -377,7 +377,7 @@ describe('ResetPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(screen.getByText('Password must be at least 8 characters')).toBeInTheDocument();
+        expect(screen.getByText('Password must be at least 12 characters')).toBeInTheDocument();
       });
     });
 

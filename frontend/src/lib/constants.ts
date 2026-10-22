@@ -24,7 +24,10 @@ export const VALIDATION_RULES = {
     pattern: /^[a-zA-Z0-9_]+$/,
   },
   password: {
-    minLength: 8,
+    // The server's policy (backend/modules/auth/validators/strongPasswordChain.mjs):
+    // 12-128 characters, lowercase + uppercase + digit + one of @$!%*?&
+    // (Equoria-hh4dc). Every client surface reads these two numbers.
+    minLength: 12,
     maxLength: 128,
     requireLowercase: true,
     requireUppercase: true,
@@ -172,7 +175,11 @@ export const PASSWORD_STRENGTH = {
     strong: '#10b981', // emerald-500
   },
   requirements: [
-    { key: 'minLength', label: '8+ characters', check: (pw: string) => pw.length >= 8 },
+    {
+      key: 'minLength',
+      label: '12+ characters',
+      check: (pw: string) => pw.length >= 12,
+    },
     { key: 'hasLowercase', label: 'Lowercase', check: (pw: string) => /[a-z]/.test(pw) },
     { key: 'hasUppercase', label: 'Uppercase', check: (pw: string) => /[A-Z]/.test(pw) },
     { key: 'hasNumber', label: 'Number', check: (pw: string) => /[0-9]/.test(pw) },

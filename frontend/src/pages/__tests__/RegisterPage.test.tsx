@@ -354,7 +354,7 @@ describe('RegisterPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/password must be at least 8 characters/i)).toBeInTheDocument();
+        expect(screen.getByText(/password must be at least 12 characters/i)).toBeInTheDocument();
       });
     });
 
@@ -567,7 +567,7 @@ describe('RegisterPage', () => {
       await user.type(passwordInput, 'test');
 
       await waitFor(() => {
-        expect(screen.getByText(/8\+ characters/i)).toBeInTheDocument();
+        expect(screen.getByText(/12\+ characters/i)).toBeInTheDocument();
         expect(screen.getByText(/lowercase/i)).toBeInTheDocument();
         expect(screen.getByText(/uppercase/i)).toBeInTheDocument();
         expect(screen.getByText(/number/i)).toBeInTheDocument();
@@ -587,7 +587,7 @@ describe('RegisterPage', () => {
       await user.type(passwordInput, 'test');
 
       await waitFor(() => {
-        expect(screen.getByText(/8\+ characters/i)).toBeInTheDocument();
+        expect(screen.getByText(/12\+ characters/i)).toBeInTheDocument();
         expect(screen.getByText(/lowercase/i)).toBeInTheDocument();
         expect(screen.getByText(/uppercase/i)).toBeInTheDocument();
         expect(screen.getByText(/number/i)).toBeInTheDocument();

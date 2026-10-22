@@ -16,6 +16,7 @@ import {
   calculatePasswordStrength,
   type RegisterFormData,
 } from '../lib/validation-schemas';
+import { VALIDATION_RULES } from '../lib/constants';
 import { useRegister } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { FormField, Input, PasswordInput } from '@/components/ui/form';
@@ -43,7 +44,7 @@ const RegisterPage: React.FC = () => {
   const passwordRequirements = useMemo(() => {
     const p = formData.password;
     return {
-      minLength: p.length >= 8,
+      minLength: p.length >= VALIDATION_RULES.password.minLength,
       hasLowercase: /[a-z]/.test(p),
       hasUppercase: /[A-Z]/.test(p),
       hasNumber: /[0-9]/.test(p),
@@ -261,7 +262,10 @@ const RegisterPage: React.FC = () => {
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                <RequirementCheck met={passwordRequirements.minLength} label="8+ characters" />
+                <RequirementCheck
+                  met={passwordRequirements.minLength}
+                  label={`${VALIDATION_RULES.password.minLength}+ characters`}
+                />
                 <RequirementCheck met={passwordRequirements.hasLowercase} label="Lowercase" />
                 <RequirementCheck met={passwordRequirements.hasUppercase} label="Uppercase" />
                 <RequirementCheck met={passwordRequirements.hasNumber} label="Number" />
