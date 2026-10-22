@@ -119,7 +119,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
         expect(line).not.toContain(sentinelValue);
         expect(line).toContain('[REDACTED]');
         // Non-sensitive field still emitted.
-        expect(line).toContain('"email":"user@example.com"');
+        expect(line).toContain('"email":"u***@example.com"'); // masked: owner ruling 2026-10-19 (Equoria-5vyuh)
       });
     });
   });
@@ -177,7 +177,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
       const line = capturedLines[0];
       expect(line).not.toContain('PROOF-nested-pwd');
       expect(line).toContain('[REDACTED]');
-      expect(line).toContain('"email":"nested@example.com"');
+      expect(line).toContain('"email":"n***@example.com"'); // masked: owner ruling 2026-10-19 (Equoria-5vyuh)
     });
 
     it('redacts tokens inside arrays of objects', () => {
@@ -307,7 +307,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
         const line = capturedLines[0];
         expect(line).not.toContain(sentinelValue);
         expect(line).toContain('[REDACTED]');
-        expect(line).toContain('"email":"user@example.com"');
+        expect(line).toContain('"email":"u***@example.com"'); // masked: owner ruling 2026-10-19 (Equoria-5vyuh)
       });
     });
 
@@ -384,7 +384,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
       const line = capturedLines[0];
       // Match the JSON-encoded form of the user's literal string.
       expect(line).toContain('"notes":"[REDACTED]"');
-      expect(line).toContain('"email":"u@x.y"');
+      expect(line).toContain('"email":"u***@x.y"'); // masked: owner ruling 2026-10-19 (Equoria-5vyuh)
     });
   });
 
@@ -412,7 +412,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
       expect(line).not.toContain('1990-04-15');
       expect(line).toContain('[REDACTED]');
       // Non-sensitive field still emitted.
-      expect(line).toContain('"email":"newuser@example.com"');
+      expect(line).toContain('"email":"n***@example.com"'); // masked: owner ruling 2026-10-19 (Equoria-5vyuh)
     });
 
     it('redacts the short `dob` alias', () => {
@@ -448,7 +448,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
       const line = capturedLines[0];
       expect(line).not.toContain('1992-02-29');
       expect(line).toContain('[REDACTED]');
-      expect(line).toContain('"email":"nested@example.com"');
+      expect(line).toContain('"email":"n***@example.com"'); // masked: owner ruling 2026-10-19 (Equoria-5vyuh)
     });
 
     it('does NOT over-redact a substring sibling like `dateOfBirthVerified`', () => {

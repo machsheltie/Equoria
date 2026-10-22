@@ -40,6 +40,7 @@ import { dirname, resolve } from 'node:path';
 
 import { AppError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
@@ -154,7 +155,7 @@ export const completeOnboarding = async (req, res, next) => {
       data: { completedOnboarding: true },
     });
   } catch (error) {
-    logger.error('[onboardingController.completeOnboarding] Error:', error);
+    logger.error('[onboardingController.completeOnboarding] Error:', maskEmailsInError(error));
     if (AppError.isAppError(error)) {
       return next(error);
     }
@@ -421,7 +422,7 @@ export const advanceOnboarding = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error('[onboardingController.advanceOnboarding] Error:', error);
+    logger.error('[onboardingController.advanceOnboarding] Error:', maskEmailsInError(error));
     if (AppError.isAppError(error)) {
       return next(error);
     }

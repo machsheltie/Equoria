@@ -92,6 +92,11 @@ export function maskEmailAddress(raw) {
 // masks a little extra text.
 const EMAIL_IN_TEXT = /[^\s@<>()[\]{}"'`,;:\\]+@[^\s@<>()[\]{}"'`,;:\\]+/g;
 
+// The same token with its `@` percent-encoded, as it appears in a logged URL
+// query string (`?email=jasmine%40example.com`). `&`, `=`, `?` and `/` also
+// end it so neighbouring query parameters and path segments are left alone.
+const ENCODED_EMAIL_IN_TEXT = /[^\s@<>()[\]{}"'`,;:\\&=?/]+%40[^\s@<>()[\]{}"'`,;:\\&=?/]+/gi;
+
 /**
  * Mask every address inside free text, such as an error message headed for a
  * server log (owner ruling 2026-10-19: logs never carry a raw email address;
@@ -106,7 +111,42 @@ export function maskEmailsInText(text) {
   if (text === null || text === undefined) {
     return text;
   }
-  return String(text).replace(EMAIL_IN_TEXT, match => maskEmailAddress(match) ?? '***');
+  return String(text)
+    .replace(EMAIL_IN_TEXT, match => maskEmailAddress(match) ?? '***')
+    .replace(ENCODED_EMAIL_IN_TEXT, match => maskEmailAddress(match.replace(/%40/i, '@')) ?? '***');
+}
+
+/**
+ * A token-bearing link (password reset, email verification) as it may appear
+ * in a server log: verbatim only in development or test, where a developer
+ * follows it from the console. The emailService not-sent branch is gated on
+ * `NODE_ENV !== 'production'`, which also covers beta, beta-readiness and an
+ * unset NODE_ENV, so that gate alone would log live tokens (Equoria-5vyuh).
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+export function tokenLinkForLog(url) {
+  return ['development', 'test'].includes(process.env.NODE_ENV)
+    ? url
+    : '[omitted outside development]';
+}
+
+/**
+ * An Error (or anything thrown) reduced to log-safe fields with every address
+ * masked. A Prisma error can echo its query arguments (an email) in `message`,
+ * and a mail-provider error names the recipient (Equoria-5vyuh).
+ *
+ * @param {unknown} error
+ * @returns {{ name: unknown, code: unknown, message: string|null|undefined, stack: string|null|undefined }}
+ */
+export function maskEmailsInError(error) {
+  return {
+    name: error?.name,
+    code: error?.code,
+    message: maskEmailsInText(error?.message ?? error),
+    stack: maskEmailsInText(error?.stack),
+  };
 }
 
 /**

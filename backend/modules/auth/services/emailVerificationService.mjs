@@ -23,7 +23,11 @@ import {
   withRetryableTxMapping,
   RetryableTransactionError,
 } from '../../../utils/retryableTransaction.mjs';
-import { normalizeEmailAddress } from '../../../utils/emailIdentityPolicy.mjs';
+import {
+  maskEmailAddress,
+  maskEmailsInError,
+  normalizeEmailAddress,
+} from '../../../utils/emailIdentityPolicy.mjs';
 import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
 
 // Email verification configuration
@@ -195,7 +199,7 @@ export async function createVerificationToken(userId, email, metadata = {}) {
 
   logger.info('[EmailVerification] Created verification token', {
     userId,
-    email,
+    email: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
     tokenId: tokenRecord.id,
     expiresAt,
   });
@@ -332,7 +336,7 @@ export async function verifyEmailToken(token, metadata = {}) {
 
     logger.info('[EmailVerification] Email verified successfully', {
       userId: tokenRecord.userId,
-      email: tokenRecord.email,
+      email: maskEmailAddress(tokenRecord.email), // Equoria-5vyuh: never a raw address
       tokenId: tokenRecord.id,
       ipAddress: metadata.ipAddress,
     });
@@ -343,7 +347,7 @@ export async function verifyEmailToken(token, metadata = {}) {
       code: 'EMAIL_VERIFIED',
     };
   } catch (error) {
-    logger.error('[EmailVerification] Error verifying email token:', error);
+    logger.error('[EmailVerification] Error verifying email token:', maskEmailsInError(error));
 
     // Equoria-2ksil: a transient transaction-timeout (RetryableTransactionError,
     // 503) must NOT be folded into the {success:false} return shapes below —
@@ -418,7 +422,10 @@ export async function checkVerificationStatus(userId) {
       verifiedAt,
     };
   } catch (error) {
-    logger.error('[EmailVerification] Error checking verification status:', error);
+    logger.error(
+      '[EmailVerification] Error checking verification status:',
+      maskEmailsInError(error),
+    );
     return {
       verified: false,
       error: 'Failed to check verification status',
@@ -467,7 +474,7 @@ export async function resendVerificationEmail(userId, metadata = {}) {
 
   logger.info('[EmailVerification] Resent verification email', {
     userId,
-    email: user.email,
+    email: maskEmailAddress(user.email), // Equoria-5vyuh: never a raw address
   });
 
   return {
@@ -513,7 +520,7 @@ export async function cleanupExpiredTokens(options = {}) {
       cutoffDate,
     };
   } catch (error) {
-    logger.error('[EmailVerification] Error cleaning up tokens:', error);
+    logger.error('[EmailVerification] Error cleaning up tokens:', maskEmailsInError(error));
     return {
       removedCount: 0,
       error: error.message,
@@ -560,7 +567,7 @@ export async function getTokenInfo(token) {
       isValid: !isExpired && !isUsed,
     };
   } catch (error) {
-    logger.error('[EmailVerification] Error getting token info:', error);
+    logger.error('[EmailVerification] Error getting token info:', maskEmailsInError(error));
     return null;
   }
 }

@@ -52,6 +52,7 @@ import { createStarterHorseForNewUser } from '../services/onboardingService.mjs'
 // the first verification token at signup).
 import { createVerificationToken } from '../services/emailVerificationService.mjs';
 import emailService from '../../../utils/emailService.mjs';
+import { maskEmailAddress, maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import {
   issueCsrfToken,
@@ -230,10 +231,13 @@ export const register = async (req, res, next) => {
       await emailService.sendVerificationEmail(user.email, verificationToken.token, user);
       logger.info('[authController.register] Verification email sent', {
         userId: user.id,
-        email: user.email,
+        email: maskEmailAddress(user.email), // Equoria-5vyuh: never a raw address
       });
     } catch (emailError) {
-      logger.error('[authController.register] Failed to send verification email:', emailError);
+      logger.error(
+        '[authController.register] Failed to send verification email:',
+        maskEmailsInError(emailError),
+      );
       // Continue with registration even if email fails
     }
 
@@ -270,7 +274,7 @@ export const register = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error('[authController.register] Error registering user:', error);
+    logger.error('[authController.register] Error registering user:', maskEmailsInError(error));
     next(error);
   }
 };
@@ -392,7 +396,7 @@ export const login = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error('[authController.login] Error logging in user:', error);
+    logger.error('[authController.login] Error logging in user:', maskEmailsInError(error));
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
@@ -455,7 +459,7 @@ export const refreshToken = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error('[authController.refreshToken] Error refreshing token:', error);
+    logger.error('[authController.refreshToken] Error refreshing token:', maskEmailsInError(error));
     if (AppError.isAppError(error)) {
       return next(error);
     }
@@ -492,7 +496,7 @@ export const logout = async (req, res, next) => {
       message: 'Logout successful',
     });
   } catch (error) {
-    logger.error('[authController.logout] Error logging out user:', error);
+    logger.error('[authController.logout] Error logging out user:', maskEmailsInError(error));
     next(new AppError('Logout failed due to an unexpected error.', 500));
   }
 };

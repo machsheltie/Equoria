@@ -19,6 +19,7 @@ import { verifyWithKeyRing } from './jwtKeyRing.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
+import { maskEmailAddress } from './emailIdentityPolicy.mjs';
 import { withRetryableTxMapping, RetryableTransactionError } from './retryableTransaction.mjs';
 import {
   TOKEN_CONFIG,
@@ -467,7 +468,7 @@ export async function invalidateTokenFamily(familyId) {
       familyId,
       invalidatedCount: updateResult.count,
       userId: tokenRecord?.user?.id,
-      email: tokenRecord?.user?.email,
+      email: maskEmailAddress(tokenRecord?.user?.email), // Equoria-5vyuh
       reason: 'Security violation - token reuse detected',
     });
 

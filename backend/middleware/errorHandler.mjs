@@ -1,18 +1,25 @@
 import logger from '../utils/logger.mjs';
 import { AppError } from '../errors/index.mjs';
 import { resolveExposeErrorStack } from '../utils/errorStackPolicy.mjs';
+import { maskEmailsInText } from '../utils/emailIdentityPolicy.mjs';
 
 /**
  * Global Error Handler Middleware
  * Handles all errors in a consistent manner with proper logging
  */
 const errorHandler = (err, req, res, next) => {
+  // Equoria-5vyuh: a Prisma error can echo its query arguments and a URL can
+  // carry a query string, so every logged email address is masked.
+  const loggedMessage = maskEmailsInText(err.message);
+  const loggedStack = maskEmailsInText(err.stack);
+  const loggedUrl = maskEmailsInText(req?.originalUrl);
+
   // Defensive checks for response object
   if (!res || typeof res.status !== 'function') {
     logger.error('Error Handler: Invalid response object', {
-      error: err.message,
-      stack: err.stack,
-      url: req?.originalUrl,
+      error: loggedMessage,
+      stack: loggedStack,
+      url: loggedUrl,
       method: req?.method,
     });
     return next(err); // Pass to Express default handler
@@ -21,17 +28,17 @@ const errorHandler = (err, req, res, next) => {
   // Check if response already sent
   if (res.headersSent) {
     logger.error('Error Handler: Headers already sent', {
-      error: err.message,
-      url: req?.originalUrl,
+      error: loggedMessage,
+      url: loggedUrl,
       method: req?.method,
     });
     return next(err); // Pass to Express default handler
   }
   // Log error details
-  logger.error(`Error ${err.message}`, {
-    error: err.message,
-    stack: err.stack,
-    url: req?.originalUrl,
+  logger.error(`Error ${loggedMessage}`, {
+    error: loggedMessage,
+    stack: loggedStack,
+    url: loggedUrl,
     method: req?.method,
     ip: req?.ip,
     userAgent: req?.get('User-Agent'),
@@ -104,7 +111,7 @@ const errorHandler = (err, req, res, next) => {
     });
   } catch (responseError) {
     logger.error('Error Handler: Failed to send response', {
-      originalError: err.message,
+      originalError: loggedMessage,
       responseError: responseError.message,
     });
     next(err);

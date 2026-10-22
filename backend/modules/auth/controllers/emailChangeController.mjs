@@ -26,6 +26,8 @@
 
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
+// Equoria-5vyuh: errors here can name an address; log them masked.
+import { maskEmailsInText } from '../../../utils/emailIdentityPolicy.mjs';
 import emailService from '../../../utils/emailService.mjs';
 import {
   requestEmailChange,
@@ -57,7 +59,7 @@ export const getEmailChangeStatusController = async (req, res, next) => {
       data: status,
     });
   } catch (error) {
-    logger.error(`[emailChangeController.status] ${error.message}`);
+    logger.error(`[emailChangeController.status] ${maskEmailsInText(error.message)}`);
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
@@ -109,7 +111,7 @@ export const requestEmailChangeController = async (req, res, next) => {
     } catch (noticeError) {
       noticeDelivered = false;
       logger.error(
-        `[emailChangeController.request] Change notice to the confirmed address failed: ${noticeError.message}`,
+        `[emailChangeController.request] Change notice to the confirmed address failed: ${maskEmailsInText(noticeError.message)}`,
       );
     }
 
@@ -121,7 +123,7 @@ export const requestEmailChangeController = async (req, res, next) => {
       );
     } catch (deliveryError) {
       logger.error(
-        `[emailChangeController.request] Confirmation email delivery failed (pending change retained): ${deliveryError.message}`,
+        `[emailChangeController.request] Confirmation email delivery failed (pending change retained): ${maskEmailsInText(deliveryError.message)}`,
       );
       return res.status(502).json({
         success: false,
@@ -143,7 +145,7 @@ export const requestEmailChangeController = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error(`[emailChangeController.request] ${error.message}`);
+    logger.error(`[emailChangeController.request] ${maskEmailsInText(error.message)}`);
     // The central errorHandler has no retry-after handling, so a throttled
     // rejection (MFA lockout, or the email-change resend cooldown) renders its
     // own body here — the same shape /auth/mfa/disable returns.
@@ -186,7 +188,7 @@ export const confirmEmailChangeController = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error(`[emailChangeController.confirm] ${error.message}`);
+    logger.error(`[emailChangeController.confirm] ${maskEmailsInText(error.message)}`);
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }

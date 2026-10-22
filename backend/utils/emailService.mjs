@@ -21,7 +21,7 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 import { createGmailApiTransport, readGmailConfig } from './gmailApiTransport.mjs';
 import { SUPPORT_EMAIL, generateEmailTemplate, generatePlainTextEmail } from './emailTemplates.mjs';
-import { maskEmailAddress } from './emailIdentityPolicy.mjs';
+import { maskEmailAddress, tokenLinkForLog } from './emailIdentityPolicy.mjs';
 
 // Email configuration
 const EMAIL_CONFIG = {
@@ -183,9 +183,9 @@ export async function sendVerificationEmail(email, token, user = {}) {
     });
 
     logger.info('[EmailService] Email verification (DEV MODE - not sent)', {
-      to: email,
+      to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
       subject,
-      verificationUrl,
+      verificationUrl: tokenLinkForLog(verificationUrl),
       htmlLength: htmlEmail.length,
       textLength: plainTextEmail.length,
     });
@@ -206,7 +206,7 @@ export async function sendVerificationEmail(email, token, user = {}) {
   });
 
   logger.info('[EmailService] Verification email sent', {
-    to: email,
+    to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
     messageId: info?.messageId,
   });
 
@@ -268,7 +268,7 @@ export async function sendWelcomeEmail(email, user = {}) {
     });
 
     logger.info('[EmailService] Welcome email (DEV MODE - not sent)', {
-      to: email,
+      to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
       subject,
     });
 
@@ -287,7 +287,7 @@ export async function sendWelcomeEmail(email, user = {}) {
   });
 
   logger.info('[EmailService] Welcome email sent', {
-    to: email,
+    to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
     messageId: info?.messageId,
   });
 
@@ -323,7 +323,7 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
     logger.info('[EmailService] Password reset email (DEV MODE - not sent)', {
       to: maskEmailAddress(email), // owner ruling 2026-10-19: logs carry a masked address
       subject,
-      resetUrl,
+      resetUrl: tokenLinkForLog(resetUrl),
       htmlLength: htmlEmail.length,
       textLength: plainTextEmail.length,
     });
@@ -413,7 +413,7 @@ If this was not you, do nothing and change your password.`;
     });
 
     logger.info('[EmailService] Email change confirmation (DEV MODE - not sent)', {
-      to: email,
+      to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
       subject,
       htmlLength: htmlEmail.length,
       textLength: plainTextEmail.length,
@@ -435,7 +435,7 @@ If this was not you, do nothing and change your password.`;
   });
 
   logger.info('[EmailService] Email change confirmation sent', {
-    to: email,
+    to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
     messageId: info?.messageId,
   });
 
@@ -497,7 +497,7 @@ If this was not you, change your password now — doing so cancels the pending c
     });
 
     logger.info('[EmailService] Email change notice (DEV MODE - not sent)', {
-      to: email,
+      to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
       subject,
       htmlLength: htmlEmail.length,
       textLength: plainTextEmail.length,
@@ -515,7 +515,7 @@ If this was not you, change your password now — doing so cancels the pending c
   });
 
   logger.info('[EmailService] Email change notice sent', {
-    to: email,
+    to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
     messageId: info?.messageId,
   });
 
@@ -545,7 +545,7 @@ export async function sendStaffCheckinCodeEmail(email, code) {
     captureEmailPreview('staff-checkin', { to: email, subject, preview: line });
 
     logger.info("[EmailService] Steward's Office code (DEV MODE - not sent)", {
-      to: email,
+      to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
       subject,
     });
 
@@ -560,7 +560,7 @@ export async function sendStaffCheckinCodeEmail(email, code) {
   });
 
   logger.info("[EmailService] Steward's Office code sent", {
-    to: email,
+    to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
     messageId: info?.messageId,
   });
 

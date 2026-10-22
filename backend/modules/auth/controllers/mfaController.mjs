@@ -29,6 +29,7 @@ import * as mfaLockoutService from '../services/mfaLockoutService.mjs';
 import * as mfaReplayProtectionService from '../services/mfaReplayProtectionService.mjs';
 import { encryptField, decryptField } from '../../../utils/fieldEncryption.mjs';
 import logger from '../../../utils/logger.mjs';
+import { maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { issueAuthenticatedSession } from '../services/authSessionService.mjs';
 
@@ -69,7 +70,7 @@ export const mfaEnroll = async (req, res, next) => {
       data: { secret, otpauthUrl },
     });
   } catch (error) {
-    logger.error('[mfaController.mfaEnroll] Error:', error);
+    logger.error('[mfaController.mfaEnroll] Error:', maskEmailsInError(error));
     if (AppError.isAppError(error)) {
       return next(error);
     }
@@ -132,7 +133,7 @@ export const mfaVerifyEnrollment = async (req, res, next) => {
       data: { recoveryCodes: plaintext },
     });
   } catch (error) {
-    logger.error('[mfaController.mfaVerifyEnrollment] Error:', error);
+    logger.error('[mfaController.mfaVerifyEnrollment] Error:', maskEmailsInError(error));
     if (AppError.isAppError(error)) {
       return next(error);
     }
@@ -256,7 +257,7 @@ export const mfaChallenge = async (req, res, next) => {
       data: sessionData,
     });
   } catch (error) {
-    logger.error('[mfaController.mfaChallenge] Error:', error);
+    logger.error('[mfaController.mfaChallenge] Error:', maskEmailsInError(error));
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
@@ -340,7 +341,7 @@ export const mfaDisable = async (req, res, next) => {
       data: { mfaEnabled: false },
     });
   } catch (error) {
-    logger.error('[mfaController.mfaDisable] Error:', error);
+    logger.error('[mfaController.mfaDisable] Error:', maskEmailsInError(error));
     if (AppError.isAppError(error)) {
       return next(error);
     }

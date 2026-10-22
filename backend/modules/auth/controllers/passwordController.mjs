@@ -60,7 +60,11 @@ import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 import { revokePendingEmailChanges } from '../services/emailChangeService.mjs';
 import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
-import { maskEmailAddress, maskEmailsInText } from '../../../utils/emailIdentityPolicy.mjs';
+import {
+  maskEmailAddress,
+  maskEmailsInError,
+  maskEmailsInText,
+} from '../../../utils/emailIdentityPolicy.mjs';
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -251,7 +255,7 @@ export const changePassword = async (req, res, next) => {
 
     logger.info('[passwordController.changePassword] Password changed successfully', {
       userId: req.user.id,
-      email: user.email,
+      email: maskEmailAddress(user.email), // Equoria-5vyuh: never a raw address
     });
 
     // Clear cookies for current session
@@ -268,7 +272,10 @@ export const changePassword = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error('[passwordController.changePassword] Error changing password:', error);
+    logger.error(
+      '[passwordController.changePassword] Error changing password:',
+      maskEmailsInError(error),
+    );
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
@@ -540,7 +547,7 @@ export const resetPassword = async (req, res, next) => {
       message: 'Password reset successfully. Please login again.',
     });
   } catch (error) {
-    logger.error('[passwordController.resetPassword] Error:', error);
+    logger.error('[passwordController.resetPassword] Error:', maskEmailsInError(error));
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }

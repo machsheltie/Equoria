@@ -1,4 +1,5 @@
 import logger from '../utils/logger.mjs';
+import { maskEmailsInText } from '../utils/emailIdentityPolicy.mjs';
 
 /**
  * 21R-OBS-2 (Equoria-2ns5): redact credential-class fields from values
@@ -89,7 +90,8 @@ function normaliseKey(key) {
  *     Non-sensitive values recurse.
  *   - Arrays: each element recurses. Array indexes are not key names
  *     and are never redacted.
- *   - Primitives, null, undefined, functions: returned as-is.
+ *   - Strings: any email address inside is masked (Equoria-5vyuh).
+ *   - Other primitives, null, undefined, functions: returned as-is.
  *   - Buffer, Date, Map, Set: returned as-is to avoid silent JSON
  *     serialisation surprises (the caller chose to log them).
  *
@@ -102,6 +104,10 @@ function redactCredentialFields(value) {
   }
   if (Array.isArray(value)) {
     return value.map(redactCredentialFields);
+  }
+  if (typeof value === 'string') {
+    // Equoria-5vyuh: no raw email address in server logs, whatever the key.
+    return maskEmailsInText(value);
   }
   if (typeof value !== 'object') {
     return value;
@@ -136,9 +142,11 @@ export const requestLogger = (req, res, next) => {
   // non-sensitive request envelope data (method, URL, IP, userAgent).
   // Body / params / query are NOT included — see errorRequestLogger
   // below for the rationale and redaction layer.
-  logger.info(`[${req.method}] ${req.originalUrl}`, {
+  // Equoria-5vyuh: a query string can carry an email address.
+  const url = maskEmailsInText(req.originalUrl);
+  logger.info(`[${req.method}] ${url}`, {
     method: req.method,
-    url: req.originalUrl,
+    url,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
     contentType: req.get('Content-Type'),
@@ -151,9 +159,9 @@ export const requestLogger = (req, res, next) => {
   res.end = function (chunk, encoding) {
     const duration = Date.now() - start;
 
-    logger.info(`[${req.method}] ${req.originalUrl} - ${res.statusCode}`, {
+    logger.info(`[${req.method}] ${url} - ${res.statusCode}`, {
       method: req.method,
-      url: req.originalUrl,
+      url,
       statusCode: res.statusCode,
       duration: `${duration}ms`,
       ip: req.ip,
@@ -181,11 +189,12 @@ export const requestLogger = (req, res, next) => {
  * BEFORE the metadata reaches the logger format chain.
  */
 export const errorRequestLogger = (err, req, res, next) => {
-  logger.error(`[${req.method}] ${req.originalUrl} - ERROR`, {
+  const url = maskEmailsInText(req.originalUrl);
+  logger.error(`[${req.method}] ${url} - ERROR`, {
     method: req.method,
-    url: req.originalUrl,
-    error: err.message,
-    stack: err.stack,
+    url,
+    error: maskEmailsInText(err.message),
+    stack: maskEmailsInText(err.stack),
     ip: req.ip,
     userAgent: req.get('User-Agent'),
     userId: req.user?.id || 'anonymous',

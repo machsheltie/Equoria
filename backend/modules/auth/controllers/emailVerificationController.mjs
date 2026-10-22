@@ -15,6 +15,8 @@
 
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
+// Equoria-5vyuh: errors here can name the recipient address; log them masked.
+import { maskEmailsInError } from '../../../utils/emailIdentityPolicy.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   verifyEmailToken,
@@ -53,7 +55,7 @@ export const verifyEmail = async (req, res, next) => {
     } catch (emailError) {
       logger.error(
         '[emailVerificationController.verifyEmail] Failed to send welcome email:',
-        emailError,
+        maskEmailsInError(emailError),
       );
       // Continue even if welcome email fails
     }
@@ -67,7 +69,10 @@ export const verifyEmail = async (req, res, next) => {
       },
     });
   } catch (error) {
-    logger.error('[emailVerificationController.verifyEmail] Error verifying email:', error);
+    logger.error(
+      '[emailVerificationController.verifyEmail] Error verifying email:',
+      maskEmailsInError(error),
+    );
     if (AppError.isAppError(error)) {
       return next(error);
     }
@@ -111,7 +116,7 @@ export const resendVerification = async (req, res, next) => {
     } catch (emailError) {
       logger.error(
         '[emailVerificationController.resendVerification] Failed to send email:',
-        emailError,
+        maskEmailsInError(emailError),
       );
       throw new AppError('Failed to send verification email. Please try again later.', 500);
     }
@@ -127,7 +132,7 @@ export const resendVerification = async (req, res, next) => {
   } catch (error) {
     logger.error(
       '[emailVerificationController.resendVerification] Error resending verification:',
-      error,
+      maskEmailsInError(error),
     );
     if (AppError.isAppError(error)) {
       return next(error);
@@ -165,7 +170,7 @@ export const getVerificationStatus = async (req, res, next) => {
   } catch (error) {
     logger.error(
       '[emailVerificationController.getVerificationStatus] Error checking status:',
-      error,
+      maskEmailsInError(error),
     );
     if (AppError.isAppError(error)) {
       return next(error);

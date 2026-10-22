@@ -22,6 +22,7 @@
 
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { maskEmailsInText } from '../../../utils/emailIdentityPolicy.mjs';
 import { sendStaffTicketEmail } from '../../../utils/emailService.mjs';
 import { hasCapability } from '../capabilities.mjs';
 
@@ -154,7 +155,8 @@ async function deliver(row, clock) {
   try {
     await sendStaffTicketEmail(user.email, details);
   } catch (error) {
-    const message = String(error?.message ?? error).slice(0, ERROR_TEXT_LIMIT);
+    // Equoria-5vyuh: a provider error can name the recipient; mask before log/store.
+    const message = maskEmailsInText(String(error?.message ?? error)).slice(0, ERROR_TEXT_LIMIT);
     if (row.attempts >= MAX_ATTEMPTS) {
       return fail(message);
     }
@@ -257,7 +259,7 @@ export function kickTicketEmails(keys) {
   }
   runEmailOutbox({ keys }).catch(error => {
     logger.error(
-      `[emailOutbox] post-commit delivery stopped: ${error.message}; the job will retry`,
+      `[emailOutbox] post-commit delivery stopped: ${maskEmailsInText(error.message)}; the job will retry`,
     );
   });
 }
