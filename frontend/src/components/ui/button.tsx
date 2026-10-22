@@ -126,6 +126,20 @@ const Slot = React.forwardRef<HTMLElement, SlotProps>(
 );
 Slot.displayName = 'Slot';
 
+/**
+ * The readable text of a button's children (strings and numbers, through
+ * wrappers and fragments). Icons contribute nothing. Used to keep the accessible
+ * name of a pending button, whose visible label is hidden to hold its size.
+ */
+function textOfChildren(children: React.ReactNode): string {
+  if (typeof children === 'string' || typeof children === 'number') return String(children);
+  if (Array.isArray(children)) return children.map(textOfChildren).join('');
+  if (React.isValidElement<{ children?: React.ReactNode }>(children)) {
+    return textOfChildren(children.props.children);
+  }
+  return '';
+}
+
 const buttonVariants = cva(
   // Base: flex layout, typography, accessibility, disabled state (40% per spec §11)
   // Shape: --radius-button = --radius-md = 12px (DECISIONS.md §3/§5; was rounded-full)
@@ -334,8 +348,21 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Pending semantics spread AFTER caller props so pending always wins —
     // a caller passing disabled={false} must not unlock a pending button.
+    // The label is kept only to hold the button's size and is hidden with
+    // `invisible`, which real browsers leave out of the accessible name — so
+    // a pending button names itself explicitly unless the caller already did
+    // (Equoria-4yocc).
+    const pendingName =
+      pending && !props['aria-label'] && !props['aria-labelledby']
+        ? textOfChildren(props.children).replace(/\s+/g, ' ').trim()
+        : '';
     const pendingProps = pending
-      ? { disabled: true, 'aria-busy': 'true' as const, 'data-pending': '' }
+      ? {
+          disabled: true,
+          'aria-busy': 'true' as const,
+          'data-pending': '',
+          ...(pendingName ? { 'aria-label': pendingName } : {}),
+        }
       : {};
 
     return (

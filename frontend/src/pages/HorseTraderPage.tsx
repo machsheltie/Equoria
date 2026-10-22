@@ -15,7 +15,7 @@
  * Route: /marketplace/horse-trader
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useId } from 'react';
 import { Link } from 'react-router';
 import { ShoppingBag } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -55,6 +55,10 @@ const HorseTraderPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedBreedId, setSelectedBreedId] = useState<number | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  // Combobox keyboard state (Equoria-4yocc): the option the arrow keys are on.
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const comboboxRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
   // Sex toggle state
   const [sex, setSex] = useState<'Mare' | 'Stallion'>('Mare');
@@ -74,16 +78,58 @@ const HorseTraderPage: React.FC = () => {
     return breeds.filter((b) => b.name.toLowerCase().includes(lower));
   }, [breeds, search]);
 
+  const listOpen = showDropdown && filteredBreeds.length > 0;
+  const optionId = (breedId: number) => `${listboxId}-option-${breedId}`;
+  const activeBreed = listOpen ? filteredBreeds[activeIndex] : undefined;
+
+  function closeList() {
+    setShowDropdown(false);
+    setActiveIndex(-1);
+  }
+
+  // A click or tap anywhere outside the picker closes its list.
+  useEffect(() => {
+    if (!showDropdown) return undefined;
+    const closeOnOutsidePress = (event: MouseEvent) => {
+      if (!comboboxRef.current?.contains(event.target as Node)) closeList();
+    };
+    document.addEventListener('mousedown', closeOnOutsidePress);
+    return () => document.removeEventListener('mousedown', closeOnOutsidePress);
+  }, [showDropdown]);
+
   function handleSelectBreed(breedId: number, breedName: string) {
     setSelectedBreedId(breedId);
     setSearch(breedName);
-    setShowDropdown(false);
+    closeList();
   }
 
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSearch(e.target.value);
     setSelectedBreedId(null); // clear selection when user types
     setShowDropdown(true);
+    setActiveIndex(-1);
+  }
+
+  function handleComboboxKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    const count = filteredBreeds.length;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (count === 0) return;
+      e.preventDefault();
+      setShowDropdown(true);
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      setActiveIndex((current) => {
+        if (current < 0) return step === 1 ? 0 : count - 1;
+        return (current + step + count) % count;
+      });
+    } else if (e.key === 'Enter' && activeBreed) {
+      e.preventDefault();
+      handleSelectBreed(activeBreed.id, activeBreed.name);
+    } else if (e.key === 'Escape' && listOpen) {
+      e.preventDefault();
+      closeList();
+    } else if (e.key === 'Tab') {
+      closeList();
+    }
   }
 
   function handleBuy() {
@@ -130,10 +176,15 @@ const HorseTraderPage: React.FC = () => {
             >
               Breed
             </label>
-            <div className="relative">
+            <div className="relative" ref={comboboxRef}>
               <Input
                 id="breed-search"
                 type="text"
+                role="combobox"
+                aria-expanded={listOpen}
+                aria-controls={listOpen ? listboxId : undefined}
+                aria-autocomplete="list"
+                aria-activedescendant={activeBreed ? optionId(activeBreed.id) : undefined}
                 placeholder={
                   breedsLoading
                     ? 'Loading breeds…'
@@ -145,23 +196,35 @@ const HorseTraderPage: React.FC = () => {
                 disabled={breedsLoading || breedsError}
                 onChange={handleSearchChange}
                 onFocus={() => setShowDropdown(true)}
+                onKeyDown={handleComboboxKeyDown}
                 autoComplete="off"
               />
 
-              {showDropdown && filteredBreeds.length > 0 && (
+              {listOpen && (
                 <ul
+                  id={listboxId}
+                  role="listbox"
+                  aria-label="Matching options"
                   className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-[var(--bg-card)] shadow-lg"
                   data-testid="breed-dropdown"
                 >
-                  {filteredBreeds.map((breed) => (
-                    <li key={breed.id}>
-                      <button
-                        type="button"
-                        className="w-full px-3 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--glass-bg)] focus:outline-none focus:bg-[var(--glass-bg)]"
-                        onMouseDown={() => handleSelectBreed(breed.id, breed.name)}
-                      >
-                        {breed.name}
-                      </button>
+                  {filteredBreeds.map((breed, index) => (
+                    <li
+                      key={breed.id}
+                      id={optionId(breed.id)}
+                      role="option"
+                      aria-selected={index === activeIndex}
+                      className={`w-full cursor-pointer px-3 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--glass-bg)] ${
+                        index === activeIndex ? 'bg-[var(--glass-bg)]' : ''
+                      }`}
+                      // mousedown (not click) so the input keeps focus and the pick lands
+                      // before the outside-press listener or a blur can close the list.
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        handleSelectBreed(breed.id, breed.name);
+                      }}
+                    >
+                      {breed.name}
                     </li>
                   ))}
                 </ul>

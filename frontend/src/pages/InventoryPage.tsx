@@ -19,7 +19,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Package, Shield, Leaf, Sparkles, Loader2, Wrench, Star } from 'lucide-react';
+import { Package, Shield, Leaf, Sparkles, Wrench, Star } from 'lucide-react';
 import { useInventory, useUnequipItem } from '@/hooks/api/useInventory';
 import { useFeedCatalog } from '@/hooks/api/useFeedShop';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -144,9 +144,10 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
             e.stopPropagation();
             onUnequip(item);
           }}
-          disabled={isUnequipping}
+          pending={isUnequipping}
+          aria-label={`Unequip ${item.name}`}
         >
-          {isUnequipping ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Unequip'}
+          Unequip
         </Button>
       </div>
     );
