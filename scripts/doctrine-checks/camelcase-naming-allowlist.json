@@ -98,7 +98,6 @@
     "private_key": "snake_case request field the logger must still redact",
     "credit_card": "snake_case request field the logger must still redact",
     "date_of_birth": "snake_case request field the logger must still redact",
-    "csrf_token": "snake_case request field the logger must still redact",
-    "unlisted_trait": "probe trait name frozen in backend/modules/traits/__tests__/helpers/environmentalTriggerSystem.golden.json (digests captured from the pre-S4 API); renaming the input invalidates a capture that cannot be regenerated"
+    "csrf_token": "snake_case request field the logger must still redact"
   }
 }
