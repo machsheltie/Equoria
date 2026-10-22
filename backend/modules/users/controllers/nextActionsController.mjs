@@ -12,12 +12,17 @@
  *   3. train          — a horse whose training cooldown expired
  *   4. compete        — an OPEN show the user has an eligible horse for
  *   5. breed          — a Stallion, or a Mare off her breeding cooldown
- *   6. groom-foal      — an active foal development record
+ *   6. groom-foal      — a foal development record for a horse under 3
  *   7. visit-vet      — an injured horse
+ *
+ * Health gate (owner ruling 2026-10-22, Equoria-3tna6): bad health is the only
+ * consequence — a horse in bad health cannot train, breed or enter shows, so
+ * none of those is suggested for it. Bad health is the threshold the breeding
+ * guard applies: displayed health 'critical' (utils/horseHealth.mjs).
  *
  * Actions are emitted PER real entity (one train per trainable horse, one
  * breed per breedable horse, one visit-vet per injured horse, one groom-foal
- * per active foal). `compete` is a single opportunity action for the
+ * per foal under 3). `compete` is a single opportunity action for the
  * most-urgent open show the user can actually enter, and `check-results` is a
  * single aggregate action carrying the unviewed COUNT plus the most recent
  * unviewed result's show — the player goes to one results surface regardless
@@ -39,7 +44,7 @@
  * (20260921120000_oey9628_add_competition_result_viewed_at). The write that
  * clears it is POST /api/v1/competition/results/viewed.
  *
- * Query budget: 4 round trips total (horses, active foals, open shows, and one
+ * Query budget: 4 round trips total (horses, foals under 3, open shows, and one
  * array-form `$transaction` holding the unviewed-results count + most-recent
  * lookup) — no per-horse N+1. Eligibility matching runs in-memory over those
  * result sets.
@@ -54,6 +59,7 @@ import {
   loadActiveDisciplineTypes,
 } from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
 
 // Story 23.4 priority table. 1 = highest.
@@ -83,9 +89,14 @@ const isInjured = healthStatus => String(healthStatus).toLowerCase() === 'injure
 // `age` is a nullable Int on Horse — a null age must not pass the gate.
 const isActiveAge = age => typeof age === 'number' && age >= MIN_ACTIVE_AGE;
 
+// The bad-health gate the breeding guard, training and show entry apply
+// (Equoria-3tna6): displayed health (worse of feed and vet health) 'critical'.
+const isInBadHealth = (h, now) => getDisplayedHealth(h, now) === 'critical';
+
 const isTrainable = (h, now) =>
   isActiveAge(h.age) &&
   !isInjured(h.healthStatus) &&
+  !isInBadHealth(h, now) &&
   (!h.trainingCooldown || new Date(h.trainingCooldown) <= now);
 
 /**
@@ -113,12 +124,19 @@ export async function getNextActions(req, res) {
         trainingCooldown: true,
         lastBredDate: true,
         sex: true,
+        // Displayed health (the bad-health gate, Equoria-3tna6).
+        lastFedDate: true,
+        lastVettedDate: true,
         // The entry rules (Equoria-576c0 B9): dateOfBirth, healthStatus, gaitScores.
         ...ENTRY_RULE_HORSE_SELECT,
       },
     });
 
-    // Query 2 — foals in active development.
+    // Query 2 — foal development records of horses under 3 (game age).
+    //
+    // Equoria-fr2kg Q11 (owner ruling 2026-10-22): no isActive filter — the
+    // legacy FoalDevelopment.isActive column never turns false. A horse is a
+    // foal while its game age is under 3 (MIN_ACTIVE_AGE).
     //
     // 21R-PROD-BUG-1 (Equoria-j8s2): the FoalDevelopment model has a `foal`
     // relation (named `FoalDevelopmentFoal` via foalId FK); it does NOT have a
@@ -130,8 +148,7 @@ export async function getNextActions(req, res) {
     try {
       activeFoals = await prisma.foalDevelopment.findMany({
         where: {
-          foal: { userId },
-          isActive: true,
+          foal: { userId, age: { lt: MIN_ACTIVE_AGE } },
         },
         select: { foalId: true, foal: { select: { name: true, dateOfBirth: true } } },
       });
@@ -245,6 +262,7 @@ export async function getNextActions(req, res) {
       for (const show of openShows) {
         const eligible = horses.find(
           h =>
+            !isInBadHealth(h, now) &&
             evaluateEntryRules({
               show,
               horse: h,
@@ -283,7 +301,8 @@ export async function getNextActions(req, res) {
       if (
         (sex === 'mare' || sex === 'stallion') &&
         isActiveAge(h.age) &&
-        !isInjured(h.healthStatus)
+        !isInjured(h.healthStatus) &&
+        !isInBadHealth(h, now)
       ) {
         if (damBreedingCooldownEndsAt(h, now) === null) {
           actions.push({
@@ -297,7 +316,7 @@ export async function getNextActions(req, res) {
       }
     }
 
-    // ── groom-foal (priority 6) — one per active foal ────────────────────────
+    // ── groom-foal (priority 6) — one per foal under 3 ───────────────────────
     for (const foalDev of activeFoals) {
       const foalAge = foalDev.foal?.dateOfBirth
         ? getHorseAgeDays(foalDev.foal.dateOfBirth, now)

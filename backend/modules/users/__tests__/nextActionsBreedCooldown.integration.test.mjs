@@ -84,7 +84,8 @@ async function ownerOf(now, sex, bredDaysAgo) {
     },
   });
   userIds.push(user.id);
-  // No rider: no compete suggestion. Not injured: no visit-vet.
+  // No rider: no compete suggestion. Not injured: no visit-vet. Bad health
+  // blocks breeding (owner ruling 2026-10-22), so the horse is fed.
   const horse = await createTestHorse(
     prisma,
     {
@@ -93,6 +94,9 @@ async function ownerOf(now, sex, bredDaysAgo) {
       age: 5,
       dateOfBirth: birthDateForAge(5, now),
       healthStatus: 'Excellent',
+      // Fed at the pinned instant: not in bad health, so the health gate
+      // (Equoria-3tna6) leaves the cooldown as the only rule under test.
+      lastFedDate: now,
       lastBredDate: gameCalendarDate(now, -bredDaysAgo),
       userId: user.id,
     },
