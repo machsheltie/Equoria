@@ -592,9 +592,12 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
       await user.click(screen.getByRole('button', { name: /Confirm Breeding/i }));
 
+      // Equoria-2yn9j: the express-validator envelope ('Validation failed') is
+      // developer copy; the player reads designed copy about the pairing.
       await waitFor(() => {
-        expect(screen.getByText(/Validation failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/couldn't be paired as chosen/i)).toBeInTheDocument();
       });
+      expect(screen.queryByText(/Validation failed/i)).not.toBeInTheDocument();
       // The failure is on the surface, not in a floating notification, and the
       // modal has closed so the pair is still selected for a retry.
       expect(screen.queryByRole('heading', { name: 'Confirm Breeding' })).not.toBeInTheDocument();

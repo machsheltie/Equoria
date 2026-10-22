@@ -45,6 +45,7 @@ import type { Horse } from '@/types/breeding';
 import { horseQueryKeys } from '@/hooks/api/useHorses';
 import { ErrorState } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { breedingErrorMessage } from '@/lib/http/breedingErrorMessage';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -302,7 +303,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       }
     },
     onError: (error) => {
-      setErrorMessage(error.message || 'Failed to initiate breeding. Please try again.');
+      setErrorMessage(breedingErrorMessage(error));
       setShowConfirmation(false);
     },
   });
