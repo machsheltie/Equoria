@@ -364,44 +364,64 @@ export function detectSuspiciousPatterns(userActivity) {
   return patterns;
 }
 
+const SENSITIVE_LOG_FIELDS = [
+  'password',
+  'token',
+  'secret',
+  'key',
+  'auth',
+  'credential',
+  'ssn',
+  'social',
+  'credit',
+  'card',
+  'cvv',
+  'pin',
+  // Equoria-iqzn: date of birth is sensitive PII (COPPA age-gate input).
+  // Substring match: redacts `dateOfBirth` (-> `dateofbirth` contains
+  // `birth`) and any `dob`-named field from persisted audit metadata.
+  'birth',
+  'dob',
+];
+
+// Equoria-oierg: only objects and arrays are walked. A tag check, not a
+// prototype identity check, so cross-realm objects (e.g. Prisma Json reads)
+// still walk; Date, Buffer and Map are left as-is (matched by key only).
+const SANITIZE_MAX_DEPTH = 8;
+const isWalkable = value =>
+  Array.isArray(value) || Object.prototype.toString.call(value) === '[object Object]';
+
 /**
- * Sanitize sensitive data for logging
+ * Sanitize sensitive data for logging. Recurses (Equoria-oierg): a key
+ * containing a sensitive substring has its whole subtree redacted at any depth,
+ * arrays stay arrays, cycles become '[CIRCULAR]' and nesting past
+ * SANITIZE_MAX_DEPTH becomes '[MAX_DEPTH]' (never emitted unscanned). Never
+ * mutates input. `depth` / `ancestors` are internal recursion state.
  * Exported for unit-testing pure branch coverage (Equoria-jkht)
  */
-export function sanitizeLogData(data) {
-  if (!data || typeof data !== 'object') {
+export function sanitizeLogData(data, depth = 0, ancestors = new Set()) {
+  if (!data || typeof data !== 'object' || !isWalkable(data)) {
     return data;
   }
-
-  const sensitiveFields = [
-    'password',
-    'token',
-    'secret',
-    'key',
-    'auth',
-    'credential',
-    'ssn',
-    'social',
-    'credit',
-    'card',
-    'cvv',
-    'pin',
-    // Equoria-iqzn: date of birth is sensitive PII (COPPA age-gate input).
-    // Substring match: redacts `dateOfBirth` (-> `dateofbirth` contains
-    // `birth`) and any `dob`-named field from persisted audit metadata.
-    'birth',
-    'dob',
-  ];
-
-  const sanitized = { ...data };
-
-  for (const field of Object.keys(sanitized)) {
-    const fieldLower = field.toLowerCase();
-    if (sensitiveFields.some(sensitive => fieldLower.includes(sensitive))) {
-      sanitized[field] = '[REDACTED]';
-    }
+  if (ancestors.has(data)) {
+    return '[CIRCULAR]';
   }
-
+  if (depth >= SANITIZE_MAX_DEPTH) {
+    return '[MAX_DEPTH]';
+  }
+  ancestors.add(data);
+  const sanitized = Array.isArray(data)
+    ? data.map(item => sanitizeLogData(item, depth + 1, ancestors))
+    : Object.fromEntries(
+        Object.entries(data).map(([key, child]) => [
+          key,
+          SENSITIVE_LOG_FIELDS.some(s => key.toLowerCase().includes(s))
+            ? '[REDACTED]'
+            : sanitizeLogData(child, depth + 1, ancestors),
+        ]),
+      );
+  // Ancestors only: a shared, non-cyclic reference is sanitized at every position.
+  ancestors.delete(data);
   return sanitized;
 }
 
