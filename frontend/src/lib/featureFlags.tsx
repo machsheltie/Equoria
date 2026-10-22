@@ -7,7 +7,7 @@
  * @module lib/featureFlags
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/http/apiClient';
 
@@ -245,25 +245,4 @@ export function createFlagChecker() {
     const value = cachedFlags[flagName];
     return typeof value === 'boolean' ? value : false;
   };
-}
-
-/**
- * Hook for A/B test tracking
- * Automatically logs variant assignment
- *
- * @param testName - Name of the A/B test
- * @param variants - Possible variants
- */
-export function useABTest(
-  testName: string,
-  variants: string[]
-): { variant: string; trackConversion: () => void } {
-  const variant = useFeatureVariant(testName, variants[0]);
-
-  const trackConversion = useCallback(() => {
-    // TODO: send to analytics when analytics integration is wired
-    // analytics.track('ab_conversion', { testName, variant });
-  }, [testName, variant]);
-
-  return { variant, trackConversion };
 }
