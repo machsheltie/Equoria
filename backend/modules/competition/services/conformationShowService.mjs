@@ -36,9 +36,13 @@ import {
   getConformationAgeClass,
   calculateConformationShowScore,
   resolveReward,
-  resolveTitle,
-  BREEDING_BOOST_CAP,
 } from './conformationShowScoring.mjs';
+import {
+  activeGroomsForLegacyEntries,
+  applyConformationRewards,
+  conformationScoringHorseSelect,
+  handlerSelect,
+} from './conformationShowSettlement.mjs';
 
 // Re-export the pure scoring + reward surface so existing consumers
 // (conformationShowController, the competition barrel, and the test suites that
@@ -397,9 +401,14 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
           throw new ConformationShowAlreadySettledError(showId);
         }
 
+        // Equoria-cmw85.11: only the fields scoring reads, never whole horse rows.
         const entries = await tx.showEntry.findMany({
           where: { showId },
-          include: { horse: true, groom: true },
+          select: {
+            groomSnapshot: true,
+            horse: { select: conformationScoringHorseSelect },
+            groom: { select: handlerSelect },
+          },
           // id breaks createdAt ties, so equal scores place the same way on
           // every run (Equoria-mwjst).
           orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -411,22 +420,21 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         // The live groom row is used while it exists; if it was deleted, the
         // snapshot taken at entry stands in for it — never another groom. Only an
         // entry from before entries recorded their groom (no snapshot at all)
-        // falls back to the horse's active assignment. Equoria-axad9.1: never
-        // fabricate a placeholder groom — that would award a real handler-score
-        // component to a horse with no handler; fail honest, which rolls the
-        // claim back.
-        const resolved = [];
-        for (const entry of entries) {
-          let groom = entry.groom ?? groomFromSnapshot(entry.groomSnapshot);
-          if (!groom && entry.groomSnapshot === null) {
-            const assignment = await tx.groomAssignment.findFirst({
-              where: { foalId: entry.horse.id, isActive: true },
-              include: { groom: true },
-            });
-            groom = assignment?.groom ?? null;
-          }
-          resolved.push({ entry, horse: entry.horse, groom });
-        }
+        // falls back to the horse's active assignment (owner ruling 2026-10-20),
+        // looked up for all such entries in one query (Equoria-cmw85.11).
+        // Equoria-axad9.1: never fabricate a placeholder groom — that would award
+        // a real handler-score component to a horse with no handler; fail honest,
+        // which rolls the claim back.
+        const activeGroomByHorseId = await activeGroomsForLegacyEntries(tx, entries);
+        const resolved = entries.map(entry => ({
+          entry,
+          horse: entry.horse,
+          groom:
+            entry.groom ??
+            groomFromSnapshot(entry.groomSnapshot) ??
+            activeGroomByHorseId.get(entry.horse.id) ??
+            null,
+        }));
         const missingGroomHorseIds = resolved.filter(r => r.groom === null).map(r => r.horse.id);
         if (missingGroomHorseIds.length > 0) {
           logger.error(
@@ -449,67 +457,44 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
 
         // Rank by score descending; ties keep entry creation order (already asc).
         scored.sort((a, b) => b.finalScore - a.finalScore);
+        const placed = scored.map(({ horse, finalScore }, i) => ({
+          horse,
+          finalScore,
+          placement: i + 1,
+          reward: resolveReward(i + 1),
+        }));
 
-        const results = [];
-        for (let i = 0; i < scored.length; i++) {
-          const { horse, finalScore } = scored[i];
-          const placement = i + 1;
-          const { ribbon, titlePoints: tpAwarded, breedingBoostDelta } = resolveReward(placement);
+        const rewarded = await applyConformationRewards(tx, placed);
 
-          // Equoria-bvddn.21: titlePoints is incremented IN the database
-          // (`{ increment }` → `SET titlePoints = titlePoints + n`) and the title
-          // is derived from the value the update RETURNS, so two settlements
-          // that share a horse cannot clobber each other's points.
-          // Equoria-mwjst: breedingValueBoost likewise — a capped increment
-          // evaluated by the database on the row as it is now (the same rule as
-          // applyBreedingValueBoost), never an absolute value computed from the
-          // horse this settlement loaded, which a concurrent settlement may
-          // already have boosted.
-          if (breedingBoostDelta > 0) {
-            await tx.$executeRaw`
-              UPDATE "horses"
-              SET "breedingValueBoost" = LEAST("breedingValueBoost" + ${breedingBoostDelta}, ${BREEDING_BOOST_CAP})
-              WHERE "id" = ${horse.id}`;
-          }
+        // CompetitionResult — no prizeWon (AC4). One INSERT for the whole show
+        // (Equoria-cmw85.11); the [showId, horseId] unique still refuses a
+        // duplicate, rolling the whole settlement back.
+        await tx.competitionResult.createMany({
+          data: placed.map(({ horse, finalScore, placement, reward }) => ({
+            horseId: horse.id,
+            showId,
+            score: finalScore,
+            placement: String(placement),
+            discipline: 'conformation',
+            runDate: now,
+            showName: show.name ?? `Show #${showId}`,
+            prizeWon: null,
+            statGains: { ribbon: reward.ribbon, titlePoints: reward.titlePoints },
+          })),
+        });
 
-          const updatedHorse = await tx.horse.update({
-            where: { id: horse.id },
-            data: { titlePoints: { increment: tpAwarded } },
-          });
-
-          const newTitle = resolveTitle(updatedHorse.titlePoints);
-          if (newTitle !== updatedHorse.currentTitle) {
-            await tx.horse.update({
-              where: { id: horse.id },
-              data: { currentTitle: newTitle },
-            });
-          }
-
-          // CompetitionResult — no prizeWon (AC4)
-          await tx.competitionResult.create({
-            data: {
-              horseId: horse.id,
-              showId,
-              score: finalScore,
-              placement: String(placement),
-              discipline: 'conformation',
-              runDate: now,
-              showName: show.name ?? `Show #${showId}`,
-              prizeWon: null,
-              statGains: { ribbon, titlePoints: tpAwarded },
-            },
-          });
-
-          results.push({
+        const results = placed.map(({ horse, finalScore, placement, reward }) => {
+          const after = rewarded.get(horse.id);
+          return {
             horseId: horse.id,
             placement,
             score: finalScore,
-            ribbon,
-            titlePoints: tpAwarded,
-            newTitle,
-            breedingValueBoost: updatedHorse.breedingValueBoost,
-          });
-        }
+            ribbon: reward.ribbon,
+            titlePoints: reward.titlePoints,
+            newTitle: after.newTitle,
+            breedingValueBoost: after.breedingValueBoost,
+          };
+        });
 
         await tx.show.update({
           where: { id: showId },
