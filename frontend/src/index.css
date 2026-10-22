@@ -17,6 +17,54 @@
   }
 }
 
+/* Autofilled fields keep the dark glass recipe (Equoria-hc2ok).
+   Chromium paints a light-blue/white background and forces dark text over any
+   field it autofills, which turned the login card's email and password boxes
+   white. The browser background cannot be unset, so it is covered with an opaque
+   inset shadow in the field colour (--bg-midnight: the opaque navy under the
+   --glass-bg recipe in ui/form/fieldStyles.ts) and the text/caret are pinned to
+   --text-primary. The long transition keeps the browser's own background
+   animation from ever showing. Both pseudo-classes are listed separately: a
+   selector list with one unknown pseudo-class is dropped whole. */
+@layer base {
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: var(--text-primary);
+    caret-color: var(--text-primary);
+    box-shadow: 0 0 0 1000px var(--bg-midnight) inset;
+    transition: background-color 600000s 0s;
+  }
+
+  input:autofill,
+  input:autofill:hover,
+  textarea:autofill,
+  select:autofill {
+    -webkit-text-fill-color: var(--text-primary);
+    caret-color: var(--text-primary);
+    box-shadow: 0 0 0 1000px var(--bg-midnight) inset;
+    transition: background-color 600000s 0s;
+  }
+
+  /* Focused: keep the gold ring the field recipe draws with box-shadow. */
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill:focus {
+    box-shadow:
+      0 0 0 1000px var(--bg-midnight) inset,
+      0 0 0 1px var(--gold-primary);
+  }
+
+  input:autofill:focus,
+  textarea:autofill:focus,
+  select:autofill:focus {
+    box-shadow:
+      0 0 0 1000px var(--bg-midnight) inset,
+      0 0 0 1px var(--gold-primary);
+  }
+}
+
 @layer base {
   /* The global `* { border-color: var(--border-default) }` rule was deleted
      2026-08-17 (Equoria-dlup5, user ruling 2026-08-14): a global implicit
