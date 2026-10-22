@@ -130,7 +130,21 @@ function withTackItem(tack, item) {
       ? { ...tack }
       : { ...tack, [DECORATIONS_KEY]: [...decorations, item.itemId] };
   }
-  return { ...tack, [item.category]: item.itemId };
+  const next = { ...tack, [item.category]: item.itemId };
+  // Equoria-6p398.19: a slot that carries a bonus mirror (a shop purchase wrote
+  // it) must describe the item now in the slot, not the one it replaced —
+  // `resolveTackBonus` returns the mirror without looking at the id. The value
+  // is the catalogue's, exactly what `resolveTackBonus` reads for this id when
+  // no mirror exists, so replacing never invents or keeps a bonus. A slot with
+  // no mirror gets none: adding one would flip `hasDirect` for the other slot.
+  const mirrorKey = BONUS_MIRROR_KEYS[item.category];
+  if (mirrorKey && typeof tack[mirrorKey] === 'number') {
+    const definition = TACK_INVENTORY.find(
+      d => d.id === item.itemId && d.category === item.category,
+    );
+    next[mirrorKey] = definition?.numericBonus ?? 0;
+  }
+  return next;
 }
 
 /**
@@ -197,6 +211,22 @@ async function applyTackChange(tx, userId, change) {
   if (count !== 1) {
     throw httpError(409, 'That horse is no longer yours. Please reload your stable.');
   }
+}
+
+/**
+ * Read the current tack of the named horses that `userId` still owns.
+ * @param {object} tx
+ * @param {string} userId
+ * @param {Array<number|null>} horseIds - nulls are ignored
+ * @returns {Promise<Map<number, object>>} horse id -> object-guarded tack
+ */
+async function readOwnedTack(tx, userId, horseIds) {
+  const ids = horseIds.filter(id => id !== null && id !== undefined);
+  const rows = await tx.horse.findMany({
+    where: { id: { in: ids }, userId },
+    select: { id: true, tack: true },
+  });
+  return new Map(rows.map(row => [row.id, asObject(row.tack)]));
 }
 
 // ── Controllers ───────────────────────────────────────────────────────────────
@@ -342,18 +372,27 @@ export async function equipItem(req, res) {
           throw httpError(409, INVENTORY_CONFLICT);
         }
 
-        // HORSE rows second, in ascending primary-key order.
+        // HORSE rows second, in ascending primary-key order. Equoria-5gjnz: the
+        // tack is re-read NOW, under the User row lock the write above took.
+        // Every User-first tack writer (shop purchase, sale, the other equip
+        // paths) is serialised behind that lock, so this read cannot be the
+        // stale pre-purchase document the top-of-tx read may be.
+        const prevHorseId =
+          item.equippedToHorseId && item.equippedToHorseId !== horseId
+            ? item.equippedToHorseId
+            : null;
+        const freshTack = await readOwnedTack(tx, userId, [horseId, prevHorseId]);
         const tackChanges = [];
-        if (item.equippedToHorseId && item.equippedToHorseId !== horseId) {
-          const prevHorse = user.horses.find(h => h.id === item.equippedToHorseId);
-          if (prevHorse) {
-            tackChanges.push({
-              id: prevHorse.id,
-              tack: withoutTackItem(asObject(prevHorse.tack), item),
-            });
-          }
+        if (prevHorseId && freshTack.has(prevHorseId)) {
+          tackChanges.push({
+            id: prevHorseId,
+            tack: withoutTackItem(freshTack.get(prevHorseId), item),
+          });
         }
-        const updatedTack = withTackItem(asObject(horse.tack), item);
+        if (!freshTack.has(horseId)) {
+          throw httpError(409, 'That horse is no longer yours. Please reload your stable.');
+        }
+        const updatedTack = withTackItem(freshTack.get(horseId), item);
         tackChanges.push({ id: horseId, tack: updatedTack });
         tackChanges.sort((a, b) => a.id - b.id);
 
@@ -454,11 +493,12 @@ export async function unequipItem(req, res) {
         // is still right — it is the only way the player recovers the item —
         // but the disagreement is real state and is recorded rather than
         // passed over in silence.
-        const horse = user.horses.find(h => h.id === item.equippedToHorseId);
-        if (horse) {
+        // The tack is read after the User-row write (Equoria-5gjnz, as equipItem).
+        const freshTack = await readOwnedTack(tx, userId, [item.equippedToHorseId]);
+        if (freshTack.has(item.equippedToHorseId)) {
           await applyTackChange(tx, userId, {
-            id: horse.id,
-            tack: withoutTackItem(asObject(horse.tack), item),
+            id: item.equippedToHorseId,
+            tack: withoutTackItem(freshTack.get(item.equippedToHorseId), item),
           });
         } else {
           logger.warn(

@@ -47,7 +47,10 @@ const PRISMA_WRITE = '(?:update|updateMany|create|createMany|delete|deleteMany|u
 const USER_WRITE = new RegExp(
   String.raw`\.user\.${PRISMA_WRITE}\s*\(` +
     // debitMoneyOrThrow's first statement is `client.user.updateMany(...)`.
-    String.raw`|\bdebitMoneyOrThrow\s*\(`,
+    String.raw`|\bdebitMoneyOrThrow\s*\(` +
+    // updateUserSettingsPaths is one raw `UPDATE "User"` (Equoria-6p398.19).
+    String.raw`|\bupdateUserSettingsPaths\s*\(` +
+    String.raw`|UPDATE\s+"User"`,
   'g',
 );
 
@@ -55,7 +58,9 @@ const USER_WRITE = new RegExp(
 const HORSE_WRITE = new RegExp(
   String.raw`\.horse\.${PRISMA_WRITE}\s*\(` +
     // Raw statements bypass the Prisma model API but take the same lock.
-    String.raw`|UPDATE\s+"horses"`,
+    String.raw`|UPDATE\s+"horses"` +
+    // inventoryController's guarded `tx.horse.updateMany` helper.
+    String.raw`|\bapplyTackChange\s*\(`,
   'g',
 );
 
@@ -122,6 +127,9 @@ const GUARDED_FILES = [
   'modules/economy/vet/controllers/vetController.mjs',
   'modules/economy/farrier/controllers/farrierController.mjs',
   'modules/economy/tackShop/controllers/tackShopController.mjs',
+  // Equoria-6p398.19 / Equoria-5gjnz: equip/unequip write the inventory (User
+  // row, settings-path CAS) before any horse tack.
+  'modules/economy/inventory/controllers/inventoryController.mjs',
   // Equoria-q4uem.9: a public stud booking debits the mare owner and credits the
   // stallion owner (User rows, ascending id) before pinning the sire and
   // claiming the dam (Horse rows).
@@ -176,6 +184,18 @@ describe('SENTINEL: User rows are locked before Horse rows inside a transaction'
       await prisma.$transaction(async tx => {
         await tx.$executeRaw(Prisma.sql\`UPDATE "horses" SET "bondScore" = 1 WHERE "id" = \${id}\`);
         await tx.user.update({ where: { id: userId }, data: { money: { decrement: 5 } } });
+      });
+    `;
+    const result = analyzeUserBeforeHorse(planted);
+    expect(result).toHaveLength(1);
+    expect(result[0].violation).toBe(true);
+  });
+
+  it('DETECTOR PROOF: a settings-path write counts as a User write', () => {
+    const planted = `
+      await prisma.$transaction(async tx => {
+        await tx.horse.updateMany({ where: { id: horseId, userId }, data: { tack } });
+        await updateUserSettingsPaths(tx, userId, { set: { inventory } });
       });
     `;
     const result = analyzeUserBeforeHorse(planted);

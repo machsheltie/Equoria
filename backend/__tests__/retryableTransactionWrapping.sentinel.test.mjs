@@ -60,7 +60,9 @@ const MIGRATED = [
   ['modules/auth/controllers/onboardingController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/crafting/controllers/craftingController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/economy/vet/controllers/vetController.mjs', { wrapped: 1, totalTx: 1 }],
-  ['modules/economy/tackShop/controllers/tackShopController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-6p398.19: unequipDecoration became a wrapped transaction (it now
+  // returns the decoration to inventory: User-row CAS, then the horse's tack).
+  ['modules/economy/tackShop/controllers/tackShopController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/economy/farrier/controllers/farrierController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/riders/controllers/riderMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   // Equoria-6p398.6 (2026-09 audit, Finding 6, commit c96e0354a) made rider
