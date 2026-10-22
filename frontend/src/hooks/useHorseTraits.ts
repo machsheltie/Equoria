@@ -79,7 +79,6 @@ export interface RawDiscoveryStatus {
   traitCounts?: { visible?: number; hidden?: number };
   discoveryConditions?: {
     met?: Array<{ trait?: string; reason?: string } | string>;
-    enrichment?: Array<{ trait?: string; reason?: string } | string>;
     total?: number;
   };
   canDiscover?: boolean;
@@ -180,8 +179,9 @@ export function mapHorseTraits(raw: RawHorseTraits | null | undefined): HorseTra
  * Map GET /traits/discovery-status/:id → TraitDiscoveryStatus (the shape
  * HiddenTraitIndicator consumes). The backend exposes visible/hidden counts
  * and a `canDiscover` flag + met conditions; there is no separate "partial"
- * state, so partiallyDiscoveredTraits is 0. The first met/enrichment condition
- * (if any) becomes the next-discovery hint.
+ * state, so partiallyDiscoveredTraits is 0. The first met condition (if any)
+ * becomes the next-discovery hint. There is no enrichment condition list
+ * (Equoria-ecp0i).
  */
 export function mapDiscoveryStatus(
   raw: RawDiscoveryStatus | null | undefined
@@ -190,12 +190,9 @@ export function mapDiscoveryStatus(
   const hidden = raw?.traitCounts?.hidden ?? 0;
   const total = visible + hidden;
 
-  const conditions = [
-    ...(Array.isArray(raw?.discoveryConditions?.met) ? raw!.discoveryConditions!.met! : []),
-    ...(Array.isArray(raw?.discoveryConditions?.enrichment)
-      ? raw!.discoveryConditions!.enrichment!
-      : []),
-  ];
+  const conditions = Array.isArray(raw?.discoveryConditions?.met)
+    ? raw!.discoveryConditions!.met!
+    : [];
   let nextDiscoveryHint: string | undefined;
   const first = conditions[0];
   if (first) {
@@ -213,7 +210,7 @@ export function mapDiscoveryStatus(
   // Equoria-9zmc4: surface the backend's authoritative eligibility flag plus a
   // human-readable reason the action is unavailable, so the discover button can
   // be pre-disabled BEFORE a wasted 400 round-trip. The backend computes
-  // canDiscover = (metConditions + enrichmentConditions > 0) AND hidden > 0
+  // canDiscover = (metConditions > 0) AND hidden > 0
   // (traitController.getDiscoveryStatus). We default a MISSING flag to true so a
   // shape regression never silently disables a real action; only an explicit
   // `false` disables. The reason mirrors the two branches of that AND so the

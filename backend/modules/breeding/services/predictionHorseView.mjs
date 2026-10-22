@@ -6,7 +6,7 @@
  * forever, to everyone, on stallions and ancestors alike; an UNREVEALED hidden
  * trait stays hidden — for every horse, the caller's own included. In the data,
  * "revealed" means moved out of `epigeneticModifiers.hidden` into `.positive`
- * / `.negative` by revealTraits (backend/utils/traitDiscovery.mjs).
+ * / `.negative`.
  *
  * The hidden list is emptied BEFORE any prediction service sees the horse, so
  * an unrevealed trait can be neither shown nor inferred from a score that

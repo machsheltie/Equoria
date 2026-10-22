@@ -1,23 +1,34 @@
 /**
- * traitDiscovery — pure-function branch-coverage tests (Equoria-jkht)
+ * traitDiscovery — branch-coverage tests (Equoria-jkht)
  *
- * Targets checkEnrichmentDiscoveries — the only exported pure sync function.
- * No DB calls. No mocks.
+ * Covers DISCOVERY_CONDITIONS, checkDiscoveryConditions and getDiscoveryProgress
+ * (the read side used by GET /traits/discovery-status and /trait-discovery/*).
+ * No mocks.
  *
- * Branch map for checkEnrichmentDiscoveries:
- *   forEach activityCounts || 0  → first-occurrence (falsy left) / repeat (truthy left)
- *   reduce  activityCounts || 0  → activity done (truthy) / not done (falsy)
- *   if (completedCount >= minCount) → threshold met / not met (×4 ENRICHMENT entries)
+ * Equoria-ecp0i. OLD CONTRACT: the module also exported ENRICHMENT_DISCOVERIES
+ * (six enrichment activity names: social_interaction, group_play,
+ * puzzle_feeding, obstacle_course, free_exercise, controlled_movement) and
+ * checkEnrichmentDiscoveries, and revealTraits took a checkEnrichment flag.
+ * NEW RULING (owner, 2026-10-16, fr2kg F14): nothing produces those
+ * activities since the player-run enrichment was removed (Equoria-fr2kg), so
+ * they go; groom-driven trait discovery stays.
+ *
+ * Equoria-0w96q. OLD CONTRACT: revealTraits / batchRevealTraits moved hidden
+ * trait names into positive/negative and wrote the whole epigeneticModifiers
+ * object back, outside a transaction. NEW RULING: it had no production caller
+ * once the player discovery routes went (Equoria-gu8jk; owner ruling
+ * 2026-10-20: players never reveal traits), and hidden traits stay inert until
+ * revealed (owner ruling 2026-10-19). The dead writer and its only importer,
+ * the never-mounted traitDiscoveryMiddleware, were deleted.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import * as traitDiscovery from '../../../utils/traitDiscovery.mjs';
 import {
-  checkEnrichmentDiscoveries,
   checkDiscoveryConditions,
-  ENRICHMENT_DISCOVERIES,
   DISCOVERY_CONDITIONS,
-  revealTraits,
-  batchRevealTraits,
   getDiscoveryProgress,
 } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -28,153 +39,19 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // runs every registered scoped delete in FK order and throws loudly if any fail.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-// ENRICHMENT_DISCOVERIES entries and their thresholds:
-//   SOCIALIZATION_COMPLETE:       activities=[social_interaction, group_play],         minCount=3
-//   MENTAL_STIMULATION_COMPLETE:  activities=[puzzle_feeding, obstacle_course],        minCount=2
-//   PHYSICAL_DEVELOPMENT_COMPLETE: activities=[free_exercise, controlled_movement],    minCount=4
-//   ALL_ENRICHMENT_COMPLETE:      activities=[all 6],                                  minCount=6
+// ── Retired exports (Equoria-ecp0i, Equoria-0w96q) ───────────────────────────
 
-function act(type) {
-  return { activityType: type };
-}
+describe('retired trait discovery exports', () => {
+  it.each(['ENRICHMENT_DISCOVERIES', 'checkEnrichmentDiscoveries', 'revealTraits', 'batchRevealTraits'])(
+    'traitDiscovery no longer exports %s',
+    name => {
+      expect(traitDiscovery).not.toHaveProperty(name);
+    },
+  );
 
-describe('checkEnrichmentDiscoveries()', () => {
-  // ── Empty activities ──────────────────────────────────────────────────────
-
-  it('returns empty array when activities is empty', () => {
-    const result = checkEnrichmentDiscoveries([]);
-    expect(result).toEqual([]);
-  });
-
-  // ── No thresholds met ────────────────────────────────────────────────────
-
-  it('returns empty array when activity counts are below all thresholds', () => {
-    const activities = [
-      act('social_interaction'), // 1 (SOCIALIZATION needs 3)
-      act('puzzle_feeding'), // 1 (MENTAL needs 2)
-    ];
-    const result = checkEnrichmentDiscoveries(activities);
-    expect(result).toEqual([]);
-  });
-
-  // ── activityCounts || 0: repeated type (truthy left branch) ──────────────
-
-  it('counts repeated activity types correctly (covers truthy-left || branch)', () => {
-    // social_interaction × 3 meets SOCIALIZATION_COMPLETE (minCount=3)
-    const activities = [act('social_interaction'), act('social_interaction'), act('social_interaction')];
-    const result = checkEnrichmentDiscoveries(activities);
-    const found = result.find(c => c.name === 'SOCIALIZATION_COMPLETE');
-    expect(found).toBeDefined();
-    expect(found.completedCount).toBe(3);
-  });
-
-  // ── MENTAL_STIMULATION_COMPLETE met ──────────────────────────────────────
-
-  it('returns MENTAL_STIMULATION_COMPLETE when puzzle_feeding + obstacle_course total >= 2', () => {
-    const activities = [act('puzzle_feeding'), act('obstacle_course')];
-    const result = checkEnrichmentDiscoveries(activities);
-    const found = result.find(c => c.name === 'MENTAL_STIMULATION_COMPLETE');
-    expect(found).toBeDefined();
-    expect(found.priority).toBe('high');
-    expect(found.type).toBe('enrichment');
-    expect(found.requiredCount).toBe(2);
-  });
-
-  // ── Reduce: activity in discovery list but count 0 (falsy || 0 branch) ──
-
-  it('returns 0 completedCount for discovery activities not present (falsy-left || branch)', () => {
-    // Only social_interaction present; MENTAL activities absent → completedCount=0 for MENTAL
-    const activities = [
-      act('social_interaction'),
-      act('group_play'),
-      act('social_interaction'),
-      act('group_play'),
-      act('group_play'), // total social+group = 5 → SOCIALIZATION met (>=3)
-    ];
-    const result = checkEnrichmentDiscoveries(activities);
-    // MENTAL_STIMULATION should NOT be met (puzzle/obstacle not present)
-    expect(result.find(c => c.name === 'MENTAL_STIMULATION_COMPLETE')).toBeUndefined();
-    // SOCIALIZATION should be met
-    expect(result.find(c => c.name === 'SOCIALIZATION_COMPLETE')).toBeDefined();
-  });
-
-  // ── PHYSICAL_DEVELOPMENT_COMPLETE met ────────────────────────────────────
-
-  it('returns PHYSICAL_DEVELOPMENT_COMPLETE when total free+controlled >= 4', () => {
-    const activities = [
-      act('free_exercise'),
-      act('free_exercise'),
-      act('controlled_movement'),
-      act('controlled_movement'),
-    ];
-    const result = checkEnrichmentDiscoveries(activities);
-    const found = result.find(c => c.name === 'PHYSICAL_DEVELOPMENT_COMPLETE');
-    expect(found).toBeDefined();
-    expect(found.completedCount).toBe(4);
-    expect(found.requiredCount).toBe(4);
-  });
-
-  // ── ALL_ENRICHMENT_COMPLETE met ───────────────────────────────────────────
-
-  it('returns ALL_ENRICHMENT_COMPLETE when all 6 activity types provided (total >= 6)', () => {
-    const activities = [
-      act('social_interaction'),
-      act('group_play'),
-      act('puzzle_feeding'),
-      act('obstacle_course'),
-      act('free_exercise'),
-      act('controlled_movement'),
-    ];
-    const result = checkEnrichmentDiscoveries(activities);
-    const found = result.find(c => c.name === 'ALL_ENRICHMENT_COMPLETE');
-    expect(found).toBeDefined();
-    expect(found.priority).toBe('legendary');
-    expect(found.completedCount).toBe(6);
-  });
-
-  // ── Multiple conditions met ───────────────────────────────────────────────
-
-  it('returns multiple metConditions when several discoveries are satisfied', () => {
-    const activities = [
-      // social_interaction × 3 → SOCIALIZATION_COMPLETE
-      act('social_interaction'),
-      act('social_interaction'),
-      act('social_interaction'),
-      // puzzle_feeding × 2 → MENTAL_STIMULATION_COMPLETE
-      act('puzzle_feeding'),
-      act('obstacle_course'),
-    ];
-    const result = checkEnrichmentDiscoveries(activities);
-    expect(result.length).toBeGreaterThanOrEqual(2);
-    expect(result.find(c => c.name === 'SOCIALIZATION_COMPLETE')).toBeDefined();
-    expect(result.find(c => c.name === 'MENTAL_STIMULATION_COMPLETE')).toBeDefined();
-  });
-
-  // ── Return shape ─────────────────────────────────────────────────────────
-
-  it('returned conditions have name, description, priority, type, completedCount, requiredCount', () => {
-    const activities = [act('puzzle_feeding'), act('obstacle_course')];
-    const result = checkEnrichmentDiscoveries(activities);
-    expect(result.length).toBeGreaterThan(0);
-    const cond = result[0];
-    expect(cond).toHaveProperty('name');
-    expect(cond).toHaveProperty('description');
-    expect(cond).toHaveProperty('priority');
-    expect(cond.type).toBe('enrichment');
-    expect(typeof cond.completedCount).toBe('number');
-    expect(typeof cond.requiredCount).toBe('number');
-  });
-
-  // ── Constants are exported and well-formed ────────────────────────────────
-
-  it('ENRICHMENT_DISCOVERIES has 4 entries each with activities array and minCount', () => {
-    const entries = Object.entries(ENRICHMENT_DISCOVERIES);
-    expect(entries.length).toBe(4);
-    for (const [, discovery] of entries) {
-      expect(Array.isArray(discovery.activities)).toBe(true);
-      expect(typeof discovery.minCount).toBe('number');
-      expect(discovery.minCount).toBeGreaterThan(0);
-    }
+  it('the unmounted traitDiscoveryMiddleware module is gone', () => {
+    const middlewarePath = fileURLToPath(new URL('../../../middleware/traitDiscoveryMiddleware.mjs', import.meta.url));
+    expect(existsSync(middlewarePath)).toBe(false);
   });
 });
 
@@ -349,35 +226,6 @@ describe('checkDiscoveryConditions()', () => {
   }, 10000);
 });
 
-// ── revealTraits — invalid ID and not-found error paths ──────────────────────
-
-describe('revealTraits() — error paths', () => {
-  it('throws for non-numeric string horseId', async () => {
-    await expect(revealTraits('not-a-number')).rejects.toThrow(/invalid horse id/i);
-  });
-
-  it('throws when horse does not exist in DB (id=-1)', async () => {
-    await expect(revealTraits(-1)).rejects.toThrow(/not found/i);
-  });
-});
-
-// ── batchRevealTraits — error path collected ─────────────────────────────────
-
-describe('batchRevealTraits() — non-existent horses', () => {
-  it('returns empty array for empty input', async () => {
-    const results = await batchRevealTraits([]);
-    expect(results).toEqual([]);
-  });
-
-  it('returns success=false for each non-existent horse ID', async () => {
-    const results = await batchRevealTraits([-1, -2]);
-    expect(results).toHaveLength(2);
-    expect(results[0].success).toBe(false);
-    expect(results[1].success).toBe(false);
-    expect(typeof results[0].error).toBe('string');
-  }, 15000);
-});
-
 // ── getDiscoveryProgress — invalid/not-found error paths ─────────────────────
 
 describe('getDiscoveryProgress() — error paths', () => {
@@ -412,16 +260,11 @@ describe('checkDiscoveryConditions() — condition-throws catch path (Equoria-jk
   }, 10000);
 });
 
-// ── revealTraits — DB-fixture paths (lines 190-253) ──────────────────────────
-// Covers:
-//   no-hidden-traits early return (lines 190-206) — horse with empty hidden array
-//   no-conditions-met early return (lines 237-253) — horse with hidden trait, bond=0, stress=100
-//   getDiscoveryProgress happy path — horse exists, returns progress object
+// ── getDiscoveryProgress — DB-fixture happy path ─────────────────────────────
 
-describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-jkht)', () => {
+describe('getDiscoveryProgress() — DB-fixture path (Equoria-jkht)', () => {
   let tdUser;
   let noHiddenHorse;
-  let noConditionsHorse;
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -439,7 +282,6 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
       },
     });
 
-    // Horse with no hidden traits → revealTraits returns early at line 190
     noHiddenHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -451,21 +293,6 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
         stressLevel: 30,
         userId: tdUser.id,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-      },
-    });
-
-    // Horse with one hidden trait but bond=0, stress=100 → no conditions met at line 237
-    noConditionsHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-TD-NoConditions-${ts}`,
-        sex: 'Colt',
-        dateOfBirth: new Date(),
-        age: 1,
-        bondScore: 0,
-        stressLevel: 100,
-        userId: tdUser.id,
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['ConfidentInCrowd'] },
       },
     });
 
@@ -481,22 +308,6 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
-
-  it('returns success:true with empty traitsRevealed when horse has no hidden traits (lines 190-206)', async () => {
-    const result = await revealTraits(noHiddenHorse.id);
-    expect(result.success).toBe(true);
-    expect(result.traitsRevealed).toEqual([]);
-    expect(result.totalHiddenBefore).toBe(0);
-    expect(result.message).toMatch(/no hidden traits/i);
-  }, 15000);
-
-  it('returns success:true with empty traitsRevealed when no discovery conditions met (lines 237-253)', async () => {
-    const result = await revealTraits(noConditionsHorse.id);
-    expect(result.success).toBe(true);
-    expect(result.traitsRevealed).toEqual([]);
-    expect(result.totalHiddenBefore).toBe(1);
-    expect(result.message).toMatch(/no discovery conditions/i);
-  }, 15000);
 
   it('getDiscoveryProgress returns progress object for existing horse (happy path)', async () => {
     const result = await getDiscoveryProgress(noHiddenHorse.id);

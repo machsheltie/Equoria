@@ -72,7 +72,6 @@ const realDiscoveryStatus = {
   traitCounts: { visible: 2, hidden: 2 },
   discoveryConditions: {
     met: [{ trait: 'brave', reason: 'High bond score reached' }],
-    enrichment: [],
     total: 1,
   },
   canDiscover: true,
@@ -157,12 +156,29 @@ describe('useHorseTraits — pure mappers', () => {
       const status = mapDiscoveryStatus({
         horseId: 1,
         traitCounts: { visible: 2, hidden: 3 },
-        discoveryConditions: { met: [], enrichment: [], total: 0 },
+        discoveryConditions: { met: [], total: 0 },
         canDiscover: false,
       });
       expect(status.canDiscover).toBe(false);
       expect(status.hiddenTraits).toBe(3);
       expect(status.cannotDiscoverReason).toMatch(/no discovery conditions are met/i);
+    });
+
+    // Equoria-ecp0i. OLD CONTRACT: the first `enrichment` condition became the
+    // hint when no `met` condition existed. NEW RULING (owner, 2026-10-16,
+    // fr2kg F14): the player-run enrichment discovery list is removed; the
+    // backend no longer sends it and a stray one is ignored.
+    it('ignores a legacy enrichment condition list (Equoria-ecp0i)', () => {
+      const status = mapDiscoveryStatus({
+        horseId: 1,
+        traitCounts: { visible: 1, hidden: 2 },
+        discoveryConditions: {
+          met: [],
+          enrichment: [{ reason: 'Socialization activities completed' }],
+          total: 1,
+        },
+      } as Parameters<typeof mapDiscoveryStatus>[0]);
+      expect(status.nextDiscoveryHint).toBeUndefined();
     });
 
     it('defaults a MISSING canDiscover flag to true (never silently disables)', () => {

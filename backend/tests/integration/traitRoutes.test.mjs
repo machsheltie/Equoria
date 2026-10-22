@@ -260,12 +260,14 @@ describe('Trait Routes Integration Tests', () => {
       expect(traitCounts).toHaveProperty('visible');
       expect(traitCounts).toHaveProperty('hidden');
 
+      // Equoria-ecp0i. OLD CONTRACT: discoveryConditions also carried an
+      // `enrichment` array. NEW RULING (owner, 2026-10-16, fr2kg F14): the
+      // player-run enrichment discovery list is removed.
       const { discoveryConditions } = response.body.data;
       expect(discoveryConditions).toHaveProperty('met');
-      expect(discoveryConditions).toHaveProperty('enrichment');
+      expect(discoveryConditions).not.toHaveProperty('enrichment');
       expect(discoveryConditions).toHaveProperty('total');
       expect(Array.isArray(discoveryConditions.met)).toBe(true);
-      expect(Array.isArray(discoveryConditions.enrichment)).toBe(true);
     });
 
     it('should return validation error for invalid horse ID', async () => {

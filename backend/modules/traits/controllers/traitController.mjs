@@ -201,12 +201,6 @@ export async function getDiscoveryStatus(req, res) {
     // Fetch full horse data with needed fields (ownership check already done by middleware)
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
-      include: {
-        foalActivities: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-        },
-      },
     });
 
     if (!horse) {
@@ -221,12 +215,12 @@ export async function getDiscoveryStatus(req, res) {
     }
 
     // Import discovery functions
-    const { checkDiscoveryConditions, checkEnrichmentDiscoveries } =
-      await import('../../../utils/traitDiscovery.mjs');
+    const { checkDiscoveryConditions } = await import('../../../utils/traitDiscovery.mjs');
 
-    // Check current conditions
+    // Check current conditions. There is no enrichment discovery list
+    // (Equoria-ecp0i; owner ruling 2026-10-16: the player-run enrichment
+    // activities it counted no longer exist).
     const metConditions = await checkDiscoveryConditions(horse);
-    const enrichmentConditions = checkEnrichmentDiscoveries(horse.foalActivities || []);
 
     const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
 
@@ -247,12 +241,9 @@ export async function getDiscoveryStatus(req, res) {
         },
         discoveryConditions: {
           met: metConditions,
-          enrichment: enrichmentConditions,
-          total: metConditions.length + enrichmentConditions.length,
+          total: metConditions.length,
         },
-        canDiscover:
-          metConditions.length + enrichmentConditions.length > 0 &&
-          (traits.hidden?.length || 0) > 0,
+        canDiscover: metConditions.length > 0 && (traits.hidden?.length || 0) > 0,
       },
     });
   } catch (error) {

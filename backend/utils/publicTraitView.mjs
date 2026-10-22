@@ -3,7 +3,7 @@
  *
  * Owner ruling (Stacey, 2026-10-16): an UNREVEALED hidden trait stays hidden
  * from everyone, the horse's owner included; once revealed (moved out of
- * `epigeneticModifiers.hidden` into `.positive` / `.negative` by revealTraits)
+ * `epigeneticModifiers.hidden` into `.positive` / `.negative`)
  * it is public forever. A COUNT of hidden traits may be shown.
  *
  * Game logic keeps reading the stored `epigeneticModifiers` unchanged. These

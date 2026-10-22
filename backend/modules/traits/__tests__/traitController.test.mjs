@@ -168,6 +168,23 @@ describe('GET /api/v1/traits/discovery-status/:horseId', () => {
     expect(res.body.data).toHaveProperty('horseId');
   });
 
+  // Equoria-ecp0i. OLD CONTRACT: discoveryConditions carried an `enrichment`
+  // list (six player-run enrichment activity names) counted into `total` and
+  // `canDiscover`. NEW RULING (owner, 2026-10-16, fr2kg F14): nothing produces
+  // those activities since the player-run enrichment was removed, so the list
+  // is gone; `total` counts the met conditions only.
+  it('carries no enrichment discovery list (Equoria-ecp0i)', async () => {
+    const res = await request(app)
+      .get(`/api/v1/traits/discovery-status/${horse.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const { discoveryConditions } = res.body.data;
+    expect(discoveryConditions).not.toHaveProperty('enrichment');
+    expect(discoveryConditions.total).toBe(discoveryConditions.met.length);
+  });
+
   it('returns 400 for non-numeric horseId', async () => {
     const res = await request(app)
       .get('/api/v1/traits/discovery-status/notanumber')

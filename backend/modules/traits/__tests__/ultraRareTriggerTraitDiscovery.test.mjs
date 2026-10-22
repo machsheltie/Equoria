@@ -8,7 +8,10 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../../../utils/ultraRareTriggerEngine.mjs';
-import { revealTraits, batchRevealTraits, getDiscoveryProgress } from '../../../utils/traitDiscovery.mjs';
+// Equoria-0w96q: revealTraits / batchRevealTraits (a dead whole-object
+// epigeneticModifiers writer with no production caller) were deleted with
+// their cases here; getDiscoveryProgress stays.
+import { getDiscoveryProgress } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -83,35 +86,6 @@ describe('evaluateExoticUnlocks', () => {
 });
 
 // ── traitDiscovery ────────────────────────────────────────────────────────────
-
-describe('revealTraits', () => {
-  it('throws for non-existent horse', async () => {
-    await expect(revealTraits(999999999)).rejects.toThrow();
-  });
-
-  it('returns success:true with empty revealed array for horse with no hidden traits', async () => {
-    const result = await revealTraits(horse.id);
-    expect(result.success).toBe(true);
-    expect(result.horseId).toBe(horse.id);
-    expect(Array.isArray(result.revealed)).toBe(true);
-    expect(typeof result.message).toBe('string');
-  });
-});
-
-describe('batchRevealTraits', () => {
-  it('returns array of results for a batch containing one horse', async () => {
-    const results = await batchRevealTraits([horse.id]);
-    expect(Array.isArray(results)).toBe(true);
-    expect(results).toHaveLength(1);
-    expect(results[0].success).toBe(true);
-  });
-
-  it('returns empty array for empty input', async () => {
-    const results = await batchRevealTraits([]);
-    expect(Array.isArray(results)).toBe(true);
-    expect(results).toHaveLength(0);
-  });
-});
 
 describe('getDiscoveryProgress', () => {
   it('throws for non-existent horse', async () => {
