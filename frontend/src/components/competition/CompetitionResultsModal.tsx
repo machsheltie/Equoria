@@ -92,7 +92,6 @@ type SortDirection = 'asc' | 'desc';
 // Equoria-2dnd2: date formatting + honest invalid-date fallback now live in the
 // shared util (was a duplicated, unguarded component-local formatDate).
 import { formatDate } from '@/lib/formatDate';
-import { LoadingRegion } from '@/components/ui/state';
 
 /**
  * Get placement badge styling based on rank
@@ -401,9 +400,8 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
     // Loading state
     if (isLoading) {
       return (
-        <div className="overflow-x-auto">
-          <LoadingRegion label="Loading competition results" />
-          <table className="min-w-full" role="table">
+        <div className="overflow-x-auto" role="status" aria-label="Loading results">
+          <table className="min-w-full" role="table" aria-busy="true">
             <thead className="sticky top-0 bg-[rgba(15,35,70,0.5)] z-[var(--z-raised)]">
               <tr>
                 <th
