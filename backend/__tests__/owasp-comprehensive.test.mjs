@@ -29,6 +29,8 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-4dva: real production SSRF-guard — A10 tests now exercise this
 // instead of the previous assertion-free placeholder it() bodies.
 import { validateOutboundUrl, assertSafeOutboundUrl } from '../utils/ssrfGuard.mjs';
+import dns from 'node:dns';
+import { startLocalDnsServer } from './helpers/localDnsServer.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -658,9 +660,30 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
     });
 
     describe('DNS Rebinding Prevention', () => {
+      // Equoria-l2ij4: the upstream resolver is the only third-party boundary
+      // here, and a transient public-DNS failure failed the pre-push gate. The
+      // real Node resolver (dns.promises.resolve4/6, which the SSRF gate calls)
+      // is pointed at a local authoritative server instead, so the gate's own
+      // resolution, per-address re-validation and fail-closed paths still run.
+      let localDns;
+      let previousDnsServers;
+      beforeAll(async () => {
+        previousDnsServers = dns.getServers();
+        localDns = await startLocalDnsServer({
+          'localhost.localdomain': ['127.0.0.1'],
+          'example.com': ['93.184.216.34'],
+        });
+        dns.setServers([`127.0.0.1:${localDns.port}`]);
+      });
+      afterAll(async () => {
+        dns.setServers(previousDnsServers);
+        await localDns.close();
+      });
+
       it('the async gate performs DNS resolution + per-address re-validation', async () => {
-        // Real DNS: a guaranteed-loopback hostname must be rejected because
-        // it resolves to 127.x — proves resolved-IP re-validation runs.
+        // Resolved via the local resolver: a hostname that resolves to
+        // loopback must be rejected because it resolves to 127.x — proves
+        // resolved-IP re-validation runs.
         await expect(assertSafeOutboundUrl('http://localhost.localdomain/')).rejects.toMatchObject({ statusCode: 400 });
         // example.com resolves only to public addresses → allowed.
         await expect(assertSafeOutboundUrl('https://example.com/')).resolves.toContain('example.com');
