@@ -8,7 +8,6 @@
   "backend/__tests__/auth-bypass-attempts.test.mjs": 8,
   "backend/__tests__/authControllerNoXffFallback.sentinel.test.mjs": 2,
   "backend/__tests__/authRateLimitDocDrift.sentinel.test.mjs": 2,
-  "backend/__tests__/backfillAuditLogRedaction.integration.test.mjs": 3,
   "backend/__tests__/bareDefaultGuardZeroCorruption.sentinel.test.mjs": 16,
   "backend/__tests__/betaReadinessEnvSentinel.test.mjs": 3,
   "backend/__tests__/bmadOutputBypassHeaderDocFreshness.sentinel.test.mjs": 11,
