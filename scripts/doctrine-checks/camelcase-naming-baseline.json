@@ -1133,7 +1133,6 @@
   "frontend/src/components/trainer/TrainerCareerPanel.tsx": 8,
   "frontend/src/components/trainer/TrainerDiscoveryPanel.tsx": 16,
   "frontend/src/components/trainer/TrainerPersonalityBadge.tsx": 2,
-  "frontend/src/components/trainer/TrainerPersonalityDisplay.tsx": 6,
   "frontend/src/components/training/DisciplineSelector.tsx": 5,
   "frontend/src/components/training/ScoreRadarChart.tsx": 3,
   "frontend/src/components/training/TrainingSessionModal.tsx": 3,
