@@ -7,12 +7,6 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';
 
 /**
- * Suspicious Activity Cache
- * Tracks suspicious authentication patterns for rate limiting
- */
-const suspiciousActivityCache = new Map();
-
-/**
  * In-memory TTL cache for User.passwordChangedAt — Equoria-2bbf.
  * Removes the per-request DB lookup the CWE-613 check (Equoria-39r5) would
  * otherwise perform on every authenticated route.
@@ -463,29 +457,6 @@ export const generateRefreshToken = payload => {
   };
   return generateToken(uniquePayload, '7d');
 };
-
-/**
- * Clean up old cache entries periodically
- */
-if (process.env.NODE_ENV !== 'test') {
-  setInterval(
-    () => {
-      const now = Date.now();
-      const maxAge = 10 * 60 * 1000; // 10 minutes
-
-      for (const [userId, activities] of suspiciousActivityCache.entries()) {
-        const recentActivities = activities.filter(activity => now - activity.timestamp < maxAge);
-
-        if (recentActivities.length === 0) {
-          suspiciousActivityCache.delete(userId);
-        } else {
-          suspiciousActivityCache.set(userId, recentActivities);
-        }
-      }
-    },
-    5 * 60 * 1000,
-  ); // Clean every 5 minutes
-}
 
 // Export authenticateToken as the default export for backward compatibility
 export default authenticateToken;

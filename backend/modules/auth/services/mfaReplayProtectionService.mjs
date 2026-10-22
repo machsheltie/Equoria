@@ -42,8 +42,8 @@
  *     - mfaLockoutService (Equoria-kg7i2): 5 failed-MFA / 5min / userId.
  *       A successful replay is NOT a failure, so it does not increment the
  *       counter directly — but the surrounding authRateLimiter caps the
- *       attack at 200 requests/15min/IP and the suspicious-activity
- *       detector flags rapid-fire bursts.
+ *       attack at 200 requests/15min/IP. (There is no in-process
+ *       suspicious-activity detector; Equoria-hjnrc removed the unmounted one.)
  *     - For multi-node deployments, this Map should be promoted to a
  *       Redis-backed cache with TTL keys (`SET key value PX ttl NX` for
  *       atomic check-and-set). Tracked as Equoria-teguu (filed from the

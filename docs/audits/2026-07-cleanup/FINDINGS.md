@@ -1063,7 +1063,7 @@ history carry the same content.
 | XSS input sanitisation                             | CONFIRMED             | `sanitizeInput()` used in the profile controller                                                         |
 | CORS policy (no-origin gate + allow-list)          | CONFIRMED             | `backend/middleware/corsPolicy.mjs`, mounted in `backend/app.mjs`                                        |
 | Refresh-token rotation                             | CONFIRMED             | `tokenRotationService.mjs`, wired in the auth controller, with tests                                     |
-| IP / suspicious-activity monitoring                | DRIFT                 | detector is dead code — Equoria-hjnrc (doc-drift half kept open 2026-09-21)                              |
+| IP / suspicious-activity monitoring                | DRIFT, since resolved | unmounted detector removed 2026-10-22, SECURITY.md carries no such claim — Equoria-hjnrc                 |
 | Data-integrity middleware                          | DRIFT, since resolved | `gameIntegrity.mjs` was unmounted — removed and SECURITY.md corrected under Equoria-oey96.30 (7f3d0c0eb) |
 | Financial transactions (atomic SQL, audit logging) | CONFIRMED             | bank controller                                                                                          |
 

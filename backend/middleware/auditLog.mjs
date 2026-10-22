@@ -3,7 +3,13 @@ import prisma from '../../packages/database/prismaClient.mjs';
 
 /**
  * Audit Logging Middleware
- * Tracks sensitive operations and detects suspicious patterns.
+ * Persists sensitive state-changing operations to the AuditLog table.
+ *
+ * Equoria-hjnrc (owner ruling 2026-10-22): the per-route auditLog() factory,
+ * its six pre-built wrappers, the in-process suspicious-activity detector and
+ * the Sentry threshold alerting were never mounted and were deleted. There is
+ * no suspicious-activity detection; the live defences are the rate limiters
+ * and this DB audit trail.
  *
  * Equoria-jw10w (OWASP A09): sensitive mutating operations are persisted to a
  * tamper-evident, queryable `AuditLog` DB table (see storeAuditLog below) and
@@ -14,144 +20,6 @@ import prisma from '../../packages/database/prismaClient.mjs';
  * are best-effort/fail-soft: a write failure logs and is swallowed — it must
  * never break, delay-block, or 500 the underlying request.
  */
-
-/**
- * Comprehensive audit logging for sensitive operations
- */
-// Equoria-97ikc: cap on the body payload we forward into logOperation /
-// the audit log. 8KB is roughly the size of a paginated API page; anything larger
-// is almost certainly either a list response (no per-row PII surface that
-// the body-redactor handles) or a binary blob we should not be passing
-// through the audit log at all.
-const AUDIT_LOG_BODY_CAPTURE_CAP_BYTES = 8 * 1024;
-
-function truncateForAuditLog(data) {
-  if (data === null || data === undefined) {
-    return data;
-  }
-  if (typeof data === 'string') {
-    return data.length > AUDIT_LOG_BODY_CAPTURE_CAP_BYTES
-      ? `${data.slice(0, AUDIT_LOG_BODY_CAPTURE_CAP_BYTES)}…[truncated]`
-      : data;
-  }
-  if (Buffer.isBuffer(data)) {
-    return data.length > AUDIT_LOG_BODY_CAPTURE_CAP_BYTES
-      ? `${data.slice(0, AUDIT_LOG_BODY_CAPTURE_CAP_BYTES).toString('utf8')}…[truncated]`
-      : data.toString('utf8');
-  }
-  // Objects / arrays: pass through as-is — sanitizeLogData() downstream
-  // handles redaction. The size cap is bytes-on-the-wire; for in-memory
-  // objects it doesn't apply.
-  return data;
-}
-
-export const auditLog = (operationType, sensitivityLevel = 'medium') => {
-  return async (req, res, next) => {
-    // Skip audit logging in test environment
-    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
-      return next();
-    }
-
-    const startTime = Date.now();
-    const originalSend = res.send;
-
-    // Capture response data
-    res.send = function (data) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // Equoria-97ikc: three-way skip on body capture.
-      //
-      //   1) SSE / text/event-stream: never buffer. SSE handlers normally
-      //      call res.write + res.end (not res.send) so this branch is
-      //      defensive — but a future handler that mistakenly mixes the
-      //      two would otherwise hand its event stream to the audit log
-      //      verbatim, defeating SSE flush semantics and leaking each
-      //      streamed event into the audit log.
-      //   2) Success responses (statusCode < 400): the only consumer of
-      //      response data in logOperation is the `errorResponse` field
-      //      (statusCode >= 400 branch). Capturing successes feeds full
-      //      payloads through sanitizeLogData + the audit pipe for no
-      //      operational gain — pure PII surface for nothing.
-      //   3) Oversize: anything past AUDIT_LOG_BODY_CAPTURE_CAP_BYTES gets
-      //      truncated. Lists, blobs, or unexpectedly-large failure
-      //      payloads do not balloon the audit row or the telemetry
-      //      pipeline.
-      const contentType =
-        typeof res.getHeader === 'function' ? String(res.getHeader('Content-Type') ?? '') : '';
-      const isSse = contentType.toLowerCase().includes('text/event-stream');
-      const isFailure = res.statusCode >= 400;
-      const bodyToLog = isFailure && !isSse ? truncateForAuditLog(data) : null;
-
-      // Log the operation
-      logOperation(req, res, operationType, sensitivityLevel, duration, bodyToLog);
-
-      // Call original send
-      originalSend.call(this, data);
-    };
-
-    next();
-  };
-};
-
-/**
- * Log operation details
- */
-async function logOperation(req, res, operationType, sensitivityLevel, duration, responseData) {
-  try {
-    const logEntry = {
-      timestamp: new Date(),
-      userId: req.user?.id || null,
-      userEmail: req.user?.email || null,
-      userRole: req.user?.role || 'anonymous',
-      operationType,
-      sensitivityLevel,
-      method: req.method,
-      path: req.path,
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      statusCode: res.statusCode,
-      duration,
-      requestBody: sanitizeLogData(req.body),
-      // Equoria-wp0ib: previously stored verbatim — a sensitive value in a
-      // path param (e.g. /:token) or a query string (?password=...) would
-      // persist into audit_logs for the 90-day retention window. Both
-      // surfaces now route through the same sanitizeLogData() redactor.
-      requestParams: sanitizeLogData(req.params),
-      requestQuery: sanitizeLogData(req.query),
-      success: res.statusCode < 400,
-    };
-
-    // Add response data for failed operations
-    if (res.statusCode >= 400) {
-      logEntry.errorResponse = sanitizeLogData(responseData);
-    }
-
-    // Log to different levels based on sensitivity
-    if (sensitivityLevel === 'high' || res.statusCode >= 400) {
-      logger.warn('[audit] Sensitive operation:', logEntry);
-    } else {
-      logger.info('[audit] Operation logged:', {
-        userId: logEntry.userId,
-        operationType: logEntry.operationType,
-        method: logEntry.method,
-        path: logEntry.path,
-        statusCode: logEntry.statusCode,
-        duration: logEntry.duration,
-      });
-    }
-
-    // Store in database for high-sensitivity operations
-    if (sensitivityLevel === 'high') {
-      await storeAuditLog(logEntry);
-    }
-
-    // Check for suspicious patterns
-    await checkSuspiciousActivity(logEntry);
-  } catch (error) {
-    logger.error('[audit] Failed to log operation:', error);
-  }
-}
 
 /**
  * Derive the logical resource + (best-effort) resource id from a request path.
@@ -236,132 +104,6 @@ export async function storeAuditLog(logEntry) {
     // Fail-soft: never propagate. A09 audit must not be on the critical path.
     logger.error('[audit] Failed to persist audit log to DB:', error?.message || error);
   }
-}
-
-/**
- * Check for suspicious activity patterns
- */
-const suspiciousActivityCache = new Map();
-
-async function checkSuspiciousActivity(logEntry) {
-  try {
-    const { userId } = logEntry;
-    if (!userId) {
-      return;
-    }
-
-    const now = Date.now();
-    const windowMs = 5 * 60 * 1000; // 5 minutes
-
-    // Get user's recent activity
-    let userActivity = suspiciousActivityCache.get(userId) || [];
-
-    // Clean old entries
-    userActivity = userActivity.filter(entry => now - entry.timestamp < windowMs);
-
-    // Add current entry
-    userActivity.push({
-      timestamp: now,
-      operationType: logEntry.operationType,
-      statusCode: logEntry.statusCode,
-      ip: logEntry.ip,
-      path: logEntry.path,
-    });
-
-    // Update cache
-    suspiciousActivityCache.set(userId, userActivity);
-
-    // Check for suspicious patterns
-    const suspiciousPatterns = detectSuspiciousPatterns(userActivity, logEntry);
-
-    if (suspiciousPatterns.length > 0) {
-      logger.error('[audit] SUSPICIOUS ACTIVITY DETECTED:', {
-        userId,
-        userEmail: logEntry.userEmail,
-        patterns: suspiciousPatterns,
-        recentActivity: userActivity.slice(-10), // Last 10 activities
-      });
-    }
-  } catch (error) {
-    logger.error('[audit] Failed to check suspicious activity:', error);
-  }
-}
-
-/**
- * Detect suspicious patterns in user activity
- * Exported for unit-testing pure branch coverage (Equoria-jkht)
- */
-export function detectSuspiciousPatterns(userActivity) {
-  const patterns = [];
-  const now = Date.now();
-
-  // Pattern 1: Too many failed requests
-  const failedRequests = userActivity.filter(entry => entry.statusCode >= 400);
-  if (failedRequests.length >= 10) {
-    patterns.push({
-      type: 'excessiveFailures',
-      count: failedRequests.length,
-      severity: 'high',
-    });
-  }
-
-  // Pattern 2: Rapid-fire requests (potential automation)
-  const rapidRequests = userActivity.filter(
-    entry => now - entry.timestamp < 30000, // Last 30 seconds
-  );
-  if (rapidRequests.length >= 20) {
-    patterns.push({
-      type: 'rapidFireRequests',
-      count: rapidRequests.length,
-      severity: 'medium',
-    });
-  }
-
-  // Pattern 3: Multiple IP addresses (account sharing/compromise)
-  const uniqueIPs = new Set(userActivity.map(entry => entry.ip));
-  if (uniqueIPs.size >= 3) {
-    patterns.push({
-      type: 'multipleIpAddresses',
-      ipCount: uniqueIPs.size,
-      ips: Array.from(uniqueIPs),
-      severity: 'high',
-    });
-  }
-
-  // Pattern 4: Unusual operation patterns
-  const sensitiveOps = userActivity.filter(entry =>
-    ['breeding', 'training', 'transaction', 'statModification'].includes(entry.operationType),
-  );
-  if (sensitiveOps.length >= 15) {
-    patterns.push({
-      type: 'excessiveSensitiveOperations',
-      count: sensitiveOps.length,
-      severity: 'medium',
-    });
-  }
-
-  // Pattern 5: Error followed by success (potential exploit attempt)
-  const recentEntries = userActivity.slice(-5);
-  const hasErrorThenSuccess = recentEntries.some((entry, index) => {
-    if (index === 0) {
-      return false;
-    }
-    const prevEntry = recentEntries[index - 1];
-    return (
-      prevEntry.statusCode >= 400 &&
-      entry.statusCode < 400 &&
-      prevEntry.operationType === entry.operationType
-    );
-  });
-
-  if (hasErrorThenSuccess) {
-    patterns.push({
-      type: 'errorThenSuccessPattern',
-      severity: 'high',
-    });
-  }
-
-  return patterns;
 }
 
 const sensitiveLogFields = [
@@ -493,9 +235,9 @@ export function classifyAuditAction(method, path) {
 }
 
 /**
- * Global audit middleware. Unlike the per-route `auditLog()` factory this does
- * NOT short-circuit in the test environment — the DB trail must be verifiable
- * by real-DB integration tests and behave identically in prod and test.
+ * Global audit middleware. It does NOT short-circuit in the test environment —
+ * the DB trail must be verifiable by real-DB integration tests and behave
+ * identically in prod and test.
  */
 export const globalAuditTrail = (req, res, next) => {
   const action = classifyAuditAction(req.method, req.originalUrl || req.url || req.path);
@@ -544,48 +286,8 @@ export const globalAuditTrail = (req, res, next) => {
   return next();
 };
 
-/**
- * Middleware for specific operation types
- */
-export const auditBreeding = auditLog('breeding', 'high');
-export const auditTraining = auditLog('training', 'medium');
-export const auditTransaction = auditLog('transaction', 'high');
-export const auditStatModification = auditLog('statModification', 'high');
-export const auditAuth = auditLog('authentication', 'high');
-export const auditAdmin = auditLog('adminOperation', 'high');
-
-/**
- * Clean up old cache entries periodically
- */
-if (process.env.NODE_ENV !== 'test') {
-  setInterval(
-    () => {
-      const now = Date.now();
-      const maxAge = 10 * 60 * 1000; // 10 minutes
-
-      for (const [userId, activities] of suspiciousActivityCache.entries()) {
-        const recentActivities = activities.filter(activity => now - activity.timestamp < maxAge);
-
-        if (recentActivities.length === 0) {
-          suspiciousActivityCache.delete(userId);
-        } else {
-          suspiciousActivityCache.set(userId, recentActivities);
-        }
-      }
-    },
-    5 * 60 * 1000,
-  ); // Clean every 5 minutes
-}
-
 export default {
-  auditLog,
   globalAuditTrail,
   storeAuditLog,
   classifyAuditAction,
-  auditBreeding,
-  auditTraining,
-  auditTransaction,
-  auditStatModification,
-  auditAuth,
-  auditAdmin,
 };

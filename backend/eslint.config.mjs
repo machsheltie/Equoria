@@ -416,7 +416,6 @@ export default [
         jest: 'readonly',
         __ENV: 'readonly', // k6 load testing
         __VU: 'readonly', // k6 load testing
-        suspiciousActivityCache: 'readonly', // Test helper
       },
     },
     rules: {
