@@ -1860,6 +1860,19 @@ enum ElectionStatus {
   closed
 }
 
+/// How a closed club election was decided (Equoria-bvddn.22, owner ruling
+/// 2026-10-22: a tied election goes to a one-day run-off between the tied
+/// candidates, and the run-off winner takes the seat).
+enum ElectionOutcome {
+  /// One candidate had the most votes; winnerCandidateId holds the seat.
+  won
+  /// The top vote count was tied; `runoff` is the run-off round deciding it.
+  runoff
+  /// A run-off round was itself tied. No rule exists yet (question returned to
+  /// the owner), so no seat is assigned and the tie waits for an admin.
+  tied
+}
+
 model Club {
   id          Int              @id @default(autoincrement())
   name        String           @unique
@@ -1896,17 +1909,30 @@ model ClubElection {
   status     ElectionStatus    @default(upcoming)
   startsAt   DateTime
   endsAt     DateTime
-  candidates ClubCandidate[]
+  candidates ClubCandidate[] @relation("ClubCandidateToClubElection")
+  /// Equoria-bvddn.22: set when the closing job decides the election; NULL
+  /// while it is not closed, or when it closed with no candidates.
+  outcome           ElectionOutcome?
+  /// The candidate (a row of THIS election) who takes the seat. For an
+  /// election decided by run-off it is set once the run-off has a winner.
+  winnerCandidateId Int?
+  winnerCandidate   ClubCandidate?   @relation("ElectionWinner", fields: [winnerCandidateId], references: [id], onDelete: SetNull)
+  /// A run-off round points at the tied election it decides.
+  runoffOfId        Int?             @unique
+  runoffOf          ClubElection?    @relation("ElectionRunoff", fields: [runoffOfId], references: [id], onDelete: SetNull)
+  runoff            ClubElection?    @relation("ElectionRunoff")
 }
 
 model ClubCandidate {
   id         Int          @id @default(autoincrement())
   electionId Int
-  election   ClubElection @relation(fields: [electionId], references: [id])
+  election   ClubElection @relation("ClubCandidateToClubElection", fields: [electionId], references: [id])
   userId     String
   user       User         @relation("ElectionCandidacies", fields: [userId], references: [id])
   statement  String
   ballots    ClubBallot[]
+  /// Elections this candidacy won (Equoria-bvddn.22).
+  electionsWon ClubElection[] @relation("ElectionWinner")
 
   @@unique([electionId, userId])
 }
