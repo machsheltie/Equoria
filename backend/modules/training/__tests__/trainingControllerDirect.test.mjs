@@ -101,6 +101,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         stamina: 50,
         agility: 50,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
     testHorse4Years = testHorseEligible;
@@ -121,6 +122,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         stamina: 45,
         agility: 45,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
 
@@ -143,6 +145,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         stamina: 40,
         agility: 40,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
 
@@ -160,6 +163,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         stamina: 60,
         agility: 60,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
 
@@ -275,6 +279,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           stamina: 50,
           agility: 50,
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
 
@@ -342,6 +347,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           stamina: 50,
           agility: 50,
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
 
@@ -486,6 +492,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           stamina: 50,
           agility: 50,
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
 
@@ -562,6 +569,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           stamina: 50,
           agility: 50,
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
 

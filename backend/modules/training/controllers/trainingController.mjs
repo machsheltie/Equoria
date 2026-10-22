@@ -10,6 +10,7 @@ import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
+import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
@@ -113,6 +114,20 @@ async function computeCanTrain(parsedHorseId, discipline) {
     return { eligible: false, reason: 'Horse is injured and cannot train' };
   }
 
+  // Bad-health gate (owner ruling 2026-10-22, Equoria-0d4wa): a horse in bad
+  // health cannot train. "Bad health" is the threshold breeding and
+  // conformation entry already apply: displayed health (worse of feed and vet
+  // health) is 'critical'.
+  if (getDisplayedHealth(horse) === 'critical') {
+    logger.info(
+      `[trainingController.canTrain] Horse ${parsedHorseId} is in critical health — cannot train`,
+    );
+    return {
+      eligible: false,
+      reason: 'Horse is in critical health and cannot train. Feed and vet to restore health.',
+    };
+  }
+
   // Check trait requirements for specific disciplines (e.g., Gaited)
   if (discipline === 'Gaited') {
     if (!checkTraitRequirements(horse, discipline)) {
@@ -200,17 +215,8 @@ async function trainHorse(horseId, discipline) {
       `[trainingController.trainHorse] Horse ${horseId} has traits: ${allTraits.length > 0 ? allTraits.join(', ') : 'none'}`,
     );
 
-    // Check for training-blocking traits
-    if (traitEffects.statGainBlocked) {
-      logger.warn('[trainingController.trainHorse] Training blocked by trait effects (burnout)');
-      return {
-        success: false,
-        reason: 'Horse is experiencing burnout and cannot gain from training',
-        updatedHorse: null,
-        message: 'Training not effective: Horse is experiencing burnout',
-        nextEligible: null,
-      };
-    }
+    // Owner ruling 2026-10-22 (Equoria-0d4wa): no trait blocks training — there
+    // is no burnout. Bad health (canTrain above) is the only consequence gate.
 
     // Equoria-bvddn.17: a training session is ONE unit of work. Everything the
     // session writes — owner XP, the cooldown claim, the TrainingLog row and

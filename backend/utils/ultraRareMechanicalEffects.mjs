@@ -494,72 +494,6 @@ export function applyUltraRareBondingEffects(horse, baseBondChange, bondingConte
 }
 
 /**
- * Apply ultra-rare trait effects to burnout calculations
- * @param {Object} horse - Horse data with ultra-rare traits
- * @param {number} baseBurnoutDays - Base burnout duration in days
- * @returns {Object} Modified burnout duration and applied effects
- */
-export function applyUltraRareBurnoutEffects(horse, baseBurnoutDays) {
-  try {
-    const allTraits = getUltraRareTraitList(horse);
-
-    let modifiedBurnoutDays = baseBurnoutDays;
-    const appliedEffects = [];
-
-    for (const traitData of allTraits) {
-      const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) {
-        continue;
-      }
-
-      const effects = traitDef.mechanicalEffects;
-
-      // Apply burnout immunity (Iron-Willed)
-      if (effects.burnoutImmunity) {
-        modifiedBurnoutDays = 0;
-        appliedEffects.push({
-          trait: traitDef.name,
-          effect: 'burnout_immunity',
-          value: true,
-          reduction: baseBurnoutDays,
-        });
-        break; // Immunity overrides all other effects
-      }
-
-      // Apply burnout recovery bonus (Phoenix-Born)
-      if (effects.burnoutRecoveryBonus) {
-        const reduction = baseBurnoutDays * effects.burnoutRecoveryBonus;
-        modifiedBurnoutDays -= reduction;
-        appliedEffects.push({
-          trait: traitDef.name,
-          effect: 'burnout_recovery_bonus',
-          value: effects.burnoutRecoveryBonus,
-          reduction,
-        });
-      }
-    }
-
-    // Ensure burnout days don't go below 0
-    modifiedBurnoutDays = Math.max(0, modifiedBurnoutDays);
-
-    return {
-      originalBurnoutDays: baseBurnoutDays,
-      modifiedBurnoutDays,
-      appliedEffects,
-      totalReduction: baseBurnoutDays - modifiedBurnoutDays,
-    };
-  } catch (error) {
-    logger.error(`[ultraRareMechanicalEffects] Error applying burnout effects: ${error.message}`);
-    return {
-      originalBurnoutDays: baseBurnoutDays,
-      modifiedBurnoutDays: baseBurnoutDays,
-      appliedEffects: [],
-      totalReduction: 0,
-    };
-  }
-}
-
-/**
  * Apply ultra-rare trait effects to base stats
  * @param {Object} horse - Horse data with ultra-rare traits
  * @param {Object} baseStats - Base stat values
@@ -655,11 +589,6 @@ export function hasUltraRareAbility(horse, abilityType) {
       switch (abilityType) {
         case 'stress_immunity':
           if (effects.stressImmunity) {
-            return true;
-          }
-          break;
-        case 'burnout_immunity':
-          if (effects.burnoutImmunity) {
             return true;
           }
           break;

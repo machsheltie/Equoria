@@ -80,7 +80,8 @@ beforeAll(async () => {
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: entrant.id,
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
     },
   });
   entrantHorseId = entrantHorse.id;
@@ -94,7 +95,8 @@ beforeAll(async () => {
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: creator.id,
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
     },
   });
   creatorHorseId = creatorHorse.id;

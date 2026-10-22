@@ -60,6 +60,7 @@ async function createHorse(userId, breedId, overrides = {}) {
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       disciplineScores: overrides.disciplineScores ?? {},
       trainingCooldown: null,
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       breed: { connect: { id: breedId } },
       user: { connect: { id: userId } },
     },

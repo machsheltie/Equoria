@@ -123,6 +123,7 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
         sex: 'Mare',
         dateOfBirth: fourYearsAgo,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {},
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },

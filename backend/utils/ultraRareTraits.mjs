@@ -28,7 +28,6 @@ export const ULTRA_RARE_TRAITS = {
     // Mechanical effects
     mechanicalEffects: {
       stressDecayMultiplier: 1.3, // 30% faster stress decay
-      burnoutRecoveryBonus: 0.57, // 4 days instead of 7 (57% reduction)
       stressResistance: 0.2, // 20% less stress from all sources
       competitionScoreModifier: 0.04, // +4% competition score
     },
@@ -59,7 +58,6 @@ export const ULTRA_RARE_TRAITS = {
 
     // Mechanical effects
     mechanicalEffects: {
-      burnoutImmunity: true, // Cannot be burned out
       trainingFatigueImmunity: true, // Ignores training fatigue
       staminaBonus: 5, // +5 stamina stat
       competitionStressResistance: 0.5, // 50% less stress in competitions

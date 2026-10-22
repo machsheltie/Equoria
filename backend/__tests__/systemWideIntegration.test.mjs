@@ -69,6 +69,7 @@ describe('System-Wide Data Integrity', () => {
         sex: 'mare',
         dateOfBirth: new Date('2019-01-01'),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
 
@@ -275,6 +276,7 @@ describe('System-Wide Data Integrity', () => {
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
 

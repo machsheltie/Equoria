@@ -385,7 +385,6 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
     successRate: 1.0 - skillLevel.errorChance, // Base success rate
     traitInfluence: 1, // Base trait influence points
     streakGrowth: 1, // Base streak growth
-    burnoutRisk: 0.1, // Base burnout risk
     modifiers: {
       specialty: specialty.bondingModifier,
       skillLevel: skillLevel.bondingModifier,

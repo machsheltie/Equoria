@@ -240,6 +240,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         sex: 'Colt',
         dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2022-01-01')
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {},
         epigeneticModifiers: {
           positive: ['energetic', 'curious'],
@@ -266,6 +267,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         sex: 'Mare',
         dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2020-01-01')
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {},
         epigeneticModifiers: {
           positive: ['athletic', 'focused', 'brave', 'resilient'],

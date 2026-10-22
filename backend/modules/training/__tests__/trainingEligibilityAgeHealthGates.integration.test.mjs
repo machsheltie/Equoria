@@ -77,6 +77,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         stamina: 50,
         agility: 50,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
 
@@ -94,6 +95,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         stamina: 50,
         agility: 50,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
 
@@ -113,6 +115,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         stamina: 50,
         agility: 50,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
 
@@ -147,6 +150,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
         stamina: 50,
         agility: 50,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
   });

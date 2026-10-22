@@ -50,8 +50,10 @@ describe('ULTRA_RARE_TRAITS', () => {
     expect(ULTRA_RARE_TRAITS['phoenix-born'].mechanicalEffects.stressDecayMultiplier).toBeGreaterThan(1);
   });
 
-  it('iron-willed has burnoutImmunity', () => {
-    expect(ULTRA_RARE_TRAITS['iron-willed'].mechanicalEffects.burnoutImmunity).toBe(true);
+  // Owner ruling 2026-10-22 (Equoria-0d4wa): there is no burnout (old contract:
+  // iron-willed carried burnoutImmunity).
+  it('iron-willed carries no burnout immunity', () => {
+    expect(ULTRA_RARE_TRAITS['iron-willed'].mechanicalEffects.burnoutImmunity).toBeUndefined();
   });
 });
 

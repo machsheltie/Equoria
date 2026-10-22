@@ -11,7 +11,6 @@ import {
   applyUltraRareTrainingEffects,
   applyUltraRareCompetitionEffects,
   applyUltraRareBondingEffects,
-  applyUltraRareBurnoutEffects,
   applyUltraRareStatEffects,
   hasUltraRareAbility,
 } from '../../../utils/ultraRareMechanicalEffects.mjs';
@@ -319,47 +318,6 @@ describe('applyUltraRareBondingEffects', () => {
 });
 
 // ---------------------------------------------------------------------------
-// applyUltraRareBurnoutEffects
-// ---------------------------------------------------------------------------
-describe('applyUltraRareBurnoutEffects', () => {
-  it('no traits → burnout days unchanged', () => {
-    const result = applyUltraRareBurnoutEffects(noTraits(), 7);
-    expect(result.modifiedBurnoutDays).toBe(7);
-    expect(result.totalReduction).toBe(0);
-  });
-
-  it('iron-willed burnoutImmunity zeros out burnout days', () => {
-    const horse = withUltraRare('iron-willed');
-    const result = applyUltraRareBurnoutEffects(horse, 7);
-    expect(result.modifiedBurnoutDays).toBe(0);
-    expect(result.totalReduction).toBe(7);
-    expect(result.appliedEffects.some(e => e.effect === 'burnout_immunity')).toBe(true);
-  });
-
-  it('phoenix-born burnoutRecoveryBonus reduces burnout by 57%', () => {
-    const horse = withUltraRare('phoenix-born');
-    const result = applyUltraRareBurnoutEffects(horse, 7);
-    // reduction = 7 * 0.57 = 3.99 → modifiedBurnoutDays ≈ 3.01
-    expect(result.modifiedBurnoutDays).toBeCloseTo(7 * (1 - 0.57));
-    expect(result.appliedEffects.some(e => e.effect === 'burnout_recovery_bonus')).toBe(true);
-  });
-
-  it('burnout days cannot go below 0', () => {
-    const horse = withUltraRare('phoenix-born');
-    const result = applyUltraRareBurnoutEffects(horse, 0);
-    expect(result.modifiedBurnoutDays).toBe(0);
-  });
-
-  it('result has originalBurnoutDays, modifiedBurnoutDays, appliedEffects, totalReduction', () => {
-    const result = applyUltraRareBurnoutEffects(noTraits(), 5);
-    expect(result).toHaveProperty('originalBurnoutDays', 5);
-    expect(result).toHaveProperty('modifiedBurnoutDays');
-    expect(result).toHaveProperty('appliedEffects');
-    expect(result).toHaveProperty('totalReduction');
-  });
-});
-
-// ---------------------------------------------------------------------------
 // applyUltraRareStatEffects
 // ---------------------------------------------------------------------------
 describe('applyUltraRareStatEffects', () => {
@@ -420,15 +378,16 @@ describe('applyUltraRareStatEffects', () => {
 describe('hasUltraRareAbility', () => {
   it('returns false when horse has no traits', () => {
     expect(hasUltraRareAbility(noTraits(), 'stress_immunity')).toBe(false);
-    expect(hasUltraRareAbility(noTraits(), 'burnout_immunity')).toBe(false);
   });
 
   it('ghostwalker has stress_immunity', () => {
     expect(hasUltraRareAbility(withExotic('ghostwalker'), 'stress_immunity')).toBe(true);
   });
 
-  it('iron-willed has burnout_immunity', () => {
-    expect(hasUltraRareAbility(withUltraRare('iron-willed'), 'burnout_immunity')).toBe(true);
+  // Owner ruling 2026-10-22 (Equoria-0d4wa): there is no burnout, so no
+  // trait carries a burnout immunity (old contract: iron-willed did).
+  it('no trait has burnout_immunity', () => {
+    expect(hasUltraRareAbility(withUltraRare('iron-willed'), 'burnout_immunity')).toBe(false);
   });
 
   it('iron-willed has training_fatigue_immunity', () => {
@@ -452,7 +411,7 @@ describe('hasUltraRareAbility', () => {
   });
 
   it('returns false when ability exists but horse lacks it', () => {
-    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'burnout_immunity')).toBe(false);
+    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'training_fatigue_immunity')).toBe(false);
   });
 
   it('missing ultraRareTraits field returns false', () => {
@@ -509,14 +468,6 @@ describe('null-horse catch blocks', () => {
     expect(result.totalModification).toBe(0);
   });
 
-  it('applyUltraRareBurnoutEffects — catch (538-539): returns safe default when horse is null', () => {
-    const result = applyUltraRareBurnoutEffects(null, 7);
-    expect(result.originalBurnoutDays).toBe(7);
-    expect(result.modifiedBurnoutDays).toBe(7);
-    expect(result.appliedEffects).toEqual([]);
-    expect(result.totalReduction).toBe(0);
-  });
-
   it('applyUltraRareStatEffects: returns safe default when horse is null (Equoria-liy7c: now handled on the happy path, no throw)', () => {
     const baseStats = { speed: 50 };
     const result = applyUltraRareStatEffects(null, baseStats);
@@ -564,12 +515,6 @@ describe('phantom-trait continue branches (no trait definition found)', () => {
   it('applyUltraRareBondingEffects continue (407): phantom trait skips loop body', () => {
     const result = applyUltraRareBondingEffects(phantomHorse, 5);
     expect(result.modifiedBondChange).toBe(5);
-    expect(result.appliedEffects).toEqual([]);
-  });
-
-  it('applyUltraRareBurnoutEffects continue (498): phantom trait skips loop body', () => {
-    const result = applyUltraRareBurnoutEffects(phantomHorse, 7);
-    expect(result.modifiedBurnoutDays).toBe(7);
     expect(result.appliedEffects).toEqual([]);
   });
 
@@ -638,12 +583,6 @@ describe('missing-ultraRareTraits || fallback branches (Equoria-jkht)', () => {
     expect(result.appliedEffects).toEqual([]);
   });
 
-  it('applyUltraRareBurnoutEffects (line 489): {} horse uses [] fallback, burnout unchanged', () => {
-    const result = applyUltraRareBurnoutEffects({}, 7);
-    expect(result.modifiedBurnoutDays).toBe(7);
-    expect(result.appliedEffects).toEqual([]);
-  });
-
   it('applyUltraRareStatEffects (line 556): {} horse uses [] fallback, stats unchanged', () => {
     const result = applyUltraRareStatEffects({}, { speed: 50 });
     expect(result.modifiedStats.speed).toBe(50);
@@ -655,7 +594,6 @@ describe('missing-ultraRareTraits || fallback branches (Equoria-jkht)', () => {
 // if-condition FALSE branches — trait has mechanicalEffects but lacks the checked field
 // Line 125: stressDecayMultiplier FALSE
 // Line 450: bondCap FALSE
-// Line 516: burnoutRecoveryBonus FALSE
 // Line 572: (modifiedStats.stamina || 0) RIGHT branch when stamina is undefined
 // ---------------------------------------------------------------------------
 describe('if-condition FALSE branches — field absent despite mechanicalEffects (Equoria-jkht)', () => {
@@ -668,12 +606,6 @@ describe('if-condition FALSE branches — field absent despite mechanicalEffects
   it('line 450 FALSE: iron-willed has mechanicalEffects but no bondCap → no cap applied', () => {
     const result = applyUltraRareBondingEffects(withUltraRare('iron-willed'), 5);
     expect(result.appliedEffects.some(e => e.effect === 'bond_cap')).toBe(false);
-  });
-
-  it('line 516 FALSE: empathic-mirror has mechanicalEffects but no burnoutRecoveryBonus → days unchanged', () => {
-    const result = applyUltraRareBurnoutEffects(withUltraRare('empathic-mirror'), 7);
-    expect(result.modifiedBurnoutDays).toBe(7);
-    expect(result.appliedEffects.some(e => e.effect === 'burnout_recovery_bonus')).toBe(false);
   });
 
   it('line 572 RIGHT || branch: iron-willed staminaBonus with undefined stamina initialises from 0', () => {

@@ -518,37 +518,8 @@ const traitEffects = {
     },
   },
 
-  burnout: {
-    // Training effects
-    statGainBlocked: true, // Blocks all stat gains from training
-    trainingXpModifier: -0.5, // 50% less XP from training
-    trainingMotivationPenalty: 0.5, // 50% less motivation
-
-    // Competition effects
-    competitionScoreModifier: -0.1, // -10% to final score
-    performanceDecline: 0.3, // 30% performance decline
-
-    // Recovery effects
-    extendedRestRequired: true, // Requires extended rest periods
-    stressRecoveryPenalty: 0.4, // 40% slower stress recovery
-
-    // General effects
-    activityAvoidance: true, // Avoids all strenuous activities
-    motivationDecay: 0.25, // 25% faster motivation decay
-
-    // All disciplines affected negatively
-    disciplineModifiers: {
-      Racing: -0.12,
-      Dressage: -0.1,
-      'Show Jumping': -0.1,
-      'Cross Country': -0.12,
-      Endurance: -0.15,
-      Reining: -0.08,
-      Driving: -0.08,
-      Trail: -0.06,
-      Eventing: -0.1,
-    },
-  },
+  // Owner ruling 2026-10-22 (Equoria-0d4wa): there is no burnout trait. A
+  // stored "burnout" name now resolves to no effects, like any unknown trait.
 };
 
 /**

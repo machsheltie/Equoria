@@ -149,6 +149,7 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
         dateOfBirth: fiveYearsAgo,
         temperament,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         trainingCooldown: null,
         disciplineScores: {},
         epigeneticModifiers: { positive: positiveTraits, negative: [], hidden: [] },

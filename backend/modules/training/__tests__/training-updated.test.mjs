@@ -112,6 +112,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
         dateOfBirth: dob5yr,
         userId: testUserId,
         age: 5,
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
     testHorseId = testHorse.id;
@@ -125,6 +126,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
         dateOfBirth: dob5yr,
         userId: testUserId,
         age: 5,
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
     secondHorseId = secondHorse.id;

@@ -196,6 +196,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         sex: 'Mare',
         dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {}, // No previous training
         epigeneticModifiers: {
           positive: [],
@@ -215,6 +216,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         sex: 'Colt',
         dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {},
         epigeneticModifiers: {
           positive: [],
@@ -234,6 +236,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         sex: 'Stallion',
         dateOfBirth: fiveYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {
           Racing: 10, // Has some previous training
         },
@@ -256,6 +259,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         sex: 'Mare',
         dateOfBirth: sixYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Good',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {},
         epigeneticModifiers: {
           positive: [],
@@ -275,6 +279,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         sex: 'Stallion',
         dateOfBirth: threeYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Fair',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {},
         epigeneticModifiers: {
           positive: [],
@@ -408,6 +413,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           sex: 'Stallion',
           dateOfBirth: workflowFourYearsAgo, // FIXED: Use calculated date for accurate age
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: {},
           epigeneticModifiers: {
             positive: [],
@@ -624,6 +630,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
           sex: 'Mare',
           dateOfBirth: freshFourYearsAgo, // FIXED: Use calculated date for accurate age
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: {},
           epigeneticModifiers: {
             positive: [],

@@ -244,13 +244,12 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
       expect(e.disciplineModifiers['Endurance']).toBe(-0.08);
     });
 
-    it('burnout has severe penalties', () => {
-      const e = getTraitEffects('burnout');
-      expect(e.statGainBlocked).toBe(true);
-      expect(e.trainingXpModifier).toBe(-0.5);
-      expect(e.competitionScoreModifier).toBe(-0.1);
-      expect(e.extendedRestRequired).toBe(true);
-      expect(e.disciplineModifiers['Endurance']).toBe(-0.15);
+    // Owner ruling 2026-10-22 (Equoria-0d4wa) replaced the old contract (burnout
+    // blocked training stat gains and cut competition scores): there is no
+    // burnout trait, so a stored 'burnout' name has no effects at all.
+    it('burnout has no effects (there is no burnout)', () => {
+      expect(getTraitEffects('burnout')).toBeNull();
+      expect(getCombinedTraitEffects(['burnout'])).toEqual({});
     });
   });
 
@@ -295,12 +294,12 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
   });
 
   describe('getAllTraitEffects — includes negative/rare categories', () => {
-    it('includes lazy, nervous, legendaryBloodline, burnout', () => {
+    it('includes lazy, nervous, legendaryBloodline and no burnout (Equoria-0d4wa)', () => {
       const all = getAllTraitEffects();
       expect(all.lazy).toBeDefined();
       expect(all.nervous).toBeDefined();
       expect(all.legendaryBloodline).toBeDefined();
-      expect(all.burnout).toBeDefined();
+      expect(all.burnout).toBeUndefined();
     });
   });
 });

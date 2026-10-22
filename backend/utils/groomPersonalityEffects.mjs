@@ -42,7 +42,6 @@ import logger from './logger.mjs';
  * - bondingModifier: Bonding rate modification
  * - stressReductionModifier: Stress reduction effectiveness
  * - streakGrowthModifier: Consecutive days streak growth rate
- * - burnoutRiskModifier: Burnout risk modification
  * - traitInfluenceModifier: Trait development influence modification
  * - specialConditions: Special conditions for enhanced effects
  */
@@ -54,7 +53,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     bondingModifier: 1.2,
     stressReductionModifier: 1.4,
     streakGrowthModifier: 1.0,
-    burnoutRiskModifier: 0.8,
     traitInfluenceModifier: 1.0,
     specialConditions: {
       horseTraits: ['nervous', 'timid', 'anxious', 'fearful'],
@@ -70,7 +68,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     bondingModifier: 1.3,
     stressReductionModifier: 1.1,
     streakGrowthModifier: 1.15,
-    burnoutRiskModifier: 0.9,
     traitInfluenceModifier: 1.2,
     specialConditions: {
       ageRange: [0, 1095], // 0-3 years (foals and young horses)
@@ -86,7 +83,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     bondingModifier: 0.9,
     stressReductionModifier: 0.9,
     streakGrowthModifier: 1.0,
-    burnoutRiskModifier: 1.0,
     traitInfluenceModifier: 1.3,
     specialConditions: {
       horseTraits: ['stubborn', 'independent', 'pushy', 'resistant'],
@@ -97,12 +93,11 @@ export const GROOM_PERSONALITY_EFFECTS = {
 
   patient: {
     bonusTasks: ['puddle_training', 'tarp_desensitization', 'hoof_handling', 'patience_training'],
-    effect: 'Reduces burnout risk and failure chance on enrichment tasks',
+    effect: 'Reduces failure chance on enrichment tasks',
     successRateModifier: 1.15,
     bondingModifier: 1.3,
     stressReductionModifier: 1.2,
     streakGrowthModifier: 1.05,
-    burnoutRiskModifier: 0.6,
     traitInfluenceModifier: 1.1,
     specialConditions: {
       taskCategories: ['enrichment', 'desensitization', 'training'],
@@ -113,12 +108,11 @@ export const GROOM_PERSONALITY_EFFECTS = {
 
   high_energy: {
     bonusTasks: ['obstacle_course', 'hand_walking', 'fitness_work', 'emergency_handling'],
-    effect: 'Extra trait point on success, but 20% higher burnout risk',
+    effect: 'Extra trait point on success',
     successRateModifier: 1.1,
     bondingModifier: 1.1,
     stressReductionModifier: 0.8,
     streakGrowthModifier: 1.2,
-    burnoutRiskModifier: 1.2,
     traitInfluenceModifier: 1.4,
     specialConditions: {
       extraTraitPoints: true,
@@ -135,7 +129,6 @@ export const GROOM_PERSONALITY_EFFECTS = {
     bondingModifier: 0.8,
     stressReductionModifier: 0.9,
     streakGrowthModifier: 0.9,
-    burnoutRiskModifier: 1.1,
     traitInfluenceModifier: 0.8,
     specialConditions: {
       penalty: true,
@@ -279,14 +272,6 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
       );
     }
 
-    // Apply burnout risk modifications
-    if (modifiedEffects.burnoutRisk !== undefined) {
-      modifiedEffects.burnoutRisk = Math.max(
-        0,
-        modifiedEffects.burnoutRisk * personalityConfig.burnoutRiskModifier,
-      );
-    }
-
     // Add personality effect summary
     modifiedEffects.personalityEffects = {
       personality,
@@ -382,7 +367,6 @@ export function getPersonalityEffectSummary(personality, taskType) {
       stressReduction: personalityConfig.stressReductionModifier,
       successRate: personalityConfig.successRateModifier,
       streakGrowth: personalityConfig.streakGrowthModifier,
-      burnoutRisk: personalityConfig.burnoutRiskModifier,
       traitInfluence: personalityConfig.traitInfluenceModifier,
     },
     specialConditions: personalityConfig.specialConditions,

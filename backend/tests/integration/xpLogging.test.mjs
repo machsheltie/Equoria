@@ -62,6 +62,7 @@ beforeAll(async () => {
       breed: { connect: { id: breed.id } },
       user: { connect: { id: testUser.id } },
       healthStatus: 'Good',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       trainingCooldown: null, // no cooldown — horse is ready to train
       epigeneticModifiers: { positive: [], negative: [] },
     },
@@ -140,6 +141,7 @@ describe('XP Logging — Training Workflow', () => {
         breed: { connect: { id: testHorse.breedId } },
         user: { connect: { id: testUser.id } },
         healthStatus: 'Good',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         epigeneticModifiers: { positive: [], negative: [] },
       },
     });

@@ -16,12 +16,14 @@
  *   - C12: a Gaited show needs gaitScores.gaiting present (a non-empty list);
  *   - no double entry in one show; no general competition cooldown;
  *   - R9: XP and points never gate entry (the level/range returns with B8).
- * Unchanged: an injured horse is refused (the Fair-or-better band is B7).
+ * Health: an injured horse is refused, and so is any horse whose displayed
+ * health is critical (owner ruling 2026-10-22, Equoria-0d4wa).
  * C11: conformation keeps its own age 0+ / groom rules; only double entry
  * applies to it here.
  */
 
 import { getHorseAgeYears } from './horseAge.mjs';
+import { getDisplayedHealth } from './horseHealth.mjs';
 
 export const MIN_ENTRY_AGE_YEARS = 3;
 export const MAX_ENTRY_AGE_YEARS = 20;
@@ -36,6 +38,10 @@ export const ENTRY_REFUSALS = Object.freeze({
   }),
   AGE_TOO_OLD: Object.freeze({ status: 400, message: 'Horses over 20 years old cannot compete' }),
   HORSE_INJURED: Object.freeze({ status: 400, message: 'Injured horses cannot compete' }),
+  HORSE_CRITICAL_HEALTH: Object.freeze({
+    status: 400,
+    message: 'Horses in critical health cannot compete. Feed and vet to restore health.',
+  }),
   RIDER_REQUIRED: Object.freeze({
     status: 400,
     message: 'An assigned rider is required to compete',
@@ -149,6 +155,10 @@ export const ENTRY_RULE_HORSE_SELECT = Object.freeze({
   dateOfBirth: true,
   healthStatus: true,
   gaitScores: true,
+  // Displayed health (utils/horseHealth.mjs) for the bad-health rule.
+  age: true,
+  lastFedDate: true,
+  lastVettedDate: true,
 });
 
 /** The rider fields C10 reads from the active assignment. */
@@ -196,9 +206,21 @@ export function ageRefusal(dateOfBirth, now = new Date()) {
   return null;
 }
 
-/** Health rule (injured horses are refused): a refusal code or null. */
-export function healthRefusal(healthStatus) {
-  return String(healthStatus).toLowerCase() === 'injured' ? 'HORSE_INJURED' : null;
+/**
+ * Health rule: a refusal code or null. An injured horse keeps its own code; any
+ * other horse in bad health is refused too (owner ruling 2026-10-22,
+ * Equoria-0d4wa: bad health blocks show entry). Bad health is the threshold
+ * breeding and conformation entry already apply: displayed health 'critical'.
+ *
+ * @param {{ healthStatus?: string|null, age?: number|null,
+ *   lastFedDate?: Date|string|null, lastVettedDate?: Date|string|null }|null|undefined} horse
+ * @param {Date} [now]
+ */
+export function healthRefusal(horse, now = new Date()) {
+  if (String(horse?.healthStatus).toLowerCase() === 'injured') {
+    return 'HORSE_INJURED';
+  }
+  return horse && getDisplayedHealth(horse, now) === 'critical' ? 'HORSE_CRITICAL_HEALTH' : null;
 }
 
 /** C10 rider rule over the horse's active assignment: a refusal code or null. */
@@ -240,7 +262,8 @@ export function gaitingRefusal(discipline, gaitScores) {
  * @param {{ showType?: string, discipline?: string }} input.show - a show, or for
  *   a show-less check (the eligibility summary) just `{ discipline }`.
  * @param {{ dateOfBirth?: Date|string|null, healthStatus?: string|null,
- *   gaitScores?: object|null }} input.horse - ENTRY_RULE_HORSE_SELECT fields
+ *   gaitScores?: object|null, age?: number|null, lastFedDate?: Date|string|null,
+ *   lastVettedDate?: Date|string|null }} input.horse - ENTRY_RULE_HORSE_SELECT fields
  * @param {{ rider?: { retired?: boolean, userId?: string|null } }|null|undefined}
  *   input.assignment - the horse's active assignment (loadActiveAssignments)
  * @param {boolean} [input.alreadyEntered]
@@ -275,7 +298,7 @@ export function evaluateEntryRules({
   }
   return (
     ageRefusal(horse?.dateOfBirth, now) ??
-    healthRefusal(horse?.healthStatus) ??
+    healthRefusal(horse, now) ??
     riderRefusal(assignment, userId) ??
     gaitingRefusal(show.discipline, horse?.gaitScores) ??
     disciplineTypeRefusal(show, activeTypes)

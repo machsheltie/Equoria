@@ -30,7 +30,6 @@ import {
   applyUltraRareTrainingEffects,
   applyUltraRareCompetitionEffects,
   applyUltraRareBondingEffects,
-  applyUltraRareBurnoutEffects,
   applyUltraRareStatEffects,
   hasUltraRareAbility,
 } from '../utils/ultraRareMechanicalEffects.mjs';
@@ -102,10 +101,6 @@ describe('ultraRareMechanicalEffects tolerate malformed ultraRareTraits (Equoria
 
   it.each(BAD_SHAPES)('applyUltraRareBondingEffects does not throw when ultraRareTraits is %s', (_label, value) => {
     expect(() => applyUltraRareBondingEffects({ ultraRareTraits: value }, 3)).not.toThrow();
-  });
-
-  it.each(BAD_SHAPES)('applyUltraRareBurnoutEffects does not throw when ultraRareTraits is %s', (_label, value) => {
-    expect(() => applyUltraRareBurnoutEffects({ ultraRareTraits: value }, 7)).not.toThrow();
   });
 
   it.each(BAD_SHAPES)('applyUltraRareStatEffects does not throw when ultraRareTraits is %s', (_label, value) => {

@@ -35,7 +35,8 @@ describe('GROOM_PERSONALITY_EFFECTS', () => {
       expect(typeof config.bondingModifier).toBe('number');
       expect(typeof config.stressReductionModifier).toBe('number');
       expect(typeof config.streakGrowthModifier).toBe('number');
-      expect(typeof config.burnoutRiskModifier).toBe('number');
+      // Equoria-0d4wa: there is no burnout, so no personality carries a burnout modifier.
+      expect(config.burnoutRiskModifier).toBeUndefined();
       expect(typeof config.traitInfluenceModifier).toBe('number');
     }
   });
@@ -70,7 +71,6 @@ describe('calculatePersonalityEffects', () => {
     stressChange: -5,
     successRate: 0.85,
     streakGrowth: 1,
-    burnoutRisk: 0.1,
     traitInfluence: 5,
   };
 
@@ -225,7 +225,7 @@ describe('getPersonalityEffectSummary', () => {
   it('modifiers contain numeric values', () => {
     const result = getPersonalityEffectSummary('patient', 'puddle_training');
     expect(typeof result.modifiers.bonding).toBe('number');
-    expect(typeof result.modifiers.burnoutRisk).toBe('number');
+    expect(result.modifiers.burnoutRisk).toBeUndefined(); // Equoria-0d4wa: no burnout
   });
 });
 
@@ -237,7 +237,6 @@ describe('calculatePersonalityEffects — additional branches', () => {
     stressChange: -5,
     successRate: 0.85,
     streakGrowth: 1,
-    burnoutRisk: 0.1,
     traitInfluence: 5,
   };
 
@@ -368,7 +367,6 @@ describe('calculatePersonalityEffects — trait bonusBonding branch (line 223)',
       bondingModifier: 1.0,
       stressReductionModifier: 1.0,
       streakGrowthModifier: 1.0,
-      burnoutRiskModifier: 1.0,
       traitInfluenceModifier: 1.0,
       specialConditions: {
         horseTraits: ['docile'],
@@ -403,7 +401,6 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
     stressChange: -5,
     successRate: 0.85,
     streakGrowth: 1,
-    burnoutRisk: 0.1,
     traitInfluence: 5,
   };
 
@@ -416,7 +413,6 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
       bondingModifier: 1.0,
       stressReductionModifier: 1.0,
       streakGrowthModifier: 1.0,
-      burnoutRiskModifier: 1.0,
       traitInfluenceModifier: 1.0,
       // intentionally omitted: specialConditions
     };
@@ -429,7 +425,6 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
       bondingModifier: 1.0,
       stressReductionModifier: 1.0,
       streakGrowthModifier: 1.0,
-      burnoutRiskModifier: 1.0,
       traitInfluenceModifier: 1.0,
       specialConditions: {
         ageRange: [0, 9999],
@@ -445,7 +440,6 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
       bondingModifier: 1.0,
       stressReductionModifier: 1.0,
       streakGrowthModifier: 1.0,
-      burnoutRiskModifier: 1.0,
       traitInfluenceModifier: 1.0,
       specialConditions: {
         taskCategories: ['enrichment'],
@@ -487,7 +481,7 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
 
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
 // Exact per-personality config values and the bonusesApplied / specialConditionMet
-// / burnoutRisk behavioral fields not asserted by the tests above.
+// behavioral fields not asserted by the tests above.
 describe('groomPersonalityEffects — exact config & bonusesApplied (merged from legacy backend/tests, Equoria-wvuin)', () => {
   const mkGroom = personality => ({
     id: 'g',
@@ -518,7 +512,6 @@ describe('groomPersonalityEffects — exact config & bonusesApplied (merged from
     successRate: 0.85,
     traitInfluence: 1,
     streakGrowth: 1,
-    burnoutRisk: 0.1,
     modifiers: { specialty: 1.2, skillLevel: 1.1, personality: 1.2, experience: 1 },
   });
 
@@ -570,17 +563,20 @@ describe('groomPersonalityEffects — exact config & bonusesApplied (merged from
       expect(result.traitInfluence).toBe(Math.round(baseEffects().traitInfluence * 1.3));
     });
 
-    it('patient + enrichment task: category_match applied, reduced burnoutRisk', () => {
+    // Owner ruling 2026-10-22 (Equoria-0d4wa) replaced the old contract (patient
+    // lowered and high_energy raised a burnout risk): there is no burnout, so no
+    // personality produces or scales a burnoutRisk.
+    it('patient + enrichment task: category_match applied, no burnoutRisk', () => {
       const result = calculatePersonalityEffects(mkGroom('patient'), mkHorse(), 'puddle_training', baseEffects());
       expect(result.personalityEffects.bonusesApplied).toContain('category_match');
-      expect(result.burnoutRisk).toBeLessThan(baseEffects().burnoutRisk);
+      expect(result.burnoutRisk).toBeUndefined();
     });
 
-    it('high_energy: extra_trait_points (× 1.4 + 1), burnoutRisk × 1.2', () => {
+    it('high_energy: extra_trait_points (× 1.4 + 1), no burnoutRisk', () => {
       const result = calculatePersonalityEffects(mkGroom('high_energy'), mkHorse(), 'obstacle_course', baseEffects());
       expect(result.personalityEffects.bonusesApplied).toContain('extra_trait_points');
       expect(result.traitInfluence).toBe(Math.round(baseEffects().traitInfluence * 1.4) + 1);
-      expect(result.burnoutRisk).toBe(baseEffects().burnoutRisk * 1.2);
+      expect(result.burnoutRisk).toBeUndefined();
     });
 
     it('aloof: taskBonus false, specialConditionMet false, bonding × 0.8, success × 0.9', () => {

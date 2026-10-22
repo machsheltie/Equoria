@@ -65,7 +65,8 @@ beforeAll(async () => {
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
       userId: testUser.id,
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       trainingCooldown: null,
     },
   });

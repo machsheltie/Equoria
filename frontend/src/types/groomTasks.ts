@@ -7,7 +7,7 @@
  * Task categories:
  * - Enrichment (0-2 years): Epigenetic trait development and bonding
  * - Foal Grooming (1-3 years): Grooming behavior and presentation prep
- * - General Grooming (3+ years): Burnout prevention for adult horses
+ * - General Grooming (3+ years): Care and bonding for adult horses
  */
 
 export type TaskCategory = 'enrichment' | 'foal_grooming' | 'general_grooming';
@@ -220,10 +220,7 @@ export const TASK_DATA: TaskInfo[] = [
     category: 'general_grooming',
     minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
     recommendedDurationMinutes: 30,
-    effects: [
-      { label: 'Reduces burnout risk', type: 'positive' },
-      { label: 'Maintains light exercise', type: 'positive' },
-    ],
+    effects: [{ label: 'Maintains light exercise', type: 'positive' }],
     description: 'Light exercise and mental stimulation outside the stall.',
   },
   {

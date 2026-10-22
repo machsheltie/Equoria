@@ -258,6 +258,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         dateOfBirth: birthDate,
         age: calculatedAge, // CRITICAL: Training system requires age field
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {},
         epigeneticModifiers: {
           positive: ['athletic', 'focused'],

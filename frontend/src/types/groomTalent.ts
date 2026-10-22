@@ -82,8 +82,8 @@ export const TALENT_TREES: Record<string, TalentTier> = {
       {
         id: 'patience_virtue',
         name: 'Patience Virtue',
-        description: '+10% consistency, reduced burnout chance',
-        effect: { consistencyBonus: 0.1, burnoutResistance: 0.15 },
+        description: '+10% consistency',
+        effect: { consistencyBonus: 0.1 },
       },
     ],
     tier2: [

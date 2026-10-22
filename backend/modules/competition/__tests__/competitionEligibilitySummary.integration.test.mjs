@@ -62,7 +62,8 @@ async function makeHorse({ years = 7, rider = true, ...fields } = {}) {
       sex: 'Mare',
       age: years,
       dateOfBirth: competitionDateOfBirth(years),
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       userId: user.id,
       ...fields,
     },

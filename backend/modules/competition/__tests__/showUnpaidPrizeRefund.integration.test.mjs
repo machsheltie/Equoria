@@ -90,7 +90,8 @@ async function makeEntrant(money = 0) {
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: owner.id,
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       speed: 60,
       stamina: 60,
       agility: 60,

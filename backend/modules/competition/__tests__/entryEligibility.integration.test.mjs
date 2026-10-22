@@ -11,7 +11,8 @@
  *   - no double entry in one show;
  *   - R9: entering has nothing to do with XP or points, so the XP level
  *     bracket (Equoria-g8qg0) no longer refuses an entry.
- * Injured horses stay refused (unchanged; the Fair-or-better band is B7).
+ * Injured horses stay refused; so does any horse in bad health (displayed
+ * health critical, owner ruling 2026-10-22, Equoria-0d4wa) - fixtures are fed.
  *
  * Every refusal is a clear message with a stable `code`, leaves the wallet
  * untouched and creates no ShowEntry. Real HTTP (supertest on the app, auth +
@@ -101,7 +102,8 @@ async function makeHorse({ years = 7, rider = {}, assignment = {}, withRider = t
       dateOfBirth: competitionDateOfBirth(years),
       age: years,
       userId: entrant.id,
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       ...fields,
     },
     horseIds,

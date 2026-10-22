@@ -357,11 +357,13 @@ describe('AC3: Talent effects clearly explained', () => {
     expect(effectsContainer).toHaveTextContent('+5% Bonding Bonus');
   });
 
-  it('shows multiple effects for patience_virtue', () => {
+  it('shows the consistency effect for patience_virtue and no burnout', () => {
     render(<GroomTalentTree groom={level8Groom} />);
     const effectsContainer = screen.getByTestId('talent-effects-patience_virtue');
     expect(effectsContainer).toHaveTextContent('+10% Consistency Bonus');
-    expect(effectsContainer).toHaveTextContent('+15% Burnout Resistance');
+    // Owner ruling 2026-10-22 (Equoria-0d4wa): there is no burnout, so the talent
+    // no longer claims a burnout resistance (old contract: '+15% Burnout Resistance').
+    expect(effectsContainer).not.toHaveTextContent(/burnout/i);
   });
 
   it('shows personality label in panel header', () => {

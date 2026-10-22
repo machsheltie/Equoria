@@ -83,7 +83,8 @@ async function makeHorse(ownerId) {
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: ownerId,
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
     },
   });
   createdHorseIds.push(h.id);

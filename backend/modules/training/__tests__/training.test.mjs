@@ -173,6 +173,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         sex: 'Mare',
         dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {}, // No previous training
         epigeneticModifiers: {
           positive: [],
@@ -195,6 +196,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         sex: 'Colt',
         dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {},
         epigeneticModifiers: {
           positive: [],
@@ -217,6 +219,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         sex: 'Stallion',
         dateOfBirth: fiveYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         disciplineScores: {
           Racing: 10, // Has some previous training
         },
@@ -334,6 +337,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           sex: 'Mare',
           dateOfBirth: fourYearsAgoForScore, // FIXED: Use calculated date
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: {},
           epigeneticModifiers: {
             positive: [],
@@ -395,6 +399,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           sex: 'Stallion',
           dateOfBirth: fiveYearsAgoForAccumulation, // FIXED: Use calculated date
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: {},
           epigeneticModifiers: {
             positive: [],
@@ -417,6 +422,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           sex: 'Mare',
           dateOfBirth: sixYearsAgoForAccumulation2, // FIXED: Use calculated date
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: { 'Cross Country': 10 }, // Already has some training
           epigeneticModifiers: {
             positive: [],
@@ -498,6 +504,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           sex: 'Mare',
           dateOfBirth: sixYearsAgoForOldTrained, // FIXED: Use calculated date
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: { Racing: 15 },
           epigeneticModifiers: {
             positive: [],
@@ -566,6 +573,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           sex: 'Mare',
           dateOfBirth: fourYearsAgoForXp, // FIXED: Use calculated date
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: {},
           epigeneticModifiers: {
             positive: [],
@@ -628,6 +636,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           sex: 'Stallion',
           dateOfBirth: fiveYearsAgoForLog, // FIXED: Use calculated date
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: {},
           epigeneticModifiers: {
             positive: [],
@@ -720,6 +729,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
           sex: 'Mare',
           dateOfBirth: fourYearsAgoForDate, // FIXED: Use calculated date
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           disciplineScores: {},
           epigeneticModifiers: {
             positive: [],

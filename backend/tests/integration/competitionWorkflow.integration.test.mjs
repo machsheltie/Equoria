@@ -263,6 +263,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
           sex: 'Stallion',
           dateOfBirth: competitionDateOfBirth(5),
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           // Equoria-kacla: the canonical cron `executeClosedShows` scores
           // off the raw stat columns (speed/stamina/agility/precision/
           // boldness), NOT disciplineScores (which the removed legacy
@@ -316,6 +317,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       minAge: 3,
       minDisciplineScore: 50,
       healthStatus: 'Good',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
     };
 
     expect(testShow.discipline).toBe('Racing');

@@ -279,7 +279,9 @@ describe('GroomTaskPanel — AC3: Task duration and effects displayed', () => {
     render(<GroomTaskPanel horseAge={4} />);
     const card = screen.getByTestId('task-card-hand-walking');
     expect(card).toHaveTextContent('30m');
-    expect(card).toHaveTextContent('Reduces burnout risk');
+    expect(card).toHaveTextContent('Maintains light exercise');
+    // Owner ruling 2026-10-22 (Equoria-0d4wa): no burnout (old contract: 'Reduces burnout risk').
+    expect(card).not.toHaveTextContent(/burnout/i);
   });
 });
 

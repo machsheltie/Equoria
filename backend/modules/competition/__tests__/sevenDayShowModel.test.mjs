@@ -79,7 +79,8 @@ beforeAll(async () => {
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: entrant.id,
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
     },
   });
   entrantHorseId = entrantHorse.id;
@@ -93,7 +94,8 @@ beforeAll(async () => {
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
       userId: creator.id,
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
     },
   });
   creatorHorseId = creatorHorse.id;
@@ -400,7 +402,8 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
           dateOfBirth: competitionDateOfBirth(),
           age: 7,
           userId: entrant.id,
-          healthStatus: 'healthy',
+          healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         },
       });
       // Track for fail-loud cleanup in this describe's afterAll (Equoria-1ohys).

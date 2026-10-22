@@ -124,6 +124,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         agility: 70,
         balance: 60,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         epigeneticModifiers: {
           positive: ['fast', 'athletic', 'focused'],
           negative: [],

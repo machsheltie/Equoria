@@ -68,6 +68,7 @@ async function makeHorse(user, { years = 7, rider = true, ...fields } = {}) {
       age: years,
       dateOfBirth: competitionDateOfBirth(years),
       healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       // Training cooldown running, so no `train` action clutters the list.
       trainingCooldown: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       userId: user.id,

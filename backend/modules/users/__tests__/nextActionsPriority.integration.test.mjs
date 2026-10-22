@@ -181,6 +181,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
         age: 5,
         dateOfBirth: competitionDateOfBirth(5),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         horseXp: xpForLevel(1500),
         trainingCooldown: cooldownEndedAt,
         lastBredDate: gameCalendarDate(now, -40), // a stallion: never on cooldown
@@ -216,6 +217,7 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
         age: 0,
         dateOfBirth: gameCalendarDate(now, -3),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         userId: user.id,
       },
       horseIds,
@@ -301,6 +303,7 @@ describe('GET /api/v1/next-actions — check-results off viewedAt (Equoria-oey96
         age: 5,
         dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         // No rider → no compete pollution (B9). Rig → no breed.
         horseXp: xpForLevel(1900),
         // Cooldown still running → no train, so check-results stands alone.
@@ -368,6 +371,7 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
         age: 5,
         dateOfBirth: competitionDateOfBirth(5),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         horseXp: xpForLevel(1600),
         userId: posUser.id,
       },
@@ -385,6 +389,7 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
         age: 5,
         dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         horseXp: xpForLevel(1700),
         userId: negUser.id,
       },
@@ -434,6 +439,7 @@ describe('GET /api/v1/next-actions — Stallion breed, never on cooldown (Equori
         age: 5,
         dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         horseXp: xpForLevel(1750), // unreachable level → no compete pollution
         lastBredDate: gameCalendarDate(now, -40),
         userId: offUser.id,
@@ -452,6 +458,7 @@ describe('GET /api/v1/next-actions — Stallion breed, never on cooldown (Equori
         age: 5,
         dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         horseXp: xpForLevel(1750),
         lastBredDate: gameCalendarDate(now, -5),
         userId: onUser.id,
@@ -500,6 +507,7 @@ describe('GET /api/v1/next-actions — caps at 10 actions (Equoria-oey96.28)', (
           age: 5,
           dateOfBirth: gameCalendarDate(now, -5 * 365),
           healthStatus: 'Excellent',
+          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
           horseXp: xpForLevel(1800),
           userId: user.id,
         },

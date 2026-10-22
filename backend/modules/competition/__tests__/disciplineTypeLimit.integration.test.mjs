@@ -98,7 +98,8 @@ async function makeHorse() {
       sex: 'Mare',
       age: 7,
       dateOfBirth: competitionDateOfBirth(7),
-      healthStatus: 'healthy',
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       userId: user.id,
     },
     horseIds,

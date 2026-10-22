@@ -58,7 +58,7 @@ export const LEGACY_PERKS = {
       id: 'patience_mastery',
       name: 'Patience Mastery',
       description: 'Exceptional patience with difficult horses',
-      effect: { burnoutResistance: 0.2, consistencyBonus: 0.1 },
+      effect: { consistencyBonus: 0.1 },
     },
   ],
   energetic: [
