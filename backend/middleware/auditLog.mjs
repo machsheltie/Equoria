@@ -299,7 +299,7 @@ export function detectSuspiciousPatterns(userActivity) {
   const failedRequests = userActivity.filter(entry => entry.statusCode >= 400);
   if (failedRequests.length >= 10) {
     patterns.push({
-      type: 'excessive_failures',
+      type: 'excessiveFailures',
       count: failedRequests.length,
       severity: 'high',
     });
@@ -311,7 +311,7 @@ export function detectSuspiciousPatterns(userActivity) {
   );
   if (rapidRequests.length >= 20) {
     patterns.push({
-      type: 'rapid_fire_requests',
+      type: 'rapidFireRequests',
       count: rapidRequests.length,
       severity: 'medium',
     });
@@ -321,7 +321,7 @@ export function detectSuspiciousPatterns(userActivity) {
   const uniqueIPs = new Set(userActivity.map(entry => entry.ip));
   if (uniqueIPs.size >= 3) {
     patterns.push({
-      type: 'multiple_ip_addresses',
+      type: 'multipleIpAddresses',
       ipCount: uniqueIPs.size,
       ips: Array.from(uniqueIPs),
       severity: 'high',
@@ -330,11 +330,11 @@ export function detectSuspiciousPatterns(userActivity) {
 
   // Pattern 4: Unusual operation patterns
   const sensitiveOps = userActivity.filter(entry =>
-    ['breeding', 'training', 'transaction', 'stat_modification'].includes(entry.operationType),
+    ['breeding', 'training', 'transaction', 'statModification'].includes(entry.operationType),
   );
   if (sensitiveOps.length >= 15) {
     patterns.push({
-      type: 'excessive_sensitive_operations',
+      type: 'excessiveSensitiveOperations',
       count: sensitiveOps.length,
       severity: 'medium',
     });
@@ -356,7 +356,7 @@ export function detectSuspiciousPatterns(userActivity) {
 
   if (hasErrorThenSuccess) {
     patterns.push({
-      type: 'error_then_success_pattern',
+      type: 'errorThenSuccessPattern',
       severity: 'high',
     });
   }
@@ -428,13 +428,13 @@ const SENSITIVE_AUDIT_PREFIXES = [
   { match: p => p.startsWith('auth'), action: 'authentication' },
   // GDPR self-service account ops (Equoria-s3rf): data export + erasure are
   // among the highest-sensitivity operations a user can perform.
-  { match: p => p.startsWith('account'), action: 'account_operation' },
+  { match: p => p.startsWith('account'), action: 'accountOperation' },
   { match: p => p.startsWith('bank'), action: 'transaction' },
   { match: p => p.startsWith('transactions'), action: 'transaction' },
   { match: p => p.startsWith('breeding') || p.startsWith('breed'), action: 'breeding' },
   { match: p => p.startsWith('training'), action: 'training' },
-  { match: p => p.startsWith('admin'), action: 'admin_operation' },
-  { match: p => p.startsWith('grooms') || p.startsWith('groom-'), action: 'groom_operation' },
+  { match: p => p.startsWith('admin'), action: 'adminOperation' },
+  { match: p => p.startsWith('grooms') || p.startsWith('groom-'), action: 'groomOperation' },
 ];
 
 /**
@@ -530,9 +530,9 @@ export const globalAuditTrail = (req, res, next) => {
 export const auditBreeding = auditLog('breeding', 'high');
 export const auditTraining = auditLog('training', 'medium');
 export const auditTransaction = auditLog('transaction', 'high');
-export const auditStatModification = auditLog('stat_modification', 'high');
+export const auditStatModification = auditLog('statModification', 'high');
 export const auditAuth = auditLog('authentication', 'high');
-export const auditAdmin = auditLog('admin_operation', 'high');
+export const auditAdmin = auditLog('adminOperation', 'high');
 
 /**
  * Clean up old cache entries periodically

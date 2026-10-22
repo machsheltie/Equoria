@@ -54,14 +54,14 @@ describe("GameNotifRow — Steward's Office bells", () => {
 
   it.each([
     ['open', 'Ticket #7 is now open.'],
-    ['in_progress', 'Ticket #7 is now in progress.'],
+    ['inProgress', 'Ticket #7 is now in progress.'],
     ['resolved', 'Ticket #7 is now resolved.'],
     ['declined', 'Ticket #7 is now declined.'],
   ])('says the new status %s in plain words', (status, sentence) => {
     const row = renderRow(notif('staff_ticket_update', { ticketId: 7, status }));
 
     expect(row).toHaveTextContent(sentence);
-    expect(row).not.toHaveTextContent('in_progress');
+    expect(row).not.toHaveTextContent('inProgress');
     expectOfficeLink(row);
   });
 

@@ -175,7 +175,7 @@ export async function settledTicketEmails(ticketId, timeoutMs = 15_000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const rows = await prisma.emailOutbox.findMany({
-      where: { idempotencyKey: { startsWith: `staff_ticket:${ticketId}:` } },
+      where: { idempotencyKey: { startsWith: `staffTicket:${ticketId}:` } },
       orderBy: { id: 'asc' },
     });
     const inFlight = rows.some(
@@ -203,7 +203,7 @@ export async function removeTicketEmails(ticketWhere) {
     await settledTicketEmails(ticket.id);
   }
   await prisma.emailOutbox.deleteMany({
-    where: { OR: tickets.map(t => ({ idempotencyKey: { startsWith: `staff_ticket:${t.id}:` } })) },
+    where: { OR: tickets.map(t => ({ idempotencyKey: { startsWith: `staffTicket:${t.id}:` } })) },
   });
 }
 

@@ -17,7 +17,7 @@ import {
 import { decodeCursor } from '../services/staffTicketCursor.mjs';
 
 const TARGET_TYPES = new Set(['user', 'post', 'horse', 'show']);
-const STATUSES = new Set(['open', 'in_progress', 'resolved', 'declined']);
+const STATUSES = new Set(['open', 'inProgress', 'resolved', 'declined']);
 
 const invalid = (res, message) => res.status(400).json({ success: false, message });
 const missing = res => res.status(404).json({ success: false, message: 'Ticket not found' });
@@ -184,7 +184,7 @@ export async function changeTicketStatus(req, res, next) {
     }
     const status = req.body?.status;
     if (typeof status !== 'string' || !STATUSES.has(status)) {
-      return invalid(res, 'status must be open, in_progress, resolved or declined');
+      return invalid(res, 'status must be open, inProgress, resolved or declined');
     }
     return respond(res, await setStatus(req.staff, id, status));
   } catch (error) {

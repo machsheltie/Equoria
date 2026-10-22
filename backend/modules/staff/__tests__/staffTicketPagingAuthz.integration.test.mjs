@@ -63,7 +63,7 @@ const newestFirst = (a, b) => b.createdAt - a.createdAt || b.id - a.id;
 const oldestFirst = (a, b) => -newestFirst(a, b);
 
 /** `count` tickets for `filer`; about seven share each timestamp, ids out of step with time. */
-async function seedTickets(filer, count, status = i => (i % 3 === 0 ? 'open' : 'in_progress')) {
+async function seedTickets(filer, count, status = i => (i % 3 === 0 ? 'open' : 'inProgress')) {
   const tag = `paging-${uid()}`;
   await prisma.staffTicket.createMany({
     data: Array.from({ length: count }, (_, i) => ({
@@ -131,12 +131,12 @@ describe('The ticket list pages past 100 tickets', () => {
   });
 
   it('keeps the status filter on every page', async () => {
-    const { seen, pages } = await allPages(mod, modDevice, 'in_progress');
+    const { seen, pages } = await allPages(mod, modDevice, 'inProgress');
 
-    const expected = mine.filter(t => t.status === 'in_progress');
+    const expected = mine.filter(t => t.status === 'inProgress');
     expect(expected.length).toBeGreaterThan(LIST_PAGE);
     expect(pages).toBe(2);
-    expect(seen.every(t => t.status === 'in_progress')).toBe(true);
+    expect(seen.every(t => t.status === 'inProgress')).toBe(true);
     expect(idsOf(seen).sort((a, b) => a - b)).toEqual(idsOf(expected).sort((a, b) => a - b));
   });
 

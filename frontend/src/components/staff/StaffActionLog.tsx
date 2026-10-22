@@ -31,7 +31,7 @@ import StaffSection from './StaffSection';
 
 const STATUS_WORDS: Record<string, string> = {
   open: 'open',
-  in_progress: 'in progress',
+  inProgress: 'in progress',
   resolved: 'resolved',
   declined: 'declined',
 };

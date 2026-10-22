@@ -2091,7 +2091,7 @@ model AuditLog {
   /// (e.g. failed login). NOT a Prisma relation by design (see above).
   userId       String?
   /// Operation classifier, e.g. 'authentication', 'transaction', 'breeding',
-  /// 'training', 'admin_operation', or 'mutation' for the generic global path.
+  /// 'training', 'adminOperation', or 'mutation' for the generic global path.
   action       String
   /// Logical resource touched, derived from the request path's first segment.
   resource     String?
@@ -2208,7 +2208,7 @@ model StaffTicket {
   targetId   String
   category   String
   note       String
-  status     String             @default("open") // open | in_progress | resolved | declined
+  status     String             @default("open") // open | inProgress | resolved | declined
   replies    StaffTicketReply[]
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
@@ -2238,11 +2238,11 @@ model StaffTicketReply {
 /// last attempt. A recipient's rows go when the account is deleted.
 model EmailOutbox {
   id             Int       @id @default(autoincrement())
-  /// One row per event and recipient, e.g. "staff_ticket:<ticketId>:<userId>".
+  /// One row per event and recipient, e.g. "staffTicket:<ticketId>:<userId>".
   idempotencyKey String    @unique
   recipientId    String
   recipient      User      @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  templateKey    String // staff_ticket
+  templateKey    String // staffTicket
   payload        Json
   status         String    @default("pending") // pending | sending | sent | failed | cancelled
   attempts       Int       @default(0)

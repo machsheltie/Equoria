@@ -99,7 +99,7 @@ describe('A filer who is no longer a moderator', () => {
   it('still gets bells while a moderator', async () => {
     const { mod, ticket } = await filedTicket();
 
-    await post(`${TICKETS}/${ticket.id}/status`, admin, { status: 'in_progress' }, adminDevice);
+    await post(`${TICKETS}/${ticket.id}/status`, admin, { status: 'inProgress' }, adminDevice);
     await post(`${TICKETS}/${ticket.id}/replies`, admin, { body: 'Looking.' }, adminDevice);
 
     expect(await staffBells(mod.id)).toHaveLength(2);
@@ -131,7 +131,7 @@ describe('A filer who is no longer a moderator', () => {
 describe('Demotion', () => {
   it("deletes the account's unread staff bells and keeps read ones and other notifications", async () => {
     const { mod, ticket } = await filedTicket();
-    await post(`${TICKETS}/${ticket.id}/status`, admin, { status: 'in_progress' }, adminDevice);
+    await post(`${TICKETS}/${ticket.id}/status`, admin, { status: 'inProgress' }, adminDevice);
     await post(`${TICKETS}/${ticket.id}/replies`, admin, { body: 'Looking.' }, adminDevice);
     const unread = await staffBells(mod.id);
     expect(unread).toHaveLength(2);

@@ -29,7 +29,7 @@ export const FORMER_STEWARD = 'a former steward';
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   open: 'Open',
-  in_progress: 'In progress',
+  inProgress: 'In progress',
   resolved: 'Resolved',
   declined: 'Declined',
 };

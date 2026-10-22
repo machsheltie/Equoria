@@ -34,7 +34,7 @@ const BACKOFF_MS = [60 * 1000, 5 * 60 * 1000, 15 * 60 * 1000, 60 * 60 * 1000];
 const MAX_PER_RUN = 50;
 const ERROR_TEXT_LIMIT = 1000;
 
-const TICKET_TEMPLATE = 'staff_ticket';
+const TICKET_TEMPLATE = 'staffTicket';
 
 export const ticketEmailKey = (ticketId, recipientId) =>
   `${TICKET_TEMPLATE}:${ticketId}:${recipientId}`;

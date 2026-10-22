@@ -254,7 +254,7 @@ const GroomRetiredRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
  */
 const TICKET_STATUS_WORDS: Record<string, string> = {
   open: 'open',
-  in_progress: 'in progress',
+  inProgress: 'in progress',
   resolved: 'resolved',
   declined: 'declined',
 };

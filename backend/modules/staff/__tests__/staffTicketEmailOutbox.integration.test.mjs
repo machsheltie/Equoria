@@ -177,7 +177,7 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
 
     expect(row).toMatchObject({
       recipientId: admin.id,
-      templateKey: 'staff_ticket',
+      templateKey: 'staffTicket',
       status: 'pending',
       attempts: 1,
       sentAt: null,
@@ -295,7 +295,7 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
         expect(googleSockets.size).toBeGreaterThan(0);
         const ticketRows = () =>
           prisma.emailOutbox.findMany({
-            where: { idempotencyKey: { startsWith: `staff_ticket:${res.body.ticket.id}:` } },
+            where: { idempotencyKey: { startsWith: `staffTicket:${res.body.ticket.id}:` } },
           });
         expect((await ticketRows()).filter(r => r.status === 'sending')).toHaveLength(1);
 
@@ -372,7 +372,7 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
         data: {
           idempotencyKey: `retention:${tag}:${name}`,
           recipientId: admin.id,
-          templateKey: 'staff_ticket',
+          templateKey: 'staffTicket',
           payload: { ticketId: 1, category: 'retention', filedBy: 'nobody' },
           status,
           updatedAt: new Date(updatedAt),
@@ -424,7 +424,7 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
       data: {
         idempotencyKey: key,
         recipientId: admin.id,
-        templateKey: 'staff_ticket',
+        templateKey: 'staffTicket',
         payload: { ticketId: 1, category: 'retention', filedBy: 'nobody' },
         status: 'sent',
         updatedAt: new Date(Date.now() - SENT_RETENTION_MS - 60 * 60 * 1000),

@@ -295,100 +295,100 @@ describe('detectSuspiciousPatterns', () => {
     expect(detectSuspiciousPatterns(activity)).toEqual([]);
   });
 
-  // Pattern 1: excessive_failures (>= 10 failed requests)
-  it('detects excessive_failures when >= 10 failed requests', () => {
+  // Pattern 1: excessiveFailures (>= 10 failed requests)
+  it('detects excessiveFailures when >= 10 failed requests', () => {
     const activity = Array.from({ length: 10 }, () => makeActivity({ statusCode: 404 }));
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'excessive_failures')).toBe(true);
+    expect(patterns.some(p => p.type === 'excessiveFailures')).toBe(true);
   });
 
-  it('does NOT detect excessive_failures when < 10 failed requests', () => {
+  it('does NOT detect excessiveFailures when < 10 failed requests', () => {
     const activity = Array.from({ length: 9 }, () => makeActivity({ statusCode: 401 }));
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'excessive_failures')).toBe(false);
+    expect(patterns.some(p => p.type === 'excessiveFailures')).toBe(false);
   });
 
-  // Pattern 2: rapid_fire_requests (>= 20 in last 30 seconds)
-  it('detects rapid_fire_requests when >= 20 recent entries', () => {
+  // Pattern 2: rapidFireRequests (>= 20 in last 30 seconds)
+  it('detects rapidFireRequests when >= 20 recent entries', () => {
     const now = Date.now();
     const activity = Array.from({ length: 20 }, () => makeActivity({ timestamp: now - 1000 }));
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'rapid_fire_requests')).toBe(true);
+    expect(patterns.some(p => p.type === 'rapidFireRequests')).toBe(true);
   });
 
-  it('does NOT detect rapid_fire_requests when < 20 recent entries', () => {
+  it('does NOT detect rapidFireRequests when < 20 recent entries', () => {
     const now = Date.now();
     const activity = Array.from({ length: 10 }, () => makeActivity({ timestamp: now - 1000 }));
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'rapid_fire_requests')).toBe(false);
+    expect(patterns.some(p => p.type === 'rapidFireRequests')).toBe(false);
   });
 
   it('does NOT flag old rapid requests (> 30s ago)', () => {
     const old = makeActivity({ timestamp: Date.now() - 31000 });
     const activity = Array.from({ length: 20 }, () => old);
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'rapid_fire_requests')).toBe(false);
+    expect(patterns.some(p => p.type === 'rapidFireRequests')).toBe(false);
   });
 
-  // Pattern 3: multiple_ip_addresses (>= 3 unique IPs)
-  it('detects multiple_ip_addresses when >= 3 unique IPs', () => {
+  // Pattern 3: multipleIpAddresses (>= 3 unique IPs)
+  it('detects multipleIpAddresses when >= 3 unique IPs', () => {
     const activity = [
       makeActivity({ ip: '1.1.1.1' }),
       makeActivity({ ip: '2.2.2.2' }),
       makeActivity({ ip: '3.3.3.3' }),
     ];
     const patterns = detectSuspiciousPatterns(activity);
-    const ipPat = patterns.find(p => p.type === 'multiple_ip_addresses');
+    const ipPat = patterns.find(p => p.type === 'multipleIpAddresses');
     expect(ipPat).toBeDefined();
     expect(ipPat.ipCount).toBe(3);
   });
 
-  it('does NOT detect multiple_ip_addresses when < 3 unique IPs', () => {
+  it('does NOT detect multipleIpAddresses when < 3 unique IPs', () => {
     const activity = [
       makeActivity({ ip: '1.1.1.1' }),
       makeActivity({ ip: '1.1.1.1' }),
       makeActivity({ ip: '2.2.2.2' }),
     ];
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'multiple_ip_addresses')).toBe(false);
+    expect(patterns.some(p => p.type === 'multipleIpAddresses')).toBe(false);
   });
 
-  // Pattern 4: excessive_sensitive_operations (>= 15)
-  it('detects excessive_sensitive_operations when >= 15 sensitive ops', () => {
+  // Pattern 4: excessiveSensitiveOperations (>= 15)
+  it('detects excessiveSensitiveOperations when >= 15 sensitive ops', () => {
     const activity = Array.from({ length: 15 }, () => makeActivity({ operationType: 'breeding' }));
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'excessive_sensitive_operations')).toBe(true);
+    expect(patterns.some(p => p.type === 'excessiveSensitiveOperations')).toBe(true);
   });
 
-  it('does NOT detect excessive_sensitive_operations when < 15', () => {
+  it('does NOT detect excessiveSensitiveOperations when < 15', () => {
     const activity = Array.from({ length: 14 }, () => makeActivity({ operationType: 'training' }));
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'excessive_sensitive_operations')).toBe(false);
+    expect(patterns.some(p => p.type === 'excessiveSensitiveOperations')).toBe(false);
   });
 
   it('counts training as a sensitive operation type', () => {
     const activity = Array.from({ length: 15 }, () => makeActivity({ operationType: 'training' }));
-    expect(detectSuspiciousPatterns(activity).some(p => p.type === 'excessive_sensitive_operations')).toBe(true);
+    expect(detectSuspiciousPatterns(activity).some(p => p.type === 'excessiveSensitiveOperations')).toBe(true);
   });
 
   it('counts transaction as a sensitive operation type', () => {
     const activity = Array.from({ length: 15 }, () => makeActivity({ operationType: 'transaction' }));
-    expect(detectSuspiciousPatterns(activity).some(p => p.type === 'excessive_sensitive_operations')).toBe(true);
+    expect(detectSuspiciousPatterns(activity).some(p => p.type === 'excessiveSensitiveOperations')).toBe(true);
   });
 
   it('does NOT count view as a sensitive operation type', () => {
     const activity = Array.from({ length: 20 }, () => makeActivity({ operationType: 'view' }));
-    expect(detectSuspiciousPatterns(activity).some(p => p.type === 'excessive_sensitive_operations')).toBe(false);
+    expect(detectSuspiciousPatterns(activity).some(p => p.type === 'excessiveSensitiveOperations')).toBe(false);
   });
 
-  // Pattern 5: error_then_success_pattern
-  it('detects error_then_success_pattern in recent entries', () => {
+  // Pattern 5: errorThenSuccessPattern
+  it('detects errorThenSuccessPattern in recent entries', () => {
     const activity = [
       makeActivity({ statusCode: 401, operationType: 'authentication' }),
       makeActivity({ statusCode: 200, operationType: 'authentication' }),
     ];
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'error_then_success_pattern')).toBe(true);
+    expect(patterns.some(p => p.type === 'errorThenSuccessPattern')).toBe(true);
   });
 
   it('does NOT detect error_then_success when operation types differ', () => {
@@ -397,7 +397,7 @@ describe('detectSuspiciousPatterns', () => {
       makeActivity({ statusCode: 200, operationType: 'view' }),
     ];
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'error_then_success_pattern')).toBe(false);
+    expect(patterns.some(p => p.type === 'errorThenSuccessPattern')).toBe(false);
   });
 
   it('does NOT detect error_then_success when both succeed', () => {
@@ -406,7 +406,7 @@ describe('detectSuspiciousPatterns', () => {
       makeActivity({ statusCode: 200, operationType: 'authentication' }),
     ];
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'error_then_success_pattern')).toBe(false);
+    expect(patterns.some(p => p.type === 'errorThenSuccessPattern')).toBe(false);
   });
 
   it('does NOT detect error_then_success when both fail', () => {
@@ -415,13 +415,13 @@ describe('detectSuspiciousPatterns', () => {
       makeActivity({ statusCode: 403, operationType: 'authentication' }),
     ];
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'error_then_success_pattern')).toBe(false);
+    expect(patterns.some(p => p.type === 'errorThenSuccessPattern')).toBe(false);
   });
 
   it('index===0 branch: single-entry activity never triggers error_then_success', () => {
     const activity = [makeActivity({ statusCode: 401, operationType: 'authentication' })];
     const patterns = detectSuspiciousPatterns(activity);
-    expect(patterns.some(p => p.type === 'error_then_success_pattern')).toBe(false);
+    expect(patterns.some(p => p.type === 'errorThenSuccessPattern')).toBe(false);
   });
 
   it('returns multiple pattern types simultaneously', () => {

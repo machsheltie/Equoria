@@ -25,7 +25,7 @@ import {
 } from './helpers/staffFixtures.mjs';
 
 const TICKETS = '/api/v1/staff/tickets';
-const STATUSES = ['open', 'in_progress', 'resolved', 'declined'];
+const STATUSES = ['open', 'inProgress', 'resolved', 'declined'];
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stticketst');

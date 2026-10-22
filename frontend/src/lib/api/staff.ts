@@ -72,7 +72,7 @@ export interface StaffMember {
 }
 
 export type TicketTargetType = 'user' | 'post' | 'horse' | 'show';
-export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'declined';
+export type TicketStatus = 'open' | 'inProgress' | 'resolved' | 'declined';
 
 export interface StaffTicket {
   id: number;

@@ -236,7 +236,7 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
     // auditLog reads process.env at CALL time, so the env flip still works.
     const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const mw = auditLog('admin_operation', 'high');
+      const mw = auditLog('adminOperation', 'high');
       const req = makeReq({ user: null });
       const res = makeRes({
         statusCode: 200,
@@ -362,7 +362,7 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
 // repeatedly with the same userId so the cache accumulates.
 
 describe('auditLog suspicious-activity threshold triggers', () => {
-  it('does not throw when accumulated activity triggers excessive_failures pattern', async () => {
+  it('does not throw when accumulated activity triggers excessiveFailures pattern', async () => {
     // resetModules (2026-08-18 hygiene set) re-executes the module graph on
     // every dynamic import — importing under the flipped env would trip
     // config.mjs's production secret guard. Import under test env first;
@@ -371,7 +371,7 @@ describe('auditLog suspicious-activity threshold triggers', () => {
     await withProductionEnv(async () => {
       const userId = `rr7-excessive-${Date.now()}`;
 
-      // Drive 11 failure responses → triggers pattern 1 (excessive_failures
+      // Drive 11 failure responses → triggers pattern 1 (excessiveFailures
       // requires >=10 failures).
       for (let i = 0; i < 11; i += 1) {
         const mw = auditLog('breeding', 'medium');
@@ -391,7 +391,7 @@ describe('auditLog suspicious-activity threshold triggers', () => {
     });
   });
 
-  it('does not throw when accumulated activity triggers multiple_ip_addresses pattern', async () => {
+  it('does not throw when accumulated activity triggers multipleIpAddresses pattern', async () => {
     // resetModules (2026-08-18 hygiene set) re-executes the module graph on
     // every dynamic import — importing under the flipped env would trip
     // config.mjs's production secret guard. Import under test env first;

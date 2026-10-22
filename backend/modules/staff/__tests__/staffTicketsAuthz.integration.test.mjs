@@ -207,7 +207,7 @@ describe('Filing a ticket', () => {
     // The email is queued with the ticket and delivered from the outbox.
     const queued = (await settledTicketEmails(ticket.id)).filter(row => row.recipientId === admin.id);
     expect(queued).toHaveLength(1);
-    expect(queued[0]).toMatchObject({ templateKey: 'staff_ticket', status: 'sent', attempts: 1 });
+    expect(queued[0]).toMatchObject({ templateKey: 'staffTicket', status: 'sent', attempts: 1 });
     const emails = ticketEmailsFor(admin.email);
     expect(emails).toHaveLength(1);
     expect(emails[0].subject).toBe('A steward has filed a ticket');
@@ -260,7 +260,7 @@ describe('Filing a ticket', () => {
       reached = silentSockets.size;
       sending = await prisma.emailOutbox.count({
         where: {
-          idempotencyKey: { startsWith: `staff_ticket:${filed.body.ticket.id}:` },
+          idempotencyKey: { startsWith: `staffTicket:${filed.body.ticket.id}:` },
           recipientId: admin.id,
           status: 'sending',
         },
@@ -498,15 +498,15 @@ describe('Status changes', () => {
     const { admin, mod, adminDevice, modDevice } = await fixtureStaff();
     const ticket = (await post(TICKETS, mod, goodTicket(), modDevice)).body.ticket;
 
-    const res = await post(`${TICKETS}/${ticket.id}/status`, admin, { status: 'in_progress' }, adminDevice);
+    const res = await post(`${TICKETS}/${ticket.id}/status`, admin, { status: 'inProgress' }, adminDevice);
     expect(res.status).toBe(200);
-    expect(res.body.ticket.status).toBe('in_progress');
+    expect(res.body.ticket.status).toBe('inProgress');
     const second = await post(`${TICKETS}/${ticket.id}/status`, admin, { status: 'resolved' }, adminDevice);
     expect(second.body.ticket.status).toBe('resolved');
 
     const filerBells = await bells(mod.id, 'staff_ticket_update');
     expect(filerBells.map(b => b.payload)).toEqual([
-      { ticketId: ticket.id, status: 'in_progress' },
+      { ticketId: ticket.id, status: 'inProgress' },
       { ticketId: ticket.id, status: 'resolved' },
     ]);
 
@@ -518,7 +518,7 @@ describe('Status changes', () => {
     expect(log[1]).toMatchObject({
       targetType: 'ticket',
       targetId: String(ticket.id),
-      before: { status: 'in_progress' },
+      before: { status: 'inProgress' },
       after: { status: 'resolved' },
     });
   });
