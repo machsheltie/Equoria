@@ -27,17 +27,17 @@ import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import { createBarrierClient, openRowLockBarrier, waitForBlockedSessions } from '../helpers/rowLockBarrier.mjs';
 
-const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6p398-15-settings';
+const origin = 'http://localhost:3000';
+const fixturePrefix = 'TestFixture-6p398-15-settings';
 
 const barrierClient = createBarrierClient();
 
 async function send(method, endpoint, jwt, body) {
-  const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${jwt}`] });
+  const csrf = await fetchCsrf(app, { origin, extraCookies: [`accessToken=${jwt}`] });
   const agent = request(app);
   return agent[method](endpoint)
     .set('Authorization', `Bearer ${jwt}`)
-    .set('Origin', ORIGIN)
+    .set('Origin', origin)
     .set('Cookie', csrf.cookieHeader)
     .set('X-CSRF-Token', csrf.csrfToken)
     .send(body);
@@ -52,8 +52,8 @@ describe('settings: concurrent writes to the same nested key both survive (Equor
     const tag = randomBytes(6).toString('hex');
     user = await prisma.user.create({
       data: {
-        email: `${FIXTURE_PREFIX}-${tag}@example.com`,
-        username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+        email: `${fixturePrefix}-${tag}@example.com`,
+        username: `${fixturePrefix}-${tag}`.slice(0, 30),
         password: 'irrelevant-hash',
         firstName: 'Same',
         lastName: 'Key',

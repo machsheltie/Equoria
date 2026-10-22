@@ -71,6 +71,11 @@ function mergeTackItem(rawTack, item) {
 
 // ── Decoration return helpers (Equoria-6p398.19) ──────────────────────────────
 
+/** The catalogue entry for an item id, or undefined. */
+function catalogItem(itemId) {
+  return TACK_INVENTORY.find(item => item.id === itemId);
+}
+
 function decorationError(status, message) {
   return Object.assign(new Error(message), { decorationStatus: status });
 }
@@ -113,7 +118,7 @@ function returnDecorationToInventory(inventory, horseId, itemId) {
   for (let suffix = 2; taken.has(id); suffix += 1) {
     id = `${horseId}-${itemId}-${suffix}`;
   }
-  const definition = TACK_INVENTORY.find(item => item.id === itemId);
+  const definition = catalogItem(itemId);
   return [
     ...next,
     {
@@ -166,7 +171,7 @@ export async function purchaseTackItem(req, res) {
     const userId = req.user.id;
     const { horseId, itemId } = req.body;
 
-    const item = TACK_INVENTORY.find(i => i.id === itemId);
+    const item = catalogItem(itemId);
     if (!item) {
       return res
         .status(404)

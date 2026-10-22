@@ -28,23 +28,23 @@ import {
   openRowLockBarrier,
   waitForBlockedSessions,
 } from '../../../__tests__/helpers/rowLockBarrier.mjs';
-import { CRAFTING_RECIPES } from '../data/craftingRecipes.mjs';
+import { findRecipe } from '../data/craftingRecipes.mjs';
 
-const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-cmvmy-craft';
-const RECIPE = CRAFTING_RECIPES.find(r => r.id === 'basic-halter');
+const origin = 'http://localhost:3000';
+const fixturePrefix = 'TestFixture-cmvmy-craft';
+const recipe = findRecipe('basic-halter');
 
 const barrierClient = createBarrierClient();
 
 async function craft(jwt) {
-  const c = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${jwt}`] });
+  const c = await fetchCsrf(app, { origin, extraCookies: [`accessToken=${jwt}`] });
   return request(app)
     .post('/api/v1/crafting/craft')
     .set('Authorization', `Bearer ${jwt}`)
-    .set('Origin', ORIGIN)
+    .set('Origin', origin)
     .set('Cookie', c.cookieHeader)
     .set('X-CSRF-Token', c.csrfToken)
-    .send({ recipeId: RECIPE.id });
+    .send({ recipeId: recipe.id });
 }
 
 describe('craftItem — one material spend can never yield two crafted items (Equoria-cmvmy)', () => {
@@ -56,12 +56,12 @@ describe('craftItem — one material spend can never yield two crafted items (Eq
     const tag = randomBytes(6).toString('hex');
     user = await prisma.user.create({
       data: {
-        email: `${FIXTURE_PREFIX}-${tag}@example.com`,
-        username: `${FIXTURE_PREFIX}-${tag}`,
+        email: `${fixturePrefix}-${tag}@example.com`,
+        username: `${fixturePrefix}-${tag}`,
         password: 'irrelevant-hash',
         firstName: 'Craft',
         lastName: 'Materials',
-        money: RECIPE.cost * 10,
+        money: recipe.cost * 10,
         // Leather for exactly ONE halter; coins for ten.
         settings: {
           craftingMaterials: { leather: 1, cloth: 0, dye: 0, metal: 0, thread: 0 },
@@ -107,11 +107,11 @@ describe('craftItem — one material spend can never yield two crafted items (Eq
       where: { id: user.id },
       select: { money: true, settings: true },
     });
-    const crafted = (row.settings.inventory ?? []).filter(i => i.itemId === RECIPE.result);
+    const crafted = (row.settings.inventory ?? []).filter(i => i.itemId === recipe.result);
     expect(crafted).toHaveLength(1);
     expect(row.settings.craftingMaterials.leather).toBe(0);
     // Coins: charged once, for the one item that exists.
-    expect(Number(row.money)).toBe(RECIPE.cost * 9);
+    expect(Number(row.money)).toBe(recipe.cost * 9);
     const debits = await prisma.userTransaction.count({
       where: { userId: user.id, category: 'crafting' },
     });

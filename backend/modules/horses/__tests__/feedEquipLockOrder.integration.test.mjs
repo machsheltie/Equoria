@@ -33,19 +33,19 @@ import {
   waitForBlockedSessions,
 } from '../../../__tests__/helpers/rowLockBarrier.mjs';
 
-const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-lmer7-feedequip';
-const START_UNITS = 5;
+const origin = 'http://localhost:3000';
+const fixturePrefix = 'TestFixture-lmer7-feedequip';
+const startUnits = 5;
 
 const barrierClient = createBarrierClient();
 const uniq = () => randomBytes(6).toString('hex');
 
 async function post(endpoint, jwt, body) {
-  const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${jwt}`] });
+  const csrf = await fetchCsrf(app, { origin, extraCookies: [`accessToken=${jwt}`] });
   return request(app)
     .post(endpoint)
     .set('Authorization', `Bearer ${jwt}`)
-    .set('Origin', ORIGIN)
+    .set('Origin', origin)
     .set('Cookie', csrf.cookieHeader)
     .set('X-CSRF-Token', csrf.csrfToken)
     .send(body ?? {});
@@ -61,15 +61,15 @@ describe('feedHorse locks User before Horse (Equoria-lmer7)', () => {
     const tag = uniq();
     user = await prisma.user.create({
       data: {
-        email: `${FIXTURE_PREFIX}-${tag}@example.com`,
-        username: `${FIXTURE_PREFIX}-${tag}`,
+        email: `${fixturePrefix}-${tag}@example.com`,
+        username: `${fixturePrefix}-${tag}`,
         password: 'irrelevant-hash',
         firstName: 'Feed',
         lastName: 'Equip',
         money: 10000,
         settings: {
           inventory: [
-            { id: 'feed-basic', itemId: 'basic', category: 'feed', name: 'Basic Feed', quantity: START_UNITS },
+            { id: 'feed-basic', itemId: 'basic', category: 'feed', name: 'Basic Feed', quantity: startUnits },
             {
               id: 'inv-saddle',
               itemId: 'all-purpose-saddle',
@@ -87,7 +87,7 @@ describe('feedHorse locks User before Horse (Equoria-lmer7)', () => {
     horse = await createTestHorse(
       prisma,
       {
-        name: `${FIXTURE_PREFIX}-${tag}`,
+        name: `${fixturePrefix}-${tag}`,
         sex: 'Mare',
         dateOfBirth: new Date('2022-01-01'),
         age: 4,
@@ -135,7 +135,7 @@ describe('feedHorse locks User before Horse (Equoria-lmer7)', () => {
     expect(row.tack).toMatchObject({ saddle: 'all-purpose-saddle' });
     expect(row.lastFedDate).not.toBeNull();
     const settings = (await prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } })).settings;
-    expect(settings.inventory.find(i => i.id === 'feed-basic').quantity).toBe(START_UNITS - 1);
+    expect(settings.inventory.find(i => i.id === 'feed-basic').quantity).toBe(startUnits - 1);
     expect(settings.inventory.find(i => i.id === 'inv-saddle').equippedToHorseId).toBe(horse.id);
   }, 60000);
 });

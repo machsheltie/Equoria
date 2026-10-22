@@ -16,7 +16,10 @@ import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { updateUserSettingsPaths } from '../../../../utils/userSettingsPaths.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
-import { TACK_INVENTORY } from '../../tackShop/controllers/tackShopController.mjs';
+import {
+  TACK_INVENTORY,
+  resolveTackBonus,
+} from '../../tackShop/controllers/tackShopController.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -137,12 +140,10 @@ function withTackItem(tack, item) {
   // is the catalogue's, exactly what `resolveTackBonus` reads for this id when
   // no mirror exists, so replacing never invents or keeps a bonus. A slot with
   // no mirror gets none: adding one would flip `hasDirect` for the other slot.
-  const mirrorKey = BONUS_MIRROR_KEYS[item.category];
-  if (mirrorKey && typeof tack[mirrorKey] === 'number') {
-    const definition = TACK_INVENTORY.find(
-      d => d.id === item.itemId && d.category === item.category,
-    );
-    next[mirrorKey] = definition?.numericBonus ?? 0;
+  const resolved = resolveTackBonus({ [item.category]: item.itemId });
+  const mirrorKey = `${item.category}Bonus`;
+  if (mirrorKey in resolved && typeof tack[mirrorKey] === 'number') {
+    next[mirrorKey] = resolved[mirrorKey];
   }
   return next;
 }
