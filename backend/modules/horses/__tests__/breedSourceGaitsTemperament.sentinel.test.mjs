@@ -9,10 +9,10 @@
  *
  * ── Why this exists ───────────────────────────────────────────────────────
  * The runtime validateProfile() in backend/seed/breedProfileValidator.mjs
- * only runs against the 12 hand-authored canonical .mjs profiles (via
- * breedGeneticProfiles.test.mjs) — NOT against the 312 .txt source files that
- * actually seed the canonical DB through populateBreedsFromSql.mjs. So nothing
- * asserts the .txt files KEEP their full gait set and 11-key temperament map.
+ * runs against backend/data/breedProfiles.json (breedProfileData.test.mjs) —
+ * NOT against the 312 .txt source files that actually seed the DB through
+ * populateBreedsFromSql.mjs. So this sentinel asserts the .txt files KEEP
+ * their full gait set and 12-key temperament map.
  * A future hand-edit (a find/replace gone wrong, a new breed authored from a
  * stale template, a re-mirror that drops a gait) could silently strip a gait
  * or a temperament weight from one or more of the 312 files; the seed would
@@ -28,7 +28,7 @@
  *      mean) plus a non-empty gaited_gait_registry; a non-gaited breed has
  *      gaiting === null. (This mirrors validateProfile()'s own is_gaited
  *      branch, so the source files are held to the same contract the runtime
- *      validator enforces on the canonical-12.)
+ *      validator enforces on breedProfiles.json.)
  *   3. temperament_weights carries EXACTLY the 11 canonical keys, each an
  *      integer, summing to 100.
  *
@@ -139,7 +139,7 @@ function findGaitErrors(profile) {
   }
 
   // gaiting (the optional 5th gait) must be consistent with is_gaited_breed —
-  // same contract validateProfile() enforces on the canonical-12.
+  // same contract validateProfile() enforces on breedProfiles.json.
   const isGaited = rp.is_gaited_breed === true;
   const gaiting = gaits.gaiting;
   if (isGaited) {

@@ -10,11 +10,9 @@ import {
 } from '../services/conformationService.mjs';
 // Equoria-5p26: All breed-mean assertions now read from getBreedProfile() — the same
 // runtime data source consumed by the service under test (breedProfiles.json via
-// breedProfileLoader). The legacy import from breedGeneticProfiles.mjs was removed
-// because BREED_GENETIC_PROFILES is a test-fixture / seed module, not the runtime
-// source. Equoria-is28 reconciled the two stores for the 12 canonical breeds, but
-// the test must still read from the SAME store the service reads from so any future
-// drift fails the test loudly rather than passing by coincidence.
+// breedProfileLoader), so any future drift fails the test loudly rather than
+// passing by coincidence. (The invented 12-breed table it once imported was
+// deleted 2026-10-21.)
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 // Helper: create a scores object with a uniform value for all regions
@@ -277,8 +275,6 @@ describe('Statistical validation - breeding inheritance', () => {
   test('95% of inherited scores fall within baseValue ± 2*breedStdDev', () => {
     const breedName = 'Thoroughbred';
     // Equoria-5p26: read from getBreedProfile (same source as service under test).
-    // After Equoria-is28 the two stores match for the 12 canonical breeds, but the
-    // test must still read from the runtime store to catch any future drift.
     const conformation = getBreedProfile(breedName).rating_profiles.conformation;
     const sire = uniformScores(80);
     const dam = uniformScores(70);

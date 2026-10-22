@@ -379,7 +379,7 @@ describe('generateGaitScores', () => {
     expect(() => generateGaitScores('NotARealBreed_xyz', neutralConformation)).toThrow();
   });
 
-  it('accepts numeric breedId for canonical-12 breeds', () => {
+  it('generates gait scores for a named breed (Thoroughbred)', () => {
     const result = generateGaitScores('Thoroughbred', neutralConformation);
     expect(typeof result.walk).toBe('number');
   });

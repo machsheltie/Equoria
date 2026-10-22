@@ -261,7 +261,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   // Equoria-f5372 — the onboarding starter-horse paths must never leave the
   // temperament column NULL (the frontend would show 'not recorded').
   it('fills a NULL temperament on the existing starter horse during onboarding customization', async () => {
-    const { TEMPERAMENT_TYPES } = await import('../../horses/data/breedGeneticProfiles.mjs');
+    const { TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
     const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
     expect(breed).toBeTruthy();
 
@@ -299,7 +299,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   // (onboarding), not registration. The register-time placeholder is replaced
   // with the user's chosen breed's weighted distribution at onboarding.
   it('SENTINEL: REASSIGNS the temperament from the chosen breed at onboarding (not preserved as the register-time placeholder, Equoria-8vwly)', async () => {
-    const { TEMPERAMENT_TYPES } = await import('../../horses/data/breedGeneticProfiles.mjs');
+    const { TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
     const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
     expect(breed).toBeTruthy();
 
@@ -340,7 +340,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   });
 
   it('sets a temperament when onboarding creates the starter horse (no prior horse)', async () => {
-    const { TEMPERAMENT_TYPES } = await import('../../horses/data/breedGeneticProfiles.mjs');
+    const { TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
     const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
     expect(breed).toBeTruthy();
 

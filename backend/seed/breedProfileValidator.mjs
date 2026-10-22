@@ -8,16 +8,12 @@
  * backend/data/breeds/).
  *
  * Used by:
- *   - backend/modules/horses/__tests__/breedGeneticProfiles.test.mjs
- *     (validates the 12 canonical hand-authored profiles in
- *     breedGeneticProfiles.mjs are still well-formed; this assertion is
- *     orthogonal to the DB seeding pipeline and stays after the 12-only
- *     seed is gone)
+ *   - backend/modules/horses/__tests__/breedProfileData.test.mjs
+ *     (every breed in backend/data/breedProfiles.json is well-formed)
  *
  * Future work: this validator could be wired into populateBreedsFromSql.mjs
- * as a pre-import gate so a malformed sample file is caught before the
- * canonical DB receives it. Filed as a separate concern under Equoria-fc78a's
- * follow-ups when the canonical-12 in-memory map is deprecated.
+ * as a pre-import gate so a malformed sample file is caught before the DB
+ * receives it.
  */
 
 /**

@@ -401,6 +401,7 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     ['encouraging', 'Willing', 0.06],
     ['technical', 'Willing', 0.05],
     ['competitive', 'Willing', 0.02],
+    // A leftover 'Playful' value is no longer a temperament: base +0.02 only.
     ['focused', 'Playful', 0.02],
   ])('trainer fit: %s trainer + %s horse → bonus %d', (personality, temperament, bonus) => {
     const result = computeTrainerModifiers({

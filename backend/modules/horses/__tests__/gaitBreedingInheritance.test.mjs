@@ -10,9 +10,7 @@ import {
   STANDARD_GAITS,
 } from '../services/gaitService.mjs';
 // Equoria-f6xgn: gait inheritance assertions read the breed's gait means
-// through the loader (DB-cache backed) instead of the id-keyed in-memory
-// BREED_GENETIC_PROFILES, so the tests no longer depend on the 12-only
-// hand-authored map.
+// through the loader (DB-cache backed), the same source the service reads.
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 // Helper: average conformation (bonus = 0)

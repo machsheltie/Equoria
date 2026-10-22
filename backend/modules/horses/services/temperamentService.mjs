@@ -21,7 +21,7 @@
 // modifier; outside the show matrix (competition rules) it matters only for
 // groom bond synergy (here) and trainer fit (trainers/services/trainerModifiers.mjs).
 
-import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -140,7 +140,7 @@ export function weightedRandomSelect(weights) {
  * If the weighted-selection result is not one of the 12 canonical temperament types (e.g. a
  * misspelled key in the JSON), falls back to a uniformly-random valid type.
  *
- * @param {string} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
+ * @param {string} breedName - Breed display name
  * @returns {string} One of the 12 temperament types
  * @throws {Error} if the breed is missing from breedProfiles.json or lacks temperament_weights
  */

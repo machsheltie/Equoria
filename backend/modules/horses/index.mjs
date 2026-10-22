@@ -9,7 +9,6 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export { BREED_GENETIC_PROFILES, CANONICAL_BREEDS } from './data/breedGeneticProfiles.mjs';
 export { preloadBreedProfiles } from './data/breedProfileLoader.mjs';
 export { getFoalDevelopment } from './models/foalModel.mjs';
 // Production since WS4 S6 (Equoria-q4uem.4): competition's conformationShowScoring.mjs reads the
@@ -54,7 +53,7 @@ export {
 
 // Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
 // into the owning module, after which these lines go).
-export { TEMPERAMENT_TYPES } from './data/breedGeneticProfiles.mjs';
+export { TEMPERAMENT_TYPES } from './data/temperamentTypes.mjs';
 export {
   CONFORMATION_REGIONS,
   clampScore,

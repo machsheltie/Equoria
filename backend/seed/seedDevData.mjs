@@ -25,7 +25,8 @@ dotenv.config({ path: join(__dirname, '../.env') });
 
 // ── Breed data ──────────────────────────────────────────────────────────────
 
-// Canonical 12 breeds — must match CANONICAL_BREEDS in breedGeneticProfiles.mjs
+// A small sample of breeds for a local dev database (the full roster is
+// loaded by `npm run seed:breeds`). Not canonical: owner ruling 2026-10-21.
 const BREEDS = [
   {
     name: 'Thoroughbred',

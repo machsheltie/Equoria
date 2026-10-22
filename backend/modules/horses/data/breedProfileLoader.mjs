@@ -23,7 +23,7 @@
  * merge that grafted topline from the JSON has been removed. The JSON file
  * is RETAINED, not deleted: it still has live consumers (the no-preload
  * test suite via this loader, backend/tests/load/run-bulk-foaling-cron.mjs,
- * backend/scripts/backfill-horse-temperament.mjs, breedProfileSync.test.mjs,
+ * backend/scripts/backfill-horse-temperament.mjs, breedProfileData.test.mjs,
  * and others). Removing it remains a separate follow-up gated on migrating
  * those consumers onto a preloaded DB cache.
  *
@@ -46,9 +46,9 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import logger from '../../../utils/logger.mjs';
 
-// Equoria-f6xgn (2026-05-28): the LEGACY_ID_TO_NAME shim and its
-// CANONICAL_BREEDS dependency were removed. The shim only resolved the 12
-// hand-authored canonical breed IDs and would silently fail for the other
+// Equoria-f6xgn (2026-05-28): the LEGACY_ID_TO_NAME shim was removed. It
+// only resolved the 12 breed IDs of a hand-authored table (itself deleted
+// 2026-10-21: there were never canonical breeds) and would silently fail for the other
 // ~300 breeds added by Equoria-26qjf.3, which is exactly the kind of
 // quiet-degradation pattern the constitution forbids. Callers that have a
 // numeric breedId resolve it to a name via Prisma before reaching here.

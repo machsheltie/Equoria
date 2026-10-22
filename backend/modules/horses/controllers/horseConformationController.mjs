@@ -70,7 +70,8 @@ export async function getConformation(req, res) {
 /**
  * Get conformation analysis with percentile rankings compared to the horse's breed.
  * Percentile = percentage of same-breed horses scoring LOWER than this horse per region.
- * Breed mean comes from BREED_GENETIC_PROFILES (designed profile mean, not database average).
+ * Breed mean comes from the breed's profile via getBreedProfile (designed profile mean, not
+ * database average).
  *
  * @param {Object} req - Express request object (req.horse attached by middleware)
  * @param {Object} res - Express response object
@@ -185,8 +186,7 @@ export async function getConformationAnalysis(req, res) {
     // BigInt → Number coercion: COUNT(*) returns bigint; cast inline above
     // returns int. Defensive Number() in case driver returns BigInt anyway.
 
-    // Resolve breed name from the DB (covers all 309 breeds, not just
-    // the 12 legacy CANONICAL_BREEDS entries).
+    // Resolve breed name from the DB (covers every breed).
     const breedRecord = await prisma.breed.findUnique({
       where: { id: horse.breedId },
       select: { name: true },

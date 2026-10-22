@@ -15,7 +15,7 @@ import {
   generateTemperamentWithDefault,
   DEFAULT_TEMPERAMENT_BREED,
 } from '../services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
 
 // ---------------------------------------------------------------------------
 // Owner ruling 2026-10-21: a temperament has no training modifier and no

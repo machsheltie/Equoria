@@ -32,8 +32,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROFILES_PATH = resolve(__dirname, '../data/breedProfiles.json');
 
-// Representative breeds: the 12 canonical (id 1-12, asserted by the tests) +
-// a spread of gaited breeds (registry divergence) + a few non-canonical.
+// Representative breeds: a spread of light, gaited and draft breeds.
 const SAMPLE_BREEDS = [
   'Thoroughbred',
   'Arabian',

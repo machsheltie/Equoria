@@ -17,7 +17,6 @@
   "backend/modules/horses/__tests__/breedingColorInheritanceService.test.mjs": 1114,
   "backend/modules/horses/__tests__/horseTemperamentAnalysis.test.mjs": 804,
   "backend/modules/horses/__tests__/phenotypeCalculationService.test.mjs": 837,
-  "backend/modules/horses/data/breedGeneticProfiles.mjs": 807,
   "backend/modules/horses/services/foalingService.mjs": 622,
   "backend/modules/horses/services/horseTemperamentAnalysis.mjs": 806,
   "backend/modules/horses/services/phenotypeCalculationService.mjs": 725,

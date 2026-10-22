@@ -18,7 +18,7 @@ describe('countLoadedBreedProfiles', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  it('returns at least 12 profiles (canonical breeds)', () => {
+  it('returns at least 12 profiles', () => {
     const count = countLoadedBreedProfiles();
     expect(count).toBeGreaterThanOrEqual(12);
   });

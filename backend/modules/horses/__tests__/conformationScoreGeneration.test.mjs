@@ -280,8 +280,7 @@ describe('clampScore', () => {
 describe('Statistical validation - normal distribution verification', () => {
   test('95% of 10000 generated scores fall within breedMean ± 2*stdDev per region', () => {
     const breedName = 'Thoroughbred'; // Thoroughbred
-    // Use the same data source the service uses (breedProfiles.json via getBreedProfile),
-    // not BREED_GENETIC_PROFILES (breedGeneticProfiles.mjs) which has different values.
+    // Use the same data source the service uses (breedProfiles.json via getBreedProfile).
     const conformation = getBreedProfile(breedName).rating_profiles.conformation;
     const sampleSize = 10000;
     const allScores = [];

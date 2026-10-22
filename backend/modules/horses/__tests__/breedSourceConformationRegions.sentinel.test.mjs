@@ -12,9 +12,9 @@
  * the DB row directly on a cache hit.
  *
  * BUT: the runtime validateProfile() in backend/seed/breedProfileValidator.mjs
- * only runs against the 12 hand-authored canonical .mjs profiles (via
- * breedGeneticProfiles.test.mjs) — NOT against the 312 .txt source files that
- * actually seed the canonical DB through populateBreedsFromSql.mjs. So nothing
+ * runs against backend/data/breedProfiles.json (breedProfileData.test.mjs) —
+ * NOT against the 312 .txt source files that actually seed the DB through
+ * populateBreedsFromSql.mjs. So nothing
  * asserts the .txt files KEEP all 8 regions. A future hand-edit (or a
  * find/replace gone wrong, or a new breed file authored from a stale template)
  * could silently drop a region from one or more of the 312 files; the seed

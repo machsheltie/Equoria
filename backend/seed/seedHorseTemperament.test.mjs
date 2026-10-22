@@ -11,9 +11,9 @@
  * test), so we do NOT run them here. Instead we prove the fix two ways:
  *
  *   1. The canonical generator (generateTemperamentWithDefault) — the SAME fn the
- *      seed scripts now call — returns one of the 11 canonical temperament types
+ *      seed scripts now call — returns one of the 12 temperament types
  *      for every breed name the seed scripts use. This exercises the real data
- *      wiring (breedProfileLoader + breedGeneticProfiles), no DB, no mocks.
+ *      wiring (breedProfileLoader + breedProfiles.json), no DB, no mocks.
  *   2. Each fixed seed source file injects `temperament:` immediately adjacent to
  *      a horse-create. Sentinel-positive: this assertion FAILS if a future edit
  *      removes the temperament injection from any seed script — the exact
@@ -27,7 +27,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../modules/horses/data/breedGeneticProfiles.mjs';
+import { TEMPERAMENT_TYPES } from '../modules/horses/data/temperamentTypes.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

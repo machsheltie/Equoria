@@ -5,7 +5,7 @@
  * Owns temperament-definitions + genetics + color + breeding-color-prediction endpoints.
  * No behavior changes — functions moved verbatim.
  */
-import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
 import { TEMPERAMENT_GROOM_SYNERGY } from '../services/temperamentService.mjs';
 import { predictBreedingColors } from '../services/breedingColorPredictionService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';

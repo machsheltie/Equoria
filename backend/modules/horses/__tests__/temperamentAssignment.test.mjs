@@ -4,7 +4,7 @@
 
 import logger from '../../../utils/logger.mjs';
 import { generateTemperament, weightedRandomSelect } from '../services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 describe('Temperament Assignment Service', () => {
