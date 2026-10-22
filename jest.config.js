@@ -5,6 +5,39 @@
  * with appropriate transformations and environment settings.
  */
 
+import { realpathSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * Absolute, forward-slash, glob-safe form of a directory, for use inside
+ * testMatch globs INSTEAD of `<rootDir>`.
+ *
+ * Why not `<rootDir>`: on Windows Jest builds the glob as the backslash
+ * rootDir with its separators rewritten by replacePathSepForGlob, which
+ * deliberately keeps a backslash that precedes a regex-special character
+ * (`.` included). A dot-prefixed path segment such as `.claude/worktrees`
+ * therefore turns `/.claude` into a backslash-dot pair: an escaped dot with the separator
+ * swallowed. Every `<rootDir>/...` glob then matches nothing, and a run that
+ * resolves zero test files looks like a run that passed (Equoria-beqsp,
+ * Equoria-9zd7g, Equoria-43y7o). Forward slashes carry no escape for Jest to
+ * mangle, and picomatch is already configured with `dot: true`.
+ *
+ * Glob metacharacters that Jest's own rewrite would corrupt (`[ ] ! *`) make
+ * this throw rather than silently select nothing.
+ */
+export function toGlobRoot(directory) {
+  const posix = directory.split(path.sep).join('/');
+  if (/[[\]!*]/.test(posix)) {
+    throw new Error(
+      `jest.config.js: cannot build a test glob under a path containing [ ] ! or *: ${posix}`
+    );
+  }
+  return posix.replace(/[(){}]/g, (match) => `\\${match}`);
+}
+
+const REPO_GLOB_ROOT = toGlobRoot(realpathSync(path.dirname(fileURLToPath(import.meta.url))));
+
 const BACKEND_PROJECT_IGNORE_PATTERNS = [
   '<rootDir>/../.archive/',
   '<rootDir>/../.agent/',
@@ -32,12 +65,13 @@ export default {
     {
       displayName: 'backend',
       rootDir: '<rootDir>/backend',
+      // Absolute globs, not <rootDir>/...: see toGlobRoot above.
       testMatch: [
-        '<rootDir>/**/*.test.{js,mjs}',
-        '<rootDir>/../tests/*.test.{js,mjs}',
-        '<rootDir>/../tests/models/**/*.test.{js,mjs}',
-        '<rootDir>/../tests/services/**/*.test.{js,mjs}',
-        '<rootDir>/../tests/unit/**/*.test.{js,mjs}',
+        `${REPO_GLOB_ROOT}/backend/**/*.test.{js,mjs}`,
+        `${REPO_GLOB_ROOT}/tests/*.test.{js,mjs}`,
+        `${REPO_GLOB_ROOT}/tests/models/**/*.test.{js,mjs}`,
+        `${REPO_GLOB_ROOT}/tests/services/**/*.test.{js,mjs}`,
+        `${REPO_GLOB_ROOT}/tests/unit/**/*.test.{js,mjs}`,
       ],
       testEnvironment: '<rootDir>/tests/config/PrismaCleanupEnvironment.mjs',
       roots: ['<rootDir>', '<rootDir>/../tests'],
@@ -91,7 +125,7 @@ export default {
     {
       displayName: 'unit',
       roots: ['<rootDir>/tests/unit'],
-      testMatch: ['<rootDir>/tests/unit/**/*.test.{js,mjs}'],
+      testMatch: [`${REPO_GLOB_ROOT}/tests/unit/**/*.test.{js,mjs}`],
       testEnvironment: 'node',
       preset: null,
 
