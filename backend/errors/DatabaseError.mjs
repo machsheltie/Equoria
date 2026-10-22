@@ -6,10 +6,7 @@ import AppError from './AppError.mjs';
  */
 class DatabaseError extends AppError {
   constructor(message, originalError = null) {
-    // Not operational: callers interpolate raw driver text into the message
-    // (e.g. `Lookup failed: ${error.message}`), so the global error handler
-    // must not send it to the client (Equoria-ot1mo).
-    super(message, 500, false);
+    super(message, 500);
 
     this.name = 'DatabaseError';
     this.originalError = originalError;
