@@ -94,12 +94,14 @@ describe('handleHealthCheck', () => {
 // ── handleRedisHealthCheck ───────────────────────────────────────────────────
 
 describe('handleRedisHealthCheck', () => {
-  it('responds with a status field and cache stats', async () => {
+  it('responds with a status field and Redis availability', async () => {
     const res = makeRes();
     await handleRedisHealthCheck(makeReq(), res);
     expect(res._body.data).toHaveProperty('status');
     expect(res._body.data).toHaveProperty('redis');
-    expect(res._body.data).toHaveProperty('cache');
+    // Old contract: the anonymous payload also carried a `cache` stats block.
+    // Owner ruling 2026-10-22 (Equoria-xxu52): no cache internals to anonymous callers.
+    expect(res._body.data).not.toHaveProperty('cache');
   });
 
   it('in test env Redis is unavailable → status is "unavailable", httpStatus 503', async () => {
@@ -111,15 +113,14 @@ describe('handleRedisHealthCheck', () => {
     expect(res._body.success).toBe(false);
   });
 
-  it('cache stats shape: hits/misses/hitRate/errors/invalidations', async () => {
+  // Old contract: cache stats shape (hits/misses/hitRate/errors/invalidations),
+  // circuit-breaker metrics and redisInfo were sent to anonymous callers.
+  // Owner ruling 2026-10-22 (Equoria-xxu52): none of them leave the server.
+  it('sends no cache counters, circuit-breaker metrics or Redis server info', async () => {
     const res = makeRes();
     await handleRedisHealthCheck(makeReq(), res);
-    const cache = res._body.data.cache;
-    expect(typeof cache.hits).toBe('number');
-    expect(typeof cache.misses).toBe('number');
-    expect(typeof cache.hitRate).toBe('string');
-    expect(cache.hitRate).toMatch(/^\d+\.\d+%$/);
-    expect(typeof cache.errors).toBe('number');
+    expect(res._body.data).not.toHaveProperty('redisInfo');
+    expect(Object.keys(res._body.data.redis).sort()).toEqual(['available', 'connected']);
   });
 
   it('timestamp is present in response data', async () => {

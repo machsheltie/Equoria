@@ -56,7 +56,7 @@ router.get('/', validatePing, handlePing);
  * /health:
  *   get:
  *     summary: Comprehensive health check
- *     description: Returns detailed health status including database connectivity and system information
+ *     description: Returns health status including database connectivity. Anonymous callers get statuses only — no environment, version, error text or cache internals (Equoria-xxu52).
  *     tags: [Health]
  *     responses:
  *       200:
@@ -81,12 +81,6 @@ router.get('/', validatePing, handlePing);
  *                     uptime:
  *                       type: number
  *                       description: Server uptime in seconds
- *                     environment:
- *                       type: string
- *                       example: "development"
- *                     version:
- *                       type: string
- *                       example: "1.0.0"
  *                     services:
  *                       type: object
  *                       properties:
@@ -114,7 +108,7 @@ router.get('/', validatePing, handlePing);
  *                   example: "Service unhealthy"
  *                 data:
  *                   type: object
- *                   description: Health status with error details
+ *                   description: Health status; services.database is { status: unhealthy } with no error text
  */
 router.get('/health', handleHealthCheck);
 
@@ -123,7 +117,7 @@ router.get('/health', handleHealthCheck);
  * /health/redis:
  *   get:
  *     summary: Redis health check
- *     description: Returns detailed Redis health status including circuit breaker state, cache statistics, and connection status
+ *     description: Returns Redis availability and a circuit-derived status. Circuit-breaker metrics, cache statistics and Redis server info are not sent (Equoria-xxu52).
  *     tags: [Health]
  *     responses:
  *       200:
@@ -155,39 +149,6 @@ router.get('/health', handleHealthCheck);
  *                         connected:
  *                           type: boolean
  *                           example: true
- *                         circuitBreaker:
- *                           type: object
- *                           properties:
- *                             status:
- *                               type: string
- *                               enum: [healthy, degraded]
- *                               example: "healthy"
- *                             circuitState:
- *                               type: string
- *                               enum: [CLOSED, OPEN, HALF_OPEN]
- *                               example: "CLOSED"
- *                             metrics:
- *                               type: object
- *                               properties:
- *                                 totalRequests:
- *                                   type: number
- *                                 successCount:
- *                                   type: number
- *                                 failureCount:
- *                                   type: number
- *                                 errorRate:
- *                                   type: string
- *                                   example: "0.00%"
- *                     cache:
- *                       type: object
- *                       properties:
- *                         hits:
- *                           type: number
- *                         misses:
- *                           type: number
- *                         hitRate:
- *                           type: string
- *                           example: "85.50%"
  *       503:
  *         description: Redis is unhealthy or circuit is open
  *         content:

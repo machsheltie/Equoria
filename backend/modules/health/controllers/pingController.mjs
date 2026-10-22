@@ -19,78 +19,87 @@ export const handlePing = (req, res) => {
 
 /**
  * Health Check Controller
- * Comprehensive health check including database connectivity
+ * Health check including database connectivity, on the public router.
+ *
+ * Anonymous callers get statuses only: no environment, version, error text or
+ * cache internals (Equoria-xxu52, owner ruling 2026-10-22; same contract as
+ * /health and /ready in Equoria-ht7qz). Detail stays in the server log. The DB
+ * client is a parameter so the unreachable branch is tested with a real client.
  */
-export const handleHealthCheck = async (req, res) => {
-  const startTime = Date.now();
-  const health = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0',
-    services: {},
+export const createHealthCheckHandler =
+  ({ db }) =>
+  async (req, res) => {
+    const startTime = Date.now();
+    const health = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      services: {},
+    };
+
+    try {
+      // Test database connectivity
+      const dbStart = Date.now();
+      await db.$queryRaw`SELECT 1`;
+      const dbDuration = Math.max(1, Date.now() - dbStart);
+
+      health.services.database = {
+        status: 'healthy',
+        responseTime: `${dbDuration}ms`,
+      };
+
+      // Include Redis circuit breaker status
+      const cacheStats = await getCacheStatistics();
+      health.services.redis = {
+        available: cacheStats.redisAvailable,
+        status: cacheStats.redisAvailable ? 'healthy' : 'unavailable',
+      };
+
+      // If Redis circuit is open, mark overall health as degraded but still return 200
+      if (cacheStats.circuitBreaker?.circuitState === 'OPEN') {
+        health.status = 'degraded';
+        health.services.redis.status = 'degraded';
+      }
+
+      logger.info('[health] Health check passed', {
+        duration: `${Date.now() - startTime}ms`,
+        dbResponseTime: `${dbDuration}ms`,
+        redisAvailable: cacheStats.redisAvailable,
+        circuitState: cacheStats.circuitBreaker?.circuitState || 'N/A',
+      });
+
+      res.json({
+        success: true,
+        data: health,
+      });
+    } catch (error) {
+      health.status = 'unhealthy';
+      // The driver message can name host:port — log it, never send it.
+      health.services.database = { status: 'unhealthy' };
+
+      logger.error('[health] Health check failed', {
+        error: error.message,
+        duration: `${Date.now() - startTime}ms`,
+      });
+
+      res.status(503).json({
+        success: false,
+        data: health,
+        message: 'Service unhealthy',
+      });
+    }
   };
 
-  try {
-    // Test database connectivity
-    const dbStart = Date.now();
-    await prisma.$queryRaw`SELECT 1`;
-    const dbDuration = Math.max(1, Date.now() - dbStart);
-
-    health.services.database = {
-      status: 'healthy',
-      responseTime: `${dbDuration}ms`,
-    };
-
-    // Include Redis circuit breaker status
-    const cacheStats = await getCacheStatistics();
-    health.services.redis = {
-      available: cacheStats.redisAvailable,
-      status: cacheStats.redisAvailable ? 'healthy' : 'unavailable',
-      circuitState: cacheStats.circuitBreaker?.circuitState || 'N/A',
-    };
-
-    // If Redis circuit is open, mark overall health as degraded but still return 200
-    if (cacheStats.circuitBreaker?.circuitState === 'OPEN') {
-      health.status = 'degraded';
-      health.services.redis.status = 'degraded';
-    }
-
-    logger.info('[health] Health check passed', {
-      duration: `${Date.now() - startTime}ms`,
-      dbResponseTime: `${dbDuration}ms`,
-      redisAvailable: cacheStats.redisAvailable,
-      circuitState: cacheStats.circuitBreaker?.circuitState || 'N/A',
-    });
-
-    res.json({
-      success: true,
-      data: health,
-    });
-  } catch (error) {
-    health.status = 'unhealthy';
-    health.services.database = {
-      status: 'unhealthy',
-      error: error.message,
-    };
-
-    logger.error('[health] Health check failed', {
-      error: error.message,
-      duration: `${Date.now() - startTime}ms`,
-    });
-
-    res.status(503).json({
-      success: false,
-      data: health,
-      message: 'Service unhealthy',
-    });
-  }
-};
+export const handleHealthCheck = createHealthCheckHandler({ db: prisma });
 
 /**
  * Redis Health Check Controller
- * Detailed health check for Redis cache and circuit breaker
+ * Redis availability and circuit-derived status, on the public router.
+ *
+ * Anonymous callers get `{ status, timestamp, redis: { available, connected } }`
+ * only: circuit-breaker metrics, cache hit/miss/error counters, Redis server
+ * info and error text stay in the server log (Equoria-xxu52, owner ruling
+ * 2026-10-22).
  */
 export const handleRedisHealthCheck = async (req, res) => {
   try {
@@ -115,6 +124,11 @@ export const handleRedisHealthCheck = async (req, res) => {
       status,
       circuitState: cacheStats.circuitBreaker?.circuitState || 'N/A',
       redisAvailable: cacheStats.redisAvailable,
+      cache: {
+        hits: cacheStats.hits,
+        misses: cacheStats.misses,
+        errors: cacheStats.errors,
+      },
     });
 
     res.status(httpStatus).json({
@@ -125,21 +139,7 @@ export const handleRedisHealthCheck = async (req, res) => {
         redis: {
           available: cacheStats.redisAvailable,
           connected: cacheStats.redisConnected,
-          circuitBreaker: cacheStats.circuitBreaker || {
-            status: 'not_initialized',
-            message: 'Circuit breaker not available (likely test environment)',
-          },
         },
-        cache: {
-          hits: cacheStats.hits,
-          misses: cacheStats.misses,
-          hitRate: `${(cacheStats.hitRate * 100).toFixed(2)}%`,
-          errors: cacheStats.errors,
-          invalidations: cacheStats.invalidations,
-          localHits: cacheStats.localHits,
-          localMisses: cacheStats.localMisses,
-        },
-        redisInfo: cacheStats.redis || null,
       },
     });
   } catch (error) {
@@ -152,7 +152,6 @@ export const handleRedisHealthCheck = async (req, res) => {
       data: {
         status: 'error',
         timestamp: new Date().toISOString(),
-        error: error.message,
       },
       message: 'Redis health check failed',
     });

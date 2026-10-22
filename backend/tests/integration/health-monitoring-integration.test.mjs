@@ -256,7 +256,10 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       expect(response.body.data.status).toBe('healthy');
       expect(response.body.data.timestamp).toBeDefined();
       expect(response.body.data.uptime).toBeDefined();
-      expect(response.body.data.environment).toBeDefined();
+      // Old contract: the anonymous health payload carried `environment` (NODE_ENV).
+      // Owner ruling 2026-10-22 (Equoria-xxu52): no environment or version to anonymous callers.
+      expect(response.body.data).not.toHaveProperty('environment');
+      expect(response.body.data).not.toHaveProperty('version');
       expect(response.body.data.services).toBeDefined();
       expect(response.body.data.services.database).toBeDefined();
       expect(response.body.data.services.database.status).toBe('healthy');
