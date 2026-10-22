@@ -20,6 +20,15 @@
  *   - scoped cleanup by captured ids only — never deleteMany({}),
  *   - leaderboard cache invalidated per test (controllers cache 5 min;
  *     Redis is disabled under NODE_ENV=test so only the in-memory cache applies).
+ *
+ * Equoria-mgcyd (owner ruling 2026-10-22, Stacey): import path and export names
+ * brought up to date; NO assertion changed.
+ *   OLD contract: the suite imported ../backend/controllers/leaderboardController.mjs
+ *     (a shim retired by fe2bdf748) and the exports getTopPlayersByLevel /
+ *     getTopPlayersByXP, so the file could not load.
+ *   NEW ruling: update the stale test to the current module path and the
+ *     renamed exports getTopUsersByLevel / getTopUsersByXP (imported under the
+ *     old local names so every call site and assertion is byte-identical).
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -32,10 +41,10 @@ import prisma from '../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../backend/tests/helpers/fixtureColor.mjs';
 import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
 import {
-  getTopPlayersByLevel,
-  getTopPlayersByXP,
+  getTopUsersByLevel as getTopPlayersByLevel,
+  getTopUsersByXP as getTopPlayersByXP,
   getTopHorsesByEarnings,
-} from '../backend/controllers/leaderboardController.mjs';
+} from '../backend/modules/leaderboards/controllers/leaderboardController.mjs';
 
 // Metric values astronomically above any real row so the fixtures top each
 // board deterministically. Postgres `integer` max is 2_147_483_647.

@@ -28,6 +28,7 @@ import { tmpdir } from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const backendRoot = resolve(__dirname, '../../..'); // backend/
+const repoRoot = resolve(backendRoot, '..'); // repo root (Equoria-dyt7y: root services/ too)
 
 // Equoria-oey96.32: the permanent-stub flag evaluator `evaluateEpigeneticFlags`
 // (formerly utils/epigeneticFlags.mjs) was wired into the LIVE milestone path and
@@ -77,6 +78,35 @@ function scanProductionForPattern(rootDir, pattern) {
   return hits;
 }
 
+/**
+ * File names (recursive, relative to `dir`) that look like a flag engine / care
+ * pattern analyzer. A missing directory yields [].
+ * @returns {string[]}
+ */
+function flagEngineFilesUnder(dir) {
+  const found = [];
+  const walk = (current, prefix) => {
+    let entries;
+    try {
+      entries = readdirSync(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules') {
+          walk(join(current, entry.name), rel);
+        }
+      } else if (/flag|carePattern/i.test(entry.name)) {
+        found.push(rel);
+      }
+    }
+  };
+  walk(dir, '');
+  return found.sort();
+}
+
 describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', () => {
   const DEAD_FILES = [
     'services/carePatternAnalyzer.mjs',
@@ -92,6 +122,28 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
 
   test.each(DEAD_FILES)('dead services/ flag file %s must NOT exist', rel => {
     expect(existsSync(resolve(backendRoot, rel))).toBe(false);
+  });
+
+  // Equoria-dyt7y: the retirement used to be checked only under backend/, so the
+  // same three files survived at the repo-root services/ (retired with
+  // Equoria-mgcyd, owner ruling 2026-10-22). Check the repo root too.
+  test.each(DEAD_FILES)('dead flag file %s must NOT exist at the repo-root services/ either', rel => {
+    expect(existsSync(resolve(repoRoot, rel))).toBe(false);
+  });
+
+  test('no flag-engine file lives anywhere under the repo-root services/', () => {
+    expect(flagEngineFilesUnder(resolve(repoRoot, 'services'))).toEqual([]);
+  });
+
+  test('SENTINEL-POSITIVE: the repo-root scan FIRES on a planted flag-engine file', () => {
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'dyt7y-sentinel-'));
+    try {
+      writeFileSync(join(tmpRoot, 'flagAssignmentEngine.mjs'), 'export const x = 1;', 'utf8');
+      writeFileSync(join(tmpRoot, 'unrelatedHelper.mjs'), 'export const y = 1;', 'utf8');
+      expect(flagEngineFilesUnder(tmpRoot)).toEqual(['flagAssignmentEngine.mjs']);
+    } finally {
+      rmSync(tmpRoot, { recursive: true, force: true });
+    }
   });
 
   test.each(LIVE_FILES)('live flag module %s must exist', rel => {

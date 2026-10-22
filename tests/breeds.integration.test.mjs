@@ -22,18 +22,83 @@
  *   - scoped cleanup by the TestFixture-Breed- name prefix — never deleteMany({}),
  *   - breed list/detail caches (10-min TTL) invalidated so fresh fixtures show.
  *
+ * Equoria-mgcyd (owner ruling 2026-10-22, Stacey): the POST calls drive the create
+ * as a real admin through the real CSRF flow, like the sibling
+ * backend/__tests__/integration/breeds.integration.test.mjs.
+ *   OLD contract: this suite POSTed /api/v1/breeds anonymously and got 401 on
+ *     every call, because breed creation became admin-only + CSRF (Equoria-7p4xe).
+ *   NEW ruling: update the stale test to authenticate as admin; NO assertion
+ *     changed (same statuses, bodies and invariants).
+ *
  * Relocated to root tests/ so it RUNS via the root jest config (npm test / CI)
  * — it is excluded from the pre-push gate, which uses backend/jest.config.mjs
  * (rootDir: backend) and never collects repo-root tests/ (Equoria-jcgid).
  */
 
+import { randomBytes } from 'node:crypto';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import app from '../backend/app.mjs';
 import prisma from '../packages/database/prismaClient.mjs';
+import config from '../backend/config/config.mjs';
+import { fetchCsrf } from '../backend/tests/helpers/csrfHelper.mjs';
 import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
 
 const NAME_PREFIX = 'TestFixture-Breed-';
+const ORIGIN = 'http://localhost:3000';
+const ADMIN_TAG = randomBytes(6).toString('hex');
+
+let adminUser;
+
+// Breed create requires an authenticated admin + CSRF (Equoria-7p4xe). Build a
+// real access-token cookie for the admin and bind CSRF via that same cookie so
+// the issued token's sessionIdentifier matches req.user.id on the mutation.
+function adminAccessCookie() {
+  const token = jwt.sign(
+    {
+      id: adminUser.id,
+      userId: adminUser.id,
+      email: adminUser.email,
+      role: 'admin',
+      fingerprint: Date.now(),
+    },
+    config.jwtSecret,
+    { expiresIn: config.jwtExpiresIn || '7d' }
+  );
+  return `accessToken=${token}`;
+}
+
+async function adminCreateBreed(body) {
+  const cookie = adminAccessCookie();
+  const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: cookie });
+  return request(app)
+    .post('/api/v1/breeds')
+    .set('Origin', ORIGIN)
+    .set('Cookie', csrf.cookieHeader)
+    .set('X-CSRF-Token', csrf.csrfToken)
+    .send(body);
+}
+
+beforeAll(async () => {
+  const pw = await bcrypt.hash('BreedAdmin123!', 1);
+  adminUser = await prisma.user.create({
+    data: {
+      username: `TestFixture-mgcyd-admin-${ADMIN_TAG}`,
+      email: `testfixture-mgcyd-admin-${ADMIN_TAG}@example.com`,
+      password: pw,
+      firstName: 'Breed',
+      lastName: 'Admin',
+      role: 'admin',
+      dateOfBirth: new Date('1990-01-01'),
+    },
+  });
+}, 120000);
+
+afterAll(async () => {
+  await prisma.user.deleteMany({ where: { id: { in: [adminUser?.id].filter(Boolean) } } });
+}, 120000);
 
 describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
   let tag;
@@ -55,9 +120,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
   describe('POST /api/v1/breeds', () => {
     it('creates a new breed → 201 with { success, data, message }', async () => {
       const name = `${NAME_PREFIX}${tag}`;
-      const res = await request(app)
-        .post('/api/v1/breeds')
-        .send({ name, description: 'Elegant and spirited' });
+      const res = await adminCreateBreed({ name, description: 'Elegant and spirited' });
 
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
@@ -72,23 +135,21 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
     });
 
     it('returns 400 when name is missing', async () => {
-      const res = await request(app)
-        .post('/api/v1/breeds')
-        .send({ description: 'A breed without a name' });
+      const res = await adminCreateBreed({ description: 'A breed without a name' });
       expect(res.statusCode).toBe(400);
     });
 
     it('returns 400 when name is empty or not a string', async () => {
-      const emptyName = await request(app).post('/api/v1/breeds').send({ name: '' });
+      const emptyName = await adminCreateBreed({ name: '' });
       expect(emptyName.statusCode).toBe(400);
 
-      const nonStringName = await request(app).post('/api/v1/breeds').send({ name: 123 });
+      const nonStringName = await adminCreateBreed({ name: 123 });
       expect(nonStringName.statusCode).toBe(400);
     });
 
     it('rejects a duplicate breed name (case-insensitive) and does not persist a second row', async () => {
       const name = `${NAME_PREFIX}dup-${tag}`;
-      const first = await request(app).post('/api/v1/breeds').send({ name });
+      const first = await adminCreateBreed({ name });
       expect(first.statusCode).toBe(201);
 
       // The duplicate is rejected (not 201). NOTE: the controller currently
@@ -96,12 +157,10 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
       // re-wraps that as DatabaseError(500). That is a separate pre-existing
       // controller bug (tracked separately); this test asserts the real
       // invariant — the duplicate is NOT created — rather than blessing 500.
-      const sameCase = await request(app).post('/api/v1/breeds').send({ name });
+      const sameCase = await adminCreateBreed({ name });
       expect(sameCase.statusCode).not.toBe(201);
 
-      const differentCase = await request(app)
-        .post('/api/v1/breeds')
-        .send({ name: name.toLowerCase() });
+      const differentCase = await adminCreateBreed({ name: name.toLowerCase() });
       expect(differentCase.statusCode).not.toBe(201);
 
       // Invariant: exactly one breed with this name exists (no duplicate persisted).
@@ -115,7 +174,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
   describe('GET /api/v1/breeds', () => {
     it('returns the breed list including a freshly created fixture (coexists with real data)', async () => {
       const name = `${NAME_PREFIX}list-${tag}`;
-      const created = await request(app).post('/api/v1/breeds').send({ name });
+      const created = await adminCreateBreed({ name });
       expect(created.statusCode).toBe(201);
       // createBreed does not invalidate the list cache — clear it so GET is fresh.
       await invalidateCachePattern('breeds:*');
@@ -222,7 +281,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
   describe('GET /api/v1/breeds/:id', () => {
     it('returns a single breed by id → 200', async () => {
       const name = `${NAME_PREFIX}byid-${tag}`;
-      const created = await request(app).post('/api/v1/breeds').send({ name });
+      const created = await adminCreateBreed({ name });
       const id = created.body.data.id;
 
       const res = await request(app).get(`/api/v1/breeds/${id}`);
