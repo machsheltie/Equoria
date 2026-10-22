@@ -12,7 +12,6 @@ import {
   getGroomPersonalityTraits,
   calculatePersonalityModifiers,
   analyzePersonalityCompatibility,
-  updatePersonalityTraits,
 } from '../services/groomPersonalityTraits.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -154,21 +153,6 @@ describe('analyzePersonalityCompatibility', () => {
   });
 });
 
-// ── updatePersonalityTraits ───────────────────────────────────────────────────
-
-describe('updatePersonalityTraits', () => {
-  it('returns updated traits for known groom', async () => {
-    const result = await updatePersonalityTraits(groom.id);
-
-    expect(result).toBeDefined();
-    expect(typeof result).toBe('object');
-  });
-
-  it('throws for non-existent groom', async () => {
-    await expect(updatePersonalityTraits(999999999)).rejects.toThrow();
-  });
-});
-
 // ── groomPersonalityTraits — branch coverage (experience levels + compatibility) ──
 // Covers: calculateExperienceLevel 'medium'/'high'/'expert' (lines 560-569),
 // calculateTraitCompatibility positive/negative score paths,
@@ -275,7 +259,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     });
   }, 60000);
 
-  // FK order: grooms + horses (both Restrict on user) → user. No groom-child
+  // FK order: grooms (Restrict on user) → user. No groom-child
   // rows (synergy/assignment/interaction) are created in this block.
   afterAll(() => {
     cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GPT-' } } }), 'gptGrooms');
@@ -584,16 +568,10 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
 // ── groomPersonalityTraits — remaining branches (Equoria-rr7) ─────────────────
 // Line 247: unknown epigeneticInfluenceType → throws
 // Line 392: analyzePersonalityCompatibility non-existent horse → throws
-// Lines 493-518 + 687-691: updatePersonalityTraits with real GroomInteraction records
-//   excellent quality + bondingChange=2 → 'Enhanced trait effectiveness' (line 512-513)
-//   good quality + bondingChange=0 → 'Steady trait development' (line 514-515)
 
 describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
   let rbrUser;
-  let rbrHorse;
   let rbrGroomBadType;
-  let rbrGroomExcellent;
-  let rbrGroomGood;
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -611,17 +589,6 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
       },
     });
 
-    rbrHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-RBR-Horse-${ts}`,
-        sex: 'Filly',
-        dateOfBirth: new Date(),
-        age: 0,
-        userId: rbrUser.id,
-      },
-    });
-
     rbrGroomBadType = await prisma.groom.create({
       data: {
         name: `TestFixture-RBR-BadType-${ts}`,
@@ -631,64 +598,13 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
         userId: rbrUser.id,
       },
     });
-
-    rbrGroomExcellent = await prisma.groom.create({
-      data: {
-        name: `TestFixture-RBR-Excellent-${ts}`,
-        speciality: 'foal_care',
-        personality: 'gentle',
-        epigeneticInfluenceType: 'calm',
-        userId: rbrUser.id,
-      },
-    });
-
-    rbrGroomGood = await prisma.groom.create({
-      data: {
-        name: `TestFixture-RBR-Good-${ts}`,
-        speciality: 'foal_care',
-        personality: 'gentle',
-        epigeneticInfluenceType: 'calm',
-        userId: rbrUser.id,
-      },
-    });
-
-    // 2 excellent interactions for rbrGroomExcellent: avgQuality=4.0≥3.5, avgBondChange=2.0>1
-    for (let i = 0; i < 2; i++) {
-      await prisma.groomInteraction.create({
-        data: {
-          groomId: rbrGroomExcellent.id,
-          foalId: rbrHorse.id,
-          interactionType: 'grooming',
-          duration: 30,
-          quality: 'excellent',
-          bondingChange: 2,
-        },
-      });
-    }
-
-    // 2 good interactions for rbrGroomGood: avgQuality=3.0 (≥2.5 but <3.5), avgBondChange=0≤1
-    for (let i = 0; i < 2; i++) {
-      await prisma.groomInteraction.create({
-        data: {
-          groomId: rbrGroomGood.id,
-          foalId: rbrHorse.id,
-          interactionType: 'grooming',
-          duration: 30,
-          quality: 'good',
-          bondingChange: 0,
-        },
-      });
-    }
   }, 60000);
 
-  // FK order: groomInteraction children → grooms + horses (both Restrict on
-  // user) → user. The `?.` guards tolerate a fixture that failed to create
-  // (id undefined) without a TypeError, while still deleting what exists.
+  // FK order: grooms (Restrict on user) → user. The `?.` guard
+  // tolerates a fixture that failed to create (id undefined) without a
+  // TypeError, while still deleting what exists.
   afterAll(() => {
-    const groomIds = [rbrGroomExcellent?.id, rbrGroomGood?.id].filter(Boolean);
-    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: { in: groomIds } } }), 'rbrInteractions');
     cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RBR-' } } }), 'rbrGrooms');
-    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RBR-' } } }), 'rbrHorses');
     cleanup.add(() => prisma.user.delete({ where: { id: rbrUser?.id } }), 'rbrUser');
     return cleanup.run();
   }, 30000);
@@ -700,35 +616,5 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
   it('analyzePersonalityCompatibility: non-existent horse → throws (line 392)', async () => {
     // outer `groom` has valid epigeneticInfluenceType='calm'; horseId 999999999 does not exist
     await expect(analyzePersonalityCompatibility(groom.id, 999999999)).rejects.toThrow('Horse not found');
-  });
-
-  it('updatePersonalityTraits: excellent quality + bondingChange=2 → Enhanced trait effectiveness (lines 512-513)', async () => {
-    // avgQuality=4.0 (excellent=4) ≥3.5, avgBondChange=2.0 >1 → line 512 fires
-    const before = await prisma.groom.findUnique({
-      where: { id: rbrGroomExcellent.id },
-      select: { experience: true, level: true },
-    });
-    const result = await updatePersonalityTraits(rbrGroomExcellent.id);
-    expect(result.traitsUpdated).toContain('Enhanced trait effectiveness due to excellent performance');
-    // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs. Old
-    // contract: experienceGained > 0 and written to the groom. New: no XP.
-    expect(result).not.toHaveProperty('experienceGained');
-    const after = await prisma.groom.findUnique({
-      where: { id: rbrGroomExcellent.id },
-      select: { experience: true, level: true },
-    });
-    expect(after).toEqual(before);
-    expect(typeof result.performanceMetrics.avgQuality).toBe('number');
-    expect(result.performanceMetrics.avgQuality).toBeGreaterThanOrEqual(3.5);
-  });
-
-  it('updatePersonalityTraits: good quality + bondingChange=0 → Steady trait development (lines 514-515)', async () => {
-    // avgQuality=3.0 (good=3) ≥2.5 but <3.5; avgBondChange=0 ≤1 → line 514 fires
-    const result = await updatePersonalityTraits(rbrGroomGood.id);
-    expect(result.traitsUpdated).toContain('Steady trait development from consistent performance');
-    // Owner ruling 2026-10-21 (Equoria-dea06): old contract experienceGained > 0; new: no XP.
-    expect(result).not.toHaveProperty('experienceGained');
-    expect(result.performanceMetrics.avgQuality).toBeGreaterThanOrEqual(2.5);
-    expect(result.performanceMetrics.avgQuality).toBeLessThan(3.5);
   });
 });

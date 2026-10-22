@@ -20,7 +20,6 @@ import {
   getGroomPersonalityTraits,
   calculatePersonalityModifiers,
   analyzePersonalityCompatibility,
-  updatePersonalityTraits,
   getPersonalityTraitDefinitions,
 } from '../../modules/grooms/services/groomPersonalityTraits.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
@@ -317,49 +316,6 @@ describe('Groom Personality Trait System', () => {
       expect(
         compatibility.recommendations.some(r => r.includes('calm') || r.includes('gentle') || r.includes('avoid')),
       ).toBe(true);
-    });
-  });
-
-  describe('updatePersonalityTraits', () => {
-    test('should update personality traits based on interaction outcomes', async () => {
-      const groom = testGrooms[1]; // Energetic novice groom
-
-      // Create some interactions to base trait updates on
-      await prisma.groomInteraction.create({
-        data: {
-          groomId: groom.id,
-          foalId: testHorses[1].id, // Confident horse
-          interactionType: 'enrichment',
-          duration: 30,
-          taskType: 'desensitization',
-          bondingChange: 3,
-          stressChange: -1,
-          quality: 'excellent',
-          cost: 15.0,
-        },
-      });
-
-      const initialTraits = await getGroomPersonalityTraits(groom.id);
-      const groomBefore = await prisma.groom.findUnique({
-        where: { id: groom.id },
-        select: { experience: true, level: true },
-      });
-      const result = await updatePersonalityTraits(groom.id);
-      const updatedTraits = await getGroomPersonalityTraits(groom.id);
-
-      expect(result).toBeDefined();
-      expect(result.traitsUpdated).toBeDefined();
-      // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs. Old
-      // contract: experienceGained > 0, written to the groom. New: no XP.
-      expect(result).not.toHaveProperty('experienceGained');
-      const groomAfter = await prisma.groom.findUnique({
-        where: { id: groom.id },
-        select: { experience: true, level: true },
-      });
-      expect(groomAfter).toEqual(groomBefore);
-
-      // Should show some development (though may be minimal with one interaction)
-      expect(updatedTraits.traitStrength).toBeGreaterThanOrEqual(initialTraits.traitStrength);
     });
   });
 

@@ -14,7 +14,6 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
-import { MS_PER_WEEK } from '../../../constants/time.mjs';
 
 // Personality trait definitions
 const PERSONALITY_TRAIT_DEFINITIONS = {
@@ -433,72 +432,6 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
 }
 
 /**
- * Update personality traits based on interaction outcomes.
- * Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs, so this
- * awards no XP and writes nothing to the groom row (old contract: +2
- * experience per recent interaction).
- * @param {number} groomId - ID of the groom
- * @returns {Object} Trait update results
- */
-export async function updatePersonalityTraits(groomId) {
-  const groom = await prisma.groom.findUnique({
-    where: { id: groomId },
-    select: {
-      id: true,
-      epigeneticInfluenceType: true,
-    },
-  });
-
-  if (!groom) {
-    throw new Error(`Groom not found: ${groomId}`);
-  }
-
-  // Get recent interactions to analyze performance
-  const recentInteractions = await prisma.groomInteraction.findMany({
-    where: {
-      groomId,
-      createdAt: {
-        gte: new Date(Date.now() - MS_PER_WEEK), // Last 7 days
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  if (recentInteractions.length === 0) {
-    return {
-      groomId,
-      traitsUpdated: [],
-      message: 'No recent interactions to base trait updates on',
-    };
-  }
-
-  // Analyze interaction quality to determine trait development
-  const avgQuality = calculateAverageQuality(recentInteractions);
-  const avgBondChange =
-    recentInteractions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) /
-    recentInteractions.length;
-
-  const traitsUpdated = [];
-
-  // Determine trait improvements based on performance
-  if (avgQuality >= 3.5 && avgBondChange > 1) {
-    traitsUpdated.push('Enhanced trait effectiveness due to excellent performance');
-  } else if (avgQuality >= 2.5) {
-    traitsUpdated.push('Steady trait development from consistent performance');
-  }
-
-  return {
-    groomId,
-    traitsUpdated,
-    performanceMetrics: {
-      avgQuality,
-      avgBondChange,
-      interactionCount: recentInteractions.length,
-    },
-  };
-}
-
-/**
  * Get personality trait definitions
  * @returns {Object} Complete personality trait definitions
  */
@@ -642,17 +575,6 @@ function getCompatibilityLevel(score) {
     return 'poor';
   }
   return 'very_poor';
-}
-
-/**
- * Calculate average quality from interactions
- */
-function calculateAverageQuality(interactions) {
-  const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
-  const totalScore = interactions.reduce((sum, interaction) => {
-    return sum + (qualityScores[interaction.quality] || 2);
-  }, 0);
-  return totalScore / interactions.length;
 }
 
 /**
