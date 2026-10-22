@@ -129,7 +129,7 @@ model Breed {
   description         String?
   /// Optional default trait associated with the breed
   defaultTrait        String?
-  /// JSONB containing rating_profiles (conformation, gaits, gaited config) and temperament_weights
+  /// JSONB containing ratingProfiles (conformation, gaits, gaited config) and temperamentWeights
   breedGeneticProfile Json?
   horses              Horse[]
 

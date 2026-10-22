@@ -34,25 +34,25 @@ describe('getBreedProfile — by breed name', () => {
     expect(profile).not.toBeNull();
   });
 
-  it('returned profile has rating_profiles with conformation', () => {
+  it('returned profile has ratingProfiles with conformation', () => {
     const profile = getBreedProfile('Thoroughbred');
-    expect(profile.rating_profiles).toBeDefined();
-    expect(typeof profile.rating_profiles.conformation).toBe('object');
+    expect(profile.ratingProfiles).toBeDefined();
+    expect(typeof profile.ratingProfiles.conformation).toBe('object');
   });
 
-  it('returned profile has temperament_weights', () => {
+  it('returned profile has temperamentWeights', () => {
     const profile = getBreedProfile('Thoroughbred');
-    expect(profile.temperament_weights).toBeDefined();
+    expect(profile.temperamentWeights).toBeDefined();
   });
 
-  it('gaited breed has is_gaited_breed true (American Saddlebred)', () => {
+  it('gaited breed has isGaitedBreed true (American Saddlebred)', () => {
     const profile = getBreedProfile('American Saddlebred');
-    expect(profile.rating_profiles.is_gaited_breed).toBe(true);
+    expect(profile.ratingProfiles.isGaitedBreed).toBe(true);
   });
 
-  it('non-gaited breed has is_gaited_breed false (Thoroughbred)', () => {
+  it('non-gaited breed has isGaitedBreed false (Thoroughbred)', () => {
     const profile = getBreedProfile('Thoroughbred');
-    expect(profile.rating_profiles.is_gaited_breed).toBe(false);
+    expect(profile.ratingProfiles.isGaitedBreed).toBe(false);
   });
 
   it('throws for an unknown breed name', () => {

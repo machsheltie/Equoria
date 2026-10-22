@@ -72,10 +72,10 @@ describe('generateInheritedConformationScores', () => {
   // === Task 3.3: Formula verification with known inputs ===
 
   test('baseValue formula: (sire*0.5 + dam*0.5)*0.6 + breedMean*0.4', () => {
-    // Use Thoroughbred, head region: mean=78, std_dev=5
+    // Use Thoroughbred, head region: mean=78, stdDev=5
     // sire head=90, dam head=80
     // Expected baseValue = (90*0.5 + 80*0.5)*0.6 + 78*0.4 = 85*0.6 + 31.2 = 51 + 31.2 = 82.2
-    // With 2000 samples at std_dev=5, average should be close to 82.2
+    // With 2000 samples at stdDev=5, average should be close to 82.2
     const sire = { ...uniformScores(50), head: 90 };
     const dam = { ...uniformScores(50), head: 80 };
     const headScores = [];
@@ -237,7 +237,7 @@ describe('Statistical validation - breeding inheritance', () => {
   // Task 4.1: High-scoring parents produce foals averaging above breed mean
   test('high-scoring parents (sire=95, dam=90) produce foals with average head > breed mean', () => {
     const breedName = 'Thoroughbred'; // head mean = 78
-    const breedMean = getBreedProfile(breedName).rating_profiles.conformation.head.mean;
+    const breedMean = getBreedProfile(breedName).ratingProfiles.conformation.head.mean;
     const sire = { ...uniformScores(80), head: 95 };
     const dam = { ...uniformScores(80), head: 90 };
     const headScores = [];
@@ -275,7 +275,7 @@ describe('Statistical validation - breeding inheritance', () => {
   test('95% of inherited scores fall within baseValue ± 2*breedStdDev', () => {
     const breedName = 'Thoroughbred';
     // Equoria-5p26: read from getBreedProfile (same source as service under test).
-    const conformation = getBreedProfile(breedName).rating_profiles.conformation;
+    const conformation = getBreedProfile(breedName).ratingProfiles.conformation;
     const sire = uniformScores(80);
     const dam = uniformScores(70);
     const sampleSize = 10000;
@@ -287,7 +287,7 @@ describe('Statistical validation - breeding inheritance', () => {
 
     for (const region of CONFORMATION_REGIONS) {
       const regionMean = conformation[region].mean;
-      const regionStdDev = conformation[region].std_dev;
+      const regionStdDev = conformation[region].stdDev;
       // baseValue = (sire*0.5 + dam*0.5)*0.6 + breedMean*0.4
       const parentAvg = sire[region] * 0.5 + dam[region] * 0.5;
       const baseValue = parentAvg * 0.6 + regionMean * 0.4;
@@ -299,7 +299,7 @@ describe('Statistical validation - breeding inheritance', () => {
       }).length;
 
       const percentage = (withinRange / sampleSize) * 100;
-      // Normal distribution: ~95.4% within 2 std_devs.
+      // Normal distribution: ~95.4% within 2 stdDevs.
       // n=10000 makes sampling variance negligible (z-score ~23 below threshold).
       expect(percentage).toBeGreaterThanOrEqual(90);
     }
@@ -308,7 +308,7 @@ describe('Statistical validation - breeding inheritance', () => {
   // Statistical validation: non-Thoroughbred breed (Appaloosa, ID 6)
   test('Appaloosa high-scoring parents produce foals above breed mean', () => {
     const breedName = 'Appaloosa';
-    const breedMean = getBreedProfile(breedName).rating_profiles.conformation.head.mean;
+    const breedMean = getBreedProfile(breedName).ratingProfiles.conformation.head.mean;
     const sire = { ...uniformScores(85), head: 95 };
     const dam = { ...uniformScores(85), head: 95 };
     const headScores = [];
@@ -331,7 +331,7 @@ describe('Legacy parent scores - intentional game design', () => {
     // Legacy/store horses default to score 20. Players who breed unimproved horses
     // will get weaker foals — this is the intended natural consequence.
     const breedName = 'Thoroughbred'; // head mean = 78
-    const breedMean = getBreedProfile(breedName).rating_profiles.conformation.head.mean;
+    const breedMean = getBreedProfile(breedName).ratingProfiles.conformation.head.mean;
     const legacyParent = uniformScores(20);
     const headScores = [];
 
@@ -351,7 +351,7 @@ describe('Legacy parent scores - intentional game design', () => {
 
   test('improved parents (score=90) produce foals above breed mean — reward for training', () => {
     const breedName = 'Thoroughbred';
-    const breedMean = getBreedProfile(breedName).rating_profiles.conformation.head.mean;
+    const breedMean = getBreedProfile(breedName).ratingProfiles.conformation.head.mean;
     const improvedParent = uniformScores(90);
     const headScores = [];
 

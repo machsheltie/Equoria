@@ -50,7 +50,7 @@ describe('preloadBreedProfiles — populates the DB cache (Equoria-wpfvl)', () =
     await expect(preloadBreedProfiles({})).rejects.toThrow(/requires a Prisma client/);
   });
 
-  it('loads breed rows whose breedGeneticProfile has rating_profiles', async () => {
+  it('loads breed rows whose breedGeneticProfile has ratingProfiles', async () => {
     const count = await preloadBreedProfiles(prisma);
     expect(count).toBeGreaterThanOrEqual(12);
     expect(countLoadedBreedProfiles()).toBe(count);
@@ -67,18 +67,18 @@ describe('getBreedProfile — returns the complete DB profile on a cache hit (Eq
     const profile = getBreedProfile('Thoroughbred');
 
     // From DB (post-26qjf): color genetics live only in the DB column.
-    expect(profile.shade_bias).toBeDefined();
-    expect(typeof profile.shade_bias).toBe('object');
+    expect(profile.shadeBias).toBeDefined();
+    expect(typeof profile.shadeBias).toBe('object');
 
     // Post-Equoria-f8qew the source .txt files (and thus the seeded DB row)
     // carry topline directly — no JSON merge involved. (Requires the lead's
     // reseed of the updated backend/data/breeds/*.txt; see the file header.)
-    expect(profile.rating_profiles.conformation.topline).toBeDefined();
-    expect(Number.isFinite(profile.rating_profiles.conformation.topline.mean)).toBe(true);
+    expect(profile.ratingProfiles.conformation.topline).toBeDefined();
+    expect(Number.isFinite(profile.ratingProfiles.conformation.topline.mean)).toBe(true);
 
     // All eight conformation regions now land from the cache.
     for (const region of ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline']) {
-      expect(profile.rating_profiles.conformation[region]).toBeDefined();
+      expect(profile.ratingProfiles.conformation[region]).toBeDefined();
     }
   });
 
@@ -95,11 +95,11 @@ describe('getBreedProfile — JSON-only fallback when DB cache empty (Equoria-wp
     _clearBreedProfileCache();
   });
 
-  it('serves Thoroughbred from breedProfiles.json with conformation but no shade_bias', () => {
+  it('serves Thoroughbred from breedProfiles.json with conformation but no shadeBias', () => {
     const profile = getBreedProfile('Thoroughbred');
-    expect(profile.rating_profiles.conformation.topline).toBeDefined();
+    expect(profile.ratingProfiles.conformation.topline).toBeDefined();
     // Color genetics live only on the DB; an unpreloaded loader cannot
-    // produce shade_bias for any breed.
-    expect(profile.shade_bias).toBeUndefined();
+    // produce shadeBias for any breed.
+    expect(profile.shadeBias).toBeUndefined();
   });
 });

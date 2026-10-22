@@ -80,9 +80,9 @@ describe('horseStarterStats — exported constants', () => {
 });
 
 describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
-  it('returns an integer in [1, 100] for a typical breed-like (mean, std_dev)', () => {
+  it('returns an integer in [1, 100] for a typical breed-like (mean, stdDev)', () => {
     for (let i = 0; i < 1000; i++) {
-      const v = sampleStat({ mean: 16, std_dev: 3 });
+      const v = sampleStat({ mean: 16, stdDev: 3 });
       expect(Number.isInteger(v)).toBe(true);
       expect(v).toBeGreaterThanOrEqual(1);
       expect(v).toBeLessThanOrEqual(100);
@@ -90,25 +90,25 @@ describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
   });
 
   it('clamps to 1 (not 0) when mean is at the floor', () => {
-    // mean=0 with any std_dev should never produce 0 — game rule "no zero stats"
+    // mean=0 with any stdDev should never produce 0 — game rule "no zero stats"
     for (let i = 0; i < 1000; i++) {
-      const v = sampleStat({ mean: 0, std_dev: 0 });
+      const v = sampleStat({ mean: 0, stdDev: 0 });
       expect(v).toBe(1);
     }
   });
 
   it('clamps to 100 (not over) when mean is well above the ceiling', () => {
     for (let i = 0; i < 1000; i++) {
-      const v = sampleStat({ mean: 200, std_dev: 0 });
+      const v = sampleStat({ mean: 200, stdDev: 0 });
       expect(v).toBe(100);
     }
   });
 
-  it('returns the rounded mean when std_dev is zero', () => {
-    // With std_dev=0 the Box-Muller `z * 0` term is 0, so result = round(mean).
-    expect(sampleStat({ mean: 50, std_dev: 0 })).toBe(50);
-    expect(sampleStat({ mean: 17.4, std_dev: 0 })).toBe(17);
-    expect(sampleStat({ mean: 17.6, std_dev: 0 })).toBe(18);
+  it('returns the rounded mean when stdDev is zero', () => {
+    // With stdDev=0 the Box-Muller `z * 0` term is 0, so result = round(mean).
+    expect(sampleStat({ mean: 50, stdDev: 0 })).toBe(50);
+    expect(sampleStat({ mean: 17.4, stdDev: 0 })).toBe(17);
+    expect(sampleStat({ mean: 17.6, stdDev: 0 })).toBe(18);
   });
 
   it('never returns NaN even when Math.random returns 0 (the EPSILON guard)', () => {
@@ -117,7 +117,7 @@ describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
     let calls = 0;
     Math.random = () => (calls++ === 0 ? 0 : 0.5);
     try {
-      const v = sampleStat({ mean: 10, std_dev: 3 });
+      const v = sampleStat({ mean: 10, stdDev: 3 });
       expect(Number.isNaN(v)).toBe(false);
       expect(Number.isInteger(v)).toBe(true);
     } finally {
@@ -128,7 +128,7 @@ describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
   it('sampled distribution mean tracks the requested mean (over many samples)', () => {
     const samples = [];
     for (let i = 0; i < 5000; i++) {
-      samples.push(sampleStat({ mean: 30, std_dev: 5 }));
+      samples.push(sampleStat({ mean: 30, stdDev: 5 }));
     }
     const observed = samples.reduce((s, v) => s + v, 0) / samples.length;
     // 5000 samples with std=5 → SE of mean ≈ 0.071. Three sigma is ~0.21.
@@ -139,15 +139,15 @@ describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
 
   it('SENTINEL (Equoria-tseq): distribution shape is normal, not triangular', () => {
     // Equoria-tseq guard: data-fix scripts previously used a triangular
-    // approximation `(r1+r2-1)*1.41` which under-disperses for large std_devs.
+    // approximation `(r1+r2-1)*1.41` which under-disperses for large stdDevs.
     // True Box-Muller produces a normal distribution. The two are detectably
     // different by sample variance: triangular has variance ≈ 1/6 (≈0.17) for
     // u ∈ [-1,1]-shifted sums, so triangular*1.41 has variance ≈ (1.41)²/6 ≈
     // 0.33 — about ⅓ of unit-normal variance. We measure the empirical
-    // variance of z = (sample - mean) / std_dev and assert it's close to 1.0
+    // variance of z = (sample - mean) / stdDev and assert it's close to 1.0
     // (true normal) and definitively NOT close to 0.33 (triangular).
     //
-    // We use mean=50 and std_dev=15 to put the bulk of the distribution well
+    // We use mean=50 and stdDev=15 to put the bulk of the distribution well
     // inside [1, 100] so the clamp does not distort variance materially.
     const N = 10000;
     const mean = 50;
@@ -155,7 +155,7 @@ describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
     const zSamples = [];
     let clampedCount = 0;
     for (let i = 0; i < N; i++) {
-      const v = sampleStat({ mean, std_dev: stdDev });
+      const v = sampleStat({ mean, stdDev });
       // Track clamping rate as a sanity check — should be small (~<2%) for
       // these parameters; otherwise variance measurement is biased low.
       if (v === 1 || v === 100) {
@@ -168,7 +168,7 @@ describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
     const empiricalMean = zSamples.reduce((s, z) => s + z, 0) / N;
     const empiricalVar = zSamples.reduce((s, z) => s + (z - empiricalMean) ** 2, 0) / (N - 1);
 
-    // True normal: empiricalVar should be ≈ 1.0 (after dividing by std_dev).
+    // True normal: empiricalVar should be ≈ 1.0 (after dividing by stdDev).
     // Allow [0.85, 1.15] tolerance — N=10000 makes this gap statistically
     // tight (SE of variance ≈ sqrt(2/N) ≈ 0.014; 10-sigma is 0.14). Slight
     // shrinkage from integer rounding + occasional clamp.

@@ -5,7 +5,7 @@
  * backend/data/breeds/*.txt — SIBLING of
  * breedSourceConformationRegions.sentinel.test.mjs (Equoria-9cpop). Where
  * 9cpop guards the 8 conformation regions, this file guards two MORE required
- * source sections: `rating_profiles.gaits` and `temperament_weights`.
+ * source sections: `ratingProfiles.gaits` and `temperamentWeights`.
  *
  * ── Why this exists ───────────────────────────────────────────────────────
  * The runtime validateProfile() in backend/seed/breedProfileValidator.mjs
@@ -21,15 +21,15 @@
  * temperament rolled against an incomplete distribution.
  *
  * This sentinel closes that gap. For EVERY .txt source file it asserts:
- *   1. rating_profiles.gaits carries ALL 4 core gaits (walk/trot/canter/
- *      gallop), each with a finite mean and finite std_dev.
+ *   1. ratingProfiles.gaits carries ALL 4 core gaits (walk/trot/canter/
+ *      gallop), each with a finite mean and finite stdDev.
  *   2. The optional 5th gait key `gaiting` is consistent with
- *      is_gaited_breed: a gaited breed has a scored gaiting object (finite
- *      mean) plus a non-empty gaited_gait_registry; a non-gaited breed has
+ *      isGaitedBreed: a gaited breed has a scored gaiting object (finite
+ *      mean) plus a non-empty gaitedGaitRegistry; a non-gaited breed has
  *      gaiting === null. (This mirrors validateProfile()'s own is_gaited
  *      branch, so the source files are held to the same contract the runtime
  *      validator enforces on breedProfiles.json.)
- *   3. temperament_weights carries EXACTLY the 11 canonical keys, each an
+ *   3. temperamentWeights carries EXACTLY the 11 canonical keys, each an
  *      integer, summing to 100.
  *
  * ── Parse approach ─────────────────────────────────────────────────────────
@@ -102,22 +102,22 @@ function extractProfileJson(sql) {
 /**
  * Gait-completeness assertion. Returns an array of human-readable failure
  * strings — empty means the gait block is complete and gaiting is consistent
- * with is_gaited_breed.
+ * with isGaitedBreed.
  *
  * @param {object} profile - parsed breed profile
  * @returns {string[]}
  */
 function findGaitErrors(profile) {
   const errors = [];
-  const rp = profile?.rating_profiles;
+  const rp = profile?.ratingProfiles;
   if (rp === null || rp === undefined || typeof rp !== 'object') {
-    errors.push('rating_profiles is missing or not an object');
+    errors.push('ratingProfiles is missing or not an object');
     return errors;
   }
 
   const gaits = rp.gaits;
   if (gaits === null || gaits === undefined || typeof gaits !== 'object' || Array.isArray(gaits)) {
-    errors.push('rating_profiles.gaits is missing or not an object');
+    errors.push('ratingProfiles.gaits is missing or not an object');
     return errors;
   }
 
@@ -127,20 +127,20 @@ function findGaitErrors(profile) {
       errors.push(`missing gait: ${gait}`);
       continue;
     }
-    const { mean, std_dev: stdDev } = g;
+    const { mean, stdDev } = g;
     if (!Number.isFinite(mean)) {
       errors.push(`gaits.${gait}.mean is not a finite number (got ${JSON.stringify(mean)})`);
     } else if (mean < 0 || mean > 100) {
       errors.push(`gaits.${gait}.mean out of range [0,100] (got ${mean})`);
     }
     if (!Number.isFinite(stdDev)) {
-      errors.push(`gaits.${gait}.std_dev is not a finite number (got ${JSON.stringify(stdDev)})`);
+      errors.push(`gaits.${gait}.stdDev is not a finite number (got ${JSON.stringify(stdDev)})`);
     }
   }
 
-  // gaiting (the optional 5th gait) must be consistent with is_gaited_breed —
+  // gaiting (the optional 5th gait) must be consistent with isGaitedBreed —
   // same contract validateProfile() enforces on breedProfiles.json.
-  const isGaited = rp.is_gaited_breed === true;
+  const isGaited = rp.isGaitedBreed === true;
   const gaiting = gaits.gaiting;
   if (isGaited) {
     if (gaiting === null || gaiting === undefined || typeof gaiting !== 'object') {
@@ -148,8 +148,8 @@ function findGaitErrors(profile) {
     } else if (!Number.isFinite(gaiting.mean)) {
       errors.push(`gaited breed gaiting.mean is not a finite number (got ${JSON.stringify(gaiting.mean)})`);
     }
-    if (!Array.isArray(rp.gaited_gait_registry) || rp.gaited_gait_registry.length === 0) {
-      errors.push('gaited breed must have a non-empty gaited_gait_registry');
+    if (!Array.isArray(rp.gaitedGaitRegistry) || rp.gaitedGaitRegistry.length === 0) {
+      errors.push('gaited breed must have a non-empty gaitedGaitRegistry');
     }
   } else if (gaiting !== null && gaiting !== undefined) {
     errors.push(`non-gaited breed must have null gaiting score (got ${JSON.stringify(gaiting)})`);
@@ -168,9 +168,9 @@ function findGaitErrors(profile) {
  */
 function findTemperamentErrors(profile) {
   const errors = [];
-  const tw = profile?.temperament_weights;
+  const tw = profile?.temperamentWeights;
   if (tw === null || tw === undefined || typeof tw !== 'object' || Array.isArray(tw)) {
-    errors.push('temperament_weights is missing or not an object');
+    errors.push('temperamentWeights is missing or not an object');
     return errors;
   }
 
@@ -181,7 +181,7 @@ function findTemperamentErrors(profile) {
       continue;
     }
     if (!Number.isInteger(tw[key])) {
-      errors.push(`temperament_weights.${key} is not an integer (got ${JSON.stringify(tw[key])})`);
+      errors.push(`temperamentWeights.${key} is not an integer (got ${JSON.stringify(tw[key])})`);
     }
   }
 
@@ -232,7 +232,7 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     expect(parsed.length).toBe(312);
   });
 
-  it('every breed .txt has all 4 core gaits (finite mean 0-100 + finite std_dev) with consistent gaiting', () => {
+  it('every breed .txt has all 4 core gaits (finite mean 0-100 + finite stdDev) with consistent gaiting', () => {
     const failures = [];
     for (const { file, profile } of parsed) {
       const errs = findGaitErrors(profile);
@@ -245,7 +245,7 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     expect(failures).toEqual([]);
   });
 
-  it('every breed .txt has exactly the 12 temperament_weights keys, integer, summing to 100', () => {
+  it('every breed .txt has exactly the 12 temperamentWeights keys, integer, summing to 100', () => {
     const failures = [];
     for (const { file, profile } of parsed) {
       const errs = findTemperamentErrors(profile);
@@ -294,27 +294,27 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     function fullNonGaitedProfile() {
       const gaits = { gaiting: null };
       for (const gait of EXPECTED_GAITS) {
-        gaits[gait] = { mean: 70, std_dev: 8 };
+        gaits[gait] = { mean: 70, stdDev: 8 };
       }
-      const temperament_weights = {};
+      const temperamentWeights = {};
       // 11 keys: give the first key the remainder so the total is exactly 100.
       const per = Math.floor(EXPECTED_TEMPERAMENT_WEIGHT_SUM / EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length);
       let assigned = 0;
       EXPECTED_TEMPERAMENT_WEIGHT_KEYS.forEach((k, i) => {
         const isLast = i === EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length - 1;
         const v = isLast ? EXPECTED_TEMPERAMENT_WEIGHT_SUM - assigned : per;
-        temperament_weights[k] = v;
+        temperamentWeights[k] = v;
         assigned += v;
       });
-      return { rating_profiles: { is_gaited_breed: false, gaits }, temperament_weights };
+      return { ratingProfiles: { isGaitedBreed: false, gaits }, temperamentWeights };
     }
 
     /** Build a complete, valid gaited profile (4 gaits + scored gaiting + registry). */
     function fullGaitedProfile() {
       const p = fullNonGaitedProfile();
-      p.rating_profiles.is_gaited_breed = true;
-      p.rating_profiles.gaits.gaiting = { mean: 85, std_dev: 7 };
-      p.rating_profiles.gaited_gait_registry = ['Tölt'];
+      p.ratingProfiles.isGaitedBreed = true;
+      p.ratingProfiles.gaits.gaiting = { mean: 85, stdDev: 7 };
+      p.ratingProfiles.gaitedGaitRegistry = ['Tölt'];
       return p;
     }
 
@@ -332,7 +332,7 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     // ── Gait detector fires ──
     it('gait detector FIRES when a core gait (canter) is missing', () => {
       const p = fullNonGaitedProfile();
-      delete p.rating_profiles.gaits.canter;
+      delete p.ratingProfiles.gaits.canter;
       const errs = findGaitErrors(p);
       expect(errs).toContain('missing gait: canter');
       expect(errs.length).toBeGreaterThan(0);
@@ -340,52 +340,52 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
 
     it('gait detector FIRES when a core gait (walk) is missing', () => {
       const p = fullNonGaitedProfile();
-      delete p.rating_profiles.gaits.walk;
+      delete p.ratingProfiles.gaits.walk;
       expect(findGaitErrors(p)).toContain('missing gait: walk');
     });
 
     it('gait detector FIRES when a gait mean is non-finite', () => {
       const p = fullNonGaitedProfile();
-      p.rating_profiles.gaits.trot.mean = 'oops';
+      p.ratingProfiles.gaits.trot.mean = 'oops';
       const errs = findGaitErrors(p);
       expect(errs.some(e => e.startsWith('gaits.trot.mean is not a finite number'))).toBe(true);
     });
 
     it('gait detector FIRES when a gait mean is out of range', () => {
       const p = fullNonGaitedProfile();
-      p.rating_profiles.gaits.gallop.mean = 150;
+      p.ratingProfiles.gaits.gallop.mean = 150;
       const errs = findGaitErrors(p);
       expect(errs.some(e => e.startsWith('gaits.gallop.mean out of range'))).toBe(true);
     });
 
-    it('gait detector FIRES when a gait std_dev is non-finite', () => {
+    it('gait detector FIRES when a gait stdDev is non-finite', () => {
       const p = fullNonGaitedProfile();
-      delete p.rating_profiles.gaits.canter.std_dev;
+      delete p.ratingProfiles.gaits.canter.stdDev;
       const errs = findGaitErrors(p);
-      expect(errs.some(e => e.startsWith('gaits.canter.std_dev is not a finite number'))).toBe(true);
+      expect(errs.some(e => e.startsWith('gaits.canter.stdDev is not a finite number'))).toBe(true);
     });
 
     it('gait detector FIRES when gaits block is absent entirely', () => {
-      expect(findGaitErrors({ rating_profiles: { is_gaited_breed: false } })).toContain(
-        'rating_profiles.gaits is missing or not an object',
+      expect(findGaitErrors({ ratingProfiles: { isGaitedBreed: false } })).toContain(
+        'ratingProfiles.gaits is missing or not an object',
       );
     });
 
     it('gait detector FIRES when a gaited breed has null gaiting', () => {
       const p = fullGaitedProfile();
-      p.rating_profiles.gaits.gaiting = null;
+      p.ratingProfiles.gaits.gaiting = null;
       expect(findGaitErrors(p)).toContain('gaited breed must have a scored gaiting object');
     });
 
     it('gait detector FIRES when a gaited breed has an empty registry', () => {
       const p = fullGaitedProfile();
-      p.rating_profiles.gaited_gait_registry = [];
-      expect(findGaitErrors(p)).toContain('gaited breed must have a non-empty gaited_gait_registry');
+      p.ratingProfiles.gaitedGaitRegistry = [];
+      expect(findGaitErrors(p)).toContain('gaited breed must have a non-empty gaitedGaitRegistry');
     });
 
     it('gait detector FIRES when a non-gaited breed has a non-null gaiting score', () => {
       const p = fullNonGaitedProfile();
-      p.rating_profiles.gaits.gaiting = { mean: 80, std_dev: 6 };
+      p.ratingProfiles.gaits.gaiting = { mean: 80, stdDev: 6 };
       const errs = findGaitErrors(p);
       expect(errs.some(e => e.startsWith('non-gaited breed must have null gaiting score'))).toBe(true);
     });
@@ -393,7 +393,7 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     // ── Temperament detector fires ──
     it('temperament detector FIRES when a weight key (Spirited) is missing', () => {
       const p = fullNonGaitedProfile();
-      delete p.temperament_weights.Spirited;
+      delete p.temperamentWeights.Spirited;
       const errs = findTemperamentErrors(p);
       expect(errs).toContain('missing temperament weight: Spirited');
       // Removing a key also breaks the sum — both signals fire.
@@ -402,31 +402,29 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
 
     it('temperament detector FIRES when a weight is non-integer', () => {
       const p = fullNonGaitedProfile();
-      p.temperament_weights.Calm = 3.5;
+      p.temperamentWeights.Calm = 3.5;
       const errs = findTemperamentErrors(p);
-      expect(errs.some(e => e.startsWith('temperament_weights.Calm is not an integer'))).toBe(true);
+      expect(errs.some(e => e.startsWith('temperamentWeights.Calm is not an integer'))).toBe(true);
     });
 
     it('temperament detector FIRES on an unexpected extra key', () => {
       const p = fullNonGaitedProfile();
       // Take 5 off an existing key so the sum stays 100 — isolate the extra-key signal.
-      p.temperament_weights.Bold -= 5;
-      p.temperament_weights.Bogus = 5;
+      p.temperamentWeights.Bold -= 5;
+      p.temperamentWeights.Bogus = 5;
       const errs = findTemperamentErrors(p);
       expect(errs).toContain('unexpected temperament weight key: Bogus');
     });
 
     it('temperament detector FIRES when weights do not sum to 100', () => {
       const p = fullNonGaitedProfile();
-      p.temperament_weights.Calm += 7; // total now 107
+      p.temperamentWeights.Calm += 7; // total now 107
       const errs = findTemperamentErrors(p);
       expect(errs.some(e => e.startsWith('temperament weights sum to 107'))).toBe(true);
     });
 
-    it('temperament detector FIRES when temperament_weights block is absent entirely', () => {
-      expect(findTemperamentErrors({ rating_profiles: {} })).toContain(
-        'temperament_weights is missing or not an object',
-      );
+    it('temperament detector FIRES when temperamentWeights block is absent entirely', () => {
+      expect(findTemperamentErrors({ ratingProfiles: {} })).toContain('temperamentWeights is missing or not an object');
     });
 
     it('the extractProfileJson parser FIRES on a $json$-less file body', () => {

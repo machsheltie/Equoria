@@ -163,11 +163,11 @@ export async function createHorseFromRequest(reqBody, userId) {
   }
 
   // Calculate phenotype (display color name + pattern flags) from genotype (31E-1b)
-  const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
+  const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
 
   // Generate markings (31E-3): face, leg, advanced, modifiers
   // When sireId+damId: inherit markings from parent phenotypes (40/40/20 rule)
-  // Otherwise: random generation from breed marking_bias
+  // Otherwise: random generation from breed markingBias
   let markings;
   if (sireId && damId && sireHorse?.phenotype && damHorse?.phenotype) {
     markings = inheritMarkings(

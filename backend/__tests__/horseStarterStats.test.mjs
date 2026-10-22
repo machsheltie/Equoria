@@ -7,7 +7,7 @@
  * Covered exports:
  *   - STAT_KEYS (constant)
  *   - TOTAL_STAT_CAP (constant)
- *   - sampleStat({ mean, std_dev })
+ *   - sampleStat({ mean, stdDev })
  *   - clampStatsToTotalCap(stats, cap)
  *   - generateStoreStats(breedName)
  */
@@ -69,14 +69,14 @@ describe('TOTAL_STAT_CAP', () => {
 
 describe('sampleStat', () => {
   it('returns an integer', () => {
-    const val = sampleStat({ mean: 50, std_dev: 5 });
+    const val = sampleStat({ mean: 50, stdDev: 5 });
     expect(Number.isInteger(val)).toBe(true);
   });
 
   it('returns a value in [1, 100]', () => {
     // Run many times to cover the clamp branches
     for (let i = 0; i < 200; i++) {
-      const val = sampleStat({ mean: 50, std_dev: 10 });
+      const val = sampleStat({ mean: 50, stdDev: 10 });
       expect(val).toBeGreaterThanOrEqual(1);
       expect(val).toBeLessThanOrEqual(100);
     }
@@ -84,7 +84,7 @@ describe('sampleStat', () => {
 
   it('clamps to minimum 1 even for very low mean', () => {
     // Extreme low mean: most samples should be 1 after clamping
-    const samples = Array.from({ length: 100 }, () => sampleStat({ mean: -100, std_dev: 5 }));
+    const samples = Array.from({ length: 100 }, () => sampleStat({ mean: -100, stdDev: 5 }));
     samples.forEach(v => {
       expect(v).toBeGreaterThanOrEqual(1);
     });
@@ -92,26 +92,26 @@ describe('sampleStat', () => {
 
   it('clamps to maximum 100 even for very high mean', () => {
     // Extreme high mean: most samples should be 100 after clamping
-    const samples = Array.from({ length: 100 }, () => sampleStat({ mean: 200, std_dev: 5 }));
+    const samples = Array.from({ length: 100 }, () => sampleStat({ mean: 200, stdDev: 5 }));
     samples.forEach(v => {
       expect(v).toBeLessThanOrEqual(100);
     });
   });
 
-  it('returns values centered around mean for moderate std_dev', () => {
+  it('returns values centered around mean for moderate stdDev', () => {
     // Statistical: average of 500 samples should be close to mean
     const N = 500;
     const mean = 60;
-    const samples = Array.from({ length: N }, () => sampleStat({ mean, std_dev: 5 }));
+    const samples = Array.from({ length: N }, () => sampleStat({ mean, stdDev: 5 }));
     const avg = samples.reduce((s, v) => s + v, 0) / N;
     // Allow ±3 tolerance for statistical noise
     expect(avg).toBeGreaterThan(mean - 3);
     expect(avg).toBeLessThan(mean + 3);
   });
 
-  it('works with std_dev of 0 (deterministic)', () => {
-    // std_dev=0 means z=0, so value = round(mean)
-    const val = sampleStat({ mean: 55, std_dev: 0 });
+  it('works with stdDev of 0 (deterministic)', () => {
+    // stdDev=0 means z=0, so value = round(mean)
+    const val = sampleStat({ mean: 55, stdDev: 0 });
     expect(val).toBe(55);
   });
 });

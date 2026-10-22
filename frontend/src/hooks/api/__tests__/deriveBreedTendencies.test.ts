@@ -2,7 +2,7 @@
  * deriveBreedTendencies — pure-function tests (Equoria-x83v4)
  *
  * No network, no MSW — exercises the real derivation logic directly against the
- * real `breedGeneticProfile.rating_profiles` shape the import produces. These
+ * real `breedGeneticProfile.ratingProfiles` shape the import produces. These
  * are sentinel-positive: they prove the derivation produces DIFFERENTIATED,
  * real-data-driven tendencies (the whole point of the issue) and that the
  * null/missing-data guards fall back honestly rather than fabricating.
@@ -13,22 +13,22 @@ import { deriveBreedTendencies, type BreedGeneticProfile } from '../deriveBreedT
 
 // A realistic draft-breed profile (Shire-like) — high conformation, low gallop.
 const draftProfile: BreedGeneticProfile = {
-  rating_profiles: {
+  ratingProfiles: {
     conformation: {
-      head: { mean: 70, std_dev: 6 },
-      neck: { mean: 72, std_dev: 6 },
-      shoulders: { mean: 74, std_dev: 7 },
-      back: { mean: 78, std_dev: 5 },
-      hindquarters: { mean: 82, std_dev: 5 },
-      legs: { mean: 80, std_dev: 6 },
-      hooves: { mean: 80, std_dev: 6 },
-      topline: { mean: 76, std_dev: 6 },
+      head: { mean: 70, stdDev: 6 },
+      neck: { mean: 72, stdDev: 6 },
+      shoulders: { mean: 74, stdDev: 7 },
+      back: { mean: 78, stdDev: 5 },
+      hindquarters: { mean: 82, stdDev: 5 },
+      legs: { mean: 80, stdDev: 6 },
+      hooves: { mean: 80, stdDev: 6 },
+      topline: { mean: 76, stdDev: 6 },
     },
     gaits: {
-      walk: { mean: 70, std_dev: 8 },
-      trot: { mean: 62, std_dev: 9 },
-      canter: { mean: 58, std_dev: 9 },
-      gallop: { mean: 50, std_dev: 9 },
+      walk: { mean: 70, stdDev: 8 },
+      trot: { mean: 62, stdDev: 9 },
+      canter: { mean: 58, stdDev: 9 },
+      gallop: { mean: 50, stdDev: 9 },
       gaiting: null,
     },
   },
@@ -36,26 +36,26 @@ const draftProfile: BreedGeneticProfile = {
 
 // A racing-type profile — high gallop, leaner conformation.
 const racingProfile: BreedGeneticProfile = {
-  rating_profiles: {
+  ratingProfiles: {
     conformation: {
-      head: { mean: 78, std_dev: 5 },
-      neck: { mean: 76, std_dev: 5 },
-      shoulders: { mean: 80, std_dev: 5 },
-      back: { mean: 72, std_dev: 6 },
-      legs: { mean: 78, std_dev: 5 },
-      hooves: { mean: 74, std_dev: 6 },
-      topline: { mean: 75, std_dev: 5 },
+      head: { mean: 78, stdDev: 5 },
+      neck: { mean: 76, stdDev: 5 },
+      shoulders: { mean: 80, stdDev: 5 },
+      back: { mean: 72, stdDev: 6 },
+      legs: { mean: 78, stdDev: 5 },
+      hooves: { mean: 74, stdDev: 6 },
+      topline: { mean: 75, stdDev: 5 },
     },
     gaits: {
-      walk: { mean: 68, std_dev: 7 },
-      trot: { mean: 74, std_dev: 7 },
-      canter: { mean: 82, std_dev: 6 },
-      gallop: { mean: 92, std_dev: 5 },
+      walk: { mean: 68, stdDev: 7 },
+      trot: { mean: 74, stdDev: 7 },
+      canter: { mean: 82, stdDev: 6 },
+      gallop: { mean: 92, stdDev: 5 },
     },
   },
 };
 
-describe('deriveBreedTendencies — mapping from real rating_profiles', () => {
+describe('deriveBreedTendencies — mapping from real ratingProfiles', () => {
   it('maps each UI stat to its documented conformation/gait proxy', () => {
     const t = deriveBreedTendencies(draftProfile)!;
     expect(t).not.toBeNull();
@@ -74,7 +74,7 @@ describe('deriveBreedTendencies — mapping from real rating_profiles', () => {
     expect(t.boldness.avg).toBe(71);
   });
 
-  it('derives min/max from mean ± std_dev, clamped to 0–100', () => {
+  it('derives min/max from mean ± stdDev, clamped to 0–100', () => {
     const t = deriveBreedTendencies(draftProfile)!;
     // gallop 50 ± 9 → [41, 59]
     expect(t.speed.min).toBe(41);
@@ -109,7 +109,7 @@ describe('deriveBreedTendencies — mapping from real rating_profiles', () => {
 
   it('clamps a derived mean above 100 down to 100', () => {
     const t = deriveBreedTendencies({
-      rating_profiles: { gaits: { gallop: { mean: 120, std_dev: 0 } } },
+      ratingProfiles: { gaits: { gallop: { mean: 120, stdDev: 0 } } },
     })!;
     expect(t.speed.avg).toBe(100);
     expect(t.speed.max).toBe(100);
@@ -122,20 +122,20 @@ describe('deriveBreedTendencies — honest fallback (returns null, never fabrica
     expect(deriveBreedTendencies(undefined)).toBeNull();
   });
 
-  it('returns null when rating_profiles is missing', () => {
+  it('returns null when ratingProfiles is missing', () => {
     expect(deriveBreedTendencies({})).toBeNull();
-    expect(deriveBreedTendencies({ rating_profiles: null })).toBeNull();
+    expect(deriveBreedTendencies({ ratingProfiles: null })).toBeNull();
   });
 
   it('returns null when conformation and gaits are both absent', () => {
-    expect(deriveBreedTendencies({ rating_profiles: {} })).toBeNull();
+    expect(deriveBreedTendencies({ ratingProfiles: {} })).toBeNull();
   });
 
   it('tolerates JSONB non-object shapes (array / primitive) without throwing', () => {
     // The import can in theory store malformed JSONB; the guard must not throw.
     expect(deriveBreedTendencies([] as unknown as BreedGeneticProfile)).toBeNull();
     expect(deriveBreedTendencies('oops' as unknown as BreedGeneticProfile)).toBeNull();
-    expect(deriveBreedTendencies({ rating_profiles: [] as unknown as never })).toBeNull();
+    expect(deriveBreedTendencies({ ratingProfiles: [] as unknown as never })).toBeNull();
   });
 
   it('falls back a stat with a missing proxy to the breed OWN average, not a global constant', () => {
@@ -143,12 +143,12 @@ describe('deriveBreedTendencies — honest fallback (returns null, never fabrica
     // are absent, so they should use this breed's own present-mean average,
     // never an injected 55.
     const t = deriveBreedTendencies({
-      rating_profiles: {
+      ratingProfiles: {
         gaits: {
-          walk: { mean: 60, std_dev: 5 },
-          trot: { mean: 60, std_dev: 5 },
-          canter: { mean: 60, std_dev: 5 },
-          gallop: { mean: 60, std_dev: 5 },
+          walk: { mean: 60, stdDev: 5 },
+          trot: { mean: 60, stdDev: 5 },
+          canter: { mean: 60, stdDev: 5 },
+          gallop: { mean: 60, stdDev: 5 },
         },
       },
     })!;

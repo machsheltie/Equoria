@@ -6,6 +6,10 @@ import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
 // Cache TTL constants (seconds)
 const BREED_LIST_TTL = 600; // 10 minutes — breed list rarely changes
 const BREED_DETAIL_TTL = 600; // 10 minutes — breed detail rarely changes
+// Cache keys carry the profile shape version: v2 = camelCase profile keys
+// (migration 20261022130000). Entries cached before that deploy hold the old
+// snake_case shape and must not be served to the new frontend.
+const breedCacheVersion = 'v2';
 
 /**
  * Breed Controller
@@ -76,26 +80,26 @@ export async function getAllBreeds(req, res, next) {
   try {
     // Equoria-refgs: trim the LIST payload. The old code did
     // `prisma.breed.findMany()` with NO select, shipping the ENTIRE
-    // breedGeneticProfile JSONB (rating_profiles + starter_stats +
-    // temperament_weights + the heavy color-genetics keys: allele_weights,
-    // allowed_alleles, marking_bias, shade_bias, disallowed_combinations) for
+    // breedGeneticProfile JSONB (ratingProfiles + starterStats +
+    // temperamentWeights + the heavy color-genetics keys: alleleWeights,
+    // allowedAlleles, markingBias, shadeBias, disallowedCombinations) for
     // all ~312 breeds on what is a combobox/catalog endpoint — 1-3 MB.
     //
     // The only LIST consumer (frontend useBreeds → deriveBreedTendencies,
-    // Equoria-x83v4) reads ONLY breedGeneticProfile.rating_profiles. The other
+    // Equoria-x83v4) reads ONLY breedGeneticProfile.ratingProfiles. The other
     // client (lib/api/breeds.ts) types only id/name/description. The full blob
-    // (color genetics, starter_stats, temperament_weights, defaultTrait) is
+    // (color genetics, starterStats, temperamentWeights, defaultTrait) is
     // still served by the per-breed detail endpoint GET /api/v1/breeds/:id
     // (getBreedById returns the whole row) and by the marketplace's own
     // breed-by-id $queryRaw — neither of which is this list path.
     //
     // Prisma cannot `select` a sub-key of a Json column (the projection unit is
     // the whole column), so we select the scalar fields + the full JSON column,
-    // then project `rating_profiles` out in JS. The projection runs INSIDE the
+    // then project `ratingProfiles` out in JS. The projection runs INSIDE the
     // queryFn, so the CACHED value is the trimmed shape too (smaller Redis
     // payload as well as smaller wire payload).
     const breeds = await getCachedQuery(
-      'breeds:list:all',
+      `breeds:${breedCacheVersion}:list:all`,
       async () => {
         const rows = await prisma.breed.findMany({
           orderBy: { name: 'asc' },
@@ -108,7 +112,7 @@ export async function getAllBreeds(req, res, next) {
         });
         return rows.map(({ breedGeneticProfile, ...rest }) => {
           // JSONB four-part guard (CONTRIBUTING.md §1): the column may be null /
-          // primitive / array / object. Only project rating_profiles when the
+          // primitive / array / object. Only project ratingProfiles when the
           // blob is a real object; otherwise emit null so the consumer falls
           // back honestly (deriveBreedTendencies returns null → preset/DEFAULT).
           const trimmedProfile =
@@ -116,7 +120,7 @@ export async function getAllBreeds(req, res, next) {
             breedGeneticProfile !== undefined &&
             typeof breedGeneticProfile === 'object' &&
             !Array.isArray(breedGeneticProfile)
-              ? { rating_profiles: breedGeneticProfile.rating_profiles ?? null }
+              ? { ratingProfiles: breedGeneticProfile.ratingProfiles ?? null }
               : null;
           return { ...rest, breedGeneticProfile: trimmedProfile };
         });
@@ -238,7 +242,7 @@ export async function getBreedById(req, res, next) {
     }
 
     const breed = await getCachedQuery(
-      `breeds:detail:${breedId}`,
+      `breeds:${breedCacheVersion}:detail:${breedId}`,
       () => prisma.breed.findUnique({ where: { id: breedId } }),
       BREED_DETAIL_TTL,
     );

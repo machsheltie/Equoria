@@ -1,6 +1,6 @@
 INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
 ('Cumberland Island', 'Trait', $json${
-  "allowed_alleles": {
+  "allowedAlleles": {
     "E_Extension": [
       "e/e",
       "E/e",
@@ -69,8 +69,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "n/n"
     ]
   },
-  "disallowed_combinations": {},
-  "allele_weights": {
+  "disallowedCombinations": {},
+  "alleleWeights": {
     "E_Extension": {
       "e/e": 0.3,
       "E/e": 0.42,
@@ -139,7 +139,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "n/n": 1
     }
   },
-  "marking_bias": {
+  "markingBias": {
     "face": {
       "none": 0.35,
       "star": 0.22,
@@ -147,22 +147,22 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "blaze": 0.15,
       "snip": 0.12
     },
-    "legs_general_probability": 0.4,
-    "leg_specific_probabilities": {
+    "legsGeneralProbability": 0.4,
+    "legSpecificProbabilities": {
       "coronet": 0.3,
       "pastern": 0.28,
       "sock": 0.24,
       "stocking": 0.18
     },
-    "max_legs_marked": 4
+    "maxLegsMarked": 4
   },
-  "boolean_modifiers_prevalence": {
+  "booleanModifiersPrevalence": {
     "sooty": 0.25,
     "flaxen": 0.1,
     "pangare": 0.1,
     "rabicano": 0.06
   },
-  "shade_bias": {
+  "shadeBias": {
     "Chestnut": {
       "light": 0.3,
       "medium": 0.4,
@@ -234,65 +234,65 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "rich chocolate": 0.5
     }
   },
-  "advanced_markings_bias": {
-    "bloody_shoulder_probability_multiplier": 1,
-    "snowflake_probability_multiplier": 0,
-    "frost_probability_multiplier": 0
+  "advancedMarkingsBias": {
+    "bloodyShoulderProbabilityMultiplier": 1,
+    "snowflakeProbabilityMultiplier": 0,
+    "frostProbabilityMultiplier": 0
   },
-  "rating_profiles": {
+  "ratingProfiles": {
     "conformation": {
       "head": {
         "mean": 68,
-        "std_dev": 8
+        "stdDev": 8
       },
       "neck": {
         "mean": 70,
-        "std_dev": 8
+        "stdDev": 8
       },
       "shoulders": {
         "mean": 72,
-        "std_dev": 8
+        "stdDev": 8
       },
       "back": {
         "mean": 74,
-        "std_dev": 8
+        "stdDev": 8
       },
       "hindquarters": {
         "mean": 72,
-        "std_dev": 8
+        "stdDev": 8
       },
       "legs": {
         "mean": 76,
-        "std_dev": 7
+        "stdDev": 7
       },
       "hooves": {
         "mean": 78,
-        "std_dev": 7
+        "stdDev": 7
       },
-      "topline": { "mean": 70, "std_dev": 8 }
+      "topline": { "mean": 70, "stdDev": 8 }
     },
     "gaits": {
       "walk": {
         "mean": 74,
-        "std_dev": 8
+        "stdDev": 8
       },
       "trot": {
         "mean": 70,
-        "std_dev": 9
+        "stdDev": 9
       },
       "canter": {
         "mean": 68,
-        "std_dev": 9
+        "stdDev": 9
       },
       "gallop": {
         "mean": 66,
-        "std_dev": 9
+        "stdDev": 9
       },
       "gaiting": null
     },
-    "is_gaited_breed": false
+    "isGaitedBreed": false
   },
-  "temperament_weights": {
+  "temperamentWeights": {
     "Spirited": 12,
     "Nervous": 6,
     "Calm": 10,

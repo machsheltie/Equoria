@@ -3,7 +3,7 @@
  * boldness, flexibility, obedience, and focus silently dropped (saved as 0).
  *
  * This script finds horses where ALL SIX of those stats are 0 (the bug signature),
- * looks up the breed's starter_stats from the DB, and sets each stat to the breed mean.
+ * looks up the breed's starterStats from the DB, and sets each stat to the breed mean.
  *
  * Run once: node backend/scripts/fix-store-horse-stats.mjs
  */
@@ -38,19 +38,19 @@ async function main() {
 
   for (const horse of buggedHorses) {
     const profile = horse.breed?.breedGeneticProfile;
-    const starterStats = profile?.starter_stats ?? null;
+    const starterStats = profile?.starterStats ?? null;
 
     const updates = {};
     for (const stat of STAT_KEYS_TO_FIX) {
       if (starterStats?.[stat]) {
-        const { mean, std_dev } = starterStats[stat];
+        const { mean, stdDev } = starterStats[stat];
         // True Box-Muller (matches sampleStat in backend/services/horseStarterStats.mjs).
         // Previous (r1+r2-1)*1.41 form was triangular, not normal — under-dispersed
-        // for large std_devs and dampened breed differentiation (Equoria-tseq).
+        // for large stdDevs and dampened breed differentiation (Equoria-tseq).
         const u1 = Math.random() || Number.EPSILON; // guard against log(0)
         const u2 = Math.random();
         const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-        updates[stat] = Math.max(1, Math.min(20, Math.round(mean + std_dev * z)));
+        updates[stat] = Math.max(1, Math.min(20, Math.round(mean + stdDev * z)));
       } else {
         // No breed profile — assign a neutral starter value
         updates[stat] = 12 + Math.floor(Math.random() * 5);

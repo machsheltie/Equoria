@@ -2,7 +2,7 @@
  * Equoria-mxhpi: sentinel for the breed-SQL-profile dry-run validator.
  *
  * Proves the validator script catches the real defect classes it's
- * designed to surface — bad-structure (allele_weights sum != 1.0) — by
+ * designed to surface — bad-structure (alleleWeights sum != 1.0) — by
  * running it against the 2 sample files currently in the repo. Pre-fix
  * regex bug let the no-insert branch swallow both files; post-fix one
  * file is correctly flagged bad-struct and the other parses clean.

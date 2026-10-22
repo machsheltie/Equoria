@@ -199,7 +199,7 @@ export async function getConformationAnalysis(req, res) {
     if (breedRecord?.name) {
       try {
         const profile = getBreedProfile(breedRecord.name);
-        const rawConformation = profile?.rating_profiles?.conformation ?? null;
+        const rawConformation = profile?.ratingProfiles?.conformation ?? null;
         // Require all 8 regions to have finite means before trusting the profile.
         // A missing or non-finite mean would throw (or produce NaN) when accessed
         // later in the per-region loop and the overall mean calculation.

@@ -17,9 +17,9 @@ export const catalogHandlers = [
         { id: 1, name: 'Thoroughbred', description: 'A fast breed' },
         { id: 2, name: 'Arabian', description: 'An endurance breed' },
         { id: 3, name: 'Warmblood', description: 'A dressage breed' },
-        // Equoria-x83v4: a post-import breed that carries real rating_profiles.
+        // Equoria-x83v4: a post-import breed that carries real ratingProfiles.
         // The GET /api/v1/breeds controller trims breedGeneticProfile to ONLY
-        // rating_profiles (Equoria-refgs), which is exactly what useBreeds reads
+        // ratingProfiles (Equoria-refgs), which is exactly what useBreeds reads
         // to derive statTendencies — so this mock mirrors the real trimmed shape.
         // Shire is NOT in the hand-authored BREED_PRESETS map — exercising the
         // ~300-breed derivation path against the real (trimmed) data shape.
@@ -28,26 +28,26 @@ export const catalogHandlers = [
           name: 'Shire',
           description: 'A heavy draft breed',
           breedGeneticProfile: {
-            rating_profiles: {
+            ratingProfiles: {
               conformation: {
-                head: { mean: 70, std_dev: 6 },
-                neck: { mean: 72, std_dev: 6 },
-                shoulders: { mean: 74, std_dev: 7 },
-                back: { mean: 78, std_dev: 5 },
-                hindquarters: { mean: 82, std_dev: 5 },
-                legs: { mean: 80, std_dev: 6 },
-                hooves: { mean: 80, std_dev: 6 },
-                topline: { mean: 76, std_dev: 6 },
+                head: { mean: 70, stdDev: 6 },
+                neck: { mean: 72, stdDev: 6 },
+                shoulders: { mean: 74, stdDev: 7 },
+                back: { mean: 78, stdDev: 5 },
+                hindquarters: { mean: 82, stdDev: 5 },
+                legs: { mean: 80, stdDev: 6 },
+                hooves: { mean: 80, stdDev: 6 },
+                topline: { mean: 76, stdDev: 6 },
               },
               gaits: {
-                walk: { mean: 70, std_dev: 8 },
-                trot: { mean: 62, std_dev: 9 },
-                canter: { mean: 58, std_dev: 9 },
-                gallop: { mean: 50, std_dev: 9 },
+                walk: { mean: 70, stdDev: 8 },
+                trot: { mean: 62, stdDev: 9 },
+                canter: { mean: 58, stdDev: 9 },
+                gallop: { mean: 50, stdDev: 9 },
                 gaiting: null,
               },
-              is_gaited_breed: false,
-              gaited_gait_registry: null,
+              isGaitedBreed: false,
+              gaitedGaitRegistry: null,
             },
           },
         },

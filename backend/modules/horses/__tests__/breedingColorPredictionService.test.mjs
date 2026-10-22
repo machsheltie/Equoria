@@ -146,7 +146,7 @@ describe('applyBreedRestrictions', () => {
     ];
 
     const profile = {
-      allowed_alleles: {
+      allowedAlleles: {
         TO_Tobiano: ['to/to'], // Tobiano not allowed in this breed
       },
     };
@@ -169,7 +169,7 @@ describe('applyBreedRestrictions', () => {
     const input = [{ genotype: { E_Extension: 'E/e' }, prob: 1.0 }];
 
     const profile = {
-      allowed_alleles: {
+      allowedAlleles: {
         E_Extension: ['E/E', 'E/e', 'e/e'],
       },
     };
@@ -289,7 +289,7 @@ describe('predictBreedingColors', () => {
 });
 
 // ---------------------------------------------------------------------------
-// disallowed_combinations (Equoria-26qjf.2)
+// disallowedCombinations (Equoria-26qjf.2)
 // ---------------------------------------------------------------------------
 
 describe('filterDisallowedGenotypes (Equoria-26qjf.2)', () => {
@@ -300,7 +300,7 @@ describe('filterDisallowedGenotypes (Equoria-26qjf.2)', () => {
       { genotype: { W_DominantWhite: 'W4/w' }, prob: 0.5 },
       { genotype: { W_DominantWhite: 'w/w' }, prob: 0.25 },
     ];
-    const profile = { disallowed_combinations: { W_DominantWhite: ['W4/W4'] } };
+    const profile = { disallowedCombinations: { W_DominantWhite: ['W4/W4'] } };
     const { filtered, disallowedCount } = filterDisallowedGenotypes(gps, profile);
 
     expect(disallowedCount).toBe(1);
@@ -309,26 +309,26 @@ describe('filterDisallowedGenotypes (Equoria-26qjf.2)', () => {
     expect(total).toBeCloseTo(1.0, 6);
   });
 
-  test('NO-REGRESSION: empty disallowed_combinations returns input unchanged', () => {
+  test('NO-REGRESSION: empty disallowedCombinations returns input unchanged', () => {
     const gps = [
       { genotype: { W_DominantWhite: 'W4/W4' }, prob: 0.25 },
       { genotype: { W_DominantWhite: 'w/w' }, prob: 0.75 },
     ];
     const { filtered, disallowedCount } = filterDisallowedGenotypes(gps, {
-      disallowed_combinations: {},
+      disallowedCombinations: {},
     });
     expect(disallowedCount).toBe(0);
     expect(filtered).toHaveLength(2);
   });
 });
 
-describe('predictBreedingColors — disallowed_combinations integration (Equoria-26qjf.2)', () => {
+describe('predictBreedingColors — disallowedCombinations integration (Equoria-26qjf.2)', () => {
   test('SENTINEL: disallowed W4/W4 is excluded and counted; probabilities still sum to 1.0', () => {
     const sire = { ...GENERIC_DEFAULTS, W_DominantWhite: 'W4/w' };
     const dam = { ...GENERIC_DEFAULTS, W_DominantWhite: 'W4/w' };
     const profile = {
-      allowed_alleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
-      disallowed_combinations: { W_DominantWhite: ['W4/W4'] },
+      allowedAlleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
+      disallowedCombinations: { W_DominantWhite: ['W4/W4'] },
     };
 
     const result = predictBreedingColors(sire, dam, profile);
@@ -343,7 +343,7 @@ describe('predictBreedingColors — disallowed_combinations integration (Equoria
     const sire = { ...GENERIC_DEFAULTS, W_DominantWhite: 'W4/w' };
     const dam = { ...GENERIC_DEFAULTS, W_DominantWhite: 'W4/w' };
     const permissive = {
-      allowed_alleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
+      allowedAlleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
     };
     const result = predictBreedingColors(sire, dam, permissive);
     expect(result.disallowedCombinationsFiltered).toBe(0);

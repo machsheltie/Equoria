@@ -24,15 +24,15 @@ const SAMPLES_DIR = join(__dirname, '..', 'data', 'breeds');
 const SKIP_FILES = new Set(['generichorse.txt', '_breed-list.txt', '_gait-registry.txt']);
 
 const REQUIRED_TOP_LEVEL = [
-  'allowed_alleles',
-  'allele_weights',
-  'marking_bias',
-  'shade_bias',
-  'rating_profiles',
-  'temperament_weights',
+  'allowedAlleles',
+  'alleleWeights',
+  'markingBias',
+  'shadeBias',
+  'ratingProfiles',
+  'temperamentWeights',
 ];
 
-// Loci the genotype/phenotype services expect — must appear in allele_weights.
+// Loci the genotype/phenotype services expect — must appear in alleleWeights.
 const REQUIRED_LOCI = [
   'E_Extension',
   'A_Agouti',
@@ -81,10 +81,10 @@ function validateProfileShape(profile) {
       warnings.push(`missing top-level "${key}"`);
     }
   }
-  if (profile.allele_weights && typeof profile.allele_weights === 'object') {
+  if (profile.alleleWeights && typeof profile.alleleWeights === 'object') {
     for (const locus of REQUIRED_LOCI) {
-      if (!(locus in profile.allele_weights)) {
-        warnings.push(`allele_weights missing locus "${locus}"`);
+      if (!(locus in profile.alleleWeights)) {
+        warnings.push(`alleleWeights missing locus "${locus}"`);
       }
     }
   }
@@ -140,13 +140,13 @@ async function main() {
       stats.structuralWarnings.push({ name, warnings });
     }
 
-    if (!profile.shade_bias || typeof profile.shade_bias !== 'object') {
+    if (!profile.shadeBias || typeof profile.shadeBias !== 'object') {
       stats.noShadeBias.push(name);
     } else {
-      const keyCount = Object.keys(profile.shade_bias).length;
+      const keyCount = Object.keys(profile.shadeBias).length;
       stats.shadeBiasKeyCountDistribution[keyCount] =
         (stats.shadeBiasKeyCountDistribution[keyCount] || 0) + 1;
-      for (const colorEntry of Object.values(profile.shade_bias)) {
+      for (const colorEntry of Object.values(profile.shadeBias)) {
         if (colorEntry && typeof colorEntry === 'object') {
           for (const shadeName of Object.keys(colorEntry)) {
             stats.shadeBiasVocab.add(shadeName);
@@ -170,7 +170,7 @@ async function main() {
   console.log(`Parse errors: ${stats.parseErrors.length}`);
   console.log(`Missing breed name in SQL: ${stats.missingName.length}`);
   console.log(`Duplicate breed names across files: ${stats.duplicateNames.length}`);
-  console.log(`Files missing shade_bias: ${stats.noShadeBias.length}`);
+  console.log(`Files missing shadeBias: ${stats.noShadeBias.length}`);
   console.log(
     `Structural warnings (missing top-level keys or loci): ${stats.structuralWarnings.length}`,
   );
@@ -178,7 +178,7 @@ async function main() {
   console.log(`Would INSERT (new breeds): ${stats.wouldInsert.length}`);
   console.log(`Would UPDATE (existing breeds, profile overwrite): ${stats.wouldUpdate.length}`);
   console.log();
-  console.log('shade_bias key-count distribution (colorNames per breed):');
+  console.log('shadeBias key-count distribution (colorNames per breed):');
   for (const [k, v] of Object.entries(stats.shadeBiasKeyCountDistribution).sort(
     (a, b) => Number(a[0]) - Number(b[0]),
   )) {
@@ -220,7 +220,7 @@ async function main() {
     }
   }
   if (stats.noShadeBias.length > 0) {
-    console.log(`Breeds with NO shade_bias (${stats.noShadeBias.length}):`);
+    console.log(`Breeds with NO shadeBias (${stats.noShadeBias.length}):`);
     for (const n of stats.noShadeBias.slice(0, 20)) {
       console.log(`  - ${n}`);
     }

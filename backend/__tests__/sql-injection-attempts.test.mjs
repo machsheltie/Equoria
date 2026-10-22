@@ -722,7 +722,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       //      escaping failure.
       // Use an EXISTING fully-seeded breed (`Thoroughbred`, id resolved from the
       // canonical DB) rather than find-or-create. A seeded breed carries a
-      // populated breedGeneticProfile (rating_profiles etc.), so the genotype /
+      // populated breedGeneticProfile (ratingProfiles etc.), so the genotype /
       // phenotype generators run on real genetics instead of a bare null-profile
       // row. This mirrors how phenotypeCalculationService.test obtains its
       // breedId. If no Thoroughbred exists, fall back to any seeded breed so the

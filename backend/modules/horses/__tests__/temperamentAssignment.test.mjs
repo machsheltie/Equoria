@@ -108,7 +108,7 @@ describe('Temperament Assignment Service', () => {
   // ── Breed temperament weight validation ─────────────────────────────────
 
   describe('Breed temperament weight data integrity', () => {
-    test('all 12 breeds have temperament_weights', () => {
+    test('all 12 breeds have temperamentWeights', () => {
       for (const breedName of [
         'Thoroughbred',
         'Arabian',
@@ -125,8 +125,8 @@ describe('Temperament Assignment Service', () => {
       ]) {
         const profile = getBreedProfile(breedName);
         expect(profile).toBeDefined();
-        expect(profile.temperament_weights).toBeDefined();
-        expect(typeof profile.temperament_weights).toBe('object');
+        expect(profile.temperamentWeights).toBeDefined();
+        expect(typeof profile.temperamentWeights).toBe('object');
       }
     });
 
@@ -145,7 +145,7 @@ describe('Temperament Assignment Service', () => {
         'Lusitano',
         'Paint Horse',
       ]) {
-        const weights = getBreedProfile(breedName).temperament_weights;
+        const weights = getBreedProfile(breedName).temperamentWeights;
         const sum = Object.values(weights).reduce((a, b) => a + b, 0);
         expect(sum).toBe(100);
       }
@@ -166,7 +166,7 @@ describe('Temperament Assignment Service', () => {
         'Lusitano',
         'Paint Horse',
       ]) {
-        const weights = getBreedProfile(breedName).temperament_weights;
+        const weights = getBreedProfile(breedName).temperamentWeights;
         const keys = Object.keys(weights);
         for (const key of keys) {
           expect(TEMPERAMENT_TYPES).toContain(key);
@@ -189,7 +189,7 @@ describe('Temperament Assignment Service', () => {
         'Lusitano',
         'Paint Horse',
       ]) {
-        const weights = getBreedProfile(breedName).temperament_weights;
+        const weights = getBreedProfile(breedName).temperamentWeights;
         for (const [_type, weight] of Object.entries(weights)) {
           expect(Number.isInteger(weight)).toBe(true);
           expect(weight).toBeGreaterThanOrEqual(0);
@@ -258,7 +258,7 @@ describe('Temperament Assignment Service', () => {
 
     for (const breed of BREEDS_TO_TEST) {
       test(`${breed.name} (ID ${breed.id}) temperament distribution matches breed weights (p > 0.001)`, () => {
-        const weights = getBreedProfile(breed.name).temperament_weights;
+        const weights = getBreedProfile(breed.name).temperamentWeights;
         const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
 
         const expected = {};
@@ -294,7 +294,7 @@ describe('Temperament Assignment Service', () => {
     }
 
     test('high-weight temperament types are reliably generated from Thoroughbred', () => {
-      const weights = getBreedProfile('Thoroughbred').temperament_weights;
+      const weights = getBreedProfile('Thoroughbred').temperamentWeights;
       const seen = new Set();
       for (let i = 0; i < 10000; i++) {
         seen.add(generateTemperament('Thoroughbred'));
@@ -329,9 +329,9 @@ describe('Temperament Assignment Service', () => {
     });
 
     test('generateTemperament is a pure function (no side effects on breed data)', () => {
-      const profileBefore = JSON.stringify(getBreedProfile('Thoroughbred').temperament_weights);
+      const profileBefore = JSON.stringify(getBreedProfile('Thoroughbred').temperamentWeights);
       generateTemperament('Thoroughbred');
-      const profileAfter = JSON.stringify(getBreedProfile('Thoroughbred').temperament_weights);
+      const profileAfter = JSON.stringify(getBreedProfile('Thoroughbred').temperamentWeights);
       expect(profileAfter).toBe(profileBefore);
     });
   });

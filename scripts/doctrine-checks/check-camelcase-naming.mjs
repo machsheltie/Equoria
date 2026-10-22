@@ -161,7 +161,14 @@ function collectDbNames() {
   for (const dir of fs.readdirSync(migrations, { withFileTypes: true })) {
     const sql = path.join(migrations, dir.name, 'migration.sql');
     if (!dir.isDirectory() || !fs.existsSync(sql)) continue;
-    const text = fs.readFileSync(sql, 'utf8');
+    // Single-quoted SQL literals are data, not names: a data migration quotes
+    // the old JSON keys it rewrites ('"old_key": '), and those must not become
+    // exempt everywhere. Line comments go first: their apostrophes would
+    // unbalance the literal pairing.
+    const text = fs
+      .readFileSync(sql, 'utf8')
+      .replace(/--[^\n]*/g, '')
+      .replace(/'(?:[^']|'')*'/g, "''");
     for (const m of text.matchAll(/"([A-Za-z0-9_]+)"/g)) names.add(m[1]);
     for (const m of text.matchAll(
       /\b(?:INDEX|CONSTRAINT|TABLE|TYPE)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?([A-Za-z][A-Za-z0-9_]*)/gi

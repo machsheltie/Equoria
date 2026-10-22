@@ -48,7 +48,7 @@ async function run() {
         : null;
 
       const colorGenotype = generateGenotype(breedGeneticProfile);
-      const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
+      const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
       const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
       const phenotype = { ...baseColor, ...markings };
 

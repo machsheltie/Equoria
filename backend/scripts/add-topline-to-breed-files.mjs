@@ -9,7 +9,7 @@
  * ---------------
  * Each backend/data/breeds/<Breed>.txt is a SQL `INSERT ... ON CONFLICT`
  * whose `$json$...$json$` block carries the breed's full genetic profile,
- * including `rating_profiles.conformation`. Historically that conformation
+ * including `ratingProfiles.conformation`. Historically that conformation
  * object held only 7 regions (head/neck/shoulders/back/hindquarters/legs/
  * hooves). The conformation engine (backend/modules/horses/services/
  * conformationService.mjs) and the runtime validator
@@ -24,7 +24,7 @@
  * TOPLINE DERIVATION (AC2 — principled, not fabricated)
  * -----------------------------------------------------
  *   1. PREFERRED / authoritative: backend/data/breedProfiles.json supplies a
- *      real per-breed `rating_profiles.conformation.topline` { mean, std_dev }
+ *      real per-breed `ratingProfiles.conformation.topline` { mean, stdDev }
  *      for every one of the 312 breeds. That JSON topline is exactly the value
  *      breedProfileLoader.mjs already serves at runtime today via its
  *      transitional merge, so writing it into the .txt source makes the
@@ -32,8 +32,8 @@
  *      output (a true no-op for live conformation generation).
  *   2. FALLBACK (documented, used only if a breed is absent from the JSON or
  *      its JSON topline is malformed): the arithmetic mean of the breed's own
- *      7 existing conformation region means, with std_dev = the rounded mean
- *      of the 7 existing std_devs. This keeps the 8th region internally
+ *      7 existing conformation region means, with stdDev = the rounded mean
+ *      of the 7 existing stdDevs. This keeps the 8th region internally
  *      consistent with that breed's real per-breed data rather than inventing
  *      an arbitrary number.
  *
@@ -47,7 +47,7 @@
  * an unreadable diff. Instead this script performs a surgical textual edit:
  * it finds the `"hooves": { ... }` line (verified to be the last conformation
  * region in all 312 files), gives it a trailing comma, and inserts a
- * `"topline": { "mean": M, "std_dev": S }` line immediately after, matching
+ * `"topline": { "mean": M, "stdDev": S }` line immediately after, matching
  * the surrounding 6-space indentation. The rest of the file is byte-for-byte
  * untouched. After editing, the script re-parses the `$json$` block to prove
  * the result is still valid JSON with exactly 8 conformation regions.
@@ -97,51 +97,51 @@ function parseProfileJson(txt) {
 }
 
 /**
- * Derive the topline { mean, std_dev } for a breed.
+ * Derive the topline { mean, stdDev } for a breed.
  * Authoritative source: breedProfiles.json topline. Fallback: average of the
- * breed's own 7 existing conformation region means/std_devs.
+ * breed's own 7 existing conformation region means/stdDevs.
  * @param {string} breedName
  * @param {object} profile - the parsed profile from the .txt file
  * @param {object} jsonProfiles - breedProfiles.json keyed by breed name
- * @returns {{ topline: {mean:number, std_dev:number}, source: 'json'|'fallback' }}
+ * @returns {{ topline: {mean:number, stdDev:number}, source: 'json'|'fallback' }}
  */
 export function deriveTopline(breedName, profile, jsonProfiles) {
-  const jsonTopline = jsonProfiles?.[breedName]?.rating_profiles?.conformation?.topline;
+  const jsonTopline = jsonProfiles?.[breedName]?.ratingProfiles?.conformation?.topline;
   if (
     jsonTopline &&
     Number.isFinite(jsonTopline.mean) &&
     jsonTopline.mean >= 0 &&
     jsonTopline.mean <= 100 &&
-    Number.isFinite(jsonTopline.std_dev) &&
-    jsonTopline.std_dev >= 0
+    Number.isFinite(jsonTopline.stdDev) &&
+    jsonTopline.stdDev >= 0
   ) {
     return {
-      topline: { mean: jsonTopline.mean, std_dev: jsonTopline.std_dev },
+      topline: { mean: jsonTopline.mean, stdDev: jsonTopline.stdDev },
       source: 'json',
     };
   }
 
-  // Fallback: average the breed's own 7 region means and std_devs.
-  const conformation = profile?.rating_profiles?.conformation;
+  // Fallback: average the breed's own 7 region means and stdDevs.
+  const conformation = profile?.ratingProfiles?.conformation;
   if (!conformation) {
-    throw new Error(`Cannot derive topline for "${breedName}": no rating_profiles.conformation.`);
+    throw new Error(`Cannot derive topline for "${breedName}": no ratingProfiles.conformation.`);
   }
   const means = [];
   const stdDevs = [];
   for (const region of EXISTING_REGIONS) {
     const r = conformation[region];
-    if (!r || !Number.isFinite(r.mean) || !Number.isFinite(r.std_dev)) {
+    if (!r || !Number.isFinite(r.mean) || !Number.isFinite(r.stdDev)) {
       throw new Error(
         `Cannot derive fallback topline for "${breedName}": region "${region}" is missing or malformed.`,
       );
     }
     means.push(r.mean);
-    stdDevs.push(r.std_dev);
+    stdDevs.push(r.stdDev);
   }
   const meanAvg = Math.round(means.reduce((a, b) => a + b, 0) / means.length);
   const stdAvg = Math.round(stdDevs.reduce((a, b) => a + b, 0) / stdDevs.length);
   return {
-    topline: { mean: meanAvg, std_dev: stdAvg },
+    topline: { mean: meanAvg, stdDev: stdAvg },
     source: 'fallback',
   };
 }
@@ -150,7 +150,7 @@ export function deriveTopline(breedName, profile, jsonProfiles) {
  * Insert a topline region line into the file text immediately after the
  * `"hooves": { ... }` conformation line, preserving all other formatting.
  * @param {string} txt - full file contents
- * @param {{mean:number, std_dev:number}} topline
+ * @param {{mean:number, stdDev:number}} topline
  * @returns {string} edited contents
  */
 export function insertToplineLine(txt, topline) {
@@ -165,7 +165,7 @@ export function insertToplineLine(txt, topline) {
   const indent = m[1];
   const hadComma = m[2] === ',';
   const hoovesLine = m[0];
-  const toplineLine = `${indent}"topline": { "mean": ${topline.mean}, "std_dev": ${topline.std_dev} }`;
+  const toplineLine = `${indent}"topline": { "mean": ${topline.mean}, "stdDev": ${topline.stdDev} }`;
   // hooves must now end with a comma (it is no longer last); topline takes its
   // place as the trailing entry (no comma).
   const newHooves = hadComma ? hoovesLine : `${hoovesLine},`;
@@ -198,7 +198,7 @@ function main() {
     }
 
     // Idempotent: skip files already carrying a topline region.
-    if (profile.rating_profiles?.conformation?.topline) {
+    if (profile.ratingProfiles?.conformation?.topline) {
       skipped += 1;
       continue;
     }
@@ -208,19 +208,19 @@ function main() {
 
     // Prove the edit yields valid JSON with exactly 8 conformation regions.
     const reparsed = parseProfileJson(updated);
-    const regions = Object.keys(reparsed.rating_profiles.conformation);
+    const regions = Object.keys(reparsed.ratingProfiles.conformation);
     if (regions.length !== 8 || !regions.includes('topline')) {
       throw new Error(
         `Post-edit validation failed for ${file}: conformation has ${regions.length} regions (${regions.join(', ')}).`,
       );
     }
-    const tl = reparsed.rating_profiles.conformation.topline;
+    const tl = reparsed.ratingProfiles.conformation.topline;
     if (
       !Number.isFinite(tl.mean) ||
       tl.mean < 0 ||
       tl.mean > 100 ||
-      !Number.isFinite(tl.std_dev) ||
-      tl.std_dev < 0
+      !Number.isFinite(tl.stdDev) ||
+      tl.stdDev < 0
     ) {
       throw new Error(`Post-edit topline for ${file} is out of range: ${JSON.stringify(tl)}.`);
     }

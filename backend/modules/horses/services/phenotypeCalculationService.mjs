@@ -29,7 +29,7 @@ function djb2Hash(str) {
 }
 
 /**
- * Expand a shade_bias weight map into a flat array of shade strings for index-based selection.
+ * Expand a shadeBias weight map into a flat array of shade strings for index-based selection.
  * Weights are scaled to 10 slots (0.1 precision).
  * E.g. { dark: 0.3, light: 0.3, standard: 0.4 } → 3×'dark', 3×'light', 4×'standard'
  *
@@ -623,11 +623,11 @@ function applyPatterns(genotype, colorName, genotypeHash) {
 // ---------------------------------------------------------------------------
 
 /**
- * Select shade deterministically from breed shade_bias for the given colorName.
+ * Select shade deterministically from breed shadeBias for the given colorName.
  * Uses genotypeHash for index-based deterministic selection.
  *
  * @param {string} colorName
- * @param {Object|null} shadeBias - breed's shade_bias map
+ * @param {Object|null} shadeBias - breed's shadeBias map
  * @param {number} genotypeHash
  * @returns {string} shade string
  */
@@ -658,7 +658,7 @@ function selectShade(colorName, shadeBias, genotypeHash) {
  * Deterministic: same genotype + same shadeBias always returns identical output.
  *
  * @param {Object} genotype - colorGenotype from genotypeGenerationService
- * @param {Object|null} shadeBias - breed's shade_bias map (from breedGeneticProfile.shade_bias)
+ * @param {Object|null} shadeBias - breed's shadeBias map (from breedGeneticProfile.shadeBias)
  * @returns {Object} phenotype
  */
 export function calculatePhenotype(genotype, shadeBias = null) {

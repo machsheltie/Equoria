@@ -9,7 +9,7 @@
  *
  * Contract:
  *   - Each of the 12 stats is sampled from a per-breed normal distribution
- *     (mean, std_dev) defined in `backend/data/breedStarterStats.json`.
+ *     (mean, stdDev) defined in `backend/data/breedStarterStats.json`.
  *   - Each individual stat is in [1, 100] inclusive (no zeros — game rule).
  *   - The TOTAL across all 12 stats is ≤ 200 (game rule). Means in the JSON
  *     sum to ~195-200 by design, but Box-Muller variance can push individual
@@ -82,14 +82,14 @@ export const STAT_KEYS = [
  * Sample a single stat using Box-Muller for a true normal distribution.
  * Clamped to [1, 100] — no zeros, no over-100s. Each stat is independent.
  *
- * @param {{ mean: number, std_dev: number }} params
+ * @param {{ mean: number, stdDev: number }} params
  * @returns {number} integer stat value in [1, 100]
  */
-export function sampleStat({ mean, std_dev }) {
+export function sampleStat({ mean, stdDev }) {
   const u1 = Math.random() || Number.EPSILON; // guard against log(0)
   const u2 = Math.random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-  return Math.max(1, Math.min(100, Math.round(mean + std_dev * z)));
+  return Math.max(1, Math.min(100, Math.round(mean + stdDev * z)));
 }
 
 /**
@@ -198,9 +198,9 @@ export function generateStoreStats(breedName) {
   const sampled = Object.fromEntries(
     STAT_KEYS.map(k => {
       const s = profile[k];
-      // JSON uses `std`; sampleStat uses `std_dev`. Accept either.
-      const std_dev = typeof s.std_dev === 'number' ? s.std_dev : s.std;
-      return [k, sampleStat({ mean: s.mean, std_dev: std_dev ?? 3 })];
+      // JSON uses `std`; sampleStat uses `stdDev`. Accept either.
+      const stdDev = typeof s.stdDev === 'number' ? s.stdDev : s.std;
+      return [k, sampleStat({ mean: s.mean, stdDev: stdDev ?? 3 })];
     }),
   );
   // Game rule: total ≤ 200. Means in breedStarterStats.json sum to ~195-200,

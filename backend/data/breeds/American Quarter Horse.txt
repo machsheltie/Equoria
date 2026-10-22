@@ -1,6 +1,6 @@
 INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
 ('American Quarter Horse', 'Trait', $json${
-  "allowed_alleles": {
+  "allowedAlleles": {
     "E_Extension": ["e/e", "E/e", "E/E"],
     "A_Agouti": ["a/a", "A/a", "A/A"],
     "Cr_Cream": ["n/n", "n/Cr", "Cr/Cr"],
@@ -21,10 +21,10 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Prl_Pearl": ["n/n", "n/prl", "prl/prl", "cr/prl"],
     "BR1_Brindle1": ["n/n"]
   },
-  "disallowed_combinations": {
+  "disallowedCombinations": {
     "W_DominantWhite": ["W4/W4", "W20/W20"]
   },
-  "allele_weights": {
+  "alleleWeights": {
     "E_Extension": {"e/e": 0.45, "E/e": 0.40, "E/E": 0.15},
     "A_Agouti": {"a/a": 0.45, "A/a": 0.35, "A/A": 0.20},
     "Cr_Cream": {"n/n": 0.82, "n/Cr": 0.16, "Cr/Cr": 0.02},
@@ -45,21 +45,21 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Prl_Pearl": {"n/n": 0.992, "n/prl": 0.007, "prl/prl": 0.001, "cr/prl": 0.0},
     "BR1_Brindle1": {"n/n": 1.0}
   },
-  "marking_bias": {
+  "markingBias": {
     "face": {"none": 0.25, "star": 0.24, "strip": 0.16, "blaze": 0.18, "snip": 0.17},
-    "legs_general_probability": 0.50,
-    "leg_specific_probabilities": {
+    "legsGeneralProbability": 0.50,
+    "legSpecificProbabilities": {
       "coronet": 0.25, "pastern": 0.28, "sock": 0.27, "stocking": 0.20
     },
-    "max_legs_marked": 4
+    "maxLegsMarked": 4
   },
-  "boolean_modifiers_prevalence": {
+  "booleanModifiersPrevalence": {
     "sooty": 0.25,
     "flaxen": 0.10,
     "pangare": 0.08,
     "rabicano": 0.04
   },
-  "shade_bias": {
+  "shadeBias": {
     "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
     "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
     "Black": {"standard": 0.5, "faded": 0.5},
@@ -101,32 +101,32 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Dominant White": {"white": 1.0},
     "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
   },
-  "advanced_markings_bias": {
-    "bloody_shoulder_probability_multiplier": 1.0,
-    "snowflake_probability_multiplier": 0.0,
-    "frost_probability_multiplier": 0.0
+  "advancedMarkingsBias": {
+    "bloodyShoulderProbabilityMultiplier": 1.0,
+    "snowflakeProbabilityMultiplier": 0.0,
+    "frostProbabilityMultiplier": 0.0
   },
-  "rating_profiles": {
+  "ratingProfiles": {
     "conformation": {
-      "head": { "mean": 80, "std_dev": 7 },
-      "neck": { "mean": 76, "std_dev": 7 },
-      "shoulders": { "mean": 80, "std_dev": 7 },
-      "back": { "mean": 78, "std_dev": 7 },
-      "hindquarters": { "mean": 90, "std_dev": 6 },
-      "legs": { "mean": 78, "std_dev": 7 },
-      "hooves": { "mean": 72, "std_dev": 8 },
-      "topline": { "mean": 78, "std_dev": 7 }
+      "head": { "mean": 80, "stdDev": 7 },
+      "neck": { "mean": 76, "stdDev": 7 },
+      "shoulders": { "mean": 80, "stdDev": 7 },
+      "back": { "mean": 78, "stdDev": 7 },
+      "hindquarters": { "mean": 90, "stdDev": 6 },
+      "legs": { "mean": 78, "stdDev": 7 },
+      "hooves": { "mean": 72, "stdDev": 8 },
+      "topline": { "mean": 78, "stdDev": 7 }
     },
     "gaits": {
-      "walk": { "mean": 72, "std_dev": 8 },
-      "trot": { "mean": 76, "std_dev": 8 },
-      "canter": { "mean": 82, "std_dev": 8 },
-      "gallop": { "mean": 92, "std_dev": 7 },
+      "walk": { "mean": 72, "stdDev": 8 },
+      "trot": { "mean": 76, "stdDev": 8 },
+      "canter": { "mean": 82, "stdDev": 8 },
+      "gallop": { "mean": 92, "stdDev": 7 },
       "gaiting": null
     },
-    "is_gaited_breed": false
+    "isGaitedBreed": false
   },
-  "temperament_weights": {
+  "temperamentWeights": {
     "Spirited": 6,
     "Nervous": 3,
     "Calm": 16,

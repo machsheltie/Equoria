@@ -6,7 +6,7 @@
  * Coverage:
  *   - sampleWeightedFromMap: weighted random selection
  *   - generateFaceMarking: breed bias weights, default fallback
- *   - generateLegMarkings: general probability, type selection, max_legs_marked cap
+ *   - generateLegMarkings: general probability, type selection, maxLegsMarked cap
  *   - generateAdvancedMarkings: base probability × multiplier
  *   - generateBooleanModifiers: base probabilities, flaxen chestnut-only guard
  *   - generateMarkings: full markings object structure
@@ -139,8 +139,8 @@ describe('generateLegMarkings', () => {
 
   it('all legs are "none" when general probability is 0', () => {
     const bias = {
-      legs_general_probability: 0,
-      leg_specific_probabilities: { coronet: 0.4, pastern: 0.3, sock: 0.2, stocking: 0.1 },
+      legsGeneralProbability: 0,
+      legSpecificProbabilities: { coronet: 0.4, pastern: 0.3, sock: 0.2, stocking: 0.1 },
     };
     const result = generateLegMarkings(bias, Math.random);
     expect(Object.values(result).every(v => v === 'none')).toBe(true);
@@ -148,29 +148,29 @@ describe('generateLegMarkings', () => {
 
   it('all legs are marked (non-none) when general probability is 1', () => {
     const bias = {
-      legs_general_probability: 1,
-      leg_specific_probabilities: { coronet: 0.4, pastern: 0.3, sock: 0.2, stocking: 0.1 },
+      legsGeneralProbability: 1,
+      legSpecificProbabilities: { coronet: 0.4, pastern: 0.3, sock: 0.2, stocking: 0.1 },
     };
     const result = generateLegMarkings(bias, Math.random);
     expect(Object.values(result).every(v => v !== 'none')).toBe(true);
   });
 
-  it('respects max_legs_marked cap — at most N legs are non-none', () => {
+  it('respects maxLegsMarked cap — at most N legs are non-none', () => {
     const bias = {
-      legs_general_probability: 1, // all 4 would mark without cap
-      leg_specific_probabilities: { coronet: 1.0, pastern: 0.0, sock: 0.0, stocking: 0.0 },
-      max_legs_marked: 2,
+      legsGeneralProbability: 1, // all 4 would mark without cap
+      legSpecificProbabilities: { coronet: 1.0, pastern: 0.0, sock: 0.0, stocking: 0.0 },
+      maxLegsMarked: 2,
     };
     const result = generateLegMarkings(bias, Math.random);
     const markedCount = Object.values(result).filter(v => v !== 'none').length;
     expect(markedCount).toBeLessThanOrEqual(2);
   });
 
-  it('max_legs_marked=0 → all legs none', () => {
+  it('maxLegsMarked=0 → all legs none', () => {
     const bias = {
-      legs_general_probability: 1,
-      leg_specific_probabilities: { coronet: 1.0, pastern: 0.0, sock: 0.0, stocking: 0.0 },
-      max_legs_marked: 0,
+      legsGeneralProbability: 1,
+      legSpecificProbabilities: { coronet: 1.0, pastern: 0.0, sock: 0.0, stocking: 0.0 },
+      maxLegsMarked: 0,
     };
     const result = generateLegMarkings(bias, Math.random);
     expect(Object.values(result).every(v => v === 'none')).toBe(true);
@@ -192,9 +192,9 @@ describe('generateAdvancedMarkings', () => {
 
   it('all false when multiplier is 0', () => {
     const bias = {
-      bloody_shoulder_probability_multiplier: 0,
-      snowflake_probability_multiplier: 0,
-      frost_probability_multiplier: 0,
+      bloodyShoulderProbabilityMultiplier: 0,
+      snowflakeProbabilityMultiplier: 0,
+      frostProbabilityMultiplier: 0,
     };
     const result = generateAdvancedMarkings(bias, Math.random);
     expect(result.bloodyShoulderPresent).toBe(false);
@@ -219,9 +219,9 @@ describe('generateAdvancedMarkings', () => {
 
   it('D-1: negative multiplier clamps to 0 probability — all flags false', () => {
     const bias = {
-      bloody_shoulder_probability_multiplier: -10,
-      snowflake_probability_multiplier: -10,
-      frost_probability_multiplier: -10,
+      bloodyShoulderProbabilityMultiplier: -10,
+      snowflakeProbabilityMultiplier: -10,
+      frostProbabilityMultiplier: -10,
     };
     const result = generateAdvancedMarkings(bias, alwaysReturn(0));
     expect(result.bloodyShoulderPresent).toBe(false);
@@ -232,9 +232,9 @@ describe('generateAdvancedMarkings', () => {
   it('multiplier amplifies base rate — multiplier=10 with rng=0.15 passes bloody shoulder', () => {
     // base rate = 0.02, multiplier=10 → effective = 0.2, rng=0.15 < 0.2 → true
     const bias = {
-      bloody_shoulder_probability_multiplier: 10,
-      snowflake_probability_multiplier: 1,
-      frost_probability_multiplier: 1,
+      bloodyShoulderProbabilityMultiplier: 10,
+      snowflakeProbabilityMultiplier: 1,
+      frostProbabilityMultiplier: 1,
     };
     const result = generateAdvancedMarkings(bias, alwaysReturn(0.15));
     expect(result.bloodyShoulderPresent).toBe(true);
@@ -320,17 +320,17 @@ describe('generateMarkings', () => {
 
   it('does not throw with full breed profile', () => {
     const profile = {
-      marking_bias: {
+      markingBias: {
         face: { none: 0.7, star: 0.1, strip: 0.1, blaze: 0.05, snip: 0.05 },
-        legs_general_probability: 0.2,
-        leg_specific_probabilities: { coronet: 0.4, pastern: 0.3, sock: 0.2, stocking: 0.1 },
-        max_legs_marked: 2,
+        legsGeneralProbability: 0.2,
+        legSpecificProbabilities: { coronet: 0.4, pastern: 0.3, sock: 0.2, stocking: 0.1 },
+        maxLegsMarked: 2,
       },
-      boolean_modifiers_prevalence: { sooty: 0.5, flaxen: 0.0, pangare: 0.2, rabicano: 0.0 },
-      advanced_markings_bias: {
-        bloody_shoulder_probability_multiplier: 1.0,
-        snowflake_probability_multiplier: 1.0,
-        frost_probability_multiplier: 1.0,
+      booleanModifiersPrevalence: { sooty: 0.5, flaxen: 0.0, pangare: 0.2, rabicano: 0.0 },
+      advancedMarkingsBias: {
+        bloodyShoulderProbabilityMultiplier: 1.0,
+        snowflakeProbabilityMultiplier: 1.0,
+        frostProbabilityMultiplier: 1.0,
       },
     };
     expect(() => generateMarkings(profile, 'Bay', Math.random)).not.toThrow();

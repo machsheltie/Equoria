@@ -205,7 +205,7 @@ describe('normalRandom', () => {
       samples.push(normalRandom(mean, stdDev));
     }
     const sampleMean = samples.reduce((a, b) => a + b, 0) / samples.length;
-    // With 2000 samples and std_dev=8, the standard error is 8/sqrt(2000) ≈ 0.179
+    // With 2000 samples and stdDev=8, the standard error is 8/sqrt(2000) ≈ 0.179
     // 99% CI is about ±0.46, so tolerance of ±2 is very generous
     expect(sampleMean).toBeGreaterThan(mean - 2);
     expect(sampleMean).toBeLessThan(mean + 2);
@@ -261,14 +261,14 @@ describe('clampScore', () => {
 
   // Task 3.5: Edge cases for extreme means
   test('handles extreme mean near 0 (breed with low mean)', () => {
-    // Simulate a score generated from mean=5, std_dev=8
+    // Simulate a score generated from mean=5, stdDev=8
     // Some values will go negative and should be clamped to 0
     expect(clampScore(-3)).toBe(0);
     expect(clampScore(2.7)).toBe(3);
   });
 
   test('handles extreme mean near 100', () => {
-    // Simulate a score generated from mean=98, std_dev=8
+    // Simulate a score generated from mean=98, stdDev=8
     // Some values will exceed 100 and should be clamped
     expect(clampScore(106)).toBe(100);
     expect(clampScore(97.3)).toBe(97);
@@ -281,7 +281,7 @@ describe('Statistical validation - normal distribution verification', () => {
   test('95% of 10000 generated scores fall within breedMean ± 2*stdDev per region', () => {
     const breedName = 'Thoroughbred'; // Thoroughbred
     // Use the same data source the service uses (breedProfiles.json via getBreedProfile).
-    const conformation = getBreedProfile(breedName).rating_profiles.conformation;
+    const conformation = getBreedProfile(breedName).ratingProfiles.conformation;
     const sampleSize = 10000;
     const allScores = [];
 
@@ -292,7 +292,7 @@ describe('Statistical validation - normal distribution verification', () => {
     // Check each region independently
     for (const region of CONFORMATION_REGIONS) {
       const regionMean = conformation[region].mean;
-      const regionStdDev = conformation[region].std_dev;
+      const regionStdDev = conformation[region].stdDev;
       const lowerBound = regionMean - 2 * regionStdDev;
       const upperBound = regionMean + 2 * regionStdDev;
 
@@ -302,7 +302,7 @@ describe('Statistical validation - normal distribution verification', () => {
 
       const percentage = (withinRange / sampleSize) * 100;
 
-      // Normal distribution: ~95.4% within 2 std_devs (AC #5 specifies 95%).
+      // Normal distribution: ~95.4% within 2 stdDevs (AC #5 specifies 95%).
       // n=10000 makes sampling variance negligible (z-score ~23 below threshold).
       expect(percentage).toBeGreaterThanOrEqual(90);
     }

@@ -91,10 +91,10 @@ if (!process.env.DATABASE_URL) {
 // before binding the listener and uses the DB profile (richer: color
 // genetics, post-26qjf-imported breed data). The tests in this codebase
 // were authored against breedProfiles.json and assert JSON-shaped values
-// (e.g. specific gaited_gait_registry orderings, breed-specific gait names)
+// (e.g. specific gaitedGaitRegistry orderings, breed-specific gait names)
 // that diverge from the DB SQL data in real ways — see follow-up issue
-// for the reconciliation work (align DB rating_profiles.gaits ordering,
-// gaited_gait_registry contents, and conformation regions to the JSON
+// for the reconciliation work (align DB ratingProfiles.gaits ordering,
+// gaitedGaitRegistry contents, and conformation regions to the JSON
 // before the cache can be preloaded in tests without per-test surgery).
 // Tests that NEED cache behavior must call preloadBreedProfiles(prisma)
 // explicitly in their own beforeAll; the JSON fallback covers everything

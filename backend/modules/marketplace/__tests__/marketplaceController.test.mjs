@@ -413,12 +413,12 @@ describe('marketplaceController integration', () => {
     });
 
     // Equoria-xooh AC-7: stat-range verification. Purchased horse stats must
-    // fall within the breed's mean ± k*std_dev window. We use k=6 (deeper
-    // than 3*std_dev to absorb Box-Muller variance + clampStatsToTotalCap
+    // fall within the breed's mean ± k*stdDev window. We use k=6 (deeper
+    // than 3*stdDev to absorb Box-Muller variance + clampStatsToTotalCap
     // post-hoc adjustments at the 200-total cap). Tight enough to catch a
     // generator regression that returns zeros or constants; loose enough to
     // avoid flaking on legitimate distribution outliers.
-    it('purchased horse stats fall within breed mean ± 6*std_dev (AC-7 sentinel)', async () => {
+    it('purchased horse stats fall within breed mean ± 6*stdDev (AC-7 sentinel)', async () => {
       if (!realBreedId) {
         return; // Skip if no breeds in DB
       }
@@ -454,9 +454,9 @@ describe('marketplaceController integration', () => {
       const stored = await prisma.horse.findUnique({ where: { id: horseId } });
 
       // For each stat key in the breed profile, assert the sampled value
-      // falls within mean ± 6*std_dev. Box-Muller variance plus the
+      // falls within mean ± 6*stdDev. Box-Muller variance plus the
       // total-cap clamp can push individual stats off the mean by several
-      // std_dev, so we use a generous bound here. The point is to catch a
+      // stdDev, so we use a generous bound here. The point is to catch a
       // generator regression that returns constant zeros or random 1-100,
       // not to pin the distribution shape.
       const STAT_KEYS = [
@@ -476,7 +476,7 @@ describe('marketplaceController integration', () => {
       for (const key of STAT_KEYS) {
         const s = profile[key];
         const mean = s.mean;
-        const std = s.std ?? s.std_dev ?? 3;
+        const std = s.std ?? s.stdDev ?? 3;
         const value = stored[key];
         expect(typeof value).toBe('number');
         // Lower bound: 1 (game minimum) OR mean - 6*std, whichever is higher

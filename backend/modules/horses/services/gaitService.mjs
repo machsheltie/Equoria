@@ -98,11 +98,9 @@ export function validateGaitScores(scores) {
  */
 export function generateGaitScores(breedName, conformationScores) {
   const profile = getBreedProfile(breedName);
-  const gaits = profile.rating_profiles?.gaits;
+  const gaits = profile.ratingProfiles?.gaits;
   if (!gaits) {
-    throw new Error(
-      `breedProfiles.json entry for "${breedName}" is missing rating_profiles.gaits.`,
-    );
+    throw new Error(`breedProfiles.json entry for "${breedName}" is missing ratingProfiles.gaits.`);
   }
   const scores = {};
 
@@ -112,22 +110,22 @@ export function generateGaitScores(breedName, conformationScores) {
     if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
       throw new Error(
         `breedProfiles.json entry for "${breedName}" missing gait "${gait}" ` +
-          'in rating_profiles.gaits. All 4 standard gaits (walk/trot/canter/gallop) are required.',
+          'in ratingProfiles.gaits. All 4 standard gaits (walk/trot/canter/gallop) are required.',
       );
     }
     const bonus = calculateConformationBonus(conformationScores, gait);
-    const rawScore = normalRandom(gaitProfile.mean, gaitProfile.std_dev) + bonus;
+    const rawScore = normalRandom(gaitProfile.mean, gaitProfile.stdDev) + bonus;
     scores[gait] = clampScore(rawScore);
   }
 
   // Generate gaited gait entries for gaited breeds — each named gait gets an independent roll
-  if (profile.rating_profiles.is_gaited_breed && gaits.gaiting) {
+  if (profile.ratingProfiles.isGaitedBreed && gaits.gaiting) {
     const gaitingProfile = gaits.gaiting;
     const bonus = calculateConformationBonus(conformationScores, 'gaiting');
 
-    const gaitedNames = profile.rating_profiles.gaited_gait_registry || [];
+    const gaitedNames = profile.ratingProfiles.gaitedGaitRegistry || [];
     scores.gaiting = gaitedNames.map(name => {
-      const rawScore = normalRandom(gaitingProfile.mean, gaitingProfile.std_dev) + bonus;
+      const rawScore = normalRandom(gaitingProfile.mean, gaitingProfile.stdDev) + bonus;
       return { name, score: clampScore(rawScore) };
     });
   } else {
@@ -163,10 +161,10 @@ export function generateInheritedGaitScores(
   }
 
   const profile = getBreedProfile(breedName);
-  const gaits = profile.rating_profiles?.gaits;
+  const gaits = profile.ratingProfiles?.gaits;
   if (!gaits) {
     throw new Error(
-      `breedProfiles.json entry for "${breedName}" is missing rating_profiles.gaits (inherited path).`,
+      `breedProfiles.json entry for "${breedName}" is missing ratingProfiles.gaits (inherited path).`,
     );
   }
   const scores = {};
@@ -177,7 +175,7 @@ export function generateInheritedGaitScores(
     if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
       throw new Error(
         `breedProfiles.json entry for "${breedName}" missing gait "${gait}" ` +
-          'in rating_profiles.gaits (inherited path).',
+          'in ratingProfiles.gaits (inherited path).',
       );
     }
     // Guard against NaN/non-finite parent scores from corrupted DB data
@@ -193,12 +191,12 @@ export function generateInheritedGaitScores(
     const parentAvg = ((sireVal ?? gaitProfile.mean) + (damVal ?? gaitProfile.mean)) / 2;
     const baseValue = parentAvg * 0.6 + gaitProfile.mean * 0.4;
     const bonus = calculateConformationBonus(conformationScores, gait);
-    scores[gait] = clampScore(normalRandom(baseValue, gaitProfile.std_dev) + bonus);
+    scores[gait] = clampScore(normalRandom(baseValue, gaitProfile.stdDev) + bonus);
   }
 
   // Gaited gait availability depends on FOAL's breed, not parents
   // Each named gait gets an independent variance roll
-  if (profile.rating_profiles.is_gaited_breed && gaits.gaiting) {
+  if (profile.ratingProfiles.isGaitedBreed && gaits.gaiting) {
     const gaitingProfile = gaits.gaiting;
     const bonus = calculateConformationBonus(conformationScores, 'gaiting');
 
@@ -228,10 +226,10 @@ export function generateInheritedGaitScores(
       inheritedBaseValue = gaitingProfile.mean;
     }
 
-    const gaitedNames = profile.rating_profiles.gaited_gait_registry || [];
+    const gaitedNames = profile.ratingProfiles.gaitedGaitRegistry || [];
     scores.gaiting = gaitedNames.map(name => {
       const gaitingScore = clampScore(
-        normalRandom(inheritedBaseValue, gaitingProfile.std_dev) + bonus,
+        normalRandom(inheritedBaseValue, gaitingProfile.stdDev) + bonus,
       );
       return { name, score: gaitingScore };
     });

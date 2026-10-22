@@ -135,21 +135,21 @@ export function weightedRandomSelect(weights) {
 
 /**
  * Generate a temperament for a horse based on its breed's temperament weights.
- * Uses weighted random selection from the breed's temperament_weights in breedProfiles.json
- * (via getBreedProfile). Throws if the breed is unknown or its profile lacks temperament_weights.
+ * Uses weighted random selection from the breed's temperamentWeights in breedProfiles.json
+ * (via getBreedProfile). Throws if the breed is unknown or its profile lacks temperamentWeights.
  * If the weighted-selection result is not one of the 12 canonical temperament types (e.g. a
  * misspelled key in the JSON), falls back to a uniformly-random valid type.
  *
  * @param {string} breedName - Breed display name
  * @returns {string} One of the 12 temperament types
- * @throws {Error} if the breed is missing from breedProfiles.json or lacks temperament_weights
+ * @throws {Error} if the breed is missing from breedProfiles.json or lacks temperamentWeights
  */
 export function generateTemperament(breedName) {
   const profile = getBreedProfile(breedName);
 
-  const weights = profile.temperament_weights;
+  const weights = profile.temperamentWeights;
   if (!weights || typeof weights !== 'object' || Object.keys(weights).length === 0) {
-    throw new Error(`breedProfiles.json entry for "${breedName}" is missing temperament_weights.`);
+    throw new Error(`breedProfiles.json entry for "${breedName}" is missing temperamentWeights.`);
   }
 
   const temperament = weightedRandomSelect(weights);
@@ -172,7 +172,7 @@ export function generateTemperament(breedName) {
 }
 
 /**
- * Default breed whose temperament_weights are used when a horse has no breed
+ * Default breed whose temperamentWeights are used when a horse has no breed
  * (e.g. the registration starter horse) or an unknown breed. Thoroughbred is
  * the canonical default elsewhere in the codebase (generateTemperament(1)).
  */

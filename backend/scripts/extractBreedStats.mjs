@@ -25,14 +25,14 @@ const files = fs.readdirSync(dir).filter(f => f.endsWith('.txt') && f !== 'gener
 for (const f of files) {
   const name = f.replace('.txt', '');
   const content = fs.readFileSync(path.join(dir, f), 'utf-8');
-  if (!content.includes('starter_stats')) {
+  if (!content.includes('starterStats')) {
     continue;
   }
 
   const breedStats = {};
   for (const stat of stats10) {
     const re = new RegExp(
-      `"${stat}"\\s*:\\s*\\{\\s*"mean"\\s*:\\s*(\\d+)\\s*,\\s*"std_dev"\\s*:\\s*(\\d+)`,
+      `"${stat}"\\s*:\\s*\\{\\s*"mean"\\s*:\\s*(\\d+)\\s*,\\s*"stdDev"\\s*:\\s*(\\d+)`,
     );
     const m = content.match(re);
     if (m) {

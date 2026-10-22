@@ -38,7 +38,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
 const SAMPLES_DIR = path.join(REPO_ROOT, 'samples', 'Breeds');
 
-const REQUIRED_TOP_LEVEL_KEYS = ['allowed_alleles', 'allele_weights', 'shade_bias', 'marking_bias'];
+const REQUIRED_TOP_LEVEL_KEYS = ['allowedAlleles', 'alleleWeights', 'shadeBias', 'markingBias'];
 
 // Match INSERT INTO breeds (...) VALUES ('name', 'trait', $json$ … $json$::TYPE)
 // The trait value can be a quoted literal; the JSONB body is wrapped in $json$
@@ -90,36 +90,36 @@ function validateProfile(profile) {
     }
   }
 
-  // Validate allele_weights sums (each locus's probabilities should sum to ~1.0).
-  if (profile.allele_weights && typeof profile.allele_weights === 'object') {
-    for (const [locus, weights] of Object.entries(profile.allele_weights)) {
+  // Validate alleleWeights sums (each locus's probabilities should sum to ~1.0).
+  if (profile.alleleWeights && typeof profile.alleleWeights === 'object') {
+    for (const [locus, weights] of Object.entries(profile.alleleWeights)) {
       if (!weights || typeof weights !== 'object') {
-        errors.push(`allele_weights[${locus}] is not an object`);
+        errors.push(`alleleWeights[${locus}] is not an object`);
         continue;
       }
       const sum = Object.values(weights).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
       if (Math.abs(sum - 1) > 0.001) {
-        errors.push(`allele_weights[${locus}] sums to ${sum.toFixed(4)}, expected 1.0`);
+        errors.push(`alleleWeights[${locus}] sums to ${sum.toFixed(4)}, expected 1.0`);
       }
     }
   }
 
-  // Validate every allele in allele_weights exists in allowed_alleles.
+  // Validate every allele in alleleWeights exists in allowedAlleles.
   if (
-    profile.allele_weights &&
-    profile.allowed_alleles &&
-    typeof profile.allele_weights === 'object' &&
-    typeof profile.allowed_alleles === 'object'
+    profile.alleleWeights &&
+    profile.allowedAlleles &&
+    typeof profile.alleleWeights === 'object' &&
+    typeof profile.allowedAlleles === 'object'
   ) {
-    for (const locus of Object.keys(profile.allele_weights)) {
-      const allowed = new Set(profile.allowed_alleles[locus] ?? []);
+    for (const locus of Object.keys(profile.alleleWeights)) {
+      const allowed = new Set(profile.allowedAlleles[locus] ?? []);
       if (allowed.size === 0) {
-        errors.push(`locus ${locus}: allele_weights present but allowed_alleles missing`);
+        errors.push(`locus ${locus}: alleleWeights present but allowedAlleles missing`);
         continue;
       }
-      for (const allele of Object.keys(profile.allele_weights[locus])) {
+      for (const allele of Object.keys(profile.alleleWeights[locus])) {
         if (!allowed.has(allele)) {
-          errors.push(`locus ${locus}: weight for "${allele}" not in allowed_alleles`);
+          errors.push(`locus ${locus}: weight for "${allele}" not in allowedAlleles`);
         }
       }
     }

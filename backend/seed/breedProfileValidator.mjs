@@ -45,7 +45,7 @@ export const EXPECTED_CONFORMATION_REGIONS = Object.freeze([
  * Canonical core gaits every breed profile must carry, each with a finite
  * mean. (`gaiting` is the OPTIONAL 5th gait key — present-and-scored for
  * gaited breeds, null for non-gaited — and is therefore NOT in this required
- * set; its presence/nullness is governed by is_gaited_breed below.)
+ * set; its presence/nullness is governed by isGaitedBreed below.)
  *
  * Exported (Equoria-4xwj1) so the source-completeness sentinel
  * (breedSourceGaitsTemperament.sentinel.test.mjs) asserts the 312
@@ -59,7 +59,7 @@ export const EXPECTED_CONFORMATION_REGIONS = Object.freeze([
 export const EXPECTED_GAITS = Object.freeze(['walk', 'trot', 'canter', 'gallop']);
 
 /**
- * Canonical temperament_weights keys every breed profile must carry. All 312
+ * Canonical temperamentWeights keys every breed profile must carry. All 312
  * source files store exactly these 12 keys, each an integer, summing to 100
  * (verified 2026-06-02, Equoria-4xwj1 source audit; owner ruling 2026-10-21
  * renamed Playful to Driven and added Willing). These are the same 12
@@ -88,7 +88,7 @@ export const EXPECTED_TEMPERAMENT_WEIGHT_KEYS = Object.freeze([
 ]);
 
 /**
- * Sum every temperament_weights map must equal (verified across all 312
+ * Sum every temperamentWeights map must equal (verified across all 312
  * source files). Exported so the sentinel asserts the same invariant the
  * runtime validator enforces.
  *
@@ -102,12 +102,12 @@ export const EXPECTED_TEMPERAMENT_WEIGHT_SUM = 100;
  *
  * Checks:
  *   - profile is a non-null object
- *   - rating_profiles.conformation has the 8 expected regions, each with
- *     finite mean (0-100) and finite std_dev
- *   - rating_profiles.gaits has the 4 required gaits (walk/trot/canter/gallop)
- *     with finite means; gaiting score required for is_gaited_breed=true and
- *     forbidden for is_gaited_breed=false
- *   - temperament_weights is a 12-key map of integers summing to 100
+ *   - ratingProfiles.conformation has the 8 expected regions, each with
+ *     finite mean (0-100) and finite stdDev
+ *   - ratingProfiles.gaits has the 4 required gaits (walk/trot/canter/gallop)
+ *     with finite means; gaiting score required for isGaitedBreed=true and
+ *     forbidden for isGaitedBreed=false
+ *   - temperamentWeights is a 12-key map of integers summing to 100
  *
  * @param {number} _breedId - reserved for future breed-specific rules
  * @param {object} profile  - the profile to validate
@@ -122,12 +122,12 @@ export function validateProfile(_breedId, profile) {
     return errors;
   }
 
-  if (!profile.rating_profiles) {
-    errors.push('missing rating_profiles');
+  if (!profile.ratingProfiles) {
+    errors.push('missing ratingProfiles');
     return errors;
   }
 
-  const rp = profile.rating_profiles;
+  const rp = profile.ratingProfiles;
 
   // ── Conformation ────────────────────────────────────────────────────────
   // EXPECTED_CONFORMATION_REGIONS is the module-level exported constant
@@ -147,14 +147,14 @@ export function validateProfile(_breedId, profile) {
       errors.push(`missing conformation region: ${region}`);
       continue;
     }
-    const { mean, std_dev } = conformation[region];
+    const { mean, stdDev } = conformation[region];
     if (!Number.isFinite(mean)) {
       errors.push(`conformation.${region}.mean is not a finite number`);
     } else if (mean < 0 || mean > 100) {
       errors.push(`conformation.${region}.mean out of range (got ${mean})`);
     }
-    if (!Number.isFinite(std_dev)) {
-      errors.push(`conformation.${region}.std_dev is not a finite number`);
+    if (!Number.isFinite(stdDev)) {
+      errors.push(`conformation.${region}.stdDev is not a finite number`);
     }
   }
 
@@ -162,9 +162,9 @@ export function validateProfile(_breedId, profile) {
   // EXPECTED_GAITS is the module-level exported constant (Equoria-4xwj1) —
   // shared with the source-completeness sentinel so both validate against one
   // canonical list. `gaiting` is intentionally NOT in this set; its
-  // presence/nullness is governed by is_gaited_breed just below.
+  // presence/nullness is governed by isGaitedBreed just below.
   const gaits = rp.gaits ?? {};
-  const isGaited = rp.is_gaited_breed === true;
+  const isGaited = rp.isGaitedBreed === true;
 
   for (const gait of EXPECTED_GAITS) {
     if (!gaits[gait]) {
@@ -180,8 +180,8 @@ export function validateProfile(_breedId, profile) {
     if (gaits.gaiting === null || gaits.gaiting === undefined) {
       errors.push('gaited breed must have non-null gaiting score');
     }
-    if (!Array.isArray(rp.gaited_gait_registry) || rp.gaited_gait_registry.length === 0) {
-      errors.push('gaited breed must have non-empty gaited_gait_registry');
+    if (!Array.isArray(rp.gaitedGaitRegistry) || rp.gaitedGaitRegistry.length === 0) {
+      errors.push('gaited breed must have non-empty gaitedGaitRegistry');
     }
   } else if (gaits.gaiting !== null && gaits.gaiting !== undefined) {
     errors.push('non-gaited breed must have null gaiting score');
@@ -190,19 +190,19 @@ export function validateProfile(_breedId, profile) {
   // ── Temperament weights ──────────────────────────────────────────────────
   // EXPECTED_TEMPERAMENT_WEIGHT_KEYS / _SUM are the module-level exported
   // constants (Equoria-4xwj1) — shared with the source-completeness sentinel.
-  const tw = profile.temperament_weights ?? {};
+  const tw = profile.temperamentWeights ?? {};
   const twKeys = Object.keys(tw);
 
   if (twKeys.length !== EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length) {
     errors.push(
-      `temperament_weights has ${twKeys.length} keys, expected ${EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length}`,
+      `temperamentWeights has ${twKeys.length} keys, expected ${EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length}`,
     );
   }
 
   let twSum = 0;
   for (const [key, val] of Object.entries(tw)) {
     if (!Number.isInteger(val)) {
-      errors.push(`temperament_weights.${key} is not an integer`);
+      errors.push(`temperamentWeights.${key} is not an integer`);
     }
     twSum += val;
   }

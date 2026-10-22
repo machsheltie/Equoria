@@ -173,17 +173,17 @@ export function filterLethalGenotypes(genotypeProbabilities) {
  * probabilities (Equoria-26qjf.2).
  *
  * Mirrors filterLethalGenotypes but uses the foal breed profile's
- * disallowed_combinations (built into a per-locus Set map). A genotype is
+ * disallowedCombinations (built into a per-locus Set map). A genotype is
  * removed if ANY of its loci values is in the breed's disallowed set for that
  * locus. After removal, surviving probabilities are renormalized to sum to 1.0
  * so the prediction chart still totals 100%.
  *
  * No-op (returns input unchanged, count 0) when the profile declares no
- * disallowed_combinations — preserves prior behavior for the 307/313 breeds
+ * disallowedCombinations — preserves prior behavior for the 307/313 breeds
  * with an empty map.
  *
  * @param {Array<{genotype: object, prob: number}>} genotypeProbabilities
- * @param {object|null} foalBreedProfile - breedGeneticProfile with disallowed_combinations
+ * @param {object|null} foalBreedProfile - breedGeneticProfile with disallowedCombinations
  * @returns {{filtered: Array<{genotype: object, prob: number}>, disallowedCount: number}}
  */
 export function filterDisallowedGenotypes(genotypeProbabilities, foalBreedProfile) {
@@ -222,18 +222,18 @@ export function filterDisallowedGenotypes(genotypeProbabilities, foalBreedProfil
  * replacements don't create un-normalized duplicates.
  *
  * @param {Array<{genotype: object, prob: number}>} genotypeProbabilities
- * @param {object|null} foalBreedProfile - breedGeneticProfile with allowed_alleles
+ * @param {object|null} foalBreedProfile - breedGeneticProfile with allowedAlleles
  * @returns {Array<{genotype: object, prob: number}>} - modified in place
  */
 export function applyBreedRestrictions(genotypeProbabilities, foalBreedProfile) {
-  if (!foalBreedProfile || !foalBreedProfile.allowed_alleles) {
+  if (!foalBreedProfile || !foalBreedProfile.allowedAlleles) {
     return genotypeProbabilities;
   }
 
-  const { allowed_alleles: allowedAlleles } = foalBreedProfile;
+  const { allowedAlleles } = foalBreedProfile;
   // Equoria-26qjf.2: also avoid rewriting a locus INTO a breed-disallowed pair.
-  // (Self-inconsistent profile where allowed_alleles[locus][0] is itself listed
-  // in disallowed_combinations — no real breed does this, but the guard keeps
+  // (Self-inconsistent profile where allowedAlleles[locus][0] is itself listed
+  // in disallowedCombinations — no real breed does this, but the guard keeps
   // applyBreedRestrictions from re-introducing a pair filterDisallowedGenotypes
   // just removed.)
   const disallowedMap = buildDisallowedMap(foalBreedProfile);
@@ -262,7 +262,7 @@ export function applyBreedRestrictions(genotypeProbabilities, foalBreedProfile) 
  * sum probabilities, and return sorted array.
  *
  * @param {Array<{genotype: object, prob: number}>} genotypeProbabilities
- * @param {object|null} shadeBias - from breedGeneticProfile.shade_bias
+ * @param {object|null} shadeBias - from breedGeneticProfile.shadeBias
  * @returns {Array<{colorName: string, probability: number, percentage: string}>}
  */
 export function aggregateByPhenotype(genotypeProbabilities, shadeBias) {
@@ -313,11 +313,11 @@ export function predictBreedingColors(sireGenotype, damGenotype, foalBreedProfil
     foalBreedProfile,
   );
 
-  // Step 4: Apply breed restrictions (allowed_alleles whitelist)
+  // Step 4: Apply breed restrictions (allowedAlleles whitelist)
   const restricted = applyBreedRestrictions(nonDisallowed, foalBreedProfile);
 
   // Step 5: Aggregate by phenotype color name
-  const shadeBias = foalBreedProfile?.shade_bias ?? null;
+  const shadeBias = foalBreedProfile?.shadeBias ?? null;
   const possibleColors = aggregateByPhenotype(restricted, shadeBias);
 
   return {

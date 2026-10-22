@@ -7,7 +7,7 @@
  * (`backend/data/breeds/`, where `populateBreedsFromSql.mjs` reads from
  * post-26qjf.3) has a corresponding `breeds` row with:
  *   - a non-null breedGeneticProfile JSONB column, AND
- *   - a `shade_bias` key inside that profile.
+ *   - a `shadeBias` key inside that profile.
  *
  * Why this exists:
  *   The Equoria-c3kb6 DB-nuke incident (2026-05-28) silently wiped the breeds
@@ -108,7 +108,7 @@ describe('breed-count sentinel (Equoria-oau0u — post-26qjf.3 regression gate)'
     await prisma.$disconnect();
   });
 
-  it(`every breed in ${BREED_DATA_DIR} has a DB row with shade_bias`, async () => {
+  it(`every breed in ${BREED_DATA_DIR} has a DB row with shadeBias`, async () => {
     const expected = await expectedBreedNamesFromFiles();
 
     // Defense-in-depth: catch a future glob/path regression that would
@@ -129,8 +129,8 @@ describe('breed-count sentinel (Equoria-oau0u — post-26qjf.3 regression gate)'
         p !== undefined &&
         typeof p === 'object' &&
         !Array.isArray(p) &&
-        p.shade_bias !== undefined &&
-        p.shade_bias !== null
+        p.shadeBias !== undefined &&
+        p.shadeBias !== null
       ) {
         dbWithShadeBias.add(r.name);
       }
@@ -146,7 +146,7 @@ describe('breed-count sentinel (Equoria-oau0u — post-26qjf.3 regression gate)'
       const suffix = missing.length > 20 ? ` (... +${missing.length - 20} more)` : '';
       throw new Error(
         `[breedCountSentinel] ${missing.length} breed(s) present in ${BREED_DATA_DIR} ` +
-          `but missing from DB (or missing shade_bias on their profile): ${preview}${suffix}. ` +
+          `but missing from DB (or missing shadeBias on their profile): ${preview}${suffix}. ` +
           'Run `npm run seed:breeds` from backend/ to re-import.',
       );
     }

@@ -48,12 +48,12 @@ interface BreedsServerResponse {
     name: string;
     description?: string | null;
     /**
-     * Genetic data, trimmed to ONLY `rating_profiles` by the list endpoint
+     * Genetic data, trimmed to ONLY `ratingProfiles` by the list endpoint
      * (Equoria-refgs). GET /api/v1/breeds projects breedGeneticProfile down to
-     * `{ rating_profiles }` and drops the heavy color-genetics / starter_stats /
-     * temperament_weights keys (those remain on GET /api/v1/breeds/:id). We read
-     * only `rating_profiles` to derive statTendencies, so this trim is invisible
-     * here — BreedGeneticProfile already types only the rating_profiles slice.
+     * `{ ratingProfiles }` and drops the heavy color-genetics / starterStats /
+     * temperamentWeights keys (those remain on GET /api/v1/breeds/:id). We read
+     * only `ratingProfiles` to derive statTendencies, so this trim is invisible
+     * here — BreedGeneticProfile already types only the ratingProfiles slice.
      */
     breedGeneticProfile?: BreedGeneticProfile | null;
   }>;
@@ -203,13 +203,13 @@ async function fetchBreeds(): Promise<Breed[]> {
     const preset = lookupPreset(b.name);
 
     // Tendency precedence (Equoria-x83v4):
-    //   1. DERIVED from the breed's REAL rating_profiles (best — covers all 312
+    //   1. DERIVED from the breed's REAL ratingProfiles (best — covers all 312
     //      imported breeds and tracks the DB, no stale 312-entry map).
     //   2. Hand-authored preset (the original ~13 breeds whose authored numbers
     //      predate the import; used only if the API didn't carry profile data).
     //   3. DEFAULT (honest last resort — uniform 40/55/70).
     // This guarantees AC4: no breed lands on DEFAULT tendencies as long as its
-    // rating_profiles is present (which the import populated for all breeds).
+    // ratingProfiles is present (which the import populated for all breeds).
     const derived = deriveBreedTendencies(b.breedGeneticProfile);
     const statTendencies = derived ?? preset?.tendencies ?? DEFAULT_TENDENCIES;
 

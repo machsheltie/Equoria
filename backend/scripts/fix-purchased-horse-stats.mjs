@@ -2,7 +2,7 @@
  * Targeted fix for horses purchased from the store that have stats outside the 1–20 range.
  * Finds horses owned by real users (not E2E test horses) that have any stat > 20,
  * confirms they're store-bought (age 3, no parents), and resets all 12 stats from
- * their breed's starter_stats using a raw DB query to bypass the outdated Prisma client.
+ * their breed's starterStats using a raw DB query to bypass the outdated Prisma client.
  *
  * Run once: node backend/scripts/fix-purchased-horse-stats.mjs
  */
@@ -30,8 +30,8 @@ const STAT_KEYS = [
  *
  * The previous `(Math.random() + Math.random() - 1) * 1.41` form produces a
  * TRIANGULAR distribution, not normal — empirical sample variance of
- * z = (sample - mean) / std_dev is ~0.33 instead of the expected ~1.0.
- * With large std_devs the distribution is under-dispersed, which dampens
+ * z = (sample - mean) / stdDev is ~0.33 instead of the expected ~1.0.
+ * With large stdDevs the distribution is under-dispersed, which dampens
  * the breed differentiation the breed profiles were designed to express.
  * (Equoria-tseq, 31A-era defect.)
  *
@@ -39,11 +39,11 @@ const STAT_KEYS = [
  * Same shape as `backend/services/horseStarterStats.mjs#sampleStat` and
  * `backend/modules/horses/services/conformationService.mjs#normalRandom`.
  */
-function sampleStat({ mean, std_dev }) {
+function sampleStat({ mean, stdDev }) {
   const u1 = Math.random() || Number.EPSILON; // guard against log(0)
   const u2 = Math.random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-  return Math.max(1, Math.min(20, Math.round(mean + std_dev * z)));
+  return Math.max(1, Math.min(20, Math.round(mean + stdDev * z)));
 }
 
 function generateFromProfile(starterStats) {
@@ -95,7 +95,7 @@ async function main() {
       'SELECT "breedGeneticProfile" FROM breeds WHERE id = $1',
       horse.breedId,
     );
-    const starterStats = profileRow?.breedGeneticProfile?.starter_stats ?? null;
+    const starterStats = profileRow?.breedGeneticProfile?.starterStats ?? null;
 
     let newStats;
     if (starterStats) {

@@ -366,7 +366,7 @@ jobs:
 
       # Equoria-fefh2.36: the real-DB doctrine made suites canonical-data-
       # coupled (e.g. breedCountSentinel asserts all 312 data/breeds rows with
-      # shade_bias). A freshly migrated DB has zero breeds; seed the base data
+      # shadeBias). A freshly migrated DB has zero breeds; seed the base data
       # then the full breed roster (both idempotent).
       - name: Seed canonical test data (base + 312-breed roster)
         working-directory: ./backend

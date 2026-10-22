@@ -7,7 +7,7 @@
  *   1. DB cache populated by `preloadBreedProfiles(prisma)` — full 312-breed
  *      roster from `breeds.breedGeneticProfile` JSONB. The DB profile is the
  *      superset: full conformation (all 8 regions incl. topline), gaits,
- *      temperament, AND color genetics (shade_bias, allele_weights, etc.).
+ *      temperament, AND color genetics (shadeBias, alleleWeights, etc.).
  *   2. backend/data/breedProfiles.json — fallback for the conformation /
  *      gait / temperament subset (no color genetics). Serves the backend
  *      test suite, which intentionally does NOT preload the DB cache (see
@@ -113,7 +113,7 @@ let DB_CACHE = null;
  * a long-lived dev process).
  *
  * Rows whose `breedGeneticProfile` is null, a primitive, an array, or
- * missing `rating_profiles` are skipped — the loader's contract is that
+ * missing `ratingProfiles` are skipped — the loader's contract is that
  * every returned profile has the full conformation/gait/temperament
  * shape, so a malformed DB row is treated as absent rather than served.
  *
@@ -133,13 +133,13 @@ export async function preloadBreedProfiles(prisma) {
     const p = r.breedGeneticProfile;
     // Four-part JSONB guard (CONTRIBUTING.md "JSONB type guard"): typeof null
     // is 'object' and typeof [] is 'object', so we must exclude both
-    // explicitly. Profiles without rating_profiles are useless to consumers.
+    // explicitly. Profiles without ratingProfiles are useless to consumers.
     if (
       p !== null &&
       p !== undefined &&
       typeof p === 'object' &&
       !Array.isArray(p) &&
-      p.rating_profiles
+      p.ratingProfiles
     ) {
       next.set(r.name, p);
     }
@@ -240,8 +240,8 @@ export function getBreedProfile(breedName) {
   // source files (backend/data/breeds/*.txt) now carry all 8 conformation
   // regions — including `topline` — so the DB row imported via
   // populateBreedsFromSql.mjs is a strict superset of the JSON profile
-  // (DB additionally carries color genetics: shade_bias, allele_weights,
-  // marking_bias, etc.). The transitional per-key deep-merge that previously
+  // (DB additionally carries color genetics: shadeBias, alleleWeights,
+  // markingBias, etc.). The transitional per-key deep-merge that previously
   // grafted `topline` from the JSON onto topline-less DB rows (Equoria-wpfvl)
   // is therefore a no-op and has been removed: when the DB has the breed, the
   // DB profile is returned directly, regardless of whether the JSON also has it.

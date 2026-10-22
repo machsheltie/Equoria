@@ -7,11 +7,11 @@
  * no-preload test suite (backend/tests/setup.mjs:92-104) flagged as
  * divergent:
  *
- *   (a) rating_profiles.gaits ORDERING / contents
- *   (b) rating_profiles.gaited_gait_registry + is_gaited_breed
- *   (c) rating_profiles.conformation regions
+ *   (a) ratingProfiles.gaits ORDERING / contents
+ *   (b) ratingProfiles.gaitedGaitRegistry + isGaitedBreed
+ *   (c) ratingProfiles.conformation regions
  *
- * Plus temperament_weights as a bonus dimension.
+ * Plus temperamentWeights as a bonus dimension.
  *
  * This script performs ONLY `SELECT` queries (pg client). It never writes,
  * never runs DDL, never mutates. It exists purely to characterise the
@@ -65,14 +65,14 @@ const CONFORMATION_REGIONS = [
 const GAIT_KEYS_ORDER = ['walk', 'trot', 'canter', 'gallop', 'gaiting'];
 
 function shallowMeanStd(node) {
-  // Normalize a {mean, std_dev} leaf into a compact comparable string.
+  // Normalize a {mean, stdDev} leaf into a compact comparable string.
   if (node === null || node === undefined) {
     return String(node);
   }
   if (typeof node !== 'object') {
     return JSON.stringify(node);
   }
-  return `mean=${node.mean},std=${node.std_dev}`;
+  return `mean=${node.mean},std=${node.stdDev}`;
 }
 
 async function main() {
@@ -96,19 +96,19 @@ async function main() {
   const dbByName = new Map(rows.map(r => [r.name, r.profile]));
 
   // Also a global tally: how many DB breeds vs JSON breeds, and how many DB
-  // rows carry a usable rating_profiles object.
+  // rows carry a usable ratingProfiles object.
   const countRes = await client.query('SELECT COUNT(*)::int AS n FROM breeds');
   const ratingRes = await client.query(
     `SELECT COUNT(*)::int AS n FROM breeds
      WHERE "breedGeneticProfile" IS NOT NULL
        AND jsonb_typeof("breedGeneticProfile") = 'object'
-       AND "breedGeneticProfile" ? 'rating_profiles'`,
+       AND "breedGeneticProfile" ? 'ratingProfiles'`,
   );
 
   console.log('=== GLOBAL COUNTS ===');
   console.log(`JSON breeds:                 ${jsonKeys.length}`);
   console.log(`DB breeds (total rows):      ${countRes.rows[0].n}`);
-  console.log(`DB breeds w/ rating_profiles:${ratingRes.rows[0].n}`);
+  console.log(`DB breeds w/ ratingProfiles:${ratingRes.rows[0].n}`);
   console.log('');
 
   for (const name of SAMPLE_BREEDS) {
@@ -125,8 +125,8 @@ async function main() {
       continue;
     }
 
-    const jrp = j.rating_profiles ?? {};
-    const drp = d && typeof d === 'object' && d.rating_profiles ? d.rating_profiles : {};
+    const jrp = j.ratingProfiles ?? {};
+    const drp = d && typeof d === 'object' && d.ratingProfiles ? d.ratingProfiles : {};
 
     // (a) GAITS — ordering + values
     const jGaitKeys = Object.keys(jrp.gaits ?? {});
@@ -147,17 +147,17 @@ async function main() {
     }
     console.log(`    VALUE DIFFS: ${gaitValDiffs.length ? gaitValDiffs.join(' | ') : 'none'}`);
 
-    // (b) gaited registry + is_gaited_breed
+    // (b) gaited registry + isGaitedBreed
     console.log('  --- (b) gaited registry ---');
     console.log(
-      `    JSON is_gaited_breed=${jrp.is_gaited_breed}  registry=${JSON.stringify(jrp.gaited_gait_registry)}`,
+      `    JSON isGaitedBreed=${jrp.isGaitedBreed}  registry=${JSON.stringify(jrp.gaitedGaitRegistry)}`,
     );
     console.log(
-      `    DB   is_gaited_breed=${drp.is_gaited_breed}  registry=${JSON.stringify(drp.gaited_gait_registry)}`,
+      `    DB   isGaitedBreed=${drp.isGaitedBreed}  registry=${JSON.stringify(drp.gaitedGaitRegistry)}`,
     );
     const regMatch =
-      jrp.is_gaited_breed === drp.is_gaited_breed &&
-      JSON.stringify(jrp.gaited_gait_registry) === JSON.stringify(drp.gaited_gait_registry);
+      jrp.isGaitedBreed === drp.isGaitedBreed &&
+      JSON.stringify(jrp.gaitedGaitRegistry) === JSON.stringify(drp.gaitedGaitRegistry);
     console.log(`    REGISTRY MATCH: ${regMatch}`);
 
     // (c) conformation regions
@@ -178,11 +178,11 @@ async function main() {
     }
     console.log(`    VALUE DIFFS: ${confValDiffs.length ? confValDiffs.join(' | ') : 'none'}`);
 
-    // (bonus) temperament_weights
-    const jt = j.temperament_weights ?? null;
-    const dt = d && typeof d === 'object' ? (d.temperament_weights ?? null) : null;
+    // (bonus) temperamentWeights
+    const jt = j.temperamentWeights ?? null;
+    const dt = d && typeof d === 'object' ? (d.temperamentWeights ?? null) : null;
     const tempMatch = JSON.stringify(jt) === JSON.stringify(dt);
-    console.log('  --- (bonus) temperament_weights ---');
+    console.log('  --- (bonus) temperamentWeights ---');
     console.log(`    MATCH: ${tempMatch}`);
     if (!tempMatch) {
       console.log(`      JSON: ${JSON.stringify(jt)}`);
@@ -193,9 +193,9 @@ async function main() {
     const dbHasColor =
       d &&
       typeof d === 'object' &&
-      ('shade_bias' in d || 'allele_weights' in d || 'marking_bias' in d);
+      ('shadeBias' in d || 'alleleWeights' in d || 'markingBias' in d);
     console.log(
-      `  --- (bonus) DB color genetics present: ${dbHasColor} (JSON has shade_bias: ${'shade_bias' in (j ?? {})}) ---`,
+      `  --- (bonus) DB color genetics present: ${dbHasColor} (JSON has shadeBias: ${'shadeBias' in (j ?? {})}) ---`,
     );
   }
 

@@ -11,7 +11,7 @@
 
 // Core 19 loci always present in generated genotype output.
 // Equoria-26qjf.1: Prl_Pearl + BR1_Brindle1 added so random-generated horses
-// carry these loci even when a breed profile gives them nonzero allele_weights
+// carry these loci even when a breed profile gives them nonzero alleleWeights
 // (e.g. American Quarter Horse). phenotypeCalculationService already renders
 // Pearl + Brindle colors but read these loci off the genotype — without them in
 // CORE_LOCI the generator never emitted them, so the colors were unreachable.
@@ -185,8 +185,8 @@ export function sampleWeightedAllele(weights, rng = Math.random) {
  * Always includes all 19 CORE_LOCI plus any additional loci present in the breed profile.
  *
  * Selection priority per locus:
- *   1. allele_weights[locus] present → weighted random sampling
- *   2. allowed_alleles[locus] present (no weights) → first entry (most common by convention)
+ *   1. alleleWeights[locus] present → weighted random sampling
+ *   2. allowedAlleles[locus] present (no weights) → first entry (most common by convention)
  *   3. Neither present → GENERIC_DEFAULTS fallback
  *
  * No-profile path (Equoria-mvrvb): when breedGeneticProfile is null/undefined,
@@ -206,10 +206,10 @@ export function generateGenotype(breedGeneticProfile, rng = Math.random) {
     typeof breedGeneticProfile === 'object' &&
     !Array.isArray(breedGeneticProfile)
       ? breedGeneticProfile
-      : { allele_weights: GENERIC_STARTER_WEIGHTS };
+      : { alleleWeights: GENERIC_STARTER_WEIGHTS };
 
-  const allowedAlleles = effectiveProfile?.allowed_alleles ?? {};
-  const alleleWeights = effectiveProfile?.allele_weights ?? {};
+  const allowedAlleles = effectiveProfile?.allowedAlleles ?? {};
+  const alleleWeights = effectiveProfile?.alleleWeights ?? {};
 
   // Union of core loci + any extra loci in the breed profile
   const profileLoci = Object.keys(allowedAlleles);

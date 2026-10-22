@@ -6,7 +6,7 @@
  * Coverage:
  *   - sampleWeightedAllele: deterministic weight selection, floating-point edge cases
  *   - generateGenotype: all 19 CORE_LOCI present, extra loci from profile, null-profile fallback
- *   - Allele constraint: only allowed_alleles values are selected
+ *   - Allele constraint: only allowedAlleles values are selected
  *   - Statistical test: 1000-sample E_Extension frequency within expected range
  *   - Integration: generic horse creation persists a full colorGenotype
  *
@@ -75,7 +75,7 @@ describe('sampleWeightedAllele', () => {
 describe('generateGenotype', () => {
   // Minimal representative profile (subset of Arabian)
   const arabianProfile = {
-    allowed_alleles: {
+    allowedAlleles: {
       E_Extension: ['e/e', 'E/e', 'E/E'],
       A_Agouti: ['A/A', 'A/a', 'a/a'],
       Cr_Cream: ['n/n', 'Cr/n', 'Cr/Cr'],
@@ -96,7 +96,7 @@ describe('generateGenotype', () => {
       Prl_Pearl: ['n/n', 'prl/n'],
       BR1_Brindle1: ['n/n'],
     },
-    allele_weights: {
+    alleleWeights: {
       E_Extension: { 'e/e': 0.4, 'E/e': 0.4, 'E/E': 0.2 },
       A_Agouti: { 'A/A': 0.3, 'A/a': 0.4, 'a/a': 0.3 },
       Cr_Cream: { 'n/n': 0.85, 'Cr/n': 0.13, 'Cr/Cr': 0.02 },
@@ -134,12 +134,12 @@ describe('generateGenotype', () => {
     expect(genotype).toHaveProperty('BR1_Brindle1');
   });
 
-  it('selects only alleles from allowed_alleles for each locus', () => {
+  it('selects only alleles from allowedAlleles for each locus', () => {
     // Run 50 times to catch any out-of-range selection
     for (let i = 0; i < 50; i++) {
       const genotype = generateGenotype(arabianProfile);
-      for (const locus of Object.keys(arabianProfile.allowed_alleles)) {
-        const allowed = arabianProfile.allowed_alleles[locus];
+      for (const locus of Object.keys(arabianProfile.allowedAlleles)) {
+        const allowed = arabianProfile.allowedAlleles[locus];
         expect(allowed).toContain(genotype[locus]);
       }
     }
@@ -225,10 +225,10 @@ describe('generateGenotype', () => {
 
   it('falls back to first allowed_allele when no weight is defined for a locus', () => {
     const profileWithNoWeights = {
-      allowed_alleles: {
+      allowedAlleles: {
         E_Extension: ['E/E', 'E/e', 'e/e'],
       },
-      allele_weights: {},
+      alleleWeights: {},
     };
     const genotype = generateGenotype(profileWithNoWeights);
     // Should pick first allowed_allele: E/E
@@ -257,8 +257,8 @@ describe('generateGenotype', () => {
     // carrier pair prl/n must be able to emit it. Force the RNG high so the
     // weighted sampler picks the second (carrier) entry.
     const pearlCarrierProfile = {
-      allowed_alleles: { Prl_Pearl: ['n/n', 'prl/n'] },
-      allele_weights: { Prl_Pearl: { 'n/n': 0.5, 'prl/n': 0.5 } },
+      allowedAlleles: { Prl_Pearl: ['n/n', 'prl/n'] },
+      alleleWeights: { Prl_Pearl: { 'n/n': 0.5, 'prl/n': 0.5 } },
     };
     const rngHigh = () => 0.99; // selects the last cumulative bucket (prl/n)
     const genotype = generateGenotype(pearlCarrierProfile, rngHigh);
@@ -277,8 +277,8 @@ describe('generateGenotype', () => {
     // A profile that omits the two loci entirely must still get the wild-type
     // GENERIC_DEFAULTS fill for them (not undefined, not Brindle).
     const minimalProfile = {
-      allowed_alleles: { E_Extension: ['E/e'] },
-      allele_weights: { E_Extension: { 'E/e': 1.0 } },
+      allowedAlleles: { E_Extension: ['E/e'] },
+      alleleWeights: { E_Extension: { 'E/e': 1.0 } },
     };
     const genotype = generateGenotype(minimalProfile);
     expect(genotype.Prl_Pearl).toBe('n/n');
@@ -419,7 +419,7 @@ describe('createHorseFromRequest — colorGenotype integration', () => {
     const response = await createHorseFromRequest(
       {
         name: `GenotypeTest_${timestamp}`,
-        breedId: arabianBreedId, // Arabian — has full allele_weights profile
+        breedId: arabianBreedId, // Arabian — has full alleleWeights profile
         age: 3,
         sex: 'mare',
       },

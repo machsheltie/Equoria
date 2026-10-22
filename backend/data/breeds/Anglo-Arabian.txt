@@ -1,6 +1,6 @@
 INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
 ('Anglo-Arabian', 'Trait', $json${
-  "allowed_alleles": {
+  "allowedAlleles": {
     "E_Extension": ["e/e", "E/e", "E/E"],
     "A_Agouti": ["a/a", "A/a", "A/A"],
     "Cr_Cream": ["n/n"],
@@ -21,8 +21,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Prl_Pearl": ["n/n"],
     "BR1_Brindle1": ["n/n"]
   },
-  "disallowed_combinations": {},
-  "allele_weights": {
+  "disallowedCombinations": {},
+  "alleleWeights": {
     "E_Extension": {"e/e": 0.35, "E/e": 0.42, "E/E": 0.23},
     "A_Agouti": {"a/a": 0.28, "A/a": 0.45, "A/A": 0.27},
     "Cr_Cream": {"n/n": 1.0},
@@ -43,21 +43,21 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Prl_Pearl": {"n/n": 1.0},
     "BR1_Brindle1": {"n/n": 1.0}
   },
-  "marking_bias": {
+  "markingBias": {
     "face": {"none": 0.25, "star": 0.28, "strip": 0.18, "blaze": 0.17, "snip": 0.12},
-    "legs_general_probability": 0.45,
-    "leg_specific_probabilities": {
+    "legsGeneralProbability": 0.45,
+    "legSpecificProbabilities": {
       "coronet": 0.28, "pastern": 0.28, "sock": 0.26, "stocking": 0.18
     },
-    "max_legs_marked": 4
+    "maxLegsMarked": 4
   },
-  "boolean_modifiers_prevalence": {
+  "booleanModifiersPrevalence": {
     "sooty": 0.22,
     "flaxen": 0.12,
     "pangare": 0.08,
     "rabicano": 0.04
   },
-  "shade_bias": {
+  "shadeBias": {
     "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
     "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
     "Black": {"standard": 0.5, "faded": 0.5},
@@ -71,32 +71,32 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Fleabitten Gray": {"fleabitten": 1.0},
     "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
   },
-  "advanced_markings_bias": {
-    "bloody_shoulder_probability_multiplier": 1.0,
-    "snowflake_probability_multiplier": 0.0,
-    "frost_probability_multiplier": 0.0
+  "advancedMarkingsBias": {
+    "bloodyShoulderProbabilityMultiplier": 1.0,
+    "snowflakeProbabilityMultiplier": 0.0,
+    "frostProbabilityMultiplier": 0.0
   },
-  "rating_profiles": {
+  "ratingProfiles": {
     "conformation": {
-      "head": { "mean": 84, "std_dev": 6 },
-      "neck": { "mean": 82, "std_dev": 6 },
-      "shoulders": { "mean": 83, "std_dev": 6 },
-      "back": { "mean": 78, "std_dev": 7 },
-      "hindquarters": { "mean": 82, "std_dev": 7 },
-      "legs": { "mean": 80, "std_dev": 7 },
-      "hooves": { "mean": 78, "std_dev": 7 },
-      "topline": { "mean": 72, "std_dev": 8 }
+      "head": { "mean": 84, "stdDev": 6 },
+      "neck": { "mean": 82, "stdDev": 6 },
+      "shoulders": { "mean": 83, "stdDev": 6 },
+      "back": { "mean": 78, "stdDev": 7 },
+      "hindquarters": { "mean": 82, "stdDev": 7 },
+      "legs": { "mean": 80, "stdDev": 7 },
+      "hooves": { "mean": 78, "stdDev": 7 },
+      "topline": { "mean": 72, "stdDev": 8 }
     },
     "gaits": {
-      "walk": { "mean": 70, "std_dev": 8 },
-      "trot": { "mean": 82, "std_dev": 7 },
-      "canter": { "mean": 84, "std_dev": 7 },
-      "gallop": { "mean": 88, "std_dev": 7 },
+      "walk": { "mean": 70, "stdDev": 8 },
+      "trot": { "mean": 82, "stdDev": 7 },
+      "canter": { "mean": 84, "stdDev": 7 },
+      "gallop": { "mean": 88, "stdDev": 7 },
       "gaiting": null
     },
-    "is_gaited_breed": false
+    "isGaitedBreed": false
   },
-  "temperament_weights": {
+  "temperamentWeights": {
     "Spirited": 20,
     "Nervous": 8,
     "Calm": 6,

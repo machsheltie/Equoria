@@ -3,8 +3,8 @@
  *
  * Derives a breed's UI `statTendencies` (speed / stamina / agility / balance /
  * precision / boldness, each {min,max,avg} on a 0–100 scale) from the breed's
- * REAL imported genetic data — `breedGeneticProfile.rating_profiles`
- * (conformation + gaits, each region/gait carrying {mean, std_dev}).
+ * REAL imported genetic data — `breedGeneticProfile.ratingProfiles`
+ * (conformation + gaits, each region/gait carrying {mean, stdDev}).
  *
  * WHY this exists
  * ───────────────
@@ -12,36 +12,36 @@
  * previous client only had a hand-authored ~13-breed static preset map. The
  * other ~300 breeds fell through to a uniform DEFAULT (40/55/70 for every
  * stat) — visually identical, conveying no real breed information. The import
- * already carries differentiating data per breed in `rating_profiles`; the
+ * already carries differentiating data per breed in `ratingProfiles`; the
  * senior fix is to DERIVE the tendencies from that real data rather than
  * hand-extend a 312-entry map that would immediately drift from the DB.
  *
- * The 6 UI stats are NOT 1:1 columns in rating_profiles (which carries 8
+ * The 6 UI stats are NOT 1:1 columns in ratingProfiles (which carries 8
  * conformation regions + 4–5 gaits). We map each UI stat to the conformation /
  * gait component(s) that are the closest physical proxy, documented inline.
  * This is an honest derivation from real per-breed data, not a fabricated
  * value: a Thoroughbred's high gallop rating really does produce a high derived
  * `speed`, and a draft breed's lower gallop really does produce a lower one.
  *
- * SCALE NOTE — why rating_profiles and not starter_stats
+ * SCALE NOTE — why ratingProfiles and not starterStats
  * ──────────────────────────────────────────────────────
- * `starter_stats` ALSO lives in breedGeneticProfile and has the exact 6 stat
+ * `starterStats` ALSO lives in breedGeneticProfile and has the exact 6 stat
  * names. But its means are compressed to ~14–20 (the 12 stats are sampled under
  * a total-≤200 game cap, so each per-stat mean is small). Surfacing those
  * directly would render every breed's bars at ~15–20% — visually
- * undifferentiated, the same failure the DEFAULT had. `rating_profiles`
+ * undifferentiated, the same failure the DEFAULT had. `ratingProfiles`
  * conformation/gaits are quality ratings on the full 0–100 scale (means ~60–90)
  * and spread breeds apart meaningfully, which is what the breed-picker UI and
  * the downstream `breedDisciplineStrength` ranker (which expects 0–100 avgs)
- * need. So rating_profiles is the correct source for a 0–100 tendency display.
+ * need. So ratingProfiles is the correct source for a 0–100 tendency display.
  */
 
 import type { BreedStatTendencies, StatTendency } from './useBreeds';
 
-/** A single {mean, std_dev} cell from rating_profiles. */
+/** A single {mean, stdDev} cell from ratingProfiles. */
 interface MeanStdDev {
   mean: number;
-  std_dev?: number;
+  stdDev?: number;
 }
 
 interface ConformationProfile {
@@ -70,7 +70,7 @@ export interface RatingProfiles {
 
 /** The genetic-profile JSONB column shape (only the parts we read). */
 export interface BreedGeneticProfile {
-  rating_profiles?: RatingProfiles | null;
+  ratingProfiles?: RatingProfiles | null;
 }
 
 function clamp(n: number): number {
@@ -78,7 +78,7 @@ function clamp(n: number): number {
 }
 
 /**
- * Returns the numeric `mean` of a {mean, std_dev} cell, or undefined if the
+ * Returns the numeric `mean` of a {mean, stdDev} cell, or undefined if the
  * cell is missing/null/non-numeric. Guards against the real null patterns the
  * import produces (e.g. `gaiting: null` on non-gaited breeds).
  */
@@ -88,8 +88,8 @@ function meanOf(cell: MeanStdDev | null | undefined): number | undefined {
 }
 
 function stdOf(cell: MeanStdDev | null | undefined): number {
-  if (!cell || typeof cell.std_dev !== 'number' || Number.isNaN(cell.std_dev)) return 0;
-  return Math.max(0, cell.std_dev);
+  if (!cell || typeof cell.stdDev !== 'number' || Number.isNaN(cell.stdDev)) return 0;
+  return Math.max(0, cell.stdDev);
 }
 
 /**
@@ -103,7 +103,7 @@ function avgMeans(...cells: (MeanStdDev | null | undefined)[]): number | undefin
   return present.reduce((s, m) => s + m, 0) / present.length;
 }
 
-/** Average the std_devs of one or more cells (0 for missing). */
+/** Average the stdDevs of one or more cells (0 for missing). */
 function avgStds(...cells: (MeanStdDev | null | undefined)[]): number {
   const stds = cells.map(stdOf);
   return stds.reduce((s, v) => s + v, 0) / Math.max(1, stds.length);
@@ -111,7 +111,7 @@ function avgStds(...cells: (MeanStdDev | null | undefined)[]): number {
 
 /**
  * Build a {min,max,avg} StatTendency from a derived mean + spread.
- * min/max use mean ± std_dev (the real per-region variation the breed data
+ * min/max use mean ± stdDev (the real per-region variation the breed data
  * carries), clamped to 0–100. avg = mean.
  */
 function toTendency(mean: number, std: number): StatTendency {
@@ -123,13 +123,13 @@ function toTendency(mean: number, std: number): StatTendency {
 }
 
 /**
- * Type guard: a usable rating_profiles object with at least one of
+ * Type guard: a usable ratingProfiles object with at least one of
  * conformation/gaits present as an object (JSONB can be null / primitive /
  * array — the four-part guard mirrors the backend JSONB convention).
  */
 function hasUsableProfile(gp: BreedGeneticProfile | null | undefined): gp is BreedGeneticProfile {
   if (gp === null || gp === undefined || typeof gp !== 'object' || Array.isArray(gp)) return false;
-  const rp = gp.rating_profiles;
+  const rp = gp.ratingProfiles;
   if (rp === null || rp === undefined || typeof rp !== 'object' || Array.isArray(rp)) return false;
   const conf = rp.conformation;
   const gaits = rp.gaits;
@@ -141,9 +141,9 @@ function hasUsableProfile(gp: BreedGeneticProfile | null | undefined): gp is Bre
 }
 
 /**
- * Derive the 6 UI stat tendencies from a breed's rating_profiles.
+ * Derive the 6 UI stat tendencies from a breed's ratingProfiles.
  *
- * Returns `null` when no usable rating_profiles data is present — the caller
+ * Returns `null` when no usable ratingProfiles data is present — the caller
  * (useBreeds) then falls back to the hand-authored preset (for the original
  * ~13 breeds) or, last, the honest DEFAULT. Returning null rather than
  * fabricating a value keeps the "no real data" state truthful.
@@ -156,7 +156,7 @@ function hasUsableProfile(gp: BreedGeneticProfile | null | undefined): gp is Bre
  *   precision ← avg(gaits.walk, conf.shoulders)    (controlled, deliberate movement)
  *   boldness  ← avg(conf.head, conf.neck)          (presence / front-end carriage)
  *
- * Each tendency's min/max comes from the proxy cell(s)' mean ± std_dev — i.e.
+ * Each tendency's min/max comes from the proxy cell(s)' mean ± stdDev — i.e.
  * the same real spread the import recorded — so a tightly-selected region
  * yields a narrow band and a variable one a wider band.
  */
@@ -165,7 +165,7 @@ export function deriveBreedTendencies(
 ): BreedStatTendencies | null {
   if (!hasUsableProfile(geneticProfile)) return null;
 
-  const rp = geneticProfile.rating_profiles as RatingProfiles;
+  const rp = geneticProfile.ratingProfiles as RatingProfiles;
   const c = (rp.conformation ?? {}) as ConformationProfile;
   const g = (rp.gaits ?? {}) as GaitsProfile;
 

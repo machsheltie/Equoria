@@ -278,7 +278,7 @@ describe('Gaited gait independence', () => {
 describe('Statistical validation — gait inheritance', () => {
   test('high-scoring parents produce foals averaging above breed mean', () => {
     const breedName = 'Thoroughbred'; // Thoroughbred, gallop mean = 90
-    const breedMean = getBreedProfile(breedName).rating_profiles.gaits.gallop.mean;
+    const breedMean = getBreedProfile(breedName).ratingProfiles.gaits.gallop.mean;
     const highSire = { walk: 85, trot: 90, canter: 95, gallop: 100, gaiting: null };
     const highDam = { walk: 82, trot: 88, canter: 92, gallop: 98, gaiting: null };
     const foalScores = [];

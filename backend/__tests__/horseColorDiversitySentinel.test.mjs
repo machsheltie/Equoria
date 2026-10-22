@@ -3,14 +3,14 @@
  *
  * Canonical-DB sentinel for phenotype.colorName diversity. The
  * 2026-04-30 → 2026-05-04 "all horses Bay" bug had 5363/5382 horses with
- * an identical Bay phenotype because every breed lacked allele_weights.
+ * an identical Bay phenotype because every breed lacked alleleWeights.
  * Without a sentinel like this, that monoculture could recur silently
  * any time a future migration nuked the breed profiles.
  *
  * Current state (recorded 2026-05-15): 4 distinct colorName values
  * across 5382 phenotyped horses. The long-term invariant per the
  * Equoria-fhag AC is > 5 distinct values; that threshold cannot be met
- * until Equoria-g5ct lands allele_weights for all 312 breeds.
+ * until Equoria-g5ct lands alleleWeights for all 312 breeds.
  *
  * Per OPTIMAL_FIX_DISCIPLINE.md §2 + §10 + COMPLETION_VERIFICATION_POLICY.md §4:
  * we DO NOT silently weaken the AC. Instead we:

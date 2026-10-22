@@ -83,14 +83,14 @@ ON CONFLICT (name) DO UPDATE SET
 });
 
 describe('sanitizeSql — Pearl/Brindle allele case normalization (Equoria-26qjf.3)', () => {
-  it('lowercases Prl_Pearl allele pairs in an allowed_alleles array', () => {
+  it('lowercases Prl_Pearl allele pairs in an allowedAlleles array', () => {
     const input = '"Prl_Pearl": ["N/N", "N/Prl", "Prl/Prl", "Cr/Prl"]';
     const out = sanitizeSql(input);
     expect(out).toContain('"Prl_Pearl": ["n/n", "prl/n", "prl/prl", "Cr/prl"]');
     expect(out).not.toMatch(/"N\/Prl"|"Prl\/Prl"/);
   });
 
-  it('lowercases Prl_Pearl allele pairs in an allele_weights object', () => {
+  it('lowercases Prl_Pearl allele pairs in an alleleWeights object', () => {
     const input = '"Prl_Pearl": {"N/N": 0.992, "N/Prl": 0.007, "Prl/Prl": 0.001, "Cr/Prl": 0.0}';
     const out = sanitizeSql(input);
     expect(out).toContain('"n/n": 0.992');

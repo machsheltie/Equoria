@@ -178,7 +178,7 @@ async function createHorse(horseData, client = prisma) {
       if (resolvedPhenotype === null || resolvedPhenotype === undefined) {
         const baseColor = calculatePhenotype(
           resolvedColorGenotype,
-          breedGeneticProfile?.shade_bias ?? null,
+          breedGeneticProfile?.shadeBias ?? null,
         );
         const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
         resolvedPhenotype = { ...baseColor, ...markings };

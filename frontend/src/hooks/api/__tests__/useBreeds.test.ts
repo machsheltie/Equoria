@@ -55,13 +55,13 @@ describe('useBreeds', () => {
     expect(thoroughbred!.loreBlurb).toContain('Born to race');
   });
 
-  it('derives statTendencies from rating_profiles for a non-preset breed (Equoria-x83v4)', async () => {
+  it('derives statTendencies from ratingProfiles for a non-preset breed (Equoria-x83v4)', async () => {
     const { result } = renderHook(() => useBreeds(), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     // Shire is NOT in BREED_PRESETS — its tendencies must come from the real
-    // rating_profiles in the API payload, NOT the uniform DEFAULT (avg 55).
+    // ratingProfiles in the API payload, NOT the uniform DEFAULT (avg 55).
     const shire = result.current.data!.find((b) => b.name === 'Shire');
     expect(shire).toBeDefined();
 
@@ -72,7 +72,7 @@ describe('useBreeds', () => {
     expect(shire!.statTendencies.agility.avg).toBe(80);
     // balance ← avg(conf.back 78, conf.topline 76) = 77.
     expect(shire!.statTendencies.balance.avg).toBe(77);
-    // min/max use mean ± std_dev: gallop 50 ± 9 → [41, 59].
+    // min/max use mean ± stdDev: gallop 50 ± 9 → [41, 59].
     expect(shire!.statTendencies.speed.min).toBe(41);
     expect(shire!.statTendencies.speed.max).toBe(59);
 

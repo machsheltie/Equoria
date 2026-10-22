@@ -1,6 +1,6 @@
 INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
 ('Tolfetano', 'Trait', $json${
-  "allowed_alleles": {
+  "allowedAlleles": {
     "E_Extension": [
       "e/e",
       "E/e",
@@ -66,8 +66,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "n/n"
     ]
   },
-  "disallowed_combinations": {},
-  "allele_weights": {
+  "disallowedCombinations": {},
+  "alleleWeights": {
     "E_Extension": {
       "e/e": 0.3,
       "E/e": 0.42,
@@ -133,7 +133,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "n/n": 1
     }
   },
-  "marking_bias": {
+  "markingBias": {
     "face": {
       "none": 0.55,
       "star": 0.22,
@@ -141,22 +141,22 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "blaze": 0.04,
       "snip": 0.07
     },
-    "legs_general_probability": 0.2,
-    "leg_specific_probabilities": {
+    "legsGeneralProbability": 0.2,
+    "legSpecificProbabilities": {
       "coronet": 0.4,
       "pastern": 0.3,
       "sock": 0.18,
       "stocking": 0.12
     },
-    "max_legs_marked": 4
+    "maxLegsMarked": 4
   },
-  "boolean_modifiers_prevalence": {
+  "booleanModifiersPrevalence": {
     "sooty": 0.15,
     "flaxen": 0.08,
     "pangare": 0.08,
     "rabicano": 0.04
   },
-  "shade_bias": {
+  "shadeBias": {
     "Chestnut": {
       "light": 0.3,
       "medium": 0.4,
@@ -199,65 +199,65 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "sparse mane/tail": 1
     }
   },
-  "advanced_markings_bias": {
-    "bloody_shoulder_probability_multiplier": 1,
-    "snowflake_probability_multiplier": 0,
-    "frost_probability_multiplier": 0
+  "advancedMarkingsBias": {
+    "bloodyShoulderProbabilityMultiplier": 1,
+    "snowflakeProbabilityMultiplier": 0,
+    "frostProbabilityMultiplier": 0
   },
-  "rating_profiles": {
+  "ratingProfiles": {
     "conformation": {
       "head": {
         "mean": 76,
-        "std_dev": 7
+        "stdDev": 7
       },
       "neck": {
         "mean": 76,
-        "std_dev": 7
+        "stdDev": 7
       },
       "shoulders": {
         "mean": 78,
-        "std_dev": 7
+        "stdDev": 7
       },
       "back": {
         "mean": 80,
-        "std_dev": 7
+        "stdDev": 7
       },
       "hindquarters": {
         "mean": 80,
-        "std_dev": 6
+        "stdDev": 6
       },
       "legs": {
         "mean": 82,
-        "std_dev": 7
+        "stdDev": 7
       },
       "hooves": {
         "mean": 88,
-        "std_dev": 6
+        "stdDev": 6
       },
-      "topline": { "mean": 70, "std_dev": 8 }
+      "topline": { "mean": 70, "stdDev": 8 }
     },
     "gaits": {
       "walk": {
         "mean": 80,
-        "std_dev": 7
+        "stdDev": 7
       },
       "trot": {
         "mean": 76,
-        "std_dev": 8
+        "stdDev": 8
       },
       "canter": {
         "mean": 74,
-        "std_dev": 8
+        "stdDev": 8
       },
       "gallop": {
         "mean": 74,
-        "std_dev": 8
+        "stdDev": 8
       },
       "gaiting": null
     },
-    "is_gaited_breed": false
+    "isGaitedBreed": false
   },
-  "temperament_weights": {
+  "temperamentWeights": {
     "Spirited": 8,
     "Nervous": 3,
     "Calm": 20,

@@ -317,7 +317,7 @@ describe('inheritColorGenotype — structure', () => {
 describe('inheritColorGenotype — breed restrictions', () => {
   it('overrides TO_Tobiano to to/to when breed only allows to/to (Thoroughbred-like)', () => {
     const thoroughbredProfile = {
-      allowed_alleles: {
+      allowedAlleles: {
         TO_Tobiano: ['to/to'],
       },
     };
@@ -331,9 +331,9 @@ describe('inheritColorGenotype — breed restrictions', () => {
     }
   });
 
-  it('does NOT override loci not in allowed_alleles', () => {
+  it('does NOT override loci not in allowedAlleles', () => {
     const restrictedProfile = {
-      allowed_alleles: {
+      allowedAlleles: {
         TO_Tobiano: ['to/to'],
       },
     };
@@ -354,7 +354,7 @@ describe('inheritColorGenotype — breed restrictions', () => {
     // A misconfigured breed profile that lists a lethal as the required allele.
     // The guard in enforceBreedRestrictions must preserve the inherited non-lethal value.
     const brokenProfile = {
-      allowed_alleles: {
+      allowedAlleles: {
         O_FrameOvero: ['O/O'], // lethal — must never be installed
       },
     };
@@ -367,13 +367,13 @@ describe('inheritColorGenotype — breed restrictions', () => {
 });
 
 // ---------------------------------------------------------------------------
-// disallowed_combinations (Equoria-26qjf.2)
+// disallowedCombinations (Equoria-26qjf.2)
 // ---------------------------------------------------------------------------
 
 describe('buildDisallowedMap / isDisallowedCombination (Equoria-26qjf.2)', () => {
-  it('builds a per-locus Set from disallowed_combinations', () => {
+  it('builds a per-locus Set from disallowedCombinations', () => {
     const profile = {
-      disallowed_combinations: { W_DominantWhite: ['W4/W4', 'W20/W20'] },
+      disallowedCombinations: { W_DominantWhite: ['W4/W4', 'W20/W20'] },
     };
     const map = buildDisallowedMap(profile);
     expect(map.W_DominantWhite).toBeInstanceOf(Set);
@@ -382,27 +382,27 @@ describe('buildDisallowedMap / isDisallowedCombination (Equoria-26qjf.2)', () =>
     expect(isDisallowedCombination(map, 'W_DominantWhite', 'W4/w')).toBe(false);
   });
 
-  it('returns an empty map for null / non-object / array / missing disallowed_combinations', () => {
+  it('returns an empty map for null / non-object / array / missing disallowedCombinations', () => {
     expect(buildDisallowedMap(null)).toEqual({});
     expect(buildDisallowedMap(undefined)).toEqual({});
     expect(buildDisallowedMap([])).toEqual({});
     expect(buildDisallowedMap({})).toEqual({});
-    expect(buildDisallowedMap({ disallowed_combinations: {} })).toEqual({});
-    expect(buildDisallowedMap({ disallowed_combinations: null })).toEqual({});
-    expect(buildDisallowedMap({ disallowed_combinations: [] })).toEqual({});
+    expect(buildDisallowedMap({ disallowedCombinations: {} })).toEqual({});
+    expect(buildDisallowedMap({ disallowedCombinations: null })).toEqual({});
+    expect(buildDisallowedMap({ disallowedCombinations: [] })).toEqual({});
   });
 
   it('ignores empty arrays for a locus', () => {
-    const map = buildDisallowedMap({ disallowed_combinations: { W_DominantWhite: [] } });
+    const map = buildDisallowedMap({ disallowedCombinations: { W_DominantWhite: [] } });
     expect(map.W_DominantWhite).toBeUndefined();
   });
 });
 
-describe('inheritColorGenotype — disallowed_combinations (Equoria-26qjf.2)', () => {
+describe('inheritColorGenotype — disallowedCombinations (Equoria-26qjf.2)', () => {
   // AQH-like: forbids W4/W4 even though W4/w is allowed and not lethal.
   const aqhLikeProfile = {
-    allowed_alleles: { W_DominantWhite: ['w/w', 'W4/w', 'W20/w'] },
-    disallowed_combinations: { W_DominantWhite: ['W4/W4', 'W20/W20'] },
+    allowedAlleles: { W_DominantWhite: ['w/w', 'W4/w', 'W20/w'] },
+    disallowedCombinations: { W_DominantWhite: ['W4/W4', 'W20/W20'] },
   };
 
   it('SENTINEL: a breed disallowing W4/W4 never yields W4/W4 from inheritance', () => {
@@ -418,7 +418,7 @@ describe('inheritColorGenotype — disallowed_combinations (Equoria-26qjf.2)', (
   it('COUNTER: without the disallowed rule, W4/W4 DOES occur (proves the test is real)', () => {
     // Same cross, but a profile that allows W4/W4 and declares no disallowed rule.
     const permissiveProfile = {
-      allowed_alleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
+      allowedAlleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
     };
     const sire = buildGenotype({ W_DominantWhite: 'W4/w' });
     const dam = buildGenotype({ W_DominantWhite: 'W4/w' });
@@ -439,13 +439,13 @@ describe('inheritColorGenotype — disallowed_combinations (Equoria-26qjf.2)', (
     const dam = buildGenotype({ W_DominantWhite: 'W4/W4' });
     const foal = inheritColorGenotype(sire, dam, aqhLikeProfile);
     expect(foal.W_DominantWhite).not.toBe('W4/W4');
-    expect(aqhLikeProfile.allowed_alleles.W_DominantWhite).toContain(foal.W_DominantWhite);
+    expect(aqhLikeProfile.allowedAlleles.W_DominantWhite).toContain(foal.W_DominantWhite);
   });
 
-  it('NO-REGRESSION: empty disallowed_combinations behaves exactly as before', () => {
+  it('NO-REGRESSION: empty disallowedCombinations behaves exactly as before', () => {
     const emptyProfile = {
-      allowed_alleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
-      disallowed_combinations: {},
+      allowedAlleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
+      disallowedCombinations: {},
     };
     const sire = buildGenotype({ W_DominantWhite: 'W4/w' });
     const dam = buildGenotype({ W_DominantWhite: 'W4/w' });
@@ -613,7 +613,7 @@ describe('inheritColorGenotype — GENERIC_DEFAULTS fallback (Equoria-jeam)', ()
 describe('inheritColorGenotype — alternate-allowed-allele fallback (Equoria-tr50)', () => {
   it('uses allowed[1] when allowed[0] is lethal (O/O lethal, O/n picked instead)', () => {
     const profile = {
-      allowed_alleles: {
+      allowedAlleles: {
         O_FrameOvero: ['O/O', 'O/n'], // O/O is lethal — must skip and use O/n
       },
     };
@@ -626,7 +626,7 @@ describe('inheritColorGenotype — alternate-allowed-allele fallback (Equoria-tr
 
   it('skips restriction entirely when EVERY allowed is lethal', () => {
     const profile = {
-      allowed_alleles: {
+      allowedAlleles: {
         O_FrameOvero: ['O/O'], // only lethal allowed
       },
     };

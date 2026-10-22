@@ -34,7 +34,7 @@ export function normalRandom(mean, stdDev) {
   }
   const u2 = Math.random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-  // Guard against negative std_dev from corrupted profile data
+  // Guard against negative stdDev from corrupted profile data
   return mean + z * Math.abs(stdDev);
 }
 
@@ -68,17 +68,17 @@ export function calculateOverallConformation(scores) {
 
 /**
  * Generate conformation scores for a horse based on its breed's genetic profile.
- * Each region score is drawn from a normal distribution using the breed's mean and std_dev.
+ * Each region score is drawn from a normal distribution using the breed's mean and stdDev.
  * @param {string} breedName - Breed display name
  * @returns {Object} Object with 8 region scores (integers 0-100) and overallConformation
  * @throws {Error} if the breed is missing from breedProfiles.json or any region is absent
  */
 export function generateConformationScores(breedName) {
   const profile = getBreedProfile(breedName);
-  const conformation = profile.rating_profiles?.conformation;
+  const conformation = profile.ratingProfiles?.conformation;
   if (!conformation) {
     throw new Error(
-      `breedProfiles.json entry for "${breedName}" is missing rating_profiles.conformation. ` +
+      `breedProfiles.json entry for "${breedName}" is missing ratingProfiles.conformation. ` +
         'Fix the hand-tuned entry in backend/data/breedProfiles.json.',
     );
   }
@@ -87,19 +87,19 @@ export function generateConformationScores(breedName) {
 
   for (const region of CONFORMATION_REGIONS) {
     const regionProfile = conformation[region];
-    // Every region must be present with valid mean and std_dev. An incomplete profile is a data bug.
+    // Every region must be present with valid mean and stdDev. An incomplete profile is a data bug.
     if (
       !regionProfile ||
       !Number.isFinite(regionProfile.mean) ||
-      !Number.isFinite(regionProfile.std_dev) ||
-      regionProfile.std_dev < 0
+      !Number.isFinite(regionProfile.stdDev) ||
+      regionProfile.stdDev < 0
     ) {
       throw new Error(
         `breedProfiles.json entry for "${breedName}" has invalid region "${region}" ` +
-          'in rating_profiles.conformation. All 8 regions require finite mean and non-negative std_dev.',
+          'in ratingProfiles.conformation. All 8 regions require finite mean and non-negative stdDev.',
       );
     }
-    const rawScore = normalRandom(regionProfile.mean, regionProfile.std_dev);
+    const rawScore = normalRandom(regionProfile.mean, regionProfile.stdDev);
     scores[region] = clampScore(rawScore);
   }
 
@@ -148,10 +148,10 @@ export function generateInheritedConformationScores(
   }
 
   const profile = getBreedProfile(breedName);
-  const conformation = profile.rating_profiles?.conformation;
+  const conformation = profile.ratingProfiles?.conformation;
   if (!conformation) {
     throw new Error(
-      `breedProfiles.json entry for "${breedName}" is missing rating_profiles.conformation.`,
+      `breedProfiles.json entry for "${breedName}" is missing ratingProfiles.conformation.`,
     );
   }
 
@@ -171,12 +171,12 @@ export function generateInheritedConformationScores(
     if (
       !regionProfile ||
       !Number.isFinite(regionProfile.mean) ||
-      !Number.isFinite(regionProfile.std_dev) ||
-      regionProfile.std_dev < 0
+      !Number.isFinite(regionProfile.stdDev) ||
+      regionProfile.stdDev < 0
     ) {
       throw new Error(
         `breedProfiles.json entry for "${breedName}" has invalid region "${region}" ` +
-          'in rating_profiles.conformation (inherited path). Finite mean and non-negative std_dev are required.',
+          'in ratingProfiles.conformation (inherited path). Finite mean and non-negative stdDev are required.',
       );
     }
     // Guard against NaN/non-finite parent scores from corrupted DB data
@@ -193,7 +193,7 @@ export function generateInheritedConformationScores(
     // multiplicatively before the random draw. clampScore() keeps the result
     // inside [0, 100] so the boost never pushes a region out of domain.
     const boostedBase = baseValue * (1 + safeBoost);
-    scores[region] = clampScore(normalRandom(boostedBase, regionProfile.std_dev));
+    scores[region] = clampScore(normalRandom(boostedBase, regionProfile.stdDev));
   }
 
   scores.overallConformation = calculateOverallConformation(scores);

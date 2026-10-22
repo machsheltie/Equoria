@@ -68,7 +68,7 @@ const BREED_STARTER_STATS = JSON.parse(
 );
 
 /**
- * Generate breed-specific starter stats using mean + std_dev from breed data.
+ * Generate breed-specific starter stats using mean + stdDev from breed data.
  * Uses normal distribution (Box-Muller) around the breed's mean for each stat.
  * Clamps each stat to [1, 100] and ensures total does not exceed 200.
  */
@@ -302,7 +302,7 @@ export const advanceOnboarding = async (req, res, next) => {
       starterColorGenotype = generateGenotype(breedGeneticProfile);
       const starterBaseColor = calculatePhenotype(
         starterColorGenotype,
-        breedGeneticProfile?.shade_bias ?? null,
+        breedGeneticProfile?.shadeBias ?? null,
       );
       const starterMarkings = generateMarkings(breedGeneticProfile, starterBaseColor.colorName);
       starterPhenotype = { ...starterBaseColor, ...starterMarkings };

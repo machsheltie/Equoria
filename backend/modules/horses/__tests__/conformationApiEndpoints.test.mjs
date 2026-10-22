@@ -317,7 +317,7 @@ describe('getConformationAnalysis', () => {
     const response = res.body;
     expect(response.data.breedMeanAvailable).toBe(true);
 
-    const tbProfile = getBreedProfile('Thoroughbred').rating_profiles.conformation;
+    const tbProfile = getBreedProfile('Thoroughbred').ratingProfiles.conformation;
     for (const region of CONFORMATION_REGIONS) {
       expect(response.data.analysis[region].breedMean).toBe(tbProfile[region].mean);
     }

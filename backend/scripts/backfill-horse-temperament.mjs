@@ -7,7 +7,7 @@
  * paths (and predate temperament entirely for legacy rows).
  *
  * Strategy: when a horse has a breed with a breedProfiles.json entry, use that
- * breed's temperament_weights; otherwise fall back to the default breed's
+ * breed's temperamentWeights; otherwise fall back to the default breed's
  * weights (generateTemperamentWithDefault). Mirrors backfill-horse-colors.mjs.
  *
  * Safe to run multiple times — only touches rows where temperament IS NULL.

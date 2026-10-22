@@ -6,11 +6,11 @@
  * fully render it:
  *   - breedGeneticProfile is valid JSONB (object, not null/array/string)
  *   - generateGenotype(profile) yields a genotype covering all CORE_LOCI
- *   - calculatePhenotype(genotype, profile.shade_bias) returns a known,
+ *   - calculatePhenotype(genotype, profile.shadeBias) returns a known,
  *     non-'Unknown' colorName
- *   - when the rendered colorName has a shade_bias entry, the returned shade is
+ *   - when the rendered colorName has a shadeBias entry, the returned shade is
  *     one the breed declared for that color (engine returns 'standard' fallback
- *     for colors absent from shade_bias — that fallback is documented, not a gap)
+ *     for colors absent from shadeBias — that fallback is documented, not a gap)
  *   - the foal must NOT be falsely flagged Brindle from the breed's wild-type
  *     data (the Equoria-26qjf.1/.3 case-mismatch sentinel)
  *
@@ -31,7 +31,7 @@ function isPlainObject(v) {
   return v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v);
 }
 
-// Pull the set of declared shades for a color from a breed's shade_bias.
+// Pull the set of declared shades for a color from a breed's shadeBias.
 function declaredShadesFor(shadeBias, colorName) {
   if (!isPlainObject(shadeBias)) {
     return null;
@@ -92,8 +92,8 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
         }
       }
 
-      // Render the phenotype with the breed's shade_bias.
-      const shadeBias = isPlainObject(profile.shade_bias) ? profile.shade_bias : null;
+      // Render the phenotype with the breed's shadeBias.
+      const shadeBias = isPlainObject(profile.shadeBias) ? profile.shadeBias : null;
       let phenotype;
       try {
         phenotype = calculatePhenotype(genotype, shadeBias);
@@ -113,13 +113,13 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
         failures.push(`${breed.name}: falsely flagged Brindle despite wild-type BR1_Brindle1=n/n`);
       }
 
-      // When the rendered color is declared in shade_bias, the chosen shade must
-      // be one of the declared shades. (Colors absent from shade_bias get the
+      // When the rendered color is declared in shadeBias, the chosen shade must
+      // be one of the declared shades. (Colors absent from shadeBias get the
       // documented 'standard' fallback — not asserted.)
       const declared = declaredShadesFor(shadeBias, phenotype.colorName);
       if (declared && !declared.has(phenotype.shade)) {
         failures.push(
-          `${breed.name}: shade '${phenotype.shade}' not in declared shade_bias for '${phenotype.colorName}' (${[...declared].join('/')})`,
+          `${breed.name}: shade '${phenotype.shade}' not in declared shadeBias for '${phenotype.colorName}' (${[...declared].join('/')})`,
         );
       }
     }
@@ -143,7 +143,7 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
       if (!isPlainObject(profile)) {
         continue;
       }
-      const shadeBias = isPlainObject(profile.shade_bias) ? profile.shade_bias : null;
+      const shadeBias = isPlainObject(profile.shadeBias) ? profile.shadeBias : null;
 
       for (let i = 0; i < SAMPLES; i++) {
         const genotype = generateGenotype(profile);

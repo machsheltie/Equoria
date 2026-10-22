@@ -22,8 +22,8 @@
  * a horse generated from that breed rendered with a missing region score.
  *
  * This sentinel closes that gap: it parses EVERY .txt source file and asserts
- * each one's rating_profiles.conformation carries ALL 8 canonical regions,
- * each with a finite mean in [0,100] and a finite std_dev.
+ * each one's ratingProfiles.conformation carries ALL 8 canonical regions,
+ * each with a finite mean in [0,100] and a finite stdDev.
  *
  * ── Parse approach ─────────────────────────────────────────────────────────
  * Each .txt file is a single idempotent SQL INSERT whose JSONB payload is
@@ -98,9 +98,9 @@ function extractProfileJson(sql) {
  */
 function findConformationRegionErrors(profile) {
   const errors = [];
-  const conformation = profile?.rating_profiles?.conformation;
+  const conformation = profile?.ratingProfiles?.conformation;
   if (conformation === null || conformation === undefined || typeof conformation !== 'object') {
-    errors.push('rating_profiles.conformation is missing or not an object');
+    errors.push('ratingProfiles.conformation is missing or not an object');
     return errors;
   }
   for (const region of EXPECTED_CONFORMATION_REGIONS) {
@@ -109,14 +109,14 @@ function findConformationRegionErrors(profile) {
       errors.push(`missing conformation region: ${region}`);
       continue;
     }
-    const { mean, std_dev: stdDev } = reg;
+    const { mean, stdDev } = reg;
     if (!Number.isFinite(mean)) {
       errors.push(`conformation.${region}.mean is not a finite number (got ${JSON.stringify(mean)})`);
     } else if (mean < 0 || mean > 100) {
       errors.push(`conformation.${region}.mean out of range [0,100] (got ${mean})`);
     }
     if (!Number.isFinite(stdDev)) {
-      errors.push(`conformation.${region}.std_dev is not a finite number (got ${JSON.stringify(stdDev)})`);
+      errors.push(`conformation.${region}.stdDev is not a finite number (got ${JSON.stringify(stdDev)})`);
     }
   }
   return errors;
@@ -145,7 +145,7 @@ describe('breed source files — conformation completeness sentinel (Equoria-9cp
     expect(parsed.length).toBe(312);
   });
 
-  it('every breed .txt has all 8 conformation regions with finite mean (0-100) + finite std_dev', () => {
+  it('every breed .txt has all 8 conformation regions with finite mean (0-100) + finite stdDev', () => {
     const failures = [];
     for (const { file, profile } of parsed) {
       const errs = findConformationRegionErrors(profile);
@@ -177,9 +177,9 @@ describe('breed source files — conformation completeness sentinel (Equoria-9cp
     function fullConformationProfile() {
       const conformation = {};
       for (const region of EXPECTED_CONFORMATION_REGIONS) {
-        conformation[region] = { mean: 80, std_dev: 7 };
+        conformation[region] = { mean: 80, stdDev: 7 };
       }
-      return { rating_profiles: { conformation } };
+      return { ratingProfiles: { conformation } };
     }
 
     it('a clean synthetic profile produces ZERO errors (negative control)', () => {
@@ -188,7 +188,7 @@ describe('breed source files — conformation completeness sentinel (Equoria-9cp
 
     it('FIRES when a region (topline) is missing', () => {
       const profile = fullConformationProfile();
-      delete profile.rating_profiles.conformation.topline;
+      delete profile.ratingProfiles.conformation.topline;
       const errs = findConformationRegionErrors(profile);
       expect(errs).toContain('missing conformation region: topline');
       expect(errs.length).toBeGreaterThan(0);
@@ -196,34 +196,34 @@ describe('breed source files — conformation completeness sentinel (Equoria-9cp
 
     it('FIRES when a region (head) is missing', () => {
       const profile = fullConformationProfile();
-      delete profile.rating_profiles.conformation.head;
+      delete profile.ratingProfiles.conformation.head;
       expect(findConformationRegionErrors(profile)).toContain('missing conformation region: head');
     });
 
     it('FIRES when a region mean is non-finite', () => {
       const profile = fullConformationProfile();
-      profile.rating_profiles.conformation.back.mean = 'oops';
+      profile.ratingProfiles.conformation.back.mean = 'oops';
       const errs = findConformationRegionErrors(profile);
       expect(errs.some(e => e.startsWith('conformation.back.mean is not a finite number'))).toBe(true);
     });
 
     it('FIRES when a region mean is out of range', () => {
       const profile = fullConformationProfile();
-      profile.rating_profiles.conformation.legs.mean = 150;
+      profile.ratingProfiles.conformation.legs.mean = 150;
       const errs = findConformationRegionErrors(profile);
       expect(errs.some(e => e.startsWith('conformation.legs.mean out of range'))).toBe(true);
     });
 
-    it('FIRES when a region std_dev is non-finite', () => {
+    it('FIRES when a region stdDev is non-finite', () => {
       const profile = fullConformationProfile();
-      delete profile.rating_profiles.conformation.neck.std_dev;
+      delete profile.ratingProfiles.conformation.neck.stdDev;
       const errs = findConformationRegionErrors(profile);
-      expect(errs.some(e => e.startsWith('conformation.neck.std_dev is not a finite number'))).toBe(true);
+      expect(errs.some(e => e.startsWith('conformation.neck.stdDev is not a finite number'))).toBe(true);
     });
 
     it('FIRES when conformation block is absent entirely', () => {
-      expect(findConformationRegionErrors({ rating_profiles: {} })).toContain(
-        'rating_profiles.conformation is missing or not an object',
+      expect(findConformationRegionErrors({ ratingProfiles: {} })).toContain(
+        'ratingProfiles.conformation is missing or not an object',
       );
     });
 

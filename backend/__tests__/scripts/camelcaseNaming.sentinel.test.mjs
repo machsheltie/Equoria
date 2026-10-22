@@ -108,6 +108,21 @@ describe('check-camelcase-naming.mjs (Equoria-pjvp8)', () => {
     expect(res.stderr).toContain(`${lowerName} (jsonKey)`);
   });
 
+  it('SENTINEL: an old key quoted in a data migration literal stays counted', () => {
+    // Migration 20261022130000_breed_profile_camelcase_keys rewrites
+    // '"rating_profiles": '; quoting the old key in SQL data must not exempt it.
+    const oldKey = ['rating', 'profiles'].join(us);
+    const migration = path.join(
+      repoRoot,
+      'packages/database/prisma/migrations/20261022130000_breed_profile_camelcase_keys/migration.sql',
+    );
+    expect(fs.readFileSync(migration, 'utf8')).toContain(`'"${oldKey}": '`);
+    plant('plantedProfile.json', JSON.stringify({ [oldKey]: {} }));
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(`${oldKey} (jsonKey)`);
+  });
+
   it('SENTINEL: fails on a snake name assembled at runtime in production code', () => {
     const prefix = ['resists', ''].join(us);
     plant(

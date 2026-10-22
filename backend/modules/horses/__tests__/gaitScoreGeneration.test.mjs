@@ -452,7 +452,7 @@ describe('Gait Score Generation Service', () => {
      * — producing only ±~4.5 points of bonus on top of a base gait score that
      * varies by ±2σ (8-18 points) from breed-mean Gaussian draws. The signal
      * (conformation contribution) is intentionally small relative to the noise
-     * (breed std_dev), giving a true correlation in the 0.10-0.20 range at this
+     * (breed stdDev), giving a true correlation in the 0.10-0.20 range at this
      * sample size. r > 0.1 is therefore the correct lower bound for a small-
      * but-real-effect (Cohen 1988) at n=3000 — it would fail decisively if the
      * conformation→gait coupling were removed (r drifts to ~0). The threshold

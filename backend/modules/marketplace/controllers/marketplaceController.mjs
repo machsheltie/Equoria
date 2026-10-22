@@ -588,7 +588,7 @@ export async function buyStoreHorse(req, res) {
     `;
     const breedGeneticProfile = breedProfileRows[0]?.breedGeneticProfile ?? null;
     const colorGenotype = generateGenotype(breedGeneticProfile);
-    const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
+    const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shadeBias ?? null);
     const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
     const phenotype = { ...baseColor, ...markings };
 
