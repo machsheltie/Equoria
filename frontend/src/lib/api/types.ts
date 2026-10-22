@@ -487,6 +487,9 @@ export interface Competition {
   currentEntries?: number;
   status?: string;
   entryDeadline?: string;
+  /** When the show stops taking entries (the list endpoint returns the Show row). */
+  closeDate?: string | null;
+  runDate?: string;
   // Equoria-e0cn: conformation shows are differentiated by showType ('conformation'
   // vs ridden 'show'). Surfacing this here lets the conformation entry UI filter
   // the unified competitions list without a separate backend endpoint.

@@ -24,11 +24,14 @@ import { Filter, Calendar, Coins, X } from 'lucide-react';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { Select } from '@/components/ui/form';
 import { type JSX, useMemo, memo } from 'react';
+import type {
+  DisciplineFilter,
+  DateRangeFilter,
+  EntryFeeFilter,
+} from '@/lib/utils/competition-filters';
 
-// Type definitions
-export type DisciplineFilter = 'all' | string;
-export type DateRangeFilter = 'all' | 'today' | 'week' | 'month';
-export type EntryFeeFilter = 'all' | 'free' | 'under100' | 'range' | 'over500';
+// Type definitions (the rules behind them live in lib/utils/competition-filters)
+export type { DisciplineFilter, DateRangeFilter, EntryFeeFilter };
 
 export interface CompetitionFiltersProps {
   disciplineFilter: DisciplineFilter;
@@ -44,17 +47,24 @@ export interface CompetitionFiltersProps {
 // Constants
 const DATE_RANGE_OPTIONS: readonly { value: DateRangeFilter; label: string }[] = [
   { value: 'all', label: 'All' },
+  { value: 'closing', label: 'Closing <24h' },
   { value: 'today', label: 'Today' },
   { value: 'week', label: 'This Week' },
   { value: 'month', label: 'This Month' },
 ] as const;
 
-const ENTRY_FEE_OPTIONS: readonly { value: EntryFeeFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'free', label: 'Free' },
-  { value: 'under100', label: 'Under $100' },
-  { value: 'range', label: '$100-$500' },
-  { value: 'over500', label: 'Over $500' },
+// Entry fees are in coins, the game's currency (Equoria-oey96.12). The visible
+// label stays short for the narrow control; `title` and the aria-label say coins.
+const ENTRY_FEE_OPTIONS: readonly {
+  value: EntryFeeFilter;
+  label: string;
+  coins: string;
+}[] = [
+  { value: 'all', label: 'All', coins: 'Any entry fee' },
+  { value: 'free', label: 'Free', coins: 'Free entry' },
+  { value: 'under100', label: 'Under 100', coins: 'Under 100 coins' },
+  { value: 'range', label: '100-500', coins: '100 to 500 coins' },
+  { value: 'over500', label: 'Over 500', coins: 'Over 500 coins' },
 ] as const;
 
 // Helper function to render filter button
@@ -63,11 +73,13 @@ const FilterButton = memo(
     isActive,
     onClick,
     testId,
+    spokenLabel,
     children,
   }: {
     isActive: boolean;
     onClick: () => void;
     testId: string;
+    spokenLabel?: string;
     children: React.ReactNode;
   }) => (
     <button
@@ -79,6 +91,8 @@ const FilterButton = memo(
       }`}
       data-testid={testId}
       aria-pressed={isActive}
+      aria-label={spokenLabel}
+      title={spokenLabel}
     >
       {children}
     </button>
@@ -183,6 +197,7 @@ const CompetitionFilters = ({
                 isActive={entryFeeFilter === option.value}
                 onClick={() => onEntryFeeChange(option.value)}
                 testId={`filter-fee-${option.value}`}
+                spokenLabel={option.coins}
               >
                 {option.label}
               </FilterButton>

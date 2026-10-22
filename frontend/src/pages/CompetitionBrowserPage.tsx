@@ -23,6 +23,7 @@ import CompetitionDetailModal, {
   type Competition as ModalCompetition,
 } from '@/components/competition/CompetitionDetailModal';
 import ConformationShowsPanel from '@/components/competition/ConformationShowsPanel';
+import { applyCompetitionFilters } from '@/lib/utils/competition-filters';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SectionLoading, ErrorState } from '@/components/ui/state';
@@ -51,6 +52,17 @@ const CompetitionBrowserPage = (): JSX.Element => {
   const [disciplineFilter, setDisciplineFilter] = useState<DisciplineFilter>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilter>('all');
   const [entryFeeFilter, setEntryFeeFilter] = useState<EntryFeeFilter>('all');
+  // The filters narrow the list the player sees (Equoria-oey96.12); the page
+  // owns this so CompetitionList stays presentational.
+  const visibleCompetitions = useMemo(
+    () =>
+      applyCompetitionFilters(riddenCompetitions, {
+        discipline: disciplineFilter,
+        dateRange: dateRangeFilter,
+        entryFee: entryFeeFilter,
+      }),
+    [riddenCompetitions, disciplineFilter, dateRangeFilter, entryFeeFilter]
+  );
   const [selectedCompetition, setSelectedCompetition] = useState<ModalCompetition | null>(null);
   const [selectedHorseId, setSelectedHorseId] = useState<number | ''>('');
   const [entryError, setEntryError] = useState<string | undefined>();
@@ -274,7 +286,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
 
             {/* Competition List */}
             <CompetitionList
-              competitions={riddenCompetitions}
+              competitions={visibleCompetitions}
               isLoading={isLoading}
               onCompetitionClick={handleCompetitionClick}
               title="Available Competitions"
