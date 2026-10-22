@@ -1,7 +1,8 @@
 /**
  * personalityEvolutionSystem service unit tests (Equoria-rr7 coverage sprint).
  *
- * All 7 exported async functions tested with real DB fixtures.
+ * The exported async functions tested with real DB fixtures (evolveGroomPersonality
+ * was removed under Equoria-jy3f7: groom personalities never evolve).
  * Newborn foal (age 0 < minimumAge 1) and fresh groom (0 experience)
  * exercise the not-eligible / zero-interaction code paths.
  */
@@ -9,7 +10,6 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import {
-  evolveGroomPersonality,
   evolveHorseTemperament,
   calculatePersonalityEvolutionTriggers,
   analyzePersonalityStability,
@@ -71,21 +71,6 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(() => moduleCleanup.run(), 30000);
-
-// ── evolveGroomPersonality ────────────────────────────────────────────────────
-
-describe('evolveGroomPersonality', () => {
-  it('throws for non-existent groom', async () => {
-    await expect(evolveGroomPersonality(999999999)).rejects.toThrow();
-  });
-
-  it('returns not-evolved for fresh groom with no experience', async () => {
-    const result = await evolveGroomPersonality(groom.id);
-    expect(result.success).toBe(true);
-    expect(result.personalityEvolved).toBe(false);
-    expect(typeof result.reason).toBe('string');
-  });
-});
 
 // ── evolveHorseTemperament ────────────────────────────────────────────────────
 
@@ -260,7 +245,6 @@ describe('predictPersonalityEvolution — timeframeDays filter (Equoria-jkht)', 
 describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jkht)', () => {
   let evUser;
   let evGroom;
-  let evGroomNoInt;
   let evHorseNervous;
   let evHorseDeveloping;
   let evGroomForHorses;
@@ -278,16 +262,6 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
         firstName: 'PES',
         lastName: 'Evolve',
         money: 1000,
-      },
-    });
-
-    evGroomNoInt = await prisma.groom.create({
-      data: {
-        name: `TestFixture-PES-GroomNoInt-${ts}`,
-        speciality: 'foal_care',
-        personality: 'calm',
-        userId: evUser.id,
-        experience: 100,
       },
     });
 
@@ -398,22 +372,6 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);
-
-  it('evolveGroomPersonality returns personalityEvolved=false reason=insufficient_interaction_data for groom with experience>=50 but 0 interactions', async () => {
-    const result = await evolveGroomPersonality(evGroomNoInt.id);
-    expect(result.personalityEvolved).toBe(false);
-    expect(result.reason).toBe('insufficient_interaction_data');
-  });
-
-  it('evolveGroomPersonality returns personalityEvolved=true when experience>=50 and 15+ excellent interactions (shouldEvolve=true branch)', async () => {
-    const result = await evolveGroomPersonality(evGroom.id);
-    expect(result.success).toBe(true);
-    expect(result.personalityEvolved).toBe(true);
-    expect(result.evolutionType).toBe('trait_strengthening');
-    expect(Array.isArray(result.newTraits)).toBe(true);
-    expect(result.newTraits.length).toBeGreaterThan(0);
-    expect(typeof result.stabilityScore).toBe('number');
-  });
 
   it('evolveHorseTemperament with nervous+age>=1+10 excellent interactions → temperamentEvolved=true, newTemperament=developing (determineNewTemperament branch)', async () => {
     const result = await evolveHorseTemperament(evHorseNervous.id);
@@ -564,15 +522,6 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);
-
-  it('evolveGroomPersonality returns reason=evolution_criteria_not_met when groom has 15 mixed-quality interactions (line 136)', async () => {
-    const result = await evolveGroomPersonality(rr7GroomMixed.id);
-    expect(result.success).toBe(true);
-    expect(result.personalityEvolved).toBe(false);
-    expect(result.reason).toBe('evolution_criteria_not_met');
-    expect(result.patterns).toBeDefined();
-    expect(typeof result.stabilityScore).toBe('number');
-  });
 
   it('evolveHorseTemperament with spirited temperament + 10 excellent interactions → determineNewTemperament returns currentTemperament (line 559)', async () => {
     const result = await evolveHorseTemperament(rr7HorseSpirited.id);

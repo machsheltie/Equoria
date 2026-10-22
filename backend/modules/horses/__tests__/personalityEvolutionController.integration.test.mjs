@@ -4,11 +4,12 @@
  * backend/tests/controllers/personalityEvolutionController.test.mjs was merged
  * in here, its canonical home per CONTRIBUTING.md module-test co-location).
  *
- * Covers: evolveGroomPersonality, getEvolutionTriggers,
+ * Covers: getEvolutionTriggers,
  * getPersonalityStability, predictPersonalityEvolution, getEvolutionHistory,
  * applyEvolutionEffects, getPersonalityConfig. (The horse-temperament evolve
  * and batch-evolve routes were removed by Equoria-gu8jk — players never change
- * a horse's temperament.)
+ * a horse's temperament. The groom evolve route was removed by Equoria-jy3f7 —
+ * owner ruling 2026-10-22: groom personalities never evolve.)
  * Routes live under authRouter at /api/v1/personality-evolution (Equoria-vivsi:
  * the unversioned /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the
  * canonical surface — verified in backend/app.mjs:290 + backend/app/routers.mjs:191).
@@ -414,87 +415,25 @@ describe('GET /api/personality-evolution/:entityType/:entityId/history', () => {
   });
 });
 
-// ─── POST /api/v1/personality-evolution/groom/:groomId/evolve ────────────────
+// ─── POST /api/v1/personality-evolution/groom/:groomId/evolve — REMOVED ───────
+// Equoria-jy3f7, owner ruling 2026-10-22: groom personalities never evolve; a
+// groom keeps the same personality for its whole career. The route is gone, so
+// even an authenticated owner with a valid CSRF pair gets the router's 404.
 
-describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {
-  it('returns 200 when evolving personality for owned groom', async () => {
-    // Equoria-vivsi: per-user CSRF binding — token must be issued under the
-    // same sessionIdentifier (req.user.id) the Bearer-authed mutation resolves
-    // to. Forward the access cookie so getCsrfToken's
-    // tryPopulateUserFromAccessCookie binds the token to user.id; otherwise
-    // issuance falls back to the salt and validation 403s (csrf.mjs:95-108).
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+describe('POST /api/v1/personality-evolution/groom/:groomId/evolve (removed)', () => {
+  it('is 404 for the owner of the groom, and the groom keeps its personality', async () => {
+    const before = await prisma.groom.findUnique({ where: { id: groom.id }, select: { personality: true } });
     const res = await request(app)
       .post(`/api/v1/personality-evolution/groom/${groom.id}/evolve`)
-      .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    // 200 success or 400 (no evolution triggered) are both acceptable
-    expect([200, 400]).toContain(res.status);
-    expect(res.body.success !== undefined).toBe(true);
-  });
-
-  it('returns 404 for a groom not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/personality-evolution/groom/999999999/evolve')
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('Cookie', csrfPair.cookieHeader)
+      .set('X-CSRF-Token', csrfPair.csrfToken)
       .send({});
 
     expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    // Intentionally NOT forwarding accessToken: authenticateToken reads the
-    // access cookie FIRST (auth.mjs:83) and runs before csrfProtection
-    // (routers.mjs:93,95), so a no-auth request 401s before CSRF validation.
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/personality-evolution/groom/${groom.id}/evolve`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-
-    expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: success-path response-shape — message + boolean
-  // personalityEvolved. Uses the identity-bound CSRF pair so the mutation 200s.
-  it('evolves groom personality successfully (message + boolean personalityEvolved)', async () => {
-    const res = await request(app)
-      .post(`/api/v1/personality-evolution/groom/${groom.id}/evolve`)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrfPair.cookieHeader)
-      .set('X-CSRF-Token', csrfPair.csrfToken)
-      .expect(200);
-
-    expect(res.body.success).toBe(true);
-    expect(res.body.message).toContain('evolution');
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.success).toBe(true);
-    expect(typeof res.body.data.personalityEvolved).toBe('boolean');
-  });
-
-  // Equoria-fefh2.40 migrated: 400 for an invalid (non-numeric) groom id.
-  it('returns 400 for an invalid groom ID', async () => {
-    const res = await request(app)
-      .post('/api/v1/personality-evolution/groom/invalid/evolve')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrfPair.cookieHeader)
-      .set('X-CSRF-Token', csrfPair.csrfToken)
-      .expect(400);
-
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain('Validation failed');
+    const after = await prisma.groom.findUnique({ where: { id: groom.id }, select: { personality: true } });
+    expect(after.personality).toBe(before.personality);
   });
 });
 

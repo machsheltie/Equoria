@@ -5,7 +5,6 @@
  * evolution triggers, stability analysis, prediction capabilities, and batch processing.
  *
  * Routes:
- * - POST /groom/:groomId/evolve - Evolve groom personality
  * - GET /:entityType/:entityId/triggers - Get evolution triggers
  * - GET /:entityType/:entityId/stability - Analyze personality stability
  * - GET /:entityType/:entityId/predict - Predict future evolution
@@ -15,17 +14,18 @@
  * No route here changes a horse's temperament (Equoria-gu8jk; owner ruling
  * 2026-10-20: players must never write traits for themselves).
  * POST /horse/:horseId/evolve and POST /batch-evolve (whose 'horse' entities
- * ran the same temperament write) were removed. The groom evolve route stays:
- * it writes nothing (applyPersonalityEvolutionEffects only builds a summary).
+ * ran the same temperament write) were removed.
+ *
+ * POST /groom/:groomId/evolve was removed under Equoria-jy3f7 (owner ruling
+ * 2026-10-22: groom personalities never evolve; a groom keeps the same
+ * personality for its whole career).
  */
 
 import express from 'express';
 import { param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  evolveGroomPersonalityController,
   getEvolutionTriggersController,
   getPersonalityStabilityController,
   predictPersonalityEvolutionController,
@@ -54,18 +54,6 @@ const validateRequest = (req, res, next) => {
 
 // Apply authentication to all routes
 router.use(authenticateToken);
-
-/**
- * Evolve groom personality based on interaction patterns
- * POST /api/personality-evolution/groom/:groomId/evolve
- */
-router.post(
-  '/groom/:groomId/evolve',
-  [param('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer')],
-  validateRequest,
-  requireOwnership('groom', { idParam: 'groomId' }),
-  evolveGroomPersonalityController,
-);
 
 /**
  * Calculate personality evolution triggers for an entity
@@ -148,7 +136,7 @@ router.get(
  * `personalityUpdated: true` — it never writes to the database. Grepping the
  * repo (source, tests, frontend) turns up no caller of this route besides its
  * own now-removed test coverage; the two real evolution paths
- * (`evolveGroomPersonality`/`evolveHorseTemperament`) call the same
+ * (`evolveHorseTemperament`, and the since-removed groom evolution) call the same
  * `applyPersonalityEvolutionEffects` helper function directly as an internal
  * step, not through HTTP, so closing the route does not touch them.
  *

@@ -17,7 +17,6 @@
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
 import {
-  evolveGroomPersonality,
   evolveHorseTemperament,
   calculatePersonalityEvolutionTriggers,
   analyzePersonalityStability,
@@ -129,11 +128,12 @@ describe('Personality Evolution System', () => {
   });
 
   describe('Groom Personality Evolution', () => {
-    test('should evolve groom personality based on interaction patterns', async () => {
-      // Create interaction history showing consistent calm, patient interactions
-      const interactions = [];
+    // Equoria-jy3f7 (owner ruling 2026-10-22): groom personalities never evolve,
+    // so evolveGroomPersonality and its tests are gone. The 20-session history
+    // they seeded is kept as this block's setup: the trigger tests below read it.
+    beforeAll(async () => {
       for (let i = 0; i < 20; i++) {
-        const interaction = await prisma.groomInteraction.create({
+        await prisma.groomInteraction.create({
           data: {
             groomId: testGroom.id,
             foalId: testHorse.id,
@@ -147,64 +147,7 @@ describe('Personality Evolution System', () => {
             notes: 'Calm, patient approach with excellent results',
           },
         });
-        interactions.push(interaction);
       }
-
-      const evolution = await evolveGroomPersonality(testGroom.id);
-
-      expect(evolution.success).toBe(true);
-      expect(evolution.personalityEvolved).toBe(true);
-      expect(evolution.evolutionType).toBe('trait_strengthening');
-      expect(evolution.newTraits).toContain('enhanced_patience');
-      expect(evolution.experienceThreshold).toBeGreaterThan(0);
-      expect(evolution.interactionPatterns).toBeDefined();
-      expect(evolution.stabilityScore).toBeGreaterThan(0.5);
-    });
-
-    test('should not evolve personality with insufficient interaction data', async () => {
-      if (testUser) {
-        await prisma.user.upsert({
-          where: { id: testUser.id },
-          update: {},
-          create: {
-            id: testUser.id,
-            username: testUser.username,
-            email: testUser.email,
-            password: 'testHash',
-            firstName: testUser.firstName,
-            lastName: testUser.lastName,
-            money: 1000,
-            xp: 0,
-            level: 1,
-          },
-        });
-      }
-
-      // Create new groom with minimal interactions
-      const newGroom = await prisma.groom.create({
-        data: {
-          userId: testUser.id,
-          name: 'Minimal Interaction Groom',
-          speciality: 'general_grooming',
-          personality: 'energetic',
-          epigeneticInfluenceType: 'energetic',
-          skillLevel: 'novice',
-          experience: 20,
-          level: 2,
-          sessionRate: 20.0,
-          isActive: true,
-        },
-      });
-
-      const evolution = await evolveGroomPersonality(newGroom.id);
-
-      expect(evolution.success).toBe(true);
-      expect(evolution.personalityEvolved).toBe(false);
-      expect(evolution.reason).toBe('insufficient_experience');
-      expect(evolution.minimumInteractionsRequired).toBeGreaterThan(0);
-
-      // Cleanup
-      await prisma.groom.deleteMany({ where: { id: newGroom.id } });
     });
 
     test('should calculate personality evolution triggers accurately', async () => {

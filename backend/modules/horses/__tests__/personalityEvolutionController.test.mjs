@@ -15,7 +15,6 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  evolveGroomPersonalityController,
   getEvolutionTriggersController,
   getPersonalityStabilityController,
   predictPersonalityEvolutionController,
@@ -296,22 +295,3 @@ describe('getPersonalityEvolutionHistoryController', () => {
 // (applyPersonalityEvolutionEffects) never wrote to the database anyway. See
 // backend/modules/horses/__tests__/personalityEvolutionController.integration.test.mjs
 // for the route-closure regression coverage.
-
-// ─── evolveGroomPersonalityController — does not crash on non-existent ID ─────
-
-describe('evolveGroomPersonalityController', () => {
-  it('returns 200 or 500 without crashing on non-existent groom ID', async () => {
-    const req = {
-      params: { groomId: String(NON_EXISTENT_ID) },
-      user: { id: NON_EXISTENT_USER_ID },
-    };
-    const res = makeRes();
-
-    await evolveGroomPersonalityController(req, res);
-
-    // Service may return data or throw; controller should handle both
-    expect([200, 500]).toContain(res.statusValue);
-    expect(res.bodyValue).toBeDefined();
-    expect(typeof res.bodyValue.success).toBe('boolean');
-  });
-});

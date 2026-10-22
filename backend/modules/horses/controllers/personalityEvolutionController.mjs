@@ -17,7 +17,6 @@
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import {
-  evolveGroomPersonality,
   calculatePersonalityEvolutionTriggers,
   analyzePersonalityStability,
   predictPersonalityEvolution,
@@ -44,39 +43,6 @@ function notFoundOrNotYours(entityType) {
   return entityType === 'groom'
     ? 'Groom not found or not on your staff'
     : 'Horse not found or you do not own this horse';
-}
-
-/**
- * Evolve groom personality based on interaction patterns
- * POST /api/personality-evolution/groom/:groomId/evolve
- */
-export async function evolveGroomPersonalityController(req, res) {
-  try {
-    const { groomId } = req.params;
-
-    logger.info(
-      `[personalityEvolutionController.evolveGroomPersonalityController] Processing groom evolution for ID: ${groomId}`,
-    );
-
-    const result = await evolveGroomPersonality(parseInt(groomId));
-
-    res.status(200).json({
-      success: true,
-      message: result.personalityEvolved
-        ? 'Groom personality evolution completed successfully'
-        : 'Groom personality evolution not triggered',
-      data: result,
-    });
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionController.evolveGroomPersonalityController] Error: ${error.message}`,
-    );
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process groom personality evolution',
-      error: error.message,
-    });
-  }
 }
 
 /**
