@@ -375,7 +375,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
         groomId: pooledGroom.id,
         userId: user.id,
         endedAt: new Date('2026-03-09T09:00:00.000Z'),
-        endReason: 'fee_unpaid',
+        endReason: 'feeUnpaid',
       },
     });
 
@@ -407,7 +407,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     });
     expect(await checkRetirementEligibility(groom.id)).toEqual({
       eligible: false,
-      reason: 'not_eligible',
+      reason: 'notEligible',
       mandatory: false,
     });
 
@@ -431,7 +431,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
     // and refusing to act on an unknown age is the safe direction to fail.
     expect(await checkRetirementEligibility(groom.id)).toEqual({
       eligible: false,
-      reason: 'age_unknown',
+      reason: 'ageUnknown',
       mandatory: false,
     });
   });
@@ -456,7 +456,7 @@ describe('Equoria-ypb7d.1 — retirement compares AGE, and only chance decides w
 
     expect(await checkRetirementEligibility(groom.id)).toEqual({
       eligible: false,
-      reason: 'not_eligible',
+      reason: 'notEligible',
       mandatory: false,
     });
   });

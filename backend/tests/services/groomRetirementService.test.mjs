@@ -190,13 +190,13 @@ describe('Groom Retirement Service', () => {
   });
 
   describe('Retirement Eligibility', () => {
-    test('should report not_scheduled for a groom with no drawn retirement age', async () => {
+    test('should report notScheduled for a groom with no drawn retirement age', async () => {
       // Equoria-m9lz1: no age is invented on read. A computed-on-read age could
       // differ between two reads and the retirement week would drift.
       const eligibility = await checkRetirementEligibility(testGroom.id);
 
       expect(eligibility.eligible).toBe(false);
-      expect(eligibility.reason).toBe('not_scheduled');
+      expect(eligibility.reason).toBe('notScheduled');
       expect(eligibility.mandatory).toBe(false);
       expect(eligibility).not.toHaveProperty('weeksUntilRetirement');
     });
@@ -215,7 +215,7 @@ describe('Groom Retirement Service', () => {
       const eligibility = await checkRetirementEligibility(testGroom.id);
 
       expect(eligibility.eligible).toBe(false);
-      expect(eligibility.reason).toBe('not_eligible');
+      expect(eligibility.reason).toBe('notEligible');
       expect(eligibility.mandatory).toBe(false);
       // The countdown fields are gone; they WERE the hidden age.
       expect(eligibility).not.toHaveProperty('weeksUntilRetirement');
@@ -239,7 +239,7 @@ describe('Groom Retirement Service', () => {
     });
 
     test('level 10 is NOT a retirement trigger any more', async () => {
-      // Pre-m9lz1: { eligible: true, reason: 'early_level_cap' } at career week
+      // Pre-m9lz1: { eligible: true, reason: 'earlyLevelCap' } at career week
       // 5. The ruling retires grooms between age 50 and 65; a level-10 groom in
       // its fifth week is neither.
       await ensureRetirementSchedule(prisma, testGroom.id);
@@ -252,11 +252,11 @@ describe('Groom Retirement Service', () => {
       const eligibility = await checkRetirementEligibility(testGroom.id);
 
       expect(eligibility.eligible).toBe(false);
-      expect(eligibility.reason).toBe('not_eligible');
+      expect(eligibility.reason).toBe('notEligible');
     });
 
     test('12+ assignments is NOT a retirement trigger any more', async () => {
-      // Draw a schedule first, or this groom answers `not_scheduled` and the case
+      // Draw a schedule first, or this groom answers `notScheduled` and the case
       // would pass for the wrong reason — isolating the assignment count as the
       // only variable is the point.
       await ensureRetirementSchedule(prisma, testGroom.id);
@@ -279,11 +279,11 @@ describe('Groom Retirement Service', () => {
 
       const eligibility = await checkRetirementEligibility(testGroom.id);
 
-      // Pre-m9lz1: { eligible: true, reason: 'early_assignment_limit' }. A dozen
+      // Pre-m9lz1: { eligible: true, reason: 'earlyAssignmentLimit' }. A dozen
       // re-assignments is ordinary play, so this trigger fired long before age
       // 50 and would have made the ruling's age rule almost never fire.
       expect(eligibility.eligible).toBe(false);
-      expect(eligibility.reason).toBe('not_eligible');
+      expect(eligibility.reason).toBe('notEligible');
       expect(eligibility.mandatory).toBe(false);
     });
 
@@ -297,7 +297,7 @@ describe('Groom Retirement Service', () => {
       const eligibility = await checkRetirementEligibility(testGroom.id);
 
       expect(eligibility.eligible).toBe(false);
-      expect(eligibility.reason).toBe('already_retired');
+      expect(eligibility.reason).toBe('alreadyRetired');
     });
   });
 

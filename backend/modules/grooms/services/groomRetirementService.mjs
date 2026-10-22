@@ -126,9 +126,9 @@ export { getRetirementStatistics };
  */
 export const RETIREMENT_REASONS = {
   AGE: 'age',
-  MANDATORY_CAREER_LIMIT: 'mandatory_career_limit',
-  EARLY_LEVEL_CAP: 'early_level_cap',
-  EARLY_ASSIGNMENT_LIMIT: 'early_assignment_limit',
+  MANDATORY_CAREER_LIMIT: 'mandatoryCareerLimit',
+  EARLY_LEVEL_CAP: 'earlyLevelCap',
+  EARLY_ASSIGNMENT_LIMIT: 'earlyAssignmentLimit',
   VOLUNTARY: 'voluntary',
 };
 
@@ -260,7 +260,7 @@ export async function checkRetirementEligibility(groomId) {
   }
 
   if (groom.retired) {
-    return { eligible: false, reason: 'already_retired', mandatory: false };
+    return { eligible: false, reason: 'alreadyRetired', mandatory: false };
   }
 
   // No schedule drawn yet (a groom that predates Equoria-m9lz1, or one whose
@@ -270,7 +270,7 @@ export async function checkRetirementEligibility(groomId) {
   // the persisted schedule exists to prevent.
   const retirementAge = groom.retirementSchedule?.retirementAge ?? null;
   if (retirementAge === null) {
-    return { eligible: false, reason: 'not_scheduled', mandatory: false };
+    return { eligible: false, reason: 'notScheduled', mandatory: false };
   }
 
   // No start age drawn yet (a groom that predates Equoria-ypb7d and whose first
@@ -280,14 +280,14 @@ export async function checkRetirementEligibility(groomId) {
   // draws one via `ensureStartAge` before it asks again.
   const age = groomAgeYears(groom);
   if (age === null) {
-    return { eligible: false, reason: 'age_unknown', mandatory: false };
+    return { eligible: false, reason: 'ageUnknown', mandatory: false };
   }
 
   if (age >= retirementAge) {
     return { eligible: true, reason: RETIREMENT_REASONS.AGE, mandatory: true };
   }
 
-  return { eligible: false, reason: 'not_eligible', mandatory: false };
+  return { eligible: false, reason: 'notEligible', mandatory: false };
 }
 
 /**
@@ -386,7 +386,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     // Equoria-bgdfb fix round 1 (review F3): a debt does not outlive the career it
     // was owed for. The weekly fee pass selects `retired: false`, so an unpaid week
     // on a groom who then ages out could never be collected — and a
-    // `missed_insufficient_funds` row that will never be collected is a row whose
+    // `missedInsufficientFunds` row that will never be collected is a row whose
     // status misstates its state, which any later "what is outstanding?" reader over
     // this table would count. Written off for the same reason a non-payment release
     // writes it off (groomFeeArrearsService), in the same transaction as the
@@ -394,7 +394,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     const writtenOffArrears = await tx.groomSalaryPayment.updateMany({
       where: {
         groomId,
-        paymentType: 'weekly_salary',
+        paymentType: 'weeklySalary',
         status: { in: [...ARREARS_OWED_STATUSES] },
       },
       data: { status: ARREARS_WRITTEN_OFF_STATUS },

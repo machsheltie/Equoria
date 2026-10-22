@@ -183,7 +183,7 @@ async function paidRowsInWindow(userId, groomId, window) {
     where: {
       userId,
       groomId,
-      paymentType: 'weekly_salary',
+      paymentType: 'weeklySalary',
       status: 'paid',
       paymentDate: { gte: window.start, lt: window.end },
     },
@@ -323,7 +323,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
         userId: user.id,
         amount: FEE_ONE_HORSE,
         paymentDate: now,
-        paymentType: 'weekly_salary',
+        paymentType: 'weeklySalary',
         status: 'paid',
       },
     });

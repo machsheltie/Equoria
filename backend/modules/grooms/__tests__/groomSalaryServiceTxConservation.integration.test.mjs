@@ -305,7 +305,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
         userId: user.id,
         groomId: groom.id,
         status: 'paid',
-        paymentType: 'weekly_salary',
+        paymentType: 'weeklySalary',
       },
     });
     expect(payments.length).toBeGreaterThanOrEqual(1);
@@ -373,9 +373,9 @@ describe('groomSalaryService.processWeeklySalaries — insufficient funds (Equor
     expect(results.failed).toBe(1);
 
     // The grace-period branch should have been entered (the user gets a
-    // missed_insufficient_funds payment row + a groomSalaryGracePeriod stamp).
+    // missedInsufficientFunds payment row + a groomSalaryGracePeriod stamp).
     const missed = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, status: 'missed_insufficient_funds' },
+      where: { userId: user.id, status: 'missedInsufficientFunds' },
     });
     expect(missed.length).toBeGreaterThanOrEqual(1);
 

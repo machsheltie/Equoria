@@ -90,7 +90,7 @@ describe('Groom Legacy Service', () => {
         level: 8,
         experience: 500,
         retired: true,
-        retirementReason: 'mandatory_career_limit',
+        retirementReason: 'mandatoryCareerLimit',
         retirementTimestamp: new Date(),
       },
     });

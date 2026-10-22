@@ -122,7 +122,7 @@ describe('Groom Retirement Routes', () => {
         level: 8,
         careerWeeks: 104,
         retired: true,
-        retirementReason: 'mandatory_career_limit',
+        retirementReason: 'mandatoryCareerLimit',
       },
     });
     ids.grooms.push(retiredGroom.id);

@@ -68,7 +68,7 @@ import { checkGroomMayWork } from '../../../utils/groomWorkRules.mjs';
  */
 export const ENGAGEMENT_END_REASONS = {
   /** A full pay week went unpaid; the groom returned to the hire pool. */
-  FEE_UNPAID: 'fee_unpaid',
+  FEE_UNPAID: 'feeUnpaid',
   /** The groom aged out (groomRetirementService.processRetirement). */
   RETIREMENT: 'retirement',
 };

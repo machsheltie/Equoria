@@ -16,7 +16,7 @@
  * NEVER worked: it wrote `terminationReason` to `GroomAssignment`, a column that
  * does not exist, so Prisma rejected its first statement and the function's own
  * catch swallowed the throw. After the seven-day grace period expired, nothing was
- * deactivated, the grace period was never cleared, and no `terminated_non_payment`
+ * deactivated, the grace period was never cleared, and no `terminatedNonPayment`
  * row was written. A player who could not pay kept every groom, silently, forever.
  *
  * WHAT THIS FILE ASSERTS, AND WHY EACH FAILS ON THE PRE-FIX CODE. Renumbered in fix

@@ -26,8 +26,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
  * reinstate it, and do not add a groom's age or hidden retirement age here.
  *
  * `retirementReasons` groups over `Groom.retirementReason` and therefore still
- * reports historical `mandatory_career_limit` / `early_level_cap` /
- * `early_assignment_limit` rows alongside the current `age`.
+ * reports historical `mandatoryCareerLimit` / `earlyLevelCap` /
+ * `earlyAssignmentLimit` rows alongside the current `age`.
  *
  * Equoria-ypb7d: this read still works after the engagement model landed because
  * retirement deliberately does NOT clear `Groom.userId` — see the field's comment

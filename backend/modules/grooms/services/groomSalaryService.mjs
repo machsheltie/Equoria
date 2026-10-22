@@ -76,7 +76,7 @@
  *
  * Equoria-icqqm: `processWeeklySalaries` is now IDEMPOTENT per pay week.
  * Each per-user transaction (1) takes a per-(user, payWeek) advisory xact
- * lock, (2) reads which grooms already have a 'paid' weekly_salary row
+ * lock, (2) reads which grooms already have a 'paid' weeklySalary row
  * dated inside the pay week ([Monday 00:00 Eastern, +7 game days) — `getPayWeekStart`),
  * and (3) debits ONLY the unpaid grooms' salaries. A same-week re-run is a
  * no-op reported via `results.skipped`; a new pay week always pays.
@@ -176,7 +176,7 @@ export function getPayWeekStart(now = new Date()) {
  * for a career that has ended.
  *
  * Equoria-icqqm — PAY-WEEK IDEMPOTENCY: a re-run in the same pay week is a
- * no-op for every groom that already has a `status: 'paid'` weekly_salary
+ * no-op for every groom that already has a `status: 'paid'` weeklySalary
  * payment row dated inside the pay week. Grooms without one (fresh run,
  * partial-run recovery, groom hired after the cron fired) are still paid,
  * and ONLY their fees are debited. A run in a NEW pay week always pays.
@@ -330,7 +330,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
               const paidRows = await tx.groomSalaryPayment.findMany({
                 where: {
                   userId,
-                  paymentType: 'weekly_salary',
+                  paymentType: 'weeklySalary',
                   status: 'paid',
                   paymentDate: { gte: payWeekStart, lt: payWeekEnd },
                 },
@@ -356,7 +356,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
               const owedRows = await tx.groomSalaryPayment.findMany({
                 where: {
                   userId,
-                  paymentType: 'weekly_salary',
+                  paymentType: 'weeklySalary',
                   status: { in: [...ARREARS_OWED_STATUSES] },
                   groomId: { in: unpaidAssignments.map(entry => entry.groom.id) },
                   paymentDate: { lt: payWeekStart },
@@ -419,7 +419,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
                       // Equoria-bgdfb: the owed weeks settled by THIS debit — 0 when
                       // the wallet only covered the current week.
                       arrears: attempt.withArrears ? arrearsTotal : 0,
-                      paymentType: 'weekly_salary',
+                      paymentType: 'weeklySalary',
                       payWeekStart: payWeekStart.toISOString(), // Equoria-icqqm audit key
                     },
                   });
@@ -467,7 +467,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
                     userId,
                     amount: salary,
                     paymentDate: now,
-                    paymentType: 'weekly_salary',
+                    paymentType: 'weeklySalary',
                     status: 'paid',
                   },
                 });

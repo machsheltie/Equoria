@@ -24,10 +24,10 @@
  *   checkRetirementEligibility — throws for non-existent groom
  *
  * DB-fixture branch coverage (checkRetirementEligibility):
- *   retired=true → 'already_retired'
- *   no schedule drawn → 'not_scheduled' (and no age is invented)
+ *   retired=true → 'alreadyRetired'
+ *   no schedule drawn → 'notScheduled' (and no age is invented)
  *   careerWeeks >= its own hidden retirementAge → RETIREMENT_REASONS.AGE (mandatory=true)
- *   careerWeeks one short of it → not_eligible, and NO countdown field
+ *   careerWeeks one short of it → notEligible, and NO countdown field
  *   level >= 10 / 12+ assignment logs → NOT eligible any more (no early triggers)
  *
  * incrementCareerWeeks with real groom → careerWeeks+1
@@ -108,14 +108,14 @@ describe('checkRetirementEligibility — non-existent groom', () => {
 describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)', () => {
   let grsUser;
   let grsHorse; // needed for GroomAssignmentLog (horseId required)
-  let grsGroomRetired; // retired=true → already_retired
+  let grsGroomRetired; // retired=true → alreadyRetired
   let grsGroomMandatory; // careerWeeks == its hidden retirementAge → AGE
   let grsGroomMandatoryAge; // that groom's drawn retirement age
   let grsGroomLevelCap; // level=10 → NOT eligible any more (Equoria-m9lz1)
   let grsGroomAssignmentLimit; // 12 assignment logs → NOT eligible any more
-  let grsGroomNotice; // one tick short of its retirementAge → not_eligible, no countdown
+  let grsGroomNotice; // one tick short of its retirementAge → notEligible, no countdown
   let grsGroomNoticeAge; // that groom's drawn retirement age
-  let grsGroomNormal; // no schedule drawn → not_scheduled
+  let grsGroomNormal; // no schedule drawn → notScheduled
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -302,9 +302,9 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('checkRetirementEligibility: retired=true → already_retired', async () => {
+  it('checkRetirementEligibility: retired=true → alreadyRetired', async () => {
     const result = await checkRetirementEligibility(grsGroomRetired.id);
-    expect(result).toEqual({ eligible: false, reason: 'already_retired', mandatory: false });
+    expect(result).toEqual({ eligible: false, reason: 'alreadyRetired', mandatory: false });
   });
 
   it('checkRetirementEligibility: careerWeeks at its own hidden age → AGE, mandatory', async () => {
@@ -320,24 +320,24 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
   });
 
   it('checkRetirementEligibility: level=10 is NOT a retirement trigger any more', async () => {
-    // Pre-m9lz1 this returned { eligible: true, reason: 'early_level_cap' }.
+    // Pre-m9lz1 this returned { eligible: true, reason: 'earlyLevelCap' }.
     // The ruling retires grooms by AGE; retiring a level-10 groom at career week
     // 5 contradicts "any time between age 50-65".
     const result = await checkRetirementEligibility(grsGroomLevelCap.id);
-    expect(result).toEqual({ eligible: false, reason: 'not_eligible', mandatory: false });
+    expect(result).toEqual({ eligible: false, reason: 'notEligible', mandatory: false });
   });
 
   it('checkRetirementEligibility: 12 assignment logs is NOT a retirement trigger any more', async () => {
-    // Pre-m9lz1 this returned { eligible: true, reason: 'early_assignment_limit' }.
+    // Pre-m9lz1 this returned { eligible: true, reason: 'earlyAssignmentLimit' }.
     // A dozen re-assignments is ordinary play, so this trigger fired long before
     // age 50 and would have made the ruling's age rule almost never fire.
     const result = await checkRetirementEligibility(grsGroomAssignmentLimit.id);
-    expect(result).toEqual({ eligible: false, reason: 'not_eligible', mandatory: false });
+    expect(result).toEqual({ eligible: false, reason: 'notEligible', mandatory: false });
   });
 
-  it('checkRetirementEligibility: one tick short of its age → not_eligible, and NO countdown', async () => {
+  it('checkRetirementEligibility: one tick short of its age → notEligible, and NO countdown', async () => {
     const result = await checkRetirementEligibility(grsGroomNotice.id);
-    expect(result).toEqual({ eligible: false, reason: 'not_eligible', mandatory: false });
+    expect(result).toEqual({ eligible: false, reason: 'notEligible', mandatory: false });
     // The three fields that WERE the disclosure. A client knows careerWeeks, so
     // any of them hands it the hidden age by subtraction.
     expect(result).not.toHaveProperty('weeksUntilRetirement');
@@ -345,10 +345,10 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     expect(result).not.toHaveProperty('retirementAge');
   });
 
-  it('checkRetirementEligibility: groom with no drawn schedule → not_scheduled', async () => {
+  it('checkRetirementEligibility: groom with no drawn schedule → notScheduled', async () => {
     expect(await readRetirementAge(prisma, grsGroomNormal.id)).toBeNull();
     const result = await checkRetirementEligibility(grsGroomNormal.id);
-    expect(result).toEqual({ eligible: false, reason: 'not_scheduled', mandatory: false });
+    expect(result).toEqual({ eligible: false, reason: 'notScheduled', mandatory: false });
   });
 
   it('incrementCareerWeeks: increments careerWeeks by 1', async () => {
@@ -396,7 +396,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     expect(CAREER_CONSTANTS).not.toHaveProperty('RETIREMENT_NOTICE_WEEKS');
     expect(RETIREMENT_REASONS.AGE).toBe('age');
     // Retained for historical Groom.retirementReason rows only.
-    expect(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT).toBe('mandatory_career_limit');
+    expect(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT).toBe('mandatoryCareerLimit');
     expect(RETIREMENT_REASONS.VOLUNTARY).toBe('voluntary');
   });
 

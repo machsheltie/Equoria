@@ -35,7 +35,7 @@ import {
  * had never worked: the termination wrote `terminationReason` to
  * `GroomAssignment`, a column that does not exist, so Prisma rejected its first
  * statement and its own `catch` swallowed the throw. No assignment was ever
- * deactivated, the grace period was never cleared, and no `terminated_non_payment`
+ * deactivated, the grace period was never cleared, and no `terminatedNonPayment`
  * row was ever written — a player who could not pay kept every groom, silently.
  *
  * Per unpaid groom, exactly one of three things happens:
@@ -50,7 +50,7 @@ import {
  *        stays on staff but cannot groom, and the player is told. Also stamps the
  *        user-level `groomSalaryGracePeriod` the salary summary already renders.
  *   marked unpaid for THIS pay week already
- *     -> nothing but a `missed_grace_period` audit row. Reachable only if a second
+ *     -> nothing but a `missedGracePeriod` audit row. Reachable only if a second
  *        run in the same pay week reaches the debit and fails again; the player is
  *        not told twice.
  *
@@ -119,8 +119,8 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
               userId,
               amount: salary,
               paymentDate: payWeekStart,
-              paymentType: 'weekly_salary',
-              status: 'terminated_non_payment',
+              paymentType: 'weeklySalary',
+              status: 'terminatedNonPayment',
             },
           });
           // Equoria-bgdfb: the debt does not outlive the groom. Losing them to the
@@ -134,7 +134,7 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
             where: {
               groomId: groom.id,
               userId,
-              paymentType: 'weekly_salary',
+              paymentType: 'weeklySalary',
               status: { in: [...ARREARS_OWED_STATUSES] },
             },
             data: { status: ARREARS_WRITTEN_OFF_STATUS },
@@ -215,13 +215,13 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
             // Equoria-bgdfb: dated with the PAY WEEK this row records, not with the
             // moment it was written. The next collection settles the weeks strictly
             // BEFORE the one it is charging, and that test is only exact if the row
-            // says which week it is. (A `missed_grace_period` row is not owed — its
-            // week is already recorded by the `missed_insufficient_funds` row.)
+            // says which week it is. (A `missedGracePeriod` row is not owed — its
+            // week is already recorded by the `missedInsufficientFunds` row.)
             paymentDate: payWeekStart,
-            paymentType: 'weekly_salary',
+            paymentType: 'weeklySalary',
             // The distinction the existing vocabulary already draws: the week the
             // fee was first missed, versus a later failure inside the same week.
-            status: entered.entered ? 'missed_insufficient_funds' : 'missed_grace_period',
+            status: entered.entered ? 'missedInsufficientFunds' : 'missedGracePeriod',
           },
         });
         return entered;
@@ -267,7 +267,7 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
  * revenue path, and the campaign's standing principle is fail closed.
  *
  * WHAT THIS COMMITS TO, deliberately narrow:
- *   - The pay week is RECORDED as uncollected: one `missed_collection_error` audit
+ *   - The pay week is RECORDED as uncollected: one `missedCollectionError` audit
  *     row per groom, so the week is visible to a human and to any later pass rather
  *     than vanishing.
  *   - The groom ENTERS GRACE (`feeUnpaidSince` = this pay week) and therefore stops
@@ -282,7 +282,7 @@ export async function handleUnpaidFees(userId, unpaid, payWeekStart) {
  *     week; it is not a penalty to hand out because our own transaction threw. The
  *     groom stays on staff, cannot work, and the audit row records the week.
  *   - RELEASE, as above. (ARREARS is no longer open: Equoria-bgdfb was ruled on
- *     2026-09-14 — "It's owed." The `missed_collection_error` row this writes is in
+ *     2026-09-14 — "It's owed." The `missedCollectionError` row this writes is in
  *     `ARREARS_OWED_STATUSES`, so the next successful collection takes it along with
  *     that week's fee. Because this path never releases, its uncollected weeks can
  *     accumulate across weeks — each owed once and settled once, never doubled.)
@@ -334,11 +334,11 @@ export async function recordUncollectedFees(userId, unpaid, payWeekStart, cause)
             // Equoria-bgdfb: the pay week this row records — see the note in
             // handleUnpaidFees. This week is OWED, and a later collection settles it.
             paymentDate: payWeekStart,
-            paymentType: 'weekly_salary',
+            paymentType: 'weeklySalary',
             // A status of its own, because "we could not take the money" is not the
             // same event as "the player did not have it", and a reader of this table
             // has to be able to tell them apart.
-            status: 'missed_collection_error',
+            status: 'missedCollectionError',
           },
         });
         return entered;

@@ -47,7 +47,7 @@ export function checkGroomMayWork(groom) {
         `${groom.name ?? 'This groom'} is waiting on this week's fee and cannot work until it ` +
         'is paid. They stay on your staff for one week; after a full week unpaid they return to ' +
         'the grooms for hire.',
-      code: 'fee_unpaid',
+      code: 'feeUnpaid',
     };
   }
   return { allowed: true, reason: null, code: null };

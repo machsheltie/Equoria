@@ -14,7 +14,7 @@
  * worked: it wrote `terminationReason` to `GroomAssignment`, a column that does not
  * exist, so Prisma rejected its first statement and the function's own catch swallowed
  * the throw. After the seven-day grace period expired, nothing was deactivated, the
- * grace period was never cleared, and no `terminated_non_payment` row was written. A
+ * grace period was never cleared, and no `terminatedNonPayment` row was written. A
  * player who could not pay kept every groom, silently, forever.
  *
  * WHAT IS ASSERTED, AND WHY EACH FAILS ON THE PRE-FIX CODE:
@@ -25,7 +25,7 @@
  *   3. A SECOND failure in the same pay week -> no second notice, marker not moved, and
  *      the user-level pointer not rewritten (fix round 2, residual B)
  *   4. A full unpaid week -> released to the pool: `userId` cleared, engagement closed
- *      `fee_unpaid`, ACTIVE assignments ENDED (never deleted), inactive history
+ *      `feeUnpaid`, ACTIVE assignments ENDED (never deleted), inactive history
  *      untouched, logs closed, player told, audit row written
  *                                                              -> the whole path threw
  *                                                                 and was swallowed
@@ -335,7 +335,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
 
     // And the audit row exists, with the status the existing vocabulary uses.
     const missed = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: 'missed_insufficient_funds' },
+      where: { userId: user.id, groomId: groom.id, status: 'missedInsufficientFunds' },
     });
     expect(missed).toHaveLength(1);
 
@@ -352,7 +352,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     const stored = await prisma.groom.findUnique({ where: { id: groom.id } });
     const check = checkGroomMayWork(stored);
     expect(check.allowed).toBe(false);
-    expect(check.code).toBe('fee_unpaid');
+    expect(check.code).toBe('feeUnpaid');
 
     // And the care endpoint refuses, which is where it matters.
     const res = fakeRes();
@@ -369,7 +369,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
       res,
     );
     expect(res.statusCode).toBe(400);
-    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'fee_unpaid' }));
+    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'feeUnpaid' }));
     // No interaction was recorded.
     expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(0);
   });
@@ -455,7 +455,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
     // only new row.
     expect(
       await prisma.groomSalaryPayment.count({
-        where: { userId: user.id, groomId: groom.id, status: 'missed_grace_period' },
+        where: { userId: user.id, groomId: groom.id, status: 'missedGracePeriod' },
       }),
     ).toBe(1);
 
@@ -486,7 +486,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
       res,
     );
     expect(res.statusCode).toBe(400);
-    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'fee_unpaid' }));
+    expect(res.body.data).toEqual(expect.objectContaining({ groomId: groom.id, groomUnavailable: 'feeUnpaid' }));
     expect(await prisma.groomInteraction.count({ where: { groomId: groom.id } })).toBe(0);
   });
 
@@ -559,7 +559,7 @@ describe('Equoria-ypb7d.3 — one week of grace, then release to the pool', () =
 
     // And the audit row the pre-fix code could never write.
     const terminated = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: 'terminated_non_payment' },
+      where: { userId: user.id, groomId: groom.id, status: 'terminatedNonPayment' },
     });
     expect(terminated).toHaveLength(1);
   });

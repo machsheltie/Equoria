@@ -10,7 +10,7 @@
  * missed one was never revisited. An infrastructure fault produced a strictly better
  * outcome for the player than paying would have.
  *
- * THE FIX. `recordUncollectedFees` — the week is recorded (`missed_collection_error`
+ * THE FIX. `recordUncollectedFees` — the week is recorded (`missedCollectionError`
  * audit row) and the groom enters grace and stops working, because the player did
  * not in fact pay. The groom is NEVER released by this path: losing a groom is the
  * penalty for a player not paying for a whole week, not for our transaction throwing.
@@ -210,7 +210,7 @@ describe('Equoria-2ti1j — a non-funds throw must not grant a free week of staf
     expect(after.userId).toBe(user.id);
 
     const rows = await prisma.groomSalaryPayment.findMany({ where: { userId: user.id } });
-    expect(rows.map(r => r.status).sort()).toEqual(['missed_collection_error']);
+    expect(rows.map(r => r.status).sort()).toEqual(['missedCollectionError']);
     expect(rows[0].amount).toBe(salary);
     // No money moved: the aborted transaction rolled its debit back, and this path
     // deliberately does not re-charge (Equoria-bgdfb is the owner's to rule).
@@ -276,9 +276,9 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
     expect(engagement).not.toBeNull();
 
     const rows = await prisma.groomSalaryPayment.findMany({ where: { groomId: groom.id } });
-    expect(rows.map(r => r.status)).toEqual(['missed_collection_error']);
+    expect(rows.map(r => r.status)).toEqual(['missedCollectionError']);
     // No release audit row, and no release notice.
-    expect(rows.some(r => r.status === 'terminated_non_payment')).toBe(false);
+    expect(rows.some(r => r.status === 'terminatedNonPayment')).toBe(false);
     const notices = await prisma.notification.findMany({ where: { userId: user.id } });
     expect(notices).toHaveLength(0);
   }, 60000);
@@ -303,7 +303,7 @@ describe('Equoria-2ti1j — a collection error never costs the player the groom'
 
     const rows = await prisma.groomSalaryPayment.findMany({ where: { groomId: groom.id } });
     expect(rows).toHaveLength(2);
-    expect(rows.every(r => r.status === 'missed_collection_error')).toBe(true);
+    expect(rows.every(r => r.status === 'missedCollectionError')).toBe(true);
     const notices = await prisma.notification.findMany({ where: { userId: user.id } });
     expect(notices).toHaveLength(0);
   }, 60000);

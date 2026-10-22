@@ -325,10 +325,10 @@ describe('Equoria-m9lz1 — the hidden retirement age', () => {
     expect(await prisma.groomRetirementSchedule.count({ where: { groomId: groom.id } })).toBe(1);
   }, 30000);
 
-  it('returns not_scheduled — never a guessed age — for a groom with no schedule', async () => {
+  it('returns notScheduled — never a guessed age — for a groom with no schedule', async () => {
     expect(await readRetirementAge(prisma, groom.id)).toBeNull();
     const eligibility = await checkRetirementEligibility(groom.id);
-    expect(eligibility).toEqual({ eligible: false, reason: 'not_scheduled', mandatory: false });
+    expect(eligibility).toEqual({ eligible: false, reason: 'notScheduled', mandatory: false });
   }, 30000);
 });
 

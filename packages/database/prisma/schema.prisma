@@ -708,7 +708,7 @@ model GroomEngagement {
   /// NULL while the engagement is live. Set when the groom leaves this player.
   endedAt   DateTime?
   /// Why it ended. Written by the game, never by a request:
-  ///   'fee_unpaid' — a full pay week went unpaid; released to the hire pool.
+  ///   'feeUnpaid' — a full pay week went unpaid; released to the hire pool.
   ///   'retirement' — the groom aged out (see groomRetirementService).
   endReason String?
 
@@ -1275,9 +1275,9 @@ model GroomSalaryPayment {
   amount      Int
   /// Payment date
   paymentDate DateTime @default(now())
-  /// Type of payment (weekly_salary, bonus, etc.)
-  paymentType String   @default("weekly_salary")
-  /// Payment status (paid, missed_insufficient_funds, etc.)
+  /// Type of payment (weeklySalary, bonus, etc.)
+  paymentType String   @default("weeklySalary")
+  /// Payment status (paid, missedInsufficientFunds, etc.)
   status      String   @default("paid")
   /// Timestamps
   createdAt   DateTime @default(now())

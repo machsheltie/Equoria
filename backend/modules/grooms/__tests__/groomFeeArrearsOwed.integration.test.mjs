@@ -189,7 +189,7 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
     expect(result.released).toBe(0);
 
     const missed = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: 'missed_insufficient_funds' },
+      where: { userId: user.id, groomId: groom.id, status: 'missedInsufficientFunds' },
     });
     expect(missed).toHaveLength(1);
     expect(missed[0].amount).toBe(ONE_HORSE_FEE);
@@ -223,7 +223,7 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
     expect(settled).toHaveLength(1);
     expect(settled[0].amount).toBe(ONE_HORSE_FEE);
     const stillOwed = await prisma.groomSalaryPayment.count({
-      where: { userId: user.id, status: 'missed_insufficient_funds' },
+      where: { userId: user.id, status: 'missedInsufficientFunds' },
     });
     expect(stillOwed).toBe(0);
 
@@ -286,7 +286,7 @@ describe('Equoria-bgdfb — a debt does not outlive the groom it was owed for', 
       where: {
         userId: user.id,
         groomId: groom.id,
-        status: { in: ['missed_insufficient_funds', 'missed_collection_error'] },
+        status: { in: ['missedInsufficientFunds', 'missedCollectionError'] },
       },
     });
     expect(owed).toBe(0);
@@ -346,7 +346,7 @@ describe('Equoria-bgdfb F2 — the debt never blocks the current week', () => {
 
     // And the debt is still on the books, in the same owed state.
     const stillOwed = await prisma.groomSalaryPayment.findMany({
-      where: { userId: user.id, groomId: groom.id, status: 'missed_insufficient_funds' },
+      where: { userId: user.id, groomId: groom.id, status: 'missedInsufficientFunds' },
     });
     expect(stillOwed).toHaveLength(1);
     expect(stillOwed[0].amount).toBe(ONE_HORSE_FEE);
@@ -413,7 +413,7 @@ describe('Equoria-bgdfb F3 — a debt does not outlive the career either', () =>
       where: {
         userId: user.id,
         groomId: groom.id,
-        status: { in: ['missed_insufficient_funds', 'missed_collection_error'] },
+        status: { in: ['missedInsufficientFunds', 'missedCollectionError'] },
       },
     });
     expect(owed).toBe(0);

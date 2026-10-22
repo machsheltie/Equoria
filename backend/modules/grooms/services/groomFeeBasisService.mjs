@@ -37,8 +37,8 @@ export const MAX_HORSES_PER_GROOM = 10;
  *
  * A weekly fee that could not be taken is a DEBT, not a forgiven week. These are
  * the `GroomSalaryPayment.status` values that mean "this week is still owed":
- * the player had no money (`missed_insufficient_funds`, Equoria-ypb7d.3) or our own
- * collection threw (`missed_collection_error`, Equoria-2ti1j). Each such row carries
+ * the player had no money (`missedInsufficientFunds`, Equoria-ypb7d.3) or our own
+ * collection threw (`missedCollectionError`, Equoria-2ti1j). Each such row carries
  * the amount of the week it records and is dated with that week's Monday, so the
  * outstanding debt is a sum over rows rather than a number stored anywhere — which
  * is why this needed no schema change.
@@ -52,11 +52,11 @@ export const MAX_HORSES_PER_GROOM = 10;
  *                                has would be charging them for nothing.
  */
 export const ARREARS_OWED_STATUSES = Object.freeze([
-  'missed_insufficient_funds',
-  'missed_collection_error',
+  'missedInsufficientFunds',
+  'missedCollectionError',
 ]);
-export const ARREARS_SETTLED_STATUS = 'arrears_settled';
-export const ARREARS_WRITTEN_OFF_STATUS = 'arrears_written_off';
+export const ARREARS_SETTLED_STATUS = 'arrearsSettled';
+export const ARREARS_WRITTEN_OFF_STATUS = 'arrearsWrittenOff';
 
 /**
  * The weekly fee for ONE groom: $70 for every horse they are currently working.
