@@ -19,6 +19,10 @@ export function AsidePanel() {
   // Unknown balance is "—", never a believable 0 (Equoria-bvddn.39); a real 0 stays 0.
   const balance = user?.money?.toLocaleString() ?? '—';
   const horseList = (Array.isArray(horses) ? horses : []) as unknown as Record<string, unknown>[];
+  // Unknown until the list has loaded: an empty `horseList` also stands in for
+  // "still loading" and "failed", and must not read as zero horses
+  // (Equoria-pm0gu, doctrine §4).
+  const rosterKnown = Array.isArray(horses);
   const totalHorses = horseList.length;
   const readyCount = horseList.filter(isReadyToTrain).length;
   const needsCareCount = horseList.filter(horseNeedsCare).length;
@@ -34,12 +38,16 @@ export function AsidePanel() {
           Stable Summary
         </h3>
         <div className="space-y-0">
-          <AsideStat label="Total Horses" value={String(totalHorses)} />
+          <AsideStat label="Total Horses" value={rosterKnown ? String(totalHorses) : '—'} />
           <AsideStat label="Balance" value={`${balance} 🪙`} variant="gold" />
-          <AsideStat label="Ready to Train" value={String(readyCount)} variant="success" />
+          <AsideStat
+            label="Ready to Train"
+            value={rosterKnown ? String(readyCount) : '—'}
+            variant="success"
+          />
           <AsideStat
             label="Needs Care"
-            value={needsCareCount > 0 ? String(needsCareCount) : '0'}
+            value={rosterKnown ? String(needsCareCount) : '—'}
             variant={needsCareCount > 0 ? 'warning' : undefined}
           />
         </div>
@@ -53,7 +61,9 @@ export function AsidePanel() {
         >
           Cooldown Timers
         </h3>
-        {horseList.length === 0 ? (
+        {!rosterKnown ? (
+          <p className="text-xs text-[var(--text-muted)]">—</p>
+        ) : horseList.length === 0 ? (
           <p className="text-xs text-[var(--text-muted)]">No horses yet</p>
         ) : (
           <div className="space-y-2">

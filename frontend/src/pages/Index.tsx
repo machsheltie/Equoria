@@ -320,6 +320,10 @@ const Index = () => {
   const { data: horses, isLoading: horsesLoading, isError, error, refetch } = useHorses();
   const isNewPlayer = !user?.completedOnboarding;
   const horseList = Array.isArray(horses) ? horses : [];
+  // The roster size is UNKNOWN until the list has loaded: an empty `horseList`
+  // also stands in for "still loading" and "failed", so the header must not
+  // read it as a count (Equoria-pm0gu, doctrine §4).
+  const rosterKnown = Array.isArray(horses);
 
   const [isDayOne, setIsDayOne] = useState(() => sessionStorage.getItem('equoria-day1') === '1');
 
@@ -352,7 +356,9 @@ const Index = () => {
         className="py-0 border-b-0"
         metadata={
           <p className="text-[0.85rem] text-[var(--text-secondary)]">
-            <span className="text-[var(--gold-light)] font-semibold">{horseList.length}</span>
+            <span className="text-[var(--gold-light)] font-semibold">
+              {rosterKnown ? horseList.length : '—'}
+            </span>
             {' horses'}
             {readyCount > 0 && (
               <>
