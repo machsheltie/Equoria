@@ -79,7 +79,16 @@ const errorHandler = (err, req, res, next) => {
 
   // Send error response
   try {
-    const errorMessage = error.message || 'Server Error';
+    const statusCode = error.statusCode || 500;
+    // Equoria-ot1mo: a 5xx message is only sent to the client when it is a
+    // curated operational AppError. Anything else (raw driver/ORM errors,
+    // DatabaseError wrapping driver text, non-operational AppErrors) answers
+    // with a generic message; the detail is in the logger.error call above.
+    const isCuratedMessage = AppError.isAppError(error) && error.isOperational === true;
+    const errorMessage =
+      statusCode >= 500 && !isCuratedMessage
+        ? 'Internal Server Error'
+        : error.message || 'Server Error';
     // Equoria-x928y: stack exposure is an explicit boundary flag (mirrors
     // EXPOSE_VALIDATION_DETAILS). Default unchanged (dev-only); EXPOSE_ERROR_STACK
     // = 'true'/'false' lets an operator force it on for a non-dev debug session
@@ -88,7 +97,7 @@ const errorHandler = (err, req, res, next) => {
       nodeEnv: process.env.NODE_ENV,
       exposeErrorStackEnv: process.env.EXPOSE_ERROR_STACK,
     });
-    res.status(error.statusCode || 500).json({
+    res.status(statusCode).json({
       success: false,
       message: errorMessage,
       ...(exposeStack && { stack: err.stack }),
