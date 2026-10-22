@@ -186,61 +186,8 @@ export interface OffspringPredictions {
 }
 
 /**
- * Breeding compatibility analysis
- * Response from GET /api/breeding/lineage-analysis/:stallionId/:mareId
- */
-export interface BreedingCompatibility {
-  stallionId: number;
-  mareId: number;
-  temperamentCompatibility: number;
-  geneticDiversity: number;
-  overallScore: number;
-  strengths: string[];
-  concerns: string[];
-}
-
-/**
- * Complete breeding pair analysis
- * Combined data for the Breeding Pair Selector component
- */
-export interface BreedingPairAnalysis {
-  stallion: HorseBreedingData;
-  mare: HorseBreedingData;
-  predictions: OffspringPredictions;
-  inbreeding: InbreedingAnalysis;
-  compatibility: BreedingCompatibility;
-  isLoading: boolean;
-  error: string | null;
-}
-
-/**
  * Story 6-1: Breeding Pair Selection Types
  */
-
-/**
- * Compatibility analysis for breeding pair
- * Displays 4 key compatibility metrics plus recommendations
- */
-export interface CompatibilityAnalysis {
-  overall: number; // 0-100 overall compatibility score
-  temperamentMatch: number; // 0-100 temperament compatibility
-  traitSynergy: number; // 0-100 trait synergy score
-  geneticDiversity: number; // 0-100 genetic diversity score
-  recommendations: string[]; // List of breeding recommendations
-}
-
-/**
- * Breeding pair data structure
- * Combines both horses with their compatibility analysis
- */
-export interface BreedingPair {
-  sire: Horse; // Male horse (stallion)
-  dam: Horse; // Female horse (mare)
-  compatibility: CompatibilityAnalysis;
-  studFee?: number; // Optional stud fee in game currency
-  canBreed: boolean; // Whether this pair can currently breed
-  cooldownDays?: number; // Days remaining on breeding cooldown (if applicable)
-}
 
 /**
  * Breeding initiation request
