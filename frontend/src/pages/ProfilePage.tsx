@@ -28,7 +28,7 @@ import { User, FileText, Save, X } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
-import { PageLoading, ErrorState } from '@/components/ui/state';
+import { PageLoading, ErrorState, InlineError } from '@/components/ui/state';
 import Currency from '@/components/ui/Currency';
 import { Input, Textarea, FormField } from '@/components/ui/form';
 import XPLevelDisplay from '../components/XPLevelDisplay';
@@ -39,6 +39,7 @@ import { ActivityType, type Activity } from '../lib/activity-utils';
 import { profileSchema, type ProfileFormData } from '../lib/validation-schemas';
 import { VALIDATION_RULES, UI_TEXT } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { Button } from '@/components/ui/button';
 import { useActivityFeed, useUserProgress } from '../hooks/api/useUserProgress';
 import { useRankHistory } from '../hooks/api/useRankHistory';
@@ -54,7 +55,14 @@ const ProfilePage: React.FC = () => {
     isError: isActivityError,
     error: activityError,
   } = useActivityFeed(userId);
-  const { data: progressData, isLoading: isProgressLoading } = useUserProgress(userId);
+  const {
+    data: progressData,
+    isLoading: isProgressLoading,
+    isError: isProgressError,
+    error: progressError,
+    refetch: refetchProgress,
+    isFetching: isProgressFetching,
+  } = useUserProgress(userId);
 
   // Rank-history time-series for the trend chart (Equoria-l332). The backend
   // endpoint is ownership-enforced, so we only ever request the signed-in
@@ -133,11 +141,13 @@ const ProfilePage: React.FC = () => {
     };
   });
 
-  // Equoria-oey96.2: breedingCount + winRate are now typed fields on
-  // UserProgress (no cast needed). `?? 0` still covers the loading window
-  // where progressData is undefined.
+  // Equoria-oey96.2: breedingCount + winRate are typed fields on UserProgress.
+  // Until progressData exists the cards render their skeleton (see below), so
+  // the `?? 0` here is never shown; a failed request replaces the cards with an
+  // error (Equoria-rbso5) instead of letting zeros pose as real stats.
   const breedingCount = progressData?.breedingCount ?? 0;
   const winRate = progressData?.winRate ?? 0;
+  const progressPending = isProgressLoading || (!progressData && !isProgressError);
 
   // ── Loading ───────────────────────────────────────────────────────────
   if (isLoading) {
@@ -222,36 +232,53 @@ const ProfilePage: React.FC = () => {
               grid sits on the page band (no wrapping panel = no card-in-card) */}
           <section className="space-y-2" aria-label="Game statistics">
             <h2 className="type-label">Game Statistics</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <StatisticsCard
-                value={progressData?.totalHorses ?? 0}
-                label="Horses Owned"
-                type={StatisticType.HORSES_OWNED}
-                size="sm"
-                isLoading={isProgressLoading}
-              />
-              <StatisticsCard
-                value={progressData?.totalCompetitions ?? 0}
-                label="Competitions Won"
-                type={StatisticType.COMPETITIONS_WON}
-                size="sm"
-                isLoading={isProgressLoading}
-              />
-              <StatisticsCard
-                value={breedingCount}
-                label="Breeding Count"
-                type={StatisticType.BREEDING_COUNT}
-                size="sm"
-                isLoading={isProgressLoading}
-              />
-              <StatisticsCard
-                value={winRate}
-                label="Win Rate"
-                type={StatisticType.WIN_RATE}
-                size="sm"
-                isLoading={isProgressLoading}
-              />
-            </div>
+            {isProgressError ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <InlineError
+                  message={`Your game statistics could not be loaded. ${userMessageFor(progressError).message}`}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void refetchProgress()}
+                  pending={isProgressFetching}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <StatisticsCard
+                  value={progressData?.totalHorses ?? 0}
+                  label="Horses Owned"
+                  type={StatisticType.HORSES_OWNED}
+                  size="sm"
+                  isLoading={progressPending}
+                />
+                <StatisticsCard
+                  value={progressData?.totalCompetitions ?? 0}
+                  label="Competitions Won"
+                  type={StatisticType.COMPETITIONS_WON}
+                  size="sm"
+                  isLoading={progressPending}
+                />
+                <StatisticsCard
+                  value={breedingCount}
+                  label="Breeding Count"
+                  type={StatisticType.BREEDING_COUNT}
+                  size="sm"
+                  isLoading={progressPending}
+                />
+                <StatisticsCard
+                  value={winRate}
+                  label="Win Rate"
+                  type={StatisticType.WIN_RATE}
+                  size="sm"
+                  isLoading={progressPending}
+                />
+              </div>
+            )}
           </section>
 
           {/* Rank History Trend (Equoria-l332) — single panel frame; the chart

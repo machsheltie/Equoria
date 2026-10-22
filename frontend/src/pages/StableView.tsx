@@ -84,15 +84,18 @@ const StableView = () => {
     localStorage.setItem('stableViewMode', mode);
   };
 
+  // Each figure is UNKNOWN (null / NaN → "—") until its own query has loaded:
+  // a failed or pending profile must not read as 0 coins / level 1, nor a
+  // pending roster as 0 horses (Equoria-rbso5, doctrine §4).
   const user = profileData?.user;
   const playerStats = {
-    coins: user?.money ?? 0,
-    xp: user?.xp ?? 0,
-    level: user?.level ?? 1,
-    horseCount: horsesData?.length ?? 0,
+    coins: typeof user?.money === 'number' ? user.money : Number.NaN,
+    xp: typeof user?.xp === 'number' ? user.xp : null,
+    level: typeof user?.level === 'number' ? user.level : null,
+    horseCount: horsesData ? horsesData.length : null,
   };
 
-  const xpPercent = getXPProgressPercent(playerStats.xp);
+  const xpPercent = playerStats.xp === null ? 0 : getXPProgressPercent(playerStats.xp);
 
   // Compute categories for each horse — the category tabs operate on the
   // full roster. (Search/filter lives on the Horse Marketplace, not here —
@@ -417,20 +420,24 @@ const StableView = () => {
                 <p className="text-2xs text-[var(--text-secondary)] uppercase tracking-wide mb-1">
                   XP
                 </p>
-                <div className="w-24 h-1.5 rounded-full overflow-hidden bg-[var(--bg-twilight)]">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${xpPercent}%`, background: 'var(--gold-primary)' }}
-                  />
-                </div>
-                <p className="text-xs text-role-primary mt-1">{playerStats.xp.toLocaleString()}</p>
+                {playerStats.xp !== null && (
+                  <div className="w-24 h-1.5 rounded-full overflow-hidden bg-[var(--bg-twilight)]">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${xpPercent}%`, background: 'var(--gold-primary)' }}
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-role-primary mt-1">
+                  {playerStats.xp === null ? '—' : playerStats.xp.toLocaleString()}
+                </p>
               </div>
               <div className="text-center">
                 <p className="text-2xs text-[var(--text-secondary)] uppercase tracking-wide">
                   Level
                 </p>
                 <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
-                  {playerStats.level}
+                  {playerStats.level ?? '—'}
                 </p>
               </div>
             </div>
@@ -441,7 +448,7 @@ const StableView = () => {
                 Horses
               </p>
               <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
-                {playerStats.horseCount}
+                {playerStats.horseCount ?? '—'}
               </p>
             </div>
           </Surface>
