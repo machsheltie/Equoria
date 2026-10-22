@@ -289,9 +289,7 @@ const ProfilePage: React.FC = () => {
               series={rankHistory?.series ?? []}
               isLoading={isRankHistoryLoading}
               errorMessage={
-                isRankHistoryError
-                  ? rankHistoryError?.message || 'Failed to load rank history'
-                  : undefined
+                isRankHistoryError ? userMessageFor(rankHistoryError).message : undefined
               }
             />
           </Surface>
@@ -305,11 +303,7 @@ const ProfilePage: React.FC = () => {
               showViewAll
               size="sm"
               isLoading={isActivityLoading}
-              emptyMessage={
-                isActivityError
-                  ? activityError?.message || 'Failed to load activity feed'
-                  : undefined
-              }
+              emptyMessage={isActivityError ? userMessageFor(activityError).message : undefined}
             />
           </section>
 

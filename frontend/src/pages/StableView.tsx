@@ -30,6 +30,7 @@ import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-ut
 import { getHorseImage } from '@/lib/breed-images';
 import { useHorses } from '../hooks/api/useHorses';
 import { useProfile } from '../hooks/useAuth';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { getXPProgressPercent } from '@/lib/xp-utils';
 import { isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
 import type { HorseSummary } from '@/lib/api-client';
@@ -120,7 +121,7 @@ const StableView = () => {
       return (
         <ErrorCard
           title="Unable to Load Horses"
-          message={error?.message || 'Failed to fetch horses. Please check your connection.'}
+          message={userMessageFor(error).message}
           onRetry={() => refetch()}
         />
       );

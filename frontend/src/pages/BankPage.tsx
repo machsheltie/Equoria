@@ -40,6 +40,7 @@ const BankPage: React.FC = () => {
     data: transactionHistory,
     isLoading: transactionsLoading,
     isError: transactionsError,
+    error: transactionsErrorObj,
     isSuccess: transactionsLoaded,
     refetch: refetchTransactions,
   } = useTransactionHistory(user?.id, 1, 20);
@@ -76,11 +77,11 @@ const BankPage: React.FC = () => {
       // Background syncs — failures are non-fatal; cache is already correct above.
       void Promise.allSettled([refetchTransactions(), refetchProfile()]);
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'message' in err
-          ? (err as { message: string }).message
-          : 'Failed to claim reward. Please try again.';
-      setClaimError(msg);
+      // Class-mapped copy only — never the raw server text (doctrine §3/§4).
+      setClaimError(userMessageFor(err).message);
+      // The claim may have failed BECAUSE the reward is already claimed: re-read
+      // the server's truth so the section reflects it.
+      void claimStatus.refetch();
     } finally {
       setClaiming(false);
     }
@@ -191,7 +192,11 @@ const BankPage: React.FC = () => {
               </Button>
             </div>
           )}
-          {claimError && <p className="text-xs text-role-danger mt-3">{claimError}</p>}
+          {claimError && (
+            <div className="mt-3">
+              <InlineError message={claimError} />
+            </div>
+          )}
         </Surface>
 
         {/* Transaction History */}
@@ -214,8 +219,12 @@ const BankPage: React.FC = () => {
             {transactionsError && (
               <ErrorState
                 title="Couldn't load transactions"
-                message="We couldn't load your ledger. Please try again."
-                retry={{ label: 'Try Again', onClick: () => refetchTransactions() }}
+                message={`We couldn't load your ledger. ${userMessageFor(transactionsErrorObj).message}`}
+                retry={
+                  userMessageFor(transactionsErrorObj).retryable
+                    ? { label: 'Try Again', onClick: () => refetchTransactions() }
+                    : undefined
+                }
               />
             )}
             {/* EMPTY is reachable ONLY through a successful, genuinely-empty

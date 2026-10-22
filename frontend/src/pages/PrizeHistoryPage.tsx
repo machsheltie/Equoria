@@ -34,6 +34,7 @@ import { Surface } from '@/components/ui/Surface';
 import { IconBox } from '@/components/ui/IconBox';
 import Currency from '@/components/ui/Currency';
 import { Skeleton, ErrorState } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrizeHistory } from '@/hooks/api/usePrizeHistory';
 import { type TransactionFilters } from '@/lib/api/prizes';
@@ -189,7 +190,13 @@ const PrizeHistoryPage = (): JSX.Element => {
   // Fetch prize history with filters. This single query feeds BOTH the stat
   // cards and the transaction list, so on failure both sections are gated on
   // `!isError` below — neither may render fabricated content (§1/§4).
-  const { data: transactions, isLoading, isError, refetch } = usePrizeHistory(userId, filters);
+  const {
+    data: transactions,
+    isLoading,
+    isError,
+    error: historyError,
+    refetch,
+  } = usePrizeHistory(userId, filters);
 
   // Calculate stats from transaction data
   const stats = useMemo(() => calculateStats(transactions ?? []), [transactions]);
@@ -239,8 +246,12 @@ const PrizeHistoryPage = (): JSX.Element => {
           <div data-testid="stats-error" className="mb-8">
             <ErrorState
               title="Couldn't load prize history"
-              message="We couldn't load your prize history. Please try again."
-              retry={{ label: 'Try Again', onClick: handleRetry }}
+              message={`We couldn't load your prize history. ${userMessageFor(historyError).message}`}
+              retry={
+                userMessageFor(historyError).retryable
+                  ? { label: 'Try Again', onClick: handleRetry }
+                  : undefined
+              }
             />
           </div>
         )}

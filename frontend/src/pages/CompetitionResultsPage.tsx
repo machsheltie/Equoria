@@ -51,6 +51,7 @@ import CompetitionResultsList from '@/components/competition/CompetitionResultsL
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 import BalanceUpdateIndicator from '@/components/feedback/BalanceUpdateIndicator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 /**
  * Stat card skeleton component for loading state
@@ -413,7 +414,7 @@ const CompetitionResultsPage = (): JSX.Element => {
               results={userResults ?? []}
               onResultClick={handleResultClick}
               isLoading={resultsLoading}
-              error={resultsError ? resultsError.message : null}
+              error={resultsError ? userMessageFor(resultsError).message : null}
               onRetry={() => void refetchResults()}
             />
           </TabsContent>

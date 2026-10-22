@@ -38,6 +38,7 @@ import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { SectionLoading, ErrorState } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useFeedCatalog, usePurchaseFeed, FeedItem } from '@/hooks/api/useFeedShop';
 
 const FEED_IMAGES: Record<FeedItem['id'], string> = {
@@ -103,7 +104,7 @@ const FeedShopPage: React.FC = () => {
         {isError && (
           <ErrorState
             title="Feed Catalog Unavailable"
-            message={error?.message ?? 'Could not load the feed catalog.'}
+            message={userMessageFor(error).message}
             retry={{ label: 'Try Again', onClick: () => refetch() }}
           />
         )}

@@ -39,6 +39,7 @@ import {
   isReadyToTrain,
 } from '@/lib/utils/care-status-utils';
 import type { HorseSummary } from '@/lib/api-client';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 /**
  * Resolve stat value from flat fields or nested stats object. An absent stat is
@@ -397,7 +398,7 @@ const Index = () => {
         ) : isError ? (
           <ErrorCard
             title="Unable to Load Horses"
-            message={error?.message || 'Failed to fetch horses. Please check your connection.'}
+            message={userMessageFor(error).message}
             onRetry={() => refetch()}
           />
         ) : horseList.length === 0 ? (
