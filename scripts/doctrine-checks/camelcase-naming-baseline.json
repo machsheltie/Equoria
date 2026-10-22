@@ -550,7 +550,7 @@
   "backend/modules/grooms/services/groomTalentService.mjs": 31,
   "backend/modules/health/__tests__/session-lifecycle.test.mjs": 9,
   "backend/modules/health/__tests__/session-lifetime.test.mjs": 10,
-  "backend/modules/health/controllers/pingController.mjs": 2,
+  "backend/modules/health/controllers/pingController.mjs": 1,
   "backend/modules/horses/__tests__/addXpToHorseAtomicity.integration.test.mjs": 6,
   "backend/modules/horses/__tests__/allBreedProfilesRenderable.integration.test.mjs": 2,
   "backend/modules/horses/__tests__/allocateStatPointConcurrency.integration.test.mjs": 6,
