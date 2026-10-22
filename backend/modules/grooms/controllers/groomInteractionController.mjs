@@ -36,6 +36,10 @@ import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInflu
 // rather than a permanent 500.
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { gameDateKey } from '../../../utils/gameTime.mjs';
+import {
+  GroomDailyLimitReachedError,
+  lockHorseForGroomCare,
+} from '../services/groomCareDailyLimit.mjs';
 
 /**
  * Determine the current milestone window for a horse based on age
@@ -248,10 +252,6 @@ export async function recordInteraction(req, res) {
       );
     }
 
-    // New foal bond score / stress level (pure, from the values read above).
-    const newBondScore = Math.max(0, Math.min(100, foal.bondScore + effectiveBondingChange));
-    const newStressLevel = Math.max(0, Math.min(100, foal.stressLevel + effects.stressChange));
-
     // Calculate burnout immunity status based on consecutive days
     const immunityCheck = checkBurnoutImmunity(streakUpdate.consecutiveDays);
 
@@ -287,8 +287,18 @@ export async function recordInteraction(req, res) {
     // conflict with another transaction's plain row UPDATE, so they are safe
     // between the Horse write and the staff writes.
     // -------------------------------------------------------------------------
+    let newBondScore;
+    let newStressLevel;
     const interaction = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
+        // 0. Equoria-9a5ny: lock the Horse row and re-check the daily limit
+        // under that lock. The unlocked check above is only a fast refusal; two
+        // requests in flight both pass it. The bond/stress change is applied to
+        // the values read under the lock, not to the pre-transaction read.
+        const current = await lockHorseForGroomCare(tx, foalId);
+        newBondScore = Math.max(0, Math.min(100, current.bondScore + effectiveBondingChange));
+        newStressLevel = Math.max(0, Math.min(100, current.stressLevel + effects.stressChange));
+
         // 1. Horse row - bond, stress, task log, streak, burnout.
         await tx.horse.update({
           where: { id: foalId },
@@ -404,6 +414,20 @@ export async function recordInteraction(req, res) {
     });
     return null;
   } catch (error) {
+    // Equoria-9a5ny: a concurrent request groomed this horse first; the same
+    // refusal the pre-transaction check gives.
+    if (error instanceof GroomDailyLimitReachedError) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'This horse has already had a groom interaction today. All horses can only be worked with once per day.',
+        data: {
+          dailyLimitReached: true,
+          lastInteraction: error.lastInteraction,
+          interactionsToday: error.interactionsToday,
+        },
+      });
+    }
     logger.error(`[groomController.recordInteraction] Error: ${error.message}`);
     // Equoria-po1fl: this catch hardcodes 500, so the retryable-transaction
     // mapping above would be swallowed without this guard (see

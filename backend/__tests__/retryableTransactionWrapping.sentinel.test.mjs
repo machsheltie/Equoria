@@ -112,6 +112,12 @@ const MIGRATED = [
   // surface as a retryable 503, and both are wrapped.
   ['modules/grooms/services/groomAssignmentService.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/services/groomFoalAssignmentService.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-mc22a added this one: POST /api/grooms/enhanced/interact now commits
+  // its interaction row, the horse's bond/stress and the synergy row as one
+  // transaction (they were three autocommit writes), with the daily limit
+  // re-checked under the horse lock inside it (Equoria-9a5ny). Client-facing,
+  // so wrapped.
+  ['modules/grooms/controllers/enhancedGroomController.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-2ksil — the three deferred-from-7x9po sites, now migrated:
   // conformation show-execute tx (sole caller is the client-facing /execute
   // handler; controller got a 503 guard added). The auth /refresh + email

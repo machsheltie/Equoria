@@ -20,6 +20,11 @@ import { updateGroomSynergy } from '../services/groomProgressionService.mjs';
 import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import {
+  GroomDailyLimitReachedError,
+  lockHorseForGroomCare,
+} from '../services/groomCareDailyLimit.mjs';
 
 /**
  * GET /api/grooms/enhanced/interactions/:groomId/:horseId
@@ -274,28 +279,10 @@ export async function performEnhancedInteraction(req, res) {
     // Calculate enhanced effects
     const effects = calculateEnhancedEffects(groom, horse, interactionType, variation, duration);
 
-    // Record the interaction
-    const interaction = await prisma.groomInteraction.create({
-      data: {
-        foalId: parseInt(horseId),
-        groomId: parseInt(groomId),
-        interactionType: `${interactionType}_${variation.replace(/\s+/g, '_').toLowerCase()}`,
-        duration,
-        bondingChange: effects.bondingChange,
-        stressChange: effects.stressChange,
-        quality: effects.quality,
-        // Equoria-tfo3c: no `cost` — care costs nothing, so the column keeps its
-        // 0.0 default rather than recording a price nobody is charged.
-        notes:
-          notes ||
-          `Enhanced ${interactionType}: ${variation}${effects.specialEvent ? ` - ${effects.specialEvent.name}!` : ''}`,
-      },
-    });
-
     // Apply epigenetic FLAG influence to the bonding change (Equoria-730iv,
     // mirroring groomController.recordInteraction / yzqhj.1). The interaction
-    // row above records the BASE bondingChange; the horse's bond score uses
-    // the flag-modified value.
+    // row records the BASE bondingChange; the horse's bond score uses the
+    // flag-modified value. Pure - computed before the transaction opens.
     const flagBonding = applyFlagInfluencesToBonding(
       effects.bondingChange,
       Array.isArray(horse.epigeneticFlags) ? horse.epigeneticFlags : [],
@@ -307,30 +294,51 @@ export async function performEnhancedInteraction(req, res) {
       );
     }
 
-    // Update horse's bond score and stress level
-    const newBondScore = Math.max(0, Math.min(100, horse.bondScore + effectiveBondingChange));
-    const newStressLevel = Math.max(0, Math.min(100, horse.stressLevel + effects.stressChange));
+    // Equoria-mc22a: interaction row, bond/stress and synergy commit together.
+    // Equoria-9a5ny: the daily limit is re-checked under the Horse row lock (the
+    // check above is only a fast refusal). Lock order: Horse, then staff rows.
+    let newBondScore;
+    let newStressLevel;
+    let currentBondScore;
+    const interaction = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const current = await lockHorseForGroomCare(tx, horse.id);
+        currentBondScore = current.bondScore;
+        newBondScore = Math.max(0, Math.min(100, current.bondScore + effectiveBondingChange));
+        newStressLevel = Math.max(0, Math.min(100, current.stressLevel + effects.stressChange));
 
-    await prisma.horse.update({
-      where: { id: parseInt(horseId) },
-      data: {
-        bondScore: newBondScore,
-        stressLevel: newStressLevel,
-      },
-    });
+        await tx.horse.update({
+          where: { id: horse.id },
+          data: { bondScore: newBondScore, stressLevel: newStressLevel },
+        });
 
-    // Equoria-5tjf: mirror Equoria-5v6g — every enhanced interaction also
-    // increments sessionsTogether and (every 4th session) bumps synergyScore.
-    try {
-      await updateGroomSynergy(parseInt(groomId), parseInt(horseId), 'interaction_completed');
-    } catch (synergyError) {
-      logger.error(
-        `[enhancedGroomController] Failed to update synergy for groom ${groomId} / horse ${horseId}: ${synergyError.message}`,
-      );
-    }
+        const created = await tx.groomInteraction.create({
+          data: {
+            foalId: horse.id,
+            groomId: groom.id,
+            interactionType: `${interactionType}_${variation.replace(/\s+/g, '_').toLowerCase()}`,
+            duration,
+            bondingChange: effects.bondingChange,
+            stressChange: effects.stressChange,
+            quality: effects.quality,
+            // Equoria-tfo3c: no `cost` - care costs nothing, so the column keeps its
+            // 0.0 default rather than recording a price nobody is charged.
+            notes:
+              notes ||
+              `Enhanced ${interactionType}: ${variation}${effects.specialEvent ? ` - ${effects.specialEvent.name}!` : ''}`,
+          },
+        });
+
+        // Equoria-5tjf: mirror Equoria-5v6g - every enhanced interaction also
+        // increments sessionsTogether and (every 4th session) bumps synergyScore.
+        await updateGroomSynergy(groom.id, horse.id, 'interaction_completed', 1, tx);
+
+        return created;
+      }),
+    );
 
     // Check for relationship level change
-    const oldLevel = calculateRelationshipLevel(horse.bondScore || 0);
+    const oldLevel = calculateRelationshipLevel(currentBondScore || 0);
     const newLevel = calculateRelationshipLevel(newBondScore);
     const levelUp = newLevel.level > oldLevel.level;
 
@@ -382,6 +390,19 @@ export async function performEnhancedInteraction(req, res) {
       },
     });
   } catch (error) {
+    // Equoria-9a5ny: a concurrent request groomed this horse first.
+    if (error instanceof GroomDailyLimitReachedError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Horse has already had a groom interaction today',
+        data: { dailyLimitReached: true, lastInteraction: error.lastInteraction },
+      });
+    }
+    if (error?.statusCode === 503 || error?.status === 503) {
+      return res
+        .status(503)
+        .json({ success: false, message: 'Service busy, please retry', data: null });
+    }
     logger.error(
       `[enhancedGroomController] Error performing enhanced interaction: ${error.message}`,
     );
