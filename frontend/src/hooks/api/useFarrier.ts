@@ -34,6 +34,8 @@ export function useBookFarrierService() {
     onSuccess: () => {
       // Invalidate horse data so hoofCondition / lastFarrierDate / lastShod refresh
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+      // The booking spends coins: refresh the live balance (nav + Bank) — Equoria-z3yv3
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }
