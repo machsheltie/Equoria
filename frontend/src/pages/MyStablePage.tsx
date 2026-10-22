@@ -36,7 +36,7 @@ import {
   type CompetitionHistoryData,
 } from '@/lib/api/competitionResults';
 import { horseCompetitionHistoryQueryKeys } from '@/hooks/api/useHorseCompetitionHistory';
-import { getBreedName } from '@/lib/utils';
+import { getBreedName, isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
 
 type StableTab = 'profile' | 'legacy';
 
@@ -404,12 +404,14 @@ const MyStablePage: React.FC = () => {
   });
 
   const activeRacers = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 3).length;
-  const breedingPairs =
-    Math.min(
-      horses.filter((horse) => (horse.sex ?? horse.gender ?? '').toLowerCase() === 'stallion')
-        .length,
-      horses.filter((horse) => (horse.sex ?? horse.gender ?? '').toLowerCase() === 'mare').length
-    ) || 0;
+  // Equoria-e2qs6: count by sex GROUP (a Colt is a young stallion, a Filly a
+  // young mare, and the stored sex is never relabeled as the horse ages) and let
+  // AGE decide who can breed (3+), never the sex string.
+  const breedingAge = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 3);
+  const breedingPairs = Math.min(
+    breedingAge.filter((horse) => isMaleHorseSex(horse.sex ?? horse.gender)).length,
+    breedingAge.filter((horse) => isFemaleHorseSex(horse.sex ?? horse.gender)).length
+  );
   const totalEarnings = horses.reduce(
     (sum, horse) => sum + Number(horse.totalEarnings ?? horse.earnings ?? 0),
     0
