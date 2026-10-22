@@ -29,6 +29,21 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
   const progress = calculateDiscoveryProgress(discoveryStatus);
   const hasHiddenTraits = discoveryStatus.hiddenTraits > 0;
 
+  // Equoria-kjlub: with no traits at all, "all discovered" is a vacuous 0-of-0
+  // and congratulating the player for it is fabricated praise. Say what is true.
+  if (discoveryStatus.totalTraits === 0) {
+    return (
+      <div className="rounded-lg border-2 border-[var(--glass-border)] bg-[var(--glass-surface-subtle-bg)] p-6 text-center">
+        <Sparkles className="h-12 w-12 text-slate-400 mx-auto mb-3" aria-hidden="true" />
+        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-2">No traits discovered yet</h3>
+        <p className="text-sm text-slate-400">
+          Traits emerge from how a horse is raised and cared for. They will appear here as they are
+          discovered.
+        </p>
+      </div>
+    );
+  }
+
   if (!hasHiddenTraits) {
     return (
       <div className="rounded-lg border-2 border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.1)] p-6 text-center">

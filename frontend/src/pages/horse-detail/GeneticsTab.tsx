@@ -222,7 +222,9 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       <TraitTimelineSection timeline={timelineData?.timeline} />
 
       {/* No Traits Message */}
-      {filteredTraits.length === 0 && (
+      {/* Only when the filters exclude traits the horse really has (Equoria-kjlub):
+          a horse with no traits has nothing for a filter to exclude. */}
+      {filteredTraits.length === 0 && (epigeneticData?.traits.length ?? 0) > 0 && (
         <div className="text-center py-8 text-[rgb(160,175,200)]">
           <p>No traits match the current filters.</p>
         </div>
