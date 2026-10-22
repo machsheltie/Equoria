@@ -16,9 +16,10 @@ import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
 import { GameBadge } from '@/components/ui/game';
 import { Input } from '@/components/ui/form';
-import { InlineError } from '@/components/ui/state';
+import { InlineError, SectionLoading } from '@/components/ui/state';
 import { actionMessageFor } from '@/lib/http/actionMessage';
 import { nominateRefused, voteRefused } from './clubMessages';
+import { ClubQueryError } from './ClubQueryError';
 import { useVote, useNominate, useElectionResults } from '@/hooks/api/useClubs';
 import type { ClubElection, ElectionCandidate } from '@/lib/api-client';
 
@@ -32,13 +33,14 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
   election,
   isMember,
 }) => {
-  const { data: resultsData } = useElectionResults(election.id);
+  const results = useElectionResults(election.id);
   const vote = useVote(election.id);
   const nominate = useNominate(election.id);
   const [statement, setStatement] = useState('');
   const [showNominate, setShowNominate] = useState(false);
 
-  const candidates: ElectionCandidate[] = resultsData?.candidates ?? [];
+  // Unknown until the request succeeds: a pending or failed read is not "no candidates".
+  const candidates: ElectionCandidate[] = results.data?.candidates ?? [];
 
   return (
     <Surface variant="panel" className="mb-3" data-testid={`election-${election.id}`}>
@@ -98,8 +100,12 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
         </div>
       )}
 
-      {/* Candidates */}
-      {candidates.length > 0 ? (
+      {/* Candidates: loading, then error with retry, then empty only after success (§1) */}
+      {!results.data && results.isError ? (
+        <ClubQueryError error={results.error} onRetry={() => void results.refetch()} />
+      ) : !results.data ? (
+        <SectionLoading label="Loading candidates" minHeight="48px" />
+      ) : candidates.length > 0 ? (
         <div className="space-y-2">
           {candidates.map((c) => (
             <Surface
