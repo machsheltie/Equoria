@@ -13,15 +13,16 @@
  *   they reflect real-time state.
  */
 
-import config from './config.mjs';
 import logger from '../utils/logger.mjs';
 import { isRedisConnected, getRedisClient } from '../middleware/rateLimiting.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 
 /**
- * Collects Redis connection status (and server version when reachable) for the
- * health/readiness payloads. Never throws — a Redis hiccup degrades the field,
- * it does not fail the probe.
+ * Collects Redis connection status for the health/readiness payloads. Never
+ * throws — a Redis hiccup degrades the field, it does not fail the probe.
+ *
+ * Both probes are anonymous, so the payload is only `{ connected, status }`;
+ * the server version and error text never leave the server (Equoria-ht7qz).
  */
 export const getRedisHealthInfo = async () => {
   const redisConnected = isRedisConnected();
@@ -37,13 +38,11 @@ export const getRedisHealthInfo = async () => {
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Redis info timeout')), 2000),
       );
-      const info = await Promise.race([redisClient.info('server'), timeoutPromise]);
-      const version = info.match(/redis_version:([^\r\n]+)/)?.[1];
-      redisInfo.version = version || 'unknown';
+      // Responsiveness check only; the reply (which names the version) is discarded.
+      await Promise.race([redisClient.info('server'), timeoutPromise]);
       redisInfo.status = 'healthy';
     } catch (error) {
       redisInfo.status = 'error';
-      redisInfo.error = error.message;
       logger.warn(`[HealthCheck] Redis info check failed: ${error.message}`);
     }
   }
@@ -65,7 +64,6 @@ export const healthHandler = async (req, res) => {
     message: 'Server is healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: config.env,
     services: {
       api: 'healthy',
       redis: redisInfo,
@@ -74,39 +72,45 @@ export const healthHandler = async (req, res) => {
 };
 
 /**
- * GET /ready — readiness probe. Performs a real DB ping; 503 when unreachable.
+ * GET /ready — readiness probe. Performs a real DB ping on `db`; 503 when
+ * unreachable. The client is a parameter so the unreachable branch can be
+ * exercised with a real client pointed at a dead port.
  */
-export const readyHandler = async (req, res) => {
-  const redisInfo = await getRedisHealthInfo();
-  let dbInfo = { status: 'healthy' };
-  let statusCode = 200;
+export const createReadyHandler =
+  ({ db }) =>
+  async (req, res) => {
+    const redisInfo = await getRedisHealthInfo();
+    let dbInfo = { status: 'healthy' };
+    let statusCode = 200;
 
-  try {
-    const dbStart = Date.now();
-    await prisma.$queryRaw`SELECT 1`;
-    dbInfo.responseTime = `${Date.now() - dbStart}ms`;
-  } catch (error) {
-    dbInfo = { status: 'unhealthy', error: error.message };
-    statusCode = 503;
-    logger.error(`[ReadinessCheck] Database unreachable: ${error.message}`);
-  }
+    try {
+      const dbStart = Date.now();
+      await db.$queryRaw`SELECT 1`;
+      dbInfo.responseTime = `${Date.now() - dbStart}ms`;
+    } catch (error) {
+      // The driver message can name host:port — log it, never send it (Equoria-ht7qz).
+      dbInfo = { status: 'unhealthy' };
+      statusCode = 503;
+      logger.error(`[ReadinessCheck] Database unreachable: ${error.message}`);
+    }
 
-  // Readiness flips on DB state — must reflect real-time health, never cache.
-  res.setHeader('Cache-Control', 'no-store');
-  res.status(statusCode).json({
-    success: statusCode === 200,
-    status: statusCode === 200 ? 'ready' : 'not_ready',
-    message: statusCode === 200 ? 'Server is ready' : 'Database unreachable',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.env,
-    services: {
-      api: 'healthy',
-      database: dbInfo,
-      redis: redisInfo,
-    },
-  });
-};
+    // Readiness flips on DB state — must reflect real-time health, never cache.
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(statusCode).json({
+      success: statusCode === 200,
+      status: statusCode === 200 ? 'ready' : 'not_ready',
+      message: statusCode === 200 ? 'Server is ready' : 'Database unreachable',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      services: {
+        api: 'healthy',
+        database: dbInfo,
+        redis: redisInfo,
+      },
+    });
+  };
+
+export const readyHandler = createReadyHandler({ db: prisma });
 
 /**
  * GET /api-info — static endpoint map. Mutable across deploys → never cache.
