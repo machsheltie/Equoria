@@ -16,18 +16,16 @@ sh "$(git rev-parse --show-toplevel)/scripts/session/session-guard.sh" precommit
 # Equoria-64tby: gate-strengthening for the silent-cleanup-catch doctrine
 # ratchet (and every other doctrine check in scripts/doctrine-checks/).
 #
-# Why this lives in pre-commit (not pre-push):
-#   The active CLAUDE.md exception authorizes `git push --no-verify`, which
-#   bypasses the pre-push hook entirely — including the doctrine suite that
-#   used to ride inside it. CLAUDE.md does NOT authorize `--no-verify` on
-#   commits, so a pre-commit check is the durable, NOT-bypassable enforcement.
-#
-# Why pre-commit is the right speed/safety trade-off:
-#   The doctrine suite is ~10s end-to-end (regex scans + node startup). The
-#   pre-push hook's full Jest suite is ~16 min. We can afford to run the
-#   doctrine suite on every commit; we can NOT afford to run the Jest suite
-#   on every commit. Adding the fast gate here is "free" safety while the
-#   --no-verify exception on pushes remains active.
+# Why this lives in pre-commit as well as pre-push:
+#   Speed. The doctrine suite is ~10s end-to-end (regex scans + node startup).
+#   The pre-push hook's full sharded Jest suite takes minutes. We can afford
+#   to run the fast doctrine gate on every commit; we can NOT afford to run
+#   the Jest suite on every commit. Catching a ratchet regression at commit
+#   time keeps the failure next to the change that caused it, instead of
+#   surfacing it later in a push. The pre-push hook still runs the full
+#   doctrine suite (scripts/doctrine-checks/run-all.sh) before the tests.
+#   Neither hook is ever bypassed: CLAUDE.md forbids `--no-verify` and
+#   authorizes no standing Git bypass.
 #
 # Cost of failure: a single commit blocked locally. Easy to fix and re-commit.
 # Cost of NOT failing: a silent-cleanup-catch regression lands on master,
