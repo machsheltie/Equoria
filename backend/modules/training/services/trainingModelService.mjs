@@ -1,6 +1,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
@@ -265,7 +266,10 @@ async function getTrainableHorses(userId) {
           name: horse.name,
           age: effectiveAge,
           ageYears: getHorseAgeYears(horse.dateOfBirth),
-          level: horse.horseXp?.level ?? 1,
+          // horseXp is an Int column, so `.level` off it was always undefined and
+          // every horse read as level 1 (Equoria-fdwly). The pinned XP-bracket
+          // level is the one the show brackets use.
+          level: getHorseXpLevel(horse.horseXp),
           breed: horse.breed?.name ?? null,
           sex: horse.sex ?? null,
           phenotype: horse.phenotype ?? null,

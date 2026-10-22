@@ -20,7 +20,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
-const { logTrainingSession, getLastTrainingDate, getHorseAge } = await import(
+const { logTrainingSession, getLastTrainingDate, getHorseAge, getTrainableHorses } = await import(
   join(__dirname, '../services/trainingModelService.mjs')
 );
 const { getHorseAgeYears } = await import(join(__dirname, '../../../utils/horseAge.mjs'));
@@ -187,6 +187,20 @@ describe('Training Model', () => {
       await expect(getHorseAge(-1)).rejects.toThrow('Horse ID must be a positive integer');
       await expect(getHorseAge(0)).rejects.toThrow('Horse ID must be a positive integer');
       await expect(getHorseAge('invalid')).rejects.toThrow('Horse ID must be a positive integer');
+    });
+  });
+
+  describe('getTrainableHorses level (Equoria-fdwly)', () => {
+    it('reports the XP-bracket level, floor(horseXp / 100) + 1, not a constant 1', async () => {
+      // horseXp is an Int column; the payload used to read `.level` off it and
+      // so said level 1 for every horse regardless of XP.
+      await prisma.horse.update({ where: { id: testHorse.id }, data: { horseXp: 250 } });
+
+      const horses = await getTrainableHorses(testUser.id);
+      const entry = horses.find(h => h.id === testHorse.id);
+
+      expect(entry).toBeDefined();
+      expect(entry.level).toBe(3);
     });
   });
 
