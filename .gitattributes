@@ -38,3 +38,11 @@
 # Owner-authored design documents: store byte-for-byte, never normalise line endings
 docs/features/13_Competitions_shows_Event_Scoring_DEEP.md -text
 docs/features/competitiontemperamentmatrix.md -text
+
+# Applied-migration bytes: these two migrations were applied to long-lived local
+# databases from CRLF working files, and Prisma checksums raw bytes. The blobs
+# stay LF; checkouts materialise CRLF so every worktree hashes to the recorded
+# checksum (Equoria-k9s2h, Equoria-q9krw). Do not extend this list to other
+# migrations and do not edit these files.
+packages/database/prisma/migrations/20260129111928_remove_deprecated_ownerId_field/migration.sql text eol=crlf
+packages/database/prisma/migrations/20260513120000_add_rider_total_competitions/migration.sql text eol=crlf
