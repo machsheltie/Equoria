@@ -76,6 +76,13 @@ export function toJsonParam(value) {
  * @param {object} options
  * @param {Record<string, unknown>} options.set - Top-level settings keys to
  *   write, mapped to their new values. At least one key is required.
+ * @param {Record<string, object>} [options.merge] - Top-level keys whose
+ *   stored OBJECT value is shallow-merged with the given plain object inside
+ *   the statement (`stored || patch`; a missing or non-object stored value
+ *   counts as `{}`). Two concurrent merges into the same key that change
+ *   different fields therefore both survive — the same-key lost update a JS
+ *   merge from an earlier read suffers (Equoria-6p398.15). A key may not be in
+ *   both `set` and `merge`.
  * @param {Record<string, {equals: unknown, whenMissing?: unknown}>} [options.expect]
  *   Optional compare-and-swap preconditions. For each entry the statement only
  *   applies when the stored value of that key equals `equals` (with an absent
@@ -84,7 +91,7 @@ export function toJsonParam(value) {
  * @returns {Promise<number>} Rows affected: 1 on success, 0 when the user does
  *   not exist or a precondition no longer holds. Callers MUST check this.
  */
-export async function updateUserSettingsPaths(client, userId, { set, expect } = {}) {
+export async function updateUserSettingsPaths(client, userId, { set, merge, expect } = {}) {
   if (!client || typeof client.$executeRaw !== 'function') {
     throw new Error('updateUserSettingsPaths: a Prisma client or tx client is required');
   }
@@ -93,7 +100,8 @@ export async function updateUserSettingsPaths(client, userId, { set, expect } = 
   }
 
   const entries = Object.entries(set ?? {});
-  if (entries.length === 0) {
+  const mergeEntries = Object.entries(merge ?? {});
+  if (entries.length === 0 && mergeEntries.length === 0) {
     throw new Error('updateUserSettingsPaths: at least one settings key must be set');
   }
 
@@ -103,6 +111,18 @@ export async function updateUserSettingsPaths(client, userId, { set, expect } = 
   for (const [key, value] of entries) {
     assertKey(key);
     valueExpr = Prisma.sql`jsonb_set(${valueExpr}, ARRAY[${key}::text], ${toJsonParam(value)}::jsonb, true)`;
+  }
+  for (const [key, patch] of mergeEntries) {
+    assertKey(key);
+    if (Object.prototype.hasOwnProperty.call(set ?? {}, key)) {
+      throw new Error(`updateUserSettingsPaths: "${key}" cannot be both set and merged`);
+    }
+    if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw new Error(`updateUserSettingsPaths: merge value for "${key}" must be a plain object`);
+    }
+    // The stored value is read from the row the UPDATE is rewriting, i.e. the
+    // committed value after any row lock wait, never an earlier snapshot.
+    valueExpr = Prisma.sql`jsonb_set(${valueExpr}, ARRAY[${key}::text], (CASE WHEN jsonb_typeof("settings" -> ${key}::text) = 'object' THEN "settings" -> ${key}::text ELSE '{}'::jsonb END) || ${toJsonParam(patch)}::jsonb, true)`;
   }
 
   const conditions = [Prisma.sql`"id" = ${userId}`];

@@ -196,12 +196,10 @@ export const updateProfile = async (req, res, next) => {
     // to move it (the audit's reproduction changed it and kept
     // emailVerified/emailVerifiedAt). A same-address request is a no-op and
     // must not disturb verification; a different address is refused here and
-    // routed to the staged request/confirm flow. `currentUser` doubles as the
-    // settings snapshot the merge below needs, so this costs no extra query on
-    // the preference path.
+    // routed to the staged request/confirm flow.
     const currentUser = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { email: true, settings: true },
+      select: { email: true },
     });
     if (!currentUser) {
       throw new AppError('User not found', 404);
@@ -248,40 +246,40 @@ export const updateProfile = async (req, res, next) => {
     // onboarding state. bio lives in settings JSONB (the User table has no bio
     // column), alongside notifications + display (Equoria-pnd1z).
     //
-    // Finding 1 (Equoria-6p398.1): `settingsUpdate` now holds ONLY the keys this
+    // Finding 1 (Equoria-6p398.1): the settings write holds ONLY the keys this
     // route owns, and they are written by PATH (jsonb_set). The prior form read
     // the whole settings document and wrote the whole document back, so a
     // POST /bank/claim that committed in between had its `lastWeeklyClaimDate`
     // marker erased — letting the player claim the weekly 5,000 coins twice.
-    let settingsUpdate;
+    //
+    // Equoria-6p398.15: notifications/display are MERGED inside the UPDATE
+    // statement (`merge`), not from this request's earlier read, so two
+    // concurrent changes to different fields of the same key both survive.
+    const settingsSet = {};
+    const settingsMerge = {};
     if (hasPreferenceUpdate || hasBioUpdate) {
-      const currentSettings =
-        typeof currentUser.settings === 'object' && currentUser.settings !== null
-          ? currentUser.settings
-          : {};
-      settingsUpdate = {};
       if (notifications !== undefined && notifications !== null) {
-        settingsUpdate.notifications = {
-          ...(currentSettings.notifications ?? {}),
-          ...notifications,
-        };
+        settingsMerge.notifications = notifications;
       }
       if (display !== undefined && display !== null) {
-        settingsUpdate.display = { ...(currentSettings.display ?? {}), ...display };
+        settingsMerge.display = display;
       }
       if (hasBioUpdate) {
         // Equoria-pnd1z: persist the SANITIZED bio (XSS + control chars
         // stripped) — never the raw payload. '' clears it.
-        settingsUpdate.bio = sanitizeBio(bio);
+        settingsSet.bio = sanitizeBio(bio);
       }
     }
+    const hasSettingsWrite =
+      Object.keys(settingsSet).length > 0 || Object.keys(settingsMerge).length > 0;
 
     // Update user. The identity columns and the settings paths commit together.
     const updatedUser = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
-        if (settingsUpdate) {
+        if (hasSettingsWrite) {
           const affected = await updateUserSettingsPaths(tx, req.user.id, {
-            set: settingsUpdate,
+            set: settingsSet,
+            merge: settingsMerge,
           });
           if (affected !== 1) {
             throw new AppError('User not found', 404);
@@ -370,47 +368,32 @@ export const updateUserPreferences = async (req, res, next) => {
       }
     }
 
-    // Merge into existing settings.preferences inside a transaction.
-    // The transaction provides atomicity for the read-modify-write; a SELECT
-    // FOR UPDATE is omitted because pg's default READ COMMITTED isolation and
-    // the update's WHERE clause provide sufficient protection for this
-    // non-critical preference toggle (CodeRabbit Major 2026-04-20 original
-    // concern addressed via transactional atomicity rather than row locking).
+    // Merge into settings.preferences INSIDE the UPDATE statement
+    // (Equoria-6p398.15). The earlier form read preferences, merged in JS and
+    // wrote the whole key back, so two concurrent toggles of different
+    // preferences lost one of them; READ COMMITTED does not prevent that.
     // Equoria-7x9po: a transient P2028 tx-timeout maps to a retryable 503; the
     // RetryableTransactionError is an AppError subclass, so the isAppError-gated
     // `next(error)` below forwards it unchanged to the central handler (503).
     const mergedPreferences = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
-        const user = await tx.user.findUnique({
-          where: { id: req.user.id },
-          select: { settings: true },
-        });
-        if (!user) {
-          throw new AppError('User not found', 404);
-        }
-        const currentSettings =
-          typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
-        const currentPreferences =
-          typeof currentSettings.preferences === 'object' && currentSettings.preferences !== null
-            ? currentSettings.preferences
-            : {};
-
-        const merged = {
-          ...currentPreferences,
-          ...body,
-        };
-
         // Finding 1 (Equoria-6p398.1): write ONLY the `preferences` path so a
         // concurrent bank claim's `lastWeeklyClaimDate` (and inventory,
         // materials, onboarding state) survive this preference toggle.
         const affected = await updateUserSettingsPaths(tx, req.user.id, {
-          set: { preferences: merged },
+          merge: { preferences: body },
         });
         if (affected !== 1) {
           throw new AppError('User not found', 404);
         }
 
-        return merged;
+        // The merged preferences as committed by this write (row still locked).
+        const user = await tx.user.findUnique({
+          where: { id: req.user.id },
+          select: { settings: true },
+        });
+        const preferences = user?.settings?.preferences;
+        return preferences !== null && typeof preferences === 'object' ? preferences : {};
       }),
       { message: 'Preferences service is busy right now, please retry in a moment.' },
     );

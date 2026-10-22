@@ -167,6 +167,38 @@ describe('updateUserSettingsPaths', () => {
     expect((await settings()).inventory).toEqual([{ id: 'a', quantity: 1 }]);
   }, 30000);
 
+  it('merge: shallow-merges into the stored object and leaves its other fields (Equoria-6p398.15)', async () => {
+    const affected = await updateUserSettingsPaths(prisma, userId, {
+      merge: { craftingMaterials: { leather: 9 } },
+    });
+
+    expect(affected).toBe(1);
+    const after = await settings();
+    expect(after.craftingMaterials).toEqual({ leather: 9, cloth: 2, dye: 1, metal: 4, thread: 5 });
+    expect(after.lastWeeklyClaimDate).toBe(MARKER);
+  }, 30000);
+
+  it('merge: a missing or non-object stored value counts as {}', async () => {
+    await updateUserSettingsPaths(prisma, userId, { set: { display: 'legacy-string' } });
+    const affected = await updateUserSettingsPaths(prisma, userId, {
+      merge: { display: { compact: true }, notifications: { emailSystem: true } },
+    });
+
+    expect(affected).toBe(1);
+    const after = await settings();
+    expect(after.display).toEqual({ compact: true });
+    expect(after.notifications).toEqual({ emailSystem: true });
+  }, 30000);
+
+  it('merge: rejects a non-object patch and a key both set and merged', async () => {
+    await expect(updateUserSettingsPaths(prisma, userId, { merge: { display: [1] } })).rejects.toThrow(
+      'must be a plain object',
+    );
+    await expect(
+      updateUserSettingsPaths(prisma, userId, { set: { display: {} }, merge: { display: { a: 1 } } }),
+    ).rejects.toThrow('cannot be both set and merged');
+  }, 30000);
+
   it('rejects a settings key that is not a plain identifier', async () => {
     await expect(updateUserSettingsPaths(prisma, userId, { set: { 'inventory"; DROP': 1 } })).rejects.toThrow(
       'unsafe settings key',

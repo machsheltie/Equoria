@@ -398,39 +398,17 @@ export const updateUserController = async (req, res, next) => {
     // /auth/profile/preferences paths enforce (shared ALLOWED_PREFERENCE_KEYS),
     // then MERGE into the stored settings so server-owned keys are preserved.
     if (updates.settings !== undefined) {
-      const validatedSettings = validateSettingsPayload(updates.settings);
-      const currentUser = await prisma.user.findUnique({
-        where: { id },
-        select: { settings: true },
-      });
-      if (!currentUser) {
-        return res.status(404).json({
-          success: false,
-          message: 'User not found',
-        });
-      }
-      const currentSettings =
-        typeof currentUser.settings === 'object' && currentUser.settings !== null
-          ? currentUser.settings
-          : {};
       // Shallow-merge each validated top-level key into its existing value so
       // nested client preferences are additive.
       //
-      // Finding 1 (Equoria-6p398.1): the merged result is applied by PATH via
-      // updateUserSettingsPaths and REMOVED from `updates`, so only the
-      // client-writable keys are rewritten. The prior form sent a whole
-      // settings document built from a pre-request read, which erased the
-      // weekly bank-claim marker (`lastWeeklyClaimDate`) written by a
-      // concurrent POST /bank/claim and let the reward be claimed twice.
-      settingsPaths = {};
-      for (const [key, value] of Object.entries(validatedSettings)) {
-        settingsPaths[key] = {
-          ...(typeof currentSettings[key] === 'object' && currentSettings[key] !== null
-            ? currentSettings[key]
-            : {}),
-          ...value,
-        };
-      }
+      // Finding 1 (Equoria-6p398.1): applied by PATH via updateUserSettingsPaths
+      // and REMOVED from `updates`, so only the client-writable keys are
+      // rewritten (a whole-document write erased a concurrent bank claim's
+      // `lastWeeklyClaimDate`). Equoria-6p398.15: the merge itself runs inside
+      // the UPDATE statement (`merge`), not from a pre-request read, so two
+      // concurrent changes to different fields of one key both survive. A
+      // missing user is the transaction's affected-row 404 below.
+      settingsPaths = validateSettingsPayload(updates.settings);
       // The write itself happens in Step 4, in the SAME transaction as the
       // identity columns — see the note there.
       delete updates.settings;
@@ -475,7 +453,7 @@ export const updateUserController = async (req, res, next) => {
       user = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
           if (settingsPaths && Object.keys(settingsPaths).length > 0) {
-            const affected = await updateUserSettingsPaths(tx, id, { set: settingsPaths });
+            const affected = await updateUserSettingsPaths(tx, id, { merge: settingsPaths });
             if (affected !== 1) {
               throw userMissingError();
             }
