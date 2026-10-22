@@ -42,7 +42,7 @@ export {
 } from './services/horseNamePolicy.mjs';
 export { generateStoreStats } from './services/horseStarterStats.mjs';
 export { analyzeHorseTemperament } from './services/horseTemperamentAnalysis.mjs';
-export { addXpToHorseCore } from './services/horseXpModelService.mjs';
+export { addXpToHorseCore, invalidateHorseXpCaches } from './services/horseXpModelService.mjs';
 export { generateMarkings } from './services/markingGenerationService.mjs';
 export { calculatePhenotype } from './services/phenotypeCalculationService.mjs';
 export {

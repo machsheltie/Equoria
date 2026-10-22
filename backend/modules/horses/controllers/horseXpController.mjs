@@ -38,7 +38,7 @@ export async function getHorseXpStatus(req, res) {
       throw new ValidationError('Invalid horse ID');
     }
 
-    const cacheKey = `horse:xp:status:${horseIdNum}`;
+    const cacheKey = horseXpModel.horseXpStatusCacheKey(horseIdNum);
     const data = await getCachedQuery(
       cacheKey,
       async () => {
@@ -180,7 +180,7 @@ export async function allocateStatPoint(req, res) {
     }
 
     // Invalidate caches
-    await invalidateCache(`horse:xp:status:${horseIdNum}`);
+    await invalidateCache(horseXpModel.horseXpStatusCacheKey(horseIdNum));
     await invalidateCache(`horse:overview:${horseIdNum}`);
 
     logger.info(
@@ -237,7 +237,7 @@ export async function getHorseXpHistory(req, res) {
       throw new ValidationError('Invalid horse ID');
     }
 
-    const cacheKey = `horse:xp:history:${horseIdNum}:${limit}:${offset}`;
+    const cacheKey = horseXpModel.horseXpHistoryCacheKey(horseIdNum, limit, offset);
     const result = await getCachedQuery(
       cacheKey,
       async () => {

@@ -24,7 +24,11 @@ import { refundUnpaidPrizeShareInTx, settleShowFeeEscrow } from './showEscrowTx.
 import { settleDueConformationShows } from '../services/conformationShowService.mjs';
 // Equoria-c7mx0: scoring extracted verbatim to the shared scoring service;
 // readStagedOrdering implements the 2026-07-06 staged-ordering replay contract.
-import { readStagedOrdering, scoreShowEntries } from '../services/competitionScoring.mjs';
+import {
+  rankScoredEntries,
+  readStagedOrdering,
+  scoreShowEntries,
+} from '../services/competitionScoring.mjs';
 // Equoria-oey96.4: horse XP / owner XP / stat gains — the executor's progression
 // gap (it paid prize + rider XP but zero player/horse progression). Tx-aware helper
 // so the awards run INSIDE the per-entry tx below without a nested transaction.
@@ -39,6 +43,7 @@ import {
 // horses had placed. Mirrors the pi4nk pattern from enterAndRunShow:
 // fire-and-forget OUTSIDE the prize-payout tx (fail-soft).
 import { createNotification } from '../../../utils/notificationService.mjs';
+import { invalidateHorseXpCaches } from '../../horses/index.mjs';
 
 /**
  * Set shows.stagedOrdering to SQL NULL (Equoria-c7mx0). Raw parameterized SQL
@@ -96,22 +101,25 @@ async function scoreOrdering(show, entries, scoreRng) {
     : [];
   const assignmentByHorseId = new Map(riderAssignments.map(ra => [ra.horseId, ra]));
 
-  // Score (extracted verbatim to competitionScoring.mjs) + rank.
+  // Score (extracted verbatim to competitionScoring.mjs) + rank. Equal scores
+  // are separated by a luck re-roll among the tied horses (owner ruling
+  // 2026-10-22, Equoria-bvddn.22): no shared placings, no split prizes.
   const scored = scoreShowEntries({
     show,
     entries,
     assignmentByHorseId,
     ...(scoreRng ? { rng: scoreRng } : {}),
   });
-  scored.sort((a, b) => b.score - a.score);
-  return scored.map(({ entry, score, assignment }, i) => ({
-    horseId: entry.horseId,
-    userId: entry.userId,
-    horseName: entry.horse?.name ?? null,
-    score,
-    placement: i + 1,
-    riderId: assignment?.riderId ?? null,
-  }));
+  return rankScoredEntries(scored, scoreRng ?? Math.random).map(
+    ({ entry, score, assignment }, i) => ({
+      horseId: entry.horseId,
+      userId: entry.userId,
+      horseName: entry.horse?.name ?? null,
+      score,
+      placement: i + 1,
+      riderId: assignment?.riderId ?? null,
+    }),
+  );
 }
 
 /**
@@ -229,6 +237,17 @@ async function settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGai
     // Equoria-q4uem.10 (owner ruling R6): the result records what it awarded.
     await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
   });
+
+  // Equoria-7vhgr: the horse XP routes cache a horse's XP status and history
+  // for 60s. The award above has committed, so drop them now and the owner sees
+  // the new Horse Points at once. Fail-soft, like the notification below.
+  try {
+    await invalidateHorseXpCaches(horseId);
+  } catch (cacheErr) {
+    logger.error(
+      `[showExecutionService] Failed to invalidate XP caches for horse ${horseId}: ${cacheErr.message}`,
+    );
+  }
 
   // Riders are fixed NPCs: no XP (Equoria-dea06) and no prestige from wins
   // (owner ruling 2026-10-22, Equoria-0d4wa).

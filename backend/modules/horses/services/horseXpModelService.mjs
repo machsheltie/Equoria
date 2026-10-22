@@ -22,6 +22,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { DatabaseError } from '../../../errors/index.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
+import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 
 /**
  * Horse Points per stat allocation (owner ruling C15; bible 13). The one
@@ -32,6 +33,31 @@ export const HORSE_POINTS_PER_STAT_POINT = 1000;
 
 // Valid horse stats that can receive stat point allocations
 const VALID_HORSE_STATS = HORSE_STAT_VALUES;
+
+/**
+ * Cache keys of the horse XP routes (horseXpController): the status read and
+ * one key per history page. One source for the reads and the invalidation.
+ */
+export function horseXpStatusCacheKey(horseId) {
+  return `horse:xp:status:${horseId}`;
+}
+
+export function horseXpHistoryCacheKey(horseId, limit, offset) {
+  return `horse:xp:history:${horseId}:${limit}:${offset}`;
+}
+
+/**
+ * Drop a horse's cached XP status and every cached XP history page
+ * (Equoria-7vhgr). Call it after the transaction that awarded the XP has
+ * committed, so the next read cannot re-cache the pre-award value.
+ *
+ * @param {number} horseId
+ */
+export async function invalidateHorseXpCaches(horseId) {
+  await invalidateCache(horseXpStatusCacheKey(horseId));
+  // Every page: the pattern matches any limit and offset.
+  await invalidateCachePattern(horseXpHistoryCacheKey(horseId, '*', '*'));
+}
 
 /**
  * Calculate available stat points based on horse XP
