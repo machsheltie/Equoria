@@ -148,7 +148,6 @@ function buildHorseDetail(
   profile: LeaderboardHorseProfile,
   entry: LeaderboardEntryData
 ): HorseDetailData {
-  const totalCompetitions = entry.secondaryStats?.totalCompetitions ?? profile.competitionWins;
   return {
     horseId: profile.horseId,
     horseName: profile.name,
@@ -158,7 +157,9 @@ function buildHorseDetail(
     level: entry.secondaryStats?.level ?? entry.primaryStat,
     stats: { ...profile.stats },
     competitionHistory: {
-      total: totalCompetitions,
+      // Unknown stays unknown (shown as "—"), never the win count; a real 0 survives `??`
+      // (Equoria-alnmo).
+      total: entry.secondaryStats?.totalCompetitions ?? null,
       wins: entry.secondaryStats?.wins ?? profile.competitionWins,
       top3Finishes: profile.topThreeFinishes,
       // Unknown stays unknown (shown as "—"); a real 0 survives `??` (Equoria-k7plw).

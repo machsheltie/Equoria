@@ -73,7 +73,8 @@ export interface HorseDetailData {
     focus: number;
   };
   competitionHistory: {
-    total: number;
+    /** Entries on record; `null` when the source does not carry one (shown as "—"). */
+    total: number | null;
     wins: number;
     top3Finishes: number;
     /** Win rate in percent; `null` when the source does not carry one (shown as "—"). */
@@ -313,7 +314,11 @@ const LeaderboardHorseDetailModal = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   <SummaryStatCard
                     label="Total Competitions"
-                    value={String(horseData.competitionHistory.total)}
+                    value={
+                      horseData.competitionHistory.total === null
+                        ? '—'
+                        : String(horseData.competitionHistory.total)
+                    }
                   />
                   <SummaryStatCard label="Wins" value={String(horseData.competitionHistory.wins)} />
                   <SummaryStatCard

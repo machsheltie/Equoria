@@ -98,3 +98,30 @@ describe('LeaderboardsPage horse modal (Equoria-k7plw)', () => {
     expect(winRateCard(modal)).toHaveTextContent('0%');
   });
 });
+
+const totalCard = (modal: HTMLElement) =>
+  within(modal).getByText('Total Competitions').parentElement as HTMLElement;
+
+describe('LeaderboardsPage horse modal — total competitions (Equoria-alnmo)', () => {
+  it('shows an unavailable marker, not the win count, when the row has no total', async () => {
+    stubBoard({ level: 5, wins: 2, winRate: 20 });
+    const modal = await openHorseModal();
+
+    expect(totalCard(modal)).toHaveTextContent('—');
+    expect(totalCard(modal)).not.toHaveTextContent(/\d/);
+  });
+
+  it('shows the real total when the row carries one', async () => {
+    stubBoard({ level: 5, totalCompetitions: 10, wins: 2 });
+    const modal = await openHorseModal();
+
+    expect(totalCard(modal)).toHaveTextContent('10');
+  });
+
+  it('keeps a genuine zero total as 0', async () => {
+    stubBoard({ level: 5, totalCompetitions: 0, wins: 0 });
+    const modal = await openHorseModal();
+
+    expect(totalCard(modal)).toHaveTextContent('0');
+  });
+});
