@@ -129,7 +129,8 @@ export async function holdLock(client, lock) {
   return {
     pid: barrier.pid,
     release: () => barrier.release(),
-    waitForQueued: (count, timeoutMs) => waitForBlockedSessions(client, barrier.pid, count, timeoutMs),
+    waitForQueued: (count, timeoutMs) =>
+      waitForBlockedSessions(client, barrier.pid, count, timeoutMs),
   };
 }
 
