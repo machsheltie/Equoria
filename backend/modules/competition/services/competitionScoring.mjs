@@ -229,6 +229,76 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
 }
 
 /**
+ * How many times a tie may be re-rolled before the ordering gives up. Only an
+ * rng that keeps answering the same value (a test's fixed seam) gets near it:
+ * with Math.random two horses tie on ten rounds in a row once in 10^10 shows.
+ */
+const maxTieBreakRounds = 50;
+
+/**
+ * Order tied horses by re-rolling the luck roll among them (owner ruling
+ * 2026-10-22, Equoria-bvddn.22): each tied horse rolls again, the higher roll
+ * places higher, and horses that roll the same re-roll among themselves until
+ * the order is strict. The re-roll only orders the tie; the horses keep the
+ * score they tied on, and every other horse keeps its place.
+ *
+ * The tied horses roll in horseId order, which only fixes which horse receives
+ * which roll (so an injected rng reproduces the same outcome); it favours no
+ * one.
+ */
+function orderTiedByLuckReroll(tied, rng, round = 0) {
+  if (tied.length < 2) {
+    return tied;
+  }
+  if (round >= maxTieBreakRounds) {
+    logger.error(
+      `[competitionScoring] tie between horses ${tied.map(t => t.entry.horseId).join(', ')} still unbroken after ${maxTieBreakRounds} luck re-rolls (the rng keeps answering the same roll); kept in horseId order`,
+    );
+    return tied;
+  }
+  const rolls = new Map(tied.map(item => [item, rollLuckPercent(rng)]));
+  const byRoll = [...tied].sort((a, b) => rolls.get(b) - rolls.get(a));
+  return groupsOfEqual(byRoll, item => rolls.get(item)).flatMap(group =>
+    orderTiedByLuckReroll(group, rng, round + 1),
+  );
+}
+
+/** Split an already-sorted list into runs of equal key, in order. */
+function groupsOfEqual(sorted, keyOf) {
+  const groups = [];
+  for (const item of sorted) {
+    const last = groups[groups.length - 1];
+    if (last && keyOf(last[0]) === keyOf(item)) {
+      last.push(item);
+    } else {
+      groups.push([item]);
+    }
+  }
+  return groups;
+}
+
+/**
+ * Rank scored entries best first, with no shared placings: horses on the same
+ * score are ordered by a luck re-roll among them (Equoria-bvddn.22).
+ *
+ * @param {Array<{entry: {horseId: number}, score: number}>} scored - scoreShowEntries output
+ * @param {Function} [rng] - the luck RNG (default Math.random); the executor
+ *   passes the same seam it scored with
+ * @returns {Array} the same items, ranked
+ */
+export function rankScoredEntries(scored, rng = Math.random) {
+  const byScore = [...scored].sort((a, b) => b.score - a.score);
+  return groupsOfEqual(byScore, item => item.score).flatMap(group =>
+    group.length < 2
+      ? group
+      : orderTiedByLuckReroll(
+          [...group].sort((a, b) => a.entry.horseId - b.entry.horseId),
+          rng,
+        ),
+  );
+}
+
+/**
  * Read a show's persisted scored ordering (Equoria-c7mx0, 2026-07-06 approved
  * decision). The ordering is written in the SAME atomic statement as the
  * 'executing' claim; when a crashed execution is re-driven, the executor
@@ -287,5 +357,6 @@ export function readStagedOrdering(show, entries) {
 export default {
   applyRiderCompatibility,
   scoreShowEntries,
+  rankScoredEntries,
   readStagedOrdering,
 };
