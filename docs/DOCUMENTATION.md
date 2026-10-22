@@ -116,6 +116,12 @@ say so in the first screenful. Never label a document `canonical`, `complete`,
 `verified`, or `source of truth` unless an executable mechanism keeps that
 claim true.
 
+When a document points at source, cite the path and, where a locator is
+needed, the symbol, model, or test name. Never cite a line number or line range
+(`file.mjs:120`); lines drift on every edit (owner ruling 2026-09-21,
+Equoria-l6lq6). Dated audit records under `docs/audits/` are point-in-time
+evidence and keep the citations they were written with.
+
 ## Task-to-document routing
 
 Start with the smallest row whose trigger matches. Never load a directory

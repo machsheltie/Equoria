@@ -13,7 +13,7 @@
  * - Graceful degradation (allows requests if Redis unavailable)
  *
  * Configuration (verified Equoria-f5r1, 2026-05-15):
- * - 200 failed attempts per 15 minutes per IP/user (rateLimiting.mjs:434-440)
+ * - 200 failed attempts per 15 minutes per IP/user (see authRateLimiter in rateLimiting.mjs)
  * - skipSuccessfulRequests: true — only failed logins count toward the cap
  * - Rate limit headers in all responses (RFC standard)
  * - Per-user rate limiting for authenticated requests

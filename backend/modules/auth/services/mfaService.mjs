@@ -6,9 +6,9 @@
  * real DB. Uses `otplib` (actively maintained) for RFC 6238 TOTP.
  *
  * Design notes:
- *  - `mfaSecret` is the base32 TOTP shared secret. At-rest encryption is NOT
- *    yet applied because the codebase has no encryption util; this is a
- *    documented, tracked follow-up (see SECURITY.md A07 note + bd follow-up).
+ *  - `mfaSecret` is the base32 TOTP shared secret. It is encrypted at rest with
+ *    AES-256-GCM (`encryptField` in utils/fieldEncryption.mjs) by
+ *    mfaController.mjs before it is stored (Equoria-yi13v).
  *  - Recovery codes are bcrypt-hashed (never stored or logged in plaintext)
  *    and single-use: consumption stamps `usedAt` so a code cannot be replayed.
  *  - `verifyToken` uses a ±1 step window (otplib `window: 1`) to tolerate
