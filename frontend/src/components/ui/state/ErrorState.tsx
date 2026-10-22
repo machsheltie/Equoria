@@ -5,8 +5,10 @@
  * icon, and action buttons) and adds:
  *   - `severity` prop: 'section' (default) | 'page' — tunes vertical padding
  *   - `backLink` prop: optional back navigation alongside retry
- *   - focusable heading for screen-reader discovery (tabIndex=-1 on the
- *     inner h3 via ErrorCard's existing structure)
+ *   - `focusOnMount` (default true), passed to ErrorCard, which gives its
+ *     heading tabIndex=-1 and moves focus there when the error appears — unless
+ *     another control already has focus. Pass false for an inline error beside
+ *     content the player is working in (Equoria-3r6n3)
  *   - role="alert" is provided by ErrorCard's inner panel
  *
  * Extend-vs-new decision: ErrorCard already has `role="alert"`, the Celestial
@@ -78,6 +80,12 @@ export interface ErrorStateProps {
   backLink?: ErrorStateBackLink;
   /** Extra class on the outer wrapper */
   className?: string;
+  /**
+   * Move focus to the error heading when it appears (default true; skipped when
+   * another control already holds focus). Pass false for an inline,
+   * non-blocking error.
+   */
+  focusOnMount?: boolean;
 }
 
 export function ErrorState({
@@ -87,6 +95,7 @@ export function ErrorState({
   retry,
   backLink,
   className,
+  focusOnMount,
 }: ErrorStateProps) {
   return (
     <div className={cn(severity === 'page' ? 'py-16' : 'py-8', className)}>
@@ -97,6 +106,7 @@ export function ErrorState({
         retryLabel={retry?.label}
         onGoHome={backLink?.onClick}
         goHomeLabel={backLink?.label}
+        focusOnMount={focusOnMount}
       />
     </div>
   );

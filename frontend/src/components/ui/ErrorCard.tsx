@@ -12,9 +12,16 @@
  * Equoria-o5hub ratchet: retryLabel / goHomeLabel passthrough (defaults
  * unchanged: "Try Again" / "Go Home") so ErrorState consumers' labels are
  * honoured instead of silently dropped.
+ * Equoria-3r6n3: focus management — the heading is focusable (tabIndex -1) and
+ * takes focus when the card appears, so a keyboard or screen-reader user whose
+ * request just failed lands on the failure. Two guards keep it from being a
+ * focus-steal: it never moves focus out of a control the player is already
+ * using (a background refetch failing while she types), and `focusOnMount`
+ * lets an inline, non-blocking caller opt out. The focus call does not scroll,
+ * so a failed section further down a page does not yank the view.
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -33,6 +40,12 @@ interface ErrorCardProps {
   goHomeLabel?: string;
   /** Extra wrapper class — useful to constrain padding in tight contexts */
   className?: string;
+  /**
+   * Move focus to the heading when the card appears. Default true. Pass false
+   * for an inline error beside content the player is working in. Focus is also
+   * left alone whenever another control already has it.
+   */
+  focusOnMount?: boolean;
 }
 
 export const ErrorCard: React.FC<ErrorCardProps> = ({
@@ -43,43 +56,59 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
   onGoHome,
   goHomeLabel = 'Go Home',
   className,
-}) => (
-  <div className={`flex items-center justify-center p-8 sm:p-12 ${className ?? ''}`}>
-    <div
-      className="glass-panel rounded-[var(--radius-lg)] border border-[var(--role-warning-border)] px-6 py-6 text-center space-y-4 max-w-sm w-full"
-      role="alert"
-    >
-      {/* Icon — warning role tint (status dot circles are legitimate full radius) */}
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--badge-warning-bg)] border border-[var(--role-warning-border)] mx-auto">
-        <AlertTriangle className="h-6 w-6 text-[var(--status-warning)]" aria-hidden="true" />
-      </div>
+  focusOnMount = true,
+}) => {
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
-      {/* Text */}
-      <div className="space-y-1">
-        <h3 className="type-card-title">{title}</h3>
-        <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)] leading-relaxed">
-          {message}
-        </p>
-      </div>
+  useEffect(() => {
+    if (!focusOnMount) return;
+    const active = document.activeElement;
+    // Only claim focus when nothing specific holds it (the control that triggered
+    // the failed request has usually just been unmounted, leaving body focused).
+    if (active && active !== document.body && active !== document.documentElement) return;
+    headingRef.current?.focus({ preventScroll: true });
+  }, [focusOnMount]);
 
-      {/* Action buttons — canonical tiers (D-08: one gold primary) */}
-      <div className="flex items-center justify-center gap-3">
-        {onRetry && (
-          <Button type="button" size="sm" onClick={onRetry}>
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-            {retryLabel}
-          </Button>
-        )}
+  return (
+    <div className={`flex items-center justify-center p-8 sm:p-12 ${className ?? ''}`}>
+      <div
+        className="glass-panel rounded-[var(--radius-lg)] border border-[var(--role-warning-border)] px-6 py-6 text-center space-y-4 max-w-sm w-full"
+        role="alert"
+      >
+        {/* Icon — warning role tint (status dot circles are legitimate full radius) */}
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--badge-warning-bg)] border border-[var(--role-warning-border)] mx-auto">
+          <AlertTriangle className="h-6 w-6 text-[var(--status-warning)]" aria-hidden="true" />
+        </div>
 
-        {onGoHome && (
-          <Button type="button" size="sm" variant="outline" onClick={onGoHome}>
-            <Home className="h-3.5 w-3.5" aria-hidden="true" />
-            {goHomeLabel}
-          </Button>
-        )}
+        {/* Text */}
+        <div className="space-y-1">
+          <h3 ref={headingRef} tabIndex={-1} className="type-card-title focus:outline-none">
+            {title}
+          </h3>
+          <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)] leading-relaxed">
+            {message}
+          </p>
+        </div>
+
+        {/* Action buttons — canonical tiers (D-08: one gold primary) */}
+        <div className="flex items-center justify-center gap-3">
+          {onRetry && (
+            <Button type="button" size="sm" onClick={onRetry}>
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              {retryLabel}
+            </Button>
+          )}
+
+          {onGoHome && (
+            <Button type="button" size="sm" variant="outline" onClick={onGoHome}>
+              <Home className="h-3.5 w-3.5" aria-hidden="true" />
+              {goHomeLabel}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default ErrorCard;
