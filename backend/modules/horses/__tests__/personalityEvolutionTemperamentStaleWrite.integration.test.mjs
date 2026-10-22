@@ -21,43 +21,16 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma, { PrismaClient } from '../../../../packages/database/prismaClient.mjs';
-import { buildDatabaseUrl } from '../../../../packages/database/dbPoolConfig.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { createBarrierClient, holdLock, horseRowLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { evolveHorseTemperament } from '../services/personalityEvolutionSystem.mjs';
 
 const tag = `jy3f7-${randomBytes(5).toString('hex')}`;
 
-const barrierClient = new PrismaClient({
-  datasources: { db: { url: buildDatabaseUrl(process.env.DATABASE_URL, process.env) } },
-  log: [],
-  errorFormat: 'minimal',
-});
-
-async function waitForBlockedSessions(barrierPid, count, timeoutMs = 15000) {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const rows = await barrierClient.$queryRaw`
-      WITH RECURSIVE chain AS (
-        SELECT pid FROM pg_stat_activity WHERE pid = ${barrierPid}
-        UNION
-        SELECT a.pid
-        FROM pg_stat_activity a
-        JOIN chain c ON c.pid = ANY (pg_blocking_pids(a.pid))
-      )
-      SELECT (count(*) - 1)::int AS blocked FROM chain`;
-    const seen = Number(rows[0].blocked);
-    if (seen >= count) {
-      return;
-    }
-    if (Date.now() > deadline) {
-      throw new Error(`Timed out waiting for ${count} session(s) blocked by pid ${barrierPid}; saw ${seen}`);
-    }
-    await new Promise(r => setTimeout(r, 20));
-  }
-}
+const barrierClient = createBarrierClient();
 
 describe('Equoria-jy3f7: evolveHorseTemperament does not write over a newer temperament', () => {
   let user;
@@ -120,18 +93,20 @@ describe('Equoria-jy3f7: evolveHorseTemperament does not write over a newer temp
   }, 60000);
 
   it('keeps a temperament committed between the evolution read and its write', async () => {
+    let barrierTx;
+    const barrier = await holdLock(barrierClient, async tx => {
+      barrierTx = tx;
+      await horseRowLock(horse.id)(tx);
+    });
     let evolution;
-    await barrierClient.$transaction(
-      async tx => {
-        const [{ pid }] = await tx.$queryRaw`SELECT pg_backend_pid()::int AS pid`;
-        await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horse.id} FOR UPDATE`;
-        evolution = evolveHorseTemperament(horse.id);
-        // Started, read 'nervous', and now queued on the horse row.
-        await waitForBlockedSessions(Number(pid), 1);
-        await tx.horse.update({ where: { id: horse.id }, data: { temperament: 'Calm' } });
-      },
-      { maxWait: 20000, timeout: 60000 },
-    );
+    try {
+      evolution = evolveHorseTemperament(horse.id);
+      // Started, read 'nervous', and now queued on the horse row.
+      await barrier.waitForQueued(1);
+      await barrierTx.horse.update({ where: { id: horse.id }, data: { temperament: 'Calm' } });
+    } finally {
+      await barrier.release();
+    }
     const result = await evolution;
 
     const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { temperament: true } });

@@ -28,21 +28,17 @@
 
 import { describe, beforeAll, afterAll, afterEach, expect, it, jest } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma, { PrismaClient } from '../../packages/database/prismaClient.mjs';
-import { buildDatabaseUrl } from '../../packages/database/dbPoolConfig.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { createBarrierClient, holdLock, horseRowLock } from './helpers/rowLockBarrier.mjs';
 import * as foalTraitImpl from '../services/jobs/impl/foalTraitEvaluation.mjs';
 import { checkForMilestones } from '../utils/horseAgingSystem.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
 
-const barrierClient = new PrismaClient({
-  datasources: { db: { url: buildDatabaseUrl(process.env.DATABASE_URL, process.env) } },
-  log: [],
-  errorFormat: 'minimal',
-});
+const barrierClient = createBarrierClient();
 
 /** A service handle that re-enters the impl exactly as the CronJobService delegators do. */
 function realService() {
@@ -54,72 +50,6 @@ function realService() {
     logAuditSummary: s => foalTraitImpl.logAuditSummary(s),
   };
   return service;
-}
-
-/** Hold the horse row FOR UPDATE on the barrier client until release(). */
-async function armHorseBarrier(horseId) {
-  let release;
-  let ready;
-  const released = new Promise(r => {
-    release = r;
-  });
-  const armed = new Promise(r => {
-    ready = r;
-  });
-  let failure = null;
-  const barrier = { pid: null };
-  const held = barrierClient
-    .$transaction(
-      async tx => {
-        const rows = await tx.$queryRaw`SELECT pg_backend_pid()::int AS pid`;
-        barrier.pid = Number(rows[0].pid);
-        await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR UPDATE`;
-        ready();
-        await released;
-      },
-      { maxWait: 20000, timeout: 120000 },
-    )
-    .catch(err => {
-      failure = err;
-    });
-  barrier.release = async () => {
-    release();
-    await held;
-    if (failure) {
-      throw failure;
-    }
-  };
-  await Promise.race([
-    armed,
-    held.then(() => {
-      throw failure ?? new Error('barrier transaction ended before it was armed');
-    }),
-  ]);
-  return barrier;
-}
-
-/** Resolves once `count` sessions are transitively blocked by the barrier session. */
-async function waitForBlockedSessions(barrierPid, count, timeoutMs = 15000) {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const rows = await barrierClient.$queryRaw`
-      WITH RECURSIVE chain AS (
-        SELECT pid FROM pg_stat_activity WHERE pid = ${barrierPid}
-        UNION
-        SELECT a.pid
-        FROM pg_stat_activity a
-        JOIN chain c ON c.pid = ANY (pg_blocking_pids(a.pid))
-      )
-      SELECT (count(*) - 1)::int AS blocked FROM chain`;
-    const seen = Number(rows[0].blocked);
-    if (seen >= count) {
-      return;
-    }
-    if (Date.now() > deadline) {
-      throw new Error(`Timed out waiting for ${count} session(s) blocked by pid ${barrierPid}; saw ${seen}`);
-    }
-    await new Promise(r => setTimeout(r, 20));
-  }
 }
 
 describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equoria-m1sf8)', () => {
@@ -198,16 +128,16 @@ describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equ
     const snapshot = await reload(foal.id);
     jest.spyOn(Math, 'random').mockReturnValue(0);
 
-    const barrier = await armHorseBarrier(foal.id);
+    const barrier = await holdLock(barrierClient, horseRowLock(foal.id));
     let evaluation;
     let milestone;
     try {
       // A first: it reads the traits inside its transaction, then queues.
       evaluation = foalTraitImpl.evaluateFoalTraits(realService(), snapshot);
-      await waitForBlockedSessions(barrier.pid, 1);
+      await barrier.waitForQueued(1);
       // B second: it reads the same traits, then queues behind A.
       milestone = checkForMilestones(foal.id, 0, 10);
-      await waitForBlockedSessions(barrier.pid, 2);
+      await barrier.waitForQueued(2);
     } finally {
       await barrier.release();
     }

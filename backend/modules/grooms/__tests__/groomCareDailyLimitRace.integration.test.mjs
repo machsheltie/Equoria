@@ -45,98 +45,23 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 
 import app from '../../../app.mjs';
-import prisma, { PrismaClient } from '../../../../packages/database/prismaClient.mjs';
-import { buildDatabaseUrl } from '../../../../packages/database/dbPoolConfig.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import {
+  createBarrierClient,
+  holdLock,
+  horseRowLock,
+  raceBehindLock,
+} from '../../../__tests__/helpers/rowLockBarrier.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const tag = () => `9a5ny-${randomBytes(5).toString('hex')}`;
-
 // A dedicated client, so the barrier never competes with the requests for the
 // app singleton's pooled connections.
-const barrierClient = new PrismaClient({
-  datasources: { db: { url: buildDatabaseUrl(process.env.DATABASE_URL, process.env) } },
-  log: [],
-  errorFormat: 'minimal',
-});
-
-/**
- * Hold a row lock on the horse (`lockClause` is 'UPDATE' or 'SHARE') on the
- * barrier client until `release()` is called.
- */
-async function armHorseBarrier(horseId, lockClause) {
-  let release;
-  let ready;
-  const released = new Promise(r => {
-    release = r;
-  });
-  const armed = new Promise(r => {
-    ready = r;
-  });
-  let barrierFailure = null;
-  const barrier = { pid: null };
-  const held = barrierClient
-    .$transaction(
-      async tx => {
-        const rows = await tx.$queryRaw`SELECT pg_backend_pid()::int AS pid`;
-        barrier.pid = Number(rows[0].pid);
-        if (lockClause === 'SHARE') {
-          await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR SHARE`;
-        } else {
-          await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR UPDATE`;
-        }
-        ready();
-        await released;
-      },
-      { maxWait: 20000, timeout: 120000 },
-    )
-    .catch(err => {
-      barrierFailure = err;
-    });
-
-  barrier.release = async () => {
-    release();
-    await held;
-    if (barrierFailure) {
-      throw barrierFailure;
-    }
-  };
-
-  await Promise.race([
-    armed,
-    held.then(() => {
-      throw barrierFailure ?? new Error('barrier transaction ended before it was armed');
-    }),
-  ]);
-  return barrier;
-}
-
-/** Resolves once `count` sessions are transitively blocked by the barrier session. */
-async function waitForBlockedSessions(barrierPid, count, timeoutMs = 15000) {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const rows = await barrierClient.$queryRaw`
-      WITH RECURSIVE chain AS (
-        SELECT pid FROM pg_stat_activity WHERE pid = ${barrierPid}
-        UNION
-        SELECT a.pid
-        FROM pg_stat_activity a
-        JOIN chain c ON c.pid = ANY (pg_blocking_pids(a.pid))
-      )
-      SELECT (count(*) - 1)::int AS blocked FROM chain`;
-    const seen = Number(rows[0].blocked);
-    if (seen >= count) {
-      return seen;
-    }
-    if (Date.now() > deadline) {
-      throw new Error(`Timed out waiting for ${count} session(s) blocked by pid ${barrierPid}; saw ${seen}`);
-    }
-    await new Promise(r => setTimeout(r, 20));
-  }
-}
+const barrierClient = createBarrierClient();
 
 describe('groom-care daily limit and atomicity under concurrency (Equoria-9a5ny, Equoria-mc22a)', () => {
   let user;
@@ -232,26 +157,6 @@ describe('groom-care daily limit and atomicity under concurrency (Equoria-9a5ny,
       }),
   };
 
-  /** Fire `senders` together behind a horse-row barrier; settle all of them. */
-  async function raceBehindHorseLock(senders) {
-    const barrier = await armHorseBarrier(horse.id, 'UPDATE');
-    let released = false;
-    const releaseOnce = async () => {
-      if (!released) {
-        released = true;
-        await barrier.release();
-      }
-    };
-    // A supertest request is thenable, not a Promise; Promise.resolve starts it.
-    const inFlight = senders.map(send => Promise.resolve(send()));
-    try {
-      await waitForBlockedSessions(barrier.pid, senders.length);
-    } finally {
-      await releaseOnce();
-    }
-    return Promise.all(inFlight);
-  }
-
   function expectOneGroomedOneRefused(responses) {
     // Compare statuses, not whole response objects, so a failure stays readable.
     const statuses = responses.map(r => r.status).sort();
@@ -268,7 +173,11 @@ describe('groom-care daily limit and atomicity under concurrency (Equoria-9a5ny,
   ])(
     '%s: two requests in flight for one horse groom it exactly once',
     async (_label, pair) => {
-      const responses = await raceBehindHorseLock(pair.map(door => doors[door]()));
+      const responses = await raceBehindLock(
+        barrierClient,
+        horseRowLock(horse.id),
+        pair.map(door => doors[door]()),
+      );
       expectOneGroomedOneRefused(responses);
 
       const rows = await prisma.groomInteraction.count({ where: { foalId: horse.id } });
@@ -279,11 +188,11 @@ describe('groom-care daily limit and atomicity under concurrency (Equoria-9a5ny,
 
   it('enhanced door: no interaction row is visible before the bond change commits', async () => {
     const before = await prisma.horse.findUnique({ where: { id: horse.id } });
-    const barrier = await armHorseBarrier(horse.id, 'SHARE');
+    const barrier = await holdLock(barrierClient, horseRowLock(horse.id, 'SHARE'));
     const inFlight = Promise.resolve(doors.enhanced()());
     let visibleWhileBlocked;
     try {
-      await waitForBlockedSessions(barrier.pid, 1);
+      await barrier.waitForQueued(1);
       visibleWhileBlocked = await barrierClient.groomInteraction.count({ where: { foalId: horse.id } });
     } finally {
       await barrier.release();
