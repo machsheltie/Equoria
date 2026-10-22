@@ -1,36 +1,22 @@
 /**
- * personalityEvolutionController integration tests (Equoria-rr7 coverage sprint;
- * Equoria-fefh2.40 consolidation — the legacy top-level
- * backend/tests/controllers/personalityEvolutionController.test.mjs was merged
- * in here, its canonical home per CONTRIBUTING.md module-test co-location).
+ * /api/v1/personality-evolution — what is left of the namespace.
  *
- * Covers: getEvolutionTriggers,
- * getPersonalityStability, predictPersonalityEvolution, getEvolutionHistory,
- * applyEvolutionEffects, getPersonalityConfig. (The horse-temperament evolve
- * and batch-evolve routes were removed by Equoria-gu8jk — players never change
- * a horse's temperament. The groom evolve route was removed by Equoria-jy3f7 —
- * owner ruling 2026-10-22: groom personalities never evolve.)
+ * Equoria-5d8ba. OLD CONTRACT: GET /horse/:horseId/{triggers,stability,
+ * predict,history} returned a horse's temperament "evolution" analysis
+ * (predictions from constants, history always empty) and GET /config listed
+ * the evolution system's configuration. NEW RULING (owner, 2026-10-22):
+ * remove the horse temperament-evolution read endpoints and their tests.
+ * Temperament only affects the show matrix, groom bond and trainer fit
+ * (owner ruling 2026-10-21) and players never change it (Equoria-gu8jk), so
+ * every one of those paths now answers 404, and the service behind them
+ * (personalityEvolutionSystem, including the caller-less
+ * evolveHorseTemperament) is gone.
  *
- * Equoria-j5qui. OLD CONTRACT: GET /:entityType/:entityId/{triggers,
- * stability,predict,history} accepted entityType 'groom' and returned
- * evolution triggers, stability and a predicted evolution for a groom's
- * personality; /config listed groomConfig and groom evolved traits. NEW
- * RULING (owner, 2026-10-22): groom personalities never evolve. The read
- * routes are now /horse/:horseId/*; the groom paths answer 404 and /config
- * describes horses only. The groom fixture stays: the interaction history
- * the horse cases read is recorded against it.
- * Routes live under authRouter at /api/v1/personality-evolution (Equoria-vivsi:
- * the unversioned /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the
- * canonical surface — verified in backend/app.mjs:290 + backend/app/routers.mjs:191).
+ * Kept: the groom paths stay 404 (Equoria-j5qui, Equoria-jy3f7 — groom
+ * personalities never evolve) and POST /apply-effects stays a 410
+ * (Equoria-bvddn.4 — an unauthorized no-op stub, closed).
  *
- * Equoria-fefh2.40: the migrated success/shape/branch-value tests need a richer
- * fixture than the original groom+horse beforeAll (which had no interaction
- * history). The top-level fixture's 20-iteration groomInteraction seed loop,
- * nervous-temperament horse (stressLevel/bondScore), and groom
- * epigeneticInfluenceType are ported below so evolution/triggers/stability/
- * history have real history to compute against. Interaction ids are tracked in
- * the fail-loud cleanup tracker and deleted FIRST (FK order:
- * groomInteraction -> horse -> groom -> user -> breed).
+ * Routes live under authRouter at /api/v1/personality-evolution.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -40,39 +26,25 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-// Equoria-twmpa: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
-// leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
-// the suite goes red at the source. groomInteraction -> horse -> groom -> user
-// -> breed (Horse.userId onDelete: Restrict, schema:282).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-
-// Reference date anchor for a 2-year-old horse (matches the migrated fixture).
-const referenceDate = new Date('2025-06-01T12:00:00Z');
-const birthDate2YearsOld = new Date(referenceDate);
-birthDate2YearsOld.setFullYear(referenceDate.getFullYear() - 2); // 2023-06-01 (age 2)
 
 let user;
 let token;
 let groom;
 let horse;
 let breed;
-// Equoria-plw0h: CSRF pair bound to the acting identity — fetched after the
-// fixture token exists, forwarding the accessToken cookie so issuance binds to
-// user.id (an anonymous salt-bound token would 403 on authenticated mutations).
 let csrfPair;
 const cleanup = createCleanupTracker();
-const interactionIds = [];
 
 beforeAll(async () => {
+  const tag = randomBytes(6).toString('hex');
   user = await prisma.user.create({
     data: {
-      email: `pevol-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
-      username: `pevol${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
+      email: `pevol-${tag}@test.com`,
+      username: `pevol${tag}`,
       password: 'irrelevant-hash',
       firstName: 'PEvol',
       lastName: 'Tester',
@@ -82,27 +54,17 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-
-  // Equoria-plw0h: CSRF pair bound to the acting identity — fetched after the
-  // fixture token exists, forwarding the accessToken cookie so
-  // tryPopulateUserFromAccessCookie binds issuance to user.id.
   csrfPair = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
   breed = await prisma.breed.create({
-    data: {
-      name: `TestFixture-PersEvoBreed-${randomBytes(8).toString('hex')}`,
-      description: 'Test breed for personality evolution API testing',
-    },
+    data: { name: `TestFixture-PersEvoBreed-${tag}`, description: 'personality-evolution removal test' },
   });
 
-  // Equoria-fefh2.40: groom carries an epigeneticInfluenceType so evolution /
-  // stability logic has a personality-influence basis to compute against.
   groom = await prisma.groom.create({
     data: {
-      name: `TestFixture-EvolGroom-${Date.now()}`,
+      name: `TestFixture-EvolGroom-${tag}`,
       speciality: 'foalCare',
       personality: 'calm',
-      epigeneticInfluenceType: 'calm',
       skillLevel: 'intermediate',
       experience: 100,
       level: 5,
@@ -112,46 +74,21 @@ beforeAll(async () => {
     },
   });
 
-  // Equoria-fefh2.40: nervous temperament + stress/bond seed values so the
-  // horse has real evolution-relevant state.
   horse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
-      name: `TestFixture-EvolHorse-${Date.now()}`,
+      name: `TestFixture-EvolHorse-${tag}`,
       sex: 'Filly',
-      dateOfBirth: birthDate2YearsOld,
+      dateOfBirth: new Date('2023-06-01T12:00:00Z'),
       age: 2,
       temperament: 'nervous',
-      stressLevel: 7,
-      bondScore: 20,
       healthStatus: 'Good',
       userId: user.id,
       breedId: breed.id,
     },
   });
 
-  // Equoria-fefh2.40: 20-interaction history so triggers / stability / history /
-  // evolution endpoints have real care-pattern data to analyze.
-  for (let i = 0; i < 20; i++) {
-    const interaction = await prisma.groomInteraction.create({
-      data: {
-        groomId: groom.id,
-        foalId: horse.id,
-        taskType: 'trust_building',
-        interactionType: 'enrichment',
-        bondingChange: 2,
-        stressChange: -2,
-        quality: 'excellent',
-        cost: 25.0,
-        duration: 30,
-        notes: 'API test interaction for evolution',
-      },
-    });
-    interactionIds.push(interaction.id);
-  }
-
-  // FK-ordered, id-scoped, fail-loud sweep (interactions FIRST).
-  cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { id: { in: interactionIds } } }), 'groomInteractions');
+  // FK order: horse -> groom -> user -> breed.
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
   cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
@@ -160,193 +97,33 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 60000);
 
-// ─── GET /api/v1/personality-evolution/config ─────────────────────────────────
+// ─── Horse temperament-evolution reads — REMOVED (Equoria-5d8ba) ──────────────
 
-describe('GET /api/personality-evolution/config', () => {
-  it('returns 200 with personality evolution configuration', async () => {
+describe('GET /api/v1/personality-evolution/horse/:horseId/* (removed, Equoria-5d8ba)', () => {
+  it.each(['triggers', 'stability', 'predict', 'history'])(
+    'GET /horse/:horseId/%s is 404 for the horse owner',
+    async path => {
+      const res = await request(app)
+        .get(`/api/v1/personality-evolution/horse/${horse.id}/${path}`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(404);
+    },
+  );
+
+  it('GET /config is 404 (it described the removed evolution system)', async () => {
     const res = await request(app)
       .get('/api/v1/personality-evolution/config')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/personality-evolution/config').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: full config response-shape.
-  it('returns the full system configuration shape', async () => {
-    const res = await request(app)
-      .get('/api/v1/personality-evolution/config')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.evolutionTypes).toBeDefined();
-    expect(Array.isArray(res.body.data.evolutionTypes)).toBe(true);
-    expect(res.body.data.entityTypes).toEqual(['horse']);
-    expect(res.body.data).not.toHaveProperty('groomConfig');
-    expect(res.body.data.horseConfig).toBeDefined();
-    expect(res.body.data.availableTraits).toBeDefined();
-    expect(res.body.data.availableTraits).not.toHaveProperty('groom');
-  });
-});
-
-// ─── GET /api/v1/personality-evolution/:entityType/:entityId/triggers ─────────
-
-describe('GET /api/personality-evolution/horse/:horseId/triggers', () => {
-  it('returns 200 with triggers for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/triggers`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 404 for any other entity path (no such route)', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/trainer/${groom.id}/triggers`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(404);
   });
 
-  it('returns 401 without auth', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/triggers`)
-      .set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: triggers response-shape for horse.
-  it('returns triggers and evolutionReadiness for horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/triggers`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.triggers).toBeDefined();
-    expect(res.body.data.triggers).not.toHaveProperty('specialization');
-    expect(typeof res.body.data.evolutionReadiness).toBe('number');
-  });
-});
-
-// ─── GET /api/v1/personality-evolution/:entityType/:entityId/stability ────────
-
-describe('GET /api/personality-evolution/horse/:horseId/stability', () => {
-  it('returns 401 without auth', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/stability`)
-      .set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: horse-stability shape had ZERO co-located
-  // equivalent before this migration.
-  it('returns stabilityScore and stabilityFactors for horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/stability`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.stabilityScore).toBeDefined();
-    expect(res.body.data.stabilityFactors).toBeDefined();
-  });
-});
-
-// ─── GET /api/v1/personality-evolution/:entityType/:entityId/predict ──────────
-
-describe('GET /api/personality-evolution/horse/:horseId/predict', () => {
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/personality-evolution/horse/${horse.id}/predict`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: predict response-shape with default timeframe —
-  // predictions array.
-  it('predicts temperament evolution with default timeframe (predictions array)', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/predict`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.predictions).toBeDefined();
-    expect(Array.isArray(res.body.data.predictions)).toBe(true);
-  });
-
-  // Equoria-fefh2.40 migrated: predict with a custom ?timeframeDays=60.
-  it('predicts personality evolution with a custom timeframe', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/predict?timeframeDays=60`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.predictions).toBeDefined();
-  });
-
-  // Equoria-fefh2.40 migrated: 400 for an out-of-range timeframe (HTTP level).
-  it('returns 400 for an invalid timeframe', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/predict?timeframeDays=500`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain('Validation failed');
-  });
-});
-
-// ─── GET /api/v1/personality-evolution/:entityType/:entityId/history ──────────
-
-describe('GET /api/personality-evolution/horse/:horseId/history', () => {
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/personality-evolution/horse/${horse.id}/history`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: history response-shape — evolutionEvents array +
-  // totalEvolutions.
-  it('returns evolutionEvents array and totalEvolutions', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/horse/${horse.id}/history`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.evolutionEvents).toBeDefined();
-    expect(Array.isArray(res.body.data.evolutionEvents)).toBe(true);
-    expect(res.body.data.totalEvolutions).toBeDefined();
+  it('the horse keeps its temperament', async () => {
+    const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { temperament: true } });
+    expect(after.temperament).toBe('nervous');
   });
 });
 
@@ -369,9 +146,7 @@ describe('GET /api/v1/personality-evolution/groom/:groomId/* (removed)', () => {
 });
 
 // ─── POST /api/v1/personality-evolution/groom/:groomId/evolve — REMOVED ───────
-// Equoria-jy3f7, owner ruling 2026-10-22: groom personalities never evolve; a
-// groom keeps the same personality for its whole career. The route is gone, so
-// even an authenticated owner with a valid CSRF pair gets the router's 404.
+// Equoria-jy3f7, owner ruling 2026-10-22: groom personalities never evolve.
 
 describe('POST /api/v1/personality-evolution/groom/:groomId/evolve (removed)', () => {
   it('is 404 for the owner of the groom, and the groom keeps its personality', async () => {
@@ -391,35 +166,18 @@ describe('POST /api/v1/personality-evolution/groom/:groomId/evolve (removed)', (
 });
 
 // ─── POST /api/v1/personality-evolution/apply-effects ────────────────────────
-// Equoria-bvddn.4 (audit 2026-09-25): this route was commented "admin
-// function" but carried no requireRole('admin') check — any authenticated
-// player could call it. Grepping the repo turned up no caller besides this
-// suite, and the function it invoked (applyPersonalityEvolutionEffects) never
-// wrote to the database — a genuine no-op stub. Closed with 410 for every
-// authenticated caller, mirroring the Equoria-bvddn.1 precedent
-// (POST /api/v1/users/:id/add-xp). These two tests used to assert 200 /
-// "effects applied" for ANY authenticated caller — that WAS the vulnerable
-// contract, so they are replaced (not merely edited) with the new 410
-// contract per the issue's explicit ruling, not silently weakened.
+// Equoria-bvddn.4 (audit 2026-09-25): an unauthorized no-op stub, closed with
+// 410 for every authenticated caller (precedent: POST /api/v1/users/:id/add-xp).
 
 describe('POST /api/personality-evolution/apply-effects', () => {
   it('returns 410 Gone for a non-admin authenticated caller (route removed)', async () => {
-    const evolutionData = {
-      entityId: groom.id,
-      entityType: 'groom',
-      evolutionType: 'trait_strengthening',
-      newTraits: ['enhanced_patience'],
-      stabilityPeriod: 14,
-      effectStrength: 0.8,
-    };
-
     const res = await request(app)
       .post('/api/v1/personality-evolution/apply-effects')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrfPair.cookieHeader)
       .set('X-CSRF-Token', csrfPair.csrfToken)
-      .send(evolutionData)
+      .send({ entityId: horse.id, entityType: 'horse', evolutionType: 'trait_strengthening' })
       .expect(410);
 
     expect(res.body.success).toBe(false);
@@ -427,16 +185,13 @@ describe('POST /api/personality-evolution/apply-effects', () => {
   });
 
   it('returns 410 (not 401/validation) even for a malformed body', async () => {
-    // The refusal runs before any body validation now — same idiom as the
-    // add-xp closure: a malformed request gets the same closed answer
-    // without leaking which fields would have failed validation.
     const res = await request(app)
       .post('/api/v1/personality-evolution/apply-effects')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrfPair.cookieHeader)
       .set('X-CSRF-Token', csrfPair.csrfToken)
-      .send({ entityId: groom.id })
+      .send({ entityId: horse.id })
       .expect(410);
 
     expect(res.body.success).toBe(false);
@@ -449,7 +204,7 @@ describe('POST /api/personality-evolution/apply-effects', () => {
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ entityId: groom.id, entityType: 'groom', evolutionType: 'trait_strengthening' });
+      .send({ entityId: horse.id, entityType: 'horse', evolutionType: 'trait_strengthening' });
 
     expect(res.status).toBe(401);
   });
