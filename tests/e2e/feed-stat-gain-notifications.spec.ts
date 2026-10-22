@@ -98,7 +98,7 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     await session?.context.close();
   });
 
-  test('feed loop yields stat_gain notification + bell dot clears after mark-read', async ({
+  test('feed loop yields statGain notification + bell dot clears after mark-read', async ({
     page,
   }) => {
     test.setTimeout(180_000);
@@ -107,7 +107,7 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     // Each feed call sets lastFedDate=today; the feedHistory fixture backdates
     // it in the test database between feeds (Equoria-mwjst — no production
     // route may rewind it). statRollPct for performance is non-zero so at
-    // least one of 20 attempts should fire a stat_gain notification.
+    // least one of 20 attempts should fire a statGain notification.
     let statBoostFired = false;
     let attempts = 0;
     while (attempts < 20 && !statBoostFired) {
@@ -133,7 +133,7 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
 
     expect(
       statBoostFired,
-      `No stat_gain fired in ${attempts} performance feeds — statRollPct may have regressed`
+      `No statGain fired in ${attempts} performance feeds — statRollPct may have regressed`
     ).toBe(true);
 
     // Step 2 — visit any authed page so MainNavigation mounts and the bell
@@ -166,10 +166,10 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
 
     // Step 5 — at least one game-notif-* row must be present for this horse.
     // The row testid is `game-notif-<id>` so we use a regex on data-notif-type.
-    const statGainRows = page.locator('[data-notif-type="stat_gain"]');
+    const statGainRows = page.locator('[data-notif-type="statGain"]');
     await expect(statGainRows.first()).toBeVisible({ timeout: 15_000 });
     // The row must mention the horse we fed.
-    const matching = page.locator('[data-notif-type="stat_gain"]', { hasText: horseName });
+    const matching = page.locator('[data-notif-type="statGain"]', { hasText: horseName });
     await expect(matching.first()).toBeVisible({ timeout: 15_000 });
 
     // Step 6 — the PATCH /game-notifications/read-all armed in step 4 must have
@@ -184,7 +184,7 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     await expect(page.getByTestId('notification-dot')).toHaveCount(0, { timeout: 15_000 });
   });
 
-  test('UI feed click renders sonner toast with "+1 [Stat]!" suffix on stat_gain (Equoria-ap38)', async ({
+  test('UI feed click renders sonner toast with "+1 [Stat]!" suffix on statGain (Equoria-ap38)', async ({
     page,
   }) => {
     // E2E coverage replacing deleted vi.mock unit test

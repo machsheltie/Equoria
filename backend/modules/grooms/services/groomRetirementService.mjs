@@ -146,7 +146,7 @@ export const CAREER_CONSTANTS = {
 };
 
 /** The notification type the game emits in the week a groom retires. */
-export const GROOM_RETIRED_NOTIFICATION_TYPE = 'groom_retired';
+export const GROOM_RETIRED_NOTIFICATION_TYPE = 'groomRetired';
 
 /**
  * Advance the groom's age by one game-year.
@@ -305,7 +305,7 @@ export async function checkRetirementEligibility(groomId) {
  *   2. ACTIVE `GroomAssignment` rows ended (`isActive: false` + `endDate`).
  *      Inactive rows — the groom's history — are NOT matched and NOT touched.
  *   3. Open `GroomAssignmentLog` rows closed with `unassignedAt`.
- *   4. The `groom_retired` Notification, via `createNotificationTx` on the same
+ *   4. The `groomRetired` Notification, via `createNotificationTx` on the same
  *      `tx` (invariant I4). It throws on failure, so an unannounceable
  *      retirement does not happen at all.
  *

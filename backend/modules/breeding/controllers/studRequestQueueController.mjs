@@ -76,7 +76,7 @@ export function rejectStudRequest(req, res) {
     field: 'stallionOwnerId',
     data: { status: 'DECLINED', declineReason: 'REJECTED' },
     notifyField: 'mareOwnerId',
-    type: 'stud_request_declined',
+    type: 'studRequestDeclined',
   });
 }
 
@@ -88,7 +88,7 @@ export function cancelStudRequest(req, res) {
     field: 'mareOwnerId',
     data: { status: 'CANCELLED', declineReason: 'CANCELLED_BY_OWNER' },
     notifyField: 'stallionOwnerId',
-    type: 'stud_request_cancelled',
+    type: 'studRequestCancelled',
   });
 }
 

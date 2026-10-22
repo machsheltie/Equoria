@@ -27,7 +27,7 @@ import {
 } from './helpers/staffFixtures.mjs';
 
 const TICKETS = `${STAFF_API}/tickets`;
-const STAFF_BELLS = ['staff_ticket', 'staff_ticket_update'];
+const STAFF_BELLS = ['staffTicket', 'staffTicketUpdate'];
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stbellto');
@@ -136,14 +136,14 @@ describe('Demotion', () => {
     const unread = await staffBells(mod.id);
     expect(unread).toHaveLength(2);
     const read = await prisma.notification.create({
-      data: { userId: mod.id, type: 'staff_ticket_update', payload: { ticketId: ticket.id }, isRead: true },
+      data: { userId: mod.id, type: 'staffTicketUpdate', payload: { ticketId: ticket.id }, isRead: true },
     });
     const unrelated = await prisma.notification.create({
-      data: { userId: mod.id, type: 'foal_born', payload: { horseId: 1 } },
+      data: { userId: mod.id, type: 'foalBorn', payload: { horseId: 1 } },
     });
     // Another account's unread staff bell is not touched.
     const adminBell = await prisma.notification.create({
-      data: { userId: admin.id, type: 'staff_ticket', payload: { ticketId: ticket.id } },
+      data: { userId: admin.id, type: 'staffTicket', payload: { ticketId: ticket.id } },
     });
 
     expect((await demote(mod)).status).toBe(200);
@@ -159,7 +159,7 @@ describe('Demotion', () => {
     expect((await demote(mod)).status).toBe(200);
     await prisma.user.update({ where: { id: mod.id }, data: { role: 'moderator' } });
     const bell = await prisma.notification.create({
-      data: { userId: mod.id, type: 'staff_ticket_update', payload: { ticketId: ticket.id } },
+      data: { userId: mod.id, type: 'staffTicketUpdate', payload: { ticketId: ticket.id } },
     });
 
     // No reason: refused before any write.

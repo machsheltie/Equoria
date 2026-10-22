@@ -192,8 +192,8 @@ export async function fileTicket(staff, { targetType, targetId, targetUsername, 
     );
     for (const admin of adminRows) {
       const payload = { ticketId: created.id, category };
-      await createNotificationTx(tx, admin.id, 'staff_ticket', payload);
-      notes.push({ userId: admin.id, type: 'staff_ticket', payload });
+      await createNotificationTx(tx, admin.id, 'staffTicket', payload);
+      notes.push({ userId: admin.id, type: 'staffTicket', payload });
     }
     await recordStaffActionTx(tx, {
       actorId: staff.id,
@@ -297,8 +297,8 @@ export async function addReply(staff, id, body) {
     }
     for (const userId of recipients) {
       const payload = { ticketId: id };
-      await createNotificationTx(tx, userId, 'staff_ticket_update', payload);
-      notes.push({ userId, type: 'staff_ticket_update', payload });
+      await createNotificationTx(tx, userId, 'staffTicketUpdate', payload);
+      notes.push({ userId, type: 'staffTicketUpdate', payload });
     }
     return { reply };
   });
@@ -338,8 +338,8 @@ export async function setStatus(staff, id, status) {
     // Read after the ticket write, so a demotion that landed meanwhile is seen.
     if (await filerStillStaff(tx, ticket.filedById)) {
       const payload = { ticketId: id, status };
-      await createNotificationTx(tx, ticket.filedById, 'staff_ticket_update', payload);
-      notes.push({ userId: ticket.filedById, type: 'staff_ticket_update', payload });
+      await createNotificationTx(tx, ticket.filedById, 'staffTicketUpdate', payload);
+      notes.push({ userId: ticket.filedById, type: 'staffTicketUpdate', payload });
     }
     return { ticket: await tx.staffTicket.findUnique({ where: { id } }) };
   });

@@ -222,7 +222,7 @@ export async function feedHorseHandler(req, res) {
     }
 
     if (result.statBoost) {
-      await createNotification(req.user.id, 'stat_gain', {
+      await createNotification(req.user.id, 'statGain', {
         horseName: result.horse.name,
         stat: result.statBoost.stat,
         amount: result.statBoost.amount,

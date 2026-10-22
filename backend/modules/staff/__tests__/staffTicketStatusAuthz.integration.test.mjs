@@ -80,7 +80,7 @@ async function trail(ticket) {
       orderBy: { id: 'asc' },
     }),
     prisma.notification.findMany({
-      where: { userId: mod.id, type: 'staff_ticket_update' },
+      where: { userId: mod.id, type: 'staffTicketUpdate' },
       orderBy: { id: 'asc' },
     }),
   ]);

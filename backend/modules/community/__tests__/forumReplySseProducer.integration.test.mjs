@@ -7,11 +7,11 @@
  * __tests__/eventStream.integration.test.mjs (Equoria-lewrv).
  *
  * Asserts:
- *   1. a reply by user B to user A's thread emits an `event: forum_reply`
+ *   1. a reply by user B to user A's thread emits an `event: forumReply`
  *      frame on user A's (the thread author's) SSE stream;
  *   2. the REPLIER (B) does NOT receive it on their own stream (per-user
  *      isolation — the producer publishes to the thread author only);
- *   3. a reply by the thread author to their OWN thread emits NO forum_reply
+ *   3. a reply by the thread author to their OWN thread emits NO forumReply
  *      (no self-notify).
  *
  * SSE is a long-lived streaming response; supertest's buffered model handles
@@ -165,7 +165,7 @@ describe('INTEGRATION: forum-reply SSE producer (Equoria-pwwuz)', () => {
     return { status, body };
   }
 
-  it("emits 'forum_reply' to the thread author and NOT the replier", async () => {
+  it("emits 'forumReply' to the thread author and NOT the replier", async () => {
     const authorStream = await openStream(authorToken);
     const replierStream = await openStream(replierToken);
     await waitFor(() => userListenerCount(author.id) >= 1);
@@ -175,21 +175,21 @@ describe('INTEGRATION: forum-reply SSE producer (Equoria-pwwuz)', () => {
       const { status } = await postReply(replier.id, 'TestFixture-pwwuz reply content');
       expect(status).toBe(201);
 
-      // Thread author MUST receive the forum_reply frame.
-      const authorGot = await waitFor(() => authorStream.chunks.join('').includes('event: forum_reply'));
+      // Thread author MUST receive the forumReply frame.
+      const authorGot = await waitFor(() => authorStream.chunks.join('').includes('event: forumReply'));
       expect(authorGot).toBe(true);
       expect(authorStream.chunks.join('')).toContain(`"threadId":${thread.id}`);
 
       // The replier must NOT receive it on their own stream (per-user isolation).
       await wait(400);
-      expect(replierStream.chunks.join('')).not.toContain('event: forum_reply');
+      expect(replierStream.chunks.join('')).not.toContain('event: forumReply');
     } finally {
       authorStream.close();
       replierStream.close();
     }
   });
 
-  it('does NOT emit forum_reply when the thread author replies to their own thread (no self-notify)', async () => {
+  it('does NOT emit forumReply when the thread author replies to their own thread (no self-notify)', async () => {
     const authorStream = await openStream(authorToken);
     await waitFor(() => userListenerCount(author.id) >= 1);
 
@@ -198,7 +198,7 @@ describe('INTEGRATION: forum-reply SSE producer (Equoria-pwwuz)', () => {
       expect(status).toBe(201);
       // Give ample time for a (wrongful) self-notify, then assert none.
       await wait(500);
-      expect(authorStream.chunks.join('')).not.toContain('event: forum_reply');
+      expect(authorStream.chunks.join('')).not.toContain('event: forumReply');
     } finally {
       authorStream.close();
     }

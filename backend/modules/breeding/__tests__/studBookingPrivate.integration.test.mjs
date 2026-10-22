@@ -115,7 +115,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       expect(await moneyOf(mareOwner.user.id)).toBe(5000);
       expect(await moneyOf(studOwner.user.id)).toBe(100);
       expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
-      expect(await notesOf(studOwner.user.id, 'stud_request_received')).toHaveLength(1);
+      expect(await notesOf(studOwner.user.id, 'studRequestReceived')).toHaveLength(1);
     });
 
     it('S7: a second request for the same mare is refused with 409 MARE_HAS_PENDING_REQUEST', async () => {
@@ -232,7 +232,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       expect(
         await prisma.userTransaction.count({ where: { userId: studOwner.user.id, category: 'stud_fee_received' } }),
       ).toBe(1);
-      expect(await notesOf(mareOwner.user.id, 'stud_request_approved')).toHaveLength(1);
+      expect(await notesOf(mareOwner.user.id, 'studRequestApproved')).toHaveLength(1);
     });
 
     it('S6: the mare owner cannot pay at approval: DECLINED INSUFFICIENT_FUNDS, nothing moves, both notified', async () => {
@@ -247,8 +247,8 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       expect(await moneyOf(mareOwner.user.id)).toBe(FEE - 1);
       expect(await moneyOf(studOwner.user.id)).toBe(100);
       expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
-      expect(await notesOf(mareOwner.user.id, 'stud_request_declined')).toHaveLength(1);
-      expect(await notesOf(studOwner.user.id, 'stud_request_declined')).toHaveLength(1);
+      expect(await notesOf(mareOwner.user.id, 'studRequestDeclined')).toHaveLength(1);
+      expect(await notesOf(studOwner.user.id, 'studRequestDeclined')).toHaveLength(1);
     });
 
     it('S-Q3: a mare on cooldown at approval is DECLINED MARE_INELIGIBLE and both are notified', async () => {
@@ -261,8 +261,8 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       expect(res.body.data.declineReason).toBe('MARE_INELIGIBLE');
       expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'MARE_INELIGIBLE' });
       expect(await moneyOf(mareOwner.user.id)).toBe(5000);
-      expect(await notesOf(mareOwner.user.id, 'stud_request_declined')).toHaveLength(1);
-      expect(await notesOf(studOwner.user.id, 'stud_request_declined')).toHaveLength(1);
+      expect(await notesOf(mareOwner.user.id, 'studRequestDeclined')).toHaveLength(1);
+      expect(await notesOf(studOwner.user.id, 'studRequestDeclined')).toHaveLength(1);
     });
 
     it('a stallion no longer at private stud at approval: DECLINED STALLION_UNAVAILABLE', async () => {
@@ -332,8 +332,8 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       expect(await moneyOf(studOwner.user.id)).toBe(100);
       expect(await prisma.userTransaction.count({ where: { userId: { in: userIds } } })).toBe(0);
       expect((await prisma.horse.findUnique({ where: { id: mare.id } })).inFoalSinceDate).toBeNull();
-      expect(await notesOf(mareOwner.user.id, 'stud_request_approved')).toHaveLength(0);
-      expect(await notesOf(mareOwner.user.id, 'stud_request_declined')).toHaveLength(1);
+      expect(await notesOf(mareOwner.user.id, 'studRequestApproved')).toHaveLength(0);
+      expect(await notesOf(mareOwner.user.id, 'studRequestDeclined')).toHaveLength(1);
     });
 
     it('approve racing a cancel: the cancel lands while the approval waits on the mare; the approval rolls back', async () => {
@@ -368,7 +368,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
 
       expect(res.status).toBe(200);
       expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'REJECTED' });
-      expect(await notesOf(mareOwner.user.id, 'stud_request_declined')).toHaveLength(1);
+      expect(await notesOf(mareOwner.user.id, 'studRequestDeclined')).toHaveLength(1);
     });
 
     it('S8/S-Q5: the mare owner cancels any time; the stallion owner is notified; the mare can then be bred elsewhere', async () => {
@@ -381,7 +381,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
 
       expect(res.status).toBe(200);
       expect(await recordOf(requestId)).toMatchObject({ status: 'CANCELLED' });
-      expect(await notesOf(studOwner.user.id, 'stud_request_cancelled')).toHaveLength(1);
+      expect(await notesOf(studOwner.user.id, 'studRequestCancelled')).toHaveLength(1);
       expect((await breedOwnPair(mareOwner.token, ownStallion.id, mare.id)).status).toBe(200);
       expect((await actOnRequest(mareOwner.token, requestId, 'cancel')).status).toBe(409);
     });

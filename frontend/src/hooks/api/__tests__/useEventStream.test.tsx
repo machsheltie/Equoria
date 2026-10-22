@@ -96,7 +96,7 @@ describe('useEventStream', () => {
     renderHook(() => useEventStream(), { wrapper: createWrapper(qc) });
 
     spy.mockClear();
-    lastSource!.emit('stat_gain');
+    lastSource!.emit('statGain');
 
     expect(spy).toHaveBeenCalledWith({ queryKey: ['game-notifications'] });
     expect(spy).toHaveBeenCalledWith({ queryKey: ['messages', 'unread-count'] });
@@ -109,13 +109,13 @@ describe('useEventStream', () => {
   // arrived via the 5s poll. This is the SSE_EVENT_NAMES contract with the
   // backend createNotification(...) type strings.
   it.each([
-    'stat_gain',
-    'foal_born',
-    'competition_placement',
-    'competition_stat_gain',
-    'horse_purchased',
-    'horse_sold',
-    'club_leadership_transferred',
+    'statGain',
+    'foalBorn',
+    'competitionPlacement',
+    'competitionStatGain',
+    'horsePurchased',
+    'horseSold',
+    'clubLeadershipTransferred',
   ])('registers a listener for backend event "%s" and invalidates on it', (eventName) => {
     const qc = new QueryClient();
     const spy = vi.spyOn(qc, 'invalidateQueries');
@@ -157,21 +157,21 @@ describe('useEventStream', () => {
   it('exports SSE_EVENT_NAMES matching exactly the backend producer event types', () => {
     // Lockstep contract with the backend createNotification(...) type strings.
     expect([...SSE_EVENT_NAMES]).toEqual([
-      'stat_gain',
-      'foal_born',
-      'competition_placement',
-      'competition_stat_gain',
-      'horse_purchased',
-      'horse_sold',
-      'forum_reply',
-      'club_leadership_transferred',
+      'statGain',
+      'foalBorn',
+      'competitionPlacement',
+      'competitionStatGain',
+      'horsePurchased',
+      'horseSold',
+      'forumReply',
+      'clubLeadershipTransferred',
       // Equoria-m9lz1: groomRetirementService.processRetirement emits this in
       // the same transaction as the retirement it announces.
-      'groom_retired',
+      'groomRetired',
       // Equoria-ypb7d.3: groomFeeArrearsService emits these in the same
       // transaction as the grace entry / release they announce.
-      'groom_fee_unpaid',
-      'groom_released',
+      'groomFeeUnpaid',
+      'groomReleased',
     ]);
   });
 
@@ -180,8 +180,8 @@ describe('useEventStream', () => {
     renderHook(() => useEventStream(), { wrapper: createWrapper(qc) });
 
     // 'competitionResult' matched no backend producer — registering it was
-    // dead code. The real competition events are competition_placement /
-    // competition_stat_gain.
+    // dead code. The real competition events are competitionPlacement /
+    // competitionStatGain.
     expect(lastSource!.listeners['competitionResult']).toBeUndefined();
   });
 

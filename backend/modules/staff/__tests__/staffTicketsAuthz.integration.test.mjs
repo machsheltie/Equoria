@@ -190,7 +190,7 @@ describe('Filing a ticket', () => {
       status: 'open',
     });
 
-    const adminBells = await bells(admin.id, 'staff_ticket');
+    const adminBells = await bells(admin.id, 'staffTicket');
     expect(adminBells).toHaveLength(1);
     expect(adminBells[0].payload).toEqual({ ticketId: ticket.id, category: 'Needs the admin' });
 
@@ -230,7 +230,7 @@ describe('Filing a ticket', () => {
 
     expect(res.status).toBe(201);
     expect(await prisma.staffTicket.count({ where: { id: res.body.ticket.id } })).toBe(1);
-    expect(await bells(admin.id, 'staff_ticket')).toHaveLength(1);
+    expect(await bells(admin.id, 'staffTicket')).toHaveLength(1);
     // The delivery was really attempted and really failed; the email waits in
     // the outbox for the worker's retry.
     expect(row).toMatchObject({ status: 'pending', attempts: 1, sentAt: null });
@@ -280,7 +280,7 @@ describe('Filing a ticket', () => {
 
     expect(res.status).toBe(201);
     expect(await prisma.staffTicket.count({ where: { id: res.body.ticket.id } })).toBe(1);
-    expect(await bells(admin.id, 'staff_ticket')).toHaveLength(1);
+    expect(await bells(admin.id, 'staffTicket')).toHaveLength(1);
     // nodemailer waits 30s for a greeting; the response did not.
     expect(elapsed).toBeLessThan(10_000);
     // The delivery was still on the wire after the 201, then waited for a retry.
@@ -381,16 +381,16 @@ describe('Replies', () => {
     const adminReply = await post(`${TICKETS}/${ticket.id}/replies`, admin, { body: ' On it. ' }, adminDevice);
     expect(adminReply.status).toBe(201);
     expect(adminReply.body.reply).toMatchObject({ authorId: admin.id, body: 'On it.' });
-    const filerBells = await bells(mod.id, 'staff_ticket_update');
+    const filerBells = await bells(mod.id, 'staffTicketUpdate');
     expect(filerBells).toHaveLength(1);
     expect(filerBells[0].payload).toEqual({ ticketId: ticket.id });
 
     const modReply = await post(`${TICKETS}/${ticket.id}/replies`, mod, { body: 'Thanks.' }, modDevice);
     expect(modReply.status).toBe(201);
-    const adminUpdates = await bells(admin.id, 'staff_ticket_update');
+    const adminUpdates = await bells(admin.id, 'staffTicketUpdate');
     expect(adminUpdates).toHaveLength(1);
     expect(adminUpdates[0].payload).toEqual({ ticketId: ticket.id });
-    expect(await bells(mod.id, 'staff_ticket_update')).toHaveLength(1);
+    expect(await bells(mod.id, 'staffTicketUpdate')).toHaveLength(1);
     // Only filing emails the admin (delivered from the outbox after the 201).
     await settledTicketEmails(ticket.id);
     expect(ticketEmailsFor(admin.email)).toHaveLength(1);
@@ -475,7 +475,7 @@ describe('Replies', () => {
 
     expect(reads).toBeGreaterThan(1);
     expect(await prisma.staffTicketReply.count({ where: { ticketId: ticket.id } })).toBe(0);
-    expect(await bells(mod.id, 'staff_ticket_update')).toHaveLength(0);
+    expect(await bells(mod.id, 'staffTicketUpdate')).toHaveLength(0);
     expect(
       await prisma.staffActionLog.count({ where: { capability: 'ticket.reply', targetId: String(ticket.id) } }),
     ).toBe(0);
@@ -504,7 +504,7 @@ describe('Status changes', () => {
     const second = await post(`${TICKETS}/${ticket.id}/status`, admin, { status: 'resolved' }, adminDevice);
     expect(second.body.ticket.status).toBe('resolved');
 
-    const filerBells = await bells(mod.id, 'staff_ticket_update');
+    const filerBells = await bells(mod.id, 'staffTicketUpdate');
     expect(filerBells.map(b => b.payload)).toEqual([
       { ticketId: ticket.id, status: 'inProgress' },
       { ticketId: ticket.id, status: 'resolved' },

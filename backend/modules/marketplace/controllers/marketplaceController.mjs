@@ -437,12 +437,12 @@ export async function buyHorse(req, res) {
       { message: 'The marketplace is busy right now, please retry in a moment.' },
     ).then(finalizeAfterCommit);
 
-    await createNotification(buyerId, 'horse_purchased', {
+    await createNotification(buyerId, 'horsePurchased', {
       horseName: result.horseName,
       salePrice: result.salePrice,
       sellerUsername: result.sellerUsername,
     });
-    await createNotification(result.sellerId, 'horse_sold', {
+    await createNotification(result.sellerId, 'horseSold', {
       horseName: result.horseName,
       salePrice: result.salePrice,
     });

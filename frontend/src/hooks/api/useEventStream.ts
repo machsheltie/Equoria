@@ -30,15 +30,15 @@ const STREAM_URL = `${API_BASE_URL}/api/v1/events/stream`;
  * frame `event: ${event.type}` (eventStreamController.mjs:68). The type is
  * the notification `type` each producer passes to createNotification(...):
  *
- *   - stat_gain               (horseFeedController — feed stat boost)
- *   - foal_born               (foalingService — foal birth)
- *   - competition_placement   (competitionController; pending re-anchor onto executeClosedShows per Equoria-dfet1)
- *   - competition_stat_gain   (competitionController; pending re-anchor onto executeClosedShows per Equoria-dfet1)
- *   - horse_purchased         (marketplaceController — buyer side)
- *   - horse_sold              (marketplaceController — seller side)
- *   - forum_reply             (forumController — reply to a thread the user authored, Equoria-pwwuz/il1e4)
- *   - club_leadership_transferred (clubController — you were promoted to club president, Equoria-pwwuz)
- *   - groom_retired           (groomRetirementService — a groom reached their hidden retirement age, Equoria-m9lz1)
+ *   - statGain               (horseFeedController — feed stat boost)
+ *   - foalBorn               (foalingService — foal birth)
+ *   - competitionPlacement   (competitionController; pending re-anchor onto executeClosedShows per Equoria-dfet1)
+ *   - competitionStatGain   (competitionController; pending re-anchor onto executeClosedShows per Equoria-dfet1)
+ *   - horsePurchased         (marketplaceController — buyer side)
+ *   - horseSold              (marketplaceController — seller side)
+ *   - forumReply             (forumController — reply to a thread the user authored, Equoria-pwwuz/il1e4)
+ *   - clubLeadershipTransferred (clubController — you were promoted to club president, Equoria-pwwuz)
+ *   - groomRetired           (groomRetirementService — a groom reached their hidden retirement age, Equoria-m9lz1)
  *
  * Per the SSE spec, a frame with `event: <name>` dispatches ONLY to
  * addEventListener('<name>') handlers and does NOT fire the generic
@@ -48,21 +48,21 @@ const STREAM_URL = `${API_BASE_URL}/api/v1/events/stream`;
  * must stay in lockstep with the backend producers above.
  */
 export const SSE_EVENT_NAMES = [
-  'stat_gain',
-  'foal_born',
-  'competition_placement',
-  'competition_stat_gain',
-  'horse_purchased',
-  'horse_sold',
-  'forum_reply',
-  'club_leadership_transferred',
-  'groom_retired',
+  'statGain',
+  'foalBorn',
+  'competitionPlacement',
+  'competitionStatGain',
+  'horsePurchased',
+  'horseSold',
+  'forumReply',
+  'clubLeadershipTransferred',
+  'groomRetired',
   // Equoria-ypb7d.3: the two moments the weekly groom fee creates. Named events
   // are dropped by EventSource unless a listener is registered for the exact
   // name, so a producer without an entry here reaches the player only on the 5s
   // poll — which for "your groom has left" is too slow to be a warning.
-  'groom_fee_unpaid',
-  'groom_released',
+  'groomFeeUnpaid',
+  'groomReleased',
 ] as const;
 
 /**
@@ -71,13 +71,13 @@ export const SSE_EVENT_NAMES = [
  * useAuth.ts) must refetch alongside the notification list. Determined by
  * reading each producer, not by guessing from the event name:
  *
- *   - horse_purchased      buyer side of marketplaceController's sale tx —
+ *   - horsePurchased      buyer side of marketplaceController's sale tx —
  *                          the buyer's money decreases.
- *   - horse_sold           seller side of the SAME tx — the seller's money
+ *   - horseSold           seller side of the SAME tx — the seller's money
  *                          increases (the scenario this bug was filed for).
- *   - competition_placement showController debits the prize pool and pays
+ *   - competitionPlacement showController debits the prize pool and pays
  *                          the placing owner (`prizeWon` in the payload).
- *   - groom_fee_unpaid     groomSalaryService debits the weekly salary from
+ *   - groomFeeUnpaid     groomSalaryService debits the weekly salary from
  *                          the owner's balance every week it succeeds; this
  *                          event fires on the one week it does NOT (grace),
  *                          but it is emitted from the same weekly-fee pass
@@ -85,15 +85,15 @@ export const SSE_EVENT_NAMES = [
  *                          balance is exactly as likely to be stale here as
  *                          on any other week's silent debit — refresh it.
  *
- * Explicitly NOT included: stat_gain, foal_born, competition_stat_gain,
- * forum_reply, club_leadership_transferred, groom_retired, groom_released —
+ * Explicitly NOT included: statGain, foalBorn, competitionStatGain,
+ * forumReply, clubLeadershipTransferred, groomRetired, groomReleased —
  * none of their producers touch User.money.
  */
 const MONEY_EVENT_NAMES = new Set<(typeof SSE_EVENT_NAMES)[number]>([
-  'horse_purchased',
-  'horse_sold',
-  'competition_placement',
-  'groom_fee_unpaid',
+  'horsePurchased',
+  'horseSold',
+  'competitionPlacement',
+  'groomFeeUnpaid',
 ]);
 
 /**
@@ -128,7 +128,7 @@ export function useEventStream(): void {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     };
 
-    // Server frames are named events (e.g. `event: stat_gain`). A named
+    // Server frames are named events (e.g. `event: statGain`). A named
     // EventSource event does NOT fire the generic `message` handler, so we
     // must register a listener for every concrete event type the backend
     // emits (SSE_EVENT_NAMES — kept in lockstep with the producers). The

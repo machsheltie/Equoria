@@ -57,7 +57,7 @@
  *      `groomAssignment.deleteMany({ where: { groomId } })` — every row for the
  *      groom — outside any transaction.
  *
- *   4. THE NOTIFICATION IS PART OF THE RETIREMENT. Exactly one `groom_retired`
+ *   4. THE NOTIFICATION IS PART OF THE RETIREMENT. Exactly one `groomRetired`
  *      Notification reaches the groom's own user and nobody else, its payload
  *      names the groom and how many horses were left uncovered, and it carries no
  *      retirement age. That it is written INSIDE the retirement transaction is

@@ -234,7 +234,7 @@ async function gatherLineage(sireId, damId, generations) {
  * Reads the dam's `inFoalSinceDate` / `pregnancySireId` /
  * `pregnancyFeedingsByTier`, generates the foal exactly as the legacy
  * `createFoal` controller did, then in ONE transaction clears the dam's
- * pregnancy (guarded), inserts the foal and its foal_born notification.
+ * pregnancy (guarded), inserts the foal and its foalBorn notification.
  * Callers: the foaling job and POST /:id/foal-now.
  *
  * @param {object} params
@@ -466,7 +466,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     _epigeneticTraitsApplied: true,
   };
 
-  // Equoria-bvddn.20: the pregnancy claim, the foal insert and the foal_born notification row
+  // Equoria-bvddn.20: the pregnancy claim, the foal insert and the foalBorn notification row
   // commit as ONE transaction. They used to be separate autocommit writes with a compensating
   // restore on failure, so a crash (or a rejected restore) between the claim and the insert lost
   // the pregnancy with no foal. Now a failure anywhere rolls the claim back with it. The claim is a
@@ -501,14 +501,14 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     }
     const foal = await createHorse(horseData, tx);
     if (notifUserId) {
-      await createNotificationTx(tx, notifUserId, 'foal_born', foalBornPayload(foal, dam, sire));
+      await createNotificationTx(tx, notifUserId, 'foalBorn', foalBornPayload(foal, dam, sire));
     }
     return foal;
   });
 
   // Post-commit only: the real-time nudge and retention prune (never throws).
   if (notifUserId) {
-    finalizeNotificationAfterCommit(notifUserId, 'foal_born', foalBornPayload(newFoal, dam, sire));
+    finalizeNotificationAfterCommit(notifUserId, 'foalBorn', foalBornPayload(newFoal, dam, sire));
   }
 
   logger.info(

@@ -1,12 +1,12 @@
 /**
- * Sentinel test: competition placement creates a competition_stat_gain Notification row
+ * Sentinel test: competition placement creates a competitionStatGain Notification row
  * when calculateStatGain fires (10% chance for 1st place).
  *
  * The old JSONB code never wrote to the Notification table, so this test
  * fails before the executeEnhancedCompetition fix.
  *
  * Strategy: direct DB sentinel (deterministic) — calls createNotification() directly
- * to prove the Notification table accepts competition_stat_gain and stores the correct
+ * to prove the Notification table accepts competitionStatGain and stores the correct
  * payload. This validates the fix without relying on the 10% RNG in the competition
  * controller, which cannot be exercised reliably within the per-user API rate limit
  * (30 /enter requests per 60 seconds).
@@ -19,7 +19,7 @@ import { createNotification } from '../../../utils/notificationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-describe('SENTINEL: competition placement → competition_stat_gain Notification', () => {
+describe('SENTINEL: competition placement → competitionStatGain Notification', () => {
   let user;
   let horse;
   const cleanup = createCleanupTracker();
@@ -57,11 +57,11 @@ describe('SENTINEL: competition placement → competition_stat_gain Notification
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('createNotification writes a competition_stat_gain row with correct payload shape', async () => {
-    // Direct sentinel: proves the Notification table accepts competition_stat_gain
+  it('createNotification writes a competitionStatGain row with correct payload shape', async () => {
+    // Direct sentinel: proves the Notification table accepts competitionStatGain
     // and the payload is stored correctly. This is the core fix verification —
     // the old JSONB-only code never called createNotification at all.
-    await createNotification(user.id, 'competition_stat_gain', {
+    await createNotification(user.id, 'competitionStatGain', {
       horseName: horse.name,
       stat: 'focus',
       amount: 1,
@@ -70,7 +70,7 @@ describe('SENTINEL: competition placement → competition_stat_gain Notification
     });
 
     const rows = await prisma.notification.findMany({
-      where: { userId: user.id, type: 'competition_stat_gain' },
+      where: { userId: user.id, type: 'competitionStatGain' },
     });
 
     expect(rows.length).toBeGreaterThanOrEqual(1);

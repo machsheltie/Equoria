@@ -14,7 +14,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-// Equoria-pwwuz (ADR-011): publish a low-latency 'forum_reply' SSE nudge to the
+// Equoria-pwwuz (ADR-011): publish a low-latency 'forumReply' SSE nudge to the
 // thread author when someone replies to their thread. Mirrors the DM 'message'
 // producer (Equoria-lewrv). Fire-and-forget — the DB write is the source of
 // truth and must never be coupled to bus delivery.
@@ -189,7 +189,7 @@ export async function createPost(req, res) {
     // couple the reply write to bus delivery.
     if (thread.authorId && thread.authorId !== authorId) {
       try {
-        publishUserEvent(thread.authorId, 'forum_reply', {
+        publishUserEvent(thread.authorId, 'forumReply', {
           threadId,
           postId: post.id,
           threadTitle: thread.title ?? null,

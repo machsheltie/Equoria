@@ -140,8 +140,8 @@ describe('INTEGRATION: GET /api/v1/events/stream — SSE transport (Equoria-rgyv
   it('delivers a notification created for the connected user', async () => {
     const { chunks, close } = await openStream(tokenA);
     await waitFor(() => userListenerCount(userA.id) >= 1); // subscription registered
-    await createNotification(userA.id, 'stat_gain', { stat: 'speed', amount: 1 });
-    const got = await waitFor(() => chunks.join('').includes('event: stat_gain'));
+    await createNotification(userA.id, 'statGain', { stat: 'speed', amount: 1 });
+    const got = await waitFor(() => chunks.join('').includes('event: statGain'));
     expect(got).toBe(true);
     expect(chunks.join('')).toContain('"stat":"speed"');
     close();
@@ -151,12 +151,12 @@ describe('INTEGRATION: GET /api/v1/events/stream — SSE transport (Equoria-rgyv
     const { chunks, close } = await openStream(tokenA);
     await waitFor(() => userListenerCount(userA.id) >= 1);
     // Event for a DIFFERENT user must never reach userA's stream.
-    await createNotification(userB.id, 'foal_born', { foalId: 'should-not-leak' });
+    await createNotification(userB.id, 'foalBorn', { foalId: 'should-not-leak' });
     // Give ample time for a (wrongful) delivery to occur, then assert none.
     await wait(500);
     const body = chunks.join('');
     expect(body).not.toContain('should-not-leak');
-    expect(body).not.toContain('event: foal_born');
+    expect(body).not.toContain('event: foalBorn');
     close();
   });
 
@@ -193,17 +193,17 @@ describe('INTEGRATION: GET /api/v1/events/stream — SSE transport (Equoria-rgyv
     }
   });
 
-  it('delivers a competition_placement notification end-to-end (Equoria-mza0x)', async () => {
+  it('delivers a competitionPlacement notification end-to-end (Equoria-mza0x)', async () => {
     // The exact blind spot that let the frontend listener-name defect ship:
-    // assert a competition_placement frame actually reaches the subscriber on
-    // the wire (not just stat_gain).
+    // assert a competitionPlacement frame actually reaches the subscriber on
+    // the wire (not just statGain).
     const { chunks, close } = await openStream(tokenA);
     await waitFor(() => userListenerCount(userA.id) >= 1);
-    await createNotification(userA.id, 'competition_placement', {
+    await createNotification(userA.id, 'competitionPlacement', {
       showId: 'TestFixture-show',
       placement: 1,
     });
-    const got = await waitFor(() => chunks.join('').includes('event: competition_placement'));
+    const got = await waitFor(() => chunks.join('').includes('event: competitionPlacement'));
     expect(got).toBe(true);
     expect(chunks.join('')).toContain('"placement":1');
     close();

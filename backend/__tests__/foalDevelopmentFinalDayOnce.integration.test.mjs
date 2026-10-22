@@ -155,7 +155,7 @@ describe('INTEGRATION: a foal development day is evaluated once (Equoria-mwjst)'
     });
     expect(history).toHaveLength(revealed.length);
     const notes = await prisma.notification.findMany({
-      where: { userId: user.id, type: 'trait_discovery' },
+      where: { userId: user.id, type: 'traitDiscovery' },
     });
     expect(notes.filter(n => n.payload?.foalId === foal.id).length).toBeLessThanOrEqual(1);
   }, 60000);

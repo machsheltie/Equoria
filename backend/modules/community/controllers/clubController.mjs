@@ -513,7 +513,7 @@ export async function transferLeadership(req, res) {
     // correctness. Guarded anyway so a future refactor cannot couple the
     // leadership write to bus delivery.
     try {
-      await createNotification(newPresidentId, 'club_leadership_transferred', {
+      await createNotification(newPresidentId, 'clubLeadershipTransferred', {
         clubId,
         previousPresidentId: userId,
       });

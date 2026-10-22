@@ -186,7 +186,7 @@ export async function requestPrivateStud(req, res) {
             tx,
             notifications,
             stallionOwnerId,
-            'stud_request_received',
+            'studRequestReceived',
             requestPayload(record, { mareOwnerName: mareOwner?.username ?? '' }),
           );
           return { record, notifications };
@@ -431,7 +431,7 @@ export async function approveStudRequest(req, res) {
             tx,
             notifications,
             mareOwnerId,
-            'stud_request_approved',
+            'studRequestApproved',
             requestPayload(request, { foalDueDate }),
           );
           const balance = await tx.user.findUnique({
@@ -492,8 +492,8 @@ async function declineAfterFailedApproval(res, { requestId, approverId, decline 
             declineReason: decline.reason,
             message: decline.message,
           });
-          await notify(tx, notifications, record.mareOwnerId, 'stud_request_declined', payload);
-          await notify(tx, notifications, record.stallionOwnerId, 'stud_request_declined', payload);
+          await notify(tx, notifications, record.mareOwnerId, 'studRequestDeclined', payload);
+          await notify(tx, notifications, record.stallionOwnerId, 'studRequestDeclined', payload);
           return { declined: true, notifications };
         },
         { timeout: 30000 },

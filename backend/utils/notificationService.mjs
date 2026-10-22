@@ -60,8 +60,8 @@ export async function pruneOldNotifications(userId, retentionCount = NOTIFICATIO
  *   notification IS the player's warning, not a courtesy echo of something the
  *   surface already shows. Groom retirement is the motivating case: the game
  *   ends the player's assignments; if the announcement can fail independently
- *   the player loses a groom silently. `foal_born`, `horse_sold` and
- *   `stat_gain` are all echoes of state the player can already see, so they
+ *   the player loses a groom silently. `foalBorn`, `horseSold` and
+ *   `statGain` are all echoes of state the player can already see, so they
  *   correctly stay on the post-commit `createNotification` path.
  *
  * CONTRACT — this differs from `createNotification` in TWO ways, deliberately:

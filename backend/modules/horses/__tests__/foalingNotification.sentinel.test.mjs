@@ -1,8 +1,8 @@
 /**
- * Sentinel test: foaling creates a foal_born Notification row.
+ * Sentinel test: foaling creates a foalBorn Notification row.
  *
  * Calls createFoalFromPregnancy() directly (same code path as runFoalingJob)
- * and asserts that a foal_born Notification row is written to the DB.
+ * and asserts that a foalBorn Notification row is written to the DB.
  * The old code never touched the Notification table, so this test fails
  * before the foalingService fix.
  */
@@ -17,7 +17,7 @@ import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-describe('SENTINEL: foal born → foal_born Notification', () => {
+describe('SENTINEL: foal born → foalBorn Notification', () => {
   let user;
   let sire;
   let dam;
@@ -90,7 +90,7 @@ describe('SENTINEL: foal born → foal_born Notification', () => {
     await cleanup.run();
   }, 30000);
 
-  it('creates a foal_born Notification row when a foal is born', async () => {
+  it('creates a foalBorn Notification row when a foal is born', async () => {
     const result = await createFoalFromPregnancy({
       damId: dam.id,
       sireId: sire.id,
@@ -101,7 +101,7 @@ describe('SENTINEL: foal born → foal_born Notification', () => {
     foalId = result.foal.id;
 
     const rows = await prisma.notification.findMany({
-      where: { userId: user.id, type: 'foal_born' },
+      where: { userId: user.id, type: 'foalBorn' },
     });
 
     expect(rows.length).toBeGreaterThanOrEqual(1);

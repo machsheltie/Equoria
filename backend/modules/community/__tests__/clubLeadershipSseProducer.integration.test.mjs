@@ -16,11 +16,11 @@
  *
  * Asserts:
  *   1. transferLeadership by the current president emits an
- *      `event: club_leadership_transferred` frame on the PROMOTED member's
+ *      `event: clubLeadershipTransferred` frame on the PROMOTED member's
  *      SSE stream;
  *   2. the PREVIOUS president does NOT receive it on their own stream
  *      (per-user isolation — the producer publishes to the new president only);
- *   3. a durable Notification row (type 'club_leadership_transferred') is
+ *   3. a durable Notification row (type 'clubLeadershipTransferred') is
  *      persisted for the promoted member (createNotification source-of-truth).
  *
  * SSE is a long-lived streaming response; supertest's buffered model handles
@@ -183,7 +183,7 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
     return { status, body };
   }
 
-  it("emits 'club_leadership_transferred' to the promoted member, NOT the previous president, and persists a Notification row", async () => {
+  it("emits 'clubLeadershipTransferred' to the promoted member, NOT the previous president, and persists a Notification row", async () => {
     const promotedStream = await openStream(promotedToken);
     const presidentStream = await openStream(presidentToken);
     await waitFor(() => userListenerCount(promoted.id) >= 1);
@@ -195,7 +195,7 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
 
       // The promoted member MUST receive the live frame.
       const promotedGot = await waitFor(() =>
-        promotedStream.chunks.join('').includes('event: club_leadership_transferred'),
+        promotedStream.chunks.join('').includes('event: clubLeadershipTransferred'),
       );
       expect(promotedGot).toBe(true);
       expect(promotedStream.chunks.join('')).toContain(`"clubId":${club.id}`);
@@ -203,12 +203,12 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
       // The previous president must NOT receive it on their own stream
       // (per-user isolation — single recipient is the new president only).
       await wait(400);
-      expect(presidentStream.chunks.join('')).not.toContain('event: club_leadership_transferred');
+      expect(presidentStream.chunks.join('')).not.toContain('event: clubLeadershipTransferred');
 
       // createNotification is the source of truth: a durable Notification row
       // must exist for the promoted member with the correct type + payload.
       const rows = await prisma.notification.findMany({
-        where: { userId: promoted.id, type: 'club_leadership_transferred' },
+        where: { userId: promoted.id, type: 'clubLeadershipTransferred' },
       });
       expect(rows.length).toBe(1);
       expect(rows[0].payload).toMatchObject({

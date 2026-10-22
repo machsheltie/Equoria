@@ -58,7 +58,7 @@ export interface GroomRetiredNotificationPayload {
   horses: GroomRetiredHorse[];
 }
 
-export type GameNotificationType = 'stat_gain' | 'foal_born' | 'groom_retired' | string;
+export type GameNotificationType = 'statGain' | 'foalBorn' | 'groomRetired' | string;
 
 export interface GameNotification {
   id: string;

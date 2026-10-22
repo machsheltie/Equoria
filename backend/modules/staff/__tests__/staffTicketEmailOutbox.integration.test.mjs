@@ -262,7 +262,7 @@ describe('Ticket email outbox (STAFF-CR-10)', () => {
 
     expect(capturedTicketEmailsFor(admin.email)).toHaveLength(0);
     expect(await prisma.staffTicket.count({ where: { id: ticket.id } })).toBe(1);
-    expect(await prisma.notification.count({ where: { userId: admin.id, type: 'staff_ticket' } })).toBe(1);
+    expect(await prisma.notification.count({ where: { userId: admin.id, type: 'staffTicket' } })).toBe(1);
   });
 
   it('answers 201 while the Gmail API never answers, and the stuck send is retried later', async () => {

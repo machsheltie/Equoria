@@ -74,10 +74,10 @@ export const ENGAGEMENT_END_REASONS = {
 };
 
 /** The player is told their groom cannot work until this week's fee is paid. */
-export const GROOM_FEE_UNPAID_NOTIFICATION_TYPE = 'groom_fee_unpaid';
+export const GROOM_FEE_UNPAID_NOTIFICATION_TYPE = 'groomFeeUnpaid';
 
 /** The player is told the groom has left for the grooms-for-hire pool. */
-export const GROOM_RELEASED_NOTIFICATION_TYPE = 'groom_released';
+export const GROOM_RELEASED_NOTIFICATION_TYPE = 'groomReleased';
 
 /**
  * The predicate that defines the grooms-for-hire pool.

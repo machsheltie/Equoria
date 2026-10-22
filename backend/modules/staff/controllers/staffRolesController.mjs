@@ -26,7 +26,7 @@ const MAX_TEXT = 100;
 const MAX_REASON = 1000;
 const PUBLIC_FIELDS = { id: true, username: true, role: true };
 // Bells that link into the Steward's Office (STAFF-CR-11).
-const STAFF_BELL_TYPES = ['staff_ticket', 'staff_ticket_update'];
+const STAFF_BELL_TYPES = ['staffTicket', 'staffTicketUpdate'];
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 

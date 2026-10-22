@@ -39,7 +39,7 @@ export async function declinePendingRequestsForSire(tx, { sireId, reason }) {
     if (claimed.count === 1 && request.mareOwnerId) {
       const note = {
         userId: request.mareOwnerId,
-        type: 'stud_request_declined',
+        type: 'studRequestDeclined',
         payload: {
           requestId: request.id,
           sireName: request.sireName,
@@ -77,7 +77,7 @@ export async function cancelPendingRequestForMare(tx, { damId, reason }) {
     if (claimed.count === 1 && request.stallionOwnerId) {
       const note = {
         userId: request.stallionOwnerId,
-        type: 'stud_request_cancelled',
+        type: 'studRequestCancelled',
         payload: {
           requestId: request.id,
           sireName: request.sireName,

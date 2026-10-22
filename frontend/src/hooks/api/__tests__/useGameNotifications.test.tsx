@@ -49,7 +49,7 @@ describe('useGameNotifications', () => {
       notifications: [
         {
           id: 'g-1',
-          type: 'stat_gain' as const,
+          type: 'statGain' as const,
           isRead: false,
           createdAt: '2026-05-15T00:00:00.000Z',
           payload: { horseName: 'Stardust', stat: 'speed', amount: 1, feedName: 'Premium Oats' },

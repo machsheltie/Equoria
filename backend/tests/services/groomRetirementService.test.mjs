@@ -128,7 +128,7 @@ describe('Groom Retirement Service', () => {
         where: { groomId: testGroom.id },
       });
       await prisma.notification.deleteMany({
-        where: { userId: testUser.id, type: 'groom_retired' },
+        where: { userId: testUser.id, type: 'groomRetired' },
       });
       await prisma.groom.deleteMany({
         where: { id: testGroom.id },
@@ -331,7 +331,7 @@ describe('Groom Retirement Service', () => {
       // Equoria-m9lz1: the notification is written by the retirement's own
       // transaction, so a committed retirement always has one.
       const notifications = await prisma.notification.findMany({
-        where: { userId: testUser.id, type: 'groom_retired' },
+        where: { userId: testUser.id, type: 'groomRetired' },
       });
       expect(notifications).toHaveLength(1);
       expect(notifications[0].payload).toMatchObject({ groomId: testGroom.id, reason: 'age' });
@@ -524,7 +524,7 @@ describe('Groom Retirement Service', () => {
           });
         }
         await prisma.notification.deleteMany({
-          where: { userId: testUser.id, type: 'groom_retired' },
+          where: { userId: testUser.id, type: 'groomRetired' },
         });
       }
     });
@@ -572,7 +572,7 @@ describe('Groom Retirement Service', () => {
       // Each retirement announced itself to the groom's own user.
       expect(
         await prisma.notification.count({
-          where: { userId: testUser.id, type: 'groom_retired' },
+          where: { userId: testUser.id, type: 'groomRetired' },
         }),
       ).toBe(retiredGrooms.length);
     });

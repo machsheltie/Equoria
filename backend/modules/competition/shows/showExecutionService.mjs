@@ -35,7 +35,7 @@ import {
   recordProgressionOnResult,
 } from '../services/competitionResultRecord.mjs';
 // Equoria-o26xc: sibling-fix of Equoria-pi4nk for the cron-driven executor.
-// executeClosedShows previously never wrote competition_placement
+// executeClosedShows previously never wrote competitionPlacement
 // notifications — owners of winning horses got zero UI signal that their
 // horses had placed. Mirrors the pi4nk pattern from enterAndRunShow:
 // fire-and-forget OUTSIDE the prize-payout tx (fail-soft).
@@ -383,7 +383,7 @@ export async function executeClosedShows(req, res, options) {
         }
 
         // Equoria-o26xc / sibling-fix of Equoria-pi4nk: fire a
-        // competition_placement notification on every top-3 finish for the
+        // competitionPlacement notification on every top-3 finish for the
         // cron-driven executor (the canonical post-toqet path). OUTSIDE the
         // tx and wrapped in try/catch — a notification-subsystem failure
         // must NEVER roll back the prize payout or block show execution.
@@ -393,7 +393,7 @@ export async function executeClosedShows(req, res, options) {
         if (placement <= 3) {
           try {
             const placementLabel = placement === 1 ? '1st' : placement === 2 ? '2nd' : '3rd';
-            await createNotification(userId, 'competition_placement', {
+            await createNotification(userId, 'competitionPlacement', {
               horseName,
               placement: placementLabel,
               discipline: show.discipline,
@@ -402,7 +402,7 @@ export async function executeClosedShows(req, res, options) {
             });
           } catch (notifErr) {
             logger.error(
-              `[showController] Failed to create competition_placement notification for user ${userId} (horse ${horseId}): ${notifErr.message}`,
+              `[showController] Failed to create competitionPlacement notification for user ${userId} (horse ${horseId}): ${notifErr.message}`,
             );
           }
         }

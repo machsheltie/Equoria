@@ -37,7 +37,7 @@ describe('INTEGRATION: game-notifications endpoints', () => {
     await prisma.notification.create({
       data: {
         userId: user.id,
-        type: 'stat_gain',
+        type: 'statGain',
         payload: { horseName: 'Blaze', stat: 'speed', amount: 1 },
       },
     });
@@ -50,7 +50,7 @@ describe('INTEGRATION: game-notifications endpoints', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.unreadCount).toBeGreaterThanOrEqual(1);
-    const notif = res.body.data.notifications.find(n => n.type === 'stat_gain');
+    const notif = res.body.data.notifications.find(n => n.type === 'statGain');
     expect(notif).toBeDefined();
     expect(notif.payload.horseName).toBe('Blaze');
   });
@@ -59,7 +59,7 @@ describe('INTEGRATION: game-notifications endpoints', () => {
     const created = await prisma.notification.create({
       data: {
         userId: user.id,
-        type: 'stat_gain',
+        type: 'statGain',
         payload: { horseName: 'Thunder' },
         isRead: false,
       },

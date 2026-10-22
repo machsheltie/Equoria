@@ -106,9 +106,9 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
 
     expect(res.status).toBe(200);
     expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'LISTING_CHANGED' });
-    expect(
-      await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'stud_request_declined' } }),
-    ).toBe(1);
+    expect(await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'studRequestDeclined' } })).toBe(
+      1,
+    );
   });
 
   it('S-Q2: switching Private -> Public declines pending requests', async () => {
@@ -138,9 +138,9 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({ studStatus: 'At Private Stud', studFee: FEE * 2 });
     expect(await recordOf(requestId)).toMatchObject({ status: 'PENDING', fee: FEE });
-    expect(
-      await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'stud_request_declined' } }),
-    ).toBe(0);
+    expect(await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'studRequestDeclined' } })).toBe(
+      0,
+    );
   });
 
   it('a sale of the stallion resets its listing and declines its pending requests (STALLION_SOLD)', async () => {
@@ -154,9 +154,9 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     const sold = await prisma.horse.findUnique({ where: { id: stud.id } });
     expect(sold).toMatchObject({ userId: buyer.user.id, studStatus: 'Not at Stud', studFee: 0 });
     expect(await recordOf(requestId)).toMatchObject({ status: 'DECLINED', declineReason: 'STALLION_SOLD' });
-    expect(
-      await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'stud_request_declined' } }),
-    ).toBe(1);
+    expect(await prisma.notification.count({ where: { userId: mareOwner.user.id, type: 'studRequestDeclined' } })).toBe(
+      1,
+    );
   });
 
   it('S-Q4: a sale of the mare cancels her pending request and tells the stallion owner', async () => {
@@ -169,7 +169,7 @@ describe('pending stud requests follow listing changes, sales and erasure (Equor
     expect(sale.status).toBe(200);
     expect(await recordOf(requestId)).toMatchObject({ status: 'CANCELLED', declineReason: 'MARE_TRANSFERRED' });
     expect(
-      await prisma.notification.count({ where: { userId: studOwner.user.id, type: 'stud_request_cancelled' } }),
+      await prisma.notification.count({ where: { userId: studOwner.user.id, type: 'studRequestCancelled' } }),
     ).toBe(1);
     // The new owner is not bound by the old owner's request.
     expect(await prisma.breedingRecord.count({ where: { damId: mare.id, status: 'PENDING' } })).toBe(0);

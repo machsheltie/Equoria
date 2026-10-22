@@ -167,7 +167,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
   });
 
   describe('notifyTraitRevelation(...)', () => {
-    it('writes a trait_discovery notification for the owner when visible traits revealed', async () => {
+    it('writes a traitDiscovery notification for the owner when visible traits revealed', async () => {
       const foal = await makeFoal(1);
       await foalTraitImpl.notifyTraitRevelation(
         { id: foal.id, name: foal.name, userId: user.id },
@@ -175,7 +175,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
         1,
       );
       const notes = await prisma.notification.findMany({
-        where: { userId: user.id, type: 'trait_discovery' },
+        where: { userId: user.id, type: 'traitDiscovery' },
       });
       expect(notes.length).toBeGreaterThanOrEqual(1);
       await prisma.notification.deleteMany({ where: { userId: user.id } });
@@ -189,7 +189,7 @@ describe('INTEGRATION: foalTraitEvaluation impl module (Equoria-urqic.3)', () =>
         2,
       );
       const notes = await prisma.notification.findMany({
-        where: { userId: user.id, type: 'trait_discovery' },
+        where: { userId: user.id, type: 'traitDiscovery' },
       });
       expect(notes.length).toBe(0);
     }, 60000);

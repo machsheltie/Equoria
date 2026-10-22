@@ -128,7 +128,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
       damName: mare.name,
     });
 
-    const notes = await prisma.notification.findMany({ where: { userId: studOwner.user.id, type: 'stud_booked' } });
+    const notes = await prisma.notification.findMany({ where: { userId: studOwner.user.id, type: 'studBooked' } });
     expect(notes).toHaveLength(1);
   });
 

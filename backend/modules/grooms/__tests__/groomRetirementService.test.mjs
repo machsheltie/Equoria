@@ -527,6 +527,6 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
     expect(normalAge).toBeLessThanOrEqual(CAREER_CONSTANTS.RETIREMENT_AGE_MAX);
     // The retirement announced itself to the groom's own user, in its own
     // transaction (see groomRetirementGameDriven.integration.test.mjs).
-    expect(await prisma.notification.count({ where: { userId: wcpUser.id, type: 'groom_retired' } })).toBe(1);
+    expect(await prisma.notification.count({ where: { userId: wcpUser.id, type: 'groomRetired' } })).toBe(1);
   });
 });

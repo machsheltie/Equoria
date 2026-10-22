@@ -246,7 +246,7 @@ export async function bookPublicStud(req, res) {
 
           const notification = {
             userId: stallionOwnerId,
-            type: 'stud_booked',
+            type: 'studBooked',
             payload: {
               recordId: record.id,
               sireId,

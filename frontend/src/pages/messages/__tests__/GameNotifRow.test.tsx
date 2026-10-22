@@ -1,8 +1,8 @@
 /**
  * GameNotifRow — the Steward's Office bells (Equoria-puj1e.1).
  *
- * Staff bells arrive as `staff_ticket` ({ ticketId, category }) and
- * `staff_ticket_update` ({ ticketId, status? } — no status means a reply).
+ * Staff bells arrive as `staffTicket` ({ ticketId, category }) and
+ * `staffTicketUpdate` ({ ticketId, status? } — no status means a reply).
  * They must say what happened in plain words and lead to /steward, never fall
  * through to the unknown row that shows the raw type slug.
  */
@@ -37,19 +37,19 @@ const expectOfficeLink = (row: HTMLElement) => {
 
 describe("GameNotifRow — Steward's Office bells", () => {
   it('tells the admin a steward filed a ticket, with its number and category', () => {
-    const row = renderRow(notif('staff_ticket', { ticketId: 12, category: 'Needs the admin' }));
+    const row = renderRow(notif('staffTicket', { ticketId: 12, category: 'Needs the admin' }));
 
     expect(row).toHaveTextContent('A steward filed ticket #12 (Needs the admin).');
     expectOfficeLink(row);
-    expect(row).not.toHaveTextContent('staff_ticket');
+    expect(row).not.toHaveTextContent('staffTicket');
   });
 
   it('says a ticket has a reply when the update carries no status', () => {
-    const row = renderRow(notif('staff_ticket_update', { ticketId: 7 }));
+    const row = renderRow(notif('staffTicketUpdate', { ticketId: 7 }));
 
     expect(row).toHaveTextContent('Ticket #7 has a reply.');
     expectOfficeLink(row);
-    expect(row).not.toHaveTextContent('staff_ticket_update');
+    expect(row).not.toHaveTextContent('staffTicketUpdate');
   });
 
   it.each([
@@ -58,7 +58,7 @@ describe("GameNotifRow — Steward's Office bells", () => {
     ['resolved', 'Ticket #7 is now resolved.'],
     ['declined', 'Ticket #7 is now declined.'],
   ])('says the new status %s in plain words', (status, sentence) => {
-    const row = renderRow(notif('staff_ticket_update', { ticketId: 7, status }));
+    const row = renderRow(notif('staffTicketUpdate', { ticketId: 7, status }));
 
     expect(row).toHaveTextContent(sentence);
     expect(row).not.toHaveTextContent('inProgress');
@@ -66,14 +66,14 @@ describe("GameNotifRow — Steward's Office bells", () => {
   });
 
   it('stays honest when the payload is missing pieces', () => {
-    const row = renderRow(notif('staff_ticket', {}));
+    const row = renderRow(notif('staffTicket', {}));
 
     expect(row).toHaveTextContent('A steward filed a ticket.');
     expectOfficeLink(row);
   });
 
   it('keeps the office link out of every other bell', () => {
-    renderRow(notif('foal_born', { foalName: 'Moonflower' }));
+    renderRow(notif('foalBorn', { foalName: 'Moonflower' }));
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });

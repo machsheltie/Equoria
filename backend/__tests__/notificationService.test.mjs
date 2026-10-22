@@ -25,10 +25,10 @@ describe('notificationService', () => {
 
   it('inserts a Notification row for a valid userId', async () => {
     const payload = { horseName: 'TestHorse', stat: 'speed', amount: 1, feedName: 'Grain' };
-    await createNotification(user.id, 'stat_gain', payload);
+    await createNotification(user.id, 'statGain', payload);
 
     const rows = await prisma.notification.findMany({
-      where: { userId: user.id, type: 'stat_gain' },
+      where: { userId: user.id, type: 'statGain' },
     });
     expect(rows).toHaveLength(1);
     expect(rows[0].isRead).toBe(false);
@@ -36,7 +36,7 @@ describe('notificationService', () => {
   });
 
   it('does NOT throw when given a non-existent userId', async () => {
-    await expect(createNotification('00000000-0000-0000-0000-000000000000', 'stat_gain', {})).resolves.toBeUndefined();
+    await expect(createNotification('00000000-0000-0000-0000-000000000000', 'statGain', {})).resolves.toBeUndefined();
   });
 
   // Equoria-1fqs: per-user Notification rows must be capped after each
@@ -64,7 +64,7 @@ describe('notificationService', () => {
       const baseTime = Date.now();
       const rows = Array.from({ length: total }, (_, idx) => ({
         userId: capUser.id,
-        type: 'stat_gain',
+        type: 'statGain',
         payload: { idx },
         createdAt: new Date(baseTime + idx * 1000),
       }));
@@ -96,7 +96,7 @@ describe('notificationService', () => {
       const baseTime = Date.now() - (NOTIFICATION_RETENTION_COUNT + 60) * 1000;
       const seedRows = Array.from({ length: NOTIFICATION_RETENTION_COUNT }, (_, idx) => ({
         userId: capUser.id,
-        type: 'stat_gain',
+        type: 'statGain',
         payload: { idx, seeded: true },
         createdAt: new Date(baseTime + idx * 1000),
       }));
@@ -104,7 +104,7 @@ describe('notificationService', () => {
 
       // Now insert one more via the production helper. The fire-and-forget
       // prune should bring the table back to N.
-      await createNotification(capUser.id, 'stat_gain', { sentinel: true });
+      await createNotification(capUser.id, 'statGain', { sentinel: true });
 
       // Wait for the prune microtask to settle. The prune is async so we
       // poll briefly rather than sleeping a fixed duration.

@@ -144,7 +144,7 @@ router.get(
  * ON THE PROMISE IN THE MESSAGE (Equoria-m9lz1 fix round 3, finding 6): it used
  * to end "you will hear about it in time to take on someone new", which promised
  * ADVANCE warning. There is none, by design — `processRetirement` writes the
- * `groom_retired` notification in the SAME transaction that has already ended
+ * `groomRetired` notification in the SAME transaction that has already ended
  * the assignments, so the player hears afterwards, in the week it happens. The
  * wording now says that, because the alternative is telling a player she will
  * get notice she is never going to get.

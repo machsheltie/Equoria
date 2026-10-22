@@ -78,7 +78,7 @@ describe('useEventStream — money events invalidate the balance (Equoria-bvddn.
     vi.unstubAllGlobals();
   });
 
-  it.each(['horse_sold', 'horse_purchased', 'competition_placement', 'groom_fee_unpaid'])(
+  it.each(['horseSold', 'horsePurchased', 'competitionPlacement', 'groomFeeUnpaid'])(
     'invalidates ["profile"] when the "%s" money event arrives',
     (eventName) => {
       const qc = new QueryClient();
@@ -95,12 +95,12 @@ describe('useEventStream — money events invalidate the balance (Equoria-bvddn.
   );
 
   it.each([
-    'stat_gain',
-    'foal_born',
-    'competition_stat_gain',
-    'club_leadership_transferred',
-    'groom_retired',
-    'groom_released',
+    'statGain',
+    'foalBorn',
+    'competitionStatGain',
+    'clubLeadershipTransferred',
+    'groomRetired',
+    'groomReleased',
   ])('does NOT invalidate ["profile"] for the non-money event "%s"', (eventName) => {
     const qc = new QueryClient();
     const spy = vi.spyOn(qc, 'invalidateQueries');

@@ -6,7 +6,7 @@
  * suite drives the REAL producer (CronJobService.notifyTraitRevelation, the
  * exact method evaluateFoalTraits calls) against the REAL database (no mocks)
  * and asserts:
- *   1. A 'trait_discovery' Notification row is written for the foal's owner
+ *   1. A 'traitDiscovery' Notification row is written for the foal's owner
  *      when a VISIBLE trait (positive or negative) is revealed.
  *   2. NO notification is written when only HIDDEN traits are revealed.
  *   3. NO notification when the foal has no owner (userId null).
@@ -80,7 +80,7 @@ describe('INTEGRATION: daily trait reveal notification (Equoria-yy1a5)', () => {
     );
   }
 
-  it('creates a trait_discovery notification for the owner when a VISIBLE trait is revealed', async () => {
+  it('creates a traitDiscovery notification for the owner when a VISIBLE trait is revealed', async () => {
     const foal = await makeFoal();
 
     await cronJobService.notifyTraitRevelation(
@@ -90,7 +90,7 @@ describe('INTEGRATION: daily trait reveal notification (Equoria-yy1a5)', () => {
     );
 
     const notifs = await prisma.notification.findMany({
-      where: { userId: user.id, type: 'trait_discovery' },
+      where: { userId: user.id, type: 'traitDiscovery' },
     });
     const forThisFoal = notifs.filter(n => n.payload?.foalId === foal.id);
     expect(forThisFoal).toHaveLength(1);
@@ -106,7 +106,7 @@ describe('INTEGRATION: daily trait reveal notification (Equoria-yy1a5)', () => {
     await cronJobService.notifyTraitRevelation(foal, { positive: [], negative: [], hidden: ['intelligent'] }, 3);
 
     const notifs = await prisma.notification.findMany({
-      where: { userId: user.id, type: 'trait_discovery' },
+      where: { userId: user.id, type: 'traitDiscovery' },
     });
     const forThisFoal = notifs.filter(n => n.payload?.foalId === foal.id);
     expect(forThisFoal).toHaveLength(0);

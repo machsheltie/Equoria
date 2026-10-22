@@ -55,7 +55,7 @@ function userChannel(userId) {
  * write) coupled to bus delivery. Never throws.
  *
  * @param {string} userId - recipient user id (the token subject server-side)
- * @param {string} type   - event type, e.g. 'stat_gain', 'foal_born'
+ * @param {string} type   - event type, e.g. 'statGain', 'foalBorn'
  * @param {object} payload - serializable event payload
  */
 export function publishUserEvent(userId, type, payload) {

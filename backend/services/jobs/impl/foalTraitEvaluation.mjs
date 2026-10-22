@@ -347,7 +347,7 @@ export async function notifyTraitRevelation(foal, newTraits, currentDay) {
       // Only hidden traits revealed — intentionally no notification.
       return;
     }
-    await createNotification(ownerUserId, 'trait_discovery', {
+    await createNotification(ownerUserId, 'traitDiscovery', {
       foalId: foal.id,
       foalName: foal.name,
       traits: visibleTraits,

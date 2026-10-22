@@ -69,7 +69,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
     const baseTime = Date.now();
     const rows = Array.from({ length: count }, (_, idx) => ({
       userId,
-      type: 'stat_gain',
+      type: 'statGain',
       payload: { idx, tag: 'TestFixture-uuhq1' },
       createdAt: new Date(baseTime + idx * 1000),
     }));

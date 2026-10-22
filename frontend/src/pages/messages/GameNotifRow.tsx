@@ -127,7 +127,7 @@ const FoalBornRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
 };
 
 /**
- * Reads the horse names out of a groom_retired payload, defensively.
+ * Reads the horse names out of a groomRetired payload, defensively.
  *
  * Returns only entries that actually carry a usable name — a nameless horse
  * cannot be said out loud, and "and  is without a groom" is worse than falling
@@ -341,15 +341,15 @@ const UnknownNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
 
 export const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   switch (notif.type) {
-    case 'stat_gain':
+    case 'statGain':
       return <StatGainRow notif={notif} />;
-    case 'foal_born':
+    case 'foalBorn':
       return <FoalBornRow notif={notif} />;
-    case 'groom_retired':
+    case 'groomRetired':
       return <GroomRetiredRow notif={notif} />;
-    case 'staff_ticket':
+    case 'staffTicket':
       return <StaffTicketRow notif={notif} />;
-    case 'staff_ticket_update':
+    case 'staffTicketUpdate':
       return <StaffTicketUpdateRow notif={notif} />;
     default:
       return <UnknownNotifRow notif={notif} />;

@@ -40,7 +40,7 @@ const ticketIds = [];
 
 const ticketBells = ticketId =>
   prisma.notification.findMany({
-    where: { type: 'staff_ticket_update', payload: { path: ['ticketId'], equals: ticketId } },
+    where: { type: 'staffTicketUpdate', payload: { path: ['ticketId'], equals: ticketId } },
   });
 
 beforeAll(() => {

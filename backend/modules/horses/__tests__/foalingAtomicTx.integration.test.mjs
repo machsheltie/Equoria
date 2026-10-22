@@ -17,7 +17,7 @@
  * worked — it pins that the atomic path keeps the same outcome.
  *
  * The concurrency case pins that two overlapping job runs for one mare still
- * produce exactly one foal and one foal_born notification.
+ * produce exactly one foal and one foalBorn notification.
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
@@ -207,7 +207,7 @@ describe('foaling is one transaction — the pregnancy is never lost (Equoria-bv
     expect(damAfter.pregnancySireId).toBeNull();
 
     const notes = await prisma.notification.findMany({
-      where: { userId: testUser.id, type: 'foal_born' },
+      where: { userId: testUser.id, type: 'foalBorn' },
       select: { payload: true },
     });
     const forThisFoal = notes.filter(n => n.payload?.foalId === foals[0].id);

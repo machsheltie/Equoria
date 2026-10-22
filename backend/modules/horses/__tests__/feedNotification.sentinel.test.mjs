@@ -2,7 +2,7 @@
  * Sentinel test: feeding a horse creates a Notification row when a stat boost fires.
  *
  * Feed stat boosts are probabilistic, so the test feeds the horse up to 20 times
- * and asserts at least one stat_gain notification was inserted into the Notification
+ * and asserts at least one statGain notification was inserted into the Notification
  * table. The old JSONB code never wrote to this table, so this test fails before fix.
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -17,7 +17,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
-describe('SENTINEL: feed → stat_gain Notification', () => {
+describe('SENTINEL: feed → statGain Notification', () => {
   let user;
   let horse;
   let token;
@@ -61,7 +61,7 @@ describe('SENTINEL: feed → stat_gain Notification', () => {
     await prisma.user.delete({ where: { id: user.id } });
   }, 30000);
 
-  it('creates a stat_gain Notification row when a stat boost fires', async () => {
+  it('creates a statGain Notification row when a stat boost fires', async () => {
     let boostFound = false;
     for (let i = 0; i < 20; i++) {
       await attachCsrf(
@@ -73,7 +73,7 @@ describe('SENTINEL: feed → stat_gain Notification', () => {
       );
 
       const rows = await prisma.notification.findMany({
-        where: { userId: user.id, type: 'stat_gain' },
+        where: { userId: user.id, type: 'statGain' },
       });
       if (rows.length > 0) {
         boostFound = true;

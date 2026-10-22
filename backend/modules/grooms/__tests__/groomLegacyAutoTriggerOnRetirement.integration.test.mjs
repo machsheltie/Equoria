@@ -49,7 +49,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroom: { userId: uid } } }),
       `groomLegacyLog:${uid}`,
     );
-    // Equoria-m9lz1: processRetirement now also writes a `groom_retired`
+    // Equoria-m9lz1: processRetirement now also writes a `groomRetired`
     // Notification (in the same transaction as the retirement) and a
     // GroomRetirementSchedule row may exist for these grooms. Both are Cascade
     // children, but they are deleted explicitly and narrowly so a leak fails

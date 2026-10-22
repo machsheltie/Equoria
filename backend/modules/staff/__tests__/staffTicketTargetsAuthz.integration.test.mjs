@@ -82,7 +82,7 @@ async function trail() {
   const [tickets, logRows, bells] = await Promise.all([
     prisma.staffTicket.count({ where: { filedById: mod.id } }),
     prisma.staffActionLog.count({ where: { actorId: mod.id, capability: 'ticket.file' } }),
-    prisma.notification.count({ where: { userId: admin.id, type: 'staff_ticket' } }),
+    prisma.notification.count({ where: { userId: admin.id, type: 'staffTicket' } }),
   ]);
   return { tickets, logRows, bells };
 }

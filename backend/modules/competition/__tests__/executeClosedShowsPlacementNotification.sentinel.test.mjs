@@ -1,6 +1,6 @@
 /**
  * Sentinel test (Equoria-dfet1 / Equoria-o26xc): executeClosedShows fires a
- * DISTINCT 'competition_placement' Notification on EVERY top-3 finish.
+ * DISTINCT 'competitionPlacement' Notification on EVERY top-3 finish.
  *
  * Re-anchor of the deleted Equoria-toqet sentinel
  * (enhancedCompetitionPlacementNotification.sentinel.test.mjs), now bound
@@ -18,9 +18,9 @@
  *   - BEFORE the o26xc fix, executeClosedShows imported zero notification
  *     helpers and called createNotification zero times. Running this
  *     sentinel against the pre-fix controller produces ZERO
- *     'competition_placement' rows → the assertion below fails
+ *     'competitionPlacement' rows → the assertion below fails
  *     (length === 0, not >= 1).
- *   - AFTER the o26xc fix, a 'competition_placement' row is written on
+ *   - AFTER the o26xc fix, a 'competitionPlacement' row is written on
  *     every top-3 finish, FAIL-SOFT (try/catch outside the prize-payout
  *     transaction). The assertion is deterministic.
  *
@@ -133,8 +133,8 @@ afterAll(async () => {
   }
 }, 30000);
 
-describe('SENTINEL: executeClosedShows → competition_placement notification on top-3 (Equoria-dfet1 / Equoria-o26xc)', () => {
-  it('creates a competition_placement notification on a 1st-place cron-executed finish', async () => {
+describe('SENTINEL: executeClosedShows → competitionPlacement notification on top-3 (Equoria-dfet1 / Equoria-o26xc)', () => {
+  it('creates a competitionPlacement notification on a 1st-place cron-executed finish', async () => {
     // Scope to ONLY this suite's show — never claim another parallel suite's
     // open shows.
     await executeClosedShows({ body: { showIds: [show.id] } }, null);
@@ -146,11 +146,11 @@ describe('SENTINEL: executeClosedShows → competition_placement notification on
     expect(result).not.toBeNull();
     expect(result.placement).toBe('1');
 
-    // Core sentinel: a DISTINCT competition_placement row exists for the
+    // Core sentinel: a DISTINCT competitionPlacement row exists for the
     // horse owner. Against the pre-o26xc controller this assertion fails
     // (no createNotification call exists on the executeClosedShows path).
     const placementRows = await prisma.notification.findMany({
-      where: { userId: user.id, type: 'competition_placement' },
+      where: { userId: user.id, type: 'competitionPlacement' },
     });
 
     expect(placementRows.length).toBeGreaterThanOrEqual(1);
@@ -169,13 +169,13 @@ describe('SENTINEL: executeClosedShows → competition_placement notification on
     // the koodu claim-and-mark-completed pattern is ever weakened, this
     // sentinel surfaces it as a duplicate notification.
     const before = await prisma.notification.count({
-      where: { userId: user.id, type: 'competition_placement' },
+      where: { userId: user.id, type: 'competitionPlacement' },
     });
 
     await executeClosedShows({ body: { showIds: [show.id] } }, null);
 
     const after = await prisma.notification.count({
-      where: { userId: user.id, type: 'competition_placement' },
+      where: { userId: user.id, type: 'competitionPlacement' },
     });
 
     expect(after).toBe(before);

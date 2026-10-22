@@ -110,7 +110,7 @@ describe('PATCH /api/v1/users/me/game-notifications/read-all', () => {
   it('returns 200 and marks notifications as read', async () => {
     // Seed a real Notification row (not JSONB) so the handler has something to mark
     const seeded = await prisma.notification.create({
-      data: { userId: user.id, type: 'stat_gain', payload: { message: 'test' }, isRead: false },
+      data: { userId: user.id, type: 'statGain', payload: { message: 'test' }, isRead: false },
     });
     // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
     transientNotificationIds.push(seeded.id);

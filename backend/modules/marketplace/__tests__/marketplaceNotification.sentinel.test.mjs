@@ -1,5 +1,5 @@
 /**
- * Sentinel test: horse purchase creates horse_purchased (buyer) and horse_sold
+ * Sentinel test: horse purchase creates horsePurchased (buyer) and horseSold
  * (seller) Notification rows.
  *
  * The old code never wrote to the Notification table, so this test fails
@@ -18,7 +18,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 
 const ORIGIN = 'http://localhost:3000';
 
-describe('SENTINEL: marketplace purchase → horse_purchased + horse_sold Notifications', () => {
+describe('SENTINEL: marketplace purchase → horsePurchased + horseSold Notifications', () => {
   let seller;
   let buyer;
   let horse;
@@ -79,7 +79,7 @@ describe('SENTINEL: marketplace purchase → horse_purchased + horse_sold Notifi
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('creates horse_purchased (buyer) and horse_sold (seller) Notification rows', async () => {
+  it('creates horsePurchased (buyer) and horseSold (seller) Notification rows', async () => {
     const res = await attachCsrf(
       request(app)
         .post(`/api/v1/marketplace/buy/${horse.id}`)
@@ -91,14 +91,14 @@ describe('SENTINEL: marketplace purchase → horse_purchased + horse_sold Notifi
     expect(res.status).toBe(200);
 
     const buyerNotif = await prisma.notification.findFirst({
-      where: { userId: buyer.id, type: 'horse_purchased' },
+      where: { userId: buyer.id, type: 'horsePurchased' },
     });
     expect(buyerNotif).not.toBeNull();
     expect(buyerNotif.payload).toHaveProperty('horseName');
     expect(buyerNotif.payload).toHaveProperty('salePrice');
 
     const sellerNotif = await prisma.notification.findFirst({
-      where: { userId: seller.id, type: 'horse_sold' },
+      where: { userId: seller.id, type: 'horseSold' },
     });
     expect(sellerNotif).not.toBeNull();
     expect(sellerNotif.payload).toHaveProperty('horseName');
