@@ -25,9 +25,16 @@
     {
       "regex": "^lane_db_[0-9]+$",
       "reason": "Postgres database names used by the gate-lock sentinel"
+    },
+    {
+      "regex": "^[a-z][a-z0-9_]*_seq$",
+      "reason": "Postgres sequence names generated for serial columns (SQL layer)"
     }
   ],
   "tokens": {
+    "pg_dump": "Postgres command-line tool",
+    "query_engine": "Prisma query-engine library file name",
+    "__TESTING_ONLY_": "test-only export marker prefix enforced by check-no-test-only-imports.mjs",
     "node_modules": "npm directory name",
     "child_process": "Node.js built-in module name",
     "unstable_mockModule": "Jest API",

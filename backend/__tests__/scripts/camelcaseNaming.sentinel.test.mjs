@@ -108,6 +108,30 @@ describe('check-camelcase-naming.mjs (Equoria-pjvp8)', () => {
     expect(res.stderr).toContain(`${lowerName} (jsonKey)`);
   });
 
+  it('SENTINEL: fails on a snake name assembled at runtime in production code', () => {
+    const prefix = ['resists', ''].join(us);
+    plant(
+      'plantedAssembled.mjs',
+      [
+        `export const viaTemplate = (t) => \`${prefix}\${t}\`;`,
+        `export const viaConcat = (t) => '${prefix}' + t;`,
+        '',
+      ].join('\n'),
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(`${prefix} (templateFragment)`);
+    expect(res.stderr).toContain(`${prefix} (concatFragment)`);
+  });
+
+  it('does not fragment-scan throwaway fixture identities in test files', () => {
+    const prefix = ['testuser', ''].join(us);
+    plant('plantedFixture.test.mjs', `export const name = \`${prefix}\${Date.now()}\`;\n`);
+    const res = runCheck();
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+  });
+
   it('does not count comments, env reads, or module specifiers', () => {
     plant(
       'plantedExempt.mjs',

@@ -233,9 +233,12 @@ function isModuleSpecifier(node) {
   return false;
 }
 
+const testPath = /(^|\/)(__tests__|tests?|e2e)\/|\.(test|spec|stories)\.[cm]?[jt]sx?$/;
+
 function scanCode(file, src, envNames, allow) {
   const hits = [];
   const sf = parseCode(file, src);
+  const testFile = testPath.test(toRelKey(file));
   const record = (node, token, where) => {
     const kind = snakeKind(token);
     if (!kind || allow.has(token)) return;
@@ -258,12 +261,60 @@ function scanCode(file, src, envNames, allow) {
           (ts.isBindingElement(parent) && parent.propertyName === node));
       if (!envMember && !envKey) record(node, node.text, 'identifier');
     } else if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-      if (!isModuleSpecifier(node) && !envNames.has(node.text)) record(node, node.text, 'string');
+      if (!isModuleSpecifier(node) && !envNames.has(node.text)) {
+        if (snakeKind(node.text)) record(node, node.text, 'string');
+        else if (isConcatOperand(node))
+          recordFragments(node, node.text, true, true, 'concatFragment');
+      }
+    } else if (ts.isTemplateExpression(node) && !isSqlTemplate(node)) {
+      recordFragments(node.head, node.head.text, false, true, 'templateFragment');
+      node.templateSpans.forEach((span, i) => {
+        const last = i === node.templateSpans.length - 1;
+        recordFragments(span.literal, span.literal.text, true, !last, 'templateFragment');
+      });
     }
     ts.forEachChild(node, visit);
   };
+  // A snake name assembled at runtime: `resists_${trait}`, 'age_' + n,
+  // `${type}_${variation}`. A fragment touching an edge that joins another
+  // value is padded before testing, so `req_` reads as `req_x`.
+  const recordFragments = (node, text, joinsBefore, joinsAfter, where) => {
+    // Test fixture identities (`testuser_${Date.now()}`) are throwaway data,
+    // not names; only production code is fragment-scanned.
+    if (testFile) return;
+    for (const m of text.matchAll(/[A-Za-z0-9_]+/g)) {
+      if (envNames.has(m[0])) continue;
+      const frag = m[0];
+      if (!frag.includes('_') || !/[A-Za-z]/.test(frag)) continue;
+      const atStart = joinsBefore && m.index === 0;
+      const atEnd = joinsAfter && m.index + frag.length === text.length;
+      const padded = `${atStart && frag.startsWith('_') ? 'x' : ''}${frag}${atEnd && frag.endsWith('_') ? 'x' : ''}`;
+      if (snakeKind(padded) && !allow.has(frag) && !allow.has(padded)) {
+        const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+        hits.push({ line: line + 1, token: frag, kind: snakeKind(padded), where });
+      }
+    }
+  };
   visit(sf);
   return hits;
+}
+
+function isConcatOperand(node) {
+  const parent = node.parent;
+  return Boolean(
+    parent && ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.PlusToken
+  );
+}
+
+const sqlWords =
+  /\b(SELECT|INSERT|UPDATE|DELETE|WHERE|FROM|CREATE|ALTER|DROP|JOIN|VALUES|RETURNING)\b/;
+
+// Postgres names inside SQL stay snake_case by owner ruling, so SQL text is
+// never fragment-scanned: tagged SQL templates and SQL-looking text.
+function isSqlTemplate(node) {
+  if (node.parent && ts.isTaggedTemplateExpression(node.parent)) return true;
+  const text = [node.head.text, ...node.templateSpans.map((s) => s.literal.text)].join(' ');
+  return sqlWords.test(text);
 }
 
 function lineOf(src, index) {
@@ -439,7 +490,7 @@ function main() {
     console.error(`[${label}] FAIL`);
     for (const s of stale) console.error(`  stale baseline entry (file gone): ${s}`);
     for (const g of grew) {
-      console.error(`  ${g.file}: ${g.hits.length} snake_case names (baseline ${g.allowed})`);
+      console.error(`  ${g.file}: ${g.hits.length} snake-case names (baseline ${g.allowed})`);
       for (const h of g.hits.slice(0, 10))
         console.error(`    line ${h.line}: ${h.token} (${h.where})`);
     }
@@ -452,7 +503,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    `[${label}] OK — ${total} legacy snake_case names in ${results.size} files, none new`
+    `[${label}] OK — ${total} legacy snake-case names in ${results.size} files, none new`
   );
 }
 
