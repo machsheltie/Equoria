@@ -324,6 +324,12 @@ export async function nominate(req, res) {
         .status(400)
         .json({ success: false, message: 'Election is not open for nominations' });
     }
+    // Equoria-bvddn.22: a run-off is between the tied candidates only.
+    if (election.runoffOfId !== null) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'A run-off is between the tied candidates only' });
+    }
 
     const existing = await prisma.clubCandidate.findUnique({
       where: { electionId_userId: { electionId, userId } },

@@ -157,3 +157,28 @@ export function startOfGameWeek(date, weekStartDay) {
   const back = (gameDateParts(date).weekday - weekStartDay + 7) % 7;
   return startOfGameDayIndex(gameDayIndex(date) - back);
 }
+
+/**
+ * The instant `days` Eastern calendar days after `date` at the same Eastern
+ * wall-clock time (to the second), so a 23- or 25-hour daylight-saving day is
+ * still exactly one game day. A wall time that does not exist on the target day
+ * (02:xx on the spring-forward day) lands an hour later.
+ * Equoria-bvddn.22: a club election run-off lasts one game day.
+ * @param {Date|string|number} date
+ * @param {number} days
+ * @returns {Date}
+ */
+export function sameGameClockDaysLater(date, days) {
+  const { hour, minute, second } = gameDateParts(date);
+  const wallMs = ((hour * 60 + minute) * 60 + second) * 1000;
+  const subSecondMs = new Date(date).getTime() % 1000;
+  const targetIndex = gameDayIndex(date) + days;
+  const guess = startOfGameDayIndex(targetIndex).getTime() + wallMs;
+  // Where the guess actually landed on the Eastern clock, measured from the
+  // target day's midnight (it can spill into the next day near midnight).
+  const landed = gameDateParts(guess);
+  const landedMs =
+    (gameDayIndex(guess) - targetIndex) * MS_PER_DAY +
+    ((landed.hour * 60 + landed.minute) * 60 + landed.second) * 1000;
+  return new Date(guess - (landedMs - wallMs) + subSecondMs);
+}
