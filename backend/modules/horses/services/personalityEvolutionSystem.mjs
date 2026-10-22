@@ -186,6 +186,15 @@ export async function evolveHorseTemperament(horseId) {
 
   // Apply evolution if triggered
   if (evolutionData.shouldEvolve) {
+    // Equoria-jy3f7: guarded write; only if the temperament read above still holds.
+    const written = await prisma.horse.updateMany({
+      where: { id: horseId, temperament: horse.temperament },
+      data: { temperament: evolutionData.newTemperament },
+    });
+    if (written.count === 0) {
+      return { success: true, temperamentEvolved: false, reason: 'temperamentChanged' };
+    }
+
     const effects = await applyPersonalityEvolutionEffects({
       entityId: horseId,
       entityType: 'horse',
@@ -195,12 +204,6 @@ export async function evolveHorseTemperament(horseId) {
       newPersonality: evolutionData.newTemperament,
       stabilityPeriod: EVOLUTION_CONFIG.horse.stabilityPeriodDays,
       effectStrength: evolutionData.strength,
-    });
-
-    // Update horse temperament
-    await prisma.horse.update({
-      where: { id: horseId },
-      data: { temperament: evolutionData.newTemperament },
     });
 
     return {
