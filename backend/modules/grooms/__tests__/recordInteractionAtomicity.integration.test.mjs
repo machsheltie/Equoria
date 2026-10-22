@@ -8,7 +8,9 @@
  *   2. GroomInteraction.create — the row the DAILY LIMIT check keys off
  *   3. FoalActivity.create     — the canonical foal-activity event log
  *                                (Equoria-2emg: taskLog is its derived cache)
- *   4. Groom.update            — +2 XP for the session
+ *   4. Groom.update            — +2 XP for the session (REMOVED by owner
+ *                                ruling 2026-10-21, Equoria-dea06: grooms are
+ *                                fixed NPCs; the groom row is no longer written)
  *   5. GroomHorseSynergy       — sessionsTogether / synergyScore
  *
  * Before the fix these were five independent round-trips with no transaction
@@ -22,9 +24,12 @@
  * ── HOW THE FAILURE IS FORCED (no mocks; this is a real database event) ──────
  * A second, dedicated Prisma connection opens its own transaction and takes
  * `SELECT … FROM grooms WHERE id = $1 FOR UPDATE` on the groom row, then holds
- * it. The request then runs: writes 1-3 succeed, and write 4 (the groom's XP
- * `UPDATE`) BLOCKS on that row lock until the handler's interactive-transaction
- * timeout fires. That is a genuine mid-set failure of exactly the kind this
+ * it. The request then runs: write 1 succeeds, and the first write that
+ * references the groom row BLOCKS on that row lock until the handler's
+ * interactive-transaction timeout fires. (Originally write 4, the groom's XP
+ * `UPDATE`; since Equoria-dea06 removed it, write 2's insert blocks on the
+ * FOR KEY SHARE its foreign key takes on the groom row, which FOR UPDATE
+ * excludes.) That is a genuine mid-set failure of exactly the kind this
  * endpoint suffers under contention — not an injected throw, not a stubbed
  * client, and not a path that only exists in tests.
  *
@@ -45,9 +50,10 @@
  *    BEFORE the transaction opens, so two simultaneous requests for the same
  *    horse can both pass it. That is a separate defect (a missing uniqueness
  *    guard), not an atomicity one, and is out of this fix's scope.
- *  - It forces the failure at write 4 only. Writes 1-3 and 5 are covered
- *    transitively (all-or-nothing is asserted over the whole set), but a
- *    failure originating inside write 5 is not separately provoked.
+ *  - It forces the failure at one write only (write 4 originally; write 2
+ *    since Equoria-dea06). The other writes are covered transitively
+ *    (all-or-nothing is asserted over the whole set), but a failure
+ *    originating inside write 5 is not separately provoked.
  *
  * Real DB, real HTTP, real auth, real CSRF. Scoped fail-loud fixtures.
  */
@@ -175,8 +181,10 @@ describe('Equoria-po1fl: POST /api/v1/grooms/interact is atomic across its five 
     const horseBefore = await prisma.horse.findUnique({ where: { id: foal.id } });
     const groomBefore = await prisma.groom.findUnique({ where: { id: groom.id } });
 
-    // Take and hold an exclusive row lock on the groom row. Write 4 of the
-    // handler's set (the groom's XP UPDATE) must wait on it.
+    // Take and hold an exclusive row lock on the groom row. The first write
+    // of the handler's set that references the groom row must wait on it
+    // (write 2's foreign-key FOR KEY SHARE since Equoria-dea06 removed the
+    // groom XP UPDATE).
     let signalAcquired;
     const acquired = new Promise(resolve => {
       signalAcquired = resolve;
@@ -257,7 +265,11 @@ describe('Equoria-po1fl: POST /api/v1/grooms/interact is atomic across its five 
     expect(horseAfter.lastGroomed).not.toBeNull();
     expect(horseAfter.taskLog).not.toEqual(horseBefore.taskLog);
 
+    // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs. Old
+    // contract: the session's write 4 gave the groom +2 XP. New contract: the
+    // groom row is not written; experience and level stay as generated.
     const groomAfter = await prisma.groom.findUnique({ where: { id: groom.id } });
-    expect(groomAfter.experience).toBe(groomBefore.experience + 2);
+    expect(groomAfter.experience).toBe(groomBefore.experience);
+    expect(groomAfter.level).toBe(groomBefore.level);
   }, 60000);
 });

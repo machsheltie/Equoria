@@ -12,7 +12,8 @@
  *      processing entries. A failed partial run no longer re-executes.
  *   2. Wrap each winner's competitionResult.create + user.update + (1st place)
  *      firstWin milestone + rider.update in a single $transaction.
- *      awardRiderCompetitionXP stays outside (fail-soft contract).
+ *      awardRiderCompetitionPrestige stays outside (fail-soft contract;
+ *      rider XP was removed by owner ruling 2026-10-21, Equoria-dea06).
  *   3. The @@unique([showId, horseId]) on CompetitionResult backstops any
  *      claim-bypass with P2002 (already in schema + canonical DB).
  *

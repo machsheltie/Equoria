@@ -7,7 +7,8 @@
  *    reputationScore) plus totalInteractions, aggregated on every
  *    performance-record write by the backend.
  *  - GroomAssignmentLog: past-assignment history (milestonesCompleted,
- *    traitsShaped chips, xpGained) written on each unassign.
+ *    traitsShaped chips) written on each unassign. xpGained is not shown:
+ *    grooms are fixed NPCs with no XP (Equoria-dea06).
  *
  * Data sources (Equoria-wb7z backend half):
  *  - GET /api/v1/grooms/:id/profile          → metrics
@@ -218,7 +219,6 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
                   <span data-testid={`groom-log-milestones-${log.id}`}>
                     Milestones: {log.milestonesCompleted}
                   </span>
-                  <span data-testid={`groom-log-xp-${log.id}`}>XP gained: {log.xpGained}</span>
                 </div>
                 {log.traitsShaped.length > 0 && (
                   <div

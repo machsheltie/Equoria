@@ -704,9 +704,20 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
 
   it('updatePersonalityTraits: excellent quality + bondingChange=2 → Enhanced trait effectiveness (lines 512-513)', async () => {
     // avgQuality=4.0 (excellent=4) ≥3.5, avgBondChange=2.0 >1 → line 512 fires
+    const before = await prisma.groom.findUnique({
+      where: { id: rbrGroomExcellent.id },
+      select: { experience: true, level: true },
+    });
     const result = await updatePersonalityTraits(rbrGroomExcellent.id);
     expect(result.traitsUpdated).toContain('Enhanced trait effectiveness due to excellent performance');
-    expect(result.experienceGained).toBeGreaterThan(0);
+    // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs. Old
+    // contract: experienceGained > 0 and written to the groom. New: no XP.
+    expect(result).not.toHaveProperty('experienceGained');
+    const after = await prisma.groom.findUnique({
+      where: { id: rbrGroomExcellent.id },
+      select: { experience: true, level: true },
+    });
+    expect(after).toEqual(before);
     expect(typeof result.performanceMetrics.avgQuality).toBe('number');
     expect(result.performanceMetrics.avgQuality).toBeGreaterThanOrEqual(3.5);
   });
@@ -715,7 +726,8 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
     // avgQuality=3.0 (good=3) ≥2.5 but <3.5; avgBondChange=0 ≤1 → line 514 fires
     const result = await updatePersonalityTraits(rbrGroomGood.id);
     expect(result.traitsUpdated).toContain('Steady trait development from consistent performance');
-    expect(result.experienceGained).toBeGreaterThan(0);
+    // Owner ruling 2026-10-21 (Equoria-dea06): old contract experienceGained > 0; new: no XP.
+    expect(result).not.toHaveProperty('experienceGained');
     expect(result.performanceMetrics.avgQuality).toBeGreaterThanOrEqual(2.5);
     expect(result.performanceMetrics.avgQuality).toBeLessThan(3.5);
   });

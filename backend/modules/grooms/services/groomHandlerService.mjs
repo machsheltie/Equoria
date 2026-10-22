@@ -355,98 +355,10 @@ export async function validateHandlerEligibility(horseId, userId, classNameOrDis
   }
 }
 
-/**
- * Record handler performance in competition
- * @param {Object} competitionResult - Competition result data
- * @param {Object} handlerData - Handler performance data
- * @returns {Object} Updated result with handler information
- */
-export async function recordHandlerPerformance(competitionResult, handlerData) {
-  try {
-    if (!handlerData.hasHandler) {
-      return competitionResult;
-    }
-
-    // Add handler information to competition result
-    const enhancedResult = {
-      ...competitionResult,
-      handlerInfo: {
-        groomId: handlerData.groom.id,
-        groomName: handlerData.groom.name,
-        handlerBonus: handlerData.handlerBonus,
-        bonusBreakdown: handlerData.bonusBreakdown,
-      },
-    };
-
-    // Award experience to the groom based on performance
-    const experienceGain = calculateGroomExperienceGain(
-      competitionResult.placement,
-      competitionResult.totalEntries,
-      handlerData.groom.skillLevel,
-    );
-
-    if (experienceGain > 0) {
-      await prisma.groom.update({
-        where: { id: handlerData.groom.id },
-        data: {
-          experience: {
-            increment: experienceGain,
-          },
-        },
-      });
-
-      enhancedResult.handlerInfo.experienceGained = experienceGain;
-    }
-
-    logger.info(
-      `[groomHandlerService] Recorded handler performance for ${handlerData.groom.name}: +${experienceGain} experience`,
-    );
-
-    return enhancedResult;
-  } catch (error) {
-    logger.error(`[groomHandlerService] Error recording handler performance: ${error.message}`);
-    return competitionResult;
-  }
-}
-
-/**
- * Calculate experience gain for groom based on competition performance
- * Exported for unit-testing pure branch coverage (Equoria-jkht)
- * @param {number} placement - Competition placement
- * @param {number} totalEntries - Total number of entries
- * @param {string} skillLevel - Groom skill level
- * @returns {number} Experience points gained
- */
-export function calculateGroomExperienceGain(placement, totalEntries, skillLevel) {
-  // Base experience for participation
-  let experience = 1;
-
-  // Bonus for good placements
-  if (placement === 1) {
-    experience += 3; // +3 for 1st place
-  } else if (placement === 2) {
-    experience += 2; // +2 for 2nd place
-  } else if (placement === 3) {
-    experience += 1; // +1 for 3rd place
-  }
-
-  // Bonus for competitive fields
-  if (totalEntries >= 10) {
-    experience += 1; // +1 for large competitions
-  }
-
-  // Skill level affects experience gain (higher skill = slower gain)
-  const skillMultipliers = {
-    novice: 1.0,
-    intermediate: 0.8,
-    expert: 0.6,
-    master: 0.4,
-  };
-
-  experience *= skillMultipliers[skillLevel] || 1.0;
-
-  return Math.round(experience);
-}
+// Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs and earn no
+// XP. recordHandlerPerformance (which incremented a handler groom's experience
+// after a show) and calculateGroomExperienceGain were removed; neither had a
+// production caller.
 
 /**
  * Fetch competition results for a user within a date window for the handler

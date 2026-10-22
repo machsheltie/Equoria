@@ -1,19 +1,19 @@
 /**
  * groomProgressionService unit tests (Equoria-rr7 coverage sprint).
  *
- * calculateGroomLevel: pure sync, no DB.
  * Async functions: DB fixture — user + groom + horse.
+ *
+ * Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs that never
+ * earn XP and keep their generated level. Old contract: this file also pinned
+ * calculateGroomLevel (the XP-to-level curve) and awardGroomXP (shape, level-up
+ * and fallback branches). Both functions were removed with the ruling, so their
+ * blocks here were removed too; staffAreFixedNpcs.integration.test.mjs pins the
+ * new contract.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import {
-  calculateGroomLevel,
-  awardGroomXP,
-  updateGroomSynergy,
-  logGroomAssignment,
-  getGroomProfile,
-} from '../services/groomProgressionService.mjs';
+import { updateGroomSynergy, logGroomAssignment, getGroomProfile } from '../services/groomProgressionService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -70,52 +70,6 @@ afterAll(() => {
   return topCleanup.run();
 }, 30000);
 
-// ── calculateGroomLevel ───────────────────────────────────────────────────────
-
-describe('calculateGroomLevel', () => {
-  it('returns 1 for 0 experience', () => {
-    expect(calculateGroomLevel(0)).toBe(1);
-  });
-
-  it('returns 1 for 99 experience', () => {
-    expect(calculateGroomLevel(99)).toBe(1);
-  });
-
-  it('returns 2 for 100 experience', () => {
-    expect(calculateGroomLevel(100)).toBe(2);
-  });
-
-  it('returns 10 (cap) for very high experience', () => {
-    expect(calculateGroomLevel(99999)).toBe(10);
-  });
-
-  it('returns a number between 1 and 10', () => {
-    const level = calculateGroomLevel(500);
-    expect(level).toBeGreaterThanOrEqual(1);
-    expect(level).toBeLessThanOrEqual(10);
-  });
-});
-
-// ── awardGroomXP ──────────────────────────────────────────────────────────────
-
-describe('awardGroomXP', () => {
-  it('returns error object for non-existent groom', async () => {
-    const result = await awardGroomXP(999999999, 'milestone_completion', 50);
-    expect(result.success).toBe(false);
-    expect(typeof result.error).toBe('string');
-  });
-
-  it('returns XP result shape for valid groom', async () => {
-    const result = await awardGroomXP(groom.id, 'milestone_completion', 10);
-
-    expect(result).toBeDefined();
-    expect(typeof result.xpGained).toBe('number');
-    expect(typeof result.newExperience).toBe('number');
-    expect(typeof result.newLevel).toBe('number');
-    expect(result.xpGained).toBe(10);
-  });
-});
-
 // ── updateGroomSynergy ────────────────────────────────────────────────────────
 
 describe('updateGroomSynergy', () => {
@@ -154,74 +108,6 @@ describe('getGroomProfile', () => {
     const result = await getGroomProfile(groom.id);
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
-  });
-});
-
-// ── calculateGroomLevel — intermediate levels (Equoria-jkht) ──────────────────
-
-describe('calculateGroomLevel — intermediate levels (Equoria-jkht)', () => {
-  it('returns 3 for experience=400 (level-3 bracket)', () => {
-    expect(calculateGroomLevel(400)).toBe(3);
-  });
-
-  it('returns 5 for experience=1200 (level-5 bracket)', () => {
-    expect(calculateGroomLevel(1200)).toBe(5);
-  });
-});
-
-// ── awardGroomXP — levelUp branch (Equoria-jkht) ──────────────────────────────
-
-describe('awardGroomXP — levelUp branch (Equoria-jkht)', () => {
-  let luUser;
-  let luGroom;
-  const cleanup = createCleanupTracker();
-
-  beforeAll(async () => {
-    const ts = Date.now();
-    const rand = () => Math.random().toString(36).slice(2, 8);
-
-    luUser = await prisma.user.create({
-      data: {
-        email: `gp-lu-${ts}-${rand()}@test.com`,
-        username: `gplu${ts}${rand()}`,
-        password: 'irrelevant-hash',
-        firstName: 'GP',
-        lastName: 'LU',
-        money: 1000,
-      },
-    });
-
-    luGroom = await prisma.groom.create({
-      data: {
-        name: `TestFixture-GP-LU-Groom-${ts}`,
-        speciality: 'foal_care',
-        personality: 'gentle',
-        userId: luUser.id,
-        experience: 0,
-        level: 1,
-      },
-    });
-  }, 30000);
-
-  // FK order: groom (Groom.userId Restrict) → user.
-  afterAll(() => {
-    cleanup.add(() => prisma.groom.delete({ where: { id: luGroom.id } }), 'luGroom');
-    cleanup.add(() => prisma.user.delete({ where: { id: luUser.id } }), 'luUser');
-    return cleanup.run();
-  }, 30000);
-
-  it('levelUp=true when XP crosses level boundary (0→200 XP → level 2)', async () => {
-    const result = await awardGroomXP(luGroom.id, 'milestone_completion', 200);
-    expect(result.success).toBe(true);
-    expect(result.levelUp).toBe(true);
-    expect(result.newLevel).toBe(2);
-  });
-
-  it('levelUp=false when XP stays within same level (200→210 XP → still level 2)', async () => {
-    const result = await awardGroomXP(luGroom.id, 'milestone_completion', 10);
-    expect(result.success).toBe(true);
-    expect(result.levelUp).toBe(false);
-    expect(result.newLevel).toBe(2);
   });
 });
 
@@ -476,55 +362,6 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
 });
 
 // ── groomProgressionService — null-coalesce fallback branches (Equoria-rr7) ──
-
-describe('awardGroomXP — oldLevel fallback branch (line 73, Equoria-rr7)', () => {
-  let l73User;
-  let l73Groom;
-  const cleanup = createCleanupTracker();
-
-  beforeAll(async () => {
-    const ts = Date.now();
-    const rand = () => Math.random().toString(36).slice(2, 8);
-
-    l73User = await prisma.user.create({
-      data: {
-        email: `gp-l73-${ts}-${rand()}@test.com`,
-        username: `gpl73${ts}${rand()}`,
-        password: 'irrelevant-hash',
-        firstName: 'GP',
-        lastName: 'L73',
-        money: 1000,
-      },
-    });
-
-    // level=0 forces the `|| 1` fallback on line 73
-    l73Groom = await prisma.groom.create({
-      data: {
-        name: `TestFixture-GP-L73-Groom-${ts}`,
-        speciality: 'foal_care',
-        personality: 'gentle',
-        userId: l73User.id,
-        level: 0,
-        experience: 0,
-      },
-    });
-  }, 30000);
-
-  // FK order: groom (Groom.userId Restrict) → user.
-  afterAll(() => {
-    cleanup.add(() => prisma.groom.delete({ where: { id: l73Groom.id } }), 'l73Groom');
-    cleanup.add(() => prisma.user.delete({ where: { id: l73User.id } }), 'l73User');
-    return cleanup.run();
-  }, 30000);
-
-  it('uses || 1 fallback when groom.level=0 (line 73)', async () => {
-    const result = await awardGroomXP(l73Groom.id, 'milestone_completion', 10);
-    expect(result.success).toBe(true);
-    // oldLevel=0 → || 1 → 1; newLevel=1 (10 XP < 100) → levelUp=false
-    expect(result.oldLevel).toBe(1);
-    expect(result.xpGained).toBe(10);
-  });
-});
 
 describe('logGroomAssignment — default-param + null-coalesce fallback branches (lines 190+232-234, Equoria-rr7)', () => {
   let la2User;

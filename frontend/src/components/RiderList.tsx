@@ -326,12 +326,8 @@ const RiderList: React.FC<RiderListProps> = ({
 
                   {/* Details */}
                   <div className="space-y-2 text-sm border-y border-[var(--glass-border)] py-3 mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)]">Experience:</span>
-                      <span className="text-[var(--text-secondary)]">
-                        {rider.skillLevel === 'rookie' ? '???' : `${rider.experience} XP`}
-                      </span>
-                    </div>
+                    {/* Equoria-dea06: riders are fixed NPCs with no XP, so the
+                        card no longer shows an "Experience: n XP" row. */}
                     <div className="flex justify-between">
                       <span className="text-[var(--text-muted)]">Weekly Rate:</span>
                       <span className="font-semibold inline-flex items-center gap-1">

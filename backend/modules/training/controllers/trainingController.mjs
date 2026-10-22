@@ -13,7 +13,7 @@ import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
-import { awardTrainerSessionXP, computeTrainerModifiers } from '../../trainers/index.mjs';
+import { computeTrainerModifiers } from '../../trainers/index.mjs';
 import { MIN_ACTIVE_AGE_YEARS, MAX_ACTIVE_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
 
 /**
@@ -238,9 +238,7 @@ async function trainHorse(horseId, discipline) {
     // Equoria-oey96.7: load the active trainer (if any) for the training
     // modifier. Fail-soft — a trainer load / DB error degrades to the
     // no-trainer path (net modifier 0) and must NEVER block the primary
-    // discipline-score write. Reused below for the trainer-session XP award, so
-    // the "which trainer is active this session" lookup happens exactly once.
-    let activeTrainerId = null;
+    // discipline-score write.
     let activeTrainer = null;
     try {
       const activeTrainerAssignment = await prisma.trainerAssignment.findFirst({
@@ -248,7 +246,6 @@ async function trainHorse(horseId, discipline) {
         select: { trainerId: true, trainer: true },
       });
       if (activeTrainerAssignment?.trainerId) {
-        activeTrainerId = activeTrainerAssignment.trainerId;
         activeTrainer = activeTrainerAssignment.trainer ?? null;
       }
     } catch (trainerLoadErr) {
@@ -365,19 +362,8 @@ async function trainHorse(horseId, discipline) {
       `[trainingController.trainHorse] Successfully trained horse ${horseId} in ${discipline} (Log ID: ${trainingLog.id}, Score +${disciplineScoreIncrease})`,
     );
 
-    // Equoria-r1nr: award trainer XP for the session, using the active
-    // assignment already loaded above for the training modifier (Equoria-oey96.7
-    // consolidated the two identical TrainerAssignment lookups into one).
-    // Fail-soft — trainer XP failure must not block the training result.
-    if (activeTrainerId) {
-      try {
-        await awardTrainerSessionXP(activeTrainerId);
-      } catch (trainerXpErr) {
-        logger.error(
-          `[trainingController.trainHorse] Failed to award trainer XP for horse ${horseId}: ${trainerXpErr.message}`,
-        );
-      }
-    }
+    // Owner ruling 2026-10-21 (Equoria-dea06): trainers are fixed NPCs. A
+    // session awards the trainer no XP and never changes its generated level.
 
     // Bust ALL eligibility cache entries for this horse so the next check
     // for any discipline sees the new cooldown state immediately.

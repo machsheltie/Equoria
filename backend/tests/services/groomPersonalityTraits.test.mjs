@@ -340,12 +340,23 @@ describe('Groom Personality Trait System', () => {
       });
 
       const initialTraits = await getGroomPersonalityTraits(groom.id);
+      const groomBefore = await prisma.groom.findUnique({
+        where: { id: groom.id },
+        select: { experience: true, level: true },
+      });
       const result = await updatePersonalityTraits(groom.id);
       const updatedTraits = await getGroomPersonalityTraits(groom.id);
 
       expect(result).toBeDefined();
       expect(result.traitsUpdated).toBeDefined();
-      expect(result.experienceGained).toBeGreaterThan(0);
+      // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs. Old
+      // contract: experienceGained > 0, written to the groom. New: no XP.
+      expect(result).not.toHaveProperty('experienceGained');
+      const groomAfter = await prisma.groom.findUnique({
+        where: { id: groom.id },
+        select: { experience: true, level: true },
+      });
+      expect(groomAfter).toEqual(groomBefore);
 
       // Should show some development (though may be minimal with one interaction)
       expect(updatedTraits.traitStrength).toBeGreaterThanOrEqual(initialTraits.traitStrength);

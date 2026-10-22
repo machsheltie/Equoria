@@ -1,12 +1,16 @@
 /**
  * Groom Progression Service
  *
- * Handles groom experience, leveling, synergy tracking, and assignment history.
+ * Handles groom-horse synergy tracking, assignment history and profile data.
  * Implements the groom progression and personality system as specified in
  * groomprogressionpersonality.md.
  *
+ * Owner ruling 2026-10-21 (Equoria-dea06): grooms are game-generated NPCs that
+ * never earn XP and keep the level they were generated with. The groom XP award
+ * and the XP-to-level curve that lived here are gone; nothing writes a groom's
+ * `experience` or `level` after it is created.
+ *
  * Features:
- * - XP gain and leveling system (cap at level 10)
  * - Groom-horse synergy tracking with effects
  * - Assignment history logging
  * - Enhanced profile data aggregation
@@ -14,113 +18,6 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-
-/**
- * XP requirements per level: 100 * level
- * Level 1: 0-99 XP
- * Level 2: 100-299 XP (100 + 200)
- * Level 3: 300-599 XP (100 + 200 + 300)
- * etc.
- */
-const LEVEL_CAP = 10;
-
-/**
- * Calculate groom level from total experience
- * @param {number} experience - Total experience points
- * @returns {number} Current level (1-10)
- */
-export function calculateGroomLevel(experience) {
-  if (experience < 100) {
-    return 1;
-  }
-
-  let totalXpRequired = 0;
-  for (let level = 1; level <= LEVEL_CAP; level++) {
-    const xpForThisLevel = 100 * level;
-    if (experience < totalXpRequired + xpForThisLevel) {
-      return level;
-    }
-    totalXpRequired += xpForThisLevel;
-  }
-
-  return LEVEL_CAP; // Cap at level 10
-}
-
-/**
- * Award XP to a groom and handle leveling
- * @param {number} groomId - ID of the groom
- * @param {string} source - Source of XP (milestone_completion, trait_shaped, show_win)
- * @param {number} amount - Amount of XP to award
- * @param {object} [client] - Prisma client or interactive-transaction client.
- *   Pass a `tx` to enlist this write in the caller's transaction (Equoria-po1fl);
- *   when a tx is passed, failures are RETHROWN instead of fail-softed.
- * @returns {Object} Result with XP gained, new experience, level info
- */
-export async function awardGroomXP(groomId, source, amount, client = prisma) {
-  try {
-    logger.info(
-      `[groomProgressionService.awardGroomXP] Awarding ${amount} XP to groom ${groomId} for ${source}`,
-    );
-
-    // Get current groom data
-    const groom = await client.groom.findUnique({
-      where: { id: groomId },
-      select: { experience: true, level: true },
-    });
-
-    if (!groom) {
-      throw new Error(`Groom with ID ${groomId} not found`);
-    }
-
-    const oldExperience = groom.experience || 0;
-    const oldLevel = groom.level || 1;
-    const newExperience = oldExperience + amount;
-    const newLevel = calculateGroomLevel(newExperience);
-    const levelUp = newLevel > oldLevel;
-
-    // Update groom with new experience and level
-    await client.groom.update({
-      where: { id: groomId },
-      data: {
-        experience: newExperience,
-        level: newLevel,
-      },
-    });
-
-    logger.info(
-      `[groomProgressionService.awardGroomXP] Groom ${groomId} gained ${amount} XP: ${oldExperience} → ${newExperience} (Level ${oldLevel} → ${newLevel})`,
-    );
-
-    return {
-      success: true,
-      xpGained: amount,
-      oldExperience,
-      newExperience,
-      oldLevel,
-      newLevel,
-      levelUp,
-    };
-  } catch (error) {
-    logger.error(
-      `[groomProgressionService.awardGroomXP] Error awarding XP to groom ${groomId}:`,
-      error,
-    );
-    // Equoria-po1fl: when a CALLER supplied a transaction client, the failed
-    // statement has already aborted that transaction inside Postgres. Returning
-    // `{ success: false }` here would let the caller carry on and "commit" a set
-    // that the database will refuse — or, worse, commit the other writes while
-    // silently dropping this one. Rethrow so the caller's `$transaction` rolls
-    // the whole set back. The standalone (`client === prisma`) call sites keep
-    // their historical fail-soft contract.
-    if (client !== prisma) {
-      throw error;
-    }
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
 
 /**
  * Update synergy between groom and horse
@@ -200,8 +97,9 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1,
     };
   } catch (error) {
     logger.error('[groomProgressionService.updateGroomSynergy] Error updating synergy:', error);
-    // Equoria-po1fl: see awardGroomXP — inside a caller's transaction a
-    // swallowed error is a half-written player state. Propagate.
+    // Equoria-po1fl: inside a caller's transaction the failed statement has
+    // already aborted that transaction, so a swallowed error would be a
+    // half-written player state. Propagate; standalone callers stay fail-soft.
     if (client !== prisma) {
       throw error;
     }

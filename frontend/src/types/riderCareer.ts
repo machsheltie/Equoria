@@ -1,11 +1,12 @@
 /**
  * Rider Career Lifecycle Types (Epic 9C — Story 9C-4)
  *
- * Defines career data, XP/level progression helpers, and retirement status
- * calculations for the Rider System. Mirrors groomCareer.ts pattern.
+ * Defines career data and retirement status calculations for the Rider
+ * System. Mirrors groomCareer.ts pattern.
  *
- * XP per level: 100 * level (Level 1 needs 100 XP, Level 2 needs 200 XP, etc.)
- * Level N starts at: 100 * N*(N-1)/2
+ * Owner ruling 2026-10-21 (Equoria-dea06): riders are fixed NPCs. They earn no
+ * XP and keep the level they were generated with, so the XP-to-level progress
+ * helpers that used to live here were removed.
  *
  * Rider careers are finite (weeks-based) with retirement warnings.
  * Legacy riders (high wins/prestige) may earn special contract extensions.
@@ -14,8 +15,8 @@
 export interface RiderCareerData {
   id: number;
   name: string;
-  experience: number; // total XP earned
-  level: number; // 1–10
+  experience: number; // generated at hire; never earned (Equoria-dea06)
+  level: number; // 1–10, generated at hire and fixed (Equoria-dea06)
   careerWeeks: number;
   hiredDate: string; // ISO timestamp
   retired: boolean;
@@ -49,15 +50,6 @@ export interface RiderRetirementStatus {
   warningReasons: RiderRetirementWarningReason[];
 }
 
-export interface RiderXPProgress {
-  level: number; // 1–10
-  xpInLevel: number;
-  xpToNextLevel: number;
-  totalXPForCurrentLevel: number;
-  isMaxLevel: boolean;
-  progressPercent: number; // 0–100
-}
-
 export interface RiderCareerMilestone {
   id: string;
   label: string;
@@ -86,57 +78,6 @@ export const RIDER_CAREER_CONSTANTS = {
     5: 6,
   } as Record<number, number>,
 } as const;
-
-/**
- * XP required to start a given level.
- * Formula: 100 * N*(N-1)/2 — mirrors groom XP formula.
- */
-export function riderXpToStartLevel(level: number): number {
-  return (100 * level * (level - 1)) / 2;
-}
-
-/**
- * Calculate XP progress within the current level.
- */
-export function calculateRiderXPProgress(experience: number): RiderXPProgress {
-  const { LEVEL_CAP } = RIDER_CAREER_CONSTANTS;
-
-  let level = 1;
-  for (let l = 1; l <= LEVEL_CAP; l++) {
-    if (experience >= riderXpToStartLevel(l)) {
-      level = l;
-    } else {
-      break;
-    }
-  }
-
-  const isMaxLevel = level >= LEVEL_CAP;
-  const totalXPForCurrentLevel = riderXpToStartLevel(level);
-  const xpInLevel = experience - totalXPForCurrentLevel;
-
-  if (isMaxLevel) {
-    return {
-      level: LEVEL_CAP,
-      xpInLevel,
-      xpToNextLevel: 0,
-      totalXPForCurrentLevel,
-      isMaxLevel: true,
-      progressPercent: 100,
-    };
-  }
-
-  const xpToNextLevel = 100 * level;
-  const progressPercent = Math.min(100, Math.round((xpInLevel / xpToNextLevel) * 100));
-
-  return {
-    level,
-    xpInLevel,
-    xpToNextLevel,
-    totalXPForCurrentLevel,
-    isMaxLevel: false,
-    progressPercent,
-  };
-}
 
 /**
  * Calculate retirement status for a rider.
@@ -211,7 +152,7 @@ export function buildRiderCareerMilestones(
     {
       id: 'level_5',
       label: 'Seasoned Rider (Level 5)',
-      description: 'Reached level 5 through competition experience',
+      description: 'A rider of level 5 or above',
       reached: level >= 5,
     },
     {

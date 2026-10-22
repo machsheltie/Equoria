@@ -24,7 +24,7 @@ import { DEVELOPMENTAL_WINDOWS } from '../../../utils/enhancedMilestoneEvaluatio
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
-import { awardGroomXP, updateGroomSynergy } from '../services/groomProgressionService.mjs';
+import { updateGroomSynergy } from '../services/groomProgressionService.mjs';
 // Equoria-ypb7d.3: a groom inside the one-week fee grace period stays on staff but
 // cannot groom. Pure check over the groom row this handler already fetches.
 import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
@@ -278,7 +278,7 @@ export async function recordInteraction(req, res) {
     // invariant count(FoalActivity) == taskLog[task], and the player keeps
     // their interaction instead of paying for a broken one.
     //
-    // WRITE ORDER - Horse row first, staff rows (Groom, GroomHorseSynergy)
+    // WRITE ORDER - Horse row first, the staff row (GroomHorseSynergy)
     // second, matching the repository lock-ordering ruling recorded in
     // Equoria-6p398.9 (User -> Horse -> staff, ascending ids) and the same order
     // riderController uses. There is no User row on this path (grooming costs
@@ -356,11 +356,10 @@ export async function recordInteraction(req, res) {
           },
         });
 
-        // 4. Staff row: the groom's 2 XP for the session (consistent with
-        // groomPersonalityTraits.mjs). Enlisted on `tx`, so it rethrows.
-        await awardGroomXP(groomId, 'interaction_completed', 2, tx);
+        // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs; a
+        // session awards the groom no XP and never changes its level.
 
-        // 5. Staff row: Equoria-5v6g - GroomHorseSynergy tracks sessionsTogether
+        // 4. Staff row: Equoria-5v6g - GroomHorseSynergy tracks sessionsTogether
         // on every interaction and grows synergyScore every 4th session.
         await updateGroomSynergy(groomId, foalId, 'interaction_completed', 1, tx);
 

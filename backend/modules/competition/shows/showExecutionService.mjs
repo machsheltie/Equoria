@@ -25,7 +25,7 @@ import { settleDueConformationShows } from '../services/conformationShowService.
 // Equoria-c7mx0: scoring extracted verbatim to the shared scoring service;
 // readStagedOrdering implements the 2026-07-06 staged-ordering replay contract.
 import { readStagedOrdering, scoreShowEntries } from '../services/competitionScoring.mjs';
-import { awardRiderCompetitionXP } from '../../trainers/index.mjs';
+import { awardRiderCompetitionPrestige } from '../../trainers/index.mjs';
 // Equoria-oey96.4: horse XP / owner XP / stat gains — the executor's progression
 // gap (it paid prize + rider XP but zero player/horse progression). Tx-aware helper
 // so the awards run INSIDE the per-entry tx below without a nested transaction.
@@ -269,9 +269,9 @@ export async function executeClosedShows(req, res, options) {
       // rider.update are wrapped in a single $transaction (Equoria-koodu AC).
       // If user.update fails (deadlock, connection drop, server crash), the
       // result.create is rolled back so we never have "result recorded but
-      // money not paid." awardRiderCompetitionXP stays OUTSIDE the tx because
-      // it is fail-soft (existing contract — XP failure must not block show
-      // execution).
+      // money not paid." awardRiderCompetitionPrestige stays OUTSIDE the tx
+      // because it is fail-soft (existing contract — a prestige failure must not
+      // block show execution).
       const resultOps = stagedOrdering.map(async staged => {
         const { horseId, userId, horseName, placement, riderId } = staged;
         const prize = prizeFor(placement);
@@ -369,15 +369,16 @@ export async function executeClosedShows(req, res, options) {
           await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
         });
 
-        // Equoria-r1nr: award XP + prestige OUTSIDE the transaction
-        // (fail-soft — XP failure must not block show execution or roll back
-        // the prize payment).
+        // Owner ruling 2026-10-21 (Equoria-dea06): riders are fixed NPCs and
+        // earn no XP. Only the prestige bump for 1st/2nd remains, OUTSIDE the
+        // transaction (fail-soft — it must not block show execution or roll
+        // back the prize payment).
         if (riderId) {
           try {
-            await awardRiderCompetitionXP(riderId, placement);
-          } catch (xpErr) {
+            await awardRiderCompetitionPrestige(riderId, placement);
+          } catch (prestigeErr) {
             logger.error(
-              `[showController] Failed to award rider XP for rider ${riderId}: ${xpErr.message}`,
+              `[showController] Failed to bump prestige for rider ${riderId}: ${prestigeErr.message}`,
             );
           }
         }

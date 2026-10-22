@@ -10,8 +10,7 @@
  */
 
 export {
-  awardRiderCompetitionXP,
-  awardTrainerSessionXP,
+  awardRiderCompetitionPrestige,
   incrementWeeklyCareerWeeks,
 } from './services/riderTrainerProgressionService.mjs';
 export { processRiderTrainerRetirement } from './services/riderTrainerRetirementService.mjs';

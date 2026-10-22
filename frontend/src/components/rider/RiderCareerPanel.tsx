@@ -2,7 +2,7 @@
  * RiderCareerPanel Component (Epic 9C — Story 9C-4)
  *
  * Displays rider career progress:
- * - XP / level progress bar
+ * - Level (generated and fixed: riders earn no XP, Equoria-dea06)
  * - Career timeline (weeks served)
  * - Retirement status / warnings
  * - Legacy contract eligibility
@@ -15,7 +15,6 @@ import React from 'react';
 import { Trophy, Clock, AlertTriangle, Star, CheckCircle, Circle } from 'lucide-react';
 import {
   RiderCareerData,
-  calculateRiderXPProgress,
   calculateRiderRetirementStatus,
   buildRiderCareerMilestones,
 } from '@/types/riderCareer';
@@ -26,7 +25,6 @@ interface RiderCareerPanelProps {
 }
 
 const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCount = 0 }) => {
-  const xpProgress = calculateRiderXPProgress(rider.experience);
   const retirementStatus = calculateRiderRetirementStatus(
     rider.careerWeeks,
     rider.level,
@@ -70,29 +68,14 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
         </div>
       )}
 
-      {/* XP / Level Progress */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-            Level {xpProgress.level}
-          </span>
-          {xpProgress.isMaxLevel ? (
-            <span className="text-xs text-[var(--gold-primary)] font-semibold">MAX LEVEL</span>
-          ) : (
-            <span className="text-xs text-[var(--text-muted)]">
-              {xpProgress.xpInLevel} / {xpProgress.xpToNextLevel} XP
-            </span>
-          )}
-        </div>
-        <div className="h-2 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[var(--gold-primary)] rounded-full transition-all duration-700"
-            style={{ width: `${xpProgress.progressPercent}%` }}
-            data-testid="xp-progress-bar"
-          />
-        </div>
-        <p className="text-[10px] text-[var(--text-muted)] mt-1">{rider.experience} total XP</p>
-      </div>
+      {/* Level. Equoria-dea06: staff are fixed NPCs with no XP; this is the
+          level the rider was generated with. */}
+      <p
+        className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider"
+        data-testid="rider-level"
+      >
+        Level {rider.level}
+      </p>
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">

@@ -2,7 +2,6 @@
  * Groom Progression & Personality System Tests
  *
  * Tests the complete groom progression system including:
- * - XP gain and leveling mechanics
  * - Groom-horse synergy tracking
  * - Assignment history logging
  * - Enhanced profile API
@@ -12,13 +11,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  awardGroomXP,
-  calculateGroomLevel,
-  updateGroomSynergy,
-  logGroomAssignment,
-  getGroomProfile,
-} from '../services/groomProgressionService.mjs';
+import { updateGroomSynergy, logGroomAssignment, getGroomProfile } from '../services/groomProgressionService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
@@ -129,60 +122,11 @@ describe('Groom Progression System', () => {
     await cleanupProgressionData();
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
-  describe('XP and Leveling System', () => {
-    test('Should award XP for milestone completion', async () => {
-      const result = await awardGroomXP(testGroom.id, 'milestone_completion', 20);
-
-      expect(result.success).toBe(true);
-      expect(result.xpGained).toBe(20);
-      expect(result.newExperience).toBe(20);
-      expect(result.levelUp).toBe(false);
-      expect(result.newLevel).toBe(1);
-    });
-
-    test('Should award XP for trait shaping', async () => {
-      const result = await awardGroomXP(testGroom.id, 'trait_shaped', 10);
-
-      expect(result.success).toBe(true);
-      expect(result.xpGained).toBe(10);
-      expect(result.newExperience).toBe(10);
-    });
-
-    test('Should award XP for show wins', async () => {
-      const result = await awardGroomXP(testGroom.id, 'showWin', 15);
-
-      expect(result.success).toBe(true);
-      expect(result.xpGained).toBe(15);
-      expect(result.newExperience).toBe(15);
-    });
-
-    test('Should level up when reaching XP threshold', async () => {
-      // Award 100 XP to reach level 2 (100 * 1 = 100 XP required)
-      const result = await awardGroomXP(testGroom.id, 'milestone_completion', 100);
-
-      expect(result.success).toBe(true);
-      expect(result.xpGained).toBe(100);
-      expect(result.newExperience).toBe(100);
-      expect(result.levelUp).toBe(true);
-      expect(result.newLevel).toBe(2);
-    });
-
-    test('Should calculate correct level from experience', () => {
-      expect(calculateGroomLevel(0)).toBe(1);
-      expect(calculateGroomLevel(50)).toBe(1);
-      expect(calculateGroomLevel(100)).toBe(2);
-      expect(calculateGroomLevel(300)).toBe(3); // 100 + 200 = 300
-      expect(calculateGroomLevel(600)).toBe(4); // 100 + 200 + 300 = 600
-      expect(calculateGroomLevel(1000)).toBe(5); // 100 + 200 + 300 + 400 = 1000
-    });
-
-    test('Should cap level at 10', async () => {
-      // Award massive XP to test level cap
-      const result = await awardGroomXP(testGroom.id, 'milestone_completion', 10000);
-
-      expect(result.newLevel).toBeLessThanOrEqual(10);
-    });
-  });
+  // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs that never
+  // earn XP and keep their generated level. Old contract: an 'XP and Leveling
+  // System' block here pinned awardGroomXP (milestone/trait/show XP, level-ups,
+  // the level-10 cap) and calculateGroomLevel. Both were removed with the
+  // ruling; staffAreFixedNpcs.integration.test.mjs pins the new contract.
 
   describe('Groom-Horse Synergy System', () => {
     test('Should create synergy record for new groom-horse pair', async () => {
@@ -259,8 +203,10 @@ describe('Groom Progression System', () => {
 
   describe('Enhanced Groom Profile API', () => {
     test('Should return comprehensive groom profile', async () => {
-      // Set up some progression data
-      await awardGroomXP(testGroom.id, 'milestone_completion', 150); // Level 2
+      // Set up some progression data. Owner ruling 2026-10-21 (Equoria-dea06):
+      // a groom's experience/level are generated, never earned (old contract:
+      // awardGroomXP(150) raised it to level 2), so set them as generation would.
+      await prisma.groom.update({ where: { id: testGroom.id }, data: { experience: 150, level: 2 } });
       await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 3);
       await logGroomAssignment(testGroom.id, testHorse.id, 'assigned');
 

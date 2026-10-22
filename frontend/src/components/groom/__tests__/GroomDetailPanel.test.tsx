@@ -4,7 +4,8 @@
  * Verifies the metrics + assignment-history + talent-tree panel surfaces
  * backend data:
  *  - 7 GroomMetrics score fields + totalInteractions render with values
- *  - assignment-log rows render milestones / xp / traitsShaped chips
+ *  - assignment-log rows render milestones / traitsShaped chips (no XP:
+ *    grooms are fixed NPCs, Equoria-dea06)
  *  - loading / error / empty states render their honest placeholders
  *    (and the populated grids/lists are ABSENT in those states)
  *  - Equoria-oey96.6: the talent tree renders from BACKEND-sourced selections,
@@ -103,7 +104,9 @@ describe('GroomDetailPanel (Equoria-cbkw)', () => {
     expect(within(grid).getByTestId('groom-metric-totalInteractions-7')).toHaveTextContent('42');
   });
 
-  it('renders assignment-log rows with milestones, xp, and trait chips', () => {
+  // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs and never
+  // gain XP. Old contract: each log row showed "XP gained: n". New: no XP row.
+  it('renders assignment-log rows with milestones and trait chips, and no XP', () => {
     const logs = [
       {
         id: 11,
@@ -123,7 +126,8 @@ describe('GroomDetailPanel (Equoria-cbkw)', () => {
     const row = screen.getByTestId('groom-log-11');
     expect(within(row).getByText('Comet')).toBeInTheDocument();
     expect(within(row).getByTestId('groom-log-milestones-11')).toHaveTextContent('4');
-    expect(within(row).getByTestId('groom-log-xp-11')).toHaveTextContent('120');
+    expect(within(row).queryByTestId('groom-log-xp-11')).not.toBeInTheDocument();
+    expect(within(row).queryByText(/XP/)).not.toBeInTheDocument();
     const traits = within(row).getByTestId('groom-log-traits-11');
     expect(within(traits).getByText('brave')).toBeInTheDocument();
     expect(within(traits).getByText('calm')).toBeInTheDocument();

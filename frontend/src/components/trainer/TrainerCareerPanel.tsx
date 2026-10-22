@@ -2,14 +2,13 @@
  * TrainerCareerPanel — Career progress display (Epic 13 — Story 13-4)
  *
  * Displays trainer career progression:
- * - XP / level progress bar
+ * - Level (generated and fixed: trainers earn no XP, Equoria-dea06)
  * - Career timeline (weeks served, sessions run)
  * - Retirement status / warnings
  * - Legacy certification eligibility
  * - Career milestones (hired, first session, level caps)
  *
  * Mirrors RiderCareerPanel.tsx for the Trainer System.
- * XP formula: 100 * level * (level - 1) / 2 (same as Grooms / Riders)
  * Retirement: mandatory at 80 weeks; early at L8+
  */
 
@@ -28,28 +27,8 @@ export interface TrainerCareerData {
   totalHorses: number;
 }
 
-const MAX_LEVEL = 10;
 const MANDATORY_RETIREMENT_WEEKS = 80;
 const RETIREMENT_WARNING_WEEKS = 72; // 8 weeks notice
-
-function calculateXPProgress(experience: number) {
-  // Level from XP: 100 * L * (L-1) / 2 = XP at start of level L
-  let level = 1;
-  while (level < MAX_LEVEL) {
-    const xpForNextLevel = Math.floor(100 * (level + 1) * level) / 2;
-    if (experience < xpForNextLevel) break;
-    level++;
-  }
-  const isMaxLevel = level >= MAX_LEVEL;
-  const xpAtLevelStart = isMaxLevel ? 0 : Math.floor((100 * level * (level - 1)) / 2);
-  const xpAtNextLevel = isMaxLevel ? 1 : Math.floor((100 * (level + 1) * level) / 2);
-  const xpInLevel = experience - xpAtLevelStart;
-  const xpToNextLevel = xpAtNextLevel - xpAtLevelStart;
-  const progressPercent = isMaxLevel
-    ? 100
-    : Math.min(100, Math.round((xpInLevel / xpToNextLevel) * 100));
-  return { level, xpInLevel, xpToNextLevel, progressPercent, isMaxLevel };
-}
 
 function calculateRetirementStatus(careerWeeks: number, level: number) {
   const mandatoryRetirement = careerWeeks >= MANDATORY_RETIREMENT_WEEKS;
@@ -122,7 +101,6 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
   trainer,
   assignmentCount = 0,
 }) => {
-  const xpProgress = calculateXPProgress(trainer.experience);
   const retirementStatus = calculateRetirementStatus(trainer.careerWeeks, trainer.level);
   const milestones = buildMilestones(trainer.level, trainer.careerWeeks, trainer.totalSessions);
 
@@ -156,29 +134,14 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
         </div>
       )}
 
-      {/* XP / Level Progress */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-            Level {xpProgress.level}
-          </span>
-          {xpProgress.isMaxLevel ? (
-            <span className="text-xs text-[var(--gold-primary)] font-semibold">MAX LEVEL</span>
-          ) : (
-            <span className="text-xs text-[var(--text-muted)]">
-              {xpProgress.xpInLevel} / {xpProgress.xpToNextLevel} XP
-            </span>
-          )}
-        </div>
-        <div className="h-2 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[var(--gold-primary)] rounded-full transition-all duration-700"
-            style={{ width: `${xpProgress.progressPercent}%` }}
-            data-testid="xp-progress-bar"
-          />
-        </div>
-        <p className="text-[10px] text-[var(--text-muted)] mt-1">{trainer.experience} total XP</p>
-      </div>
+      {/* Level. Equoria-dea06: staff are fixed NPCs with no XP; this is the
+          level the trainer was generated with. */}
+      <p
+        className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider"
+        data-testid="trainer-level"
+      >
+        Level {trainer.level}
+      </p>
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">

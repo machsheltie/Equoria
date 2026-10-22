@@ -5,7 +5,8 @@
  * Slimmed from full user-journey coverage. The remaining tests are limited
  * to data invariants that span MULTIPLE backend systems — e.g., training
  * mutating both Horse and User progress, horse creation impacting user
- * counts, groom interaction affecting groom experience visible via API.
+ * counts, groom interaction leaving the groom's generated experience as it was,
+ * visible via API (owner ruling 2026-10-21, Equoria-dea06).
  *
  * Full multi-screen user-journey scenarios live in tests/e2e/ Playwright
  * specs, not here.
@@ -192,7 +193,10 @@ describe('System-Wide Data Integrity', () => {
     expect(finalLevel).toBe(expectedLevel);
   });
 
-  test('Groom interaction increments groom experience — cross-system: Groom Interaction → Groom Profile API', async () => {
+  // Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs that never
+  // earn XP. Old contract: this test asserted the interaction INCREMENTED the
+  // groom's experience (> 0). New contract: experience and level stay as generated.
+  test('Groom interaction leaves groom experience and level unchanged — cross-system: Groom Interaction → Groom Profile API', async () => {
     const interactionResponse = await request(app)
       .post('/api/v1/grooms/interact')
       .set('Authorization', `Bearer ${authToken}`)
@@ -218,7 +222,8 @@ describe('System-Wide Data Integrity', () => {
     expect(groomResponse.body.success).toBe(true);
     const updatedGroom = groomResponse.body.grooms.find(g => g.id === testGroom.id);
     expect(updatedGroom).toBeDefined();
-    expect(updatedGroom.experience).toBeGreaterThan(0);
+    expect(updatedGroom.experience).toBe(0);
+    expect(updatedGroom.level).toBe(1);
   });
 
   test('Auth registration produces auth cookies and queryable user record — cross-system: Auth → DB', async () => {

@@ -433,7 +433,10 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
 }
 
 /**
- * Update personality traits based on interaction outcomes
+ * Update personality traits based on interaction outcomes.
+ * Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs, so this
+ * awards no XP and writes nothing to the groom row (old contract: +2
+ * experience per recent interaction).
  * @param {number} groomId - ID of the groom
  * @returns {Object} Trait update results
  */
@@ -442,8 +445,6 @@ export async function updatePersonalityTraits(groomId) {
     where: { id: groomId },
     select: {
       id: true,
-      experience: true,
-      level: true,
       epigeneticInfluenceType: true,
     },
   });
@@ -467,13 +468,9 @@ export async function updatePersonalityTraits(groomId) {
     return {
       groomId,
       traitsUpdated: [],
-      experienceGained: 0,
       message: 'No recent interactions to base trait updates on',
     };
   }
-
-  // Calculate experience gained from interactions
-  const experienceGained = recentInteractions.length * 2; // 2 experience per interaction
 
   // Analyze interaction quality to determine trait development
   const avgQuality = calculateAverageQuality(recentInteractions);
@@ -482,14 +479,6 @@ export async function updatePersonalityTraits(groomId) {
     recentInteractions.length;
 
   const traitsUpdated = [];
-
-  // Update groom experience
-  await prisma.groom.update({
-    where: { id: groomId },
-    data: {
-      experience: groom.experience + experienceGained,
-    },
-  });
 
   // Determine trait improvements based on performance
   if (avgQuality >= 3.5 && avgBondChange > 1) {
@@ -501,7 +490,6 @@ export async function updatePersonalityTraits(groomId) {
   return {
     groomId,
     traitsUpdated,
-    experienceGained,
     performanceMetrics: {
       avgQuality,
       avgBondChange,

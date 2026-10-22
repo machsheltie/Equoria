@@ -6,8 +6,6 @@ import {
   calculateHandlerBonus,
   getAssignedHandler,
   validateHandlerEligibility,
-  recordHandlerPerformance,
-  calculateGroomExperienceGain,
 } from '../services/groomHandlerService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -136,81 +134,13 @@ describe('calculateHandlerBonus', () => {
   });
 });
 
-// ── calculateGroomExperienceGain ─────────────────────────────────────────────
-
-describe('calculateGroomExperienceGain', () => {
-  it('awards +3 extra XP for 1st place', () => {
-    const xp = calculateGroomExperienceGain(1, 5, 'novice');
-    expect(xp).toBe(4); // base 1 + placement bonus 3, novice multiplier 1.0
-  });
-
-  it('awards +2 extra XP for 2nd place', () => {
-    const xp = calculateGroomExperienceGain(2, 5, 'novice');
-    expect(xp).toBe(3); // base 1 + 2 = 3 * 1.0
-  });
-
-  it('awards +1 extra XP for 3rd place', () => {
-    const xp = calculateGroomExperienceGain(3, 5, 'novice');
-    expect(xp).toBe(2); // base 1 + 1 = 2 * 1.0
-  });
-
-  it('awards only base XP for 4th place', () => {
-    const xp = calculateGroomExperienceGain(4, 5, 'novice');
-    expect(xp).toBe(1); // base 1 only
-  });
-
-  it('adds +1 for large competitions (>=10 entries)', () => {
-    const xp = calculateGroomExperienceGain(4, 10, 'novice');
-    expect(xp).toBe(2); // base 1 + field bonus 1
-  });
-
-  it('does NOT add field bonus for <10 entries', () => {
-    const xp = calculateGroomExperienceGain(4, 9, 'novice');
-    expect(xp).toBe(1); // base 1 only
-  });
-
-  it('applies novice multiplier 1.0', () => {
-    expect(calculateGroomExperienceGain(1, 5, 'novice')).toBe(4);
-  });
-
-  it('applies intermediate multiplier 0.8', () => {
-    // (1 + 3) * 0.8 = 3.2 → rounded to 3
-    expect(calculateGroomExperienceGain(1, 5, 'intermediate')).toBe(3);
-  });
-
-  it('applies expert multiplier 0.6', () => {
-    // (1 + 3) * 0.6 = 2.4 → rounded to 2
-    expect(calculateGroomExperienceGain(1, 5, 'expert')).toBe(2);
-  });
-
-  it('applies master multiplier 0.4', () => {
-    // (1 + 3) * 0.4 = 1.6 → rounded to 2
-    expect(calculateGroomExperienceGain(1, 5, 'master')).toBe(2);
-  });
-
-  it('defaults to 1.0 multiplier for unknown skill level', () => {
-    expect(calculateGroomExperienceGain(4, 5, 'legendary')).toBe(1);
-  });
-
-  it('returns an integer (Math.round applied)', () => {
-    const xp = calculateGroomExperienceGain(2, 5, 'intermediate');
-    expect(Number.isInteger(xp)).toBe(true);
-  });
-});
-
-// ── recordHandlerPerformance ─────────────────────────────────────────────────
-
-describe('recordHandlerPerformance', () => {
-  it('returns competitionResult unchanged when hasHandler=false', async () => {
-    const result = { placement: 1, score: 95 };
-    const returned = await recordHandlerPerformance(result, { hasHandler: false });
-    expect(returned).toBe(result);
-  });
-});
+// Owner ruling 2026-10-21 (Equoria-dea06): grooms are fixed NPCs and earn no
+// XP. Old contract: calculateGroomExperienceGain priced a handler's XP by
+// placement/field/skill and recordHandlerPerformance wrote it to the groom.
+// Both functions were removed with that ruling, and so were their tests here.
 
 // ── DB-fixture branch coverage (Equoria-rr7) ─────────────────────────────────
-// Covers getAssignedHandler (170-225), validateHandlerEligibility (234-292),
-// and recordHandlerPerformance hasHandler=true path (307-344).
+// Covers getAssignedHandler (170-225) and validateHandlerEligibility (234-292).
 
 describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () => {
   let ghsUser;
@@ -312,35 +242,5 @@ describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () 
     expect(result.eligible).toBe(true);
     expect(result.groom).toBeDefined();
     expect(typeof result.handlerBonus).toBe('number');
-  });
-
-  it('recordHandlerPerformance: hasHandler=true, experienceGain>0 → updates groom XP (lines 307-341)', async () => {
-    const competitionResult = { placement: 1, totalEntries: 5, score: 95 };
-    const handlerData = {
-      hasHandler: true,
-      groom: { id: ghsGroom.id, name: ghsGroom.name, skillLevel: 'novice' },
-      handlerBonus: 0.1,
-      bonusBreakdown: { skillBonus: 0.1 },
-    };
-    const result = await recordHandlerPerformance(competitionResult, handlerData);
-    expect(result).toHaveProperty('handlerInfo');
-    expect(result.handlerInfo.groomId).toBe(ghsGroom.id);
-    expect(result.handlerInfo.experienceGained).toBeGreaterThan(0);
-    const updatedGroom = await prisma.groom.findUnique({ where: { id: ghsGroom.id } });
-    expect(updatedGroom.experience).toBeGreaterThan(0);
-  });
-
-  it('recordHandlerPerformance: hasHandler=true, experienceGain=0 → skips XP update (line 324 false arm)', async () => {
-    // master + 4th place + 1 entry: (1+0)*0.4 = 0.4 → Math.round(0.4) = 0
-    const competitionResult = { placement: 4, totalEntries: 1, score: 75 };
-    const handlerData = {
-      hasHandler: true,
-      groom: { id: ghsGroom.id, name: ghsGroom.name, skillLevel: 'master' },
-      handlerBonus: 0.05,
-      bonusBreakdown: {},
-    };
-    const result = await recordHandlerPerformance(competitionResult, handlerData);
-    expect(result).toHaveProperty('handlerInfo');
-    expect(result.handlerInfo).not.toHaveProperty('experienceGained');
   });
 });
