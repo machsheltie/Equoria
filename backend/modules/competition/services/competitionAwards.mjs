@@ -85,7 +85,8 @@ export function computePlacementAwards(placementNumber) {
  *      (`updateMany where stat < 100`) so a stat already at the 0-100 ceiling is
  *      a no-op instead of exceeding it. `updateHorseRewards`/`updateHorseStat`
  *      are deliberately NOT reused — they are separate un-transacted writes that
- *      also bundle earnings (the totalEarnings gap is the separate Equoria-xal4m).
+ *      also bundle earnings (the executor adds totalEarnings in its own payout
+ *      leg, Equoria-xal4m).
  *
  * `db` MUST be a transaction client when atomicity with sibling writes is
  * required (the executor passes its per-entry `tx`); a root client is acceptable

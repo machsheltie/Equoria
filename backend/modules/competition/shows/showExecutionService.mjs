@@ -167,6 +167,14 @@ async function settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGai
         where: { id: userId },
         data: { money: { increment: prize } },
       });
+      // Equoria-xal4m: the horse's lifetime winnings (Horse.totalEarnings, read
+      // by the earnings leaderboard and horse pages) grow with the same prize,
+      // in the same tx, so totalEarnings == SUM(prizeWon) of its results.
+      // User before Horse, as everywhere (lock order).
+      await tx.horse.update({
+        where: { id: horseId },
+        data: { totalEarnings: { increment: prize } },
+      });
     }
     if (placement === 1) {
       await refundUnpaidPrizeShareInTx(tx, {
