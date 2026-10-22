@@ -59,7 +59,13 @@ export const enforceNoOriginPolicy = (req, res, next) => {
   });
 };
 
-const STATIC_ALLOWED_ORIGINS = [
+// Local development origins. Built in everywhere except production, where the
+// allow-list is ALLOWED_ORIGINS alone, so a page on a player's own loopback
+// cannot make credentialed calls to the live API (Equoria-xb9oc, owner
+// decision 2026-07-07). NODE_ENV=beta keeps them: it is the Playwright
+// production-parity profile, run in CI with a localhost frontend and no
+// ALLOWED_ORIGINS (test.yml e2e-tests, update-visual-baselines.yml).
+const LOCAL_DEV_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
@@ -86,39 +92,47 @@ const isSameOrigin = (origin, hostHeader) => {
 
 /**
  * cors() option delegate: reflects no-origin and same-origin requests, allows
- * configured + static origins, and rejects everything else with a CORS error.
+ * ALLOWED_ORIGINS (plus the local dev origins outside production), and
+ * rejects everything else with a CORS error.
  */
-export const corsOptionsDelegate = (req, callback) => {
-  const origin = req.header('Origin');
-  const baseOptions = {
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
+export const createCorsOptionsDelegate =
+  ({ nodeEnv, allowedOrigins: configuredOrigins }) =>
+  (req, callback) => {
+    const origin = req.header('Origin');
+    const baseOptions = {
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
+    };
+
+    // No-origin requests that reach this point are already exempt from the
+    // state-changing-mutation gate above (safe methods, SPA HTML,
+    // /health/ready/ping). Reflect them through.
+    if (!origin) {
+      return callback(null, { ...baseOptions, origin: true });
+    }
+
+    // Same-origin: the request's Host header matches the Origin's host. Always
+    // allow — the browser sent Origin here even though same-origin requests
+    // technically don't need CORS, and we shouldn't reject our own deployment.
+    if (isSameOrigin(origin, req.headers.host)) {
+      return callback(null, { ...baseOptions, origin: true });
+    }
+
+    const allowedOrigins = nodeEnv === 'production' ? [] : [...LOCAL_DEV_ORIGINS];
+    if (configuredOrigins && configuredOrigins.length > 0) {
+      allowedOrigins.push(...configuredOrigins);
+    }
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, { ...baseOptions, origin: true });
+    }
+
+    logger.warn(`CORS blocked request from origin: ${origin} (host: ${req.headers.host})`);
+    return callback(new Error('Not allowed by CORS'));
   };
 
-  // No-origin requests that reach this point are already exempt from the
-  // state-changing-mutation gate above (safe methods, SPA HTML,
-  // /health/ready/ping). Reflect them through.
-  if (!origin) {
-    return callback(null, { ...baseOptions, origin: true });
-  }
-
-  // Same-origin: the request's Host header matches the Origin's host. Always
-  // allow — the browser sent Origin here even though same-origin requests
-  // technically don't need CORS, and we shouldn't reject our own deployment.
-  if (isSameOrigin(origin, req.headers.host)) {
-    return callback(null, { ...baseOptions, origin: true });
-  }
-
-  const allowedOrigins = [...STATIC_ALLOWED_ORIGINS];
-  if (config.allowedOrigins && config.allowedOrigins.length > 0) {
-    allowedOrigins.push(...config.allowedOrigins);
-  }
-
-  if (allowedOrigins.indexOf(origin) !== -1) {
-    return callback(null, { ...baseOptions, origin: true });
-  }
-
-  logger.warn(`CORS blocked request from origin: ${origin} (host: ${req.headers.host})`);
-  return callback(new Error('Not allowed by CORS'));
-};
+export const corsOptionsDelegate = createCorsOptionsDelegate({
+  nodeEnv: config.env,
+  allowedOrigins: config.allowedOrigins,
+});
