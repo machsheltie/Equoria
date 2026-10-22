@@ -70,7 +70,9 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
         </p>
         <p className="font-semibold text-lg text-[var(--text-primary)]">
           {horse.forSale
-            ? `Listed for ${(horse.salePrice ?? 0).toLocaleString()} coins`
+            ? typeof horse.salePrice === 'number'
+              ? `Listed for ${horse.salePrice.toLocaleString()} coins`
+              : 'Listed for sale'
             : 'Not Listed'}
         </p>
         {isAtStud && (
@@ -78,7 +80,8 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
             className="fantasy-body text-[var(--text-secondary)] text-sm mt-1"
             data-testid="stud-current-status"
           >
-            At stud · Fee: {(horse.studFee ?? 0).toLocaleString()} coins
+            At stud · Fee:{' '}
+            {typeof horse.studFee === 'number' ? `${horse.studFee.toLocaleString()} coins` : '—'}
           </p>
         )}
       </div>

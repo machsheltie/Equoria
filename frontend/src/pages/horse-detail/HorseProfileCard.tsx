@@ -210,7 +210,10 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
       {horse.forSale && (
         <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-[var(--badge-success-bg)] border border-[var(--role-success-border)] text-[var(--status-success)] text-xs w-fit">
           <ShoppingCart className="w-3 h-3" />
-          For Sale — {(horse.salePrice ?? 0).toLocaleString()} coins
+          {/* A missing price is not "0 coins" (Equoria-qqhwh): name no price. */}
+          {typeof horse.salePrice === 'number'
+            ? `For Sale — ${horse.salePrice.toLocaleString()} coins`
+            : 'For Sale'}
         </div>
       )}
       {/* Equoria-ga5g — render markings (face / legs / advanced / modifiers) */}

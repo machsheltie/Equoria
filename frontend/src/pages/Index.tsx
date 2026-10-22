@@ -40,9 +40,13 @@ import {
 } from '@/lib/utils/care-status-utils';
 import type { HorseSummary } from '@/lib/api-client';
 
-/** Resolve stat value from flat fields or nested stats object */
-function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number {
-  return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
+/**
+ * Resolve stat value from flat fields or nested stats object. An absent stat is
+ * null (rendered "—"), never 0 — a real zero stat must stay distinguishable
+ * (Equoria-qqhwh).
+ */
+function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number | null {
+  return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? null;
 }
 
 /* ─── Legacy route-local horse summary; not a reusable design pattern ─── */
@@ -149,7 +153,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
               {s.label}
             </span>
             <span className="text-[0.75rem] font-semibold text-[var(--text-primary)]">
-              {s.value}
+              {s.value ?? '—'}
             </span>
           </div>
         ))}
