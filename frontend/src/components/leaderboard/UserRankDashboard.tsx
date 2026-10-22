@@ -71,12 +71,16 @@ const DashboardSkeleton = () => (
   <div
     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
     data-testid="rankings-grid-skeleton"
+    role="status"
+    aria-busy="true"
+    aria-label="Loading your rankings"
   >
     {Array.from({ length: SKELETON_CARD_COUNT }, (_, i) => (
       <RankSummaryCard
         key={`skeleton-${i}`}
         ranking={null as unknown as CategoryRanking}
         isLoading={true}
+        quietWhenLoading
       />
     ))}
   </div>

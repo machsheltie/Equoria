@@ -152,6 +152,8 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
       <div data-testid="score-progression-panel" className={`space-y-6 p-4 ${className}`}>
         <div
           data-testid="loading-container"
+          role="status"
+          aria-busy="true"
           aria-label="Loading training data"
           className="space-y-6"
         >

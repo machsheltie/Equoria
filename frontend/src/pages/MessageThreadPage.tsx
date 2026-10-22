@@ -168,7 +168,7 @@ const MessageThreadPage: React.FC = () => {
         )}
 
         {isLoading && (
-          <div className="space-y-3">
+          <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading thread">
             {[1, 2, 3].map((n) => (
               <Skeleton.Rect key={n} className="h-24" rounded="lg" />
             ))}

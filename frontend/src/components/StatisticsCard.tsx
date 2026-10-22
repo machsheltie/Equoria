@@ -126,6 +126,9 @@ const StatisticsCardSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }
   return (
     <div
       data-testid="stat-loading-skeleton"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading statistic"
       className={`stat-card-skeleton animate-pulse rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-[var(--alpha-text-secondary-20)] ${sizeClasses[size]}`}
     >
       <div className="flex items-center gap-3">

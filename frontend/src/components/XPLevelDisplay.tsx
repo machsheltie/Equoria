@@ -39,6 +39,9 @@ const XPLoadingSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }) => 
   return (
     <div
       data-testid="xp-loading-skeleton"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading experience"
       className={`animate-pulse ${sizeClasses[size]} flex items-center gap-3`}
     >
       {/* Level badge skeleton */}

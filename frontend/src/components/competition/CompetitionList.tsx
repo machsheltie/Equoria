@@ -99,6 +99,9 @@ const CompetitionList = ({
           <div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             data-testid="competition-grid"
+            role="status"
+            aria-busy="true"
+            aria-label="Loading competitions"
           >
             <LoadingSkeletons />
           </div>

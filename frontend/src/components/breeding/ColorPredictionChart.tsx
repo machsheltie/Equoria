@@ -64,6 +64,9 @@ export default function ColorPredictionChart({
       <div
         className="rounded-lg border border-[var(--btn-glass-border)] bg-[var(--alpha-bg-midnight-20)] p-4"
         data-testid="color-prediction-loading"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading color forecast"
       >
         <div className="flex items-center gap-2 mb-3">
           <Palette className="h-4 w-4 text-[var(--role-accent-text)]" />

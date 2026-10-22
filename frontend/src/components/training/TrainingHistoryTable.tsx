@@ -18,6 +18,7 @@
 import React, { useState, useMemo } from 'react';
 import { formatDisciplineName } from '@/lib/utils/training-utils';
 import { formatDate } from '@/lib/formatDate';
+import { LoadingRegion } from '@/components/ui/state';
 
 /**
  * Training history entry interface
@@ -196,6 +197,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
   if (loading) {
     return (
       <div data-testid="training-history-table" className={className}>
+        <LoadingRegion label="Loading training history" />
         <div data-testid="table-container" className="overflow-x-auto">
           <table className="min-w-full table-auto divide-y divide-[var(--glass-border)]">
             <caption className="sr-only">

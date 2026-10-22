@@ -5,6 +5,7 @@
  *   PageLoading    — route/page-level (wraps GallopingLoader)
  *   SectionLoading — section-level inline spinner
  *   Skeleton       — Skeleton.Rect / Skeleton.Line / Skeleton.Circle + SkeletonBase
+ *   LoadingRegion  — role="status" wrapper that announces a component's own placeholder
  *
  * Errors:
  *   InlineError — field/inline error (icon + text, role="alert")
@@ -20,6 +21,9 @@ export { SectionLoading } from './SectionLoading';
 export type { SectionLoadingProps } from './SectionLoading';
 
 export { Skeleton, SkeletonBase } from './Skeleton';
+
+export { LoadingRegion } from './LoadingRegion';
+export type { LoadingRegionProps } from './LoadingRegion';
 
 export { InlineError } from './InlineError';
 export type { InlineErrorProps } from './InlineError';

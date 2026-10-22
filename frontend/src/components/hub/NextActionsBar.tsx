@@ -134,6 +134,8 @@ export function NextActionsBar() {
     return (
       <div
         className="flex gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:overflow-visible"
+        role="status"
+        aria-busy="true"
         aria-label="Loading next actions"
       >
         {[1, 2, 3, 4].map((i) => (

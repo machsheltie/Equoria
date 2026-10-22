@@ -190,7 +190,12 @@ export function WhileYouWereGone() {
 
         {/* Content */}
         {isLoading ? (
-          <div className="space-y-3 py-2">
+          <div
+            className="space-y-3 py-2"
+            role="status"
+            aria-busy="true"
+            aria-label="Loading what happened while you were away"
+          >
             {[1, 2, 3].map((i) => (
               <div
                 key={i}

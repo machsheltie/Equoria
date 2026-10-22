@@ -226,7 +226,12 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="p-4 bg-[rgba(15,35,70,0.5)] rounded-lg shadow border border-[rgba(37,99,235,0.3)]">
+      <div
+        className="p-4 bg-[rgba(15,35,70,0.5)] rounded-lg shadow border border-[rgba(37,99,235,0.3)]"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading XP history"
+      >
         <div className="animate-pulse">
           <div className="h-6 bg-[rgba(15,35,70,0.5)] rounded w-1/4 mb-4"></div>
           <div className="h-64 bg-[rgba(15,35,70,0.3)] rounded"></div>

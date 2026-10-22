@@ -41,6 +41,12 @@ export interface RankSummaryCardProps {
   onClick?: () => void;
   isClickable?: boolean;
   isLoading?: boolean;
+  /**
+   * The loading placeholder does not announce itself (default false). Set by a
+   * parent that already wraps a whole run of placeholder cards in one live
+   * region, so a grid of six does not announce six times.
+   */
+  quietWhenLoading?: boolean;
   className?: string;
 }
 
@@ -115,10 +121,17 @@ const RankChangeIndicator = ({ rankChange }: { rankChange: number }) => {
 /**
  * Loading skeleton placeholder for the RankSummaryCard.
  */
-const SkeletonCard = ({ className = '' }: { className?: string }) => (
+const SkeletonCard = ({
+  className = '',
+  quiet = false,
+}: {
+  className?: string;
+  quiet?: boolean;
+}) => (
   <div
     className={`glass-panel rounded-lg p-4 animate-pulse ${className}`}
     data-testid="rank-summary-card-skeleton"
+    {...(quiet ? {} : { role: 'status', 'aria-busy': true, 'aria-label': 'Loading ranking' })}
   >
     <div className="h-5 bg-[rgba(15,35,70,0.5)] rounded w-2/3 mb-3" data-testid="skeleton-pulse" />
     <div className="h-8 bg-[rgba(15,35,70,0.5)] rounded w-1/2 mb-2" data-testid="skeleton-pulse" />
@@ -137,11 +150,12 @@ const RankSummaryCard = ({
   onClick,
   isClickable = false,
   isLoading = false,
+  quietWhenLoading = false,
   className = '',
 }: RankSummaryCardProps) => {
   // Render loading skeleton when isLoading is true
   if (isLoading) {
-    return <SkeletonCard className={className} />;
+    return <SkeletonCard className={className} quiet={quietWhenLoading} />;
   }
 
   const achievement = getAchievement(ranking.rank);

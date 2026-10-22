@@ -125,7 +125,12 @@ import { formatDate } from '@/lib/formatDate';
  * Skeleton placeholder blocks displayed while loading.
  */
 const LoadingSkeleton = () => (
-  <div className="space-y-6 animate-pulse">
+  <div
+    className="space-y-6 animate-pulse"
+    role="status"
+    aria-busy="true"
+    aria-label="Loading horse details"
+  >
     {/* Header skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
       <div className="h-8 bg-[var(--bg-twilight)] rounded w-3/4" />

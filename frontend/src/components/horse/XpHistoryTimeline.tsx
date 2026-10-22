@@ -158,7 +158,7 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           </div>
 
           {/* Skeleton entries */}
-          <div className="space-y-1">
+          <div className="space-y-1" role="status" aria-busy="true" aria-label="Loading XP history">
             {Array.from({ length: 3 }).map((_, i) => (
               <TimelineSkeleton key={`skeleton-${i}`} />
             ))}

@@ -51,6 +51,9 @@ const CompetitionCardSkeleton = ({ className = '' }: { className?: string }) => 
   <div
     className={`glass-panel rounded-lg p-4 animate-pulse ${className}`}
     data-testid="competition-card-skeleton"
+    role="status"
+    aria-busy="true"
+    aria-label="Loading competition"
   >
     <Skeleton.Rect className="h-6 w-3/4 mb-2" />
     <Skeleton.Rect className="h-4 w-1/2 mb-4" />

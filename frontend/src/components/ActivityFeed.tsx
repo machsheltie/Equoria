@@ -11,6 +11,7 @@ import React from 'react';
 import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ActivityFeedItem from './ActivityFeedItem';
+import { LoadingRegion } from '@/components/ui/state';
 import { ActivityType, sortActivitiesByDate, type Activity } from '../lib/activity-utils';
 
 interface ActivityFeedProps {
@@ -145,9 +146,9 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
         >
           {title}
         </h3>
-        <div className="space-y-2" role="list" aria-busy="true">
+        <LoadingRegion label="Loading recent activity" className="space-y-2">
           <ActivityLoadingSkeleton count={loadingCount} size={size} />
-        </div>
+        </LoadingRegion>
       </div>
     );
   }

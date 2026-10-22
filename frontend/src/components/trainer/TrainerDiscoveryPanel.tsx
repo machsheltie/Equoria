@@ -218,7 +218,13 @@ export function TrainerDiscoveryPanelLive({ trainerId }: TrainerDiscoveryPanelLi
 
   if (isLoading) {
     return (
-      <div className="space-y-3" data-testid="trainer-discovery-panel-loading">
+      <div
+        className="space-y-3"
+        data-testid="trainer-discovery-panel-loading"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading discovery progress"
+      >
         <div className="h-4 w-28 bg-[var(--glass-surface-subtle-bg)] rounded animate-pulse" />
         <div className="h-1.5 w-full bg-[var(--glass-surface-subtle-bg)] rounded-full" />
         <div className="h-12 w-full bg-[var(--glass-surface-subtle-bg)] rounded-lg" />

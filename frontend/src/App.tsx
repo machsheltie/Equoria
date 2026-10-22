@@ -59,12 +59,17 @@ const App = () => (
             <BrowserRouter>
               {/* Applies body.celestial class — reads ?theme= URL param + localStorage */}
               <CelestialThemeProvider />
-              {/* Return overlay — shown after 4+ hour absence (authenticated users only) */}
+              {/* Return overlay — shown after 4+ hour absence (authenticated users only).
+                  fallback={null} is deliberate (doctrine section 5 exemption): until this lazy
+                  chunk loads there is no overlay to stand in for — the player is not waiting
+                  on it, and it announces its own loading state once mounted. */}
               <Suspense fallback={null}>
                 <WhileYouWereGone />
               </Suspense>
               {/* OnboardingGuard (wraps Routes below) redirects new users to /onboarding when completedOnboarding === false */}
-              {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1 */}
+              {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1.
+                  fallback={null} is deliberate (doctrine section 5 exemption): the tour is an
+                  optional overlay with nothing to show before its chunk loads. */}
               <Suspense fallback={null}>
                 <OnboardingSpotlight />
               </Suspense>

@@ -417,7 +417,12 @@ function BreedRow({
 
 function GridSkeleton() {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div
+      className="grid grid-cols-2 sm:grid-cols-3 gap-3"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading breeds"
+    >
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
@@ -438,7 +443,7 @@ function GridSkeleton() {
 
 function ListSkeleton() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" role="status" aria-busy="true" aria-label="Loading breeds">
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}

@@ -329,7 +329,12 @@ function PedigreeTab({
 
 function LoadingSkeleton() {
   return (
-    <div className="space-y-3 animate-pulse">
+    <div
+      className="space-y-3 animate-pulse"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading compatibility"
+    >
       <div className="h-40 rounded-xl bg-[var(--bg-midnight)]" />
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="h-6 rounded bg-[var(--bg-midnight)] w-full" />
