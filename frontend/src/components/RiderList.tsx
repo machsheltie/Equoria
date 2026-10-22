@@ -32,7 +32,9 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
 import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, hireRefused, refreshRefused } from '@/lib/http/actionMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import {
   GameDialog,
@@ -125,6 +127,8 @@ const RiderList: React.FC<RiderListProps> = ({
   const canAfford = (weeklyRate: number) => (user?.money ?? 0) >= calculateHiringCost(weeklyRate);
 
   const handleHireClick = (rider: MarketplaceRider) => {
+    // A refusal belongs to the attempt that earned it; don't carry it to the next.
+    hireMutation.reset();
     setSelectedRider(rider);
     setShowHireModal(true);
   };
@@ -156,8 +160,8 @@ const RiderList: React.FC<RiderListProps> = ({
     return (
       <ErrorState
         title="Error Loading Marketplace"
-        message={marketplaceError.message}
-        retry={{ label: 'Retry', onClick: handleRefresh }}
+        message={userMessageFor(marketplaceError).message}
+        retry={{ label: 'Retry', onClick: () => marketplaceQuery.refetch() }}
       />
     );
   }
@@ -191,6 +195,13 @@ const RiderList: React.FC<RiderListProps> = ({
           )}
         </Button>
       </div>
+
+      {refreshMutation.isError && (
+        <InlineError
+          message={actionMessageFor(refreshMutation.error, refreshRefused)}
+          className="-mt-3"
+        />
+      )}
 
       {/* User Balance */}
       {user && (
@@ -430,6 +441,13 @@ const RiderList: React.FC<RiderListProps> = ({
                   />
                 </div>
               </Surface>
+
+              {hireMutation.isError && (
+                <InlineError
+                  message={actionMessageFor(hireMutation.error, hireRefused)}
+                  className="mt-4"
+                />
+              )}
             </GameDialogBody>
             <GameDialogFooter>
               <Button

@@ -31,7 +31,9 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
 import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, hireRefused, refreshRefused } from '@/lib/http/actionMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import {
   GameDialog,
@@ -114,6 +116,8 @@ const TrainerList: React.FC<TrainerListProps> = () => {
   }, [data, filterSkillLevel, filterPersonality, sortBy]);
 
   const handleHireClick = (trainer: MarketplaceTrainer) => {
+    // A refusal belongs to the attempt that earned it; don't carry it to the next.
+    hireMutation.reset();
     setSelectedTrainer(trainer);
     setShowHireModal(true);
   };
@@ -167,6 +171,13 @@ const TrainerList: React.FC<TrainerListProps> = () => {
           )}
         </Button>
       </div>
+
+      {refreshMutation.isError && (
+        <InlineError
+          message={actionMessageFor(refreshMutation.error, refreshRefused)}
+          className="-mt-3"
+        />
+      )}
 
       {/* User Balance */}
       {user && (
@@ -253,7 +264,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
         {isError && (
           <ErrorState
             title="Failed to Load Trainers"
-            message={error?.message ?? 'Unable to reach the marketplace. Please try again later.'}
+            message={userMessageFor(error).message}
             retry={{ label: 'Try Again', onClick: () => refetch() }}
           />
         )}
@@ -409,6 +420,13 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                   />
                 </div>
               </Surface>
+
+              {hireMutation.isError && (
+                <InlineError
+                  message={actionMessageFor(hireMutation.error, hireRefused)}
+                  className="mt-4"
+                />
+              )}
             </GameDialogBody>
             <GameDialogFooter>
               <Button
