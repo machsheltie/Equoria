@@ -46,9 +46,12 @@ describe('Error Handler Middleware', () => {
     errorHandler(error, req, res, next);
 
     expect(statusCode).toBe(500);
+    // Old contract: the raw error.message ('Generic error') reached the client.
+    // Owner ruling 2026-10-22 (Equoria-ot1mo): generic 500s answer
+    // 'Internal Server Error' outside development (this runs under NODE_ENV=test).
     expect(responseData).toEqual({
       success: false,
-      message: 'Generic error',
+      message: 'Internal Server Error',
     });
   });
 
@@ -105,9 +108,12 @@ describe('Error Handler Middleware', () => {
 
     errorHandler(error, req, res, next);
 
+    // Old contract: the raw error.message ('Test error') reached the client in
+    // production. Owner ruling 2026-10-22 (Equoria-ot1mo): generic 500s answer
+    // 'Internal Server Error' outside development.
     expect(responseData).toEqual({
       success: false,
-      message: 'Test error',
+      message: 'Internal Server Error',
     });
 
     process.env.NODE_ENV = originalEnv;
