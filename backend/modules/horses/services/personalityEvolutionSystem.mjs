@@ -1,11 +1,15 @@
 /**
  * Personality Evolution System Service
  *
- * Implements comprehensive personality evolution for both grooms and horses based on experience and interactions.
- * Handles dynamic personality development, trait strengthening, and cross-species personality influence.
+ * Horse temperament evolution analysis based on care history.
+ *
+ * There is no groom personality evolution (Equoria-jy3f7, Equoria-j5qui; owner
+ * ruling 2026-10-22: groom personalities never evolve; a groom keeps the same
+ * personality for its whole career). evolveGroomPersonality went in jy3f7;
+ * the groom branches of the trigger / stability / prediction / history
+ * functions, EVOLUTION_CONFIG.groom and EVOLVED_TRAITS.groom went in j5qui.
  *
  * Business Rules:
- * - Groom personalities evolve based on interaction patterns, experience, and specialization
  * - Horse temperaments evolve based on care history, environmental factors, and age
  * - Evolution requires minimum interaction thresholds and consistency patterns
  * - Personality stability periods prevent rapid changes and maintain realism
@@ -18,13 +22,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // Evolution configuration constants
 const EVOLUTION_CONFIG = {
-  groom: {
-    minimumInteractions: 15,
-    minimumExperience: 50,
-    consistencyThreshold: 0.7,
-    stabilityPeriodDays: 14,
-    evolutionCooldownDays: 30,
-  },
   horse: {
     minimumInteractions: 10,
     minimumAge: 1, // 1 year minimum
@@ -50,11 +47,6 @@ const EVOLUTION_TYPES = {
 
 // Enhanced personality traits for evolution
 const EVOLVED_TRAITS = {
-  groom: {
-    calm: ['enhanced_patience', 'stress_resistance', 'deep_bonding'],
-    energetic: ['enthusiasm_boost', 'motivation_expert', 'energy_transfer'],
-    methodical: ['precision_master', 'systematic_approach', 'detail_oriented'],
-  },
   horse: {
     nervous: ['confidence_building', 'trust_development', 'anxiety_reduction'],
     developing: ['personality_formation', 'adaptability', 'learning_enhancement'],
@@ -88,7 +80,7 @@ export async function evolveHorseTemperament(horseId) {
   }
 
   // Check evolution eligibility
-  const eligibility = await checkEvolutionEligibility(horse, 'horse');
+  const eligibility = await checkEvolutionEligibility(horse);
   if (!eligibility.eligible) {
     return {
       success: true,
@@ -103,7 +95,7 @@ export async function evolveHorseTemperament(horseId) {
   const carePatterns = analyzeCarePatterns(horse.groomInteractions);
 
   // Calculate temperament evolution
-  const evolutionData = calculateEvolution(horse, carePatterns, 'horse');
+  const evolutionData = calculateEvolution(horse, carePatterns);
 
   // Apply evolution if triggered
   if (evolutionData.shouldEvolve) {
@@ -149,43 +141,31 @@ export async function evolveHorseTemperament(horseId) {
 }
 
 /**
- * Calculate personality evolution triggers for an entity
- * @param {number} entityId - ID of the entity (groom or horse)
- * @param {string} entityType - Type of entity ('groom' or 'horse')
+ * Calculate temperament evolution triggers for a horse
+ * @param {number} horseId - ID of the horse
  * @returns {Object} Evolution trigger analysis
  */
-export async function calculatePersonalityEvolutionTriggers(entityId, entityType = 'groom') {
+export async function calculatePersonalityEvolutionTriggers(horseId) {
   logger.info(
-    `[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Analyzing triggers for ${entityType} ${entityId}`,
+    `[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Analyzing triggers for horse ${horseId}`,
   );
 
-  const config = EVOLUTION_CONFIG[entityType];
+  const config = EVOLUTION_CONFIG.horse;
 
-  // Get entity data based on type
-  const entity =
-    entityType === 'groom'
-      ? await prisma.groom.findUnique({
-          where: { id: entityId },
-          include: { groomInteractions: { take: 50 } },
-        })
-      : await prisma.horse.findUnique({
-          where: { id: entityId },
-          include: { groomInteractions: { take: 30 } },
-        });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    include: { groomInteractions: { take: 30 } },
+  });
 
-  if (!entity) {
-    throw new Error(`${entityType} with ID ${entityId} not found`);
+  if (!horse) {
+    throw new Error(`horse with ID ${horseId} not found`);
   }
 
   // Calculate trigger factors
   const triggers = {
-    experienceThreshold:
-      entityType === 'groom'
-        ? entity.experience >= config.minimumExperience
-        : entity.age >= config.minimumAge,
-    interactionConsistency: entity.groomInteractions.length >= config.minimumInteractions,
-    performanceQuality: calculatePerformanceQuality(entity.groomInteractions),
-    specialization: entityType === 'groom' ? calculateSpecializationLevel(entity) : null,
+    experienceThreshold: horse.age >= config.minimumAge,
+    interactionConsistency: horse.groomInteractions.length >= config.minimumInteractions,
+    performanceQuality: calculatePerformanceQuality(horse.groomInteractions),
   };
 
   // Calculate overall evolution readiness
@@ -196,25 +176,24 @@ export async function calculatePersonalityEvolutionTriggers(entityId, entityType
     success: true,
     triggers,
     evolutionReadiness: readinessScore,
-    nextEvolutionEstimate: estimateNextEvolution(entity, entityType),
-    recommendedActions: generateEvolutionRecommendations(triggers, entityType),
+    nextEvolutionEstimate: estimateNextEvolution(),
+    recommendedActions: generateEvolutionRecommendations(),
   };
 }
 
 /**
- * Analyze personality stability for an entity
- * @param {number} entityId - ID of the entity
- * @param {string} entityType - Type of entity ('groom' or 'horse')
+ * Analyze temperament stability for a horse
+ * @param {number} horseId - ID of the horse
  * @returns {Object} Stability analysis
  */
-export async function analyzePersonalityStability(entityId, entityType) {
+export async function analyzePersonalityStability(horseId) {
   logger.info(
-    `[personalityEvolutionSystem.analyzePersonalityStability] Analyzing stability for ${entityType} ${entityId}`,
+    `[personalityEvolutionSystem.analyzePersonalityStability] Analyzing stability for horse ${horseId}`,
   );
 
   // Get recent interactions and evolution history
   const interactions = await prisma.groomInteraction.findMany({
-    where: entityType === 'groom' ? { groomId: entityId } : { foalId: entityId },
+    where: { foalId: horseId },
     orderBy: { createdAt: 'desc' },
     take: 20,
   });
@@ -223,8 +202,8 @@ export async function analyzePersonalityStability(entityId, entityType) {
   const stabilityFactors = {
     careConsistency: calculateCareConsistency(interactions),
     environmentalStability: calculateEnvironmentalStability(interactions),
-    ageStability: entityType === 'horse' ? calculateAgeStability(entityId) : 1.0,
-    groomInfluence: entityType === 'horse' ? calculateGroomInfluence(interactions) : 0,
+    ageStability: calculateAgeStability(horseId),
+    groomInfluence: calculateGroomInfluence(interactions),
   };
 
   // Calculate overall stability score
@@ -242,20 +221,19 @@ export async function analyzePersonalityStability(entityId, entityType) {
 }
 
 /**
- * Predict future personality evolution
- * @param {number} entityId - ID of the entity
- * @param {string} entityType - Type of entity
+ * Predict future temperament evolution for a horse
+ * @param {number} horseId - ID of the horse
  * @param {number} timeframeDays - Prediction timeframe in days
  * @returns {Object} Evolution predictions
  */
-export async function predictPersonalityEvolution(entityId, entityType, timeframeDays = 30) {
+export async function predictPersonalityEvolution(horseId, timeframeDays = 30) {
   logger.info(
-    `[personalityEvolutionSystem.predictPersonalityEvolution] Predicting evolution for ${entityType} ${entityId} over ${timeframeDays} days`,
+    `[personalityEvolutionSystem.predictPersonalityEvolution] Predicting evolution for horse ${horseId} over ${timeframeDays} days`,
   );
 
   // Get current state and trends
-  const currentState = await getCurrentPersonalityState(entityId, entityType);
-  const trends = await analyzePersonalityTrends(entityId, entityType);
+  const currentState = await getCurrentPersonalityState(horseId);
+  const trends = await analyzePersonalityTrends(horseId);
 
   // Generate predictions
   const predictions = [];
@@ -280,14 +258,13 @@ export async function predictPersonalityEvolution(entityId, entityType, timefram
 }
 
 /**
- * Get personality evolution history for an entity
- * @param {number} entityId - ID of the entity
- * @param {string} entityType - Type of entity
+ * Get temperament evolution history for a horse
+ * @param {number} horseId - ID of the horse
  * @returns {Object} Evolution history
  */
-export async function getPersonalityEvolutionHistory(entityId, entityType) {
+export async function getPersonalityEvolutionHistory(horseId) {
   logger.info(
-    `[personalityEvolutionSystem.getPersonalityEvolutionHistory] Getting history for ${entityType} ${entityId}`,
+    `[personalityEvolutionSystem.getPersonalityEvolutionHistory] Getting history for horse ${horseId}`,
   );
 
   // For now, return mock data structure since we don't have evolution history table yet
@@ -347,20 +324,14 @@ export async function applyPersonalityEvolutionEffects(evolutionData) {
 }
 
 // Helper functions
-async function checkEvolutionEligibility(entity, entityType) {
-  const config = EVOLUTION_CONFIG[entityType];
+async function checkEvolutionEligibility(horse) {
+  const config = EVOLUTION_CONFIG.horse;
 
-  if (entityType === 'groom') {
-    if (entity.experience < config.minimumExperience) {
-      return { eligible: false, reason: 'insufficient_experience' };
-    }
-  } else {
-    if (entity.age < config.minimumAge) {
-      return { eligible: false, reason: 'insufficient_age' };
-    }
+  if (horse.age < config.minimumAge) {
+    return { eligible: false, reason: 'insufficient_age' };
   }
 
-  if (entity.groomInteractions.length < config.minimumInteractions) {
+  if (horse.groomInteractions.length < config.minimumInteractions) {
     return { eligible: false, reason: 'insufficient_interaction_data' };
   }
 
@@ -401,8 +372,8 @@ function analyzeCarePatterns(interactions) {
   return analyzeInteractionPatterns(interactions); // Same analysis for now
 }
 
-function calculateEvolution(entity, patterns, entityType) {
-  const config = EVOLUTION_CONFIG[entityType];
+function calculateEvolution(horse, patterns) {
+  const config = EVOLUTION_CONFIG.horse;
 
   // Determine if evolution should occur
   const shouldEvolve =
@@ -413,17 +384,14 @@ function calculateEvolution(entity, patterns, entityType) {
   }
 
   // Determine evolution type and new traits
-  const currentPersonality = entityType === 'groom' ? entity.personality : entity.temperament;
-  const availableTraits = EVOLVED_TRAITS[entityType][currentPersonality] || [];
+  const availableTraits = EVOLVED_TRAITS.horse[horse.temperament] || [];
 
   return {
     shouldEvolve: true,
     type: EVOLUTION_TYPES.TRAIT_STRENGTHENING,
     newTraits: availableTraits.slice(0, 2), // Add first 2 available traits
-    newPersonality:
-      entityType === 'horse' ? determineNewTemperament(entity.temperament, patterns) : null,
-    newTemperament:
-      entityType === 'horse' ? determineNewTemperament(entity.temperament, patterns) : null,
+    newPersonality: determineNewTemperament(horse.temperament, patterns),
+    newTemperament: determineNewTemperament(horse.temperament, patterns),
     strength: patterns.qualityScore,
   };
 }
@@ -461,15 +429,11 @@ function calculatePerformanceQuality(interactions) {
   return interactions.length > 0 ? 0.75 : 0; // Simplified calculation
 }
 
-function calculateSpecializationLevel(groom) {
-  return groom.experience > 100 ? 0.8 : 0.5; // Simplified calculation
-}
-
-function estimateNextEvolution(_entity, _entityType) {
+function estimateNextEvolution() {
   return '2-3 weeks'; // Simplified estimate
 }
 
-function generateEvolutionRecommendations(_triggers, _entityType) {
+function generateEvolutionRecommendations() {
   return ['Continue consistent interactions', 'Focus on quality care'];
 }
 
@@ -493,11 +457,11 @@ function generateStabilityRecommendations(_factors) {
   return ['Maintain consistent care patterns'];
 }
 
-async function getCurrentPersonalityState(_entityId, _entityType) {
+async function getCurrentPersonalityState(_horseId) {
   return { personality: 'calm', traits: [], stability: 0.7 };
 }
 
-async function analyzePersonalityTrends(_entityId, _entityType) {
+async function analyzePersonalityTrends(_horseId) {
   return { influencingFactors: ['experience', 'interactions'] };
 }
 

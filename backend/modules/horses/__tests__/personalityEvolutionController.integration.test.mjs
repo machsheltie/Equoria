@@ -10,6 +10,15 @@
  * and batch-evolve routes were removed by Equoria-gu8jk — players never change
  * a horse's temperament. The groom evolve route was removed by Equoria-jy3f7 —
  * owner ruling 2026-10-22: groom personalities never evolve.)
+ *
+ * Equoria-j5qui. OLD CONTRACT: GET /:entityType/:entityId/{triggers,
+ * stability,predict,history} accepted entityType 'groom' and returned
+ * evolution triggers, stability and a predicted evolution for a groom's
+ * personality; /config listed groomConfig and groom evolved traits. NEW
+ * RULING (owner, 2026-10-22): groom personalities never evolve. The read
+ * routes are now /horse/:horseId/*; the groom paths answer 404 and /config
+ * describes horses only. The groom fixture stays: the interaction history
+ * the horse cases read is recorded against it.
  * Routes live under authRouter at /api/v1/personality-evolution (Equoria-vivsi:
  * the unversioned /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the
  * canonical surface — verified in backend/app.mjs:290 + backend/app/routers.mjs:191).
@@ -183,27 +192,17 @@ describe('GET /api/personality-evolution/config', () => {
     expect(res.body.data).toBeDefined();
     expect(res.body.data.evolutionTypes).toBeDefined();
     expect(Array.isArray(res.body.data.evolutionTypes)).toBe(true);
-    expect(res.body.data.entityTypes).toBeDefined();
-    expect(res.body.data.groomConfig).toBeDefined();
+    expect(res.body.data.entityTypes).toEqual(['horse']);
+    expect(res.body.data).not.toHaveProperty('groomConfig');
     expect(res.body.data.horseConfig).toBeDefined();
     expect(res.body.data.availableTraits).toBeDefined();
+    expect(res.body.data.availableTraits).not.toHaveProperty('groom');
   });
 });
 
 // ─── GET /api/v1/personality-evolution/:entityType/:entityId/triggers ─────────
 
-describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => {
-  it('returns 200 with triggers for owned groom', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/triggers`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
+describe('GET /api/personality-evolution/horse/:horseId/triggers', () => {
   it('returns 200 with triggers for owned horse', async () => {
     const res = await request(app)
       .get(`/api/v1/personality-evolution/horse/${horse.id}/triggers`)
@@ -215,37 +214,21 @@ describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => 
     expect(res.body.data).toBeDefined();
   });
 
-  it('returns 400 for invalid entityType', async () => {
+  it('returns 404 for any other entity path (no such route)', async () => {
     const res = await request(app)
       .get(`/api/v1/personality-evolution/trainer/${groom.id}/triggers`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   it('returns 401 without auth', async () => {
     const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/triggers`)
+      .get(`/api/v1/personality-evolution/horse/${horse.id}/triggers`)
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: triggers response-shape for groom — triggers +
-  // numeric evolutionReadiness fields.
-  it('returns triggers and a numeric evolutionReadiness for groom', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/triggers`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.triggers).toBeDefined();
-    expect(res.body.data.evolutionReadiness).toBeDefined();
-    expect(typeof res.body.data.evolutionReadiness).toBe('number');
   });
 
   // Equoria-fefh2.40 migrated: triggers response-shape for horse.
@@ -259,46 +242,20 @@ describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => 
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
     expect(res.body.data.triggers).toBeDefined();
-    expect(res.body.data.evolutionReadiness).toBeDefined();
+    expect(res.body.data.triggers).not.toHaveProperty('specialization');
+    expect(typeof res.body.data.evolutionReadiness).toBe('number');
   });
 });
 
 // ─── GET /api/v1/personality-evolution/:entityType/:entityId/stability ────────
 
-describe('GET /api/personality-evolution/:entityType/:entityId/stability', () => {
-  it('returns 200 with stability data for owned groom', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/stability`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
+describe('GET /api/personality-evolution/horse/:horseId/stability', () => {
   it('returns 401 without auth', async () => {
     const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/stability`)
+      .get(`/api/v1/personality-evolution/horse/${horse.id}/stability`)
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
-  });
-
-  // Equoria-fefh2.40 migrated: stability response-shape for groom — numeric
-  // stabilityScore + stabilityFactors.
-  it('returns a numeric stabilityScore and stabilityFactors for groom', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/stability`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.stabilityScore).toBeDefined();
-    expect(typeof res.body.data.stabilityScore).toBe('number');
-    expect(res.body.data.stabilityFactors).toBeDefined();
   });
 
   // Equoria-fefh2.40 migrated: horse-stability shape had ZERO co-located
@@ -319,29 +276,18 @@ describe('GET /api/personality-evolution/:entityType/:entityId/stability', () =>
 
 // ─── GET /api/v1/personality-evolution/:entityType/:entityId/predict ──────────
 
-describe('GET /api/personality-evolution/:entityType/:entityId/predict', () => {
-  it('returns 200 with prediction for owned groom', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/predict`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
+describe('GET /api/personality-evolution/horse/:horseId/predict', () => {
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/personality-evolution/groom/${groom.id}/predict`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/personality-evolution/horse/${horse.id}/predict`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 
   // Equoria-fefh2.40 migrated: predict response-shape with default timeframe —
   // predictions array.
-  it('predicts personality evolution with default timeframe (predictions array)', async () => {
+  it('predicts temperament evolution with default timeframe (predictions array)', async () => {
     const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/predict`)
+      .get(`/api/v1/personality-evolution/horse/${horse.id}/predict`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -368,7 +314,7 @@ describe('GET /api/personality-evolution/:entityType/:entityId/predict', () => {
   // Equoria-fefh2.40 migrated: 400 for an out-of-range timeframe (HTTP level).
   it('returns 400 for an invalid timeframe', async () => {
     const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/predict?timeframeDays=500`)
+      .get(`/api/v1/personality-evolution/horse/${horse.id}/predict?timeframeDays=500`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -380,20 +326,9 @@ describe('GET /api/personality-evolution/:entityType/:entityId/predict', () => {
 
 // ─── GET /api/v1/personality-evolution/:entityType/:entityId/history ──────────
 
-describe('GET /api/personality-evolution/:entityType/:entityId/history', () => {
-  it('returns 200 with evolution history for owned groom', async () => {
-    const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/history`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
+describe('GET /api/personality-evolution/horse/:horseId/history', () => {
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/personality-evolution/groom/${groom.id}/history`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/personality-evolution/horse/${horse.id}/history`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -402,7 +337,7 @@ describe('GET /api/personality-evolution/:entityType/:entityId/history', () => {
   // totalEvolutions.
   it('returns evolutionEvents array and totalEvolutions', async () => {
     const res = await request(app)
-      .get(`/api/v1/personality-evolution/groom/${groom.id}/history`)
+      .get(`/api/v1/personality-evolution/horse/${horse.id}/history`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -413,6 +348,24 @@ describe('GET /api/personality-evolution/:entityType/:entityId/history', () => {
     expect(Array.isArray(res.body.data.evolutionEvents)).toBe(true);
     expect(res.body.data.totalEvolutions).toBeDefined();
   });
+});
+
+// ─── GET /api/v1/personality-evolution/groom/:groomId/* — REMOVED ─────────────
+// Equoria-j5qui, owner ruling 2026-10-22: groom personalities never evolve, so
+// nothing describes a groom's evolution. Even the groom's owner gets 404.
+
+describe('GET /api/v1/personality-evolution/groom/:groomId/* (removed)', () => {
+  it.each(['triggers', 'stability', 'predict', 'history'])(
+    'GET /groom/:groomId/%s is 404 for the groom owner',
+    async path => {
+      const res = await request(app)
+        .get(`/api/v1/personality-evolution/groom/${groom.id}/${path}`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(404);
+    },
+  );
 });
 
 // ─── POST /api/v1/personality-evolution/groom/:groomId/evolve — REMOVED ───────

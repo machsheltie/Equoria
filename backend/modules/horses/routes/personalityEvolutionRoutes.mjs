@@ -1,14 +1,14 @@
 /**
  * Personality Evolution Routes
  *
- * Defines API routes for personality evolution system including groom and horse personality development,
- * evolution triggers, stability analysis, prediction capabilities, and batch processing.
+ * Read-only analysis of a HORSE's temperament evolution.
  *
  * Routes:
- * - GET /:entityType/:entityId/triggers - Get evolution triggers
- * - GET /:entityType/:entityId/stability - Analyze personality stability
- * - GET /:entityType/:entityId/predict - Predict future evolution
- * - GET /:entityType/:entityId/history - Get evolution history
+ * - GET /horse/:horseId/triggers - Get evolution triggers
+ * - GET /horse/:horseId/stability - Analyze temperament stability
+ * - GET /horse/:horseId/predict - Predict future evolution
+ * - GET /horse/:horseId/history - Get evolution history
+ * - GET /config - Evolution configuration (horses only)
  * - POST /apply-effects - REMOVED, answers 410 (Equoria-bvddn.4: unauthorized no-op stub)
  *
  * No route here changes a horse's temperament (Equoria-gu8jk; owner ruling
@@ -18,7 +18,10 @@
  *
  * POST /groom/:groomId/evolve was removed under Equoria-jy3f7 (owner ruling
  * 2026-10-22: groom personalities never evolve; a groom keeps the same
- * personality for its whole career).
+ * personality for its whole career). Under the same ruling the read routes
+ * no longer describe a groom (Equoria-j5qui): they were
+ * /:entityType/:entityId/* with entityType 'groom' or 'horse' and are now
+ * /horse/:horseId/*, so /groom/:groomId/* answers 404.
  */
 
 import express from 'express';
@@ -56,48 +59,35 @@ const validateRequest = (req, res, next) => {
 router.use(authenticateToken);
 
 /**
- * Calculate personality evolution triggers for an entity
- * GET /api/personality-evolution/:entityType/:entityId/triggers
+ * Calculate temperament evolution triggers for a horse
+ * GET /api/personality-evolution/horse/:horseId/triggers
  */
 router.get(
-  '/:entityType/:entityId/triggers',
-  [
-    param('entityType')
-      .isIn(['groom', 'horse'])
-      .withMessage('Entity type must be either "groom" or "horse"'),
-    param('entityId').isInt({ min: 1 }).withMessage('Entity ID must be a positive integer'),
-  ],
+  '/horse/:horseId/triggers',
+  [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
   validateRequest,
   getEvolutionTriggersController,
 );
 
 /**
- * Analyze personality stability for an entity
- * GET /api/personality-evolution/:entityType/:entityId/stability
+ * Analyze temperament stability for a horse
+ * GET /api/personality-evolution/horse/:horseId/stability
  */
 router.get(
-  '/:entityType/:entityId/stability',
-  [
-    param('entityType')
-      .isIn(['groom', 'horse'])
-      .withMessage('Entity type must be either "groom" or "horse"'),
-    param('entityId').isInt({ min: 1 }).withMessage('Entity ID must be a positive integer'),
-  ],
+  '/horse/:horseId/stability',
+  [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
   validateRequest,
   getPersonalityStabilityController,
 );
 
 /**
- * Predict future personality evolution
- * GET /api/personality-evolution/:entityType/:entityId/predict
+ * Predict future temperament evolution for a horse
+ * GET /api/personality-evolution/horse/:horseId/predict
  */
 router.get(
-  '/:entityType/:entityId/predict',
+  '/horse/:horseId/predict',
   [
-    param('entityType')
-      .isIn(['groom', 'horse'])
-      .withMessage('Entity type must be either "groom" or "horse"'),
-    param('entityId').isInt({ min: 1 }).withMessage('Entity ID must be a positive integer'),
+    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     query('timeframeDays')
       .optional()
       .isInt({ min: 1, max: 365 })
@@ -108,17 +98,12 @@ router.get(
 );
 
 /**
- * Get personality evolution history for an entity
- * GET /api/personality-evolution/:entityType/:entityId/history
+ * Get temperament evolution history for a horse
+ * GET /api/personality-evolution/horse/:horseId/history
  */
 router.get(
-  '/:entityType/:entityId/history',
-  [
-    param('entityType')
-      .isIn(['groom', 'horse'])
-      .withMessage('Entity type must be either "groom" or "horse"'),
-    param('entityId').isInt({ min: 1 }).withMessage('Entity ID must be a positive integer'),
-  ],
+  '/horse/:horseId/history',
+  [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
   validateRequest,
   getPersonalityEvolutionHistoryController,
 );
@@ -151,7 +136,7 @@ router.post('/apply-effects', (req, res) => {
   return res.status(410).json({
     success: false,
     message:
-      'Manual personality evolution effect application has been removed. Evolution effects are applied automatically by the server during groom/horse evolution.',
+      'Manual personality evolution effect application has been removed. Evolution effects are applied automatically by the server during horse temperament evolution.',
   });
 });
 
@@ -171,14 +156,7 @@ router.get('/config', (req, res) => {
         'temperament_stabilization',
         'convergence',
       ],
-      entityTypes: ['groom', 'horse'],
-      groomConfig: {
-        minimumInteractions: 15,
-        minimumExperience: 50,
-        consistencyThreshold: 0.7,
-        stabilityPeriodDays: 14,
-        evolutionCooldownDays: 30,
-      },
+      entityTypes: ['horse'],
       horseConfig: {
         minimumInteractions: 10,
         minimumAge: 1,
@@ -192,11 +170,6 @@ router.get('/config', (req, res) => {
         predictionTimeframeDays: 90,
       },
       availableTraits: {
-        groom: {
-          calm: ['enhanced_patience', 'stress_resistance', 'deep_bonding'],
-          energetic: ['enthusiasm_boost', 'motivation_expert', 'energy_transfer'],
-          methodical: ['precision_master', 'systematic_approach', 'detail_oriented'],
-        },
         horse: {
           nervous: ['confidence_building', 'trust_development', 'anxiety_reduction'],
           developing: ['personality_formation', 'adaptability', 'learning_enhancement'],

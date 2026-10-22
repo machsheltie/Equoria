@@ -3,8 +3,15 @@
  *
  * The exported async functions tested with real DB fixtures (evolveGroomPersonality
  * was removed under Equoria-jy3f7: groom personalities never evolve).
- * Newborn foal (age 0 < minimumAge 1) and fresh groom (0 experience)
- * exercise the not-eligible / zero-interaction code paths.
+ * Newborn foal (age 0 < minimumAge 1) exercises the not-eligible /
+ * zero-interaction code paths.
+ *
+ * Equoria-j5qui. OLD CONTRACT: calculatePersonalityEvolutionTriggers,
+ * analyzePersonalityStability, predictPersonalityEvolution and
+ * getPersonalityEvolutionHistory took (entityId, entityType) and analysed a
+ * groom's personality evolution for 'groom'. NEW RULING (owner, 2026-10-22):
+ * groom personalities never evolve. They take a horse id only; the groom
+ * cases are gone and the groom-only timeframe cases run against the horse.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -90,77 +97,53 @@ describe('evolveHorseTemperament', () => {
 // ── calculatePersonalityEvolutionTriggers ─────────────────────────────────────
 
 describe('calculatePersonalityEvolutionTriggers', () => {
-  it('throws for non-existent groom', async () => {
-    await expect(calculatePersonalityEvolutionTriggers(999999999, 'groom')).rejects.toThrow();
+  it('throws for non-existent horse', async () => {
+    await expect(calculatePersonalityEvolutionTriggers(999999999)).rejects.toThrow();
   });
 
-  it('returns trigger analysis for valid groom', async () => {
-    const result = await calculatePersonalityEvolutionTriggers(groom.id, 'groom');
+  it('returns trigger analysis for valid horse, with no groom specialization factor', async () => {
+    const result = await calculatePersonalityEvolutionTriggers(horse.id);
     expect(result.success).toBe(true);
     expect(typeof result.triggers).toBe('object');
+    expect(result.triggers).not.toHaveProperty('specialization');
     expect(typeof result.evolutionReadiness).toBe('number');
     expect(Array.isArray(result.recommendedActions)).toBe(true);
-  });
-
-  it('returns trigger analysis for valid horse', async () => {
-    const result = await calculatePersonalityEvolutionTriggers(horse.id, 'horse');
-    expect(result.success).toBe(true);
-    expect(typeof result.triggers).toBe('object');
-    expect(typeof result.evolutionReadiness).toBe('number');
   });
 });
 
 // ── analyzePersonalityStability ───────────────────────────────────────────────
 
 describe('analyzePersonalityStability', () => {
-  it('returns stability analysis for groom', async () => {
-    const result = await analyzePersonalityStability(groom.id, 'groom');
+  it('returns stability analysis for horse', async () => {
+    const result = await analyzePersonalityStability(horse.id);
     expect(result.success).toBe(true);
     expect(typeof result.stabilityScore).toBe('number');
     expect(typeof result.stabilityFactors).toBe('object');
     expect(typeof result.evolutionRisk).toBe('number');
     expect(Array.isArray(result.recommendedActions)).toBe(true);
   });
-
-  it('returns stability analysis for horse', async () => {
-    const result = await analyzePersonalityStability(horse.id, 'horse');
-    expect(result.success).toBe(true);
-    expect(typeof result.stabilityScore).toBe('number');
-  });
 });
 
 // ── predictPersonalityEvolution ───────────────────────────────────────────────
 
 describe('predictPersonalityEvolution', () => {
-  it('returns predictions for groom over 30 days', async () => {
-    const result = await predictPersonalityEvolution(groom.id, 'groom', 30);
+  it('returns predictions for horse over 30 days', async () => {
+    const result = await predictPersonalityEvolution(horse.id, 30);
     expect(result.success).toBe(true);
     expect(Array.isArray(result.predictions)).toBe(true);
     expect(Array.isArray(result.recommendedActions)).toBe(true);
-  });
-
-  it('returns predictions for horse over 30 days', async () => {
-    const result = await predictPersonalityEvolution(horse.id, 'horse', 30);
-    expect(result.success).toBe(true);
-    expect(Array.isArray(result.predictions)).toBe(true);
   });
 });
 
 // ── getPersonalityEvolutionHistory ────────────────────────────────────────────
 
 describe('getPersonalityEvolutionHistory', () => {
-  it('returns history shape for groom (empty — no log table yet)', async () => {
-    const result = await getPersonalityEvolutionHistory(groom.id, 'groom');
+  it('returns history shape for horse (empty — no log table yet)', async () => {
+    const result = await getPersonalityEvolutionHistory(horse.id);
     expect(result.success).toBe(true);
     expect(Array.isArray(result.evolutionEvents)).toBe(true);
     expect(typeof result.totalEvolutions).toBe('number');
     expect(result.totalEvolutions).toBe(0);
-  });
-
-  it('returns history shape for horse', async () => {
-    const result = await getPersonalityEvolutionHistory(horse.id, 'horse');
-    expect(result.success).toBe(true);
-    expect(Array.isArray(result.evolutionEvents)).toBe(true);
   });
 });
 
@@ -227,14 +210,14 @@ describe('applyPersonalityEvolutionEffects — uncovered branches (Equoria-jkht)
 
 describe('predictPersonalityEvolution — timeframeDays filter (Equoria-jkht)', () => {
   it('returns 1 prediction when timeframeDays=7 (filter keeps only [7])', async () => {
-    const result = await predictPersonalityEvolution(groom.id, 'groom', 7);
+    const result = await predictPersonalityEvolution(horse.id, 7);
     expect(result.success).toBe(true);
     expect(result.predictions).toHaveLength(1);
     expect(result.predictions[0].timeframe).toBe(7);
   });
 
   it('returns 5 predictions when timeframeDays=90 (all timeframes [7,14,30,60,90] included)', async () => {
-    const result = await predictPersonalityEvolution(groom.id, 'groom', 90);
+    const result = await predictPersonalityEvolution(horse.id, 90);
     expect(result.success).toBe(true);
     expect(result.predictions).toHaveLength(5);
   });
@@ -390,7 +373,7 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
   });
 
   it('analyzePersonalityStability for horse with 20 interactions → calculateGroomInfluence >10 branch returns 0.6', async () => {
-    const result = await analyzePersonalityStability(evHorseNervous.id, 'horse');
+    const result = await analyzePersonalityStability(evHorseNervous.id);
     expect(result.success).toBe(true);
     expect(result.stabilityFactors.groomInfluence).toBe(0.6);
   });

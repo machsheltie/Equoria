@@ -127,10 +127,12 @@ describe('Personality Evolution System', () => {
     }
   });
 
-  describe('Groom Personality Evolution', () => {
+  describe('Evolution triggers from groom care history', () => {
     // Equoria-jy3f7 (owner ruling 2026-10-22): groom personalities never evolve,
     // so evolveGroomPersonality and its tests are gone. The 20-session history
     // they seeded is kept as this block's setup: the trigger tests below read it.
+    // Equoria-j5qui: the trigger analysis is the horse's (it took the groom by
+    // default and reported a groom specialization factor before).
     beforeAll(async () => {
       for (let i = 0; i < 20; i++) {
         await prisma.groomInteraction.create({
@@ -151,14 +153,14 @@ describe('Personality Evolution System', () => {
     });
 
     test('should calculate personality evolution triggers accurately', async () => {
-      const triggers = await calculatePersonalityEvolutionTriggers(testGroom.id);
+      const triggers = await calculatePersonalityEvolutionTriggers(testHorse.id);
 
       expect(triggers.success).toBe(true);
       expect(triggers.triggers).toBeDefined();
       expect(triggers.triggers.experienceThreshold).toBeDefined();
       expect(triggers.triggers.interactionConsistency).toBeDefined();
       expect(triggers.triggers.performanceQuality).toBeDefined();
-      expect(triggers.triggers.specialization).toBeDefined();
+      expect(triggers.triggers).not.toHaveProperty('specialization');
       expect(triggers.evolutionReadiness).toBeDefined();
       expect(triggers.nextEvolutionEstimate).toBeDefined();
     });
@@ -254,7 +256,7 @@ describe('Personality Evolution System', () => {
     });
 
     test('should analyze personality stability accurately', async () => {
-      const stability = await analyzePersonalityStability(testHorse.id, 'horse');
+      const stability = await analyzePersonalityStability(testHorse.id);
 
       expect(stability.success).toBe(true);
       expect(stability.stabilityScore).toBeGreaterThanOrEqual(0);
@@ -270,7 +272,7 @@ describe('Personality Evolution System', () => {
 
   describe('Personality Evolution Prediction', () => {
     test('should predict future personality evolution accurately', async () => {
-      const prediction = await predictPersonalityEvolution(testGroom.id, 'groom', 30);
+      const prediction = await predictPersonalityEvolution(testHorse.id, 30);
 
       expect(prediction.success).toBe(true);
       expect(prediction.predictions).toBeDefined();
@@ -284,7 +286,7 @@ describe('Personality Evolution System', () => {
     });
 
     test('should get personality evolution history', async () => {
-      const history = await getPersonalityEvolutionHistory(testGroom.id, 'groom');
+      const history = await getPersonalityEvolutionHistory(testHorse.id);
 
       expect(history.success).toBe(true);
       expect(Array.isArray(history.evolutionEvents)).toBe(true);
@@ -338,7 +340,7 @@ describe('Personality Evolution System', () => {
         });
       }
 
-      const convergence = await analyzePersonalityStability(testHorse.id, 'horse');
+      const convergence = await analyzePersonalityStability(testHorse.id);
 
       expect(convergence.success).toBe(true);
       expect(convergence.stabilityFactors.groomInfluence).toBeDefined();

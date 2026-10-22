@@ -1,17 +1,18 @@
 /**
  * Personality Evolution Controller
  *
- * Handles API endpoints for personality evolution system including groom and horse personality development,
- * evolution triggers, stability analysis, and prediction capabilities.
+ * Read-only analysis endpoints for a HORSE's temperament: evolution triggers,
+ * stability, prediction and history.
  *
- * Business Rules:
- * - Groom personalities evolve based on interaction patterns and experience
- * - Evolution requires minimum thresholds and consistency patterns
- * - Provides prediction and analysis capabilities for strategic planning
  * - No handler here changes a horse's temperament (Equoria-gu8jk; owner ruling
  *   2026-10-20: players must never write traits for themselves). The
  *   evolveHorseTemperamentController and batchEvolvePersonalitiesController
  *   handlers were removed with their routes.
+ * - There is no groom personality evolution (Equoria-jy3f7, Equoria-j5qui;
+ *   owner ruling 2026-10-22: groom personalities never evolve; a groom keeps
+ *   the same personality for its whole career). The groom evolve handler went
+ *   in jy3f7; the groom branches of these four read handlers went in j5qui,
+ *   and their routes now serve horses only.
  */
 
 import logger from '../../../utils/logger.mjs';
@@ -24,57 +25,42 @@ import {
 } from '../services/personalityEvolutionSystem.mjs';
 
 /**
- * The 404 body for "this entity is not yours", correct for BOTH entity types.
- *
- * Equoria-ypb7d.2 fix round 3. These four responses interpolated
- * `"... not found or you do not own this ${entityType}"`, which is right for a horse and
- * wrong for a groom: players never own grooms, they engage them. Four copies of a string
- * that must agree is the same shape as the drift finding F1 was about, so the wording has
- * ONE definition here rather than four.
- *
- * The not-found / not-yours COLLAPSE is preserved deliberately: one message per branch,
- * distinguishing nothing, so the endpoint cannot be used as an existence oracle
- * (CWE-639, the convention this codebase already holds).
- *
- * @param {'groom'|'horse'} entityType — already validated by the caller
- * @returns {string}
+ * One message for both "no such horse" and "not your horse", so the endpoint
+ * cannot be used as an existence oracle (CWE-639, the convention this codebase
+ * already holds).
  */
-function notFoundOrNotYours(entityType) {
-  return entityType === 'groom'
-    ? 'Groom not found or not on your staff'
-    : 'Horse not found or you do not own this horse';
+const notFoundOrNotYoursMessage = 'Horse not found or you do not own this horse';
+
+/**
+ * Resolve the caller's horse from :horseId. Sends the 404 and returns null
+ * when the horse is missing or not the caller's.
+ */
+async function ownedHorseIdOr404(req, res) {
+  const horseId = parseInt(req.params.horseId, 10);
+  const horse = await findOwnedResource('horse', horseId, req.user.id);
+  if (!horse) {
+    res.status(404).json({ success: false, message: notFoundOrNotYoursMessage });
+    return null;
+  }
+  return horseId;
 }
 
 /**
- * Calculate personality evolution triggers for an entity
- * GET /api/personality-evolution/:entityType/:entityId/triggers
+ * Calculate temperament evolution triggers for a horse
+ * GET /api/personality-evolution/horse/:horseId/triggers
  */
 export async function getEvolutionTriggersController(req, res) {
   try {
-    const { entityType, entityId } = req.params;
-    const userId = req.user.id;
-
-    if (!['groom', 'horse'].includes(entityType)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid entity type. Must be "groom" or "horse"',
-      });
-    }
-
     logger.info(
-      `[personalityEvolutionController.getEvolutionTriggersController] Analyzing triggers for ${entityType} ID: ${entityId}`,
+      `[personalityEvolutionController.getEvolutionTriggersController] Analyzing triggers for horse ID: ${req.params.horseId}`,
     );
 
-    // Validate entity ownership (atomic)
-    const entity = await findOwnedResource(entityType, parseInt(entityId), userId);
-    if (!entity) {
-      return res.status(404).json({
-        success: false,
-        message: notFoundOrNotYours(entityType),
-      });
+    const horseId = await ownedHorseIdOr404(req, res);
+    if (horseId === null) {
+      return;
     }
 
-    const result = await calculatePersonalityEvolutionTriggers(parseInt(entityId), entityType);
+    const result = await calculatePersonalityEvolutionTriggers(horseId);
 
     res.status(200).json({
       success: true,
@@ -94,35 +80,21 @@ export async function getEvolutionTriggersController(req, res) {
 }
 
 /**
- * Analyze personality stability for an entity
- * GET /api/personality-evolution/:entityType/:entityId/stability
+ * Analyze temperament stability for a horse
+ * GET /api/personality-evolution/horse/:horseId/stability
  */
 export async function getPersonalityStabilityController(req, res) {
   try {
-    const { entityType, entityId } = req.params;
-    const userId = req.user.id;
-
-    if (!['groom', 'horse'].includes(entityType)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid entity type. Must be "groom" or "horse"',
-      });
-    }
-
     logger.info(
-      `[personalityEvolutionController.getPersonalityStabilityController] Analyzing stability for ${entityType} ID: ${entityId}`,
+      `[personalityEvolutionController.getPersonalityStabilityController] Analyzing stability for horse ID: ${req.params.horseId}`,
     );
 
-    // Validate entity ownership (atomic)
-    const entity = await findOwnedResource(entityType, parseInt(entityId), userId);
-    if (!entity) {
-      return res.status(404).json({
-        success: false,
-        message: notFoundOrNotYours(entityType),
-      });
+    const horseId = await ownedHorseIdOr404(req, res);
+    if (horseId === null) {
+      return;
     }
 
-    const result = await analyzePersonalityStability(parseInt(entityId), entityType);
+    const result = await analyzePersonalityStability(horseId);
 
     res.status(200).json({
       success: true,
@@ -142,21 +114,12 @@ export async function getPersonalityStabilityController(req, res) {
 }
 
 /**
- * Predict future personality evolution
- * GET /api/personality-evolution/:entityType/:entityId/predict
+ * Predict future temperament evolution for a horse
+ * GET /api/personality-evolution/horse/:horseId/predict
  */
 export async function predictPersonalityEvolutionController(req, res) {
   try {
-    const { entityType, entityId } = req.params;
     const { timeframeDays = 30 } = req.query;
-    const userId = req.user.id;
-
-    if (!['groom', 'horse'].includes(entityType)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid entity type. Must be "groom" or "horse"',
-      });
-    }
 
     const timeframe = parseInt(timeframeDays);
     if (isNaN(timeframe) || timeframe < 1 || timeframe > 365) {
@@ -167,19 +130,15 @@ export async function predictPersonalityEvolutionController(req, res) {
     }
 
     logger.info(
-      `[personalityEvolutionController.predictPersonalityEvolutionController] Predicting evolution for ${entityType} ID: ${entityId} over ${timeframe} days`,
+      `[personalityEvolutionController.predictPersonalityEvolutionController] Predicting evolution for horse ID: ${req.params.horseId} over ${timeframe} days`,
     );
 
-    // Validate entity ownership (atomic)
-    const entity = await findOwnedResource(entityType, parseInt(entityId), userId);
-    if (!entity) {
-      return res.status(404).json({
-        success: false,
-        message: notFoundOrNotYours(entityType),
-      });
+    const horseId = await ownedHorseIdOr404(req, res);
+    if (horseId === null) {
+      return;
     }
 
-    const result = await predictPersonalityEvolution(parseInt(entityId), entityType, timeframe);
+    const result = await predictPersonalityEvolution(horseId, timeframe);
 
     res.status(200).json({
       success: true,
@@ -199,35 +158,21 @@ export async function predictPersonalityEvolutionController(req, res) {
 }
 
 /**
- * Get personality evolution history for an entity
- * GET /api/personality-evolution/:entityType/:entityId/history
+ * Get temperament evolution history for a horse
+ * GET /api/personality-evolution/horse/:horseId/history
  */
 export async function getPersonalityEvolutionHistoryController(req, res) {
   try {
-    const { entityType, entityId } = req.params;
-    const userId = req.user.id;
-
-    if (!['groom', 'horse'].includes(entityType)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid entity type. Must be "groom" or "horse"',
-      });
-    }
-
     logger.info(
-      `[personalityEvolutionController.getPersonalityEvolutionHistoryController] Getting evolution history for ${entityType} ID: ${entityId}`,
+      `[personalityEvolutionController.getPersonalityEvolutionHistoryController] Getting evolution history for horse ID: ${req.params.horseId}`,
     );
 
-    // Validate entity ownership (atomic)
-    const entity = await findOwnedResource(entityType, parseInt(entityId), userId);
-    if (!entity) {
-      return res.status(404).json({
-        success: false,
-        message: notFoundOrNotYours(entityType),
-      });
+    const horseId = await ownedHorseIdOr404(req, res);
+    if (horseId === null) {
+      return;
     }
 
-    const result = await getPersonalityEvolutionHistory(parseInt(entityId), entityType);
+    const result = await getPersonalityEvolutionHistory(horseId);
 
     res.status(200).json({
       success: true,
