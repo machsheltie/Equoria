@@ -24,18 +24,32 @@ import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import { Input } from '@/components/ui/form';
+import { InlineError } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useBreeds, useBuyStoreHorse } from '@/hooks/api/useHorseTrader';
 import { useProfile } from '@/hooks/useAuth';
 
 const STORE_PRICE = 1000;
 
 const HorseTraderPage: React.FC = () => {
-  const { data: breeds = [], isLoading: breedsLoading } = useBreeds();
+  const {
+    data: breeds = [],
+    isLoading: breedsLoading,
+    isError: breedsError,
+    isSuccess: breedsLoaded,
+    error: breedsFailure,
+    refetch: refetchBreeds,
+    isFetching: breedsFetching,
+  } = useBreeds();
   const { data: profileData } = useProfile();
   const buyMutation = useBuyStoreHorse();
 
-  const userBalance = profileData?.user?.money ?? 0;
-  const canAfford = userBalance >= STORE_PRICE;
+  // A profile with no balance is UNKNOWN, not 0 (Currency renders "—"); the
+  // purchase stays disabled until the balance is known, with no false
+  // insufficient-funds warning (Equoria-si3m2).
+  const userBalance = profileData?.user?.money;
+  const balanceKnown = typeof userBalance === 'number';
+  const canAfford = balanceKnown && userBalance >= STORE_PRICE;
 
   // Breed combobox state
   const [search, setSearch] = useState('');
@@ -120,9 +134,15 @@ const HorseTraderPage: React.FC = () => {
               <Input
                 id="breed-search"
                 type="text"
-                placeholder={breedsLoading ? 'Loading breeds…' : 'Search breeds…'}
+                placeholder={
+                  breedsLoading
+                    ? 'Loading breeds…'
+                    : breedsError
+                      ? 'Breeds unavailable'
+                      : 'Search breeds…'
+                }
                 value={search}
-                disabled={breedsLoading}
+                disabled={breedsLoading || breedsError}
                 onChange={handleSearchChange}
                 onFocus={() => setShowDropdown(true)}
                 autoComplete="off"
@@ -147,6 +167,28 @@ const HorseTraderPage: React.FC = () => {
                 </ul>
               )}
             </div>
+            {/* ERROR before EMPTY (doctrine §1): a failed breed list is not an empty one. */}
+            {breedsError && (
+              <div className="flex flex-wrap items-center gap-3">
+                <InlineError
+                  message={`The breed list could not be loaded. ${userMessageFor(breedsFailure).message}`}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void refetchBreeds()}
+                  pending={breedsFetching}
+                >
+                  Try again
+                </Button>
+              </div>
+            )}
+            {breedsLoaded && breeds.length === 0 && (
+              <p className="text-xs text-[var(--text-muted)]">
+                No breeds are available right now. Please check back soon.
+              </p>
+            )}
             {selectedBreed && (
               <p className="text-xs text-[var(--text-muted)]">
                 Selected:{' '}
@@ -188,11 +230,11 @@ const HorseTraderPage: React.FC = () => {
             </span>
             <span
               className={`text-sm font-medium inline-flex items-center gap-1.5 ${
-                canAfford ? 'text-[var(--text-secondary)]' : 'text-role-danger'
+                canAfford || !balanceKnown ? 'text-[var(--text-secondary)]' : 'text-role-danger'
               }`}
             >
-              Your balance: <Currency amount={userBalance} />
-              {!canAfford && ' ⚠'}
+              Your balance: <Currency amount={userBalance ?? Number.NaN} />
+              {balanceKnown && !canAfford && ' ⚠'}
             </span>
           </Surface>
 
