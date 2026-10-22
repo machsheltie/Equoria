@@ -90,16 +90,21 @@ export async function createHorseFromRequest(reqBody, userId) {
   const breedGeneticProfile = breedRow.breedGeneticProfile ?? null;
 
   // Mirror horseController.createFoal: surface "breed exists in DB but has
-  // no breedProfiles.json entry" as 422 rather than letting the generators
-  // throw and fall through to the generic 500 handler.
+  // no profile" as 422 rather than letting the generators throw and fall
+  // through to the generic 500 handler.
+  //
+  // The loader words a genuine absence differently depending on whether the DB
+  // cache is loaded (production) or not (tests), so the message cannot be the
+  // discriminator (Equoria-72bub). It sets `cause` only on its load-FAILURE arms
+  // (a broken breedProfiles.json) and never on a genuine absence, so branch on that.
   try {
     getBreedProfile(breedName);
   } catch (err) {
-    if (!err.message?.startsWith('No breedProfiles.json entry for breed')) {
+    if (err?.cause) {
       throw err;
     }
     logger.warn(
-      `[createHorseService] No breedProfiles.json entry for "${breedName}" (id=${parsedBreedId}): ${err.message}`,
+      `[createHorseService] No breed profile for "${breedName}" (id=${parsedBreedId}): ${err.message}`,
     );
     return {
       status: 422,
