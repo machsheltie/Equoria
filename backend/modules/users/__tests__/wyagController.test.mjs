@@ -340,6 +340,17 @@ describe('GET /api/v1/while-you-were-gone — six event-type aggregation (Equori
     return res.body.data.items;
   }
 
+  it('competition-result: reports the persisted prizeWon in coins (Equoria-oey96.70)', async () => {
+    const items = await fetchItems();
+    const result = items.find(i => i.type === 'competition-result' && i.title.includes(show.name));
+    expect(result).toBeDefined();
+    // The fixture result persists prizeWon: 500 (Decimal column). The block used
+    // to read the non-existent `result.prize`, so it always said "Prize: $0".
+    expect(result.description).toContain('500 coins');
+    expect(result.description).not.toContain('$');
+    expect(result.metadata.prize).toBe(500);
+  });
+
   it('club-activity: emits a real new-member event with correct type/priority/timestamp', async () => {
     const items = await fetchItems();
     const clubItems = items.filter(i => i.type === 'club-activity');

@@ -58,14 +58,17 @@ export async function getWhileYouWereGone(req, res) {
       });
 
       for (const result of competitionResults) {
+        // CompetitionResult.prizeWon is a Decimal (Equoria-oey96.70); the game
+        // pays in coins, never dollars.
+        const prizeWon = Number(result.prizeWon ?? 0);
         items.push({
           type: 'competition-result',
           priority: 1,
           title: `${result.horse?.name ?? 'Your horse'} competed in ${result.show?.name ?? 'a show'}`,
-          description: `Placed ${result.placement ?? '?'} — Prize: $${result.prize ?? 0}`,
+          description: `Placed ${result.placement ?? '?'} — Prize: ${prizeWon} coins`,
           timestamp: result.createdAt.toISOString(),
           actionUrl: '/competitions',
-          metadata: { resultId: result.id, placement: result.placement, prize: result.prize },
+          metadata: { resultId: result.id, placement: result.placement, prize: prizeWon },
         });
       }
     } catch (err) {
