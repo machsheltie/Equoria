@@ -451,32 +451,13 @@ async function evaluateBaseMilestone(horse, _milestoneData) {
   return {
     milestoneReached: true,
     recommendedTraits: [],
-    ageCategory: getAgeCategory(horse),
     developmentalStage: getDevelopmentalStage(horse),
   };
 }
 
-// Equoria-l06yb (Option 1, 2026-05-20): elapsed-time foal-development windows
-// on getHorseAgeDays() (elapsed calendar days), aligned with foalAgeUtils.mjs.
-// These are display/category labels (consumed by the base-milestone shape).
-// Using calendar days (not game-cadence) ensures upper buckets remain active.
-function getAgeCategory(horse) {
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
-
-  if (ageInDays < 180) {
-    return 'foal';
-  }
-  if (ageInDays < 365) {
-    return 'weanling';
-  }
-  if (ageInDays < 730) {
-    return 'yearling';
-  }
-  if (ageInDays < 1095) {
-    return 'two_year_old';
-  }
-  return 'mature';
-}
+// The base milestone carries no named life stage (`ageCategory` foal /
+// weanling / yearling / two_year_old / mature was removed: Equoria-fr2kg Q5,
+// owner ruling 2026-10-15 — the named life stages are not part of the design).
 
 // Equoria-l06yb (Option 1, 2026-05-20): elapsed-time developmental-phase
 // windows on getHorseAgeDays() (elapsed calendar days). Intentionally NOT

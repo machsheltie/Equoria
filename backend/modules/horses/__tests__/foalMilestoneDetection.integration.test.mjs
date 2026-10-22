@@ -5,11 +5,10 @@
  * persisted `FoalDevelopment.completedMilestones` store as
  * Array<{ id, timestamp }> on GET /foals/:id/development) shipped in
  * Equoria-oey96.17. This suite proves the detection/write path actually
- * POPULATES that store from REAL gameplay state, for all three milestone
+ * POPULATES that store from REAL gameplay state, for both milestone
  * families, idempotently:
  *
  *   bond      — Horse.bondScore crosses 25/50/75/100
- *   stage     — foal enters weanling/yearling/two-year-old stage (game-year clock)
  *   first-trait — first discovered/expressed epigenetic trait
  *
  * Equoria-fr2kg. OLD CONTRACT: a fourth family, `graduation`, was recorded
@@ -17,6 +16,12 @@
  * and a bond milestone could be recorded inside the player-run enrichment
  * write path. NEW RULING (owner, 2026-10-14/15): there is no graduation and
  * no player-run enrichment, so no `graduation` milestone is ever recorded.
+ *
+ * Equoria-fr2kg Q5. OLD CONTRACT: a `stage` family was recorded as the foal
+ * entered the named life stages (stage-weanling at 3 days, stage-yearling at
+ * 7, stage-two-year-old at 14). NEW RULING (owner, 2026-10-15): the named life
+ * stages are removed; owner ruling F6 (2026-10-16) keeps only the bond and
+ * first-trait milestones. No stage milestone is ever recorded, at any age.
  *
  * IDEMPOTENCY is the core correctness property: re-detecting on unchanged state
  * records nothing new and never duplicates a milestone (the store is keyed by
@@ -125,18 +130,10 @@ describe('computeReachedMilestones — pure boundary logic', () => {
     expect(reached).not.toContain('bond-100');
   });
 
-  it('reports each stage as its real-day boundary is crossed (game-year clock)', () => {
-    expect(computeReachedMilestones({ ageDays: 2, bondScore: 0, hasDiscoveredTrait: false })).toEqual([]);
-    expect(computeReachedMilestones({ ageDays: 9, bondScore: 0, hasDiscoveredTrait: false })).toEqual([
-      'stage-weanling',
-      'stage-yearling',
-    ]);
-    // No `graduation` milestone at 21 days (Equoria-fr2kg): only the stages.
-    expect(computeReachedMilestones({ ageDays: 21, bondScore: 0, hasDiscoveredTrait: false })).toEqual([
-      'stage-weanling',
-      'stage-yearling',
-      'stage-two-year-old',
-    ]);
+  it('reports no milestone for age alone: no life stages, no graduation (Equoria-fr2kg Q5)', () => {
+    for (const ageDays of [0, 2, 3, 7, 9, 14, 20, 21, 60]) {
+      expect(computeReachedMilestones({ ageDays, bondScore: 0, hasDiscoveredTrait: false })).toEqual([]);
+    }
   });
 
   it('reports first-trait when a trait is discovered', () => {
@@ -195,12 +192,12 @@ describe('first-trait milestone detection (real DB)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Stage milestones surface through the REAL read endpoint (GET /development).
+// Detection on the REAL read endpoint (GET /development).
 // ---------------------------------------------------------------------------
-describe('stage milestone detection on the /development read path (HTTP, real DB)', () => {
-  it('detecting on read records + surfaces the passed stage milestones', async () => {
-    // 9 real days → yearling (game-year 1); age<=1 so /development is reachable.
-    const foal = await makeFoal({ suffix: 'yearling', days: 9, ageYears: 1 });
+describe('milestone detection on the /development read path (HTTP, real DB)', () => {
+  it('detecting on read records + surfaces reached milestones, and no stage milestone', async () => {
+    // 9 real days (game-year 1); age<=1 so /development is reachable.
+    const foal = await makeFoal({ suffix: 'yearold', days: 9, ageYears: 1, bondScore: 30 });
 
     const res = await request(app)
       .get(`/api/v1/foals/${foal.id}/development`)
@@ -209,34 +206,27 @@ describe('stage milestone detection on the /development read path (HTTP, real DB
 
     expect(res.status).toBe(200);
     const ids = res.body.data.completedMilestones.map(m => m.id);
-    expect(ids).toContain('stage-weanling');
-    expect(ids).toContain('stage-yearling');
-    expect(ids).not.toContain('stage-two-year-old');
-    expect(ids).not.toContain('graduation');
+    expect(ids).toEqual(['bond-25']);
 
     // Persisted for real (not just computed for the response).
     const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
-    expect(persisted.completedMilestones['stage-weanling']).toBeDefined();
-    expect(persisted.completedMilestones['stage-yearling']).toBeDefined();
+    expect(persisted.completedMilestones).toEqual({ 'bond-25': expect.any(String) });
   }, 30000);
 });
 
 // ---------------------------------------------------------------------------
 // No graduation milestone at age 3 (Equoria-fr2kg).
 // ---------------------------------------------------------------------------
-describe('a foal past age 3 records its stage milestones and no graduation milestone (real DB)', () => {
-  it('detection on a 21-day foal records the three stages, never graduation; idempotent', async () => {
+describe('a foal past age 3 records no stage and no graduation milestone (real DB)', () => {
+  it('detection on a 21-day unbonded foal records nothing; idempotent', async () => {
     // 21 real days → age 3 game-years. age=3.
     const foal = await makeFoal({ suffix: 'age3', days: 21, ageYears: 3 });
 
     const first = await detectAndRecordFoalMilestones(foal.id);
-    expect(first.newMilestones).not.toContain('graduation');
+    expect(first.newMilestones).toEqual([]);
 
     const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
-    expect(persisted.completedMilestones['stage-weanling']).toBeDefined();
-    expect(persisted.completedMilestones['stage-yearling']).toBeDefined();
-    expect(persisted.completedMilestones['stage-two-year-old']).toBeDefined();
-    expect(persisted.completedMilestones).not.toHaveProperty('graduation');
+    expect(persisted?.completedMilestones ?? {}).toEqual({});
 
     const again = await detectAndRecordFoalMilestones(foal.id);
     expect(again.newMilestones).toEqual([]);
@@ -275,11 +265,19 @@ async function waitUntilBlockedBy(blockerPid) {
 }
 
 /**
- * Run B (records at `bNow`, parks holding the row lock) and A (optionally
- * mutates the foal in its own transaction, then records at `aNow`) in the
- * interleaving described above. Resolves with both core results.
+ * Run B (optionally mutates the foal in its own transaction, records at
+ * `bNow`, parks holding the row lock) and A (optionally mutates the foal in
+ * its own transaction, then records at `aNow`) in the interleaving described
+ * above. Resolves with both core results.
+ *
+ * Equoria-fr2kg Q5. OLD SETUP: B reached its own keys by looking ten days
+ * ahead (the stage milestones). Those milestones are gone (owner ruling
+ * 2026-10-15), so a transaction now reaches a key only through foal state.
+ * B changes the foal inside its own uncommitted transaction; A reads the
+ * committed foal, so the two see different state without A touching the
+ * row B holds before A's read.
  */
-async function raceRecordings(foalId, { bNow, aNow, aPrepare }) {
+async function raceRecordings(foalId, { bNow, aNow, aPrepare, bPrepare }) {
   let releaseB;
   const bMayCommit = new Promise(resolve => {
     releaseB = resolve;
@@ -291,6 +289,9 @@ async function raceRecordings(foalId, { bNow, aNow, aPrepare }) {
 
   const txB = prisma.$transaction(async tx => {
     const [{ pid }] = await tx.$queryRaw`SELECT pg_backend_pid()::int AS pid`;
+    if (bPrepare) {
+      await bPrepare(tx);
+    }
     const result = await detectAndRecordFoalMilestonesCore(tx, foalId, { now: bNow });
     signalBRecorded(pid);
     await bMayCommit;
@@ -317,28 +318,31 @@ async function raceRecordings(foalId, { bNow, aNow, aPrepare }) {
 
 describe('concurrent milestone recording keeps every key (real DB, Equoria-q4uem.8)', () => {
   it('a key committed by another transaction after this read survives with its own timestamp', async () => {
-    // 1 day old, bond 0: nothing reached at the real clock.
-    const foal = await makeFoal({ suffix: 'race', days: 1, ageYears: 0, bondScore: 0 });
+    // Committed state: bond 30, no trait. A, reading it, reaches bond-25 (key Y).
+    const foal = await makeFoal({ suffix: 'race', days: 1, ageYears: 0, bondScore: 30 });
     await prisma.foalDevelopment.create({ data: { foalId: foal.id } });
 
     const aNow = new Date();
-    // B looks 10 days ahead: it reaches the stage milestones (key X).
-    const bNow = new Date(aNow.getTime() + 10 * MS_PER_DAY);
+    const bNow = new Date(aNow.getTime() + 1000);
 
     const { a, b } = await raceRecordings(foal.id, {
       bNow,
       aNow,
-      // A raises the bond inside its own transaction: it reaches bond-25 (key Y).
-      aPrepare: tx => tx.horse.update({ where: { id: foal.id }, data: { bondScore: 30 } }),
+      // B, in its own transaction, drops the bond and gains a revealed trait:
+      // it reaches first-trait only (key X).
+      bPrepare: tx =>
+        tx.horse.update({
+          where: { id: foal.id },
+          data: { bondScore: 0, epigeneticModifiers: { positive: ['bold'], negative: [], hidden: [] } },
+        }),
     });
 
-    expect(b.newMilestones).toEqual(['stage-weanling', 'stage-yearling']);
+    expect(b.newMilestones).toEqual(['first-trait']);
     expect(a.newMilestones).toEqual(['bond-25']);
 
     const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
     expect(persisted.completedMilestones).toEqual({
-      'stage-weanling': bNow.toISOString(),
-      'stage-yearling': bNow.toISOString(),
+      'first-trait': bNow.toISOString(),
       'bond-25': aNow.toISOString(),
     });
     // The returned map is what the database holds after A's statement.
@@ -346,25 +350,34 @@ describe('concurrent milestone recording keeps every key (real DB, Equoria-q4uem
   }, 30000);
 
   it('a key another transaction stored first keeps its timestamp and is not new for this call', async () => {
-    const foal = await makeFoal({ suffix: 'raceoverlap', days: 1, ageYears: 0, bondScore: 0 });
+    // Committed state: bond 60 and a revealed trait. A reaches bond-25,
+    // bond-50 and first-trait.
+    const foal = await makeFoal({
+      suffix: 'raceoverlap',
+      days: 1,
+      ageYears: 0,
+      bondScore: 60,
+      epigeneticModifiers: { positive: ['bold'], negative: [], hidden: [] },
+    });
     await prisma.foalDevelopment.create({ data: { foalId: foal.id } });
 
-    const bNow = new Date(Date.now() + 10 * MS_PER_DAY);
+    const bNow = new Date();
     const aNow = new Date(bNow.getTime() + 1000);
 
-    // Both reach the stage milestones; only A also reaches bond-25.
+    // B lowers the bond to 30 in its own transaction: it reaches bond-25 and
+    // first-trait. Both reach those two; only A also reaches bond-50.
     const { a } = await raceRecordings(foal.id, {
       bNow,
       aNow,
-      aPrepare: tx => tx.horse.update({ where: { id: foal.id }, data: { bondScore: 30 } }),
+      bPrepare: tx => tx.horse.update({ where: { id: foal.id }, data: { bondScore: 30 } }),
     });
 
-    expect(a.newMilestones).toEqual(['bond-25']);
+    expect(a.newMilestones).toEqual(['bond-50']);
     const persisted = await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } });
     expect(persisted.completedMilestones).toEqual({
-      'stage-weanling': bNow.toISOString(),
-      'stage-yearling': bNow.toISOString(),
-      'bond-25': aNow.toISOString(),
+      'bond-25': bNow.toISOString(),
+      'first-trait': bNow.toISOString(),
+      'bond-50': aNow.toISOString(),
     });
   }, 30000);
 

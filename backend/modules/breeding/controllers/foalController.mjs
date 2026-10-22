@@ -19,6 +19,10 @@
  * POST /activity, /enrichment, /enrich and /graduate handlers were removed
  * too (Equoria-fr2kg; owner ruling 2026-10-14/15: foal enrichment is the
  * groom's job, and there is no graduation).
+ *
+ * No response carries a named life stage (newborn / weanling / yearling /
+ * two_year_old): Equoria-fr2kg Q5, owner ruling 2026-10-15 — the named life
+ * stages are not part of the design.
  */
 
 import { validationResult } from 'express-validator';
@@ -28,7 +32,7 @@ import { getFoalDevelopment } from '../../horses/index.mjs';
 import { ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
-import { computeAgeStage } from '../../../utils/foalAgeUtils.mjs';
+import { computeAgeInWeeks, isFoalByBirthDate } from '../../../utils/foalAgeUtils.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
@@ -85,7 +89,8 @@ export async function getFoalDevelopmentHandler(req, res) {
 /**
  * GET /api/foals/:foalId
  * Get foal basic record. Ownership middleware already attached the horse to req.foal.
- * Returns 404 if the horse has graduated (age ≥ 3 game-years / ≥ 21 real days; Equoria-oey96.16).
+ * Returns 404 once the horse is no longer a foal (game age 3+ / 21+ real days;
+ * Equoria-oey96.16).
  *
  * Equoria-149w
  */
@@ -109,14 +114,11 @@ export async function getFoalHandler(req, res) {
       return res.status(404).json({ success: false, message: 'Foal not found' });
     }
 
-    // Reject horses no longer foals (graduated at age 3 game-years / 21 real days;
-    // Equoria-oey96.16). Same age-stage logic used elsewhere in the foal system.
-    const { computeAgeStage, computeAgeInWeeks } = await import('../../../utils/foalAgeUtils.mjs');
-    const ageStage = computeAgeStage(foal.dateOfBirth);
-    if (ageStage === null) {
+    // Reject horses no longer foals (game age 3+ / 21 real days; Equoria-oey96.16).
+    if (!isFoalByBirthDate(foal.dateOfBirth)) {
       return res
         .status(404)
-        .json({ success: false, message: 'Horse is not a foal (already graduated)' });
+        .json({ success: false, message: 'Horse is not a foal (age 3 or older)' });
     }
 
     const ageInWeeks = computeAgeInWeeks(foal.dateOfBirth);
@@ -133,7 +135,6 @@ export async function getFoalHandler(req, res) {
         damId: foal.damId,
         userId: foal.userId,
         breedId: foal.breedId,
-        ageStage,
         bondScore: foal.bondScore,
         stressLevel: foal.stressLevel,
         epigeneticFlags: foal.epigeneticFlags || [],
@@ -174,14 +175,10 @@ export async function getFoalActivitiesHandler(req, res) {
       take: 50,
     });
 
-    // requireOwnership attached the foal record to req.foal. The player-run
-    // stage-activity list that used to ride along here was removed
-    // (Equoria-fr2kg); the age stage stays.
-    const currentStage = computeAgeStage(req.foal?.dateOfBirth);
-
+    // The player-run stage-activity list and the named age stage that used to
+    // ride along here were removed (Equoria-fr2kg, Equoria-fr2kg Q5).
     res.json({
       success: true,
-      ageStage: currentStage,
       data: activities.map(a => ({
         id: a.id,
         day: a.day,

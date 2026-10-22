@@ -64,7 +64,7 @@ export async function evaluateDailyFoalTraits(service) {
   const foals = await prisma.horse.findMany({
     where: {
       age: {
-        in: [0, 1], // 0 = newborn, 1 = yearling
+        in: [0, 1], // game-years 0 and 1
       },
     },
     include: {

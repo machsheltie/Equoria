@@ -1,9 +1,9 @@
 /**
  * DevelopmentTracker Component Tests
  *
- * Tests the foal development tracker with age stage computation and the
- * bond score bar. It carries no player activity cards and no graduated
- * state (Equoria-fr2kg).
+ * Tests the foal development tracker's bond score bar. It carries no player
+ * activity cards and no graduated state (Equoria-fr2kg), and no named life
+ * stages (Equoria-fr2kg Q5).
  */
 
 import React from 'react';
@@ -32,32 +32,27 @@ describe('DevelopmentTracker', () => {
     expect(screen.getByText('Little Star')).toBeInTheDocument();
   });
 
-  describe('Age stage computation', () => {
-    it('shows newborn stage for foal < 4 weeks old', () => {
-      // 9 days old = ~1.3 weeks = newborn
-      render(<DevelopmentTracker foalName="Foal" dateOfBirth="2026-03-01T00:00:00Z" />);
-      expect(screen.getByText('Stage 1 / 4')).toBeInTheDocument();
-    });
+  // Equoria-fr2kg Q5. OLD CONTRACT: the tracker derived a named life stage
+  // from a real-week clock (Newborn 0–4 wk, Weanling 4–26, Yearling 26–52,
+  // 2-Year-Old 52–104), drew a four-stage timeline with "Complete"/"Upcoming"
+  // marks and a "Stage N / 4" badge, and on phones a stage card with
+  // previous/next navigation. NEW RULING (owner, 2026-10-15): the named life
+  // stages are not part of the design; remove them. No stage UI renders at
+  // any age.
+  describe('No named life stages', () => {
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    // dateOfBirth is no longer a prop; it is still passed here, as the old
+    // contract did, so a stage clock re-derived from it would be caught.
 
-    it('shows weanling stage for foal 4-26 weeks old', () => {
-      // 8 weeks ago
-      const dob = new Date('2026-01-13T00:00:00Z').toISOString();
+    it.each([1, 8, 30, 60, 110])('renders no stage timeline at %i weeks old', (weeks) => {
+      const dob = new Date(Date.now() - weeks * weekMs).toISOString();
       render(<DevelopmentTracker foalName="Foal" dateOfBirth={dob} />);
-      expect(screen.getByText('Stage 2 / 4')).toBeInTheDocument();
-    });
-
-    it('shows yearling stage for foal 26-52 weeks old', () => {
-      // 30 weeks ago
-      const dob = new Date(Date.now() - 30 * 7 * 24 * 60 * 60 * 1000).toISOString();
-      render(<DevelopmentTracker foalName="Foal" dateOfBirth={dob} />);
-      expect(screen.getByText('Stage 3 / 4')).toBeInTheDocument();
-    });
-
-    it('shows 2-year-old stage for foal 52-104 weeks old', () => {
-      // 60 weeks ago
-      const dob = new Date(Date.now() - 60 * 7 * 24 * 60 * 60 * 1000).toISOString();
-      render(<DevelopmentTracker foalName="Foal" dateOfBirth={dob} />);
-      expect(screen.getByText('Stage 4 / 4')).toBeInTheDocument();
+      expect(screen.queryByText(/Stage \d+ \/ \d+/)).not.toBeInTheDocument();
+      for (const label of ['Newborn', 'Weanling', 'Yearling', '2-Year-Old', 'Current Stage']) {
+        expect(screen.queryByText(label)).not.toBeInTheDocument();
+      }
+      expect(screen.queryByText(/\d+–\d+ wk/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /stage/i })).not.toBeInTheDocument();
     });
 
     // Equoria-fr2kg. OLD CONTRACT: a foal past 104 weeks showed a
@@ -66,7 +61,7 @@ describe('DevelopmentTracker', () => {
     // is no graduation, so no graduated state renders at any age.
     it('shows no graduated state for a foal past 104 weeks', () => {
       // 110 weeks ago
-      const dob = new Date(Date.now() - 110 * 7 * 24 * 60 * 60 * 1000).toISOString();
+      const dob = new Date(Date.now() - 110 * weekMs).toISOString();
       render(<DevelopmentTracker foalName="Foal" dateOfBirth={dob} />);
       expect(screen.queryByText(/graduat/i)).not.toBeInTheDocument();
       expect(screen.queryByText('Development Complete')).not.toBeInTheDocument();

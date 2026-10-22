@@ -17,7 +17,7 @@
  *     system", source groom_interaction).
  *   - Serialized by GET /activities:
  *     backend/modules/breeding/controllers/foalController.mjs:167-191
- *     ({ success, ageStage, data: [{ id, day, activityType, activity (alias),
+ *     ({ success, data: [{ id, day, activityType, activity (alias),
  *     outcome, bondingChange, stressChange, description, createdAt }] }).
  */
 
@@ -84,7 +84,7 @@ describe('FoalDevelopmentTracker — Activity Log shows groom rows (Equoria-fr2k
         })
       ),
       http.get(foalPath('/activities'), () =>
-        HttpResponse.json({ success: true, ageStage: 'newborn', data: [groomRow] })
+        HttpResponse.json({ success: true, data: [groomRow] })
       )
     );
   });

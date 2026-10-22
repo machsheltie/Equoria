@@ -27,17 +27,6 @@ export type MilestoneType =
 export type MilestoneStatus = 'pending' | 'in_progress' | 'completed';
 
 /**
- * Development stage based on foal age
- */
-export type DevelopmentStage =
-  | 'newborn' // Day 1
-  | 'week1' // Days 1-7
-  | 'week2' // Days 8-14
-  | 'week3' // Days 15-21
-  | 'week4' // Days 22-30
-  | 'mature'; // 30+ days
-
-/**
  * Milestone definition and status
  * Tracks individual milestone progress and evaluation
  */
@@ -121,13 +110,10 @@ export interface Foal extends Horse {
   ageInDays: number;
   currentMilestone: MilestoneType | null;
   completedMilestones: MilestoneType[];
-  developmentStage: DevelopmentStage;
 
   // Development metrics
   bondingLevel?: number; // 0-100
   stressLevel?: number; // 0-100
-  enrichmentActivitiesCompleted?: number;
-  totalEnrichmentActivities?: number;
 
   // Parent references
   sireId: number;

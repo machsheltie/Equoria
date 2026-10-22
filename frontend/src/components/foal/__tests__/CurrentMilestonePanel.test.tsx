@@ -12,8 +12,7 @@
  * - Days remaining (with plural handling)
  * - Progress bar (color coding, percentage, aria attributes)
  * - "Day X of Y" calculation
- * - Enrichment activities (count, percentage, progress bar, messages)
- * - Enrichment status color coding
+ * - No player enrichment counter (Equoria-fr2kg)
  * - Guidance tips (3 variants based on conditions)
  * - Default prop values
  */
@@ -67,8 +66,6 @@ describe('CurrentMilestonePanel Component', () => {
     milestone: mockMilestone,
     foalAge: 15,
     daysRemaining: 15,
-    enrichmentActivitiesCompleted: 3,
-    totalEnrichmentActivities: 5,
   };
 
   describe('header', () => {
@@ -334,83 +331,20 @@ describe('CurrentMilestonePanel Component', () => {
     });
   });
 
-  describe('enrichment activities', () => {
-    it('should display "Enrichment Activities" header', () => {
-      render(<CurrentMilestonePanel {...defaultProps} />);
-      expect(screen.getByText('Enrichment Activities')).toBeInTheDocument();
-    });
-
-    it('should display completion count', () => {
-      render(<CurrentMilestonePanel {...defaultProps} />);
-      expect(screen.getByText('3 / 5')).toBeInTheDocument();
-    });
-
-    it('should calculate and display percentage correctly', () => {
-      // 3/5 = 60% — component now uses inline style with CSS variable for background
+  // Equoria-fr2kg. OLD CONTRACT: the panel showed an "Enrichment Activities"
+  // counter (completed / total, default total 5) with a progress bar and
+  // "More enrichment activities needed" messages. NEW RULING (owner,
+  // 2026-10-14/15): foal enrichment is the groom's job, not a player
+  // checklist, so the panel shows no enrichment counter.
+  describe('no player enrichment counter (Equoria-fr2kg)', () => {
+    it('renders no "Enrichment Activities" counter or progress bar', () => {
       const { container } = render(<CurrentMilestonePanel {...defaultProps} />);
-      const enrichmentBar = container.querySelector(
-        '[role="progressbar"][aria-label*="Enrichment activities"]'
-      );
-      expect(enrichmentBar).toHaveStyle({ width: '60%' });
-    });
-
-    it('should use green color for 80%+ completion', () => {
-      // 4/5 = 80% — getEnrichmentStatusColor returns 'var(--status-success)' for >=80%
-      render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={4} />);
-      const statusText = screen.getByText('4 / 5');
-      expect(statusText.style.color).toContain('--status-success');
-    });
-
-    it('should use blue color for 60-79% completion', () => {
-      // 3/5 = 60% — getEnrichmentStatusColor returns 'var(--celestial-primary)' for 60-79%
-      render(<CurrentMilestonePanel {...defaultProps} />);
-      const statusText = screen.getByText('3 / 5');
-      expect(statusText.style.color).toContain('--celestial-primary');
-    });
-
-    it('should use yellow color for 40-59% completion', () => {
-      // 2/5 = 40% — getEnrichmentStatusColor returns 'var(--status-warning)' for 40-59%
-      render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={2} />);
-      const statusText = screen.getByText('2 / 5');
-      expect(statusText.style.color).toContain('--status-warning');
-    });
-
-    it('should use amber color for <40% completion', () => {
-      // 1/5 = 20% — getEnrichmentStatusColor returns 'var(--status-warning)' for <40%
-      render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={1} />);
-      const statusText = screen.getByText('1 / 5');
-      expect(statusText.style.color).toContain('--status-warning');
-    });
-
-    it('should display excellent message for 80%+ completion', () => {
-      render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={4} />);
-      expect(screen.getByText(/🌟 Excellent progress!/)).toBeInTheDocument();
-    });
-
-    it('should display good message for 60-79% completion', () => {
-      render(<CurrentMilestonePanel {...defaultProps} />);
-      expect(screen.getByText(/✨ Good progress\./)).toBeInTheDocument();
-    });
-
-    it('should display making progress message for 40-59% completion', () => {
-      render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={2} />);
-      expect(screen.getByText(/💫 Making progress\./)).toBeInTheDocument();
-    });
-
-    it('should display needs more message for <40% completion', () => {
-      render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={1} />);
-      expect(screen.getByText(/⏳ More enrichment activities needed/)).toBeInTheDocument();
-    });
-
-    it('should handle 0 completed activities', () => {
-      render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={0} />);
-      expect(screen.getByText('0 / 5')).toBeInTheDocument();
-    });
-
-    it('should handle all activities completed', () => {
-      render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={5} />);
-      expect(screen.getByText('5 / 5')).toBeInTheDocument();
-      expect(screen.getByText(/🌟 Excellent progress!/)).toBeInTheDocument();
+      expect(screen.queryByText('Enrichment Activities')).not.toBeInTheDocument();
+      expect(screen.queryByText(/\d+ \/ 5/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/More enrichment activities needed/)).not.toBeInTheDocument();
+      expect(
+        container.querySelector('[role="progressbar"][aria-label*="Enrichment activities"]')
+      ).toBeNull();
     });
   });
 
@@ -447,44 +381,6 @@ describe('CurrentMilestonePanel Component', () => {
       render(<CurrentMilestonePanel {...defaultProps} foalAge={9} daysRemaining={2} />);
       expect(screen.getByText(/Milestone evaluation is approaching!/)).toBeInTheDocument();
       expect(screen.queryByText(/Focus on daily enrichment activities/)).not.toBeInTheDocument();
-    });
-  });
-
-  describe('default props', () => {
-    it('should use default enrichmentActivitiesCompleted (0) when not provided', () => {
-      const propsWithoutEnrichment = {
-        milestone: defaultProps.milestone,
-        foalAge: defaultProps.foalAge,
-        daysRemaining: defaultProps.daysRemaining,
-        totalEnrichmentActivities: defaultProps.totalEnrichmentActivities,
-      };
-      render(<CurrentMilestonePanel {...propsWithoutEnrichment} />);
-
-      expect(screen.getByText('0 / 5')).toBeInTheDocument();
-    });
-
-    it('should use default totalEnrichmentActivities (5) when not provided', () => {
-      const propsWithoutTotal = {
-        milestone: defaultProps.milestone,
-        foalAge: defaultProps.foalAge,
-        daysRemaining: defaultProps.daysRemaining,
-        enrichmentActivitiesCompleted: 3,
-      };
-      render(<CurrentMilestonePanel {...propsWithoutTotal} />);
-
-      expect(screen.getByText('3 / 5')).toBeInTheDocument();
-    });
-
-    it('should use both defaults when enrichment props not provided', () => {
-      const propsWithoutEnrichment = {
-        milestone: defaultProps.milestone,
-        foalAge: defaultProps.foalAge,
-        daysRemaining: defaultProps.daysRemaining,
-      };
-
-      render(<CurrentMilestonePanel {...propsWithoutEnrichment} />);
-
-      expect(screen.getByText('0 / 5')).toBeInTheDocument();
     });
   });
 

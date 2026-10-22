@@ -41,11 +41,9 @@
  * - backend/utils/horseAgingSystem.mjs (cron) writes to Horse.age. After
  *   Equoria-son6 lands, that column stores game-years and this helper
  *   matches it.
- * - backend/utils/foalAgeUtils.mjs.computeAgeStage now computes foal
- *   age-stage windows on THIS game-year clock via getHorseAgeDays
- *   (Equoria-oey96.16, decision 2026-07-02) — graduation aligns exactly
- *   with the age-3 training gate (21 real days). It previously used a
- *   real-time weeks reading (the drift tracked in Equoria-5msz).
+ * - backend/utils/foalAgeUtils.mjs.isFoalByBirthDate decides "still a foal"
+ *   on THIS game-year clock via getHorseAgeYears (Equoria-oey96.16), so the
+ *   foal window closes exactly at the age-3 training gate (21 real days).
  */
 
 import { calendarDateDayIndex, gameCalendarDate, gameDayIndex } from './gameTime.mjs';

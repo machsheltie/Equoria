@@ -2,7 +2,7 @@
 // Paths adjusted for the new depth (models→horses→modules→backend→repo).
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { computeAgeStage, computeAgeInWeeks } from '../../../utils/foalAgeUtils.mjs';
+import { computeAgeInWeeks } from '../../../utils/foalAgeUtils.mjs';
 import { detectAndRecordFoalMilestones } from '../services/foalMilestoneService.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
@@ -83,20 +83,17 @@ async function getFoalDevelopment(foalId) {
 
   logger.info(`[foalModel.getFoalDevelopment] Retrieved development data for foal ${parsedFoalId}`);
 
-  // Equoria-oey96.17 (BB.1/BB.2/BB.3): surface the age-stage payload the
-  // Epic-29 UI needs, ADDITIVELY on the ratified game-year clock
-  // (Equoria-oey96.16 — 7 real days = 1 game year, via foalAgeUtils, NOT real
-  // weeks). computeAgeStage/computeAgeInWeeks read the LIVE age from
-  // Horse.dateOfBirth; FoalDevelopment.ageStage is a never-written @default
-  // cache and is intentionally NOT read here.
-  const ageStage = computeAgeStage(foal.dateOfBirth);
+  // Equoria-oey96.17 (BB.1/BB.3): surface the age payload ADDITIVELY on the
+  // ratified game-year clock (Equoria-oey96.16 — 7 real days = 1 game year,
+  // via foalAgeUtils, NOT real weeks), read LIVE from Horse.dateOfBirth.
+  // No named life stage (Equoria-fr2kg Q5, owner ruling 2026-10-15); the
+  // never-written FoalDevelopment.ageStage column is not read.
   const ageInWeeks = computeAgeInWeeks(foal.dateOfBirth);
   const birthDate = foal.dateOfBirth ? new Date(foal.dateOfBirth).toISOString() : null;
 
-  // BB.3 (Equoria-oey96.18): lazy milestone detection on read. Bond / stage /
+  // BB.3 (Equoria-oey96.18): lazy milestone detection on read. Bond and
   // first-trait milestones are a function of the foal's persisted state, so
-  // viewing development is a legitimate detection trigger (stage change is a
-  // function of time). Detect + persist idempotently, then surface the
+  // viewing development is a legitimate detection trigger. Detect + persist idempotently, then surface the
   // up-to-date store below instead of the pre-detection `development` snapshot.
   const { completedMilestones: milestoneStore } = await detectAndRecordFoalMilestones(parsedFoalId);
 
@@ -108,10 +105,8 @@ async function getFoalDevelopment(foalId) {
       breed: foal.breed?.name || 'Unknown',
       owner: foal.user?.firstName || 'Unknown',
     },
-    // BB.1 (Equoria-oey96.17): age-stage fields, additive alongside the legacy
-    // `development` block below. `ageStage` is null once the foal is age 3+
-    // game-years.
-    ageStage,
+    // BB.1 (Equoria-oey96.17): age fields, additive alongside the legacy
+    // `development` block below.
     ageInWeeks,
     birthDate,
     development: {

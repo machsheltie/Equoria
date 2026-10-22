@@ -2,7 +2,10 @@
  * CurrentMilestonePanel Component
  *
  * Displays detailed information about the foal's current milestone including
- * focus area, days remaining, progress, and enrichment activity recommendations.
+ * focus area, days remaining and progress.
+ *
+ * No player enrichment counter (Equoria-fr2kg; owner ruling 2026-10-14/15:
+ * foal enrichment is the groom's job, not a player checklist).
  *
  * Story 6-2: Foal Milestone Timeline - Subcomponent
  */
@@ -16,8 +19,6 @@ export interface CurrentMilestonePanelProps {
   milestone: Milestone;
   foalAge: number;
   daysRemaining: number;
-  enrichmentActivitiesCompleted?: number;
-  totalEnrichmentActivities?: number;
 }
 
 /**
@@ -32,32 +33,16 @@ function getProgressFill(progress: number): string {
 }
 
 /**
- * Get enrichment completion status color (CSS custom property).
- */
-function getEnrichmentStatusColor(completed: number, total: number): string {
-  const percentage = (completed / total) * 100;
-  if (percentage >= 80) return 'var(--status-success)';
-  if (percentage >= 60) return 'var(--celestial-primary)';
-  if (percentage >= 40) return 'var(--status-warning)';
-  return 'var(--status-warning)';
-}
-
-/**
  * CurrentMilestonePanel Component
  */
 const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
   milestone,
   foalAge,
   daysRemaining,
-  enrichmentActivitiesCompleted = 0,
-  totalEnrichmentActivities = 5,
 }) => {
   const { name, description, focus, ageWindow } = milestone;
   const progress = calculateMilestoneProgress(milestone, foalAge);
   const progressFill = getProgressFill(progress);
-  const enrichmentPercentage = Math.round(
-    (enrichmentActivitiesCompleted / totalEnrichmentActivities) * 100
-  );
 
   return (
     <div className="rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.1)] p-6 shadow-sm">
@@ -144,50 +129,6 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
         </div>
         <p className="text-xs text-slate-400 mt-1">
           Day {foalAge - ageWindow.min + 1} of {ageWindow.max - ageWindow.min + 1} in this window
-        </p>
-      </div>
-
-      {/* Enrichment Activities */}
-      <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-3">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-semibold" style={{ color: 'var(--status-success)' }}>
-            Enrichment Activities
-          </p>
-          <span
-            className="text-sm font-bold"
-            style={{
-              color: getEnrichmentStatusColor(
-                enrichmentActivitiesCompleted,
-                totalEnrichmentActivities
-              ),
-            }}
-          >
-            {enrichmentActivitiesCompleted} / {totalEnrichmentActivities}
-          </span>
-        </div>
-        <div className="w-full rounded-full h-2" style={{ background: 'var(--bg-surface)' }}>
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${enrichmentPercentage}%`,
-              background: 'var(--status-success)',
-              transition: 'width var(--duration-reveal) var(--ease-out)',
-            }}
-            role="progressbar"
-            aria-valuenow={enrichmentActivitiesCompleted}
-            aria-valuemin={0}
-            aria-valuemax={totalEnrichmentActivities}
-            aria-label={`Enrichment activities: ${enrichmentActivitiesCompleted} of ${totalEnrichmentActivities}`}
-          />
-        </div>
-        <p className="text-xs text-emerald-300 mt-2">
-          {enrichmentPercentage >= 80
-            ? '🌟 Excellent progress! Keep up the great care.'
-            : enrichmentPercentage >= 60
-              ? '✨ Good progress. A few more activities will help.'
-              : enrichmentPercentage >= 40
-                ? '💫 Making progress. More enrichment recommended.'
-                : '⏳ More enrichment activities needed for optimal development.'}
         </p>
       </div>
 

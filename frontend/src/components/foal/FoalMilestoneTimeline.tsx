@@ -234,8 +234,6 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
           milestone={currentMilestone}
           foalAge={foal.ageInDays}
           daysRemaining={daysUntilNext}
-          enrichmentActivitiesCompleted={foal.enrichmentActivitiesCompleted || 0}
-          totalEnrichmentActivities={foal.totalEnrichmentActivities || 5}
         />
       )}
 

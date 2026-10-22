@@ -17,6 +17,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -168,5 +169,75 @@ describe('retired player-run foal routes (Equoria-fr2kg)', () => {
     expect(await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } })).toEqual(devBefore);
     expect(await prisma.foalActivity.count({ where: { foalId: foal.id } })).toBe(0);
     expect(await prisma.foalTrainingHistory.count({ where: { horseId: foal.id } })).toBe(0);
+  });
+});
+
+// ─── Named life stages (removed) ────────────────────────────────────────────
+// Equoria-fr2kg Q5. OLD CONTRACT: GET /foals/:id, /activities and /development
+// carried `ageStage` ('newborn' | 'weanling' | 'yearling' | 'two_year_old'),
+// and GET /foals/:id refused an age-3 horse as "already graduated". NEW RULING
+// (owner, 2026-10-15): remove the named life stages; they are not part of the
+// design, and there is no graduation. The age-3 refusal itself is unchanged.
+
+describe('foal routes carry no named life stage (Equoria-fr2kg Q5)', () => {
+  const get = path =>
+    request(app).get(`/api/v1/foals/${path}`).set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
+
+  const makeHorse = async (label, ageYears) => {
+    const dob = birthDateForAge(ageYears);
+    const horse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-Foal-${label}-${randomBytes(4).toString('hex')}`,
+        sex: 'Filly',
+        dateOfBirth: dob,
+        age: ageYears,
+        userId: user.id,
+      },
+    });
+    return horse;
+  };
+  // Deleted inside each test: the shared tracker deletes the user before any
+  // horse registered after it, and Horse.userId is onDelete:Restrict.
+  const dropHorse = horse => prisma.horse.deleteMany({ where: { id: horse.id } });
+
+  it('GET /:foalId has no ageStage', async () => {
+    const res = await get(foal.id);
+    expect(res.status).toBe(200);
+    expect(res.body.data).not.toHaveProperty('ageStage');
+  });
+
+  it('GET /:foalId/activities has no ageStage', async () => {
+    const res = await get(`${foal.id}/activities`);
+    expect(res.status).toBe(200);
+    expect(res.body).not.toHaveProperty('ageStage');
+  });
+
+  it('GET /:foalId/development has no ageStage', async () => {
+    const res = await get(`${foal.id}/development`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).not.toHaveProperty('ageStage');
+  });
+
+  it('GET /:foalId still serves a 2-year-old', async () => {
+    const twoYearOld = await makeHorse('age2', 2);
+    try {
+      const res = await get(twoYearOld.id);
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe(twoYearOld.id);
+    } finally {
+      await dropHorse(twoYearOld);
+    }
+  });
+
+  it('GET /:foalId refuses an age-3 horse without calling it graduated', async () => {
+    const adult = await makeHorse('age3', 3);
+    try {
+      const res = await get(adult.id);
+      expect(res.status).toBe(404);
+      expect(res.body.message).not.toMatch(/graduat/i);
+    } finally {
+      await dropHorse(adult);
+    }
   });
 });

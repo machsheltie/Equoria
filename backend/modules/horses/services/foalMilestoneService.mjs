@@ -17,17 +17,17 @@
  *
  * Canonical milestone ids owned by this service and its tests:
  *   bond-25 / bond-50 / bond-75 / bond-100  — Horse.bondScore crosses a threshold
- *   stage-weanling / stage-yearling / stage-two-year-old — foal enters an age stage
  *   first-trait     — the foal's first epigenetic trait is discovered/expressed
  *
  * There is no `graduation` milestone (Equoria-fr2kg; owner ruling
  * 2026-10-14/15: there is no graduation). Stores written before the removal
  * may still hold a `graduation` key; it is left in place.
  *
- * CADENCE — GAME-YEAR CLOCK (Equoria-oey96.16): the stage day boundaries are
- * the SAME real-day boundaries computeAgeStage uses; they are
- * imported from foalAgeUtils (single source of truth) so this detector can
- * never drift from the stage computation.
+ * There are no stage milestones either (Equoria-fr2kg Q5; owner ruling
+ * 2026-10-15: the named life stages are removed; ruling F6 2026-10-16 keeps
+ * the bond and first-trait milestones). Stores written before the removal may
+ * still hold stage-weanling / stage-yearling / stage-two-year-old keys; they
+ * are left in place (deleting stored data needs the owner).
  *
  * BOND SOURCE — `Horse.bondScore` (NOT `FoalDevelopment.bondingLevel`). This is
  * deliberate: the product decision behind Equoria-507mt/g89vy set bond to start
@@ -41,13 +41,7 @@
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
-import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { toJsonParam } from '../../../utils/userSettingsPaths.mjs';
-import {
-  STAGE_WEANLING_MIN_DAYS,
-  STAGE_YEARLING_MIN_DAYS,
-  STAGE_TWO_YEAR_OLD_MIN_DAYS,
-} from '../../../utils/foalAgeUtils.mjs';
 
 // Bond thresholds → canonical persisted milestone id.
 export const BOND_MILESTONE_THRESHOLDS = Object.freeze([
@@ -55,15 +49,6 @@ export const BOND_MILESTONE_THRESHOLDS = Object.freeze([
   Object.freeze({ id: 'bond-50', threshold: 50 }),
   Object.freeze({ id: 'bond-75', threshold: 75 }),
   Object.freeze({ id: 'bond-100', threshold: 100 }),
-]);
-
-// Age-stage entry milestones → the real-day boundary at which the foal ENTERS
-// that stage. Boundaries come from foalAgeUtils so they can never drift from
-// computeAgeStage (Equoria-oey96.16).
-export const STAGE_MILESTONES = Object.freeze([
-  Object.freeze({ id: 'stage-weanling', minDays: STAGE_WEANLING_MIN_DAYS }),
-  Object.freeze({ id: 'stage-yearling', minDays: STAGE_YEARLING_MIN_DAYS }),
-  Object.freeze({ id: 'stage-two-year-old', minDays: STAGE_TWO_YEAR_OLD_MIN_DAYS }),
 ]);
 
 export const FIRST_TRAIT_MILESTONE_ID = 'first-trait';
@@ -115,20 +100,17 @@ function hasDiscoveredEpigeneticTrait(horse) {
  * milestone the foal has REACHED (regardless of whether it is already
  * recorded). The caller decides which of these are new.
  *
- * @param {{ ageDays: number, bondScore: number, hasDiscoveredTrait: boolean }} state
+ * Age alone reaches no milestone (Equoria-fr2kg Q5); `ageDays` is accepted and
+ * ignored so callers need not change.
+ *
+ * @param {{ ageDays?: number, bondScore: number, hasDiscoveredTrait: boolean }} state
  * @returns {string[]}
  */
-export function computeReachedMilestones({ ageDays, bondScore, hasDiscoveredTrait }) {
+export function computeReachedMilestones({ bondScore, hasDiscoveredTrait }) {
   const reached = [];
 
   for (const { id, threshold } of BOND_MILESTONE_THRESHOLDS) {
     if (bondScore >= threshold) {
-      reached.push(id);
-    }
-  }
-
-  for (const { id, minDays } of STAGE_MILESTONES) {
-    if (ageDays >= minDays) {
       reached.push(id);
     }
   }
@@ -182,7 +164,6 @@ export async function detectAndRecordFoalMilestonesCore(tx, foalId, { now = new 
     where: { id: parsedFoalId },
     select: {
       id: true,
-      dateOfBirth: true,
       bondScore: true,
       epigeneticFlags: true,
       epigeneticModifiers: true,
@@ -194,7 +175,6 @@ export async function detectAndRecordFoalMilestonesCore(tx, foalId, { now = new 
   }
 
   const reached = computeReachedMilestones({
-    ageDays: getHorseAgeDays(horse.dateOfBirth, now),
     bondScore: horse.bondScore ?? 0,
     hasDiscoveredTrait: hasDiscoveredEpigeneticTrait(horse),
   });

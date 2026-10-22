@@ -170,8 +170,6 @@ describe('FoalMilestoneTimeline Component', () => {
     sireId: 'sire-1',
     damId: 'dam-1',
     userId: 'user-1',
-    enrichmentActivitiesCompleted: 3,
-    totalEnrichmentActivities: 5,
   };
 
   const mockMilestones: Milestone[] = [
@@ -432,19 +430,8 @@ describe('FoalMilestoneTimeline Component', () => {
       expect(screen.queryByTestId('current-milestone-panel')).not.toBeInTheDocument();
     });
 
-    it('should use default enrichment values when not provided', () => {
-      const foalWithoutEnrichment = {
-        ...mockFoal,
-        enrichmentActivitiesCompleted: undefined,
-        totalEnrichmentActivities: undefined,
-      };
-
-      renderWithQueryClient(
-        <FoalMilestoneTimeline foal={foalWithoutEnrichment as Foal} milestones={mockMilestones} />
-      );
-      // CurrentMilestonePanel should still render with defaults (0 and 5)
-      expect(screen.getByTestId('current-milestone-panel')).toBeInTheDocument();
-    });
+    // Equoria-fr2kg: the panel's player enrichment counter (and its default
+    // 0 / 5 values) was removed; foal enrichment is the groom's job.
   });
 
   describe('milestone history', () => {

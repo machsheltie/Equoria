@@ -54,8 +54,7 @@ describe('evaluateEnhancedMilestone — mature horse (age >= 3 years)', () => {
     expect(typeof result).toBe('object');
     expect(result.milestoneReached).toBe(true);
     expect(Array.isArray(result.recommendedTraits)).toBe(true);
-    expect(typeof result.ageCategory).toBe('string');
-    expect(result.ageCategory).toBe('mature');
+    expect(result).not.toHaveProperty('ageCategory');
   });
 });
 
@@ -103,7 +102,7 @@ describe('evaluateEnhancedMilestone — 1095d gate boundary (Equoria-l06yb senti
     );
     // gated → base milestone shape, no enhanced-only field
     expect(result).not.toHaveProperty('epigeneticFlags');
-    expect(result.ageCategory).toBe('mature');
+    expect(result).not.toHaveProperty('ageCategory');
   });
 });
 
@@ -137,9 +136,9 @@ describe('evaluateEnhancedMilestone — newborn foal (graceful ultra-rare failur
     expect(typeof result.enhancementFactors.bondStability).toBe('string');
   });
 
-  it('returns ageCategory foal for newborn', async () => {
+  it('returns no named life-stage ageCategory (Equoria-fr2kg Q5)', async () => {
     const result = await evaluateEnhancedMilestone(newbornHorse, { interactions: [] }, null, makeMilestoneData());
-    expect(result.ageCategory).toBe('foal');
+    expect(result).not.toHaveProperty('ageCategory');
   });
 });
 
@@ -168,15 +167,20 @@ describe('evaluateEnhancedMilestone — with groom object', () => {
   });
 });
 
-// ── age categories (getAgeCategory + getDevelopmentalStage branches) ──────────
+// ── developmental stage branches (getDevelopmentalStage) ─────────────────────
+//
+// Equoria-fr2kg Q5. OLD CONTRACT: the base milestone also carried
+// `ageCategory` (foal / weanling / yearling / two_year_old / mature). NEW
+// RULING (owner, 2026-10-15): the named life stages are removed, so there is
+// no ageCategory. The developmentalStage assertions are unchanged.
 
 const milestoneData = { type: 'growth', completed: true, score: 70 };
 const daysAgo = d => new Date(Date.now() - d * 24 * 60 * 60 * 1000);
 // dateOfBirth is a date-only column: store the Eastern game date, as production writers do.
 const gameDaysAgo = d => gameCalendarDate(new Date(), -d);
 
-describe('evaluateEnhancedMilestone — age category branches', () => {
-  it('weanling + juvenile at 200 days', async () => {
+describe('evaluateEnhancedMilestone — developmental stage branches', () => {
+  it('juvenile at 200 days', async () => {
     const horse = {
       id: -1,
       dateOfBirth: gameDaysAgo(200),
@@ -184,11 +188,11 @@ describe('evaluateEnhancedMilestone — age category branches', () => {
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
     const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
-    expect(result.ageCategory).toBe('weanling');
+    expect(result).not.toHaveProperty('ageCategory');
     expect(result.developmentalStage).toBe('juvenile');
   });
 
-  it('yearling + adolescent at 400 days', async () => {
+  it('adolescent at 400 days', async () => {
     const horse = {
       id: -1,
       dateOfBirth: gameDaysAgo(400),
@@ -196,11 +200,11 @@ describe('evaluateEnhancedMilestone — age category branches', () => {
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
     const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
-    expect(result.ageCategory).toBe('yearling');
+    expect(result).not.toHaveProperty('ageCategory');
     expect(result.developmentalStage).toBe('adolescent');
   });
 
-  it('two_year_old + young_adult at 800 days', async () => {
+  it('young_adult at 800 days', async () => {
     const horse = {
       id: -1,
       dateOfBirth: gameDaysAgo(800),
@@ -208,11 +212,11 @@ describe('evaluateEnhancedMilestone — age category branches', () => {
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
     const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
-    expect(result.ageCategory).toBe('two_year_old');
+    expect(result).not.toHaveProperty('ageCategory');
     expect(result.developmentalStage).toBe('young_adult');
   });
 
-  it('foal + fear_period at 100 days', async () => {
+  it('fear_period at 100 days', async () => {
     const horse = {
       id: -1,
       dateOfBirth: gameDaysAgo(100),
@@ -220,7 +224,7 @@ describe('evaluateEnhancedMilestone — age category branches', () => {
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
     const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
-    expect(result.ageCategory).toBe('foal');
+    expect(result).not.toHaveProperty('ageCategory');
     expect(result.developmentalStage).toBe('fear_period');
   });
 });

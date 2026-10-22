@@ -2,7 +2,7 @@
  * FoalDevelopmentTracker (Epic 29-2 — Celestial Night restyle) — CONTAINER
  *
  * Full foal development interface:
- *  - DevelopmentTracker (age-stage timeline + bond score)
+ *  - DevelopmentTracker (bond score)
  *  - Discovered traits
  *  - Activity log
  *
@@ -70,11 +70,10 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
           </div>
         )}
 
-        {/* DevelopmentTracker — shows stage timeline + bond score */}
+        {/* DevelopmentTracker — shows the bond score (no named life stages, Equoria-fr2kg Q5) */}
         {foal && (
           <DevelopmentTracker
             foalName={foal.name ?? `Foal #${foalId}`}
-            dateOfBirth={foal.dateOfBirth ?? foal.birthDate ?? new Date().toISOString()}
             bondScore={development?.bondingLevel ?? 0}
             completedMilestones={{}}
             lastInteractionAt={undefined}

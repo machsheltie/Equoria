@@ -38,7 +38,7 @@ router.use(authenticateToken);
 
 /**
  * GET /api/foals/:foalId
- * Get a foal's basic record. Returns 404 if not found, not owned, or already graduated.
+ * Get a foal's basic record. Returns 404 if not found, not owned, or age 3 or older.
  *
  * Equoria-149w
  */

@@ -8,7 +8,7 @@
  * was never surfaced here. This suite proves the endpoint now returns, on the
  * ratified game-year cadence (Equoria-oey96.16; 7 real days = 1 game year):
  *
- *   BB.1  ageInWeeks · ageStage · birthDate
+ *   BB.1  ageInWeeks · birthDate
  *   BB.3  completedMilestones: Array<{ id, timestamp }> read from the REAL
  *         persisted FoalDevelopment.completedMilestones store — the detection
  *         WRITE path is Equoria-oey96.18, so a fresh foal reports [] honestly;
@@ -24,6 +24,11 @@
  * enrichmentDay, enrichmentWindowOpen, availableEnrichmentActivities, and the
  * BB.2 stage-filtered availableActivities). NEW RULING (owner, 2026-10-14/15):
  * foal enrichment is the groom's job, so none of those fields are returned.
+ *
+ * Equoria-fr2kg Q5. OLD CONTRACT: BB.1 also returned `ageStage` (newborn /
+ * weanling / yearling / two_year_old), and reading development recorded
+ * stage-* milestones. NEW RULING (owner, 2026-10-15): the named life stages
+ * are removed, so neither is returned or recorded.
  *
  * Real DB, real Express, no mocks. Scoped TestFixture- cleanup (CLAUDE.md §2).
  */
@@ -73,7 +78,7 @@ beforeAll(async () => {
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
 
-  // dob 9 real days ago → yearling stage (game-year 1; 7–13 real days).
+  // dob 9 real days ago → game-year 1 (7–13 real days).
   yearlingFoal = await prisma.horse.create({
     data: {
       ...fixtureColor(),
@@ -124,8 +129,8 @@ describe('GET /api/v1/foals/:foalId/development — BB.1/BB.2/BB.3 additive (Equ
     expect(data).toBeDefined();
   });
 
-  it('BB.1: exposes ageStage / ageInWeeks / birthDate on the game-year clock', () => {
-    expect(data.ageStage).toBe('yearling');
+  it('BB.1: exposes ageInWeeks / birthDate on the game-year clock, and no ageStage', () => {
+    expect(data).not.toHaveProperty('ageStage');
     expect(data.ageInWeeks).toBe(1);
     expect(data.birthDate).toBe(yearlingFoal.dateOfBirth.toISOString());
   });
@@ -153,5 +158,10 @@ describe('GET /api/v1/foals/:foalId/development — BB.1/BB.2/BB.3 additive (Equ
       id: 'bond25',
       timestamp: SEEDED_MILESTONE_TS,
     });
+  });
+
+  it('records no named life-stage milestone for a 9-day-old foal (Equoria-fr2kg Q5)', () => {
+    const ids = data.completedMilestones.map(m => m.id);
+    expect(ids.filter(id => id.startsWith('stage-'))).toEqual([]);
   });
 });
