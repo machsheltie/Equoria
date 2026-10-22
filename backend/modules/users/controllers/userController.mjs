@@ -211,7 +211,7 @@ export const getCommunityActivity = async (req, res, next) => {
 
     // 3. Get latest top competition wins (1st place)
     const wins = await prisma.competitionResult.findMany({
-      where: { placement: { in: ['1', '1st'] } },
+      where: { placement: 1 },
       orderBy: { runDate: 'desc' },
       take: 5,
       include: { horse: { select: { name: true, user: { select: { username: true } } } } },

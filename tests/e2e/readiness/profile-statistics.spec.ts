@@ -96,7 +96,7 @@ test('profile Game-Statistics cards render real non-zero values with no bypass h
   await prisma.competitionResult.create({
     data: {
       score: 95.5,
-      placement: '1st',
+      placement: 1,
       discipline: 'Racing',
       runDate: new Date(Date.now() - 86400000),
       showName: show.name,

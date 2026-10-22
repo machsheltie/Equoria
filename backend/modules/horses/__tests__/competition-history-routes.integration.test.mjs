@@ -83,7 +83,7 @@ describe('INTEGRATION: GET /api/v1/horses/:horseId/competition-history (21S-4)',
     const r1 = await prisma.competitionResult.create({
       data: {
         score: 90,
-        placement: '1st',
+        placement: 1,
         discipline: 'Racing',
         runDate: new Date(Date.now() - 86400000),
         showName: show1.name,
@@ -97,7 +97,7 @@ describe('INTEGRATION: GET /api/v1/horses/:horseId/competition-history (21S-4)',
     const r2 = await prisma.competitionResult.create({
       data: {
         score: 70,
-        placement: '2nd',
+        placement: 2,
         discipline: 'Racing',
         runDate: new Date(Date.now() - 2 * 86400000),
         showName: show2.name,

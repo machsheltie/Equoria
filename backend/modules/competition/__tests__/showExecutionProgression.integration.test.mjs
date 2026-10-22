@@ -400,7 +400,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
     await prisma.competitionResult.create({
       data: {
         score: 99,
-        placement: '1',
+        placement: 1,
         discipline: 'Dressage',
         runDate: new Date(),
         showName: show.name,

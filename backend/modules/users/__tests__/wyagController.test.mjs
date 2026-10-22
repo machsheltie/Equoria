@@ -165,7 +165,7 @@ describe('GET /api/v1/while-you-were-gone — six event-type aggregation (Equori
     await prisma.competitionResult.create({
       data: {
         score: 88.5,
-        placement: '1st',
+        placement: 1,
         discipline: 'Dressage',
         runDate: hoursAgo(1),
         showName: show.name,

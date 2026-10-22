@@ -927,7 +927,10 @@ model CompetitionResult {
   id         Int      @id @default(autoincrement())
   /// Competition details
   score      Decimal  @db.Decimal(10, 2)
-  placement  String?
+  /// The 1-based rank (1 = winner); NULL when the result records no placing.
+  /// An integer since Equoria-f46tb (owner ruling 2026-10-22): it was a string
+  /// written both as '1' and as '1st'.
+  placement  Int?
   discipline String
   runDate    DateTime
   showName   String

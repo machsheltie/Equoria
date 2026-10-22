@@ -25,7 +25,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculateTraitScore } from '../../traits/index.mjs';
 import { NotFoundError } from '../../../errors/index.mjs';
-import { placementRank } from '../../../utils/competitionPlacement.mjs';
 
 // Constants for legacy score components
 const MAX_BASE_STATS_SCORE = 30;
@@ -185,12 +184,11 @@ export function calculateBaseStatsScore(horse) {
 export async function calculateAchievementsScore(horse) {
   const results = horse.competitionResults || [];
 
-  // Count wins by placement. The stored placement is a string, '1' or '1st'
-  // (Equoria-f46tb); comparing it to a number counted no placings at all.
-  const ranks = results.map(r => placementRank(r.placement));
-  const firstPlaces = ranks.filter(rank => rank === 1).length;
-  const secondPlaces = ranks.filter(rank => rank === 2).length;
-  const thirdPlaces = ranks.filter(rank => rank === 3).length;
+  // Count wins by placement: the Int rank since Equoria-f46tb (while it was a
+  // string, these comparisons to numbers counted no placings at all).
+  const firstPlaces = results.filter(r => r.placement === 1).length;
+  const secondPlaces = results.filter(r => r.placement === 2).length;
+  const thirdPlaces = results.filter(r => r.placement === 3).length;
   const totalCompetitions = results.length;
 
   // Calculate achievement points

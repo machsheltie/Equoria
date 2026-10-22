@@ -38,8 +38,8 @@ export const prizeHandlers = [
     }
 
     // Full prize history data — REAL backend row shape (Equoria-i3l23):
-    // `competitionResultId` (not transactionId/competitionId), STRING
-    // `placement` ("1st"/"2nd"), `runDate` (not date), and NO xpGained/claimed/
+    // `competitionResultId` (not transactionId/competitionId), integer
+    // `placement` (Equoria-f46tb), `runDate` (not date), and NO xpGained/claimed/
     // claimedAt (those columns do not exist in the CompetitionResult model). The
     // frontend `fetchPrizeHistory` maps these rows into the UI `PrizeTransaction`
     // shape; this handler must match what the route really emits so the unit
@@ -51,7 +51,7 @@ export const prizeHandlers = [
         horseId: 1,
         horseName: 'Thunder',
         discipline: 'dressage',
-        placement: '1st',
+        placement: 1,
         prizeMoney: 2500,
         runDate: '2026-03-15T10:00:00Z',
       },
@@ -61,7 +61,7 @@ export const prizeHandlers = [
         horseId: 2,
         horseName: 'Storm',
         discipline: 'jumping',
-        placement: '2nd',
+        placement: 2,
         prizeMoney: 1500,
         runDate: '2026-02-10T14:00:00Z',
       },
@@ -71,7 +71,7 @@ export const prizeHandlers = [
         horseId: 1,
         horseName: 'Thunder',
         discipline: 'eventing',
-        placement: '3rd',
+        placement: 3,
         prizeMoney: 1000,
         runDate: '2026-01-25T09:00:00Z',
       },
@@ -81,7 +81,7 @@ export const prizeHandlers = [
         horseId: 1,
         horseName: 'Thunder',
         discipline: 'dressage',
-        placement: '1st',
+        placement: 1,
         prizeMoney: 2000,
         runDate: '2025-12-20T10:00:00Z',
       },

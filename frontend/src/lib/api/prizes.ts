@@ -60,7 +60,8 @@ export interface PrizeTransaction {
  * backend/modules/users/routes/userRoutes.mjs — the `formatted` map). The
  * backend serializes raw `CompetitionResult` rows, so:
  * - `competitionResultId` is the result PK (there is no separate competitionId);
- * - `placement` is a STRING ("1st" / "2nd" / null), not a number;
+ * - `placement` is the integer rank or null (Equoria-f46tb; it used to be a
+ *   string, "1st" or "1");
  * - `runDate` is the date (there is no `date`);
  * - there is NO `xpGained`, `claimed`, or `claimedAt` — the data model
  *   (CompetitionResult) has no XP or claim-state columns.
@@ -70,7 +71,7 @@ export interface BackendPrizeHistoryRow {
   competitionName: string;
   horseName: string;
   horseId: number;
-  placement: string | number | null;
+  placement: number | null;
   prizeMoney: number;
   discipline: string;
   runDate: string;
@@ -97,18 +98,12 @@ export interface BackendPrizeHistoryResponse {
 }
 
 /**
- * Parse the backend's STRING placement ("1st", "2nd", "3rd", null) into the
- * numeric placement the UI components compare/sort on. A null or non-numeric
- * placement (placeholder results) maps to 0, which the row renderer displays
- * honestly as "-" (no medal), rather than fabricating a rank.
+ * The numeric placement the UI components compare/sort on. A null placement
+ * (placeholder results) maps to 0, which the row renderer displays honestly as
+ * "-" (no medal), rather than fabricating a rank.
  */
-export function parsePlacement(placement: string | number | null | undefined): number {
-  if (typeof placement === 'number') return Number.isFinite(placement) ? placement : 0;
-  if (typeof placement === 'string') {
-    const parsed = parseInt(placement, 10);
-    return Number.isNaN(parsed) ? 0 : parsed;
-  }
-  return 0;
+export function parsePlacement(placement: number | null | undefined): number {
+  return typeof placement === 'number' && Number.isFinite(placement) ? placement : 0;
 }
 
 /**
@@ -121,7 +116,7 @@ export function parsePlacement(placement: string | number | null | undefined): n
  *                    claim endpoint that also used it was removed under
  *                    Equoria-m1jmb)
  * - date           ← runDate
- * - placement      ← parsePlacement(placement string)
+ * - placement      ← parsePlacement(placement)
  * - xpGained       ← row.xpGained ?? 0    (no XP column in the data model)
  * - claimed        ← row.claimed ?? true  (history rows are settled records;
  *                    the data model has no claim-state column, so there is no

@@ -29,7 +29,7 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /**
  * REAL backend prize-history rows (Equoria-i3l23) — `competitionResultId`,
- * STRING `placement`, `runDate`, NO xpGained/claimed/claimedAt. These are what
+ * integer `placement` (Equoria-f46tb), `runDate`, NO xpGained/claimed/claimedAt. These are what
  * the route really emits under `data.prizeHistory`; the hook maps them into the
  * UI `PrizeTransaction` shape via `fetchPrizeHistory`.
  */
@@ -40,7 +40,7 @@ const backendRows = [
     horseId: 1,
     horseName: 'Thunder',
     discipline: 'dressage',
-    placement: '1st',
+    placement: 1,
     prizeMoney: 2500,
     runDate: '2026-03-15T10:00:00Z',
   },
@@ -50,7 +50,7 @@ const backendRows = [
     horseId: 2,
     horseName: 'Storm',
     discipline: 'jumping',
-    placement: '2nd',
+    placement: 2,
     prizeMoney: 1500,
     runDate: '2026-02-10T14:00:00Z',
   },
@@ -60,15 +60,15 @@ const backendRows = [
     horseId: 1,
     horseName: 'Thunder',
     discipline: 'eventing',
-    placement: '3rd',
+    placement: 3,
     prizeMoney: 1000,
     runDate: '2026-01-25T09:00:00Z',
   },
 ];
 
 /**
- * The mapped UI shape the hook now returns for `backendRows` — placement parsed
- * from the strings, xpGained defaulted to 0 (no XP column), claimed defaulted
+ * The mapped UI shape the hook now returns for `backendRows` — placement passed
+ * through, xpGained defaulted to 0 (no XP column), claimed defaulted
  * to true (settled history), claimedAt defaulted to runDate, competitionId and
  * transactionId derived from competitionResultId.
  */
@@ -255,7 +255,7 @@ describe('usePrizeHistory', () => {
         horseId: 1,
         horseName: 'Thunder',
         discipline: 'dressage',
-        placement: '1st',
+        placement: 1,
         prizeMoney: 3000,
         runDate: '2026-03-20T10:00:00Z',
       },

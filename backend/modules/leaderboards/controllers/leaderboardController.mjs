@@ -388,9 +388,9 @@ export const getRecentWinners = async (req, res) => {
     const { discipline } = req.query;
     // Documented: limit default 20, max 50 (Equoria-9svu0).
     const { limit } = parsePaginationParams(req, { defaultLimit: 20, maxLimit: 50 });
-    const whereClause = {
-      OR: [{ placement: '1' }, { placement: '1st' }],
-    };
+    // placement is the Int rank (Equoria-f46tb); it was a string written as
+    // both '1' and '1st', which this filter used to match one by one.
+    const whereClause = { placement: 1 };
 
     if (discipline) {
       whereClause.discipline = discipline;

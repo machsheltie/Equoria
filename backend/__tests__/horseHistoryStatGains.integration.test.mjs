@@ -50,7 +50,7 @@ function resultFor(horse, discipline, statGains) {
     horseId: horse.id,
     showId: show.id,
     score: 70,
-    placement: '1',
+    placement: 1,
     discipline,
     runDate: new Date('2026-10-10T07:00:00.000Z'),
     showName: show.name,

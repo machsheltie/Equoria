@@ -36,7 +36,7 @@ async function plantResult(showId, horseId) {
   await prisma.competitionResult.create({
     data: {
       score: 1,
-      placement: '99',
+      placement: 99,
       discipline: 'Dressage',
       runDate: new Date(),
       showName: 'planted',

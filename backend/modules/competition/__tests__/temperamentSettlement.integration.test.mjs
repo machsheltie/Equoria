@@ -117,10 +117,10 @@ describe('nightly settlement scores temperament as a percent term (B6)', () => {
     const byHorse = new Map(results.map(r => [r.horseId, r]));
     expect(results).toHaveLength(3);
     expect(Number(byHorse.get(calm.id).score)).toBe(106);
-    expect(byHorse.get(calm.id).placement).toBe('1');
+    expect(byHorse.get(calm.id).placement).toBe(1);
     expect(Number(byHorse.get(unrecorded.id).score)).toBe(101);
-    expect(byHorse.get(unrecorded.id).placement).toBe('2');
+    expect(byHorse.get(unrecorded.id).placement).toBe(2);
     expect(Number(byHorse.get(nervous.id).score)).toBe(96);
-    expect(byHorse.get(nervous.id).placement).toBe('3');
+    expect(byHorse.get(nervous.id).placement).toBe(3);
   }, 60000);
 });

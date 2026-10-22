@@ -1,17 +1,18 @@
 /**
- * Every placement reader counts both stored spellings (Equoria-f46tb).
+ * Every placement reader agrees on the same horse (Equoria-f46tb).
  *
- * CompetitionResult.placement is written as the rank ('1', '2', ...) by the
- * nightly executors and as the ordinal ('1st', '2nd', ...) by older paths.
- * Readers matched one spelling each: the wins and placements leaderboards only
- * the numbers, the stable's championship border and the dashboard's last
- * placing only the ordinals, and the legacy score compared the string column to
- * numbers and so counted no placings at all. The same horse therefore had
- * different win totals on different screens.
+ * CompetitionResult.placement used to be a string written as the rank ('1')
+ * by the nightly executors and as the ordinal ('1st') by older paths, and each
+ * reader matched one spelling: the wins and placements leaderboards only the
+ * numbers, the stable's championship border and the dashboard's last placing
+ * only the ordinals, and the legacy score compared the string to numbers and
+ * counted no placings at all. The owner ruled (2026-10-22, options A and C)
+ * that placement is an Int, with the ordinal rows backfilled by the migration
+ * 20261022190000_competition_result_placement_int.
  *
- * The fixture horse has seven results: 1, 1, 1st, 1st, 2, 3rd, 5. Every
- * reader must see 4 wins and 6 top-three placings. (A migration to one
- * encoding is owner-gated and not part of this fix.)
+ * The fixture horse has seven results: 1, 1, 1, 1, 2, 3, 5. Every reader must
+ * see 4 wins and 6 top-three placings, and the dashboard's last placing is the
+ * newest top-three result.
  *
  * Real DB, real routes (supertest, real JWT), scoped fixtures.
  */
@@ -24,7 +25,6 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
-import { placementRank, storedPlacements } from '../utils/competitionPlacement.mjs';
 import {
   groupWinsByHorse,
   groupTopThreePlacementsByHorse,
@@ -34,7 +34,7 @@ import { calculateAchievementsScore } from '../modules/horses/services/legacySco
 const PREFIX = 'TestFixture-f46tb';
 const ORIGIN = 'http://localhost:3000';
 // Oldest first; the newest result is the numeric 2nd place.
-const PLACEMENTS = ['1st', '5', '1', '3rd', '1st', '1', '2'];
+const PLACEMENTS = [1, 5, 1, 3, 1, 1, 2];
 const tag = randomBytes(4).toString('hex');
 const cleanup = createCleanupTracker();
 
@@ -109,37 +109,15 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 60000);
 
-describe('placement readers count both spellings (Equoria-f46tb)', () => {
-  it('helpers: rank of either spelling; every spelling of a rank', () => {
-    expect(placementRank('1')).toBe(1);
-    expect(placementRank('1st')).toBe(1);
-    expect(placementRank(' 3rd ')).toBe(3);
-    expect(placementRank(2)).toBe(2);
-    expect(placementRank('')).toBeNull();
-    expect(placementRank(null)).toBeNull();
-    expect(storedPlacements(1, 2, 3)).toEqual(['1', '1st', '2', '2nd', '3', '3rd']);
-    expect(storedPlacements(11, 12, 13, 21, 22)).toEqual([
-      '11',
-      '11th',
-      '12',
-      '12th',
-      '13',
-      '13th',
-      '21',
-      '21st',
-      '22',
-      '22nd',
-    ]);
-  });
-
-  it('wins and placements leaderboards count both spellings', async () => {
+describe('placement readers agree (Equoria-f46tb)', () => {
+  it('wins and placements leaderboards count every win and placing', async () => {
     const wins = await groupWinsByHorse({ horseId: horse.id }, { take: 5, skip: 0 });
     expect(wins).toEqual([{ horseId: horse.id, _count: { id: 4 } }]);
     const placings = await groupTopThreePlacementsByHorse({ horseId: horse.id }, { take: 5, skip: 0 });
     expect(placings).toEqual([{ horseId: horse.id, _count: { id: 6 } }]);
   });
 
-  it("the stable list's championship signal counts both spellings", async () => {
+  it("the stable list's championship signal counts every win", async () => {
     const res = await request(app).get('/api/v1/horses').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     const row = res.body.data.find(h => h.id === horse.id);
@@ -147,14 +125,14 @@ describe('placement readers count both spellings (Equoria-f46tb)', () => {
     expect(row.hasChampionship).toBe(true);
   });
 
-  it("the dashboard's last placing finds the newest top-three result in either spelling", async () => {
+  it("the dashboard's last placing is the newest top-three result", async () => {
     const res = await request(app)
       .get(`/api/v1/users/dashboard/${owner.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     const activity = res.body.data?.activity ?? res.body.activity;
-    expect(activity.lastShowPlaced).toMatchObject({ horseName: horse.name, placement: '2' });
+    expect(activity.lastShowPlaced).toMatchObject({ horseName: horse.name, placement: 2 });
   });
 
   it('the legacy score counts the stored placings', async () => {

@@ -91,7 +91,7 @@ describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', (
     const result = await prisma.competitionResult.create({
       data: {
         score: 87.5,
-        placement: '1st',
+        placement: 1,
         discipline: 'Racing',
         runDate: new Date(Date.now() - 86400000),
         showName: show.name,

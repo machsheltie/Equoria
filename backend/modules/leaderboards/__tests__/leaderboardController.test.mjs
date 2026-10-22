@@ -191,7 +191,7 @@ describe('GET /api/v1/leaderboards/win-rate (Equoria-847r)', () => {
         showId: show.id,
         showName: show.name,
         discipline: 'Racing',
-        placement: '1',
+        placement: 1,
         score: 87.5,
         runDate: new Date('2024-01-15'),
       },

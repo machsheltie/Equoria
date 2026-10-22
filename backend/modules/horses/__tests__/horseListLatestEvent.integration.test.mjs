@@ -78,7 +78,7 @@ beforeAll(async () => {
   await prisma.competitionResult.create({
     data: {
       score: 80.5,
-      placement: '3rd',
+      placement: 3,
       discipline: 'Dressage',
       runDate: new Date('2026-05-01T00:00:00.000Z'),
       showName: olderShow.name,
@@ -89,7 +89,7 @@ beforeAll(async () => {
   await prisma.competitionResult.create({
     data: {
       score: 92.0,
-      placement: '1st',
+      placement: 1,
       discipline: 'Show Jumping',
       runDate: new Date('2026-05-15T00:00:00.000Z'),
       showName: newerShow.name,
@@ -128,7 +128,7 @@ describe('GET /api/v1/horses — latestEvent exposure (55bo.5)', () => {
     expect(h.latestEvent.type).toBe('competition');
     // The NEWER (2026-05-15 Show Jumping 1st) result must win, not the older one.
     expect(h.latestEvent.discipline).toBe('Show Jumping');
-    expect(h.latestEvent.placement).toBe('1st');
+    expect(h.latestEvent.placement).toBe(1);
     expect(typeof h.latestEvent.showName).toBe('string');
     expect(h.latestEvent.showName).toContain('NewShow');
     expect(new Date(h.latestEvent.date).toISOString()).toBe('2026-05-15T00:00:00.000Z');

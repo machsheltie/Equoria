@@ -144,7 +144,7 @@ describe('SENTINEL: executeClosedShows → competitionPlacement notification on 
       where: { showId: show.id, horseId: horse.id },
     });
     expect(result).not.toBeNull();
-    expect(result.placement).toBe('1');
+    expect(result.placement).toBe(1);
 
     // Core sentinel: a DISTINCT competitionPlacement row exists for the
     // horse owner. Against the pre-o26xc controller this assertion fails

@@ -136,23 +136,23 @@ beforeAll(async () => {
     data: [
       result(riddenShow, rivalHorse, {
         score: 81.5,
-        placement: '1',
+        placement: 1,
         prizeWon: 500,
         horsePointsAwarded: 30,
         statGains: { stat: 'focus', gain: 1 },
       }),
       result(riddenShow, viewerHorse, {
         score: 64.25,
-        placement: '2',
+        placement: 2,
         prizeWon: 300,
         horsePointsAwarded: 27,
         statGains: { stat: 'precision', gain: 1 },
       }),
       // Settled before A1: nothing recorded, and a malformed statGains value.
-      result(riddenShow, legacyHorse, { score: 40, placement: '3', prizeWon: 200, statGains: { stat: 7 } }),
+      result(riddenShow, legacyHorse, { score: 40, placement: 3, prizeWon: 200, statGains: { stat: 7 } }),
       result(conformationShow, viewerHorse, {
         score: 72,
-        placement: '1',
+        placement: 1,
         prizeWon: null,
         statGains: { ribbon: 'Blue', titlePoints: 10 },
       }),

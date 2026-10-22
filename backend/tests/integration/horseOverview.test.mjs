@@ -201,7 +201,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           showId: testShow.id,
           showName: 'Summer Invitational',
           discipline: 'Dressage',
-          placement: '1st',
+          placement: 1,
           score: 95.5,
           prizeWon: 1000,
           runDate: new Date('2025-06-01'),
@@ -239,7 +239,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       // Verify last show result exists
       expect(data.lastShowResult).toBeDefined();
       expect(data.lastShowResult.showName).toBe('Summer Invitational');
-      expect(data.lastShowResult.placement).toBe('1st');
+      expect(data.lastShowResult.placement).toBe(1);
 
       // Verify rider info
       expect(data.rider).toEqual({

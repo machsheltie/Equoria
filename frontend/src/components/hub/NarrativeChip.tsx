@@ -9,6 +9,7 @@
  */
 
 import { cn } from '@/lib/utils';
+import { getOrdinal } from '@/lib/activity-utils';
 
 type ChipVariant = 'ready' | 'active' | 'cooldown' | 'neutral' | 'warning';
 
@@ -136,7 +137,8 @@ export interface LatestChapterInput {
     type: 'competition';
     showName: string;
     discipline: string;
-    placement: string | null;
+    /** The 1-based rank (Equoria-f46tb: an integer, no longer '1st'). */
+    placement: number | null;
     date: string | null;
   } | null;
 }
@@ -176,13 +178,13 @@ export function deriveLatestChapter(
   if (data.latestEvent && data.latestEvent.type === 'competition') {
     const at = chapterTs(data.latestEvent.date);
     if (at !== null) {
-      const place = (data.latestEvent.placement ?? '').trim();
+      const place = data.latestEvent.placement;
       const disc = data.latestEvent.discipline;
       const label =
-        place === '1st'
+        place === 1
           ? `Won the ${disc} show`
           : place
-            ? `Placed ${place} in ${disc}`
+            ? `Placed ${getOrdinal(place)} in ${disc}`
             : `Competed in ${disc}`;
       competitionEvent = { label, at, isCompetition: true };
     }

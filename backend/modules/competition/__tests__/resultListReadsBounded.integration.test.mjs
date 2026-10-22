@@ -107,7 +107,7 @@ beforeAll(async () => {
       horseId: careerHorse.id,
       showId: show.id,
       score: 50,
-      placement: '1',
+      placement: 1,
       discipline: 'Dressage',
       runDate: new Date(base + i * 60_000),
       showName: show.name,
@@ -131,7 +131,7 @@ beforeAll(async () => {
       horseId: horse.id,
       showId: bigShow.id,
       score: i % 50,
-      placement: String(i + 1),
+      placement: i + 1,
       discipline: 'Dressage',
       runDate: new Date(),
       showName: bigShow.name,
@@ -199,7 +199,7 @@ describe('result list reads (Equoria-cmw85.12)', () => {
     expect(res.body.results).toHaveLength(LIMIT);
     expect(res.body.results[0]).toMatchObject({
       horseId: careerHorse.id,
-      placement: '1',
+      placement: 1,
       discipline: 'Dressage',
       horse: { id: careerHorse.id, name: careerHorse.name },
     });

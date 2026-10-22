@@ -47,9 +47,9 @@ describe('a tied show (Equoria-bvddn.22)', () => {
       select: { horseId: true, placement: true, prizeWon: true, score: true },
     });
     const byHorse = new Map(results.map(r => [r.horseId, r]));
-    expect(String(byHorse.get(mid.horse.id).placement)).toBe('1');
-    expect(String(byHorse.get(high.horse.id).placement)).toBe('2');
-    expect(String(byHorse.get(low.horse.id).placement)).toBe('3');
+    expect(byHorse.get(mid.horse.id).placement).toBe(1);
+    expect(byHorse.get(high.horse.id).placement).toBe(2);
+    expect(byHorse.get(low.horse.id).placement).toBe(3);
     expect(new Set(results.map(r => Number(r.score))).size).toBe(1);
 
     expect(Number(byHorse.get(mid.horse.id).prizeWon)).toBe(500);

@@ -111,7 +111,7 @@ export async function getPendingStudRequestsForDams(damIds) {
  * — no N+1).
  *
  * @param {number[]} horseIds
- * @returns {Promise<Array<{ horseId: number, showName: string|null, discipline: string|null, placement: string|null, runDate: Date|null }>>}
+ * @returns {Promise<Array<{ horseId: number, showName: string|null, discipline: string|null, placement: number|null, runDate: Date|null }>>}
  */
 export function getRecentResultsForHorses(horseIds) {
   return prisma.competitionResult.findMany({
@@ -154,7 +154,7 @@ export function updateHorse(horseId, data) {
  * endpoint. Returns the minimal column subset the aggregator needs.
  *
  * @param {number} horseId
- * @returns {Promise<Array<{ placement: string|null, prizeWon: number|null }>>}
+ * @returns {Promise<Array<{ placement: number|null, prizeWon: number|null }>>}
  */
 export function getHorseCompetitionResultsForPrizeSummary(horseId) {
   return prisma.competitionResult.findMany({

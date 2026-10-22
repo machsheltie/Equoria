@@ -104,7 +104,7 @@ beforeAll(async () => {
       showId: showA.id,
       horseId: horseA.id,
       score: 95,
-      placement: '1st',
+      placement: 1,
       discipline: 'Dressage',
       runDate: pastRunDate,
       showName: showA.name,

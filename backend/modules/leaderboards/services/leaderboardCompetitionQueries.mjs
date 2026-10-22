@@ -12,7 +12,6 @@
  */
 
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
-import { storedPlacements } from '../../../utils/competitionPlacement.mjs';
 
 /**
  * Fetch the per-horse user/breed details for an ordered list of horse ids.
@@ -32,13 +31,13 @@ export function fetchHorseDetailsByIds(horseIds) {
 }
 
 /**
- * Wins per horse, ordered desc, for the wins metric branch. A win is stored as
- * '1' or '1st' (Equoria-f46tb); both count.
+ * Wins per horse, ordered desc, for the wins metric branch (placement is the
+ * Int rank since Equoria-f46tb).
  */
 export function groupWinsByHorse(whereClause, { take, skip }) {
   return prisma.competitionResult.groupBy({
     by: ['horseId'],
-    where: { ...whereClause, placement: { in: storedPlacements(1) } },
+    where: { ...whereClause, placement: 1 },
     _count: { id: true },
     orderBy: [{ _count: { id: 'desc' } }, { horseId: 'asc' }],
     take,
@@ -58,11 +57,11 @@ export function groupEarningsByHorse(whereClause, { take, skip }) {
   });
 }
 
-/** Top-3 placements per horse for the placements metric branch (either spelling, Equoria-f46tb). */
+/** Top-3 placements per horse for the placements metric branch. */
 export function groupTopThreePlacementsByHorse(whereClause, { take, skip }) {
   return prisma.competitionResult.groupBy({
     by: ['horseId'],
-    where: { ...whereClause, placement: { in: storedPlacements(1, 2, 3) } },
+    where: { ...whereClause, placement: { in: [1, 2, 3] } },
     _count: { id: true },
     orderBy: [{ _count: { id: 'desc' } }, { horseId: 'asc' }],
     take,
@@ -122,21 +121,13 @@ function whereToSqlConditions(whereClause, caller) {
  * Requires a minimum of 3 numeric placements (HAVING count >= 3) so the
  * average is statistically meaningful.
  *
- * Equoria-6lobd: `CompetitionResult.placement` is a String? column, and
- * Prisma's `_avg` / `orderBy: { _avg }` only accept numeric fields — the
- * previous `prisma.competitionResult.groupBy({ _avg: { placement } })`
- * threw PrismaClientValidationError on every call, turning every
- * `?metric=average_placement` request into a 500. Until the placement
- * column becomes an Int (the migration decided under Equoria-f46tb), the
- * average is computed in SQL over the leading digits of the string:
+ * `CompetitionResult.placement` is the Int rank since Equoria-f46tb (it was a
+ * String written as '1' and '1st'; Equoria-6lobd computed the average over its
+ * leading digits). The average is computed in SQL:
  *
- * - `substring(placement from '^[0-9]+')::int` parses '1' and '1st'
- *   identically — the same leading-digits contract as placementToNumber()
- *   (userStatsService) and parseCompetitionPlacement()
- *   (horseOverviewController).
- * - Rows whose placement has no leading digit (e.g. a 'DQ') are excluded
- *   from BOTH the average and the returned count, so competitionCount is
- *   the honest n the average was computed over.
+ * - Rows with no placing (NULL) are excluded from BOTH the average and the
+ *   returned count (the route's `placement: { not: null }`), so
+ *   competitionCount is the honest n the average was computed over.
  * - Ties on the average are broken by horseId ASC so pagination is
  *   deterministic.
  *
@@ -153,12 +144,7 @@ function whereToSqlConditions(whereClause, caller) {
  * @returns {Promise<Array<{ horseId: number, _avg: { placement: number }, _count: { id: number } }>>}
  */
 export async function groupAveragePlacementByHorse(whereClause, { take, skip }) {
-  const conditions = [
-    ...whereToSqlConditions(whereClause, 'groupAveragePlacementByHorse'),
-    // Numeric guard: only rows whose placement starts with a digit enter
-    // the average ('1', '2nd', '10th' — yes; 'DQ' — no).
-    Prisma.sql`"placement" ~ '^[0-9]'`,
-  ];
+  const conditions = whereToSqlConditions(whereClause, 'groupAveragePlacementByHorse');
 
   // Function-call form (`$queryRaw(Prisma.sql\`…\`)`) rather than the tagged
   // template — the in-repo convention for composed fragments (see
@@ -168,7 +154,7 @@ export async function groupAveragePlacementByHorse(whereClause, { take, skip }) 
   const rows = await prisma.$queryRaw(Prisma.sql`
     SELECT
       "horseId",
-      AVG((substring("placement" from '^[0-9]+'))::int)::float8 AS "averagePlacement",
+      AVG("placement")::float8 AS "averagePlacement",
       COUNT(*)::int AS "resultCount"
     FROM "competition_results"
     WHERE ${Prisma.join(conditions, ' AND ')}

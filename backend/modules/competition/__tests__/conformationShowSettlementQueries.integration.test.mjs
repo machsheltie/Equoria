@@ -247,7 +247,7 @@ describe('conformation show settlement work (Equoria-cmw85.11)', () => {
       const boost = applyBreedingValueBoost(horse.breedingValueBoost, reward.breedingBoostDelta);
 
       const row = rows.find(r => r.horseId === horse.id);
-      expect(row.placement).toBe(String(placement));
+      expect(row.placement).toBe(placement);
       expect(Number(row.score)).toBe(score);
       expect(row.prizeWon).toBeNull();
       expect(row.statGains).toEqual({ ribbon: reward.ribbon, titlePoints: reward.titlePoints });

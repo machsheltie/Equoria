@@ -78,7 +78,7 @@ export async function seedPrizeResult(horseId: number): Promise<SeededPrizeResul
   const result = await prisma.competitionResult.create({
     data: {
       score: 92.5,
-      placement: '1st',
+      placement: 1,
       discipline: 'Dressage',
       runDate,
       showName: show.name,

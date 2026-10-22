@@ -338,6 +338,6 @@ describe('Equoria-kacla: canonical /api/v1/shows 7-day path still works (no nx8t
       where: { showId: show.id, horseId: entrantHorseId },
     });
     expect(result).not.toBeNull();
-    expect(result.placement).toBe('1');
+    expect(result.placement).toBe(1);
   }, 30000);
 });

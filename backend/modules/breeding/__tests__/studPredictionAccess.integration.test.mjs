@@ -261,7 +261,7 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
           horseId,
           showId: show.id,
           score: 88,
-          placement: '1st',
+          placement: 1,
           discipline: 'Racing',
           runDate: new Date(Date.now() - 86400000),
           showName,

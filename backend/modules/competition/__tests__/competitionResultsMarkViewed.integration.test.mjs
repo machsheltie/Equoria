@@ -117,7 +117,7 @@ describe('POST /api/v1/competition/results/viewed (Equoria-oey96.28)', () => {
         horseId,
         showId: show.id,
         score: 101.25,
-        placement: '2nd',
+        placement: 2,
         discipline: show.discipline,
         runDate: show.runDate,
         showName: show.name,

@@ -135,7 +135,7 @@ async function createCompetitionResult(horseId, showId) {
   return prisma.competitionResult.create({
     data: {
       score: 75.5,
-      placement: '3rd',
+      placement: 3,
       discipline: 'Dressage',
       runDate: new Date(),
       showName: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,

@@ -39,7 +39,7 @@ let sharedUser;
 let sharedGroom;
 
 // Horses created for specific scenarios
-let horseCompetitionResult; // has CompetitionResult with placement='8' (>5)
+let horseCompetitionResult; // has CompetitionResult with placement 8 (>5)
 let horseShadowMilestone; // has milestoneTraitLog with milestoneType='socialization'
 let horseGhostwalkerMilestone; // has milestoneTraitLog for emotionalDetachment filter
 let horseSoulbondedMilestones; // has milestoneTraitLogs with groomId+bondScore → triggers Soulbonded throw+catch
@@ -72,7 +72,7 @@ beforeAll(async () => {
     },
   });
 
-  // ── Fixture: horse with CompetitionResult placement='8' (> 5) ──────────────
+  // ── Fixture: horse with CompetitionResult placement 8 (> 5) ────────────────
   // Covers line 222 in evaluatePhoenixBornConditions:
   //   competitionResults.filter(result => result.placement > 5).length
   //   The filter lambda body executes for each result entry.
@@ -111,13 +111,13 @@ beforeAll(async () => {
   });
 
   if (show) {
-    // Add a CompetitionResult with placement > 5 (string comparison: '8' > 5 = true in JS)
+    // Add a CompetitionResult with placement > 5 (the Int rank 8)
     await prisma.competitionResult.create({
       data: {
         horseId: horseCompetitionResult.id,
         showId: show.id,
         score: 50,
-        placement: '8',
+        placement: 8,
         discipline: 'Dressage',
         runDate: new Date(),
         showName: show.name,

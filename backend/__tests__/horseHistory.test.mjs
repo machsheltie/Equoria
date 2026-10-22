@@ -176,7 +176,7 @@ describe('response shape and field mapping', () => {
         showId: show.id,
         showName: `${PREFIX}Barrel Show`,
         discipline: 'Barrel Racing',
-        placement: '1st',
+        placement: 1,
         score: 100,
         prizeWon: 500,
         statGains: null,
@@ -200,7 +200,7 @@ describe('response shape and field mapping', () => {
     expect(found).toBeDefined();
     expect(found.showName).toBe(`${PREFIX}Barrel Show`);
     expect(found.discipline).toBe('Barrel Racing');
-    expect(found.placement).toBe('1st');
+    expect(found.placement).toBe(1);
     expect(Number(found.prize)).toBe(500);
     expect(found.statGain).toBeNull();
     expect(found.runDate).toBeDefined();
@@ -214,7 +214,7 @@ describe('response shape and field mapping', () => {
         showId: show.id,
         showName: `${PREFIX}Dressage Show`,
         discipline: 'Dressage',
-        placement: '2nd',
+        placement: 2,
         score: 90,
         prizeWon: 200,
         statGains: JSON.stringify({ stat: 'stamina', gain: 1 }),

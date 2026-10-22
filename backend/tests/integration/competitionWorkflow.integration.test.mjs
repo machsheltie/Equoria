@@ -437,7 +437,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     expect(competitionResult).toBeTruthy();
     expect(Number(competitionResult.score)).toBeGreaterThan(0);
     // Sole entrant → 1st place → 50% of the prize pool.
-    expect(competitionResult.placement).toBe('1');
+    expect(competitionResult.placement).toBe(1);
     expect(Number(competitionResult.prizeWon)).toBeGreaterThan(0);
 
     // ────────────────────────────────────────────────────────────────────

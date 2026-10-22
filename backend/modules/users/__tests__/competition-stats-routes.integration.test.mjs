@@ -104,7 +104,7 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
     const result1 = await prisma.competitionResult.create({
       data: {
         score: 95.5,
-        placement: '1st',
+        placement: 1,
         discipline: 'Racing',
         runDate: new Date(Date.now() - 86400000),
         showName: shows[0].name,
@@ -118,7 +118,7 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
     const result2 = await prisma.competitionResult.create({
       data: {
         score: 82,
-        placement: '3rd',
+        placement: 3,
         discipline: 'Racing',
         runDate: new Date(Date.now() - 2 * 86400000),
         showName: shows[1].name,
@@ -132,7 +132,7 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
     const result3 = await prisma.competitionResult.create({
       data: {
         score: 60,
-        placement: '5th',
+        placement: 5,
         discipline: 'Dressage',
         runDate: new Date(Date.now() - 3 * 86400000),
         showName: shows[2].name,

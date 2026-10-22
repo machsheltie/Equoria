@@ -288,10 +288,10 @@ describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
     // dedicated show. Aggregate stats are show-agnostic, so totals and
     // placement-branch coverage are unchanged.
     const placements = [
-      ['1st', 95],
-      ['2nd', 90],
-      ['3rd', 85],
-      ['4th', 80],
+      [1, 95],
+      [2, 90],
+      [3, 85],
+      [4, 80],
       [null, 75], // null placement → placementToNumber → 0 branch
     ];
     for (let i = 0; i < placements.length; i++) {
@@ -320,7 +320,7 @@ describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
           discipline: 'Dressage',
           placement,
           score: String(score),
-          prizeWon: placement === '1st' ? 500 : placement === '2nd' ? 300 : 100,
+          prizeWon: placement === 1 ? 500 : placement === 2 ? 300 : 100,
           runDate: new Date('2024-01-01'),
         },
       });

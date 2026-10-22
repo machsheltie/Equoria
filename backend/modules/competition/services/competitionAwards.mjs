@@ -53,7 +53,7 @@ const PLACEMENT_AWARD_TABLE = Object.freeze({
 const PARTICIPATION_AWARD = Object.freeze({ horseXp: 1, userXp: 0, statGainChance: 0 });
 
 /**
- * Map a NUMERIC placement (the executor stores placement as "1"/"2"/"3"…; this
+ * Map a NUMERIC placement (the executor stores the Int rank, Equoria-f46tb; this
  * takes the 1-based number) to its award row. Placements 1-3 get the podium row;
  * 4th+ (and any non-integer/invalid input, defensively) get the participation
  * row. The returned `ordinal` ('1st'/'2nd'/'3rd' or `${n}th`) is what

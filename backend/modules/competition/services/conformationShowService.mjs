@@ -477,7 +477,7 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
             horseId: horse.id,
             showId,
             score: finalScore,
-            placement: String(placement),
+            placement,
             discipline: 'conformation',
             runDate: now,
             showName: show.name ?? `Show #${showId}`,

@@ -212,7 +212,7 @@ describe('nightly settlement with a discipline outside the 23', () => {
       const placement = i + 1;
       expect(r).toMatchObject({
         showId: legacyShow.id,
-        placement: String(placement),
+        placement,
         horsePointsAwarded: computePlacementAwards(placement).horseXp,
         statGains: null,
       });
@@ -227,7 +227,7 @@ describe('nightly settlement with a discipline outside the 23', () => {
       const placement = i + 1;
       expect(r).toMatchObject({
         showId: validShow.id,
-        placement: String(placement),
+        placement,
         horsePointsAwarded: computePlacementAwards(placement).horseXp,
         statGains: { stat: 'precision', gain: 1 },
       });

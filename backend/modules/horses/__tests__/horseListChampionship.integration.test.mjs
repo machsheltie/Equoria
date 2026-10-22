@@ -93,7 +93,7 @@ beforeAll(async () => {
     data: [
       {
         score: 92.0,
-        placement: '1st',
+        placement: 1,
         discipline: 'Dressage',
         runDate: new Date('2026-05-10T00:00:00.000Z'),
         showName: shows[0].name,
@@ -102,7 +102,7 @@ beforeAll(async () => {
       },
       {
         score: 91.0,
-        placement: '1st',
+        placement: 1,
         discipline: 'Show Jumping',
         runDate: new Date('2026-05-11T00:00:00.000Z'),
         showName: shows[1].name,
@@ -111,7 +111,7 @@ beforeAll(async () => {
       },
       {
         score: 70.0,
-        placement: '3rd',
+        placement: 3,
         discipline: 'Dressage',
         runDate: new Date('2026-05-12T00:00:00.000Z'),
         showName: shows[2].name,
@@ -121,7 +121,7 @@ beforeAll(async () => {
       // Placed-but-never-first horse: a 2nd and a 3rd, no 1st.
       {
         score: 80.0,
-        placement: '2nd',
+        placement: 2,
         discipline: 'Dressage',
         runDate: new Date('2026-05-10T00:00:00.000Z'),
         showName: shows[3].name,
@@ -130,7 +130,7 @@ beforeAll(async () => {
       },
       {
         score: 65.0,
-        placement: '3rd',
+        placement: 3,
         discipline: 'Show Jumping',
         runDate: new Date('2026-05-11T00:00:00.000Z'),
         showName: shows[4].name,

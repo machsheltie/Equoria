@@ -73,7 +73,7 @@ async function addResult(horseId, showName) {
       showId,
       showName,
       discipline: 'Racing',
-      placement: '1',
+      placement: 1,
       prizeWon: 0,
       score: 80,
       runDate: new Date(),

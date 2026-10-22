@@ -289,7 +289,7 @@ export async function getHorseShowResults(horseId, { skip, take }) {
 export function buildRiddenResultRow({ show, staged, prize, now }) {
   return {
     score: staged.score,
-    placement: `${staged.placement}`,
+    placement: staged.placement,
     discipline: show.discipline,
     runDate: now,
     showName: show.name,

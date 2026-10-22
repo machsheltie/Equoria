@@ -132,7 +132,7 @@ async function makeResult(show, horseId, { viewedAt = null } = {}, resultIds) {
       horseId,
       showId: show.id,
       score: 128.5,
-      placement: '1st',
+      placement: 1,
       discipline: show.discipline,
       runDate: show.runDate,
       showName: show.name,

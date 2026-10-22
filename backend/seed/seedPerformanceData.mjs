@@ -291,10 +291,10 @@ async function seedPerformanceCompetitionResults() {
         horseId: horse.id,
         showId: show.id,
         // Schema fields (chunk-B fix 2026-04-30): CompetitionResult has no
-        // direct userId — reach the user via horse.user. placement is a
-        // String? (denormalized rank label like '1st', not an integer).
-        // Required: showName + runDate (was 'competitionDate' field name).
-        placement: String(placement),
+        // direct userId — reach the user via horse.user. placement is the
+        // Int? rank (Equoria-f46tb). Required: showName + runDate (was
+        // 'competitionDate' field name).
+        placement,
         score,
         prizeWon,
         discipline: show.discipline,

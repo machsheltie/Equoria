@@ -106,7 +106,7 @@ describe('groom showPerformance — real persisted data (Equoria-axad9.1)', () =
         horseId: provenHorse.id,
         showId: show.id,
         score: 90,
-        placement: '1',
+        placement: 1,
         discipline: 'conformation',
         runDate: new Date(),
         showName: show.name,

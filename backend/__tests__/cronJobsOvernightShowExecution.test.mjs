@@ -135,7 +135,7 @@ describe('CronJobService.executeOvernightShows() — Equoria-aghl', () => {
     });
     expect(results.length).toBe(1);
     expect(results[0].horseId).toBe(execHorse.id);
-    expect(results[0].placement).toBe('1');
+    expect(results[0].placement).toBe(1);
     // Prize for 1st place = floor(1000 * 0.5) = 500
     // prizeWon may be Prisma Decimal — coerce via Number() before comparison.
     expect(Number(results[0].prizeWon)).toBe(500);

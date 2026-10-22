@@ -634,7 +634,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
       expect(cr).not.toBeNull();
       expect(Number(cr.score)).toBe(entry.score);
       expect(cr.discipline).toBe('conformation');
-      expect(cr.placement).toBe('1');
+      expect(cr.placement).toBe(1);
     });
   });
 });

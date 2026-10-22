@@ -80,7 +80,7 @@ describe('🎯 INTEGRATION: /progress returns real Game-Statistics fields (Equor
     const r1 = await prisma.competitionResult.create({
       data: {
         score: 95.5,
-        placement: '1st', // a win
+        placement: 1, // a win
         discipline: 'Racing',
         runDate: new Date(Date.now() - 86400000),
         showName: show1.name,
@@ -92,7 +92,7 @@ describe('🎯 INTEGRATION: /progress returns real Game-Statistics fields (Equor
     const r2 = await prisma.competitionResult.create({
       data: {
         score: 61,
-        placement: '4th', // not a win
+        placement: 4, // not a win
         discipline: 'Racing',
         runDate: new Date(Date.now() - 2 * 86400000),
         showName: show2.name,

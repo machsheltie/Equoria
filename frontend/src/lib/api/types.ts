@@ -282,7 +282,7 @@ export interface HorseSummary {
     type: 'competition';
     showName: string;
     discipline: string;
-    placement: string | null;
+    placement: number | null;
     date: string | null;
   } | null;
   // Equoria-55bo.6: real per-horse championship signal, derived by the list

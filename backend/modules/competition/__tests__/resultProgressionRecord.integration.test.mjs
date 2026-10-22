@@ -156,7 +156,7 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
     await prisma.competitionResult.create({
       data: {
         score: 60,
-        placement: '1',
+        placement: 1,
         discipline: 'Dressage',
         runDate: new Date(),
         showName: show.name,
@@ -198,7 +198,7 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
     await prisma.competitionResult.create({
       data: {
         score: 60,
-        placement: '1',
+        placement: 1,
         discipline: 'Dressage',
         runDate: new Date(),
         showName: show.name,
@@ -252,11 +252,11 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
     });
     const byHorse = new Map(rows.map(r => [r.horseId, r]));
     expect(byHorse.get(second.id)).toMatchObject({
-      placement: '1',
+      placement: 1,
       horsePointsAwarded: computePlacementAwards(1).horseXp,
     });
     expect(byHorse.get(first.id)).toMatchObject({
-      placement: '2',
+      placement: 2,
       horsePointsAwarded: computePlacementAwards(2).horseXp,
     });
   }, 60000);

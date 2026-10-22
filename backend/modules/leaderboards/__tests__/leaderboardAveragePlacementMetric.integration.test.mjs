@@ -13,12 +13,15 @@
  * This suite fails RED before the fix (500 where 200 is asserted) and locks
  * the post-fix contract:
  *   - 200 with a correct per-horse average placement, ascending (lower = better)
- *   - ordinal-encoded placements ('1st') parse by leading digits, consistent
- *     with placementToNumber()/parseCompetitionPlacement() elsewhere
- *   - non-numeric placements (e.g. 'DQ') are excluded from BOTH the average
- *     and the competitionCount shown next to it (honest count of the n
- *     actually averaged)
- *   - horses with fewer than 3 numeric placements are excluded (HAVING >= 3)
+ *   - results with no placing (NULL) are excluded from BOTH the average and
+ *     the competitionCount shown next to it (honest count of the n actually
+ *     averaged)
+ *   - horses with fewer than 3 placings are excluded (HAVING >= 3)
+ *
+ * Equoria-f46tb (owner ruling 2026-10-22) made placement an Int column. Old
+ * contract: ordinal strings ('1st') parsed by leading digits and a non-numeric
+ * 'DQ' row excluded. New contract: the fixtures store Int ranks, and the row
+ * with no placing is NULL (the only "non-numeric" a column of Int can hold).
  *
  * NO MOCKS — real backend, real Prisma, real auth, real DB. Fixtures scoped
  * (TestFixture-6lobd- prefix + per-run random suffix) and cleaned up by
@@ -40,10 +43,10 @@ describe('INTEGRATION: GET /api/v1/leaderboards/competition metric=average_place
 
   let token;
   let userId;
-  let horseA; // placements '1st','2','3','1'  -> avg 1.75, count 4
-  let horseB; // placements '2','3','4','3','DQ' -> avg 3.0, count 4 (DQ excluded)
-  let horseC; // placements '1','1'            -> excluded (fewer than 3)
-  let horseD; // placements '2','2','2'        -> exactly 3: the HAVING boundary, included
+  let horseA; // placements 1,2,3,1         -> avg 1.75, count 4
+  let horseB; // placements 2,3,4,3,null    -> avg 3.0, count 4 (no placing excluded)
+  let horseC; // placements 1,1             -> excluded (fewer than 3)
+  let horseD; // placements 2,2,2           -> exactly 3: the HAVING boundary, included
   const horseIds = [];
   const showIds = [];
 
@@ -99,30 +102,29 @@ describe('INTEGRATION: GET /api/v1/leaderboards/competition metric=average_place
       shows.push(await createShow(i));
     }
 
-    // Horse A — mixed ordinal + plain numeric encodings (the f46tb split):
-    // (1 + 2 + 3 + 1) / 4 = 1.75
-    await createResult(horseA.id, shows[0].id, '1st');
-    await createResult(horseA.id, shows[1].id, '2');
-    await createResult(horseA.id, shows[2].id, '3');
-    await createResult(horseA.id, shows[3].id, '1');
+    // Horse A: (1 + 2 + 3 + 1) / 4 = 1.75
+    await createResult(horseA.id, shows[0].id, 1);
+    await createResult(horseA.id, shows[1].id, 2);
+    await createResult(horseA.id, shows[2].id, 3);
+    await createResult(horseA.id, shows[3].id, 1);
 
-    // Horse B — four numeric placements + one non-numeric 'DQ' row:
-    // (2 + 3 + 4 + 3) / 4 = 3.0; DQ must not enter avg or count.
-    await createResult(horseB.id, shows[0].id, '2');
-    await createResult(horseB.id, shows[1].id, '3');
-    await createResult(horseB.id, shows[2].id, '4');
-    await createResult(horseB.id, shows[3].id, '3');
-    await createResult(horseB.id, shows[4].id, 'DQ');
+    // Horse B — four placings + one result with no placing (NULL):
+    // (2 + 3 + 4 + 3) / 4 = 3.0; the NULL must not enter avg or count.
+    await createResult(horseB.id, shows[0].id, 2);
+    await createResult(horseB.id, shows[1].id, 3);
+    await createResult(horseB.id, shows[2].id, 4);
+    await createResult(horseB.id, shows[3].id, 3);
+    await createResult(horseB.id, shows[4].id, null);
 
     // Horse C — only two numeric placements: below the minimum of 3.
-    await createResult(horseC.id, shows[0].id, '1');
-    await createResult(horseC.id, shows[1].id, '1');
+    await createResult(horseC.id, shows[0].id, 1);
+    await createResult(horseC.id, shows[1].id, 1);
 
     // Horse D — EXACTLY 3 numeric placements: the HAVING >= 3 boundary.
     // (2 + 2 + 2) / 3 = 2.0 — must be included, ranked between A and B.
-    await createResult(horseD.id, shows[0].id, '2');
-    await createResult(horseD.id, shows[1].id, '2');
-    await createResult(horseD.id, shows[2].id, '2');
+    await createResult(horseD.id, shows[0].id, 2);
+    await createResult(horseD.id, shows[1].id, 2);
+    await createResult(horseD.id, shows[2].id, 2);
   }, 120000);
 
   afterAll(async () => {
@@ -166,7 +168,7 @@ describe('INTEGRATION: GET /api/v1/leaderboards/competition metric=average_place
     expect(rowA.metric).toBe('average_placement');
     expect(rowA.competitionCount).toBe(4);
 
-    // Horse B: 'DQ' excluded from both average and count -> 3.0 over 4 rows.
+    // Horse B: the NULL placing excluded from both average and count -> 3.0 over 4 rows.
     expect(rowB.averagePlacement).toBeCloseTo(3.0, 5);
     expect(rowB.competitionCount).toBe(4);
 

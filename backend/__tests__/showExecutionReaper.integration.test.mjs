@@ -295,7 +295,7 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
       expect(r).toBeDefined();
       // score (like prizeWon) round-trips through a string/Decimal column.
       expect(Number(r.score)).toBe(s.score);
-      expect(r.placement).toBe(String(s.placement));
+      expect(r.placement).toBe(s.placement);
       expect(Number(r.prizeWon ?? 0)).toBe(expectedPrizeByHorseId[s.horseId]);
     }
     expect(results.reduce((s, r) => s + Number(r.prizeWon ?? 0), 0)).toBe(PRIZE);

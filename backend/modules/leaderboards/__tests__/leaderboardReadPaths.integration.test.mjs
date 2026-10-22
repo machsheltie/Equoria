@@ -103,13 +103,13 @@ beforeAll(async () => {
   }
   for (let i = 0; i < 6; i++) {
     await addResult(horses[i].id, showIds[i], {
-      placement: '1',
+      placement: 1,
       score: 4_000_000,
       discipline: disciplineA,
     });
   }
   await addResult(horses[0].id, showIds[6], {
-    placement: '1',
+    placement: 1,
     score: 4_500_000,
     discipline: disciplineB,
   });

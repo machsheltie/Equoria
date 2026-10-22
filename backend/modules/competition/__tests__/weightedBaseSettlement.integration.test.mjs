@@ -123,9 +123,9 @@ describe('nightly settlement scores the discipline’s 50/30/20 base (B4a)', () 
       select: { horseId: true, placement: true, score: true },
     });
     const byHorse = new Map(results.map(r => [r.horseId, r]));
-    expect(byHorse.get(specialist.id)).toMatchObject({ placement: '1' });
+    expect(byHorse.get(specialist.id)).toMatchObject({ placement: 1 });
     expect(Number(byHorse.get(specialist.id).score)).toBe(84); // 83 x 1.01 = 83.83
-    expect(byHorse.get(allRounder.id)).toMatchObject({ placement: '2' });
+    expect(byHorse.get(allRounder.id)).toMatchObject({ placement: 2 });
     expect(Number(byHorse.get(allRounder.id).score)).toBe(35); // 35 x 1.01 = 35.35
   }, 60000);
 });

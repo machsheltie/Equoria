@@ -182,7 +182,7 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
       const results = await prisma.competitionResult.findMany({ where: { showId: pastShowId } });
       expect(results.length).toBe(1);
       expect(results[0].horseId).toBe(execHorse.id);
-      expect(results[0].placement).toBe('1');
+      expect(results[0].placement).toBe(1);
       expect(Number(results[0].prizeWon)).toBe(500);
     }, 60000);
   });
