@@ -220,7 +220,10 @@ function generateCompatibilityRecommendation(overallScore, inbreedingRisk) {
  * @param {Array<number>} horseIds
  * @returns {Promise<Object>}
  */
-export async function generateOptimalBreedingRecommendations(horseIds) {
+export async function generateOptimalBreedingRecommendations(
+  horseIds,
+  { diversityOf = calculateAdvancedGeneticDiversity } = {},
+) {
   logger.info(
     `[breedingCompatibility.generateOptimalBreedingRecommendations] Generating recommendations for ${horseIds.length} horses`,
   );
@@ -281,7 +284,7 @@ export async function generateOptimalBreedingRecommendations(horseIds) {
   optimalPairs.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
 
   const priorityBreedings = generatePriorityBreedings(optimalPairs, horses);
-  const diversityGoals = await generateDiversityGoals(horseIds);
+  const diversityGoals = await generateDiversityGoals(horseIds, diversityOf);
   const timeline = generateBreedingTimeline(optimalPairs, priorityBreedings);
 
   return {
@@ -309,8 +312,8 @@ function generatePriorityBreedings(optimalPairs, _horses) {
   return priorities;
 }
 
-async function generateDiversityGoals(horseIds) {
-  const currentDiversity = await calculateAdvancedGeneticDiversity(horseIds);
+async function generateDiversityGoals(horseIds, diversityOf) {
+  const currentDiversity = await diversityOf(horseIds);
   return {
     shortTerm: {
       target: Math.min(100, currentDiversity.diversityScore + 10),

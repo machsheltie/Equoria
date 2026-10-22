@@ -363,14 +363,16 @@ export async function identifyGeneticFounders(horseIds) {
   });
 
   const founders = [];
+  const populationIds = new Set(horseIds);
+  const childrenByParent = buildChildrenMap(horses);
 
   for (const horse of horses) {
     const hasParentsInPopulation =
-      horseIds.includes(horse.sireId) || horseIds.includes(horse.damId);
+      populationIds.has(horse.sireId) || populationIds.has(horse.damId);
     const offspringCount = horse.sireOffspring.length + horse.damOffspring.length;
 
     if (!hasParentsInPopulation || offspringCount >= 2) {
-      const descendants = await getDescendants(horse.id, horseIds);
+      const descendants = getDescendants(horse.id, childrenByParent);
       const geneticInfluence = calculateGeneticInfluence(horse, descendants, horses.length);
 
       founders.push({
@@ -390,12 +392,34 @@ export async function identifyGeneticFounders(horseIds) {
 }
 
 /**
- * Get all descendant IDs within the population (BFS over sire/dam links).
- * @param {number} horseId
- * @param {Array<number>} populationIds
- * @returns {Promise<Array<number>>}
+ * Parent id -> ids of its children inside the population, from the rows the
+ * population read already returned (Equoria-cmw85.32: one pass, no query per
+ * founder candidate).
+ * @param {Array<{id:number,sireId:number|null,damId:number|null}>} horses
+ * @returns {Map<number, Array<number>>}
  */
-async function getDescendants(horseId, populationIds) {
+function buildChildrenMap(horses) {
+  const childrenByParent = new Map();
+  for (const horse of horses) {
+    for (const parentId of [horse.sireId, horse.damId]) {
+      if (parentId) {
+        if (!childrenByParent.has(parentId)) {
+          childrenByParent.set(parentId, []);
+        }
+        childrenByParent.get(parentId).push(horse.id);
+      }
+    }
+  }
+  return childrenByParent;
+}
+
+/**
+ * Get all descendant IDs within the population (walk over the children map).
+ * @param {number} horseId
+ * @param {Map<number, Array<number>>} childrenByParent
+ * @returns {Array<number>}
+ */
+function getDescendants(horseId, childrenByParent) {
   const descendants = new Set();
   const toProcess = [horseId];
   const processed = new Set();
@@ -407,20 +431,12 @@ async function getDescendants(horseId, populationIds) {
     }
     processed.add(currentId);
 
-    const offspring = await prisma.horse.findMany({
-      where: {
-        OR: [{ sireId: currentId }, { damId: currentId }],
-        id: { in: populationIds },
-      },
-      select: { id: true },
-    });
-
-    offspring.forEach(child => {
-      if (!descendants.has(child.id)) {
-        descendants.add(child.id);
-        toProcess.push(child.id);
+    for (const childId of childrenByParent.get(currentId) ?? []) {
+      if (!descendants.has(childId)) {
+        descendants.add(childId);
+        toProcess.push(childId);
       }
-    });
+    }
   }
 
   return Array.from(descendants);

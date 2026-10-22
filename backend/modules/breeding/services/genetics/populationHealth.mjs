@@ -27,12 +27,15 @@ import { calculateDetailedInbreedingCoefficient } from './inbreedingAnalysis.mjs
  * @param {Array<number>} horseIds
  * @returns {Promise<Object>}
  */
-export async function trackPopulationGeneticHealth(horseIds) {
+export async function trackPopulationGeneticHealth(
+  horseIds,
+  { diversityOf = calculateAdvancedGeneticDiversity } = {},
+) {
   logger.info(
     `[populationHealth.trackPopulationGeneticHealth] Tracking health for ${horseIds.length} horses`,
   );
 
-  const diversity = await calculateAdvancedGeneticDiversity(horseIds);
+  const diversity = await diversityOf(horseIds);
   const effectiveSize = await calculateEffectivePopulationSize(horseIds);
   const inbreedingLevels = await analyzePopulationInbreeding(horseIds);
   const geneticBottlenecks = await identifyPopulationBottlenecks(horseIds);

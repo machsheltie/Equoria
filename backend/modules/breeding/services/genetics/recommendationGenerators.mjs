@@ -36,7 +36,10 @@ import { generateOptimalBreedingRecommendations } from './breedingCompatibility.
  * @param {Array<number>} horseIds
  * @returns {Promise<Object>}
  */
-export async function analyzeGeneticTrends(horseIds) {
+export async function analyzeGeneticTrends(
+  horseIds,
+  { diversityOf = calculateAdvancedGeneticDiversity } = {},
+) {
   logger.info(
     `[recommendationGenerators.analyzeGeneticTrends] Analyzing trends for ${horseIds.length} horses`,
   );
@@ -78,7 +81,7 @@ export async function analyzeGeneticTrends(horseIds) {
     const yearHorses = generationMap[year];
     const yearIds = yearHorses.map(h => h.id);
 
-    const diversity = await calculateAdvancedGeneticDiversity(yearIds);
+    const diversity = await diversityOf(yearIds);
     const inbreeding = await analyzePopulationInbreeding(yearIds);
 
     generationalAnalysis.push({
@@ -262,7 +265,13 @@ function generateGeneticPredictions(generationalAnalysis) {
  * @param {Array<number>} horseIds
  * @returns {Promise<Object>}
  */
-export async function trackGeneticDiversityOverTime(horseIds) {
+export async function trackGeneticDiversityOverTime(
+  horseIds,
+  {
+    diversityOf = calculateAdvancedGeneticDiversity,
+    healthOf = ids => trackPopulationGeneticHealth(ids, { diversityOf }),
+  } = {},
+) {
   logger.info(
     `[recommendationGenerators.trackGeneticDiversityOverTime] Tracking diversity for ${horseIds.length} horses`,
   );
@@ -296,7 +305,7 @@ export async function trackGeneticDiversityOverTime(horseIds) {
 
   for (const [year, yearHorses] of Object.entries(yearGroups)) {
     const yearIds = yearHorses.map(h => h.id);
-    const diversity = await calculateAdvancedGeneticDiversity(yearIds);
+    const diversity = await diversityOf(yearIds);
 
     timeline.push({
       date: `${year}-01-01`,
@@ -307,8 +316,8 @@ export async function trackGeneticDiversityOverTime(horseIds) {
     });
   }
 
-  const currentDiversity = await calculateAdvancedGeneticDiversity(horseIds);
-  const populationHealth = await trackPopulationGeneticHealth(horseIds);
+  const currentDiversity = await diversityOf(horseIds);
+  const populationHealth = await healthOf(horseIds);
   const alerts = generateGeneticAlerts(currentDiversity, populationHealth);
   const milestones = identifyGeneticMilestones(timeline);
 
@@ -409,6 +418,23 @@ function calculateVolatility(values) {
 // ── Comprehensive report ────────────────────────────────────────────────────
 
 /**
+ * Cache an async `(horseIds) => result` by the SET of ids, for one request.
+ * The promise is cached, so concurrent callers share the in-flight computation.
+ * @param {(horseIds: Array<number>) => Promise<any>} compute
+ * @returns {(horseIds: Array<number>) => Promise<any>}
+ */
+function memoizeByIds(compute) {
+  const cache = new Map();
+  return horseIds => {
+    const key = [...horseIds].sort((a, b) => a - b).join(',');
+    if (!cache.has(key)) {
+      cache.set(key, compute(horseIds));
+    }
+    return cache.get(key);
+  };
+}
+
+/**
  * Executive-summary + action-plan + metrics roll-up.
  * @param {Array<number>} horseIds
  * @returns {Promise<Object>}
@@ -418,13 +444,18 @@ export async function generateGeneticDiversityReport(horseIds) {
     `[recommendationGenerators.generateGeneticDiversityReport] Generating report for ${horseIds.length} horses`,
   );
 
+  // Equoria-cmw85.14: each aggregate (a population's diversity, its health) is
+  // computed once per request and shared by every section that needs it.
+  const diversityOf = memoizeByIds(calculateAdvancedGeneticDiversity);
+  const healthOf = memoizeByIds(ids => trackPopulationGeneticHealth(ids, { diversityOf }));
+
   const [diversity, populationHealth, trends, breedingRecommendations, tracking] =
     await Promise.all([
-      calculateAdvancedGeneticDiversity(horseIds),
-      trackPopulationGeneticHealth(horseIds),
-      analyzeGeneticTrends(horseIds),
-      generateOptimalBreedingRecommendations(horseIds),
-      trackGeneticDiversityOverTime(horseIds),
+      diversityOf(horseIds),
+      healthOf(horseIds),
+      analyzeGeneticTrends(horseIds, { diversityOf }),
+      generateOptimalBreedingRecommendations(horseIds, { diversityOf }),
+      trackGeneticDiversityOverTime(horseIds, { diversityOf, healthOf }),
     ]);
 
   const executiveSummary = {
