@@ -26,9 +26,9 @@ import logger from '../utils/logger.mjs';
 // user is a leaked subscription. Keeping a finite ceiling keeps Node's
 // MaxListenersExceededWarning alive as the early signal (Equoria-ckfi5); 0
 // (unlimited) would silence it.
-const MAX_LISTENERS_PER_USER = 50;
+const maxListenersPerUser = 50;
 const emitter = new EventEmitter();
-emitter.setMaxListeners(MAX_LISTENERS_PER_USER);
+emitter.setMaxListeners(maxListenersPerUser);
 
 // Equoria-fsuys: lightweight observability for open SSE connections. Each
 // SSE stream registers exactly one subscriber via subscribeUserEvents and

@@ -154,20 +154,6 @@ class MemoryResourceManager extends EventEmitter {
   }
 
   /**
-   * Record an alert and emit it. The log keeps the most recent 100, like
-   * memoryUsage and gcEvents: an alert fires on every tick while memory is over
-   * threshold, so an uncapped array would grow fastest exactly under pressure
-   * (Equoria-hikk1).
-   */
-  recordAlert(alert) {
-    this.metrics.alerts.push(alert);
-    if (this.metrics.alerts.length > 100) {
-      this.metrics.alerts = this.metrics.alerts.slice(-100);
-    }
-    this.emit('alert', alert);
-  }
-
-  /**
    * Check memory thresholds and trigger alerts
    */
   checkMemoryThresholds() {
@@ -190,7 +176,8 @@ class MemoryResourceManager extends EventEmitter {
         },
       };
 
-      this.recordAlert(alert);
+      this.metrics.alerts.splice(0, this.metrics.alerts.push(alert) - 100); // keep the latest 100 (Equoria-hikk1)
+      this.emit('alert', alert);
 
       logger.warn(
         `[MemoryManager] Memory threshold alert: ${Math.round(current.heapUsed / 1024 / 1024)}MB used`,
@@ -223,7 +210,8 @@ class MemoryResourceManager extends EventEmitter {
         },
       };
 
-      this.recordAlert(alert);
+      this.metrics.alerts.splice(0, this.metrics.alerts.push(alert) - 100); // keep the latest 100 (Equoria-hikk1)
+      this.emit('alert', alert);
 
       logger.warn(`[MemoryManager] Potential memory leak detected: ${alert.data.growthRate}`);
     }

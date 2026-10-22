@@ -21,8 +21,8 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const RUN = randomBytes(6).toString('hex');
-const DISC_A = 'Dressage';
-const DISC_B = 'Show Jumping';
+const disciplineA = 'Dressage';
+const disciplineB = 'Show Jumping';
 
 const cleanup = createCleanupTracker();
 let user;
@@ -81,8 +81,8 @@ beforeAll(async () => {
   token = created.token;
   userIds.push(user.id);
 
-  // Six horses, each with exactly one first place in DISC_A at the SAME score
-  // (a full tie on wins, earnings and score), plus one in DISC_B for horse 0
+  // Six horses, each with exactly one first place in disciplineA at the SAME score
+  // (a full tie on wins, earnings and score), plus one in disciplineB for horse 0
   // with a higher score.
   for (let i = 0; i < 6; i++) {
     horses.push(await createTestHorse({ name: `TestFixture-LBRead-H${i}-${RUN}`, userId: user.id }));
@@ -91,7 +91,7 @@ beforeAll(async () => {
     const show = await prisma.show.create({
       data: {
         name: `TestFixture-LBRead-show-${i}-${RUN}`,
-        discipline: DISC_A,
+        discipline: disciplineA,
         runDate: new Date(),
         prize: 1000,
         entryFee: 100,
@@ -105,13 +105,13 @@ beforeAll(async () => {
     await addResult(horses[i].id, showIds[i], {
       placement: '1',
       score: 4_000_000,
-      discipline: DISC_A,
+      discipline: disciplineA,
     });
   }
   await addResult(horses[0].id, showIds[6], {
     placement: '1',
     score: 4_500_000,
-    discipline: DISC_B,
+    discipline: disciplineB,
   });
 
   // A snapshot history far deeper than the four rows a summary needs.
@@ -151,7 +151,7 @@ describe('competition leaderboard horse details (Equoria-cmw85.16)', () => {
     let res;
     try {
       res = await get(
-        `/api/v1/leaderboards/competition?metric=wins&discipline=${encodeURIComponent(DISC_A)}&limit=100`,
+        `/api/v1/leaderboards/competition?metric=wins&discipline=${encodeURIComponent(disciplineA)}&limit=100`,
       );
     } finally {
       rec.restore();
@@ -184,7 +184,8 @@ describe('competition leaderboard horse details (Equoria-cmw85.16)', () => {
 
 describe('stable ordering and real counts (Equoria-2y91o, Equoria-4qpqb)', () => {
   it('pages a fully tied competition leaderboard without skipping or repeating a horse', async () => {
-    const path = metric => `/api/v1/leaderboards/competition?metric=${metric}&discipline=${encodeURIComponent(DISC_A)}`;
+    const path = metric =>
+      `/api/v1/leaderboards/competition?metric=${metric}&discipline=${encodeURIComponent(disciplineA)}`;
     for (const metric of ['wins', 'placements', 'earnings']) {
       const seen = [];
       let offset = 0;
@@ -211,7 +212,7 @@ describe('stable ordering and real counts (Equoria-2y91o, Equoria-4qpqb)', () =>
     try {
       for (const metric of ['wins', 'placements', 'earnings']) {
         const res = await get(
-          `/api/v1/leaderboards/competition?metric=${metric}&discipline=${encodeURIComponent(DISC_A)}&limit=3&offset=${3 + Math.floor(Math.random() * 1000)}`,
+          `/api/v1/leaderboards/competition?metric=${metric}&discipline=${encodeURIComponent(disciplineA)}&limit=3&offset=${3 + Math.floor(Math.random() * 1000)}`,
         );
         expect(res.status).toBe(200);
       }
@@ -227,14 +228,14 @@ describe('stable ordering and real counts (Equoria-2y91o, Equoria-4qpqb)', () =>
   }, 60_000);
 
   it('never materialises every group to count a competition page', async () => {
-    const where = { placement: { not: null }, discipline: DISC_A };
+    const where = { placement: { not: null }, discipline: disciplineA };
     const expectedTotal = (await prisma.competitionResult.groupBy({ by: ['horseId'], where })).length;
 
     const rec = record([['competitionResult', 'groupBy']]);
     let res;
     try {
       res = await get(
-        `/api/v1/leaderboards/competition?metric=wins&discipline=${encodeURIComponent(DISC_A)}&limit=2&offset=0`,
+        `/api/v1/leaderboards/competition?metric=wins&discipline=${encodeURIComponent(disciplineA)}&limit=2&offset=0`,
       );
     } finally {
       rec.restore();
@@ -309,16 +310,18 @@ describe('stable ordering and real counts (Equoria-2y91o, Equoria-4qpqb)', () =>
 
 describe('documented leaderboard parameters are honoured (Equoria-9svu0)', () => {
   it('applies limit, offset and discipline to horses/performance', async () => {
-    const all = await get(`/api/v1/leaderboards/horses/performance?discipline=${encodeURIComponent(DISC_A)}&limit=100`);
+    const all = await get(
+      `/api/v1/leaderboards/horses/performance?discipline=${encodeURIComponent(disciplineA)}&limit=100`,
+    );
     expect(all.status).toBe(200);
     const full = all.body.data.rankings;
     const mineFull = full.filter(r => horses.some(h => h.id === r.horseId));
     expect(mineFull).toHaveLength(6);
-    // horse 0's better DISC_B score must not leak into the DISC_A ranking
+    // horse 0's better disciplineB score must not leak into the disciplineA ranking
     expect(mineFull.every(r => r.maxScore === 4_000_000)).toBe(true);
 
     const window = await get(
-      `/api/v1/leaderboards/horses/performance?discipline=${encodeURIComponent(DISC_A)}&limit=2&offset=1`,
+      `/api/v1/leaderboards/horses/performance?discipline=${encodeURIComponent(disciplineA)}&limit=2&offset=1`,
     );
     expect(window.status).toBe(200);
     expect(window.body.data.rankings).toHaveLength(2);
@@ -326,7 +329,7 @@ describe('documented leaderboard parameters are honoured (Equoria-9svu0)', () =>
     expect(window.body.data.rankings.map(r => r.rank)).toEqual([2, 3]);
 
     const other = await get(
-      `/api/v1/leaderboards/horses/performance?discipline=${encodeURIComponent(DISC_B)}&limit=100`,
+      `/api/v1/leaderboards/horses/performance?discipline=${encodeURIComponent(disciplineB)}&limit=100`,
     );
     const mineB = other.body.data.rankings.filter(r => horses.some(h => h.id === r.horseId));
     expect(mineB.map(r => r.horseId)).toEqual([horses[0].id]);
@@ -339,8 +342,8 @@ describe('documented leaderboard parameters are honoured (Equoria-9svu0)', () =>
 
     const rec = record([['competitionResult', 'findMany']]);
     try {
-      await get(`/api/v1/leaderboards/recent-winners?limit=500&discipline=${encodeURIComponent(DISC_A)}`);
-      await get(`/api/v1/leaderboards/recent-winners?discipline=${encodeURIComponent(DISC_B)}`);
+      await get(`/api/v1/leaderboards/recent-winners?limit=500&discipline=${encodeURIComponent(disciplineA)}`);
+      await get(`/api/v1/leaderboards/recent-winners?discipline=${encodeURIComponent(disciplineB)}`);
     } finally {
       rec.restore();
     }

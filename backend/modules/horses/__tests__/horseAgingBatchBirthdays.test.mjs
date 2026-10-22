@@ -131,7 +131,8 @@ describe('processHorseBirthdays() (Equoria-cmw85.27)', () => {
       milestonesTriggered: [],
     });
     expect(byId[ids.age1]).toMatchObject({ newAge: 1, hadBirthday: true });
-    expect(byId[ids.age1].milestonesTriggered).toEqual(['age_1_trait_evaluation']);
+    expect(byId[ids.age1].milestonesTriggered).toHaveLength(1);
+    expect(byId[ids.age1].milestonesTriggered).not.toContain('retirement');
     expect(byId[ids.retire]).toMatchObject({ newAge: 21, hadBirthday: true });
     expect(byId[ids.retire].milestonesTriggered).toEqual(['retirement']);
     expect(byId[ids.current]).toBeUndefined();

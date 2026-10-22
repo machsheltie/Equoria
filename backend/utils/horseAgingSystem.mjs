@@ -102,12 +102,15 @@ export function calculateAgeInGameYears(dateOfBirth, currentDate = new Date()) {
   return Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
 }
 
+/** Lower bound, in days, of the game-year bucket a horse is stored in. */
+const previousAgeInDays = storedAge => storedAge * DAYS_PER_GAME_YEAR;
+
 /** True when the age moved from `previousDays` to `newDays` across `threshold` days. */
 const crossesThreshold = (previousDays, newDays, threshold) =>
   previousDays < threshold && newDays >= threshold;
 
-const AGE_ONE_MILESTONE_DAYS = 7;
-const RETIREMENT_MILESTONE_DAYS = 147;
+const ageOneMilestoneDays = 7;
+const retirementMilestoneDays = 147;
 
 /**
  * Whether a birthday from `storedAge` to a horse now `ageInDays` old triggers an
@@ -116,10 +119,10 @@ const RETIREMENT_MILESTONE_DAYS = 147;
  * column written.
  */
 function birthdayHasMilestone(storedAge, ageInDays) {
-  const previousDays = storedAge * DAYS_PER_GAME_YEAR;
+  const previousDays = previousAgeInDays(storedAge);
   return (
-    crossesThreshold(previousDays, ageInDays, AGE_ONE_MILESTONE_DAYS) ||
-    crossesThreshold(previousDays, ageInDays, RETIREMENT_MILESTONE_DAYS)
+    crossesThreshold(previousDays, ageInDays, ageOneMilestoneDays) ||
+    crossesThreshold(previousDays, ageInDays, retirementMilestoneDays)
   );
 }
 
@@ -187,8 +190,7 @@ export async function updateHorseAge(horseId, knownHorse = null) {
   // bucket); the current day-equivalent is `ageInDays`.
   let milestoneResult = { milestonesTriggered: [], traitsAssigned: [] };
   if (hadBirthday) {
-    const prevAgeInDays = storedAge * DAYS_PER_GAME_YEAR;
-    milestoneResult = await checkForMilestones(horseId, prevAgeInDays, ageInDays);
+    milestoneResult = await checkForMilestones(horseId, previousAgeInDays(storedAge), ageInDays);
   }
 
   return {
@@ -221,7 +223,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
 
     // Age 1 milestone (7 days) - Trait evaluation
     // Trigger when crossing the 7-day threshold
-    if (crossesThreshold(previousAge, newAge, AGE_ONE_MILESTONE_DAYS)) {
+    if (crossesThreshold(previousAge, newAge, ageOneMilestoneDays)) {
       logger.info(
         `[horseAgingSystem.checkForMilestones] Horse ${horseId} reached age 1 milestone - evaluating traits`,
       );
@@ -287,7 +289,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
     // MilestoneTraitLog table. That path was deleted rather than repaired.
 
     // Retirement milestone (21 years = 147 days)
-    if (crossesThreshold(previousAge, newAge, RETIREMENT_MILESTONE_DAYS)) {
+    if (crossesThreshold(previousAge, newAge, retirementMilestoneDays)) {
       // Retirement enforcement is implicit: competition entry for horses over
       // 21 game-years is rejected by the age-gate in
       // backend/logic/enhancedCompetitionSimulation.mjs (validateCompetitionEntry:

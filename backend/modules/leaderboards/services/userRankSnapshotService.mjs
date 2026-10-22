@@ -32,7 +32,7 @@
 import defaultPrisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
-const RANK_CATEGORIES = ['level', 'xp', 'horse-earnings', 'horse-performance'];
+const rankCategories = ['level', 'xp', 'horse-earnings', 'horse-performance'];
 
 /**
  * The most recent snapshot rank per category, for rankChange
@@ -51,7 +51,7 @@ export async function readLatestRankSnapshots(userId, prismaClient = defaultPris
   const snapshotMap = {};
   try {
     const latest = await Promise.all(
-      RANK_CATEGORIES.map(category =>
+      rankCategories.map(category =>
         prismaClient.userRankSnapshot.findFirst({
           where: { userId, category },
           orderBy: { capturedAt: 'desc' },
