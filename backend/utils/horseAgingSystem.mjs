@@ -102,27 +102,44 @@ export function calculateAgeInGameYears(dateOfBirth, currentDate = new Date()) {
   return Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
 }
 
+/** True when the age moved from `previousDays` to `newDays` across `threshold` days. */
+const crossesThreshold = (previousDays, newDays, threshold) =>
+  previousDays < threshold && newDays >= threshold;
+
+const AGE_ONE_MILESTONE_DAYS = 7;
+const RETIREMENT_MILESTONE_DAYS = 147;
+
+/**
+ * Whether a birthday from `storedAge` to a horse now `ageInDays` old triggers an
+ * age milestone (age-1 trait evaluation, retirement). Mirrors the day-threshold
+ * tests in checkForMilestones; a horse that crosses neither needs only its age
+ * column written.
+ */
+function birthdayHasMilestone(storedAge, ageInDays) {
+  const previousDays = storedAge * DAYS_PER_GAME_YEAR;
+  return (
+    crossesThreshold(previousDays, ageInDays, AGE_ONE_MILESTONE_DAYS) ||
+    crossesThreshold(previousDays, ageInDays, RETIREMENT_MILESTONE_DAYS)
+  );
+}
+
 /**
  * Update a single horse's age based on dateOfBirth
  * @param {number} horseId - Horse ID to update
+ * @param {Object|null} knownHorse - The horse's {id, name, dateOfBirth, age} when the
+ *   caller already holds it (the nightly scan does); skips a second read of the same row.
  * @returns {Object} Update result
  */
-export async function updateHorseAge(horseId) {
+export async function updateHorseAge(horseId, knownHorse = null) {
   logger.info(`[horseAgingSystem.updateHorseAge] Processing horse ${horseId}`);
 
   // Get horse data
-  const horse = await prisma.horse.findUnique({
-    where: { id: horseId },
-    select: {
-      id: true,
-      name: true,
-      dateOfBirth: true,
-      age: true,
-      taskLog: true,
-      daysGroomedInARow: true,
-      epigeneticModifiers: true,
-    },
-  });
+  const horse =
+    knownHorse ??
+    (await prisma.horse.findUnique({
+      where: { id: horseId },
+      select: { id: true, name: true, dateOfBirth: true, age: true },
+    }));
 
   if (!horse) {
     throw new Error(`Horse with ID ${horseId} not found`);
@@ -204,7 +221,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
 
     // Age 1 milestone (7 days) - Trait evaluation
     // Trigger when crossing the 7-day threshold
-    if (previousAge < 7 && newAge >= 7) {
+    if (crossesThreshold(previousAge, newAge, AGE_ONE_MILESTONE_DAYS)) {
       logger.info(
         `[horseAgingSystem.checkForMilestones] Horse ${horseId} reached age 1 milestone - evaluating traits`,
       );
@@ -270,7 +287,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
     // MilestoneTraitLog table. That path was deleted rather than repaired.
 
     // Retirement milestone (21 years = 147 days)
-    if (previousAge < 147 && newAge >= 147) {
+    if (crossesThreshold(previousAge, newAge, RETIREMENT_MILESTONE_DAYS)) {
       // Retirement enforcement is implicit: competition entry for horses over
       // 21 game-years is rejected by the age-gate in
       // backend/logic/enhancedCompetitionSimulation.mjs (validateCompetitionEntry:
@@ -361,10 +378,15 @@ export async function processHorseBirthdays(options = {}) {
   let birthdaysFound = 0;
   let milestonesTriggered = 0;
   let errors = 0;
-  const results = [];
+  // Results are kept in scan order; plain birthdays fill their slot after the
+  // batched write below.
+  const resultSlots = [];
+  // Birthdays with no milestone write only `age`: group them by new age so each
+  // age is ONE updateMany (Equoria-cmw85.27).
+  const plainBirthdaysByAge = new Map();
 
   // Process each horse
-  for (const horse of horses) {
+  for (const [index, horse] of horses.entries()) {
     try {
       // Compare game-years (the unit persisted to Horse.age) — Equoria-son6
       const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
@@ -375,11 +397,21 @@ export async function processHorseBirthdays(options = {}) {
         birthdaysFound++;
 
         if (!dryRun) {
-          const result = await updateHorseAge(horse.id);
-          results.push(result);
+          const hadBirthday = calculatedAge > storedAge;
+          if (hadBirthday && birthdayHasMilestone(storedAge, ageInDays)) {
+            // Milestone writes differ per horse: keep the individual path, but
+            // hand it the row the scan already read.
+            const result = await updateHorseAge(horse.id, horse);
+            resultSlots[index] = result;
 
-          if (result.milestonesTriggered.length > 0) {
-            milestonesTriggered++;
+            if (result.milestonesTriggered.length > 0) {
+              milestonesTriggered++;
+            }
+          } else {
+            if (!plainBirthdaysByAge.has(calculatedAge)) {
+              plainBirthdaysByAge.set(calculatedAge, []);
+            }
+            plainBirthdaysByAge.get(calculatedAge).push({ index, horse, hadBirthday });
           }
         } else {
           // Dry run - just log what would happen
@@ -396,6 +428,35 @@ export async function processHorseBirthdays(options = {}) {
       );
     }
   }
+
+  for (const [newAge, group] of plainBirthdaysByAge) {
+    try {
+      await prisma.horse.updateMany({
+        where: { id: { in: group.map(entry => entry.horse.id) } },
+        data: { age: newAge },
+      });
+      logger.info(
+        `[horseAgingSystem.processHorseBirthdays] Aged ${group.length} horses to ${newAge} game-years in one update`,
+      );
+      for (const { index, horse, hadBirthday } of group) {
+        resultSlots[index] = {
+          horseId: horse.id,
+          horseName: horse.name,
+          ageUpdated: true,
+          newAge,
+          hadBirthday,
+          milestonesTriggered: [],
+          traitsAssigned: [],
+        };
+      }
+    } catch (error) {
+      errors += group.length;
+      logger.error(
+        `[horseAgingSystem.processHorseBirthdays] Error aging ${group.length} horses to ${newAge}: ${error.message}`,
+      );
+    }
+  }
+  const results = resultSlots.filter(Boolean);
 
   const duration = Date.now() - startTime;
   logger.info(`[horseAgingSystem.processHorseBirthdays] Completed in ${duration}ms`);
