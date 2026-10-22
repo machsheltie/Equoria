@@ -33,7 +33,12 @@ import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
 import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { actionMessageFor, hireRefused, refreshRefused } from '@/lib/http/actionMessage';
+import {
+  actionMessageFor,
+  hireRefusalCodes,
+  hireRefused,
+  refreshRefused,
+} from '@/lib/http/actionMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import {
   GameDialog,
@@ -423,7 +428,11 @@ const TrainerList: React.FC<TrainerListProps> = () => {
 
               {hireMutation.isError && (
                 <InlineError
-                  message={actionMessageFor(hireMutation.error, hireRefused)}
+                  message={actionMessageFor(
+                    hireMutation.error,
+                    hireRefused,
+                    hireRefusalCodes('trainer')
+                  )}
                   className="mt-4"
                 />
               )}

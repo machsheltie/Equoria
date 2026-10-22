@@ -86,14 +86,12 @@ export function useHireGroom() {
       queryClient.invalidateQueries({ queryKey: groomKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
-    // Equoria-mljz9 — surface a visible failure toast (§2). Was onSuccess-only,
-    // so a failed hire was silent. userMessageFor keeps the raw server body off
-    // the screen (§3).
-    onError: (error) => {
-      toast.error('Could not hire this groom', {
-        description: userMessageFor(error).message,
-      });
-    },
+    // Equoria-dosig — NO hook onError here on purpose. The sole consumer
+    // (GroomList's hire dialog) shows the refusal at the call site as an
+    // InlineError that names the exact reason (roster full vs. balance short),
+    // and doctrine §2 mandates exactly ONE feedback per mutation (hook OR call
+    // site, not both). The earlier hook toast (Equoria-mljz9) said only "could
+    // not hire" and would double the feedback.
   });
 }
 

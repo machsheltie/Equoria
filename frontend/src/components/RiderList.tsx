@@ -34,7 +34,12 @@ import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
 import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
-import { actionMessageFor, hireRefused, refreshRefused } from '@/lib/http/actionMessage';
+import {
+  actionMessageFor,
+  hireRefusalCodes,
+  hireRefused,
+  refreshRefused,
+} from '@/lib/http/actionMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import {
   GameDialog,
@@ -122,7 +127,9 @@ const RiderList: React.FC<RiderListProps> = ({
     return filtered;
   }, [marketplaceData, filterSkillLevel, filterPersonality, sortBy]);
 
-  const calculateHiringCost = (weeklyRate: number) => weeklyRate * 4; // 4-week upfront
+  // Hiring a rider charges one week's pay, once (owner ruling 2026-10-22,
+  // Equoria-yw6w1); the server charges the same figure.
+  const calculateHiringCost = (weeklyRate: number) => weeklyRate;
 
   const canAfford = (weeklyRate: number) => (user?.money ?? 0) >= calculateHiringCost(weeklyRate);
 
@@ -398,7 +405,7 @@ const RiderList: React.FC<RiderListProps> = ({
       {user && (user.money ?? 0) < 5000 && (
         <div className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-md)] bg-[var(--role-warning-bg)] border border-[var(--role-warning-border)] text-sm text-[var(--role-warning-text)]">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p>Low balance — hiring requires a 4-week upfront payment.</p>
+          <p>Low balance — hiring a rider takes one week's pay up front.</p>
         </div>
       )}
 
@@ -429,8 +436,13 @@ const RiderList: React.FC<RiderListProps> = ({
                   <span>Weekly Rate:</span>
                   <Currency amount={selectedRider.weeklyRate} />
                 </div>
-                <div className="flex justify-between border-t border-[var(--glass-border)] pt-2">
-                  <span className="font-bold text-[var(--text-secondary)]">Upfront (4 weeks):</span>
+                <div
+                  className="flex justify-between border-t border-[var(--glass-border)] pt-2"
+                  data-testid="hire-charge-now"
+                >
+                  <span className="font-bold text-[var(--text-secondary)]">
+                    Charged now (one week):
+                  </span>
                   <Currency
                     amount={calculateHiringCost(selectedRider.weeklyRate)}
                     variant="balance"
@@ -440,7 +452,11 @@ const RiderList: React.FC<RiderListProps> = ({
 
               {hireMutation.isError && (
                 <InlineError
-                  message={actionMessageFor(hireMutation.error, hireRefused)}
+                  message={actionMessageFor(
+                    hireMutation.error,
+                    hireRefused,
+                    hireRefusalCodes('rider')
+                  )}
                   className="mt-4"
                 />
               )}

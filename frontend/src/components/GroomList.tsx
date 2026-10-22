@@ -28,7 +28,8 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
 import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
+import { actionMessageFor, hireRefusalCodes, hireRefused } from '@/lib/http/actionMessage';
 import {
   GameDialog,
   GameDialogContent,
@@ -138,6 +139,8 @@ const GroomList: React.FC<GroomListProps> = ({
 
   // Handle hire button click
   const handleHireClick = (groom: MarketplaceGroom) => {
+    // A refusal belongs to the attempt that earned it; don't carry it to the next.
+    hireMutation.reset();
     setSelectedGroom(groom);
     setShowHireModal(true);
   };
@@ -497,6 +500,17 @@ const GroomList: React.FC<GroomListProps> = ({
                   />
                 </div>
               </Surface>
+
+              {hireMutation.isError && (
+                <InlineError
+                  message={actionMessageFor(
+                    hireMutation.error,
+                    hireRefused,
+                    hireRefusalCodes('groom')
+                  )}
+                  className="mt-4"
+                />
+              )}
             </GameDialogBody>
             <GameDialogFooter>
               <Button

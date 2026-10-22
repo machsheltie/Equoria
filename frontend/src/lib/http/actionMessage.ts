@@ -19,6 +19,19 @@ import { userMessageFor } from './userMessage.js';
 /** Copy an action supplies for the statuses it can name, keyed by HTTP status. */
 export type ActionCopy = Partial<Record<number, string>>;
 
+/**
+ * Copy an action supplies for the machine-readable refusal codes it can name,
+ * keyed by `ApiError.code`. A code says more than a status: two different
+ * refusals can share a 400.
+ */
+export type ActionCodeCopy = Partial<Record<string, string>>;
+
+function codeOf(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return undefined;
+  const code = (error as { code: unknown }).code;
+  return typeof code === 'string' ? code : undefined;
+}
+
 function statusOf(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null || !('statusCode' in error)) return undefined;
   const status = (error as { statusCode: unknown }).statusCode;
@@ -26,13 +39,22 @@ function statusOf(error: unknown): number | undefined {
 }
 
 /**
- * The action's own copy for this failure's status, else the shared mapper's.
+ * The action's own copy for this failure, else the shared mapper's. A refusal
+ * code the action names wins over the status copy; the status copy covers a
+ * response with no code or a code the action does not name.
  * A network failure (0), expired session (401) and rate limit (429) always use
  * the shared copy: they say nothing about the action itself.
  */
-export function actionMessageFor(error: unknown, copy: ActionCopy = {}): string {
+export function actionMessageFor(
+  error: unknown,
+  copy: ActionCopy = {},
+  codeCopy: ActionCodeCopy = {}
+): string {
   const status = statusOf(error);
   if (status !== undefined && status !== 0 && status !== 401 && status !== 429) {
+    const code = codeOf(error);
+    const byCode = code ? codeCopy[code] : undefined;
+    if (byCode) return byCode;
     const own = copy[status];
     if (own) return own;
   }
@@ -40,12 +62,34 @@ export function actionMessageFor(error: unknown, copy: ActionCopy = {}): string 
 }
 
 /**
- * Hiring from a staff marketplace. The backend answers a full roster and an
- * unaffordable hire with the same 400, so the copy names both honestly.
+ * Hiring from a staff marketplace. A 400 with no refusal code (an older server
+ * answer) could be a full roster or an unaffordable hire, so this copy names
+ * both honestly. A coded refusal gets `hireRefusalCodes` instead.
  */
 export const hireRefused: ActionCopy = {
   400: "That hire couldn't go through. Your roster may be full or your balance may be short.",
 };
+
+/** The kinds of staff a player hires from a marketplace. */
+export type HireStaffKind = 'rider' | 'trainer' | 'groom';
+
+const ROSTER_FULL_ADVICE: Record<HireStaffKind, string> = {
+  rider: 'Retire a rider or raise your stable level before hiring another.',
+  trainer: 'Retire a trainer or raise your stable level before hiring another.',
+  groom: 'Release a groom before hiring another.',
+};
+
+/**
+ * The exact refusal for a coded staff hire 400 (Equoria-dosig): the backend's
+ * `ROSTER_CAP_REACHED` and `INSUFFICIENT_FUNDS`. Pass as the third argument of
+ * `actionMessageFor` beside `hireRefused`.
+ */
+export function hireRefusalCodes(staff: HireStaffKind): ActionCodeCopy {
+  return {
+    ROSTER_CAP_REACHED: `Your ${staff} roster is full. ${ROSTER_FULL_ADVICE[staff]}`,
+    INSUFFICIENT_FUNDS: "Your balance doesn't cover this hire.",
+  };
+}
 
 /** Refreshing a staff marketplace: a 400 is the refresh fee the balance can't cover. */
 export const refreshRefused: ActionCopy = {
