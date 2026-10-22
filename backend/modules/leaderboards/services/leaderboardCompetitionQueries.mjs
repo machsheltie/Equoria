@@ -12,6 +12,7 @@
  */
 
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
+import { storedPlacements } from '../../../utils/competitionPlacement.mjs';
 
 /**
  * Fetch the per-horse user/breed details for an ordered list of horse ids.
@@ -30,11 +31,14 @@ export function fetchHorseDetailsByIds(horseIds) {
   });
 }
 
-/** Wins per horse, ordered desc, for the wins metric branch. */
+/**
+ * Wins per horse, ordered desc, for the wins metric branch. A win is stored as
+ * '1' or '1st' (Equoria-f46tb); both count.
+ */
 export function groupWinsByHorse(whereClause, { take, skip }) {
   return prisma.competitionResult.groupBy({
     by: ['horseId'],
-    where: { ...whereClause, placement: '1' },
+    where: { ...whereClause, placement: { in: storedPlacements(1) } },
     _count: { id: true },
     orderBy: [{ _count: { id: 'desc' } }, { horseId: 'asc' }],
     take,
@@ -54,11 +58,11 @@ export function groupEarningsByHorse(whereClause, { take, skip }) {
   });
 }
 
-/** Top-3 placements per horse for the placements metric branch. */
+/** Top-3 placements per horse for the placements metric branch (either spelling, Equoria-f46tb). */
 export function groupTopThreePlacementsByHorse(whereClause, { take, skip }) {
   return prisma.competitionResult.groupBy({
     by: ['horseId'],
-    where: { ...whereClause, placement: { in: ['1', '2', '3'] } },
+    where: { ...whereClause, placement: { in: storedPlacements(1, 2, 3) } },
     _count: { id: true },
     orderBy: [{ _count: { id: 'desc' } }, { horseId: 'asc' }],
     take,

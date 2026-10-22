@@ -27,6 +27,7 @@ import { breedingStateFields } from '../services/breedingPairRules.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';
+import { placementRank } from '../../../utils/competitionPlacement.mjs';
 
 const router = express.Router();
 
@@ -103,8 +104,8 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     // Equoria-55bo.6: real per-horse championship signal for GoldBorderFrame
     // on the non-HoF stable/dashboard cards (Spec 11.3.13). Counted from the
     // SAME single batched competitionResult query that powers latestEvent —
-    // no extra query, no N+1. `placement` is stored as a label string ('1st',
-    // '2nd', …), so a 1st-place win is `placement === '1st'`.
+    // no extra query, no N+1. `placement` is stored as '1' (the nightly
+    // executors) or '1st' (older paths); both are a 1st-place win (Equoria-f46tb).
     const firstPlaceWinsByHorse = new Map();
     if (horseIds.length > 0) {
       const recentResults = await getRecentResultsForHorses(horseIds);
@@ -118,9 +119,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
             date: r.runDate ? new Date(r.runDate).toISOString() : null,
           });
         }
-        // Normalize the placement label before comparing so '1st', '1ST',
-        // or stray whitespace all count as a real 1st-place win.
-        if (typeof r.placement === 'string' && r.placement.trim().toLowerCase() === '1st') {
+        if (placementRank(r.placement) === 1) {
           firstPlaceWinsByHorse.set(r.horseId, (firstPlaceWinsByHorse.get(r.horseId) ?? 0) + 1);
         }
       }
