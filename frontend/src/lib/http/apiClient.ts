@@ -20,6 +20,7 @@
 
 import authSessionState from '../authSessionState.js';
 import type { ApiError, ApiResponse } from './types.js';
+import { refreshAcrossTabs } from './crossTabRefresh.js';
 
 // Nullish coalescing: empty string = relative URLs (correct for monolithic deploy).
 // Set VITE_API_URL only for split-deploy scenarios.
@@ -30,7 +31,12 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 let refreshPromise: Promise<boolean> | null = null;
 
 /**
- * Attempt to refresh the access token using the refresh token cookie
+ * Attempt to refresh the access token using the refresh token cookie.
+ *
+ * Single-flight within this tab (refreshPromise) and ordered across tabs
+ * (refreshAcrossTabs, Equoria-jwfzj): the server honours each refresh token
+ * once, so two tabs refreshing with the same cookie at once would end one
+ * tab's session although the cookie jar holds a valid rotated one.
  */
 export async function refreshAccessToken(): Promise<boolean> {
   // If a refresh is already in flight, every caller shares the same promise.
@@ -40,7 +46,7 @@ export async function refreshAccessToken(): Promise<boolean> {
 
   // Create the refresh promise *before* any async work so concurrent callers
   // that arrive between now and the first await see it immediately.
-  refreshPromise = (async () => {
+  refreshPromise = refreshAcrossTabs(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh-token`, {
         method: 'POST',
@@ -61,7 +67,7 @@ export async function refreshAccessToken(): Promise<boolean> {
       authSessionState.clear(); // Network error — treat as session dead
       return false;
     }
-  })();
+  });
 
   try {
     return await refreshPromise;
