@@ -329,10 +329,9 @@ export async function validateBatchOwnership(resourceType, resourceIds, userId, 
  * Ensures users can only access their own data (prevents CWE-639).
  *
  * Equoria-q4uem.4 (WS4 S3): hoisted verbatim from
- * modules/users/routes/userRoutes.mjs so the users router and the application
- * query router (backend/app/queries/userQueryRoutes.mjs) share one
- * implementation instead of a copy. Responses are unchanged; only the log
- * prefix names this middleware instead of userRoutes.
+ * modules/users/routes/userRoutes.mjs; shared middleware, not a per-router copy.
+ * Responses are unchanged; only the log prefix names this middleware instead of
+ * userRoutes.
  *
  * @param {string} [idParam='id'] - route param holding the target user id
  */

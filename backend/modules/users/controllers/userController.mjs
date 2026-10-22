@@ -481,7 +481,6 @@ export const updateUserController = async (req, res, next) => {
 
     // Invalidate user caches
     await invalidateCache(`user:progress:${id}`);
-    await invalidateCache(`user:dashboard:${id}`);
 
     res.status(200).json({
       success: true,

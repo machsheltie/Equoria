@@ -76,16 +76,6 @@ describe('User Routes Rate Limiting Integration Tests', () => {
       expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
     });
 
-    it('should apply queryRateLimiter to GET /api/v1/users/dashboard/:userId', async () => {
-      const response = await request(app)
-        .get(`/api/v1/users/dashboard/${userId}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`);
-
-      expect([200, 404, 500]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
-    });
-
     it('should apply queryRateLimiter to GET /api/v1/users/:id', async () => {
       const response = await request(app)
         .get(`/api/v1/users/${userId}`)

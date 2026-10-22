@@ -2,7 +2,7 @@
  * 🧪 INTEGRATION TEST: User Progress API - Comprehensive Progress Tracking
  *
  * This test validates the complete user progress API system including XP tracking,
- * level progression, progress calculations, and dashboard functionality.
+ * level progression and progress calculations.
  *
  * 📋 BUSINESS RULES TESTED:
  * - USER level progression: 200 XP per level (Level 1: 0-199 XP, Level 2: 200-299 XP, etc.)
@@ -37,7 +37,7 @@
  *    (testUser / authToken / __csrf__ / testHorse) that a PRIOR `it()` had set
  *    — STEP 3/4 in particular consumed the auth/csrf established in STEP 1.
  *    Under Jest test-order randomization those cross-`it()` reads break. The
- *    fix: the register → csrf → authToken → train → level-up → dashboard →
+ *    fix: the register → csrf → authToken → train → level-up →
  *    validate chain is now ONE self-contained `it()` that establishes its OWN
  *    auth then runs every former STEP's assertions in order against LOCAL
  *    state. The genuinely-independent API-consistency / edge-case scenarios
@@ -136,12 +136,12 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
   afterAll(() => cleanup.run());
 
-  // Equoria-klq4v: the register → train → level-up → dashboard → validate chain
+  // Equoria-klq4v: the register → train → level-up → validate chain
   // is ONE self-contained test. It establishes its OWN auth (register + login +
-  // per-user CSRF) and runs every former STEP 1–5/7 assertion in order against
+  // per-user CSRF) and runs every former STEP 1–4/7 assertion in order against
   // LOCAL state (testUser, authToken, __csrf__, testHorse). No assertion here
   // depends on state left behind by any other `it()`.
-  it('tracks user progress end-to-end through real training (register → XP gain → level-up → dashboard → integrity)', async () => {
+  it('tracks user progress end-to-end through real training (register → XP gain → level-up → integrity)', async () => {
     // ────────────────────────────────────────────────────────────────────
     // STEP 1: User Setup & Initial Progress State
     // ────────────────────────────────────────────────────────────────────
@@ -447,7 +447,6 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
     // Invalidate caches after manual database update to ensure API returns fresh data
     await invalidateCache(`user:progress:${testUser.id}`);
-    await invalidateCache(`user:dashboard:${testUser.id}`);
 
     // Verify multi-level progression
     const afterMultiLevelResponse = await request(app)
@@ -472,38 +471,6 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       totalCompetitions: expect.any(Number),
       winRate: expect.any(Number),
       breedingCount: expect.any(Number),
-    });
-
-    // ────────────────────────────────────────────────────────────────────
-    // STEP 5: Dashboard Data Integration
-    // ────────────────────────────────────────────────────────────────────
-    const dashboardResponse = await request(app)
-      .get(`/api/v1/users/dashboard/${testUser.id}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Authorization', `Bearer ${authToken}`)
-      .expect(200);
-
-    expect(dashboardResponse.body.success).toBe(true);
-    expect(dashboardResponse.body.data).toEqual({
-      user: {
-        id: testUser.id,
-        username: testUser.username,
-        level: 3,
-        xp: 350, // Updated to match our manual setting
-        money: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
-      },
-      horses: {
-        total: 2, // 1 starter horse (auto-created at registration) + 1 test horse
-        trainable: expect.any(Number),
-      },
-      shows: {
-        upcomingEntries: 0,
-        nextShowRuns: expect.any(Array), // May contain shows from other tests
-      },
-      activity: {
-        lastTrained: expect.any(String), // Training is now working correctly
-        lastShowPlaced: 'never', // No competition results yet
-      },
     });
 
     // ────────────────────────────────────────────────────────────────────

@@ -453,28 +453,6 @@ export interface UserProgress {
   totalWins?: number;
 }
 
-export interface DashboardData {
-  user: {
-    id: number;
-    username: string;
-    level: number;
-    money: number;
-  };
-  horses: {
-    total: number;
-    trainable: number;
-  };
-  shows: {
-    upcomingEntries: number;
-    nextShowRuns: string[];
-  };
-  activity: {
-    lastTrained: string;
-    lastShowPlaced: string | null;
-  };
-  recentShows?: Array<{ id: number; name: string; placement: number }>;
-}
-
 export interface ActivityFeedItem {
   id: number;
   userId: number;

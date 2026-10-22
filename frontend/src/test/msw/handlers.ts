@@ -34,7 +34,6 @@
  * GET    /api/v1/users/:id/activity                 recent activity feed
  * GET    /api/v1/users/:id/competition-stats        competition statistics
  * GET    /api/v1/users/:userId/prize-history        prize history (paginated)
- * GET    /api/v1/users/dashboard/:id                dashboard summary
  * GET    /api/v1/users/me/game-notifications      in-game stat-gain notifications (Equoria-sqyb)
  * PATCH  /api/v1/users/me/game-notifications/read-all  mark all notifications read
  *

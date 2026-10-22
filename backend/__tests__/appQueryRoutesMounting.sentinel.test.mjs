@@ -7,10 +7,15 @@
  *   horseQueryRoutes  GET /trainable/:userId, GET /:id/history, GET /:id/overview,
  *                     GET /:id/training-history, GET /:id/breeding-data,
  *                     GET /:id/trait-card                     (mounted at /horses)
- *   userQueryRoutes   GET /dashboard/:userId                  (mounted at /users)
  *
- * routers.mjs mounts each query router on the same prefix immediately BEFORE
- * the module router. Three structural invariants keep every re-homed URL
+ * The users half (userQueryRoutes: GET /dashboard/:userId) was retired by
+ * Equoria-oey96.40 (owner decision 2026-07-07: the orphaned dashboard endpoint
+ * and its hook are deleted). Old contract: userQueryRoutes exposed exactly
+ * GET /dashboard/:userId and mounted AFTER userRoutes. New ruling: the route and
+ * router no longer exist; this sentinel now asserts they stay gone.
+ *
+ * routers.mjs mounts the horses query router on its prefix immediately BEFORE
+ * the module router. Structural invariants keep every re-homed URL
  * byte-identical in behaviour:
  *
  *   1. UNION — the pre-split horses inventory that the Equoria-y8u2j module
@@ -23,21 +28,18 @@
  *   3. MOUNT ORDER + PREFIX — the order that reproduces base first-match
  *      behaviour, prefix by prefix: on /horses the query router is mounted
  *      BEFORE horseRoutes (at base the six reads were reached before any other
- *      two-segment route); on /users the query router is mounted AFTER
- *      userRoutes (at base GET /:id/progress and GET /:id/activity were
- *      registered before GET /dashboard/:userId, so GET /users/dashboard/progress
- *      must keep matching /:id/progress). Each query-router layer must also be
- *      mounted on its own prefix. Sentinel-positive: swapping either prefix's
- *      two mount lines in routers.mjs fails this test (recorded in the WS4 report).
- *   4. NO PATH-LESS USE — every layer of both query routers is a route. A
+ *      two-segment route). The query-router layer must also be mounted on its
+ *      own prefix. Sentinel-positive: swapping the two mount lines in
+ *      routers.mjs fails this test (recorded in the WS4 report).
+ *   4. NO PATH-LESS USE — every layer of the query router is a route. A
  *      path-less router.use() in a router mounted ahead of the module router
  *      would execute for every request on that prefix, which base never did.
  */
 
+import { existsSync } from 'node:fs';
 import { describe, it, expect } from '@jest/globals';
 import { buildRouters } from '../app/routers.mjs';
 import horseQueryRoutes from '../app/queries/horseQueryRoutes.mjs';
-import userQueryRoutes from '../app/queries/userQueryRoutes.mjs';
 import horseRoutes from '../modules/horses/routes/horseRoutes.mjs';
 import userRoutes from '../modules/users/routes/userRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S4): bank owns GET /users/transactions; its router mounts at
@@ -74,7 +76,6 @@ const HORSE_QUERY_ROUTES = [
   'GET /:id/breeding-data',
   'GET /:id/trait-card',
 ].sort();
-const USER_QUERY_ROUTES = ['GET /dashboard/:userId'];
 
 // The full Equoria-y8u2j pre-split inventory (parent + sub-routers), now split
 // between the query router and the module router tree.
@@ -104,11 +105,6 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
     }
   });
 
-  it('UNION: userQueryRoutes + userRoutes host GET /dashboard/:userId exactly once', () => {
-    const all = [...sigsOf(userQueryRoutes), ...sigsOf(userRoutes)];
-    expect(all.filter(sig => sig === 'GET /dashboard/:userId')).toHaveLength(1);
-  });
-
   it('EXACT: horseQueryRoutes exposes exactly the six re-homed horse reads', () => {
     expect(sigsOf(horseQueryRoutes)).toEqual(HORSE_QUERY_ROUTES);
     // and the module tree no longer hosts them (no duplicate first-match candidates)
@@ -118,42 +114,39 @@ describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => 
     }
   });
 
-  it('EXACT: userQueryRoutes exposes exactly GET /dashboard/:userId', () => {
-    expect(sigsOf(userQueryRoutes)).toEqual(USER_QUERY_ROUTES);
+  it('RETIRED (Equoria-oey96.40): GET /dashboard/:userId is hosted by no router and no users query router is mounted', () => {
     expect(new Set(sigsOf(userRoutes)).has('GET /dashboard/:userId')).toBe(false);
+    const { authRouter } = buildRouters();
+    // Every mounted router layer: none may host the retired dashboard route.
+    const hosted = authRouter.stack.filter(l => l.name === 'router').flatMap(l => sigsOf(l.handle));
+    expect(hosted).not.toContain('GET /dashboard/:userId');
+    const queryDir = new URL('../app/queries/', import.meta.url);
+    expect(existsSync(new URL('userQueryRoutes.mjs', queryDir))).toBe(false);
+    expect(existsSync(new URL('userDashboardQuery.mjs', queryDir))).toBe(false);
   });
 
-  it('MOUNT ORDER: /horses query router BEFORE horseRoutes; /users query router AFTER userRoutes', () => {
+  it('MOUNT ORDER: /horses query router BEFORE horseRoutes', () => {
     const { authRouter } = buildRouters();
     const handles = authRouter.stack.filter(l => l.name === 'router').map(l => l.handle);
     const idx = router => handles.indexOf(router);
     expect(idx(horseQueryRoutes)).toBeGreaterThanOrEqual(0);
     expect(idx(horseRoutes)).toBeGreaterThanOrEqual(0);
-    expect(idx(userQueryRoutes)).toBeGreaterThanOrEqual(0);
     expect(idx(userRoutes)).toBeGreaterThanOrEqual(0);
     // /horses: the six reads were reached before any competing route at base.
     expect(idx(horseQueryRoutes)).toBeLessThan(idx(horseRoutes));
-    // /users: GET /:id/progress and GET /:id/activity preceded GET /dashboard/:userId
-    // at base, so the module router must still see /users/dashboard/progress first.
-    expect(idx(userRoutes)).toBeLessThan(idx(userQueryRoutes));
   });
 
   it('MOUNT PREFIX: each query router is mounted on its own prefix', () => {
     const { authRouter } = buildRouters();
     const layerOf = router => authRouter.stack.find(l => l.name === 'router' && l.handle === router);
     const horsesLayer = layerOf(horseQueryRoutes);
-    const usersLayer = layerOf(userQueryRoutes);
     expect(horsesLayer.regexp.test('/horses/42/history')).toBe(true);
     expect(horsesLayer.regexp.test('/users/42')).toBe(false);
-    expect(usersLayer.regexp.test('/users/dashboard/x')).toBe(true);
-    expect(usersLayer.regexp.test('/horses/42')).toBe(false);
   });
 
-  it('NO PATH-LESS USE: every layer of both query routers is a route', () => {
+  it('NO PATH-LESS USE: every layer of the horses query router is a route', () => {
     expect(horseQueryRoutes.stack.length).toBeGreaterThan(0);
-    expect(userQueryRoutes.stack.length).toBeGreaterThan(0);
     expect(horseQueryRoutes.stack.every(l => Boolean(l.route))).toBe(true);
-    expect(userQueryRoutes.stack.every(l => Boolean(l.route))).toBe(true);
   });
 
   describe('bank-owned GET /users/transactions (Equoria-q4uem.4, WS4 S4)', () => {

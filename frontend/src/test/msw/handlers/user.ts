@@ -32,26 +32,6 @@ export const userHandlers = [
       },
     });
   }),
-  http.get(`${base}/api/v1/users/dashboard/:id`, ({ params }) => {
-    if (params.id === '999999') {
-      return new HttpResponse(null, { status: 404 });
-    }
-    return HttpResponse.json({
-      success: true,
-      data: {
-        user: {
-          id: params.id,
-          username: 'testuser',
-          level: 1,
-          xp: 50,
-          money: 1000,
-        },
-        horses: { total: 2, trainable: 1 },
-        shows: { upcomingEntries: 0, nextShowRuns: [] },
-        activity: { lastTrained: 'never', lastShowPlaced: 'never' },
-      },
-    });
-  }),
   http.get(`${base}/api/v1/users/:id/activity`, () =>
     HttpResponse.json({
       success: true,

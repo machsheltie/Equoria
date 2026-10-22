@@ -98,18 +98,15 @@ import craftingRoutes from '../modules/crafting/routes/craftingRoutes.mjs';
 // Imported directly, never through the staff barrel: this file is the only
 // allowed importer of the staff Router (STAFF-CR-05, check-staff-routes-mount).
 import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
-// Equoria-q4uem.4 (WS4 S3): application-level cross-domain reads. These routers
-// hold the /horses and /users routes that compose data from more than one
-// domain (overview, history, trainable horses, training history, breeding
-// data, trait card, dashboard). They share a prefix with the module routers:
-// horseQueryRoutes mounts BEFORE horseRoutes, userQueryRoutes mounts AFTER
-// userRoutes, because at base GET /:id/progress and GET /:id/activity preceded
-// GET /dashboard/:userId, so /users/dashboard/progress|activity must keep
-// matching the module routes (see the mount block below). Every URL, executed
-// chain and first-match position is unchanged; the domains no longer import
-// each other for these reads.
+// Equoria-q4uem.4 (WS4 S3): application-level cross-domain reads. This router
+// holds the /horses routes that compose data from more than one domain
+// (overview, history, trainable horses, training history, breeding data, trait
+// card). It shares a prefix with the module router and mounts BEFORE
+// horseRoutes (see the mount block below). Every URL, executed chain and
+// first-match position is unchanged; the domains no longer import each other
+// for these reads. (The users half, GET /users/dashboard/:userId, was retired
+// by Equoria-oey96.40.)
 import horseQueryRoutes from './queries/horseQueryRoutes.mjs';
-import userQueryRoutes from './queries/userQueryRoutes.mjs';
 // Equoria-q4uem.4 (WS4 S4): GET /users/transactions is bank's handler on the users
 // prefix; bank owns the route module (imported directly, like every route module
 // below after S4) and routers.mjs mounts it at /users ahead of userRoutes.
@@ -170,17 +167,13 @@ export function buildRouters() {
   authRouter.use('/auth', authenticatedAuthRoutes);
 
   // Core game features
-  // Equoria-q4uem.4 (WS4 S3): application query routers share a prefix with
-  // the module routers. Their relative order reproduces the base first-match
+  // Equoria-q4uem.4 (WS4 S3): the application query router shares a prefix with
+  // the module router. Its relative order reproduces the base first-match
   // behaviour exactly and is pinned by backend/__tests__/
   // appQueryRoutesMounting.sentinel.test.mjs:
   //   /horses — query router FIRST. Its paths (/trainable/:userId, /:id/<sub>)
   //     have no competing two-segment pattern in horseRoutes, and at base they
   //     were reached before any other two-segment route could match.
-  //   /users  — module router FIRST. At base userRoutes registered
-  //     GET /:id/progress and GET /:id/activity before GET /dashboard/:userId,
-  //     so GET /users/dashboard/progress matched /:id/progress; mounting the
-  //     query router after userRoutes keeps that.
   //   /users  — bank's GET /transactions FIRST (at base userRoutes registered
   //     /transactions ahead of GET /:id; mounting the bank router before
   //     userRoutes keeps /users/transactions from being claimed by /:id).
@@ -188,7 +181,6 @@ export function buildRouters() {
   authRouter.use('/horses', horseRoutes);
   authRouter.use('/users', bankUserTransactionsRoutes);
   authRouter.use('/users', userRoutes);
-  authRouter.use('/users', userQueryRoutes);
   // Equoria-rgyv (ADR-011): GET /api/v1/events/stream — per-user SSE stream.
   authRouter.use('/events', eventRoutes);
   authRouter.use('/account', gdprAccountRoutes);

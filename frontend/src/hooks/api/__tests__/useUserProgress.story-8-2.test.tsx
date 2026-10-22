@@ -3,7 +3,6 @@
  *
  * Tests that all user-progress hooks fetch real data via MSW:
  * - useUserProgress: level, xp, username from GET /api/users/:id/progress
- * - useDashboard: horse count, money from GET /api/users/dashboard/:id
  * - useActivityFeed: activity items from GET /api/users/:id/activity
  * - useUser: user profile from GET /api/users/:id
  * - staleTime values match AC requirements
@@ -14,13 +13,7 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  useUserProgress,
-  useDashboard,
-  useActivityFeed,
-  useUser,
-  progressKeys,
-} from '../useUserProgress';
+import { useUserProgress, useActivityFeed, useUser, progressKeys } from '../useUserProgress';
 
 // ─── Test wrapper ─────────────────────────────────────────────────────────────
 
@@ -86,51 +79,6 @@ describe('useUserProgress (Story 8.2)', () => {
   });
 });
 
-// ─── useDashboard ─────────────────────────────────────────────────────────────
-
-describe('useDashboard (Story 8.2)', () => {
-  it('fetches user money from GET /api/users/dashboard/:id', async () => {
-    const { result } = renderHook(() => useDashboard(1), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.user.money).toBe(1000);
-  });
-
-  it('fetches username from dashboard endpoint', async () => {
-    const { result } = renderHook(() => useDashboard(1), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.user.username).toBe('testuser');
-  });
-
-  it('fetches horse count from dashboard endpoint (AC: 3)', async () => {
-    const { result } = renderHook(() => useDashboard(1), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.horses.total).toBe(2);
-    expect(result.current.data?.horses.trainable).toBe(1);
-  });
-
-  it('uses staleTime of 2 minutes (AC: 7)', () => {
-    // useDashboard staleTime is 2 * 60 * 1000 = 120000ms per AC
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-    const { result } = renderHook(() => useDashboard(1), { wrapper });
-    expect(result.current.isLoading).toBe(true); // starts loading — hook is enabled
-  });
-
-  it('is disabled when userId is falsy', () => {
-    const { result } = renderHook(() => useDashboard(0), { wrapper: createWrapper() });
-    expect(result.current.fetchStatus).toBe('idle');
-  });
-
-  it('returns error state on 404', async () => {
-    const { result } = renderHook(() => useDashboard(999999), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.isError).toBe(true));
-  });
-});
-
 // ─── useActivityFeed ──────────────────────────────────────────────────────────
 
 describe('useActivityFeed (Story 8.2)', () => {
@@ -187,10 +135,6 @@ describe('useUser (Story 8.2)', () => {
 describe('progressKeys (Story 8.2)', () => {
   it('generates correct user query key', () => {
     expect(progressKeys.user(1)).toEqual(['userProgress', 1]);
-  });
-
-  it('generates correct dashboard query key', () => {
-    expect(progressKeys.dashboard(1)).toEqual(['userProgress', 'dashboard', 1]);
   });
 
   it('generates correct activity query key', () => {
