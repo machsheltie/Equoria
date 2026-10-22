@@ -36,6 +36,7 @@ import {
   getConformationAgeClass,
   calculateConformationShowScore,
   resolveReward,
+  BREEDING_BOOST_CAP,
 } from './conformationShowScoring.mjs';
 import {
   activeGroomsForLegacyEntries,
@@ -464,7 +465,9 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
           reward: resolveReward(i + 1),
         }));
 
-        const rewarded = await applyConformationRewards(tx, placed);
+        const rewarded = await applyConformationRewards(tx, placed, {
+          boostCap: BREEDING_BOOST_CAP,
+        });
 
         // CompetitionResult — no prizeWon (AC4). One INSERT for the whole show
         // (Equoria-cmw85.11); the [showId, horseId] unique still refuses a

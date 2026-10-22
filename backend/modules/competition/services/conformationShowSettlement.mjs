@@ -12,7 +12,7 @@
  * capped boost and the titles live in ./conformationShowScoring.mjs.
  */
 
-import { BREEDING_BOOST_CAP, resolveTitle } from './conformationShowScoring.mjs';
+import { resolveTitle } from './conformationShowScoring.mjs';
 
 /** The horse fields conformation scoring reads (calculateConformationShowScore). */
 export const conformationScoringHorseSelect = {
@@ -93,9 +93,11 @@ export async function activeGroomsForLegacyEntries(tx, entries) {
  *
  * @param {object} tx - the settlement transaction
  * @param {Array<{ horse: { id: number }, reward: { titlePoints: number, breedingBoostDelta: number } }>} placed
+ * @param {{ boostCap: number }} rules - the breeding-value boost cap (owned by
+ *   conformationShowScoring.mjs)
  * @returns {Promise<Map<number, { newTitle: string|null, breedingValueBoost: number }>>}
  */
-export async function applyConformationRewards(tx, placed) {
+export async function applyConformationRewards(tx, placed, { boostCap }) {
   const horseIds = placed.map(p => p.horse.id);
   const ascending = [...horseIds].sort((a, b) => a - b);
   await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ANY(${ascending}) ORDER BY "id" FOR UPDATE`;
@@ -108,7 +110,7 @@ export async function applyConformationRewards(tx, placed) {
   )) {
     await tx.$executeRaw`
       UPDATE "horses"
-      SET "breedingValueBoost" = LEAST("breedingValueBoost" + ${delta}, ${BREEDING_BOOST_CAP})
+      SET "breedingValueBoost" = LEAST("breedingValueBoost" + ${delta}, ${boostCap})
       WHERE "id" = ANY(${ids})`;
   }
 

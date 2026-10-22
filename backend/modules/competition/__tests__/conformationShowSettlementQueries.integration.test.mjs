@@ -58,13 +58,15 @@ const {
   calculateConformationShowScore,
   resolveReward,
   resolveTitle,
-  BREEDING_BOOST_CAP,
-  SCORE_NEUTRAL_CONFORMATION_CLASS,
+  applyBreedingValueBoost,
 } = await import('../services/conformationShowService.mjs');
 const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs');
 const { createCleanupTracker } = await import('../../../__tests__/helpers/failLoudCleanup.mjs');
 
 const PREFIX = 'TestFixture-cmw8511';
+// Settlement scores with a class-neutral default; the class never changes a
+// score, so any valid class gives the same golden value.
+const scoringClass = 'Mares';
 const RECORDED = 12;
 const LEGACY = 4;
 const tag = randomBytes(4).toString('hex');
@@ -211,7 +213,7 @@ describe('conformation show settlement work (Equoria-cmw85.11)', () => {
     const ranked = fixtures
       .map(({ horse, groom }) => ({
         horse,
-        score: calculateConformationShowScore(horse, groom, SCORE_NEUTRAL_CONFORMATION_CLASS).finalScore,
+        score: calculateConformationShowScore(horse, groom, scoringClass).finalScore,
       }))
       .sort((a, b) => b.score - a.score);
 
@@ -242,10 +244,7 @@ describe('conformation show settlement work (Equoria-cmw85.11)', () => {
       const placement = index + 1;
       const reward = resolveReward(placement);
       const points = horse.titlePoints + reward.titlePoints;
-      const boost =
-        reward.breedingBoostDelta > 0
-          ? Math.min(BREEDING_BOOST_CAP, horse.breedingValueBoost + reward.breedingBoostDelta)
-          : horse.breedingValueBoost;
+      const boost = applyBreedingValueBoost(horse.breedingValueBoost, reward.breedingBoostDelta);
 
       const row = rows.find(r => r.horseId === horse.id);
       expect(row.placement).toBe(String(placement));

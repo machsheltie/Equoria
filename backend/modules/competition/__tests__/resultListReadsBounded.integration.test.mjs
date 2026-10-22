@@ -42,8 +42,8 @@ let owner;
 let careerHorse;
 let bigShow;
 
-const HORSE_KEYS = ['breed', 'id', 'name'];
-const PRIVATE_PATTERN = /genotype|epigeneticModifiers|stagedOrdering|feeEscrow|prizeEscrow|createdByUserId/i;
+const horseKeys = ['breed', 'id', 'name'];
+const privatePattern = /genotype|epigeneticModifiers|stagedOrdering|feeEscrow|prizeEscrow|createdByUserId/i;
 
 cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }), 'results');
 cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
@@ -144,10 +144,10 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 60000);
 
 function expectScopedRow(row) {
-  expect(Object.keys(row.horse).sort()).toEqual(HORSE_KEYS);
+  expect(Object.keys(row.horse).sort()).toEqual(horseKeys);
   expect(row.show).toBeDefined();
   expect(row.show.name).toBeDefined();
-  expect(JSON.stringify(row)).not.toMatch(PRIVATE_PATTERN);
+  expect(JSON.stringify(row)).not.toMatch(privatePattern);
 }
 
 describe('result list reads (Equoria-cmw85.12)', () => {
@@ -203,6 +203,6 @@ describe('result list reads (Equoria-cmw85.12)', () => {
       discipline: 'Dressage',
       horse: { id: careerHorse.id, name: careerHorse.name },
     });
-    expect(JSON.stringify(res.body)).not.toMatch(PRIVATE_PATTERN);
+    expect(JSON.stringify(res.body)).not.toMatch(privatePattern);
   }, 60000);
 });

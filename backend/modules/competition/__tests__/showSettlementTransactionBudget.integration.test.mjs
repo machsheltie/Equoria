@@ -51,7 +51,7 @@ const { executeClosedShows } = await import('../shows/showExecutionService.mjs')
 const { createFundedShowFixtures, moneyOf } = await import('./helpers/fundedShowFixtures.mjs');
 
 const PRIZE = 1000;
-const ENTRY_FEE = 10;
+const entryFee = 10;
 const ENTRANTS = 12;
 
 const fx = createFundedShowFixtures('TestFixture-cmw851');
@@ -85,7 +85,7 @@ describe('show settlement transaction budget (Equoria-cmw85.1)', () => {
 
   it('settles a 12-entry show holding at most one transaction at a time, paying everyone once', async () => {
     expect(prisma).toBe(appClientHandle);
-    const show = await fx.buildClosedShow({ prize: PRIZE, entryFee: ENTRY_FEE, entrantCount: ENTRANTS });
+    const show = await fx.buildClosedShow({ prize: PRIZE, entryFee, entrantCount: ENTRANTS });
     const heldBefore = await fx.heldMoney(show);
 
     const { statements } = await recorder.measure(() => executeClosedShows({ body: { showIds: [show.showId] } }, null));
@@ -110,7 +110,7 @@ describe('show settlement transaction budget (Equoria-cmw85.1)', () => {
     expect(after.status).toBe('completed');
     expect(after.prizeEscrow).toBe(0);
     expect(after.feeEscrow).toBe(0);
-    expect(await moneyOf(show.creator.id)).toBe(ENTRY_FEE * ENTRANTS);
+    expect(await moneyOf(show.creator.id)).toBe(entryFee * ENTRANTS);
     expect(await fx.heldMoney(show)).toBe(heldBefore);
   }, 120000);
 });

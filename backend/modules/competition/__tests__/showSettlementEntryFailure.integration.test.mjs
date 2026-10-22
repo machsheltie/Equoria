@@ -25,7 +25,7 @@ import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createFundedShowFixtures, moneyOf } from './helpers/fundedShowFixtures.mjs';
 
 const PRIZE = 1000;
-const ENTRY_FEE = 50;
+const entryFee = 50;
 
 const fx = createFundedShowFixtures('TestFixture-wmwbr');
 
@@ -68,7 +68,7 @@ async function creatorCreditRows(creatorId, showId) {
 
 describe('a failed entry settlement (Equoria-wmwbr)', () => {
   it('pays the other entrants, settles the fee escrow once, and a re-run changes nothing', async () => {
-    const show = await fx.buildClosedShow({ prize: PRIZE, entryFee: ENTRY_FEE, entrantCount: 3 });
+    const show = await fx.buildClosedShow({ prize: PRIZE, entryFee, entrantCount: 3 });
     const [first, failing, third] = show.entrants;
     await plantResult(show.showId, failing.horse.id);
     const heldBefore = await fx.heldMoney(show);
@@ -98,9 +98,9 @@ describe('a failed entry settlement (Equoria-wmwbr)', () => {
     const after = await prisma.show.findUnique({ where: { id: show.showId } });
     expect(after.status).toBe('completed');
     expect(after.feeEscrow).toBe(0);
-    expect(await moneyOf(show.creator.id)).toBe(ENTRY_FEE * 3);
+    expect(await moneyOf(show.creator.id)).toBe(entryFee * 3);
     const feeRows = await creatorCreditRows(show.creator.id, show.showId);
-    expect(feeRows.map(r => r.amount)).toEqual([ENTRY_FEE * 3]);
+    expect(feeRows.map(r => r.amount)).toEqual([entryFee * 3]);
 
     // The failed entrant's share is still held, not lost: escrow holds exactly
     // what was not paid out, and no money appeared or vanished.
@@ -111,7 +111,7 @@ describe('a failed entry settlement (Equoria-wmwbr)', () => {
 
     // A re-run is a no-op: nothing settles twice.
     expect(await runCatching([show.showId])).toBeNull();
-    expect(await moneyOf(show.creator.id)).toBe(ENTRY_FEE * 3);
+    expect(await moneyOf(show.creator.id)).toBe(entryFee * 3);
     expect(await creatorCreditRows(show.creator.id, show.showId)).toHaveLength(1);
     for (const entrant of [first, third]) {
       const row = settled.find(r => r.horseId === entrant.horse.id);
@@ -122,8 +122,8 @@ describe('a failed entry settlement (Equoria-wmwbr)', () => {
   }, 60000);
 
   it('a show with a failed entry does not hold back the next show in the same run', async () => {
-    const broken = await fx.buildClosedShow({ prize: PRIZE, entryFee: ENTRY_FEE, entrantCount: 2 });
-    const healthy = await fx.buildClosedShow({ prize: PRIZE, entryFee: ENTRY_FEE, entrantCount: 3 });
+    const broken = await fx.buildClosedShow({ prize: PRIZE, entryFee, entrantCount: 2 });
+    const healthy = await fx.buildClosedShow({ prize: PRIZE, entryFee, entrantCount: 3 });
     await plantResult(broken.showId, broken.entrants[0].horse.id);
     const healthyHeld = await fx.heldMoney(healthy);
 
@@ -135,7 +135,7 @@ describe('a failed entry settlement (Equoria-wmwbr)', () => {
     expect(settledShow.prizeEscrow).toBe(0);
     expect(settledShow.feeEscrow).toBe(0);
     expect(await prisma.competitionResult.count({ where: { showId: healthy.showId } })).toBe(3);
-    expect(await moneyOf(healthy.creator.id)).toBe(ENTRY_FEE * 3);
+    expect(await moneyOf(healthy.creator.id)).toBe(entryFee * 3);
     expect(await fx.heldMoney(healthy)).toBe(healthyHeld);
   }, 60000);
 });

@@ -18,7 +18,7 @@ import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createFundedShowFixtures } from './helpers/fundedShowFixtures.mjs';
 
 const PRIZE = 1000;
-const ENTRY_FEE = 20;
+const entryFee = 20;
 
 const fx = createFundedShowFixtures('TestFixture-xal4m');
 
@@ -39,7 +39,7 @@ async function prizeByHorse(showId) {
 
 describe('horse earnings from show settlement (Equoria-xal4m)', () => {
   it('adds each placed horse its prize, on top of what it had already earned', async () => {
-    const show = await fx.buildClosedShow({ prize: PRIZE, entryFee: ENTRY_FEE, entrantCount: 4 });
+    const show = await fx.buildClosedShow({ prize: PRIZE, entryFee, entrantCount: 4 });
     const earlier = 250;
     await prisma.horse.update({ where: { id: show.entrants[0].horse.id }, data: { totalEarnings: earlier } });
 
@@ -57,7 +57,7 @@ describe('horse earnings from show settlement (Equoria-xal4m)', () => {
   }, 60000);
 
   it('two executors racing for one show add the earnings once', async () => {
-    const show = await fx.buildClosedShow({ prize: PRIZE, entryFee: ENTRY_FEE, entrantCount: 3 });
+    const show = await fx.buildClosedShow({ prize: PRIZE, entryFee, entrantCount: 3 });
 
     await Promise.all([
       executeClosedShows({ body: { showIds: [show.showId] } }, null),

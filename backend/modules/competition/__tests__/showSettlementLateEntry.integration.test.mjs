@@ -29,8 +29,8 @@ import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createFundedShowFixtures, moneyOf } from './helpers/fundedShowFixtures.mjs';
 
 const PRIZE = 1000;
-const ENTRY_FEE = 40;
-const ENTRY_WINDOW_MS = 3000;
+const entryFee = 40;
+const entryWindowMs = 3000;
 
 const fx = createFundedShowFixtures('TestFixture-fzmiy');
 
@@ -62,17 +62,17 @@ async function waitForLockWaiters(tx, count, timeoutMs = 20000) {
 
 describe('a late entry racing the executor claim (Equoria-fzmiy)', () => {
   it('is scored and paid like every other entry', async () => {
-    const { creator, showId } = await fx.createFundedShow({ prize: PRIZE, entryFee: ENTRY_FEE });
-    const early = await fx.makeEntrant(ENTRY_FEE);
-    const second = await fx.makeEntrant(ENTRY_FEE);
-    const late = await fx.makeEntrant(ENTRY_FEE);
+    const { creator, showId } = await fx.createFundedShow({ prize: PRIZE, entryFee });
+    const early = await fx.makeEntrant(entryFee);
+    const second = await fx.makeEntrant(entryFee);
+    const late = await fx.makeEntrant(entryFee);
     expect((await fx.enter(showId, early)).statusCode).toBe(201);
     expect((await fx.enter(showId, second)).statusCode).toBe(201);
     const show = { creator, showId, entrants: [early, second, late] };
     const heldBefore = await fx.heldMoney(show);
 
     // The show closes a moment from now; the late entry starts before then.
-    const closeAt = new Date(Date.now() + ENTRY_WINDOW_MS);
+    const closeAt = new Date(Date.now() + entryWindowMs);
     await prisma.show.update({ where: { id: showId }, data: { closeDate: closeAt } });
 
     let lateEntry;
@@ -114,7 +114,7 @@ describe('a late entry racing the executor claim (Equoria-fzmiy)', () => {
     expect(after.status).toBe('completed');
     expect(after.prizeEscrow).toBe(0);
     expect(after.feeEscrow).toBe(0);
-    expect(await moneyOf(creator.id)).toBe(ENTRY_FEE * 3);
+    expect(await moneyOf(creator.id)).toBe(entryFee * 3);
     expect(await fx.heldMoney(show)).toBe(heldBefore);
   }, 90000);
 });
