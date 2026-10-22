@@ -696,7 +696,6 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
           onClose={() => setIsAssignModalOpen(false)}
           horseId={selectedHorseId}
           horseName={selectedHorseName}
-          userId={userId}
           onAssignmentComplete={handleAssignmentComplete}
           availableGrooms={finalGrooms}
           horseTemperament={selectedHorseTemperament}

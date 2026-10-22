@@ -51,8 +51,6 @@ import {
 } from '@/components/ui/game/GameDialog';
 
 interface RiderListProps {
-  // Auth user id is a UUID string (Equoria-ai6pw / phv9p), not a numeric DB int.
-  userId: string;
   onRiderHired?: (_rider: MarketplaceRider) => void;
   marketplaceData?: RiderMarketplaceData;
 }
@@ -79,7 +77,6 @@ const SKILL_LEVEL_LABELS: Record<
 };
 
 const RiderList: React.FC<RiderListProps> = ({
-  userId: _userId,
   onRiderHired: _onRiderHired,
   marketplaceData: propMarketplaceData,
 }) => {

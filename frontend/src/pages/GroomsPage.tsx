@@ -70,7 +70,7 @@ const GroomsPage: React.FC = () => {
             <MyGroomsDashboard userId={userId} onBrowseMarketplace={() => setActiveTab('hire')} />
           </TabsContent>
           <TabsContent value="hire">
-            <GroomList userId={userId} />
+            <GroomList />
           </TabsContent>
         </Tabs>
       </div>

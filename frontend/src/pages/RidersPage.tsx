@@ -74,7 +74,7 @@ const RidersPage: React.FC = () => {
             <MyRidersDashboard userId={userId} onBrowseMarketplace={() => setActiveTab('hire')} />
           </TabsContent>
           <TabsContent value="hire">
-            <RiderList userId={userId} />
+            <RiderList />
           </TabsContent>
         </Tabs>
       </div>

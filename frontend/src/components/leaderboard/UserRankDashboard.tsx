@@ -42,7 +42,6 @@ export interface BestRanking {
  * Props for the UserRankDashboard component.
  */
 export interface UserRankDashboardProps {
-  userId: string;
   userName: string;
   rankings: CategoryRanking[];
   bestRankings: BestRanking[];
@@ -118,7 +117,6 @@ const BestRankingItem = ({ bestRanking }: { bestRanking: BestRanking }) => (
  * section. Supports loading, empty, and interactive states.
  */
 const UserRankDashboard = ({
-  userId: _userId,
   userName,
   rankings,
   bestRankings,

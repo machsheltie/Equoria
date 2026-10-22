@@ -281,7 +281,6 @@ const LeaderboardsPage = () => {
         --------------------------------------------------------------- */}
         <section aria-label="Your rankings">
           <UserRankDashboard
-            userId={userId}
             userName={userRankData?.userName ?? user?.username ?? 'Player'}
             rankings={userRankData?.rankings ?? []}
             bestRankings={userRankData?.bestRankings ?? []}

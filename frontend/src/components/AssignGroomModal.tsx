@@ -59,7 +59,6 @@ interface AssignGroomModalProps {
   onClose: () => void;
   horseId: number;
   horseName: string;
-  userId: string | number;
   onAssignmentComplete?: (_assignment: unknown) => void;
   availableGrooms?: Groom[];
   /**
@@ -116,7 +115,6 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   onClose,
   horseId,
   horseName,
-  userId: _userId,
   onAssignmentComplete,
   availableGrooms = [],
   horseTemperament = null,
