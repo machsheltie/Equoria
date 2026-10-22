@@ -261,11 +261,12 @@ if (
  * Handles connection failures gracefully with exponential backoff
  */
 async function initializeRedis() {
-  const isTestLike = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
-  const redisDisabled = process.env.REDIS_DISABLED === 'true';
-
-  // Never attempt Redis connections in test/Jest environments or when explicitly disabled
-  if (isTestLike || redisDisabled) {
+  // One predicate decides "Redis intentionally disabled" for the whole module
+  // (test/Jest, the Postgres-only beta-readiness gate, REDIS_DISABLED=true), so
+  // this boot-time connect and the fail-closed limiters can never disagree
+  // (Equoria-x9c6b, Equoria-zh1m6).
+  // Never attempt Redis connections in those environments.
+  if (redisIntentionallyDisabled()) {
     logger.info('[rateLimiting] Using in-memory rate limiting for test/disabled Redis environment');
     isRedisAvailable = false;
     redisClient = null;
