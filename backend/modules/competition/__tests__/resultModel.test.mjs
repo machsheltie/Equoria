@@ -23,11 +23,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
-  saveResult,
   getResultsByHorse,
   getResultsByShow,
   getResultById,
-  createResult,
   getResultsByUser,
 } from '../services/resultModelService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -36,7 +34,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-ResultModel-';
 const USER_ID = 'test-user-result-model';
-const RUN_DATE = new Date('2024-06-15');
 
 async function mkHorse(suffix) {
   return prisma.horse.create({
@@ -92,169 +89,6 @@ afterAll(async () => {
   await prisma.show.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.user.deleteMany({ where: { id: USER_ID } });
-});
-
-// ─── saveResult – input validation (no DB needed) ─────────────────────────────
-
-describe('saveResult - input validation', () => {
-  it('throws if horseId is missing', async () => {
-    await expect(
-      saveResult({ showId: 2, score: 85.5, discipline: 'Racing', runDate: RUN_DATE, showName: 'X' }),
-    ).rejects.toThrow('Horse ID is required');
-  });
-
-  it('throws if showId is missing', async () => {
-    await expect(
-      saveResult({ horseId: 1, score: 85.5, discipline: 'Racing', runDate: RUN_DATE, showName: 'X' }),
-    ).rejects.toThrow('Show ID is required');
-  });
-
-  it('throws if score is missing', async () => {
-    await expect(
-      saveResult({ horseId: 1, showId: 2, discipline: 'Racing', runDate: RUN_DATE, showName: 'X' }),
-    ).rejects.toThrow('Score is required');
-  });
-
-  it('throws if discipline is missing', async () => {
-    await expect(saveResult({ horseId: 1, showId: 2, score: 85.5, runDate: RUN_DATE, showName: 'X' })).rejects.toThrow(
-      'Discipline is required',
-    );
-  });
-
-  it('throws if runDate is missing', async () => {
-    await expect(
-      saveResult({ horseId: 1, showId: 2, score: 85.5, discipline: 'Racing', showName: 'X' }),
-    ).rejects.toThrow('Run date is required');
-  });
-
-  it('throws if showName is missing', async () => {
-    await expect(
-      saveResult({ horseId: 1, showId: 2, score: 85.5, discipline: 'Racing', runDate: RUN_DATE }),
-    ).rejects.toThrow('Show name is required');
-  });
-
-  it('throws if showName is not a string', async () => {
-    await expect(
-      saveResult({ horseId: 1, showId: 2, score: 85.5, discipline: 'Racing', runDate: RUN_DATE, showName: 123 }),
-    ).rejects.toThrow('Show name is required');
-  });
-
-  it('throws if score is not a number', async () => {
-    await expect(
-      saveResult({ horseId: 1, showId: 2, score: 'invalid', discipline: 'Racing', runDate: RUN_DATE, showName: 'X' }),
-    ).rejects.toThrow('Score must be a number');
-  });
-
-  it('throws if horseId is a negative integer', async () => {
-    await expect(
-      saveResult({ horseId: -1, showId: 2, score: 85.5, discipline: 'Racing', runDate: RUN_DATE, showName: 'X' }),
-    ).rejects.toThrow('Horse ID must be a positive integer');
-  });
-
-  it('throws if showId is zero', async () => {
-    await expect(
-      saveResult({ horseId: 1, showId: 0, score: 85.5, discipline: 'Racing', runDate: RUN_DATE, showName: 'X' }),
-    ).rejects.toThrow('Show ID must be a positive integer');
-  });
-});
-
-// ─── saveResult – database behaviour ─────────────────────────────────────────
-
-describe('saveResult - database behaviour', () => {
-  it('creates a new result when no placeholder exists', async () => {
-    const horse = await mkHorse('Save1');
-    const show = await mkShow('Save1');
-    const result = await saveResult({
-      horseId: horse.id,
-      showId: show.id,
-      score: 85.5,
-      placement: '1st',
-      discipline: 'Racing',
-      runDate: RUN_DATE,
-      showName: show.name,
-      prizeWon: 500,
-      statGains: { stat: 'speed', gain: 1 },
-    });
-
-    expect(result.horseId).toBe(horse.id);
-    expect(result.showId).toBe(show.id);
-    expect(toNum(result.score)).toBe(85.5);
-    expect(result.placement).toBe('1st');
-    expect(toNum(result.prizeWon)).toBe(500);
-    expect(result.horse.id).toBe(horse.id);
-    expect(result.show.id).toBe(show.id);
-    // statGains stored as JSON-stringified string
-    expect(JSON.parse(result.statGains)).toEqual({ stat: 'speed', gain: 1 });
-  });
-
-  it('creates a result with null placement and default prizeWon=0', async () => {
-    const horse = await mkHorse('Save2');
-    const show = await mkShow('Save2');
-    const result = await saveResult({
-      horseId: horse.id,
-      showId: show.id,
-      score: 65.2,
-      placement: null,
-      discipline: 'Racing',
-      runDate: RUN_DATE,
-      showName: show.name,
-      // prizeWon omitted — should default to 0
-    });
-
-    expect(result.placement).toBeNull();
-    expect(toNum(result.prizeWon)).toBe(0);
-  });
-
-  it('converts string prizeWon to float before storing', async () => {
-    const horse = await mkHorse('Save3');
-    const show = await mkShow('Save3');
-    const result = await saveResult({
-      horseId: horse.id,
-      showId: show.id,
-      score: 85.5,
-      placement: '1st',
-      discipline: 'Racing',
-      runDate: RUN_DATE,
-      showName: show.name,
-      prizeWon: '500.75',
-    });
-
-    expect(toNum(result.prizeWon)).toBeCloseTo(500.75, 2);
-  });
-
-  it('updates an existing placeholder result instead of creating a new record', async () => {
-    const horse = await mkHorse('Save4');
-    const show = await mkShow('Save4');
-    const placeholder = await prisma.competitionResult.create({
-      data: {
-        horseId: horse.id,
-        showId: show.id,
-        score: 0,
-        placement: null,
-        discipline: 'Racing',
-        runDate: RUN_DATE,
-        showName: show.name,
-        prizeWon: 0,
-      },
-    });
-
-    const result = await saveResult({
-      horseId: horse.id,
-      showId: show.id,
-      score: 85.5,
-      placement: '1st',
-      discipline: 'Racing',
-      runDate: RUN_DATE,
-      showName: show.name,
-      prizeWon: 500,
-    });
-
-    // Same ID proves it was an UPDATE, not a CREATE
-    expect(result.id).toBe(placeholder.id);
-    expect(toNum(result.score)).toBe(85.5);
-    expect(result.placement).toBe('1st');
-    expect(toNum(result.prizeWon)).toBe(500);
-  });
 });
 
 // ─── getResultsByHorse ────────────────────────────────────────────────────────
@@ -442,31 +276,6 @@ describe('getResultById', () => {
     const result = await getResultById(String(created.id));
     expect(result).not.toBeNull();
     expect(result.id).toBe(created.id);
-  });
-});
-
-// ─── createResult ─────────────────────────────────────────────────────────────
-
-describe('createResult', () => {
-  it('enforces the same input validation as saveResult', async () => {
-    await expect(createResult({ showId: 2 })).rejects.toThrow('Horse ID is required');
-  });
-
-  it('creates a result (alias behaviour)', async () => {
-    const horse = await mkHorse('CR1');
-    const show = await mkShow('CR1');
-    const result = await createResult({
-      horseId: horse.id,
-      showId: show.id,
-      score: 80,
-      placement: null,
-      discipline: 'Racing',
-      runDate: RUN_DATE,
-      showName: show.name,
-    });
-
-    expect(result.horseId).toBe(horse.id);
-    expect(toNum(result.score)).toBe(80);
   });
 });
 

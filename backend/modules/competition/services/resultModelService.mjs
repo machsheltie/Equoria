@@ -9,136 +9,6 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 const MAX_MARK_VIEWED_SHOWS = 100;
 
 /**
- * Save a competition result to the database
- * Updates existing placeholder result if found, otherwise creates new result
- * @param {Object} resultData - Result data object
- * @param {number} resultData.horseId - Horse ID
- * @param {number} resultData.showId - Show ID
- * @param {number} resultData.score - Competition score
- * @param {string|null} resultData.placement - Placement ("1st", "2nd", "3rd", or null)
- * @param {string} resultData.discipline - Competition discipline
- * @param {Date} resultData.runDate - Date when the show was run
- * @param {string} resultData.showName - Name of the show for history
- * @param {number} resultData.prizeWon - Prize amount won (default 0)
- * @param {Object|null} resultData.statGains - Stat gains from winning (default null)
- * @returns {Object} - Created or updated result object with relations
- */
-async function saveResult(resultData) {
-  const {
-    horseId,
-    showId,
-    score,
-    placement,
-    discipline,
-    runDate,
-    showName,
-    prizeWon = 0,
-    statGains = null,
-  } = resultData;
-
-  // Validate required fields
-  if (horseId === undefined || horseId === null) {
-    throw new Error('Horse ID is required');
-  }
-  if (showId === undefined || showId === null) {
-    throw new Error('Show ID is required');
-  }
-  if (score === undefined || score === null) {
-    throw new Error('Score is required');
-  }
-  if (!discipline) {
-    throw new Error('Discipline is required');
-  }
-  if (!runDate) {
-    throw new Error('Run date is required');
-  }
-
-  if (!showName || typeof showName !== 'string') {
-    throw new Error('Show name is required');
-  }
-
-  // Validate data types
-  if (typeof score !== 'number') {
-    throw new Error('Score must be a number');
-  }
-  if (!Number.isInteger(horseId) || horseId <= 0) {
-    throw new Error('Horse ID must be a positive integer');
-  }
-  if (!Number.isInteger(showId) || showId <= 0) {
-    throw new Error('Show ID must be a positive integer');
-  }
-
-  try {
-    // Check if there's already a placeholder result for this horse/show combination
-    const existingResult = await prisma.competitionResult.findFirst({
-      where: {
-        horseId,
-        showId,
-        score: 0, // Placeholder results have score 0
-        placement: null, // Placeholder results have null placement
-      },
-    });
-
-    let result;
-    if (existingResult) {
-      // Update the existing placeholder result
-      result = await prisma.competitionResult.update({
-        where: { id: existingResult.id },
-        data: {
-          score,
-          placement,
-          prizeWon: parseFloat(prizeWon),
-          statGains: statGains ? JSON.stringify(statGains) : null,
-          // Keep original entry data (horseId, showId, discipline, runDate, showName)
-        },
-        include: {
-          horse: {
-            include: {
-              breed: true,
-            },
-          },
-          show: true,
-        },
-      });
-      logger.info(
-        `[resultModel.saveResult] Successfully updated placeholder result for horse ${horseId} in show ${showId} with score ${score}`,
-      );
-    } else {
-      // Create new result (for cases where no placeholder exists)
-      result = await prisma.competitionResult.create({
-        data: {
-          horseId,
-          showId,
-          score,
-          placement,
-          discipline,
-          runDate: new Date(runDate),
-          showName,
-          prizeWon: parseFloat(prizeWon),
-          statGains: statGains ? JSON.stringify(statGains) : null,
-        },
-        include: {
-          horse: {
-            include: {
-              breed: true,
-            },
-          },
-          show: true,
-        },
-      });
-      logger.info(
-        `[resultModel.saveResult] Successfully created new result for horse ${horseId} in show ${showId} with score ${score}`,
-      );
-    }
-
-    return result;
-  } catch (error) {
-    logger.error('[resultModel.saveResult] Database error: %o', error);
-    throw new Error(`Database error in saveResult: ${error.message}`, { cause: error });
-  }
-}
-
-/**
  * Get all competition results for a specific horse
  * @param {number} horseId - Horse ID
  * @returns {Array} - Array of result objects with relations
@@ -244,15 +114,6 @@ async function getResultById(resultId) {
     logger.error('[resultModel.getResultById] Database error: %o', error);
     throw new Error(`Database error in getResultById: ${error.message}`, { cause: error });
   }
-}
-
-/**
- * Create a new competition result (alias for saveResult)
- * @param {Object} resultData - Competition result data
- * @returns {Object} Created result
- */
-async function createResult(resultData) {
-  return await saveResult(resultData);
 }
 
 /**
@@ -439,8 +300,6 @@ async function markUserResultsViewed(userId, showIds) {
 }
 
 export {
-  saveResult,
-  createResult,
   getResultsByHorse,
   getResultsByShow,
   getResultById,

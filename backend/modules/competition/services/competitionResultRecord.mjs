@@ -18,8 +18,8 @@ const isPlainObject = value => value !== null && typeof value === 'object' && !A
 
 /**
  * `statGains` as an object. The executors store an object;
- * resultModelService.saveResult (no production callers) stored a JSON string,
- * so a string is parsed.
+ * the retired resultModelService.saveResult (deleted, Equoria-wb427) stored a JSON
+ * string; rows it wrote may still exist, so a string is parsed.
  * Anything unparseable reads as nothing.
  */
 function statGainsObject(raw) {
