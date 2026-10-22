@@ -110,3 +110,41 @@ export async function waitForBlockedSessions(client, barrierPid, count, timeoutM
     await new Promise(r => setTimeout(r, 20));
   }
 }
+
+/** `lock` for a barrier: the horse row FOR UPDATE, or FOR SHARE when mode is 'SHARE'. */
+export const horseRowLock =
+  (horseId, mode = 'UPDATE') =>
+  tx =>
+    mode === 'SHARE'
+      ? tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR SHARE`
+      : tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR UPDATE`;
+
+/**
+ * openRowLockBarrier plus `waitForQueued(n)` bound to the barrier's own pid
+ * (Equoria-9a5ny / j8s5c tests).
+ * @returns {Promise<{ pid: number, release: () => Promise<void>, waitForQueued: (n: number, timeoutMs?: number) => Promise<number> }>}
+ */
+export async function holdLock(client, lock) {
+  const barrier = await openRowLockBarrier(client, lock);
+  return {
+    pid: barrier.pid,
+    release: () => barrier.release(),
+    waitForQueued: (count, timeoutMs) => waitForBlockedSessions(client, barrier.pid, count, timeoutMs),
+  };
+}
+
+/**
+ * Start every sender while `lock` is held, wait until all of them are queued
+ * behind it, release, and settle them all (in sender order).
+ */
+export async function raceBehindLock(client, lock, senders) {
+  const barrier = await holdLock(client, lock);
+  // A supertest request is thenable, not a Promise; Promise.resolve starts it.
+  const inFlight = senders.map(send => Promise.resolve(send()));
+  try {
+    await barrier.waitForQueued(senders.length);
+  } finally {
+    await barrier.release();
+  }
+  return Promise.all(inFlight);
+}

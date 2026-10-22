@@ -145,10 +145,13 @@ export async function assignTrainer(req, res) {
           throw httpError(400, 'Cannot assign a retired trainer');
         }
 
-        const horse = await tx.horse.findFirst({
-          where: { id: horseId, userId },
-          select: { id: true },
-        });
+        // Equoria-j8s5c: LOCK the owned Horse row (lock order User -> Horse ->
+        // staff). Assigning replaces the horse's trainer, so a concurrent assign
+        // of a DIFFERENT trainer to this horse must wait here and then see this
+        // assignment when it deactivates the horse's active one below; the
+        // trainer-row lock alone never serialised two trainers on one horse.
+        const [horse] = await tx.$queryRaw`
+          SELECT "id" FROM "horses" WHERE "id" = ${horseId} AND "userId" = ${userId} FOR UPDATE`;
         if (!horse) {
           throw httpError(404, 'Horse not found');
         }

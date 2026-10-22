@@ -163,14 +163,6 @@ export async function assignRider(req, res) {
           throw httpError(404, 'Horse not found');
         }
 
-        // Check if rider is already actively assigned to another horse
-        const existingRiderAssignment = await tx.riderAssignment.findFirst({
-          where: { riderId, isActive: true },
-        });
-        if (existingRiderAssignment) {
-          throw httpError(400, 'Rider is already assigned to a horse. Unassign first.');
-        }
-
         // HORSE row first. Syncing the horse.rider JSONB field is what makes
         // hasValidRider() true for competition entry; RiderAssignment alone is
         // not sufficient. The `userId` predicate is the authoritative ownership
@@ -190,6 +182,20 @@ export async function assignRider(req, res) {
         });
         if (claimed.count !== 1) {
           throw httpError(409, HORSE_NOT_YOURS);
+        }
+
+        // Equoria-j8s5c: then LOCK the rider row (a real write, as the trainer
+        // flow does) BEFORE the "already assigned" read, so a concurrent assign
+        // of this same rider to ANOTHER horse waits here and then sees this
+        // assignment. Without it both read "not assigned" and the rider went
+        // active on two horses. Horse before staff keeps the lock order.
+        await tx.rider.update({ where: { id: riderId }, data: { updatedAt: new Date() } });
+
+        const existingRiderAssignment = await tx.riderAssignment.findFirst({
+          where: { riderId, isActive: true },
+        });
+        if (existingRiderAssignment) {
+          throw httpError(400, 'Rider is already assigned to a horse. Unassign first.');
         }
 
         // Staff rows second: deactivate any existing active rider on this horse.
