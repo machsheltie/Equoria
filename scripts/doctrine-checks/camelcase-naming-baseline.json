@@ -1116,7 +1116,7 @@
   "frontend/src/components/horse/__tests__/XpProgressBar.test.tsx": 3,
   "frontend/src/components/hub/NarrativeChip.tsx": 4,
   "frontend/src/components/hub/NextActionsBar.tsx": 3,
-  "frontend/src/components/hub/WhileYouWereGone.tsx": 10,
+  "frontend/src/components/hub/WhileYouWereGone.tsx": 7,
   "frontend/src/components/hub/__tests__/NextActionsBar.test.tsx": 4,
   "frontend/src/components/hub/__tests__/WhileYouWereGone.test.tsx": 28,
   "frontend/src/components/layout/BottomNav.tsx": 2,

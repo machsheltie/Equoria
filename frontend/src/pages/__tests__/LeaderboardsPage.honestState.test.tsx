@@ -23,13 +23,13 @@ import { server } from '@/test/msw/server';
 import LeaderboardsPage from '../LeaderboardsPage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'user-abc';
-const SUMMARY_PATH = `${base}/api/v1/leaderboards/user-summary/${USER_ID}`;
-const HORSE_PATH = `${base}/api/v1/leaderboards/horse/:horseId`;
+const userId = 'user-abc';
+const summaryPath = `${base}/api/v1/leaderboards/user-summary/${userId}`;
+const horsePath = `${base}/api/v1/leaderboards/horse/:horseId`;
 
-const emptySummary = { userId: USER_ID, userName: 'Tester', rankings: [], bestRankings: [] };
+const emptySummary = { userId: userId, userName: 'Tester', rankings: [], bestRankings: [] };
 const fullSummary = {
-  userId: USER_ID,
+  userId: userId,
   userName: 'Tester',
   rankings: [
     {
@@ -51,7 +51,7 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <MockAuthProvider userOverrides={{ id: USER_ID, username: 'Tester' }}>
+      <MockAuthProvider userOverrides={{ id: userId, username: 'Tester' }}>
         <MemoryRouter initialEntries={['/leaderboards']}>
           <LeaderboardsPage />
         </MemoryRouter>
@@ -89,7 +89,7 @@ const horseProfile = (sex: unknown) => ({
 describe('LeaderboardsPage — rank summary four-state (Equoria-ffmha)', () => {
   it('shows an error with retry, not "No rankings yet", when the summary fails', async () => {
     server.use(
-      http.get(SUMMARY_PATH, () =>
+      http.get(summaryPath, () =>
         HttpResponse.json({ status: 'error', message: 'summary boom' }, { status: 500 })
       )
     );
@@ -107,7 +107,7 @@ describe('LeaderboardsPage — rank summary four-state (Equoria-ffmha)', () => {
   it('retry re-fetches and renders the real ranks', async () => {
     let calls = 0;
     server.use(
-      http.get(SUMMARY_PATH, () => {
+      http.get(summaryPath, () => {
         calls += 1;
         return calls === 1
           ? HttpResponse.json({ status: 'error' }, { status: 500 })
@@ -128,7 +128,7 @@ describe('LeaderboardsPage — rank summary four-state (Equoria-ffmha)', () => {
 
   it('shows "No rankings yet" only after a successful, genuinely empty summary', async () => {
     server.use(
-      http.get(SUMMARY_PATH, () => HttpResponse.json({ success: true, data: emptySummary }))
+      http.get(summaryPath, () => HttpResponse.json({ success: true, data: emptySummary }))
     );
 
     renderPage();
@@ -149,8 +149,8 @@ describe('LeaderboardsPage — horse detail modal (Equoria-ffmha, Equoria-b9yi1)
 
   it('renders an unknown sex as "—", never a fabricated "Stallion"', async () => {
     server.use(
-      http.get(SUMMARY_PATH, () => HttpResponse.json({ success: true, data: emptySummary })),
-      http.get(HORSE_PATH, () => HttpResponse.json(horseProfile('Gelding')))
+      http.get(summaryPath, () => HttpResponse.json({ success: true, data: emptySummary })),
+      http.get(horsePath, () => HttpResponse.json(horseProfile('Gelding')))
     );
 
     await openFirstHorse();
@@ -164,8 +164,8 @@ describe('LeaderboardsPage — horse detail modal (Equoria-ffmha, Equoria-b9yi1)
 
   it('renders a missing sex as "—" too', async () => {
     server.use(
-      http.get(SUMMARY_PATH, () => HttpResponse.json({ success: true, data: emptySummary })),
-      http.get(HORSE_PATH, () => HttpResponse.json(horseProfile(undefined)))
+      http.get(summaryPath, () => HttpResponse.json({ success: true, data: emptySummary })),
+      http.get(horsePath, () => HttpResponse.json(horseProfile(undefined)))
     );
 
     await openFirstHorse();
@@ -178,8 +178,8 @@ describe('LeaderboardsPage — horse detail modal (Equoria-ffmha, Equoria-b9yi1)
 
   it('still renders a recognised sex verbatim', async () => {
     server.use(
-      http.get(SUMMARY_PATH, () => HttpResponse.json({ success: true, data: emptySummary })),
-      http.get(HORSE_PATH, () => HttpResponse.json(horseProfile('Mare')))
+      http.get(summaryPath, () => HttpResponse.json({ success: true, data: emptySummary })),
+      http.get(horsePath, () => HttpResponse.json(horseProfile('Mare')))
     );
 
     await openFirstHorse();
@@ -191,8 +191,8 @@ describe('LeaderboardsPage — horse detail modal (Equoria-ffmha, Equoria-b9yi1)
   it('shows an error with retry (not the bare "not available" empty) when the profile fails', async () => {
     let calls = 0;
     server.use(
-      http.get(SUMMARY_PATH, () => HttpResponse.json({ success: true, data: emptySummary })),
-      http.get(HORSE_PATH, () => {
+      http.get(summaryPath, () => HttpResponse.json({ success: true, data: emptySummary })),
+      http.get(horsePath, () => {
         calls += 1;
         return calls === 1
           ? HttpResponse.json({ status: 'error', message: 'profile boom' }, { status: 500 })

@@ -21,13 +21,13 @@ import { server } from '@/test/msw/server';
 import BankPage from '../BankPage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const TRANSACTIONS_PATH = `${base}/api/v1/users/transactions`;
-const CLAIM_STATUS_PATH = `${base}/api/v1/bank/claim-status`;
-const USER_ID = 42;
+const transactionsPath = `${base}/api/v1/users/transactions`;
+const claimStatusPath = `${base}/api/v1/bank/claim-status`;
+const userId = 42;
 
 function stubTransactions() {
   server.use(
-    http.get(TRANSACTIONS_PATH, () =>
+    http.get(transactionsPath, () =>
       HttpResponse.json({
         success: true,
         data: { transactions: [], total: 0, page: 1, pageSize: 20 },
@@ -56,7 +56,7 @@ describe('BankPage — weekly reward claim status (Equoria-ffj5j)', () => {
   const renderPage = (userOverrides: Record<string, unknown> = { money: 15000 }) =>
     render(
       <QueryClientProvider client={queryClient}>
-        <MockAuthProvider userOverrides={{ id: USER_ID, username: 'BankTester', ...userOverrides }}>
+        <MockAuthProvider userOverrides={{ id: userId, username: 'BankTester', ...userOverrides }}>
           <MemoryRouter initialEntries={['/bank']}>
             <BankPage />
           </MemoryRouter>
@@ -66,7 +66,7 @@ describe('BankPage — weekly reward claim status (Equoria-ffj5j)', () => {
 
   it('does not offer Claim when the claim-status request fails; shows a retryable error', async () => {
     server.use(
-      http.get(CLAIM_STATUS_PATH, () =>
+      http.get(claimStatusPath, () =>
         HttpResponse.json({ status: 'error', message: 'boom internals' }, { status: 500 })
       )
     );
@@ -89,7 +89,7 @@ describe('BankPage — weekly reward claim status (Equoria-ffj5j)', () => {
   it('retry re-checks the status and enables Claim when it is available', async () => {
     let calls = 0;
     server.use(
-      http.get(CLAIM_STATUS_PATH, () => {
+      http.get(claimStatusPath, () => {
         calls += 1;
         if (calls === 1) {
           return HttpResponse.json({ status: 'error', message: 'boom' }, { status: 500 });
@@ -112,7 +112,7 @@ describe('BankPage — weekly reward claim status (Equoria-ffj5j)', () => {
 
   it('keeps Claim unavailable while the status is still being checked', async () => {
     server.use(
-      http.get(CLAIM_STATUS_PATH, async () => {
+      http.get(claimStatusPath, async () => {
         await delay(200);
         return claimStatus(true);
       })
@@ -126,7 +126,7 @@ describe('BankPage — weekly reward claim status (Equoria-ffj5j)', () => {
   });
 
   it('shows the claimed state when the server says it is already claimed', async () => {
-    server.use(http.get(CLAIM_STATUS_PATH, () => claimStatus(false)));
+    server.use(http.get(claimStatusPath, () => claimStatus(false)));
 
     renderPage();
 
@@ -135,7 +135,7 @@ describe('BankPage — weekly reward claim status (Equoria-ffj5j)', () => {
   });
 
   it('shows the Claim button when the server says it is claimable', async () => {
-    server.use(http.get(CLAIM_STATUS_PATH, () => claimStatus(true)));
+    server.use(http.get(claimStatusPath, () => claimStatus(true)));
 
     renderPage();
 
@@ -150,11 +150,11 @@ describe('BankPage — balance is not fabricated (Equoria-bvddn.39)', () => {
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
     stubTransactions();
-    server.use(http.get(CLAIM_STATUS_PATH, () => claimStatus(true)));
+    server.use(http.get(claimStatusPath, () => claimStatus(true)));
 
     render(
       <QueryClientProvider client={queryClient}>
-        <MockAuthProvider userOverrides={{ id: USER_ID, money: undefined }}>
+        <MockAuthProvider userOverrides={{ id: userId, money: undefined }}>
           <MemoryRouter initialEntries={['/bank']}>
             <BankPage />
           </MemoryRouter>

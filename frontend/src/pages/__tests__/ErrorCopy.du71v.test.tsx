@@ -23,11 +23,11 @@ import PrizeHistoryPage from '../PrizeHistoryPage';
 import StableView from '../StableView';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 42;
-const TRANSACTIONS_PATH = `${base}/api/v1/users/transactions`;
-const CLAIM_STATUS_PATH = `${base}/api/v1/bank/claim-status`;
-const CLAIM_PATH = `${base}/api/v1/bank/claim`;
-const PRIZE_HISTORY_PATH = `${base}/api/v1/users/${USER_ID}/prize-history`;
+const userId = 42;
+const transactionsPath = `${base}/api/v1/users/transactions`;
+const claimStatusPath = `${base}/api/v1/bank/claim-status`;
+const claimPath = `${base}/api/v1/bank/claim`;
+const prizeHistoryPath = `${base}/api/v1/users/${userId}/prize-history`;
 
 const fail = (status: number, message = 'RAW-SERVER-DETAIL') =>
   HttpResponse.json({ status: 'error', message }, { status });
@@ -47,7 +47,7 @@ function newClient() {
 function renderBank() {
   return render(
     <QueryClientProvider client={newClient()}>
-      <MockAuthProvider userOverrides={{ id: USER_ID, username: 'T', money: 15000 }}>
+      <MockAuthProvider userOverrides={{ id: userId, username: 'T', money: 15000 }}>
         <MemoryRouter>
           <BankPage />
         </MemoryRouter>
@@ -58,11 +58,11 @@ function renderBank() {
 
 describe('BankPage error copy (Equoria-du71v)', () => {
   beforeEach(() => {
-    server.use(http.get(CLAIM_STATUS_PATH, claimable));
+    server.use(http.get(claimStatusPath, claimable));
   });
 
   it('says it is rate-limited, retryable, for a 429 on the ledger', async () => {
-    server.use(http.get(TRANSACTIONS_PATH, () => fail(429)));
+    server.use(http.get(transactionsPath, () => fail(429)));
     renderBank();
 
     const section = await screen.findByTestId('transaction-history');
@@ -73,7 +73,7 @@ describe('BankPage error copy (Equoria-du71v)', () => {
   });
 
   it('offers no retry for a 403 on the ledger (a blind retry repeats the failure)', async () => {
-    server.use(http.get(TRANSACTIONS_PATH, () => fail(403)));
+    server.use(http.get(transactionsPath, () => fail(403)));
     renderBank();
 
     const section = await screen.findByTestId('transaction-history');
@@ -84,7 +84,7 @@ describe('BankPage error copy (Equoria-du71v)', () => {
 
   it('a failed claim shows class-mapped copy (never the raw server text) and re-reads the status', async () => {
     server.use(
-      http.get(TRANSACTIONS_PATH, () =>
+      http.get(transactionsPath, () =>
         HttpResponse.json({
           success: true,
           data: { transactions: [], total: 0, page: 1, pageSize: 20 },
@@ -93,7 +93,7 @@ describe('BankPage error copy (Equoria-du71v)', () => {
     );
     let statusCalls = 0;
     server.use(
-      http.get(CLAIM_STATUS_PATH, () => {
+      http.get(claimStatusPath, () => {
         statusCalls += 1;
         return statusCalls === 1
           ? claimable()
@@ -102,7 +102,7 @@ describe('BankPage error copy (Equoria-du71v)', () => {
               data: { canClaim: false, nextClaimDate: '2026-10-25T00:00:00Z', rewardAmount: 5000 },
             });
       }),
-      http.post(CLAIM_PATH, () => fail(409, 'RAW-SERVER-DETAIL already claimed'))
+      http.post(claimPath, () => fail(409, 'RAW-SERVER-DETAIL already claimed'))
     );
 
     const user = userEvent.setup();
@@ -127,7 +127,7 @@ describe('PrizeHistoryPage error copy (Equoria-du71v)', () => {
   const renderPrizes = () =>
     render(
       <QueryClientProvider client={newClient()}>
-        <MockAuthProvider userOverrides={{ id: USER_ID, username: 'T' }}>
+        <MockAuthProvider userOverrides={{ id: userId, username: 'T' }}>
           <MemoryRouter>
             <PrizeHistoryPage />
           </MemoryRouter>
@@ -136,7 +136,7 @@ describe('PrizeHistoryPage error copy (Equoria-du71v)', () => {
     );
 
   it('maps a 500 to server-fault copy with a retry, and never echoes the raw text', async () => {
-    server.use(http.get(PRIZE_HISTORY_PATH, () => fail(500)));
+    server.use(http.get(prizeHistoryPath, () => fail(500)));
     renderPrizes();
 
     const box = await screen.findByTestId('stats-error');
@@ -146,7 +146,7 @@ describe('PrizeHistoryPage error copy (Equoria-du71v)', () => {
   });
 
   it('offers no retry for a 403', async () => {
-    server.use(http.get(PRIZE_HISTORY_PATH, () => fail(403)));
+    server.use(http.get(prizeHistoryPath, () => fail(403)));
     renderPrizes();
 
     const box = await screen.findByTestId('stats-error');

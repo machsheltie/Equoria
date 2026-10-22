@@ -22,9 +22,9 @@ import { server } from '@/test/msw/server';
 import { WhileYouWereGone } from '../WhileYouWereGone';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const WYAG_PATH = `${base}/api/v1/while-you-were-gone`;
-const LAST_VISIT_PREFIX = 'equoria-last-visit';
-const FIVE_HOURS_AGO = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+const wyagPath = `${base}/api/v1/while-you-were-gone`;
+const lastVisitPrefix = 'equoria-last-visit';
+const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
 
 function renderWYAG(userId: number) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -44,9 +44,9 @@ describe('WhileYouWereGone — failure is not "nothing new" (Equoria-bvddn.39)',
   afterEach(() => localStorage.clear());
 
   it('shows a retryable error, not the all-clear, when the activity request fails', async () => {
-    localStorage.setItem(`${LAST_VISIT_PREFIX}:7`, FIVE_HOURS_AGO);
+    localStorage.setItem(`${lastVisitPrefix}:7`, fiveHoursAgo);
     server.use(
-      http.get(WYAG_PATH, () =>
+      http.get(wyagPath, () =>
         HttpResponse.json({ status: 'error', message: 'internal boom' }, { status: 500 })
       )
     );
@@ -62,10 +62,10 @@ describe('WhileYouWereGone — failure is not "nothing new" (Equoria-bvddn.39)',
   });
 
   it('retry re-fetches and renders the real items', async () => {
-    localStorage.setItem(`${LAST_VISIT_PREFIX}:7`, FIVE_HOURS_AGO);
+    localStorage.setItem(`${lastVisitPrefix}:7`, fiveHoursAgo);
     let calls = 0;
     server.use(
-      http.get(WYAG_PATH, () => {
+      http.get(wyagPath, () => {
         calls += 1;
         if (calls === 1) {
           return HttpResponse.json({ status: 'error', message: 'boom' }, { status: 500 });
@@ -82,7 +82,7 @@ describe('WhileYouWereGone — failure is not "nothing new" (Equoria-bvddn.39)',
                 timestamp: new Date().toISOString(),
               },
             ],
-            since: FIVE_HOURS_AGO,
+            since: fiveHoursAgo,
             hasMore: false,
           },
         });
@@ -102,10 +102,10 @@ describe('WhileYouWereGone — last visit is per user (Equoria-bvddn.39)', () =>
   beforeEach(() => {
     localStorage.clear();
     server.use(
-      http.get(WYAG_PATH, () =>
+      http.get(wyagPath, () =>
         HttpResponse.json({
           success: true,
-          data: { items: [], since: FIVE_HOURS_AGO, hasMore: false },
+          data: { items: [], since: fiveHoursAgo, hasMore: false },
         })
       )
     );
@@ -113,20 +113,20 @@ describe('WhileYouWereGone — last visit is per user (Equoria-bvddn.39)', () =>
   afterEach(() => localStorage.clear());
 
   it("does not show another account's absence window to a different user", () => {
-    localStorage.setItem(`${LAST_VISIT_PREFIX}:7`, FIVE_HOURS_AGO);
+    localStorage.setItem(`${lastVisitPrefix}:7`, fiveHoursAgo);
     renderWYAG(8);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it("records this user's visit under their own key, leaving the other user's alone", () => {
-    localStorage.setItem(`${LAST_VISIT_PREFIX}:7`, FIVE_HOURS_AGO);
+    localStorage.setItem(`${lastVisitPrefix}:7`, fiveHoursAgo);
     renderWYAG(8);
-    expect(localStorage.getItem(`${LAST_VISIT_PREFIX}:8`)).not.toBeNull();
-    expect(localStorage.getItem(`${LAST_VISIT_PREFIX}:7`)).toBe(FIVE_HOURS_AGO);
+    expect(localStorage.getItem(`${lastVisitPrefix}:8`)).not.toBeNull();
+    expect(localStorage.getItem(`${lastVisitPrefix}:7`)).toBe(fiveHoursAgo);
   });
 
   it('shows the overlay for the user whose own key is 4+ hours old', async () => {
-    localStorage.setItem(`${LAST_VISIT_PREFIX}:7`, FIVE_HOURS_AGO);
+    localStorage.setItem(`${lastVisitPrefix}:7`, fiveHoursAgo);
     renderWYAG(7);
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });

@@ -25,15 +25,15 @@ import { useWhileYouWereGone, type WYAGItem } from '@/hooks/api/useWhileYouWereG
 const ABSENCE_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours
 // The last-visit time is per ACCOUNT: a second player on the same browser must
 // not inherit the first one's absence window (Equoria-bvddn.39).
-const LAST_VISIT_KEY = 'equoria-last-visit';
-const lastVisitKey = (userId: string | number) => `${LAST_VISIT_KEY}:${userId}`;
+const lastVisitKeyPrefix = 'equoria-last-visit';
+const lastVisitKey = (userId: string | number) => `${lastVisitKeyPrefix}:${userId}`;
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 function getLastVisit(userId: string | number): string | null {
   try {
     // The unscoped key is what older builds wrote; honour it once so a player
     // is not silently skipped on upgrade. setLastVisit() removes it.
-    return localStorage.getItem(lastVisitKey(userId)) ?? localStorage.getItem(LAST_VISIT_KEY);
+    return localStorage.getItem(lastVisitKey(userId)) ?? localStorage.getItem(lastVisitKeyPrefix);
   } catch {
     return null;
   }
@@ -42,7 +42,7 @@ function getLastVisit(userId: string | number): string | null {
 function setLastVisit(userId: string | number) {
   try {
     localStorage.setItem(lastVisitKey(userId), new Date().toISOString());
-    localStorage.removeItem(LAST_VISIT_KEY);
+    localStorage.removeItem(lastVisitKeyPrefix);
   } catch {
     // Storage can be blocked (private window); the overlay then simply never fires.
   }

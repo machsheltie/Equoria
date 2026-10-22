@@ -19,13 +19,13 @@ import { server } from '@/test/msw/server';
 import MyStablePage from '../MyStablePage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'user-123';
-const HORSES_PATH = `${base}/api/v1/horses`;
-const STATS_PATH = `${base}/api/v1/users/${USER_ID}/competition-stats`;
-const HISTORY_PATH = `${base}/api/v1/horses/:id/competition-history`;
+const userId = 'user-123';
+const horsesPath = `${base}/api/v1/horses`;
+const statsPath = `${base}/api/v1/users/${userId}/competition-stats`;
+const historyPath = `${base}/api/v1/horses/:id/competition-history`;
 
 const statsOk = {
-  userId: USER_ID,
+  userId: userId,
   totalCompetitions: 17,
   totalWins: 5,
   totalTop3: 9,
@@ -47,7 +47,7 @@ const horseRow = (id: number, name: string, ageYears: number, sex = 'Mare') => (
 
 function stubStats(ok = true) {
   server.use(
-    http.get(STATS_PATH, () =>
+    http.get(statsPath, () =>
       ok
         ? HttpResponse.json(statsOk)
         : HttpResponse.json({ status: 'error', message: 'stats boom' }, { status: 500 })
@@ -61,7 +61,7 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <MockAuthProvider userOverrides={{ id: USER_ID, username: 'tester' }}>
+      <MockAuthProvider userOverrides={{ id: userId, username: 'tester' }}>
         <MemoryRouter initialEntries={['/my-stable']}>
           <MyStablePage />
         </MemoryRouter>
@@ -78,7 +78,7 @@ describe('MyStablePage — horses query four-state (Equoria-ye01k)', () => {
   it('shows an error with retry, not an empty stable, when the roster fails', async () => {
     stubStats();
     server.use(
-      http.get(HORSES_PATH, () =>
+      http.get(horsesPath, () =>
         HttpResponse.json({ status: 'error', message: 'horses boom' }, { status: 500 })
       )
     );
@@ -98,9 +98,7 @@ describe('MyStablePage — horses query four-state (Equoria-ye01k)', () => {
 
   it('Hall of Fame shows the error (not "No Retired Horses Yet") when the roster fails', async () => {
     stubStats();
-    server.use(
-      http.get(HORSES_PATH, () => HttpResponse.json({ status: 'error' }, { status: 500 }))
-    );
+    server.use(http.get(horsesPath, () => HttpResponse.json({ status: 'error' }, { status: 500 })));
 
     const user = userEvent.setup();
     renderPage();
@@ -116,7 +114,7 @@ describe('MyStablePage — horses query four-state (Equoria-ye01k)', () => {
     stubStats();
     let calls = 0;
     server.use(
-      http.get(HORSES_PATH, () => {
+      http.get(horsesPath, () => {
         calls += 1;
         return calls === 1
           ? HttpResponse.json({ status: 'error' }, { status: 500 })
@@ -140,7 +138,7 @@ describe('MyStablePage — horses query four-state (Equoria-ye01k)', () => {
   it('shows a loading status, not zeros, while the roster is pending', async () => {
     stubStats();
     server.use(
-      http.get(HORSES_PATH, async () => {
+      http.get(horsesPath, async () => {
         await delay(150);
         return HttpResponse.json({ success: true, data: [horseRow(1, 'Alpha', 5)] });
       })
@@ -157,7 +155,7 @@ describe('MyStablePage — horses query four-state (Equoria-ye01k)', () => {
 
   it('a genuinely empty roster is honest zero (empty only via success)', async () => {
     stubStats();
-    server.use(http.get(HORSES_PATH, () => HttpResponse.json({ success: true, data: [] })));
+    server.use(http.get(horsesPath, () => HttpResponse.json({ success: true, data: [] })));
 
     renderPage();
 
@@ -170,8 +168,8 @@ describe('MyStablePage — horses query four-state (Equoria-ye01k)', () => {
 describe('MyStablePage — career figures are unknown, not zero (Equoria-ye01k)', () => {
   it('shows "—" for competitions and wins while the stats query is pending', async () => {
     server.use(
-      http.get(HORSES_PATH, () => HttpResponse.json({ success: true, data: [] })),
-      http.get(STATS_PATH, () => new Promise(() => {}))
+      http.get(horsesPath, () => HttpResponse.json({ success: true, data: [] })),
+      http.get(statsPath, () => new Promise(() => {}))
     );
 
     renderPage();
@@ -182,7 +180,7 @@ describe('MyStablePage — career figures are unknown, not zero (Equoria-ye01k)'
   });
 
   it('shows "—" for competitions and wins when the stats query fails', async () => {
-    server.use(http.get(HORSES_PATH, () => HttpResponse.json({ success: true, data: [] })));
+    server.use(http.get(horsesPath, () => HttpResponse.json({ success: true, data: [] })));
     stubStats(false);
 
     renderPage();
@@ -195,10 +193,10 @@ describe('MyStablePage — career figures are unknown, not zero (Equoria-ye01k)'
   it('shows "—" for a retired horse career whose history request fails', async () => {
     stubStats();
     server.use(
-      http.get(HORSES_PATH, () =>
+      http.get(horsesPath, () =>
         HttpResponse.json({ success: true, data: [horseRow(101, 'Old Champion', 25)] })
       ),
-      http.get(HISTORY_PATH, () => HttpResponse.json({ status: 'error' }, { status: 500 }))
+      http.get(historyPath, () => HttpResponse.json({ status: 'error' }, { status: 500 }))
     );
 
     const user = userEvent.setup();
