@@ -41,7 +41,6 @@
   "frontend/src/components/competition/CompetitionResultsModal.tsx": 713,
   "frontend/src/components/competition/PrizeTransactionHistory.tsx": 824,
   "frontend/src/components/onboarding/BreedSelector.tsx": 746,
-  "frontend/src/lib/api/types.ts": 602,
   "frontend/src/lib/utils/__tests__/training-utils.test.ts": 904,
   "frontend/src/pages/__tests__/RegisterPage.test.tsx": 1226
 }

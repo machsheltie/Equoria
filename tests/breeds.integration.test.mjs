@@ -48,7 +48,7 @@ import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
 
 const NAME_PREFIX = 'TestFixture-Breed-';
 const ORIGIN = 'http://localhost:3000';
-const ADMIN_TAG = randomBytes(6).toString('hex');
+const adminTag = randomBytes(6).toString('hex');
 
 let adminUser;
 
@@ -85,8 +85,8 @@ beforeAll(async () => {
   const pw = await bcrypt.hash('BreedAdmin123!', 1);
   adminUser = await prisma.user.create({
     data: {
-      username: `TestFixture-mgcyd-admin-${ADMIN_TAG}`,
-      email: `testfixture-mgcyd-admin-${ADMIN_TAG}@example.com`,
+      username: `TestFixture-mgcyd-admin-${adminTag}`,
+      email: `testfixture-mgcyd-admin-${adminTag}@example.com`,
       password: pw,
       firstName: 'Breed',
       lastName: 'Admin',

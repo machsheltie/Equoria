@@ -37,7 +37,7 @@ const repoRoot = resolve(backendRoot, '..'); // repo root (Equoria-dyt7y: root s
 // any production (non-test) .mjs file from re-importing / re-calling that stub —
 // re-introducing a second flag-evaluation path is the exact drift this doctrine
 // prevents.
-const FORBIDDEN_STUB_TOKEN = /\bevaluateEpigeneticFlags\b/;
+const forbiddenStubToken = /\bevaluateEpigeneticFlags\b/;
 
 /**
  * Recursively collect production .mjs files under `rootDir` whose contents match
@@ -108,26 +108,26 @@ function flagEngineFilesUnder(dir) {
 }
 
 describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', () => {
-  const DEAD_FILES = [
+  const deadFiles = [
     'services/carePatternAnalyzer.mjs',
     'services/flagAssignmentEngine.mjs',
     'services/weeklyFlagEvaluationService.mjs',
   ];
 
-  const LIVE_FILES = [
+  const liveFiles = [
     'config/epigeneticFlagDefinitions.mjs',
     'utils/carePatternAnalysis.mjs',
     'utils/flagEvaluationEngine.mjs',
   ];
 
-  test.each(DEAD_FILES)('dead services/ flag file %s must NOT exist', rel => {
+  test.each(deadFiles)('dead services/ flag file %s must NOT exist', rel => {
     expect(existsSync(resolve(backendRoot, rel))).toBe(false);
   });
 
   // Equoria-dyt7y: the retirement used to be checked only under backend/, so the
   // same three files survived at the repo-root services/ (retired with
   // Equoria-mgcyd, owner ruling 2026-10-22). Check the repo root too.
-  test.each(DEAD_FILES)('dead flag file %s must NOT exist at the repo-root services/ either', rel => {
+  test.each(deadFiles)('dead flag file %s must NOT exist at the repo-root services/ either', rel => {
     expect(existsSync(resolve(repoRoot, rel))).toBe(false);
   });
 
@@ -146,7 +146,7 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
     }
   });
 
-  test.each(LIVE_FILES)('live flag module %s must exist', rel => {
+  test.each(liveFiles)('live flag module %s must exist', rel => {
     expect(existsSync(resolve(backendRoot, rel))).toBe(true);
   });
 
@@ -164,7 +164,7 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
 
 describe('Stub flag evaluator stays out of production (Equoria-oey96.32)', () => {
   test('no production .mjs re-imports or re-calls evaluateEpigeneticFlags', () => {
-    const violations = scanProductionForPattern(backendRoot, FORBIDDEN_STUB_TOKEN);
+    const violations = scanProductionForPattern(backendRoot, forbiddenStubToken);
     // Report the actual file paths on failure so a future regression is obvious.
     expect(violations).toEqual([]);
   });
@@ -182,7 +182,7 @@ describe('Stub flag evaluator stays out of production (Equoria-oey96.32)', () =>
           'export const flags = evaluateEpigeneticFlags({}, {}, {});\n',
         'utf8',
       );
-      const hits = scanProductionForPattern(tmpRoot, FORBIDDEN_STUB_TOKEN);
+      const hits = scanProductionForPattern(tmpRoot, forbiddenStubToken);
       expect(hits).toContain(plantedFile);
     } finally {
       rmSync(tmpRoot, { recursive: true, force: true });
@@ -199,7 +199,7 @@ describe('Stub flag evaluator stays out of production (Equoria-oey96.32)', () =>
           'export const read = (h) => asFlagArray(h.epigeneticFlags);\n',
         'utf8',
       );
-      expect(scanProductionForPattern(tmpRoot, FORBIDDEN_STUB_TOKEN)).toEqual([]);
+      expect(scanProductionForPattern(tmpRoot, forbiddenStubToken)).toEqual([]);
     } finally {
       rmSync(tmpRoot, { recursive: true, force: true });
     }
