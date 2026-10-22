@@ -129,7 +129,7 @@ describe('POST /api/trainers/marketplace/hire — concurrent-race sentinel (Equo
     const results = await Promise.all(
       marketplaceIds.map((mid, i) =>
         request(app)
-          .post('/api/trainers/marketplace/hire')
+          .post('/api/v1/trainers/marketplace/hire')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${buyerToken}`)
           .set('Cookie', csrfPerReq[i].cookieHeader)
