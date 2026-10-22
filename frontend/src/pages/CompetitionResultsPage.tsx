@@ -212,6 +212,7 @@ const CompetitionResultsPage = (): JSX.Element => {
     data: userResults,
     isLoading: resultsLoading,
     error: resultsError,
+    refetch: refetchResults,
   } = useUserCompetitionResults(userId);
 
   // Equoria-oey96.28: reaching this page IS the player seeing their results, so
@@ -413,6 +414,7 @@ const CompetitionResultsPage = (): JSX.Element => {
               onResultClick={handleResultClick}
               isLoading={resultsLoading}
               error={resultsError ? resultsError.message : null}
+              onRetry={() => void refetchResults()}
             />
           </TabsContent>
         </Tabs>

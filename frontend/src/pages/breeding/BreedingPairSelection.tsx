@@ -43,6 +43,8 @@ import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { useRewardToast } from '@/components/feedback';
 import type { Horse } from '@/types/breeding';
 import { horseQueryKeys } from '@/hooks/api/useHorses';
+import { ErrorState } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -95,6 +97,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     data: horses,
     isLoading: loadingHorses,
     error: horsesError,
+    refetch: refetchHorses,
   } = useQuery<HorseSummary[], Error, BreedingHorse[]>({
     // Equoria-bvddn.33: this reads the same session-scoped horse list every
     // other list consumer reads (horsesApi.list() takes no userId — the
@@ -333,14 +336,11 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
   if (horsesError) {
     return (
-      <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--role-danger-border)] p-6">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-[var(--role-danger-text)]" />
-          <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">
-            Failed to load horses. Please try again.
-          </p>
-        </div>
-      </div>
+      <ErrorState
+        title="Failed to load horses"
+        message={userMessageFor(horsesError).message}
+        retry={{ label: 'Try Again', onClick: () => void refetchHorses() }}
+      />
     );
   }
 

@@ -18,6 +18,9 @@ import { useCompetitions } from '@/hooks/api/useCompetitions';
 import { useHorses } from '@/hooks/api/useHorses';
 import ConformationEntryModal from '@/components/competition/ConformationEntryModal';
 import Currency from '@/components/ui/Currency';
+import { Button } from '@/components/ui/button';
+import { InlineError, SectionLoading } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 interface SelectedEntry {
   show: { id: number; name: string; entryFee: number };
@@ -25,7 +28,13 @@ interface SelectedEntry {
 }
 
 const ConformationShowsPanel = (): JSX.Element => {
-  const { data: competitions = [], isLoading, error } = useCompetitions();
+  const {
+    data: competitions = [],
+    isLoading,
+    error,
+    refetch: refetchCompetitions,
+    isFetching,
+  } = useCompetitions();
   const { data: horses = [] } = useHorses();
   const [selectedShowId, setSelectedShowId] = useState<number | ''>('');
   const [selectedHorseId, setSelectedHorseId] = useState<number | ''>('');
@@ -95,12 +104,20 @@ const ConformationShowsPanel = (): JSX.Element => {
       </div>
 
       {error && (
-        <p
-          role="alert"
-          className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2"
-        >
-          Failed to load competitions.
-        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <InlineError
+            message={`Couldn't load the conformation shows. ${userMessageFor(error).message}`}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void refetchCompetitions()}
+            pending={isFetching}
+          >
+            Try again
+          </Button>
+        </div>
       )}
 
       <div className="mt-4">
@@ -117,8 +134,9 @@ const ConformationShowsPanel = (): JSX.Element => {
 
       <section className="mt-8" aria-label="Open conformation shows">
         <h2 className="text-lg font-semibold text-gray-900">Open Shows</h2>
-        {isLoading && <p className="mt-2 text-sm text-gray-500">Loading…</p>}
-        {!isLoading && conformationShows.length === 0 && (
+        {isLoading && <SectionLoading label="Loading conformation shows" minHeight="80px" />}
+        {/* EMPTY only via a successful fetch — never over a failed one. */}
+        {!isLoading && !error && conformationShows.length === 0 && (
           <p className="mt-2 text-sm text-gray-500" data-testid="conformation-empty-state">
             No open conformation shows. Check back later.
           </p>

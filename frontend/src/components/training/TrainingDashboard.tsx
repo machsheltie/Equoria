@@ -26,6 +26,8 @@ import type { TrainableHorse } from '@/lib/api-client';
 import { canTrain } from '@/lib/utils/training-utils';
 import type { Horse } from '@/lib/utils/training-utils';
 import { getBreedName } from '@/lib/utils';
+import { ErrorState } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import EligibilityIndicator from './EligibilityIndicator';
 import EligibilityFilter from './EligibilityFilter';
 import type { EligibilityFilterType } from './EligibilityFilter';
@@ -280,12 +282,12 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Error state
   if (isError) {
     return (
-      <div
-        data-testid="error-state"
-        className="text-center py-12 text-[var(--role-danger-text)]"
-        role="alert"
-      >
-        Error loading horses: {error?.message || 'Unknown error'}
+      <div data-testid="error-state">
+        <ErrorState
+          title="Couldn't load your horses"
+          message={userMessageFor(error).message}
+          retry={{ label: 'Try Again', onClick: () => void refetch() }}
+        />
       </div>
     );
   }

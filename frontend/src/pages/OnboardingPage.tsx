@@ -100,7 +100,7 @@ interface HorseStepProps {
 }
 
 const HorseStep: React.FC<HorseStepProps> = ({ selection, onChange }) => {
-  const { data: breeds, isLoading, isError } = useBreeds();
+  const { data: breeds, isLoading, isError, refetch, isFetching } = useBreeds();
 
   return (
     <div className="space-y-5">
@@ -119,12 +119,18 @@ const HorseStep: React.FC<HorseStepProps> = ({ selection, onChange }) => {
       {isLoading ? (
         <BreedSelectorSkeleton viewMode="grid" />
       ) : isError || !breeds ? (
-        <p
-          className="text-sm text-[var(--text-muted)] font-[var(--font-body)] text-center py-6"
-          role="alert"
-        >
-          Couldn&apos;t load breeds — please try refreshing.
-        </p>
+        <div className="flex flex-col items-center gap-3 py-6">
+          <InlineError message="Couldn't load the breeds." />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void refetch()}
+            pending={isFetching}
+          >
+            Try again
+          </Button>
+        </div>
       ) : (
         <BreedSelector breeds={breeds} value={selection} onChange={onChange} />
       )}
