@@ -59,7 +59,7 @@ describe('TrainerList — refusal codes (Equoria-dosig)', () => {
   it('a full roster is named as a full roster, not as a short balance', async () => {
     server.use(
       http.get(MARKETPLACE, () => HttpResponse.json({ success: true, data: marketplace })),
-      http.post(HIRE, () => refusal('ROSTER_CAP_REACHED'))
+      http.post(HIRE, () => refusal('rosterCapReached'))
     );
     const user = userEvent.setup();
     renderList();
@@ -76,7 +76,7 @@ describe('TrainerList — refusal codes (Equoria-dosig)', () => {
   it('a short balance is named as a short balance, not as a full roster', async () => {
     server.use(
       http.get(MARKETPLACE, () => HttpResponse.json({ success: true, data: marketplace })),
-      http.post(HIRE, () => refusal('INSUFFICIENT_FUNDS'))
+      http.post(HIRE, () => refusal('insufficientFunds'))
     );
     const user = userEvent.setup();
     renderList();

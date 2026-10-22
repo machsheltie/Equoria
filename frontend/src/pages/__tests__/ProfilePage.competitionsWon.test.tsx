@@ -19,10 +19,10 @@ import { server } from '@/test/msw/server';
 import ProfilePage from '../ProfilePage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'user-7';
+const profileUserId = 'user-7';
 
 const progress = {
-  userId: USER_ID,
+  userId: profileUserId,
   username: 'Rider',
   level: 3,
   xp: 250,
@@ -44,7 +44,7 @@ function stub(statsResponse: () => Response) {
         status: 'success',
         data: {
           user: {
-            id: USER_ID,
+            id: profileUserId,
             username: 'Rider',
             email: 'rider@example.com',
             firstName: 'Ada',
@@ -57,10 +57,10 @@ function stub(statsResponse: () => Response) {
         },
       })
     ),
-    http.get(`${base}/api/v1/users/${USER_ID}/progress`, () =>
+    http.get(`${base}/api/v1/users/${profileUserId}/progress`, () =>
       HttpResponse.json({ success: true, data: progress })
     ),
-    http.get(`${base}/api/v1/users/${USER_ID}/competition-stats`, statsResponse)
+    http.get(`${base}/api/v1/users/${profileUserId}/competition-stats`, statsResponse)
   );
 }
 
@@ -70,7 +70,7 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={qc}>
-      <MockAuthProvider userOverrides={{ id: USER_ID }}>
+      <MockAuthProvider userOverrides={{ id: profileUserId }}>
         <MemoryRouter initialEntries={['/profile']}>
           <ProfilePage />
         </MemoryRouter>
@@ -85,7 +85,7 @@ describe('ProfilePage — Competitions Won (Equoria-4z3i9)', () => {
       HttpResponse.json({
         success: true,
         data: {
-          userId: USER_ID,
+          userId: profileUserId,
           totalCompetitions: 12,
           totalWins: 2,
           totalTop3: 5,
@@ -104,7 +104,13 @@ describe('ProfilePage — Competitions Won (Equoria-4z3i9)', () => {
     stub(() =>
       HttpResponse.json({
         success: true,
-        data: { userId: USER_ID, totalCompetitions: 12, totalWins: 0, totalTop3: 0, winRate: 0 },
+        data: {
+          userId: profileUserId,
+          totalCompetitions: 12,
+          totalWins: 0,
+          totalTop3: 0,
+          winRate: 0,
+        },
       })
     );
     renderPage();
@@ -120,7 +126,7 @@ describe('ProfilePage — Competitions Won (Equoria-4z3i9)', () => {
         : HttpResponse.json({
             success: true,
             data: {
-              userId: USER_ID,
+              userId: profileUserId,
               totalCompetitions: 12,
               totalWins: 2,
               totalTop3: 5,

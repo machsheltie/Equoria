@@ -73,7 +73,7 @@ export const hireRefused: ActionCopy = {
 /** The kinds of staff a player hires from a marketplace. */
 export type HireStaffKind = 'rider' | 'trainer' | 'groom';
 
-const ROSTER_FULL_ADVICE: Record<HireStaffKind, string> = {
+const rosterFullAdvice: Record<HireStaffKind, string> = {
   rider: 'Retire a rider or raise your stable level before hiring another.',
   trainer: 'Retire a trainer or raise your stable level before hiring another.',
   groom: 'Release a groom before hiring another.',
@@ -81,13 +81,13 @@ const ROSTER_FULL_ADVICE: Record<HireStaffKind, string> = {
 
 /**
  * The exact refusal for a coded staff hire 400 (Equoria-dosig): the backend's
- * `ROSTER_CAP_REACHED` and `INSUFFICIENT_FUNDS`. Pass as the third argument of
+ * `rosterCapReached` and `insufficientFunds`. Pass as the third argument of
  * `actionMessageFor` beside `hireRefused`.
  */
 export function hireRefusalCodes(staff: HireStaffKind): ActionCodeCopy {
   return {
-    ROSTER_CAP_REACHED: `Your ${staff} roster is full. ${ROSTER_FULL_ADVICE[staff]}`,
-    INSUFFICIENT_FUNDS: "Your balance doesn't cover this hire.",
+    rosterCapReached: `Your ${staff} roster is full. ${rosterFullAdvice[staff]}`,
+    insufficientFunds: "Your balance doesn't cover this hire.",
   };
 }
 

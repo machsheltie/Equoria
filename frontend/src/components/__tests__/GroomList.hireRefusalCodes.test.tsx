@@ -72,7 +72,7 @@ async function openDialogAndConfirm(user: ReturnType<typeof userEvent.setup>) {
 
 describe('GroomList — refusal codes (Equoria-dosig)', () => {
   it('a full roster is named as a full roster, in the dialog, with no server text', async () => {
-    server.use(http.post(HIRE, () => refusal(400, 'ROSTER_CAP_REACHED')));
+    server.use(http.post(HIRE, () => refusal(400, 'rosterCapReached')));
     const user = userEvent.setup();
     renderList();
 
@@ -86,7 +86,7 @@ describe('GroomList — refusal codes (Equoria-dosig)', () => {
   });
 
   it('a short balance is named as a short balance, not as a full roster', async () => {
-    server.use(http.post(HIRE, () => refusal(400, 'INSUFFICIENT_FUNDS')));
+    server.use(http.post(HIRE, () => refusal(400, 'insufficientFunds')));
     const user = userEvent.setup();
     renderList();
 

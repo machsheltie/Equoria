@@ -4,7 +4,7 @@
  *
  * A full roster and an unaffordable hire both answer 400, so the hire dialog
  * could not say which one stopped the player. Each now carries a `code`
- * (ROSTER_CAP_REACHED / INSUFFICIENT_FUNDS) beside the existing message and
+ * (rosterCapReached / insufficientFunds) beside the existing message and
  * data. Real app, real DB, id-scoped fail-loud cleanup.
  */
 
@@ -20,9 +20,9 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-dosig-trainer';
-const SESSION_RATE = 50;
-const HIRING_COST = SESSION_RATE * 4; // the backend charges four sessions up front
+const fixturePrefix = 'TestFixture-dosig-trainer';
+const offerRate = 50;
+const hiringCost = offerRate * 4; // the backend charges four sessions up front
 
 const createdUserIds = [];
 const cleanup = createCleanupTracker();
@@ -32,8 +32,8 @@ async function makeUser({ level, money }) {
   const pw = await bcrypt.hash('TestPassword123!', 1);
   const user = await prisma.user.create({
     data: {
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Code',
       lastName: 'Buyer',
@@ -56,7 +56,7 @@ async function seedTrainers(userId, active) {
         personality: 'patient',
         skillLevel: 'expert',
         speciality: 'Dressage',
-        sessionRate: SESSION_RATE,
+        sessionRate: offerRate,
       },
     });
   }
@@ -71,15 +71,11 @@ async function seedMarketplace(userId, count) {
     personality: 'patient',
     skillLevel: 'expert',
     speciality: 'Dressage',
-    sessionRate: SESSION_RATE,
+    sessionRate: offerRate,
     experience: 5,
     bio: 'refusal-code fixture',
   }));
-  await prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: 'trainer' } },
-    create: { userId, staffType: 'trainer', offers, refreshCount: 0 },
-    update: { offers },
-  });
+  await prisma.staffMarketplaceState.create({ data: { userId, staffType: 'trainer', offers, refreshCount: 0 } });
   return ids;
 }
 
@@ -129,7 +125,7 @@ beforeAll(() => {
 afterAll(() => cleanup.run(), 30000);
 
 describe('POST /api/v1/trainers/marketplace/hire — refusal codes (Equoria-dosig)', () => {
-  it('a full roster answers 400 with code ROSTER_CAP_REACHED and the cap counts', async () => {
+  it('a full roster answers 400 with code rosterCapReached and the cap counts', async () => {
     const { user, token } = await makeUser({ level: 1, money: 1000 });
     await seedTrainers(user.id, 1); // level 1 -> cap 1
     const [mid] = await seedMarketplace(user.id, 1);
@@ -137,25 +133,25 @@ describe('POST /api/v1/trainers/marketplace/hire — refusal codes (Equoria-dosi
     const res = await hire(token, mid);
 
     expect(res.status).toBe(400);
-    expect(res.body.code).toBe('ROSTER_CAP_REACHED');
+    expect(res.body.code).toBe('rosterCapReached');
     expect(res.body.data).toEqual({ currentCount: 1, maxAllowed: 1 });
     expect(await moneyOf(user.id)).toBe(1000);
   });
 
-  it('an unaffordable hire answers 400 with code INSUFFICIENT_FUNDS and no debit', async () => {
-    const { user, token } = await makeUser({ level: 1, money: HIRING_COST - 1 });
+  it('an unaffordable hire answers 400 with code insufficientFunds and no debit', async () => {
+    const { user, token } = await makeUser({ level: 1, money: hiringCost - 1 });
     const [mid] = await seedMarketplace(user.id, 1);
 
     const res = await hire(token, mid);
 
     expect(res.status).toBe(400);
-    expect(res.body.code).toBe('INSUFFICIENT_FUNDS');
-    expect(res.body.data).toEqual({ required: HIRING_COST, available: HIRING_COST - 1 });
-    expect(await moneyOf(user.id)).toBe(HIRING_COST - 1);
+    expect(res.body.code).toBe('insufficientFunds');
+    expect(res.body.data).toEqual({ required: hiringCost, available: hiringCost - 1 });
+    expect(await moneyOf(user.id)).toBe(hiringCost - 1);
     expect(await prisma.trainer.count({ where: { userId: user.id } })).toBe(0);
   });
 
-  it('a racing hire that loses the last slot still carries ROSTER_CAP_REACHED', async () => {
+  it('a racing hire that loses the last slot still carries rosterCapReached', async () => {
     const { user, token } = await makeUser({ level: 1, money: 1000 });
     const ids = await seedMarketplace(user.id, 2); // one slot, two competing hires
 
@@ -164,6 +160,6 @@ describe('POST /api/v1/trainers/marketplace/hire — refusal codes (Equoria-dosi
 
     expect(results.filter(r => r.status === 201)).toHaveLength(1);
     expect(rejected).toHaveLength(1);
-    expect(rejected[0].body.code).toBe('ROSTER_CAP_REACHED');
+    expect(rejected[0].body.code).toBe('rosterCapReached');
   });
 });

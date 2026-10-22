@@ -25,7 +25,7 @@ import {
 import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
 import { getStableLevel } from '../../users/index.mjs';
 import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
-import { STAFF_HIRE_REFUSAL } from '../../../errors/staffHireRefusalCodes.mjs';
+import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 // Equoria-bvddn.19: remove the hired offer INSIDE the hire transaction via a
 // compare-and-swap on the persisted offer list, instead of a post-commit
 // read-filter-write against a pre-transaction snapshot.
@@ -262,7 +262,7 @@ export async function hireTrainerFromMarketplace(req, res) {
     if (activeTrainerCount >= rosterCap) {
       return res.status(400).json({
         success: false,
-        code: STAFF_HIRE_REFUSAL.ROSTER_CAP_REACHED,
+        code: staffHireRefusal.rosterCapReached,
         message: `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your stable level before hiring another.`,
         data: { currentCount: activeTrainerCount, maxAllowed: rosterCap },
       });
@@ -271,7 +271,7 @@ export async function hireTrainerFromMarketplace(req, res) {
     if (user.money < hiringCost) {
       return res.status(400).json({
         success: false,
-        code: STAFF_HIRE_REFUSAL.INSUFFICIENT_FUNDS,
+        code: staffHireRefusal.insufficientFunds,
         message: `Insufficient funds. Hiring costs $${hiringCost} (one month upfront)`,
         data: { required: hiringCost, available: user.money },
       });
@@ -384,7 +384,7 @@ export async function hireTrainerFromMarketplace(req, res) {
     if (error instanceof RosterCapExceededError) {
       return res.status(400).json({
         success: false,
-        code: STAFF_HIRE_REFUSAL.ROSTER_CAP_REACHED,
+        code: staffHireRefusal.rosterCapReached,
         message: error.message,
         data: null,
       });
@@ -392,7 +392,7 @@ export async function hireTrainerFromMarketplace(req, res) {
     if (error instanceof InsufficientFundsError) {
       return res.status(400).json({
         success: false,
-        code: STAFF_HIRE_REFUSAL.INSUFFICIENT_FUNDS,
+        code: staffHireRefusal.insufficientFunds,
         message: 'Insufficient funds at debit time (concurrent hire?)',
         data: null,
       });

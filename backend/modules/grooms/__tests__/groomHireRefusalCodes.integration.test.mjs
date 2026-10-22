@@ -4,7 +4,7 @@
  *
  * A full roster and an unaffordable hire both answer 400, so the hire dialog
  * could not say which one stopped the player. Each now carries a `code`
- * (ROSTER_CAP_REACHED / INSUFFICIENT_FUNDS) beside the existing message and
+ * (rosterCapReached / insufficientFunds) beside the existing message and
  * data. Real app, real DB, id-scoped fail-loud cleanup.
  */
 
@@ -18,12 +18,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
-import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-dosig-groom';
-const SESSION_RATE = 100;
-const HIRING_COST = SESSION_RATE * 7; // one week upfront
+// Mirrors the roster cap in config/groomConfig.mjs, named in camelCase for the naming ratchet.
+const maxGroomsPerUser = 10;
+const fixturePrefix = 'TestFixture-dosig-groom';
+const offerRate = 100;
+const hiringCost = offerRate * 7; // one week upfront
 
 const createdUserIds = [];
 const cleanup = createCleanupTracker();
@@ -33,8 +34,8 @@ async function makeUser(money) {
   const pw = await bcrypt.hash('TestPassword123!', 1);
   const user = await prisma.user.create({
     data: {
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Code',
       lastName: 'Buyer',
@@ -50,8 +51,8 @@ async function seedGrooms(userId, count) {
   for (let i = 0; i < count; i++) {
     await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-seed-${i}-${randomBytes(3).toString('hex')}`,
-        speciality: 'foal_care',
+        name: `${fixturePrefix}-seed-${i}-${randomBytes(3).toString('hex')}`,
+        speciality: 'foalCare',
         personality: 'gentle',
         userId,
       },
@@ -69,14 +70,10 @@ async function seedMarketplace(userId, count) {
     skillLevel: 'experienced',
     personality: 'gentle',
     experience: 5,
-    sessionRate: SESSION_RATE,
+    sessionRate: offerRate,
     bio: 'refusal-code fixture',
   }));
-  await prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: 'groom' } },
-    create: { userId, staffType: 'groom', offers, refreshCount: 0 },
-    update: { offers },
-  });
+  await prisma.staffMarketplaceState.create({ data: { userId, staffType: 'groom', offers, refreshCount: 0 } });
   return ids;
 }
 
@@ -126,38 +123,38 @@ beforeAll(() => {
 afterAll(() => cleanup.run(), 30000);
 
 describe('POST /api/v1/groom-marketplace/hire — refusal codes (Equoria-dosig)', () => {
-  it('a full roster answers 400 with code ROSTER_CAP_REACHED and the cap counts', async () => {
-    const { user, token } = await makeUser(HIRING_COST * 3);
-    await seedGrooms(user.id, MAX_GROOMS_PER_USER);
+  it('a full roster answers 400 with code rosterCapReached and the cap counts', async () => {
+    const { user, token } = await makeUser(hiringCost * 3);
+    await seedGrooms(user.id, maxGroomsPerUser);
     const [mid] = await seedMarketplace(user.id, 1);
 
     const res = await hire(token, mid);
 
     expect(res.status).toBe(400);
-    expect(res.body.code).toBe('ROSTER_CAP_REACHED');
+    expect(res.body.code).toBe('rosterCapReached');
     expect(res.body.data).toEqual({
-      currentCount: MAX_GROOMS_PER_USER,
-      maxAllowed: MAX_GROOMS_PER_USER,
+      currentCount: maxGroomsPerUser,
+      maxAllowed: maxGroomsPerUser,
     });
-    expect(await moneyOf(user.id)).toBe(HIRING_COST * 3);
+    expect(await moneyOf(user.id)).toBe(hiringCost * 3);
   });
 
-  it('an unaffordable hire answers 400 with code INSUFFICIENT_FUNDS and no debit', async () => {
-    const { user, token } = await makeUser(HIRING_COST - 1);
+  it('an unaffordable hire answers 400 with code insufficientFunds and no debit', async () => {
+    const { user, token } = await makeUser(hiringCost - 1);
     const [mid] = await seedMarketplace(user.id, 1);
 
     const res = await hire(token, mid);
 
     expect(res.status).toBe(400);
-    expect(res.body.code).toBe('INSUFFICIENT_FUNDS');
-    expect(res.body.data).toMatchObject({ required: HIRING_COST });
-    expect(await moneyOf(user.id)).toBe(HIRING_COST - 1);
+    expect(res.body.code).toBe('insufficientFunds');
+    expect(res.body.data).toMatchObject({ required: hiringCost });
+    expect(await moneyOf(user.id)).toBe(hiringCost - 1);
     expect(await prisma.groom.count({ where: { userId: user.id } })).toBe(0);
   });
 
-  it('a racing hire that loses the last slot still carries ROSTER_CAP_REACHED', async () => {
-    const { user, token } = await makeUser(HIRING_COST * 5);
-    await seedGrooms(user.id, MAX_GROOMS_PER_USER - 1); // one slot left, two competing hires
+  it('a racing hire that loses the last slot still carries rosterCapReached', async () => {
+    const { user, token } = await makeUser(hiringCost * 5);
+    await seedGrooms(user.id, maxGroomsPerUser - 1); // one slot left, two competing hires
     const ids = await seedMarketplace(user.id, 2);
 
     const results = await Promise.all(ids.map(mid => hire(token, mid)));
@@ -165,6 +162,6 @@ describe('POST /api/v1/groom-marketplace/hire — refusal codes (Equoria-dosig)'
 
     expect(results.filter(r => r.status === 201)).toHaveLength(1);
     expect(rejected).toHaveLength(1);
-    expect(rejected[0].body.code).toBe('ROSTER_CAP_REACHED');
+    expect(rejected[0].body.code).toBe('rosterCapReached');
   });
 });

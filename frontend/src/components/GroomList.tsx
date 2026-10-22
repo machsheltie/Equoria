@@ -500,7 +500,6 @@ const GroomList: React.FC<GroomListProps> = ({
                   />
                 </div>
               </Surface>
-
               {hireMutation.isError && (
                 <InlineError
                   message={actionMessageFor(

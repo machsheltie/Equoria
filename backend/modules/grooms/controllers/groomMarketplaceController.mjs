@@ -31,7 +31,7 @@ import { CapExceededError } from '../groomErrors.mjs';
 // read-filter-write against a pre-transaction snapshot.
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
 import { StaleOfferError } from '../../../errors/index.mjs';
-import { STAFF_HIRE_REFUSAL } from '../../../errors/staffHireRefusalCodes.mjs';
+import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
 // Equoria-m9lz1: draw the groom's HIDDEN retirement age at hire, inside the
 // hire transaction, so a hired groom always has a schedule and a rolled-back
 // hire leaves no orphan schedule row.
@@ -308,7 +308,7 @@ export async function hireFromMarketplace(req, res) {
     if (existingGroomCount >= MAX_GROOMS_PER_USER) {
       return res.status(400).json({
         success: false,
-        code: STAFF_HIRE_REFUSAL.ROSTER_CAP_REACHED,
+        code: staffHireRefusal.rosterCapReached,
         message: `You have reached the maximum limit of ${MAX_GROOMS_PER_USER} grooms. Please release a groom before hiring a new one.`,
         data: { currentCount: existingGroomCount, maxAllowed: MAX_GROOMS_PER_USER },
       });
@@ -431,7 +431,7 @@ export async function hireFromMarketplace(req, res) {
       if (txErr instanceof CapExceededError) {
         return res.status(400).json({
           success: false,
-          code: STAFF_HIRE_REFUSAL.ROSTER_CAP_REACHED,
+          code: staffHireRefusal.rosterCapReached,
           message: txErr.message,
           data: { currentCount: MAX_GROOMS_PER_USER, maxAllowed: MAX_GROOMS_PER_USER },
         });
@@ -439,7 +439,7 @@ export async function hireFromMarketplace(req, res) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
-          code: STAFF_HIRE_REFUSAL.INSUFFICIENT_FUNDS,
+          code: staffHireRefusal.insufficientFunds,
           message: `Insufficient funds. Hiring costs $${hiringCost} (one week upfront)`,
           data: { required: hiringCost },
         });
