@@ -254,9 +254,9 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
     expect(sales[0].buyerId).toBe(buyerC.user.id);
     expect(sales[0].salePrice).toBe(LIST_PRICE);
 
-    expect(await ledgerFor(buyerB.user.id, 'marketplace_purchase')).toHaveLength(0);
-    expect(await ledgerFor(buyerC.user.id, 'marketplace_purchase')).toEqual([{ amount: LIST_PRICE }]);
-    expect(await ledgerFor(sellerA.user.id, 'marketplace_sale')).toEqual([{ amount: LIST_PRICE }]);
+    expect(await ledgerFor(buyerB.user.id, 'marketplacePurchase')).toHaveLength(0);
+    expect(await ledgerFor(buyerC.user.id, 'marketplacePurchase')).toEqual([{ amount: LIST_PRICE }]);
+    expect(await ledgerFor(sellerA.user.id, 'marketplaceSale')).toEqual([{ amount: LIST_PRICE }]);
   }, 120000);
 
   it('rejects a purchase whose seller delisted and relisted at a higher price mid-request', async () => {
@@ -298,8 +298,8 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
     expect(await money(buyerB.user.id)).toBe(1000);
 
     expect(await prisma.horseSale.findMany({ where: { horseId: horse.id } })).toHaveLength(0);
-    expect(await ledgerFor(buyerB.user.id, 'marketplace_purchase')).toHaveLength(0);
-    expect(await ledgerFor(sellerA.user.id, 'marketplace_sale')).toHaveLength(0);
+    expect(await ledgerFor(buyerB.user.id, 'marketplacePurchase')).toHaveLength(0);
+    expect(await ledgerFor(sellerA.user.id, 'marketplaceSale')).toHaveLength(0);
   }, 120000);
 
   it('completes normally when the listing is unchanged across the same pause', async () => {
@@ -333,7 +333,7 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
     expect(sales[0].buyerId).toBe(buyerB.user.id);
     expect(sales[0].salePrice).toBe(LIST_PRICE);
 
-    expect(await ledgerFor(buyerB.user.id, 'marketplace_purchase')).toEqual([{ amount: LIST_PRICE }]);
-    expect(await ledgerFor(sellerA.user.id, 'marketplace_sale')).toEqual([{ amount: LIST_PRICE }]);
+    expect(await ledgerFor(buyerB.user.id, 'marketplacePurchase')).toEqual([{ amount: LIST_PRICE }]);
+    expect(await ledgerFor(sellerA.user.id, 'marketplaceSale')).toEqual([{ amount: LIST_PRICE }]);
   }, 120000);
 });

@@ -97,7 +97,7 @@ describe('POST /api/v1/feed-shop/purchase — concurrent purchase race (Equoria-
     expect(fresh.money).toBe(INITIAL_MONEY - CONCURRENCY * PACK_PRICE);
 
     const debitRows = await prisma.userTransaction.count({
-      where: { userId: user.id, category: 'feed_purchase', type: 'debit' },
+      where: { userId: user.id, category: 'feedPurchase', type: 'debit' },
     });
     expect(debitRows).toBe(CONCURRENCY);
 

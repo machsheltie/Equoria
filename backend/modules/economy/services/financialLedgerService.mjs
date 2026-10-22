@@ -70,7 +70,7 @@ export class InsufficientFundsError extends Error {
  *   moves TO (e.g. `SYSTEM_ACCOUNT_BURN` for a fee/purchase sink). Omitting
  *   it throws — there is no unpaired-debit path.
  * @param {string} params.category - REQUIRED. Ledger category for the paired
- *   credit row (e.g. 'crafting_fee_burn').
+ *   credit row (e.g. 'craftingFeeBurn').
  * @param {string} [params.description] - Human-readable ledger description for
  *   the paired credit row.
  * @param {object} [params.metadata] - Extra metadata for the paired credit row.
@@ -142,7 +142,7 @@ export async function debitMoneyOrThrow(
  * them only through these constants so a typo at a call site is a compile-time
  * error, not a silent miss.
  */
-export const SYSTEM_ACCOUNT_SHOW_ESCROW = 'show_escrow';
+export const SYSTEM_ACCOUNT_SHOW_ESCROW = 'showEscrow';
 export const SYSTEM_ACCOUNT_BURN = 'burn';
 
 /**
@@ -182,7 +182,7 @@ export class InsufficientSystemAccountBalanceError extends Error {
  * @param {string} name - One of `SYSTEM_ACCOUNT_*` constants.
  * @param {number} amount - Positive integer.
  * @param {object} opts
- * @param {string} opts.category - Ledger category (e.g. 'show_create_prize_escrow').
+ * @param {string} opts.category - Ledger category (e.g. 'showCreatePrizeEscrow').
  * @param {string} [opts.description] - Human-readable ledger row.
  * @param {string} [opts.linkedUserId] - Attribute the paired ledger row to this user.
  * @param {object} [opts.metadata] - Extra ledger metadata.

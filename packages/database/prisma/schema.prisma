@@ -844,10 +844,10 @@ model Show {
   /// Show type: 'ridden' (default discipline scoring), 'conformation', or 'parade' (presentation scoring)
   showType           String              @default("ridden")
   /// Equoria-si69u: per-show escrow accounting columns. prizeEscrow tracks
-  /// the prize-side money held by SystemAccount[show_escrow] for this show;
+  /// the prize-side money held by SystemAccount[showEscrow] for this show;
   /// feeEscrow tracks the entry-fee-side money held for this show. Both
   /// decrement to zero by execute time. The aggregate
-  /// SystemAccount[show_escrow].balance MUST equal
+  /// SystemAccount[showEscrow].balance MUST equal
   /// SUM(prizeEscrow + feeEscrow) across all open shows at all times —
   /// reconciled by the money-conservation sentinel in
   /// `backend/__tests__/showEscrowMoneyConservation.integration.test.mjs`.
@@ -878,7 +878,7 @@ model Show {
 /// codebase informally maintains.
 ///
 /// Seed (in the migration):
-///   - `show_escrow`: holds prize + accumulated entry fees for open shows
+///   - `showEscrow`: holds prize + accumulated entry fees for open shows
 ///   - `burn`:        terminal account; money credited here is permanently
 ///                    removed from circulation (used when a show's creator
 ///                    has been GDPR-deleted before payout)

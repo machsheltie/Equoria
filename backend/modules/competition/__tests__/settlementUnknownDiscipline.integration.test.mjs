@@ -14,9 +14,9 @@
  *
  * Escrow ownership: both shows are created through the real createShow
  * controller, which debits the test-owned creator and credits
- * SystemAccount[show_escrow] by the prize, so the run never depends on what the
+ * SystemAccount[showEscrow] by the prize, so the run never depends on what the
  * shared escrow singleton happens to hold (it passes on a fresh database where
- * show_escrow = 0). Three entrants per show take the whole prize (50/30/20), so
+ * showEscrow = 0). Three entrants per show take the whole prize (50/30/20), so
  * settlement drains every escrow column it owns to 0. createShow only accepts
  * the 23, so the legacy show is created as Dressage and then given the legacy
  * name on its own row, the shape a pre-B3 row has. Teardown re-settles any
@@ -96,7 +96,7 @@ function fakeRes() {
   return res;
 }
 
-/** A Dressage show funded through the real createShow path (prize -> show_escrow). */
+/** A Dressage show funded through the real createShow path (prize -> showEscrow). */
 async function createFundedShow(creatorId) {
   const res = fakeRes();
   await createShow(

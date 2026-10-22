@@ -213,7 +213,7 @@ export async function hireFreeAgent(req, res) {
             userId,
             amount: hiringCost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'groom_hire_burn',
+            category: 'groomHireBurn',
             description: `Groom hire fee — ${offer.name}`,
             metadata: { groomId, freeAgent: true },
           });
@@ -252,7 +252,7 @@ export async function hireFreeAgent(req, res) {
             userId,
             type: 'debit',
             amount: hiringCost,
-            category: 'groom_hire',
+            category: 'groomHire',
             description: `Hired groom ${offer.name}`,
             metadata: { groomId, freeAgent: true },
           });

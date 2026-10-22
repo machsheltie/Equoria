@@ -206,7 +206,7 @@ describe('feedShopController integration', () => {
       expect(res.body.data.remainingMoney).toBe(4900);
 
       const ledgerRow = await prisma.userTransaction.findFirst({
-        where: { userId: user.id, category: 'feed_purchase' },
+        where: { userId: user.id, category: 'feedPurchase' },
         orderBy: { createdAt: 'desc' },
       });
 

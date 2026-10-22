@@ -140,13 +140,13 @@ describe('tackShop purchaseTackItem recordTransactionTx migration sentinel (Equo
     // recordTransactionTx read inside the same tx (the migration's
     // structural guarantee).
     const ledgerRow = await prisma.userTransaction.findFirst({
-      where: { userId: user.id, category: 'tack_purchase' },
+      where: { userId: user.id, category: 'tackPurchase' },
       orderBy: { createdAt: 'desc' },
     });
     expect(ledgerRow).not.toBeNull();
     expect(ledgerRow.type).toBe('debit');
     expect(Number(ledgerRow.amount)).toBe(item.cost);
-    expect(ledgerRow.category).toBe('tack_purchase');
+    expect(ledgerRow.category).toBe('tackPurchase');
     expect(Number(ledgerRow.balanceAfter)).toBe(expectedMoneyAfter);
     expect(ledgerRow.metadata).toMatchObject({
       horseId: horse.id,

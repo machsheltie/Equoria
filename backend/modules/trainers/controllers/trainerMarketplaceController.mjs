@@ -154,7 +154,7 @@ export async function refreshTrainerMarketplace(req, res) {
               userId,
               amount: refreshCost,
               systemAccount: SYSTEM_ACCOUNT_BURN,
-              category: 'trainer_marketplace_refresh_burn',
+              category: 'trainerMarketplaceRefreshBurn',
               description: 'Trainer marketplace refresh fee',
               metadata: { staffType: STAFF_TYPE },
             });
@@ -298,7 +298,7 @@ export async function hireTrainerFromMarketplace(req, res) {
           userId,
           amount: hiringCost,
           systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'trainer_hire_burn',
+          category: 'trainerHireBurn',
           description: `Trainer hire fee — ${trainer.firstName} ${trainer.lastName}`,
           metadata: { trainerId: trainer.id, marketplaceId },
         });
@@ -326,7 +326,7 @@ export async function hireTrainerFromMarketplace(req, res) {
           userId,
           type: 'debit',
           amount: hiringCost,
-          category: 'trainer_hire',
+          category: 'trainerHire',
           description: `Hired trainer ${trainer.firstName} ${trainer.lastName}`,
           metadata: { trainerId: trainer.id, marketplaceId },
         });

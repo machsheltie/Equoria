@@ -230,7 +230,7 @@ export async function bookPublicStud(req, res) {
               userId: requesterId,
               type: 'debit',
               amount: fee,
-              category: 'stud_fee_paid',
+              category: 'studFeePaid',
               description: `Stud fee: ${dam.name} to ${sire.name}`,
               metadata: { ...metadata, counterpartyId: stallionOwnerId },
             });
@@ -238,7 +238,7 @@ export async function bookPublicStud(req, res) {
               userId: stallionOwnerId,
               type: 'credit',
               amount: fee,
-              category: 'stud_fee_received',
+              category: 'studFeeReceived',
               description: `Stud fee: ${sire.name} covered ${dam.name}`,
               metadata: { ...metadata, counterpartyId: requesterId },
             });

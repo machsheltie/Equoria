@@ -98,11 +98,11 @@ export async function createShow(req, res) {
     const closeDate = new Date(openDate.getTime() + MS_PER_WEEK);
 
     // Equoria-nx8t1 R5 + Equoria-si69u: charge the FULL prize to the creator
-    // atomically with the show row, AND route it through SystemAccount[show_escrow]
+    // atomically with the show row, AND route it through SystemAccount[showEscrow]
     // so the prize money has a real counterparty for the lifetime of the show.
     // Pre-si69u the prize was just deducted from User.money with no credit
     // anywhere — the system implicitly minted the prize at payout time.
-    // Post-si69u: creator → SystemAccount[show_escrow] at creation; on
+    // Post-si69u: creator → SystemAccount[showEscrow] at creation; on
     // execute we move escrow → winner. Money is conserved end-to-end and the
     // show.prizeEscrow column holds the per-show accounting view.
     let show;
@@ -119,7 +119,7 @@ export async function createShow(req, res) {
             }
             // Credit the escrow account by the same amount in the same tx.
             await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
-              category: 'show_create_prize_escrow',
+              category: 'showCreatePrizeEscrow',
               description: `Prize escrow for show "${name.trim()}"`,
               linkedUserId: userId,
             });
@@ -141,7 +141,7 @@ export async function createShow(req, res) {
               closeDate,
               createdByUserId: userId,
               // Equoria-si69u: per-show accounting view of the escrow.
-              // SystemAccount[show_escrow].balance always reconciles against
+              // SystemAccount[showEscrow].balance always reconciles against
               // SUM(prizeEscrow + feeEscrow) for open shows.
               prizeEscrow: prize,
               feeEscrow: 0,

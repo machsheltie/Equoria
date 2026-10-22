@@ -8,7 +8,7 @@
  *
  * Pre-shsgd behavior (the bug): eraseUserAccount() only nulled
  * createdByUserId on the show row. The show stayed status='open', kept
- * its prizeEscrow and feeEscrow balances in SystemAccount[show_escrow],
+ * its prizeEscrow and feeEscrow balances in SystemAccount[showEscrow],
  * and executeClosedShows eventually scored the entries and burned the
  * fees (entrants lost their fees with no offsetting outcome they cared
  * about, prize was paid to whoever's horse won).
@@ -121,7 +121,7 @@ async function snapBurn() {
   return row ? Number(row.balance) : 0;
 }
 
-// Equoria-3n2g4: do NOT globally reset the shared SystemAccount[show_escrow]/
+// Equoria-3n2g4: do NOT globally reset the shared SystemAccount[showEscrow]/
 // [burn] singletons. They are shared across every money-conservation suite, and
 // siblings run concurrently under maxWorkers=50%; forcing them to 0 clobbered a
 // sibling's in-flight balance mid-measurement (the cross-interference this issue
@@ -213,7 +213,7 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     // Sanity: THIS show's per-show escrow columns hold exactly the prize (1000)
     // + the accumulated fees (3 × 50 = 150). These columns belong solely to this
     // show row, so they are immune to concurrent sibling activity on the shared
-    // SystemAccount[show_escrow] row (Equoria-3n2g4).
+    // SystemAccount[showEscrow] row (Equoria-3n2g4).
     const showMid = await prisma.show.findUnique({ where: { id: showId } });
     expect(showMid.prizeEscrow).toBe(1000);
     expect(showMid.feeEscrow).toBe(150);
@@ -258,7 +258,7 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     const burnAfter = await snapBurn();
     expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(1000);
 
-    // The shared show_escrow row returned to (at least) its baseline for this
+    // The shared showEscrow row returned to (at least) its baseline for this
     // show's contribution: this show pushed 1150 in and drained all 1150 back
     // out (1000→burn, 150→entrants). A concurrent sibling could leave escrow
     // elevated, so assert this show's net escrow contribution is zero via its
@@ -297,7 +297,7 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
         feeEscrow: 0,
       },
     });
-    // Equoria-3n2g4: settle the shared show_escrow by DECREMENTing exactly the
+    // Equoria-3n2g4: settle the shared showEscrow by DECREMENTing exactly the
     // amount createShow credited for THIS show (the 1000 prize), instead of a
     // global `balance: 0` set. The decrement is atomic and touches only this
     // show's contribution — it cannot clobber a concurrently-running sibling's

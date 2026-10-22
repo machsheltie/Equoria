@@ -36,7 +36,7 @@ const sampleResponse = {
       id: 1,
       type: 'credit',
       amount: 500,
-      category: 'weekly_reward',
+      category: 'weeklyReward',
       description: 'Weekly reward claim',
       balanceAfter: 1500,
       metadata: {},

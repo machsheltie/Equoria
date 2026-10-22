@@ -190,7 +190,7 @@ export async function refreshMarketplace(req, res) {
               userId,
               amount: refreshCost,
               systemAccount: SYSTEM_ACCOUNT_BURN,
-              category: 'groom_marketplace_refresh_burn',
+              category: 'groomMarketplaceRefreshBurn',
               description: 'Groom marketplace refresh fee',
               metadata: { staffType: STAFF_TYPE },
             });
@@ -199,7 +199,7 @@ export async function refreshMarketplace(req, res) {
               userId,
               type: 'debit',
               amount: refreshCost,
-              category: 'groom_marketplace_refresh',
+              category: 'groomMarketplaceRefresh',
               description: 'Groom marketplace refresh fee',
               metadata: { staffType: STAFF_TYPE },
             });
@@ -359,7 +359,7 @@ export async function hireFromMarketplace(req, res) {
             userId,
             amount: hiringCost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'groom_hire_burn',
+            category: 'groomHireBurn',
             description: `Groom hire fee — ${groom.name}`,
             metadata: { groomId: groom.id, marketplaceId },
           });
@@ -413,7 +413,7 @@ export async function hireFromMarketplace(req, res) {
             userId,
             type: 'debit',
             amount: hiringCost,
-            category: 'groom_hire',
+            category: 'groomHire',
             description: `Hired groom ${groom.name}`,
             metadata: { groomId: groom.id, marketplaceId },
           });

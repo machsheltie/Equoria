@@ -328,7 +328,7 @@ afterAll(async () => {
   if (created.showIds.length) {
     // Drain any escrow a fixture show is still holding BEFORE deleting the row.
     // Deleting a show with feeEscrow > 0 would strand that money in the shared
-    // SystemAccount[show_escrow] with no show to account for it, breaking the
+    // SystemAccount[showEscrow] with no show to account for it, breaking the
     // si69u reconciliation for every suite that runs after this one. The happy
     // path settles inside the test; this is the failed-test path.
     const stillEscrowed = await prisma.show
@@ -583,7 +583,7 @@ describe('INTEGRATION: erasure survives a PRESERVED horse that carries an entry 
 
     // A show the OTHER player hosts. Created directly (not via createShow) so
     // it starts with zero escrow: every coin this fixture puts into
-    // SystemAccount[show_escrow] then arrives through the REAL entry path
+    // SystemAccount[showEscrow] then arrives through the REAL entry path
     // below and leaves through the REAL settlement path at the end, which
     // keeps the si69u invariant (escrow.balance == SUM(prizeEscrow +
     // feeEscrow)) true at every point a concurrent sibling suite could look.
@@ -608,7 +608,7 @@ describe('INTEGRATION: erasure survives a PRESERVED horse that carries an entry 
     created.showIds.push(show.id);
 
     // Both players enter through the production controller, so the fee legs
-    // are real: wallet -> SystemAccount[show_escrow], show.feeEscrow += fee,
+    // are real: wallet -> SystemAccount[showEscrow], show.feeEscrow += fee,
     // ShowEntry created.
     for (const [entrant, horse] of [
       [owner, ancestor],

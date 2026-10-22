@@ -105,9 +105,9 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     const paid = await prisma.userTransaction.findMany({ where: { userId: mareOwner.user.id } });
     const received = await prisma.userTransaction.findMany({ where: { userId: studOwner.user.id } });
     expect(paid).toHaveLength(1);
-    expect(paid[0]).toMatchObject({ type: 'debit', amount: FEE, category: 'stud_fee_paid' });
+    expect(paid[0]).toMatchObject({ type: 'debit', amount: FEE, category: 'studFeePaid' });
     expect(received).toHaveLength(1);
-    expect(received[0]).toMatchObject({ type: 'credit', amount: FEE, category: 'stud_fee_received' });
+    expect(received[0]).toMatchObject({ type: 'credit', amount: FEE, category: 'studFeeReceived' });
 
     const dam = await prisma.horse.findUnique({ where: { id: mare.id } });
     expect(dam.inFoalSinceDate).not.toBeNull();
@@ -161,8 +161,8 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     return Promise.all([
       moneyOf(mareOwner.user.id),
       moneyOf(studOwner.user.id),
-      prisma.userTransaction.count({ where: { userId: mareOwner.user.id, category: 'stud_fee_paid' } }),
-      prisma.userTransaction.count({ where: { userId: studOwner.user.id, category: 'stud_fee_received' } }),
+      prisma.userTransaction.count({ where: { userId: mareOwner.user.id, category: 'studFeePaid' } }),
+      prisma.userTransaction.count({ where: { userId: studOwner.user.id, category: 'studFeeReceived' } }),
       prisma.breedingRecord.count({ where: { damId: mare.id } }),
     ]).then(([a, b, paid, received, records]) => {
       expect(a).toBe(mareOwnerStart - FEE);

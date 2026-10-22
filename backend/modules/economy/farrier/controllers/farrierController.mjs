@@ -120,7 +120,7 @@ export async function bookFarrierService(req, res) {
             userId,
             amount: service.cost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'farrier_service_burn',
+            category: 'farrierServiceBurn',
             description: `Farrier fee — ${service.name} for ${horse.name}`,
             metadata: { horseId, serviceId },
           });
@@ -134,7 +134,7 @@ export async function bookFarrierService(req, res) {
             userId,
             type: 'debit',
             amount: service.cost,
-            category: 'farrier_service',
+            category: 'farrierService',
             description: `${service.name} for ${horse.name}`,
             metadata: { horseId, serviceId },
           });

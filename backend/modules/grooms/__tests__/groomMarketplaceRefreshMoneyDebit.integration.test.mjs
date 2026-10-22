@@ -34,7 +34,7 @@
  * Why red on the un-hardened code:
  *   - Case 1: the bare autocommit decrement double-spends -> two 200s, wallet
  *     negative.
- *   - Case 2: the old path writes NO groom_marketplace_refresh(/_burn) row and
+ *   - Case 2: the old path writes NO groomMarketplaceRefresh(/_burn) row and
  *     credits burn ZERO.
  *   - Case 3: the old debit autocommits BEFORE the separate upsert, so when the
  *     upsert overflows the user is already charged (wallet down by the cost).
@@ -175,14 +175,14 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     // Burn credited exactly ONCE + exactly one principal debit row for the
     // winner (concurrency-proof "no off-ledger, no double-burn" signal).
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_marketplace_refresh' },
+      where: { userId: buyer.id, category: 'groomMarketplaceRefresh' },
     });
     expect(debitRows).toHaveLength(1);
     expect(debitRows[0].type).toBe('debit');
     expect(debitRows[0].amount).toBe(REFRESH_COST);
 
     const burnCreditRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_marketplace_refresh_burn' },
+      where: { userId: buyer.id, category: 'groomMarketplaceRefreshBurn' },
     });
     expect(burnCreditRows).toHaveLength(1);
     expect(burnCreditRows[0].type).toBe('credit');
@@ -214,7 +214,7 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(REFRESH_COST);
 
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_marketplace_refresh' },
+      where: { userId: buyer.id, category: 'groomMarketplaceRefresh' },
     });
     expect(debitRows).toHaveLength(1);
     expect(debitRows[0].type).toBe('debit');
@@ -222,7 +222,7 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     expect(Number(debitRows[0].balanceAfter)).toBe(moneyBefore - REFRESH_COST);
 
     const burnCreditRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_marketplace_refresh_burn' },
+      where: { userId: buyer.id, category: 'groomMarketplaceRefreshBurn' },
     });
     expect(burnCreditRows).toHaveLength(1);
     expect(burnCreditRows[0].type).toBe('credit');
@@ -253,7 +253,7 @@ describe('groomMarketplaceController.refreshMarketplace money-debit hardening (E
     const ledgerRows = await prisma.userTransaction.findMany({
       where: {
         userId: buyer.id,
-        category: { in: ['groom_marketplace_refresh', 'groom_marketplace_refresh_burn'] },
+        category: { in: ['groomMarketplaceRefresh', 'groomMarketplaceRefreshBurn'] },
       },
     });
     expect(ledgerRows).toHaveLength(0);

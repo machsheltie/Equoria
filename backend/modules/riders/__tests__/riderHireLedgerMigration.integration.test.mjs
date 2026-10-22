@@ -20,7 +20,7 @@
  *   1. Hiring a rider from a seeded marketplace via the controller
  *      (no HTTP — dodges CSRF; uses the same pattern as the vet and
  *      bank migration sentinels Equoria-2hfss / Equoria-hw3c8).
- *   2. Reading back the most recent rider_hire `userTransaction` row.
+ *   2. Reading back the most recent riderHire `userTransaction` row.
  *   3. Asserting `balanceAfter` on the ledger row equals the user's
  *      money column AFTER the debit (starting money - hiringCost).
  *   4. Asserting type/amount/category/metadata.riderId/marketplaceId
@@ -157,13 +157,13 @@ describe('rider hireRiderFromMarketplace recordTransactionTx migration sentinel 
     // recordTransactionTx read inside the same tx (the migration's
     // structural guarantee).
     const ledgerRow = await prisma.userTransaction.findFirst({
-      where: { userId: user.id, category: 'rider_hire' },
+      where: { userId: user.id, category: 'riderHire' },
       orderBy: { createdAt: 'desc' },
     });
     expect(ledgerRow).not.toBeNull();
     expect(ledgerRow.type).toBe('debit');
     expect(Number(ledgerRow.amount)).toBe(HIRING_COST);
-    expect(ledgerRow.category).toBe('rider_hire');
+    expect(ledgerRow.category).toBe('riderHire');
     expect(Number(ledgerRow.balanceAfter)).toBe(expectedMoneyAfter);
     expect(ledgerRow.metadata).toMatchObject({
       riderId: hiredRiderId,

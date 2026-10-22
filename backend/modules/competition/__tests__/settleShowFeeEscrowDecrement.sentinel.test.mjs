@@ -5,7 +5,7 @@
  * `feeEscrow` fresh, paid the creator that amount, then wrote
  * `feeEscrow: 0` (ABSOLUTE) instead of `{ decrement: <read amount> }`. Any
  * feeEscrow increment that raced in between the read and the write was ERASED —
- * the per-show reconciliation invariant (SystemAccount[show_escrow].balance ==
+ * the per-show reconciliation invariant (SystemAccount[showEscrow].balance ==
  * SUM(prizeEscrow + feeEscrow) of open shows) breaks and money is stranded.
  *
  * THE FIX writes `feeEscrow: { decrement: settled.feeEscrow }` so the column is
@@ -91,7 +91,7 @@ describe('settleShowFeeEscrow — decrement, not absolute-zero (Equoria-8pb6w)',
     });
     showIds.push(show.id);
 
-    // Fund SystemAccount[show_escrow] so the settlement debit (== read amount)
+    // Fund SystemAccount[showEscrow] so the settlement debit (== read amount)
     // succeeds regardless of the shared row's starting balance. Delta-based:
     // we credit exactly SETTLED_AMOUNT and settlement debits it back.
     await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, SETTLED_AMOUNT, {

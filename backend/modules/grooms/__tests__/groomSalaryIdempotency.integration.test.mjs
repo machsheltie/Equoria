@@ -270,7 +270,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
 
     // Exactly ONE burn-credit ledger row attributed to this user.
     const burnRows = await prisma.userTransaction.count({
-      where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
+      where: { userId: user.id, type: 'credit', category: 'groomSalaryBurn' },
     });
     expect(burnRows).toBe(1);
   }, 120000);
@@ -368,7 +368,7 @@ describe('processWeeklySalaries — same-pay-week idempotency (Equoria-icqqm)', 
     expect(paidRows.length).toBe(1);
 
     const burnRows = await prisma.userTransaction.count({
-      where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
+      where: { userId: user.id, type: 'credit', category: 'groomSalaryBurn' },
     });
     expect(burnRows).toBe(1);
   }, 120000);

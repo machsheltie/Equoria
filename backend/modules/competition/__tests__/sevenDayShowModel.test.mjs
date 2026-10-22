@@ -327,7 +327,7 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
   });
 
   // Equoria-si69u / Equoria-9iffb: entry fees are held in
-  // SystemAccount[show_escrow] (tracked per-show via Show.feeEscrow) on entry,
+  // SystemAccount[showEscrow] (tracked per-show via Show.feeEscrow) on entry,
   // NOT credited to the creator's wallet on entry. The creator is paid the
   // accumulated fees at EXECUTION (or the escrow is burned if the creator
   // GDPR-deleted before then). This is the post-si69u correct economics:
@@ -380,7 +380,7 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
     // Creator is NOT credited on entry — the fee is held in escrow until execution.
     expect(creatorAfter.money).toBe(creatorBefore.money);
     // The fee lands in the per-show fee escrow (the scoped accounting view of
-    // SystemAccount[show_escrow]).
+    // SystemAccount[showEscrow]).
     expect(showAfter.feeEscrow).toBe(showBefore.feeEscrow + 25);
     // Money conservation: the amount debited from the entrant equals the
     // amount added to escrow — the fee is held, not lost or minted.

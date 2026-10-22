@@ -266,7 +266,7 @@ export async function craftItem(req, res) {
             userId,
             amount: recipe.cost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'crafting_fee_burn',
+            category: 'craftingFeeBurn',
             description: `Crafting fee — ${recipe.resultName}`,
             metadata: { recipeId, result: recipe.result },
           });

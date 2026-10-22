@@ -404,7 +404,7 @@ export async function buyHorse(req, res) {
             userId: buyerId,
             type: 'debit',
             amount: salePrice,
-            category: 'marketplace_purchase',
+            category: 'marketplacePurchase',
             description: `Purchased ${horseSnapshot.name}`,
             metadata: { horseId, saleId: saleRecord.id, sellerId },
           });
@@ -412,7 +412,7 @@ export async function buyHorse(req, res) {
             userId: sellerId,
             type: 'credit',
             amount: salePrice,
-            category: 'marketplace_sale',
+            category: 'marketplaceSale',
             description: `Sold ${horseSnapshot.name}`,
             metadata: { horseId, saleId: saleRecord.id, buyerId },
           });
@@ -623,8 +623,8 @@ export async function buyStoreHorse(req, res) {
             userId: buyerId,
             amount: STORE_PRICE,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'store_horse_purchase_burn',
-            description: `Burn paired with horse_trader_purchase by user ${buyerId}`,
+            category: 'storeHorsePurchaseBurn',
+            description: `Burn paired with horseTraderPurchase by user ${buyerId}`,
             metadata: { breedId: parsedBreedId, sex: canonicalSex },
           });
 
@@ -634,7 +634,7 @@ export async function buyStoreHorse(req, res) {
             userId: buyerId,
             type: 'debit',
             amount: STORE_PRICE,
-            category: 'horse_trader_purchase',
+            category: 'horseTraderPurchase',
             description: `Purchased ${breedRecord.name} from Horse Trader`,
             metadata: { breedId: parsedBreedId, sex: canonicalSex },
           });

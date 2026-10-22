@@ -272,8 +272,8 @@ describe('two different entries against money for one fee (Equoria-mwjst)', () =
     const showRow = await prisma.show.findUnique({ where: { id: show.id }, select: { feeEscrow: true } });
     expect(Number(showRow.feeEscrow)).toBe(ENTRY_FEE);
     const ledger = await ledgerFor(user.id, show.id);
-    expect(ledger.filter(r => r.category === 'competition_entry').map(r => Number(r.amount))).toEqual([ENTRY_FEE]);
-    expect(ledger.filter(r => r.category === 'show_entry_fee_escrow').map(r => Number(r.amount))).toEqual([ENTRY_FEE]);
+    expect(ledger.filter(r => r.category === 'competitionEntry').map(r => Number(r.amount))).toEqual([ENTRY_FEE]);
+    expect(ledger.filter(r => r.category === 'showEntryFeeEscrow').map(r => Number(r.amount))).toEqual([ENTRY_FEE]);
   });
 });
 
@@ -290,8 +290,8 @@ describe('both entry routes keep the same books (Equoria-mwjst)', () => {
       const entry = await enterFn({ show: showRow, showId: show.id, horseId: horse.id, userId: user.id });
 
       const ledger = await ledgerFor(user.id, show.id);
-      const debit = ledger.filter(r => r.category === 'competition_entry');
-      const escrow = ledger.filter(r => r.category === 'show_entry_fee_escrow');
+      const debit = ledger.filter(r => r.category === 'competitionEntry');
+      const escrow = ledger.filter(r => r.category === 'showEntryFeeEscrow');
       const after = await showRowAndMoney(user.id, show.id);
       results.push({
         moneyDelta: before - after.money,
@@ -363,7 +363,7 @@ describe('conformation settlement (Equoria-mwjst)', () => {
 
     const hostAfter = await money(host.id);
     expect(hostAfter).toBe(hostBefore + ENTRY_FEE);
-    const credits = (await ledgerFor(host.id, show.id)).filter(r => r.category === 'show_entry_fees_received');
+    const credits = (await ledgerFor(host.id, show.id)).filter(r => r.category === 'showEntryFeesReceived');
     expect(
       credits.map(r => ({ type: r.type, amount: Number(r.amount), balanceAfter: Number(r.balanceAfter) })),
     ).toEqual([{ type: 'credit', amount: ENTRY_FEE, balanceAfter: hostAfter }]);

@@ -316,22 +316,22 @@ describe('purchaseTackItem / unequipDecoration — controller-direct decorative 
     expect(h.tack.decorations.filter(id => id === 'show-ribbon').length).toBe(1);
   });
 
-  it('writes the tack_purchase ledger transaction synchronously before resolving', async () => {
+  it('writes the tackPurchase ledger transaction synchronously before resolving', async () => {
     await prisma.horse.update({ where: { id: horse.id }, data: { tack: {} } });
     await prisma.user.update({ where: { id: user.id }, data: { money: 50000 } });
-    const before = await prisma.userTransaction.count({ where: { userId: user.id, category: 'tack_purchase' } });
+    const before = await prisma.userTransaction.count({ where: { userId: user.id, category: 'tackPurchase' } });
     const res = makeRes();
     await purchaseTackItem(makeReq({ body: { horseId: horse.id, itemId: 'show-ribbon' } }), res);
     expect(res._status).toBe(200);
-    const after = await prisma.userTransaction.count({ where: { userId: user.id, category: 'tack_purchase' } });
+    const after = await prisma.userTransaction.count({ where: { userId: user.id, category: 'tackPurchase' } });
     expect(after).toBe(before + 1);
     const row = await prisma.userTransaction.findFirst({
-      where: { userId: user.id, category: 'tack_purchase' },
+      where: { userId: user.id, category: 'tackPurchase' },
       orderBy: { createdAt: 'desc' },
     });
     expect(row.type).toBe('debit');
     expect(row.amount).toBe(120);
-    await prisma.userTransaction.deleteMany({ where: { userId: user.id, category: 'tack_purchase' } });
+    await prisma.userTransaction.deleteMany({ where: { userId: user.id, category: 'tackPurchase' } });
   });
 
   it('returns 400 on insufficient funds', async () => {

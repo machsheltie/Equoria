@@ -6,7 +6,7 @@
  * recordTransactionTx(tx, opts).
  *
  * What this test PROVES (the load-bearing assertions):
- *   1. A `trainer_hire` debit row is persisted under the same tx as the
+ *   1. A `trainerHire` debit row is persisted under the same tx as the
  *      money debit + trainer.create. If the migration silently swapped
  *      back to fire-and-forget recordTransaction, the row count would
  *      still match — but the `balanceAfter` would carry whatever the
@@ -122,14 +122,14 @@ describe('hireTrainerFromMarketplace — recordTransactionTx migration (Equoria-
   afterAll(cleanupSuite);
   afterEach(cleanupSuite);
 
-  it('persists a trainer_hire debit row inside the same tx as the trainer.create', async () => {
+  it('persists a trainerHire debit row inside the same tx as the trainer.create', async () => {
     const user = await createUser(50_000);
     const state = await seedMarketplaceState(user.id);
     const target = state.offers[0];
     const expectedCost = target.sessionRate * 4;
 
     const before = await prisma.userTransaction.count({
-      where: { userId: user.id, category: 'trainer_hire' },
+      where: { userId: user.id, category: 'trainerHire' },
     });
 
     const h = makeReqRes(user.id, { body: { marketplaceId: target.marketplaceId } });
@@ -139,12 +139,12 @@ describe('hireTrainerFromMarketplace — recordTransactionTx migration (Equoria-
 
     // No await-tick: the ledger row MUST exist the moment the handler returns.
     const after = await prisma.userTransaction.count({
-      where: { userId: user.id, category: 'trainer_hire' },
+      where: { userId: user.id, category: 'trainerHire' },
     });
     expect(after).toBe(before + 1);
 
     const row = await prisma.userTransaction.findFirst({
-      where: { userId: user.id, category: 'trainer_hire' },
+      where: { userId: user.id, category: 'trainerHire' },
       orderBy: { createdAt: 'desc' },
     });
     expect(row).not.toBeNull();
@@ -180,7 +180,7 @@ describe('hireTrainerFromMarketplace — recordTransactionTx migration (Equoria-
     const target = state.offers[0];
 
     const before = await prisma.userTransaction.count({
-      where: { userId: user.id, category: 'trainer_hire' },
+      where: { userId: user.id, category: 'trainerHire' },
     });
 
     const h = makeReqRes(user.id, { body: { marketplaceId: target.marketplaceId } });
@@ -191,7 +191,7 @@ describe('hireTrainerFromMarketplace — recordTransactionTx migration (Equoria-
 
     // NO ledger row written.
     const after = await prisma.userTransaction.count({
-      where: { userId: user.id, category: 'trainer_hire' },
+      where: { userId: user.id, category: 'trainerHire' },
     });
     expect(after).toBe(before);
 

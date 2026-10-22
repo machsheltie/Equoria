@@ -210,7 +210,7 @@ describe('Equoria-bgdfb — the missed week is collected with the next one, once
 
     // ONE debit, not two: a single burn-ledger row carries the whole move.
     const burnRows = await prisma.userTransaction.findMany({
-      where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
+      where: { userId: user.id, type: 'credit', category: 'groomSalaryBurn' },
       select: { amount: true },
     });
     expect(burnRows).toHaveLength(1);

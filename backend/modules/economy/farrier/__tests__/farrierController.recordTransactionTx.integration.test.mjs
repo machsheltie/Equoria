@@ -6,7 +6,7 @@
  * recordTransactionTx(tx, opts).
  *
  * What this test PROVES (the load-bearing assertions):
- *   1. A `farrier_service` debit row is persisted under the same tx as the
+ *   1. A `farrierService` debit row is persisted under the same tx as the
  *      money debit + horse update.
  *   2. `balanceAfter` on the persisted row equals the user's money AFTER
  *      the debit. Pre-migration the caller passed `userUpdate.money`
@@ -108,7 +108,7 @@ afterAll(async () => {
 }, 30000);
 
 describe('farrierController.bookFarrierService — recordTransactionTx migration (Equoria-u9mw9)', () => {
-  it('SENTINEL: writes a farrier_service debit ledger row inside the same tx, balanceAfter sourced internally', async () => {
+  it('SENTINEL: writes a farrierService debit ledger row inside the same tx, balanceAfter sourced internally', async () => {
     const startMoney = service.cost + 1000;
     const { user, horse } = await makeFarrierFixture(startMoney);
 
@@ -119,9 +119,9 @@ describe('farrierController.bookFarrierService — recordTransactionTx migration
     expect(res.statusCode).toBe(200);
     expect(res.body?.success).toBe(true);
 
-    // 1. The ledger row exists, attached to this user, category 'farrier_service'.
+    // 1. The ledger row exists, attached to this user, category 'farrierService'.
     const rows = await prisma.userTransaction.findMany({
-      where: { userId: user.id, category: 'farrier_service' },
+      where: { userId: user.id, category: 'farrierService' },
       orderBy: { createdAt: 'desc' },
     });
     expect(rows).toHaveLength(1);
@@ -165,7 +165,7 @@ describe('farrierController.bookFarrierService — recordTransactionTx migration
 
     // The bug guard: no row was written.
     const rows = await prisma.userTransaction.findMany({
-      where: { userId: user.id, category: 'farrier_service' },
+      where: { userId: user.id, category: 'farrierService' },
     });
     expect(rows).toHaveLength(0);
 

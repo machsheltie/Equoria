@@ -139,13 +139,13 @@ describe('vet bookVetAppointment recordTransactionTx migration sentinel (Equoria
     // recordTransactionTx read inside the same tx (the migration's
     // structural guarantee).
     const ledgerRow = await prisma.userTransaction.findFirst({
-      where: { userId: user.id, category: 'vet_service' },
+      where: { userId: user.id, category: 'vetService' },
       orderBy: { createdAt: 'desc' },
     });
     expect(ledgerRow).not.toBeNull();
     expect(ledgerRow.type).toBe('debit');
     expect(Number(ledgerRow.amount)).toBe(service.cost);
-    expect(ledgerRow.category).toBe('vet_service');
+    expect(ledgerRow.category).toBe('vetService');
     expect(Number(ledgerRow.balanceAfter)).toBe(expectedMoneyAfter);
     expect(ledgerRow.metadata).toMatchObject({
       horseId: horse.id,

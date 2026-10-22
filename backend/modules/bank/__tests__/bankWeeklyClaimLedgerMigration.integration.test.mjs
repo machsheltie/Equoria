@@ -2,7 +2,7 @@
  * POST /api/v1/bank/claim — recordTransactionTx migration sentinel
  * (Equoria-hw3c8).
  *
- * Per Equoria-pqp69 migration plan: the weekly_reward CREDIT in
+ * Per Equoria-pqp69 migration plan: the weeklyReward CREDIT in
  * bankController.claimWeeklyReward was migrated from the legacy
  * `recordTransaction(opts, tx)` signature to
  * `recordTransactionTx(tx, opts)`. The structural guarantee of the new
@@ -14,7 +14,7 @@
  *   1. Claiming the weekly reward via the controller (no HTTP — dodges
  *      CSRF setup; uses the same pattern as the vet migration sentinel
  *      Equoria-2hfss).
- *   2. Reading back the most recent weekly_reward `userTransaction` row.
+ *   2. Reading back the most recent weeklyReward `userTransaction` row.
  *   3. Asserting `balanceAfter` on the ledger row equals the user's
  *      money column AFTER the credit (starting money + WEEKLY_REWARD).
  *
@@ -25,7 +25,7 @@
  * signature would have made that impossible by construction.
  *
  * Sentinel-positive coverage: also asserts type='credit',
- * amount=WEEKLY_REWARD, category='weekly_reward', and
+ * amount=WEEKLY_REWARD, category='weeklyReward', and
  * metadata.weekStart matches the current Sunday — so a refactor that
  * drops one of those fields fails loudly.
  *
@@ -119,13 +119,13 @@ describe('bank claimWeeklyReward recordTransactionTx migration sentinel (Equoria
     // recordTransactionTx read inside the same tx (the migration's
     // structural guarantee).
     const ledgerRow = await prisma.userTransaction.findFirst({
-      where: { userId: user.id, category: 'weekly_reward' },
+      where: { userId: user.id, category: 'weeklyReward' },
       orderBy: { createdAt: 'desc' },
     });
     expect(ledgerRow).not.toBeNull();
     expect(ledgerRow.type).toBe('credit');
     expect(Number(ledgerRow.amount)).toBe(WEEKLY_REWARD_AMOUNT);
-    expect(ledgerRow.category).toBe('weekly_reward');
+    expect(ledgerRow.category).toBe('weeklyReward');
     expect(Number(ledgerRow.balanceAfter)).toBe(expectedMoneyAfter);
 
     const expectedWeekStartISO = getCurrentWeekStart().toISOString();

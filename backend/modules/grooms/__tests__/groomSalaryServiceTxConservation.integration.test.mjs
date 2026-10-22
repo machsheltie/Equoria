@@ -230,7 +230,7 @@ describe('groomSalaryService.processWeeklySalaries — code sentinel (Equoria-7r
     //     present so a regression that drops it (and thus the conservation
     //     pairing) is caught at source level.
     expect(body).toMatch(/systemAccount:\s*SYSTEM_ACCOUNT_BURN/);
-    expect(body).toMatch(/category:\s*'groom_salary_burn'/);
+    expect(body).toMatch(/category:\s*'groomSalaryBurn'/);
 
     // (4) Must NOT use the historical TOCTOU shape — manual pre-check
     //     followed by raw `prisma.user.update({ money: { decrement } })`.
@@ -323,7 +323,7 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
       where: {
         userId: user.id,
         type: 'credit',
-        category: 'groom_salary_burn',
+        category: 'groomSalaryBurn',
       },
     });
     expect(ledgerRows.length).toBeGreaterThanOrEqual(1);
@@ -351,14 +351,14 @@ describe('groomSalaryService.processWeeklySalaries — insufficient funds (Equor
     // no longer does — the call below is scoped to this fixture user. Instead we assert
     // that NO burn-credit ledger row was attributed to THIS user.
     const burnRowsBefore = await prisma.userTransaction.count({
-      where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
+      where: { userId: user.id, type: 'credit', category: 'groomSalaryBurn' },
     });
 
     const results = await processWeeklySalaries(undefined, { userId: user.id });
 
     const userAfter = await getUserMoney(user.id);
     const burnRowsAfter = await prisma.userTransaction.count({
-      where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
+      where: { userId: user.id, type: 'credit', category: 'groomSalaryBurn' },
     });
 
     // Wallet UNCHANGED — no partial debit, no negative wallet
@@ -412,7 +412,7 @@ describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-
     // linkedUserId is what we assert here. Equoria-ypb7d.3: it is no longer because
     // OTHER users are processed in the same call — the calls below are scoped.
     const burnRowsBefore = await prisma.userTransaction.count({
-      where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
+      where: { userId: user.id, type: 'credit', category: 'groomSalaryBurn' },
     });
 
     // Fire two parallel passes, both SCOPED to this fixture user (Equoria-ypb7d.3 — an
@@ -426,7 +426,7 @@ describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-
 
     const userAfter = await getUserMoney(user.id);
     const burnRowsAfter = await prisma.userTransaction.count({
-      where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
+      where: { userId: user.id, type: 'credit', category: 'groomSalaryBurn' },
     });
 
     // The wallet must NEVER go negative — this is the principal sentinel.
@@ -444,7 +444,7 @@ describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-
 
     // And the amount matches the single won debit
     const burnRows = await prisma.userTransaction.findMany({
-      where: { userId: user.id, type: 'credit', category: 'groom_salary_burn' },
+      where: { userId: user.id, type: 'credit', category: 'groomSalaryBurn' },
       orderBy: { createdAt: 'desc' },
       take: 1,
     });

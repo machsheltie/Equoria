@@ -150,12 +150,12 @@ describe('buyHorse — sale integrity invariants (finding 4)', () => {
     expect(await money(winnerId)).toBe(0);
     for (const b of buyers.filter(b => b.user.id !== winnerId)) {
       expect(await money(b.user.id)).toBe(price);
-      expect(await ledgerCount(b.user.id, 'marketplace_purchase')).toBe(0);
+      expect(await ledgerCount(b.user.id, 'marketplacePurchase')).toBe(0);
     }
 
     expect(await money(seller.user.id)).toBe(price);
-    expect(await ledgerCount(seller.user.id, 'marketplace_sale')).toBe(1);
-    expect(await ledgerCount(winnerId, 'marketplace_purchase')).toBe(1);
+    expect(await ledgerCount(seller.user.id, 'marketplaceSale')).toBe(1);
+    expect(await ledgerCount(winnerId, 'marketplacePurchase')).toBe(1);
 
     const sales = await prisma.horseSale.findMany({ where: { horseId: horse.id } });
     expect(sales).toHaveLength(1);
@@ -185,8 +185,8 @@ describe('buyHorse — sale integrity invariants (finding 4)', () => {
     expect(await money(buyer.user.id)).toBe(price - 1);
     expect(await money(seller.user.id)).toBe(0);
     expect(await prisma.horseSale.findMany({ where: { horseId: horse.id } })).toHaveLength(0);
-    expect(await ledgerCount(buyer.user.id, 'marketplace_purchase')).toBe(0);
-    expect(await ledgerCount(seller.user.id, 'marketplace_sale')).toBe(0);
+    expect(await ledgerCount(buyer.user.id, 'marketplacePurchase')).toBe(0);
+    expect(await ledgerCount(seller.user.id, 'marketplaceSale')).toBe(0);
   }, 120000);
 
   it('one buyer spending concurrently on two listings priced at their whole balance', async () => {
@@ -224,10 +224,10 @@ describe('buyHorse — sale integrity invariants (finding 4)', () => {
     expect(owned).toBe(1);
 
     const sellerCredits =
-      (await ledgerCount(sellerOne.user.id, 'marketplace_sale')) +
-      (await ledgerCount(sellerTwo.user.id, 'marketplace_sale'));
+      (await ledgerCount(sellerOne.user.id, 'marketplaceSale')) +
+      (await ledgerCount(sellerTwo.user.id, 'marketplaceSale'));
     expect(sellerCredits).toBe(1);
-    expect(await ledgerCount(buyer.user.id, 'marketplace_purchase')).toBe(1);
+    expect(await ledgerCount(buyer.user.id, 'marketplacePurchase')).toBe(1);
     expect((await money(sellerOne.user.id)) + (await money(sellerTwo.user.id))).toBe(price);
   }, 120000);
 
@@ -261,7 +261,7 @@ describe('buyHorse — sale integrity invariants (finding 4)', () => {
     expect(await money(buyer.user.id)).toBe(price);
     expect(await money(seller.user.id)).toBe(2_000_000_000);
     expect(await prisma.horseSale.findMany({ where: { horseId: horse.id } })).toHaveLength(0);
-    expect(await ledgerCount(buyer.user.id, 'marketplace_purchase')).toBe(0);
-    expect(await ledgerCount(seller.user.id, 'marketplace_sale')).toBe(0);
+    expect(await ledgerCount(buyer.user.id, 'marketplacePurchase')).toBe(0);
+    expect(await ledgerCount(seller.user.id, 'marketplaceSale')).toBe(0);
   }, 120000);
 });

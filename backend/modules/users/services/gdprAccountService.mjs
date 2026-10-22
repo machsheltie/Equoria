@@ -334,11 +334,11 @@ export async function eraseUserAccount(userId) {
       // show row, then let executeClosedShows pick the show up later. That
       // had two real defects for open/closed (not-yet-executed) shows:
       //
-      //   (1) Entry fees that other users had paid into SystemAccount[show_escrow]
+      //   (1) Entry fees that other users had paid into SystemAccount[showEscrow]
       //       were eventually burned at execute time (no creator to credit). The
       //       entrants get no refund AND their horse "competes" in a phantom show
       //       — they lose the entry fee with no offsetting outcome they care about.
-      //   (2) The creator's prize escrow remained in SystemAccount[show_escrow]
+      //   (2) The creator's prize escrow remained in SystemAccount[showEscrow]
       //       until execute. If the cron never picked the show up (cancelled
       //       cron, status filter drift), the money sat indefinitely.
       //
@@ -405,7 +405,7 @@ export async function eraseUserAccount(userId) {
             continue;
           }
           await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, allowed, {
-            category: 'show_cancel_refund_entrant',
+            category: 'showCancelRefundEntrant',
             description: `Refund entry fee — show "${show.name}" cancelled (creator GDPR-deleted)`,
             linkedUserId: refundUserId,
             metadata: { showId: show.id, reason: 'creator_deleted' },
@@ -422,12 +422,12 @@ export async function eraseUserAccount(userId) {
         const feeEscrowResidue = show.feeEscrow - totalRefunded;
         if (feeEscrowResidue > 0) {
           await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, feeEscrowResidue, {
-            category: 'show_cancel_burn_fee_residue',
+            category: 'showCancelBurnFeeResidue',
             description: `Burn fee-escrow residue for cancelled show ${show.id}`,
             metadata: { showId: show.id, reason: 'fee_escrow_residue' },
           });
           await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, feeEscrowResidue, {
-            category: 'show_cancel_burn_fee_residue',
+            category: 'showCancelBurnFeeResidue',
             description: `Burn fee-escrow residue for cancelled show ${show.id}`,
           });
         }
@@ -436,12 +436,12 @@ export async function eraseUserAccount(userId) {
         // (the creator's wallet is being deleted with their account).
         if (show.prizeEscrow > 0) {
           await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.prizeEscrow, {
-            category: 'show_cancel_burn_prize',
+            category: 'showCancelBurnPrize',
             description: `Burn prize escrow for cancelled show ${show.id} (creator GDPR-deleted)`,
             metadata: { showId: show.id, reason: 'creator_deleted' },
           });
           await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, show.prizeEscrow, {
-            category: 'show_cancel_burn_prize',
+            category: 'showCancelBurnPrize',
             description: `Burn prize escrow for cancelled show ${show.id}`,
           });
         }
@@ -497,7 +497,7 @@ export async function eraseUserAccount(userId) {
       // RETENTION RULING — the entry is deleted and the fee stays escrowed to
       // the host:
       //   • Equoria has no withdraw-from-show path. Once `enterShowAtomicTx`
-      //     moves a fee into SystemAccount[show_escrow] it is the HOST's at
+      //     moves a fee into SystemAccount[showEscrow] it is the HOST's at
       //     settlement (`settleShowFeeEscrow`); there is no inverse operation
       //     and no refund anywhere in the entry lifecycle.
       //   • This is already what the cascade path does for every other entry
@@ -505,7 +505,7 @@ export async function eraseUserAccount(userId) {
       //     user's entries behave identically, rather than the outcome hinging
       //     on whether some other player happened to breed from the horse.
       //   • Money is conserved because nothing here moves: neither
-      //     SystemAccount[show_escrow] nor the show's prizeEscrow/feeEscrow
+      //     SystemAccount[showEscrow] nor the show's prizeEscrow/feeEscrow
       //     columns are touched, so the si69u invariant
       //     (escrow.balance == SUM(prizeEscrow + feeEscrow)) still holds and
       //     the host settles exactly what they were always going to settle.

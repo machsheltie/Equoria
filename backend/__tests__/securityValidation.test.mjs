@@ -149,7 +149,7 @@ describe('validateTransactionData', () => {
   });
 
   it('accepts all valid transaction types', () => {
-    const types = ['purchase', 'sale', 'transfer', 'breeding_fee', 'training_fee', 'competition_entry', 'prize'];
+    const types = ['purchase', 'sale', 'transfer', 'breedingFee', 'trainingFee', 'competitionEntry', 'prize'];
     for (const type of types) {
       expect(validateTransactionData({ amount: 50, type }).isValid).toBe(true);
     }

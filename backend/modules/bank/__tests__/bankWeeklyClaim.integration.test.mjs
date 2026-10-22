@@ -10,7 +10,7 @@
  * Coverage:
  *  - GET  /api/v1/bank/claim-status   → fresh account can claim
  *  - POST /api/v1/bank/claim          → balance += 5,000, PERSISTED to DB
- *  - GET  /api/v1/bank/transactions   → a weekly_reward credit row exists
+ *  - GET  /api/v1/bank/transactions   → a weeklyReward credit row exists
  *                                         reflecting the claim
  *  - POST /api/v1/bank/claim (again)  → cooldown rejection (400), balance
  *                                         unchanged (no double-credit)
@@ -108,7 +108,7 @@ describe('Bank + transactions API — real-DB integration (Equoria-qfky)', () =>
     expect(after.settings.lastWeeklyClaimDate).toBeTruthy();
   });
 
-  it('GET /bank/transactions reflects the weekly_reward credit row', async () => {
+  it('GET /bank/transactions reflects the weeklyReward credit row', async () => {
     const res = await request(app)
       .get('/api/v1/bank/transactions')
       .set('Authorization', `Bearer ${token}`)
@@ -120,7 +120,7 @@ describe('Bank + transactions API — real-DB integration (Equoria-qfky)', () =>
     // History shape varies (array vs { transactions, ... }); normalize.
     const list = Array.isArray(res.body.data) ? res.body.data : res.body.data.transactions || res.body.data.items || [];
 
-    const claimRow = list.find(t => t.category === 'weekly_reward' && Number(t.amount) === WEEKLY_REWARD);
+    const claimRow = list.find(t => t.category === 'weeklyReward' && Number(t.amount) === WEEKLY_REWARD);
     expect(claimRow).toBeDefined();
     expect(claimRow.type).toBe('credit');
   });

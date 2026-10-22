@@ -153,7 +153,7 @@ export async function refreshRiderMarketplace(req, res) {
               userId,
               amount: refreshCost,
               systemAccount: SYSTEM_ACCOUNT_BURN,
-              category: 'rider_marketplace_refresh_burn',
+              category: 'riderMarketplaceRefreshBurn',
               description: 'Rider marketplace refresh fee',
               metadata: { staffType: STAFF_TYPE },
             });
@@ -314,7 +314,7 @@ export async function hireRiderFromMarketplace(req, res) {
             userId,
             amount: hiringCost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'rider_hire_burn',
+            category: 'riderHireBurn',
             description: `Rider hire fee — ${rider.firstName} ${rider.lastName}`,
             metadata: { riderId: rider.id, marketplaceId },
           });
@@ -340,7 +340,7 @@ export async function hireRiderFromMarketplace(req, res) {
             userId,
             type: 'debit',
             amount: hiringCost,
-            category: 'rider_hire',
+            category: 'riderHire',
             description: `Hired rider ${rider.firstName} ${rider.lastName}`,
             metadata: { riderId: rider.id, marketplaceId },
           });

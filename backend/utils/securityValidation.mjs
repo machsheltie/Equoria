@@ -294,9 +294,9 @@ export const validateTransactionData = transactionData => {
       'purchase',
       'sale',
       'transfer',
-      'breeding_fee',
-      'training_fee',
-      'competition_entry',
+      'breedingFee',
+      'trainingFee',
+      'competitionEntry',
       'prize',
     ];
     if (!validTypes.includes(sanitized.type)) {

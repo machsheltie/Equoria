@@ -121,7 +121,7 @@ export async function bookVetAppointment(req, res) {
             userId,
             amount: service.cost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'vet_service_burn',
+            category: 'vetServiceBurn',
             description: `Vet fee — ${service.name} for ${horse.name}`,
             metadata: { horseId, serviceId },
           });
@@ -137,7 +137,7 @@ export async function bookVetAppointment(req, res) {
             userId,
             type: 'debit',
             amount: service.cost,
-            category: 'vet_service',
+            category: 'vetService',
             description: `${service.name} for ${horse.name}`,
             metadata: { horseId, serviceId },
           });

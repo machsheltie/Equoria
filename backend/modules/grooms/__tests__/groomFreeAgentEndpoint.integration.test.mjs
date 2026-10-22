@@ -271,7 +271,7 @@ describe('Equoria-ypb7d.2 — GET/POST /api/v1/groom-marketplace/free-agents ove
     });
     expect(Number(after.money)).toBe(Number(before.money));
 
-    expect(await prisma.userTransaction.count({ where: { userId: hirer.id, category: 'groom_hire' } })).toBe(0);
+    expect(await prisma.userTransaction.count({ where: { userId: hirer.id, category: 'groomHire' } })).toBe(0);
   }, 60000);
 
   it('POST requires authentication, and refuses before touching any groom', async () => {
@@ -336,7 +336,7 @@ describe('Equoria-ypb7d.2 — GET/POST /api/v1/groom-marketplace/free-agents ove
       expect(Number(wallet.money)).toBe(20000);
       expect(
         await prisma.userTransaction.count({
-          where: { userId: hirer.id, category: 'groom_hire' },
+          where: { userId: hirer.id, category: 'groomHire' },
         }),
       ).toBe(0);
 

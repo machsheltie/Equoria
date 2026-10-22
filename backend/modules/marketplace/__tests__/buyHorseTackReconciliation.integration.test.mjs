@@ -520,7 +520,7 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
       await prisma.userTransaction.count({
         where: {
           userId: { in: [seller.id, buyer.id] },
-          category: { in: ['marketplace_sale', 'marketplace_purchase'] },
+          category: { in: ['marketplaceSale', 'marketplacePurchase'] },
         },
       }),
     ).toBe(0);

@@ -88,7 +88,7 @@ export async function claimWeeklyReward(req, res) {
           // Equoria-hw3c8: migrated to recordTransactionTx(tx, opts). tx is
           // structurally required (first arg); the service reads the
           // authoritative balanceAfter inside the same tx, so the caller no
-          // longer supplies it. The weekly_reward credit happens after the
+          // longer supplies it. The weeklyReward credit happens after the
           // atomic UPDATE bumped money by WEEKLY_REWARD_AMOUNT in the same
           // tx, so the service's balanceAfter read will observe the new
           // post-credit balance.
@@ -96,7 +96,7 @@ export async function claimWeeklyReward(req, res) {
             userId,
             type: 'credit',
             amount: WEEKLY_REWARD_AMOUNT,
-            category: 'weekly_reward',
+            category: 'weeklyReward',
             description: 'Weekly reward claim',
             metadata: { weekStart: weekStartISO },
           });

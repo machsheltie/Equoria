@@ -53,7 +53,7 @@ export function openForEntriesWhere(showId, now = new Date()) {
  * /api/v1/shows/:id/enter via enterShowAtomicTx, POST /api/v1/competition/enter
  * and the conformation entry via competitionRouteQueries.enterShowDeferredTx —
  * run this body, so a fix can never land on one path only). Debits the entrant
- * the entryFee, credits SystemAccount[show_escrow], increments the per-show
+ * the entryFee, credits SystemAccount[showEscrow], increments the per-show
  * feeEscrow, creates the ShowEntry and writes the entrant's debit ledger row
  * with the balance after it — all in one transaction, so a fee can never be
  * debited without the escrow credit, the entry row and its ledger record.
@@ -98,7 +98,7 @@ export function enterShowTx(
           if (debited.count === 0) {
             throw new Error('INSUFFICIENT_FUNDS');
           }
-          // Equoria-si69u: route the entry fee to SystemAccount[show_escrow]
+          // Equoria-si69u: route the entry fee to SystemAccount[showEscrow]
           // instead of directly to the creator's wallet. At show execute time
           // the accumulated feeEscrow is paid out to the creator IF they
           // still exist; otherwise it's burned via SystemAccount[burn]. This
@@ -113,7 +113,7 @@ export function enterShowTx(
           // own fee into escrow and will get it back at execute time IF
           // they're still around.
           await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
-            category: 'show_entry_fee_escrow',
+            category: 'showEntryFeeEscrow',
             description: `Entry fee for show ${showId}`,
             linkedUserId: userId,
             metadata: { showId, horseId },
@@ -163,7 +163,7 @@ export function enterShowTx(
               userId,
               type: 'debit',
               amount: show.entryFee,
-              category: 'competition_entry',
+              category: 'competitionEntry',
               description: `Entry fee for show ${showId}`,
               balanceAfter: after.money,
               metadata: { horseId, showId, entryId: entry.id },
@@ -193,7 +193,7 @@ export function enterShowAtomicTx({ show, showId, horseId, userId }) {
 /**
  * Settle a completed show's accumulated entry-fee escrow (extracted from
  * executeClosedShows for testability — Equoria-8pb6w). If the creator still
- * exists, the accumulated fees move from SystemAccount[show_escrow] into their
+ * exists, the accumulated fees move from SystemAccount[showEscrow] into their
  * User.money; if the creator was GDPR-deleted, they move into
  * SystemAccount[burn]. Either path keeps money conservation constant.
  *
@@ -232,7 +232,7 @@ export async function settleShowFeeEscrowInTx(tx, showId) {
  * Refund a show's unpaid prize share to its creator (Equoria-w7fnz; owner ruling
  * 2026-10-19: with fewer than 3 entrants the unpaid share goes back to the
  * creator). Runs inside the caller's payout transaction: debits
- * SystemAccount[show_escrow], decrements the show's prizeEscrow and credits the
+ * SystemAccount[showEscrow], decrements the show's prizeEscrow and credits the
  * creator by `amount`, all with `tx`.
  *
  * No creator (a GDPR-erased creator, or a seeded show) is unruled: the amount is
@@ -246,7 +246,7 @@ export async function refundUnpaidPrizeShareInTx(tx, { showId, creatorId, amount
     return;
   }
   await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, amount, {
-    category: 'show_refund_unpaid_prize',
+    category: 'showRefundUnpaidPrize',
     description: `Unpaid prize share refund for show ${showId}`,
     linkedUserId: creatorId,
     metadata: { showId },
@@ -258,7 +258,7 @@ export async function refundUnpaidPrizeShareInTx(tx, { showId, creatorId, amount
   await creditCreatorInTx(tx, {
     userId: creatorId,
     amount,
-    category: 'show_unpaid_prize_refund',
+    category: 'showUnpaidPrizeRefund',
     description: `Unpaid prize share returned for show ${showId}`,
     metadata: { showId },
   });
@@ -303,14 +303,14 @@ async function readUnsettledFeeEscrow(client, showId) {
 }
 
 /**
- * Move `settled.feeEscrow` out of SystemAccount[show_escrow] to the creator
+ * Move `settled.feeEscrow` out of SystemAccount[showEscrow] to the creator
  * (or to SystemAccount[burn] when the creator was GDPR-deleted), and decrement
  * the show's feeEscrow by exactly that amount. Every write uses `tx`.
  */
 async function moveFeeEscrow(tx, showId, settled) {
   // Always debit the escrow account by the full feeEscrow amount.
   await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, settled.feeEscrow, {
-    category: settled.createdByUserId ? 'show_settle_fees_to_creator' : 'show_settle_fees_to_burn',
+    category: settled.createdByUserId ? 'showSettleFeesToCreator' : 'showSettleFeesToBurn',
     description: `Fee settlement for show ${showId}`,
     linkedUserId: settled.createdByUserId ?? null,
     metadata: { showId, creatorPresent: !!settled.createdByUserId },
@@ -320,7 +320,7 @@ async function moveFeeEscrow(tx, showId, settled) {
     await creditCreatorInTx(tx, {
       userId: settled.createdByUserId,
       amount: settled.feeEscrow,
-      category: 'show_entry_fees_received',
+      category: 'showEntryFeesReceived',
       description: `Entry fees received for show ${showId}`,
       metadata: { showId },
     });
@@ -330,14 +330,14 @@ async function moveFeeEscrow(tx, showId, settled) {
     // the SystemAccount.balance mutations themselves form the audit
     // pair (escrow.balance -= X, burn.balance += X).
     await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, settled.feeEscrow, {
-      category: 'show_burn_orphaned_fees',
+      category: 'showBurnOrphanedFees',
       description: `Burn orphaned fees for show ${showId} (creator GDPR-deleted)`,
     });
   }
   // Equoria-8pb6w: decrement by the amount we READ + settled, NOT an absolute
   // reset to 0. The read (above) and this write are separate round-trips; an
   // absolute `feeEscrow: 0` would erase any increment that raced in between,
-  // breaking the SystemAccount[show_escrow] == SUM(prizeEscrow + feeEscrow)
+  // breaking the SystemAccount[showEscrow] == SUM(prizeEscrow + feeEscrow)
   // reconciliation invariant. A relative decrement leaves the raced residual
   // in the column for a later settlement pass.
   await tx.show.update({

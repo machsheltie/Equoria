@@ -126,9 +126,9 @@ describe('POST /api/v1/shows/create — non-integer amounts rejected at the 400 
   // NOTE: the over-rejection guard (a valid INTEGER amount must still yield 201) is
   // intentionally NOT re-tested here. showController.test.mjs already covers it via
   // the "returns 201 when creating a valid show" test with entryFee:0 — and that
-  // path, unlike a nonzero prize, credits NO money to SystemAccount[show_escrow], so
+  // path, unlike a nonzero prize, credits NO money to SystemAccount[showEscrow], so
   // it leaves no orphaned escrow credit when its show fixture is deleted. A
-  // nonzero-prize happy-path here WOULD orphan escrow (createShow credits show_escrow
+  // nonzero-prize happy-path here WOULD orphan escrow (createShow credits showEscrow
   // at creation; a raw show-row delete never unwinds it), adding to the shared
   // singleton's pre-existing drift. isInteger(0)===isInteger(10)===true, so the
   // existing integer-create coverage already proves the guard does not over-reject.

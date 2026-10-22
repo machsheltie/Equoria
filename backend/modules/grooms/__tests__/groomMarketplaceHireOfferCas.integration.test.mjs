@@ -176,7 +176,7 @@ describe('groomMarketplaceController.hireFromMarketplace offer-removal race (Equ
     expect(groomCount).toBe(1);
 
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_hire' },
+      where: { userId: buyer.id, category: 'groomHire' },
     });
     expect(debitRows).toHaveLength(1);
     expect(await userMoney(buyer.id)).toBe(moneyBefore - HIRING_COST);

@@ -328,7 +328,7 @@ export async function hireGroom(req, res) {
             userId,
             amount: hiringCost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'groom_hire_burn',
+            category: 'groomHireBurn',
             description: `Groom hire fee — ${groom.name}`,
             metadata: { groomId: groom.id },
           });
@@ -356,7 +356,7 @@ export async function hireGroom(req, res) {
             userId,
             type: 'debit',
             amount: hiringCost,
-            category: 'groom_hire',
+            category: 'groomHire',
             description: `Hired groom ${groom.name}`,
             metadata: { groomId: groom.id },
           });

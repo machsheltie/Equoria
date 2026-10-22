@@ -3,7 +3,7 @@
  *
  * Sibling defect of Equoria-si69u: si69u fixed the canonical
  * showController.enterShow path (POST /api/v1/shows/:id/enter) to route entry
- * fees through SystemAccount[show_escrow] + per-show feeEscrow column. The
+ * fees through SystemAccount[showEscrow] + per-show feeEscrow column. The
  * deferred-entry route POST /api/v1/competition/enter — used by the live
  * frontend competitionsApi.enter — calls enterShowDeferredTx in
  * competitionRouteQueries.mjs, which still ran the pre-si69u "credit creator
@@ -14,7 +14,7 @@
  *
  * This sentinel locks the contract:
  *   - After enterShowDeferredTx, the creator's User.money is UNCHANGED.
- *   - SystemAccount[show_escrow].balance has incremented by entryFee.
+ *   - SystemAccount[showEscrow].balance has incremented by entryFee.
  *   - Show.feeEscrow has incremented by entryFee.
  *   - Total money is conserved end-to-end.
  *
@@ -141,7 +141,7 @@ afterAll(async () => {
       .deleteMany({ where: { id: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] user: ${err.message}`));
   }
-  // Equoria-iomtg: do NOT reset the shared SystemAccount[show_escrow]/[burn]
+  // Equoria-iomtg: do NOT reset the shared SystemAccount[showEscrow]/[burn]
   // rows here. They are singleton rows shared with sibling suites
   // (systemAccountHelpers, showEscrowMoneyConservation, gdprShowCancel,
   // buyStoreHorse, groomSalary). A `balance: 0` set in this suite's teardown
@@ -153,7 +153,7 @@ afterAll(async () => {
 }, 30000);
 
 describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
-  it('SENTINEL: entry fee credits SystemAccount[show_escrow], NOT the creator wallet', async () => {
+  it('SENTINEL: entry fee credits SystemAccount[showEscrow], NOT the creator wallet', async () => {
     const entryFee = 100;
     const show = await makeShow(creator.id, entryFee);
 

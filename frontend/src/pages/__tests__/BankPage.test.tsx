@@ -38,7 +38,7 @@ const sampleTransactions = [
     id: 1,
     type: 'credit' as const,
     amount: 5000,
-    category: 'weekly_reward',
+    category: 'weeklyReward',
     description: 'Weekly reward',
     balanceAfter: 15000,
     metadata: {},

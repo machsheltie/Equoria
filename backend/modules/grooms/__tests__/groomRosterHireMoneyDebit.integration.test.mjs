@@ -18,8 +18,8 @@
  * THIS SENTINEL asserts (fails-first against the un-hardened code):
  *   1. Concurrency/TOCTOU: two concurrent hires with a wallet for ONE ->
  *      exactly one 201, wallet never negative, exactly one groom created,
- *      and the winner has exactly one groom_hire debit row + one paired
- *      groom_hire_burn credit row (burn credited once).
+ *      and the winner has exactly one groomHire debit row + one paired
+ *      groomHireBurn credit row (burn credited once).
  *   2. Money conservation: a single successful hire moves exactly `hiringCost`
  *      from the user's wallet to the burn account, with the paired ledger rows.
  *   3. Insufficient funds -> 400 (message mentions funds), no groom created,
@@ -30,7 +30,7 @@
  *     negative, two grooms — and even in the rare serial-timing branch where
  *     only one 201 lands, the OLD code writes ZERO ledger rows / ZERO burn
  *     credit, so the ledger assertions still fail. Timing-independent red.
- *   - Case 2: the OLD code never writes a groom_hire / groom_hire_burn row and
+ *   - Case 2: the OLD code never writes a groomHire / groomHireBurn row and
  *     never credits burn -> red.
  *   (Case 3 already returned 400 via the old pre-check; it is a post-fix
  *   regression guard, not the fails-first sentinel.)
@@ -175,14 +175,14 @@ describe('groomRosterController.hireGroom money-debit hardening (Equoria-otii0)'
     // winner. This per-user pair is the concurrency-proof "no off-ledger,
     // no double-burn" signal (immune to the shared burn account moving).
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_hire' },
+      where: { userId: buyer.id, category: 'groomHire' },
     });
     expect(debitRows).toHaveLength(1);
     expect(debitRows[0].type).toBe('debit');
     expect(debitRows[0].amount).toBe(HIRING_COST);
 
     const burnCreditRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_hire_burn' },
+      where: { userId: buyer.id, category: 'groomHireBurn' },
     });
     expect(burnCreditRows).toHaveLength(1);
     expect(burnCreditRows[0].type).toBe('credit');
@@ -216,7 +216,7 @@ describe('groomRosterController.hireGroom money-debit hardening (Equoria-otii0)'
     // Paired ledger rows attributed to this user: one principal debit + one
     // counterparty burn credit — the rows the un-hardened path never wrote.
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_hire' },
+      where: { userId: buyer.id, category: 'groomHire' },
     });
     expect(debitRows).toHaveLength(1);
     expect(debitRows[0].type).toBe('debit');
@@ -224,7 +224,7 @@ describe('groomRosterController.hireGroom money-debit hardening (Equoria-otii0)'
     expect(Number(debitRows[0].balanceAfter)).toBe(moneyBefore - HIRING_COST);
 
     const burnCreditRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_hire_burn' },
+      where: { userId: buyer.id, category: 'groomHireBurn' },
     });
     expect(burnCreditRows).toHaveLength(1);
     expect(burnCreditRows[0].type).toBe('credit');

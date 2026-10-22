@@ -282,7 +282,7 @@ export async function executeClosedShows(req, res, options) {
             data: buildRiddenResultRow({ show, staged, prize, now }),
           });
 
-          // Equoria-si69u: pay the winner from SystemAccount[show_escrow]
+          // Equoria-si69u: pay the winner from SystemAccount[showEscrow]
           // (which was credited at createShow), decrement Show.prizeEscrow
           // by the same amount, and credit the winner's User.money. All in
           // the same tx so a failure in any leg rolls back the whole prize
@@ -300,7 +300,7 @@ export async function executeClosedShows(req, res, options) {
           if (prize > 0) {
             if (show.prizeEscrow >= prize) {
               await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
-                category: 'show_payout_prize',
+                category: 'showPayoutPrize',
                 description: `Prize payout for show ${show.id}, placement ${placement}`,
                 linkedUserId: userId,
                 metadata: { showId: show.id, placement },

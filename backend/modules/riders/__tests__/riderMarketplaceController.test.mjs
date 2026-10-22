@@ -282,13 +282,13 @@ describe('riderMarketplaceController (real DB)', () => {
     // promise settled after suite cleanup deleted the user and Jest tore down
     // the module registry, risking an import-after-teardown ReferenceError.
     // Sentinel: the ledger row exists the instant the handler returns.
-    it('writes the rider_hire ledger transaction synchronously before the handler resolves', async () => {
+    it('writes the riderHire ledger transaction synchronously before the handler resolves', async () => {
       const user = await createUser(9999);
       const state = await seedMarketplaceState(user.id);
       const targetRider = state.offers[0];
 
       const before = await prisma.userTransaction.count({
-        where: { userId: user.id, category: 'rider_hire' },
+        where: { userId: user.id, category: 'riderHire' },
       });
 
       const h = makeReqRes(user.id, { body: { marketplaceId: targetRider.marketplaceId } });
@@ -297,12 +297,12 @@ describe('riderMarketplaceController (real DB)', () => {
 
       // No await-tick on purpose: with the fire-and-forget bug this is still `before`.
       const after = await prisma.userTransaction.count({
-        where: { userId: user.id, category: 'rider_hire' },
+        where: { userId: user.id, category: 'riderHire' },
       });
       expect(after).toBe(before + 1);
 
       const row = await prisma.userTransaction.findFirst({
-        where: { userId: user.id, category: 'rider_hire' },
+        where: { userId: user.id, category: 'riderHire' },
         orderBy: { createdAt: 'desc' },
       });
       expect(row).not.toBeNull();

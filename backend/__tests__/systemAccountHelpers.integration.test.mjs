@@ -7,7 +7,7 @@
  *   - debitSystemAccountOrThrow: atomic predicate (balance >= amount),
  *     throws InsufficientSystemAccountBalanceError on count===0, never
  *     drives balance negative under concurrent debits.
- *   - The seeded named accounts (`show_escrow`, `burn`) exist post-migration.
+ *   - The seeded named accounts (`showEscrow`, `burn`) exist post-migration.
  *
  * Real DB, no mocks, scoped cleanup of any side effects.
  */
@@ -28,7 +28,7 @@ const FIXTURE_PREFIX = 'TestFixture-si69u-helpers';
 // Equoria-iomtg: the helper-behavior tests below exercise the SAME
 // creditSystemAccount / debitSystemAccountOrThrow code path, but against a
 // SUITE-PRIVATE, uniquely-named SystemAccount row created fresh in each
-// `beforeEach` — NOT the shared singleton `show_escrow`/`burn` rows. The old
+// `beforeEach` — NOT the shared singleton `showEscrow`/`burn` rows. The old
 // `beforeEach` reset those shared rows to `balance: 0`, which (a) clobbered
 // any concurrent sibling suite mid-flight under --runInBand / parallel shards
 // and (b) made every absolute `toBe(...)` assertion here brittle to a sibling
@@ -83,7 +83,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
       where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
       orderBy: { name: 'asc' },
     });
-    expect(rows.map(r => r.name).sort()).toEqual(['burn', 'show_escrow']);
+    expect(rows.map(r => r.name).sort()).toEqual(['burn', 'showEscrow']);
   });
 
   it('creditSystemAccount increments balance and writes ledger row when linkedUserId given', async () => {

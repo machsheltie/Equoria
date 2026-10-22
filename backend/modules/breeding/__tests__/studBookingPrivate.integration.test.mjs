@@ -227,10 +227,10 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       const dam = await prisma.horse.findUnique({ where: { id: mare.id } });
       expect(dam.pregnancySireId).toBe(stud.id);
       expect(
-        await prisma.userTransaction.count({ where: { userId: mareOwner.user.id, category: 'stud_fee_paid' } }),
+        await prisma.userTransaction.count({ where: { userId: mareOwner.user.id, category: 'studFeePaid' } }),
       ).toBe(1);
       expect(
-        await prisma.userTransaction.count({ where: { userId: studOwner.user.id, category: 'stud_fee_received' } }),
+        await prisma.userTransaction.count({ where: { userId: studOwner.user.id, category: 'studFeeReceived' } }),
       ).toBe(1);
       expect(await notesOf(mareOwner.user.id, 'studRequestApproved')).toHaveLength(1);
     });

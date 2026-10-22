@@ -411,7 +411,7 @@ export async function approveStudRequest(req, res) {
               userId: mareOwnerId,
               type: 'debit',
               amount: fee,
-              category: 'stud_fee_paid',
+              category: 'studFeePaid',
               description: `Stud fee: ${dam.name} to ${sire.name}`,
               metadata: { ...metadata, counterpartyId: approverId },
             });
@@ -419,7 +419,7 @@ export async function approveStudRequest(req, res) {
               userId: approverId,
               type: 'credit',
               amount: fee,
-              category: 'stud_fee_received',
+              category: 'studFeeReceived',
               description: `Stud fee: ${sire.name} covered ${dam.name}`,
               metadata: { ...metadata, counterpartyId: mareOwnerId },
             });

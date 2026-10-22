@@ -20,7 +20,7 @@
  *
  * THIS SENTINEL asserts (fails-first against the count-then-create code):
  *   1. Concurrency: user at MAX-1 grooms with a wallet for BOTH hires -> exactly
- *      one 201, final groom count == MAX (never MAX+1), exactly one groom_hire
+ *      one 201, final groom count == MAX (never MAX+1), exactly one groomHire
  *      debit row, and the wallet is charged exactly once (the loser's debit +
  *      create rolled back atomically — no charge-without-slot).
  *   2. Fast-path regression: a user already AT MAX hiring one more -> 400 with
@@ -182,7 +182,7 @@ describe('groomRosterController.hireGroom roster-cap concurrency (Equoria-n4m5j)
     // Charged exactly once — every loser's debit rolled back with its create
     // (no charge-without-slot, no off-ledger burn for the rejected hires).
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_hire' },
+      where: { userId: buyer.id, category: 'groomHire' },
     });
     expect(debitRows).toHaveLength(1);
     expect(await userMoney(buyer.id)).toBe(moneyBefore - HIRING_COST);

@@ -3,7 +3,7 @@
  *
  * Settlement pays the placed shares only (50/30/20). Before this fix a show with
  * one entrant paid 50% and a show with two paid 80%; the rest stayed in the
- * completed show's prizeEscrow (and SystemAccount[show_escrow]) for good.
+ * completed show's prizeEscrow (and SystemAccount[showEscrow]) for good.
  *
  * Owner ruling (Stacey, 2026-10-19, decision 5): with fewer than 3 entrants the
  * unpaid share is REFUNDED to the show's creator. Nothing else about prizes
@@ -28,7 +28,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const PREFIX = 'TestFixture-w7fnz';
-const REFUND_CATEGORY = 'show_refund_unpaid_prize';
+const REFUND_CATEGORY = 'showRefundUnpaidPrize';
 const uid = () => randomBytes(5).toString('hex');
 
 const userIds = [];
@@ -167,7 +167,7 @@ describe('unpaid prize shares are refunded to the creator (Equoria-w7fnz)', () =
     const rows = await refundRows(creator.id, showId);
     expect(rows).toHaveLength(1);
     expect(rows[0].amount).toBe(501);
-    expect(rows[0].metadata.systemAccount).toBe('show_escrow');
+    expect(rows[0].metadata.systemAccount).toBe('showEscrow');
   });
 
   it('2 entrants: 50% and 30% are paid, the remaining 20% is refunded to the creator', async () => {
@@ -289,7 +289,7 @@ describe('unpaid prize shares are refunded to the creator (Equoria-w7fnz)', () =
     expect(refunds[0].amount).toBe(501);
     const feeRows = (
       await prisma.userTransaction.findMany({
-        where: { userId: creator.id, category: 'show_settle_fees_to_creator' },
+        where: { userId: creator.id, category: 'showSettleFeesToCreator' },
       })
     ).filter(r => r.metadata?.showId === showId);
     expect(feeRows).toHaveLength(1);

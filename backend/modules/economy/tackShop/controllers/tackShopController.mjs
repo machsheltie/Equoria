@@ -202,7 +202,7 @@ export async function purchaseTackItem(req, res) {
             userId,
             amount: item.cost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'tack_purchase_burn',
+            category: 'tackPurchaseBurn',
             description: `Tack purchase — ${item.name} for ${horse.name ?? horseId}`,
             metadata: { horseId, itemId: item.id, itemCategory: item.category },
           });
@@ -222,7 +222,7 @@ export async function purchaseTackItem(req, res) {
             userId,
             type: 'debit',
             amount: item.cost,
-            category: 'tack_purchase',
+            category: 'tackPurchase',
             description: `${item.name} for ${horse.name ?? horseId}`,
             metadata: { horseId, itemId: item.id, category: item.category },
           });

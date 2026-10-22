@@ -411,7 +411,7 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
                     userId,
                     amount: attempt.amount,
                     systemAccount: SYSTEM_ACCOUNT_BURN,
-                    category: 'groom_salary_burn',
+                    category: 'groomSalaryBurn',
                     description: `Groom salary weekly run — user ${user.username}`,
                     metadata: {
                       groomCount: unpaidAssignments.length,

@@ -372,7 +372,7 @@ describe('Equoria-ypb7d.2 — two players cannot hire the same free agent', () =
     // The loser was not charged.
     const loserId = row.userId === bidderA.id ? bidderB.id : bidderA.id;
     const loserLedger = await prisma.userTransaction.count({
-      where: { userId: loserId, category: 'groom_hire' },
+      where: { userId: loserId, category: 'groomHire' },
     });
     expect(loserLedger).toBe(0);
 

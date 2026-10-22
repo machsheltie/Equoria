@@ -116,7 +116,7 @@ export async function purchaseFeed(req, res) {
             userId,
             amount: totalCost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'feed_purchase_burn',
+            category: 'feedPurchaseBurn',
             description: `Feed purchase — ${packs} pack(s) of ${tier.name}`,
             metadata: { feedTier: tier.id, packs, totalUnits },
           });
@@ -172,7 +172,7 @@ export async function purchaseFeed(req, res) {
             userId,
             type: 'debit',
             amount: totalCost,
-            category: 'feed_purchase',
+            category: 'feedPurchase',
             description: `${packs} pack(s) of ${tier.name}`,
             metadata: { feedTier: tier.id, packs, totalUnits },
           });

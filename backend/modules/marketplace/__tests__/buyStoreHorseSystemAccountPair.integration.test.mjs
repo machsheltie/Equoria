@@ -134,7 +134,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     //     `systemAccount: SYSTEM_ACCOUNT_BURN` to the debit helper rather than
     //     a separate creditSystemAccount call (which would double-credit).
     expect(buyStoreHorseBody).toMatch(/systemAccount:\s*SYSTEM_ACCOUNT_BURN/);
-    expect(buyStoreHorseBody).toMatch(/category:\s*'store_horse_purchase_burn'/);
+    expect(buyStoreHorseBody).toMatch(/category:\s*'storeHorsePurchaseBurn'/);
 
     // (3) Must NOT use the historical raw `tx.user.findUnique` + manual
     //     `money < STORE_PRICE` pre-check — that's the TOCTOU shape.
@@ -190,7 +190,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     // attributed to EXACTLY this user: the paired ledger row (userId-scoped,
     // so exclusively owned by this test's fresh fixture user).
     const burnCreditRows = await prisma.userTransaction.findMany({
-      where: { userId: user.id, type: 'credit', category: 'store_horse_purchase_burn' },
+      where: { userId: user.id, type: 'credit', category: 'storeHorsePurchaseBurn' },
     });
     expect(burnCreditRows).toHaveLength(1);
     expect(Number(burnCreditRows[0].amount)).toBe(STORE_PRICE);
@@ -204,7 +204,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     expect(deltaUser + deltaBurn).toBe(0);
   }, 60000);
 
-  it('pairs the ledger: a horse_trader_purchase debit row AND a burn-credit row are written', async () => {
+  it('pairs the ledger: a horseTraderPurchase debit row AND a burn-credit row are written', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
@@ -221,7 +221,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
 
     // The original purchase debit row (Equoria-9hja2 — unchanged)
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: user.id, type: 'debit', category: 'horse_trader_purchase' },
+      where: { userId: user.id, type: 'debit', category: 'horseTraderPurchase' },
     });
     expect(debitRows).toHaveLength(1);
     expect(Number(debitRows[0].amount)).toBe(STORE_PRICE);
@@ -231,7 +231,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
       where: {
         userId: user.id,
         type: 'credit',
-        category: 'store_horse_purchase_burn',
+        category: 'storeHorsePurchaseBurn',
       },
     });
     expect(burnRows).toHaveLength(1);

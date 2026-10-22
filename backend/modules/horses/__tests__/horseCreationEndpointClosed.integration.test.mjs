@@ -336,7 +336,7 @@ describe('Finding 2 — the legitimate paid acquisition path is untouched', () =
     expect(await prisma.horse.count({ where: { userId: buyer.id } })).toBe(1);
 
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, type: 'debit', category: 'horse_trader_purchase' },
+      where: { userId: buyer.id, type: 'debit', category: 'horseTraderPurchase' },
     });
     expect(debitRows).toHaveLength(1);
     expect(Number(debitRows[0].amount)).toBe(STORE_PRICE);

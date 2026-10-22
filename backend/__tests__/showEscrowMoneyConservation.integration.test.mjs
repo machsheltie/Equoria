@@ -8,7 +8,7 @@
  * with no audit trail. Winners were still paid the prize, but from "nowhere"
  * (the system implicitly minted at payout time).
  *
- * The fix routes show money through SystemAccount[show_escrow] with per-show
+ * The fix routes show money through SystemAccount[showEscrow] with per-show
  * `prizeEscrow` + `feeEscrow` accounting columns. At execute time:
  *   - Winner prize comes from escrow (no implicit minting).
  *   - Accumulated fees go to creator if still around; else to
@@ -16,7 +16,7 @@
  *
  * THIS SENTINEL asserts the resulting INVARIANT:
  *   total = sum(User.money for all involved users)
- *         + sum(SystemAccount.balance for show_escrow + burn)
+ *         + sum(SystemAccount.balance for showEscrow + burn)
  *   remains CONSTANT across the entire lifecycle, including the
  *   creator-deletion path that the bug allowed to leak money.
  *
@@ -153,7 +153,7 @@ afterAll(async () => {
       .deleteMany({ where: { id: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
-  // Equoria-3n2g4: do NOT reset the shared SystemAccount[show_escrow]/[burn]
+  // Equoria-3n2g4: do NOT reset the shared SystemAccount[showEscrow]/[burn]
   // rows here. Those rows are SHARED across every money-conservation suite, and
   // sibling suites run concurrently under maxWorkers=50%. Forcing them to 0
   // clobbered a sibling suite's in-flight balance mid-measurement (the exact

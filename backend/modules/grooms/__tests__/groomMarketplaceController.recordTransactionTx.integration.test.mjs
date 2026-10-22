@@ -6,7 +6,7 @@
  * recordTransactionTx(tx, opts).
  *
  * What this test PROVES (the load-bearing assertions):
- *   1. A `groom_hire` debit row is persisted under the same tx as the
+ *   1. A `groomHire` debit row is persisted under the same tx as the
  *      money debit + groom.create. If the migration silently swapped
  *      back to fire-and-forget recordTransaction, the row count would
  *      still match — but the `balanceAfter` would carry whatever the
@@ -148,9 +148,9 @@ afterAll(async () => {
 }, 30000);
 
 describe('hireFromMarketplace — recordTransactionTx migration (Equoria-26wuo)', () => {
-  it('SENTINEL: persists a groom_hire debit row with balanceAfter sourced from inside the tx', async () => {
+  it('SENTINEL: persists a groomHire debit row with balanceAfter sourced from inside the tx', async () => {
     const before = await prisma.userTransaction.count({
-      where: { userId: happyUser.id, category: 'groom_hire' },
+      where: { userId: happyUser.id, category: 'groomHire' },
     });
 
     const req = {
@@ -165,18 +165,18 @@ describe('hireFromMarketplace — recordTransactionTx migration (Equoria-26wuo)'
 
     // Ledger row count incremented by exactly 1
     const after = await prisma.userTransaction.count({
-      where: { userId: happyUser.id, category: 'groom_hire' },
+      where: { userId: happyUser.id, category: 'groomHire' },
     });
     expect(after).toBe(before + 1);
 
     const row = await prisma.userTransaction.findFirst({
-      where: { userId: happyUser.id, category: 'groom_hire' },
+      where: { userId: happyUser.id, category: 'groomHire' },
       orderBy: { createdAt: 'desc' },
     });
     expect(row).not.toBeNull();
     expect(row.type).toBe('debit');
     expect(Number(row.amount)).toBe(HIRING_COST);
-    expect(row.category).toBe('groom_hire');
+    expect(row.category).toBe('groomHire');
     expect(row.metadata).toMatchObject({ marketplaceId: happyMarketplaceId });
 
     // balanceAfter is now read INSIDE recordTransactionTx from the same tx
@@ -191,7 +191,7 @@ describe('hireFromMarketplace — recordTransactionTx migration (Equoria-26wuo)'
 
   it('rolls back the ledger row when the tx fails on insufficient funds (rollback parity)', async () => {
     const before = await prisma.userTransaction.count({
-      where: { userId: brokeUser.id, category: 'groom_hire' },
+      where: { userId: brokeUser.id, category: 'groomHire' },
     });
 
     const req = {
@@ -207,7 +207,7 @@ describe('hireFromMarketplace — recordTransactionTx migration (Equoria-26wuo)'
 
     // NO ledger row written.
     const after = await prisma.userTransaction.count({
-      where: { userId: brokeUser.id, category: 'groom_hire' },
+      where: { userId: brokeUser.id, category: 'groomHire' },
     });
     expect(after).toBe(before);
 

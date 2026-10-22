@@ -138,8 +138,8 @@ async function snapshot(entrant, show) {
     money: Number(user.money),
     feeEscrow: Number(showRow.feeEscrow),
     entries,
-    escrowCredits: showLedger.filter(row => row.category === 'show_entry_fee_escrow'),
-    entrantDebits: showLedger.filter(row => row.category === 'competition_entry'),
+    escrowCredits: showLedger.filter(row => row.category === 'showEntryFeeEscrow'),
+    entrantDebits: showLedger.filter(row => row.category === 'competitionEntry'),
   };
 }
 

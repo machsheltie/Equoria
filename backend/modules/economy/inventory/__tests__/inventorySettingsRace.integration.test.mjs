@@ -356,7 +356,7 @@ describe('Finding 1 — User.settings economy state survives inventory + setting
     expect(after.money).toBe(WEEKLY_REWARD);
 
     const credits = await prisma.userTransaction.findMany({
-      where: { userId: user.id, category: 'weekly_reward' },
+      where: { userId: user.id, category: 'weeklyReward' },
     });
     expect(credits).toHaveLength(1);
   }, 120000);

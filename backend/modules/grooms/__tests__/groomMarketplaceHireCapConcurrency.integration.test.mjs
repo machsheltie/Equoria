@@ -185,7 +185,7 @@ describe('groomMarketplaceController.hireFromMarketplace roster-cap (Equoria-hdu
 
     // Charged exactly once — every loser's debit rolled back with its create.
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'groom_hire' },
+      where: { userId: buyer.id, category: 'groomHire' },
     });
     expect(debitRows).toHaveLength(1);
     expect(await userMoney(buyer.id)).toBe(moneyBefore - HIRING_COST);

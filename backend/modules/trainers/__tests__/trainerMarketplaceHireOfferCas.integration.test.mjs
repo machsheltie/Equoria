@@ -180,7 +180,7 @@ describe('trainerMarketplaceController.hireTrainerFromMarketplace offer-removal 
     expect(trainerCount).toBe(1);
 
     const debitRows = await prisma.userTransaction.findMany({
-      where: { userId: buyer.id, category: 'trainer_hire' },
+      where: { userId: buyer.id, category: 'trainerHire' },
     });
     expect(debitRows).toHaveLength(1);
     expect(await userMoney(buyer.id)).toBe(moneyBefore - HIRING_COST);

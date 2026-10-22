@@ -238,7 +238,7 @@ describe('Equoria-kacla: POST /api/v1/competition/enter is a deferred entry (no 
 
     // Equoria-si69u / Equoria-jnk6r / Equoria-9iffb: the deferred /enter path
     // (enterShowDeferredTx) is byte-identical to showController.enterShow — it
-    // ESCROWS the entry fee in SystemAccount[show_escrow] (per-show
+    // ESCROWS the entry fee in SystemAccount[showEscrow] (per-show
     // Show.feeEscrow) on entry rather than crediting the creator's wallet
     // immediately. The creator is paid the accumulated fees at execution (or
     // the escrow is burned if the creator GDPR-deleted first). The original

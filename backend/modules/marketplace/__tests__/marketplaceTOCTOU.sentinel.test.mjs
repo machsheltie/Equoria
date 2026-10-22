@@ -177,10 +177,10 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
 
     // Exactly one debit transaction for the winner; zero for the loser
     const winnerDebits = await prisma.userTransaction.findMany({
-      where: { userId: winnerId, type: 'debit', category: 'marketplace_purchase' },
+      where: { userId: winnerId, type: 'debit', category: 'marketplacePurchase' },
     });
     const loserDebits = await prisma.userTransaction.findMany({
-      where: { userId: loserId, type: 'debit', category: 'marketplace_purchase' },
+      where: { userId: loserId, type: 'debit', category: 'marketplacePurchase' },
     });
     expect(winnerDebits).toHaveLength(1);
     expect(loserDebits).toHaveLength(0);
