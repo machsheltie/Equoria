@@ -17,6 +17,7 @@ import {
   resolveBreedingPairAccess,
 } from '../services/breedingOwnershipQueries.mjs';
 import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { mareIdInBody, mareIdInParams } from './_breedingPairValidators.mjs';
 
 // Import genetic services
 // Equoria-emkv6: all four genetics functions live in the module-local service
@@ -90,7 +91,7 @@ router.post(
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
+    mareIdInBody(),
     body('includeLineage').optional().isBoolean().withMessage('includeLineage must be boolean'),
     body('generations').optional().isInt({ min: 1, max: 5 }).withMessage('generations must be 1-5'),
   ],
@@ -180,7 +181,7 @@ router.get(
   authenticateToken,
   [
     param('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    param('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
+    mareIdInParams(),
     query('generations')
       .optional()
       .isInt({ min: 1, max: 5 })
@@ -248,7 +249,7 @@ router.post(
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
+    mareIdInBody(),
   ],
   validateRequest,
   async (req, res) => {
@@ -376,7 +377,7 @@ router.post(
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
+    mareIdInBody(),
   ],
   validateRequest,
   async (req, res) => {
@@ -526,7 +527,7 @@ router.post(
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
+    mareIdInBody(),
   ],
   validateRequest,
   async (req, res) => {
