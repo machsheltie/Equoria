@@ -9,9 +9,52 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 const MAX_MARK_VIEWED_SHOWS = 100;
 
 /**
+ * The most rows a horse's or a show's result list returns (Equoria-cmw85.12),
+ * the same ceiling getResultsByUser applies.
+ */
+const resultListLimit = 100;
+
+/**
+ * What a result list returns per row (Equoria-cmw85.12): the result's own
+ * columns, the horse's id, name and breed, and the show's public fields. Never
+ * whole horse rows (genotype, colour genotype, epigenetic modifiers and the
+ * other JSONB columns) or the show's settlement internals (staged ordering of
+ * every entrant, escrow columns, creator).
+ */
+const resultListRowSelect = {
+  id: true,
+  horseId: true,
+  showId: true,
+  score: true,
+  placement: true,
+  discipline: true,
+  runDate: true,
+  showName: true,
+  prizeWon: true,
+  horsePointsAwarded: true,
+  createdAt: true,
+  horse: { select: { id: true, name: true, breed: { select: { id: true, name: true } } } },
+  show: {
+    select: {
+      id: true,
+      name: true,
+      discipline: true,
+      showType: true,
+      status: true,
+      runDate: true,
+      executedAt: true,
+      prize: true,
+      entryFee: true,
+    },
+  },
+};
+
+/**
  * Get all competition results for a specific horse
  * @param {number} horseId - Horse ID
- * @returns {Array} - Array of result objects with relations
+ * @returns {Array} - The horse's newest results (at most 100), newest first,
+ *   each with its horse and show (scoped; statGains included — the callers are
+ *   the horse's owner)
  */
 async function getResultsByHorse(horseId) {
   // Validate horseId
@@ -23,15 +66,9 @@ async function getResultsByHorse(horseId) {
   try {
     const results = await prisma.competitionResult.findMany({
       where: { horseId: numericId },
-      include: {
-        horse: {
-          include: {
-            breed: true,
-          },
-        },
-        show: true,
-      },
-      orderBy: { runDate: 'desc' },
+      select: { ...resultListRowSelect, statGains: true },
+      orderBy: [{ runDate: 'desc' }, { id: 'desc' }],
+      take: resultListLimit,
     });
 
     logger.info(
@@ -47,7 +84,8 @@ async function getResultsByHorse(horseId) {
 /**
  * Get all competition results for a specific show
  * @param {number} showId - Show ID
- * @returns {Array} - Array of result objects with relations, ordered by score (highest first)
+ * @returns {Array} - The show's results (at most 100), highest score first, each
+ *   with its horse and show (scoped)
  */
 async function getResultsByShow(showId) {
   // Validate showId
@@ -59,15 +97,11 @@ async function getResultsByShow(showId) {
   try {
     const results = await prisma.competitionResult.findMany({
       where: { showId: numericId },
-      include: {
-        horse: {
-          include: {
-            breed: true,
-          },
-        },
-        show: true,
-      },
-      orderBy: { score: 'desc' },
+      // No statGains: a horse's stat gain is its owner's to see (owner ruling
+      // R7), and this list covers every player's horse in the show.
+      select: resultListRowSelect,
+      orderBy: [{ score: 'desc' }, { id: 'asc' }],
+      take: resultListLimit,
     });
 
     logger.info(
