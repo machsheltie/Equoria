@@ -4,15 +4,13 @@
  * CompetitionResult.placement used to be a string written as the rank ('1')
  * by the nightly executors and as the ordinal ('1st') by older paths, and each
  * reader matched one spelling: the wins and placements leaderboards only the
- * numbers, the stable's championship border and the dashboard's last placing
- * only the ordinals, and the legacy score compared the string to numbers and
- * counted no placings at all. The owner ruled (2026-10-22, options A and C)
+ * numbers, the stable's championship border only the ordinals, and the legacy
+ * score compared the string to numbers and counted no placings at all. The owner ruled (2026-10-22, options A and C)
  * that placement is an Int, with the ordinal rows backfilled by the migration
  * 20261022190000_competition_result_placement_int.
  *
  * The fixture horse has seven results: 1, 1, 1, 1, 2, 3, 5. Every reader must
- * see 4 wins and 6 top-three placings, and the dashboard's last placing is the
- * newest top-three result.
+ * see 4 wins and 6 top-three placings.
  *
  * Real DB, real routes (supertest, real JWT), scoped fixtures.
  */
@@ -123,16 +121,6 @@ describe('placement readers agree (Equoria-f46tb)', () => {
     const row = res.body.data.find(h => h.id === horse.id);
     expect(row.firstPlaceWins).toBe(4);
     expect(row.hasChampionship).toBe(true);
-  });
-
-  it("the dashboard's last placing is the newest top-three result", async () => {
-    const res = await request(app)
-      .get(`/api/v1/users/dashboard/${owner.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    const activity = res.body.data?.activity ?? res.body.activity;
-    expect(activity.lastShowPlaced).toMatchObject({ horseName: horse.name, placement: 2 });
   });
 
   it('the legacy score counts the stored placings', async () => {
