@@ -22,7 +22,9 @@ import compression from 'compression';
 import { createHash } from 'crypto';
 import logger from '../utils/logger.mjs';
 
-// Performance metrics tracking
+// Performance metrics tracking. serializationTime keeps only the most recent
+// samples: one entry per JSON response, forever, was a slow leak (Equoria-cmw85.30).
+const MAX_SERIALIZATION_SAMPLES = 1000;
 const performanceMetrics = {
   compressionRatio: new Map(),
   responseSize: new Map(),
@@ -183,7 +185,11 @@ export class SerializationService {
     }
 
     const serializationTime = Date.now() - startTime;
-    performanceMetrics.serializationTime.set(Date.now(), serializationTime);
+    const samples = performanceMetrics.serializationTime;
+    if (samples.size >= MAX_SERIALIZATION_SAMPLES) {
+      samples.delete(samples.keys().next().value); // oldest first: Maps keep insertion order
+    }
+    samples.set(Date.now(), serializationTime);
 
     return optimizedData;
   }

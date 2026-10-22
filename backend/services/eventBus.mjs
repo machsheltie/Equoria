@@ -20,12 +20,15 @@
 import { EventEmitter } from 'node:events';
 import logger from '../utils/logger.mjs';
 
-// A single shared emitter. maxListeners is raised because each connected
-// SSE client adds one listener; the default cap of 10 would warn under
-// normal multi-user load. This is bounded by concurrent SSE connections,
-// which is monitored separately as a future concern (ADR-011).
+// A single shared emitter. Each connected SSE client adds one listener to ITS
+// user's channel, and Node counts listeners per event name, so this ceiling is
+// per user: a player with a handful of tabs is normal, 50 open streams for one
+// user is a leaked subscription. Keeping a finite ceiling keeps Node's
+// MaxListenersExceededWarning alive as the early signal (Equoria-ckfi5); 0
+// (unlimited) would silence it.
+const MAX_LISTENERS_PER_USER = 50;
 const emitter = new EventEmitter();
-emitter.setMaxListeners(0); // 0 = unlimited; connection count is the real bound
+emitter.setMaxListeners(MAX_LISTENERS_PER_USER);
 
 // Equoria-fsuys: lightweight observability for open SSE connections. Each
 // SSE stream registers exactly one subscriber via subscribeUserEvents and
@@ -120,6 +123,16 @@ export function userListenerCount(userId) {
 }
 
 /**
+ * Diagnostic: the per-user-channel listener ceiling past which Node warns of a
+ * likely leaked subscription (Equoria-ckfi5). Always a finite number.
+ *
+ * @returns {number}
+ */
+export function getListenerCeiling() {
+  return emitter.getMaxListeners();
+}
+
+/**
  * Equoria-fsuys: observability snapshot of currently-open SSE connections.
  * `total` is the overall active-stream gauge; `userCount` is the number of
  * distinct users with at least one open stream; `maxPerUser` surfaces the
@@ -146,5 +159,6 @@ export default {
   publishUserEvent,
   subscribeUserEvents,
   userListenerCount,
+  getListenerCeiling,
   getActiveConnectionMetrics,
 };
