@@ -13,10 +13,24 @@
  * ends with a reap; also runnable directly: `node scripts/reap-orphan-jest.mjs`.
  * Windows-only by design (the dev machine); CI runners are ephemeral, so on
  * other platforms this is a silent no-op.
+ *
+ * SCOPE (Equoria-r13ay): the net is intentionally MACHINE-WIDE. It matches any
+ * node.exe whose command line contains 'jest' and whose parent is dead, in any
+ * project, because an orphaned jest worker anywhere on this single-developer
+ * laptop costs the same memory. A live run's workers always have a live parent
+ * and are never touched.
+ *
+ * IMPORT SAFETY (Equoria-r13ay): this script kills processes. Importing it
+ * (e.g. a parse-check `node -e "import('./scripts/reap-orphan-jest.mjs')"`)
+ * must not sweep, so the sweep runs only when this file is the entry point.
  */
 
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
+// @($orphans).Count, not $orphans.Count: with exactly one match PowerShell
+// unrolls the pipeline to a scalar CimInstance, whose absent Count property
+// reads as $null, so the "Killed N" line was silently skipped (Equoria-try0h).
 function main() {
   if (process.platform !== 'win32') {
     return;
@@ -27,7 +41,7 @@ function main() {
     $orphans = Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
       Where-Object { $_.CommandLine -match 'jest' -and ($all -notcontains $_.ParentProcessId) -and $_.ProcessId -ne ${process.pid} }
     foreach ($p in $orphans) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
-    Write-Output $orphans.Count
+    Write-Output @($orphans).Count
   `;
 
   try {
@@ -45,4 +59,6 @@ function main() {
   }
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main();
+}

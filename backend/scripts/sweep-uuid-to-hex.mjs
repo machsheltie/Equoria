@@ -25,6 +25,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const FILES = [
   '__tests__/conformationApiEndpoints.test.mjs',
@@ -57,53 +58,65 @@ const FILES = [
   '__tests__/setup.mjs',
 ];
 
-let totalReplacements = 0;
-let touchedFiles = 0;
+/**
+ * Side effects (source rewrites) live in main() and run only when this file is
+ * the entry point, so a bare import() (e.g. a parse-check) rewrites nothing
+ * (Equoria-8hweb, same class as Equoria-c3kb6).
+ */
+function main() {
+  let totalReplacements = 0;
+  let touchedFiles = 0;
 
-for (const path of FILES) {
-  let content;
-  try {
-    content = readFileSync(path, 'utf8');
-  } catch (e) {
-    console.error(`SKIP (read fail): ${path} — ${e.message}`);
-    continue;
+  for (const path of FILES) {
+    let content;
+    try {
+      content = readFileSync(path, 'utf8');
+    } catch (e) {
+      console.error(`SKIP (read fail): ${path} — ${e.message}`);
+      continue;
+    }
+
+    let newContent = content;
+    let replacements = 0;
+
+    // Replace template-literal usages.
+    const tmplRe = /\$\{randomUUID\(\)\}/g;
+    const tmplMatches = newContent.match(tmplRe);
+    if (tmplMatches) {
+      newContent = newContent.replace(tmplRe, "${randomBytes(8).toString('hex')}");
+      replacements += tmplMatches.length;
+    }
+
+    // Replace bare randomUUID() calls (e.g. const uid = randomUUID();)
+    const bareRe = /\brandomUUID\(\)/g;
+    const bareMatches = newContent.match(bareRe);
+    if (bareMatches) {
+      newContent = newContent.replace(bareRe, "randomBytes(8).toString('hex')");
+      replacements += bareMatches.length;
+    }
+
+    // Update the import: replace `randomUUID` with `randomBytes` in the
+    // existing `import { ... } from 'node:crypto'` line.
+    const importRe =
+      /(import\s*\{[^}]*?)\brandomUUID\b([^}]*?\}\s*from\s*['"]node:crypto['"]\s*;?)/;
+    if (importRe.test(newContent)) {
+      newContent = newContent.replace(importRe, '$1randomBytes$2');
+    }
+
+    if (replacements === 0) {
+      console.log(`SKIP (no randomUUID usages): ${path}`);
+      continue;
+    }
+
+    writeFileSync(path, newContent, 'utf8');
+    totalReplacements += replacements;
+    touchedFiles += 1;
+    console.log(`OK ${replacements} replacements: ${path}`);
   }
 
-  let newContent = content;
-  let replacements = 0;
-
-  // Replace template-literal usages.
-  const tmplRe = /\$\{randomUUID\(\)\}/g;
-  const tmplMatches = newContent.match(tmplRe);
-  if (tmplMatches) {
-    newContent = newContent.replace(tmplRe, "${randomBytes(8).toString('hex')}");
-    replacements += tmplMatches.length;
-  }
-
-  // Replace bare randomUUID() calls (e.g. const uid = randomUUID();)
-  const bareRe = /\brandomUUID\(\)/g;
-  const bareMatches = newContent.match(bareRe);
-  if (bareMatches) {
-    newContent = newContent.replace(bareRe, "randomBytes(8).toString('hex')");
-    replacements += bareMatches.length;
-  }
-
-  // Update the import: replace `randomUUID` with `randomBytes` in the
-  // existing `import { ... } from 'node:crypto'` line.
-  const importRe = /(import\s*\{[^}]*?)\brandomUUID\b([^}]*?\}\s*from\s*['"]node:crypto['"]\s*;?)/;
-  if (importRe.test(newContent)) {
-    newContent = newContent.replace(importRe, '$1randomBytes$2');
-  }
-
-  if (replacements === 0) {
-    console.log(`SKIP (no randomUUID usages): ${path}`);
-    continue;
-  }
-
-  writeFileSync(path, newContent, 'utf8');
-  totalReplacements += replacements;
-  touchedFiles += 1;
-  console.log(`OK ${replacements} replacements: ${path}`);
+  console.log(`\nTotal: ${totalReplacements} replacements across ${touchedFiles} files.`);
 }
 
-console.log(`\nTotal: ${totalReplacements} replacements across ${touchedFiles} files.`);
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main();
+}

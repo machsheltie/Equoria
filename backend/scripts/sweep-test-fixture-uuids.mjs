@@ -21,6 +21,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const FILES = [
   '__tests__/conformationApiEndpoints.test.mjs',
@@ -97,28 +98,39 @@ function ensureImport(content) {
   return lines.join('\n');
 }
 
-let totalReplacements = 0;
-let touchedFiles = 0;
+/**
+ * Side effects (source rewrites) live in main() and run only when this file is
+ * the entry point, so a bare import() (e.g. a parse-check) rewrites nothing
+ * (Equoria-8hweb, same class as Equoria-c3kb6).
+ */
+function main() {
+  let totalReplacements = 0;
+  let touchedFiles = 0;
 
-for (const relPath of FILES) {
-  const path = relPath;
-  let content;
-  try {
-    content = readFileSync(path, 'utf8');
-  } catch (e) {
-    console.error(`SKIP (read fail): ${path} — ${e.message}`);
-    continue;
+  for (const relPath of FILES) {
+    const path = relPath;
+    let content;
+    try {
+      content = readFileSync(path, 'utf8');
+    } catch (e) {
+      console.error(`SKIP (read fail): ${path} — ${e.message}`);
+      continue;
+    }
+    const matches = content.match(PHASE3A_RE);
+    if (!matches || matches.length === 0) {
+      console.log(`SKIP (no pattern): ${path}`);
+      continue;
+    }
+    const newContent = ensureImport(content.replace(PHASE3A_RE, REPLACE_WITH));
+    writeFileSync(path, newContent, 'utf8');
+    totalReplacements += matches.length;
+    touchedFiles += 1;
+    console.log(`OK ${matches.length} replacements: ${path}`);
   }
-  const matches = content.match(PHASE3A_RE);
-  if (!matches || matches.length === 0) {
-    console.log(`SKIP (no pattern): ${path}`);
-    continue;
-  }
-  const newContent = ensureImport(content.replace(PHASE3A_RE, REPLACE_WITH));
-  writeFileSync(path, newContent, 'utf8');
-  totalReplacements += matches.length;
-  touchedFiles += 1;
-  console.log(`OK ${matches.length} replacements: ${path}`);
+
+  console.log(`\nTotal: ${totalReplacements} replacements across ${touchedFiles} files.`);
 }
 
-console.log(`\nTotal: ${totalReplacements} replacements across ${touchedFiles} files.`);
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main();
+}
