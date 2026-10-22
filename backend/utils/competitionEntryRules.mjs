@@ -38,7 +38,8 @@ export const ENTRY_REFUSALS = Object.freeze({
   }),
   AGE_TOO_OLD: Object.freeze({ status: 400, message: 'Horses over 20 years old cannot compete' }),
   HORSE_INJURED: Object.freeze({ status: 400, message: 'Injured horses cannot compete' }),
-  HORSE_CRITICAL_HEALTH: Object.freeze({
+  // camelCase: new codes may not add snake-case names (Equoria-pjvp8 ratchet).
+  horseCriticalHealth: Object.freeze({
     status: 400,
     message: 'Horses in critical health cannot compete. Feed and vet to restore health.',
   }),
@@ -220,7 +221,7 @@ export function healthRefusal(horse, now = new Date()) {
   if (String(horse?.healthStatus).toLowerCase() === 'injured') {
     return 'HORSE_INJURED';
   }
-  return horse && getDisplayedHealth(horse, now) === 'critical' ? 'HORSE_CRITICAL_HEALTH' : null;
+  return horse && getDisplayedHealth(horse, now) === 'critical' ? 'horseCriticalHealth' : null;
 }
 
 /** C10 rider rule over the horse's active assignment: a refusal code or null. */

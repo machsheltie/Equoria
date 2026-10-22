@@ -56,8 +56,7 @@ beforeAll(async () => {
       dateOfBirth: eligible.competitionDateOfBirth(),
       age: 7,
       userId: user.id,
-      healthStatus: 'Excellent',
-      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
+      ...eligible.healthyAndFed(),
     },
   });
   await eligible.giveEligibleRider(prisma, { horseId: horse.id, userId: user.id }, cleanup);
@@ -104,8 +103,7 @@ beforeAll(async () => {
       dateOfBirth: new Date('2018-01-01'),
       age: 7,
       userId: execUser.id,
-      healthStatus: 'Excellent',
-      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
+      ...eligible.healthyAndFed(),
       speed: 60,
       stamina: 60,
       agility: 60,
@@ -412,7 +410,6 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
         age: 1,
         userId: user.id,
         healthStatus: 'Excellent',
-        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
     });
     ageTestHorseId = youngHorse.id;
@@ -580,8 +577,7 @@ describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
         dateOfBirth: eligible.competitionDateOfBirth(),
         age: 7,
         userId: brokeUser.id,
-        healthStatus: 'Excellent',
-        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
+        ...eligible.healthyAndFed(),
       },
     });
     await eligible.giveEligibleRider(prisma, { horseId: brokeHorse.id, userId: brokeUser.id }, cleanup);

@@ -27,6 +27,16 @@ export function competitionDateOfBirth(years = 7) {
 }
 
 /**
+ * Horse fields for a horse in good health: a real band and fed today, so its
+ * displayed health is not critical (bad health refuses entry - owner ruling
+ * 2026-10-22, Equoria-0d4wa).
+ * @returns {{ healthStatus: string, lastFedDate: Date }}
+ */
+export function healthyAndFed() {
+  return { healthStatus: 'Excellent', lastFedDate: new Date() };
+}
+
+/**
  * Create a rider employed by `userId` and actively assign it to `horseId`.
  *
  * @param {object} db - prisma client

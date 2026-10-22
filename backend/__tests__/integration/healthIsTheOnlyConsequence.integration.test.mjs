@@ -38,7 +38,7 @@ let owner;
 let token;
 
 /** Ten Eastern days without feed: feed health 'critical' (bands: 9+ days). */
-const TEN_DAYS_AGO = () => new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+const tenDaysAgo = () => new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
 
 beforeAll(async () => {
   owner = await prisma.user.create({
@@ -136,7 +136,7 @@ describe('No burnout (owner ruling 2026-10-22)', () => {
 
 describe('Bad health blocks training', () => {
   it('refuses a horse in critical health (ten days unfed) and writes nothing', async () => {
-    const horse = await makeHorse({ lastFedDate: TEN_DAYS_AGO() });
+    const horse = await makeHorse({ lastFedDate: tenDaysAgo() });
 
     const res = await post('/api/v1/training/train', { horseId: horse.id, discipline: 'Dressage' });
 
@@ -177,13 +177,13 @@ describe.each([
 
   it('refuses a horse in critical health (ten days unfed) and creates no entry', async () => {
     const show = await makeShow();
-    const horse = await riddenHorse({ lastFedDate: TEN_DAYS_AGO() });
+    const horse = await riddenHorse({ lastFedDate: tenDaysAgo() });
 
     const res = await enter(show.id, horse.id);
 
     expect({ status: res.status, code: res.body.code }).toEqual({
       status: 400,
-      code: 'HORSE_CRITICAL_HEALTH',
+      code: 'horseCriticalHealth',
     });
     expect(res.body.message).toMatch(/critical health/i);
     expect(await prisma.showEntry.count({ where: { showId: show.id, horseId: horse.id } })).toBe(0);
@@ -198,7 +198,7 @@ describe.each([
 
 describe('Bad health blocks conformation show entry', () => {
   it('refuses a horse in critical health before any groom or show lookup', async () => {
-    const horse = await makeHorse({ lastFedDate: TEN_DAYS_AGO() });
+    const horse = await makeHorse({ lastFedDate: tenDaysAgo() });
     const res = await post('/api/v1/competition/conformation/enter', {
       horseId: horse.id,
       groomId: 1,
@@ -212,7 +212,7 @@ describe('Bad health blocks conformation show entry', () => {
 describe('Bad health blocks breeding', () => {
   it('refuses a pair when the mare is in critical health and starts no pregnancy', async () => {
     const sire = await makeHorse({ sex: 'Stallion' });
-    const dam = await makeHorse({ lastFedDate: TEN_DAYS_AGO() });
+    const dam = await makeHorse({ lastFedDate: tenDaysAgo() });
 
     const res = await post('/api/v1/horses/foals', { sireId: sire.id, damId: dam.id });
 

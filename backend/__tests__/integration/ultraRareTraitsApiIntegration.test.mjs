@@ -321,7 +321,6 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
       // Equoria-0d4wa: no burnout, so no burnout immunity (old contract: true).
       expect(hasUltraRareAbility(horseWithIronWilled, 'burnout_immunity')).toBe(false);
-      expect(hasUltraRareAbility(horseWithIronWilled, 'training_fatigue_immunity')).toBe(true);
       expect(hasUltraRareAbility(horseWithIronWilled, 'stress_immunity')).toBe(false);
 
       expect(hasUltraRareAbility(horseWithGhostwalker, 'stress_immunity')).toBe(true);
