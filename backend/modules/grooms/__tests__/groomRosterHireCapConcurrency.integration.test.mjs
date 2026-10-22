@@ -95,7 +95,7 @@ async function seedGrooms(userId, count) {
     await prisma.groom.create({
       data: {
         name: `${FIXTURE_PREFIX}-seed-${i}-${randomBytes(3).toString('hex')}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId,
       },
@@ -108,7 +108,7 @@ function hireReq(userId, name) {
     user: { id: userId },
     body: {
       name,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       skill_level: SKILL_LEVEL,
       personality: 'gentle',
     },

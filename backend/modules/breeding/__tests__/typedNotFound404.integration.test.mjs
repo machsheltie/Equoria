@@ -94,7 +94,7 @@ describe('INTEGRATION: type-based 404 vs 500-unexpected — Equoria-4xwyi routes
     ownedGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-pwjs5-groom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         skillLevel: 'novice',
         sessionRate: 15.0,

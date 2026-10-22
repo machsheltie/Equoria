@@ -239,7 +239,7 @@ describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
       const groom = await prisma.groom.create({
         data: {
           name: `TestFixture-GdprDelGroom_${ts}`,
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           personality: 'gentle',
           userId: subject.user.id,
         },

@@ -72,7 +72,7 @@ describe('Legacy Score Trait Integration System', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: `LegacyTraitTest_Groom_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         experience: 10,
         skillLevel: 'expert',
         personality: 'calm',

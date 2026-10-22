@@ -58,7 +58,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-GroomBondingGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },

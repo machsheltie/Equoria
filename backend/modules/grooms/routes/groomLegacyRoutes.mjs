@@ -118,7 +118,7 @@ router.get(
  *                 enum: [novice, intermediate, expert]
  *               speciality:
  *                 type: string
- *                 enum: [foal_care, general_grooming, specialized_disciplines]
+ *                 enum: [foalCare, generalGrooming, specializedDisciplines]
  *               sessionRate:
  *                 type: number
  *                 minimum: 5
@@ -159,7 +159,7 @@ router.post(
   body('personality').isIn(['calm', 'energetic', 'methodical']).withMessage('Invalid personality'),
   body('skillLevel').isIn(['novice', 'intermediate', 'expert']).withMessage('Invalid skill level'),
   body('speciality')
-    .isIn(['foal_care', 'general_grooming', 'specialized_disciplines'])
+    .isIn(['foalCare', 'generalGrooming', 'specializedDisciplines'])
     .withMessage('Invalid speciality'),
   body('sessionRate')
     .optional()

@@ -75,7 +75,7 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
     groom = await prisma.groom.create({
       data: {
         name: `${TAG}-Groom`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'patient',
         experience: 5,

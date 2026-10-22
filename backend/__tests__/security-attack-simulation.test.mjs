@@ -128,7 +128,7 @@ describe('Security Attack Simulation Tests', () => {
       data: {
         name: `TestFixture-GroomB-${randomBytes(8).toString('hex')}`,
         userId: userB.id,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
       },
     });

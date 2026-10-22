@@ -115,7 +115,7 @@ async function createGroom(userId, overrides = {}) {
   return prisma.groom.create({
     data: {
       name: overrides.name ?? `${SUITE_PREFIX}-groom-${randomBytes(4).toString('hex')}`,
-      speciality: overrides.speciality ?? 'foal_care',
+      speciality: overrides.speciality ?? 'foalCare',
       personality: overrides.personality ?? 'gentle',
       user: { connect: { id: userId } },
     },

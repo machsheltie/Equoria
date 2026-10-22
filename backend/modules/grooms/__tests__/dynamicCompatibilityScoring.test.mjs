@@ -58,7 +58,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-DynCompatGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -450,7 +450,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
         prisma.groom.create({
           data: {
             name: `TestFixture-DC-HighExpGroom-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'gentle',
             level: 10,
             experience: 200,
@@ -461,7 +461,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
         prisma.groom.create({
           data: {
             name: `TestFixture-DC-MethodicalGroom-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'methodical',
             epigeneticInfluenceType: 'methodical',
             level: 10,

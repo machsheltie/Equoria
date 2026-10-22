@@ -192,7 +192,7 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
     grooms[key] = await prisma.groom.create({
       data: {
         name: `Compat Groom ${key} ${token}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: influence,
         epigeneticInfluenceType: influence,
         experience,

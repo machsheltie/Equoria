@@ -98,7 +98,7 @@ function groomData(ownerId, name, personality) {
   return {
     userId: ownerId,
     name,
-    speciality: 'foal_care',
+    speciality: 'foalCare',
     personality,
     epigeneticInfluenceType: personality,
     skillLevel: 'intermediate',

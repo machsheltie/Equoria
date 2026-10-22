@@ -71,7 +71,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       data: {
         name: `${TAG}-Mentor`,
         userId: user.id,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'expert',
         personality: 'calm',
         experience: 5000,
@@ -85,7 +85,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       data: {
         name: `${TAG}-Protege`,
         userId: user.id,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'novice',
         personality: 'patient',
         experience: 50,
@@ -119,7 +119,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       data: {
         name: `${TAG}-LowMentor`,
         userId: user.id,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'calm',
         experience: 1500,
@@ -133,7 +133,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       data: {
         name: `${TAG}-LowProtege`,
         userId: user.id,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'novice',
         personality: 'patient',
         experience: 50,
@@ -158,7 +158,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       data: {
         name: `${TAG}-SoloMentor`,
         userId: user.id,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'expert',
         personality: 'energetic',
         experience: 5000,
@@ -210,7 +210,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       data: {
         name: `${TAG}-OwnerlessMentor`,
         userId: null,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'expert',
         personality: 'calm',
         experience: 5000,
@@ -223,7 +223,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
       data: {
         name: `${TAG}-OwnerlessStranger`,
         userId: null,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'novice',
         personality: 'patient',
         experience: 0,

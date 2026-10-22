@@ -127,7 +127,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: 'Gentle Test Groom',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         experience: 15,
         skillLevel: 'expert',
         personality: 'calm',
@@ -503,7 +503,7 @@ describe('Trait History Service', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: 'Service Test Groom',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         experience: 10,
         skillLevel: 'intermediate',
         personality: 'patient',

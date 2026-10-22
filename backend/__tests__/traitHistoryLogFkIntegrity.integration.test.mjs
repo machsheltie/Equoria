@@ -137,7 +137,7 @@ describe('trait_history_logs FK integrity (Equoria-vllv4)', () => {
     const groom = await prisma.groom.create({
       data: {
         name: `${FIXTURE_PREFIX}-groom-${randomBytes(4).toString('hex')}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'gentle',
         experience: 5,

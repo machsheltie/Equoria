@@ -113,7 +113,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: 'Phoenix Whisperer Groom',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         experience: 8,
         skillLevel: 'expert',
         personality: 'mindful',

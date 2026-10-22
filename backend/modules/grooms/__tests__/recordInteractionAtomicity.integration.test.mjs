@@ -131,7 +131,7 @@ describe('Equoria-po1fl: POST /api/v1/grooms/interact is atomic across its five 
     groom = await prisma.groom.create({
       data: {
         name: `${TAG}-Groom`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'patient',
         experience: 5,

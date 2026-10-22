@@ -84,7 +84,7 @@ describe('Groom Legacy Service', () => {
         name: `Retired Master Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         personality: 'calm',
         skillLevel: 'expert',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         userId: testUser.id,
         careerWeeks: 104,
         level: 8,
@@ -178,7 +178,7 @@ describe('Groom Legacy Service', () => {
           name: `Active Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'energetic',
           skillLevel: 'expert',
-          speciality: 'general_grooming',
+          speciality: 'generalGrooming',
           userId: testUser.id,
           level: 9,
           retired: false,
@@ -201,7 +201,7 @@ describe('Groom Legacy Service', () => {
           name: `Low Level Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'methodical',
           skillLevel: 'intermediate',
-          speciality: 'specialized_disciplines',
+          speciality: 'specializedDisciplines',
           userId: testUser.id,
           level: 5,
           retired: true,
@@ -225,7 +225,7 @@ describe('Groom Legacy Service', () => {
           name: `Existing Protégé ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'calm',
           skillLevel: 'novice',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           userId: testUser.id,
           level: 1,
         },
@@ -260,7 +260,7 @@ describe('Groom Legacy Service', () => {
         name: 'Young Apprentice',
         personality: 'energetic',
         skillLevel: 'novice',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
       };
 
       const result = await generateLegacyProtege(retiredGroom.id, protegeData, testUser.id);
@@ -293,7 +293,7 @@ describe('Groom Legacy Service', () => {
           name: `Ineligible Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'calm',
           skillLevel: 'novice',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           userId: testUser.id,
           level: 3,
           retired: true,
@@ -304,7 +304,7 @@ describe('Groom Legacy Service', () => {
         name: 'Failed Apprentice',
         personality: 'calm',
         skillLevel: 'novice',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
       };
 
       await expect(generateLegacyProtege(ineligibleGroom.id, protegeData, testUser.id)).rejects.toThrow(
@@ -353,7 +353,7 @@ describe('Groom Legacy Service', () => {
         name: 'History Test Apprentice',
         personality: 'methodical',
         skillLevel: 'novice',
-        speciality: 'specialized_disciplines',
+        speciality: 'specializedDisciplines',
       };
 
       const result = await generateLegacyProtege(retiredGroom.id, protegeData, testUser.id);

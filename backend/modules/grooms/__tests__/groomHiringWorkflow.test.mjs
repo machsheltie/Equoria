@@ -89,7 +89,7 @@ describe('Groom Hiring Workflow Tests', () => {
   describe('1. Required Field Validation', () => {
     it('should validate name is required', async () => {
       const req = {
-        body: { speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
+        body: { speciality: 'foalCare', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
       const res = makeRes();
@@ -117,7 +117,7 @@ describe('Groom Hiring Workflow Tests', () => {
 
     it('should validate skill_level is required', async () => {
       const req = {
-        body: { name: 'Test Groom', speciality: 'foal_care', personality: 'gentle' },
+        body: { name: 'Test Groom', speciality: 'foalCare', personality: 'gentle' },
         user: { id: testUser.id },
       };
       const res = makeRes();
@@ -132,7 +132,7 @@ describe('Groom Hiring Workflow Tests', () => {
 
     it('should validate personality is required', async () => {
       const req = {
-        body: { name: 'Test Groom', speciality: 'foal_care', skill_level: 'expert' },
+        body: { name: 'Test Groom', speciality: 'foalCare', skill_level: 'expert' },
         user: { id: testUser.id },
       };
       const res = makeRes();
@@ -184,7 +184,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           experience: 10,
           skill_level: 'invalidLevel',
           personality: 'gentle',
@@ -205,7 +205,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           experience: 10,
           skill_level: 'expert',
           personality: 'invalidPersonality',
@@ -248,7 +248,7 @@ describe('Groom Hiring Workflow Tests', () => {
         const req = {
           body: {
             name: `${skillLevel} Groom`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             skill_level: skillLevel,
             personality: 'gentle',
           },
@@ -268,7 +268,7 @@ describe('Groom Hiring Workflow Tests', () => {
     it('should accept all valid personality values', async () => {
       for (const personality of Object.keys(PERSONALITY_TRAITS)) {
         const req = {
-          body: { name: `${personality} Groom`, speciality: 'foal_care', skill_level: 'expert', personality },
+          body: { name: `${personality} Groom`, speciality: 'foalCare', skill_level: 'expert', personality },
           user: { id: testUser.id },
         };
         const res = makeRes();
@@ -288,7 +288,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Default Experience Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -306,7 +306,7 @@ describe('Groom Hiring Workflow Tests', () => {
 
     it('should calculate session rate based on skill level when not provided', async () => {
       const req = {
-        body: { name: 'Default Rate Groom', speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
+        body: { name: 'Default Rate Groom', speciality: 'foalCare', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
       const res = makeRes();
@@ -325,7 +325,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Custom Rate Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           sessionRate: customRate,
@@ -345,7 +345,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Bio Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           bio: customBio,
@@ -375,7 +375,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Availability Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           availability: customAvailability,
@@ -415,7 +415,7 @@ describe('Groom Hiring Workflow Tests', () => {
         const req = {
           body: {
             name: `Limit Test Groom ${i}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             skill_level: 'novice',
             personality: 'gentle',
           },
@@ -451,7 +451,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Expensive Master Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'master',
           personality: 'gentle',
           sessionRate: 100.0,
@@ -475,7 +475,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Premium Master Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'master',
           personality: 'gentle',
           sessionRate: 100.0,
@@ -493,7 +493,7 @@ describe('Groom Hiring Workflow Tests', () => {
   describe('5. Error Handling & Edge Cases', () => {
     it('should handle empty strings for required fields', async () => {
       const req = {
-        body: { name: '', speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
+        body: { name: '', speciality: 'foalCare', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
       const res = makeRes();
@@ -506,7 +506,7 @@ describe('Groom Hiring Workflow Tests', () => {
     it('should handle extremely long names', async () => {
       const veryLongName = 'A'.repeat(1000);
       const req = {
-        body: { name: veryLongName, speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
+        body: { name: veryLongName, speciality: 'foalCare', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
       const res = makeRes();
@@ -526,7 +526,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Negative Experience Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           experience: -5,
@@ -550,7 +550,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Negative Rate Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           sessionRate: -20.0,
@@ -572,7 +572,7 @@ describe('Groom Hiring Workflow Tests', () => {
 
     it('should handle missing user ID', async () => {
       const req = {
-        body: { name: 'No User Groom', speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
+        body: { name: 'No User Groom', speciality: 'foalCare', skill_level: 'expert', personality: 'gentle' },
       };
       const res = makeRes();
 

@@ -143,7 +143,7 @@ export const COMPETITION_PLACEMENT_VALUES = Object.values(COMPETITION_PLACEMENTS
  * Groom specialties
  */
 export const GROOM_SPECIALTIES = {
-  FOAL_CARE: 'foal_care',
+  FOAL_CARE: 'foalCare',
   GENERAL: 'general',
   TRAINING: 'training',
   MEDICAL: 'medical',

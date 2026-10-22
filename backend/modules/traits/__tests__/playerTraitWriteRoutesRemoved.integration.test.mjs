@@ -104,7 +104,7 @@ describe('Player trait-write routes are removed (Equoria-gu8jk)', () => {
     groom = await prisma.groom.create({
       data: {
         name: `TestFixture-gu8jk-groom-${suffix}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: player.id,
         experience: 500,

@@ -70,7 +70,7 @@ describe('Breeding Prediction System', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: `TestGroom_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         experience: 10,
         skillLevel: 'expert',
         personality: 'calm',

@@ -80,7 +80,7 @@ describe('System-Wide Data Integrity', () => {
         experience: 0,
         personality: 'calm',
         epigeneticInfluenceType: 'calm',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         level: 1,
         careerWeeks: 0,
         retired: false,

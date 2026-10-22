@@ -57,7 +57,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-GroomSvcGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -127,7 +127,7 @@ describe('calculateHandlerBonus', () => {
       id: groom.id,
       name: groom.name,
       skillLevel: 'novice',
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       experience: 0,
     };
@@ -142,7 +142,7 @@ describe('calculateHandlerBonus', () => {
       id: groom.id,
       name: groom.name,
       skillLevel: 'novice',
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       experience: 0,
     };

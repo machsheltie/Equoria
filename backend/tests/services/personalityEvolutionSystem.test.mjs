@@ -75,7 +75,7 @@ describe('Personality Evolution System', () => {
           data: {
             userId: testUser.id,
             name: 'Evolution Test Groom',
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             epigeneticInfluenceType: 'calm',
             skillLevel: 'intermediate',

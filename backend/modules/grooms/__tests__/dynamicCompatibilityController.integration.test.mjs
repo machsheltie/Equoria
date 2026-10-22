@@ -95,7 +95,7 @@ beforeAll(async () => {
       skillLevel: 'expert',
       experience: 200,
       level: 10,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
     },
     {
       name: `Energetic Novice ${uid}`,
@@ -103,7 +103,7 @@ beforeAll(async () => {
       skillLevel: 'novice',
       experience: 50,
       level: 3,
-      speciality: 'general_grooming',
+      speciality: 'generalGrooming',
     },
     {
       name: `Methodical Intermediate ${uid}`,
@@ -189,7 +189,7 @@ beforeAll(async () => {
     data: {
       userId: foreignUser.id,
       name: `Foreign Groom ${uid}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'calm',
       epigeneticInfluenceType: 'calm',
       skillLevel: 'expert',

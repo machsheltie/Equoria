@@ -280,7 +280,7 @@ describe('Equoria-ypb7d.1 — both hire paths give a groom an age', () => {
         user: { id: user.id },
         body: {
           name: `${FIXTURE_PREFIX}-hire-direct-${tag()}`,
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'novice',
           personality: 'gentle',
         },

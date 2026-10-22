@@ -142,14 +142,14 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
 
   describe('Groom Constants', () => {
     it('should have all groom specialties', () => {
-      expect(GROOM_SPECIALTIES.FOAL_CARE).toBe('foal_care');
+      expect(GROOM_SPECIALTIES.FOAL_CARE).toBe('foalCare');
       expect(GROOM_SPECIALTIES.GENERAL).toBe('general');
       expect(GROOM_SPECIALTIES.TRAINING).toBe('training');
       expect(GROOM_SPECIALTIES.MEDICAL).toBe('medical');
     });
 
     it('should validate groom specialties correctly', () => {
-      expect(isValidGroomSpecialty('foal_care')).toBe(true);
+      expect(isValidGroomSpecialty('foalCare')).toBe(true);
       expect(isValidGroomSpecialty('general')).toBe(true);
       expect(isValidGroomSpecialty('invalid')).toBe(false);
     });

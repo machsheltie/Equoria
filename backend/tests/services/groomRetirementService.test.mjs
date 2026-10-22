@@ -93,7 +93,7 @@ describe('Groom Retirement Service', () => {
         name: `Test Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         personality: 'calm',
         skillLevel: 'intermediate',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         userId: testUser.id,
         careerWeeks: 0,
         // Equoria-ypb7d.1: a groom's age is `startAge + careerWeeks`, so a fixture
@@ -418,7 +418,7 @@ describe('Groom Retirement Service', () => {
               name: `Test Groom Early ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'calm',
               skillLevel: 'novice',
-              speciality: 'foal_care',
+              speciality: 'foalCare',
               userId: testUser.id,
               careerWeeks: 10,
               // Equoria-ypb7d.1: fixed start age so this groom's AGE is 30 — well
@@ -435,7 +435,7 @@ describe('Groom Retirement Service', () => {
               name: `Test Groom Mid ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'energetic',
               skillLevel: 'intermediate',
-              speciality: 'general_grooming',
+              speciality: 'generalGrooming',
               userId: testUser.id,
               // Equoria-m9lz1: was 50, which sits INSIDE the 50..65 retirement
               // band — a 1-in-16 chance of this groom drawing exactly 50 and
@@ -454,7 +454,7 @@ describe('Groom Retirement Service', () => {
               name: `Test Groom Near Retirement ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'methodical',
               skillLevel: 'expert',
-              speciality: 'specialized_disciplines',
+              speciality: 'specializedDisciplines',
               userId: testUser.id,
               // Equoria-m9lz1: parked one tick short of its own hidden age by the
               // post-create step below, so the pass carries it over the line.
@@ -470,7 +470,7 @@ describe('Groom Retirement Service', () => {
               name: `Test Groom Level 10 ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'calm',
               skillLevel: 'expert',
-              speciality: 'foal_care',
+              speciality: 'foalCare',
               userId: testUser.id,
               // Level 10 is no longer a retirement trigger (Equoria-m9lz1), so
               // this groom now retires for the same reason as every other: it
@@ -584,7 +584,7 @@ describe('Groom Retirement Service', () => {
           name: `Problem Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'calm',
           skillLevel: 'novice',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           userId: testUser.id,
           careerWeeks: 0,
           level: 1,

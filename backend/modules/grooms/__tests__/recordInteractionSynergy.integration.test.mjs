@@ -75,7 +75,7 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
     patientGroom = await prisma.groom.create({
       data: {
         name: `${TAG}-Patient`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'patient',
         experience: 5,
@@ -88,7 +88,7 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
     strictGroom = await prisma.groom.create({
       data: {
         name: `${TAG}-Strict`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'strict',
         experience: 5,

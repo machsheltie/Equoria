@@ -59,7 +59,7 @@ describe('Groom Personality Trait System', () => {
               personality: 'calm',
               epigeneticInfluenceType: 'calm',
               skillLevel: 'expert',
-              speciality: 'foal_care',
+              speciality: 'foalCare',
               userId: testUser.id,
               sessionRate: 35.0,
               experience: 150, // High experience
@@ -73,7 +73,7 @@ describe('Groom Personality Trait System', () => {
               personality: 'energetic',
               epigeneticInfluenceType: 'energetic',
               skillLevel: 'novice',
-              speciality: 'general_grooming',
+              speciality: 'generalGrooming',
               userId: testUser.id,
               sessionRate: 15.0,
               experience: 25, // Low experience
@@ -87,7 +87,7 @@ describe('Groom Personality Trait System', () => {
               personality: 'methodical',
               epigeneticInfluenceType: 'methodical',
               skillLevel: 'experienced',
-              speciality: 'foal_care',
+              speciality: 'foalCare',
               userId: testUser.id,
               sessionRate: 28.0,
               experience: 80, // Medium experience

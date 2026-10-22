@@ -55,7 +55,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-GroomProgressGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -137,7 +137,7 @@ describe('updateGroomSynergy — branch coverage (Equoria-jkht)', () => {
     sgGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-GP-SG-Groom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: sgUser.id,
       },
@@ -215,7 +215,7 @@ describe('logGroomAssignment — branch coverage (Equoria-jkht)', () => {
     laGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-GP-LA-Groom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: laUser.id,
       },
@@ -302,7 +302,7 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
     seGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-GP-SE-Groom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: seUser.id,
       },
@@ -387,7 +387,7 @@ describe('logGroomAssignment — default-param + null-coalesce fallback branches
     la2Groom = await prisma.groom.create({
       data: {
         name: `TestFixture-GP-LA2-Groom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: la2User.id,
       },

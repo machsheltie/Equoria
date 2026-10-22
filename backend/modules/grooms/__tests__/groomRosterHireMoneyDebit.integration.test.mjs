@@ -97,7 +97,7 @@ function hireReq(userId, name) {
     user: { id: userId },
     body: {
       name,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       skill_level: SKILL_LEVEL,
       personality: 'gentle',
     },

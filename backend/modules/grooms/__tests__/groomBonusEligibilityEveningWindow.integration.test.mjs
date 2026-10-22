@@ -90,7 +90,7 @@ function makeGroom() {
   return prisma.groom.create({
     data: {
       name: `${PREFIX}-groom-${groomSeq}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: owner.id,
     },

@@ -434,7 +434,7 @@ router.get(
  *                 description: Groom's name
  *               speciality:
  *                 type: string
- *                 enum: [foal_care, general, training, medical]
+ *                 enum: [foalCare, general, training, medical]
  *                 description: Groom's speciality
  *               experience:
  *                 type: integer

@@ -87,7 +87,7 @@ const REPRESENTATIVE_MUTATIONS = [
     label: 'POST /api/v1/grooms/hire (authRouter — hire groom)',
     method: 'post',
     path: '/api/v1/grooms/hire',
-    body: { name: 'TestFixture-sentinel-groom', speciality: 'foal_care', skill_level: 'novice', personality: 'gentle' },
+    body: { name: 'TestFixture-sentinel-groom', speciality: 'foalCare', skill_level: 'novice', personality: 'gentle' },
   },
   // authRouter — financial/economy
   {

@@ -67,7 +67,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-PersEvolGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -251,7 +251,7 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
     evGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-PES-GroomEvolves-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'calm',
         userId: evUser.id,
         experience: 100,
@@ -261,7 +261,7 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
     evGroomForHorses = await prisma.groom.create({
       data: {
         name: `TestFixture-PES-GroomForHorses-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: evUser.id,
       },
@@ -409,7 +409,7 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
     rr7GroomMixed = await prisma.groom.create({
       data: {
         name: `TestFixture-PES-RR7-GroomMixed-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'calm',
         userId: rr7User.id,
         experience: 100,
@@ -419,7 +419,7 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
     rr7GroomForHorses = await prisma.groom.create({
       data: {
         name: `TestFixture-PES-RR7-GroomForHorses-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: rr7User.id,
       },

@@ -236,7 +236,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
     thGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-TH-Groom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: thUser.id,
       },

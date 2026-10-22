@@ -56,7 +56,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-GroomPersonGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       epigeneticInfluenceType: 'calm',
       userId: user.id,
@@ -214,7 +214,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     mediumGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-GPT-MediumGroom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         epigeneticInfluenceType: 'calm',
         experience: 51,
@@ -226,7 +226,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     highGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-GPT-HighGroom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         epigeneticInfluenceType: 'calm',
         experience: 101,
@@ -238,7 +238,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     calmExpertGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-GPT-ExpertGroom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         epigeneticInfluenceType: 'calm',
         experience: 201,
@@ -250,7 +250,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     energeticGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-GPT-EnergeticGroom-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'active',
         epigeneticInfluenceType: 'energetic',
         experience: 0,
@@ -353,7 +353,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
         prisma.groom.create({
           data: {
             name: `TestFixture-GP-EnergeticGroom-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'energetic',
             epigeneticInfluenceType: 'energetic',
             userId: gpUser.id,
@@ -363,7 +363,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
         prisma.groom.create({
           data: {
             name: `TestFixture-GP-CalmExpert-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             epigeneticInfluenceType: 'calm',
             experience: 250,
@@ -374,7 +374,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
         prisma.groom.create({
           data: {
             name: `TestFixture-GP-CalmMedium-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             epigeneticInfluenceType: 'calm',
             experience: 75,
@@ -385,7 +385,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
         prisma.groom.create({
           data: {
             name: `TestFixture-GP-CalmHigh-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             epigeneticInfluenceType: 'calm',
             experience: 150,
@@ -592,7 +592,7 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
     rbrGroomBadType = await prisma.groom.create({
       data: {
         name: `TestFixture-RBR-BadType-${ts}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         epigeneticInfluenceType: 'invalidTypeXyz',
         userId: rbrUser.id,

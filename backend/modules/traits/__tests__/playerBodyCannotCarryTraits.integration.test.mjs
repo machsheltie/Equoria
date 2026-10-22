@@ -198,14 +198,14 @@ describe('Player bodies cannot carry trait fields (Equoria-gu8jk)', () => {
       name: 'TestFixture Protege',
       personality: 'calm',
       skillLevel: 'novice',
-      speciality: 'foal_care',
+      speciality: 'foalCare',
     };
 
     beforeAll(async () => {
       mentor = await prisma.groom.create({
         data: {
           name: `TestFixture-gu8jk-mentor-${randomBytes(4).toString('hex')}`,
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           personality: 'calm',
           userId: player.id,
           level: 8,

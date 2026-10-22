@@ -137,7 +137,7 @@ describe('Schema Validation', () => {
     const groom = await prisma.groom.create({
       data: {
         name: 'Schema Test Groom',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'expert',
         personality: 'gentle',
         sessionRate: 25.0,
@@ -147,7 +147,7 @@ describe('Schema Validation', () => {
 
     expect(groom).toBeTruthy();
     expect(groom.name).toBe('Schema Test Groom');
-    expect(groom.speciality).toBe('foal_care');
+    expect(groom.speciality).toBe('foalCare');
     expect(groom.skillLevel).toBe('expert');
     expect(groom.personality).toBe('gentle');
     expect(parseFloat(groom.sessionRate)).toBe(25.0);

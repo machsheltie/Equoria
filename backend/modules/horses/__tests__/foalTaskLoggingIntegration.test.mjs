@@ -135,7 +135,7 @@ describe('Foal Task Logging Integration', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: `Task Logging Groom ${testCounter}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         experience: 3,
         skillLevel: 'intermediate',
         personality: 'patient',

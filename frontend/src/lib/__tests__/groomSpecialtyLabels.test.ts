@@ -23,21 +23,13 @@ import { groomSpecialtyLabel } from '../groomSpecialtyLabels';
  * literal rather than imported because the frontend does not import backend
  * modules; if that list grows, this test fails and points at the label map.
  */
-const BACKEND_SPECIALTY_VALUES = ['foal_care', 'general', 'training', 'medical'];
+const BACKEND_SPECIALTY_VALUES = ['foalCare', 'general', 'training', 'medical'];
 
-/** The camelCase spellings the marketplace generator and older rows use. */
-const CAMEL_SPECIALTY_VALUES = ['foalCare', 'general', 'training', 'medical'];
-
-/**
- * Legacy strings that appear in older fixtures and could still reach a payload.
- * Only spellings that actually occur in source are listed: `generalGrooming` does,
- * `specializedDisciplines` does not (only its snake_case form), so inventing a key
- * for it would assert coverage of something nothing emits.
- */
-const LEGACY_SPECIALTY_VALUES = ['general_grooming', 'generalGrooming', 'specialized_disciplines'];
+/** Legacy strings that appear in older fixtures and could still reach a payload. */
+const LEGACY_SPECIALTY_VALUES = ['generalGrooming', 'specializedDisciplines'];
 
 describe('groomSpecialtyLabel — every backend specialty has an authored label', () => {
-  it.each([...BACKEND_SPECIALTY_VALUES, ...CAMEL_SPECIALTY_VALUES, ...LEGACY_SPECIALTY_VALUES])(
+  it.each([...BACKEND_SPECIALTY_VALUES, ...LEGACY_SPECIALTY_VALUES])(
     'labels %s without leaking the raw value',
     (raw) => {
       const label = groomSpecialtyLabel(raw);
@@ -53,15 +45,7 @@ describe('groomSpecialtyLabel — every backend specialty has an authored label'
   it('speaks the game rather than de-snake-casing: foal care is "raising foals"', () => {
     // The specific wording the review asked for. "foal care" would be *correct*
     // and flat; this is the register the rest of the row is written in.
-    expect(groomSpecialtyLabel('foal_care')).toBe('raising foals');
     expect(groomSpecialtyLabel('foalCare')).toBe('raising foals');
-  });
-
-  it('maps both spellings of one specialty to the SAME label', () => {
-    // Both are live in real data: `grooms.speciality` holds `foal_care`, while the
-    // marketplace generator emits `foalCare`. A player must not be able to tell
-    // which row shape they happened to get.
-    expect(groomSpecialtyLabel('foalCare')).toBe(groomSpecialtyLabel('foal_care'));
   });
 
   it('reads correctly inside the sentence it was written for', () => {
@@ -97,6 +81,6 @@ describe('groomSpecialtyLabel — the fallback protects values it has never seen
   });
 
   it('tolerates surrounding whitespace on a known value', () => {
-    expect(groomSpecialtyLabel('  foal_care  ')).toBe('raising foals');
+    expect(groomSpecialtyLabel('  foalCare  ')).toBe('raising foals');
   });
 });

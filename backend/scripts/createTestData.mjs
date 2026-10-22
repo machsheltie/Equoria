@@ -113,7 +113,7 @@ async function createTestData() {
     const foalCareGroom = await prisma.groom.create({
       data: {
         name: 'Sarah Johnson',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         experience: 8,
         skillLevel: 'expert',
         personality: 'gentle',

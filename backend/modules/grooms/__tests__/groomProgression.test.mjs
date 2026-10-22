@@ -94,7 +94,7 @@ describe('Groom Progression System', () => {
       testGroom = await tx.groom.create({
         data: {
           name: 'Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           experience: 0,
           level: 1,
           skillLevel: 'novice',

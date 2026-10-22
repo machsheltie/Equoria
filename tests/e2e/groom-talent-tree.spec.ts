@@ -95,7 +95,7 @@ test.describe.serial('Groom Talent Tree — reachable + allocatable (Equoria-oey
     const groom = await prisma.groom.create({
       data: {
         name: `TestFixture-TalentGroom-${crypto.randomBytes(4).toString('hex')}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: SEED_PERSONALITY,
         level: SEED_LEVEL,
         skillLevel: 'expert',

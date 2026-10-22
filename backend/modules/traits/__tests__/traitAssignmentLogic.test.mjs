@@ -52,7 +52,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-TraitAssignLogicGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -230,7 +230,7 @@ describe('calculateTraitProbabilityWithBonus() — bonus-trait eligibility check
     groomWithBonus = await prisma.groom.create({
       data: {
         name: `TestFixture-BonusTraitGroom-${Date.now()}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: user.id,
         bonusTraitMap: { Brave: 0.1 },
@@ -336,7 +336,7 @@ describe('getTraitAssignmentSummary() — eligibility.eligible=true branch (line
     eligibleGroom2 = await prisma.groom.create({
       data: {
         name: `TestFixture-EligibleSummaryGroom-${Date.now()}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: user.id,
         bonusTraitMap: { SummaryTrait: 0.1 },
@@ -416,7 +416,7 @@ describe('calculateTraitProbabilityWithBonus() — bonus applied (lines 93-110) 
     eligibleGroom = await prisma.groom.create({
       data: {
         name: `TestFixture-EligibleBonusGroom-${Date.now()}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: user.id,
         bonusTraitMap: { TestEligibleTrait: 0.15 },

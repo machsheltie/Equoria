@@ -20,7 +20,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 const ORIGIN = 'http://localhost:3000';
 
 // Valid enum values (from constants/schema.mjs)
-const VALID_SPECIALITY = 'foal_care';
+const VALID_SPECIALITY = 'foalCare';
 const VALID_SKILL = 'novice'; // costModifier=0.7 → hiringCost=Math.round(500*0.7)=350
 const VALID_PERSONALITY = 'gentle';
 

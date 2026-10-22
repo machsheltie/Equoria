@@ -59,7 +59,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-TrainTalentGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -281,7 +281,7 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
         prisma.groom.create({
           data: {
             name: `TestFixture-TT-CalmL5-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             level: 5,
             userId: ttUser.id,
@@ -291,7 +291,7 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
         prisma.groom.create({
           data: {
             name: `TestFixture-TT-CalmL5Fresh-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             level: 5,
             userId: ttUser.id,
@@ -301,7 +301,7 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
         prisma.groom.create({
           data: {
             name: `TestFixture-TT-GentleL3-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'gentle',
             level: 3,
             userId: ttUser.id,
@@ -404,7 +404,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
         prisma.groom.create({
           data: {
             name: `TestFixture-ST2-CalmL3-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             level: 3,
             userId: st2User.id,
@@ -414,7 +414,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
         prisma.groom.create({
           data: {
             name: `TestFixture-ST2-CalmL8-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             level: 8,
             userId: st2User.id,
@@ -424,7 +424,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
         prisma.groom.create({
           data: {
             name: `TestFixture-ST2-Stress-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'calm',
             level: 8,
             userId: st2User.id,
@@ -434,7 +434,7 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
         prisma.groom.create({
           data: {
             name: `TestFixture-ST2-Quality-${ts}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             personality: 'energetic',
             level: 3,
             userId: st2User.id,

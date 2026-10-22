@@ -70,7 +70,7 @@ beforeAll(async () => {
   groomWithMap = await prisma.groom.create({
     data: {
       name: `${PREFIX}_withmap`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
       bonusTraitMap: { BraveTrait: 0.15 },
@@ -80,7 +80,7 @@ beforeAll(async () => {
   groomNullMap = await prisma.groom.create({
     data: {
       name: `${PREFIX}_nullmap`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
       // bonusTraitMap omitted → null in DB
@@ -93,7 +93,7 @@ beforeAll(async () => {
   groomCovLow = await prisma.groom.create({
     data: {
       name: `${PREFIX}_covlow`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -115,7 +115,7 @@ beforeAll(async () => {
   groomEndNull = await prisma.groom.create({
     data: {
       name: `${PREFIX}_endnull`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -145,7 +145,7 @@ beforeAll(async () => {
   groomEndSet = await prisma.groom.create({
     data: {
       name: `${PREFIX}_endset`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -175,7 +175,7 @@ beforeAll(async () => {
   groomForAssign = await prisma.groom.create({
     data: {
       name: `${PREFIX}_assign`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
       // no bonusTraitMap — will be set by assignBonusTraits test

@@ -100,7 +100,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-EvolGroom-${Date.now()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'calm',
       epigeneticInfluenceType: 'calm',
       skillLevel: 'intermediate',

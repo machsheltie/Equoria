@@ -68,7 +68,7 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
     testGroom = await prisma.groom.create({
       data: {
         name: `BvddnGroom_${uid()}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         experience: 10,
         skillLevel: 'expert',
         personality: 'calm',

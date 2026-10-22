@@ -10,8 +10,8 @@
 
 describe('Groom System Constants', () => {
   it('should define expected specialty types', () => {
-    const specialties = ['foal_care', 'general', 'training', 'medical'];
-    expect(specialties).toContain('foal_care');
+    const specialties = ['foalCare', 'general', 'training', 'medical'];
+    expect(specialties).toContain('foalCare');
   });
 
   it('should define expected skill level tiers', () => {

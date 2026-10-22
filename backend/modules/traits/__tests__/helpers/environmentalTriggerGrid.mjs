@@ -327,7 +327,7 @@ export async function buildTriggerFixtures(prisma, token, colour) {
       await prisma.groom.create({
         data: {
           name: `EnvTrig Groom ${i} ${token}`,
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           personality: influence === 'calm' ? 'calm' : 'energetic',
           epigeneticInfluenceType: influence,
           skillLevel: i === 0 ? 'expert' : 'novice',

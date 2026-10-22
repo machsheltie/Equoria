@@ -86,7 +86,7 @@ async function seedGrooms(userId, count) {
     await prisma.groom.create({
       data: {
         name: `${FIXTURE_PREFIX}-seed-${i}-${randomBytes(3).toString('hex')}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId,
       },

@@ -130,7 +130,7 @@ async function setupTestData() {
         update: {},
         create: {
           name: 'Sarah Johnson',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           experience: 8,
           skillLevel: 'expert',
           personality: 'gentle',

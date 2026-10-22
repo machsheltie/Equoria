@@ -95,7 +95,7 @@ beforeAll(async () => {
   groom = await prisma.groom.create({
     data: {
       name: `TestFixture-ExFire-Groom-${ts}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'gentle',
       userId: user.id,
     },
@@ -103,7 +103,7 @@ beforeAll(async () => {
   groom2 = await prisma.groom.create({
     data: {
       name: `TestFixture-ExFire-Groom2-${ts}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       personality: 'strict',
       userId: user.id,
     },

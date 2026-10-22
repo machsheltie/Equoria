@@ -115,7 +115,7 @@ describe('Advanced Epigenetic API Routes', () => {
         personality: 'calm',
         epigeneticInfluenceType: 'calm',
         skillLevel: 'expert',
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         userId: testUser.id,
         sessionRate: 40.0,
         experience: 200,

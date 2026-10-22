@@ -17,28 +17,17 @@
  *      `foal_care` at all. Extending "the" helper would mean picking one of two
  *      and leaving the other wrong.
  *
- *   3. Both spellings are live in real data, which a single regex cannot
- *      reconcile. The `GROOM_SPECIALTIES` constants in
- *      backend/constants/schema.mjs define the snake_case values (`foal_care`);
- *      the marketplace groom generator emits camelCase (`foalCare`). Both reach
- *      `grooms.speciality`, and a row's spelling depends on which path created
- *      it, so both map to the same label here.
- *
- *      No occurrence counts are quoted on purpose. An earlier version of this
- *      docblock asserted "81 `'foal_care'` literals AND 35 `'foalCare'` ones"
- *      and a database distribution, and none of it survived checking: the source
- *      figures came from a grep scoped to four directories, and the database is
- *      shared, so its distribution moved twice in one day while this was being
- *      written. The constants file and the generator are the durable facts; the
- *      map below records the one count that decides anything (which camelCase
- *      spellings actually exist), with the command that produced it.
+ *   3. One spelling per specialty. Until the camelCase conversion (owner
+ *      ruling 2026-10-21, Equoria-pjvp8 phase 3e) `grooms.speciality` held both
+ *      `foal_care` and `foalCare` depending on which path created the row; the
+ *      data migration 20261022190000_groom_speciality_camelcase unified them,
+ *      so the map keeps only the camelCase keys.
  *
  * COVERAGE
  *   Every value in `backend/constants/schema.mjs` `GROOM_SPECIALTIES`
- *   (`foal_care`, `general`, `training`, `medical`), each also under its
- *   camelCase spelling, plus two legacy strings that appear only in older test
- *   fixtures (`general_grooming`, `specialized_disciplines`) so they cannot
- *   surface raw either.
+ *   (`foalCare`, `general`, `training`, `medical`), plus two legacy strings that
+ *   appear only in older test fixtures (`generalGrooming`,
+ *   `specializedDisciplines`) so they cannot surface raw either.
  *
  * SCOPE NOTE
  *   The two legacy `formatSpecialty` copies are deliberately NOT switched over
@@ -55,30 +44,21 @@
  * drops these into running prose ("a long career in raising foals"), so casing
  * belongs to the sentence, not the label.
  *
- * Keys are only the spellings that actually occur — a specialty whose value is a
- * single word needs no camelCase variant, and an invented `labelShaped` key is
+ * Keys are only the values that actually occur; an invented `labelShaped` key is
  * dead weight that reads as coverage without being any.
  */
 const GROOM_SPECIALTY_LABELS: Readonly<Record<string, string>> = Object.freeze({
-  // GROOM_SPECIALTIES.FOAL_CARE, both spellings.
-  foal_care: 'raising foals',
+  // GROOM_SPECIALTIES.FOAL_CARE.
   foalCare: 'raising foals',
   // GROOM_SPECIALTIES.GENERAL.
   general: 'everyday care',
-  // GROOM_SPECIALTIES.TRAINING and .MEDICAL are single words, so they have no
-  // distinct camelCase spelling to cover.
+  // GROOM_SPECIALTIES.TRAINING and .MEDICAL.
   training: 'training support',
   medical: 'medical care',
   // Legacy strings that appear in older test fixtures, mapped so they cannot
-  // surface raw. `generalGrooming` is included because it really does occur in
-  // source; `specializedDisciplines` is NOT, because only the snake_case form
-  // does. Verified rather than assumed — a grep for each camelCase spelling
-  // returned 44 files for `foalCare`, 2 for `generalGrooming`, and 0 for
-  // `trainingSupport`, `medicalCare` and `specializedDisciplines`, which is why
-  // those three label-shaped keys were removed as dead entries.
-  general_grooming: 'grooming',
+  // surface raw.
   generalGrooming: 'grooming',
-  specialized_disciplines: 'specialist disciplines',
+  specializedDisciplines: 'specialist disciplines',
 });
 
 /**

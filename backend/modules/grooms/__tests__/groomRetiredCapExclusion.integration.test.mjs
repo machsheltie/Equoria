@@ -89,7 +89,7 @@ async function seedFullRetiredHeavyRoster(userId) {
     const g = await prisma.groom.create({
       data: {
         name: `${FIXTURE_PREFIX}-retired-${i}-${tag()}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId,
         retired: true,
@@ -104,7 +104,7 @@ async function seedFullRetiredHeavyRoster(userId) {
     const g = await prisma.groom.create({
       data: {
         name: `${FIXTURE_PREFIX}-active-${i}-${tag()}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId,
       },
@@ -176,7 +176,7 @@ describe('Equoria-bvddn.12 — retired grooms excluded from the roster cap', () 
 
     const hireRes = await authed(request(app).post('/api/v1/grooms/hire'), buyer.token, csrf).send({
       name: `${FIXTURE_PREFIX}-newhire-${tag()}`,
-      speciality: 'foal_care',
+      speciality: 'foalCare',
       skill_level: SKILL_LEVEL,
       personality: 'gentle',
     });

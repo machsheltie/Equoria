@@ -368,7 +368,7 @@ async function globalSetup(config: FullConfig) {
       const hireRes = await page.request.post(`${baseURL}/api/v1/grooms/hire`, {
         data: {
           name: `E2E Conformation Handler ${timestamp}`,
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
         },

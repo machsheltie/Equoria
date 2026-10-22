@@ -196,7 +196,7 @@ describe('Equoria-ypb7d.2 — hiring opens an engagement, never an ownership', (
         user: { id: user.id },
         body: {
           name: `${FIXTURE_PREFIX}-open-hired-${tag()}`,
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'novice',
           personality: 'gentle',
         },

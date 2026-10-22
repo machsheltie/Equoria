@@ -73,7 +73,7 @@ describe('🔒 REGRESSION: POST /api/v1/groom-performance/record is closed (Equo
     groom = await prisma.groom.create({
       data: {
         name: `Bvddn6Groom-${Date.now()}`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         personality: 'gentle',
         userId: user.id,
       },
