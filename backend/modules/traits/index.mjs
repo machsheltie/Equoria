@@ -15,6 +15,10 @@ export { logTraitAssignment } from './services/traitHistoryService.mjs';
 export { getTraitRevelationAnalytics } from './services/traitRevelationAnalyticsService.mjs';
 export { generateTraitTimeline } from './services/traitTimelineService.mjs';
 export { evaluateAndPersistUltraRareTraits } from './services/ultraRareTraitEvaluationService.mjs';
+export {
+  appendEpigeneticTraits,
+  setEpigeneticModifiersKey,
+} from './services/epigeneticModifiersWrites.mjs';
 
 // Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
 // into the owning module, after which these lines go).

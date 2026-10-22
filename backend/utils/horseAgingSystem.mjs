@@ -38,6 +38,7 @@ import {
   MILESTONE_TYPES,
 } from './enhancedMilestoneEvaluationSystem.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
+import { setEpigeneticModifiersKey } from '../modules/traits/index.mjs';
 
 /**
  * GAME-DESIGN UNIT CONTRACT (Equoria-son6 / Equoria-j9ip):
@@ -214,7 +215,6 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
             name: true,
             taskLog: true,
             daysGroomedInARow: true,
-            epigeneticModifiers: true,
           },
         });
 
@@ -226,21 +226,10 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
           );
 
           if (assignedTraits.length > 0) {
-            // Add traits to horse's epigenetic modifiers
-            const currentModifiers = horse.epigeneticModifiers || {
-              positive: [],
-              negative: [],
-              hidden: [],
-            };
-            const updatedModifiers = {
-              ...currentModifiers,
-              epigenetic_tags: assignedTraits,
-            };
-
-            await prisma.horse.update({
-              where: { id: horseId },
-              data: { epigeneticModifiers: updatedModifiers },
-            });
+            // Equoria-m1sf8: set only this milestone's key, in one statement
+            // against the row's current value, so a trait revealed since the
+            // read above is kept.
+            await setEpigeneticModifiersKey(prisma, horseId, 'epigenetic_tags', assignedTraits);
 
             traitsAssigned = assignedTraits;
             logger.info(

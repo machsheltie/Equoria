@@ -43,7 +43,7 @@ import logger from '../../../utils/logger.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { evaluateTraitRevelation } from '../../../utils/traitEvaluation.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
-import { logTraitAssignment } from '../../../modules/traits/index.mjs';
+import { appendEpigeneticTraits, logTraitAssignment } from '../../../modules/traits/index.mjs';
 
 const FINAL_DEVELOPMENT_DAY = 6;
 
@@ -174,15 +174,11 @@ export async function evaluateFoalTraits(service, foal) {
       return { fresh, newTraits, totalNewTraits, updatedTraits: currentTraits };
     }
 
-    const updatedTraits = {
-      positive: [...currentTraits.positive, ...newTraits.positive],
-      negative: [...currentTraits.negative, ...newTraits.negative],
-      hidden: [...currentTraits.hidden, ...newTraits.hidden],
-    };
-    await tx.horse.update({
-      where: { id: foal.id },
-      data: { epigeneticModifiers: updatedTraits },
-    });
+    // Equoria-m1sf8: append in one statement against the row's current value,
+    // never write back the object read above. Another writer of this column
+    // (the age-1 milestone's tags) may commit between that read and this write.
+    const stored = await appendEpigeneticTraits(tx, foal.id, newTraits);
+    const updatedTraits = normalizeTraits(stored);
     await service.logTraitRevelation(foal.id, foal.name, newTraits, currentDay, fresh, tx);
     return { fresh, newTraits, totalNewTraits, updatedTraits };
   });
