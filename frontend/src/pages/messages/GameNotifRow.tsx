@@ -153,13 +153,19 @@ const retiredGroomHorseNames = (payload: Record<string, unknown>): string[] => {
  * player reads and starts being a list, and the roster is where a list belongs.
  */
 const MAX_SPOKEN_HORSE_NAMES = 3;
-const speakHorseNames = (names: string[]): string => {
-  if (names.length <= 1) return names[0] ?? '';
-  if (names.length <= MAX_SPOKEN_HORSE_NAMES) {
-    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+const speakHorseNames = (names: string[], unnamed = 0): string => {
+  // `unnamed` horses were left unattended but arrived without a usable name
+  // (Equoria-d6ru2); they are spoken as a count so names and count always agree.
+  const total = names.length + unnamed;
+  if (total <= MAX_SPOKEN_HORSE_NAMES) {
+    const parts =
+      unnamed > 0 ? [...names, `${unnamed} other ${unnamed === 1 ? 'horse' : 'horses'}`] : names;
+    if (parts.length <= 1) return parts[0] ?? '';
+    return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
   }
-  const spoken = names.slice(0, MAX_SPOKEN_HORSE_NAMES).join(', ');
-  return `${spoken} and ${names.length - MAX_SPOKEN_HORSE_NAMES} more`;
+  const spokenNames = names.slice(0, MAX_SPOKEN_HORSE_NAMES);
+  const rest = total - spokenNames.length;
+  return `${spokenNames.join(', ')} and ${rest} more`;
 };
 
 /**
@@ -217,7 +223,9 @@ const GroomRetiredRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   // all when the retirement left nobody uncovered.
   let uncovered: string;
   if (horseNames.length > 0) {
-    uncovered = ` ${speakHorseNames(horseNames)} ${horseNames.length === 1 ? 'is' : 'are'} without a groom — take someone new on when you are ready.`;
+    const unnamed = Math.max(0, horseCount - horseNames.length);
+    const total = horseNames.length + unnamed;
+    uncovered = ` ${speakHorseNames(horseNames, unnamed)} ${total === 1 ? 'is' : 'are'} without a groom — take someone new on when you are ready.`;
   } else if (horseCount > 0) {
     uncovered = ` ${horseCount} ${horseCount === 1 ? 'horse is' : 'horses are'} without a groom — take someone new on when you are ready.`;
   } else {
