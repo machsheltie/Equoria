@@ -161,14 +161,15 @@ function buildHorseDetail(
       total: totalCompetitions,
       wins: entry.secondaryStats?.wins ?? profile.competitionWins,
       top3Finishes: profile.topThreeFinishes,
-      winRate: entry.secondaryStats?.winRate ?? 0,
+      // Unknown stays unknown (shown as "—"); a real 0 survives `??` (Equoria-k7plw).
+      winRate: entry.secondaryStats?.winRate ?? null,
       totalPrizeMoney: entry.secondaryStats?.totalPrizeMoney ?? profile.totalEarnings,
       recentCompetitions: [],
     },
     owner: {
       ownerId: entry.ownerId,
       ownerName: entry.ownerName,
-      stableSize: 0,
+      // stableSize is omitted: neither the row nor the profile carries it.
     },
     achievements: [],
   };

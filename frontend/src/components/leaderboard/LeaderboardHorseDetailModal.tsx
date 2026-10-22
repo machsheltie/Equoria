@@ -76,14 +76,16 @@ export interface HorseDetailData {
     total: number;
     wins: number;
     top3Finishes: number;
-    winRate: number;
+    /** Win rate in percent; `null` when the source does not carry one (shown as "—"). */
+    winRate: number | null;
     totalPrizeMoney: number;
     recentCompetitions: CompetitionEntry[];
   };
   owner: {
     ownerId: string;
     ownerName: string;
-    stableSize: number;
+    /** Owner's stable size; omitted when unknown (no source provides it today). */
+    stableSize?: number;
   };
   achievements: string[];
   primaryDiscipline?: string;
@@ -320,7 +322,11 @@ const LeaderboardHorseDetailModal = ({
                   />
                   <SummaryStatCard
                     label="Win Rate"
-                    value={`${horseData.competitionHistory.winRate}%`}
+                    value={
+                      horseData.competitionHistory.winRate === null
+                        ? '—'
+                        : `${horseData.competitionHistory.winRate}%`
+                    }
                   />
                 </div>
 
