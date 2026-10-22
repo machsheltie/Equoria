@@ -261,7 +261,11 @@ function scanCode(file, src, envNames, allow) {
           (ts.isBindingElement(parent) && parent.propertyName === node));
       if (!envMember && !envKey) record(node, node.text, 'identifier');
     } else if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-      if (!isModuleSpecifier(node) && !envNames.has(node.text)) {
+      if (
+        !isModuleSpecifier(node) &&
+        !envNames.has(node.text) &&
+        !(testFile && isFixturePrefix(node))
+      ) {
         if (snakeKind(node.text)) record(node, node.text, 'string');
         else if (isConcatOperand(node))
           recordFragments(node, node.text, true, true, 'concatFragment');
@@ -297,6 +301,25 @@ function scanCode(file, src, envNames, allow) {
   };
   visit(sf);
   return hits;
+}
+
+/**
+ * Owner ruling 2026-10-22: test-account prefixes are exempt. They build
+ * throwaway fixture e-mails and usernames (`pwreset_int_`, SUITE_PREFIX =
+ * 'setpref_e2e'), production lower-cases e-mails, and camelCasing them broke
+ * the fixtures. Only in test files, and only a string assigned to a
+ * `*prefix*` variable or key (EMAIL_PREFIX, SUITE_PREFIX). Production id
+ * prefixes such as `mkt_rider_` stay counted.
+ */
+function isFixturePrefix(node) {
+  const parent = node.parent;
+  const holder =
+    parent &&
+    ((ts.isVariableDeclaration(parent) && parent.initializer === node) ||
+      (ts.isPropertyAssignment(parent) && parent.initializer === node))
+      ? parent.name
+      : null;
+  return Boolean(holder && ts.isIdentifier(holder) && /prefix/i.test(holder.text));
 }
 
 function isConcatOperand(node) {

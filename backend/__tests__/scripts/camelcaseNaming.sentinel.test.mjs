@@ -132,6 +132,22 @@ describe('check-camelcase-naming.mjs (Equoria-pjvp8)', () => {
     expect(res.status).toBe(0);
   });
 
+  it('exempts a test-account prefix in a test file (owner ruling 2026-10-22)', () => {
+    const prefix = ['pwreset', 'int', ''].join(us);
+    plant('plantedAccounts.test.mjs', `const emailPrefix = '${prefix}';\nexport const email = emailPrefix;\n`);
+    const res = runCheck();
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+  });
+
+  it('SENTINEL: still counts a *prefix* string in production code', () => {
+    const prefix = ['mkt', 'rider', ''].join(us);
+    plant('plantedIdPrefix.mjs', `const idPrefix = '${prefix}';\nexport const id = idPrefix;\n`);
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(`${prefix} (string)`);
+  });
+
   it('does not count comments, env reads, or module specifiers', () => {
     plant(
       'plantedExempt.mjs',
