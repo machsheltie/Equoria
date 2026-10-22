@@ -252,6 +252,52 @@ async function settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGai
 }
 
 /**
+ * The entries a claimed show settles, and the ordering to pay (Equoria-fzmiy).
+ *
+ * The ordering staged by the claim was scored from the entries read BEFORE it.
+ * An entry transaction already inside the entry window when the show closed
+ * can commit after that read and before the claim: its status-scoped guard
+ * (Equoria-8pb6w) still saw 'open', so its fee was taken and its row created,
+ * yet the snapshot never held it. Once the claim has committed that guard
+ * refuses every later entry, so the entries read now are the final set. When
+ * they differ from the staged ordering, the final set is scored and its
+ * ordering replaces the staged one (nothing is paid until the 'completed'
+ * write that follows, so no placement has been settled yet).
+ *
+ * @returns {Promise<{ entries: Array, stagedOrdering: Array }>}
+ */
+async function finalEntriesAndOrdering(show, claimedOrdering, scoreRng) {
+  const finalEntries = await prisma.showEntry.findMany({
+    where: { showId: show.id },
+    select: { horseId: true },
+  });
+  const claimedHorseIds = new Set(claimedOrdering.map(s => s.horseId));
+  const unchanged =
+    finalEntries.length === claimedOrdering.length &&
+    finalEntries.every(e => claimedHorseIds.has(e.horseId));
+  if (unchanged) {
+    return { entries: show.entries, stagedOrdering: claimedOrdering };
+  }
+
+  const entries = await prisma.showEntry.findMany({
+    where: { showId: show.id },
+    include: { horse: { select: scoringHorseSelect } },
+  });
+  const stagedOrdering = await scoreOrdering(show, entries, scoreRng);
+  const restaged = await prisma.show.updateMany({
+    where: { id: show.id, status: 'executing' },
+    data: { stagedOrdering },
+  });
+  if (restaged.count !== 1) {
+    throw new Error(`Show ${show.id} left 'executing' while its final entries were scored`);
+  }
+  logger.warn(
+    `[showExecutionService] Show ${show.id}: entries changed between the read and the claim (${claimedOrdering.length} -> ${entries.length}); scored the final set`,
+  );
+  return { entries, stagedOrdering };
+}
+
+/**
  * Settle one due ridden show: claim it, replay (or score and stage) its
  * ordering, settle each entry, then settle its entry-fee escrow.
  *
@@ -261,8 +307,6 @@ async function settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGai
  * transaction failed and rolled back (Equoria-wmwbr).
  */
 async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
-  const entries = show.entries;
-
   // Equoria-c7mx0 (2026-07-06 approved decision): determine the ordering
   // to execute BEFORE claiming. A crashed prior claim leaves its scored
   // ordering persisted on the row (the reaper's release preserves it) and
@@ -270,8 +314,8 @@ async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
   // scored at the original claim, never a re-roll. NULL/invalid staging
   // (fresh show, or a stranding predating the staging migration) scores
   // fresh; readStagedOrdering carries the JSONB shape guards.
-  const stagedOrdering =
-    readStagedOrdering(show, entries) ?? (await scoreOrdering(show, entries, scoreRng));
+  const claimedOrdering =
+    readStagedOrdering(show, show.entries) ?? (await scoreOrdering(show, show.entries, scoreRng));
 
   // Equoria-dyj3y: ATOMICALLY claim the show. A conditional updateMany
   // scoped to the still-open status performs read-and-claim in a single
@@ -280,10 +324,12 @@ async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
   // skips (its wasted scoring pass is discarded with its claim) — this is
   // what prevents duplicate results / double pay. Equoria-c7mx0: the SAME
   // statement persists claimedAt + the scored ordering, so a persisted
-  // 'executing' always carries the ordering its recovery must replay.
+  // 'executing' always carries the ordering its recovery must replay (or, if
+  // an entry slipped in before the claim, one readStagedOrdering rejects as a
+  // roster mismatch until finalEntriesAndOrdering restages it — Equoria-fzmiy).
   const claimed = await prisma.show.updateMany({
     where: { id: show.id, status: 'open' },
-    data: { status: 'executing', claimedAt: now, stagedOrdering },
+    data: { status: 'executing', claimedAt: now, stagedOrdering: claimedOrdering },
   });
   if (claimed.count !== 1) {
     logger.info(
@@ -291,6 +337,12 @@ async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
     );
     return { executed: false, failures: [] };
   }
+
+  const { entries, stagedOrdering } = await finalEntriesAndOrdering(
+    show,
+    claimedOrdering,
+    scoreRng,
+  );
 
   if (entries.length === 0) {
     // Equoria-w7fnz fix round 1 (owner ruling 2026-10-19): no entrants =>
