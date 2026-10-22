@@ -135,10 +135,14 @@ describe('GET /api/v1/foals/:foalId/development — BB.1/BB.2/BB.3 additive (Equ
     expect(data.birthDate).toBe(yearlingFoal.dateOfBirth.toISOString());
   });
 
-  it('ADDITIVE: every legacy development field is preserved with unchanged semantics', () => {
+  // Equoria-fr2kg Q16. OLD CONTRACT: bondingLevel / stressLevel echoed the
+  // legacy FoalDevelopment columns (45 / 12 here). NEW RULING (owner,
+  // 2026-10-22): they carry the horse's real Horse.bondScore / stressLevel
+  // (30 / 10 here); the legacy columns are kept but ignored.
+  it("ADDITIVE: every development field is present; bond and stress are the horse's own", () => {
     expect(data.development.currentDay).toBe(2);
-    expect(data.development.bondingLevel).toBe(45);
-    expect(data.development.stressLevel).toBe(12);
+    expect(data.development.bondingLevel).toBe(30);
+    expect(data.development.stressLevel).toBe(10);
     expect(data.development.maxDay).toBe(6);
     expect(Array.isArray(data.activityHistory)).toBe(true);
     expect(data.foal.id).toBe(yearlingFoal.id);

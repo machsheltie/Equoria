@@ -130,8 +130,25 @@ describe('getFoalDevelopment', () => {
     }
   });
 
+  // Equoria-fr2kg Q16. OLD CONTRACT: development.bondingLevel / stressLevel
+  // echoed the legacy FoalDevelopment columns, frozen at their 50 / 20
+  // defaults. NEW RULING (owner, 2026-10-22): the foal page shows the horse's
+  // real bond and stress (Horse.bondScore / Horse.stressLevel, which grooms
+  // write); the legacy columns are kept but ignored.
+  it("serves the horse's real bond and stress, not the frozen legacy columns (Equoria-fr2kg Q16)", async () => {
+    const foal = await mkFoal('RealBond', { age: 1, bondScore: 37, stressLevel: 12 });
+    try {
+      await mkDev(foal.id, { bondingLevel: 50, stressLevel: 20 });
+      const result = await getFoalDevelopment(foal.id);
+      expect(result.development.bondingLevel).toBe(37);
+      expect(result.development.stressLevel).toBe(12);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
   it('returns full development data with all expected fields', async () => {
-    const foal = await mkFoal('FullData', { age: 0 });
+    const foal = await mkFoal('FullData', { age: 0, bondScore: 60 });
     try {
       await mkDev(foal.id, {
         currentDay: 2,
@@ -166,12 +183,14 @@ describe('getFoalDevelopment', () => {
   });
 
   it('auto-creates development record for foal with no existing record', async () => {
-    const foal = await mkFoal('NoDev', { age: 0 });
+    const foal = await mkFoal('NoDev', { age: 0, bondScore: 4, stressLevel: 3 });
     try {
       const result = await getFoalDevelopment(foal.id);
       expect(result.development.currentDay).toBe(0);
-      expect(result.development.bondingLevel).toBe(50);
-      expect(result.development.stressLevel).toBe(20);
+      expect(await prisma.foalDevelopment.count({ where: { foalId: foal.id } })).toBe(1);
+      // Bond and stress are the horse's own (Equoria-fr2kg Q16).
+      expect(result.development.bondingLevel).toBe(4);
+      expect(result.development.stressLevel).toBe(3);
     } finally {
       await rmFoal(foal.id);
     }

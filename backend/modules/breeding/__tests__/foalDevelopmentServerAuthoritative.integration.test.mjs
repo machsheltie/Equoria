@@ -138,7 +138,21 @@ describe('foal development is server-authoritative (Equoria-mwjst Finding 3)', (
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.development).toMatchObject({ currentDay: 0, bondingLevel: 50, stressLevel: 20 });
+    // Equoria-fr2kg Q16 (owner ruling 2026-10-22): bond and stress are the
+    // horse's own Horse.bondScore / stressLevel (OLD CONTRACT: the frozen
+    // legacy FoalDevelopment 50 / 20). Neither the attempted PUT (bond 100) nor
+    // anything else in this request path wrote them.
+    const horse = await prisma.horse.findUnique({
+      where: { id: foal.id },
+      select: { bondScore: true, stressLevel: true },
+    });
+    expect(horse.bondScore).not.toBe(100);
+    expect(res.body.data.development).toMatchObject({
+      currentDay: 0,
+      bondingLevel: horse.bondScore,
+      stressLevel: horse.stressLevel,
+    });
+    expect(await readDevelopment(foal.id)).toMatchObject({ bondingLevel: 50, stressLevel: 20 });
   });
 
   it('the nightly trait job still advances the development day by exactly one per run', async () => {

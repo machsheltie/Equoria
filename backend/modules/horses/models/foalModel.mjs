@@ -114,8 +114,13 @@ async function getFoalDevelopment(foalId) {
     birthDate,
     development: {
       currentDay: development.currentDay,
-      bondingLevel: development.bondingLevel,
-      stressLevel: development.stressLevel,
+      // Equoria-fr2kg Q16 (owner ruling 2026-10-22): the horse's real bond and
+      // stress, which grooms write (Horse.bondScore / Horse.stressLevel). The
+      // legacy FoalDevelopment.bondingLevel / stressLevel columns sat frozen
+      // at their 50 / 20 defaults; they are kept (C5, owner-deferred drop)
+      // but no longer read.
+      bondingLevel: foal.bondScore,
+      stressLevel: foal.stressLevel,
       maxDay: 6, // Foal development period is 7 days (0-6)
     },
     activityHistory: activityHistory.map(activity => ({
