@@ -37,6 +37,7 @@ import Currency from '@/components/ui/Currency';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { SectionLoading, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 import { useFeedCatalog, usePurchaseFeed, FeedItem } from '@/hooks/api/useFeedShop';
 
 const FEED_IMAGES: Record<FeedItem['id'], string> = {
@@ -107,12 +108,23 @@ const FeedShopPage: React.FC = () => {
           />
         )}
 
-        {catalog && (
+        {/* EMPTY only via a successful fetch that returned no tiers (Equoria-6p78r). */}
+        {catalog && catalog.length === 0 && (
+          <EmptyState
+            variant="unavailable"
+            icon={<Leaf className="h-8 w-8" aria-hidden="true" />}
+            title="The feed shop is restocking"
+            description="There is no feed on the shelves right now. Check back soon."
+          />
+        )}
+
+        {catalog && catalog.length > 0 && (
           <div data-testid="feed-shop-grid">
             <CardGrid aria-label="Feed catalog">
               {catalog.map((tier) => {
                 const packs = packsByTier[tier.id] ?? 1;
-                const totalCost = (tier.packPrice ?? 0) * packs;
+                // An absent price is unknown (Currency renders "—"), never 0 coins (Equoria-qqhwh).
+                const totalCost = typeof tier.packPrice === 'number' ? tier.packPrice * packs : NaN;
                 const totalUnits = 100 * packs;
 
                 const action = (
@@ -186,7 +198,7 @@ const FeedShopPage: React.FC = () => {
                     title={tier.name}
                     subtitle={
                       <span className="inline-flex items-center gap-1">
-                        <Currency amount={tier.packPrice ?? 0} /> / 100-unit pack
+                        <Currency amount={tier.packPrice ?? NaN} /> / 100-unit pack
                       </span>
                     }
                     description={tier.description}
