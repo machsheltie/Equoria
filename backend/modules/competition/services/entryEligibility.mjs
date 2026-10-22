@@ -53,9 +53,10 @@ export async function checkEntryEligibility(
   // entries for new types must not both read the same count. A guarded no-op
   // update of the owner's User row takes its row lock: every entry for the
   // horse (only its owner can enter it) serializes here, and the paid path's
-  // later User debit is already under this lock. No horse lock: feeding and a
-  // zero-prize settlement take Horse -> User, so locking the horse after the
-  // User row here could deadlock with them.
+  // later User debit is already under this lock. No horse lock: a zero-prize
+  // settlement takes Horse -> User, so locking the horse after the User row
+  // here could deadlock with it. (Feeding was the other Horse -> User path
+  // until Equoria-lmer7 moved it to User first.)
   const serialized = await tx.user.updateMany({
     where: { id: userId },
     data: { money: { increment: 0 } },

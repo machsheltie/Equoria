@@ -130,6 +130,9 @@ const GUARDED_FILES = [
   // Equoria-6p398.19 / Equoria-5gjnz: equip/unequip write the inventory (User
   // row, settings-path CAS) before any horse tack.
   'modules/economy/inventory/controllers/inventoryController.mjs',
+  // Equoria-lmer7: feeding takes the owner's User row (a guarded no-op update)
+  // before its fed-today claim on the horse row.
+  'modules/horses/services/horseFeedService.mjs',
   // Equoria-q4uem.9: a public stud booking debits the mare owner and credits the
   // stallion owner (User rows, ascending id) before pinning the sire and
   // claiming the dam (Horse rows).
