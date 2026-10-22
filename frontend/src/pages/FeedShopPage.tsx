@@ -52,6 +52,8 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
 const FeedShopPage: React.FC = () => {
   const { data: catalog, isLoading, isError, error, refetch } = useFeedCatalog();
   const purchase = usePurchaseFeed();
+  // Equoria-ib96u: one mutation serves five tiers; only the tier being bought is pending.
+  const buyingTier = purchase.isPending ? purchase.variables?.feedTier : undefined;
   const [packsByTier, setPacksByTier] = useState<Record<string, number>>({});
 
   const handlePurchase = (tier: FeedItem) => {
@@ -171,8 +173,8 @@ const FeedShopPage: React.FC = () => {
                       type="button"
                       size="sm"
                       onClick={() => handlePurchase(tier)}
-                      disabled={purchase.isPending}
-                      pending={purchase.isPending}
+                      disabled={buyingTier === tier.id}
+                      pending={buyingTier === tier.id}
                       className="w-full"
                       data-testid={`buy-${tier.id}`}
                       data-onboarding-target={

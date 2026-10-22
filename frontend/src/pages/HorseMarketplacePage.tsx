@@ -422,7 +422,7 @@ const MyListingsTab: React.FC = () => {
             type="button"
             variant="secondary"
             size="sm"
-            disabled={delistMutation.isPending}
+            disabled={delistMutation.isPending && delistMutation.variables === l.id}
             onClick={() => delistMutation.mutate(l.id, { onSuccess: () => refetch() })}
           >
             Delist

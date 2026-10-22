@@ -321,7 +321,9 @@ const CraftingPage: React.FC = () => {
                         recipe={recipe}
                         playerMaterials={materials}
                         onCraft={(recipeId) => craftMutation.mutate(recipeId)}
-                        isCrafting={craftMutation.isPending}
+                        isCrafting={
+                          craftMutation.isPending && craftMutation.variables === recipe.id
+                        }
                       />
                     ))}
                   </div>
