@@ -1,42 +1,39 @@
 /**
- * backfill-audit-log-redaction.mjs (Equoria-uf987)
+ * backfill-audit-log-redaction.mjs (Equoria-uf987, Equoria-oierg)
  *
- * One-shot, idempotent backfill that re-applies `sanitizeLogData()` to the
- * historical `audit_logs.metadata.params` and `audit_logs.metadata.query`
- * blobs. Pre-Equoria-wp0ib (closed 2026-05-28), only `metadata.body` was
- * sanitized at write time — `params` and `query` were persisted verbatim,
- * so any audit row written before wp0ib's middleware fix may contain a
- * raw `?token=...`, `?password=...`, or a sensitive path-parameter value.
+ * One-shot, idempotent backfill that re-applies the canonical, recursive
+ * `sanitizeLogData()` redactor to historical `audit_logs.metadata` rows.
  *
- * The A09 retention purge is 90 days, so a row from 2026-02-28 could
- * still leak a secret it captured pre-wp0ib for nearly three months
- * post-fix. This backfill closes that gap by redacting the historical
- * rows in place.
+ * Two generations of leak are covered:
+ *   - Pre-Equoria-wp0ib rows stored `metadata.params` / `metadata.query`
+ *     verbatim (a raw `?token=...` or sensitive path parameter).
+ *   - Pre-Equoria-oierg rows were redacted at the top level only, so a nested
+ *     secret (`body.profile.password`, `body.items[].token`) was stored as-is.
+ *
+ * The A09 retention purge is 90 days, so such a row can keep a secret for
+ * nearly three months after the write-path fix. This backfill redacts the
+ * historical rows in place.
  *
  * What it does
- *   - Walks rows where metadata.params OR metadata.query is a non-empty
- *     object that, after fresh `sanitizeLogData()` application, would
- *     change (i.e. it has at least one key whose lowercase form contains
- *     a known-sensitive substring per the canonical redactor).
- *   - Rewrites the metadata blob with the redacted variant. All other
- *     metadata fields are preserved byte-for-byte.
- *   - Idempotent: a second run finds no rows that would change (because
- *     the canonical redactor is the same one the live write path uses
- *     post-wp0ib), so it writes nothing.
+ *   - Walks every audit row in id-ordered batches.
+ *   - For each top-level metadata entry: a sensitive key is redacted whole;
+ *     an object/array value is passed through `sanitizeLogData()` from depth 0,
+ *     exactly as the live write path sanitizes `body`, `params`, `query` and
+ *     `errorResponse` individually (so the depth cap lands where it does for
+ *     fresh rows). Scalars are kept.
+ *   - A row is rewritten only when the redacted metadata differs from what is
+ *     stored. Every other value is preserved.
+ *   - Idempotent: the live write path uses the same redactor, so a second run
+ *     finds nothing to change and writes nothing.
  *
  * Safety doctrine (CLAUDE.md §2)
- *   - Every UPDATE is scoped to a single AuditLog.id (no `updateMany`
- *     without `where`).
+ *   - Every UPDATE is scoped to a single AuditLog.id.
  *   - Reads run in id-ordered batches to bound memory.
- *   - The script is paranoid about its own input shape: a row whose
- *     metadata is null, a string, an array, or otherwise not the
- *     expected object shape is left untouched (and counted as
- *     'skipped-malformed' in the summary). The live write path always
- *     produces the canonical shape; legacy rows with drifted shape are
- *     not within the threat model this script addresses.
+ *   - A row whose metadata is null, a string, an array or otherwise not an
+ *     object is left untouched (counted as 'skipped-malformed').
  *
  * Usage
- *   node backend/scripts/backfill-audit-log-redaction.mjs --print-only
+ *   node backend/scripts/backfill-audit-log-redaction.mjs --dry-run
  *   node backend/scripts/backfill-audit-log-redaction.mjs
  *
  * Flags
@@ -49,6 +46,8 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fileURLToPath } from 'node:url';
 import { sanitizeLogData } from '../middleware/auditLog.mjs';
+
+const redactedMarker = '[REDACTED]';
 
 function parseArgs(argv) {
   const args = { dryRun: false, batchSize: 1000, limit: null, quiet: false };
@@ -74,28 +73,96 @@ function parseArgs(argv) {
   return args;
 }
 
+const isPlainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+
 /**
- * Apply the canonical redactor to a nested params/query object. Returns
- * the redacted variant, OR the original reference if no key would
- * change (so the caller can short-circuit and skip the row).
+ * Redact one stored metadata object with the canonical redactor. Returns the
+ * redacted copy and the top-level fields whose value changed.
  */
-function redactNested(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    // Not the expected shape — never sanitized by the live path, never
-    // sanitized here. Surface as 'skipped-malformed' upstream.
-    return { changed: false, redacted: value, shape: 'non-object' };
-  }
-  const redacted = sanitizeLogData(value);
-  // sanitizeLogData returns a shallow clone with `[REDACTED]` for matching
-  // keys. Detect any actual key change by comparing post-clone values.
-  let changed = false;
-  for (const key of Object.keys(redacted)) {
-    if (redacted[key] === '[REDACTED]' && value[key] !== '[REDACTED]') {
-      changed = true;
-      break;
+export function redactAuditMetadata(meta) {
+  // A one-entry wrapper reuses sanitizeLogData's key test for the top-level
+  // key without adding a depth level to the value beneath it.
+  const redacted = {};
+  const changedFields = [];
+  for (const [key, value] of Object.entries(meta)) {
+    const keyIsSensitive = sanitizeLogData({ [key]: true })[key] === redactedMarker;
+    const next = keyIsSensitive ? redactedMarker : sanitizeLogData(value);
+    redacted[key] = next;
+    if (JSON.stringify(next) !== JSON.stringify(value)) {
+      changedFields.push(key);
     }
   }
-  return { changed, redacted, shape: 'object' };
+  return { redacted, changedFields };
+}
+
+/**
+ * Scan audit_logs and redact rows in place. `scope` narrows the rows (tests
+ * pass their own fixture ids); the CLI scans the whole table.
+ */
+export async function runAuditLogRedactionBackfill({
+  db = prisma,
+  dryRun = false,
+  batchSize = 1000,
+  limit = null,
+  scope = {},
+  log = () => {},
+} = {}) {
+  const counts = {
+    processed: 0,
+    needsUpdate: 0,
+    updated: 0,
+    unchanged: 0,
+    skippedMalformed: 0,
+    failed: 0,
+  };
+  let lastId = 0;
+  const limitReached = () => Boolean(limit) && counts.processed >= limit;
+
+  while (!limitReached()) {
+    const batch = await db.auditLog.findMany({
+      where: { AND: [scope, { id: { gt: lastId } }] },
+      orderBy: { id: 'asc' },
+      take: batchSize,
+      select: { id: true, metadata: true },
+    });
+    if (batch.length === 0) {
+      break;
+    }
+
+    for (const row of batch) {
+      if (limitReached()) {
+        break;
+      }
+      counts.processed++;
+      lastId = row.id;
+
+      if (!isPlainObject(row.metadata)) {
+        counts.skippedMalformed++;
+        continue;
+      }
+
+      const { redacted, changedFields } = redactAuditMetadata(row.metadata);
+      if (changedFields.length === 0) {
+        counts.unchanged++;
+        continue;
+      }
+      counts.needsUpdate++;
+      if (dryRun) {
+        continue;
+      }
+
+      try {
+        await db.auditLog.update({ where: { id: row.id }, data: { metadata: redacted } });
+        counts.updated++;
+        log(`  [REDACTED] audit_logs.id=${row.id} fields=${changedFields.join('+')}`);
+      } catch (err) {
+        counts.failed++;
+        console.error(`  [ERR] audit_logs.id=${row.id}: ${err.message}`);
+      }
+    }
+  }
+
+  return counts;
 }
 
 async function main() {
@@ -103,7 +170,7 @@ async function main() {
   const startedAt = Date.now();
 
   console.log('═══════════════════════════════════════════════════════════');
-  console.log('  audit_logs metadata.params / metadata.query backfill (Equoria-uf987)');
+  console.log('  audit_logs metadata redaction backfill (Equoria-uf987, Equoria-oierg)');
   console.log(`  mode:       ${args.dryRun ? 'DRY-RUN (no writes)' : 'WET (UPDATE rows)'}`);
   console.log(`  batch-size: ${args.batchSize}`);
   if (args.limit) {
@@ -115,108 +182,38 @@ async function main() {
   console.log(`  total audit_logs rows: ${total}`);
   console.log();
 
-  let processed = 0;
-  let needsUpdate = 0;
-  let updated = 0;
-  let unchanged = 0;
-  let skippedMalformed = 0;
-  let failed = 0;
-  let lastId = 0;
-
-  while (true) {
-    const batch = await prisma.auditLog.findMany({
-      where: { id: { gt: lastId } },
-      orderBy: { id: 'asc' },
-      take: args.batchSize,
-      select: { id: true, metadata: true },
-    });
-    if (batch.length === 0) {
-      break;
-    }
-
-    for (const row of batch) {
-      if (args.limit && processed >= args.limit) {
-        break;
-      }
-      processed++;
-      lastId = row.id;
-
-      const meta = row.metadata;
-      // metadata column is Json? — null is a legitimate state for very old
-      // rows. Skip cleanly.
-      if (!meta || typeof meta !== 'object' || Array.isArray(meta)) {
-        skippedMalformed++;
-        continue;
-      }
-
-      const paramsResult = meta.params !== undefined ? redactNested(meta.params) : null;
-      const queryResult = meta.query !== undefined ? redactNested(meta.query) : null;
-
-      const anyChanged =
-        (paramsResult && paramsResult.changed) || (queryResult && queryResult.changed);
-
-      if (!anyChanged) {
-        unchanged++;
-        continue;
-      }
-      needsUpdate++;
-
-      if (!args.dryRun) {
-        try {
-          const newMeta = {
-            ...meta,
-            ...(paramsResult && paramsResult.changed ? { params: paramsResult.redacted } : {}),
-            ...(queryResult && queryResult.changed ? { query: queryResult.redacted } : {}),
-          };
-          await prisma.auditLog.update({
-            where: { id: row.id },
-            data: { metadata: newMeta },
-          });
-          updated++;
-          if (!args.quiet) {
-            const fields = [];
-            if (paramsResult && paramsResult.changed) {
-              fields.push('params');
-            }
-            if (queryResult && queryResult.changed) {
-              fields.push('query');
-            }
-            console.log(`  [REDACTED] audit_logs.id=${row.id} fields=${fields.join('+')}`);
-          }
-        } catch (err) {
-          failed++;
-          console.error(`  [ERR] audit_logs.id=${row.id}: ${err.message}`);
-        }
-      }
-    }
-
-    if (args.limit && processed >= args.limit) {
-      break;
-    }
-  }
+  const counts = await runAuditLogRedactionBackfill({
+    dryRun: args.dryRun,
+    batchSize: args.batchSize,
+    limit: args.limit,
+    log: args.quiet ? () => {} : console.log,
+  });
 
   const duration = ((Date.now() - startedAt) / 1000).toFixed(1);
   console.log();
   console.log('═══════════════════════════════════════════════════════════');
   console.log('  Summary');
-  console.log(`  processed:           ${processed}`);
-  console.log(`  needs-update:        ${needsUpdate}`);
-  console.log(`  updated:             ${updated}${args.dryRun ? '  (dry-run, no writes)' : ''}`);
-  console.log(`  unchanged:           ${unchanged}`);
-  console.log(`  skipped-malformed:   ${skippedMalformed}`);
-  console.log(`  failed:              ${failed}`);
+  console.log(`  processed:           ${counts.processed}`);
+  console.log(`  needs-update:        ${counts.needsUpdate}`);
+  console.log(
+    `  updated:             ${counts.updated}${args.dryRun ? '  (dry-run, no writes)' : ''}`,
+  );
+  console.log(`  unchanged:           ${counts.unchanged}`);
+  console.log(`  skipped-malformed:   ${counts.skippedMalformed}`);
+  console.log(`  failed:              ${counts.failed}`);
   console.log(`  duration:            ${duration}s`);
   console.log('═══════════════════════════════════════════════════════════');
 
   await prisma.$disconnect();
-  if (failed > 0) {
+  if (counts.failed > 0) {
     process.exit(1);
   }
 }
 
 // Equoria-5z0if: main-module guard. main() runs scoped audit_logs UPDATEs
 // — must NOT run on bare import (e.g. parse-check `node -e
-// "import('./backfill-audit-log-redaction.mjs')"`).
+// "import('./backfill-audit-log-redaction.mjs')"`, or a test importing the
+// exported functions).
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch(err => {
     console.error('Fatal error:', err);
