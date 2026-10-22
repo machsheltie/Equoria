@@ -101,6 +101,23 @@ function getMaterialDeficit(have, need) {
   return deficits.length > 0 ? deficits.join(', ') : null;
 }
 
+/** The materials left after spending a recipe's cost. */
+function deductMaterials(have, need) {
+  const left = {};
+  for (const mat of ['leather', 'cloth', 'dye', 'metal', 'thread']) {
+    left[mat] = have[mat] - (need[mat] || 0);
+  }
+  return left;
+}
+
+/** Thrown inside the craft tx when the post-lock materials no longer cover the recipe. */
+class InsufficientMaterialsError extends Error {
+  constructor(deficit) {
+    super(`Insufficient materials: need ${deficit}`);
+    this.deficit = deficit;
+  }
+}
+
 // ── Controllers ──────────────────────────────────────────────────────────────
 
 /**
@@ -206,7 +223,8 @@ export async function craftItem(req, res) {
     }
 
     // Material check (coin check moved INTO the tx below via debitMoneyOrThrow
-    // — Equoria-6g8wm). Materials still checked here for fast 400 feedback.
+    // — Equoria-6g8wm). Materials checked here for fast 400 feedback only; the
+    // authoritative check re-runs post-lock inside the tx (Equoria-cmvmy).
     const materials = getMaterials(user.settings);
     const deficit = getMaterialDeficit(materials, recipe.materials);
     if (deficit) {
@@ -215,17 +233,6 @@ export async function craftItem(req, res) {
         message: `Insufficient materials: need ${deficit}`,
       });
     }
-
-    // Deduct materials and coins, add crafted item to inventory
-    const newMaterials = {
-      leather: materials.leather - (recipe.materials.leather || 0),
-      cloth: materials.cloth - (recipe.materials.cloth || 0),
-      dye: materials.dye - (recipe.materials.dye || 0),
-      metal: materials.metal - (recipe.materials.metal || 0),
-      thread: materials.thread - (recipe.materials.thread || 0),
-    };
-
-    const existingInventory = getInventory(user.settings);
 
     const newItem = {
       id: `crafted-${Date.now()}-${recipe.result}`,
@@ -242,16 +249,6 @@ export async function craftItem(req, res) {
       equippedToHorseName: null,
     };
 
-    // Finding 1 (Equoria-6p398.1): only the two keys this craft owns are
-    // written, by path, so a concurrent bank claim's `lastWeeklyClaimDate`
-    // survives. `existingInventory` is also the compare-and-swap precondition
-    // below — a craft computed from a stale inventory snapshot is rejected
-    // rather than silently discarding the other writer's change.
-    const updatedSettings = {
-      craftingMaterials: newMaterials,
-      inventory: [...existingInventory, newItem],
-    };
-
     // Equoria-6g8wm: wrap the money debit + settings update + ledger row in
     // ONE $transaction. Pre-fix the user.update was outside any tx and the
     // recordTransaction was fire-and-forget — meaning a debit failure left
@@ -260,6 +257,7 @@ export async function craftItem(req, res) {
     // InsufficientFundsError on count===0 rolls back the settings update
     // and the ledger row, surfacing as a 400 with the original envelope.
     let newBalance;
+    let newMaterials;
     try {
       newBalance = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
@@ -272,8 +270,26 @@ export async function craftItem(req, res) {
             description: `Crafting fee — ${recipe.resultName}`,
             metadata: { recipeId, result: recipe.result },
           });
+          // Equoria-cmvmy: the materials + inventory read-modify-write runs on a
+          // read taken AFTER the debit, whose User row lock serialises every
+          // settings writer — a concurrent craft that already spent the
+          // materials is seen here and rejected as a 400, never a second item.
+          const fresh = await tx.user.findUnique({
+            where: { id: userId },
+            select: { settings: true },
+          });
+          const freshMaterials = getMaterials(fresh?.settings);
+          const freshDeficit = getMaterialDeficit(freshMaterials, recipe.materials);
+          if (freshDeficit) {
+            throw new InsufficientMaterialsError(freshDeficit);
+          }
+          newMaterials = deductMaterials(freshMaterials, recipe.materials);
+          const existingInventory = getInventory(fresh?.settings);
+          // Finding 1 (Equoria-6p398.1): only the two keys this craft owns are
+          // written, by path, so a concurrent bank claim's `lastWeeklyClaimDate`
+          // survives. The inventory compare-and-swap stays as a second guard.
           const affectedSettings = await updateUserSettingsPaths(tx, userId, {
-            set: updatedSettings,
+            set: { craftingMaterials: newMaterials, inventory: [...existingInventory, newItem] },
             expect: { inventory: { equals: existingInventory, whenMissing: [] } },
           });
           if (affectedSettings !== 1) {
@@ -300,6 +316,15 @@ export async function craftItem(req, res) {
         { message: 'The workshop is busy right now, please retry in a moment.' },
       );
     } catch (txErr) {
+      if (txErr instanceof InsufficientMaterialsError) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient materials: need ${txErr.deficit}`,
+        });
+      }
+      if (txErr?.status === 409) {
+        return res.status(409).json({ success: false, message: txErr.message });
+      }
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
