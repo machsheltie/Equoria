@@ -193,21 +193,21 @@ const AUTH_PAGES = [
 
 let eid = 11;
 for (const { name, path } of AUTH_PAGES) {
-  const e375_attached = eid++;
-  const e375_panel = eid++;
-  const e1440_attached = eid++;
+  const e375Attached = eid++;
+  const e375Panel = eid++;
+  const e1440Attached = eid++;
 
   test.describe(`${name} page chrome — 375px mobile`, () => {
     test.use({ viewport: { width: 375, height: 812 } });
 
-    test(`22-7-E2E-${String(e375_attached).padStart(3, '0')}: ${name} — PageBackground attached at 375px`, async ({
+    test(`22-7-E2E-${String(e375Attached).padStart(3, '0')}: ${name} — PageBackground attached at 375px`, async ({
       page,
     }) => {
       await page.goto(path, { waitUntil: 'domcontentloaded' });
       await expect(page.locator('[data-testid="page-background"]')).toBeAttached();
     });
 
-    test(`22-7-E2E-${String(e375_panel).padStart(3, '0')}: ${name} — glass panel visible within 375px viewport`, async ({
+    test(`22-7-E2E-${String(e375Panel).padStart(3, '0')}: ${name} — glass panel visible within 375px viewport`, async ({
       page,
     }) => {
       await page.goto(path, { waitUntil: 'domcontentloaded' });
@@ -223,7 +223,7 @@ for (const { name, path } of AUTH_PAGES) {
   test.describe(`${name} page chrome — 1440px desktop`, () => {
     test.use({ viewport: { width: 1440, height: 900 } });
 
-    test(`22-7-E2E-${String(e1440_attached).padStart(3, '0')}: ${name} — PageBackground attached at 1440px`, async ({
+    test(`22-7-E2E-${String(e1440Attached).padStart(3, '0')}: ${name} — PageBackground attached at 1440px`, async ({
       page,
     }) => {
       await page.goto(path, { waitUntil: 'domcontentloaded' });

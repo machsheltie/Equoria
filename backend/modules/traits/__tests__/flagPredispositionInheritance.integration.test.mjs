@@ -53,7 +53,7 @@ async function seedBorderlineAffectionateCare(foalId, groomId) {
     rows.push({
       foalId,
       groomId,
-      interactionType: 'daily_grooming',
+      interactionType: 'dailyGrooming',
       duration: 30,
       bondingChange: 3, // positive (counts toward positiveInteractions)
       stressChange: 0,

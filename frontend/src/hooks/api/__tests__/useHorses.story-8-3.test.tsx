@@ -98,7 +98,7 @@ describe('useHorse', () => {
   it('returns horse with disciplineScores', async () => {
     const { result } = renderHook(() => useHorse(1), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.disciplineScores.show_jumping).toBe(55);
+    expect(result.current.data?.disciplineScores.showJumping).toBe(55);
   });
 
   it('is disabled when horseId is 0 (falsy)', () => {

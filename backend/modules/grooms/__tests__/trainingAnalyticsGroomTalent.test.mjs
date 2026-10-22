@@ -180,20 +180,20 @@ describe('getGroomTalentSelections', () => {
 
 describe('validateTalentSelection', () => {
   it('returns groom_not_found for non-existent groom', async () => {
-    const result = await validateTalentSelection(999999999, 'tier1', 'some_talent');
+    const result = await validateTalentSelection(999999999, 'tier1', 'someTalent');
     expect(result.valid).toBe(false);
     expect(result.reason).toBe('groom_not_found');
   });
 
   it('returns invalid_tier for unknown tier', async () => {
-    const result = await validateTalentSelection(groom.id, 'tier99', 'some_talent');
+    const result = await validateTalentSelection(groom.id, 'tier99', 'someTalent');
     expect(result.valid).toBe(false);
     expect(result.reason).toBe('invalid_tier');
   });
 
   it('returns insufficient_level for fresh groom (level 0) attempting tier1', async () => {
     const trees = getTalentTreeDefinitions();
-    const firstTalentId = trees.gentle?.tier1?.[0]?.id ?? 'any_talent';
+    const firstTalentId = trees.gentle?.tier1?.[0]?.id ?? 'anyTalent';
     const result = await validateTalentSelection(groom.id, 'tier1', firstTalentId);
     expect(result.valid).toBe(false);
     expect(['insufficient_level', 'invalid_talent', 'invalid_personality_tier'].includes(result.reason)).toBe(true);
@@ -331,14 +331,14 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
   afterAll(() => ttCleanup.run(), 30000);
 
   it('invalid_talent: talentId not in personality tree for valid tier', async () => {
-    const result = await validateTalentSelection(ttGroomCalmL5.id, 'tier1', 'nonexistent_xyz');
+    const result = await validateTalentSelection(ttGroomCalmL5.id, 'tier1', 'nonexistentXyz');
     expect(result.valid).toBe(false);
     expect(result.reason).toBe('invalid_talent');
   });
 
   it('invalid_personality_tier: personality not in TALENT_TREES (gentle)', async () => {
     // gentle personality → TALENT_TREES.gentle is undefined → invalid_personality_tier
-    const result = await validateTalentSelection(ttGroomGentleL3.id, 'tier1', 'any_talent');
+    const result = await validateTalentSelection(ttGroomGentleL3.id, 'tier1', 'anyTalent');
     expect(result.valid).toBe(false);
     expect(result.reason).toBe('invalid_personality_tier');
   });

@@ -115,7 +115,7 @@ describe('calculateTraitCompetitionImpact', () => {
   });
 
   it('skips unknown traits gracefully', () => {
-    const horse = makeHorse({ positive: ['nonexistent_trait'] });
+    const horse = makeHorse({ positive: ['nonexistentTrait'] });
     const result = calculateTraitCompetitionImpact(horse, 'Racing', 70);
     expect(result.totalScoreModifier).toBe(0);
   });
@@ -231,7 +231,7 @@ describe('traitCompetitionImpact — exact modifiers & balance invariants (merge
     expect(hasSpecializedEffect('resilient', 'Endurance')).toBe(true);
     expect(hasSpecializedEffect('bold', 'Dressage')).toBe(false);
     expect(hasSpecializedEffect('calm', 'Racing')).toBe(false);
-    expect(hasSpecializedEffect('unknown_trait', 'Show Jumping')).toBe(false);
+    expect(hasSpecializedEffect('unknownTrait', 'Show Jumping')).toBe(false);
   });
 
   describe('discipline-specific modifier matrix', () => {

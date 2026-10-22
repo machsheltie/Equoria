@@ -41,8 +41,8 @@ export default async function globalSetup() {
       { contains: 'tokentest' }, // token-rotation.integration.test.mjs
       { contains: 'tokenunit' }, // token-rotation.unit.test.mjs
       { contains: 'authintegration' }, // auth-system-integration.test.mjs
-      { startsWith: 'memory_admin_' }, // memoryAdminGuard.integration.test.mjs
-      { startsWith: 'memory_regular_' }, // memoryAdminGuard.integration.test.mjs
+      { startsWith: 'memoryAdmin_' }, // memoryAdminGuard.integration.test.mjs
+      { startsWith: 'memoryRegular_' }, // memoryAdminGuard.integration.test.mjs
       { startsWith: 'acookie-' }, // auth-cookies.test.mjs (defence-in-depth; suite also self-cleans)
       { startsWith: 'cintg-' }, // cookieIntegration.test.mjs (defence-in-depth; suite also self-cleans)
     ];
@@ -125,8 +125,8 @@ export default async function globalSetup() {
 
     // Prefix-pattern users (accumulated when afterAll doesn't run)
     const usernamePatterns = [
-      { startsWith: 'memory_admin_' }, // memoryAdminGuard.integration.test.mjs
-      { startsWith: 'memory_regular_' }, // memoryAdminGuard.integration.test.mjs
+      { startsWith: 'memoryAdmin_' }, // memoryAdminGuard.integration.test.mjs
+      { startsWith: 'memoryRegular_' }, // memoryAdminGuard.integration.test.mjs
       { startsWith: 'tokentest_' }, // token-rotation.integration.test.mjs
       { startsWith: 'tokenunit_' }, // token-rotation.unit.test.mjs
       { startsWith: 'testuser_' }, // generic createTestUser() callers

@@ -52,19 +52,19 @@ describe('pregnancy-bonus pool is approved + effect-backed (Equoria-9o3n7.4)', (
 });
 
 describe('pregnancy feed-tier mechanic still biases foal outcomes (Equoria-9o3n7.4)', () => {
-  it('premium (elite) feeding raises positive_chance vs poor (basic-only) feeding', () => {
+  it('premium (elite) feeding raises positiveChance vs poor (basic-only) feeding', () => {
     // 7 elite feedings across a 7-day gestation → max positive bias.
     const premium = calculatePregnancyEpigeneticChances({ elite: 7 });
     // 7 basic feedings → 0% per-feeding weight → no positive bias, no missed days.
     const poor = calculatePregnancyEpigeneticChances({ basic: 7 });
-    expect(premium.positive_chance).toBeGreaterThan(poor.positive_chance);
-    expect(poor.positive_chance).toBe(0);
+    expect(premium.positiveChance).toBeGreaterThan(poor.positiveChance);
+    expect(poor.positiveChance).toBe(0);
   });
 
-  it('under-feeding raises negative_chance (missed days penalty)', () => {
+  it('under-feeding raises negativeChance (missed days penalty)', () => {
     const fed = calculatePregnancyEpigeneticChances({ elite: 7 });
     const neglected = calculatePregnancyEpigeneticChances({ elite: 2 }); // 5 missed days
-    expect(neglected.negative_chance).toBeGreaterThan(fed.negative_chance);
-    expect(fed.negative_chance).toBe(0);
+    expect(neglected.negativeChance).toBeGreaterThan(fed.negativeChance);
+    expect(fed.negativeChance).toBe(0);
   });
 });

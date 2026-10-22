@@ -306,7 +306,7 @@ export const PROBABILITY_TRAITS = [
   'social',
   'insecure',
   'withdrawn',
-  'unlisted_trait',
+  'unlistedTrait',
 ];
 
 export async function buildTriggerFixtures(prisma, token, colour) {

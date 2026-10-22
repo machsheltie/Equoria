@@ -142,7 +142,7 @@ describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
           userId: subject.user.id,
           type: 'credit',
           amount: 250,
-          category: 'test_fixture',
+          category: 'testFixture',
           description: `TestFixture-GdprExportTxn_${ts}`,
         },
       });
@@ -219,7 +219,7 @@ describe('INTEGRATION: GDPR account export/delete (Equoria-s3rf)', () => {
           userId: subject.user.id,
           type: 'credit',
           amount: 99,
-          category: 'test_fixture',
+          category: 'testFixture',
           description: `TestFixture-GdprDelTxn_${ts}`,
         },
       });

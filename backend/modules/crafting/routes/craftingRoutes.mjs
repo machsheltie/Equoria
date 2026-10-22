@@ -11,11 +11,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import logger from '../../../utils/logger.mjs';
-import {
-  getMaterials_endpoint,
-  getRecipes,
-  craftItem,
-} from '../controllers/craftingController.mjs';
+import { getMaterialsEndpoint, getRecipes, craftItem } from '../controllers/craftingController.mjs';
 // Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
 import { financialRateLimiter } from '../../../middleware/rateLimiting.mjs';
 // Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
@@ -37,7 +33,7 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-router.get('/materials', getMaterials_endpoint);
+router.get('/materials', getMaterialsEndpoint);
 
 router.get('/recipes', getRecipes);
 

@@ -151,7 +151,7 @@ export async function hireGroom(req, res) {
       experience,
       skill_level,
       personality,
-      session_rate,
+      sessionRate,
       bio,
       availability,
     } = req.body;
@@ -198,10 +198,10 @@ export async function hireGroom(req, res) {
 
     // Validate session rate (must be positive number if provided)
     const sanitizedSessionRate =
-      session_rate !== undefined && session_rate !== null ? parseFloat(session_rate) : null;
+      sessionRate !== undefined && sessionRate !== null ? parseFloat(sessionRate) : null;
     if (
-      session_rate !== undefined &&
-      session_rate !== null &&
+      sessionRate !== undefined &&
+      sessionRate !== null &&
       (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)
     ) {
       return res.status(400).json({

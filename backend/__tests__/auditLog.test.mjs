@@ -72,7 +72,7 @@ describe('auditLog factory', () => {
   });
 
   it('works with default sensitivityLevel', async () => {
-    const mw = auditLog('any_operation');
+    const mw = auditLog('anyOperation');
     const req = makeReq();
     const res = makeRes();
     let called = false;

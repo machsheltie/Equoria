@@ -174,7 +174,7 @@ describe('determineTraitOutcome()', () => {
 
 describe('evaluateEnhancedMilestone() — safe throw paths', () => {
   it('rejects with "Invalid milestone type" for an unrecognised milestoneType (lines 82-84)', async () => {
-    await expect(evaluateEnhancedMilestone(-1, 'invalid_type')).rejects.toThrow('Invalid milestone type: invalid_type');
+    await expect(evaluateEnhancedMilestone(-1, 'invalidType')).rejects.toThrow('Invalid milestone type: invalidType');
   });
 
   it('rejects with "Horse with ID -1 not found" for a valid type but missing horse (lines 97-99)', async () => {

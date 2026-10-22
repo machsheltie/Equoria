@@ -50,7 +50,7 @@ describe('calculateBehaviorModifiers', () => {
   });
 
   it('gracefully ignores unknown flags', () => {
-    const mods = calculateBehaviorModifiers(['totally_made_up_flag']);
+    const mods = calculateBehaviorModifiers(['totallyMadeUpFlag']);
     expect(typeof mods).toBe('object');
   });
 });
@@ -177,7 +177,7 @@ describe('getFlagInfluenceSummary', () => {
   });
 
   it('handles unknown flags gracefully (type: unknown)', () => {
-    const summary = getFlagInfluenceSummary(['nonexistent_flag']);
+    const summary = getFlagInfluenceSummary(['nonexistentFlag']);
     expect(summary.flagCount).toBe(1);
     expect(summary.flags[0].type).toBe('unknown');
   });

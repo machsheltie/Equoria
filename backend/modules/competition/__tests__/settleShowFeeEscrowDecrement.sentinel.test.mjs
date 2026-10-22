@@ -95,7 +95,7 @@ describe('settleShowFeeEscrow — decrement, not absolute-zero (Equoria-8pb6w)',
     // succeeds regardless of the shared row's starting balance. Delta-based:
     // we credit exactly SETTLED_AMOUNT and settlement debits it back.
     await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, SETTLED_AMOUNT, {
-      category: 'test_seed_escrow',
+      category: 'testSeedEscrow',
     });
 
     const creatorBefore = await prisma.user.findUnique({

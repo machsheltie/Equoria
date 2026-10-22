@@ -126,7 +126,7 @@ describe('INTEGRATION: flagEvaluation impl module (Equoria-urqic.3.2) — real D
       await prisma.horse.update({
         where: { id: horse.id },
         data: {
-          temporaryEpigeneticFlags: [{ flag: 'startled', expiresAt: pastExpiry, source: 'test_fixture' }],
+          temporaryEpigeneticFlags: [{ flag: 'startled', expiresAt: pastExpiry, source: 'testFixture' }],
         },
       });
 
@@ -170,7 +170,7 @@ describe('INTEGRATION: flagEvaluation impl module (Equoria-urqic.3.2) — real D
       await prisma.horse.update({
         where: { id: horse.id },
         data: {
-          temporaryEpigeneticFlags: [{ flag: 'unsettled', expiresAt: futureExpiry, source: 'test_fixture' }],
+          temporaryEpigeneticFlags: [{ flag: 'unsettled', expiresAt: futureExpiry, source: 'testFixture' }],
         },
       });
 

@@ -229,7 +229,7 @@ describe('Groom Workflow Integration Tests', () => {
           skill_level: 'expert',
           personality: 'gentle',
           experience: 8,
-          session_rate: 25.0,
+          sessionRate: 25.0,
           bio: 'Experienced foal care specialist',
         },
         user: { id: testUser.id },

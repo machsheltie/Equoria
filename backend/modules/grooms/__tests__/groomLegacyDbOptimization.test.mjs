@@ -70,7 +70,7 @@ describe('getLegacyPerks', () => {
   });
 
   it('returns empty array for unknown personality', () => {
-    const result = getLegacyPerks('unknown_personality');
+    const result = getLegacyPerks('unknownPersonality');
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(0);
   });

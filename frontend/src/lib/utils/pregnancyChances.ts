@@ -4,7 +4,7 @@
  * Feed-system redesign 2026-04-29 (Equoria-ta4s, parent: Equoria-3gqg).
  *
  * Mirrors the canonical backend formula so the in-foal panel can show a live
- * preview of positive_chance / negative_chance without an extra API roundtrip.
+ * preview of positiveChance / negativeChance without an extra API roundtrip.
  *
  * Contract: identical numeric output to
  *   backend/utils/pregnancyBonus.mjs#calculatePregnancyEpigeneticChances
@@ -24,15 +24,15 @@ export const PREGNANCY_BONUS_PCT: Record<string, number> = Object.freeze({
   elite: 20,
 }) as Record<string, number>;
 
-/** Percentage points added to negative_chance per missed day. */
+/** Percentage points added to negativeChance per missed day. */
 export const NEG_PER_MISSED_DAY = 5;
 
 /** Length of an Equoria gestation, in days. Doubles as the divisor floor. */
 export const GESTATION_DAYS = 7;
 
 export interface PregnancyChances {
-  positive_chance: number;
-  negative_chance: number;
+  positiveChance: number;
+  negativeChance: number;
 }
 
 /**
@@ -59,12 +59,12 @@ export function calculatePregnancyEpigeneticChances(
   }
 
   const divisor = Math.max(GESTATION_DAYS, totalFeedings);
-  const positive_chance = weightedSum / divisor;
+  const positiveChance = weightedSum / divisor;
 
   const unfedDays = Math.max(0, GESTATION_DAYS - totalFeedings);
-  const negative_chance = unfedDays * NEG_PER_MISSED_DAY;
+  const negativeChance = unfedDays * NEG_PER_MISSED_DAY;
 
-  return { positive_chance, negative_chance };
+  return { positiveChance, negativeChance };
 }
 
 export interface PregnancyProgress {

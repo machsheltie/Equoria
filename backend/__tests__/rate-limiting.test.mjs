@@ -106,7 +106,7 @@ describe('Rate Limiting System', () => {
   });
 
   describe('Login Rate Limiting (Brute Force Protection)', () => {
-    it('should_allow_up_to_5_failed_login_attempts', async () => {
+    it('shouldAllowUpTo5FailedLoginAttempts', async () => {
       const ip = getUniqueIP(1);
       // Attempt 1-5: Should be allowed but fail authentication
       for (let i = 1; i <= 5; i++) {
@@ -134,7 +134,7 @@ describe('Rate Limiting System', () => {
       }
     });
 
-    it('should_block_6th_failed_login_attempt_with_429', async () => {
+    it('shouldBlock6thFailedLoginAttemptWith429', async () => {
       const ip = getUniqueIP(2);
       // First 5 attempts (exhaust limit)
       for (let i = 0; i < 5; i++) {
@@ -164,7 +164,7 @@ describe('Rate Limiting System', () => {
       }
     });
 
-    it('should_reset_rate_limit_after_successful_authentication', async () => {
+    it('shouldResetRateLimitAfterSuccessfulAuthentication', async () => {
       const ip = getUniqueIP(3);
       // Fail 3 times
       for (let i = 0; i < 3; i++) {
@@ -201,7 +201,7 @@ describe('Rate Limiting System', () => {
       }
     });
 
-    it('should_include_retry_after_in_rate_limit_response', async () => {
+    it('shouldIncludeRetryAfterInRateLimitResponse', async () => {
       // Exhaust rate limit
       for (let i = 0; i < 5; i++) {
         await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
@@ -223,7 +223,7 @@ describe('Rate Limiting System', () => {
       }
     });
 
-    it('should_track_rate_limits_per_ip_address', async () => {
+    it('shouldTrackRateLimitsPerIpAddress', async () => {
       // Exhaust rate limit from IP 1
       for (let i = 0; i < 5; i++) {
         await request(app)
@@ -268,7 +268,7 @@ describe('Rate Limiting System', () => {
       await sleep(100);
     });
 
-    it('should_rate_limit_registration_attempts', async () => {
+    it('shouldRateLimitRegistrationAttempts', async () => {
       const baseData = createUserData();
       const ip = getUniqueIP(10);
 
@@ -315,7 +315,7 @@ describe('Rate Limiting System', () => {
       expectRateLimitExceeded(response);
     });
 
-    it('should_include_rate_limit_headers_on_registration', async () => {
+    it('shouldIncludeRateLimitHeadersOnRegistration', async () => {
       const userData = createUserData();
       const ip = getUniqueIP(11);
 
@@ -359,7 +359,7 @@ describe('Rate Limiting System', () => {
       refreshToken = cookies.find(c => c.startsWith('refreshToken='));
     });
 
-    it('should_rate_limit_token_refresh_attempts', async () => {
+    it('shouldRateLimitTokenRefreshAttempts', async () => {
       if (!refreshToken) {
         // Login failed or limiter bypassed in test environment
         return;
@@ -407,7 +407,7 @@ describe('Rate Limiting System', () => {
       await sleep(100);
     });
 
-    it('should_include_standard_rate_limit_headers', async () => {
+    it('shouldIncludeStandardRateLimitHeaders', async () => {
       const ip = getUniqueIP(30);
       const response = await request(app)
         .post('/api/v1/auth/login')
@@ -435,7 +435,7 @@ describe('Rate Limiting System', () => {
       expect(response.headers).not.toHaveProperty('x-ratelimit-remaining');
     });
 
-    it('should_update_ratelimit_remaining_with_each_request', async () => {
+    it('shouldUpdateRatelimitRemainingWithEachRequest', async () => {
       const responses = [];
 
       for (let i = 0; i < 3; i++) {
@@ -457,7 +457,7 @@ describe('Rate Limiting System', () => {
       }
     });
 
-    it('should_provide_accurate_reset_timestamp', async () => {
+    it('shouldProvideAccurateResetTimestamp', async () => {
       const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: 'WrongPassword123!',
@@ -474,7 +474,7 @@ describe('Rate Limiting System', () => {
   });
 
   describe('Rate Limit Reset Mechanism', () => {
-    it('should_reset_rate_limit_after_time_window', async () => {
+    it('shouldResetRateLimitAfterTimeWindow', async () => {
       // This test requires waiting for the rate limit window to reset
       // In test environment, window is 2 seconds
 
@@ -514,7 +514,7 @@ describe('Rate Limiting System', () => {
   });
 
   describe('Concurrent Request Handling', () => {
-    it('should_handle_concurrent_requests_correctly', async () => {
+    it('shouldHandleConcurrentRequestsCorrectly', async () => {
       // Send 10 concurrent requests
       const promises = Array(10)
         .fill(null)
@@ -534,7 +534,7 @@ describe('Rate Limiting System', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should_handle_missing_ip_address_gracefully', async () => {
+    it('shouldHandleMissingIpAddressGracefully', async () => {
       const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: 'WrongPassword123!',
@@ -545,7 +545,7 @@ describe('Rate Limiting System', () => {
       expectRateLimitHeaders(response);
     });
 
-    it('should_handle_malformed_requests_with_rate_limiting', async () => {
+    it('shouldHandleMalformedRequestsWithRateLimiting', async () => {
       for (let i = 0; i < 6; i++) {
         const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
           // Missing password
@@ -556,7 +556,7 @@ describe('Rate Limiting System', () => {
       }
     });
 
-    it('should_not_leak_user_existence_through_rate_limiting', async () => {
+    it('shouldNotLeakUserExistenceThroughRateLimiting', async () => {
       // Rate limit for non-existent user
       for (let i = 0; i < 6; i++) {
         const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
@@ -570,7 +570,7 @@ describe('Rate Limiting System', () => {
   });
 
   describe('Test Environment Configuration', () => {
-    it('should_respect_test_environment_rate_limit_config', () => {
+    it('shouldRespectTestEnvironmentRateLimitConfig', () => {
       // This test verifies that test environment can bypass or modify rate limits
       expect(process.env.NODE_ENV).toBe('test');
 

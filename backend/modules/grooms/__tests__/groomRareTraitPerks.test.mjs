@@ -347,7 +347,7 @@ describe('applyRareTraitBoosterEffects', () => {
         stackedBonus: 0.02,
         requiredTags: [],
         requiredExperience: 0,
-        revealCondition: 'unrecognised_condition',
+        revealCondition: 'unrecognisedCondition',
       };
     });
 

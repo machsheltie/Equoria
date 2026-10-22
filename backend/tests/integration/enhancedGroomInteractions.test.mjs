@@ -428,7 +428,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const invalidData = {
         groomId: testGroom.id,
         horseId: testHorse.id,
-        interactionType: 'invalid_type',
+        interactionType: 'invalidType',
         variation: 'Test Variation',
         duration: 30,
       };

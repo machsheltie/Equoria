@@ -149,7 +149,7 @@ describe('Groom Progression System', () => {
     });
 
     test('Should award XP for show wins', async () => {
-      const result = await awardGroomXP(testGroom.id, 'show_win', 15);
+      const result = await awardGroomXP(testGroom.id, 'showWin', 15);
 
       expect(result.success).toBe(true);
       expect(result.xpGained).toBe(15);

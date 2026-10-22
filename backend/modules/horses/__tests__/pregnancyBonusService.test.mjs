@@ -63,68 +63,68 @@ describe('NEG_PER_MISSED_DAY and GESTATION_DAYS', () => {
 // calculatePregnancyEpigeneticChances
 // ---------------------------------------------------------------------------
 describe('calculatePregnancyEpigeneticChances', () => {
-  it('returns zero positive_chance and 35 negative_chance for null (all missed)', () => {
+  it('returns zero positiveChance and 35 negativeChance for null (all missed)', () => {
     const result = calculatePregnancyEpigeneticChances(null);
-    expect(result.positive_chance).toBe(0);
-    expect(result.negative_chance).toBe(35); // 7 days * 5
+    expect(result.positiveChance).toBe(0);
+    expect(result.negativeChance).toBe(35); // 7 days * 5
   });
 
-  it('returns zero positive_chance for undefined input', () => {
+  it('returns zero positiveChance for undefined input', () => {
     const result = calculatePregnancyEpigeneticChances(undefined);
-    expect(result.positive_chance).toBe(0);
-    expect(result.negative_chance).toBe(35);
+    expect(result.positiveChance).toBe(0);
+    expect(result.negativeChance).toBe(35);
   });
 
-  it('returns zero positive_chance for empty object', () => {
+  it('returns zero positiveChance for empty object', () => {
     const result = calculatePregnancyEpigeneticChances({});
-    expect(result.positive_chance).toBe(0);
-    expect(result.negative_chance).toBe(35);
+    expect(result.positiveChance).toBe(0);
+    expect(result.negativeChance).toBe(35);
   });
 
-  it('basic tier feedings contribute zero positive_chance', () => {
+  it('basic tier feedings contribute zero positiveChance', () => {
     const result = calculatePregnancyEpigeneticChances({ basic: 7 });
-    expect(result.positive_chance).toBe(0);
-    expect(result.negative_chance).toBe(0); // 7 feedings → 0 unfed days
+    expect(result.positiveChance).toBe(0);
+    expect(result.negativeChance).toBe(0); // 7 feedings → 0 unfed days
   });
 
-  it('7 elite feedings produce maximum positive_chance = 20', () => {
-    // weightedSum = 7 * 20 = 140, divisor = max(7, 7) = 7, positive_chance = 20
+  it('7 elite feedings produce maximum positiveChance = 20', () => {
+    // weightedSum = 7 * 20 = 140, divisor = max(7, 7) = 7, positiveChance = 20
     const result = calculatePregnancyEpigeneticChances({ elite: 7 });
-    expect(result.positive_chance).toBe(20);
-    expect(result.negative_chance).toBe(0);
+    expect(result.positiveChance).toBe(20);
+    expect(result.negativeChance).toBe(0);
   });
 
   it('mixed tier feedings blend correctly', () => {
     // 4 performancePlus (10) + 3 highPerformance (15) = 4*10 + 3*15 = 85
-    // divisor = max(7, 7) = 7, positive_chance = 85/7 ≈ 12.14
+    // divisor = max(7, 7) = 7, positiveChance = 85/7 ≈ 12.14
     const result = calculatePregnancyEpigeneticChances({ performancePlus: 4, highPerformance: 3 });
-    expect(result.positive_chance).toBeCloseTo(85 / 7, 5);
-    expect(result.negative_chance).toBe(0);
+    expect(result.positiveChance).toBeCloseTo(85 / 7, 5);
+    expect(result.negativeChance).toBe(0);
   });
 
-  it('under-feeding raises negative_chance proportionally', () => {
-    // 5 elite feedings → unfedDays = max(0, 7 - 5) = 2 → negative_chance = 10
+  it('under-feeding raises negativeChance proportionally', () => {
+    // 5 elite feedings → unfedDays = max(0, 7 - 5) = 2 → negativeChance = 10
     const result = calculatePregnancyEpigeneticChances({ elite: 5 });
-    expect(result.negative_chance).toBe(10);
+    expect(result.negativeChance).toBe(10);
   });
 
   it('ignores unknown tier keys silently', () => {
     const result = calculatePregnancyEpigeneticChances({ unknownTier: 7, elite: 7 });
-    expect(result.positive_chance).toBe(20); // elite only
-    expect(result.negative_chance).toBe(0);
+    expect(result.positiveChance).toBe(20); // elite only
+    expect(result.negativeChance).toBe(0);
   });
 
   it('more feedings than GESTATION_DAYS caps divisor at totalFeedings', () => {
-    // 10 elite feedings → divisor = max(7, 10) = 10, positive_chance = (10*20)/10 = 20
+    // 10 elite feedings → divisor = max(7, 10) = 10, positiveChance = (10*20)/10 = 20
     const result = calculatePregnancyEpigeneticChances({ elite: 10 });
-    expect(result.positive_chance).toBe(20);
-    expect(result.negative_chance).toBe(0); // unfedDays = max(0, 7-10) = 0
+    expect(result.positiveChance).toBe(20);
+    expect(result.negativeChance).toBe(0); // unfedDays = max(0, 7-10) = 0
   });
 
   it('returns an object with both fields', () => {
     const result = calculatePregnancyEpigeneticChances({ performance: 7 });
-    expect(typeof result.positive_chance).toBe('number');
-    expect(typeof result.negative_chance).toBe('number');
+    expect(typeof result.positiveChance).toBe('number');
+    expect(typeof result.negativeChance).toBe('number');
   });
 });
 

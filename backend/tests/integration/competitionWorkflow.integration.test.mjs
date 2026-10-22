@@ -284,7 +284,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
           epigeneticModifiers: {
             positive: ['fast', 'athletic', 'focused', 'brave', 'resilient', 'peopleTrusting'],
             negative: [],
-            hidden: ['champion_heart'],
+            hidden: ['championHeart'],
           },
         },
       });

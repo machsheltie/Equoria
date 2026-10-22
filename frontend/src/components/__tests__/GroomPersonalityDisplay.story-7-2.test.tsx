@@ -55,7 +55,7 @@ describe('groomPersonality helpers', () => {
     });
 
     it('falls back to patient for unknown personality', () => {
-      const info = getPersonalityInfo('unknown_personality');
+      const info = getPersonalityInfo('unknownPersonality');
       expect(info.label).toBe('Patient');
     });
 

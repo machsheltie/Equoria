@@ -169,9 +169,9 @@ beforeAll(async () => {
     data: {
       foalId: stormtouchedHorse.id,
       groomId: groom.id,
-      interactionType: 'novelty_exposure',
+      interactionType: 'noveltyExposure',
       duration: 30,
-      taskType: 'novelty_exposure', // novelty event
+      taskType: 'noveltyExposure', // novelty event
       stressChange: 7, // spike #2
       timestamp: new Date(ts - 39 * DAY),
     },
@@ -204,9 +204,9 @@ beforeAll(async () => {
     data: {
       foalId: stormtouchedNegHorse.id,
       groomId: groom.id,
-      interactionType: 'novelty_exposure',
+      interactionType: 'noveltyExposure',
       duration: 30,
-      taskType: 'novelty_exposure',
+      taskType: 'noveltyExposure',
       stressChange: 8,
       timestamp: new Date(ts - 40 * DAY),
     },

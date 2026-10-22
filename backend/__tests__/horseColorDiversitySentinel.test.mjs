@@ -37,11 +37,11 @@ describe('horse-color diversity sentinel (Equoria-fhag layer 2)', () => {
 
   test('at least one distinct phenotype.colorName exists', async () => {
     const result = await prisma.$queryRaw`
-      SELECT COUNT(DISTINCT phenotype->>'colorName')::int AS distinct_colors
+      SELECT COUNT(DISTINCT phenotype->>'colorName')::int AS "distinctColors"
       FROM horses
       WHERE phenotype IS NOT NULL
     `;
-    const distinctColors = result[0]?.distinct_colors ?? 0;
+    const distinctColors = result[0]?.distinctColors ?? 0;
     expect(distinctColors).toBeGreaterThanOrEqual(1);
   });
 
@@ -64,11 +64,11 @@ describe('horse-color diversity sentinel (Equoria-fhag layer 2)', () => {
         SELECT SUM(cnt)::int AS total FROM counts
       )
       SELECT
-        MAX(cnt)::int AS top_count,
+        MAX(cnt)::int AS "topCount",
         (SELECT total FROM totals) AS total
       FROM counts
     `;
-    const { top_count: topCount, total } = result[0] ?? { top_count: 0, total: 0 };
+    const { topCount, total } = result[0] ?? { topCount: 0, total: 0 };
     if (total === 0) {
       // No phenotyped horses — vacuous pass. Equoria-a429 sentinel guards
       // against this state in a separate suite.

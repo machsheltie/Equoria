@@ -293,7 +293,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
         'feeding', // This should return null as it's not in any category
         'exercise', // This should return null as it's not in any category
         'medical_check', // This should return null as it's not in any category
-        'unknown_task', // This should return null as it's not in any category
+        'unknownTask', // This should return null as it's not in any category
       ];
 
       generalTasks.forEach(task => {
@@ -303,7 +303,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     });
 
     it('should handle unknown task types', () => {
-      const unknownTasks = ['unknown_task', 'invalid_task', '', 'random_string'];
+      const unknownTasks = ['unknownTask', 'invalidTask', '', 'randomString'];
 
       unknownTasks.forEach(task => {
         const category = categorizeTask(task);

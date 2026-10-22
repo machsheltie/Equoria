@@ -98,12 +98,12 @@ describe('fixtureColor() guard (Equoria-g9sa)', () => {
     // AND phenotype->>'colorName' is a non-empty string.
     const [row] = await prisma.$queryRaw`
       SELECT
-        (phenotype IS NULL) AS phenotype_is_null,
-        (phenotype->>'colorName') AS color_name
+        (phenotype IS NULL) AS "phenotypeIsNull",
+        (phenotype->>'colorName') AS "colorName"
       FROM horses WHERE id = ${horse.id}
     `;
-    expect(row.phenotype_is_null).toBe(false);
-    expect(typeof row.color_name).toBe('string');
-    expect(row.color_name.length).toBeGreaterThan(0);
+    expect(row.phenotypeIsNull).toBe(false);
+    expect(typeof row.colorName).toBe('string');
+    expect(row.colorName.length).toBeGreaterThan(0);
   }, 15000);
 });

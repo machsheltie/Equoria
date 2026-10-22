@@ -219,7 +219,7 @@ describe('Legacy Score Trait Integration System', () => {
       const traitHistory = [
         { traitName: 'sensitive', sourceType: 'milestone', isEpigenetic: true, ageInDays: 30 }, // Before age 4
         { traitName: 'noble', sourceType: 'groom', isEpigenetic: true, ageInDays: 365 }, // Before age 4
-        { traitName: 'late_trait', sourceType: 'environmental', isEpigenetic: false, ageInDays: 1500 }, // After age 4 (4+ years)
+        { traitName: 'lateTrait', sourceType: 'environmental', isEpigenetic: false, ageInDays: 1500 }, // After age 4 (4+ years)
       ];
 
       for (const trait of traitHistory) {
@@ -262,7 +262,7 @@ describe('Legacy Score Trait Integration System', () => {
             horseId: testHorse.id,
             milestoneType: milestone.milestoneType,
             score: 5,
-            finalTrait: 'test_trait',
+            finalTrait: 'testTrait',
             groomId: testGroom.id,
             bondScore: milestone.bondScore,
             taskConsistency: milestone.taskConsistency,
@@ -276,7 +276,7 @@ describe('Legacy Score Trait Integration System', () => {
       await prisma.traitHistoryLog.create({
         data: {
           horseId: testHorse.id,
-          traitName: 'well_cared_for',
+          traitName: 'wellCaredFor',
           sourceType: 'milestone',
           isEpigenetic: true,
           ageInDays: 100,

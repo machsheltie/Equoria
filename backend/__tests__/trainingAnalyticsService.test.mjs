@@ -77,13 +77,13 @@ describe('trainingAnalyticsService.calculateDisciplineBalance', () => {
     const history = [
       makeLog('dressage', 5),
       makeLog('dressage', 4),
-      makeLog('show_jumping', 3),
-      makeLog('show_jumping', 2),
+      makeLog('showJumping', 3),
+      makeLog('showJumping', 2),
     ];
     const result = trainingAnalyticsService.calculateDisciplineBalance(history);
 
     expect(result.dressage.percentage).toBe(50);
-    expect(result.show_jumping.percentage).toBe(50);
+    expect(result.showJumping.percentage).toBe(50);
   });
 
   it('tracks lastTrainingDate and firstTrainingDate', () => {
@@ -111,7 +111,7 @@ describe('trainingAnalyticsService.calculateDisciplineBalance', () => {
 
   it('handles many disciplines with equal distribution', () => {
     expect.hasAssertions(); // Equoria-gc0dn
-    const disciplines = ['dressage', 'show_jumping', 'racing', 'cross_country'];
+    const disciplines = ['dressage', 'showJumping', 'racing', 'crossCountry'];
     const history = disciplines.map((d, i) => makeLog(d, i + 1));
 
     const result = trainingAnalyticsService.calculateDisciplineBalance(history);
@@ -158,7 +158,7 @@ describe('trainingAnalyticsService.calculateTrainingFrequency', () => {
     const history = [
       makeLog('dressage', 5), // recent
       makeLog('racing', 25), // recent
-      makeLog('show_jumping', 35), // older than 30 days
+      makeLog('showJumping', 35), // older than 30 days
     ];
     const result = trainingAnalyticsService.calculateTrainingFrequency(history);
 
@@ -171,7 +171,7 @@ describe('trainingAnalyticsService.calculateTrainingFrequency', () => {
 
   it('excludes sessions older than 30 days from recentActivity', () => {
     expect.hasAssertions(); // Equoria-gc0dn
-    const history = [makeLog('cross_country', 40), makeLog('endurance', 60)];
+    const history = [makeLog('crossCountry', 40), makeLog('endurance', 60)];
     const result = trainingAnalyticsService.calculateTrainingFrequency(history);
 
     expect(result.totalSessions).toBe(2);
@@ -278,7 +278,7 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
     expect.hasAssertions(); // Equoria-gc0dn vacuous-pass guard
 
     // Seed some training logs
-    const disciplines = ['dressage', 'show_jumping', 'racing'];
+    const disciplines = ['dressage', 'showJumping', 'racing'];
     for (let i = 0; i < 6; i++) {
       await prisma.trainingLog.create({
         data: {

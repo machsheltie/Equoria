@@ -148,7 +148,7 @@ describe('countAllocatedTalents', () => {
 
 describe('getTalentTiersWithState', () => {
   it('returns empty array for unknown personality', () => {
-    const tiers = getTalentTiersWithState('unknown_personality', 10, null);
+    const tiers = getTalentTiersWithState('unknownPersonality', 10, null);
     expect(tiers).toHaveLength(0);
   });
 

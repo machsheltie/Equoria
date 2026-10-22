@@ -214,7 +214,7 @@ describe('getEligibleHorses — catch block (lines 347-348)', () => {
 
 describe('evaluateFlagTriggers — unknown flag name (line 201, Equoria-jkht)', () => {
   it('logs a warning and returns triggered=false for an unknown flag name', () => {
-    const result = flagEvalDefault.evaluateFlagTriggers({ name: 'unknown_test_flag', triggerConditions: {} }, {});
+    const result = flagEvalDefault.evaluateFlagTriggers({ name: 'unknownTestFlag', triggerConditions: {} }, {});
     expect(result.triggered).toBe(false);
     expect(result.score).toBe(0);
   });

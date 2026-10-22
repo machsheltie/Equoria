@@ -448,7 +448,7 @@ describe('hasUltraRareAbility', () => {
   });
 
   it('returns false for unknown ability type', () => {
-    expect(hasUltraRareAbility(withExotic('ghostwalker'), 'unknown_ability')).toBe(false);
+    expect(hasUltraRareAbility(withExotic('ghostwalker'), 'unknownAbility')).toBe(false);
   });
 
   it('returns false when ability exists but horse lacks it', () => {
@@ -539,7 +539,7 @@ describe('null-horse catch blocks', () => {
 describe('phantom-trait continue branches (no trait definition found)', () => {
   const phantomHorse = {
     ultraRareTraits: {
-      ultraRare: [{ name: 'nonexistent_trait_xyz_phantom' }],
+      ultraRare: [{ name: 'nonexistentTraitXyzPhantom' }],
       exotic: [],
     },
   };

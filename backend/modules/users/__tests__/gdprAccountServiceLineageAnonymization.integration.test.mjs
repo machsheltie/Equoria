@@ -198,8 +198,8 @@ describe('INTEGRATION: GDPR lineage anonymization (Equoria-cugl9)', () => {
     // deletedOwner owns grandSire (A) AND parentSire (B), where B.sireId = A.
     // survivor owns foal (C), where C.sireId = B. The whole A<-B<-C chain must
     // survive (A and B anonymized) so C's lineage walks all the way up.
-    const deletedOwner = await makeUser('owner_gen');
-    const survivor = await makeUser('survivor_gen');
+    const deletedOwner = await makeUser('ownerGen');
+    const survivor = await makeUser('survivorGen');
 
     const grandSire = await makeHorse(deletedOwner.id, { sex: 'Stallion' });
     const parentSire = await makeHorse(deletedOwner.id, {

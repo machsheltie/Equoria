@@ -270,7 +270,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         epigeneticModifiers: {
           positive: ['athletic', 'focused', 'brave', 'resilient'],
           negative: [],
-          hidden: ['strong_heart'],
+          hidden: ['strongHeart'],
         },
       },
     });

@@ -182,7 +182,7 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
   describe('Trait Visibility Determination', () => {
     it('should categorize traits by visibility correctly', () => {
       const params = {
-        damTraits: ['resilient', 'hidden_talent'],
+        damTraits: ['resilient', 'hiddenTalent'],
         sireTraits: ['strong', 'mysterious'],
         damBondScore: 85,
         damStressLevel: 15,
@@ -235,8 +235,8 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
 
     it('should handle boundary values for bonding and stress', () => {
       const params = {
-        damTraits: ['test_trait'],
-        sireTraits: ['another_trait'],
+        damTraits: ['testTrait'],
+        sireTraits: ['anotherTrait'],
         damBondScore: 0, // Minimum
         damStressLevel: 100, // Maximum
         seed: 88888,
@@ -251,8 +251,8 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
 
     it('should handle maximum values for bonding and stress', () => {
       const params = {
-        damTraits: ['excellent_trait'],
-        sireTraits: ['superior_trait'],
+        damTraits: ['excellentTrait'],
+        sireTraits: ['superiorTrait'],
         damBondScore: 100, // Maximum
         damStressLevel: 0, // Minimum
         seed: 99999,
@@ -311,8 +311,8 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
 
     it('should maintain trait consistency across multiple calculations', () => {
       const params = {
-        damTraits: ['consistent_trait', 'stable_trait'],
-        sireTraits: ['reliable_trait', 'steady_trait'],
+        damTraits: ['consistentTrait', 'stableTrait'],
+        sireTraits: ['reliableTrait', 'steadyTrait'],
         damBondScore: 80,
         damStressLevel: 20,
         seed: 13579,
@@ -334,8 +334,8 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
   describe('Trait Array Properties', () => {
     it('should return sorted trait arrays', () => {
       const params = {
-        damTraits: ['zebra_trait', 'alpha_trait', 'middle_trait'],
-        sireTraits: ['omega_trait', 'beta_trait', 'gamma_trait'],
+        damTraits: ['zebraTrait', 'alphaTrait', 'middleTrait'],
+        sireTraits: ['omegaTrait', 'betaTrait', 'gammaTrait'],
         damBondScore: 65,
         damStressLevel: 45,
         seed: 24680,
@@ -357,8 +357,8 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
 
     it('should return unique traits in each category', () => {
       const params = {
-        damTraits: ['duplicate_trait', 'unique_trait', 'duplicate_trait'],
-        sireTraits: ['another_trait', 'unique_trait', 'final_trait'],
+        damTraits: ['duplicate_trait', 'uniqueTrait', 'duplicate_trait'],
+        sireTraits: ['anotherTrait', 'uniqueTrait', 'finalTrait'],
         damBondScore: 55,
         damStressLevel: 55,
         seed: 97531,

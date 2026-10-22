@@ -233,9 +233,9 @@ describe('Trait Timeline System', () => {
     it('should filter traits by age cutoff (before age 4)', async () => {
       // Create traits both before and after age 4
       const traitHistory = [
-        { traitName: 'early_trait', ageInDays: 365 }, // 1 year - should be included
-        { traitName: 'late_trait', ageInDays: 1500 }, // 4+ years - should be excluded
-        { traitName: 'cutoff_trait', ageInDays: 1460 }, // Exactly 4 years - should be excluded
+        { traitName: 'earlyTrait', ageInDays: 365 }, // 1 year - should be included
+        { traitName: 'lateTrait', ageInDays: 1500 }, // 4+ years - should be excluded
+        { traitName: 'cutoffTrait', ageInDays: 1460 }, // Exactly 4 years - should be excluded
       ];
 
       for (const trait of traitHistory) {
@@ -259,7 +259,7 @@ describe('Trait Timeline System', () => {
       const timeline = await generateTraitTimeline(testHorse.id);
 
       expect(timeline.timelineEvents).toHaveLength(1);
-      expect(timeline.timelineEvents[0].traitName).toBe('early_trait');
+      expect(timeline.timelineEvents[0].traitName).toBe('earlyTrait');
       expect(timeline.summary.totalTraits).toBe(1);
       expect(timeline.summary.traitsExcluded).toBe(2);
       expect(timeline.excludedTraits).toHaveLength(2);
@@ -319,12 +319,12 @@ describe('Trait Timeline System', () => {
     it('should organize events by age ranges', async () => {
       // Create traits at specific age milestones
       const ageRangeTraits = [
-        { name: 'week1_trait', ageInDays: 5 },
-        { name: 'month1_trait', ageInDays: 25 },
-        { name: 'month3_trait', ageInDays: 85 },
-        { name: 'year1_trait', ageInDays: 300 },
-        { name: 'year2_trait', ageInDays: 600 },
-        { name: 'year3_trait', ageInDays: 900 },
+        { name: 'week1Trait', ageInDays: 5 },
+        { name: 'month1Trait', ageInDays: 25 },
+        { name: 'month3Trait', ageInDays: 85 },
+        { name: 'year1Trait', ageInDays: 300 },
+        { name: 'year2Trait', ageInDays: 600 },
+        { name: 'year3Trait', ageInDays: 900 },
       ];
 
       for (const trait of ageRangeTraits) {

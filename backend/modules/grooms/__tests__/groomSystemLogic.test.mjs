@@ -327,9 +327,9 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
 
     it('should handle invalid modifiers gracefully', () => {
       const invalidGroom = {
-        speciality: 'invalid_specialty',
-        skillLevel: 'invalid_level',
-        personality: 'invalid_personality',
+        speciality: 'invalidSpecialty',
+        skillLevel: 'invalidLevel',
+        personality: 'invalidPersonality',
         experience: 5,
         sessionRate: 18.0,
       };

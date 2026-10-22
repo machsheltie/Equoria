@@ -53,14 +53,14 @@ describe('sanitizeLogData applied to req.params + req.query (Equoria-wp0ib)', ()
       accessToken: 'access-...',
       refreshToken: 'refresh-...',
       resetPasswordKey: 'reset-...',
-      api_secret: 'secret-...',
+      apiSecret: 'secret-...',
       authHeader: 'Bearer xxx',
       irrelevant: 'keep me',
     });
     expect(sanitized.accessToken).toBe('[REDACTED]');
     expect(sanitized.refreshToken).toBe('[REDACTED]');
     expect(sanitized.resetPasswordKey).toBe('[REDACTED]');
-    expect(sanitized.api_secret).toBe('[REDACTED]');
+    expect(sanitized.apiSecret).toBe('[REDACTED]');
     expect(sanitized.authHeader).toBe('[REDACTED]');
     expect(sanitized.irrelevant).toBe('keep me');
   });

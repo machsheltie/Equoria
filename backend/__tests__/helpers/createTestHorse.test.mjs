@@ -107,15 +107,15 @@ describe('createTestHorse helper (Equoria-dm1i)', () => {
 
     const [row] = await prisma.$queryRaw`
       SELECT
-        (phenotype IS NULL) AS phenotype_is_null,
-        (phenotype->>'colorName') AS color_name,
-        ("colorGenotype" IS NULL) AS genotype_is_null
+        (phenotype IS NULL) AS "phenotypeIsNull",
+        (phenotype->>'colorName') AS "colorName",
+        ("colorGenotype" IS NULL) AS "genotypeIsNull"
       FROM horses WHERE id = ${horse.id}
     `;
-    expect(row.phenotype_is_null).toBe(false);
-    expect(row.genotype_is_null).toBe(false);
-    expect(typeof row.color_name).toBe('string');
-    expect(row.color_name.length).toBeGreaterThan(0);
+    expect(row.phenotypeIsNull).toBe(false);
+    expect(row.genotypeIsNull).toBe(false);
+    expect(typeof row.colorName).toBe('string');
+    expect(row.colorName.length).toBeGreaterThan(0);
   }, 15000);
 
   it('respects caller-supplied colorGenotype/phenotype (does not clobber an intentional genotype)', async () => {
@@ -133,10 +133,10 @@ describe('createTestHorse helper (Equoria-dm1i)', () => {
       createdIds,
     );
     const [row] = await prisma.$queryRaw`
-      SELECT (phenotype->>'colorName') AS color_name
+      SELECT (phenotype->>'colorName') AS "colorName"
       FROM horses WHERE id = ${horse.id}
     `;
-    expect(row.color_name).toBe('SentinelTestColor');
+    expect(row.colorName).toBe('SentinelTestColor');
   }, 15000);
 
   it('cleanupTestHorses deletes ONLY collected ids and is idempotent', async () => {

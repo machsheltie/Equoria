@@ -104,7 +104,7 @@ describe('useEventStream', () => {
 
   // Equoria-9fu3w: the hook must listen for the EXACT named event types the
   // backend SSE producer emits. Before the fix, the competition + marketplace
-  // events were registered under the wrong name ('competition_result') or not
+  // events were registered under the wrong name ('competitionResult') or not
   // at all, so they were silently dropped on the SSE fast-path and only
   // arrived via the 5s poll. This is the SSE_EVENT_NAMES contract with the
   // backend createNotification(...) type strings.
@@ -175,14 +175,14 @@ describe('useEventStream', () => {
     ]);
   });
 
-  it('does NOT register the dead "competition_result" listener (no backend producer)', () => {
+  it('does NOT register the dead "competitionResult" listener (no backend producer)', () => {
     const qc = new QueryClient();
     renderHook(() => useEventStream(), { wrapper: createWrapper(qc) });
 
-    // 'competition_result' matched no backend producer — registering it was
+    // 'competitionResult' matched no backend producer — registering it was
     // dead code. The real competition events are competition_placement /
     // competition_stat_gain.
-    expect(lastSource!.listeners['competition_result']).toBeUndefined();
+    expect(lastSource!.listeners['competitionResult']).toBeUndefined();
   });
 
   it('closes the EventSource on unmount (no leak)', () => {

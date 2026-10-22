@@ -24,12 +24,12 @@ import { check, sleep, group } from 'k6';
 import { Counter, Trend, Rate, Gauge } from 'k6/metrics';
 
 // Custom metrics
-const activeSessions = new Gauge('active_sessions');
-const sessionCreations = new Counter('session_creations');
-const sessionRefreshes = new Counter('session_refreshes');
-const sessionConflicts = new Rate('session_conflicts');
-const sessionCleanups = new Counter('session_cleanups');
-const tokenRefreshDuration = new Trend('token_refresh_duration');
+const activeSessions = new Gauge('activeSessions');
+const sessionCreations = new Counter('sessionCreations');
+const sessionRefreshes = new Counter('sessionRefreshes');
+const sessionConflicts = new Rate('sessionConflicts');
+const sessionCleanups = new Counter('sessionCleanups');
+const tokenRefreshDuration = new Trend('tokenRefreshDuration');
 
 // Test configuration
 export const options = {
@@ -42,8 +42,8 @@ export const options = {
   thresholds: {
     http_req_duration: ['p(95)<1000'], // 95% under 1s
     http_req_failed: ['rate<0.05'], // Error rate under 5%
-    session_conflicts: ['rate<0.1'], // Conflict rate under 10%
-    token_refresh_duration: ['p(95)<500'], // Token refresh under 500ms
+    sessionConflicts: ['rate<0.1'], // Conflict rate under 10%
+    tokenRefreshDuration: ['p(95)<500'], // Token refresh under 500ms
   },
 };
 
@@ -291,12 +291,12 @@ export default function (data) {
  * Custom Summary Output
  */
 export function handleSummary(data) {
-  const totalSessions = data.metrics.session_creations?.values.count || 0;
-  const totalRefreshes = data.metrics.session_refreshes?.values.count || 0;
-  const totalCleanups = data.metrics.session_cleanups?.values.count || 0;
-  const conflictRate = ((data.metrics.session_conflicts?.values.rate || 0) * 100).toFixed(2);
-  const avgRefreshTime = (data.metrics.token_refresh_duration?.values.avg || 0).toFixed(2);
-  const maxActiveSessions = data.metrics.active_sessions?.values.max || 0;
+  const totalSessions = data.metrics.sessionCreations?.values.count || 0;
+  const totalRefreshes = data.metrics.sessionRefreshes?.values.count || 0;
+  const totalCleanups = data.metrics.sessionCleanups?.values.count || 0;
+  const conflictRate = ((data.metrics.sessionConflicts?.values.rate || 0) * 100).toFixed(2);
+  const avgRefreshTime = (data.metrics.tokenRefreshDuration?.values.avg || 0).toFixed(2);
+  const maxActiveSessions = data.metrics.activeSessions?.values.max || 0;
 
   return {
     stdout: `
@@ -309,7 +309,7 @@ export function handleSummary(data) {
 ║ Max Active Sessions:      ${maxActiveSessions.toString().padStart(10)}                      ║
 ║ Conflict Rate:            ${conflictRate.toString().padStart(10)}%                  ║
 ║ Avg Refresh Time:         ${avgRefreshTime.toString().padStart(10)}ms                 ║
-║ P95 Refresh Time:         ${(data.metrics.token_refresh_duration?.values['p(95)'] || 0).toFixed(2).padStart(10)}ms                 ║
+║ P95 Refresh Time:         ${(data.metrics.tokenRefreshDuration?.values['p(95)'] || 0).toFixed(2).padStart(10)}ms                 ║
 ╠════════════════════════════════════════════════════════════════╣
 ║ Status: ${conflictRate < 10 ? '✅ PASS' : '❌ FAIL'} - Session management working correctly    ║
 ╚════════════════════════════════════════════════════════════════╝

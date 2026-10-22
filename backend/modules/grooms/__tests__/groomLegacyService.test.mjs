@@ -54,7 +54,7 @@ describe('getLegacyPerks — pure function', () => {
   });
 
   it('returns empty array for unknown personality (|| [] fallback branch)', () => {
-    const perks = getLegacyPerks('unknown_personality');
+    const perks = getLegacyPerks('unknownPersonality');
     expect(perks).toEqual([]);
   });
 

@@ -105,8 +105,8 @@ describe('Horse Model epigeneticModifiers contract (real DB)', () => {
 
     it('persists caller-supplied modifiers VERBATIM for a newborn (no merge, no extra traits)', async () => {
       const supplied = {
-        positive: ['existing_trait'],
-        negative: ['existing_negative'],
+        positive: ['existingTrait'],
+        negative: ['existingNegative'],
         hidden: [],
       };
       const result = await createHorse({

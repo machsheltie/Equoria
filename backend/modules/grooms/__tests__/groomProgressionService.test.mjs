@@ -279,7 +279,7 @@ describe('updateGroomSynergy — branch coverage (Equoria-jkht)', () => {
   }, 30000);
 
   it('creates new synergy record with unknown action → synergyGained=0 (new-record + ||0 branches)', async () => {
-    const result = await updateGroomSynergy(sgGroom.id, sgHorse.id, 'pet_horse');
+    const result = await updateGroomSynergy(sgGroom.id, sgHorse.id, 'petHorse');
     expect(result.success).toBe(true);
     expect(result.synergyGained).toBe(0);
     expect(result.newSynergyScore).toBe(0);
@@ -384,7 +384,7 @@ describe('logGroomAssignment — branch coverage (Equoria-jkht)', () => {
   });
 
   it('invalid action returns {success:false} (invalid-action catch branch)', async () => {
-    const result = await logGroomAssignment(laGroom.id, laHorse.id, 'invalid_action', {});
+    const result = await logGroomAssignment(laGroom.id, laHorse.id, 'invalidAction', {});
     expect(result.success).toBe(false);
     expect(typeof result.error).toBe('string');
   });

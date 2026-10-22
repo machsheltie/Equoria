@@ -73,7 +73,7 @@ async function loadTestEnvironment() {
 
   // Set JWT secret for tests
   if (!process.env.JWT_SECRET) {
-    process.env.JWT_SECRET = 'test_secret_key_for_jest';
+    process.env.JWT_SECRET = 'testSecretKeyForJest';
   }
 
   console.info('  ✓ Environment loaded');

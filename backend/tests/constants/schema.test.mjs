@@ -256,7 +256,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
       expect(isValidHorseStat('intelligence')).toBe(true);
 
       // Invalid stats
-      expect(isValidHorseStat('invalid_stat')).toBe(false);
+      expect(isValidHorseStat('invalidStat')).toBe(false);
       expect(isValidHorseStat('')).toBe(false);
       expect(isValidHorseStat(null)).toBe(false);
       expect(isValidHorseStat(undefined)).toBe(false);

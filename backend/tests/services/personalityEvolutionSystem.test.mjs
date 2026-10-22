@@ -54,7 +54,7 @@ describe('Personality Evolution System', () => {
           data: {
             username: `personality_evolution_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             email: `personality_evolution_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-            password: 'test_hash',
+            password: 'testHash',
             firstName: 'Test',
             lastName: 'User',
             money: 1000,
@@ -170,7 +170,7 @@ describe('Personality Evolution System', () => {
             id: testUser.id,
             username: testUser.username,
             email: testUser.email,
-            password: 'test_hash',
+            password: 'testHash',
             firstName: testUser.firstName,
             lastName: testUser.lastName,
             money: 1000,

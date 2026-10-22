@@ -163,7 +163,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'invalid_speciality',
+          speciality: 'invalidSpeciality',
           experience: 10,
           skill_level: 'expert',
           personality: 'gentle',
@@ -186,7 +186,7 @@ describe('Groom Hiring Workflow Tests', () => {
           name: 'Test Groom',
           speciality: 'foal_care',
           experience: 10,
-          skill_level: 'invalid_level',
+          skill_level: 'invalidLevel',
           personality: 'gentle',
         },
         user: { id: testUser.id },
@@ -208,7 +208,7 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           experience: 10,
           skill_level: 'expert',
-          personality: 'invalid_personality',
+          personality: 'invalidPersonality',
         },
         user: { id: testUser.id },
       };
@@ -328,7 +328,7 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
-          session_rate: customRate,
+          sessionRate: customRate,
         },
         user: { id: testUser.id },
       };
@@ -454,7 +454,7 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           skill_level: 'master',
           personality: 'gentle',
-          session_rate: 100.0,
+          sessionRate: 100.0,
         },
         user: { id: limitedUser.id },
       };
@@ -478,7 +478,7 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           skill_level: 'master',
           personality: 'gentle',
-          session_rate: 100.0,
+          sessionRate: 100.0,
         },
         user: { id: wealthyUser.id },
       };
@@ -553,7 +553,7 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
-          session_rate: -20.0,
+          sessionRate: -20.0,
         },
         user: { id: testUser.id },
       };

@@ -245,8 +245,8 @@ test.describe('Profile edit flow (Equoria-wli8n)', () => {
     const displayNameInput = page.getByLabel(/display name/i);
     await expect(displayNameInput).toHaveValue(player.username);
 
-    await displayNameInput.fill('dirty_value_unsaved');
-    await expect(displayNameInput).toHaveValue('dirty_value_unsaved');
+    await displayNameInput.fill('dirtyValueUnsaved');
+    await expect(displayNameInput).toHaveValue('dirtyValueUnsaved');
 
     await page.getByRole('button', { name: /cancel/i }).click();
 

@@ -293,14 +293,14 @@ describe('Trait Metadata Validation', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid trait names gracefully', () => {
-      expect(getTraitMetadata('invalid_trait')).toBeNull();
+      expect(getTraitMetadata('invalidTrait')).toBeNull();
       expect(getTraitDefinition('nonexistent')).toBeNull();
       expect(checkTraitConflict('invalid1', 'invalid2')).toBe(false);
     });
 
     it('should handle empty category queries', () => {
-      expect(getTraitsByCategory('invalid_category')).toEqual([]);
-      expect(getTraitsByType('invalid_type')).toEqual([]);
+      expect(getTraitsByCategory('invalidCategory')).toEqual([]);
+      expect(getTraitsByType('invalidType')).toEqual([]);
     });
   });
 });

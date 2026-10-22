@@ -11,7 +11,7 @@
  *   Double-foal-creation — two parallel POST /horses/:id/foal-now on the same
  *   in-foal mare can both pass the `inFoalSinceDate` guard and both materialise a
  *   foal row (cron-vs-mutation conflict class — the bulk foaling job hits the same
- *   window). Gated by the cross-VU `foal_now_success` Counter (count<=1): proven
+ *   window). Gated by the cross-VU `foalNowSuccess` Counter (count<=1): proven
  *   RED at count=3 if the foalingService atomic claim (Equoria-wgw5k) is reverted.
  *
  * The TWO feed race classes this harness used to carry are NO LONGER exercised
@@ -33,7 +33,7 @@
  *      delta while in-foal) — Equoria-qi1ns, now covered by
  *      backend/modules/horses/__tests__/inFoalFeedConservation.test.mjs.
  *      RATIONALE: the atomic foal-now claim sets pregnancyFeedingsByTier:{} when
- *      the foal is created, so once foal_race fires (every run) the counter is
+ *      the foal is created, so once foalRace fires (every run) the counter is
  *      RESET and the teardown's exact-equality check could only run on a no-foal
  *      run — i.e. almost never. The Jest test never foals the mare, so it runs
  *      the exact-equality assertion across the whole in-foal window.
@@ -43,7 +43,7 @@
  * The double-create window only opens when the SAME mare row is hit by concurrent
  * foal-now transactions. So this harness provisions ONE user with ONE in-foal
  * mare, then drives a burst of parallel foal-now requests at that single mare.
- * The `foal_now_success` Counter (k6 aggregates it GLOBALLY at end-of-run, so it
+ * The `foalNowSuccess` Counter (k6 aggregates it GLOBALLY at end-of-run, so it
  * is independent of the teardown VU isolate) must stay <= 1.
  *
  * REAL DB: this runs against the canonical Equoria DB per project policy.
@@ -80,9 +80,9 @@ const SMOKE = __ENV.SMOKE === '1';
 // ── Custom metrics ────────────────────────────────────────────────────────
 // Scope (Equoria-kv2gz/qi1ns): the feed lost-update + conservation arms moved to
 // dedicated Jest tests; the only invariant this harness gates is the foal-now
-// double-create window via the cross-VU foal_now_success Counter.
-const foalSuccess = new Counter('foal_now_success'); // 201 from /foal-now — cross-VU double-create gate (count<=1)
-const foalRejected = new Counter('foal_now_rejected'); // 400 "not in foal"
+// double-create window via the cross-VU foalNowSuccess Counter.
+const foalSuccess = new Counter('foalNowSuccess'); // 201 from /foal-now — cross-VU double-create gate (count<=1)
+const foalRejected = new Counter('foalNowRejected'); // 400 "not in foal"
 
 // One packs = 100 units (matches FEED_CATALOG). The setup still seeds + feeds
 // the horses once to clear the critical-health gate so the pregnancy can start.
@@ -96,7 +96,7 @@ export const options = {
     // scenario now: the feed-contention arm moved to dedicated Jest concurrency
     // tests (Equoria-kv2gz/qi1ns — see header), where the HTTP rate limiter does
     // not serialise the burst and the strong exact-conservation check can run.
-    foal_race: {
+    foalRace: {
       executor: 'shared-iterations',
       vus: SMOKE ? 3 : 8,
       iterations: SMOKE ? 6 : 16,
@@ -105,14 +105,14 @@ export const options = {
     },
   },
   thresholds: {
-    // foal_now_success is a cross-VU Counter that k6 aggregates GLOBALLY at
+    // foalNowSuccess is a cross-VU Counter that k6 aggregates GLOBALLY at
     // end-of-run, so it is independent of the teardown VU isolate and counts
     // EVERY /foal-now that returned 201. >1 success == a real double-create
     // race. This REPLACES the former `double_foal_count: ['value<=1']` gauge
     // threshold, which was a confirmed PLACEBO: teardown derived that gauge
     // from a stale, field-stripped cached horse-list read that never saw the
     // freshly-created foal, so it passed (value 0) even when 3 foals were
-    // genuinely created (Equoria-xkccu, lc2 evidence: foal_now_success=3 yet
+    // genuinely created (Equoria-xkccu, lc2 evidence: foalNowSuccess=3 yet
     // double_foal_count=0). The Counter goes RED at count=3 if the
     // foalingService atomic claim (Equoria-wgw5k) is reverted — a real
     // sentinel, not a placebo.
@@ -124,7 +124,7 @@ export const options = {
     // gated here anyway — the per-user rl:mutation bucket serialised the feed
     // burst, and foaling zeroed pregnancyFeedingsByTier before teardown could
     // read the conservation delta.
-    foal_now_success: ['count<=1'],
+    foalNowSuccess: ['count<=1'],
   },
 };
 
@@ -334,7 +334,7 @@ export function foalRace(data) {
  *
  * SCOPE (Equoria-kv2gz/qi1ns): the atomic-triple feed-conservation math that
  * used to live here was REMOVED. It depended on reading pregnancyFeedingsByTier
- * after the run, but the foal_race scenario (which fires every run) zeroes that
+ * after the run, but the foalRace scenario (which fires every run) zeroes that
  * counter when the foal is created — so the exact-equality check could almost
  * never run, and the rate limiter had already serialised the feeds it was meant
  * to gate. Those invariants are now covered by the dedicated real-DB Jest tests
@@ -342,7 +342,7 @@ export function foalRace(data) {
  * inFoalFeedConservation.test.mjs).
  *
  * The double-create invariant THIS harness exists for is gated by the
- * `foal_now_success` Counter (count<=1) threshold in options — a cross-VU
+ * `foalNowSuccess` Counter (count<=1) threshold in options — a cross-VU
  * Counter k6 aggregates at end-of-run, independent of this teardown VU isolate.
  * No assertion is needed here for it.
  */

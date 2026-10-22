@@ -44,7 +44,7 @@ describe('Email Verification Service - Unit Tests', () => {
   });
 
   describe('generateVerificationToken()', () => {
-    it('should_generate_unique_tokens', () => {
+    it('shouldGenerateUniqueTokens', () => {
       const token1 = generateVerificationToken();
       const token2 = generateVerificationToken();
 
@@ -55,14 +55,14 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(typeof token2).toBe('string');
     });
 
-    it('should_generate_64_character_hex_tokens', () => {
+    it('shouldGenerate64CharacterHexTokens', () => {
       const token = generateVerificationToken();
 
       expect(token.length).toBe(64); // 32 bytes * 2 (hex encoding)
       expect(/^[0-9a-f]{64}$/.test(token)).toBe(true);
     });
 
-    it('should_generate_cryptographically_secure_tokens', () => {
+    it('shouldGenerateCryptographicallySecureTokens', () => {
       const tokens = new Set();
       const iterations = 1000;
 
@@ -76,7 +76,7 @@ describe('Email Verification Service - Unit Tests', () => {
   });
 
   describe('createVerificationToken()', () => {
-    it('should_create_token_with_valid_user_id', async () => {
+    it('shouldCreateTokenWithValidUserId', async () => {
       const result = await createVerificationToken(testUser.id, testUser.email);
 
       expect(result).toBeDefined();
@@ -86,7 +86,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(result.token.length).toBe(64);
     });
 
-    it('should_store_token_in_database', async () => {
+    it('shouldStoreTokenInDatabase', async () => {
       const result = await createVerificationToken(testUser.id, testUser.email);
 
       const tokenRecord = await prisma.emailVerificationToken.findUnique({
@@ -99,7 +99,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(tokenRecord.usedAt).toBeNull();
     });
 
-    it('should_set_expiration_to_24_hours', async () => {
+    it('shouldSetExpirationTo24Hours', async () => {
       const beforeCreate = Date.now();
       const result = await createVerificationToken(testUser.id, testUser.email);
       const afterCreate = Date.now();
@@ -112,7 +112,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(expiryTime).toBeLessThanOrEqual(expectedMax);
     });
 
-    it('should_store_ip_address_and_user_agent', async () => {
+    it('shouldStoreIpAddressAndUserAgent', async () => {
       const metadata = {
         ipAddress: '192.168.1.100',
         userAgent: 'Mozilla/5.0 (Test Browser)',
@@ -128,7 +128,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(tokenRecord.userAgent).toBe(metadata.userAgent);
     });
 
-    it('should_enforce_maximum_pending_tokens_limit', async () => {
+    it('shouldEnforceMaximumPendingTokensLimit', async () => {
       // Create 5 pending tokens directly in database (bypassing cooldown)
       for (let i = 0; i < 5; i++) {
         await prisma.emailVerificationToken.create({
@@ -150,7 +150,7 @@ describe('Email Verification Service - Unit Tests', () => {
       );
     });
 
-    it('should_enforce_rate_limiting_cooldown', async () => {
+    it('shouldEnforceRateLimitingCooldown', async () => {
       // Create first token
       await createVerificationToken(testUser.id, testUser.email);
 
@@ -158,7 +158,7 @@ describe('Email Verification Service - Unit Tests', () => {
       await expect(createVerificationToken(testUser.id, testUser.email)).rejects.toThrow('Please wait');
     });
 
-    it('should_allow_token_creation_after_cooldown', async () => {
+    it('shouldAllowTokenCreationAfterCooldown', async () => {
       // Create first token
       const firstToken = await createVerificationToken(testUser.id, testUser.email);
 
@@ -183,7 +183,7 @@ describe('Email Verification Service - Unit Tests', () => {
   });
 
   describe('verifyEmailToken()', () => {
-    it('should_verify_valid_token', async () => {
+    it('shouldVerifyValidToken', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       const result = await verifyEmailToken(tokenData.token);
@@ -195,7 +195,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(result.code).toBe('EMAIL_VERIFIED');
     });
 
-    it('should_mark_user_email_as_verified', async () => {
+    it('shouldMarkUserEmailAsVerified', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       await verifyEmailToken(tokenData.token);
@@ -208,7 +208,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(user.emailVerifiedAt).toBeDefined();
     });
 
-    it('should_mark_token_as_used', async () => {
+    it('shouldMarkTokenAsUsed', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       await verifyEmailToken(tokenData.token);
@@ -221,15 +221,15 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(tokenRecord.usedAt?.constructor?.name).toBe('Date');
     });
 
-    it('should_reject_invalid_token', async () => {
-      const result = await verifyEmailToken('invalid_token_string_here_123456789');
+    it('shouldRejectInvalidToken', async () => {
+      const result = await verifyEmailToken('invalidTokenStringHere123456789');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Invalid or expired verification token');
       expect(result.code).toBe('INVALID_TOKEN');
     });
 
-    it('should_reject_already_used_token', async () => {
+    it('shouldRejectAlreadyUsedToken', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       // Use token first time
@@ -247,7 +247,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(['TOKEN_ALREADY_USED', 'INVALID_TOKEN']).toContain(result.code);
     });
 
-    it('should_reject_expired_token', async () => {
+    it('shouldRejectExpiredToken', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       // Manually expire the token
@@ -263,7 +263,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(result.code).toBe('TOKEN_EXPIRED');
     });
 
-    it('should_use_atomic_transaction_for_verification', async () => {
+    it('shouldUseAtomicTransactionForVerification', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       // Verify that both token update and user update happen atomically
@@ -279,9 +279,9 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(userRecord.emailVerified).toBe(true);
     });
 
-    it('should_implement_timing_safe_response_for_invalid_tokens', async () => {
+    it('shouldImplementTimingSafeResponseForInvalidTokens', async () => {
       const startTime = Date.now();
-      await verifyEmailToken('invalid_token');
+      await verifyEmailToken('invalidToken');
       const endTime = Date.now();
 
       const elapsed = endTime - startTime;
@@ -292,7 +292,7 @@ describe('Email Verification Service - Unit Tests', () => {
   });
 
   describe('checkVerificationStatus()', () => {
-    it('should_return_verification_status_for_verified_user', async () => {
+    it('shouldReturnVerificationStatusForVerifiedUser', async () => {
       // Verify user first
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await verifyEmailToken(tokenData.token);
@@ -304,7 +304,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(status.verifiedAt).toBeDefined();
     });
 
-    it('should_return_verification_status_for_unverified_user', async () => {
+    it('shouldReturnVerificationStatusForUnverifiedUser', async () => {
       const status = await checkVerificationStatus(testUser.id);
 
       expect(status.verified).toBe(false);
@@ -312,7 +312,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(status.verifiedAt).toBeNull();
     });
 
-    it('should_handle_non_existent_user', async () => {
+    it('shouldHandleNonExistentUser', async () => {
       const status = await checkVerificationStatus('non-existent-user-id');
 
       expect(status.verified).toBe(false);
@@ -321,7 +321,7 @@ describe('Email Verification Service - Unit Tests', () => {
   });
 
   describe('resendVerificationEmail()', () => {
-    it('should_create_new_token_for_unverified_user', async () => {
+    it('shouldCreateNewTokenForUnverifiedUser', async () => {
       const result = await resendVerificationEmail(testUser.id);
 
       expect(result.success).toBe(true);
@@ -329,7 +329,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(result.expiresAt).toBeDefined();
     });
 
-    it('should_reject_resend_for_verified_user', async () => {
+    it('shouldRejectResendForVerifiedUser', async () => {
       // Verify user first
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await verifyEmailToken(tokenData.token);
@@ -344,7 +344,7 @@ describe('Email Verification Service - Unit Tests', () => {
       await expect(resendVerificationEmail(testUser.id)).rejects.toThrow('Email is already verified');
     });
 
-    it('should_cleanup_expired_tokens_before_creating_new', async () => {
+    it('shouldCleanupExpiredTokensBeforeCreatingNew', async () => {
       // Create expired token
       const expiredToken = await createVerificationToken(testUser.id, testUser.email);
       await prisma.emailVerificationToken.update({
@@ -362,7 +362,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(expiredTokenRecord).toBeNull();
     });
 
-    it('should_enforce_rate_limiting_on_resend', async () => {
+    it('shouldEnforceRateLimitingOnResend', async () => {
       // Create first token
       await resendVerificationEmail(testUser.id);
 
@@ -372,7 +372,7 @@ describe('Email Verification Service - Unit Tests', () => {
   });
 
   describe('cleanupExpiredTokens()', () => {
-    it('should_delete_expired_tokens', async () => {
+    it('shouldDeleteExpiredTokens', async () => {
       // Create token and expire it
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await prisma.emailVerificationToken.update({
@@ -391,7 +391,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(tokenRecord).toBeNull();
     });
 
-    it('should_delete_old_used_tokens', async () => {
+    it('shouldDeleteOldUsedTokens', async () => {
       // Create and use token
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await verifyEmailToken(tokenData.token);
@@ -407,7 +407,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(result.removedCount).toBeGreaterThan(0);
     });
 
-    it('should_keep_active_valid_tokens', async () => {
+    it('shouldKeepActiveValidTokens', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       await cleanupExpiredTokens();
@@ -421,7 +421,7 @@ describe('Email Verification Service - Unit Tests', () => {
   });
 
   describe('getTokenInfo()', () => {
-    it('should_return_token_information', async () => {
+    it('shouldReturnTokenInformation', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       const info = await getTokenInfo(tokenData.token);
@@ -434,7 +434,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(info.isUsed).toBe(false);
     });
 
-    it('should_indicate_used_token', async () => {
+    it('shouldIndicateUsedToken', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await verifyEmailToken(tokenData.token);
 
@@ -445,7 +445,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(info.isValid).toBe(false);
     });
 
-    it('should_indicate_expired_token', async () => {
+    it('shouldIndicateExpiredToken', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await prisma.emailVerificationToken.update({
         where: { tokenHash: hashVerificationToken(tokenData.token) },
@@ -458,8 +458,8 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(info.isValid).toBe(false);
     });
 
-    it('should_return_null_for_invalid_token', async () => {
-      const info = await getTokenInfo('invalid_token_here');
+    it('shouldReturnNullForInvalidToken', async () => {
+      const info = await getTokenInfo('invalidTokenHere');
 
       expect(info).toBeNull();
     });

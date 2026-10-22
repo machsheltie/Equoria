@@ -57,7 +57,7 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
       traits: {
         positive: ['athletic', 'intelligent', 'calm'],
         negative: ['stubborn'],
-        hidden: ['endurance_boost'],
+        hidden: ['enduranceBoost'],
       },
       stats: {
         speed: 85,
@@ -82,7 +82,7 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
       traits: {
         positive: ['resilient', 'focused', 'athletic'],
         negative: ['nervous'],
-        hidden: ['speed_boost'],
+        hidden: ['speedBoost'],
       },
       stats: {
         speed: 90,
@@ -115,8 +115,8 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
       {
         generation: 3,
         horses: [
-          { id: 20, traits: { positive: ['legendary_speed'], negative: [], hidden: [] } },
-          { id: 21, traits: { positive: ['perfect_balance'], negative: [], hidden: [] } },
+          { id: 20, traits: { positive: ['legendarySpeed'], negative: [], hidden: [] } },
+          { id: 21, traits: { positive: ['perfectBalance'], negative: [], hidden: [] } },
         ],
       },
     ];

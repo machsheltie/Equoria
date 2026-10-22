@@ -345,7 +345,7 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
     });
 
     it('should return null for invalid traits', () => {
-      const invalidDef = getTraitDefinition('nonexistent_trait');
+      const invalidDef = getTraitDefinition('nonexistentTrait');
       expect(invalidDef).toBeNull();
     });
 
@@ -418,8 +418,8 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
     });
 
     it('should return false for unknown traits', () => {
-      expect(checkTraitConflict('unknown_trait', 'resilient')).toBe(false);
-      expect(checkTraitConflict('resilient', 'unknown_trait')).toBe(false);
+      expect(checkTraitConflict('unknownTrait', 'resilient')).toBe(false);
+      expect(checkTraitConflict('resilient', 'unknownTrait')).toBe(false);
       expect(checkTraitConflict('unknown1', 'unknown2')).toBe(false);
     });
 

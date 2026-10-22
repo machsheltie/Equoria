@@ -46,7 +46,7 @@ describe('🏋️ INTEGRATION: Training eligibility — max-age (20) + injury ga
       data: {
         username: `TestFixture-oey96-15-user-${timestamp}`,
         email: `testfixture-oey96-15-${timestamp}@test.com`,
-        password: 'hashed_password',
+        password: 'hashedPassword',
         firstName: 'Age',
         lastName: 'Gate',
         money: 5000,

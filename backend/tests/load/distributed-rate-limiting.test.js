@@ -25,12 +25,12 @@ import { check, sleep, group } from 'k6';
 import { Counter, Trend, Rate, Gauge as _Gauge } from 'k6/metrics';
 
 // Custom metrics
-const rateLimitHitsServer1 = new Counter('rate_limit_hits_server1');
-const rateLimitHitsServer2 = new Counter('rate_limit_hits_server2');
-const totalRateLimitHits = new Counter('total_rate_limit_hits');
-const distributedConsistency = new Rate('distributed_consistency');
-const redisLatency = new Trend('redis_latency');
-const crossServerRequests = new Counter('cross_server_requests');
+const rateLimitHitsServer1 = new Counter('rateLimitHitsServer1');
+const rateLimitHitsServer2 = new Counter('rateLimitHitsServer2');
+const totalRateLimitHits = new Counter('totalRateLimitHits');
+const distributedConsistency = new Rate('distributedConsistency');
+const redisLatency = new Trend('redisLatency');
+const crossServerRequests = new Counter('crossServerRequests');
 
 // Test configuration
 export const options = {
@@ -44,9 +44,9 @@ export const options = {
   thresholds: {
     http_req_duration: ['p(95)<800'], // 95% under 800ms (Redis adds latency)
     http_req_failed: ['rate<0.05'], // Error rate under 5%
-    distributed_consistency: ['rate>0.9'], // 90%+ consistency across servers
-    redis_latency: ['p(95)<100'], // Redis operations under 100ms
-    total_rate_limit_hits: ['count>50'], // At least 50 rate limit hits total
+    distributedConsistency: ['rate>0.9'], // 90%+ consistency across servers
+    redisLatency: ['p(95)<100'], // Redis operations under 100ms
+    totalRateLimitHits: ['count>50'], // At least 50 rate limit hits total
   },
 };
 
@@ -317,13 +317,13 @@ export default function (data) {
  * Custom Summary Output
  */
 export function handleSummary(data) {
-  const server1Hits = data.metrics.rate_limit_hits_server1?.values.count || 0;
-  const server2Hits = data.metrics.rate_limit_hits_server2?.values.count || 0;
-  const totalHits = data.metrics.total_rate_limit_hits?.values.count || 0;
-  const consistencyRate = ((data.metrics.distributed_consistency?.values.rate || 0) * 100).toFixed(2);
-  const avgRedisLatency = (data.metrics.redis_latency?.values.avg || 0).toFixed(2);
-  const p95RedisLatency = (data.metrics.redis_latency?.values['p(95)'] || 0).toFixed(2);
-  const crossServerReqs = data.metrics.cross_server_requests?.values.count || 0;
+  const server1Hits = data.metrics.rateLimitHitsServer1?.values.count || 0;
+  const server2Hits = data.metrics.rateLimitHitsServer2?.values.count || 0;
+  const totalHits = data.metrics.totalRateLimitHits?.values.count || 0;
+  const consistencyRate = ((data.metrics.distributedConsistency?.values.rate || 0) * 100).toFixed(2);
+  const avgRedisLatency = (data.metrics.redisLatency?.values.avg || 0).toFixed(2);
+  const p95RedisLatency = (data.metrics.redisLatency?.values['p(95)'] || 0).toFixed(2);
+  const crossServerReqs = data.metrics.crossServerRequests?.values.count || 0;
 
   return {
     stdout: `

@@ -47,7 +47,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Rate Limiter Configuration', () => {
-    it('should_create_rate_limiter_with_default_config', () => {
+    it('shouldCreateRateLimiterWithDefaultConfig', () => {
       // const limiter = createAuthRateLimiter();
       //
       // expect(limiter).toBeDefined();
@@ -56,7 +56,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_create_rate_limiter_with_custom_config', () => {
+    it('shouldCreateRateLimiterWithCustomConfig', () => {
       // const limiter = createAuthRateLimiter({
       //   windowMs: 60000, // 1 minute
       //   max: 10,
@@ -67,7 +67,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_validate_configuration_parameters', () => {
+    it('shouldValidateConfigurationParameters', () => {
       // expect(() => {
       //   createAuthRateLimiter({ windowMs: -1000 });
       // }).toThrow('windowMs must be positive');
@@ -80,7 +80,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Request Tracking', () => {
-    it('should_track_requests_by_ip_address', async () => {
+    it('shouldTrackRequestsByIpAddress', async () => {
       // const req1 = createMockRequest({ ip: '192.168.1.1' });
       // const req2 = createMockRequest({ ip: '192.168.1.2' });
       //
@@ -94,7 +94,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_allow_requests_within_limit', async () => {
+    it('shouldAllowRequestsWithinLimit', async () => {
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
       // }
@@ -104,7 +104,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_block_requests_exceeding_limit', async () => {
+    it('shouldBlockRequestsExceedingLimit', async () => {
       // // 3 requests within limit
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -120,7 +120,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Rate Limit Headers', () => {
-    it('should_set_ratelimit_headers_on_every_request', async () => {
+    it('shouldSetRatelimitHeadersOnEveryRequest', async () => {
       // await rateLimiter(mockReq, mockRes, mockNext);
       //
       // expect(mockRes.headers['ratelimit-limit']).toBe('3');
@@ -129,7 +129,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_update_remaining_count_with_each_request', async () => {
+    it('shouldUpdateRemainingCountWithEachRequest', async () => {
       // await rateLimiter(mockReq, mockRes, mockNext);
       // const remaining1 = mockRes.headers['ratelimit-remaining'];
       //
@@ -141,7 +141,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_calculate_accurate_reset_timestamp', async () => {
+    it('shouldCalculateAccurateResetTimestamp', async () => {
       // const beforeTimestamp = Math.floor(Date.now() / 1000);
       // await rateLimiter(mockReq, mockRes, mockNext);
       // const resetTimestamp = parseInt(mockRes.headers['ratelimit-reset']);
@@ -153,7 +153,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Time Window Reset', () => {
-    it('should_reset_count_after_time_window', async () => {
+    it('shouldResetCountAfterTimeWindow', async () => {
       // // Exhaust limit
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -175,7 +175,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_maintain_separate_windows_for_different_ips', async () => {
+    it('shouldMaintainSeparateWindowsForDifferentIps', async () => {
       // const req1 = createMockRequest({ ip: '192.168.1.1' });
       // const req2 = createMockRequest({ ip: '192.168.1.2' });
       //
@@ -198,7 +198,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Success Reset Mechanism', () => {
-    it('should_reset_count_on_successful_authentication', async () => {
+    it('shouldResetCountOnSuccessfulAuthentication', async () => {
       // // 2 failed attempts
       // for (let i = 0; i < 2; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -216,7 +216,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_provide_method_to_reset_specific_ip', () => {
+    it('shouldProvideMethodToResetSpecificIp', () => {
       // expect(rateLimiter.resetForIp).toBeDefined();
       // expect(typeof rateLimiter.resetForIp).toBe('function');
       // Test implementation below
@@ -224,7 +224,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Error Handling', () => {
-    it('should_handle_missing_ip_address', async () => {
+    it('shouldHandleMissingIpAddress', async () => {
       // const req = createMockRequest({ ip: undefined });
       //
       // await rateLimiter(req, mockRes, mockNext);
@@ -234,7 +234,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_handle_concurrent_requests_atomically', async () => {
+    it('shouldHandleConcurrentRequestsAtomically', async () => {
       // const promises = Array(10)
       //   .fill(null)
       //   .map(() => rateLimiter(mockReq, createMockResponse(), mockNext));
@@ -246,7 +246,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_not_crash_on_invalid_configuration', () => {
+    it('shouldNotCrashOnInvalidConfiguration', () => {
       // expect(() => {
       //   createAuthRateLimiter({ windowMs: 'invalid' });
       // }).toThrow();
@@ -259,7 +259,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Memory Management', () => {
-    it('should_clean_up_expired_entries', async () => {
+    it('shouldCleanUpExpiredEntries', async () => {
       // const req1 = createMockRequest({ ip: '192.168.1.1' });
       // const req2 = createMockRequest({ ip: '192.168.1.2' });
       //
@@ -277,7 +277,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_have_configurable_cleanup_interval', () => {
+    it('shouldHaveConfigurableCleanupInterval', () => {
       // const limiter = createAuthRateLimiter({
       //   windowMs: 1000,
       //   max: 5,
@@ -288,7 +288,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_limit_maximum_storage_size', async () => {
+    it('shouldLimitMaximumStorageSize', async () => {
       // const limiter = createAuthRateLimiter({
       //   windowMs: 60000,
       //   max: 5,
@@ -308,20 +308,20 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Integration with Express', () => {
-    it('should_work_as_express_middleware', () => {
+    it('shouldWorkAsExpressMiddleware', () => {
       // expect(rateLimiter).toBeInstanceOf(Function);
       // expect(rateLimiter.length).toBe(3); // (req, res, next)
       // Test implementation below
     });
 
-    it('should_call_next_when_within_limit', async () => {
+    it('shouldCallNextWhenWithinLimit', async () => {
       // await rateLimiter(mockReq, mockRes, mockNext);
       // expect(mockNext).toHaveBeenCalledTimes(1);
       // expect(mockNext).toHaveBeenCalledWith(); // No error argument
       // Test implementation below
     });
 
-    it('should_not_call_next_when_rate_limited', async () => {
+    it('shouldNotCallNextWhenRateLimited', async () => {
       // // Exhaust limit
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -337,7 +337,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
   });
 
   describe('Response Format', () => {
-    it('should_send_consistent_429_response_format', async () => {
+    it('shouldSendConsistent429ResponseFormat', async () => {
       // // Exhaust limit
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -355,7 +355,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // Test implementation below
     });
 
-    it('should_include_retry_after_in_seconds', async () => {
+    it('shouldIncludeRetryAfterInSeconds', async () => {
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
       // }

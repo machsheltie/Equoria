@@ -103,7 +103,7 @@ describe('Equoria-rg1r: /api/v1/crafting/* security pipeline', () => {
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ recipeId: '__definitely_not_a_real_recipe__' });
+        .send({ recipeId: '__definitelyNotARealRecipe__' });
       // Chain passed auth+CSRF; handler rejects the bogus recipe (not 401/403).
       expect(res.status).not.toBe(401);
       expect(res.status).not.toBe(403);

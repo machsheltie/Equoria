@@ -488,10 +488,10 @@ router.post(
     body('personality')
       .isIn(GROOM_PERSONALITY_VALUES)
       .withMessage(`personality must be one of: ${GROOM_PERSONALITY_VALUES.join(', ')}`),
-    body('session_rate')
+    body('sessionRate')
       .optional()
       .isFloat({ min: 5, max: 100 })
-      .withMessage('session_rate must be between 5 and 100'),
+      .withMessage('sessionRate must be between 5 and 100'),
     body('bio').optional().isLength({ max: 500 }).withMessage('bio must be 500 characters or less'),
     body('availability').optional().isObject().withMessage('availability must be an object'),
     handleValidationErrors,

@@ -41,7 +41,7 @@ describe('getTraitDefinition', () => {
   });
 
   it('returns null for an unknown trait', () => {
-    expect(getTraitDefinition('totally_unknown_trait')).toBeNull();
+    expect(getTraitDefinition('totallyUnknownTrait')).toBeNull();
   });
 
   it('includes conflicts array', () => {
@@ -85,7 +85,7 @@ describe('getTraitsByType', () => {
   });
 
   it('returns empty array for unknown type (no match)', () => {
-    const result = getTraitsByType('legendary_unknown_type_xyz');
+    const result = getTraitsByType('legendaryUnknownTypeXyz');
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(0);
   });
@@ -126,7 +126,7 @@ describe('getTraitsByCategory', () => {
   });
 
   it('returns empty array for unknown category', () => {
-    const result = getTraitsByCategory('unknown_category');
+    const result = getTraitsByCategory('unknownCategory');
     expect(result).toHaveLength(0);
   });
 
@@ -152,7 +152,7 @@ describe('getTraitMetadata', () => {
   });
 
   it('returns null for unknown trait', () => {
-    expect(getTraitMetadata('no_such_trait')).toBeNull();
+    expect(getTraitMetadata('noSuchTrait')).toBeNull();
   });
 
   it('conflicts array is a copy (not reference to internal)', () => {
@@ -185,7 +185,7 @@ describe('checkTraitConflict', () => {
   });
 
   it('returns false for unknown trait pairs', () => {
-    expect(checkTraitConflict('unknown_a', 'unknown_b')).toBe(false);
+    expect(checkTraitConflict('unknownA', 'unknownB')).toBe(false);
   });
 });
 
@@ -319,7 +319,7 @@ describe('validateInput — type-check branches', () => {
 describe('calculateEpigeneticTraits — rarity and unknown-trait branches', () => {
   it('handles unknown/unlisted parent trait (default 0.3 probability fallback)', () => {
     const result = calculateEpigeneticTraits({
-      damTraits: ['mystery_trait_xyz'],
+      damTraits: ['mysteryTraitXyz'],
       sireTraits: [],
       damBondScore: 50,
       damStressLevel: 50,

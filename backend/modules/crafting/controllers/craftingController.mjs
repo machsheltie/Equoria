@@ -107,7 +107,7 @@ function getMaterialDeficit(have, need) {
  * GET /crafting/materials
  * Returns the player's current material stockpile and workshop tier.
  */
-export async function getMaterials_endpoint(req, res) {
+export async function getMaterialsEndpoint(req, res) {
   try {
     const userId = req.user.id;
     const user = await prisma.user.findUnique({

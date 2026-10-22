@@ -362,13 +362,13 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       ];
 
       for (const endpoint of healthEndpoints) {
-        const request_builder = request(app).get(endpoint.path).set('Origin', 'http://localhost:3000');
+        const requestBuilder = request(app).get(endpoint.path).set('Origin', 'http://localhost:3000');
 
         if (endpoint.requiresAuth) {
-          request_builder.set('Authorization', `Bearer ${authToken}`);
+          requestBuilder.set('Authorization', `Bearer ${authToken}`);
         }
 
-        const response = await request_builder;
+        const response = await requestBuilder;
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);

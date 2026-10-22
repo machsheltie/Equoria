@@ -159,7 +159,7 @@ describe('groomController integration', () => {
         .set('X-CSRF-Token', csrf.csrfToken)
         .send({
           name: 'Alice',
-          speciality: 'bad_speciality',
+          speciality: 'badSpeciality',
           skill_level: VALID_SKILL,
           personality: VALID_PERSONALITY,
         });
@@ -175,7 +175,7 @@ describe('groomController integration', () => {
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ name: 'Alice', speciality: VALID_SPECIALITY, skill_level: 'god_tier', personality: VALID_PERSONALITY });
+        .send({ name: 'Alice', speciality: VALID_SPECIALITY, skill_level: 'godTier', personality: VALID_PERSONALITY });
 
       expect(res.status).toBe(400);
     });

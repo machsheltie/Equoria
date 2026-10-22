@@ -41,7 +41,7 @@ describe('Weekly Flag Evaluation Service', () => {
       data: {
         username: `flagtest_${Date.now()}`,
         email: `flagtest_${Date.now()}@test.com`,
-        password: 'test_hash',
+        password: 'testHash',
         firstName: 'Flag',
         lastName: 'Tester',
         money: 1000,

@@ -106,7 +106,7 @@ describe('Email Verification System - Integration Tests', () => {
   };
 
   describe('POST /auth/register - Email Verification Integration', () => {
-    it('should_create_verification_token_on_registration', async () => {
+    it('shouldCreateVerificationTokenOnRegistration', async () => {
       const timestamp = Date.now();
       const newUser = {
         username: `newuser_${timestamp}`,
@@ -135,7 +135,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(tokens[0].usedAt).toBeNull();
     });
 
-    it('should_include_email_verified_status_in_response', async () => {
+    it('shouldIncludeEmailVerifiedStatusInResponse', async () => {
       const timestamp = Date.now();
       const newUser = {
         username: `newuser2_${timestamp}`,
@@ -157,7 +157,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.message).toContain('verify your account');
     });
 
-    it('should_log_verification_email_in_development_mode', async () => {
+    it('shouldLogVerificationEmailInDevelopmentMode', async () => {
       // This test verifies development mode behavior
       const timestamp = Date.now();
       const newUser = {
@@ -188,7 +188,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(token.tokenHash).toMatch(/^[a-f0-9]{64}$/);
     });
 
-    it('should_store_hash_not_raw_verification_token_at_rest', async () => {
+    it('shouldStoreHashNotRawVerificationTokenAtRest', async () => {
       // Equoria-7lfth sentinel-positive: ADR-006 claims verification tokens
       // are hashed at rest, but the only existing stored-value check is a
       // format regex (/^[a-f0-9]{64}$/) — which a stubbed identity hash on a
@@ -212,7 +212,7 @@ describe('Email Verification System - Integration Tests', () => {
   });
 
   describe('GET /auth/verify-email', () => {
-    it('should_verify_email_with_valid_token', async () => {
+    it('shouldVerifyEmailWithValidToken', async () => {
       // Create verification token (raw stays in local scope — Equoria-uy73)
       const rawToken = await seedTestVerificationToken();
 
@@ -227,7 +227,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.data.user.emailVerified).toBe(true);
     });
 
-    it('should_update_user_email_verified_status', async () => {
+    it('shouldUpdateUserEmailVerifiedStatus', async () => {
       const rawToken = await seedTestVerificationToken();
 
       await request(app).get(`/api/v1/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
@@ -241,7 +241,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(user.emailVerifiedAt?.constructor?.name).toBe('Date');
     });
 
-    it('should_mark_token_as_used', async () => {
+    it('shouldMarkTokenAsUsed', async () => {
       const rawToken = await seedTestVerificationToken();
 
       await request(app).get(`/api/v1/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
@@ -254,14 +254,14 @@ describe('Email Verification System - Integration Tests', () => {
       expect(tokenRecord.usedAt?.constructor?.name).toBe('Date');
     });
 
-    it('should_reject_missing_token', async () => {
+    it('shouldRejectMissingToken', async () => {
       const response = await request(app).get('/api/v1/auth/verify-email').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('Verification token is required');
     });
 
-    it('should_reject_invalid_token', async () => {
+    it('shouldRejectInvalidToken', async () => {
       const response = await request(app)
         .get('/api/v1/auth/verify-email?token=invalid_token_here')
         .set('Origin', 'http://localhost:3000');
@@ -270,7 +270,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.message).toBeDefined();
     });
 
-    it('should_reject_expired_token', async () => {
+    it('shouldRejectExpiredToken', async () => {
       const rawToken = await seedTestVerificationToken({
         expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
       });
@@ -283,7 +283,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.message).toContain('expired');
     });
 
-    it('should_reject_already_used_token', async () => {
+    it('shouldRejectAlreadyUsedToken', async () => {
       const rawToken = await seedTestVerificationToken();
 
       // Use token first time
@@ -298,7 +298,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.message).toContain('already been used');
     });
 
-    it('should_be_publicly_accessible_without_authentication', async () => {
+    it('shouldBePubliclyAccessibleWithoutAuthentication', async () => {
       const rawToken = await seedTestVerificationToken();
 
       // No authentication header provided
@@ -312,7 +312,7 @@ describe('Email Verification System - Integration Tests', () => {
   });
 
   describe('POST /auth/resend-verification', () => {
-    it('should_create_new_verification_token', async () => {
+    it('shouldCreateNewVerificationToken', async () => {
       const response = await request(app)
         .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
@@ -333,7 +333,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(tokens.length).toBeGreaterThan(0);
     });
 
-    it('should_require_authentication', async () => {
+    it('shouldRequireAuthentication', async () => {
       const response = await request(app)
         .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
@@ -342,7 +342,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should_reject_if_email_already_verified', async () => {
+    it('shouldRejectIfEmailAlreadyVerified', async () => {
       // Verify email first
       await prisma.user.update({
         where: { id: testUser.id },
@@ -363,7 +363,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.message).toContain('already verified');
     });
 
-    it('should_enforce_rate_limiting', async () => {
+    it('shouldEnforceRateLimiting', async () => {
       // First resend
       await request(app)
         .post('/api/v1/auth/resend-verification')
@@ -384,7 +384,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.message).toContain('wait');
     });
 
-    it('should_cleanup_expired_tokens', async () => {
+    it('shouldCleanupExpiredTokens', async () => {
       // Create expired token (hashed at rest — Equoria-uy73)
       await seedTestVerificationToken({
         expiresAt: new Date(Date.now() - 1000),
@@ -410,7 +410,7 @@ describe('Email Verification System - Integration Tests', () => {
   });
 
   describe('GET /auth/verification-status', () => {
-    it('should_return_unverified_status_for_new_user', async () => {
+    it('shouldReturnUnverifiedStatusForNewUser', async () => {
       const response = await request(app)
         .get('/api/v1/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
@@ -423,7 +423,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.data.verifiedAt).toBeNull();
     });
 
-    it('should_return_verified_status_after_verification', async () => {
+    it('shouldReturnVerifiedStatusAfterVerification', async () => {
       // Verify email
       await prisma.user.update({
         where: { id: testUser.id },
@@ -443,14 +443,14 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.data.verifiedAt).toBeDefined();
     });
 
-    it('should_require_authentication', async () => {
+    it('shouldRequireAuthentication', async () => {
       const response = await request(app)
         .get('/api/v1/auth/verification-status')
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
     });
 
-    it('should_return_user_email_address', async () => {
+    it('shouldReturnUserEmailAddress', async () => {
       const response = await request(app)
         .get('/api/v1/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
@@ -508,7 +508,7 @@ describe('Email Verification System - Integration Tests', () => {
       delete process.env.EMAIL_CAPTURE_FILE;
     });
 
-    it('should_complete_full_registration_to_verification_flow', async () => {
+    it('shouldCompleteFullRegistrationToVerificationFlow', async () => {
       const timestamp = Date.now();
       const newUser = {
         username: `workflow_${timestamp}`,
@@ -551,7 +551,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(user.emailVerifiedAt).toBeDefined();
     });
 
-    it('should_handle_resend_and_verify_workflow', async () => {
+    it('shouldHandleResendAndVerifyWorkflow', async () => {
       // Step 1: Check status (unverified)
       const statusResponse1 = await request(app)
         .get('/api/v1/auth/verification-status')
@@ -591,7 +591,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(statusResponse2.body.data.verified).toBe(true);
     });
 
-    it('should_prevent_multiple_verification_attempts', async () => {
+    it('shouldPreventMultipleVerificationAttempts', async () => {
       const rawToken = await seedTestVerificationToken();
 
       // First verification
@@ -616,7 +616,7 @@ describe('Email Verification System - Integration Tests', () => {
   });
 
   describe('Security and Edge Cases', () => {
-    it('should_handle_concurrent_verification_requests', async () => {
+    it('shouldHandleConcurrentVerificationRequests', async () => {
       const rawToken = await seedTestVerificationToken();
 
       // Send two concurrent verification requests
@@ -634,7 +634,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(failureCount).toBe(1);
     });
 
-    it('should_sanitize_error_messages_to_prevent_enumeration', async () => {
+    it('shouldSanitizeErrorMessagesToPreventEnumeration', async () => {
       const response = await request(app)
         .get('/api/v1/auth/verify-email?token=definitely_invalid_token_123')
         .set('Origin', 'http://localhost:3000');
@@ -645,7 +645,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.body.message).not.toContain('email');
     });
 
-    it('should_handle_malformed_token_input', async () => {
+    it('shouldHandleMalformedTokenInput', async () => {
       const malformedTokens = [
         '',
         ' ',

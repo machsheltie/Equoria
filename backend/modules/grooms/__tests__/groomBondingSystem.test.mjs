@@ -112,7 +112,7 @@ describe('categorizeTask', () => {
   });
 
   it('returns null for unknown task', () => {
-    const result = categorizeTask('totally_unknown_task_xyz');
+    const result = categorizeTask('totallyUnknownTaskXyz');
     expect(result).toBeNull();
   });
 });
@@ -310,7 +310,7 @@ describe('calculateBondingEffects — branch coverage', () => {
   });
 
   it('returns eligible:false for unknown task', () => {
-    const result = calculateBondingEffects(50, 'magic_brushing', null, null);
+    const result = calculateBondingEffects(50, 'magicBrushing', null, null);
     expect(result.eligible).toBe(false);
   });
 
@@ -482,7 +482,7 @@ describe('checkTaskMutualExclusivity', () => {
   });
 
   it('allows when newTask has unknown category (null → no conflict possible)', () => {
-    const result = checkTaskMutualExclusivity(ENRICHMENT_TASK, 'unknown_task_xyz');
+    const result = checkTaskMutualExclusivity(ENRICHMENT_TASK, 'unknownTaskXyz');
     expect(result.allowed).toBe(true);
     expect(result.conflict).toBe(false);
   });

@@ -315,7 +315,7 @@ describe('applyBondingChange — error path', () => {
     // catch is if something after calculateBondingChange throws.
     // Verify unknown activity is absorbed by calculateBondingChange (modifiedChange=0)
     const horse = noTraitHorse({ bondScore: 25 });
-    const result = applyBondingChange(horse, 'unknown_activity');
+    const result = applyBondingChange(horse, 'unknownActivity');
     // calculateBondingChange returns modifiedChange:0 for unknown activity
     // applyBondingChange still returns success:true with no change
     expect(result.newBondScore).toBe(horse.bondScore);
@@ -455,10 +455,10 @@ describe('applyBondingChange — error catch branch (lines 248-249)', () => {
 // ---------------------------------------------------------------------------
 describe('calculateBondingChange — default switch case (line 210)', () => {
   it('unknown activity hits default: break and returns base change unmodified', () => {
-    // 'hand_wash' is not in the switch cases — hits default: break, covering line 210
-    const result = calculateBondingChange(noTraitHorse(), 'hand_wash', {});
+    // 'handWash' is not in the switch cases — hits default: break, covering line 210
+    const result = calculateBondingChange(noTraitHorse(), 'handWash', {});
     expect(result).toHaveProperty('modifiedChange');
-    expect(result).toHaveProperty('activity', 'hand_wash');
+    expect(result).toHaveProperty('activity', 'handWash');
     // Base change is used as-is; should be a non-negative number
     expect(result.modifiedChange).toBeGreaterThanOrEqual(0);
   });

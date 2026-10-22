@@ -68,7 +68,7 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('generateTokenFamily()', () => {
-    it('should_create_unique_family_id', () => {
+    it('shouldCreateUniqueFamilyId', () => {
       const family1 = generateTokenFamily();
       const family2 = generateTokenFamily();
 
@@ -79,7 +79,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(family1.length).toBeGreaterThan(10);
     });
 
-    it('should_include_timestamp_in_family_id', () => {
+    it('shouldIncludeTimestampInFamilyId', () => {
       const _before = Date.now();
       const family = generateTokenFamily();
       const _after = Date.now();
@@ -90,7 +90,7 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('createTokenPair()', () => {
-    it('should_create_access_and_refresh_token_pair', async () => {
+    it('shouldCreateAccessAndRefreshTokenPair', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -104,7 +104,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(() => jwt.decode(tokenPair.refreshToken)).not.toThrow();
     });
 
-    it('should_create_refresh_token_with_family_id', async () => {
+    it('shouldCreateRefreshTokenWithFamilyId', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -114,7 +114,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(decoded.type).toBe('refresh');
     });
 
-    it('should_store_refresh_token_in_database', async () => {
+    it('shouldStoreRefreshTokenInDatabase', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -132,7 +132,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(dbToken.isInvalidated).toBe(false);
     });
 
-    it('should_store_hash_not_raw_token_in_database', async () => {
+    it('shouldStoreHashNotRawTokenInDatabase', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -143,13 +143,13 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(dbToken).toBeDefined();
       // Equoria-ighs sentinel: the DB value MUST NOT be the raw JWT. If
       // hashRefreshToken() were ever regressed to an identity function, the
-      // sibling test (should_store_refresh_token_in_database) would silently
+      // sibling test (shouldStoreRefreshTokenInDatabase) would silently
       // pass because hash(raw) === raw. This explicit negative assertion
       // catches that regression before plaintext token storage re-enters the DB.
       expect(dbToken.tokenHash).not.toBe(tokenPair.refreshToken);
     });
 
-    it('should_set_correct_expiration_times', async () => {
+    it('shouldSetCorrectExpirationTimes', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -167,7 +167,7 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('validateRefreshToken()', () => {
-    it('should_validate_legitimate_refresh_token', async () => {
+    it('shouldValidateLegitimateRefreshToken', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -180,7 +180,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(validation.error).toBeNull();
     });
 
-    it('should_reject_expired_refresh_token', async () => {
+    it('shouldRejectExpiredRefreshToken', async () => {
       // Create expired token
       const expiredToken = jwt.sign(
         {
@@ -201,7 +201,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(validation.error).toContain('expired');
     });
 
-    it('should_reject_token_with_invalid_signature', async () => {
+    it('shouldRejectTokenWithInvalidSignature', async () => {
       const invalidToken = jwt.sign({ userId: testUser.id, type: 'refresh' }, 'wrong-secret');
 
       const validation = await validateRefreshToken(invalidToken);
@@ -210,7 +210,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(validation.error).toContain('signature');
     });
 
-    it('should_reject_inactive_token_from_database', async () => {
+    it('shouldRejectInactiveTokenFromDatabase', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -226,7 +226,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(validation.error).toContain('inactive');
     });
 
-    it('should_reject_malformed_token', async () => {
+    it('shouldRejectMalformedToken', async () => {
       const malformedTokens = ['invalid.jwt.token', '', null, undefined, 'not-a-jwt-at-all'];
 
       for (const token of malformedTokens) {
@@ -238,7 +238,7 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('detectTokenReuse()', () => {
-    it('should_detect_reuse_of_invalidated_token', async () => {
+    it('shouldDetectReuseOfInvalidatedToken', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -255,7 +255,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(reuseDetection.shouldInvalidateFamily).toBe(true);
     });
 
-    it('should_not_flag_first_use_as_reuse', async () => {
+    it('shouldNotFlagFirstUseAsReuse', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -266,7 +266,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(reuseDetection.shouldInvalidateFamily).toBe(false);
     });
 
-    it('should_identify_family_for_invalidation', async () => {
+    it('shouldIdentifyFamilyForInvalidation', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -289,7 +289,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(reuseDetection.affectedTokenHashes).toContain(hashRefreshToken(secondTokenPair.refreshToken));
     });
 
-    it('should_not_log_raw_token_during_reuse_detection', async () => {
+    it('shouldNotLogRawTokenDuringReuseDetection', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -325,7 +325,7 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('rotateRefreshToken()', () => {
-    it('should_create_new_token_and_invalidate_old', async () => {
+    it('shouldCreateNewTokenAndInvalidateOld', async () => {
       const familyId = generateTokenFamily();
       const oldTokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -353,7 +353,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(newTokenRecord.familyId).toBe(familyId);
     });
 
-    it('should_fail_rotation_for_invalid_token', async () => {
+    it('shouldFailRotationForInvalidToken', async () => {
       const rotationResult = await rotateRefreshToken('invalid-token');
 
       expect(rotationResult.success).toBe(false);
@@ -361,7 +361,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(rotationResult.newTokenPair).toBeNull();
     });
 
-    it('should_fail_rotation_if_reuse_detected', async () => {
+    it('shouldFailRotationIfReuseDetected', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -378,7 +378,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(rotationResult.familyInvalidated).toBe(true);
     });
 
-    it('should_handle_concurrent_rotation_attempts', async () => {
+    it('shouldHandleConcurrentRotationAttempts', async () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
@@ -394,7 +394,7 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('invalidateTokenFamily()', () => {
-    it('should_invalidate_all_tokens_in_family', async () => {
+    it('shouldInvalidateAllTokensInFamily', async () => {
       const familyId = generateTokenFamily();
 
       // Create multiple tokens in same family
@@ -418,14 +418,14 @@ describe('Token Rotation Service - Unit Tests', () => {
       });
     });
 
-    it('should_handle_family_that_does_not_exist', async () => {
+    it('shouldHandleFamilyThatDoesNotExist', async () => {
       const invalidationResult = await invalidateTokenFamily('nonexistent-family');
 
       expect(invalidationResult.success).toBe(true);
       expect(invalidationResult.invalidatedCount).toBe(0);
     });
 
-    it('should_log_invalidation_for_security_audit', async () => {
+    it('shouldLogInvalidationForSecurityAudit', async () => {
       const familyId = generateTokenFamily();
       await createTokenPair(testUser.id, familyId);
 
@@ -436,7 +436,7 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('cleanupExpiredTokens()', () => {
-    it('should_remove_expired_tokens_from_database', async () => {
+    it('shouldRemoveExpiredTokensFromDatabase', async () => {
       // Create expired token
       const expiredToken = jwt.sign(
         { userId: testUser.id, type: 'refresh', familyId: 'test' },
@@ -476,7 +476,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(validTokenRecord).toBeDefined();
     });
 
-    it('should_remove_old_invalidated_tokens', async () => {
+    it('shouldRemoveOldInvalidatedTokens', async () => {
       // Create old invalidated tokens
       const oldDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
 
@@ -497,7 +497,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(cleanupResult.removedCount).toBe(1);
     });
 
-    it('should_return_cleanup_statistics', async () => {
+    it('shouldReturnCleanupStatistics', async () => {
       // Setup various token states for comprehensive cleanup test
       const expiredToken = new Date(Date.now() - 1000);
       const oldToken = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -537,7 +537,7 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('Error Handling and Edge Cases', () => {
-    it('should_handle_jwt_verification_errors_gracefully', async () => {
+    it('shouldHandleJwtVerificationErrorsGracefully', async () => {
       // Test various JWT errors
       const invalidTokens = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature', 'malformed.token', ''];
 
@@ -548,7 +548,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       }
     });
 
-    it('should_validate_token_family_id_format', () => {
+    it('shouldValidateTokenFamilyIdFormat', () => {
       const family = generateTokenFamily();
 
       // Should be alphanumeric with dashes/underscores

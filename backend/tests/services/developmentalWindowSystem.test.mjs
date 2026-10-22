@@ -45,7 +45,7 @@ describe('Developmental Window System', () => {
       data: {
         username: `dev_window_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `dev_window_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-        password: 'test_hash',
+        password: 'testHash',
         firstName: 'Test',
         lastName: 'User',
         money: 1000,
@@ -517,7 +517,7 @@ describe('Developmental Window System', () => {
         data: {
           username: `TestFixture-DWS-rr7-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           email: `TestFixture-DWS-rr7-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-          password: 'test_hash',
+          password: 'testHash',
           firstName: 'DWS',
           lastName: 'Branch',
           money: 0,
@@ -566,7 +566,7 @@ describe('Developmental Window System', () => {
 
     // line 221: calculateWindowSensitivity throws for unknown window
     test('calculateWindowSensitivity: throws for unknown window name (line 221)', async () => {
-      await expect(calculateWindowSensitivity(sixtyDayHorse.id, 'invalid_window')).rejects.toThrow(
+      await expect(calculateWindowSensitivity(sixtyDayHorse.id, 'invalidWindow')).rejects.toThrow(
         'Unknown developmental window',
       );
     });
@@ -580,7 +580,7 @@ describe('Developmental Window System', () => {
 
     // line 313: evaluateTraitDevelopmentOpportunity throws for unknown window
     test('evaluateTraitDevelopmentOpportunity: throws for unknown window name (line 313)', async () => {
-      await expect(evaluateTraitDevelopmentOpportunity(sixtyDayHorse.id, 'brave', 'invalid_window')).rejects.toThrow(
+      await expect(evaluateTraitDevelopmentOpportunity(sixtyDayHorse.id, 'brave', 'invalidWindow')).rejects.toThrow(
         'Unknown developmental window',
       );
     });
@@ -608,7 +608,7 @@ describe('Developmental Window System', () => {
 
     // line 485: assessWindowClosure throws for unknown window
     test('assessWindowClosure: throws for unknown window name (line 485)', async () => {
-      await expect(assessWindowClosure(sixtyDayHorse.id, 'invalid_window')).rejects.toThrow(
+      await expect(assessWindowClosure(sixtyDayHorse.id, 'invalidWindow')).rejects.toThrow(
         'Unknown developmental window',
       );
     });
@@ -656,7 +656,7 @@ describe('Developmental Window System', () => {
         data: {
           username: `TestFixture-DWS-BII-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           email: `TestFixture-DWS-BII-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-          password: 'test_hash',
+          password: 'testHash',
           firstName: 'DWSBII',
           lastName: 'Branch',
           money: 0,
@@ -771,7 +771,7 @@ describe('Developmental Window System', () => {
         data: {
           username: `TestFixture-DWS-BIII-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           email: `TestFixture-DWS-BIII-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-          password: 'test_hash',
+          password: 'testHash',
           firstName: 'DWSBIII',
           lastName: 'Branch',
           money: 0,

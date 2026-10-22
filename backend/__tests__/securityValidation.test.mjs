@@ -597,7 +597,7 @@ describe('validateRateLimit', () => {
       global.rateLimitStore = new Map();
     }
     // Inject a 2-minute-old timestamp — outside 60s window
-    global.rateLimitStore.set('expUser_expOp', [Date.now() - 120_000]);
+    global.rateLimitStore.set('expUserExpOp', [Date.now() - 120_000]);
     const result = validateRateLimit('expUser', 'expOp', 2, 60_000);
     // Old timestamp filtered out → only 1 new request now → 2-1=1 remaining
     expect(result.allowed).toBe(true);

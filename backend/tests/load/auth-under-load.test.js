@@ -25,17 +25,17 @@ import { check, sleep, group } from 'k6';
 import { Counter, Trend, Rate, Gauge } from 'k6/metrics';
 
 // Custom metrics
-const loginAttempts = new Counter('login_attempts');
-const successfulLogins = new Counter('successful_logins');
-const failedLogins = new Counter('failed_logins');
-const registrationAttempts = new Counter('registration_attempts');
-const successfulRegistrations = new Counter('successful_registrations');
-const tokenGenerationTime = new Trend('token_generation_time');
-const passwordHashingTime = new Trend('password_hashing_time');
-const loginDuration = new Trend('login_duration');
-const registrationDuration = new Trend('registration_duration');
-const concurrentUsers = new Gauge('concurrent_users');
-const authErrors = new Rate('auth_errors');
+const loginAttempts = new Counter('loginAttempts');
+const successfulLogins = new Counter('successfulLogins');
+const failedLogins = new Counter('failedLogins');
+const registrationAttempts = new Counter('registrationAttempts');
+const successfulRegistrations = new Counter('successfulRegistrations');
+const tokenGenerationTime = new Trend('tokenGenerationTime');
+const passwordHashingTime = new Trend('passwordHashingTime');
+const loginDuration = new Trend('loginDuration');
+const registrationDuration = new Trend('registrationDuration');
+const concurrentUsers = new Gauge('concurrentUsers');
+const authErrors = new Rate('authErrors');
 
 // Test configuration
 export const options = {
@@ -50,11 +50,11 @@ export const options = {
   thresholds: {
     http_req_duration: ['p(95)<2000'], // 95% under 2s (bcrypt is expensive)
     http_req_failed: ['rate<0.05'], // Error rate under 5%
-    login_duration: ['p(95)<1500'], // Login under 1.5s
-    registration_duration: ['p(95)<3000'], // Registration under 3s (bcrypt)
-    token_generation_time: ['p(95)<100'], // Token gen under 100ms
-    password_hashing_time: ['p(95)<500'], // Bcrypt under 500ms
-    auth_errors: ['rate<0.05'], // Auth errors under 5%
+    loginDuration: ['p(95)<1500'], // Login under 1.5s
+    registrationDuration: ['p(95)<3000'], // Registration under 3s (bcrypt)
+    tokenGenerationTime: ['p(95)<100'], // Token gen under 100ms
+    passwordHashingTime: ['p(95)<500'], // Bcrypt under 500ms
+    authErrors: ['rate<0.05'], // Auth errors under 5%
   },
 };
 
@@ -320,19 +320,19 @@ export default function (data) {
  * Custom Summary Output
  */
 export function handleSummary(data) {
-  const totalLogins = data.metrics.login_attempts?.values.count || 0;
-  const successLogins = data.metrics.successful_logins?.values.count || 0;
-  const failedLogins = data.metrics.failed_logins?.values.count || 0;
-  const totalRegistrations = data.metrics.registration_attempts?.values.count || 0;
-  const successRegistrations = data.metrics.successful_registrations?.values.count || 0;
-  const avgLoginTime = (data.metrics.login_duration?.values.avg || 0).toFixed(2);
-  const p95LoginTime = (data.metrics.login_duration?.values['p(95)'] || 0).toFixed(2);
-  const avgRegistrationTime = (data.metrics.registration_duration?.values.avg || 0).toFixed(2);
-  const p95RegistrationTime = (data.metrics.registration_duration?.values['p(95)'] || 0).toFixed(2);
-  const avgTokenTime = (data.metrics.token_generation_time?.values.avg || 0).toFixed(2);
-  const avgHashTime = (data.metrics.password_hashing_time?.values.avg || 0).toFixed(2);
-  const maxConcurrentUsers = data.metrics.concurrent_users?.values.max || 0;
-  const authErrorRate = ((data.metrics.auth_errors?.values.rate || 0) * 100).toFixed(2);
+  const totalLogins = data.metrics.loginAttempts?.values.count || 0;
+  const successLogins = data.metrics.successfulLogins?.values.count || 0;
+  const failedLogins = data.metrics.failedLogins?.values.count || 0;
+  const totalRegistrations = data.metrics.registrationAttempts?.values.count || 0;
+  const successRegistrations = data.metrics.successfulRegistrations?.values.count || 0;
+  const avgLoginTime = (data.metrics.loginDuration?.values.avg || 0).toFixed(2);
+  const p95LoginTime = (data.metrics.loginDuration?.values['p(95)'] || 0).toFixed(2);
+  const avgRegistrationTime = (data.metrics.registrationDuration?.values.avg || 0).toFixed(2);
+  const p95RegistrationTime = (data.metrics.registrationDuration?.values['p(95)'] || 0).toFixed(2);
+  const avgTokenTime = (data.metrics.tokenGenerationTime?.values.avg || 0).toFixed(2);
+  const avgHashTime = (data.metrics.passwordHashingTime?.values.avg || 0).toFixed(2);
+  const maxConcurrentUsers = data.metrics.concurrentUsers?.values.max || 0;
+  const authErrorRate = ((data.metrics.authErrors?.values.rate || 0) * 100).toFixed(2);
 
   const loginSuccessRate = totalLogins > 0 ? ((successLogins / totalLogins) * 100).toFixed(2) : 0;
   const registrationSuccessRate =

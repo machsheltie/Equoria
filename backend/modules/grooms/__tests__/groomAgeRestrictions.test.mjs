@@ -125,7 +125,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
   describe('Task Type Validation', () => {
     it('should reject invalid task types for any age', async () => {
       const horse = { id: 8, age: 10, bondScore: 50 };
-      const result = await validateGroomingEligibility(horse, 'invalid_task');
+      const result = await validateGroomingEligibility(horse, 'invalidTask');
 
       expect(result.eligible).toBe(false);
       expect(result.reason).toContain('not an eligible');
@@ -133,7 +133,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
 
     it('should provide list of eligible tasks when task is invalid', async () => {
       const horse = { id: 9, age: 5, bondScore: 30 };
-      const result = await validateGroomingEligibility(horse, 'nonexistent_task');
+      const result = await validateGroomingEligibility(horse, 'nonexistentTask');
 
       expect(result.eligible).toBe(false);
       expect(result.eligibleTasks).toBeDefined();

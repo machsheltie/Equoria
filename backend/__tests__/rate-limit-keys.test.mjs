@@ -329,7 +329,7 @@ describe('Rate Limit Key Generation Unit Tests', () => {
       const user = createMockUser({
         id: 1,
         email: 'test@example.com',
-        password: 'hashed_password',
+        password: 'hashedPassword',
       });
       req.user = user;
 

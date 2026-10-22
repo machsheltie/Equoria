@@ -118,12 +118,12 @@ const RETIRED_COMPOSITE_UNIQUES = Object.freeze([
  * `pg_index`/`pg_class`, never Prisma's own bookkeeping.
  *
  * @param {import('pg').Client} client
- * @returns {Promise<Array<{index_name: string, is_unique: boolean, predicate: string | null}>>}
+ * @returns {Promise<Array<{indexName: string, isUnique: boolean, predicate: string | null}>>}
  */
 async function readActiveUniqueIndexes(client) {
   const { rows } = await client.query(
-    `SELECT c.relname AS index_name,
-            i.indisunique AS is_unique,
+    `SELECT c.relname AS "indexName",
+            i.indisunique AS "isUnique",
             pg_get_expr(i.indpred, i.indrelid) AS predicate
        FROM pg_index i
        JOIN pg_class c ON c.oid = i.indexrelid
@@ -138,12 +138,12 @@ async function readActiveUniqueIndexes(client) {
  * The guard itself, extracted so the sentinel-positive test can prove it FAILS
  * on a defective catalog rather than only passing on a healthy one.
  *
- * @param {Array<{index_name: string, is_unique: boolean, predicate: string | null}>} rows
+ * @param {Array<{indexName: string, isUnique: boolean, predicate: string | null}>} rows
  */
 function assertActiveOnlyPartialUniques(rows) {
-  expect(rows.map(row => row.index_name)).toEqual(ACTIVE_PARTIAL_INDEXES.map(entry => entry.index));
+  expect(rows.map(row => row.indexName)).toEqual(ACTIVE_PARTIAL_INDEXES.map(entry => entry.index));
   for (const row of rows) {
-    expect(row.is_unique).toBe(true);
+    expect(row.isUnique).toBe(true);
     // Postgres renders `WHERE "isActive"` (a bare boolean column) as `"isActive"`.
     // A plain, non-partial unique index yields NULL here.
     expect(row.predicate).not.toBeNull();
@@ -299,11 +299,11 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
         );
 
         const rows = await readActiveUniqueIndexes(client);
-        const planted = rows.find(row => row.index_name === target.index);
+        const planted = rows.find(row => row.indexName === target.index);
 
         // Everything a weaker check would look at is still intact ...
         expect(planted).toBeDefined();
-        expect(planted.is_unique).toBe(true);
+        expect(planted.isUnique).toBe(true);
         // ... and the one thing that matters is missing.
         expect(planted.predicate).toBeNull();
 

@@ -92,7 +92,7 @@ describe('Enhanced Reporting API Routes', () => {
       data: {
         username: `enh_report_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `enh_report_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-        password: 'test_hash',
+        password: 'testHash',
         firstName: 'Test',
         lastName: 'User',
         money: 1000,
@@ -390,7 +390,7 @@ describe('Enhanced Reporting API Routes', () => {
         data: {
           username: `other_report_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           email: `other_report_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-          password: 'test_hash',
+          password: 'testHash',
           firstName: 'Other',
           lastName: 'User',
           money: 1000,

@@ -50,7 +50,7 @@ describe('Training Analytics Service', () => {
           data: {
             username: `training_test_user_${timestamp}`,
             email: `training_${timestamp}@test.com`,
-            password: 'test_password',
+            password: 'testPassword',
             firstName: 'Training',
             lastName: 'Test',
           },
@@ -85,7 +85,7 @@ describe('Training Analytics Service', () => {
           },
         });
 
-        const disciplines = ['dressage', 'show_jumping', 'racing', 'cross_country'];
+        const disciplines = ['dressage', 'showJumping', 'racing', 'crossCountry'];
         testTrainingHistory = [];
 
         for (let i = 0; i < 12; i++) {
@@ -185,9 +185,9 @@ describe('Training Analytics Service', () => {
 
       const { sessionsPerDiscipline } = analytics.trainingFrequency;
       expect(sessionsPerDiscipline.dressage).toBe(3);
-      expect(sessionsPerDiscipline.show_jumping).toBe(3);
+      expect(sessionsPerDiscipline.showJumping).toBe(3);
       expect(sessionsPerDiscipline.racing).toBe(3);
-      expect(sessionsPerDiscipline.cross_country).toBe(3);
+      expect(sessionsPerDiscipline.crossCountry).toBe(3);
     });
   });
 
@@ -198,9 +198,9 @@ describe('Training Analytics Service', () => {
       expect(analytics.disciplineBalance).toBeDefined();
       expect(typeof analytics.disciplineBalance).toBe('object');
       expect(analytics.disciplineBalance.dressage).toBeDefined();
-      expect(analytics.disciplineBalance.show_jumping).toBeDefined();
+      expect(analytics.disciplineBalance.showJumping).toBeDefined();
       expect(analytics.disciplineBalance.racing).toBeDefined();
-      expect(analytics.disciplineBalance.cross_country).toBeDefined();
+      expect(analytics.disciplineBalance.crossCountry).toBeDefined();
     });
 
     test('should calculate training percentages correctly', async () => {

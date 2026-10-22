@@ -42,7 +42,7 @@ describe('Groom Personality Trait System', () => {
           data: {
             username: `groomtraits_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             email: `groomtraits_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-            password: 'test_hash',
+            password: 'testHash',
             firstName: 'Test',
             lastName: 'User',
             money: 1000,

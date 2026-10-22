@@ -40,10 +40,10 @@ afterAll(() => client.$disconnect());
 
 describe('queryEventRecorder — late query events (Equoria-hajbq)', () => {
   it('counts a statement whose event arrives after the measured call resolves', async () => {
-    const { result, statements } = await recorder.measure(() => client.$queryRawUnsafe('SELECT 7 AS "hajbq_measured"'));
+    const { result, statements } = await recorder.measure(() => client.$queryRawUnsafe('SELECT 7 AS "hajbqMeasured"'));
 
-    expect(result).toEqual([{ hajbq_measured: 7 }]);
-    expect(statements).toEqual(['SELECT 7 AS "hajbq_measured"']);
+    expect(result).toEqual([{ hajbqMeasured: 7 }]);
+    expect(statements).toEqual(['SELECT 7 AS "hajbqMeasured"']);
   });
 
   it('carries no statement into the next measurement', async () => {

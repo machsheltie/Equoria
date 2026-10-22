@@ -99,8 +99,8 @@ describe('Horse Model epigeneticModifiers contract — Real Database', () => {
 
   it('persists caller-supplied epigenetic traits VERBATIM (no merge, no extra traits)', async () => {
     const existingTraits = {
-      positive: ['existing_positive_trait'],
-      negative: ['existing_negative_trait'],
+      positive: ['existingPositiveTrait'],
+      negative: ['existingNegativeTrait'],
       hidden: [],
     };
 
@@ -191,7 +191,7 @@ describe('Horse Model epigeneticModifiers contract — Real Database', () => {
     // _epigeneticTraitsApplied = true to prevent double application in the model.
     // The model should use whatever epigeneticModifiers were passed and NOT call atBirthTraits again.
     const preAppliedTraits = {
-      positive: ['controller_applied_trait'],
+      positive: ['controllerAppliedTrait'],
       negative: [],
       hidden: [],
     };
@@ -212,7 +212,7 @@ describe('Horse Model epigeneticModifiers contract — Real Database', () => {
 
     expect(foal).toBeDefined();
     // The pre-applied traits must be preserved exactly — no additional at-birth traits added
-    expect(foal.epigeneticModifiers.positive).toContain('controller_applied_trait');
+    expect(foal.epigeneticModifiers.positive).toContain('controllerAppliedTrait');
   });
 
   it('correctly links sire and dam on the created horse record', async () => {

@@ -81,13 +81,13 @@ function renderPage(url: string, authenticated = false) {
 describe('ConfirmEmailChangePage', () => {
   it('spends the link exactly once and names the address that now finds you', async () => {
     stubConfirmAccepted();
-    renderPage('/confirm-email-change?token=ec1_abcdef');
+    renderPage('/confirm-email-change?token=ec1Abcdef');
 
     expect(await screen.findByText(NEW_ADDRESS)).toBeInTheDocument();
     // One-time token: a second consumption would answer 400 and tell the player
     // her own successful change had failed.
     await waitFor(() => expect(confirmCalls).toBe(1));
-    expect(confirmTokens[0]).toBe('ec1_abcdef');
+    expect(confirmTokens[0]).toBe('ec1Abcdef');
   });
 
   it('shows a distinct waiting state before the answer arrives', async () => {

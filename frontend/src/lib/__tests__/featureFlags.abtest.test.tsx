@@ -41,7 +41,7 @@ describe('useABTest — no console.log on trackConversion (Equoria-o7c0x L5)', (
   });
 
   it('trackConversion does not call console.log (no variant-assignment leak)', async () => {
-    const { result } = renderHook(() => useABTest('FF_AB_TEST_EXAMPLE', ['control', 'variant_a']), {
+    const { result } = renderHook(() => useABTest('FF_AB_TEST_EXAMPLE', ['control', 'variantA']), {
       wrapper,
     });
 
@@ -53,7 +53,7 @@ describe('useABTest — no console.log on trackConversion (Equoria-o7c0x L5)', (
   });
 
   it('returns the variant string from the hook (functional smoke-test)', () => {
-    const { result } = renderHook(() => useABTest('FF_AB_TEST_EXAMPLE', ['control', 'variant_a']), {
+    const { result } = renderHook(() => useABTest('FF_AB_TEST_EXAMPLE', ['control', 'variantA']), {
       wrapper,
     });
 

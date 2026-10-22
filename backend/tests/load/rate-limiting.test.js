@@ -24,10 +24,10 @@ import { check, sleep } from 'k6';
 import { Counter, Trend, Rate } from 'k6/metrics';
 
 // Custom metrics
-const rateLimitHits = new Counter('rate_limit_hits');
-const rateLimitErrors = new Rate('rate_limit_errors');
-const requestDuration = new Trend('request_duration');
-const authRequestDuration = new Trend('auth_request_duration');
+const rateLimitHits = new Counter('rateLimitHits');
+const rateLimitErrors = new Rate('rateLimitErrors');
+const requestDuration = new Trend('requestDuration');
+const authRequestDuration = new Trend('authRequestDuration');
 
 // Test configuration
 export const options = {
@@ -41,7 +41,7 @@ export const options = {
   thresholds: {
     http_req_duration: ['p(95)<500'], // 95% of requests under 500ms
     http_req_failed: ['rate<0.05'], // Error rate under 5%
-    rate_limit_errors: ['rate>0.3'], // At least 30% should hit rate limits
+    rateLimitErrors: ['rate>0.3'], // At least 30% should hit rate limits
   },
 };
 
@@ -190,7 +190,7 @@ export default function (data) {
  * Custom Summary Output
  */
 export function handleSummary(data) {
-  const rateLimitCount = data.metrics.rate_limit_hits?.values.count || 0;
+  const rateLimitCount = data.metrics.rateLimitHits?.values.count || 0;
   const totalRequests = data.metrics.http_reqs?.values.count || 0;
   const rateLimitPercentage = ((rateLimitCount / totalRequests) * 100).toFixed(2);
 
@@ -201,7 +201,7 @@ export function handleSummary(data) {
 ╠════════════════════════════════════════════════════════════════╣
 ║ Total Requests:           ${totalRequests.toString().padStart(10)}                      ║
 ║ Rate Limit Hits:          ${rateLimitCount.toString().padStart(10)} (${rateLimitPercentage}%)             ║
-║ Avg Request Duration:     ${data.metrics.request_duration?.values.avg.toFixed(2).padStart(10)}ms                 ║
+║ Avg Request Duration:     ${data.metrics.requestDuration?.values.avg.toFixed(2).padStart(10)}ms                 ║
 ║ P95 Request Duration:     ${data.metrics.http_req_duration?.values['p(95)'].toFixed(2).padStart(10)}ms                 ║
 ║ Error Rate:               ${(data.metrics.http_req_failed?.values.rate * 100).toFixed(2).padStart(10)}%                  ║
 ╠════════════════════════════════════════════════════════════════╣

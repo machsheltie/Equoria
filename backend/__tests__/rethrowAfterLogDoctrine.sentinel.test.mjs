@@ -49,7 +49,7 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
     const CLOSE = '}';
     const SEMI = ';';
     const KEYWORDS = ['try', 'catch', 'throw'];
-    const planted_src = [
+    const plantedSrc = [
       '// PLANTED by rethrowAfterLogDoctrine.sentinel.test.mjs — Equoria-ej9k1.',
       "import logger from '../../utils/logger.mjs';",
       `export async function plantedFn() ${OPEN}`,
@@ -61,7 +61,7 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
       CLOSE,
       '',
     ].join('\n');
-    fs.writeFileSync(planted, planted_src);
+    fs.writeFileSync(planted, plantedSrc);
 
     const res = runCheck();
     expect(res.status).not.toBe(0);

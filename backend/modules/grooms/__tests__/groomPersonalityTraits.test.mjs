@@ -627,7 +627,7 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
         name: `TestFixture-RBR-BadType-${ts}`,
         speciality: 'foal_care',
         personality: 'gentle',
-        epigeneticInfluenceType: 'invalid_type_xyz',
+        epigeneticInfluenceType: 'invalidTypeXyz',
         userId: rbrUser.id,
       },
     });

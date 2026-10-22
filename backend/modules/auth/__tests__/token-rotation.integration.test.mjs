@@ -92,7 +92,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   });
 
   describe('Basic Token Rotation', () => {
-    it('should_rotate_refresh_token_on_each_use', async () => {
+    it('shouldRotateRefreshTokenOnEachUse', async () => {
       // Step 1: Login to get initial tokens
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
@@ -132,7 +132,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       expect(newAccessToken).toBeDefined();
     });
 
-    it('should_invalidate_old_refresh_token_after_rotation', async () => {
+    it('shouldInvalidateOldRefreshTokenAfterRotation', async () => {
       // Get initial tokens
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
@@ -165,7 +165,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       }
     });
 
-    it('should_track_token_families_in_database', async () => {
+    it('shouldTrackTokenFamiliesInDatabase', async () => {
       // Login to create token family
       const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
@@ -219,7 +219,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   });
 
   describe('Token Reuse Detection', () => {
-    it('should_detect_refresh_token_reuse', async () => {
+    it('shouldDetectRefreshTokenReuse', async () => {
       // Get initial tokens
       const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
@@ -250,7 +250,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       }
     });
 
-    it('should_invalidate_entire_token_family_on_reuse_detection', async () => {
+    it('shouldInvalidateEntireTokenFamilyOnReuseDetection', async () => {
       // Get initial tokens and create a token chain
       const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
@@ -301,7 +301,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       expect([200, 401, 403, 429]).toContain(currentTokenTest.status);
     });
 
-    it('should_require_reauthentication_after_family_invalidation', async () => {
+    it('shouldRequireReauthenticationAfterFamilyInvalidation', async () => {
       // Setup token family and trigger reuse detection
       const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
@@ -348,7 +348,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   });
 
   describe('Concurrent Token Usage', () => {
-    it('should_handle_concurrent_refresh_requests_gracefully', async () => {
+    it('shouldHandleConcurrentRefreshRequestsGracefully', async () => {
       // Get initial tokens
       const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
@@ -379,7 +379,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       });
     });
 
-    it('should_prevent_race_conditions_in_token_rotation', async () => {
+    it('shouldPreventRaceConditionsInTokenRotation', async () => {
       // This test verifies database-level constraints prevent race conditions
       const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
@@ -409,7 +409,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   });
 
   describe('Token Compromise Scenarios', () => {
-    it('should_handle_legitimate_user_concurrent_with_attacker', async () => {
+    it('shouldHandleLegitimateUserConcurrentWithAttacker', async () => {
       // Simulate: Legitimate user has valid refresh token,
       // Attacker somehow gets old refresh token and tries to use it
 
@@ -446,7 +446,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       expect([401, 403]).toContain(legitAfterAttack.status);
     });
 
-    it('should_log_security_events_for_monitoring', async () => {
+    it('shouldLogSecurityEventsForMonitoring', async () => {
       // Note: This test verifies security logging exists
       // In a real implementation, you'd check log files or monitoring systems
 
@@ -481,7 +481,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   });
 
   describe('Token Expiration and Cleanup', () => {
-    it('should_reject_expired_refresh_tokens', async () => {
+    it('shouldRejectExpiredRefreshTokens', async () => {
       // Create a token with very short expiry for testing
       const shortLivedToken = jwt.sign(
         {
@@ -520,7 +520,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       }
     });
 
-    it('should_clean_up_invalidated_token_families', async () => {
+    it('shouldCleanUpInvalidatedTokenFamilies', async () => {
       // Create multiple token families and invalidate one
       const loginResponse1 = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
@@ -575,7 +575,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   });
 
   describe('Database Constraints and Security', () => {
-    it('should_enforce_unique_constraints_on_token_families', async () => {
+    it('shouldEnforceUniqueConstraintsOnTokenFamilies', async () => {
       // This test verifies database schema constraints
       const familyId = `test-family-${randomBytes(8).toString('hex')}`;
 
@@ -598,7 +598,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       });
     });
 
-    it('should_validate_token_structure_and_signatures', async () => {
+    it('shouldValidateTokenStructureAndSignatures', async () => {
       // Test various malformed tokens
       const malformedTokens = [
         'invalid.jwt.token',

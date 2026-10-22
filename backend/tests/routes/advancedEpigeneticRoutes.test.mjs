@@ -90,7 +90,7 @@ describe('Advanced Epigenetic API Routes', () => {
       data: {
         username: `adv_epi_api_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `adv_epi_api_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-        password: 'test_hash',
+        password: 'testHash',
         firstName: 'Test',
         lastName: 'User',
         money: 1000,
@@ -265,7 +265,7 @@ describe('Advanced Epigenetic API Routes', () => {
         data: {
           username: `other_user_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           email: `other_user_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-          password: 'test_hash',
+          password: 'testHash',
           firstName: 'Other',
           lastName: 'User',
           money: 1000,

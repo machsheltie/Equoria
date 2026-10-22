@@ -103,7 +103,7 @@ const healthCheck = (async () => {
     issues.push(`  • ${orphanHorses} orphan horse row(s) (userId not found in "User")`);
   }
 
-  // 3. Orphan competition_result rows (horseId → horses.id missing)
+  // 3. Orphan competitionResult rows (horseId → horses.id missing)
   const { rows: orphanResultRows } = await client.query(`
     SELECT COUNT(*) AS n
     FROM competition_results cr
@@ -113,7 +113,7 @@ const healthCheck = (async () => {
   const orphanResults = parseInt(orphanResultRows[0].n, 10);
   if (orphanResults > 0) {
     issues.push(
-      `  • ${orphanResults} orphan competition_result row(s) (horseId not found in horses)`
+      `  • ${orphanResults} orphan competitionResult row(s) (horseId not found in horses)`
     );
   }
 

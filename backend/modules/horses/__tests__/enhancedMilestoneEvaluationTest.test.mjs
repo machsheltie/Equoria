@@ -418,7 +418,7 @@ describe('evaluateEnhancedMilestone — personality bonus branches', () => {
   });
 
   it('personalityBonuses is {} for unknown personality type', async () => {
-    const groom = { id: 5, name: 'UnknownGroom', epigeneticInfluenceType: 'mythical_unicorn_handler' };
+    const groom = { id: 5, name: 'UnknownGroom', epigeneticInfluenceType: 'mythicalUnicornHandler' };
     const result = await evaluateEnhancedMilestone(youngHorse, {}, groom, milestoneData);
     expect(result.personalityBonuses).toEqual({});
   });

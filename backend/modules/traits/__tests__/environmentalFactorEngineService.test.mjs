@@ -323,7 +323,7 @@ describe('calculateCurrentWeather — region branches', () => {
   });
 
   it('unknown region falls back to temperate base (15)', () => {
-    const result = calculateCurrentWeather(SPRING_DATE, { ...LOCATION, region: 'unknown_region' });
+    const result = calculateCurrentWeather(SPRING_DATE, { ...LOCATION, region: 'unknownRegion' });
     expect(typeof result.temperature).toBe('number');
     expect(Number.isFinite(result.temperature)).toBe(true);
   });

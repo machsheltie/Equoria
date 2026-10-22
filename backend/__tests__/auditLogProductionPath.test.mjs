@@ -153,7 +153,7 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
     // auditLog reads process.env at CALL time, so the env flip still works.
     const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const mw = auditLog('routine_op', 'low');
+      const mw = auditLog('routineOp', 'low');
       const req = makeReq({ user: { id: 'user-B', email: 'b@test.com', role: 'user' } });
       const res = makeRes({
         statusCode: 200,
@@ -256,7 +256,7 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
     // auditLog reads process.env at CALL time, so the env flip still works.
     const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const mw = auditLog('generic_op'); // default 'medium'
+      const mw = auditLog('genericOp'); // default 'medium'
       const req = makeReq({ user: { id: 'user-E' } });
       const res = makeRes({
         statusCode: 200,

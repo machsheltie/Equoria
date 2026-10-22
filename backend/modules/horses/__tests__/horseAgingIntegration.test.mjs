@@ -179,7 +179,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
           epigeneticModifiers: {
             positive: ['athletic'],
             negative: [],
-            hidden: ['mysterious_lineage'],
+            hidden: ['mysteriousLineage'],
           },
         },
       });
@@ -224,7 +224,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
 
       // Verify existing traits were preserved (deterministic).
       expect(epigeneticModifiers.positive).toContain('athletic');
-      expect(epigeneticModifiers.hidden).toContain('mysterious_lineage');
+      expect(epigeneticModifiers.hidden).toContain('mysteriousLineage');
     });
 
     it('should handle multiple horses with different milestone scenarios', async () => {

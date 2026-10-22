@@ -68,9 +68,9 @@ describe('evaluateEpigeneticTagsFromFoalTasks', () => {
 
   it('returns [] when all tasks are unknown (not in influence map)', () => {
     const taskLog = {
-      invalid_task: 5,
-      another_invalid: 10,
-      totally_made_up: 3,
+      invalidTask: 5,
+      anotherInvalid: 10,
+      totallyMadeUp: 3,
     };
 
     const result = evaluateEpigeneticTagsFromFoalTasks(taskLog, 0);
@@ -110,7 +110,7 @@ describe('evaluateEpigeneticTagsFromFoalTasks', () => {
   });
 
   it('ignores unknown tasks but processes valid tasks normally', () => {
-    const pureInvalid = { unknown_task: 5, fake_task: 10 };
+    const pureInvalid = { unknownTask: 5, fakeTask: 10 };
     const pureValid = { trust_building: 5 };
 
     const invalidResult = evaluateEpigeneticTagsFromFoalTasks(pureInvalid, 0);

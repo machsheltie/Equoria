@@ -144,16 +144,16 @@ describe('Streak Loss and Recovery', () => {
 
 describe('Per-Horse Independent Tracking', () => {
   it('tracks three horses with different care patterns independently', () => {
-    const horseA_streak = buildStreak(10);
+    const horseAStreak = buildStreak(10);
 
-    let horseB_streak = 5;
-    horseB_streak = updateConsecutiveDays(horseB_streak, false, 2).newConsecutiveDays;
+    let horseBStreak = 5;
+    horseBStreak = updateConsecutiveDays(horseBStreak, false, 2).newConsecutiveDays;
 
-    const horseC_streak = buildStreak(3);
+    const horseCStreak = buildStreak(3);
 
-    expect(horseA_streak).toBe(10);
-    expect(horseB_streak).toBe(5);
-    expect(horseC_streak).toBe(3);
+    expect(horseAStreak).toBe(10);
+    expect(horseBStreak).toBe(5);
+    expect(horseCStreak).toBe(3);
   });
 
   it('reports correct immunity status for each independently-tracked horse', () => {

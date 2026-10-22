@@ -8,7 +8,7 @@
  * Covers:
  *   - craftingRecipes catalog (shape, tiers, data integrity) — pure
  *     module data, no mocking ever needed
- *   - craftingController: getMaterials_endpoint, getRecipes, craftItem
+ *   - craftingController: getMaterialsEndpoint, getRecipes, craftItem
  *     against the real `equoria_test` DB. Each test creates a real
  *     user with controlled settings JSON, calls the real controller,
  *     and asserts on real DB state.
@@ -25,7 +25,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/glob
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
-import { getMaterials_endpoint, getRecipes, craftItem } from '../controllers/craftingController.mjs';
+import { getMaterialsEndpoint, getRecipes, craftItem } from '../controllers/craftingController.mjs';
 
 const SUITE_PREFIX = 'craft';
 
@@ -154,12 +154,12 @@ describe('craftingController (real DB)', () => {
   afterAll(cleanupSuite);
   afterEach(cleanupSuite);
 
-  describe('getMaterials_endpoint()', () => {
+  describe('getMaterialsEndpoint()', () => {
     it('returns materials and workshopTier for a real user with populated settings', async () => {
       const user = await createUser({ settings: makeSettings({ workshopTier: 2 }) });
 
       const res = makeRes();
-      await getMaterials_endpoint(makeReq(user.id), res);
+      await getMaterialsEndpoint(makeReq(user.id), res);
 
       expect(res._status).toBe(200);
       expect(res._body.success).toBe(true);
@@ -171,7 +171,7 @@ describe('craftingController (real DB)', () => {
       const user = await createUser({ settings: undefined });
 
       const res = makeRes();
-      await getMaterials_endpoint(makeReq(user.id), res);
+      await getMaterialsEndpoint(makeReq(user.id), res);
 
       expect(res._body.data.materials).toEqual({
         leather: 0,
@@ -185,7 +185,7 @@ describe('craftingController (real DB)', () => {
 
     it('returns 404 when the user does not exist', async () => {
       const res = makeRes();
-      await getMaterials_endpoint(makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`), res);
+      await getMaterialsEndpoint(makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`), res);
 
       expect(res._status).toBe(404);
       expect(res._body.success).toBe(false);

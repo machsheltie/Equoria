@@ -6,7 +6,7 @@
  * `inFoalSinceDate` set. Shows:
  *   1. Gestation day X of 7 + days remaining countdown.
  *   2. Per-tier feeding counters accrued during the gestation window.
- *   3. Live preview of the positive_chance / negative_chance epigenetic-trait
+ *   3. Live preview of the positiveChance / negativeChance epigenetic-trait
  *      probabilities that will be rolled at foaling — using the same formula
  *      as backend/utils/pregnancyBonus.mjs (mirrored in
  *      frontend/src/lib/utils/pregnancyChances.ts; the contract test in
@@ -77,7 +77,7 @@ export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
   if (!progress) return null;
   const { gestationDay, daysRemaining, isOverdue } = progress;
 
-  const { positive_chance, negative_chance } = calculatePregnancyEpigeneticChances(feedings);
+  const { positiveChance, negativeChance } = calculatePregnancyEpigeneticChances(feedings);
 
   // Sire row: render only when we have something meaningful to show.
   const hasSireInfo = Boolean(sireName) || pregnancySireId != null;
@@ -132,13 +132,13 @@ export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
         <div>
           Projected positive trait chance:{' '}
           <strong className="text-emerald-300" data-testid="pregnancy-positive-chance">
-            {formatPct(positive_chance)}
+            {formatPct(positiveChance)}
           </strong>
         </div>
         <div>
           Projected negative trait chance:{' '}
           <strong className="text-rose-300" data-testid="pregnancy-negative-chance">
-            {formatPct(negative_chance, 0)}
+            {formatPct(negativeChance, 0)}
           </strong>
         </div>
       </div>

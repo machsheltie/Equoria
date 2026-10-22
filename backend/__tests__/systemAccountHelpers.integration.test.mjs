@@ -88,7 +88,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
 
   it('creditSystemAccount increments balance and writes ledger row when linkedUserId given', async () => {
     const after = await creditSystemAccount(prisma, acct, 500, {
-      category: 'test_credit',
+      category: 'testCredit',
       description: 'fixture credit',
       linkedUserId: testUserId,
     });
@@ -100,7 +100,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
     expect(Number(row.balance)).toBe(500);
 
     const ledger = await prisma.userTransaction.findMany({
-      where: { userId: testUserId, category: 'test_credit' },
+      where: { userId: testUserId, category: 'testCredit' },
     });
     expect(ledger).toHaveLength(1);
     expect(ledger[0].type).toBe('credit');
@@ -111,10 +111,10 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
 
   it('creditSystemAccount without linkedUserId skips ledger row (system-to-system move)', async () => {
     await creditSystemAccount(prisma, acct, 200, {
-      category: 'system_to_system_test',
+      category: 'systemToSystemTest',
     });
     const ledger = await prisma.userTransaction.findMany({
-      where: { category: 'system_to_system_test' },
+      where: { category: 'systemToSystemTest' },
     });
     expect(ledger).toHaveLength(0);
     const row = await prisma.systemAccount.findUnique({
@@ -128,7 +128,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
       category: 'seed',
     });
     const after = await debitSystemAccountOrThrow(prisma, acct, 300, {
-      category: 'test_debit',
+      category: 'testDebit',
       linkedUserId: testUserId,
     });
     expect(after).toBe(700);
@@ -139,7 +139,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
     expect(Number(row.balance)).toBe(700);
 
     const ledger = await prisma.userTransaction.findMany({
-      where: { userId: testUserId, category: 'test_debit' },
+      where: { userId: testUserId, category: 'testDebit' },
     });
     expect(ledger).toHaveLength(1);
     expect(ledger[0].type).toBe('debit');
@@ -152,7 +152,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
     });
     await expect(
       debitSystemAccountOrThrow(prisma, acct, 500, {
-        category: 'test_overdraw',
+        category: 'testOverdraw',
       }),
     ).rejects.toBeInstanceOf(InsufficientSystemAccountBalanceError);
     // Balance unchanged.
@@ -164,13 +164,13 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
 
   it('SENTINEL: 5 parallel debits with balance for ONE — exactly 1 succeeds, 4 throw, balance never negative', async () => {
     await creditSystemAccount(prisma, acct, 100, {
-      category: 'seed_race',
+      category: 'seedRace',
     });
     const N = 5;
     const results = await Promise.allSettled(
       Array.from({ length: N }, () =>
         debitSystemAccountOrThrow(prisma, acct, 100, {
-          category: 'race_debit',
+          category: 'raceDebit',
         }),
       ),
     );
@@ -244,7 +244,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
 
     it('SENTINEL A: debitSystemAccountOrThrow persists balanceAfter = null (skipBalanceRead)', async () => {
       await creditSystemAccount(prisma, acct, 1000, {
-        category: 'seed_jou5c_debit',
+        category: 'seedJou5cDebit',
       });
       await prisma.user.update({
         where: { id: testUserId },
@@ -270,7 +270,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
       // Seed the suite-private account with enough balance that the debit
       // predicate succeeds — the throw comes AFTER the helper completes.
       await creditSystemAccount(prisma, acct, 1000, {
-        category: 'seed_jou5c_rollback',
+        category: 'seedJou5cRollback',
       });
 
       await expect(

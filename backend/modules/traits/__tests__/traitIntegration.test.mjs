@@ -134,7 +134,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     });
 
     it('should handle unknown traits gracefully', () => {
-      const effects = getCombinedTraitEffects(['unknown_trait', 'another_unknown']);
+      const effects = getCombinedTraitEffects(['unknownTrait', 'anotherUnknown']);
 
       expect(Object.keys(effects)).toHaveLength(0);
     });
@@ -178,7 +178,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     it('should handle malformed trait data', () => {
       const horse = {
         id: 1,
-        epigeneticModifiers: 'invalid_data', // Should be an object
+        epigeneticModifiers: 'invalidData', // Should be an object
       };
 
       const result = calculateBondingChange(horse, 'training', { success: true });
@@ -197,7 +197,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
         },
       };
 
-      const result = calculateBondingChange(horse, 'invalid_activity', {});
+      const result = calculateBondingChange(horse, 'invalidActivity', {});
 
       expect(result.error).toBeDefined();
       expect(result.modifiedChange).toBe(0);

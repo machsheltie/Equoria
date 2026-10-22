@@ -105,9 +105,9 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
     // Three ultra-rare/exotic trait names at the max per-trait bonus — the
     // exact shape that used to unlock the rare-trait booster perk for free.
     const exploitBonusTraits = {
-      phoenix_touch: 0.3,
+      phoenixTouch: 0.3,
       whisperer: 0.3,
-      once_in_generation: 0.3,
+      onceInGeneration: 0.3,
     };
 
     const response = await request(app)

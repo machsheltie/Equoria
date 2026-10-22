@@ -153,7 +153,7 @@ describe('Foal Task Logging & Streak Tracking System', () => {
     });
 
     it('should return null for unknown tasks', () => {
-      expect(categorizeTask('unknown_task')).toBeNull();
+      expect(categorizeTask('unknownTask')).toBeNull();
       expect(categorizeTask('')).toBeNull();
       expect(categorizeTask(null)).toBeNull();
     });

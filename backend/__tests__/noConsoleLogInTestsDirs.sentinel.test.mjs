@@ -137,7 +137,7 @@ describe('no bare-console trigger in backend/tests + backend/__tests__ (Equoria-
     );
 
     const hits = findMatches(TARGET_DIRS);
-    const planted_hit = hits.find(h => h.includes('planted.test.mjs'));
-    expect(planted_hit).toBeDefined();
+    const plantedHit = hits.find(h => h.includes('planted.test.mjs'));
+    expect(plantedHit).toBeDefined();
   });
 });

@@ -253,7 +253,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
         rider: { name: 'Test Rider 3', skill: 'Beginner' },
         epigeneticModifiers: {
           positive: [],
-          negative: ['nervous_temperament'],
+          negative: ['nervousTemperament'],
           hidden: [],
         },
       },

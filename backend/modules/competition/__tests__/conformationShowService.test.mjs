@@ -100,7 +100,7 @@ describe('getHandlerScore', () => {
 
   it('defaults to novice score (20) for unknown value', () => {
     expect(getHandlerScore(null)).toBe(20);
-    expect(getHandlerScore('unknown_level')).toBe(20);
+    expect(getHandlerScore('unknownLevel')).toBe(20);
   });
 });
 

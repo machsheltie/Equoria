@@ -35,7 +35,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       sireId: 3,
       damId: 4,
       stats: { speed: 95, stamina: 88, agility: 82, intelligence: 78 },
-      traits: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendary_speed'] },
+      traits: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendarySpeed'] },
       disciplineScores: { racing: 92, jumping: 65 },
       competitionResults: [
         { discipline: 'racing', placement: 1, score: 95 },
@@ -50,7 +50,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       sireId: 5,
       damId: 6,
       stats: { speed: 78, stamina: 92, agility: 85, intelligence: 90 },
-      traits: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfect_balance'] },
+      traits: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfectBalance'] },
       disciplineScores: { dressage: 88, jumping: 82 },
       competitionResults: [
         { discipline: 'dressage', placement: 1, score: 90 },

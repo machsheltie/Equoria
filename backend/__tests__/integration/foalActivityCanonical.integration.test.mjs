@@ -139,12 +139,12 @@ describe('FoalActivity canonical store (Equoria-2emg)', () => {
     // Simulate a pre-Equoria-2emg legacy count with no canonical rows.
     await prisma.horse.update({
       where: { id: foal.id },
-      data: { taskLog: { early_touch: 3, desensitization: 2, legacy_only_task: 7 } },
+      data: { taskLog: { early_touch: 3, desensitization: 2, legacyOnlyTask: 7 } },
     });
 
     const result = await reconcileTaskLogFromActivities(foal.id);
-    // legacy_only_task has no FoalActivity rows → preserved, not dropped.
-    expect(result.after.legacy_only_task).toBe(7);
+    // legacyOnlyTask has no FoalActivity rows → preserved, not dropped.
+    expect(result.after.legacyOnlyTask).toBe(7);
     // canonical keys still equal their derived floor.
     expect(result.after.early_touch).toBe(3);
     expect(result.after.desensitization).toBe(2);

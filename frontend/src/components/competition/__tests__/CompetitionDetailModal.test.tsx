@@ -449,7 +449,7 @@ describe('CompetitionDetailModal', () => {
           breed: 'Arabian',
           level: 4,
           ownerId: 'u1',
-          ownerName: 'rival_player',
+          ownerName: 'rivalPlayer',
           topStats: [
             { name: 'speed', value: 88 },
             { name: 'stamina', value: 70 },
@@ -464,7 +464,7 @@ describe('CompetitionDetailModal', () => {
           breed: 'Thoroughbred',
           level: 5,
           ownerId: 'u2',
-          ownerName: 'another_player',
+          ownerName: 'anotherPlayer',
           topStats: [
             { name: 'balance', value: 80 },
             { name: 'focus', value: 60 },

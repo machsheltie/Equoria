@@ -132,7 +132,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
       data: {
         foalId: foal.id,
         day: 1,
-        activityType: 'legacy_null_task',
+        activityType: 'legacyNullTask',
         outcome: 'good',
         bondingChange: 1,
         stressChange: 0,
@@ -142,7 +142,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
     });
 
     const derived = await deriveTaskCountsFromActivities(foal.id);
-    expect(derived.legacy_null_task).toBe(1);
+    expect(derived.legacyNullTask).toBe(1);
     // And the collision groom count is still exactly 2 (enrichment still excluded).
     expect(derived[COLLISION_TASK]).toBe(2);
   });
@@ -152,7 +152,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
     expect(first.changed).toBe(true);
     // taskLog reflects groom-only counts: the collision key is 2, NOT 3.
     expect(first.after[COLLISION_TASK]).toBe(2);
-    expect(first.after.legacy_null_task).toBe(1);
+    expect(first.after.legacyNullTask).toBe(1);
 
     // Persisted cache matches the source-filtered derivation (no double-count).
     const horse = await prisma.horse.findUnique({

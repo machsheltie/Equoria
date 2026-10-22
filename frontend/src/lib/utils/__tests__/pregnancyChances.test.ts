@@ -41,8 +41,8 @@ describe('calculatePregnancyEpigeneticChances — spec §8.2 worked examples', (
   for (const c of cases) {
     it(`${c.name} → positive ${c.positive}% / negative ${c.negative}%`, () => {
       const out = calculatePregnancyEpigeneticChances(c.input);
-      expect(out.positive_chance).toBeCloseTo(c.positive, 1);
-      expect(out.negative_chance).toBe(c.negative);
+      expect(out.positiveChance).toBeCloseTo(c.positive, 1);
+      expect(out.negativeChance).toBe(c.negative);
     });
   }
 });
@@ -68,8 +68,8 @@ describe('calculatePregnancyEpigeneticChances — backend contract', () => {
     it(`agrees with backend for ${JSON.stringify(sample)}`, () => {
       const fe = calculatePregnancyEpigeneticChances(sample);
       const be = backendCalc(sample);
-      expect(fe.positive_chance).toBe(be.positive_chance);
-      expect(fe.negative_chance).toBe(be.negative_chance);
+      expect(fe.positiveChance).toBe(be.positiveChance);
+      expect(fe.negativeChance).toBe(be.negativeChance);
     });
   }
 });
@@ -77,36 +77,36 @@ describe('calculatePregnancyEpigeneticChances — backend contract', () => {
 describe('calculatePregnancyEpigeneticChances — edge cases', () => {
   it('treats null input as zero feedings (35% negative)', () => {
     expect(calculatePregnancyEpigeneticChances(null)).toEqual({
-      positive_chance: 0,
-      negative_chance: 35,
+      positiveChance: 0,
+      negativeChance: 35,
     });
   });
 
   it('treats undefined input as zero feedings (35% negative)', () => {
     expect(calculatePregnancyEpigeneticChances(undefined)).toEqual({
-      positive_chance: 0,
-      negative_chance: 35,
+      positiveChance: 0,
+      negativeChance: 35,
     });
   });
 
   it('ignores unknown tier keys silently', () => {
     const out = calculatePregnancyEpigeneticChances({ unknownTier: 5, elite: 2 });
     // total = 2 (only elite), weighted = 40, divisor = max(7, 2) = 7
-    expect(out.positive_chance).toBeCloseTo(40 / 7, 4);
+    expect(out.positiveChance).toBeCloseTo(40 / 7, 4);
     // 7 - 2 = 5 missed days
-    expect(out.negative_chance).toBe(25);
+    expect(out.negativeChance).toBe(25);
   });
 
   it('caps the divisor at GESTATION_DAYS so 7×elite cannot exceed 20%', () => {
     const out = calculatePregnancyEpigeneticChances({ elite: 7 });
-    expect(out.positive_chance).toBe(20); // 7*20 / max(7,7) = 140/7 = 20.0
+    expect(out.positiveChance).toBe(20); // 7*20 / max(7,7) = 140/7 = 20.0
   });
 
   it('caps the bonus at 8th-day edge (8×elite stays bounded)', () => {
     const out = calculatePregnancyEpigeneticChances({ elite: 8 });
     // weighted = 160, divisor = max(7, 8) = 8 → 20%
-    expect(out.positive_chance).toBe(20);
-    expect(out.negative_chance).toBe(0);
+    expect(out.positiveChance).toBe(20);
+    expect(out.negativeChance).toBe(0);
   });
 
   it('exports the canonical constants', () => {

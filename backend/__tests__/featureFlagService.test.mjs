@@ -85,9 +85,9 @@ describe('getFeatureVariant', () => {
   });
 
   it('returns the string value when env var is a string', async () => {
-    process.env.FF_LANDING_PAGE_VARIANT = 'variant_a';
+    process.env.FF_LANDING_PAGE_VARIANT = 'variantA';
     const variant = await getFeatureVariant('FF_LANDING_PAGE_VARIANT', 'control');
-    expect(variant).toBe('variant_a');
+    expect(variant).toBe('variantA');
   });
 
   it('returns default when raw value is boolean (not a string)', async () => {

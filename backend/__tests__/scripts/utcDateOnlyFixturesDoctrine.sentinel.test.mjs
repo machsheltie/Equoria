@@ -66,13 +66,13 @@ afterEach(() => {
 
 describe('check-no-utc-date-only-fixtures (Equoria-1lk00)', () => {
   it.each([
-    ['dob_date_now', `const h = { ${DOB}: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000) };\n`],
-    ['bred_get_time', `const h = { ${BRED}: new Date(now.getTime() - 40 * MS_PER_DAY) };\n`],
-    ['vetted_assign', `h.${VETTED} = new Date(Date.now() - DAY_MS);\n`],
-    ['dob_local_ts', `const ts = Date.now();\nconst h = { ${DOB}: new Date(ts - 900 * DAY) };\n`],
-    ['dob_local_date', `const h = { ${DOB}: new Date(now - 30 * DAY) };\n`],
-    ['dob_via_value', `const dob = new Date(Date.now() - 5 * 365 * DAY_MS);\nconst h = { ${DOB}: dob };\n`],
-    ['bred_via_helper', `const daysAgo = n => new Date(ts - n * DAY);\nconst h = { ${BRED}: daysAgo(2) };\n`],
+    ['dobDateNow', `const h = { ${DOB}: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000) };\n`],
+    ['bredGetTime', `const h = { ${BRED}: new Date(now.getTime() - 40 * MS_PER_DAY) };\n`],
+    ['vettedAssign', `h.${VETTED} = new Date(Date.now() - DAY_MS);\n`],
+    ['dobLocalTs', `const ts = Date.now();\nconst h = { ${DOB}: new Date(ts - 900 * DAY) };\n`],
+    ['dobLocalDate', `const h = { ${DOB}: new Date(now - 30 * DAY) };\n`],
+    ['dobViaValue', `const dob = new Date(Date.now() - 5 * 365 * DAY_MS);\nconst h = { ${DOB}: dob };\n`],
+    ['bredViaHelper', `const daysAgo = n => new Date(ts - n * DAY);\nconst h = { ${BRED}: daysAgo(2) };\n`],
   ])('fires on a planted %s violation and names the file', (name, body) => {
     const base = plant(name, body);
 

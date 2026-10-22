@@ -87,7 +87,7 @@ describe('Email service — production SMTP wiring', () => {
     process.env.SMTP_HOST = 'smtp.resend.com';
     process.env.SMTP_PORT = '465';
     process.env.SMTP_USER = 'resend';
-    process.env.SMTP_PASS = 're_apikey_example';
+    process.env.SMTP_PASS = 'reApikeyExample';
 
     const result = await sendPasswordResetEmail('user@example.com', 'reset-tok-9');
 

@@ -102,7 +102,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
         userId: user.id,
         amount: 250,
         systemAccount: SYSTEM_ACCOUNT_BURN,
-        category: 'kl16c_conservation_test_burn',
+        category: 'kl16cConservationTestBurn',
         description: 'paired debit conservation test',
         metadata: { test: 'conservation' },
       });
@@ -124,7 +124,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
     // tagged with the burn system account. This counterparty row's ABSENCE is
     // the entire defect class kl16c fixes.
     const ledger = await prisma.userTransaction.findMany({
-      where: { userId: user.id, category: 'kl16c_conservation_test_burn' },
+      where: { userId: user.id, category: 'kl16cConservationTestBurn' },
     });
     expect(ledger.length).toBe(1);
     expect(ledger[0].type).toBe('credit');

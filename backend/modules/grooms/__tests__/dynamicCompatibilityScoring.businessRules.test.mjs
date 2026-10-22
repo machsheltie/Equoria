@@ -42,7 +42,7 @@ describe('Dynamic Compatibility Scoring', () => {
           data: {
             username: `compatibility_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             email: `compatibility_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
-            password: 'test_hash',
+            password: 'testHash',
             firstName: 'Test',
             lastName: 'User',
             money: 1000,

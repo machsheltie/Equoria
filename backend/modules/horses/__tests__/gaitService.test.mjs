@@ -56,7 +56,7 @@ describe('calculateConformationBonus', () => {
   });
 
   it('returns 0 for unknown gait key', () => {
-    expect(calculateConformationBonus({ shoulders: 80, back: 80 }, 'unknown_gait')).toBe(0);
+    expect(calculateConformationBonus({ shoulders: 80, back: 80 }, 'unknownGait')).toBe(0);
   });
 
   it('returns 0 when all mapped regions are at neutral baseline (70)', () => {

@@ -232,9 +232,9 @@ describe('sentinel-positive proof: the coverage check fires on a violation (Equo
   }
 
   it('FAILS when a fake dead trait is emittable (proves assertion (a) is not a placebo)', () => {
-    const planted = new Set(['__fake_dead_trait_for_sentinel__']);
+    const planted = new Set(['__fakeDeadTraitForSentinel__']);
     // Not in traitEffects and not baselined → must be flagged unexpected.
-    expect(unexpectedMissingFor(planted)).toEqual(['__fake_dead_trait_for_sentinel__']);
+    expect(unexpectedMissingFor(planted)).toEqual(['__fakeDeadTraitForSentinel__']);
   });
 
   it('PASSES for a real effect-backed trait (planted trait removed)', () => {

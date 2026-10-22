@@ -113,7 +113,7 @@ beforeAll(async () => {
           age: 1,
           bondScore: 0,
           stressLevel: 5, // LOW_STRESS + MINIMAL_STRESS met
-          epigeneticModifiers: { positive: [], negative: [], hidden: ['trait_xyz_unknown_7k3'] },
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['traitXyzUnknown7k3'] },
         },
       }),
     () =>
@@ -295,7 +295,7 @@ describe('revealTraits() — conditions met, no suitable traits path', () => {
         epigeneticModifiers: {
           positive: [],
           negative: [],
-          hidden: ['trait_xyz_unknown_7k3'],
+          hidden: ['traitXyzUnknown7k3'],
         },
       },
     });

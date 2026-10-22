@@ -90,7 +90,7 @@ describe('identifyDevelopmentalWindows', () => {
 
 describe('calculateWindowSensitivity', () => {
   it('throws for unknown window name', async () => {
-    await expect(calculateWindowSensitivity(horse.id, 'totally_fake_window')).rejects.toThrow();
+    await expect(calculateWindowSensitivity(horse.id, 'totallyFakeWindow')).rejects.toThrow();
   });
 
   it('returns sensitivity shape for valid window', async () => {
@@ -114,7 +114,7 @@ describe('calculateWindowSensitivity', () => {
 
 describe('evaluateTraitDevelopmentOpportunity', () => {
   it('throws for unknown window name', async () => {
-    await expect(evaluateTraitDevelopmentOpportunity(horse.id, 'trusting', 'not_a_window')).rejects.toThrow();
+    await expect(evaluateTraitDevelopmentOpportunity(horse.id, 'trusting', 'notAWindow')).rejects.toThrow();
   });
 
   it('returns opportunity shape for target trait in matching window', async () => {
@@ -153,7 +153,7 @@ describe('trackDevelopmentalMilestones', () => {
 
 describe('assessWindowClosure', () => {
   it('throws for unknown window name', async () => {
-    await expect(assessWindowClosure(horse.id, 'bad_window')).rejects.toThrow();
+    await expect(assessWindowClosure(horse.id, 'badWindow')).rejects.toThrow();
   });
 
   it('returns open closure status for imprinting on a newborn', async () => {

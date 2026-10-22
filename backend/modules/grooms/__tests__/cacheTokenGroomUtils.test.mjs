@@ -168,7 +168,7 @@ describe('generateTokenFamily', () => {
 
 describe('applyRareTraitBoosterEffects', () => {
   it('returns unchanged chance when groom has no rare trait perks', () => {
-    const result = applyRareTraitBoosterEffects('moonlit_grace', 0.05, { rareTraitPerks: {} });
+    const result = applyRareTraitBoosterEffects('moonlitGrace', 0.05, { rareTraitPerks: {} });
     expect(result.originalChance).toBe(0.05);
     expect(result.modifiedChance).toBe(0.05);
     expect(Array.isArray(result.appliedPerks)).toBe(true);
@@ -177,7 +177,7 @@ describe('applyRareTraitBoosterEffects', () => {
   });
 
   it('caps modified chance at 1.0', () => {
-    const result = applyRareTraitBoosterEffects('any_trait', 1.0, { rareTraitPerks: {} });
+    const result = applyRareTraitBoosterEffects('anyTrait', 1.0, { rareTraitPerks: {} });
     expect(result.modifiedChance).toBeLessThanOrEqual(1.0);
   });
 });

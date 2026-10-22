@@ -36,7 +36,7 @@ describe('sendVerificationEmail', () => {
   });
 
   it('works with username in user object', async () => {
-    const result = await sendVerificationEmail('x@y.com', 'tok', { username: 'ada_rider' });
+    const result = await sendVerificationEmail('x@y.com', 'tok', { username: 'adaRider' });
     expect(result.success).toBe(true);
   });
 });

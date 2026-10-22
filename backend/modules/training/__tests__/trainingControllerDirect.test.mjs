@@ -60,7 +60,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       data: {
         username: `test-training-user-${timestamp}`,
         email: `training-${timestamp}@test.com`,
-        password: 'hashed_password',
+        password: 'hashedPassword',
         firstName: 'Test',
         lastName: 'User',
         xp: 100,

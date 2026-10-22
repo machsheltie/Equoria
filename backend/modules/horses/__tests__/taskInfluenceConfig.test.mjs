@@ -75,7 +75,7 @@ describe('getTraitsInfluencedByTask', () => {
   });
 
   it('returns empty array for unknown task', () => {
-    expect(getTraitsInfluencedByTask('unknown_task')).toEqual([]);
+    expect(getTraitsInfluencedByTask('unknownTask')).toEqual([]);
   });
 
   it('returns a copy (mutating result does not affect map)', () => {
@@ -99,7 +99,7 @@ describe('getDailyTraitValue', () => {
   });
 
   it('returns 0 for unknown task', () => {
-    expect(getDailyTraitValue('unknown_task')).toBe(0);
+    expect(getDailyTraitValue('unknownTask')).toBe(0);
   });
 });
 
@@ -179,7 +179,7 @@ describe('calculateTraitPoints', () => {
   });
 
   it('ignores unknown tasks', () => {
-    const result = calculateTraitPoints({ unknown_task: 5 });
+    const result = calculateTraitPoints({ unknownTask: 5 });
     expect(Object.keys(result)).toHaveLength(0);
   });
 

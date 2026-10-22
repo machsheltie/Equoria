@@ -56,7 +56,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
             stamina: 85,
             agility: 80,
             intelligence: 75,
-            epigeneticModifiers: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendary_speed'] },
+            epigeneticModifiers: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendarySpeed'] },
           },
         }),
       () =>
@@ -70,7 +70,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
             stamina: 95,
             agility: 85,
             intelligence: 90,
-            epigeneticModifiers: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfect_balance'] },
+            epigeneticModifiers: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfectBalance'] },
           },
         }),
       () =>
@@ -84,7 +84,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
             stamina: 80,
             agility: 95,
             intelligence: 85,
-            epigeneticModifiers: { positive: ['agile', 'bold'], negative: [], hidden: ['natural_jumper'] },
+            epigeneticModifiers: { positive: ['agile', 'bold'], negative: [], hidden: ['naturalJumper'] },
           },
         }),
       () =>
@@ -98,7 +98,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
             stamina: 90,
             agility: 75,
             intelligence: 95,
-            epigeneticModifiers: { positive: ['wise', 'steady'], negative: [], hidden: ['dressage_master'] },
+            epigeneticModifiers: { positive: ['wise', 'steady'], negative: [], hidden: ['dressageMaster'] },
           },
         }),
     ]);

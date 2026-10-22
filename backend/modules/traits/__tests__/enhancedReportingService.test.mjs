@@ -217,7 +217,7 @@ describe('generateEpigeneticRecommendations', () => {
   });
 
   it('adds milestone recommendation when pendingMilestones present', () => {
-    const dev = { pendingMilestones: ['first_trait', 'second_trait'] };
+    const dev = { pendingMilestones: ['firstTrait', 'secondTrait'] };
     const horse = makeHorse({ bondScore: 40, stressLevel: 3 });
     const result = generateEpigeneticRecommendations(horse, goodEnv, goodTrait, dev);
     expect(result.some(r => r.includes('2 developmental milestones pending'))).toBe(true);

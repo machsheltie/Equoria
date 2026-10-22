@@ -26,7 +26,7 @@ const FIXTURE_PREFIX = 'TestFixture-hjzwt';
 // (it pairs a SystemAccount credit internally so the debit conserves money).
 // These hjzwt sentinels exercise the TOCTOU-race guarantee, which is
 // orthogonal to the pairing — they just need to pass the now-required args.
-const PAIR = { systemAccount: SYSTEM_ACCOUNT_BURN, category: 'hjzwt_race_test_burn' };
+const PAIR = { systemAccount: SYSTEM_ACCOUNT_BURN, category: 'hjzwtRaceTestBurn' };
 
 let user;
 const createdUserIds = [];

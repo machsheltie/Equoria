@@ -53,7 +53,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       where: {
         OR: [
           { horse: { name: { startsWith: 'EpigeneticTest' } } },
-          { horse: { userId: { startsWith: 'epigenetic_test' } } },
+          { horse: { userId: { startsWith: 'epigeneticTest' } } },
         ],
       },
     });
@@ -530,7 +530,7 @@ describe('Trait History Service', () => {
       horseId: testHorse.id,
       traitName: 'Confident',
       sourceType: 'milestone',
-      sourceId: 'socialization_milestone',
+      sourceId: 'socializationMilestone',
       influenceScore: 2.5,
       isEpigenetic: true,
       groomId: testGroom.id,

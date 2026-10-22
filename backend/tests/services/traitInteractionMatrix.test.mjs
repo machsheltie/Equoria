@@ -35,7 +35,7 @@ describe('Trait Interaction Matrix', () => {
       data: {
         username: `trait_matrix_${testSuffix}`,
         email: `trait_matrix_${testSuffix}@test.com`,
-        password: 'test_hash',
+        password: 'testHash',
         firstName: 'Test',
         lastName: 'User',
         money: 1000,

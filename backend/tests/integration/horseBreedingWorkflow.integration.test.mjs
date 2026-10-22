@@ -210,7 +210,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         epigeneticModifiers: {
           positive: ['fast', 'intelligent', 'calm', 'resilient'],
           negative: [],
-          hidden: ['strong_heart'],
+          hidden: ['strongHeart'],
         },
       },
     });

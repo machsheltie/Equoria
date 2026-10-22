@@ -66,7 +66,7 @@ const GESTATION_DAYS = 7;
  * NOTHING in competition/training. Every trait below resolves in
  * traitEffects.mjs (so the bonus is mechanically real) and is a canonical
  * roster member per the 9o3n7 spec §B. The feed-tier mechanic is unchanged —
- * premium feed still raises positive_chance and biases toward these traits.
+ * premium feed still raises positiveChance and biases toward these traits.
  */
 // §B4 (9o3n7.4): repointed at approved, effect-backed canonical traits. The
 // previous pool (wellNourished/vigorous/undernourished/weakImmunity/lowVigor)
@@ -586,8 +586,9 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
     // next run; a parallel runner that foaled her first makes the claim match
     // nothing, which is a skip, not an error.
     try {
-      const { positive_chance: positiveChance, negative_chance: negativeChance } =
-        calculatePregnancyEpigeneticChances(snapshot.pregnancyFeedingsByTier);
+      const { positiveChance, negativeChance } = calculatePregnancyEpigeneticChances(
+        snapshot.pregnancyFeedingsByTier,
+      );
 
       await createFoalFromPregnancy({
         damId,
