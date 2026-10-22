@@ -185,18 +185,30 @@ describe('Gait Score Generation Service', () => {
     // Owner ruling 2026-10-21: breedProfiles.json now carries the same gait
     // profiles as the seed files that load the DB the game reads (the invented
     // 12-breed table these values came from was deleted). Old contract:
-    // Walkaloosa had Indian Shuffle only; National Show Horse was gaited with Slow
-    // Gait and Rack. The game's data: Walkaloosa has Singlefoot and Saddle Rack;
-    // National Show Horse is not gaited.
+    // Walkaloosa had Indian Shuffle only. The game's data: Walkaloosa has
+    // Singlefoot and Saddle Rack. Owner ruling 2026-10-22: National Show Horse,
+    // Mangalarga and Standardbred are gaited (gait names from the canonical
+    // registry, samples/Breeds/_gait-registry.txt).
     test('Walkaloosa gets Singlefoot and Saddle Rack', () => {
       const scores = generateGaitScores('Walkaloosa', goodConformation);
       expect(scores.gaiting).toHaveLength(2);
       expect(new Set(scores.gaiting.map(g => g.name))).toEqual(new Set(['Singlefoot', 'Saddle Rack']));
     });
 
-    test('National Show Horse is not gaited', () => {
+    test('National Show Horse gets Slow Gait and Rack', () => {
       const scores = generateGaitScores('National Show Horse', goodConformation);
-      expect(scores.gaiting).toBeNull();
+      expect(scores.gaiting).toHaveLength(2);
+      expect(new Set(scores.gaiting.map(g => g.name))).toEqual(new Set(['Slow Gait', 'Rack']));
+    });
+
+    test('Mangalarga gets Marcha Batida and Marcha Picada', () => {
+      const scores = generateGaitScores('Mangalarga', goodConformation);
+      expect(new Set(scores.gaiting.map(g => g.name))).toEqual(new Set(['Marcha Batida', 'Marcha Picada']));
+    });
+
+    test('Standardbred gets Pace', () => {
+      const scores = generateGaitScores('Standardbred', goodConformation);
+      expect(scores.gaiting.map(g => g.name)).toEqual(['Pace']);
     });
   });
 
@@ -215,11 +227,13 @@ describe('Gait Score Generation Service', () => {
       'Lusitano',
       'Paint Horse',
     ];
-    // Owner ruling 2026-10-21: breedProfiles.json now carries the same gait
-    // profiles as the seed files that load the DB the game reads (the invented
-    // 12-breed table these values came from was deleted). Old contract
-    // also counted National Show Horse as gaited.
-    const gaitedBreedNames = new Set(['American Saddlebred', 'Tennessee Walking Horse', 'Walkaloosa']);
+    // Owner ruling 2026-10-22: National Show Horse is gaited.
+    const gaitedBreedNames = new Set([
+      'American Saddlebred',
+      'National Show Horse',
+      'Tennessee Walking Horse',
+      'Walkaloosa',
+    ]);
 
     test.each(allBreedNames)('breed %s produces valid gait scores', breedName => {
       const scores = generateGaitScores(breedName, goodConformation);

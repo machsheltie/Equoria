@@ -277,9 +277,13 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
         "mean": 78,
         "std_dev": 8
       },
-      "gaiting": null
+      "gaiting": {
+        "mean": 82,
+        "std_dev": 5
+      }
     },
-    "is_gaited_breed": false
+    "is_gaited_breed": true,
+    "gaited_gait_registry": ["Slow Gait", "Rack"]
   },
   "temperament_weights": {
     "Spirited": 18,

@@ -12827,9 +12827,13 @@
           "mean": 78,
           "std_dev": 8
         },
-        "gaiting": null
+        "gaiting": {
+          "mean": 82,
+          "std_dev": 9
+        }
       },
-      "is_gaited_breed": false
+      "is_gaited_breed": true,
+      "gaited_gait_registry": ["Marcha Batida", "Marcha Picada"]
     },
     "temperament_weights": {
       "Spirited": 17,
@@ -14303,9 +14307,13 @@
           "mean": 78,
           "std_dev": 8
         },
-        "gaiting": null
+        "gaiting": {
+          "mean": 82,
+          "std_dev": 5
+        }
       },
-      "is_gaited_breed": false
+      "is_gaited_breed": true,
+      "gaited_gait_registry": ["Slow Gait", "Rack"]
     },
     "temperament_weights": {
       "Spirited": 18,
@@ -19822,9 +19830,13 @@
           "mean": 80,
           "std_dev": 8
         },
-        "gaiting": null
+        "gaiting": {
+          "mean": 82,
+          "std_dev": 9
+        }
       },
-      "is_gaited_breed": false
+      "is_gaited_breed": true,
+      "gaited_gait_registry": ["Pace"]
     },
     "temperament_weights": {
       "Spirited": 14,
