@@ -158,6 +158,8 @@ export async function getTraitDefinitions(req, res) {
       TRAIT_DEFINITIONS_TTL,
     );
 
+    // Equoria-cmw85.28: static reference data, so HTTP caching is opted in.
+    res.locals.cacheable = { maxAge: 300 };
     res.status(200).json({
       success: true,
       message: `Retrieved ${data.count} trait definitions`,

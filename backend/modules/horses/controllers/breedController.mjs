@@ -130,6 +130,8 @@ export async function getAllBreeds(req, res, next) {
 
     logger.info(`Retrieved ${breeds.length} breeds`);
 
+    // Equoria-cmw85.28: public reference data, so HTTP caching is opted in.
+    res.locals.cacheable = { maxAge: 300 };
     res.status(200).json({
       success: true,
       data: breeds,
@@ -253,6 +255,8 @@ export async function getBreedById(req, res, next) {
 
     logger.info(`Retrieved breed: ${breed.name} (ID: ${breed.id})`);
 
+    // Equoria-cmw85.28: public reference data, so HTTP caching is opted in.
+    res.locals.cacheable = { maxAge: 300 };
     res.status(200).json({
       success: true,
       data: breed,

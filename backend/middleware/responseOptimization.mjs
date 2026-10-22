@@ -73,21 +73,30 @@ export function responseOptimization(options = {}) {
           });
         }
 
-        // Generate ETag for cacheable responses
-        if (enableETag && ResponseCacheService.shouldCache(req, res)) {
-          const etag = ResponseCacheService.generateETag(optimizedData);
+        // Equoria-cmw85.28: HTTP caching is opt-in. A handler that serves
+        // genuinely public reference data sets `res.locals.cacheable =
+        // { maxAge, staleWhileRevalidate? }`; everything else without a
+        // handler-set Cache-Control is answered no-store, so player state is
+        // never stored by a browser, proxy or CDN.
+        const cacheable = res.locals?.cacheable;
+        if (cacheable && ResponseCacheService.shouldCache(req, res)) {
+          const etag = enableETag ? ResponseCacheService.generateETag(optimizedData) : undefined;
 
           // Check if client has cached version
-          if (req.headers['if-none-match'] === etag) {
+          if (etag && req.headers['if-none-match'] === etag) {
             return res.status(304).end();
           }
 
-          res.setHeader('ETag', etag);
           ResponseCacheService.setCacheHeaders(res, {
-            maxAge: 300, // 5 minutes
-            staleWhileRevalidate: 60, // 1 minute
+            maxAge: cacheable.maxAge ?? 300,
+            staleWhileRevalidate: cacheable.staleWhileRevalidate ?? 60,
             etag,
           });
+          // Keyed per identity in any shared cache.
+          res.vary('Authorization');
+          res.vary('Cookie');
+        } else if (!res.getHeader('Cache-Control')) {
+          res.setHeader('Cache-Control', 'no-store');
         }
 
         // Monitor response size
