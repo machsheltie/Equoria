@@ -296,7 +296,12 @@ describe('CompetitionResultsPage', () => {
       renderPageSimple();
 
       expect(await screen.findByTestId('stats-error')).toBeInTheDocument();
-      expect(screen.getByText(/failed to load stats/i)).toBeInTheDocument();
+      // Equoria-pe99s. Old contract: the raw server message ("Failed to load
+      // stats") was rendered verbatim. Owner ruling 2026-10-22 (Stacey): render
+      // the class-mapped userMessageFor copy instead (doctrine section 4); the
+      // server's own words never reach the player.
+      expect(screen.getByText(/something went wrong on our end/i)).toBeInTheDocument();
+      expect(screen.queryByText(/failed to load stats/i)).not.toBeInTheDocument();
 
       // Clicking retry re-issues the boundary request; stub a success so the
       // error clears and the stats render.

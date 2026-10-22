@@ -341,7 +341,7 @@ const CompetitionResultsPage = (): JSX.Element => {
         >
           {statsError && statsErrorData && (
             <StatsError
-              message={statsErrorData.message || 'Failed to load stats'}
+              message={userMessageFor(statsErrorData).message}
               onRetry={handleRetryStats}
             />
           )}
