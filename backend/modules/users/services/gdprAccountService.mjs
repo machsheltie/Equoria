@@ -219,6 +219,14 @@ export async function eraseUserAccount(userId) {
 
   await withRetryableTxMapping(
     prisma.$transaction(async tx => {
+      // Equoria-6p398.17: the email-identity lock order is EmailVerificationToken
+      // -> password_reset_tokens -> User -> RefreshToken (txTokenBeforeUserLockOrder
+      // sentinel); erasing in the reverse order could deadlock with a password
+      // reset. These go first, before any User write (entrant refunds included);
+      // refresh tokens leave last, with the user row.
+      await tx.emailVerificationToken.deleteMany({ where: { userId } });
+      await tx.passwordResetToken.deleteMany({ where: { userId } });
+
       // Ids of horses owned by THIS user. Used to scope horse-dependent
       // cleanup precisely — never "all horses".
       //
@@ -567,14 +575,18 @@ export async function eraseUserAccount(userId) {
       await tx.notification.deleteMany({ where: { userId } });
       await tx.userTransaction.deleteMany({ where: { userId } });
       await tx.xpEvent.deleteMany({ where: { userId } });
-      await tx.refreshToken.deleteMany({ where: { userId } });
-      await tx.passwordResetToken.deleteMany({ where: { userId } });
-      await tx.emailVerificationToken.deleteMany({ where: { userId } });
+      // Email-verification and password-reset tokens were deleted at the top
+      // of this transaction; refresh tokens go with the user row below
+      // (Equoria-6p398.17 — see there).
       await tx.groomSalaryPayment.deleteMany({ where: { userId } });
       await tx.groomPerformanceRecord.deleteMany({ where: { userId } });
       await tx.facility.deleteMany({ where: { userId } });
 
       // ── Finally the user row ──────────────────────────────────────────────
+      // RefreshToken is `onDelete: Cascade`, so this delete removes the
+      // account's refresh tokens AFTER locking the User row — the User ->
+      // RefreshToken edge every password rotation also takes. An explicit
+      // refreshToken.deleteMany here would lock them first (Equoria-6p398.17).
       await tx.user.delete({ where: { id: userId } });
     }, ERASURE_TX_OPTIONS),
     { message: 'Account service is busy right now, please retry in a moment.' },

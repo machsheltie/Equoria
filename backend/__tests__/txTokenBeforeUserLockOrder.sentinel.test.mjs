@@ -133,6 +133,10 @@ const GUARDED_FILES = [
   'modules/auth/controllers/passwordController.mjs',
   'modules/auth/services/emailChangeService.mjs',
   'modules/auth/services/emailVerificationService.mjs',
+  // Equoria-6p398.17: account erasure deletes the token rows before any User
+  // write (its refund credits to other players included) and leaves refresh
+  // tokens to the User delete's cascade (User -> RefreshToken).
+  'modules/users/services/gdprAccountService.mjs',
 ];
 
 describe('SENTINEL: token rows are locked before the User row inside a transaction', () => {
