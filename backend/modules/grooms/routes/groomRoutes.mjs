@@ -471,6 +471,7 @@ router.get(
  */
 router.post(
   '/hire',
+  authenticateToken, // Equoria-qyyj7: route-level auth, like every sibling mutation
   [
     body('name')
       .isLength({ min: 2, max: 100 })
