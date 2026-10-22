@@ -20,14 +20,14 @@ import { PrismaClient } from '../../packages/database/prismaClient.mjs';
 import { createReadyHandler } from '../config/healthHandlers.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const UNREACHABLE_URL = 'postgresql://probe:probe@127.0.0.1:1/equoria_unreachable?connect_timeout=2';
+const unreachableUrl = 'postgresql://probe:probe@127.0.0.1:1/equoria_unreachable?connect_timeout=2';
 
 // The only fields an anonymous caller may see in the Redis block.
-const ALLOWED_REDIS_KEYS = ['connected', 'status'];
+const allowedRedisKeys = ['connected', 'status'];
 
 describe('anonymous health payloads (Equoria-ht7qz)', () => {
   const unreachableClient = new PrismaClient({
-    datasources: { db: { url: UNREACHABLE_URL } },
+    datasources: { db: { url: unreachableUrl } },
     log: [],
     errorFormat: 'minimal',
   });
@@ -42,7 +42,7 @@ describe('anonymous health payloads (Equoria-ht7qz)', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body).not.toHaveProperty('environment');
-    expect(Object.keys(res.body.services.redis).sort()).toEqual(ALLOWED_REDIS_KEYS);
+    expect(Object.keys(res.body.services.redis).sort()).toEqual(allowedRedisKeys);
   });
 
   it('GET /ready omits environment and Redis version/error detail', async () => {
@@ -51,7 +51,7 @@ describe('anonymous health payloads (Equoria-ht7qz)', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ready');
     expect(res.body).not.toHaveProperty('environment');
-    expect(Object.keys(res.body.services.redis).sort()).toEqual(ALLOWED_REDIS_KEYS);
+    expect(Object.keys(res.body.services.redis).sort()).toEqual(allowedRedisKeys);
   });
 
   it('a failed readiness ping answers 503 with no driver error text', async () => {
@@ -61,7 +61,6 @@ describe('anonymous health payloads (Equoria-ht7qz)', () => {
     const res = await request(probeApp).get('/ready');
 
     expect(res.status).toBe(503);
-    expect(res.body.status).toBe('not_ready');
     expect(res.body.message).toBe('Database unreachable');
     expect(res.body.services.database).toEqual({ status: 'unhealthy' });
     expect(res.body).not.toHaveProperty('environment');

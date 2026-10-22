@@ -17,7 +17,7 @@ import errorHandler from '../middleware/errorHandler.mjs';
 import { AppError, DatabaseError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 
-const INTERNAL_DETAIL = "Can't reach database server at 10.0.0.5:5432";
+const internalDetail = "Can't reach database server at 10.0.0.5:5432";
 
 function appThrowing(makeError) {
   const app = express();
@@ -33,17 +33,17 @@ describe('errorHandler — internal 500 messages (Equoria-ot1mo)', () => {
 
   it('answers a raw internal Error with a generic message and logs the detail', async () => {
     const logSpy = jest.spyOn(logger, 'error');
-    const res = await request(appThrowing(() => new Error(INTERNAL_DETAIL))).get('/boom');
+    const res = await request(appThrowing(() => new Error(internalDetail))).get('/boom');
 
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toBe('Internal Server Error');
     expect(JSON.stringify(res.body)).not.toContain('10.0.0.5');
-    expect(logSpy.mock.calls.some(args => JSON.stringify(args).includes(INTERNAL_DETAIL))).toBe(true);
+    expect(logSpy.mock.calls.some(args => JSON.stringify(args).includes(internalDetail))).toBe(true);
   });
 
   it('answers a raw Error carrying an explicit 5xx statusCode with a generic message', async () => {
-    const res = await request(appThrowing(() => Object.assign(new Error(INTERNAL_DETAIL), { statusCode: 503 }))).get(
+    const res = await request(appThrowing(() => Object.assign(new Error(internalDetail), { statusCode: 503 }))).get(
       '/boom',
     );
 
@@ -53,7 +53,7 @@ describe('errorHandler — internal 500 messages (Equoria-ot1mo)', () => {
   });
 
   it('answers a non-operational AppError 500 with a generic message', async () => {
-    const res = await request(appThrowing(() => new AppError(INTERNAL_DETAIL, 500, false))).get('/boom');
+    const res = await request(appThrowing(() => new AppError(internalDetail, 500, false))).get('/boom');
 
     expect(res.status).toBe(500);
     expect(res.body.message).toBe('Internal Server Error');
@@ -61,7 +61,7 @@ describe('errorHandler — internal 500 messages (Equoria-ot1mo)', () => {
 
   it('answers a DatabaseError (which wraps raw driver text) with a generic message', async () => {
     const res = await request(
-      appThrowing(() => new DatabaseError(`Lookup failed: ${INTERNAL_DETAIL}`, new Error(INTERNAL_DETAIL))),
+      appThrowing(() => new DatabaseError(`Lookup failed: ${internalDetail}`, new Error(internalDetail))),
     ).get('/boom');
 
     expect(res.status).toBe(500);

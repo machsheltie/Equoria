@@ -25,13 +25,13 @@ const ORIGIN = 'http://localhost:3000';
 const TAG = `m5vyuh${randomBytes(5).toString('hex')}`;
 const EMAIL = `${TAG}@example.com`;
 const PASSWORD = 'TestPassword123!';
-const LOG_METHODS = ['error', 'warn', 'info', 'http', 'verbose', 'debug'];
+const logMethods = ['error', 'warn', 'info', 'http', 'verbose', 'debug'];
 
 const createdUserIds = new Set();
 
 /** Spy (call-through) on every logger level; return a reader of all logged text. */
 function captureLogs() {
-  const spies = LOG_METHODS.filter(m => typeof logger[m] === 'function').map(m => jest.spyOn(logger, m));
+  const spies = logMethods.filter(m => typeof logger[m] === 'function').map(m => jest.spyOn(logger, m));
   return () =>
     spies
       .flatMap(spy => spy.mock.calls)

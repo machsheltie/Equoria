@@ -364,7 +364,7 @@ export function detectSuspiciousPatterns(userActivity) {
   return patterns;
 }
 
-const SENSITIVE_LOG_FIELDS = [
+const sensitiveLogFields = [
   'password',
   'token',
   'secret',
@@ -387,7 +387,7 @@ const SENSITIVE_LOG_FIELDS = [
 // Equoria-oierg: only objects and arrays are walked. A tag check, not a
 // prototype identity check, so cross-realm objects (e.g. Prisma Json reads)
 // still walk; Date, Buffer and Map are left as-is (matched by key only).
-const SANITIZE_MAX_DEPTH = 8;
+const sanitizeMaxDepth = 8;
 const isWalkable = value =>
   Array.isArray(value) || Object.prototype.toString.call(value) === '[object Object]';
 
@@ -395,7 +395,7 @@ const isWalkable = value =>
  * Sanitize sensitive data for logging. Recurses (Equoria-oierg): a key
  * containing a sensitive substring has its whole subtree redacted at any depth,
  * arrays stay arrays, cycles become '[CIRCULAR]' and nesting past
- * SANITIZE_MAX_DEPTH becomes '[MAX_DEPTH]' (never emitted unscanned). Never
+ * sanitizeMaxDepth becomes '[MAX_DEPTH]' (never emitted unscanned). Never
  * mutates input. `depth` / `ancestors` are internal recursion state.
  * Exported for unit-testing pure branch coverage (Equoria-jkht)
  */
@@ -406,7 +406,7 @@ export function sanitizeLogData(data, depth = 0, ancestors = new Set()) {
   if (ancestors.has(data)) {
     return '[CIRCULAR]';
   }
-  if (depth >= SANITIZE_MAX_DEPTH) {
+  if (depth >= sanitizeMaxDepth) {
     return '[MAX_DEPTH]';
   }
   ancestors.add(data);
@@ -415,7 +415,7 @@ export function sanitizeLogData(data, depth = 0, ancestors = new Set()) {
     : Object.fromEntries(
         Object.entries(data).map(([key, child]) => [
           key,
-          SENSITIVE_LOG_FIELDS.some(s => key.toLowerCase().includes(s))
+          sensitiveLogFields.some(s => key.toLowerCase().includes(s))
             ? '[REDACTED]'
             : sanitizeLogData(child, depth + 1, ancestors),
         ]),

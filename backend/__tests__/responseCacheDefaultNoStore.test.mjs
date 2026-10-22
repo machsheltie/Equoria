@@ -23,7 +23,7 @@ import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const PUBLIC_REFERENCE_POLICY = 'public, max-age=300, stale-while-revalidate=60';
+const publicReferencePolicy = 'public, max-age=300, stale-while-revalidate=60';
 
 function expectVaryOnIdentity(res) {
   const vary = String(res.headers.vary ?? '').toLowerCase();
@@ -70,7 +70,7 @@ describe('response cache default (Equoria-cmw85.28)', () => {
     async path => {
       const res = await authedGet(path);
       expect(res.status).toBe(200);
-      expect(res.headers['cache-control']).toBe(PUBLIC_REFERENCE_POLICY);
+      expect(res.headers['cache-control']).toBe(publicReferencePolicy);
       expectVaryOnIdentity(res);
     },
   );
@@ -101,7 +101,7 @@ describe('responseOptimization opt-in contract (Equoria-cmw85.28)', () => {
   it('an opted-in route gets the public policy, Vary and a working 304', async () => {
     const probe = probeApp();
     const first = await request(probe).get('/opted-in');
-    expect(first.headers['cache-control']).toBe(PUBLIC_REFERENCE_POLICY);
+    expect(first.headers['cache-control']).toBe(publicReferencePolicy);
     expectVaryOnIdentity(first);
     expect(first.headers.etag).toBeDefined();
 

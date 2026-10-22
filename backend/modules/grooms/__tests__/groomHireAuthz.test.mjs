@@ -24,9 +24,9 @@ import groomRoutes from '../routes/groomRoutes.mjs';
 const ORIGIN = 'http://localhost:3000';
 // A body that passes the route's validators, so a missing auth layer would
 // reach the controller instead of stopping at validation.
-const VALID_HIRE_BODY = {
+const validHireBody = {
   name: 'TestFixture-qyyj7-groom',
-  speciality: 'foal_care',
+  speciality: 'general',
   skill_level: 'novice',
   personality: 'gentle',
 };
@@ -37,14 +37,14 @@ describe('POST /grooms/hire route-level authentication (Equoria-qyyj7)', () => {
     bare.use(express.json());
     bare.use('/grooms', groomRoutes);
 
-    const res = await request(bare).post('/grooms/hire').send(VALID_HIRE_BODY);
+    const res = await request(bare).post('/grooms/hire').send(validHireBody);
 
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('Access token is required');
   });
 
   it('rejects an anonymous hire on the real app at the middleware layer', async () => {
-    const res = await request(app).post('/api/v1/grooms/hire').set('Origin', ORIGIN).send(VALID_HIRE_BODY);
+    const res = await request(app).post('/api/v1/grooms/hire').set('Origin', ORIGIN).send(validHireBody);
 
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('Access token is required');

@@ -290,13 +290,8 @@ describe('doctrine checks fire on planted violations after the shared-module ref
         `const h = { '${tok}': '1' };\n`,
         'check-no-bypass-headers.sh',
       );
-    }
-  });
-
-  // Equoria-3khb1: the gate also scans the backend production tree, so a new
-  // middleware or route honouring an x-test-* header cannot ship silently.
-  test('check-no-bypass-headers.sh catches EVERY canonical bypass token planted in backend/middleware', () => {
-    for (const tok of BYPASS_HEADER_TOKENS) {
+      // Equoria-3khb1: the gate also scans the backend production tree, so a
+      // new middleware or route honouring an x-test-* header cannot ship.
       expectFiresThenClean(
         'backend/middleware/__doctrine_jest_plant_70pb9__.mjs',
         `export const skip = req => req.get('${tok}') === '1';\n`,

@@ -95,7 +95,7 @@ const EMAIL_IN_TEXT = /[^\s@<>()[\]{}"'`,;:\\]+@[^\s@<>()[\]{}"'`,;:\\]+/g;
 // The same token with its `@` percent-encoded, as it appears in a logged URL
 // query string (`?email=jasmine%40example.com`). `&`, `=`, `?` and `/` also
 // end it so neighbouring query parameters and path segments are left alone.
-const ENCODED_EMAIL_IN_TEXT = /[^\s@<>()[\]{}"'`,;:\\&=?/]+%40[^\s@<>()[\]{}"'`,;:\\&=?/]+/gi;
+const encodedEmailInText = /[^\s@<>()[\]{}"'`,;:\\&=?/]+%40[^\s@<>()[\]{}"'`,;:\\&=?/]+/gi;
 
 /**
  * Mask every address inside free text, such as an error message headed for a
@@ -113,7 +113,7 @@ export function maskEmailsInText(text) {
   }
   return String(text)
     .replace(EMAIL_IN_TEXT, match => maskEmailAddress(match) ?? '***')
-    .replace(ENCODED_EMAIL_IN_TEXT, match => maskEmailAddress(match.replace(/%40/i, '@')) ?? '***');
+    .replace(encodedEmailInText, match => maskEmailAddress(match.replace(/%40/i, '@')) ?? '***');
 }
 
 /**

@@ -19,7 +19,7 @@ import cors from 'cors';
 import request from 'supertest';
 import { createCorsOptionsDelegate } from '../config/corsPolicy.mjs';
 
-const API_HOST = 'api.equoria.example';
+const apiHost = 'api.equoria.example';
 
 function appFor({ nodeEnv, allowedOrigins = [] }) {
   const app = express();
@@ -30,7 +30,7 @@ function appFor({ nodeEnv, allowedOrigins = [] }) {
   return app;
 }
 
-const probe = (app, origin) => request(app).get('/probe').set('Host', API_HOST).set('Origin', origin);
+const probe = (app, origin) => request(app).get('/probe').set('Host', apiHost).set('Origin', origin);
 
 describe('CORS localhost origins by environment (Equoria-xb9oc)', () => {
   it.each([['production']])('%s: a localhost origin is not reflected with credentials', async nodeEnv => {
