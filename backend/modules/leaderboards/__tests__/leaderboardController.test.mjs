@@ -134,10 +134,13 @@ describe('GET /api/v1/leaderboards/recent-winners', () => {
   });
 });
 
-describe('GET /api/v1/leaderboards/win-rate (Equoria-847r)', () => {
+// Equoria-xxdqh (owner ruling 2026-10-22): /win-rate became the win-percentage
+// board (leaderboardWinBoards.integration.test.mjs). The best-score ranking this
+// block pins (Equoria-847r) is still served at /horses/performance.
+describe('GET /api/v1/leaderboards/horses/performance (Equoria-847r)', () => {
   it('returns 200 with rankings array (empty-results case)', async () => {
     const res = await request(app)
-      .get('/api/v1/leaderboards/win-rate')
+      .get('/api/v1/leaderboards/horses/performance')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -148,7 +151,7 @@ describe('GET /api/v1/leaderboards/win-rate (Equoria-847r)', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/leaderboards/win-rate').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/leaderboards/horses/performance').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -199,7 +202,7 @@ describe('GET /api/v1/leaderboards/win-rate (Equoria-847r)', () => {
 
     try {
       const res = await request(app)
-        .get('/api/v1/leaderboards/win-rate')
+        .get('/api/v1/leaderboards/horses/performance')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 

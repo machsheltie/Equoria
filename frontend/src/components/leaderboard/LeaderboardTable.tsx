@@ -34,6 +34,9 @@ export interface LeaderboardTableProps {
   totalPages: number;
   onPageChange: (_page: number) => void;
   onEntryClick?: (_entry: LeaderboardEntryData) => void;
+  /** Empty-state copy for a successful, genuinely empty board. */
+  emptyTitle?: string;
+  emptyDescription?: string;
   className?: string;
 }
 
@@ -72,6 +75,8 @@ const LeaderboardTable = ({
   totalPages,
   onPageChange,
   onEntryClick,
+  emptyTitle = 'No entries found',
+  emptyDescription = 'There are no entries for this leaderboard yet.',
   className = '',
 }: LeaderboardTableProps) => {
   const isClickable = Boolean(onEntryClick);
@@ -134,8 +139,8 @@ const LeaderboardTable = ({
             <EmptyState
               variant="first-use"
               icon={<Trophy className="h-8 w-8" aria-hidden="true" />}
-              title="No entries found"
-              description="There are no entries for this leaderboard yet."
+              title={emptyTitle}
+              description={emptyDescription}
             />
           </div>
         )}

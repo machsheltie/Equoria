@@ -13,6 +13,7 @@ import {
   getUserRankHistory,
   captureRankSnapshots,
 } from '../controllers/leaderboardController.mjs';
+import { winPercentageBoard, winsBoard } from '../controllers/horseRecordBoardsController.mjs';
 import { isKnownDiscipline } from '../../competition/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
@@ -33,7 +34,8 @@ const router = express.Router();
 /** Aliases for frontend compatibility (matches LeaderboardCategorySelector.tsx) */
 router.get('/level', auth, getTopPlayersByLevel);
 router.get('/prize-money', auth, getTopHorsesByEarnings);
-router.get('/win-rate', auth, getTopHorsesByPerformance);
+router.get('/win-rate', auth, winPercentageBoard);
+router.get('/wins', auth, winsBoard);
 router.get('/owner', auth, getTopPlayersByHorseEarnings);
 
 /**
@@ -490,7 +492,6 @@ router.get(
   ],
   async (req, res) => {
     try {
-      // Check for validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         logger.warn(
@@ -533,7 +534,6 @@ router.get(
         }
       }
 
-      // Build where clause
       const whereClause = {
         placement: { not: null }, // Only completed competitions
         ...dateFilter,

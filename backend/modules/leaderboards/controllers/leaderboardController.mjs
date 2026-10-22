@@ -185,7 +185,7 @@ export const getTopUsersByXP = async (req, res) => {
 };
 
 /**
- * GET /api/leaderboards/win-rate (and /api/leaderboards/horses/performance)
+ * GET /api/leaderboards/horses/performance (/win-rate is horseRecordBoardsController, xxdqh)
  *
  * Returns top horses ranked by MAX(CompetitionResult.score).
  *

@@ -25,6 +25,7 @@ export type LeaderboardCategory =
   | 'level'
   | 'prize-money'
   | 'win-rate'
+  | 'wins'
   | 'discipline'
   | 'owner'
   | 'recent-winners';
@@ -55,6 +56,7 @@ const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
   level: 'Horse Level',
   'prize-money': 'Prize Money',
   'win-rate': 'Win Rate',
+  wins: 'Wins',
   discipline: 'Discipline',
   owner: 'Owner',
   'recent-winners': 'Recent Winners',
@@ -67,10 +69,18 @@ const CATEGORIES: LeaderboardCategory[] = [
   'level',
   'prize-money',
   'win-rate',
+  'wins',
   'discipline',
   'owner',
   'recent-winners',
 ];
+
+/**
+ * Lifetime-record boards (Equoria-xxdqh, owner ruling 2026-10-22): win
+ * percentage and number of wins are counted over a horse's whole career, so
+ * the time period filter does not apply and is not shown for them.
+ */
+export const LIFETIME_CATEGORIES: ReadonlySet<LeaderboardCategory> = new Set(['win-rate', 'wins']);
 
 /**
  * Human-readable labels for each time period.
@@ -92,7 +102,7 @@ const PERIODS: TimePeriod[] = ['all-time', 'monthly', 'weekly', 'daily'];
  * and a conditional discipline dropdown when the discipline category is selected.
  *
  * Features:
- * - Six category tabs (CanonicalTabs underline variant, controlled)
+ * - Seven category tabs (CanonicalTabs underline variant, controlled)
  * - Four time period buttons
  * - Discipline dropdown (visible only for discipline category)
  * - Loading state that disables all controls
@@ -163,28 +173,30 @@ const LeaderboardCategorySelector = ({
         ))}
       </Tabs>
 
-      {/* Time Period Filter */}
-      <div className="flex gap-2 mt-3" role="group" aria-label="Time period filter">
-        {PERIODS.map((period) => {
-          const isActive = selectedPeriod === period;
-          return (
-            <button
-              key={period}
-              onClick={() => onPeriodChange(period)}
-              disabled={isLoading}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-[var(--status-info)] text-[var(--text-primary)]'
-                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(37,99,235,0.2)]'
-              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              data-testid={`period-${period}`}
-              aria-pressed={isActive}
-            >
-              {PERIOD_LABELS[period]}
-            </button>
-          );
-        })}
-      </div>
+      {/* Time Period Filter — not shown for lifetime-record boards */}
+      {!LIFETIME_CATEGORIES.has(selectedCategory) && (
+        <div className="flex gap-2 mt-3" role="group" aria-label="Time period filter">
+          {PERIODS.map((period) => {
+            const isActive = selectedPeriod === period;
+            return (
+              <button
+                key={period}
+                onClick={() => onPeriodChange(period)}
+                disabled={isLoading}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-[var(--status-info)] text-[var(--text-primary)]'
+                    : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(37,99,235,0.2)]'
+                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                data-testid={`period-${period}`}
+                aria-pressed={isActive}
+              >
+                {PERIOD_LABELS[period]}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

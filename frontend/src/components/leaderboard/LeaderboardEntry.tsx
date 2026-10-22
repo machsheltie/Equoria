@@ -154,7 +154,15 @@ const SecondaryStats = ({
             <span data-testid="secondary-stat-wins">Wins: {stats.wins}</span>
           )}
           {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">Races: {stats.totalCompetitions}</span>
+            <span data-testid="secondary-stat-competitions">Shows: {stats.totalCompetitions}</span>
+          )}
+        </div>
+      );
+    case 'wins':
+      return (
+        <div className="flex gap-4 text-sm text-slate-400">
+          {stats.totalCompetitions !== undefined && (
+            <span data-testid="secondary-stat-competitions">Shows: {stats.totalCompetitions}</span>
           )}
         </div>
       );

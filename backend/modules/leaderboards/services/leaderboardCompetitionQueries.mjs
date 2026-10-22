@@ -189,6 +189,66 @@ export async function countDistinctHorses(whereClause) {
 }
 
 /**
+ * Equoria-xxdqh (owner ruling 2026-10-22): the minimum shows entered before a
+ * horse appears on the win-percentage board.
+ */
+export const WIN_PERCENTAGE_MIN_SHOWS = 100;
+
+// A win is a first place. `placement` is still a String column holding '1' or
+// '1st' until the Int migration (Equoria-f46tb); both spellings count.
+const IS_WIN = Prisma.sql`"placement" IN ('1', '1st')`;
+
+/**
+ * Per-horse record over settled results (placement NOT NULL — a placeholder
+ * row for a show that has not run yet is not a show entered), aggregated and
+ * ranked in SQL. Returns the requested page plus the total qualifying count.
+ *
+ * @param {'winPercentage'|'wins'} board
+ * @param {{ take: number, skip: number }} page
+ * @returns {Promise<{ rows: Array<{ horseId: number, wins: number, showsEntered: number }>, total: number }>}
+ */
+async function rankHorseRecords(board, { take, skip }) {
+  const having =
+    board === 'winPercentage'
+      ? Prisma.sql`COUNT(*) >= ${WIN_PERCENTAGE_MIN_SHOWS}`
+      : Prisma.sql`COUNT(*) FILTER (WHERE ${IS_WIN}) >= 1`;
+  // Equal ratios of integers divide to the identical float8, so equal win
+  // percentages tie exactly and fall through to the horseId key.
+  const orderBy =
+    board === 'winPercentage'
+      ? Prisma.sql`"wins"::float8 / "showsEntered" DESC, "horseId" ASC`
+      : Prisma.sql`"wins" DESC, "horseId" ASC`;
+  const records = Prisma.sql`
+    SELECT
+      "horseId",
+      (COUNT(*) FILTER (WHERE ${IS_WIN}))::int AS "wins",
+      COUNT(*)::int AS "showsEntered"
+    FROM "competition_results"
+    WHERE "placement" IS NOT NULL
+    GROUP BY "horseId"
+    HAVING ${having}`;
+
+  const [rows, totals] = await Promise.all([
+    prisma.$queryRaw(Prisma.sql`
+      SELECT * FROM (${records}) AS "record"
+      ORDER BY ${orderBy}
+      LIMIT ${take} OFFSET ${skip}`),
+    prisma.$queryRaw(Prisma.sql`SELECT COUNT(*)::int AS "total" FROM (${records}) AS "record"`),
+  ]);
+  return { rows, total: Number(totals[0]?.total ?? 0) };
+}
+
+/** Horses with >= WIN_PERCENTAGE_MIN_SHOWS shows entered, by wins / shows entered. */
+export function rankHorsesByWinPercentage(page) {
+  return rankHorseRecords('winPercentage', page);
+}
+
+/** Horses with at least one win, by number of wins. */
+export function rankHorsesByWins(page) {
+  return rankHorseRecords('wins', page);
+}
+
+/**
  * Fetch the horse-leaderboard-profile row + competitionResults summary
  * used by `GET /api/leaderboards/horse/:horseId`. Returns `null` if the
  * row no longer exists.

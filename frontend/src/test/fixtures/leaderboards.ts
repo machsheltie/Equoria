@@ -2,7 +2,7 @@
  * Leaderboard Mock Data Fixtures
  *
  * Provides realistic leaderboard data generation functions for use in
- * MSW handlers and component tests. Generates entries for all six
+ * MSW handlers and component tests. Generates entries for all seven
  * leaderboard categories with deterministic seeded data.
  *
  * Story 5-5: Leaderboards - Task 7
@@ -31,6 +31,7 @@ export const VALID_CATEGORIES: LeaderboardCategory[] = [
   'level',
   'prize-money',
   'win-rate',
+  'wins',
   'discipline',
   'owner',
   'recent-winners',
@@ -71,6 +72,9 @@ export function calculatePrimaryStatForCategory(
     case 'win-rate':
       // Top horse has 100% win rate, decreasing by 1% per rank, minimum 0
       return Math.max(0, 100 - (rank - 1));
+    case 'wins':
+      // Top horse has 200 wins, decreasing by 2 per rank, minimum 1
+      return Math.max(1, 200 - (rank - 1) * 2);
     case 'discipline':
       // Score out of 100, decreasing by 1 per rank, minimum 0
       return Math.max(0, 100 - (rank - 1));
@@ -137,6 +141,11 @@ export function generateSecondaryStats(
       return {
         wins: baseWins,
         totalCompetitions: baseCompetitions,
+      };
+    case 'wins':
+      return {
+        wins: Math.max(1, 200 - (rank - 1) * 2),
+        totalCompetitions: 400,
       };
     case 'discipline':
       return {
