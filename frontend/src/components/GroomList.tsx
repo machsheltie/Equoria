@@ -30,6 +30,7 @@ import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
 import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import { actionMessageFor, hireRefusalCodes, hireRefused } from '@/lib/http/actionMessage';
+import { userMessageFor } from '@/lib/http/userMessage';
 import {
   GameDialog,
   GameDialogContent,
@@ -194,8 +195,8 @@ const GroomList: React.FC<GroomListProps> = ({
       <div data-testid="groom-list">
         <ErrorState
           title="Error Loading Marketplace"
-          message={marketplaceError.message}
-          retry={{ label: 'Retry', onClick: () => handleRefresh() }}
+          message={userMessageFor(marketplaceError).message}
+          retry={{ label: 'Retry', onClick: () => void marketplaceQuery.refetch() }}
         />
       </div>
     );
