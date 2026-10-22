@@ -205,9 +205,9 @@ async function main() {
   console.log('═══════════════════════════════════════════════════════════');
 
   await prisma.$disconnect();
-  if (counts.failed > 0) {
-    process.exit(1);
-  }
+  // Explicit exit: importing auditLog.mjs outside NODE_ENV=test starts its
+  // suspicious-activity cleanup setInterval, which would keep this CLI alive.
+  process.exit(counts.failed > 0 ? 1 : 0);
 }
 
 // Equoria-5z0if: main-module guard. main() runs scoped audit_logs UPDATEs
