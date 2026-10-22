@@ -6,14 +6,13 @@
  * NPCs — no XP, generated level kept. Old contract: this suite pinned
  * awardRiderCompetitionXP (rider XP by placement + level recompute + prestige),
  * awardTrainerSessionXP (trainer session XP) and calculateLevel (the XP curve).
- * The XP awards and the curve were removed with the ruling. The rider's
- * prestige bump for 1st/2nd is not XP and stays unchanged pending an owner
- * answer; it now lives in awardRiderCompetitionPrestige, pinned below with
- * experience and level asserted untouched.
+ * The XP awards and the curve were removed with the ruling. Owner ruling
+ * 2026-10-22 (Equoria-0d4wa) then fixed rider prestige at its generated value,
+ * so awardRiderCompetitionPrestige (1st +2, 2nd +1, cap 100) and its tests went
+ * too; staffAreFixedNpcs.integration.test.mjs pins that a won show leaves
+ * prestige untouched.
  *
  * Real DB. Covers:
- *   - awardRiderCompetitionPrestige for 1st/2nd/3rd/no-placement: prestige
- *     (1st +2, 2nd +1, cap 100) only; experience and level never change
  *   - incrementWeeklyCareerWeeks ticks all active riders + trainers
  *
  * Test-order independence (Equoria-klq4v):
@@ -35,8 +34,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { awardRiderCompetitionPrestige, incrementWeeklyCareerWeeks } from '../modules/trainers/index.mjs';
-import { RIDER_PRESTIGE_BUMPS } from '../modules/trainers/services/riderTrainerProgressionService.mjs';
+import { incrementWeeklyCareerWeeks } from '../modules/trainers/index.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup. The prior silent no-op catch arms
 // kept the suite green even if a rider/trainer/user delete failed, leaking
 // fixtures into the canonical DB (CLAUDE.md §2).
@@ -121,49 +119,6 @@ describe('Equoria-r1nr: rider/trainer progression service', () => {
   });
 
   afterAll(() => cleanup.run());
-
-  it('accumulates rider prestige across 1st and 2nd places; experience and level never change', async () => {
-    // One fresh local rider, steps in order (Equoria-klq4v pattern).
-    const rider = await makeRider();
-    const before = await prisma.rider.findUnique({ where: { id: rider.id } });
-
-    const after1st = await awardRiderCompetitionPrestige(rider.id, 1);
-    expect(after1st).not.toBeNull();
-    expect(after1st.prestige).toBe(before.prestige + RIDER_PRESTIGE_BUMPS.placement_1st); // +2
-
-    for (let i = 0; i < 4; i++) {
-      await awardRiderCompetitionPrestige(rider.id, 2);
-    }
-    const after = await prisma.rider.findUnique({ where: { id: rider.id } });
-    expect(after.prestige).toBe(
-      before.prestige + RIDER_PRESTIGE_BUMPS.placement_1st + 4 * RIDER_PRESTIGE_BUMPS.placement_2nd,
-    ); // 2 + 4*1 = 6
-    // Fixed NPC (Equoria-dea06): old contract 5+25 then 4x20 XP → 110 XP, level 2.
-    expect(after.experience).toBe(before.experience);
-    expect(after.level).toBe(before.level);
-  });
-
-  it('awardRiderCompetitionPrestige adds nothing for 3rd place or worse', async () => {
-    const rider = await makeRider();
-    const before = await prisma.rider.findUnique({ where: { id: rider.id } });
-    await awardRiderCompetitionPrestige(rider.id, 3);
-    await awardRiderCompetitionPrestige(rider.id, 99);
-    const after = await prisma.rider.findUnique({ where: { id: rider.id } });
-    expect(after.prestige).toBe(before.prestige);
-    expect(after.experience).toBe(before.experience);
-    expect(after.level).toBe(before.level);
-  });
-
-  it('awardRiderCompetitionPrestige caps prestige at 100', async () => {
-    const rider = await makeRider();
-    await prisma.rider.update({ where: { id: rider.id }, data: { prestige: 99 } });
-    const updated = await awardRiderCompetitionPrestige(rider.id, 1);
-    expect(updated.prestige).toBe(100);
-  });
-
-  it('awardRiderCompetitionPrestige returns null for a missing rider', async () => {
-    expect(await awardRiderCompetitionPrestige(2147483000, 1)).toBeNull();
-  });
 
   it('incrementWeeklyCareerWeeks ticks both rider and trainer', async () => {
     // Own fresh rider + trainer. incrementWeeklyCareerWeeks ticks ALL active

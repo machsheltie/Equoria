@@ -125,6 +125,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         userId: user.id,
         temperament: 'Calm',
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         trainingCooldown: null,
         disciplineScores: { Racing: 12 },
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
@@ -180,7 +181,9 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
     expect(userAfter.xp).toBeGreaterThan(userBefore.xp);
   }, 60000);
 
-  it('shows: the rider gains no XP and keeps its generated level', async () => {
+  // Owner ruling 2026-10-22 (Equoria-0d4wa): rider prestige also stays at its
+  // generated value - a win never raises it (old contract: +2 for 1st, +1 for 2nd).
+  it('shows: the rider gains no XP or prestige and keeps its generated level', async () => {
     const horse = await createTestHorse(
       prisma,
       {
@@ -189,7 +192,8 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         age: 7,
         dateOfBirth: new Date('2018-01-01'),
         userId: user.id,
-        healthStatus: 'healthy',
+        healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
       },
       horseIds,
     );
@@ -202,6 +206,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         speciality: 'Dressage',
         experience: staffExperience,
         level: staffLevel,
+        prestige: 40,
         userId: user.id,
       },
     });
@@ -243,8 +248,10 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
 
     const riderAfter = await prisma.rider.findUnique({
       where: { id: rider.id },
-      select: { experience: true, level: true, totalCompetitions: true },
+      select: { experience: true, level: true, totalCompetitions: true, prestige: true },
     });
+    expect(results[0].placement).toBe('1');
+    expect(riderAfter.prestige).toBe(40);
     expect(riderAfter.experience).toBe(staffExperience);
     expect(riderAfter.level).toBe(staffLevel);
     // The ride itself is still on the rider's record.
@@ -262,6 +269,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         age: 0,
         userId: user.id,
         healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
         bondScore: 40,
         stressLevel: 10,
       },

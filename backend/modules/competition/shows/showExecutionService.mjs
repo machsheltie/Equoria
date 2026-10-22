@@ -25,7 +25,6 @@ import { settleDueConformationShows } from '../services/conformationShowService.
 // Equoria-c7mx0: scoring extracted verbatim to the shared scoring service;
 // readStagedOrdering implements the 2026-07-06 staged-ordering replay contract.
 import { readStagedOrdering, scoreShowEntries } from '../services/competitionScoring.mjs';
-import { awardRiderCompetitionPrestige } from '../../trainers/index.mjs';
 // Equoria-oey96.4: horse XP / owner XP / stat gains — the executor's progression
 // gap (it paid prize + rider XP but zero player/horse progression). Tx-aware helper
 // so the awards run INSIDE the per-entry tx below without a nested transaction.
@@ -269,9 +268,7 @@ export async function executeClosedShows(req, res, options) {
       // rider.update are wrapped in a single $transaction (Equoria-koodu AC).
       // If user.update fails (deadlock, connection drop, server crash), the
       // result.create is rolled back so we never have "result recorded but
-      // money not paid." awardRiderCompetitionPrestige stays OUTSIDE the tx
-      // because it is fail-soft (existing contract — a prestige failure must not
-      // block show execution).
+      // money not paid."
       const resultOps = stagedOrdering.map(async staged => {
         const { horseId, userId, horseName, placement, riderId } = staged;
         const prize = prizeFor(placement);
@@ -369,19 +366,8 @@ export async function executeClosedShows(req, res, options) {
           await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
         });
 
-        // Owner ruling 2026-10-21 (Equoria-dea06): riders are fixed NPCs and
-        // earn no XP. Only the prestige bump for 1st/2nd remains, OUTSIDE the
-        // transaction (fail-soft — it must not block show execution or roll
-        // back the prize payment).
-        if (riderId) {
-          try {
-            await awardRiderCompetitionPrestige(riderId, placement);
-          } catch (prestigeErr) {
-            logger.error(
-              `[showController] Failed to bump prestige for rider ${riderId}: ${prestigeErr.message}`,
-            );
-          }
-        }
+        // Riders are fixed NPCs: no XP (Equoria-dea06) and no prestige from wins
+        // (owner ruling 2026-10-22, Equoria-0d4wa).
 
         // Equoria-o26xc / sibling-fix of Equoria-pi4nk: fire a
         // competitionPlacement notification on every top-3 finish for the
