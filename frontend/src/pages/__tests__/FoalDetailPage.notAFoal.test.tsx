@@ -35,9 +35,11 @@ const foalPath = (suffix = '') => `${base}/api/v1/foals/${FOAL_ID}${suffix}`;
 // A 19-day-old horse: the age band the storm was observed in.
 const dob = new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString();
 
-// Exact backend message (backend/modules/horses/models/foalModel.mjs:56),
-// mapped to 404 by foalController.mjs getFoalDevelopmentHandler.
-const NOT_A_FOAL = 'Horse is not a foal (must be 1 year old or younger)';
+// Exact backend message (backend/modules/horses/models/foalModel.mjs), mapped
+// to 404 by foalController.mjs getFoalDevelopmentHandler. Since Equoria-lu6xo
+// (owner ruling 2026-10-22) the development route serves game ages 0-2 and
+// refuses only at 3; the refusal this page must settle on is unchanged.
+const NOT_A_FOAL = 'Horse is not a foal (age 3 or older)';
 
 /** Real time passes so a re-fetch loop, if present, has room to spin. */
 const settle = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

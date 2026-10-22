@@ -3,6 +3,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { computeAgeInWeeks } from '../../../utils/foalAgeUtils.mjs';
+import { isFoalAge } from '../../../constants/schema.mjs';
 import { detectAndRecordFoalMilestones } from '../services/foalMilestoneService.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
@@ -47,13 +48,15 @@ async function getFoalDevelopment(foalId) {
     throw new AppError('Foal not found', 404);
   }
 
-  // Check if this is actually a foal (age 0 or very young).
+  // A horse is a foal while its game age is under 3 (owner ruling 2026-10-22,
+  // Equoria-lu6xo: development is served for ages 0-2, every horse under 3;
+  // "under 3" uses the game age, owner ruling 2026-10-19 #18).
   // NOTE (Equoria-4xwyi): this is NOT a not-found case — it is a state rejection
   // that the controller still maps to 404 via its retained `'not a foal'` string
   // branch. Left as a plain Error on purpose; converting it would conflate
-  // "wrong-state" with "missing-resource". Not-foal 404 behavior is unchanged.
-  if (foal.age > 1) {
-    throw new Error('Horse is not a foal (must be 1 year old or younger)');
+  // "wrong-state" with "missing-resource".
+  if (!isFoalAge(foal.age)) {
+    throw new Error('Horse is not a foal (age 3 or older)');
   }
 
   // Get foal development record or create default

@@ -83,25 +83,42 @@ describe('getFoalDevelopment', () => {
     await expect(getFoalDevelopment(999999999)).rejects.toThrow('Foal not found');
   });
 
-  it('throws for horse older than 1 year', async () => {
+  // Equoria-lu6xo. OLD CONTRACT: only stored game age 0-1 was served; age 2
+  // threw "must be 1 year old or younger". NEW RULING (owner, 2026-10-22):
+  // GET /foals/:id/development serves every horse under 3 (game age 0-2);
+  // age 3+ keeps its "not a foal" refusal (the controller maps it to 404).
+  it('throws for an adult horse (age 5)', async () => {
     const foal = await mkFoal('Adult-5', { age: 5 });
     try {
-      await expect(getFoalDevelopment(foal.id)).rejects.toThrow('Horse is not a foal (must be 1 year old or younger)');
+      await expect(getFoalDevelopment(foal.id)).rejects.toThrow('Horse is not a foal (age 3 or older)');
     } finally {
       await rmFoal(foal.id);
     }
   });
 
-  it('throws for 2-year-old horse (boundary)', async () => {
-    const foal = await mkFoal('Adult-2', { age: 2 });
+  it('throws for a 3-year-old horse (boundary)', async () => {
+    const foal = await mkFoal('Adult-3', { age: 3 });
     try {
-      await expect(getFoalDevelopment(foal.id)).rejects.toThrow('Horse is not a foal (must be 1 year old or younger)');
+      await expect(getFoalDevelopment(foal.id)).rejects.toThrow('Horse is not a foal (age 3 or older)');
     } finally {
       await rmFoal(foal.id);
     }
   });
 
-  it('accepts 1-year-old horse (yearling boundary)', async () => {
+  it('accepts a 2-year-old horse (under 3, Equoria-lu6xo)', async () => {
+    const foal = await mkFoal('TwoYearOld', { age: 2 });
+    try {
+      await mkDev(foal.id, { currentDay: 3 });
+      const result = await getFoalDevelopment(foal.id);
+      expect(result.foal.name).toBe(`${PREFIX}TwoYearOld`);
+      expect(result.foal.age).toBe(2);
+      expect(result.development.currentDay).toBe(3);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('accepts 1-year-old horse', async () => {
     const foal = await mkFoal('Yearling', { age: 1 });
     try {
       await mkDev(foal.id, { currentDay: 1, bondingLevel: 55, stressLevel: 18 });
