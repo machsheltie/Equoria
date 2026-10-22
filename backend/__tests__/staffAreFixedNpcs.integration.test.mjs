@@ -28,7 +28,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { createTestHorse } from './helpers/createTestHorse.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
-import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
+import { gameCalendarDate } from '../utils/gameTime.mjs';
 import { trainHorse } from '../modules/training/controllers/trainingController.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showExecutionService.mjs';
 import { recordInteraction } from '../modules/grooms/controllers/groomInteractionController.mjs';
@@ -43,8 +43,25 @@ const baseCleanup = createCleanupTracker();
 // Generated staff values that are deliberately NOT where the 100*level XP
 // curve would put them, so neither an XP award nor a level recompute can
 // leave them looking unchanged by coincidence.
-const STAFF_EXPERIENCE = 37;
-const STAFF_LEVEL = 4;
+const staffExperience = 37;
+const staffLevel = 4;
+
+// The 12 horse stats (constants/schema.mjs HORSE_STATS), listed here as an
+// independent pin of "training changes no stat".
+const horseStats = [
+  'speed',
+  'stamina',
+  'agility',
+  'endurance',
+  'strength',
+  'precision',
+  'balance',
+  'intelligence',
+  'focus',
+  'obedience',
+  'boldness',
+  'flexibility',
+];
 
 function fakeRes() {
   const res = {
@@ -97,7 +114,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
   it('training: the trainer gains no XP, and the horse gains only +5 in the trained discipline', async () => {
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-    const stats = Object.fromEntries(HORSE_STAT_VALUES.map((s, i) => [s, 40 + i]));
+    const stats = Object.fromEntries(horseStats.map((s, i) => [s, 40 + i]));
     const horse = await createTestHorse(
       prisma,
       {
@@ -124,8 +141,8 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         personality: 'patient',
         skillLevel: 'novice',
         speciality: 'Racing',
-        experience: STAFF_EXPERIENCE,
-        level: STAFF_LEVEL,
+        experience: staffExperience,
+        level: staffLevel,
         userId: user.id,
       },
     });
@@ -147,13 +164,13 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
       where: { id: trainer.id },
       select: { experience: true, level: true },
     });
-    expect(trainerAfter).toEqual({ experience: STAFF_EXPERIENCE, level: STAFF_LEVEL });
+    expect(trainerAfter).toEqual({ experience: staffExperience, level: staffLevel });
 
     const horseAfter = await prisma.horse.findUnique({
       where: { id: horse.id },
-      select: { ...Object.fromEntries(HORSE_STAT_VALUES.map(s => [s, true])), disciplineScores: true },
+      select: { ...Object.fromEntries(horseStats.map(s => [s, true])), disciplineScores: true },
     });
-    for (const stat of HORSE_STAT_VALUES) {
+    for (const stat of horseStats) {
       expect({ stat, value: horseAfter[stat] }).toEqual({ stat, value: stats[stat] });
     }
     expect(horseAfter.disciplineScores).toEqual({ Racing: 12, Dressage: 5 });
@@ -183,8 +200,8 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         personality: 'methodical',
         skillLevel: 'developing',
         speciality: 'Dressage',
-        experience: STAFF_EXPERIENCE,
-        level: STAFF_LEVEL,
+        experience: staffExperience,
+        level: staffLevel,
         userId: user.id,
       },
     });
@@ -228,8 +245,8 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
       where: { id: rider.id },
       select: { experience: true, level: true, totalCompetitions: true },
     });
-    expect(riderAfter.experience).toBe(STAFF_EXPERIENCE);
-    expect(riderAfter.level).toBe(STAFF_LEVEL);
+    expect(riderAfter.experience).toBe(staffExperience);
+    expect(riderAfter.level).toBe(staffLevel);
     // The ride itself is still on the rider's record.
     expect(riderAfter.totalCompetitions).toBe(1);
   }, 60000);
@@ -241,7 +258,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         ...fixtureColor(),
         name: `${PREFIX}-foal-${suffix}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+        dateOfBirth: gameCalendarDate(new Date(), -60),
         age: 0,
         userId: user.id,
         healthStatus: 'Excellent',
@@ -258,8 +275,8 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
         skillLevel: 'expert',
         sessionRate: 40,
         startAge: 20,
-        experience: STAFF_EXPERIENCE,
-        level: STAFF_LEVEL,
+        experience: staffExperience,
+        level: staffLevel,
         userId: user.id,
       },
     });
@@ -277,7 +294,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
     await recordInteraction(
       {
         user: { id: user.id },
-        body: { foalId: foal.id, groomId: groom.id, interactionType: 'trust_building', duration: 30 },
+        body: { foalId: foal.id, groomId: groom.id, interactionType: 'desensitization', duration: 30 },
       },
       res,
     );
@@ -288,6 +305,6 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
       where: { id: groom.id },
       select: { experience: true, level: true },
     });
-    expect(groomAfter).toEqual({ experience: STAFF_EXPERIENCE, level: STAFF_LEVEL });
+    expect(groomAfter).toEqual({ experience: staffExperience, level: staffLevel });
   }, 60000);
 });
