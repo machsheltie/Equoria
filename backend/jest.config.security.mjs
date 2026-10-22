@@ -66,7 +66,34 @@
  * backend/__tests__/securitySuiteScope.sentinel.test.mjs pins all of this:
  * it asks Jest itself (`--listTests`) what this config selects and fails if a
  * convention match, an explicit entry, or the auth-module scope is missing.
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ * WHY testMatch IS ROOTED AT AN ABSOLUTE FORWARD-SLASH PATH (Equoria-43y7o)
+ * ──────────────────────────────────────────────────────────────────────────
+ * The three layers below are written as `<rootDir>/...` patterns because that
+ * is how a reader reasons about them. On Windows Jest rewrites a `<rootDir>/...`
+ * glob with replacePathSepForGlob, which keeps a backslash that precedes `.`,
+ * so a checkout under a dot-prefixed directory (`.claude/worktrees/...`) turns
+ * every glob into a pattern that can never match: the config then selected only
+ * the seven literal EXPLICIT entries (7 of 356 suites) and the scope sentinel
+ * failed every local gate from a harness-created worktree. testMatch therefore
+ * substitutes the config's own directory, as an absolute forward-slash root
+ * (toGlobRoot, shared with the root jest.config.js, Equoria-beqsp), for
+ * `<rootDir>`. The patterns, layers and counts are unchanged.
  */
+import { realpathSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const configDirectory = realpathSync(path.dirname(fileURLToPath(import.meta.url)));
+// The root config is a `.js` ESM file, which the import-extension lint rule reserves
+// for legacy modules, so it is loaded by file URL rather than a static specifier.
+const { toGlobRoot } = await import(
+  pathToFileURL(path.join(configDirectory, '..', 'jest.config.js')).href
+);
+
+/** This config's directory (the backend), absolute, forward-slash, glob-safe. */
+export const securityGlobRoot = toGlobRoot(configDirectory);
 
 /**
  * Name tokens that mark a module-resident test as a security-control test.
@@ -123,11 +150,14 @@ export const EXPLICIT_MODULE_CONTROL_TESTS = [
   '<rootDir>/modules/horses/__tests__/foalNowEnvironmentGate.test.mjs',
 ];
 
+/** `<rootDir>/x` -> `<absolute forward-slash backend root>/x` (see header). */
+export const rootAtGlobRoot = pattern => pattern.replace('<rootDir>/', `${securityGlobRoot}/`);
+
 export const SECURITY_TEST_MATCH = [
   ...SCOPE_PATTERNS,
   ...CONVENTION_PATTERNS,
   ...EXPLICIT_MODULE_CONTROL_TESTS,
-];
+].map(rootAtGlobRoot);
 
 export default {
   // Test environment
