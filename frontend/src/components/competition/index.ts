@@ -26,9 +26,6 @@ export type {
   RelevantStat,
 } from './HorseSelectionCard';
 
-export { default as HorseSelector } from './HorseSelector';
-export type { HorseSelectorProps } from './HorseSelector';
-
 export { default as EntryConfirmationModal } from './EntryConfirmationModal';
 export type {
   EntryConfirmationModalProps,

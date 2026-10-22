@@ -71,8 +71,8 @@ export const competitionsApi = {
     ),
   /**
    * Get the list of horses already entered into a given competition.
-   * Returns minimal entry data — used by HorseSelector to mark horses as
-   * "already entered" so users can't double-enter the same competition.
+   * Returns minimal entry data. No component consumes it since the unwired
+   * competition HorseSelector was deleted (Equoria-7zyn3).
    */
   getEntries: (competitionId: number) =>
     apiClient.get<Array<{ horseId: number; horseName: string }>>(
@@ -88,8 +88,8 @@ export const competitionsApi = {
     apiClient.get<ShowFieldResponse>(`/api/v1/competition/show/${showId}/entries`),
   /**
    * Get the current user's horses that are eligible for competition entry.
-   * Eligibility filtering (age, health, etc.) is applied per-horse in the
-   * HorseSelector UI; this endpoint returns the candidate set.
+   * No component consumes it since the unwired competition HorseSelector was
+   * deleted (Equoria-7zyn3).
    */
   getEligibleUserHorses: () =>
     apiClient.get<
