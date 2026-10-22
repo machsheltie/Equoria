@@ -21,6 +21,7 @@ import { Trophy } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ErrorState } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/api/useLeaderboard';
@@ -117,10 +118,8 @@ function useLeaderboardUrlState() {
 // ---------------------------------------------------------------------------
 
 // HorseDetailData.sex is a fixed union; the backend returns a free string.
-// Map known values through, fall back to 'Stallion' only as a render-safe
-// default for an unrecognised token (not fabricated game data — the real
-// value is shown when it matches the union, which it does for all sexes
-// the schema produces).
+// Known values pass through; anything else is UNKNOWN (null -> "—"), never a
+// plausible real value such as 'Stallion' (Equoria-b9yi1, doctrine §4).
 const VALID_SEXES: ReadonlyArray<HorseDetailData['sex']> = [
   'Stallion',
   'Mare',
@@ -132,7 +131,7 @@ const VALID_SEXES: ReadonlyArray<HorseDetailData['sex']> = [
 function coerceSex(sex: string | undefined): HorseDetailData['sex'] {
   return (VALID_SEXES as readonly string[]).includes(sex ?? '')
     ? (sex as HorseDetailData['sex'])
-    : 'Stallion';
+    : null;
 }
 
 /**
@@ -208,7 +207,13 @@ const LeaderboardsPage = () => {
     refetch: refetchLeaderboard,
   } = useLeaderboard({ category, period, discipline, page });
 
-  const { data: userRankData, isLoading: isUserRankLoading } = useUserRankSummary({ userId });
+  const {
+    data: userRankData,
+    isLoading: isUserRankLoading,
+    isError: isUserRankError,
+    error: userRankError,
+    refetch: refetchUserRank,
+  } = useUserRankSummary({ userId });
 
   // Modal state
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntryData | null>(null);
@@ -249,6 +254,8 @@ const LeaderboardsPage = () => {
     data: horseProfile,
     isLoading: isHorseProfileLoading,
     isError: isHorseProfileError,
+    error: horseProfileError,
+    refetch: refetchHorseProfile,
   } = useLeaderboardHorseProfile(selectedEntry?.horseId, isModalOpen);
 
   const horseDetailData: HorseDetailData | null =
@@ -278,6 +285,9 @@ const LeaderboardsPage = () => {
             rankings={userRankData?.rankings ?? []}
             bestRankings={userRankData?.bestRankings ?? []}
             isLoading={isUserRankLoading}
+            isError={isUserRankError}
+            errorMessage={isUserRankError ? userMessageFor(userRankError).message : undefined}
+            onRetry={() => void refetchUserRank()}
             onCategoryClick={handleCategoryClickFromDashboard}
           />
         </section>
@@ -333,6 +343,14 @@ const LeaderboardsPage = () => {
           onClose={handleCloseModal}
           horseData={horseDetailData}
           isLoading={isHorseDetailLoading}
+          loadError={
+            isHorseProfileError
+              ? {
+                  message: userMessageFor(horseProfileError).message,
+                  onRetry: () => void refetchHorseProfile(),
+                }
+              : null
+          }
           onViewFullProfile={handleViewFullProfile}
         />
       </div>

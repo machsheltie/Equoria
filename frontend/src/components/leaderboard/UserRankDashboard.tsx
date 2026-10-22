@@ -19,6 +19,7 @@
  */
 
 import { Trophy, Star } from 'lucide-react';
+import { ErrorState } from '@/components/ui/state';
 import RankSummaryCard from './RankSummaryCard';
 import type { CategoryRanking as RankSummaryCardCategoryRanking } from './RankSummaryCard';
 
@@ -46,6 +47,15 @@ export interface UserRankDashboardProps {
   rankings: CategoryRanking[];
   bestRankings: BestRanking[];
   isLoading?: boolean;
+  /**
+   * The rank-summary request failed. Renders an error with retry INSTEAD of the
+   * new-player empties ("No rankings yet" / "No achievements yet"), which are
+   * only true after a successful fetch (Equoria-ffmha).
+   */
+  isError?: boolean;
+  /** User-safe error copy (never a raw server message). */
+  errorMessage?: string;
+  onRetry?: () => void;
   onCategoryClick?: (_category: string) => void;
   className?: string;
 }
@@ -113,6 +123,9 @@ const UserRankDashboard = ({
   rankings,
   bestRankings,
   isLoading = false,
+  isError = false,
+  errorMessage,
+  onRetry,
   onCategoryClick,
   className = '',
 }: UserRankDashboardProps) => {
@@ -138,11 +151,20 @@ const UserRankDashboard = ({
       {/* Loading State */}
       {isLoading && <DashboardSkeleton />}
 
-      {/* Empty State */}
-      {!isLoading && rankings.length === 0 && <EmptyRankingsState />}
+      {/* Error State — before any empty (doctrine §1) */}
+      {!isLoading && isError && (
+        <ErrorState
+          title="Couldn't load your rankings"
+          message={errorMessage}
+          retry={onRetry ? { label: 'Try Again', onClick: onRetry } : undefined}
+        />
+      )}
+
+      {/* Empty State — only through a successful, genuinely empty fetch */}
+      {!isLoading && !isError && rankings.length === 0 && <EmptyRankingsState />}
 
       {/* Rankings Grid */}
-      {!isLoading && rankings.length > 0 && (
+      {!isLoading && !isError && rankings.length > 0 && (
         <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           data-testid="rankings-grid"
@@ -159,7 +181,7 @@ const UserRankDashboard = ({
       )}
 
       {/* Best Rankings Section */}
-      {!isLoading && (
+      {!isLoading && !isError && (
         <div data-testid="best-rankings-section">
           <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-3 flex items-center gap-2">
             <Star size={20} className="text-yellow-500" aria-hidden="true" />

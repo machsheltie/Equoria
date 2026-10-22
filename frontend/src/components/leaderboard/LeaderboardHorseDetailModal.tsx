@@ -20,6 +20,7 @@
 
 import { Trophy, User, Award } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
+import { ErrorState } from '@/components/ui/state';
 import {
   GameDialog,
   GameDialogContent,
@@ -56,7 +57,8 @@ export interface HorseDetailData {
   horseName: string;
   breed: string;
   age: number;
-  sex: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
+  /** null = the backend sent a token outside the vocabulary; shown as "—" (Equoria-b9yi1) */
+  sex: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig' | null;
   level: number;
   stats: {
     speed: number;
@@ -95,6 +97,11 @@ export interface LeaderboardHorseDetailModalProps {
   onClose: () => void;
   horseData: HorseDetailData | null;
   isLoading?: boolean;
+  /**
+   * The horse-profile request failed: show this user-safe message with a
+   * retry instead of the "not available" empty (Equoria-ffmha).
+   */
+  loadError?: { message: string; onRetry: () => void } | null;
   onViewFullProfile?: (_horseId: number) => void;
   className?: string;
 }
@@ -183,6 +190,7 @@ const LeaderboardHorseDetailModal = ({
   onClose,
   horseData,
   isLoading = false,
+  loadError = null,
   onViewFullProfile,
   className = '',
 }: LeaderboardHorseDetailModalProps) => {
@@ -223,8 +231,17 @@ const LeaderboardHorseDetailModal = ({
           {/* Loading State */}
           {isLoading && <LoadingSkeleton />}
 
+          {/* Error State — before empty (doctrine §1) */}
+          {!isLoading && !horseData && loadError && (
+            <ErrorState
+              title="Couldn't load this horse"
+              message={loadError.message}
+              retry={{ label: 'Try Again', onClick: loadError.onRetry }}
+            />
+          )}
+
           {/* Empty State */}
-          {!isLoading && !horseData && <EmptyHorseState />}
+          {!isLoading && !horseData && !loadError && <EmptyHorseState />}
 
           {/* Horse Details */}
           {!isLoading && horseData && (
@@ -235,7 +252,8 @@ const LeaderboardHorseDetailModal = ({
               <div className="flex items-start gap-4">
                 <div className="flex-1">
                   <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    {horseData.breed} &middot; {horseData.age} years old &middot; {horseData.sex}
+                    {horseData.breed} &middot; {horseData.age} years old &middot;{' '}
+                    {horseData.sex ?? '—'}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <span
