@@ -22,12 +22,12 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, test, expect, afterAll } from '@jest/globals';
 
-const BACKEND_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const REAPER_PATH = path.join(BACKEND_DIR, 'scripts', 'reap-orphan-jest.mjs');
+const backendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const reaperPath = path.join(backendDir, 'scripts', 'reap-orphan-jest.mjs');
 
-const MARKER_IMPORT = 'equoria-r13ay-jest-lookalike-orphan-import';
-const MARKER_COUNT = 'equoria-try0h-jest-lookalike-orphan-count';
-const LOOKALIKE_EVAL = 'setTimeout(() => {}, 120000)';
+const markerImport = 'equoria-r13ay-jest-lookalike-orphan-import';
+const markerCount = 'equoria-try0h-jest-lookalike-orphan-count';
+const lookalikeEval = 'setTimeout(() => {}, 120000)';
 
 const spawnedPids = new Set();
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -56,7 +56,7 @@ async function pollUntil(predicate, timeoutMs, intervalMs = 250) {
 function spawnOrphan(marker) {
   const intermediateSrc = `
 import { spawn } from 'node:child_process';
-const child = spawn(process.execPath, ['-e', ${JSON.stringify(LOOKALIKE_EVAL)}, ${JSON.stringify(marker)}], {
+const child = spawn(process.execPath, ['-e', ${JSON.stringify(lookalikeEval)}, ${JSON.stringify(marker)}], {
   detached: true,
   stdio: 'ignore',
   windowsHide: true,
@@ -100,13 +100,13 @@ const describeWin32 = process.platform === 'win32' ? describe : describe.skip;
 
 describeWin32('reap-orphan-jest behaviour (Equoria-r13ay, Equoria-try0h)', () => {
   test('a bare import does not sweep: the orphaned jest-lookalike survives', async () => {
-    const orphanPid = await spawnOrphan(MARKER_IMPORT);
+    const orphanPid = await spawnOrphan(markerImport);
     expect(isAlive(orphanPid)).toBe(true);
 
     const res = spawnSync(
       process.execPath,
-      ['--input-type=module', '-e', `await import(${JSON.stringify(pathToFileURL(REAPER_PATH).href)});`],
-      { cwd: BACKEND_DIR, encoding: 'utf8', timeout: 90000, windowsHide: true },
+      ['--input-type=module', '-e', `await import(${JSON.stringify(pathToFileURL(reaperPath).href)});`],
+      { cwd: backendDir, encoding: 'utf8', timeout: 90000, windowsHide: true },
     );
     expect(res.status).toBe(0);
 
@@ -116,11 +116,11 @@ describeWin32('reap-orphan-jest behaviour (Equoria-r13ay, Equoria-try0h)', () =>
   }, 180000);
 
   test('run as the entry point it kills the orphan and reports the count, even for exactly one', async () => {
-    const orphanPid = await spawnOrphan(MARKER_COUNT);
+    const orphanPid = await spawnOrphan(markerCount);
     expect(isAlive(orphanPid)).toBe(true);
 
-    const res = spawnSync(process.execPath, [REAPER_PATH], {
-      cwd: BACKEND_DIR,
+    const res = spawnSync(process.execPath, [reaperPath], {
+      cwd: backendDir,
       encoding: 'utf8',
       timeout: 90000,
       windowsHide: true,

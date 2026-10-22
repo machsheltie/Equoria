@@ -18,11 +18,11 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const BACKEND_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const MODULE_URL = pathToFileURL(path.join(BACKEND_DIR, 'middleware', 'rateLimiting.mjs')).href;
+const backendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const moduleUrl = pathToFileURL(path.join(backendDir, 'middleware', 'rateLimiting.mjs')).href;
 
-const CHILD_SOURCE = `
-const rateLimiting = await import(${JSON.stringify(MODULE_URL)});
+const childSource = `
+const rateLimiting = await import(${JSON.stringify(moduleUrl)});
 await rateLimiting.closeRedis();
 process.exit(0);
 `;
@@ -41,8 +41,8 @@ function bootRateLimiter(nodeEnv) {
     JWT_REFRESH_SECRET: 'fedcba9876543210fedcba9876543210',
   };
   delete env.JEST_WORKER_ID;
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', CHILD_SOURCE], {
-    cwd: BACKEND_DIR,
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', childSource], {
+    cwd: backendDir,
     env,
     encoding: 'utf8',
     timeout: 60000,

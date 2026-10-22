@@ -23,15 +23,15 @@
 import dgram from 'node:dgram';
 import net from 'node:net';
 
-const TYPE_A = 1;
-const TYPE_AAAA = 28;
-const CLASS_IN = 1;
-const HEADER_LENGTH = 12;
+const typeA = 1;
+const typeAaaa = 28;
+const classIn = 1;
+const headerLength = 12;
 
 /** Parse the first question: its QNAME, QTYPE and the byte offset just past it. */
 function parseQuestion(message) {
   const labels = [];
-  let offset = HEADER_LENGTH;
+  let offset = headerLength;
   while (offset < message.length && message[offset] !== 0) {
     const length = message[offset];
     labels.push(message.toString('ascii', offset + 1, offset + 1 + length));
@@ -59,23 +59,23 @@ function encodeAddress(address) {
 function buildResponse(message, records) {
   const { name, type, end } = parseQuestion(message);
   const known = Object.hasOwn(records, name);
-  const wantFamily = type === TYPE_A ? 4 : type === TYPE_AAAA ? 6 : 0;
+  const wantFamily = type === typeA ? 4 : type === typeAaaa ? 6 : 0;
   const answers =
     known && wantFamily ? records[name].filter(address => net.isIP(address) === wantFamily) : [];
 
-  const header = Buffer.alloc(HEADER_LENGTH);
+  const header = Buffer.alloc(headerLength);
   message.copy(header, 0, 0, 2); // echo the query id
   header.writeUInt16BE(0x8180 | (known ? 0 : 3), 2); // response + RD + RA, rcode NXDOMAIN when unknown
   header.writeUInt16BE(1, 4); // QDCOUNT
   header.writeUInt16BE(answers.length, 6); // ANCOUNT
 
-  const question = message.subarray(HEADER_LENGTH, end);
+  const question = message.subarray(headerLength, end);
   const answerBuffers = answers.map(address => {
     const rdata = encodeAddress(address);
     const record = Buffer.alloc(12 + rdata.length);
     record.writeUInt16BE(0xc00c, 0); // name: pointer to the question name
     record.writeUInt16BE(type, 2);
-    record.writeUInt16BE(CLASS_IN, 4);
+    record.writeUInt16BE(classIn, 4);
     record.writeUInt32BE(60, 6); // TTL
     record.writeUInt16BE(rdata.length, 10);
     rdata.copy(record, 12);
@@ -91,7 +91,7 @@ function buildResponse(message, records) {
 export async function startLocalDnsServer(records) {
   const socket = dgram.createSocket('udp4');
   socket.on('message', (message, remote) => {
-    if (message.length <= HEADER_LENGTH) {
+    if (message.length <= headerLength) {
       return;
     }
     socket.send(buildResponse(message, records), remote.port, remote.address);

@@ -32,14 +32,14 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, test, expect, afterAll } from '@jest/globals';
 
-const BACKEND_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const REPO_ROOT = path.resolve(BACKEND_DIR, '..');
-const ROOT_CONFIG_PATH = path.join(REPO_ROOT, 'jest.config.js');
+const backendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.resolve(backendDir, '..');
+const rootConfigPath = path.join(repoRoot, 'jest.config.js');
 // The root config is a `.js` ESM file, which the import-extension lint rule reserves
 // for legacy modules, so it is loaded by file URL rather than a static specifier.
-const { default: rootConfig, toGlobRoot } = await import(pathToFileURL(ROOT_CONFIG_PATH).href);
-const JEST_BIN = path.join(BACKEND_DIR, 'node_modules', 'jest', 'bin', 'jest.js');
-const LIST_TESTS_TIMEOUT_MS = 120000;
+const { default: rootConfig, toGlobRoot } = await import(pathToFileURL(rootConfigPath).href);
+const jestBin = path.join(backendDir, 'node_modules', 'jest', 'bin', 'jest.js');
+const listTestsTimeoutMs = 120000;
 
 const scratchRoots = [];
 afterAll(() => {
@@ -82,7 +82,7 @@ function listTests(repo, projects) {
     process.execPath,
     [
       '--experimental-vm-modules',
-      JEST_BIN,
+      jestBin,
       '--config',
       path.join(repo, 'jest.config.js'),
       '--selectProjects',
@@ -121,7 +121,7 @@ describe('root jest.config.js under a dot-prefixed checkout (Equoria-beqsp, Equo
     'backend and unit projects select their tests from <tmp>/.claude/worktrees/agent-x and keep the exclusions',
     () => {
       const repo = buildDotPathRepo('');
-      copyFileSync(ROOT_CONFIG_PATH, path.join(repo, 'jest.config.js'));
+      copyFileSync(rootConfigPath, path.join(repo, 'jest.config.js'));
 
       expect(listTests(repo, ['backend'])).toEqual([
         'backend/__tests__/inBackend.test.mjs',
@@ -131,7 +131,7 @@ describe('root jest.config.js under a dot-prefixed checkout (Equoria-beqsp, Equo
       ]);
       expect(listTests(repo, ['unit'])).toEqual(['tests/unit/unitOnly.test.mjs']);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 
   // Windows-only mechanism: elsewhere Jest keeps the separator, so the control
@@ -151,7 +151,7 @@ describe('root jest.config.js under a dot-prefixed checkout (Equoria-beqsp, Equo
         );
         expect(listTests(repo, ['backend'])).toEqual([]);
       },
-      LIST_TESTS_TIMEOUT_MS,
+      listTestsTimeoutMs,
     );
   }
 });
@@ -172,11 +172,11 @@ describe('live root jest.config.js', () => {
   test(
     'the backend project still selects this repository’s own tests',
     () => {
-      const selected = listTests(REPO_ROOT, ['backend']);
+      const selected = listTests(repoRoot, ['backend']);
       expect(selected).toContain('backend/__tests__/jestRootConfigDotPathGlob.sentinel.test.mjs');
       expect(selected).toContain('tests/breeds.integration.test.mjs');
       expect(selected.filter(file => file.startsWith('tests/e2e/'))).toEqual([]);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 });

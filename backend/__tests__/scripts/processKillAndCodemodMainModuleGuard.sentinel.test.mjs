@@ -31,10 +31,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, test, expect } from '@jest/globals';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const SCRIPTS_DIR = path.join(REPO_ROOT, 'backend', 'scripts');
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const scriptsDir = path.join(repoRoot, 'backend', 'scripts');
 
-const PROCESS_KILL_PATTERNS = [/Stop-Process/, /taskkill/i, /process\.kill\s*\(/];
+const processKillPatterns = [/Stop-Process/, /taskkill/i, /process\.kill\s*\(/];
 
 /** Strip comments so documentation that merely mentions an operation cannot fire. */
 function stripComments(source) {
@@ -43,7 +43,7 @@ function stripComments(source) {
 
 function killsProcesses(source) {
   const code = stripComments(source);
-  return PROCESS_KILL_PATTERNS.some(pattern => pattern.test(code));
+  return processKillPatterns.some(pattern => pattern.test(code));
 }
 
 /**
@@ -61,14 +61,14 @@ function rewritesFilesInPlace(source) {
   return false;
 }
 
-const MAIN_GUARD_PATTERNS = [
+const mainGuardPatterns = [
   /fileURLToPath\s*\(\s*import\.meta\.url\s*\)\s*===\s*process\.argv\[1\]/,
   /fileURLToPath\s*\(\s*import\.meta\.url\s*\)\s*===\s*path\.resolve\s*\(\s*process\.argv\[1\]\s*\)/,
   /import\.meta\.url\s*===\s*pathToFileURL\s*\(\s*process\.argv\[1\]\s*\)\s*\.href/,
 ];
 
 function hasMainModuleGuard(source) {
-  return MAIN_GUARD_PATTERNS.some(pattern => pattern.test(source));
+  return mainGuardPatterns.some(pattern => pattern.test(source));
 }
 
 function isLibraryModule(source) {
@@ -130,12 +130,12 @@ describe('process-kill and in-place codemod scripts need a main-module guard (Eq
   });
 
   test('every backend/scripts/*.mjs that kills processes or rewrites files in place has a main-module guard', () => {
-    const scripts = fs.readdirSync(SCRIPTS_DIR).filter(name => name.endsWith('.mjs') && !name.endsWith('.test.mjs'));
+    const scripts = fs.readdirSync(scriptsDir).filter(name => name.endsWith('.mjs') && !name.endsWith('.test.mjs'));
     expect(scripts.length).toBeGreaterThan(10);
 
     // The scripts that motivated this sentinel must still be in its scope, so
     // deleting a detector pattern cannot silently drop them.
-    const covered = scripts.filter(name => needsGuard(fs.readFileSync(path.join(SCRIPTS_DIR, name), 'utf8')));
+    const covered = scripts.filter(name => needsGuard(fs.readFileSync(path.join(scriptsDir, name), 'utf8')));
     expect(covered).toEqual(
       expect.arrayContaining([
         'reap-orphan-jest.mjs',
@@ -145,9 +145,7 @@ describe('process-kill and in-place codemod scripts need a main-module guard (Eq
       ]),
     );
 
-    const unguarded = covered.filter(
-      name => !hasMainModuleGuard(fs.readFileSync(path.join(SCRIPTS_DIR, name), 'utf8')),
-    );
+    const unguarded = covered.filter(name => !hasMainModuleGuard(fs.readFileSync(path.join(scriptsDir, name), 'utf8')));
     expect(unguarded).toEqual([]);
   });
 });
