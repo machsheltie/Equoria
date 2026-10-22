@@ -58,16 +58,28 @@ export async function autoRetireOverdueRiders() {
 
   const ids = eligible.map(r => r.id);
 
-  // Flip retired flag for all eligible riders in one update.
-  const updateResult = await prisma.rider.updateMany({
-    where: { id: { in: ids } },
-    data: { retired: true },
-  });
-
-  // Deactivate active assignments for the retired riders.
-  const assignmentResult = await prisma.riderAssignment.updateMany({
-    where: { riderId: { in: ids }, isActive: true },
-    data: { isActive: false },
+  // Equoria-r9u5k: retiring a rider ends BOTH representations of their
+  // assignments, as dismissRider does (Equoria-6p398.6): the RiderAssignment
+  // rows and the denormalised Horse.rider JSON the competition engine reads.
+  // One transaction, Horse rows before staff rows (ascending ids).
+  const { updateResult, assignmentResult } = await prisma.$transaction(async tx => {
+    const active = await tx.riderAssignment.findMany({
+      where: { riderId: { in: ids }, isActive: true },
+      select: { horseId: true },
+    });
+    const horseIds = [...new Set(active.map(a => a.horseId))].sort((a, b) => a - b);
+    if (horseIds.length > 0) {
+      await tx.horse.updateMany({ where: { id: { in: horseIds } }, data: { rider: null } });
+    }
+    const deactivated = await tx.riderAssignment.updateMany({
+      where: { riderId: { in: ids }, isActive: true },
+      data: { isActive: false },
+    });
+    const retired = await tx.rider.updateMany({
+      where: { id: { in: ids } },
+      data: { retired: true },
+    });
+    return { updateResult: retired, assignmentResult: deactivated };
   });
 
   logger.info(

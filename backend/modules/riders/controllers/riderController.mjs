@@ -189,7 +189,15 @@ export async function assignRider(req, res) {
         // of this same rider to ANOTHER horse waits here and then sees this
         // assignment. Without it both read "not assigned" and the rider went
         // active on two horses. Horse before staff keeps the lock order.
-        await tx.rider.update({ where: { id: riderId }, data: { updatedAt: new Date() } });
+        // Equoria-r9u5k: the lock is a guarded write that re-checks `retired`,
+        // so a rider the weekly job retired after the read above is refused.
+        const lockedRider = await tx.rider.updateMany({
+          where: { id: riderId, retired: false },
+          data: { updatedAt: new Date() },
+        });
+        if (lockedRider.count !== 1) {
+          throw httpError(400, 'Cannot assign a retired rider');
+        }
 
         const existingRiderAssignment = await tx.riderAssignment.findFirst({
           where: { riderId, isActive: true },

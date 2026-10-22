@@ -255,6 +255,7 @@ const KNOWN_UNWRAPPED = [
   // Server-side cron / executor paths — no user request waiting to retry.
   'modules/competition/shows/showExecutionService.mjs (executeClosedShows: per-result payout + fee settle)',
   'modules/grooms/services/groomSalaryService.mjs (weekly salary cron run)',
+  'modules/trainers/services/riderTrainerRetirementService.mjs (weekly rider retirement cron run; Equoria-r9u5k)',
   'utils/cronLock.mjs (advisory-lock infra; timeout IS the intended skip path)',
   // Best-effort recovery inside a catch — not the primary mutation path.
   'modules/marketplace/controllers/marketplaceController.mjs (buyStoreHorse refund tx)',
