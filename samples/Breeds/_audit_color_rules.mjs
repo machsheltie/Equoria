@@ -98,10 +98,10 @@ for (const f of files.sort()) {
     errs++;
     continue;
   }
-  const a = j.allowed_alleles || {};
-  const sh = Object.keys(j.shade_bias || {});
+  const a = j.allowedAlleles || {};
+  const sh = Object.keys(j.shadeBias || {});
   const shSet = new Set(sh);
-  const adv = j.advanced_markings_bias || {};
+  const adv = j.advancedMarkingsBias || {};
   const E = [];
 
   // ---- HARD: shade present but no allele to produce it ----
@@ -118,8 +118,8 @@ for (const f of files.sort()) {
 
   // ---- HARD: LP <-> snowflake/frost multiplier consistency ----
   const lp = lpAllele(a);
-  const sf = adv.snowflake_probability_multiplier,
-    fr = adv.frost_probability_multiplier;
+  const sf = adv.snowflakeProbabilityMultiplier,
+    fr = adv.frostProbabilityMultiplier;
   if (lp && (sf !== 1.0 || fr !== 1.0))
     E.push(`LP allele present but snowflake/frost mult = ${sf}/${fr} (expect 1.0/1.0)`);
   if (!lp && (sf === 1.0 || fr === 1.0))
@@ -128,19 +128,19 @@ for (const f of files.sort()) {
   if (lp && !patnAllele(a)) E.push('LP allele present but NO PATN1 allele (patterns cannot vary)');
 
   // ---- HARD: gaited registry names must be canonical ----
-  const rp = j.rating_profiles || {};
-  if (rp.is_gaited_breed === true) {
-    const reg = rp.gaited_gait_registry || [];
+  const rp = j.ratingProfiles || {};
+  if (rp.isGaitedBreed === true) {
+    const reg = rp.gaitedGaitRegistry || [];
     for (const g of reg) if (!CANON_GAITS.has(g)) E.push(`non-canonical gait name "${g}"`);
   }
 
   // ---- HARD: each shade sub-distribution must sum to ~1.0 ----
-  for (const [name, dist] of Object.entries(j.shade_bias || {})) {
+  for (const [name, dist] of Object.entries(j.shadeBias || {})) {
     const s = Object.values(dist).reduce((x, y) => x + y, 0);
     if (Math.abs(s - 1) > 0.001) E.push(`shade "${name}" sub-weights sum ${s.toFixed(3)} (≠1.0)`);
   }
   // ---- HARD: face marking distribution must sum to ~1.0 ----
-  const face = (j.marking_bias || {}).face || {};
+  const face = (j.markingBias || {}).face || {};
   const fsum = Object.values(face).reduce((x, y) => x + y, 0);
   if (Math.abs(fsum - 1) > 0.001) E.push(`face markings sum ${fsum.toFixed(3)} (≠1.0)`);
 

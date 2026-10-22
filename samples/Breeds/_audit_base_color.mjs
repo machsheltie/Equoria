@@ -78,7 +78,7 @@ for (const [breed, cat] of Object.entries(EXPECT)) {
     continue;
   }
   const j = JSON.parse(readFileSync(path, 'utf8').match(/\$json\$([\s\S]*?)\$json\$/)[1]);
-  const aw = j.allele_weights || {};
+  const aw = j.alleleWeights || {};
   const E = aw.E_Extension || {},
     A = aw.A_Agouti || {};
   const chestnutP = E['e/e'] || 0;

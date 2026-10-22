@@ -29,23 +29,23 @@ for (const f of files.sort()) {
     continue;
   }
   const issues = [];
-  const aw = j.allele_weights || {};
+  const aw = j.alleleWeights || {};
   for (const k in aw) {
     const s = Object.values(aw[k]).reduce((x, y) => x + y, 0);
     if (Math.abs(s - 1) > 0.0015) issues.push(`${k}=${s.toFixed(4)}`);
-    // allowed_alleles keys must match allele_weights keys
-    const allowed = (j.allowed_alleles || {})[k] || [];
+    // allowedAlleles keys must match alleleWeights keys
+    const allowed = (j.allowedAlleles || {})[k] || [];
     for (const ak of Object.keys(aw[k]))
       if (!allowed.includes(ak)) issues.push(`${k}:weight'${ak}'notInAllowed`);
   }
-  const tw = Object.values(j.temperament_weights || {}).reduce((x, y) => x + y, 0);
+  const tw = Object.values(j.temperamentWeights || {}).reduce((x, y) => x + y, 0);
   if (tw !== 100) issues.push(`temp=${tw}`);
-  const rp = j.rating_profiles || {};
-  const gaited = rp.is_gaited_breed;
+  const rp = j.ratingProfiles || {};
+  const gaited = rp.isGaitedBreed;
   const g = rp.gaits && rp.gaits.gaiting;
   if (gaited === true && g == null) issues.push('gaited-but-gaiting-null');
   if (gaited === false && g != null) issues.push('not-gaited-but-gaiting-set');
-  if (gaited === true && !Array.isArray(rp.gaited_gait_registry)) issues.push('gaited-no-registry');
+  if (gaited === true && !Array.isArray(rp.gaitedGaitRegistry)) issues.push('gaited-no-registry');
   console.log(
     `${issues.length ? 'FAIL  ' : 'OK    '}${f.padEnd(30)} temp=${tw} gaited=${gaited}${issues.length ? '  >> ' + issues.join('; ') : ''}`
   );

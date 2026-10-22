@@ -5,7 +5,10 @@
       "regex": "^FF_[A-Z0-9_]+$",
       "reason": "feature-flag environment variables (backend/.env.example naming convention FF_<SCOPE>_<FEATURE_NAME>)"
     },
-    { "regex": "^ERR_[A-Z0-9_]+$", "reason": "Node.js error codes" },
+    {
+      "regex": "^ERR_[A-Z0-9_]+$",
+      "reason": "Node.js error codes"
+    },
     {
       "regex": "^EQUORIA_SCAN_RE_[A-Z0-9_]+$",
       "reason": "shell variable names defined in scripts/lib/beta-readiness-scans.sh"
@@ -95,6 +98,7 @@
     "private_key": "snake_case request field the logger must still redact",
     "credit_card": "snake_case request field the logger must still redact",
     "date_of_birth": "snake_case request field the logger must still redact",
-    "csrf_token": "snake_case request field the logger must still redact"
+    "csrf_token": "snake_case request field the logger must still redact",
+    "unlisted_trait": "probe trait name frozen in backend/modules/traits/__tests__/helpers/environmentalTriggerSystem.golden.json (digests captured from the pre-S4 API); renaming the input invalidates a capture that cannot be regenerated"
   }
 }

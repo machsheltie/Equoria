@@ -1,13 +1,13 @@
 # CANONICAL GAIT-NAME REGISTRY (Equoria)
-# Purpose: the ONLY allowed strings for `rating_profiles.gaited_gait_registry`.
+# Purpose: the ONLY allowed strings for `ratingProfiles.gaitedGaitRegistry`.
 # Agents must pick names from this list verbatim — never invent variants.
 #
 # SYSTEM CONTRACT:
-#   - `is_gaited_breed` (bool) is the ONLY field the evaluation engine reads for gait mechanics.
-#   - `rating_profiles.gaits.gaiting` ({mean,std_dev}) is the gaited quality score (same field for ALL gaited breeds).
-#   - `gaited_gait_registry` is DESCRIPTIVE METADATA ONLY. Evaluation never branches on its contents.
-#   - Non-gaited breed: "gaiting": null, "is_gaited_breed": false, OMIT gaited_gait_registry.
-#   - Gaited breed: "gaiting": {"mean":N,"std_dev":M}, "is_gaited_breed": true, gaited_gait_registry: [<names from below>].
+#   - `isGaitedBreed` (bool) is the ONLY field the evaluation engine reads for gait mechanics.
+#   - `ratingProfiles.gaits.gaiting` ({mean,stdDev}) is the gaited quality score (same field for ALL gaited breeds).
+#   - `gaitedGaitRegistry` is DESCRIPTIVE METADATA ONLY. Evaluation never branches on its contents.
+#   - Non-gaited breed: "gaiting": null, "isGaitedBreed": false, OMIT gaitedGaitRegistry.
+#   - Gaited breed: "gaiting": {"mean":N,"stdDev":M}, "isGaitedBreed": true, gaitedGaitRegistry: [<names from below>].
 #
 # CANONICAL NAMES:
 Rack
