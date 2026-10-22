@@ -104,7 +104,7 @@ describe('groom-care daily limit and atomicity under concurrency (Equoria-9a5ny,
     groom = await prisma.groom.create({
       data: {
         name: `${suffix}-Groom`,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'patient',
         experience: 5,
@@ -151,8 +151,8 @@ describe('groom-care daily limit and atomicity under concurrency (Equoria-9a5ny,
       post('/api/v1/grooms/enhanced/interact', {
         groomId: groom.id,
         horseId: horse.id,
-        interactionType: 'daily_care',
-        variation: 'Morning Routine',
+        interactionType: 'enrichment',
+        variation: 'Puzzle Feeding',
         duration: 30,
       }),
   };

@@ -50,7 +50,7 @@ describe('Equoria-jy3f7: evolveHorseTemperament does not write over a newer temp
       },
     });
     groom = await prisma.groom.create({
-      data: { name: `TestFixture-${tag}-groom`, speciality: 'foal_care', personality: 'gentle', userId: user.id },
+      data: { name: `TestFixture-${tag}-groom`, speciality: 'foalCare', personality: 'gentle', userId: user.id },
     });
     horse = await prisma.horse.create({
       data: {
@@ -70,7 +70,7 @@ describe('Equoria-jy3f7: evolveHorseTemperament does not write over a newer temp
         data: {
           foalId: horse.id,
           groomId: groom.id,
-          interactionType: 'daily_care',
+          interactionType: 'brushing',
           duration: 30,
           bondingChange: 2,
           stressChange: 0,

@@ -9,13 +9,13 @@
 
 import { body, param } from 'express-validator';
 
-export const SELF_CROSS_MESSAGE = 'Stallion and mare cannot be the same horse';
+export const selfCrossMessage = 'Stallion and mare cannot be the same horse';
 
 /** Throws when the mare id names the same horse as the request's stallion id. */
 function differsFromStallion(value, { req }) {
   const stallionId = req.body?.stallionId ?? req.params?.stallionId;
   if (Number(value) === Number(stallionId)) {
-    throw new Error(SELF_CROSS_MESSAGE);
+    throw new Error(selfCrossMessage);
   }
   return true;
 }

@@ -28,13 +28,10 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createBarrierClient, holdLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
-import {
-  autoRetireOverdueRiders,
-  RIDER_MANDATORY_RETIREMENT_WEEKS,
-} from '../services/riderTrainerRetirementService.mjs';
+import { autoRetireOverdueRiders } from '../services/riderTrainerRetirementService.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-r9u5k';
+const fixturePrefix = 'TestFixture-r9u5k';
 const tag = () => randomBytes(6).toString('hex');
 const barrierClient = createBarrierClient();
 
@@ -49,8 +46,8 @@ describe('rider retirement and Horse.rider (Equoria-r9u5k)', () => {
     const suffix = tag();
     owner = await prisma.user.create({
       data: {
-        username: `${FIXTURE_PREFIX}-${suffix}`,
-        email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
+        username: `${fixturePrefix}-${suffix}`,
+        email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
         firstName: 'R9u5k',
         lastName: 'Owner',
@@ -61,7 +58,7 @@ describe('rider retirement and Horse.rider (Equoria-r9u5k)', () => {
     horse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `${FIXTURE_PREFIX}-horse-${suffix}`,
+        name: `${fixturePrefix}-horse-${suffix}`,
         sex: 'Mare',
         dateOfBirth: new Date('2019-06-15'),
         age: 6,
@@ -110,7 +107,8 @@ describe('rider retirement and Horse.rider (Equoria-r9u5k)', () => {
 
     await prisma.rider.update({
       where: { id: rider.id },
-      data: { careerWeeks: RIDER_MANDATORY_RETIREMENT_WEEKS },
+      // Far past the mandatory-retirement threshold, whatever its value.
+      data: { careerWeeks: 10_000 },
     });
     const result = await autoRetireOverdueRiders();
     expect(result.retiredIds).toContain(rider.id);

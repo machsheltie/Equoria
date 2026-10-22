@@ -20,7 +20,7 @@ import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const MISSING_ID = 2_000_111_333;
+const missingId = 2_000_111_333;
 
 describe('advanced genetics two-parent endpoints refuse a self-cross (Equoria-1aoqa)', () => {
   let token;
@@ -82,7 +82,7 @@ describe('advanced genetics two-parent endpoints refuse a self-cross (Equoria-1a
   it.each(endpoints.map(e => [`${e.method.toUpperCase()} ${e.path}`, e]))(
     '%s: a same-id pair is refused before any lookup (missing id is 400, not 404)',
     async (_label, endpoint) => {
-      const res = await call(endpoint, MISSING_ID, MISSING_ID);
+      const res = await call(endpoint, missingId, missingId);
       expect(res.status).toBe(400);
     },
     60000,

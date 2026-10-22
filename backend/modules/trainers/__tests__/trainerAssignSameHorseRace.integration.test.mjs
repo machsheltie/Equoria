@@ -32,7 +32,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { createBarrierClient, horseRowLock, raceBehindLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-j8s5c-trainer';
+const fixturePrefix = 'TestFixture-j8s5c-trainer';
 const tag = () => randomBytes(6).toString('hex');
 const barrierClient = createBarrierClient();
 
@@ -47,8 +47,8 @@ describe('trainer assign: two trainers, one horse (Equoria-j8s5c)', () => {
     const suffix = tag();
     owner = await prisma.user.create({
       data: {
-        username: `${FIXTURE_PREFIX}-${suffix}`,
-        email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
+        username: `${fixturePrefix}-${suffix}`,
+        email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
         firstName: 'J8s5c',
         lastName: 'Owner',
@@ -59,7 +59,7 @@ describe('trainer assign: two trainers, one horse (Equoria-j8s5c)', () => {
     horse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `${FIXTURE_PREFIX}-horse-${suffix}`,
+        name: `${fixturePrefix}-horse-${suffix}`,
         sex: 'Mare',
         dateOfBirth: new Date('2019-06-15'),
         age: 6,

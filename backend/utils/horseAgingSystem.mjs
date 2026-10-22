@@ -40,6 +40,9 @@ import {
 import { getHorseAgeDays } from './horseAge.mjs';
 import { setEpigeneticModifiersKey } from '../modules/traits/index.mjs';
 
+/** The epigeneticModifiers key the age-1 milestone records its tags under. */
+export const ageOneTagsKey = 'epigenetic_tags';
+
 /**
  * GAME-DESIGN UNIT CONTRACT (Equoria-son6 / Equoria-j9ip):
  *   1 real-time week (7 days) = 1 game year.
@@ -229,7 +232,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
             // Equoria-m1sf8: set only this milestone's key, in one statement
             // against the row's current value, so a trait revealed since the
             // read above is kept.
-            await setEpigeneticModifiersKey(prisma, horseId, 'epigenetic_tags', assignedTraits);
+            await setEpigeneticModifiersKey(prisma, horseId, ageOneTagsKey, assignedTraits);
 
             traitsAssigned = assignedTraits;
             logger.info(

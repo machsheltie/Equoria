@@ -33,7 +33,7 @@ import { createTestHorse, cleanupTestHorses } from './helpers/createTestHorse.mj
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { createBarrierClient, holdLock, horseRowLock } from './helpers/rowLockBarrier.mjs';
 import * as foalTraitImpl from '../services/jobs/impl/foalTraitEvaluation.mjs';
-import { checkForMilestones } from '../utils/horseAgingSystem.mjs';
+import { ageOneTagsKey, checkForMilestones } from '../utils/horseAgingSystem.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
@@ -149,7 +149,7 @@ describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equ
 
     const after = await reload(foal.id);
     expect(revealedNames(after.epigeneticModifiers)).toEqual(expect.arrayContaining(revealed));
-    expect(after.epigeneticModifiers.epigenetic_tags).toEqual(milestoneResult.traitsAssigned);
+    expect(after.epigeneticModifiers[ageOneTagsKey]).toEqual(milestoneResult.traitsAssigned);
   }, 120000);
 
   it('a reveal written after the age-1 milestone keeps the milestone tags', async () => {
@@ -164,7 +164,7 @@ describe('INTEGRATION: epigeneticModifiers writers keep each other’s work (Equ
     expect(revealed.length).toBeGreaterThan(0);
 
     const after = await reload(foal.id);
-    expect(after.epigeneticModifiers.epigenetic_tags).toEqual(milestoneResult.traitsAssigned);
+    expect(after.epigeneticModifiers[ageOneTagsKey]).toEqual(milestoneResult.traitsAssigned);
     expect(revealedNames(after.epigeneticModifiers)).toEqual(expect.arrayContaining(revealed));
   }, 120000);
 });
