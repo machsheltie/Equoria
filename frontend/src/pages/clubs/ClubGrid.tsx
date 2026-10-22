@@ -14,9 +14,11 @@ import React from 'react';
 import { Users, Crown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
-import { Skeleton, ErrorState } from '@/components/ui/state';
+import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor } from '@/lib/http/actionMessage';
+import { joinRefused } from './clubMessages';
 import { useJoinClub, useMyClubs } from '@/hooks/api/useClubs';
 import type { Club } from '@/lib/api-client';
 import { clubIcon } from './constants';
@@ -137,6 +139,13 @@ export const ClubGrid: React.FC<{
                 <ChevronRight className="w-3.5 h-3.5" />
                 {joinClub.isPending ? 'Joining…' : 'Join Club'}
               </Button>
+            )}
+            {/* The one join mutation serves every card: show its refusal on the club tried. */}
+            {joinClub.isError && joinClub.variables === club.id && (
+              <InlineError
+                message={actionMessageFor(joinClub.error, joinRefused)}
+                className="mt-2"
+              />
             )}
           </Surface>
         );

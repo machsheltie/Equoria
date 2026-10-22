@@ -16,6 +16,9 @@ import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
 import { GameBadge } from '@/components/ui/game';
 import { Input } from '@/components/ui/form';
+import { InlineError } from '@/components/ui/state';
+import { actionMessageFor } from '@/lib/http/actionMessage';
+import { nominateRefused, voteRefused } from './clubMessages';
 import { useVote, useNominate, useElectionResults } from '@/hooks/api/useClubs';
 import type { ClubElection, ElectionCandidate } from '@/lib/api-client';
 
@@ -47,7 +50,14 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
           </GameBadge>
         </div>
         {isMember && election.status === 'open' && (
-          <Button type="button" size="sm" onClick={() => setShowNominate((v) => !v)}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              nominate.reset();
+              setShowNominate((v) => !v);
+            }}
+          >
             Nominate
           </Button>
         )}
@@ -68,13 +78,23 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
             size="sm"
             disabled={nominate.isPending}
             onClick={() => {
-              nominate.mutate(statement);
-              setShowNominate(false);
-              setStatement('');
+              // The statement stays until the server accepts the nomination (§2).
+              nominate.mutate(statement, {
+                onSuccess: () => {
+                  setShowNominate(false);
+                  setStatement('');
+                },
+              });
             }}
           >
             {nominate.isPending ? 'Submitting…' : 'Submit Nomination'}
           </Button>
+          {nominate.isError && (
+            <InlineError
+              message={actionMessageFor(nominate.error, nominateRefused)}
+              className="mt-2"
+            />
+          )}
         </div>
       )}
 
@@ -107,6 +127,9 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
         </div>
       ) : (
         <p className="text-xs text-role-muted">No candidates yet.</p>
+      )}
+      {vote.isError && (
+        <InlineError message={actionMessageFor(vote.error, voteRefused)} className="mt-2" />
       )}
     </Surface>
   );

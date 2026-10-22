@@ -42,7 +42,8 @@ import {
   GameDialogTitle,
 } from '@/components/ui/game';
 import { FormField, Input, Textarea } from '@/components/ui/form';
-import { Skeleton, ErrorState } from '@/components/ui/state';
+import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import { useThreads, useCreateThread } from '@/hooks/api/useForum';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
@@ -110,20 +111,24 @@ const MessageBoardPage: React.FC = () => {
     setPage(1);
   }, []);
 
-  const handlePost = async () => {
+  const handlePost = () => {
     if (!newTitle.trim() || !newContent.trim() || createThread.isPending) return;
-    await createThread.mutateAsync({
-      section: activeSection,
-      title: newTitle.trim(),
-      content: newContent.trim(),
-    });
-    setShowNewThread(false);
-    setNewTitle('');
-    setNewContent('');
-    setPage(1);
+    // The composer keeps what was typed until the server accepts it (§2).
+    createThread.mutate(
+      { section: activeSection, title: newTitle.trim(), content: newContent.trim() },
+      {
+        onSuccess: () => {
+          setShowNewThread(false);
+          setNewTitle('');
+          setNewContent('');
+          setPage(1);
+        },
+      }
+    );
   };
 
   const closeNewThread = () => {
+    createThread.reset();
     setShowNewThread(false);
     setNewTitle('');
     setNewContent('');
@@ -152,7 +157,10 @@ const MessageBoardPage: React.FC = () => {
           actions={
             <Button
               type="button"
-              onClick={() => setShowNewThread(true)}
+              onClick={() => {
+                createThread.reset();
+                setShowNewThread(true);
+              }}
               data-testid="new-post-button"
             >
               <PlusCircle className="w-4 h-4" />
@@ -306,6 +314,9 @@ const MessageBoardPage: React.FC = () => {
                 />
               )}
             </FormField>
+            {createThread.isError && (
+              <InlineError message={userMessageFor(createThread.error).message} />
+            )}
             <div className="flex gap-3 justify-end">
               <Button type="button" variant="secondary" onClick={closeNewThread}>
                 Cancel

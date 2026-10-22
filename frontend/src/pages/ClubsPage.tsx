@@ -45,12 +45,11 @@ const ClubsPage: React.FC = () => {
     error: breedErrorObj,
     refetch: refetchBreed,
   } = useClubs('breed');
-  const { data: allData } = useClubs();
+  const { data: allData, isPending: allPending, isError: allError } = useClubs();
 
   const disciplineClubs = disciplineData?.clubs ?? [];
   const breedClubs = breedData?.clubs ?? [];
-  const allClubs = allData?.clubs ?? [];
-  const totalClubs = allClubs.length;
+  const totalClubs = allData?.clubs.length ?? 0;
 
   return (
     <div className="min-h-screen">
@@ -75,7 +74,8 @@ const ClubsPage: React.FC = () => {
           metadata={
             <span className="inline-flex items-center gap-2">
               <Users className="w-4 h-4" aria-hidden="true" />
-              <span>{totalClubs > 0 ? `${totalClubs} clubs total` : '…'}</span>
+              {/* '…' only while loading; '—' when the count is unknown; a real 0 is 0 (§4). */}
+              <span>{allPending ? '…' : allError ? '—' : `${totalClubs} clubs total`}</span>
             </span>
           }
           className="mb-6"
@@ -117,7 +117,7 @@ const ClubsPage: React.FC = () => {
             />
           </TabsContent>
           <TabsContent value="my-club">
-            <MyClubTab allClubs={allClubs} />
+            <MyClubTab />
           </TabsContent>
         </Tabs>
       </PageContainer>

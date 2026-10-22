@@ -16,16 +16,35 @@ import { Crown, Vote, BarChart3, Trophy, PlusCircle, ArrowRightLeft } from 'luci
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
 import EmptyState from '@/components/ui/EmptyState';
+import { ErrorState, InlineError, SectionLoading } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor } from '@/lib/http/actionMessage';
 import { FormField, Input, Select, Textarea } from '@/components/ui/form';
-import { useMyClubs, useCreateClub } from '@/hooks/api/useClubs';
-import type { Club, ClubType, ClubMembership } from '@/lib/api-client';
+import { useClubs, useMyClubs, useCreateClub } from '@/hooks/api/useClubs';
+import type { ClubType, ClubMembership } from '@/lib/api-client';
 import { clubIcon } from './constants';
+import { createClubRefused } from './clubMessages';
 import { ClubElectionsSection } from './ClubElectionsSection';
 import { TransferLeadershipModal } from './TransferLeadershipModal';
 
-export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
-  const { data: myClubsData } = useMyClubs();
-  const myMemberships = myClubsData?.memberships ?? [];
+/** A failed club query: class-mapped copy, with a retry only where retrying can help. */
+const MyClubsError: React.FC<{ error: unknown; onRetry: () => void }> = ({ error, onRetry }) => {
+  const { title, message, retryable } = userMessageFor(error);
+  return (
+    <ErrorState
+      title={title}
+      message={message}
+      retry={retryable ? { label: 'Try Again', onClick: onRetry } : undefined}
+    />
+  );
+};
+
+export const MyClubTab: React.FC = () => {
+  const myClubsQuery = useMyClubs();
+  const myMemberships = myClubsQuery.data?.memberships ?? [];
+  // Same query as the page header's count (shared cache entry, one request).
+  const allClubsQuery = useClubs();
+  const allClubs = allClubsQuery.data?.clubs ?? [];
   const createClub = useCreateClub();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -35,18 +54,25 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
   const [newDescription, setNewDescription] = useState('');
   const [transferMembership, setTransferMembership] = useState<ClubMembership | null>(null);
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!newName.trim() || !newCategory.trim() || !newDescription.trim()) return;
-    await createClub.mutateAsync({
-      name: newName.trim(),
-      type: newType,
-      category: newCategory.trim(),
-      description: newDescription.trim(),
-    });
-    setShowCreate(false);
-    setNewName('');
-    setNewCategory('');
-    setNewDescription('');
+    // The form keeps what was typed until the server accepts the club (§2).
+    createClub.mutate(
+      {
+        name: newName.trim(),
+        type: newType,
+        category: newCategory.trim(),
+        description: newDescription.trim(),
+      },
+      {
+        onSuccess: () => {
+          setShowCreate(false);
+          setNewName('');
+          setNewCategory('');
+          setNewDescription('');
+        },
+      }
+    );
   };
 
   // Gather all clubIds the user is in
@@ -54,8 +80,12 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
 
   return (
     <div data-testid="my-club-tab">
-      {/* My Memberships */}
-      {myMemberships.length > 0 ? (
+      {/* My Memberships — LOADING → ERROR → EMPTY → data (§1) */}
+      {myClubsQuery.isPending ? (
+        <SectionLoading label="Loading your clubs" minHeight="96px" />
+      ) : myClubsQuery.isError ? (
+        <MyClubsError error={myClubsQuery.error} onRetry={() => myClubsQuery.refetch()} />
+      ) : myMemberships.length > 0 ? (
         <div className="mb-8">
           <h2 className="text-sm font-semibold text-role-secondary uppercase tracking-wide mb-4 flex items-center gap-2">
             <Crown className="w-4 h-4" aria-hidden="true" />
@@ -123,7 +153,10 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
         <Button
           type="button"
           variant={showCreate ? 'secondary' : 'default'}
-          onClick={() => setShowCreate((v) => !v)}
+          onClick={() => {
+            createClub.reset();
+            setShowCreate((v) => !v);
+          }}
           data-testid="create-club-toggle"
         >
           <PlusCircle className="w-4 h-4" />
@@ -184,12 +217,18 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
                 />
               )}
             </FormField>
+            {createClub.isError && (
+              <InlineError message={actionMessageFor(createClub.error, createClubRefused)} />
+            )}
             <div className="flex gap-3 justify-end">
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => setShowCreate(false)}
+                onClick={() => {
+                  createClub.reset();
+                  setShowCreate(false);
+                }}
               >
                 Cancel
               </Button>
@@ -218,7 +257,11 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
           <BarChart3 className="w-4 h-4" aria-hidden="true" />
           Club Leaderboard
         </h2>
-        {allClubs.length === 0 ? (
+        {allClubsQuery.isPending ? (
+          <SectionLoading label="Loading the club leaderboard" minHeight="96px" />
+        ) : allClubsQuery.isError ? (
+          <MyClubsError error={allClubsQuery.error} onRetry={() => allClubsQuery.refetch()} />
+        ) : allClubs.length === 0 ? (
           <EmptyState
             variant="first-use"
             icon={<BarChart3 className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />}

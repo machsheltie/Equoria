@@ -25,6 +25,7 @@ import { FormField, Input, Textarea } from '@/components/ui/form';
 import { InlineError } from '@/components/ui/state';
 import { useSendMessage } from '@/hooks/api/useMessages';
 import { usersApi } from '@/lib/api-client';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 export const ComposeModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [recipientId, setRecipientId] = useState('');
@@ -32,29 +33,43 @@ export const ComposeModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ id: string; username: string }[]>([]);
   const [searching, setSearching] = useState(false);
+  // A failed search and an empty one are different answers (§1): keep them apart.
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [noMatches, setNoMatches] = useState(false);
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const sendMessage = useSendMessage();
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Every keystroke starts a fresh question; the last answer no longer applies.
+    setSearchError(null);
+    setNoMatches(false);
     if (searchQuery.length < 2) {
       setSearchResults([]);
+      setSearching(false);
       return;
     }
+    let stale = false;
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(async () => {
       setSearching(true);
       try {
         const data = await usersApi.search(searchQuery);
-        setSearchResults(data.users ?? []);
-      } catch {
+        if (stale) return;
+        const users = data.users ?? [];
+        setSearchResults(users);
+        setNoMatches(users.length === 0);
+      } catch (error) {
+        if (stale) return;
         setSearchResults([]);
+        setSearchError(`Couldn't search players. ${userMessageFor(error).message}`);
       } finally {
-        setSearching(false);
+        if (!stale) setSearching(false);
       }
     }, 300);
     return () => {
+      stale = true;
       if (searchTimeout.current) clearTimeout(searchTimeout.current);
     };
   }, [searchQuery]);
@@ -129,6 +144,10 @@ export const ComposeModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-role-muted">
                         …
                       </span>
+                    )}
+                    {searchError && <InlineError message={searchError} className="mt-2" />}
+                    {noMatches && !searching && (
+                      <p className="mt-2 text-xs text-role-muted">No players found.</p>
                     )}
                     {searchResults.length > 0 && (
                       <ul className="absolute z-10 w-full mt-1 rounded-[var(--radius-md)] bg-[var(--bg-midnight)] border border-[var(--glass-border)] shadow-xl overflow-hidden">

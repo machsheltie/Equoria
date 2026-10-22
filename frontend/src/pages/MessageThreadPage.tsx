@@ -22,7 +22,8 @@ import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import { GameBadge } from '@/components/ui/game';
 import { Textarea } from '@/components/ui/form';
-import { Skeleton, ErrorState } from '@/components/ui/state';
+import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import { useThread, useCreatePost, useIncrementView } from '@/hooks/api/useForum';
 import type { ForumPost } from '@/lib/api-client';
@@ -83,21 +84,15 @@ const MessageThreadPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   const [reply, setReply] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (id) incrementView.mutate(id);
   }, [id]); // incrementView ref is stable — intentionally omitted
 
-  const handleReply = async () => {
-    if (!reply.trim() || submitting) return;
-    setSubmitting(true);
-    try {
-      await createPost.mutateAsync({ threadId: id, content: reply.trim() });
-      setReply('');
-    } finally {
-      setSubmitting(false);
-    }
+  const handleReply = () => {
+    if (!reply.trim() || createPost.isPending) return;
+    // The typed reply stays in the box until the server accepts it (§2).
+    createPost.mutate({ threadId: id, content: reply.trim() }, { onSuccess: () => setReply('') });
   };
 
   const sectionLabel = thread?.section
@@ -221,16 +216,19 @@ const MessageThreadPage: React.FC = () => {
               data-testid="reply-input"
               aria-label="Reply"
             />
+            {createPost.isError && (
+              <InlineError message={userMessageFor(createPost.error).message} className="mb-3" />
+            )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-role-muted">{reply.length}/10000</span>
               <Button
                 type="button"
                 onClick={handleReply}
-                disabled={!reply.trim() || submitting}
+                disabled={!reply.trim() || createPost.isPending}
                 data-testid="submit-reply"
               >
                 <Send className="w-3.5 h-3.5" />
-                {submitting ? 'Posting…' : 'Post Reply'}
+                {createPost.isPending ? 'Posting…' : 'Post Reply'}
               </Button>
             </div>
           </Surface>
