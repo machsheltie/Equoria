@@ -15,6 +15,35 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { toPredictionView } from './predictionHorseView.mjs';
+import { collectAncestorIdsBFS } from './pedigreeWalker.mjs';
+
+/**
+ * Attach `competitionResults` to the rows the VIEWER owns, in one batched read.
+ * The records of every other horse are withheld by toPredictionView (design §0,
+ * Equoria-q4uem.9 slice 4b), so they are never loaded (Equoria-cmw85.15): an
+ * include on every ancestor read an established ancestor's whole results history
+ * only to discard it. Without a viewer nobody owns anything, so nothing is read.
+ * @param {Array<object|null>} rows - Horse rows (userId present)
+ * @param {string|undefined} viewerId
+ * @returns {Promise<Array<object|null>>} rows, own ones carrying competitionResults
+ */
+async function withOwnCompetitionResults(rows, viewerId) {
+  const ownedIds = rows
+    .filter(row => row && viewerId !== undefined && row.userId === viewerId)
+    .map(row => row.id);
+  if (ownedIds.length === 0) {
+    return rows;
+  }
+  const results = await prisma.competitionResult.findMany({
+    where: { horseId: { in: ownedIds } },
+    orderBy: { id: 'asc' },
+  });
+  const byHorse = new Map(ownedIds.map(id => [id, []]));
+  results.forEach(result => byHorse.get(result.horseId).push(result));
+  return rows.map(row =>
+    row && byHorse.has(row.id) ? { ...row, competitionResults: byHorse.get(row.id) } : row,
+  );
+}
 
 /**
  * Generate hierarchical lineage tree structure
@@ -38,24 +67,13 @@ export async function generateLineageTree(
   // unrevealed hidden traits (ruling S-Q9) and, given a viewer, no competition
   // records of horses that viewer does not own (design §0; q4uem.9 slice 4b).
   const [stallion, mare] = (
-    await Promise.all([
-      prisma.horse.findUnique({
-        where: { id: stallionId },
-        include: {
-          sire: true,
-          dam: true,
-          competitionResults: true,
-        },
-      }),
-      prisma.horse.findUnique({
-        where: { id: mareId },
-        include: {
-          sire: true,
-          dam: true,
-          competitionResults: true,
-        },
-      }),
-    ])
+    await withOwnCompetitionResults(
+      await Promise.all([
+        prisma.horse.findUnique({ where: { id: stallionId }, include: { sire: true, dam: true } }),
+        prisma.horse.findUnique({ where: { id: mareId }, include: { sire: true, dam: true } }),
+      ]),
+      viewerId,
+    )
   ).map(row => toPredictionView(row, { viewerId }));
 
   if (!stallion || !mare) {
@@ -78,13 +96,15 @@ export async function generateLineageTree(
     ),
     maxGenerations - 1, // root level is depth 0; we already have stallion+mare
   );
-  const ancestorRows =
+  const ancestorRows = await withOwnCompetitionResults(
     ancestorIds.size > 0
       ? await prisma.horse.findMany({
           where: { id: { in: [...ancestorIds] } },
-          include: { sire: true, dam: true, competitionResults: true },
+          include: { sire: true, dam: true },
         })
-      : [];
+      : [],
+    viewerId,
+  );
   const ancestorById = new Map(ancestorRows.map(h => [h.id, toPredictionView(h, { viewerId })]));
   // Seed the map with the two roots so buildHorseNode can find them by id.
   ancestorById.set(stallion.id, stallion);
@@ -185,45 +205,6 @@ function buildHorseNode(horse, currentDepth, maxDepth, ancestorById, visited = n
 }
 
 /**
- * Equoria-a56gl: BFS-collect all ancestor IDs reachable from `seedIds`
- * within `maxRemainingDepth` generations. Caller passes the IDs at depth-1
- * relative to the roots; this expands generation by generation, batching
- * the sire/dam lookups per level.
- *
- * The traversal de-dupes via the same `visited` Set used in
- * organizeByGenerations so inbred branches don't double-count.
- * @param {Array<number>} seedIds - Seed ancestor IDs at depth-1
- * @param {number} maxRemainingDepth - Remaining generations to expand
- * @returns {Promise<Set<number>>} Set of reachable ancestor IDs
- */
-async function collectAncestorIdsBFS(seedIds, maxRemainingDepth) {
-  const visited = new Set();
-  let frontier = [...new Set(seedIds)];
-  for (let depth = 0; depth < maxRemainingDepth && frontier.length > 0; depth++) {
-    const toFetch = frontier.filter(id => !visited.has(id));
-    toFetch.forEach(id => visited.add(id));
-    if (toFetch.length === 0) {
-      break;
-    }
-    const rows = await prisma.horse.findMany({
-      where: { id: { in: toFetch } },
-      select: { id: true, sireId: true, damId: true },
-    });
-    const nextFrontier = [];
-    for (const r of rows) {
-      if (r.sireId && !visited.has(r.sireId)) {
-        nextFrontier.push(r.sireId);
-      }
-      if (r.damId && !visited.has(r.damId)) {
-        nextFrontier.push(r.damId);
-      }
-    }
-    frontier = [...new Set(nextFrontier)];
-  }
-  return visited;
-}
-
-/**
  * Organize lineage data by generations.
  *
  * This is the canonical "lineageData" producer consumed by the diversity and
@@ -253,13 +234,10 @@ export async function organizeByGenerations(stallionId, mareId, maxGenerations, 
     // Map the result by id so the iteration below preserves the original
     // currentGeneration ordering (downstream callers depend on deterministic
     // ordering of horses within a generation).
-    const fetched =
-      toFetch.length > 0
-        ? await prisma.horse.findMany({
-            where: { id: { in: toFetch } },
-            include: { competitionResults: true },
-          })
-        : [];
+    const fetched = await withOwnCompetitionResults(
+      toFetch.length > 0 ? await prisma.horse.findMany({ where: { id: { in: toFetch } } }) : [],
+      viewerId,
+    );
     const byId = new Map(fetched.map(h => [h.id, toPredictionView(h, { viewerId })]));
 
     const horses = [];

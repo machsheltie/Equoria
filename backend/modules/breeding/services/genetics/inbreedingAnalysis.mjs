@@ -10,8 +10,8 @@
  * Refs Equoria-1743t.
  */
 
-import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
+import { walkPedigree } from '../pedigreeWalker.mjs';
 
 /**
  * Detailed inbreeding analysis between a stallion and a mare.
@@ -24,8 +24,8 @@ export async function calculateDetailedInbreedingCoefficient(stallionId, mareId)
     `[inbreedingAnalysis.calculateDetailedInbreedingCoefficient] Analyzing stallion ${stallionId} and mare ${mareId}`,
   );
 
-  const stallionLineage = await getLineage(stallionId, 5);
-  const mareLineage = await getLineage(mareId, 5);
+  const stallionLineage = await walkPedigree(stallionId, 5);
+  const mareLineage = await walkPedigree(mareId, 5);
 
   const commonAncestors = findCommonAncestors(stallionLineage, mareLineage);
   const pathAnalysis = calculatePathAnalysis(stallionId, mareId, commonAncestors);
@@ -51,47 +51,6 @@ export async function calculateDetailedInbreedingCoefficient(stallionId, mareId)
     riskAssessment,
     recommendations,
   };
-}
-
-// Walk a horse's pedigree up to N generations.
-async function getLineage(horseId, generations) {
-  const lineage = [];
-  const toProcess = [{ id: horseId, path: [], generation: 0 }];
-  const processed = new Set();
-
-  while (toProcess.length > 0) {
-    const { id, path, generation } = toProcess.shift();
-    if (processed.has(id) || generation >= generations) {
-      continue;
-    }
-    processed.add(id);
-
-    const horse = await prisma.horse.findUnique({
-      where: { id },
-      select: { id: true, name: true, sireId: true, damId: true },
-    });
-
-    if (horse) {
-      lineage.push({ id: horse.id, name: horse.name, path: [...path], generation });
-
-      if (horse.sireId && generation + 1 < generations) {
-        toProcess.push({
-          id: horse.sireId,
-          path: [...path, 'sire'],
-          generation: generation + 1,
-        });
-      }
-      if (horse.damId && generation + 1 < generations) {
-        toProcess.push({
-          id: horse.damId,
-          path: [...path, 'dam'],
-          generation: generation + 1,
-        });
-      }
-    }
-  }
-
-  return lineage;
 }
 
 // Find ancestors appearing in both lineages; contribution per Wright: (1/2)^(n1+n2+1).
