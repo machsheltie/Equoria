@@ -9,6 +9,13 @@ import logger from '../../../utils/logger.mjs';
 /**
  * Log an XP event to the database
  *
+ * STANDALONE XP-AUDIT-WRITE HELPER (Equoria-njfwa, owner decision 2026-07-07:
+ * keep). It has no production caller by design. It MUST NOT be used for the
+ * primary XP award path: awards go through `addXpToUser` / `addXpToUserCore`,
+ * which write the XpEvent row in the same transaction as the xp increment.
+ * Calling this next to an award would re-introduce the non-atomic drift that
+ * Equoria-jvi3u closed (an XpEvent written separately from the xp change).
+ *
  * @param {Object} params - XP event parameters
  * @param {string} params.userId - User ID who received/lost XP (Changed from userId)
  * @param {number} params.amount - Amount of XP gained/lost (positive or negative)
