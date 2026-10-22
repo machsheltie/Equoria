@@ -163,6 +163,26 @@ describe('check-camelcase-naming.mjs (Equoria-pjvp8)', () => {
     expect(res.stderr).toContain(`${prefix} (string)`);
   });
 
+  it('does not scan git-ignored generated output (coverage reports)', () => {
+    // backend/coverage-security/ is git-ignored generated output that exists on
+    // one machine only; it once failed a push from the main checkout.
+    const coverageDir = path.join(repoRoot, 'backend', 'coverage-security');
+    const existed = fs.existsSync(coverageDir);
+    const ignoredPlant = path.join(coverageDir, plantDirName);
+    const planted = path.join(ignoredPlant, 'prettify.js');
+    try {
+      fs.mkdirSync(ignoredPlant, { recursive: true });
+      fs.writeFileSync(planted, `export const ${upperName} = 1;\n`);
+      const ignored = spawnSync('git', ['check-ignore', '-q', planted], { cwd: repoRoot });
+      expect(ignored.status).toBe(0);
+      const res = runCheck();
+      expect(res.stderr).toBe('');
+      expect(res.status).toBe(0);
+    } finally {
+      fs.rmSync(existed ? ignoredPlant : coverageDir, { recursive: true, force: true });
+    }
+  });
+
   it('does not count comments, env reads, or module specifiers', () => {
     plant(
       'plantedExempt.mjs',

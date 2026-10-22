@@ -42,6 +42,7 @@
  * Auto-runs via scripts/doctrine-checks/run-all.sh by file-name pattern.
  */
 
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -121,10 +122,34 @@ function includeFile(name, full) {
   return false;
 }
 
+/**
+ * Git-ignored files are generated output (coverage reports, local builds) that
+ * exist on one machine and not another, so they are not Equoria's names.
+ * Untracked files that are NOT ignored stay in scope, like every ratchet here.
+ */
+function dropGitIgnored(files) {
+  if (files.length === 0) return files;
+  const res = spawnSync('git', ['check-ignore', '--stdin', '-z'], {
+    cwd: repoRoot,
+    input: files.map(toRelKey).join('\0'),
+    encoding: 'utf8',
+    maxBuffer: 1 << 26,
+  });
+  // check-ignore exits 0 when some path is ignored, 1 when none is; anything
+  // else means git could not answer, and the check must not silently pass.
+  if (res.status !== 0 && res.status !== 1) {
+    throw new Error(`[${label}] git check-ignore failed: ${res.stderr || res.error}`);
+  }
+  const ignored = new Set(res.stdout.split('\0').filter(Boolean));
+  return files.filter((f) => !ignored.has(toRelKey(f)));
+}
+
 function listFiles() {
-  return walkFiles(
-    scanRoots.map((r) => path.join(repoRoot, r)),
-    { skipDir: (name) => skipDirNames.has(name), includeFile }
+  return dropGitIgnored(
+    walkFiles(
+      scanRoots.map((r) => path.join(repoRoot, r)),
+      { skipDir: (name) => skipDirNames.has(name), includeFile }
+    )
   );
 }
 
