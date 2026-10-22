@@ -22,7 +22,7 @@ import { getBreedName } from '@/lib/utils';
 import { GraduationCap, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
-import { ErrorState } from '@/components/ui/state';
+import { ErrorState, InlineError } from '@/components/ui/state';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import TrainerCareerPanel, { type TrainerCareerData } from './trainer/TrainerCareerPanel';
 import { TrainerDiscoveryPanelLive } from './trainer/TrainerDiscoveryPanel';
@@ -86,7 +86,13 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
   } = useTrainerAssignments();
   const unassignMutation = useDeleteTrainerAssignment();
   const assignMutation = useAssignTrainer();
-  const { data: horses, isLoading: horsesLoading } = useHorses();
+  const {
+    data: horses,
+    isLoading: horsesLoading,
+    isError: horsesError,
+    error: horsesErrorObj,
+    refetch: refetchHorses,
+  } = useHorses();
 
   const finalTrainers: TrainerEntry[] = trainers ?? [];
   const finalAssignments: TrainerAssignmentEntry[] = assignments ?? [];
@@ -395,7 +401,16 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
             {horsesLoading && (
               <p className="text-sm text-role-muted text-center py-4">Loading horses…</p>
             )}
-            {!horsesLoading && (!horses || horses.length === 0) && (
+            {/* ERROR before EMPTY (§1): a failed fetch must not claim the player has no horses. */}
+            {horsesError && (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <InlineError message={userMessageFor(horsesErrorObj).message} />
+                <Button type="button" variant="secondary" size="sm" onClick={() => refetchHorses()}>
+                  Try Again
+                </Button>
+              </div>
+            )}
+            {!horsesLoading && !horsesError && (!horses || horses.length === 0) && (
               <p className="text-sm text-role-muted text-center py-4">No horses available.</p>
             )}
             <div className="space-y-2 max-h-60 overflow-y-auto">

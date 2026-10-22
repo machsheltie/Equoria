@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 import { userMessageFor } from '@/lib/http/userMessage';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
-import { ErrorState } from '@/components/ui/state';
+import { ErrorState, InlineError } from '@/components/ui/state';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
 import RiderCareerPanel from './rider/RiderCareerPanel';
 import RiderDiscoveryPanel from './rider/RiderDiscoveryPanel';
@@ -86,7 +86,13 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
   const unassignMutation = useDeleteRiderAssignment();
   const assignMutation = useAssignRider();
   const dismissMutation = useDismissRider();
-  const { data: horses, isLoading: horsesLoading } = useHorses();
+  const {
+    data: horses,
+    isLoading: horsesLoading,
+    isError: horsesError,
+    error: horsesErrorObj,
+    refetch: refetchHorses,
+  } = useHorses();
 
   const finalRiders = ridersData ?? ridersResponse ?? [];
   const finalAssignments = assignmentsData ?? assignmentsResponse ?? [];
@@ -440,7 +446,16 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
             {horsesLoading && (
               <p className="text-sm text-role-muted text-center py-4">Loading horses…</p>
             )}
-            {!horsesLoading && (!horses || horses.length === 0) && (
+            {/* ERROR before EMPTY (§1): a failed fetch must not claim the player has no horses. */}
+            {horsesError && (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <InlineError message={userMessageFor(horsesErrorObj).message} />
+                <Button type="button" variant="secondary" size="sm" onClick={() => refetchHorses()}>
+                  Try Again
+                </Button>
+              </div>
+            )}
+            {!horsesLoading && !horsesError && (!horses || horses.length === 0) && (
               <p className="text-sm text-role-muted text-center py-4">No horses available.</p>
             )}
             <div className="space-y-2 max-h-60 overflow-y-auto">
