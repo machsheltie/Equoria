@@ -44,7 +44,8 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
   const dmUnread = unreadData?.count ?? 0;
   const gameUnread = gameNotifsData?.unreadCount ?? 0;
   const totalUnread = dmUnread + gameUnread;
-  const displayMoney = user?.money?.toLocaleString() ?? '0';
+  // Unknown balance is "—", never a believable 0 (Equoria-bvddn.39); a real 0 stays 0.
+  const displayMoney = user?.money?.toLocaleString() ?? '—';
 
   return (
     <>

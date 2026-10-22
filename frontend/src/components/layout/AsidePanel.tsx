@@ -16,7 +16,8 @@ export function AsidePanel() {
   const { user } = useAuth();
   const { data: horses } = useHorses();
 
-  const balance = user?.money?.toLocaleString() ?? '0';
+  // Unknown balance is "—", never a believable 0 (Equoria-bvddn.39); a real 0 stays 0.
+  const balance = user?.money?.toLocaleString() ?? '—';
   const horseList = (Array.isArray(horses) ? horses : []) as unknown as Record<string, unknown>[];
   const totalHorses = horseList.length;
   const readyCount = horseList.filter(isReadyToTrain).length;

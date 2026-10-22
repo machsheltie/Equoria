@@ -18,25 +18,33 @@ import { Link } from 'react-router';
 import { X, Trophy, MessageCircle, Star, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { InlineError } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useWhileYouWereGone, type WYAGItem } from '@/hooks/api/useWhileYouWereGone';
 
 const ABSENCE_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours
+// The last-visit time is per ACCOUNT: a second player on the same browser must
+// not inherit the first one's absence window (Equoria-bvddn.39).
 const LAST_VISIT_KEY = 'equoria-last-visit';
+const lastVisitKey = (userId: string | number) => `${LAST_VISIT_KEY}:${userId}`;
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
-function getLastVisit(): string | null {
+function getLastVisit(userId: string | number): string | null {
   try {
-    return localStorage.getItem(LAST_VISIT_KEY);
+    // The unscoped key is what older builds wrote; honour it once so a player
+    // is not silently skipped on upgrade. setLastVisit() removes it.
+    return localStorage.getItem(lastVisitKey(userId)) ?? localStorage.getItem(LAST_VISIT_KEY);
   } catch {
     return null;
   }
 }
 
-function setLastVisit() {
+function setLastVisit(userId: string | number) {
   try {
-    localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString());
+    localStorage.setItem(lastVisitKey(userId), new Date().toISOString());
+    localStorage.removeItem(LAST_VISIT_KEY);
   } catch {
-    // ignore
+    // Storage can be blocked (private window); the overlay then simply never fires.
   }
 }
 
@@ -95,23 +103,27 @@ export function WhileYouWereGone() {
   const [visible, setVisible] = useState(false);
   const [since, setSince] = useState<string | null>(null);
 
-  const { data, isLoading } = useWhileYouWereGone(since, visible);
+  const { data, isLoading, isError, error, refetch, isFetching } = useWhileYouWereGone(
+    since,
+    visible
+  );
 
   // On mount: detect absence, update lastVisit, store beforeunload handler
+  const userId = user?.id;
   useEffect(() => {
-    if (!user?.completedOnboarding) return;
+    if (!user?.completedOnboarding || userId === undefined) return;
 
-    const lastVisit = getLastVisit();
+    const lastVisit = getLastVisit(userId);
     if (isLongAbsence(lastVisit)) {
       setSince(lastVisit);
       setVisible(true);
     }
-    setLastVisit();
+    setLastVisit(userId);
 
-    const handleUnload = () => setLastVisit();
+    const handleUnload = () => setLastVisit(userId);
     window.addEventListener('beforeunload', handleUnload);
     return () => window.removeEventListener('beforeunload', handleUnload);
-  }, [user?.completedOnboarding]);
+  }, [user?.completedOnboarding, userId]);
 
   // Escape key to dismiss
   const close = useCallback(() => setVisible(false), []);
@@ -186,6 +198,22 @@ export function WhileYouWereGone() {
                 style={{ background: 'rgba(255,255,255,0.04)' }}
               />
             ))}
+          </div>
+        ) : isError ? (
+          // A failed read is NOT "nothing new" (doctrine §1): say so, offer a retry.
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <InlineError
+              message={`We couldn't load what happened while you were away. ${userMessageFor(error).message}`}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              pending={isFetching}
+            >
+              Try again
+            </Button>
           </div>
         ) : items.length === 0 ? (
           <p className="text-sm text-[var(--cream)] py-4 text-center opacity-60">

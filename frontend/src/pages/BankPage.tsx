@@ -11,27 +11,29 @@
  * EmptyState; all currency through the canonical Currency component.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { Link } from 'react-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Coins, Gift, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import { IconBox } from '@/components/ui/IconBox';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/contexts/AuthContext';
 import { bankApi } from '@/lib/api-client';
 import { useTransactionHistory } from '@/hooks/api/useTransactionHistory';
 import Currency from '@/components/ui/Currency';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 const BankPage: React.FC = () => {
   const { user, refetchProfile } = useAuth();
   const queryClient = useQueryClient();
-  const [claimed, setClaimed] = useState(false);
+  // Which user just claimed in this session (so it never leaks across users).
+  const [claimedUserId, setClaimedUserId] = useState<string | number | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const {
@@ -42,28 +44,26 @@ const BankPage: React.FC = () => {
     refetch: refetchTransactions,
   } = useTransactionHistory(user?.id, 1, 20);
 
-  const balance = user?.money ?? 0;
+  // A profile with no balance yet is UNKNOWN, not zero: Currency renders an
+  // honest "—" for a non-finite amount (Equoria-bvddn.39). A real 0 stays 0.
+  const balance = user?.money ?? Number.NaN;
 
-  // Check claim status on mount or user change
-  useEffect(() => {
-    if (!user?.id) return;
-    setClaimed(false); // Reset on user change
-    bankApi
-      .getClaimStatus()
-      .then((status) => {
-        if (!status.canClaim) setClaimed(true);
-      })
-      .catch(() => {
-        // Silently ignore — default to claimable
-      });
-  }, [user?.id]);
+  // Weekly-reward status is server truth, cached per user. A failed read is an
+  // error with a retry — never "claimable" (Equoria-ffj5j, doctrine §1/§4).
+  const claimStatus = useQuery({
+    queryKey: ['bank', 'claim-status', user?.id],
+    queryFn: () => bankApi.getClaimStatus(),
+    enabled: !!user?.id,
+    retry: false,
+  });
+  const claimed = claimedUserId === user?.id || claimStatus.data?.canClaim === false;
 
   const handleClaim = async () => {
     setClaiming(true);
     setClaimError(null);
     try {
       const result = await bankApi.claimWeekly();
-      setClaimed(true);
+      setClaimedUserId(user?.id ?? null);
       // Immediately apply the authoritative newBalance from the claim response so the
       // displayed balance updates even if the background refetch is slow or fails.
       queryClient.setQueryData(
@@ -146,7 +146,11 @@ const BankPage: React.FC = () => {
                 <p className="text-sm text-[var(--text-muted)] mt-0.5">
                   {claimed
                     ? 'Claimed! Come back next week for your next reward.'
-                    : 'Claim your 5,000 coin weekly reward. Resets every Sunday.'}
+                    : claimStatus.isSuccess
+                      ? 'Claim your 5,000 coin weekly reward. Resets every Sunday.'
+                      : claimStatus.isError
+                        ? "We couldn't check your weekly reward."
+                        : 'Checking your weekly reward…'}
                 </p>
               </div>
             </div>
@@ -154,7 +158,7 @@ const BankPage: React.FC = () => {
             <Button
               type="button"
               onClick={handleClaim}
-              disabled={claimed}
+              disabled={claimed || !claimStatus.isSuccess}
               pending={claiming}
               className="flex-shrink-0"
               data-testid="claim-button"
@@ -173,6 +177,20 @@ const BankPage: React.FC = () => {
               )}
             </Button>
           </div>
+          {claimStatus.isError && !claimed && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <InlineError message={userMessageFor(claimStatus.error).message} />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void claimStatus.refetch()}
+                pending={claimStatus.isFetching}
+              >
+                Try again
+              </Button>
+            </div>
+          )}
           {claimError && <p className="text-xs text-role-danger mt-3">{claimError}</p>}
         </Surface>
 
