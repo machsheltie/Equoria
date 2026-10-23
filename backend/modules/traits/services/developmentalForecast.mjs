@@ -28,7 +28,19 @@ export async function generateDevelopmentalForecast(horseId, forecastDays) {
     where: { id: horseId },
     select: { dateOfBirth: true, epigeneticFlags: true, stressLevel: true, bondScore: true },
   });
+  return forecastDevelopment(horseId, horse, forecastDays);
+}
 
+/**
+ * The forecast for a horse row the caller already holds (Equoria-glgyw), so a
+ * request that needs the horse for other analyses reads it once. Makes no
+ * database read.
+ * @param {number} horseId
+ * @param {{dateOfBirth: Date, epigeneticFlags: unknown, stressLevel: number, bondScore: number}} horse
+ * @param {number} forecastDays
+ * @returns {Object} Developmental forecast
+ */
+export async function forecastDevelopment(horseId, horse, forecastDays) {
   const currentAge = getHorseAgeDays(horse.dateOfBirth);
   const forecastEndAge = currentAge + forecastDays;
 

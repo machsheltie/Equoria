@@ -82,19 +82,28 @@ export async function applyEnvironmentalEventFlag(horseId, eventType, { source, 
 /**
  * Everything the trigger analysis reads, read once: the horse (null when it does
  * not exist) and all its groom interactions, oldest first.
+ *
+ * A caller that already holds the horse row (requireOwnership's req.horse) passes
+ * it as `options.horse` and the horse is not read again (Equoria-glgyw).
  * @param {number} horseId
- * @param {{now?: Date, client?: object}} [options]
+ * @param {{now?: Date, client?: object, horse?: object}} [options]
  * @returns {Promise<Readonly<{horseId: number, horse: object|null, interactions: object[], now: Date}>>}
  */
 export async function loadEnvironmentalTriggerSnapshot(
   horseId,
-  { now = new Date(), client = prisma } = {},
+  { now = new Date(), client = prisma, horse: heldHorse } = {},
 ) {
   const [horse, interactions] = await Promise.all([
-    client.horse.findUnique({
-      where: { id: horseId },
-      select: { dateOfBirth: true, stressLevel: true, bondScore: true },
-    }),
+    heldHorse
+      ? {
+          dateOfBirth: heldHorse.dateOfBirth,
+          stressLevel: heldHorse.stressLevel,
+          bondScore: heldHorse.bondScore,
+        }
+      : client.horse.findUnique({
+          where: { id: horseId },
+          select: { dateOfBirth: true, stressLevel: true, bondScore: true },
+        }),
     client.groomInteraction.findMany({
       where: { foalId: horseId },
       include: { groom: { select: { epigeneticInfluenceType: true } } },

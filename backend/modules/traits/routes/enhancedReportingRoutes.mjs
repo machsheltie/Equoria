@@ -28,10 +28,19 @@ import {
 } from '../services/enhancedReportingQueries.mjs';
 
 // Import advanced epigenetic services
-import { generateEnvironmentalReport } from '../services/environmentalTriggerSystem.mjs';
-import { generateInteractionMatrix } from '../services/traitInteractionMatrix.mjs';
 import {
-  generateDevelopmentalForecast,
+  environmentalReport,
+  generateEnvironmentalReport,
+  loadEnvironmentalTriggerSnapshot,
+} from '../services/environmentalTriggerSystem.mjs';
+import {
+  analyzeTraitSnapshot,
+  generateInteractionMatrix,
+  toTraitAnalysisSnapshot,
+} from '../services/traitInteractionMatrix.mjs';
+import {
+  assessDevelopmentalMilestones,
+  forecastDevelopment,
   trackDevelopmentalMilestones,
 } from '../services/developmentalWindowSystem.mjs';
 
@@ -170,17 +179,19 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      // Get horse details (service-layer fetch, Equoria-becrm)
-      const horse = await getHorseWithTraitHistoryLogs(horseId);
-
-      // Get comprehensive analysis
-      const [environmentalInfluences, traitAnalysis, developmentalProgress, predictiveInsights] =
-        await Promise.all([
-          generateEnvironmentalReport(horseId),
-          generateInteractionMatrix(horseId),
-          trackDevelopmentalMilestones(horseId),
-          generateDevelopmentalForecast(horseId, 60),
-        ]);
+      // Equoria-glgyw: requireOwnership already loaded the horse row into
+      // req.horse. Every analysis below runs on that row, and the groom
+      // interactions are read once and shared by the two analyses that need them.
+      const horse = req.horse;
+      const environmentalSnapshot = await loadEnvironmentalTriggerSnapshot(horseId, { horse });
+      const environmentalInfluences = environmentalReport(environmentalSnapshot);
+      const traitAnalysis = analyzeTraitSnapshot(toTraitAnalysisSnapshot(horse));
+      const developmentalProgress = assessDevelopmentalMilestones({
+        horseId,
+        horse,
+        interactions: environmentalSnapshot.interactions,
+      });
+      const predictiveInsights = await forecastDevelopment(horseId, horse, 60);
 
       // Generate recommendations
       const recommendations = generateEpigeneticRecommendations(

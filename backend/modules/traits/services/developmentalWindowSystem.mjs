@@ -42,7 +42,8 @@ export {
 
 export {
   trackDevelopmentalMilestones,
+  assessDevelopmentalMilestones,
   assessMilestoneProgress,
 } from './developmentalMilestones.mjs';
 
-export { generateDevelopmentalForecast } from './developmentalForecast.mjs';
+export { generateDevelopmentalForecast, forecastDevelopment } from './developmentalForecast.mjs';

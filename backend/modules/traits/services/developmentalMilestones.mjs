@@ -30,13 +30,26 @@ export async function trackDevelopmentalMilestones(horseId) {
     select: { dateOfBirth: true, bondScore: true, stressLevel: true },
   });
 
-  const currentAge = getHorseAgeDays(horse.dateOfBirth);
-
   // Get interaction history for milestone assessment
   const interactions = await prisma.groomInteraction.findMany({
     where: { foalId: horseId },
     orderBy: { createdAt: 'asc' },
   });
+
+  return assessDevelopmentalMilestones({ horseId, horse, interactions });
+}
+
+/**
+ * Developmental milestone tracking from rows the caller already holds
+ * (Equoria-glgyw), so a request that also needs the horse and its groom
+ * interactions for other analyses reads them once. Pure: no database read.
+ *
+ * @param {{horseId: number, horse: {dateOfBirth: Date, bondScore: number, stressLevel: number},
+ *   interactions: object[]}} snapshot interactions oldest first
+ * @returns {Object} Developmental milestone tracking
+ */
+export function assessDevelopmentalMilestones({ horseId, horse, interactions }) {
+  const currentAge = getHorseAgeDays(horse.dateOfBirth);
 
   const achievedMilestones = [];
   const pendingMilestones = [];
