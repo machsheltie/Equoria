@@ -1359,7 +1359,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────────
   # JOB 11 — Burn-In (weekly flaky detection, schedule-triggered only)
   #
-  # Targets E2E specs. Runs 5 iterations to catch timing-dependent failures.
+  # Targets E2E specs. Runs 3 iterations to catch timing-dependent failures.
   # R-03 note: breeding.spec.ts try/catch swallows failures — burn-in will not
   # detect those until R-03 is fixed (Epic 21 story 21-4).
   # ──────────────────────────────────────────────────────────────────────────────
@@ -1368,6 +1368,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     if: github.event_name == 'schedule'
+
+    # Equoria-cgx4h: this job must boot the SAME backend the e2e-tests job
+    # boots, because it runs the same Playwright suite. Until 2026-10-23 it
+    # did not: no Redis service (the beta-profile backend retried a refused
+    # connection forever, registration never completed, and global-setup died
+    # after 30 s in every iteration; run 36302474181 logged 435 ECONNREFUSED
+    # lines and 5 "Global setup failed", run 39104999379 the same signature),
+    # no E2E_RATE_LIMIT_MAX, and no --project, so firefox and webkit were
+    # selected although only chromium is installed. See the e2e-tests job for
+    # the full rationale of each setting.
+    env:
+      E2E_RATE_LIMIT_MAX: '100000'
 
     services:
       postgres:
@@ -1383,6 +1395,16 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v6
@@ -1435,20 +1457,32 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      - name: Burn-in E2E — 5 iterations
+      # Equoria-cgx4h: three iterations, not five. One e2e-tests job (setup
+      # plus one chromium pass) took 15 to 25 minutes wall across ten runs
+      # between 2026-10-20 and 2026-10-22; the Playwright step alone was 13.5
+      # minutes in the one inspected in detail. Five passes are about 68
+      # minutes before the Jest step starts, which is why six scheduled runs
+      # between 2026-05-03 and 2026-07-05 were cancelled at the 60-minute job
+      # timeout. Three passes plus setup fit inside it with the Jest step; the
+      # timeout itself is NOT raised. A failed pass now fails the job (a
+      # burn-in exists to surface exactly that), where it used to tolerate one
+      # failure in five.
+      - name: Burn-in E2E — 3 iterations
+        env:
+          BASE_URL: 'http://localhost:3000'
         run: |
           echo "🔥 Starting E2E burn-in — flaky test detection"
           FAILURES=0
-          for i in {1..5}; do
-            echo "━━━ Iteration $i/5 ━━━"
-            if ! npx playwright test --reporter=line; then
+          for i in 1 2 3; do
+            echo "━━━ Iteration $i/3 ━━━"
+            if ! npx playwright test --project=chromium --reporter=line; then
               FAILURES=$((FAILURES + 1))
               echo "⚠️ Iteration $i failed"
             fi
           done
-          echo "Burn-in complete — $FAILURES/5 iterations failed"
-          if [ "$FAILURES" -gt 1 ]; then
-            echo "❌ Flaky threshold exceeded (>1 failure in 5 runs)"
+          echo "Burn-in complete — $FAILURES/3 iterations failed"
+          if [ "$FAILURES" -gt 0 ]; then
+            echo "❌ Flaky threshold exceeded (any failure in 3 runs)"
             exit 1
           fi
           echo "✅ Burn-in passed"
