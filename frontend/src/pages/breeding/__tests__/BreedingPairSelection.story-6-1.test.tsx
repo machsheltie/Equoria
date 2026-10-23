@@ -604,22 +604,23 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
     });
   });
 
+  // Contract changed by the owner (Equoria-q4uem.9). OLD: the page computed a
+  // stud fee of 500 x sire level (5,000 for level-10 Thunder) plus a flat
+  // 200 breeding fee. NEW (Stacey, 2026-10-02 / 10-12 / 10-16): the game never
+  // derives a fee, an own pair is free, and the stud fee is the only fee.
   describe('Stud Fee Display', () => {
-    it('should display calculated stud fee', async () => {
+    it('states that an own pair has no stud fee', async () => {
       renderComponent();
 
       await waitFor(() => {
         expect(screen.getByText('Stud Fee')).toBeInTheDocument();
       });
-
-      // Default calculation for no selection should be 0 coins — rendered by
-      // the canonical Currency component (D-23: game currency is coins, never
-      // USD; assertion pattern matches the wave-1 PrizeHistory migration).
-      const zeroFees = screen.getAllByLabelText('0 coins');
-      expect(zeroFees.length).toBeGreaterThan(0);
+      expect(
+        screen.getByText('None. Both horses are yours, and breeding your own pair is free.')
+      ).toBeInTheDocument();
     });
 
-    it('should update stud fee when sire is selected', async () => {
+    it('never prices the pair from the sire level', async () => {
       const user = userEvent.setup();
       renderComponent();
 
@@ -629,10 +630,8 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
       await user.click(screen.getByLabelText('Select Thunder'));
 
-      await waitFor(() => {
-        // Thunder has level 10, so fee = 500 * 10 = 5000 — coins via Currency
-        expect(screen.getByLabelText('5,000 coins')).toBeInTheDocument();
-      });
+      expect(screen.queryByLabelText('5,000 coins')).not.toBeInTheDocument();
+      expect(screen.queryByText('Breeding Fee')).not.toBeInTheDocument();
     });
   });
 });

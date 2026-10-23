@@ -43,8 +43,11 @@ export interface Horse {
     health: number;
   };
 
-  // Breeding-specific properties
+  // Breeding-specific properties. breedingCooldownEndsAt is a MARE's only
+  // (stallions have no cooldown — owner ruling 2026-10-02); the server sends
+  // it and inFoal on the horse list (Equoria-q4uem.9).
   breedingCooldownEndsAt?: string | null;
+  inFoal?: boolean;
   lastBredAt?: string | null;
   canBreed?: boolean;
 

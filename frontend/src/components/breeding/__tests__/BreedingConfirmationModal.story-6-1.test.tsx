@@ -62,7 +62,6 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     compatibilityPending: false,
     compatibilityError: false,
     onRetryCompatibility: vi.fn(),
-    studFee: 5000,
     onConfirm: vi.fn(),
     isSubmitting: false,
   };
@@ -244,37 +243,34 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     });
   });
 
+  // Contract changed by the owner (Equoria-q4uem.9). OLD: the dialog showed a
+  // caller-computed stud fee "deducted immediately" and warned of a 30-day
+  // cooldown on BOTH parents. NEW (Stacey, 2026-10-02 / 10-12 / 10-16): this
+  // dialog confirms an own pair, which is free; the cooldown is the mare's
+  // alone (one game year), and stallions have none.
   describe('Cost Display', () => {
-    it('should display stud fee', () => {
-      render(<BreedingConfirmationModal {...defaultProps} studFee={5000} />);
-
-      // Stud fee renders as coins (canonical Currency; no USD)
-      expect(screen.getByText('5,000')).toBeInTheDocument();
-    });
-
-    it('should format large stud fees correctly', () => {
-      render(<BreedingConfirmationModal {...defaultProps} studFee={123456} />);
-
-      expect(screen.getByText('123,456')).toBeInTheDocument();
-    });
-
-    it('should explain stud fee deduction', () => {
+    it('states that an own pair has no stud fee', () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
+      expect(screen.getByText('None')).toBeInTheDocument();
       expect(
-        screen.getByText(/This amount will be deducted from your account balance immediately/i)
+        screen.getByText('Both horses are yours, and breeding your own pair is free.')
       ).toBeInTheDocument();
+      expect(screen.queryByText(/deducted from your account balance/i)).not.toBeInTheDocument();
     });
   });
 
   describe('Warnings and Information', () => {
-    it('should display 30-day cooldown warning', () => {
+    it('warns of the mare-only cooldown', () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
-      expect(screen.getByText(/30-Day Breeding Cooldown/i)).toBeInTheDocument();
+      expect(screen.getByText(/Breeding Cooldown:/)).toBeInTheDocument();
       expect(
-        screen.getByText(/Both parents will be unavailable for breeding for 30 days/i)
+        screen.getByText(/Lightning rests from breeding for one game year after this breeding/)
       ).toBeInTheDocument();
+      expect(screen.getByText(/Thunder has no cooldown/)).toBeInTheDocument();
+      expect(screen.queryByText(/30-Day Breeding Cooldown/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Both parents/i)).not.toBeInTheDocument();
     });
 
     it('should display gestation period information', () => {

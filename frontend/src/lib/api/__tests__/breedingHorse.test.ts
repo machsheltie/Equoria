@@ -90,6 +90,14 @@ describe('toBreedingHorse', () => {
     expect(toBreedingHorse(listHorse({ breed: '' }))?.breedName).toBe('not recorded');
   });
 
+  it("carries the server's breeding state: a mare's cooldown end and in-foal flag (Equoria-q4uem.9)", () => {
+    const horse = toBreedingHorse(
+      listHorse({ breedingCooldownEndsAt: '2026-10-30T04:00:00.000Z', inFoal: true })
+    );
+    expect(horse?.breedingCooldownEndsAt).toBe('2026-10-30T04:00:00.000Z');
+    expect(horse?.inFoal).toBe(true);
+  });
+
   it('toBreedingHorses drops rejected horses and keeps order', () => {
     const horses = toBreedingHorses([
       listHorse({ id: 1, sex: 'Stallion' }),

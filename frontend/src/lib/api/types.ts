@@ -233,6 +233,11 @@ export interface HorseSummary {
   lastShod?: string;
   lastGroomed?: string;
   trainingCooldown?: string;
+  // Breeding state (GET /horses list + detail, Equoria-q4uem.9 slice 6):
+  // when a MARE's breeding cooldown ends (null when not a mare or not on
+  // cooldown; stallions never have one) and whether she is in foal.
+  breedingCooldownEndsAt?: string | null;
+  inFoal?: boolean;
   // Earnings fields (API may return either name)
   totalEarnings?: number;
   earnings?: number;

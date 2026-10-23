@@ -38,6 +38,11 @@ export function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: strin
     return { canBreed: false, reason: 'Injured' };
   }
 
+  // A mare already in foal cannot be bred again (the server refuses it).
+  if (horse.inFoal) {
+    return { canBreed: false, reason: 'In foal' };
+  }
+
   // Breeding cooldown check
   if (horse.breedingCooldownEndsAt) {
     const cooldownDate = new Date(horse.breedingCooldownEndsAt);

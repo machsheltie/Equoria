@@ -4,7 +4,8 @@
  * Main page for selecting breeding pairs and initiating breeding.
  * - Celestial Night glass panels throughout
  * - CompatibilityPreview integration (4-tab: Stats/Traits/Inbreeding/Pedigree)
- * - Cost breakdown: stud fee + flat breeding fee
+ * - Cost: none — both horses are the player's own, and breeding your own
+ *   pair is free (owner rulings 2026-10-02 / 10-12 / 10-16, Equoria-q4uem.9)
  * - CinematicMoment on foal birth — lifetime-first only (milestones.firstBreed)
  *   Subsequent breedings show a success banner instead.
  *
@@ -19,7 +20,6 @@ import { useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Dna, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import Currency from '@/components/ui/Currency';
 import { breedingApi, horsesApi } from '@/lib/api-client';
 import { toBreedingHorses, type BreedingHorse } from '@/lib/api/breedingHorse';
 import type { HorseSummary } from '@/lib/api/types';
@@ -47,17 +47,13 @@ import { ErrorState } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { breedingErrorMessage } from '@/lib/http/breedingErrorMessage';
 
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const FLAT_BREEDING_FEE = 200; // fixed game breeding fee (separate from stud fee)
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function calculateStudFee(sire: Horse): number {
-  const basePrice = 500;
-  const levelMultiplier = sire.level || 1;
-  return Math.round(basePrice * levelMultiplier);
-}
+// No fee is computed here (Equoria-q4uem.9 / Equoria-8doyo). The page used to
+// show a stud fee of 500 x sire level plus a flat 200 "breeding fee"; neither
+// existed. Owner rulings (Stacey): a stud fee is set by the stallion's owner,
+// never derived by the game (2026-10-02); it is charged only when a mare is
+// bred to ANOTHER player's stallion, and breeding your own pair is free
+// (2026-10-12); the stud fee is the only fee (2026-10-16). Every pair on this
+// page is the player's own (POST /horses/foals records fee 0).
 
 // CompatibilityPreview data is no longer derived client-side. The previous
 // buildCompatibilityData() used hardcoded math (stat = (s+d)/2 ± spread*0.3±5,
@@ -317,9 +313,6 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     setErrorMessage(null);
   }, [selectedSire, selectedDam]);
 
-  const studFee = selectedSire ? calculateStudFee(selectedSire) : 0;
-  const totalCost = studFee + FLAT_BREEDING_FEE;
-
   // ── Loading / error states ────────────────────────────────────────────────────
 
   if (loadingHorses) {
@@ -449,39 +442,14 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       {/* Cost breakdown + action row */}
       <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--glass-border)] px-5 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Cost breakdown */}
+          {/* Cost: an own pair is free (owner ruling 2026-10-12) */}
           <div className="space-y-1">
             <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
-              Cost Breakdown
+              Stud Fee
             </p>
-            <div className="flex items-baseline gap-4">
-              <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)]">
-                  Stud Fee
-                </p>
-                <p className="text-lg font-bold text-[var(--cream)] font-[var(--font-body)] tabular-nums">
-                  <Currency amount={studFee} />
-                </p>
-              </div>
-              <span className="text-[var(--text-muted)] text-sm">+</span>
-              <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)]">
-                  Breeding Fee
-                </p>
-                <p className="text-lg font-bold text-[var(--cream)] font-[var(--font-body)] tabular-nums">
-                  <Currency amount={FLAT_BREEDING_FEE} />
-                </p>
-              </div>
-              <span className="text-[var(--text-muted)] text-sm">=</span>
-              <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)]">
-                  Total
-                </p>
-                <p className="text-xl font-bold text-[var(--gold-400)] font-[var(--font-body)] tabular-nums">
-                  <Currency amount={totalCost} />
-                </p>
-              </div>
-            </div>
+            <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">
+              None. Both horses are yours, and breeding your own pair is free.
+            </p>
           </div>
 
           {/* CTA */}
@@ -516,7 +484,6 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
           compatibilityPending={compatibilityPending}
           compatibilityError={compatibilityIsError}
           onRetryCompatibility={() => refetchCompatibility()}
-          studFee={studFee}
           onConfirm={handleConfirmBreeding}
           isSubmitting={breedingMutation.isPending}
         />

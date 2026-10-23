@@ -10,6 +10,9 @@
  *   id, name, dateOfBirth, healthStatus, sex, age  — selected columns
  *   breed                                          — `{ id, name }` relation (null when unset)
  *   ageYears                                       — added by withAgeYears (utils/horseAge.mjs)
+ *   breedingCooldownEndsAt, inFoal                 — added by breedingStateFields
+ *                                                    (Equoria-q4uem.9 slice 6; the
+ *                                                    cooldown is a mare's only)
  * `imageUrl` and `level` are NOT in the list select, so they are absent on
  * this endpoint today; they are carried as the optional fields HorseSummary
  * already declares so the breeding UI keeps its existing fallbacks.
@@ -30,7 +33,14 @@ export type BreedingHorse = Pick<
   // `level` and `imageUrl` are always undefined from GET /horses today:
   // HORSE_LIST_SELECT does not send them. Stud fee is player-set (owner
   // ruling, Equoria-q4uem.9); the game never derives it from `level`.
-  'id' | 'name' | 'dateOfBirth' | 'healthStatus' | 'imageUrl' | 'level'
+  | 'id'
+  | 'name'
+  | 'dateOfBirth'
+  | 'healthStatus'
+  | 'imageUrl'
+  | 'level'
+  | 'breedingCooldownEndsAt'
+  | 'inFoal'
 > & {
   age: number;
   sex: HorseSex;
@@ -74,6 +84,10 @@ export function toBreedingHorse(horse: HorseSummary): BreedingHorse | null {
     dateOfBirth: horse.dateOfBirth,
     imageUrl: horse.imageUrl,
     level: horse.level,
+    // Server truth (Equoria-q4uem.9): the selector's cooldown and in-foal
+    // gates read these; without them a mare on cooldown looked breedable.
+    breedingCooldownEndsAt: horse.breedingCooldownEndsAt,
+    inFoal: horse.inFoal,
   };
 }
 

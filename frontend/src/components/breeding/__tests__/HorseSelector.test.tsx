@@ -119,6 +119,18 @@ describe('canHorseBreed', () => {
     });
   });
 
+  describe('in-foal validation (Equoria-q4uem.9)', () => {
+    it('refuses a mare the server reports in foal', () => {
+      const horse = createHorse({ sex: 'Mare', age: 6, inFoal: true });
+      expect(canHorseBreed(horse)).toEqual({ canBreed: false, reason: 'In foal' });
+    });
+
+    it('allows a mare that is not in foal', () => {
+      const horse = createHorse({ sex: 'Mare', age: 6, inFoal: false });
+      expect(canHorseBreed(horse)).toEqual({ canBreed: true });
+    });
+  });
+
   describe('cooldown validation', () => {
     // Equoria-q4uem.13: cooldown days are Eastern game days, but the fixtures
     // were built with the runner's LOCAL calendar (setDate(+30)). Wherever the

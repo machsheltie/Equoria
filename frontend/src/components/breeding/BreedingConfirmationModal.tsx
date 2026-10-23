@@ -15,7 +15,6 @@
 
 import React from 'react';
 import { Heart, AlertTriangle, Coins, Clock, TrendingUp } from 'lucide-react';
-import Currency from '@/components/ui/Currency';
 import {
   GameDialog,
   GameDialogContent,
@@ -49,7 +48,6 @@ export interface BreedingConfirmationModalProps {
   compatibilityError: boolean;
   /** Wired to the compatibility query's refetch — powers the error state's retry */
   onRetryCompatibility: () => void;
-  studFee: number;
   onConfirm: () => void;
   isSubmitting: boolean;
 }
@@ -158,7 +156,6 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
   compatibilityPending,
   compatibilityError,
   onRetryCompatibility,
-  studFee,
   onConfirm,
   isSubmitting,
 }) => {
@@ -264,19 +261,19 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
               )}
             </div>
 
-            {/* Cost Breakdown */}
+            {/* Cost — this dialog confirms an OWN pair, which is free (owner
+                ruling 2026-10-12, Equoria-q4uem.9). It used to show an
+                invented level-based fee "deducted immediately". */}
             <div className="rounded-lg border border-[var(--role-success-border)] bg-[var(--role-success-bg)] p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Coins className="h-5 w-5 text-[var(--role-success-text)]" />
                   <span className="text-sm font-semibold text-[var(--text-primary)]">Stud Fee</span>
                 </div>
-                <span className="text-xl font-bold text-[var(--role-success-text)]">
-                  <Currency amount={studFee} showIcon={false} />
-                </span>
+                <span className="text-xl font-bold text-[var(--role-success-text)]">None</span>
               </div>
               <p className="text-xs text-role-secondary mt-2">
-                This amount will be deducted from your account balance immediately.
+                Both horses are yours, and breeding your own pair is free.
               </p>
             </div>
 
@@ -292,8 +289,9 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
                     <li className="flex items-start gap-2">
                       <Clock className="h-4 w-4 flex-shrink-0 mt-0.5" />
                       <span>
-                        <strong>30-Day Breeding Cooldown:</strong> Both parents will be unavailable
-                        for breeding for 30 days after confirmation.
+                        {/* Mares only (owner rulings 2026-10-02 / S-Q1 2026-10-16) */}
+                        <strong>Breeding Cooldown:</strong> {dam.name} rests from breeding for one
+                        game year after this breeding. {sire.name} has no cooldown.
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
