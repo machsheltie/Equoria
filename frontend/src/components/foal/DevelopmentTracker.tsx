@@ -76,7 +76,7 @@ function BondScoreBar({
             Bond Score
           </span>
         </div>
-        <span className="text-sm font-bold text-[var(--gold-primary)] font-[var(--font-heading)] tabular-nums">
+        <span className="text-sm font-bold text-[var(--gold-primary)] font-[var(--font-body)] tabular-nums">
           {bondScore}
         </span>
       </div>
@@ -168,7 +168,7 @@ export function DevelopmentTracker({
             </p>
             <p
               className="text-sm font-semibold text-[var(--text-primary)]"
-              style={{ fontFamily: 'var(--font-heading)' }}
+              style={{ fontFamily: 'var(--font-body)' }}
             >
               {foalName}
             </p>

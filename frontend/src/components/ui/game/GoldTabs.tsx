@@ -42,7 +42,7 @@ const GoldTabsTrigger = React.forwardRef<
     className={cn(
       'relative inline-flex items-center justify-center whitespace-nowrap',
       'px-4 py-2.5 text-sm font-medium',
-      'font-[var(--font-heading)] text-[var(--text-muted)]',
+      'font-[var(--font-body)] text-[var(--text-muted)]',
       'transition-colors duration-150',
       'hover:text-[var(--cream)]',
       'data-[state=active]:text-[var(--gold-400)]',

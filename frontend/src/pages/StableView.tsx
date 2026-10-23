@@ -437,7 +437,7 @@ const StableView = () => {
                 <p className="text-2xs text-[var(--text-secondary)] uppercase tracking-wide">
                   Level
                 </p>
-                <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
+                <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-body)]">
                   {playerStats.level ?? '—'}
                 </p>
               </div>
@@ -448,7 +448,7 @@ const StableView = () => {
               <p className="text-2xs text-[var(--text-secondary)] uppercase tracking-wide">
                 Horses
               </p>
-              <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
+              <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-body)]">
                 {playerStats.horseCount ?? '—'}
               </p>
             </div>

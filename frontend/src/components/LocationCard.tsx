@@ -119,7 +119,7 @@ const LocationCard: React.FC<LocationCardProps> = ({
           className="text-base font-semibold mb-1 truncate"
           style={{
             color: hovered ? 'var(--gold-400)' : 'var(--text-primary)',
-            fontFamily: 'var(--font-heading)',
+            fontFamily: 'var(--font-body)',
             transition: 'var(--transition-color)',
           }}
         >

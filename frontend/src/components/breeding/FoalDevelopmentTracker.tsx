@@ -103,7 +103,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
                 <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
                   {label}
                 </p>
-                <p className="text-sm font-bold text-[var(--cream)] font-[var(--font-heading)] mt-0.5 capitalize">
+                <p className="text-sm font-bold text-[var(--cream)] font-[var(--font-body)] mt-0.5 capitalize">
                   {String(value)}
                 </p>
               </div>

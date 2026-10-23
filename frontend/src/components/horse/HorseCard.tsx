@@ -134,7 +134,7 @@ export function HorseCard({
         <div className="flex-1 min-w-0">
           <p
             className="text-base font-semibold text-[var(--text-primary)] truncate mb-0.5"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            style={{ fontFamily: 'var(--font-body)' }}
             title={horse.name}
           >
             {horse.name}

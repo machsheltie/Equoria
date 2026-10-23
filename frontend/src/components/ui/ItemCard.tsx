@@ -112,7 +112,7 @@ export function ItemCard({
             {titlePrefix && <span className="flex-shrink-0">{titlePrefix}</span>}
             <h3
               className="text-base font-semibold text-[var(--text-primary)] truncate min-w-0"
-              style={{ fontFamily: 'var(--font-heading)' }}
+              style={{ fontFamily: 'var(--font-body)' }}
               title={title}
             >
               {title}

@@ -136,7 +136,7 @@ export function CooldownTimer({
 
         <span
           className={[
-            'text-sm font-bold font-[var(--font-heading)] tabular-nums',
+            'text-sm font-bold font-[var(--font-body)] tabular-nums',
             isReady
               ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(34,197,94,0.6)]'
               : 'text-[var(--text-primary)]',
@@ -158,7 +158,7 @@ export function CooldownTimer({
               key={unit}
               className="py-1.5 rounded-lg bg-[var(--bg-midnight)] border border-[rgba(100,130,165,0.15)]"
             >
-              <p className="text-base font-bold text-[var(--text-primary)] font-[var(--font-heading)] tabular-nums leading-none">
+              <p className="text-base font-bold text-[var(--text-primary)] font-[var(--font-body)] tabular-nums leading-none">
                 {String(value).padStart(2, '0')}
               </p>
               <p className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest mt-0.5 font-[var(--font-body)]">

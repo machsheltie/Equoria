@@ -271,7 +271,7 @@ function BreedCard({
       </div>
 
       {/* Name */}
-      <p className="text-xs font-semibold text-[var(--text-primary)] font-[var(--font-heading)] leading-tight mb-1 truncate">
+      <p className="text-xs font-semibold text-[var(--text-primary)] font-[var(--font-body)] leading-tight mb-1 truncate">
         {breed.name}
       </p>
 
@@ -345,7 +345,7 @@ function BreedRow({
 
         {/* Name + lore preview */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-heading)] truncate">
+          <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-body)] truncate">
             {breed.name}
           </p>
           <p className="text-xs text-[var(--text-muted)] line-clamp-1 font-[var(--font-body)] mt-0.5">

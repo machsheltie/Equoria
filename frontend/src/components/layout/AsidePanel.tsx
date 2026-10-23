@@ -33,7 +33,7 @@ export function AsidePanel() {
       <div className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] p-4 [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)]">
         <h3
           className="text-[0.85rem] font-semibold text-[var(--text-primary)] mb-3 pb-2 border-b border-[var(--glass-border)]"
-          style={{ fontFamily: 'var(--font-heading)' }}
+          style={{ fontFamily: 'var(--font-body)' }}
         >
           Stable Summary
         </h3>
@@ -57,7 +57,7 @@ export function AsidePanel() {
       <div className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] p-4 [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)]">
         <h3
           className="text-[0.85rem] font-semibold text-[var(--text-primary)] mb-3 pb-2 border-b border-[var(--glass-border)]"
-          style={{ fontFamily: 'var(--font-heading)' }}
+          style={{ fontFamily: 'var(--font-body)' }}
         >
           Cooldown Timers
         </h3>
@@ -85,7 +85,7 @@ export function AsidePanel() {
       <div className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] p-4 [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)]">
         <h3
           className="text-[0.85rem] font-semibold text-[var(--text-primary)] mb-3 pb-2 border-b border-[var(--glass-border)]"
-          style={{ fontFamily: 'var(--font-heading)' }}
+          style={{ fontFamily: 'var(--font-body)' }}
         >
           Recent Activity
         </h3>

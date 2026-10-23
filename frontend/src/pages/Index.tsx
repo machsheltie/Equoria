@@ -130,7 +130,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
         <div className="flex-1 min-w-0">
           <p
             className="text-[1.1rem] font-semibold text-[var(--text-primary)] truncate mb-0.5"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            style={{ fontFamily: 'var(--font-body)' }}
           >
             {horse.name}
           </p>

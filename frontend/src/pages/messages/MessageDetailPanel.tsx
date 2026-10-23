@@ -47,7 +47,7 @@ export const MessageDetailPanel: React.FC<{ messageId: number; onClose: () => vo
             <>
               <h3
                 className="text-base font-semibold text-role-primary leading-tight break-words"
-                style={{ fontFamily: 'var(--font-heading)' }}
+                style={{ fontFamily: 'var(--font-body)' }}
               >
                 {message.subject}
               </h3>

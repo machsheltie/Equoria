@@ -114,7 +114,7 @@ export function RewardToast({
         {/* Text */}
         <div className="flex-1 min-w-0 pt-0.5">
           <p
-            className="text-sm font-bold text-[var(--text-primary)] leading-tight font-[var(--font-heading)] truncate"
+            className="text-sm font-bold text-[var(--text-primary)] leading-tight font-[var(--font-body)] truncate"
             style={{ color: accentColor }}
           >
             {title}

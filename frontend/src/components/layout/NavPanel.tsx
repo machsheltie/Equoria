@@ -106,7 +106,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
                 aria-current={active ? 'page' : undefined}
               >
                 <item.Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                <span style={{ fontFamily: 'var(--font-heading)' }}>{item.name}</span>
+                <span style={{ fontFamily: 'var(--font-body)' }}>{item.name}</span>
               </Link>
             );
           })}

@@ -129,7 +129,7 @@ const BankPage: React.FC = () => {
               <Currency
                 amount={balance}
                 variant="balance"
-                className="text-5xl font-[var(--font-heading)]"
+                className="text-5xl font-[var(--font-body)]"
               />
             </p>
           </div>

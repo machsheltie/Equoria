@@ -248,7 +248,7 @@ export function EmptyState({
               'mt-5 rounded-full px-6 py-2 text-sm font-bold transition-all',
               'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)]',
               'hover:brightness-110 hover:shadow-[0_0_14px_var(--alpha-gold-ember-30)]',
-              'font-[var(--font-heading)]',
+              'font-[var(--font-body)]',
             ].join(' ')}
           >
             {resolvedAction.label}

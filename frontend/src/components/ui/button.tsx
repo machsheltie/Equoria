@@ -164,7 +164,7 @@ const buttonVariants = cva(
         default: [
           'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]',
           'text-[var(--bg-deep-space)] font-semibold tracking-wide',
-          'font-[var(--font-heading)]',
+          'font-[var(--font-body)]',
           'shadow-[var(--btn-default-shadow)]',
           'hover:brightness-110 hover:shadow-[var(--btn-default-shadow-hover)]',
           'active:scale-[0.98]',

@@ -112,7 +112,7 @@ export function SidebarNav() {
                 aria-hidden="true"
               />
               {!collapsed && (
-                <span className="truncate" style={{ fontFamily: 'var(--font-heading)' }}>
+                <span className="truncate" style={{ fontFamily: 'var(--font-body)' }}>
                   {item.name}
                 </span>
               )}

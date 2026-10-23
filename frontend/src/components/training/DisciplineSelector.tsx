@@ -146,7 +146,7 @@ function DisciplineOption({
     >
       <div className="flex items-center justify-between mb-2">
         <span
-          className={`text-sm font-semibold font-[var(--font-heading)] ${isIneligible ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}
+          className={`text-sm font-semibold font-[var(--font-body)] ${isIneligible ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}
         >
           {isIneligible && (
             <Lock className="w-3 h-3 inline-block mr-1 -mt-0.5" aria-hidden="true" />

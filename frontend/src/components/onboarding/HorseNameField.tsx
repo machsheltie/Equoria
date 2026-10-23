@@ -78,7 +78,7 @@ export function HorseNameField({ name, onChange, breedName, gender }: HorseNameF
       {name.length > 0 && (
         <div className="mt-2 flex items-center gap-2">
           <span className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">Preview:</span>
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[var(--alpha-gold-primary-12)] border border-[var(--alpha-gold-ember-30)] text-[var(--gold-primary)] font-[var(--font-heading)]">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[var(--alpha-gold-primary-12)] border border-[var(--alpha-gold-ember-30)] text-[var(--gold-primary)] font-[var(--font-body)]">
             {name}
             {breedName ? ` · ${breedName}` : ''}
             {gender ? ` · ${gender}` : ''}

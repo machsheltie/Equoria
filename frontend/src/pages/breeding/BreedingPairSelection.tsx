@@ -459,7 +459,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
                 <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)]">
                   Stud Fee
                 </p>
-                <p className="text-lg font-bold text-[var(--cream)] font-[var(--font-heading)] tabular-nums">
+                <p className="text-lg font-bold text-[var(--cream)] font-[var(--font-body)] tabular-nums">
                   <Currency amount={studFee} />
                 </p>
               </div>
@@ -468,7 +468,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
                 <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)]">
                   Breeding Fee
                 </p>
-                <p className="text-lg font-bold text-[var(--cream)] font-[var(--font-heading)] tabular-nums">
+                <p className="text-lg font-bold text-[var(--cream)] font-[var(--font-body)] tabular-nums">
                   <Currency amount={FLAT_BREEDING_FEE} />
                 </p>
               </div>
@@ -477,7 +477,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
                 <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)]">
                   Total
                 </p>
-                <p className="text-xl font-bold text-[var(--gold-400)] font-[var(--font-heading)] tabular-nums">
+                <p className="text-xl font-bold text-[var(--gold-400)] font-[var(--font-body)] tabular-nums">
                   <Currency amount={totalCost} />
                 </p>
               </div>
@@ -494,7 +494,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
               'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)]',
               'hover:brightness-110 hover:shadow-[var(--glow-gold-strong)]',
               'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100 disabled:hover:shadow-none',
-              'font-[var(--font-heading)]',
+              'font-[var(--font-body)]',
             ].join(' ')}
           >
             {breedingMutation.isPending ? 'Processing…' : 'Initiate Breeding'}

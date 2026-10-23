@@ -162,7 +162,7 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
       <div className="inline-flex flex-col items-center gap-1 px-5 py-3 rounded-[var(--radius-xl)] bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-ember-25)] shadow-[0_0_18px_var(--alpha-gold-primary-8)]">
         <span
           className="text-base font-bold text-[var(--gold-400)]"
-          style={{ fontFamily: 'var(--font-heading)' }}
+          style={{ fontFamily: 'var(--font-body)' }}
         >
           {horseName}
         </span>
@@ -177,7 +177,7 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
     <div>
       <h2
         className="text-lg font-bold text-[var(--cream)] mb-2"
-        style={{ fontFamily: 'var(--font-heading)' }}
+        style={{ fontFamily: 'var(--font-body)' }}
       >
         Your stable awaits
       </h2>

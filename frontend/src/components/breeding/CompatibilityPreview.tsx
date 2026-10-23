@@ -123,7 +123,7 @@ function TraitsTab({ traits }: { traits: TraitPrediction[] }) {
             </p>
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0 w-16">
-            <span className="text-xs font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
+            <span className="text-xs font-bold text-[var(--gold-primary)] font-[var(--font-body)]">
               {Math.round(t.probability * 100)}%
             </span>
             <div className="w-full h-1 rounded-full bg-[var(--celestial-navy-700)]">
@@ -153,7 +153,7 @@ function InbreedingTab({ coefficient }: { coefficient: number }) {
       <div className="text-center py-4">
         <p
           className={`text-4xl font-bold tabular-nums ${isWarning ? 'text-[var(--role-warning-text)]' : 'text-[var(--text-primary)]'}`}
-          style={{ fontFamily: 'var(--font-heading)' }}
+          style={{ fontFamily: 'var(--font-body)' }}
         >
           {pct}%
         </p>
@@ -297,7 +297,7 @@ function PedigreeTab({
   if (overlap.length === 0) {
     return (
       <div className="text-center py-4 space-y-1">
-        <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-heading)]">
+        <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-body)]">
           No common ancestors
         </p>
         <p className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
@@ -375,7 +375,7 @@ export function CompatibilityPreview({
         <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-0.5">
           Breeding Compatibility
         </p>
-        <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-heading)]">
+        <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-body)]">
           {mareName} <span className="text-[var(--gold-primary)]">×</span> {stallionName}
         </p>
       </div>

@@ -142,7 +142,7 @@ export function CompetitionFieldPreview({
         <div className="flex items-baseline justify-between gap-2">
           <h3
             className="text-sm font-bold text-[var(--text-primary)] truncate"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            style={{ fontFamily: 'var(--font-body)' }}
           >
             {show.name}
           </h3>
@@ -157,7 +157,7 @@ export function CompetitionFieldPreview({
           </p>
           <h3
             className="text-base font-bold text-[var(--text-primary)]"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            style={{ fontFamily: 'var(--font-body)' }}
           >
             {show.name}
           </h3>
