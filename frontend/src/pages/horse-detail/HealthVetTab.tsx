@@ -1,6 +1,11 @@
 /**
- * HealthVetTab — current health status + (currently empty) vet
- * history + CTA to the vet clinic. Story 12-4.
+ * HealthVetTab — current health status + the horse's recorded vet check + CTA
+ * to the vet clinic. Story 12-4.
+ *
+ * Equoria-oey96.56: a vet visit persists exactly one thing, Horse.lastVettedDate
+ * (vetController.mjs), so that is the whole history shown. There is no per-visit
+ * record, no invented next-check cadence and no vet name; absence is stated, not
+ * dressed up. Per-visit history would be a new feature with its own schema.
  * Equoria-kdduk: extracted from HorseDetailPage.tsx.
  */
 
@@ -14,13 +19,14 @@ import type { Horse } from './HorseDetailPageTypes';
 interface VetRecord {
   date: string;
   type: string;
-  result: string;
-  vet: string;
 }
 
-const vetHistory: VetRecord[] = [];
-
 const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+  // The one visit the game actually recorded (never a hardcoded list).
+  const vetHistory: VetRecord[] = horse.lastVettedDate
+    ? [{ date: horse.lastVettedDate, type: 'Vet check' }]
+    : [];
+
   const healthColor =
     horse.healthStatus?.toLowerCase() === 'healthy'
       ? 'text-[var(--status-success)]'
@@ -33,18 +39,12 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Current Status */}
       <div>
         <h3 className="type-section-heading mb-3">Current Health Status</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]">
             <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
               Status
             </p>
             <p className={`font-semibold text-xl ${healthColor}`}>{horse.healthStatus}</p>
-          </div>
-          <div className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]">
-            <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
-              Next Recommended Check
-            </p>
-            <p className="fantasy-body text-[var(--text-primary)]">6 weeks from last visit</p>
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         {vetHistory.length === 0 ? (
           <div className="text-center py-8 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
             <Stethoscope className="w-8 h-8 text-[var(--alpha-text-secondary-40)] mx-auto mb-2" />
-            <p className="fantasy-body text-[var(--text-secondary)]">No vet records on file.</p>
+            <p className="fantasy-body text-[var(--text-secondary)]">No vet visit on record.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -78,12 +78,6 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                     )}
                   </span>
                 </div>
-                <p className="fantasy-body text-[var(--text-primary)] text-sm mb-1">
-                  {record.result}
-                </p>
-                <p className="fantasy-caption text-[var(--text-secondary)] text-xs">
-                  Vet: {record.vet}
-                </p>
               </div>
             ))}
           </div>

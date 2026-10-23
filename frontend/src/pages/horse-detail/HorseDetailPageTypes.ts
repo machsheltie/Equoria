@@ -60,6 +60,8 @@ export interface Horse {
   // and the three derived health bands injected by the backend serializer
   // (backend/utils/horseHealth.mjs withHealth()).
   lastFedDate?: string | null;
+  // The date of the horse's last vet check (Horse.lastVettedDate; Equoria-oey96.56).
+  lastVettedDate?: string | null;
   equippedFeedType?: string | null;
   feedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
   vetHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired' | string;

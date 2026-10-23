@@ -147,6 +147,7 @@ export function normalizeHorseDetail(raw: HorseSummary): Horse {
     pregnancySireId: raw.pregnancySireId ?? null,
     pregnancyFeedingsByTier: raw.pregnancyFeedingsByTier ?? {},
     lastFedDate: raw.lastFedDate ?? null,
+    lastVettedDate: raw.lastVettedDate ?? null,
     equippedFeedType: raw.equippedFeedType ?? null,
     feedHealth: raw.feedHealth,
     // Equoria-8xfo (31F-FE-2) — conformation title fields. currentTitle is null
