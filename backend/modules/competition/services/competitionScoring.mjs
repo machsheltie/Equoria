@@ -39,7 +39,7 @@
  * Current state: simulateCompetition.mjs was deleted as dead code on
  * 2026-10-21, so the nightly scorer below is the only engine. Epic
  * Equoria-k1p62 brings the owner's locked factors into it: the matching
- * discipline trait as flat points (k1p62.1).
+ * discipline trait (k1p62.1) and saddle/bridle tack (k1p62.2) as flat points.
  */
 
 import { BONUS_CAP, PENALTY_CAP, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
@@ -51,6 +51,7 @@ import {
   matchingTraitPoints,
   temperamentPercent,
 } from '../rules/disciplineRules.mjs';
+import { tackPoints } from '../rules/tackScoring.mjs';
 
 /**
  * The ridden base: 50% primary + 30% secondary + 20% tertiary of the
@@ -141,15 +142,17 @@ export function applyRiderCompatibility({
  * (Equoria-576c0 B4a; was a flat 5-stat average) plus the flat points, times
  * (1 + the summed modifier percents), rounded once, x.5 up (B5, owner rulings
  * C1/C2). The flat points are the matching discipline trait (+5,
- * Equoria-k1p62.1). The percent terms are luck (+1..+10%), the rider's bonus
+ * Equoria-k1p62.1) and the saddle and bridle (discipline tack +5 each in its
+ * own discipline, All Purpose +2 each, Equoria-k1p62.2). The percent terms
+ * are luck (+1..+10%), the rider's bonus
  * minus penalty (with flag compatibility) and temperament (+5 / 0 / -5, B6).
  * Before B5, luck was ±9 points added to the base and the rider was a second
  * multiplication.
  *
  * @param {Object} input
  * @param {Object} input.show    - Show row (discipline read).
- * @param {Array}  input.entries - ShowEntry rows incl. `horse` stats and
- *   epigeneticModifiers.
+ * @param {Array}  input.entries - ShowEntry rows incl. `horse` stats,
+ *   epigeneticModifiers and tack.
  * @param {Map}    input.assignmentByHorseId - horseId -> active RiderAssignment.
  * @param {Function} [input.rng] - Luck RNG (default Math.random), called once
  *   per entry; tests pass a fixed value (0 gives +1%, 0.5 gives +6%).
@@ -229,6 +232,7 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
     // 2026-10-20, decision D 2026-10-23). A legacy discipline keeps its
     // pre-B4a scoring, so it gets none.
     const traitPoints = weighted ? matchingTraitPoints(h.epigeneticModifiers, show.discipline) : 0;
+    const tackBonus = weighted ? tackPoints(h.tack, show.discipline) : 0;
 
     // C2: each modifier as a percent, summed, applied once. Health stays out
     // until the owner settles decision C (Equoria-k1p62).
@@ -237,6 +241,7 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
     const breakdown = {
       base,
       traitPoints,
+      tackPoints: tackBonus,
       luckPercent,
       riderPercent,
       temperamentPercent: temperamentTerm,
@@ -244,7 +249,7 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
 
     return {
       entry,
-      score: applyPercentTerms(base + traitPoints, percentTerms),
+      score: applyPercentTerms(base + traitPoints + tackBonus, percentTerms),
       assignment,
       breakdown,
     };

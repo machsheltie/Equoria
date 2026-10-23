@@ -15,6 +15,11 @@
  *   - bonus: human-readable bonus description
  *   - numericBonus: numeric stat bonus (0 for cosmetic)
  *   - isCosmetic: true if no stat bonus
+ *   - disciplines (saddles and bridles only): the disciplines the item is made
+ *     for, as in the tack shop catalogue; empty = All Purpose. Ridden show
+ *     scoring reads it (owner decision A, Equoria-k1p62): discipline tack +5 in
+ *     its own disciplines, All Purpose +2 anywhere. Items whose discipline is
+ *     ambiguous are empty (All Purpose) until the owner classifies them.
  */
 
 export const CRAFTING_RECIPES = [
@@ -32,6 +37,7 @@ export const CRAFTING_RECIPES = [
     bonus: 'Cosmetic — no stat bonus',
     numericBonus: 0,
     isCosmetic: true,
+    disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },
   {
     id: 'basic-halter',
@@ -76,6 +82,7 @@ export const CRAFTING_RECIPES = [
     bonus: '+1 all disciplines',
     numericBonus: 1,
     isCosmetic: false,
+    disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },
   {
     id: 'overlay-saddle-pad',
@@ -108,6 +115,7 @@ export const CRAFTING_RECIPES = [
     bonus: '+1 agility',
     numericBonus: 1,
     isCosmetic: false,
+    disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },
   {
     id: 'precision-bridle',
@@ -123,6 +131,7 @@ export const CRAFTING_RECIPES = [
     bonus: '+2 dressage score',
     numericBonus: 2,
     isCosmetic: false,
+    disciplines: ['Dressage'],
   },
 
   // ── Tier 3 — Master workshop (legacy prestige items) ─────────────────────
@@ -140,6 +149,7 @@ export const CRAFTING_RECIPES = [
     bonus: '+2 prestige + visual glow',
     numericBonus: 2,
     isCosmetic: false,
+    disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },
 ];
 

@@ -68,8 +68,8 @@ async function clearStagedOrdering(showId) {
  * The horse fields the ridden scorer (scoreShowEntries) reads: every stat a
  * discipline can weigh (Equoria-576c0 B4a), the temperament percent term (B6),
  * the epigenetic flags behind the rider flag-compatibility bias
- * (Equoria-grys6) and the traits behind the matching-trait points
- * (Equoria-k1p62.1).
+ * (Equoria-grys6), the traits behind the matching-trait points
+ * (Equoria-k1p62.1) and the tack behind the saddle/bridle points (k1p62.2).
  */
 const scoringHorseSelect = {
   id: true,
@@ -88,6 +88,7 @@ const scoringHorseSelect = {
   temperament: true,
   epigeneticFlags: true,
   epigeneticModifiers: true,
+  tack: true,
 };
 
 /**
