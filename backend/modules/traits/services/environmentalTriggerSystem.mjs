@@ -6,7 +6,7 @@
  *
  *   loadEnvironmentalTriggerSnapshot(horseId)    two reads: the horse, its interactions
  *     -> detectTriggers / triggerThresholds / traitExpressionProbability /
- *        cumulativeExposure / criticalPeriodSensitivity   pure projections
+ *        cumulativeExposure   pure projections
  *     -> environmentalReport (composes them once)
  *   generateEnvironmentalReport(horseId)          load + report
  *
@@ -22,8 +22,6 @@ import { applyTemporaryFlag } from './temporaryFlagSystem.mjs';
 import {
   BASE_EXPRESSION_PROBABILITY,
   BASE_TRIGGER_THRESHOLD,
-  CRITICAL_PERIOD_RECOMMENDATIONS,
-  CRITICAL_PERIODS,
   CUMULATIVE_EFFECTS_EVERY,
   DEFAULT_FACTOR_PRESENT_ABOVE,
   DEFAULT_QUALITY_SCORE,
@@ -34,13 +32,8 @@ import {
   EXPRESSION_LIKELIHOOD_BANDS,
   EXPRESSION_LIKELIHOOD_FALLBACK,
   FACTOR_PRESENCE_RULES,
-  MINIMAL_SENSITIVITY,
-  OUTSIDE_CRITICAL_PERIODS_RECOMMENDATION,
   QUALITY_SCORES,
-  REPORT_RECOMMENDATIONS,
   REPORT_TRAITS,
-  RESIDUAL_SENSITIVITY,
-  RESIDUAL_SENSITIVITY_DAYS,
   STRESS_AMPLIFIED_TRAITS,
   STRESS_DAMPENED_TRAITS,
   THRESHOLD_AGE_BANDS,
@@ -295,50 +288,15 @@ export function cumulativeExposure({ horseId, interactions, now }) {
   };
 }
 
-/** Sensitivity from the critical developmental periods the horse is in (or just left). */
-export function criticalPeriodSensitivity({ horseId, horse, now }) {
-  const currentAge = getHorseAgeDays(horse.dateOfBirth, now);
-  const activeWindows = CRITICAL_PERIODS.filter(
-    period => currentAge >= period.start && currentAge <= period.end,
-  );
-
-  let sensitivityLevel;
-  if (activeWindows.length > 0) {
-    sensitivityLevel = Math.max(...activeWindows.map(window => window.sensitivity));
-  } else {
-    const daysSinceLastPeriod = Math.min(
-      ...CRITICAL_PERIODS.map(period =>
-        currentAge > period.end ? currentAge - period.end : Infinity,
-      ),
-    );
-    sensitivityLevel =
-      daysSinceLastPeriod < RESIDUAL_SENSITIVITY_DAYS ? RESIDUAL_SENSITIVITY : MINIMAL_SENSITIVITY;
-  }
-
-  const recommendations = activeWindows.flatMap(
-    window => CRITICAL_PERIOD_RECOMMENDATIONS[window.name] ?? [],
-  );
-  if (recommendations.length === 0) {
-    recommendations.push(OUTSIDE_CRITICAL_PERIODS_RECOMMENDATION);
-  }
-
-  return {
-    horseId,
-    currentAge,
-    criticalPeriods: CRITICAL_PERIODS,
-    activeWindows,
-    sensitivityLevel,
-    recommendations,
-    analysisTimestamp: now,
-  };
-}
-
-/** The full environmental report, every section from the one snapshot. */
+/**
+ * The full environmental report, every section from the one snapshot. It
+ * describes what was detected; it gives no advice, windows or forecasts (owner
+ * ruling 2026-10-07, Equoria-5nxw0).
+ */
 export function environmentalReport(snapshot) {
   const environmentalTriggers = detectTriggers(snapshot);
   const triggerThresholdsResult = triggerThresholds(snapshot);
   const exposure = cumulativeExposure(snapshot);
-  const criticalPeriods = criticalPeriodSensitivity(snapshot);
   const traitExpressionProbabilities = REPORT_TRAITS.map(trait =>
     traitExpressionProbability(snapshot, trait, environmentalTriggers),
   );
@@ -349,13 +307,6 @@ export function environmentalReport(snapshot) {
     triggerThresholds: triggerThresholdsResult,
     traitExpressionProbabilities,
     cumulativeExposure: exposure,
-    criticalPeriodSensitivity: criticalPeriods,
-    recommendations: reportRecommendations(
-      environmentalTriggers,
-      triggerThresholdsResult,
-      criticalPeriods,
-      traitExpressionProbabilities,
-    ),
     reportTimestamp: snapshot.now,
   };
 }
@@ -452,37 +403,4 @@ function analyzeCumulativeEffects(interactions) {
     qualityAverage: avgQuality,
     interactionCount: interactions.length,
   };
-}
-
-function reportRecommendations(triggers, thresholds, criticalPeriod, traitProbabilities) {
-  const {
-    highSensitivity,
-    strongTrigger,
-    criticalPeriod: critical,
-    highProbabilityTraits,
-  } = REPORT_RECOMMENDATIONS;
-  const recommendations = [];
-  if (thresholds.sensitivity > highSensitivity.above) {
-    recommendations.push(highSensitivity.text);
-  }
-  triggers.detectedTriggers.forEach(trigger => {
-    if (trigger.strength > strongTrigger.above) {
-      recommendations.push(strongTrigger.text.replace('{trigger}', trigger.name.toLowerCase()));
-    }
-  });
-  if (criticalPeriod.sensitivityLevel > critical.above) {
-    recommendations.push(critical.text);
-  }
-  const highProbTraits = traitProbabilities.filter(
-    t => t.finalProbability > highProbabilityTraits.above,
-  );
-  if (highProbTraits.length > 0) {
-    recommendations.push(
-      highProbabilityTraits.text.replace(
-        '{traits}',
-        highProbTraits.map(t => t.traitName).join(', '),
-      ),
-    );
-  }
-  return recommendations;
 }

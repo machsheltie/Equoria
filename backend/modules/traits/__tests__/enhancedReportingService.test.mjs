@@ -15,7 +15,6 @@ import {
   generateStableOverview,
   analyzeTraitDistribution,
   analyzeDevelopmentalStages,
-  generateStableRecommendations,
   identifyTraitSimilarities,
   identifyTraitDifferences,
   generateHorseRankings,
@@ -350,43 +349,6 @@ describe('analyzeDevelopmentalStages', () => {
   });
 });
 
-// ── generateStableRecommendations ────────────────────────────────────────────
-
-describe('generateStableRecommendations', () => {
-  const goodOverview = { averageStressLevel: 3, averageBondScore: 35 };
-  const goodDist = { uniqueTraits: 8 };
-  const goodStages = { critical: 0 };
-
-  it('returns default when stable is well-managed', () => {
-    const result = generateStableRecommendations(goodOverview, goodDist, goodStages);
-    expect(result).toEqual(['Stable is well-managed - continue current practices']);
-  });
-
-  it('adds critical period recommendation when critical > 0', () => {
-    const stages = { critical: 2 };
-    const result = generateStableRecommendations(goodOverview, goodDist, stages);
-    expect(result.some(r => r.includes('2 horses in critical'))).toBe(true);
-  });
-
-  it('adds stress recommendation when averageStressLevel > 6', () => {
-    const overview = { averageStressLevel: 7, averageBondScore: 35 };
-    const result = generateStableRecommendations(overview, goodDist, goodStages);
-    expect(result.some(r => r.includes('High average stress'))).toBe(true);
-  });
-
-  it('adds bonding recommendation when averageBondScore < 25', () => {
-    const overview = { averageStressLevel: 3, averageBondScore: 15 };
-    const result = generateStableRecommendations(overview, goodDist, goodStages);
-    expect(result.some(r => r.includes('Low average bonding scores'))).toBe(true);
-  });
-
-  it('adds diversity recommendation when uniqueTraits < 5', () => {
-    const dist = { uniqueTraits: 3 };
-    const result = generateStableRecommendations(goodOverview, dist, goodStages);
-    expect(result.some(r => r.includes('Limited trait diversity'))).toBe(true);
-  });
-});
-
 // ── identifyTraitSimilarities / identifyTraitDifferences ─────────────────────
 
 describe('identifyTraitSimilarities', () => {
@@ -614,11 +576,11 @@ describe('generateDetailedReport', () => {
     expect(report.developmentalAnalysis.developmentalStage).toBe('critical_period');
   });
 
-  it('includes recommendations array', async () => {
+  it('gives no recommendations, even for a stressed, poorly bonded horse', async () => {
+    // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: a recommendations array of care advice).
     const horse = makeHorse({ stressLevel: 8, bondScore: 10 });
     const report = await generateDetailedReport(horse);
-    expect(Array.isArray(report.recommendations)).toBe(true);
-    expect(report.recommendations.some(r => r.includes('stress'))).toBe(true);
+    expect(report).not.toHaveProperty('recommendations');
   });
 });
 
@@ -648,7 +610,6 @@ describe('generateComparisonInsights', () => {
 // ── enhancedReportingService — uncovered branches (Equoria-jkht) ──────────────
 // generateDetailedReport: ageCategory 'young' and 'juvenile' + getDevelopmentalStage branches.
 // generateSummaryReport: 'developing' bond category (bondScore <= 20).
-// generateBasicRecommendations: < 3 flags branch and default-no-recs branch.
 // generateComparisonInsights: empty similarities and empty differences paths.
 // generateTraitHistoryInsights: neutral harmony (0.4–0.7, neither message).
 
@@ -683,20 +644,6 @@ describe('generateSummaryReport — developing bond category (Equoria-jkht)', ()
     const horse = makeHorse({ bondScore: 10 });
     const report = await generateSummaryReport(horse);
     expect(report.summary).toContain('developing');
-  });
-});
-
-describe('generateBasicRecommendations — low trait count and no-recs branches (Equoria-jkht)', () => {
-  it('adds enrichment recommendation when epigeneticFlags.length < 3', async () => {
-    const horse = makeHorse({ epigeneticFlags: ['bold'], stressLevel: 3, bondScore: 40 });
-    const report = await generateDetailedReport(horse);
-    expect(report.recommendations.some(r => r.includes('enrichment'))).toBe(true);
-  });
-
-  it('returns "Continue current care approach" when no recs triggered', async () => {
-    const horse = makeHorse({ stressLevel: 3, bondScore: 40, epigeneticFlags: ['bold', 'curious', 'calm'] });
-    const report = await generateDetailedReport(horse);
-    expect(report.recommendations).toContain('Continue current care approach');
   });
 });
 
@@ -810,7 +757,7 @@ describe('analyzeStableEnvironmentalFactors — (Equoria-jkht)', () => {
     expect(result.overallTriggerStrength).toBe(0);
     expect(result.commonTriggers).toEqual([]);
     expect(result.environmentalRisks).toEqual([]);
-    expect(result.recommendations).toEqual([]);
+    expect(result).not.toHaveProperty('recommendations');
   });
 
   it('returns factors with overallTriggerStrength 0 when generateEnvironmentalReport throws (catch path)', async () => {

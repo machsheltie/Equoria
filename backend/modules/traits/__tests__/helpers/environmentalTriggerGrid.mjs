@@ -16,7 +16,7 @@
  * probability products all vary.
  *
  * api = async { detect(id), thresholds(id), probability(id, trait),
- *               exposure(id), critical(id), report(id) }
+ *               exposure(id), report(id) }
  */
 
 import { createHash } from 'node:crypto';
@@ -431,7 +431,6 @@ export async function runTriggerGrid(api, fx) {
       await record(`probability:${trait}`, () => api.probability(id, trait));
     }
     await record('exposure', () => api.exposure(id));
-    await record('critical', () => api.critical(id));
     await record('report', () => api.report(id));
   }
   return out;

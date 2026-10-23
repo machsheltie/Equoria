@@ -12,10 +12,6 @@
  *     ageInDays ≤30 → ageModifier=0.7
  *     ageInDays ≤90 → ageModifier=0.8
  *     ageInDays >90 → ageModifier=1.0
- *   assessCriticalPeriodSensitivity:
- *     horse in active critical period (age 0-3 days) → sensitivityLevel > 0
- *     horse past all critical periods, recent (age 121-149) → sensitivityLevel=0.3
- *     horse past all critical periods, old (age > 150) → sensitivityLevel=0.1
  *   evaluateTraitExpressionProbability — expressive likelihood label branches
  *   generateEnvironmentalReport — full aggregated report
  */
@@ -24,7 +20,6 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   generateEnvironmentalReport,
   loadEnvironmentalTriggerSnapshot,
-  criticalPeriodSensitivity,
   cumulativeExposure,
   detectTriggers,
   traitExpressionProbability,
@@ -78,7 +73,6 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
   let etsHorseYoung; // 15 days old → ageInDays ≤30 (ageModifier=0.7)
   let etsHorseDeveloping; // 45 days old → ageInDays ≤90 (ageModifier=0.8)
   let etsHorseMature; // 200 days old → ageInDays >90 (ageModifier=1.0) + past critical periods
-  let etsHorseRecent; // 130 days old → past critical periods, daysSinceLastPeriod < 30 (residual=0.3)
   let etsGroom1; // epigeneticInfluenceType='calm' → routine_stability branch coverage
   let etsGroom2; // second groom for multiple-groom fixture interactions
   let etsHorseStressedFoal; // 1 day, stressLevel=8 → sensitivity=0.82>0.7 for generateEnvironmentalReport line 931
@@ -140,18 +134,6 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
         name: `TestFixture-ETS-Mature-${ts}`,
         sex: 'Colt',
         dateOfBirth: daysAgo(200),
-        age: 0,
-        userId: etsUser.id,
-      },
-    });
-
-    // 130 days old: past last critical period (ends day 120), daysSinceLastPeriod=10 < 30 → sensitivityLevel=0.3
-    etsHorseRecent = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-ETS-Recent-${ts}`,
-        sex: 'Filly',
-        dateOfBirth: daysAgo(130),
         age: 0,
         userId: etsUser.id,
       },
@@ -299,30 +281,6 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     expect(result.ageModifier).toBe(1.0);
   });
 
-  // ── assessCriticalPeriodSensitivity branches ─────────────────────────────
-
-  it('assessCriticalPeriodSensitivity: newborn (age 1d) is in active critical period', async () => {
-    const result = await analyze(etsHorseNewborn.id, criticalPeriodSensitivity);
-    // Age 1 day: within imprinting (0-3), early_socialization (1-14) → activeWindows.length > 0
-    expect(result.activeWindows.length).toBeGreaterThan(0);
-    expect(result.sensitivityLevel).toBeGreaterThan(0);
-    expect(Array.isArray(result.criticalPeriods)).toBe(true);
-  });
-
-  it('assessCriticalPeriodSensitivity: recent past periods (130d) → sensitivityLevel=0.3', async () => {
-    const result = await analyze(etsHorseRecent.id, criticalPeriodSensitivity);
-    // Age 130: past all critical periods (last ends at 120), daysSinceLastPeriod=10 < 30 → 0.3
-    expect(result.activeWindows).toHaveLength(0);
-    expect(result.sensitivityLevel).toBe(0.3);
-  });
-
-  it('assessCriticalPeriodSensitivity: old horse (200d) → sensitivityLevel=0.1', async () => {
-    const result = await analyze(etsHorseMature.id, criticalPeriodSensitivity);
-    // Age 200: daysSinceLastPeriod=80 >= 30 → sensitivityLevel=0.1
-    expect(result.activeWindows).toHaveLength(0);
-    expect(result.sensitivityLevel).toBe(0.1);
-  });
-
   // ── evaluateTraitExpressionProbability ───────────────────────────────────
 
   it('evaluateTraitExpressionProbability: returns expressionLikelihood for brave (positive trait)', async () => {
@@ -378,7 +336,9 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     expect(Array.isArray(result.traitExpressionProbabilities)).toBe(true);
     expect(result.traitExpressionProbabilities.length).toBeGreaterThan(0);
     expect(result.cumulativeExposure).toBeDefined();
-    expect(result.criticalPeriodSensitivity).toBeDefined();
+    // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: criticalPeriodSensitivity and recommendations defined).
+    expect(result).not.toHaveProperty('criticalPeriodSensitivity');
+    expect(result).not.toHaveProperty('recommendations');
     expect(result.reportTimestamp).toBeDefined();
   });
 
@@ -421,29 +381,14 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     expect(result.environmentalModifier).toBeGreaterThan(1.0);
   });
 
-  // ── assessCriticalPeriodSensitivity — additional critical period cases ────
-
-  it('assessCriticalPeriodSensitivity: young horse (15d) → curiosity_development window active', async () => {
-    const result = await analyze(etsHorseYoung.id, criticalPeriodSensitivity);
-    const windowNames = result.activeWindows.map(w => w.name);
-    expect(windowNames).toContain('curiosity_development');
-    expect(result.recommendations.some(r => r.includes('exploration'))).toBe(true);
-  });
-
-  it('assessCriticalPeriodSensitivity: developing horse (45d) → social_hierarchy window active', async () => {
-    const result = await analyze(etsHorseDeveloping.id, criticalPeriodSensitivity);
-    const windowNames = result.activeWindows.map(w => w.name);
-    expect(windowNames).toContain('social_hierarchy');
-    expect(result.recommendations.some(r => r.includes('social'))).toBe(true);
-  });
-
   // ── generateEnvironmentalReport — highly sensitive horse ─────────────────
 
-  it('generateEnvironmentalReport: stressedFoal sensitivity=0.82>0.7 and sensitivityLevel=1.0>0.7', async () => {
+  it('generateEnvironmentalReport: a highly sensitive young foal still gets no advice or windows', async () => {
     const result = await generateEnvironmentalReport(etsHorseStressedFoal.id);
-    // thresholds.sensitivity=0.82>0.7 → line 931: 'highly sensitive' recommendation added
-    expect(result.recommendations.some(r => r.includes('highly sensitive'))).toBe(true);
-    // criticalPeriodSensitivity.sensitivityLevel=1.0>0.7 → line 947: 'critical developmental' recommendation added
-    expect(result.recommendations.some(r => r.includes('critical developmental period'))).toBe(true);
+    // thresholds.sensitivity=0.82 used to add a 'highly sensitive' recommendation and the
+    // foal's age a 'critical developmental period' one. Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts.
+    expect(result.triggerThresholds.sensitivity).toBeGreaterThan(0.7);
+    expect(result).not.toHaveProperty('recommendations');
+    expect(result).not.toHaveProperty('criticalPeriodSensitivity');
   });
 });

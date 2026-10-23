@@ -314,7 +314,6 @@ export async function analyzeStableEnvironmentalFactors(horses) {
     overallTriggerStrength: 0,
     commonTriggers: [],
     environmentalRisks: [],
-    recommendations: [],
   };
 
   if (horses.length === 0) {
@@ -346,43 +345,6 @@ export async function analyzeStableEnvironmentalFactors(horses) {
     .map(([trigger, count]) => ({ trigger, count, percentage: (count / horses.length) * 100 }));
 
   return factors;
-}
-
-/**
- * Generate stable recommendations
- */
-export function generateStableRecommendations(overview, traitDistribution, developmentalStages) {
-  const recommendations = [];
-
-  // Age-based recommendations
-  if (developmentalStages.critical > 0) {
-    recommendations.push(
-      `${developmentalStages.critical} horses in critical development period - prioritize consistent care`,
-    );
-  }
-
-  // Stress recommendations
-  if (overview.averageStressLevel > 6) {
-    recommendations.push(
-      'High average stress levels - implement stable-wide stress reduction measures',
-    );
-  }
-
-  // Bonding recommendations
-  if (overview.averageBondScore < 25) {
-    recommendations.push(
-      'Low average bonding scores - increase positive interaction frequency across stable',
-    );
-  }
-
-  // Trait diversity recommendations
-  if (traitDistribution.uniqueTraits < 5) {
-    recommendations.push('Limited trait diversity - consider varied environmental enrichment');
-  }
-
-  return recommendations.length > 0
-    ? recommendations
-    : ['Stable is well-managed - continue current practices'];
 }
 
 /**
@@ -661,7 +623,6 @@ export async function generateDetailedReport(horse) {
       ageCategory: getAgeCategory(horse.dateOfBirth),
       developmentalStage: getDevelopmentalStage(horse.dateOfBirth),
     },
-    recommendations: generateBasicRecommendations(horse),
   };
 }
 
@@ -679,7 +640,6 @@ export async function generateComprehensiveReport(horse) {
       environmentalAnalysis: environmentalReport,
       comprehensiveInsights: [
         'Full environmental and trait interaction analysis included',
-        'Predictive modeling and recommendations provided',
         'Complete developmental timeline available',
       ],
     };
@@ -735,25 +695,4 @@ function getDevelopmentalStage(dateOfBirth) {
     return 'stabilization';
   }
   return 'mature_expression';
-}
-
-/**
- * Generate basic recommendations
- */
-function generateBasicRecommendations(horse) {
-  const recommendations = [];
-
-  if (horse.stressLevel > 6) {
-    recommendations.push('Reduce stress through calming activities');
-  }
-
-  if (horse.bondScore < 20) {
-    recommendations.push('Increase bonding through positive interactions');
-  }
-
-  if (asFlagArray(horse.epigeneticFlags).length < 3) {
-    recommendations.push('Provide enrichment activities to encourage trait development');
-  }
-
-  return recommendations.length > 0 ? recommendations : ['Continue current care approach'];
 }

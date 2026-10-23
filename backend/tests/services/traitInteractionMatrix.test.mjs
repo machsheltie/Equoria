@@ -436,12 +436,12 @@ describe('Trait Interaction Matrix', () => {
       expect(stability.volatilityRisks).toBeDefined();
       // Owner ruling 2026-10-23 (Equoria-w2sb8): stabilityTrends is removed (old contract: toBeDefined).
       expect(stability).not.toHaveProperty('stabilityTrends');
-      expect(stability.recommendations).toBeDefined();
+      // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: recommendations defined).
+      expect(stability).not.toHaveProperty('recommendations');
 
       expect(stability.overallStability).toBeGreaterThanOrEqual(0);
       expect(stability.overallStability).toBeLessThanOrEqual(1);
       expect(Array.isArray(stability.volatilityRisks)).toBe(true);
-      expect(Array.isArray(stability.recommendations)).toBe(true);
     });
 
     test('should identify volatility risks in conflicting traits', async () => {

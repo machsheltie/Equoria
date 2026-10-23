@@ -11,7 +11,6 @@ import { randomBytes } from 'node:crypto';
 import {
   generateEnvironmentalReport,
   loadEnvironmentalTriggerSnapshot,
-  criticalPeriodSensitivity,
   cumulativeExposure,
   detectTriggers,
   traitExpressionProbability,
@@ -129,26 +128,6 @@ describe('trackCumulativeExposure', () => {
   });
 });
 
-describe('assessCriticalPeriodSensitivity', () => {
-  it('returns sensitivity analysis for newborn foal', async () => {
-    const result = await analyze(horse.id, criticalPeriodSensitivity);
-    expect(result.horseId).toBe(horse.id);
-    expect(typeof result.currentAge).toBe('number');
-    expect(Array.isArray(result.criticalPeriods)).toBe(true);
-    expect(Array.isArray(result.activeWindows)).toBe(true);
-    expect(typeof result.sensitivityLevel).toBe('number');
-    expect(result.sensitivityLevel).toBeGreaterThanOrEqual(0);
-    expect(result.sensitivityLevel).toBeLessThanOrEqual(1);
-    expect(realDateOrReason(result.analysisTimestamp)).toBe('valid date');
-  });
-
-  it('newborn has active critical periods', async () => {
-    const result = await analyze(horse.id, criticalPeriodSensitivity);
-    expect(result.activeWindows.length).toBeGreaterThan(0);
-    expect(result.sensitivityLevel).toBeGreaterThan(0);
-  });
-});
-
 describe('generateEnvironmentalReport', () => {
   it('returns comprehensive report for newborn foal', async () => {
     const result = await generateEnvironmentalReport(horse.id);
@@ -158,8 +137,9 @@ describe('generateEnvironmentalReport', () => {
     expect(Array.isArray(result.traitExpressionProbabilities)).toBe(true);
     expect(result.traitExpressionProbabilities.length).toBeGreaterThan(0);
     expect(typeof result.cumulativeExposure).toBe('object');
-    expect(typeof result.criticalPeriodSensitivity).toBe('object');
-    expect(Array.isArray(result.recommendations)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: criticalPeriodSensitivity and recommendations present).
+    expect(result).not.toHaveProperty('criticalPeriodSensitivity');
+    expect(result).not.toHaveProperty('recommendations');
     expect(realDateOrReason(result.reportTimestamp)).toBe('valid date');
   });
 });
@@ -205,19 +185,13 @@ describe('getTraitTimelineSummary', () => {
 //   <= 30 → 1.5  (covered by newborn fixture above)
 //   <= 90 → 1.2  ← horse60d
 //   > 90  → 0.8  ← horse100d (finalP≈0.08 → 'very_unlikely')
-//
-// assessCriticalPeriodSensitivity residual sensitivity:
-//   daysSinceLastPeriod < 30  → 0.3  ← horse125d (125-120=5)
-//   daysSinceLastPeriod >= 30 → 0.1  ← horse160d (160-120=40)
 
-describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
+describe('age-bracket branches (Equoria-jkht)', () => {
   let ageUser;
   const ageCleanup = createCleanupTracker();
   let horse10d;
   let horse60d;
   let horse100d;
-  let horse125d;
-  let horse160d;
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -246,12 +220,10 @@ describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
         },
       });
 
-    [horse10d, horse60d, horse100d, horse125d, horse160d] = await Promise.all([
+    [horse10d, horse60d, horse100d] = await Promise.all([
       makeHorse(`TestFixture-ET-Age10-${ts}`, 10),
       makeHorse(`TestFixture-ET-Age60-${ts}`, 60),
       makeHorse(`TestFixture-ET-Age100-${ts}`, 100),
-      makeHorse(`TestFixture-ET-Age125-${ts}`, 125),
-      makeHorse(`TestFixture-ET-Age160-${ts}`, 160),
     ]);
   }, 30000);
 
@@ -305,22 +277,6 @@ describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
     // finalP = 0.1 * 1.0 * 0.8 * 1.0 = 0.08 → < 0.1 → 'very_unlikely'
     const result = await analyze(horse100d.id, traitExpressionProbability, 'patient');
     expect(result.expressionLikelihood).toBe('very_unlikely');
-  });
-
-  // ── assessCriticalPeriodSensitivity residual sensitivity ────────────────────
-
-  it('sensitivityLevel=0.3 when daysSinceLastPeriod=5 (horse 125 days old)', async () => {
-    // independence_development ends at day 120; 125-120=5 < 30 → 0.3
-    const result = await analyze(horse125d.id, criticalPeriodSensitivity);
-    expect(result.activeWindows).toHaveLength(0);
-    expect(result.sensitivityLevel).toBe(0.3);
-  });
-
-  it('sensitivityLevel=0.1 when daysSinceLastPeriod=40 (horse 160 days old)', async () => {
-    // independence_development ends at day 120; 160-120=40 ≥ 30 → 0.1
-    const result = await analyze(horse160d.id, criticalPeriodSensitivity);
-    expect(result.activeWindows).toHaveLength(0);
-    expect(result.sensitivityLevel).toBe(0.1);
   });
 });
 

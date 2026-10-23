@@ -122,7 +122,8 @@ describe('analyzeTraitSnapshot', () => {
     expect(calm.overallStability).toBeCloseTo(0.5, 10);
     expect(calm.stabilityFactors).toEqual(['trait_synergies', 'strong_bonding', 'low_stress']);
     expect(calm.volatilityRisks).toEqual([]);
-    expect(calm.recommendations).toEqual(['Moderate instability - monitor for behavioral changes']);
+    // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: recommendations listed care advice).
+    expect(calm).not.toHaveProperty('recommendations');
 
     const stressed = analyzeTraitSnapshot(
       snapshot({
@@ -139,7 +140,7 @@ describe('analyzeTraitSnapshot', () => {
       'high_stress_environment',
       'reactive_temperament',
     ]);
-    expect(stressed.recommendations).toHaveLength(4);
+    expect(stressed).not.toHaveProperty('recommendations');
   });
 
   it('models temporal evolution from the age at the analysis clock and the requested window', () => {

@@ -6,7 +6,7 @@
  * helpers/environmentalTriggerGrid.mjs: 13 foals of chosen age, stress, bond
  * and interaction history (one with three interactions sharing a timestamp),
  * plus a horse that does not exist; detection, thresholds, 10 trait
- * probabilities, exposure, critical periods and the full report. It was
+ * probabilities, exposure and the full report. It was
  * recorded from the pre-S4 per-function API (git show b69fd4af4) with
  * Math.random pinned at 0.5 and then 0.9 (the analysis draws unruled trigger
  * factors at random; owner question WS7-Q2).
@@ -27,7 +27,6 @@ import { dirname, resolve } from 'node:path';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import {
-  criticalPeriodSensitivity,
   cumulativeExposure,
   detectTriggers,
   environmentalReport,
@@ -51,7 +50,6 @@ const API = {
   thresholds: async id => triggerThresholds(await load(id)),
   probability: async (id, trait) => traitExpressionProbability(await load(id), trait),
   exposure: async id => cumulativeExposure(await load(id)),
-  critical: async id => criticalPeriodSensitivity(await load(id)),
   report: async id => environmentalReport(await load(id)),
 };
 

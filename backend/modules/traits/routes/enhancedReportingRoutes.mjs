@@ -50,7 +50,6 @@ import {
   analyzeTraitDistribution,
   analyzeDevelopmentalStages,
   analyzeStableEnvironmentalFactors,
-  generateStableRecommendations,
   generateHorseComparison,
   identifyTraitSimilarities,
   identifyTraitDifferences,
@@ -289,7 +288,6 @@ router.get(
             traitDistribution: {},
             developmentalStages: {},
             environmentalFactors: {},
-            recommendations: ['No horses in stable'],
           },
         });
       }
@@ -299,11 +297,6 @@ router.get(
       const traitDistribution = analyzeTraitDistribution(horses);
       const developmentalStages = analyzeDevelopmentalStages(horses);
       const environmentalFactors = await analyzeStableEnvironmentalFactors(horses);
-      const recommendations = generateStableRecommendations(
-        stableOverview,
-        traitDistribution,
-        developmentalStages,
-      );
 
       logger.info(`Stable epigenetic report generated for user ${userId}`);
 
@@ -315,7 +308,6 @@ router.get(
           traitDistribution,
           developmentalStages,
           environmentalFactors,
-          recommendations,
         },
       });
     } catch (error) {

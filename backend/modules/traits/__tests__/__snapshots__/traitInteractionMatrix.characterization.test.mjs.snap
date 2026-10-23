@@ -337,12 +337,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "overallStability": 0.04999999999999999,
-    "recommendations": [
-      "High instability detected - focus on stress reduction and consistent care",
-      "Address trait conflicts through targeted behavioral interventions",
-      "Reduce environmental stressors and increase calming activities",
-      "Use gentle, predictable approaches to minimize reactive responses",
-    ],
     "stabilityFactors": [
       "trait_synergies",
     ],
@@ -580,9 +574,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) empty hor
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "overallStability": 0.5,
-    "recommendations": [
-      "Moderate instability - monitor for behavioral changes",
-    ],
     "stabilityFactors": [
       "low_stress",
     ],
@@ -1031,9 +1022,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "overallStability": 0.7000000000000001,
-    "recommendations": [
-      "Good stability - continue current care approach",
-    ],
     "stabilityFactors": [
       "trait_synergies",
       "strong_bonding",
@@ -1645,10 +1633,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "overallStability": 0.45000000000000007,
-    "recommendations": [
-      "Moderate instability - monitor for behavioral changes",
-      "Use gentle, predictable approaches to minimize reactive responses",
-    ],
     "stabilityFactors": [
       "trait_synergies",
     ],
@@ -2025,9 +2009,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "overallStability": 0.65,
-    "recommendations": [
-      "Good stability - continue current care approach",
-    ],
     "stabilityFactors": [
       "trait_synergies",
       "strong_bonding",
@@ -2321,9 +2302,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) unknownTr
     "analysisTimestamp": "<analysisTimestamp>",
     "horseId": "<horseId>",
     "overallStability": 0.14999999999999997,
-    "recommendations": [
-      "High instability detected - focus on stress reduction and consistent care",
-    ],
     "stabilityFactors": [],
     "volatilityRisks": [],
   },

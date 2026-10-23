@@ -28,12 +28,6 @@ import {
   TRAIT_PATTERNS,
 } from './traitInteractionRules.mjs';
 
-const RISK_RECOMMENDATIONS = {
-  multiple_trait_conflicts: 'Address trait conflicts through targeted behavioral interventions',
-  high_stress_environment: 'Reduce environmental stressors and increase calming activities',
-  reactive_temperament: 'Use gentle, predictable approaches to minimize reactive responses',
-};
-
 /**
  * Read the horse state every trait analysis needs, once.
  * @param {number} horseId
@@ -428,19 +422,7 @@ function assessStability(snapshot, traits, counts) {
     volatilityRisks.push('reactive_temperament');
   }
 
-  let baseline = 'Good stability - continue current care approach';
-  if (overallStability < 0.4) {
-    baseline = 'High instability detected - focus on stress reduction and consistent care';
-  } else if (overallStability < 0.6) {
-    baseline = 'Moderate instability - monitor for behavioral changes';
-  }
-
-  return {
-    overallStability,
-    stabilityFactors,
-    volatilityRisks,
-    recommendations: [baseline, ...volatilityRisks.map(risk => RISK_RECOMMENDATIONS[risk])],
-  };
+  return { overallStability, stabilityFactors, volatilityRisks };
 }
 
 /** Weekly snapshots across the window as the horse matures. */

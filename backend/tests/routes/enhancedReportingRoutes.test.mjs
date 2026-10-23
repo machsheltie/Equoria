@@ -292,8 +292,9 @@ describe('Enhanced Reporting API Routes', () => {
       expect(response.body.data.traitDistribution).toBeDefined();
       expect(response.body.data.developmentalStages).toBeDefined();
       expect(response.body.data.environmentalFactors).toBeDefined();
-      expect(response.body.data.recommendations).toBeDefined();
-      expect(Array.isArray(response.body.data.recommendations)).toBe(true);
+      // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: a recommendations array).
+      expect(response.body.data).not.toHaveProperty('recommendations');
+      expect(response.body.data.environmentalFactors).not.toHaveProperty('recommendations');
     });
 
     test('POST /api/v1/horses/compare-epigenetics should compare multiple horses', async () => {

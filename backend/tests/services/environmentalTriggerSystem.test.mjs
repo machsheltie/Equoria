@@ -21,7 +21,6 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import {
   generateEnvironmentalReport,
   loadEnvironmentalTriggerSnapshot,
-  criticalPeriodSensitivity,
   cumulativeExposure,
   detectTriggers,
   traitExpressionProbability,
@@ -373,34 +372,6 @@ describe('Environmental Trigger System', () => {
     });
   });
 
-  describe('assessCriticalPeriodSensitivity', () => {
-    test('should assess critical period environmental sensitivity', async () => {
-      const [youngHorse] = testHorses; // Very young foal
-
-      const sensitivity = await analyze(youngHorse.id, criticalPeriodSensitivity);
-
-      expect(sensitivity).toBeDefined();
-      expect(sensitivity.currentAge).toBeDefined();
-      expect(sensitivity.criticalPeriods).toBeDefined();
-      expect(Array.isArray(sensitivity.criticalPeriods)).toBe(true);
-      expect(sensitivity.sensitivityLevel).toBeDefined();
-      expect(sensitivity.activeWindows).toBeDefined();
-      expect(sensitivity.recommendations).toBeDefined();
-
-      // Young foal should be in critical period
-      expect(sensitivity.sensitivityLevel).toBeGreaterThan(0.7);
-      expect(sensitivity.activeWindows.length).toBeGreaterThan(0);
-    });
-
-    test('should show reduced sensitivity for older horses', async () => {
-      const olderHorse = testHorses[1];
-
-      const sensitivity = await analyze(olderHorse.id, criticalPeriodSensitivity);
-
-      expect(sensitivity.sensitivityLevel).toBeLessThan(0.8);
-    });
-  });
-
   describe('generateEnvironmentalReport', () => {
     test('should generate comprehensive environmental analysis report', async () => {
       const [horse] = testHorses;
@@ -428,9 +399,9 @@ describe('Environmental Trigger System', () => {
       expect(report.triggerThresholds).toBeDefined();
       expect(report.traitExpressionProbabilities).toBeDefined();
       expect(report.cumulativeExposure).toBeDefined();
-      expect(report.criticalPeriodSensitivity).toBeDefined();
-      expect(report.recommendations).toBeDefined();
-      expect(Array.isArray(report.recommendations)).toBe(true);
+      // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: criticalPeriodSensitivity and recommendations defined).
+      expect(report).not.toHaveProperty('criticalPeriodSensitivity');
+      expect(report).not.toHaveProperty('recommendations');
       expect(report.reportTimestamp).toBeDefined();
 
       expect(report.traitExpressionProbabilities.length).toBeGreaterThan(0);
