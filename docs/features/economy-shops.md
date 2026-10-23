@@ -150,7 +150,8 @@ owner decision and a fresh issue.
   racing and figure-eight tack, and non-zero numbers on halters, pads, wraps,
   reins, girths and breastplates). Ridden scoring ignores them; only the saddle
   and bridle slots score, at 5 or 2. A player reading the shop can be promised a
-  bonus she will not receive.
+  bonus she will not receive (tracked as Equoria-k1p62.4; delete this bullet
+  when it lands).
 - **Hoof condition has no gameplay consequence** beyond prompting the next
   farrier booking.
 
