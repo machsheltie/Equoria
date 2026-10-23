@@ -138,14 +138,6 @@ export function analyzeTraitSnapshot(snapshot, { timeWindow = 30, now = new Date
     horseId,
     traitClusters,
     emergentProperties,
-    interactionNetworks: {
-      nodes: traits.map(trait => ({ id: trait, type: 'trait' })),
-      edges: [
-        ...synergyPairs.map(pair => pairEdge(pair, 'synergy')),
-        ...conflictPairs.map(pair => pairEdge(pair, 'conflict')),
-      ],
-      clusters: [],
-    },
     stabilityMetrics: calculateStabilityMetrics(counts, traits.length),
     complexityScore: Math.min(
       1.0,
@@ -170,7 +162,6 @@ export function analyzeTraitSnapshot(snapshot, { timeWindow = 30, now = new Date
     horseId,
     timeWindow,
     interactionEvolution,
-    stabilityTrends: analyzeStabilityTrends(interactionEvolution),
     emergingPatterns: identifyEmergingPatterns(traits, ageInDays),
     projectedChanges: projectFutureChanges(counts, timeWindow),
     analysisTimestamp: now,
@@ -448,11 +439,6 @@ function assessStability(snapshot, traits, counts) {
     overallStability,
     stabilityFactors,
     volatilityRisks,
-    stabilityTrends: {
-      synergyTrend: counts.synergies > 0 ? 'stabilizing' : 'neutral',
-      conflictTrend: counts.conflicts > 2 ? 'destabilizing' : 'neutral',
-      overallTrend: counts.synergies > counts.conflicts ? 'improving' : 'declining',
-    },
     recommendations: [baseline, ...volatilityRisks.map(risk => RISK_RECOMMENDATIONS[risk])],
   };
 }
@@ -475,19 +461,6 @@ function modelInteractionEvolution(
     });
   }
   return evolution;
-}
-
-function analyzeStabilityTrends(evolution) {
-  if (evolution.length < 2) {
-    return { trend: 'insufficient_data', strength: 0 };
-  }
-  const lastStability = evolution[evolution.length - 1].stabilityScore;
-  const change = lastStability - evolution[0].stabilityScore;
-  return {
-    trend: change > 0.1 ? 'improving' : change < -0.1 ? 'declining' : 'stable',
-    strength: Math.abs(change),
-    projectedStability: lastStability,
-  };
 }
 
 function identifyEmergingPatterns(traits, ageInDays) {

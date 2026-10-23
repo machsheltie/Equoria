@@ -32,61 +32,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "complexityScore": 0.8,
     "emergentProperties": [],
     "horseId": "<horseId>",
-    "interactionNetworks": {
-      "clusters": [],
-      "edges": [
-        {
-          "source": "brave",
-          "strength": 0.8,
-          "target": "social",
-          "type": "synergy",
-        },
-        {
-          "source": "fearful",
-          "strength": 0.9,
-          "target": "brave",
-          "type": "conflict",
-        },
-        {
-          "source": "reactive",
-          "strength": 0.8,
-          "target": "calm",
-          "type": "conflict",
-        },
-        {
-          "source": "social",
-          "strength": 0.85,
-          "target": "antisocial",
-          "type": "conflict",
-        },
-      ],
-      "nodes": [
-        {
-          "id": "fearful",
-          "type": "trait",
-        },
-        {
-          "id": "brave",
-          "type": "trait",
-        },
-        {
-          "id": "reactive",
-          "type": "trait",
-        },
-        {
-          "id": "calm",
-          "type": "trait",
-        },
-        {
-          "id": "social",
-          "type": "trait",
-        },
-        {
-          "id": "antisocial",
-          "type": "trait",
-        },
-      ],
-    },
     "stabilityMetrics": {
       "coherenceScore": 0.3333333333333333,
       "conflictRatio": 0.5,
@@ -401,11 +346,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
     "stabilityFactors": [
       "trait_synergies",
     ],
-    "stabilityTrends": {
-      "conflictTrend": "destabilizing",
-      "overallTrend": "declining",
-      "synergyTrend": "stabilizing",
-    },
     "volatilityRisks": [
       "multiple_trait_conflicts",
       "high_stress_environment",
@@ -535,11 +475,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
         "timeframe": "30 days",
       },
     },
-    "stabilityTrends": {
-      "projectedStability": 0.35416666666666663,
-      "strength": 0,
-      "trend": "stable",
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -610,11 +545,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) empty hor
     "complexityScore": 0,
     "emergentProperties": [],
     "horseId": "<horseId>",
-    "interactionNetworks": {
-      "clusters": [],
-      "edges": [],
-      "nodes": [],
-    },
     "stabilityMetrics": {
       "coherenceScore": 0,
       "conflictRatio": 0,
@@ -656,11 +586,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) empty hor
     "stabilityFactors": [
       "low_stress",
     ],
-    "stabilityTrends": {
-      "conflictTrend": "neutral",
-      "overallTrend": "declining",
-      "synergyTrend": "neutral",
-    },
     "volatilityRisks": [],
   },
   "summary": {
@@ -753,11 +678,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) empty hor
         "timeframe": "30 days",
       },
     },
-    "stabilityTrends": {
-      "projectedStability": 0.5,
-      "strength": 0,
-      "trend": "stable",
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -822,81 +742,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       },
     ],
     "horseId": "<horseId>",
-    "interactionNetworks": {
-      "clusters": [],
-      "edges": [
-        {
-          "source": "confident",
-          "strength": 0.8,
-          "target": "brave",
-          "type": "synergy",
-        },
-        {
-          "source": "confident",
-          "strength": 0.8,
-          "target": "social",
-          "type": "synergy",
-        },
-        {
-          "source": "brave",
-          "strength": 0.8,
-          "target": "social",
-          "type": "synergy",
-        },
-        {
-          "source": "intelligent",
-          "strength": 0.7,
-          "target": "curious",
-          "type": "synergy",
-        },
-        {
-          "source": "intelligent",
-          "strength": 0.7,
-          "target": "adaptable",
-          "type": "synergy",
-        },
-        {
-          "source": "curious",
-          "strength": 0.7,
-          "target": "adaptable",
-          "type": "synergy",
-        },
-      ],
-      "nodes": [
-        {
-          "id": "confident",
-          "type": "trait",
-        },
-        {
-          "id": "brave",
-          "type": "trait",
-        },
-        {
-          "id": "intelligent",
-          "type": "trait",
-        },
-        {
-          "id": "social",
-          "type": "trait",
-        },
-        {
-          "id": "curious",
-          "type": "trait",
-        },
-        {
-          "id": "calm",
-          "type": "trait",
-        },
-        {
-          "id": "adaptable",
-          "type": "trait",
-        },
-        {
-          "id": "sensitive",
-          "type": "trait",
-        },
-      ],
-    },
     "stabilityMetrics": {
       "coherenceScore": 7.5,
       "conflictRatio": 0,
@@ -1194,11 +1039,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
       "strong_bonding",
       "low_stress",
     ],
-    "stabilityTrends": {
-      "conflictTrend": "neutral",
-      "overallTrend": "improving",
-      "synergyTrend": "stabilizing",
-    },
     "volatilityRisks": [],
   },
   "summary": {
@@ -1440,11 +1280,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
         "timeframe": "30 days",
       },
     },
-    "stabilityTrends": {
-      "projectedStability": 0.78125,
-      "strength": 0,
-      "trend": "stable",
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -1542,65 +1377,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "complexityScore": 0.9000000000000001,
     "emergentProperties": [],
     "horseId": "<horseId>",
-    "interactionNetworks": {
-      "clusters": [],
-      "edges": [
-        {
-          "source": "social",
-          "strength": 0.75,
-          "target": "affectionate",
-          "type": "synergy",
-        },
-        {
-          "source": "social",
-          "strength": 0.75,
-          "target": "outgoing",
-          "type": "synergy",
-        },
-        {
-          "source": "affectionate",
-          "strength": 0.75,
-          "target": "outgoing",
-          "type": "synergy",
-        },
-        {
-          "source": "affectionate",
-          "strength": 0.85,
-          "target": "aloof",
-          "type": "conflict",
-        },
-      ],
-      "nodes": [
-        {
-          "id": "social",
-          "type": "trait",
-        },
-        {
-          "id": "affectionate",
-          "type": "trait",
-        },
-        {
-          "id": "outgoing",
-          "type": "trait",
-        },
-        {
-          "id": "trusting",
-          "type": "trait",
-        },
-        {
-          "id": "fragile",
-          "type": "trait",
-        },
-        {
-          "id": "reactive",
-          "type": "trait",
-        },
-        {
-          "id": "aloof",
-          "type": "trait",
-        },
-      ],
-    },
     "stabilityMetrics": {
       "coherenceScore": 3,
       "conflictRatio": 0.14285714285714285,
@@ -1876,11 +1652,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
     "stabilityFactors": [
       "trait_synergies",
     ],
-    "stabilityTrends": {
-      "conflictTrend": "neutral",
-      "overallTrend": "improving",
-      "synergyTrend": "stabilizing",
-    },
     "volatilityRisks": [
       "reactive_temperament",
     ],
@@ -2046,11 +1817,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
         "timeframe": "30 days",
       },
     },
-    "stabilityTrends": {
-      "projectedStability": 0.6,
-      "strength": 0,
-      "trend": "stable",
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -2116,43 +1882,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "complexityScore": 0.5,
     "emergentProperties": [],
     "horseId": "<horseId>",
-    "interactionNetworks": {
-      "clusters": [],
-      "edges": [
-        {
-          "source": "brave",
-          "strength": 0.8,
-          "target": "confident",
-          "type": "synergy",
-        },
-        {
-          "source": "brave",
-          "strength": 0.8,
-          "target": "social",
-          "type": "synergy",
-        },
-        {
-          "source": "confident",
-          "strength": 0.8,
-          "target": "social",
-          "type": "synergy",
-        },
-      ],
-      "nodes": [
-        {
-          "id": "brave",
-          "type": "trait",
-        },
-        {
-          "id": "confident",
-          "type": "trait",
-        },
-        {
-          "id": "social",
-          "type": "trait",
-        },
-      ],
-    },
     "stabilityMetrics": {
       "coherenceScore": 10,
       "conflictRatio": 0,
@@ -2304,11 +2033,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
       "strong_bonding",
       "low_stress",
     ],
-    "stabilityTrends": {
-      "conflictTrend": "neutral",
-      "overallTrend": "improving",
-      "synergyTrend": "stabilizing",
-    },
     "volatilityRisks": [],
   },
   "summary": {
@@ -2477,11 +2201,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
         "timeframe": "30 days",
       },
     },
-    "stabilityTrends": {
-      "projectedStability": 0.9000000000000001,
-      "strength": 0,
-      "trend": "stable",
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -2545,16 +2264,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) unknownTr
     "complexityScore": 0.1,
     "emergentProperties": [],
     "horseId": "<horseId>",
-    "interactionNetworks": {
-      "clusters": [],
-      "edges": [],
-      "nodes": [
-        {
-          "id": "developing",
-          "type": "trait",
-        },
-      ],
-    },
     "stabilityMetrics": {
       "coherenceScore": 0,
       "conflictRatio": 0,
@@ -2616,11 +2325,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) unknownTr
       "High instability detected - focus on stress reduction and consistent care",
     ],
     "stabilityFactors": [],
-    "stabilityTrends": {
-      "conflictTrend": "neutral",
-      "overallTrend": "declining",
-      "synergyTrend": "neutral",
-    },
     "volatilityRisks": [],
   },
   "summary": {
@@ -2712,11 +2416,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) unknownTr
         "expected": "stable",
         "timeframe": "30 days",
       },
-    },
-    "stabilityTrends": {
-      "projectedStability": 0.5,
-      "strength": 0,
-      "trend": "stable",
     },
     "timeWindow": 30,
   },

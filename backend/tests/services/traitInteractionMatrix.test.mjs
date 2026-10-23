@@ -384,7 +384,8 @@ describe('Trait Interaction Matrix', () => {
       expect(complexInteractions.horseId).toBe(complexHorse.id);
       expect(complexInteractions.traitClusters).toBeDefined();
       expect(complexInteractions.emergentProperties).toBeDefined();
-      expect(complexInteractions.interactionNetworks).toBeDefined();
+      // Owner ruling 2026-10-23 (Equoria-fzuz8): interactionNetworks is removed (old contract: toBeDefined).
+      expect(complexInteractions).not.toHaveProperty('interactionNetworks');
       expect(complexInteractions.stabilityMetrics).toBeDefined();
       expect(complexInteractions.complexityScore).toBeDefined();
 
@@ -433,7 +434,8 @@ describe('Trait Interaction Matrix', () => {
       expect(stability.overallStability).toBeDefined();
       expect(stability.stabilityFactors).toBeDefined();
       expect(stability.volatilityRisks).toBeDefined();
-      expect(stability.stabilityTrends).toBeDefined();
+      // Owner ruling 2026-10-23 (Equoria-w2sb8): stabilityTrends is removed (old contract: toBeDefined).
+      expect(stability).not.toHaveProperty('stabilityTrends');
       expect(stability.recommendations).toBeDefined();
 
       expect(stability.overallStability).toBeGreaterThanOrEqual(0);
@@ -462,7 +464,8 @@ describe('Trait Interaction Matrix', () => {
       expect(temporalModel.horseId).toBe(horse.id);
       expect(temporalModel.timeWindow).toBe(30);
       expect(temporalModel.interactionEvolution).toBeDefined();
-      expect(temporalModel.stabilityTrends).toBeDefined();
+      // Owner ruling 2026-10-23 (Equoria-w2sb8): stabilityTrends is removed (old contract: toBeDefined).
+      expect(temporalModel).not.toHaveProperty('stabilityTrends');
       expect(temporalModel.emergingPatterns).toBeDefined();
       expect(temporalModel.projectedChanges).toBeDefined();
 
