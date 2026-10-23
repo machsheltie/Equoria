@@ -2,14 +2,14 @@ EQUORIA DESIGN BIBLE  •  VOLUME 13 OF 23
 13. Competitions, Shows & Event Scoring
 Recovered design intent • consolidated 6 October 2026
 Purpose of this volume
-Reconstructs Equoria’s competition engine in detail: eligibility and search, show hosting, exact 23-discipline stat-weight map, score components, riders/health/luck, prizes/stat gains/player XP, three active slots, result history, conformation/parade systems and special Cups/events.
+Reconstructs Equoria’s competition engine in detail: eligibility and search, show hosting, exact 24-discipline stat-weight map, score components, riders/health/luck, prizes/stat gains/player XP, three active slots, result history, conformation/parade systems and special Cups/events.
 
 Canonical status snapshot
 LOCKED	Standard age 3–20, rider required, max three simultaneous show slots, no general show cooldown.
 
 LOCKED	Shows run 7 days after creation; search includes discipline/level/fee/prize/run date and 20/page.
 
-LOCKED	23-discipline 50/30/20 stat map; rider ±; luck ±1–10; prizes 50/30/20; Horse Points 1/3/5/10 by result; seasonal game events double Horse Points.
+LOCKED	24-discipline 50/30/20 stat map; rider ±; luck ±1–10; prizes 50/30/20; Horse Points 1/3/5/10 by result; seasonal game events double Horse Points.
 
 LOCKED	Conformation 70/20/10 and Parade 50/30/20 baselines.
 
@@ -139,7 +139,7 @@ Leaderboards attached to competition
 •	Legacy Points / lineage prestige from top competition were proposed and feed Section 14; final formula belongs there.
 Do-not-drift guardrails
 Lock against reinterpretation
-Use the explicit 23-discipline flat list and 50/30/20 map. Do not reintroduce a generic weekly horse competition cooldown or energy bar. Do not group disciplines into Western/English categories in the player selection list. Keep discipline competition, conformation and parade scoring separate. Bounded luck must not overwhelm breeding/training/rider strategy.
+Use the explicit 24-discipline flat list and 50/30/20 map. Do not reintroduce a generic weekly horse competition cooldown or energy bar. Do not group disciplines into Western/English categories in the player selection list. Keep discipline competition, conformation and parade scoring separate. Bounded luck must not overwhelm breeding/training/rider strategy.
 
 Open decisions still requiring an explicit lock
 •	Normalize health-state vocabulary/modifiers.
@@ -170,7 +170,7 @@ Competition catalog and eligibility
 •	[DERIVED-CONTRACT] Event records must specify discipline, class/age/other eligibility, entry fee/prize, schedule/run time, capacity if any, scoring configuration and whether system/player-created/special/prestige/team.
 Processing and scoring contract
 •	[SOURCE-EXPLICIT] Competition processing has Entry -> server Processing/Simulation -> Results. Inputs include weighted horse stats, discipline training, rider compatibility, temperament suitability, bounded randomness and potentially conformation/gaits.
-•	[RECOVERED-CANON] The first bible preserves the 23-discipline 50/30/20 primary-stat map and later competition rules. That map remains the baseline unless a discipline receives an explicit revision.
+•	[RECOVERED-CANON] The first bible preserves the 24-discipline 50/30/20 primary-stat map and later competition rules. That map remains the baseline unless a discipline receives an explicit revision.
 •	[DERIVED-CONTRACT] Scores should be reproducible/auditable from stored entry snapshots plus a recorded random seed/modifier range if randomness is used. A later stat change must not rewrite a completed result.
 •	[DERIVED-CONTRACT] Duplicate entry prevention from the early competition module remains a valid integrity requirement.
 Schedules, auto-run, and results
