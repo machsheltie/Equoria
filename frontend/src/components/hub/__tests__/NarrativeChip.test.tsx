@@ -9,6 +9,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NarrativeChip, deriveHorseChip } from '../NarrativeChip';
 
 describe('NarrativeChip', () => {
+  // Story 23.2 AC (Equoria-oey96.52): a chip's text can change as the stable's
+  // state changes, so assistive tech must be told.
+  it('is announced as a status region', () => {
+    render(<NarrativeChip text="Ready to compete!" />);
+    expect(screen.getByRole('status')).toHaveTextContent('Ready to compete!');
+  });
+
   it('renders the text content', () => {
     render(<NarrativeChip text="Ready to compete!" />);
     expect(screen.getByText('Ready to compete!')).toBeInTheDocument();

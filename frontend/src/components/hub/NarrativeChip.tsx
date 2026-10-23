@@ -45,6 +45,7 @@ const VARIANT_STYLES: Record<ChipVariant, string> = {
 export function NarrativeChip({ text, variant = 'neutral', className }: NarrativeChipProps) {
   return (
     <span
+      role="status"
       className={cn(
         'inline-flex items-center px-2.5 py-0.5 rounded-full',
         'text-xs font-medium font-[var(--font-body)]',
