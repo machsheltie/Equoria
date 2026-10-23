@@ -19,7 +19,7 @@ import {
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
-} from '../modules/trainers/index.mjs';
+} from '../modules/trainers/services/trainerMarketplace.mjs';
 import { DISCIPLINE_VALUES } from '../constants/schema.mjs';
 
 // ─── TRAINER_MARKETPLACE_CONFIG ───────────────────────────────────────────────

@@ -26,6 +26,9 @@ export {
   getUserWithHorses,
 } from './services/userModelService.mjs';
 
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
+// Operator erasure (GDPR). No production importer outside this module; consumed by other
+// modules' erasure-behaviour tests (breeding studRequestLifecycle, horses
+// horseDeletionEndpointClosed, staff staffErasureKeepsRecords / staffLogActorsAuthz /
+// staffTicketEmailOutbox), which erase a fixture user to prove their own data survives.
+// Equoria-7t1tn: kept pending an owner ruling on moving those tests vs keeping the name.
 export { eraseUserAccount } from './services/gdprAccountService.mjs';

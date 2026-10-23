@@ -1,6 +1,9 @@
 /**
- * enhancedMilestoneEvaluationSystem constants
- * + emailVerificationService (pure fns) unit tests (Equoria-rr7 coverage sprint).
+ * enhancedMilestoneEvaluationSystem constants unit tests (Equoria-rr7 coverage sprint).
+ *
+ * The emailVerificationService pure-function cases that used to sit below were
+ * misfiled here; they moved unchanged to
+ * modules/auth/__tests__/emailVerificationTokenPure.test.mjs (Equoria-7t1tn).
  *
  * All tested functions are pure sync or self-contained with real-DB connectivity.
  * No horse fixture is needed — the pure-sync functions drive coverage.
@@ -18,7 +21,6 @@ import {
   TRAIT_THRESHOLDS,
   MILESTONE_TRAIT_POOLS,
 } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
-import { generateVerificationToken, hashVerificationToken } from '../../auth/index.mjs';
 
 // ── enhancedMilestoneEvaluationSystem constants ───────────────────────────────
 
@@ -62,40 +64,5 @@ describe('MILESTONE_TRAIT_POOLS', () => {
       expect(pool.positive.length).toBeGreaterThan(0);
       expect(pool.negative.length).toBeGreaterThan(0);
     }
-  });
-});
-
-// ── emailVerificationService pure fns ────────────────────────────────────────
-
-describe('generateVerificationToken', () => {
-  it('returns a 64-char hex string (32 random bytes)', () => {
-    const token = generateVerificationToken();
-    expect(typeof token).toBe('string');
-    expect(token).toHaveLength(64);
-    expect(/^[0-9a-f]+$/.test(token)).toBe(true);
-  });
-
-  it('returns unique values on successive calls', () => {
-    const a = generateVerificationToken();
-    const b = generateVerificationToken();
-    expect(a).not.toBe(b);
-  });
-});
-
-describe('hashVerificationToken', () => {
-  it('returns a 64-char hex SHA-256 digest', () => {
-    const hash = hashVerificationToken('test-token-value');
-    expect(typeof hash).toBe('string');
-    expect(hash).toHaveLength(64);
-    expect(/^[0-9a-f]+$/.test(hash)).toBe(true);
-  });
-
-  it('is deterministic — same input produces same hash', () => {
-    const token = 'deterministic-verification-token';
-    expect(hashVerificationToken(token)).toBe(hashVerificationToken(token));
-  });
-
-  it('different tokens produce different hashes', () => {
-    expect(hashVerificationToken('token-A')).not.toBe(hashVerificationToken('token-B'));
   });
 });

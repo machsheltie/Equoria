@@ -30,20 +30,20 @@ import {
   generateMarketplace,
   needsRefresh,
   getRefreshCost,
-} from '../../grooms/index.mjs';
+} from '../modules/grooms/services/groomMarketplace.mjs';
 import {
   RIDER_MARKETPLACE_CONFIG,
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
-} from '../../riders/index.mjs';
+} from '../modules/riders/services/riderMarketplace.mjs';
 import {
   TRAINER_MARKETPLACE_CONFIG,
   generateRandomTrainer,
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
-} from '../../trainers/index.mjs';
+} from '../modules/trainers/services/trainerMarketplace.mjs';
 
 // ── groomMarketplace ──────────────────────────────────────────────────────────
 

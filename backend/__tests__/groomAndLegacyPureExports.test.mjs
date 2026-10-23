@@ -13,13 +13,13 @@ import {
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
   calculateHandlerBonus,
-} from '../services/groomHandlerService.mjs';
+} from '../modules/grooms/services/groomHandlerService.mjs';
 
-import { validateBonusTraits } from '../services/groomBonusTraitService.mjs';
+import { validateBonusTraits } from '../modules/grooms/services/groomBonusTraitService.mjs';
 
-import { getLegacyScoreDefinitions } from '../../horses/index.mjs';
+import { getLegacyScoreDefinitions } from '../modules/horses/services/legacyScoreCalculator.mjs';
 
-import { getTraitScoringDefinitions } from '../../traits/index.mjs';
+import { getTraitScoringDefinitions } from '../modules/traits/services/legacyScoreTraitCalculator.mjs';
 
 // ─── HANDLER_SKILL_BONUSES ───────────────────────────────────────────────────
 

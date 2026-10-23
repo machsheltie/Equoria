@@ -19,7 +19,7 @@ import {
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
-} from '../modules/riders/index.mjs';
+} from '../modules/riders/services/riderMarketplace.mjs';
 import { DISCIPLINE_VALUES } from '../constants/schema.mjs';
 
 // ─── RIDER_MARKETPLACE_CONFIG ─────────────────────────────────────────────────

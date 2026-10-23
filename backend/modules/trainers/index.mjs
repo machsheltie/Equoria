@@ -13,15 +13,10 @@ export { incrementWeeklyCareerWeeks } from './services/riderTrainerProgressionSe
 export { processRiderTrainerRetirement } from './services/riderTrainerRetirementService.mjs';
 export { computeTrainerModifiers } from './services/trainerModifiers.mjs';
 
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
-export {
-  TRAINER_MARKETPLACE_CONFIG,
-  generateRandomTrainer,
-  generateTrainerMarketplace,
-  getTrainerRefreshCost,
-  trainerMarketplaceNeedsRefresh,
-} from './services/trainerMarketplace.mjs';
+// Consumed only by modules/training/__tests__/trainerTrainingModifier.integration.test.mjs
+// (a training test that pins the trainer-modifier caps); no production importer.
+// Equoria-7t1tn: the marketplace names that used to sit here moved out with the
+// tests that read them.
 export {
   TRAINER_BONUS_CAP,
   TRAINER_CANONICAL_TEMPERAMENTS,

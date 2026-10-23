@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getLegacyScoreDefinitions } from '../services/legacyScoreCalculator.mjs';
-import { getTraitScoringDefinitions } from '../../traits/index.mjs';
+import { getLegacyScoreDefinitions } from '../modules/horses/services/legacyScoreCalculator.mjs';
+import { getTraitScoringDefinitions } from '../modules/traits/services/legacyScoreTraitCalculator.mjs';
 
 // ---------------------------------------------------------------------------
 // getLegacyScoreDefinitions

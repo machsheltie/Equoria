@@ -10,7 +10,3 @@
  */
 
 export { CRAFTING_RECIPES } from './data/craftingRecipes.mjs';
-
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
-export { findRecipe } from './data/craftingRecipes.mjs';

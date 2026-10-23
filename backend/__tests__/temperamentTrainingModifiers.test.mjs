@@ -14,13 +14,13 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import * as horsesModule from '../../../modules/horses/index.mjs';
-import { TEMPERAMENT_TYPES } from '../../../modules/horses/index.mjs';
-import { trainHorse } from '../controllers/trainingController.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import * as horsesModule from '../modules/horses/index.mjs';
+import { TEMPERAMENT_TYPES } from '../modules/horses/data/temperamentTypes.mjs';
+import { trainHorse } from '../modules/training/controllers/trainingController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 const SUITE_PREFIX = 'tmod';
 

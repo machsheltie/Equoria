@@ -12,21 +12,21 @@ import {
   needsRefresh,
   getRefreshCost,
   MARKETPLACE_CONFIG,
-} from '../../grooms/index.mjs';
+} from '../modules/grooms/services/groomMarketplace.mjs';
 import {
   generateRandomRider,
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
   RIDER_MARKETPLACE_CONFIG,
-} from '../../riders/index.mjs';
+} from '../modules/riders/services/riderMarketplace.mjs';
 import {
   generateRandomTrainer,
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
   TRAINER_MARKETPLACE_CONFIG,
-} from '../../trainers/index.mjs';
+} from '../modules/trainers/services/trainerMarketplace.mjs';
 
 // ---------------------------------------------------------------------------
 // MARKETPLACE_CONFIG shape

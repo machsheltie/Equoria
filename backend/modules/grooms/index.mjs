@@ -13,13 +13,3 @@ export { checkBonusEligibility, getBonusTraits } from './services/groomBonusTrai
 export { processWeeklyCareerProgression } from './services/groomCareerProgressionService.mjs';
 export { updateGroomSynergy } from './services/groomProgressionService.mjs';
 export { processWeeklySalaries } from './services/groomSalaryService.mjs';
-
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
-export {
-  MARKETPLACE_CONFIG,
-  generateMarketplace,
-  generateRandomGroom,
-  getRefreshCost,
-  needsRefresh,
-} from './services/groomMarketplace.mjs';

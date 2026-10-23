@@ -19,10 +19,3 @@ export {
   appendEpigeneticTraits,
   setEpigeneticModifiersKey,
 } from './services/epigeneticModifiersWrites.mjs';
-
-// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests
-// into the owning module, after which these lines go).
-export {
-  calculateGroomCareConsistency,
-  getTraitScoringDefinitions,
-} from './services/legacyScoreTraitCalculator.mjs';
