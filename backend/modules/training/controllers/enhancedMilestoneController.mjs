@@ -17,7 +17,8 @@ import {
 } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { getHorseAgeDays, getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { MIN_ACTIVE_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
 
 /**
  * GET /api/milestones/milestone-status/:horseId
@@ -79,7 +80,8 @@ export async function getMilestoneStatus(req, res) {
         availableMilestones,
         completedEvaluations: milestoneEvaluations,
         totalCompleted: milestoneEvaluations.length,
-        eligibleForEvaluation: ageInDays < 1095, // Under 3 years
+        // Under game age 3 (21 days), the age the game shows (Equoria-xggat; was 1095 days)
+        eligibleForEvaluation: getHorseAgeYears(horse.dateOfBirth) < MIN_ACTIVE_AGE_YEARS,
       },
     });
   } catch (error) {

@@ -30,6 +30,7 @@
  */
 
 import logger from './logger.mjs';
+import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 
 /**
  * Comprehensive groom personality effects configuration
@@ -69,7 +70,9 @@ export const GROOM_PERSONALITY_EFFECTS = {
     streakGrowthModifier: 1.15,
     traitInfluenceModifier: 1.2,
     specialConditions: {
-      ageRange: [0, 1095], // 0-3 years (foals and young horses)
+      // horse.age is game-years: under 3 (Equoria-xggat, owner ruling 2026-10-19).
+      // Old range [0, 1095] treated age 3 as 1,095 days, so every adult matched.
+      ageRange: [0, minActiveAgeYears - 1],
       bonusBonding: 0.2,
       bonusDescription: 'Exceptional with young horses and foals',
     },

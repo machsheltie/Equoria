@@ -122,8 +122,10 @@ describe('calculatePersonalityEffects', () => {
 
   it('playful + foal age: gets age-based bonusBonding', () => {
     const groom = { personality: 'playful' };
-    const foal = { traits: [], age: 100 }; // within [0, 1095]
-    const adult = { traits: [], age: 2000 }; // outside age range
+    // Equoria-xggat: horse.age is game-years; under 3 is the foal range. Old contract:
+    // the range was [0, 1095], so a 100-year-old horse counted as a foal.
+    const foal = { traits: [], age: 2 };
+    const adult = { traits: [], age: 3 }; // game age 3 is outside the range
     const foalResult = calculatePersonalityEffects(groom, foal, 'grooming_game', baseEffects);
     const adultResult = calculatePersonalityEffects(groom, adult, 'grooming_game', baseEffects);
     expect(foalResult.bondingChange).toBeGreaterThan(adultResult.bondingChange);
@@ -547,7 +549,8 @@ describe('groomPersonalityEffects — exact config & bonusesApplied (merged from
     it('playful + young horse: age_match applied, streakGrowth × 1.15', () => {
       const result = calculatePersonalityEffects(
         mkGroom('playful'),
-        mkHorse({ age: 500 }),
+        // Equoria-xggat: age is game-years; 2 is under 3 (old contract: 500 inside [0, 1095])
+        mkHorse({ age: 2 }),
         'grooming_game',
         baseEffects(),
       );

@@ -22,6 +22,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
 // the suite goes red at the source. milestoneTraitLog -> horse -> user
 // (Horse.userId onDelete: Restrict, schema:282).
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -98,6 +99,22 @@ describe('GET /api/milestones/milestone-status/:horseId', () => {
     expect(res.body.data).toBeDefined();
     expect(res.body.data.horseId).toBe(horse.id);
     expect(res.body.data.availableMilestones).toBeDefined();
+  });
+
+  it.each([
+    [20, true],
+    [21, false],
+  ])('a horse %i days old: eligibleForEvaluation is %s (under game age 3, Equoria-xggat)', async (days, expected) => {
+    await prisma.horse.update({
+      where: { id: horse.id },
+      data: { dateOfBirth: gameCalendarDate(new Date(), -days) },
+    });
+    const res = await request(app)
+      .get(`/api/v1/milestones/milestone-status/${horse.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.eligibleForEvaluation).toBe(expected);
   });
 
   it('returns 404 for a horse not owned by user', async () => {
