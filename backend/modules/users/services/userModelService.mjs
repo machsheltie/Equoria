@@ -7,7 +7,7 @@ import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 // this very file (userModelService) alongside gdprAccountService (Equoria-kwjav).
 import { eraseUserAccount } from './gdprAccountService.mjs';
 
-const DEFAULT_XP_PER_LEVEL = 100;
+const xpPerLevel = 100;
 // Default audit reason for an award whose caller supplies none (e.g. the admin
 // `POST /api/user/:id/add-xp` path). XpEvent.reason is a NOT-NULL text column, so
 // the tx-aware core always needs a non-empty string here (Equoria-jvi3u).
@@ -25,7 +25,7 @@ const DEFAULT_XP_REASON = 'XP award';
  * @returns {number} The level implied by that xp (never below 1).
  */
 function levelForXp(xp) {
-  return Math.floor(Math.max(0, xp) / DEFAULT_XP_PER_LEVEL) + 1;
+  return Math.floor(Math.max(0, xp) / xpPerLevel) + 1;
 }
 
 /**
@@ -40,14 +40,14 @@ function levelForXp(xp) {
 function levelProgress(xp) {
   const safeXp = Math.max(0, xp);
   const level = levelForXp(safeXp);
-  const xpForCurrentLevel = (level - 1) * DEFAULT_XP_PER_LEVEL;
-  const xpForNextLevel = level * DEFAULT_XP_PER_LEVEL;
+  const xpForCurrentLevel = (level - 1) * xpPerLevel;
+  const xpForNextLevel = level * xpPerLevel;
   return {
     level,
     xpForCurrentLevel,
     xpForNextLevel,
     xpToNextLevel: xpForNextLevel - safeXp,
-    progressPercentage: Math.round(((safeXp - xpForCurrentLevel) / DEFAULT_XP_PER_LEVEL) * 100),
+    progressPercentage: Math.round(((safeXp - xpForCurrentLevel) / xpPerLevel) * 100),
   };
 }
 

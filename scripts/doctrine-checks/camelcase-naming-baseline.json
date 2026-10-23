@@ -843,7 +843,7 @@
   "backend/modules/users/services/gdprAccountService.mjs": 15,
   "backend/modules/users/services/gdprBreedingRecords.mjs": 2,
   "backend/modules/users/services/settingsValidation.mjs": 7,
-  "backend/modules/users/services/userModelService.mjs": 5,
+  "backend/modules/users/services/userModelService.mjs": 2,
   "backend/modules/users/services/userStatsService.mjs": 2,
   "backend/scripts/add-topline-to-breed-files.mjs": 7,
   "backend/scripts/audit-breedless-horses.mjs": 6,
