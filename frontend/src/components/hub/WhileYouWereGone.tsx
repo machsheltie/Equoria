@@ -8,11 +8,14 @@
  * Trigger detection (Task 24-3):
  *   - lastVisit stored in localStorage on beforeunload
  *   - On mount: if delta > 4 hours AND completedOnboarding === true → fetch + show
+ *   - lastVisit moves on DISMISSAL, not on mount (Equoria-oey96.53): closing the tab
+ *     before reading the summary must not mark those events as seen. A visit that
+ *     shows no overlay records the time on mount, as before.
  *
  * Does NOT appear for new users (completedOnboarding === false).
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router';
 import { X, Trophy, MessageCircle, Star, ChevronRight } from 'lucide-react';
@@ -102,31 +105,45 @@ export function WhileYouWereGone() {
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [since, setSince] = useState<string | null>(null);
+  // True while the overlay has been shown and not yet dismissed. While it is, the
+  // visit is NOT recorded (neither on mount nor on beforeunload).
+  const overlayPendingRef = useRef(false);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useWhileYouWereGone(
     since,
     visible
   );
 
-  // On mount: detect absence, update lastVisit, store beforeunload handler
+  // On mount: detect absence; record the visit now only when no overlay is shown
   const userId = user?.id;
   useEffect(() => {
     if (!user?.completedOnboarding || userId === undefined) return;
 
     const lastVisit = getLastVisit(userId);
     if (isLongAbsence(lastVisit)) {
+      overlayPendingRef.current = true;
       setSince(lastVisit);
       setVisible(true);
+    } else {
+      overlayPendingRef.current = false;
+      setLastVisit(userId);
     }
-    setLastVisit(userId);
 
-    const handleUnload = () => setLastVisit(userId);
+    const handleUnload = () => {
+      if (!overlayPendingRef.current) setLastVisit(userId);
+    };
     window.addEventListener('beforeunload', handleUnload);
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, [user?.completedOnboarding, userId]);
 
   // Escape key to dismiss
-  const close = useCallback(() => setVisible(false), []);
+  // Every dismissal path (Continue, X, Escape, backdrop, following an item link)
+  // goes through here, and it is the moment the visit is recorded.
+  const close = useCallback(() => {
+    overlayPendingRef.current = false;
+    if (userId !== undefined) setLastVisit(userId);
+    setVisible(false);
+  }, [userId]);
   useEffect(() => {
     if (!visible) return;
     const handleKey = (e: KeyboardEvent) => {
