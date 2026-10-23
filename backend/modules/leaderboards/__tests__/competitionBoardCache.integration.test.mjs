@@ -63,15 +63,21 @@ describe('INTEGRATION: competition leaderboard query cache (Equoria-cmw85.6)', (
   /** GET the board and report how many ranking and count queries it issued. */
   async function board(query) {
     const ops = { groupBy: 0, raw: 0 };
-    const realGroupBy = prisma.competitionResult.groupBy.bind(prisma.competitionResult);
-    const realQueryRaw = prisma.$queryRaw.bind(prisma);
-    prisma.competitionResult.groupBy = (...args) => {
+    // The client is shared by every test file in this Jest process, so the
+    // wrappers are removed by putting back the ORIGINAL, unbound functions.
+    // Restoring a `.bind(prisma)` copy instead leaves `$queryRaw` pinned to the base
+    // client, and every later `tx.$queryRaw` in any file runs OUTSIDE its
+    // transaction (it broke groomFeeUncollected's lock barrier).
+    const model = prisma.competitionResult;
+    const realGroupBy = model.groupBy;
+    const realQueryRaw = prisma.$queryRaw;
+    model.groupBy = function countingGroupBy(...args) {
       ops.groupBy += 1;
-      return realGroupBy(...args);
+      return realGroupBy.apply(this, args);
     };
-    prisma.$queryRaw = (...args) => {
+    prisma.$queryRaw = function countingQueryRaw(...args) {
       ops.raw += 1;
-      return realQueryRaw(...args);
+      return realQueryRaw.apply(this, args);
     };
     let res;
     try {
@@ -80,7 +86,7 @@ describe('INTEGRATION: competition leaderboard query cache (Equoria-cmw85.6)', (
         .query(query)
         .set('Authorization', `Bearer ${token}`);
     } finally {
-      prisma.competitionResult.groupBy = realGroupBy;
+      model.groupBy = realGroupBy;
       prisma.$queryRaw = realQueryRaw;
     }
     expect(res.status).toBe(200);
