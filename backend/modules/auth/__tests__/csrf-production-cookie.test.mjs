@@ -77,6 +77,11 @@ describe('CSRF cookie-name contract', () => {
         JWT_SECRET: 'StrongProdTestSecret1234567890ABCDE',
         JWT_REFRESH_SECRET: 'StrongRefreshProdTestSecret123456789',
         LOG_LEVEL: 'error',
+        // The probe sends `Origin: http://localhost:3000`. In production the CORS allow-list is
+        // ALLOWED_ORIGINS alone (config/corsPolicy.mjs: the local dev origins are not added), and
+        // a refused origin is a 500. A developer's gitignored .env.test sets this variable and CI
+        // has no such file, so the probe named no origin in CI. State it (Equoria-vscbh).
+        ALLOWED_ORIGINS: 'http://localhost:3000',
       },
       encoding: 'utf-8',
       // 90s: covers cold app.mjs import (~6s in a fresh shell) plus the
