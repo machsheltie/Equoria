@@ -27,17 +27,17 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import {
-  GUIDE_CLOSING_LINE,
-  GUIDE_TITLE,
-  NEW_PLAYER_GUIDE,
+  guideClosingLine,
+  guideTitle,
+  newPlayerGuide,
   parseGuideInline,
   type GuideBlock,
   type GuideSection,
 } from '@/constants/newPlayerGuide';
 import '@/styles/guide.css';
 
-const TOP_ID = 'guide-top';
-const INDEX_ID = 'guide-index';
+const topId = 'guide-top';
+const indexId = 'guide-index';
 
 /* ─── Inline text: bold, italic and links to other chapters ─────────────── */
 
@@ -158,7 +158,7 @@ function Chapter({ section }: { section: GuideSection }) {
         <Block key={index} block={block} />
       ))}
       <p className="guide-section__top">
-        <Link to={`#${TOP_ID}`} className="guide-link">
+        <Link to={`#${topId}`} className="guide-link">
           Back to the top
         </Link>
       </p>
@@ -172,7 +172,7 @@ function ChapterList({ onChoose }: { onChoose?: () => void }) {
   return (
     <nav aria-label="Guide sections" className="guide-index__nav">
       <ol className="guide-index__list">
-        {NEW_PLAYER_GUIDE.map((section) => (
+        {newPlayerGuide.map((section) => (
           <li key={section.id}>
             <Link to={`#${section.id}`} className="guide-index__link" onClick={onChoose}>
               {section.title}
@@ -189,7 +189,7 @@ function ChapterIndex({ compact }: { compact: boolean }) {
 
   if (!compact) {
     return (
-      <div id={INDEX_ID} className="guide-index">
+      <div id={indexId} className="guide-index">
         <p className="guide-index__heading">Chapters</p>
         <ChapterList />
       </div>
@@ -198,7 +198,7 @@ function ChapterIndex({ compact }: { compact: boolean }) {
 
   return (
     <details
-      id={INDEX_ID}
+      id={indexId}
       className="guide-index guide-index--compact"
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
@@ -223,7 +223,7 @@ export default function GuidePage() {
     const id = decodeURIComponent(hash.slice(1));
     const target = document.getElementById(id);
     if (!target) return;
-    const heading = id === TOP_ID ? target : document.getElementById(`${id}-title`);
+    const heading = id === topId ? target : document.getElementById(`${id}-title`);
     const reduceMotion =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -234,8 +234,8 @@ export default function GuidePage() {
   return (
     <div className="guide" data-testid="guide-page">
       <header className="guide__hero">
-        <h1 id={TOP_ID} tabIndex={-1} className="type-announcer-title guide__title">
-          {GUIDE_TITLE}
+        <h1 id={topId} tabIndex={-1} className="type-announcer-title guide__title">
+          {guideTitle}
         </h1>
       </header>
 
@@ -245,10 +245,10 @@ export default function GuidePage() {
         </aside>
 
         <article className="glass-panel guide__text-surface">
-          {NEW_PLAYER_GUIDE.map((section) => (
+          {newPlayerGuide.map((section) => (
             <Chapter key={section.id} section={section} />
           ))}
-          <p className="guide__closing">{GUIDE_CLOSING_LINE}</p>
+          <p className="guide__closing">{guideClosingLine}</p>
         </article>
       </div>
     </div>

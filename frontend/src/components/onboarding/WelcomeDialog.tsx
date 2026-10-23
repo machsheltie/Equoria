@@ -36,8 +36,8 @@ import {
 import { isWelcomePending } from './welcomePending';
 import '@/styles/welcome.css';
 
-const GUIDE_PATH = '/guide';
-const NEWS_PATH = '/news';
+const guidePath = '/guide';
+const newsPath = '/news';
 
 export function WelcomeDialog() {
   const { user } = useAuth();
@@ -58,7 +58,7 @@ export function WelcomeDialog() {
       return;
     }
     event.preventDefault();
-    leaveTo(GUIDE_PATH);
+    leaveTo(guidePath);
   };
 
   return (
@@ -67,7 +67,7 @@ export function WelcomeDialog() {
       // Escape is Continue. The X is hidden and outside clicks are refused, so the
       // only ways out are the two the owner ruled.
       onOpenChange={(next) => {
-        if (!next) leaveTo(NEWS_PATH);
+        if (!next) leaveTo(newsPath);
       }}
     >
       <GameDialogContent
@@ -85,13 +85,13 @@ export function WelcomeDialog() {
         </GameDialogHeader>
 
         <p className="welcome-note__invitation">
-          <Link to={GUIDE_PATH} className="welcome-note__guide-link" onClick={onGuideLinkClick}>
+          <Link to={guidePath} className="welcome-note__guide-link" onClick={onGuideLinkClick}>
             Please review the new player guide!
           </Link>
         </p>
 
         <div className="welcome-note__actions">
-          <Button size="lg" pending={markSeen.isPending} onClick={() => leaveTo(NEWS_PATH)}>
+          <Button size="lg" pending={markSeen.isPending} onClick={() => leaveTo(newsPath)}>
             Continue
           </Button>
           {markSeen.isError && (

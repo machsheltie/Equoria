@@ -1,7 +1,7 @@
 /**
  * GuidePage (Equoria-kd2dd)
  *
- * The in-game Guide renders the single content module `NEW_PLAYER_GUIDE`:
+ * The in-game Guide renders the single content module `newPlayerGuide`:
  * a section index with anchor links, every section with its heading and id,
  * tables as real tables, undecided rules as a quiet "still being decided" note
  * (never the owner's internal question), and #section links that land on and
@@ -13,7 +13,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import GuidePage from '../GuidePage';
-import { GUIDE_TITLE, NEW_PLAYER_GUIDE } from '../../constants/newPlayerGuide';
+import { guideTitle, newPlayerGuide } from '../../constants/newPlayerGuide';
 
 function renderGuide(path = '/guide') {
   return render(
@@ -41,12 +41,12 @@ describe('GuidePage (Equoria-kd2dd)', () => {
   it('has one page title and an index linking to every section', () => {
     renderGuide();
 
-    expect(screen.getByRole('heading', { level: 1, name: GUIDE_TITLE })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: guideTitle })).toBeInTheDocument();
 
     const index = screen.getByRole('navigation', { name: 'Guide sections' });
     const links = within(index).getAllByRole('link');
-    expect(links).toHaveLength(NEW_PLAYER_GUIDE.length);
-    for (const section of NEW_PLAYER_GUIDE) {
+    expect(links).toHaveLength(newPlayerGuide.length);
+    for (const section of newPlayerGuide) {
       expect(within(index).getByRole('link', { name: section.title })).toHaveAttribute(
         'href',
         `/guide#${section.id}`
@@ -57,7 +57,7 @@ describe('GuidePage (Equoria-kd2dd)', () => {
   it('renders every section as a labelled region with its heading, tagline and anchor id', () => {
     const { container } = renderGuide();
 
-    for (const section of NEW_PLAYER_GUIDE) {
+    for (const section of newPlayerGuide) {
       const region = container.querySelector(`section#${section.id}`);
       expect(region, `section #${section.id}`).not.toBeNull();
       expect(
@@ -96,9 +96,9 @@ describe('GuidePage (Equoria-kd2dd)', () => {
   it('shows each undecided rule as a quiet "still being decided" note and never the owner question', () => {
     const { container } = renderGuide();
 
-    const pending = NEW_PLAYER_GUIDE.flatMap((section) => section.blocks).filter(
-      (block) => block.kind === 'pending'
-    );
+    const pending = newPlayerGuide
+      .flatMap((section) => section.blocks)
+      .filter((block) => block.kind === 'pending');
     expect(pending.length).toBeGreaterThan(0);
 
     const notes = container.querySelectorAll('[data-guide-pending]');

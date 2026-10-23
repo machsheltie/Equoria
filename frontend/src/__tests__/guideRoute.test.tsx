@@ -12,8 +12,8 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { navItems } from '../nav-items';
-import { BOTTOM_NAV_ITEMS, NAV_SECTIONS } from '../components/layout/navItems';
-import { GUIDE_TITLE } from '../constants/newPlayerGuide';
+import * as layoutNavigation from '../components/layout/navItems';
+import { guideTitle } from '../constants/newPlayerGuide';
 
 describe('/guide route (Equoria-kd2dd)', () => {
   it('is registered in the route table', () => {
@@ -33,11 +33,15 @@ describe('/guide route (Equoria-kd2dd)', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('heading', { level: 1, name: GUIDE_TITLE })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: guideTitle })).toBeInTheDocument();
   });
 
   it('has no navigation link yet: its placement is an open owner question', () => {
-    const linked = [...NAV_SECTIONS, ...BOTTOM_NAV_ITEMS].filter(({ href }) => href === '/guide');
-    expect(linked).toEqual([]);
+    // Every list the navigation module exports (sidebar, panel and bottom bar share them).
+    const everyLink = Object.values(layoutNavigation)
+      .filter((exported): exported is { href: string }[] => Array.isArray(exported))
+      .flat();
+    expect(everyLink.length).toBeGreaterThan(0);
+    expect(everyLink.filter(({ href }) => href === '/guide')).toEqual([]);
   });
 });

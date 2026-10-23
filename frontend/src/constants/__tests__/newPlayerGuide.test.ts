@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { NEW_PLAYER_GUIDE, parseGuideInline, type GuideBlock } from '../newPlayerGuide';
+import { newPlayerGuide, parseGuideInline, type GuideBlock } from '../newPlayerGuide';
 
 const textOf = (block: GuideBlock): string[] => {
   switch (block.kind) {
@@ -24,15 +24,15 @@ const textOf = (block: GuideBlock): string[] => {
   }
 };
 
-describe('NEW_PLAYER_GUIDE content', () => {
+describe('newPlayerGuide content', () => {
   it('has unique, url-safe section ids', () => {
-    const ids = NEW_PLAYER_GUIDE.map((section) => section.id);
+    const ids = newPlayerGuide.map((section) => section.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
   });
 
   it('every section has a title, a tagline and at least one block', () => {
-    for (const section of NEW_PLAYER_GUIDE) {
+    for (const section of newPlayerGuide) {
       expect(section.title.trim()).not.toBe('');
       expect(section.tagline.trim()).not.toBe('');
       expect(section.blocks.length).toBeGreaterThan(0);
@@ -40,9 +40,9 @@ describe('NEW_PLAYER_GUIDE content', () => {
   });
 
   it('every in-guide link points at a real section', () => {
-    const ids = new Set(NEW_PLAYER_GUIDE.map((section) => section.id));
+    const ids = new Set(newPlayerGuide.map((section) => section.id));
     const dangling: string[] = [];
-    for (const section of NEW_PLAYER_GUIDE) {
+    for (const section of newPlayerGuide) {
       for (const block of section.blocks) {
         for (const text of textOf(block)) {
           for (const part of parseGuideInline(text)) {
@@ -57,7 +57,7 @@ describe('NEW_PLAYER_GUIDE content', () => {
   });
 
   it('tables are rectangular', () => {
-    for (const section of NEW_PLAYER_GUIDE) {
+    for (const section of newPlayerGuide) {
       for (const block of section.blocks) {
         if (block.kind !== 'table') continue;
         for (const row of block.rows) expect(row).toHaveLength(block.columns.length);
@@ -66,9 +66,11 @@ describe('NEW_PLAYER_GUIDE content', () => {
   });
 
   it('every undecided rule carries a player-safe topic and the full owner question', () => {
-    const pending = NEW_PLAYER_GUIDE.flatMap((section) => section.blocks).filter(
-      (block): block is Extract<GuideBlock, { kind: 'pending' }> => block.kind === 'pending'
-    );
+    const pending = newPlayerGuide
+      .flatMap((section) => section.blocks)
+      .filter(
+        (block): block is Extract<GuideBlock, { kind: 'pending' }> => block.kind === 'pending'
+      );
     expect(pending.length).toBeGreaterThan(0);
     for (const block of pending) {
       expect(block.topic.trim()).not.toBe('');
@@ -79,7 +81,7 @@ describe('NEW_PLAYER_GUIDE content', () => {
   });
 
   it('player-facing text carries no leftover draft markers', () => {
-    for (const section of NEW_PLAYER_GUIDE) {
+    for (const section of newPlayerGuide) {
       for (const block of section.blocks) {
         for (const text of textOf(block)) {
           expect(text).not.toMatch(/PENDING OWNER|DRAFT/);
