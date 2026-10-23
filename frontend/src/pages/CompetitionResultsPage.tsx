@@ -50,6 +50,7 @@ import { useMarkResultsViewed } from '@/hooks/api/useMarkResultsViewed';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 import BalanceUpdateIndicator from '@/components/feedback/BalanceUpdateIndicator';
+import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import { userMessageFor } from '@/lib/http/userMessage';
 
@@ -247,6 +248,45 @@ const CompetitionResultsPage = (): JSX.Element => {
     markResultsViewed(unreported);
   }, [userResults, markResultsViewed]);
 
+  // Equoria-oey96.41 (owner ruling 2026-10-23): a horse's first-ever win is
+  // celebrated with the CinematicMoment, once. "Once" is the server's: a first
+  // win the player has not opened yet (viewed === false) is celebrated when it
+  // arrives here, and the mark-viewed write above closes it for every later
+  // visit. The ref keeps a refetch within this visit from replaying it. Repeat
+  // wins and already-seen first wins show the normal result only; several fresh
+  // first wins are celebrated one after another.
+  const [firstWins, setFirstWins] = useState<
+    Array<{ key: string; horseName: string; competitionName: string }>
+  >([]);
+  const celebratedFirstWins = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!userResults?.length) {
+      return;
+    }
+    const fresh: Array<{ key: string; horseName: string; competitionName: string }> = [];
+    for (const summary of userResults) {
+      for (const row of summary.userResults) {
+        const key = `${summary.competitionId}:${row.horseId}`;
+        if (
+          row.isFirstWin === true &&
+          row.viewed === false &&
+          !celebratedFirstWins.current.has(key)
+        ) {
+          celebratedFirstWins.current.add(key);
+          fresh.push({ key, horseName: row.horseName, competitionName: summary.competitionName });
+        }
+      }
+    }
+    if (fresh.length > 0) {
+      setFirstWins((queue) => [...queue, ...fresh]);
+    }
+  }, [userResults]);
+
+  const dismissFirstWin = useCallback(() => {
+    setFirstWins((queue) => queue.slice(1));
+  }, []);
+
   // Modal state
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'my-results' | 'browse'>('my-results');
@@ -431,6 +471,16 @@ const CompetitionResultsPage = (): JSX.Element => {
           showPrizeNotification={showPrizeNotification}
           onPrizeNotificationClose={handlePrizeNotificationClose}
         />
+
+        {firstWins.length > 0 && (
+          <CinematicMoment
+            key={firstWins[0].key}
+            variant="cup-win"
+            title="First Victory!"
+            subtitle={`${firstWins[0].horseName} won ${firstWins[0].competitionName}`}
+            onDismiss={dismissFirstWin}
+          />
+        )}
       </main>
     </PageContainer>
   );

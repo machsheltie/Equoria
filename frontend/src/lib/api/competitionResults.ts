@@ -274,6 +274,13 @@ export interface CompetitionResultUserRow {
    * were recorded (Equoria-q4uem.10, owner rulings R6/R7). Never a fake 0.
    */
   horsePointsAwarded: number | null;
+  /**
+   * True when this result is the horse's first-ever win (its earliest 1st
+   * place; Equoria-oey96.41). Absent reads as false: never a celebration.
+   */
+  isFirstWin?: boolean;
+  /** Whether the player has opened this result yet (the server's viewedAt latch). */
+  viewed?: boolean;
 }
 
 /**

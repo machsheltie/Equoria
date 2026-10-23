@@ -12,18 +12,18 @@
  * Features:
  * - Migrated from BaseModal → GameDialog (Equoria-o5hub.13, DECISIONS.md §8)
  * - Focus trap, scroll lock, Escape close, and focus restoration from Radix Dialog
- * - CinematicMoment overlay for 1st-place wins (Story 18-4)
+ * - No CinematicMoment and no reward toast here (owner ruling 2026-10-23,
+ *   Equoria-oey96.41): a horse's first-ever win gets the moment on the results
+ *   screen (CompetitionResultsPage); every other result is shown normally.
  * - WCAG 2.1 AA compliance
  *
  * Story 5-3: Prize Notification System
  */
 
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { Trophy, Medal, Calendar, Award, Coins } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 import { GameDialog, GameDialogContent, GameDialogTitle } from '@/components/ui/game/GameDialog';
-import CinematicMoment from '@/components/feedback/CinematicMoment';
-import { useRewardToast } from '@/components/feedback';
 
 /**
  * Prize data structure containing all information to display
@@ -150,41 +150,6 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  // Show cinematic moment for 1st-place wins (Story 18-4)
-  const [showCinematic, setShowCinematic] = useState(false);
-  const { notify } = useRewardToast();
-
-  useEffect(() => {
-    if (isOpen && prizeData.placement === 1) {
-      setShowCinematic(true);
-    }
-  }, [isOpen, prizeData.placement]);
-
-  // Reward toast on a podium finish (Equoria-55bo.1, Spec 11.3.10).
-  // The modal only opens with a real competition result (placement 1-3
-  // from the competition-results pipeline) — a podium is a meaningful
-  // personal achievement. Fired once per modal open: prizeData/notify are
-  // read through a ref so the effect depends only on the isOpen edge and
-  // does not re-fire if a parent re-creates the prizeData object identity.
-  const prizeRef = useRef(prizeData);
-  prizeRef.current = prizeData;
-  const notifyRef = useRef(notify);
-  notifyRef.current = notify;
-  useEffect(() => {
-    if (!isOpen) return;
-    const pd = prizeRef.current;
-    const placementLabel = pd.placement === 1 ? '1st' : pd.placement === 2 ? '2nd' : '3rd';
-    notifyRef.current({
-      type: 'prize',
-      title:
-        pd.placement === 1
-          ? `Won ${pd.competitionName}!`
-          : `${placementLabel} place in ${pd.competitionName}`,
-      message: `${pd.horseName} placed ${placementLabel} in ${pd.discipline}.`,
-      meaningful: true,
-    });
-  }, [isOpen]);
-
   // Auto-dismiss timer — separate from Radix Dialog's focus/scroll management
   useEffect(() => {
     if (isOpen && autoDismiss) {
@@ -201,23 +166,10 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
     }
   }, [isOpen, autoDismiss, autoDismissDelay]);
 
-  // Handle cinematic dismiss
-  const handleCinematicDismiss = useCallback(() => {
-    setShowCinematic(false);
-  }, []);
-
   const { horseName, competitionName, discipline, date, placement, prizeMoney } = prizeData;
 
   return (
     <>
-      {showCinematic && (
-        <CinematicMoment
-          variant="cup-win"
-          title="Victory!"
-          subtitle={prizeData.competitionName}
-          onDismiss={handleCinematicDismiss}
-        />
-      )}
       <GameDialog
         open={isOpen}
         onOpenChange={(open) => {

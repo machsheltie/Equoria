@@ -451,4 +451,17 @@ describe('PrizeNotificationModal', () => {
       expect(overlay).toHaveClass('z-[var(--z-modal)]');
     });
   });
+
+  // Old contract (Story 18-4): every 1st place opened the cup-win CinematicMoment
+  // over this dialog. Owner ruling 2026-10-23 (Equoria-oey96.41): only a horse's
+  // first-ever win gets the moment, on the results screen; a repeat win shows
+  // this normal result alone.
+  describe('First-win moment lives on the results screen', () => {
+    it('opens no cinematic moment for a 1st place', () => {
+      renderModal({ prizeData: { ...samplePrizeData, placement: 1 } });
+
+      expect(screen.getByTestId('prize-notification-modal')).toBeInTheDocument();
+      expect(screen.queryByTestId('cinematic-moment-overlay')).not.toBeInTheDocument();
+    });
+  });
 });

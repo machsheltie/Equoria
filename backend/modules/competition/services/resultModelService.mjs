@@ -193,6 +193,29 @@ async function getResultsByUser(userId, options = {}) {
 }
 
 /**
+ * The result id of each horse's first-ever win (Equoria-oey96.41, owner ruling
+ * 2026-10-23): its earliest 1st place, by run date then id. Derived from the
+ * settled results themselves, so it needs no column and a horse can only ever
+ * have one first win — settlement writes the results, and the earliest winning
+ * row is the mark. Read over the horses' whole history, not the listed page.
+ *
+ * @param {number[]} horseIds
+ * @returns {Promise<Set<number>>}
+ */
+async function getFirstWinResultIds(horseIds) {
+  if (horseIds.length === 0) {
+    return new Set();
+  }
+  const firstWins = await prisma.competitionResult.findMany({
+    where: { horseId: { in: horseIds }, placement: 1 },
+    orderBy: [{ horseId: 'asc' }, { runDate: 'asc' }, { id: 'asc' }],
+    distinct: ['horseId'],
+    select: { id: true },
+  });
+  return new Set(firstWins.map(r => r.id));
+}
+
+/**
  * Build the CompetitionResultSummary[] payload for the CompetitionResultsPage
  * My Results list. Groups the users raw results by show and enriches each
  * group with totalParticipants + a per-horse rank (Equoria-oey96.5).
@@ -218,6 +241,9 @@ async function getUserResultsSummary(userId) {
   }
 
   const showIds = Array.from(new Set(rawResults.map(r => r.showId)));
+  const firstWinIds = await getFirstWinResultIds(
+    Array.from(new Set(rawResults.map(r => r.horseId))),
+  );
   const allShowResults = await prisma.competitionResult.findMany({
     where: { showId: { in: showIds } },
     orderBy: [{ showId: 'asc' }, { score: 'desc' }],
@@ -268,6 +294,11 @@ async function getUserResultsSummary(userId) {
       // Horse Points recorded at settlement; null on legacy rows, never a fake 0
       // (Equoria-q4uem.10, owner rulings R6/R7; was a hard-coded xpGained: 0).
       horsePointsAwarded: r.horsePointsAwarded ?? null,
+      // Equoria-oey96.41: this is the horse's first-ever win, and whether the
+      // player has opened it yet (the viewedAt latch) — together they let the
+      // results screen celebrate a first win exactly once.
+      isFirstWin: firstWinIds.has(r.id),
+      viewed: r.viewedAt !== null,
     });
   }
 

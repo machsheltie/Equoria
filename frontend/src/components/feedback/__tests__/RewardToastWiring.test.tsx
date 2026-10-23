@@ -34,8 +34,12 @@ function withProviders(ui: React.ReactNode) {
 }
 
 describe('RewardToast event wiring (55bo.1)', () => {
+  // Old contract (55bo.1): the prize modal fired a reward toast on every podium
+  // result. Owner ruling 2026-10-23 (Equoria-oey96.41): a horse's first win gets
+  // the CinematicMoment on the results screen; every other result is shown
+  // normally, with no toast.
   describe('(b) competition win', () => {
-    it('fires a reward toast when the prize modal opens with a podium result', () => {
+    it('fires no reward toast when the prize modal opens with a podium result', () => {
       render(
         withProviders(
           <PrizeNotificationModal
@@ -55,9 +59,8 @@ describe('RewardToast event wiring (55bo.1)', () => {
         )
       );
 
-      const status = document.body.querySelector('[role="status"]');
-      expect(status).toBeInTheDocument();
-      expect(status?.textContent).toMatch(/Dressage Classic/i);
+      expect(document.body.querySelector('[role="status"]')).toBeNull();
+      expect(document.body.textContent).not.toMatch(/Won Dressage Classic!/);
     });
   });
 
