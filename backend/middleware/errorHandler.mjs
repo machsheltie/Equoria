@@ -1,6 +1,7 @@
 import logger from '../utils/logger.mjs';
 import { AppError } from '../errors/index.mjs';
 import { resolveExposeErrorStack } from '../utils/errorStackPolicy.mjs';
+import { ORIGIN_NOT_ALLOWED_CODE, ORIGIN_NOT_ALLOWED_MESSAGE } from '../config/corsPolicy.mjs';
 import { maskEmailsInText } from '../utils/emailIdentityPolicy.mjs';
 
 /**
@@ -34,6 +35,16 @@ const errorHandler = (err, req, res, next) => {
     });
     return next(err); // Pass to Express default handler
   }
+  // A disallowed CORS origin is a refusal, not a server fault (Equoria-vsgi5).
+  // corsPolicy already logged the blocked origin at warn level.
+  if (err.code === ORIGIN_NOT_ALLOWED_CODE) {
+    return res.status(403).json({
+      success: false,
+      message: ORIGIN_NOT_ALLOWED_MESSAGE,
+      code: ORIGIN_NOT_ALLOWED_CODE,
+    });
+  }
+
   // Log error details
   logger.error(`Error ${loggedMessage}`, {
     error: loggedMessage,
