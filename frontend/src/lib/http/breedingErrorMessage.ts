@@ -11,9 +11,9 @@
 
 import { userMessageFor } from './userMessage.js';
 
-const VALIDATION_ENVELOPE = 'validation failed';
+const validationEnvelope = 'validation failed';
 
-const PAIRING_REFUSED =
+const pairingRefused =
   "Those two horses couldn't be paired as chosen. Check the sire and the dam and try again.";
 const FALLBACK = "Breeding couldn't go ahead. Please try again.";
 
@@ -35,6 +35,6 @@ export function breedingErrorMessage(error: unknown): string {
   }
   if (status >= 500) return userMessageFor(error).message;
 
-  if (message.toLowerCase() === VALIDATION_ENVELOPE) return PAIRING_REFUSED;
+  if (message.toLowerCase() === validationEnvelope) return pairingRefused;
   return message || FALLBACK;
 }

@@ -12,6 +12,13 @@
 // Validation Rules
 // =============================================================================
 
+/**
+ * The server's password policy (backend/modules/auth/validators/strongPasswordChain.mjs):
+ * 12-128 characters, lowercase + uppercase + digit + one of @$!%*?& (Equoria-hh4dc).
+ * Every client surface reads these two numbers.
+ */
+export const passwordPolicy = { minLength: 12, maxLength: 128 } as const;
+
 export const VALIDATION_RULES = {
   email: {
     minLength: 1,
@@ -24,11 +31,8 @@ export const VALIDATION_RULES = {
     pattern: /^[a-zA-Z0-9_]+$/,
   },
   password: {
-    // The server's policy (backend/modules/auth/validators/strongPasswordChain.mjs):
-    // 12-128 characters, lowercase + uppercase + digit + one of @$!%*?&
-    // (Equoria-hh4dc). Every client surface reads these two numbers.
-    minLength: 12,
-    maxLength: 128,
+    minLength: passwordPolicy.minLength,
+    maxLength: passwordPolicy.maxLength,
     requireLowercase: true,
     requireUppercase: true,
     requireNumber: true,

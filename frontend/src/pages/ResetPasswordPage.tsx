@@ -16,7 +16,7 @@ import {
   calculatePasswordStrength,
   type ResetPasswordFormData,
 } from '../lib/validation-schemas';
-import { VALIDATION_RULES } from '../lib/constants';
+import { passwordPolicy } from '../lib/constants';
 import { useResetPassword } from '../hooks/useAuth';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ const ResetPasswordPage: React.FC = () => {
   const passwordRequirements = useMemo(() => {
     const p = formData.password;
     return {
-      minLength: p.length >= VALIDATION_RULES.password.minLength,
+      minLength: p.length >= passwordPolicy.minLength,
       hasLowercase: /[a-z]/.test(p),
       hasUppercase: /[A-Z]/.test(p),
       hasNumber: /[0-9]/.test(p),
@@ -237,7 +237,7 @@ const ResetPasswordPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
                   <RequirementCheck
                     met={passwordRequirements.minLength}
-                    label={`${VALIDATION_RULES.password.minLength}+ characters`}
+                    label={`${passwordPolicy.minLength}+ characters`}
                   />
                   <RequirementCheck met={passwordRequirements.hasLowercase} label="Lowercase" />
                   <RequirementCheck met={passwordRequirements.hasUppercase} label="Uppercase" />

@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod';
-import { VALIDATION_RULES } from './constants';
+import { passwordPolicy } from './constants';
 
 // =============================================================================
 // Base Field Schemas
@@ -79,8 +79,8 @@ export const usernameSchema = z
  */
 export const passwordSchema = z
   .string()
-  .min(VALIDATION_RULES.password.minLength, 'Password must be at least 12 characters')
-  .max(VALIDATION_RULES.password.maxLength, 'Password must be at most 128 characters')
+  .min(passwordPolicy.minLength, 'Password must be at least 12 characters')
+  .max(passwordPolicy.maxLength, 'Password must be at most 128 characters')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[0-9]/, 'Password must contain at least one number')

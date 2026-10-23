@@ -36,9 +36,9 @@ export interface FilterableCompetition {
   date?: string | null;
 }
 
-const MS_PER_HOUR = 3_600_000;
-const WEEK_DAYS = 7;
-const MONTH_DAYS = 30;
+const msPerHour = 3_600_000;
+const weekDays = 7;
+const monthDays = 30;
 
 /** 'Show Jumping' and 'show-jumping' name the same discipline. */
 function disciplineToken(value: string): string {
@@ -66,12 +66,12 @@ function matchesDateRange(
   const closesAt = competitionClosesAt(competition);
   if (!closesAt || closesAt.getTime() <= now.getTime()) return false;
 
-  if (range === 'closing') return closesAt.getTime() - now.getTime() <= 24 * MS_PER_HOUR;
+  if (range === 'closing') return closesAt.getTime() - now.getTime() <= 24 * msPerHour;
 
   const daysAway = gameDayIndex(closesAt) - gameDayIndex(now);
   if (range === 'today') return daysAway === 0;
-  if (range === 'week') return daysAway < WEEK_DAYS;
-  return daysAway < MONTH_DAYS;
+  if (range === 'week') return daysAway < weekDays;
+  return daysAway < monthDays;
 }
 
 function matchesEntryFee(fee: number, bucket: EntryFeeFilter): boolean {

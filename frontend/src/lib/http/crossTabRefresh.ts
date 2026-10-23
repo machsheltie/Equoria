@@ -21,12 +21,12 @@
  */
 
 /** Same-origin hand-off between tabs: when the last successful refresh finished. */
-const LAST_REFRESH_KEY = 'equoria:lastRefreshAt';
-const REFRESH_LOCK_NAME = 'equoria:auth-refresh';
+const lastRefreshKey = 'equoria:lastRefreshAt';
+const refreshLockName = 'equoria:auth-refresh';
 
 function readLastRefreshAt(): number {
   try {
-    const raw = window.localStorage.getItem(LAST_REFRESH_KEY);
+    const raw = window.localStorage.getItem(lastRefreshKey);
     const value = raw === null ? 0 : Number(raw);
     return Number.isFinite(value) ? value : 0;
   } catch {
@@ -38,7 +38,7 @@ function readLastRefreshAt(): number {
 
 function writeLastRefreshAt(at: number): void {
   try {
-    window.localStorage.setItem(LAST_REFRESH_KEY, String(at));
+    window.localStorage.setItem(lastRefreshKey, String(at));
   } catch {
     // Same as above: the hand-off is an optimisation, never required.
   }
@@ -60,7 +60,7 @@ export async function refreshAcrossTabs(refresh: () => Promise<boolean>): Promis
   if (!locks) return refresh();
 
   const requestedAt = Date.now();
-  return locks.request(REFRESH_LOCK_NAME, async () => {
+  return locks.request(refreshLockName, async () => {
     if (readLastRefreshAt() >= requestedAt) return true;
     const refreshed = await refresh();
     if (refreshed) writeLastRefreshAt(Date.now());

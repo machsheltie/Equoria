@@ -20,7 +20,7 @@ import { server } from '@/test/msw/server';
 import MyStablePage from '../MyStablePage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'user-123';
+const userId = 'user-123';
 
 function horse(id: number, sex: string, ageYears: number) {
   return { id, name: `Horse ${id}`, breed: 'Thoroughbred', totalEarnings: 0, sex, ageYears };
@@ -32,7 +32,7 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <MockAuthProvider userOverrides={{ id: USER_ID, username: 'tester' }}>
+      <MockAuthProvider userOverrides={{ id: userId, username: 'tester' }}>
         <MemoryRouter initialEntries={['/my-stable']}>
           <MyStablePage />
         </MemoryRouter>
@@ -50,9 +50,9 @@ async function breedingPairsValue(): Promise<string> {
 describe('MyStablePage — Breeding Pairs stat', () => {
   beforeEach(() => {
     server.use(
-      http.get(`${base}/api/v1/users/${USER_ID}/competition-stats`, () =>
+      http.get(`${base}/api/v1/users/${userId}/competition-stats`, () =>
         HttpResponse.json({
-          userId: USER_ID,
+          userId: userId,
           totalCompetitions: 0,
           totalWins: 0,
           totalTop3: 0,

@@ -1269,7 +1269,7 @@
   "frontend/src/pages/horse-detail/__tests__/horseProfileCard.naming.test.tsx": 4,
   "frontend/src/pages/horse-detail/genetics/__tests__/nonColorMeaning.test.tsx": 8,
   "frontend/src/pages/horses/HorseEquipPage.tsx": 8,
-  "frontend/src/pages/messages/GameNotifRow.tsx": 7,
+  "frontend/src/pages/messages/GameNotifRow.tsx": 6,
   "frontend/src/pages/settings/RecoveryAddressSection.tsx": 3,
   "frontend/src/pages/settings/SoundSection.tsx": 2,
   "frontend/src/pages/settings/__tests__/RecoveryAddressSection.test.tsx": 24,

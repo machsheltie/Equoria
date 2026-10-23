@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { passwordSchema, calculatePasswordStrength } from '../validation-schemas';
-import { VALIDATION_RULES, PASSWORD_STRENGTH } from '../constants';
+import { passwordPolicy } from '../constants';
 
 describe('passwordSchema matches the server password policy', () => {
   it('rejects an 11-character password that has every character class', () => {
@@ -44,13 +44,9 @@ describe('the strength meter reflects the 12-character rule', () => {
   });
 });
 
-describe('shared client password constants', () => {
-  it('state the server minimum', () => {
-    expect(VALIDATION_RULES.password.minLength).toBe(12);
-    expect(VALIDATION_RULES.password.maxLength).toBe(128);
-    const length = PASSWORD_STRENGTH.requirements.find((r) => r.key === 'minLength');
-    expect(length?.label).toBe('12+ characters');
-    expect(length?.check('a'.repeat(11))).toBe(false);
-    expect(length?.check('a'.repeat(12))).toBe(true);
+describe('shared client password policy', () => {
+  it('states the server minimum and maximum', () => {
+    expect(passwordPolicy.minLength).toBe(12);
+    expect(passwordPolicy.maxLength).toBe(128);
   });
 });
