@@ -139,12 +139,13 @@ export async function browseStudListings(req, res) {
     } else if (breed) {
       where.breed = { name: { contains: breed, mode: 'insensitive' } };
     }
-    // Same game-year age convention as the sale browse (birthDateForAge).
+    // Same game-year age convention as the sale browse (birthDateForAge): a
+    // stallion is still maxAge until he turns maxAge + 1 (Equoria-k724f).
     if (minAge !== undefined) {
       where.dateOfBirth = { ...where.dateOfBirth, lte: birthDateForAge(minAge) };
     }
     if (maxAge !== undefined) {
-      where.dateOfBirth = { ...where.dateOfBirth, gte: birthDateForAge(maxAge) };
+      where.dateOfBirth = { ...where.dateOfBirth, gt: birthDateForAge(maxAge + 1) };
     }
     // A null studFee is a legacy row meaning 0 (design R5).
     const feeRange = {

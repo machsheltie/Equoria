@@ -114,14 +114,15 @@ export async function browseListings(req, res) {
     }
     // Filter by dateOfBirth for accurate computed age (avoids stale stored age field).
     // Equoria game-year convention: 1 game-year = 7 real days. A horse that is at
-    // least minAge game-years old was born on or before now - minAge*7 days; at most
-    // maxAge old means born on or after now - maxAge*7 days. (Using calendar years
-    // here would exclude every correctly-aged horse, whose dob is only weeks ago.)
+    // least minAge game-years old was born on or before now - minAge*7 days. A horse is
+    // still maxAge until it turns maxAge+1, so "at most maxAge" means born AFTER
+    // now - (maxAge+1)*7 days. (Using calendar years here would exclude every
+    // correctly-aged horse, whose dob is only weeks ago.)
     if (minAge !== undefined) {
       where.dateOfBirth = { ...where.dateOfBirth, lte: birthDateForAge(minAge) };
     }
     if (maxAge !== undefined) {
-      where.dateOfBirth = { ...where.dateOfBirth, gte: birthDateForAge(maxAge) };
+      where.dateOfBirth = { ...where.dateOfBirth, gt: birthDateForAge(maxAge + 1) };
     }
     if (minPrice !== undefined) {
       where.salePrice = { ...where.salePrice, gte: minPrice };
