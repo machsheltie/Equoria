@@ -35,32 +35,50 @@ test.describe('Bank transaction history — four-state (Equoria-4hra5)', () => {
     page,
     context,
   }) => {
-    // 1. Land on a DIFFERENT page first (loaded online) so the SPA document and
-    //    the cached profile (which feeds the balance) are already in memory.
-    //
-    //    Equoria-c2erw KNOWN-RED (filed separately): this step cannot reach the
-    //    behaviour the test guards on the current stack. BankPage is a lazily
-    //    imported route chunk (route-based code splitting, 8040128ca) and the
-    //    Playwright webServer serves it from `vite dev`, so with the network
-    //    already down the SPA navigation below dies on "Failed to fetch
-    //    dynamically imported module: src/pages/BankPage.tsx" and the app-level
-    //    ErrorBoundary replaces the route with "Something went wrong." —
-    //    BankPage never mounts. Warming the chunk with an online visit first
-    //    does not help either: the transactions query (staleTime 2 min, key
-    //    ['transactions', userId, 1, 20]) then has cached rows, React Query
-    //    keeps isError false on a failed background refetch, and BankPage's
-    //    ERROR branch stays unreachable. There is no pagination or refresh
-    //    affordance to re-query under a cold key the way prize-history uses its
-    //    date-range filter. Left UNMODIFIED on purpose: weakening or skipping it
-    //    would hide a real four-state guard on a financial surface.
-    await page.goto('/stable', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('link', { name: 'Bank' }).first()).toBeVisible({ timeout: 20000 });
+    // Equoria-0isqi, owner decision 24 (2026-10-19): the Vault follows the
+    // prize-history rule — an offline ledger fetch ends in the error card with
+    // Try Again. Old trigger: go offline on /stable, then open /bank. That could
+    // never reach the ledger: BankPage is a lazily loaded route chunk, so with
+    // the network already down the chunk itself failed and the app-level
+    // ErrorBoundary replaced the route. New trigger, a real player path: she
+    // opens the Vault online (route chunk loaded, ledger fetched), leaves it,
+    // comes back after the cached ledger has been discarded (React Query's
+    // 5-minute gcTime) while her connection is down. The browser clock is
+    // installed so those minutes pass deterministically (owner ruling
+    // 2026-10-23: flaky/slow paths may use fake timers, never weaker asserts).
+    await page.clock.install();
 
-    // 2. Go offline, then CLIENT-SIDE navigate to /bank (SPA nav — no document
-    //    fetch). The transactions GET fails against a genuinely unreachable
-    //    network; there is no route interception involved.
+    // 1. Open the Vault ONLINE through the real navigation, so the route chunk
+    //    is loaded and the ledger has been fetched once.
+    await page.goto('/stable', { waitUntil: 'domcontentloaded' });
+    const bankLink = page.getByRole('link', { name: 'Bank' }).first();
+    await expect(bankLink).toBeVisible({ timeout: 20000 });
+    const firstLedgerOk = page.waitForResponse(
+      (resp) =>
+        resp.url().includes('/api/v1/users/transactions') &&
+        resp.request().method() === 'GET' &&
+        resp.status() === 200,
+      { timeout: 30000 }
+    );
+    await bankLink.click();
+    await expect(
+      page.getByRole('heading', { name: 'The Vault', exact: true, level: 1 })
+    ).toBeVisible({ timeout: 20000 });
+    await firstLedgerOk;
+
+    // 2. Leave the Vault (browser Back, same document), let more than the
+    //    5-minute cache lifetime pass, lose the network, and come back
+    //    (browser Forward). The ledger query is cold, so the Vault must fetch
+    //    it — against a genuinely unreachable network, no route interception.
+    await page.goBack();
+    await expect(page).toHaveURL(/\/stable$/);
+    await page.clock.fastForward('06:00');
     await context.setOffline(true);
-    await page.getByRole('link', { name: 'Bank' }).first().click();
+    await page.goForward();
+    await expect(page).toHaveURL(/\/bank$/);
+    await expect(
+      page.getByRole('heading', { name: 'The Vault', exact: true, level: 1 })
+    ).toBeVisible({ timeout: 20000 });
 
     // 3. The transaction section must render the ERROR state with a retry
     //    affordance — NOT the honest empty. ErrorCard carries role="alert".

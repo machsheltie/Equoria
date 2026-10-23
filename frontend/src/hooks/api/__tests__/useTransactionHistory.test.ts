@@ -14,7 +14,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { useTransactionHistory } from '../useTransactionHistory';
@@ -113,5 +113,32 @@ describe('useTransactionHistory', () => {
     // Was: toHaveBeenCalledWith(3, 10) — now proven via the wire query string.
     expect(capturedQuery?.get('page')).toBe('3');
     expect(capturedQuery?.get('pageSize')).toBe('10');
+  });
+
+  // Owner ruling 2026-10-19 (decision 24, Equoria-0isqi): the ledger follows the
+  // prize-history rule — an offline fetch ends in the error card with Try Again.
+  // TanStack's default networkMode 'online' PAUSES an offline query instead
+  // (fetchStatus 'paused', isError false), so the Vault had nothing to show.
+  it('an offline fetch runs and reaches the error state instead of pausing', async () => {
+    let requests = 0;
+    server.use(
+      http.get(`${base}/api/v1/users/transactions`, () => {
+        requests += 1;
+        return HttpResponse.error();
+      })
+    );
+
+    onlineManager.setOnline(false);
+    try {
+      const { result } = renderHook(() => useTransactionHistory(1, 1, 20), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+      expect(result.current.fetchStatus).not.toBe('paused');
+      expect(requests).toBeGreaterThan(0);
+    } finally {
+      onlineManager.setOnline(true);
+    }
   });
 });

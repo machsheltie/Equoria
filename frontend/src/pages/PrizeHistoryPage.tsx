@@ -188,11 +188,13 @@ const PrizeHistoryPage = (): JSX.Element => {
   const filters = useMemo(() => parseFiltersFromParams(searchParams), [searchParams]);
 
   // Fetch prize history with filters. This single query feeds BOTH the stat
-  // cards and the transaction list, so on failure both sections are gated on
-  // `!isError` below — neither may render fabricated content (§1/§4).
+  // cards and the transaction list. Neither may render content from it until
+  // it has SUCCEEDED (§1/§4): an unresolved query — actively loading, paused,
+  // or disabled while the user id is unknown — shows loading, a failed one
+  // shows the error card (Equoria-g3n8c, owner decision 23).
   const {
     data: transactions,
-    isLoading,
+    isSuccess,
     isError,
     error: historyError,
     refetch,
@@ -265,7 +267,7 @@ const PrizeHistoryPage = (): JSX.Element => {
             data-testid="stats-summary"
             aria-label="Prize statistics summary"
           >
-            {isLoading ? (
+            {!isSuccess ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="stats-grid">
                 <StatCardSkeleton />
                 <StatCardSkeleton />
@@ -302,18 +304,19 @@ const PrizeHistoryPage = (): JSX.Element => {
         {/* Transaction History — never on error. PrizeTransactionHistory is a
             presentational component with no error concept; passing it `[]` on a
             failed fetch would render its "No transactions yet" empty — a false
-            empty (Equoria-x6l44, §1). Gating on `!isError` keeps that empty
-            reachable ONLY through a successful fetch: LOADING → its own
-            skeleton (via isLoading); SUCCESS-empty → honest empty; SUCCESS →
-            rows. (userId is always non-empty on this auth-gated route, so the
-            query is never in the disabled state here.) */}
+            empty (Equoria-x6l44, §1). Its empty is reachable ONLY through a
+            successful fetch: until the query has succeeded it is held in its
+            own loading skeleton (`isLoading={!isSuccess}`, which never reads
+            the rows), including the paused and disabled states that are not
+            "loading" to TanStack (Equoria-g3n8c). SUCCESS-empty → honest
+            empty; SUCCESS → rows. */}
         {!isError && (
           <section>
             <PrizeTransactionHistory
-              transactions={transactions ?? []}
+              transactions={isSuccess ? transactions : []}
               filters={filters}
               onFilterChange={handleFilterChange}
-              isLoading={isLoading}
+              isLoading={!isSuccess}
             />
           </section>
         )}

@@ -18,7 +18,7 @@
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse, delay } from 'msw';
 import { usePrizeHistory, prizeHistoryQueryKeys } from '../usePrizeHistory';
@@ -454,6 +454,33 @@ describe('usePrizeHistory', () => {
     // Verify data is cached under correct key
     const cachedData = queryClient.getQueryData(expectedKey);
     expect(cachedData).toEqual(expectedTransactions);
+  });
+
+  // Owner ruling 2026-10-19 (decision 23, Equoria-g3n8c): an offline fetch ends
+  // in the error card with Try Again. TanStack's default networkMode 'online'
+  // PAUSES an offline query instead (fetchStatus 'paused', isError false), which
+  // left the page with neither data nor an error to show.
+  it('an offline fetch runs and reaches the error state instead of pausing', async () => {
+    let requests = 0;
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, () => {
+        requests += 1;
+        return HttpResponse.error();
+      })
+    );
+
+    onlineManager.setOnline(false);
+    try {
+      const { result } = renderHook(() => usePrizeHistory('user-offline'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+      expect(result.current.fetchStatus).not.toBe('paused');
+      expect(requests).toBeGreaterThan(0);
+    } finally {
+      onlineManager.setOnline(true);
+    }
   });
 });
 

@@ -587,6 +587,43 @@ describe('PrizeHistoryPage', () => {
       expect(screen.queryByTestId('stat-win-rate')).not.toBeInTheDocument();
     });
 
+    // Equoria-g3n8c (owner decision 23): an unresolved query that is NOT
+    // actively fetching (paused offline, or disabled while the user id is not
+    // yet known) has isSuccess=false, isError=false, isLoading=false and no
+    // data. Gating on `!isError` / `isLoading` let that state fall through to
+    // zero stat cards and "No transactions yet" — a fabricated empty.
+    it('an unresolved query with no data renders neither zero stats nor the empty state', async () => {
+      let requests = 0;
+      server.use(
+        http.get(PRIZE_HISTORY_PATH, () => {
+          requests += 1;
+          return HttpResponse.json(prizeHistoryEnvelope());
+        })
+      );
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MockAuthProvider value={{ user: null }}>
+            <MemoryRouter initialEntries={['/prizes']}>
+              <Routes>
+                <Route path="/prizes" element={<PrizeHistoryPage />} />
+              </Routes>
+            </MemoryRouter>
+          </MockAuthProvider>
+        </QueryClientProvider>
+      );
+
+      expect(screen.getByTestId('prize-history-page')).toBeInTheDocument();
+      expect(screen.queryByText(/no transactions yet/i)).not.toBeInTheDocument();
+      expect(screen.queryByTestId('stat-total-prize-money')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('stat-total-competitions')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('stat-win-rate')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('stats-error')).not.toBeInTheDocument();
+      // The query is disabled without a user id — nothing was fetched, so
+      // nothing may be presented as a result.
+      expect(requests).toBe(0);
+    });
+
     it('the honest empty state is reachable only via a successful, genuinely-empty fetch', async () => {
       stubPrizeHistory([]);
 

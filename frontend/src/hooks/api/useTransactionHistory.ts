@@ -50,5 +50,9 @@ export function useTransactionHistory(
     queryFn: () => bankApi.getTransactions(page, pageSize),
     enabled: Boolean(userId),
     staleTime: 2 * 60 * 1000,
+    // Owner ruling 2026-10-19 (decision 24, Equoria-0isqi): the ledger follows
+    // the prize-history rule — an offline fetch ends in the error card with
+    // Try Again, never a paused query with no data and no error.
+    networkMode: 'always',
   });
 }

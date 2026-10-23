@@ -83,6 +83,10 @@ export function usePrizeHistory(userId: string, filters?: TransactionFilters) {
     enabled: userId !== '',
     staleTime: 5 * 60 * 1000, // 5 minutes - history updates after claims
     gcTime: 10 * 60 * 1000, // 10 minutes - cache retention
+    // Owner ruling 2026-10-19 (decision 23, Equoria-g3n8c): an offline fetch
+    // must end in the error card with Try Again. The default networkMode
+    // 'online' pauses an offline query instead, leaving no data and no error.
+    networkMode: 'always',
   });
 }
 
