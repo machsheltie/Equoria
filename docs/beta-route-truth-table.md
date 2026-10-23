@@ -54,6 +54,7 @@ Every currently known route is `beta-live`; unknown paths also resolve to `beta-
 | `/messages`                 | Community           | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/crafting`                 | Crafting            | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/community`                | Community hub       | `betaRouteScope.ts` | `App.tsx`    | beta-live |
+| `/guide`                    | New player guide    | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 
 ## Verification
 

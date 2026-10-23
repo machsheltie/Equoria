@@ -57,6 +57,8 @@ const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 // Equoria-wbt8l — News (the Night Road) and the staff News Desk
 const NewsPage = lazy(() => import('./pages/NewsPage'));
 const NewsDeskPage = lazy(() => import('./pages/NewsDeskPage'));
+// Equoria-kd2dd — the in-game new player guide (route-only: its navigation link is undecided)
+const GuidePage = lazy(() => import('./pages/GuidePage'));
 
 /**
  * Navigation items for the Equoria application
@@ -278,6 +280,14 @@ export const navItems = [
     to: '/news/desk',
     icon: null,
     Page: NewsDeskPage,
+  },
+  // Equoria-kd2dd — the new player guide. Route-only on purpose: the owner has not
+  // yet decided where its link lives, so it is opened from the one-time welcome note.
+  {
+    title: 'Guide',
+    to: '/guide',
+    icon: null,
+    Page: GuidePage,
   },
 ];
 

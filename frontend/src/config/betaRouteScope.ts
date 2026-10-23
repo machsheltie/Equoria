@@ -71,6 +71,8 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
   '/crafting': 'beta-live',
   '/my-stable': 'beta-live',
   '/community': 'beta-live',
+  // Equoria-kd2dd: the in-game new player guide.
+  '/guide': 'beta-live',
 };
 
 /**
