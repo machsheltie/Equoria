@@ -250,7 +250,7 @@ describe('Equoria-dea06 — staff are fixed NPCs (no XP, generated level kept)',
       where: { id: rider.id },
       select: { experience: true, level: true, totalCompetitions: true, prestige: true },
     });
-    expect(results[0].placement).toBe('1');
+    expect(results[0].placement).toBe(1);
     expect(riderAfter.prestige).toBe(40);
     expect(riderAfter.experience).toBe(staffExperience);
     expect(riderAfter.level).toBe(staffLevel);
