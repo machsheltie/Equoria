@@ -19,6 +19,7 @@ import {
   Coins,
   Medal,
   Stethoscope,
+  Wheat,
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,8 @@ const NARRATIVES: Record<NextAction['type'], (_a: NextAction) => string> = {
     return count > 1 ? `${count} competition results are waiting` : 'Your results are in';
   },
   'visit-vet': (a) => (a.horseName ? `${a.horseName} needs veterinary care` : 'A horse needs care'),
+  // Equoria-cn6kt: a horse in critical health also needs feeding.
+  feed: (a) => (a.horseName ? `${a.horseName} needs feeding` : 'A horse needs feeding'),
 };
 
 const ICONS: Record<NextAction['type'], React.ReactNode> = {
@@ -51,6 +54,7 @@ const ICONS: Record<NextAction['type'], React.ReactNode> = {
   // side by side and must not read as the same errand.
   'check-results': <Medal className="w-5 h-5" />,
   'visit-vet': <Stethoscope className="w-5 h-5" />,
+  feed: <Wheat className="w-5 h-5" />,
 };
 
 const ACTION_LINKS: Record<NextAction['type'], string> = {
@@ -62,6 +66,8 @@ const ACTION_LINKS: Record<NextAction['type'], string> = {
   // Equoria-oey96.28: the results surface, not the browse-competitions list.
   'check-results': '/competition-results',
   'visit-vet': '/vet',
+  // Feeding happens on the horse's own page (its action bar).
+  feed: '/horses',
 };
 
 /* ─── ActionCard ────────────────────────────────────────────────────────── */
@@ -73,9 +79,11 @@ interface ActionCardProps {
 function ActionCard({ action, isTopPriority }: ActionCardProps) {
   const narrative = NARRATIVES[action.type]?.(action) ?? action.type;
   const icon = ICONS[action.type];
-  const href = action.horseId
-    ? `${ACTION_LINKS[action.type]}?horseId=${action.horseId}`
-    : ACTION_LINKS[action.type];
+  const href = !action.horseId
+    ? ACTION_LINKS[action.type]
+    : action.type === 'feed'
+      ? `/horses/${action.horseId}`
+      : `${ACTION_LINKS[action.type]}?horseId=${action.horseId}`;
 
   return (
     <Link

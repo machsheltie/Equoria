@@ -19,7 +19,8 @@ export interface NextAction {
     | 'groom-foal'
     | 'claim-prize'
     | 'check-results'
-    | 'visit-vet';
+    | 'visit-vet'
+    | 'feed';
   priority: number;
   horseId?: number;
   horseName?: string;

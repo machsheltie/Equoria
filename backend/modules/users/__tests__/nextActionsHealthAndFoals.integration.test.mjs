@@ -8,6 +8,9 @@
  * 'breed' (and 'compete') for such a horse, because it checked only
  * healthStatus 'injured'. It must not suggest an action the gate would refuse.
  *
+ * Equoria-cn6kt — owner ruling 2026-10-22: for a horse in critical health,
+ * next-actions suggests BOTH a vet visit and feeding.
+ *
  * Equoria-fr2kg Q11 — owner ruling 2026-10-22: remove the
  * FoalDevelopment.isActive filter (the column never turns false). The
  * groom-foal suggestion is for horses under 3 (game age), whatever the
@@ -116,6 +119,8 @@ describe('next-actions respects the health gate (Equoria-3tna6)', () => {
     const types = actions.filter(a => a.horseId === mare.id).map(a => a.type);
 
     expect(types).toEqual(expect.arrayContaining(['train', 'breed', 'compete']));
+    expect(types).not.toContain('visit-vet');
+    expect(types).not.toContain('feed');
   });
 
   it('a mare in critical health is suggested for none of train, breed or compete', async () => {
@@ -128,6 +133,27 @@ describe('next-actions respects the health gate (Equoria-3tna6)', () => {
     expect(types).not.toContain('train');
     expect(types).not.toContain('breed');
     expect(types).not.toContain('compete');
+  });
+
+  it('a mare in critical health is suggested for a vet visit AND feeding (Equoria-cn6kt)', async () => {
+    const user = await makeUser();
+    const mare = await adultMare(user, { fed: false });
+
+    const actions = (await actionsFor(user)).filter(a => a.horseId === mare.id);
+
+    expect(actions.filter(a => a.type === 'visit-vet')).toHaveLength(1);
+    expect(actions.filter(a => a.type === 'feed')).toHaveLength(1);
+  });
+
+  it('an injured mare already fed today gets one vet visit and no feeding', async () => {
+    const user = await makeUser();
+    const mare = await adultMare(user, { fed: true });
+    await prisma.horse.update({ where: { id: mare.id }, data: { healthStatus: 'Injured' } });
+
+    const types = (await actionsFor(user)).filter(a => a.horseId === mare.id).map(a => a.type);
+
+    expect(types.filter(t => t === 'visit-vet')).toHaveLength(1);
+    expect(types).not.toContain('feed');
   });
 });
 

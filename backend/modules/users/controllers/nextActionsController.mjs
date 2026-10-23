@@ -13,7 +13,8 @@
  *   4. compete        — an OPEN show the user has an eligible horse for
  *   5. breed          — a Stallion, or a Mare off her breeding cooldown
  *   6. groom-foal      — a foal development record for a horse under 3
- *   7. visit-vet      — an injured horse
+ *   7. visit-vet      — an injured horse, or one in bad health
+ *      feed           — a horse in bad health (Equoria-cn6kt)
  *
  * Health gate (owner ruling 2026-10-22, Equoria-3tna6): bad health is the only
  * consequence — a horse in bad health cannot train, breed or enter shows, so
@@ -59,7 +60,7 @@ import {
   loadActiveDisciplineTypes,
 } from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
-import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { alreadyFedToday, getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
 
 // Story 23.4 priority table. 1 = highest.
@@ -71,6 +72,8 @@ const SPEC_PRIORITY = Object.freeze({
   breed: 5,
   'groom-foal': 6,
   'visit-vet': 7,
+  // Equoria-cn6kt: feeding sits with the vet visit as care for a horse in bad health.
+  feed: 7,
 });
 
 // Story 23.4 AC: "max 10 actions returned".
@@ -330,15 +333,30 @@ export async function getNextActions(req, res) {
       });
     }
 
-    // ── visit-vet (priority 7) — one per injured horse ───────────────────────
+    // ── visit-vet + feed (priority 7) — care for injured / bad-health horses ──
+    // Owner ruling 2026-10-22 (Equoria-cn6kt): a horse in critical health is
+    // suggested BOTH a vet visit and feeding. An injured horse keeps its vet
+    // visit; a horse that is both gets one vet suggestion. Feeding is offered
+    // only while the horse can still be fed today (the feed path refuses a
+    // second feeding on the same Eastern game day).
     for (const h of horses) {
-      if (isInjured(h.healthStatus)) {
+      const badHealth = isInBadHealth(h, now);
+      if (isInjured(h.healthStatus) || badHealth) {
         actions.push({
           type: 'visit-vet',
           priority: SPEC_PRIORITY['visit-vet'],
           horseId: h.id,
           horseName: h.name,
           metadata: { healthStatus: h.healthStatus },
+        });
+      }
+      if (badHealth && !alreadyFedToday(h.lastFedDate, now)) {
+        actions.push({
+          type: 'feed',
+          priority: SPEC_PRIORITY.feed,
+          horseId: h.id,
+          horseName: h.name,
+          metadata: { displayedHealth: 'critical' },
         });
       }
     }

@@ -168,4 +168,14 @@ describe('NextActionsBar', () => {
     const vetLink = await screen.findByLabelText('Blaze needs veterinary care');
     expect(vetLink).toHaveAttribute('href', '/vet?horseId=5');
   });
+
+  // Equoria-cn6kt (owner ruling 2026-10-22): a horse in critical health gets
+  // a feed suggestion beside the vet visit. Feeding happens on the horse page.
+  it('names a feed action and links it to that horse', async () => {
+    stubNextActions([{ type: 'feed', priority: 1, horseId: 6, horseName: 'Ember' }]);
+
+    renderBar();
+    const feedLink = await screen.findByLabelText('Ember needs feeding');
+    expect(feedLink).toHaveAttribute('href', '/horses/6');
+  });
 });

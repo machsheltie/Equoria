@@ -201,6 +201,9 @@ describe('GET /api/v1/next-actions — priority ordering + metadata (Equoria-oey
         age: 5,
         dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Injured',
+        // Fed today: injury alone drives the vet visit, and a horse already
+        // fed today is not offered feeding (Equoria-cn6kt).
+        lastFedDate: new Date(),
         horseXp: xpForLevel(1500),
         userId: user.id,
       },
