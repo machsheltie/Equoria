@@ -198,6 +198,37 @@ export async function ensureEngagementTx(tx, groomId, userId) {
 }
 
 /**
+ * `ensureEngagementTx` for several grooms of one player in two statements, one
+ * lookup and (only when some have none) one createMany, whatever the staff size
+ * (Equoria-cmw85.37). Same safety as the single form: no skipDuplicates, so a
+ * concurrent second opener violates `groom_engagements_active_groomId_key` and
+ * aborts the caller's transaction instead of producing a second open row.
+ *
+ * @param {Object} tx - Prisma transaction client
+ * @param {number[]} groomIds
+ * @param {string} userId
+ * @returns {Promise<number>} engagements opened by this call
+ */
+export async function ensureEngagementsTx(tx, groomIds, userId) {
+  if (groomIds.length === 0) {
+    return 0;
+  }
+  const open = await tx.groomEngagement.findMany({
+    where: { groomId: { in: groomIds }, endedAt: null },
+    select: { groomId: true },
+  });
+  const haveOpen = new Set(open.map(row => row.groomId));
+  const missing = groomIds.filter(groomId => !haveOpen.has(groomId));
+  if (missing.length === 0) {
+    return 0;
+  }
+  const created = await tx.groomEngagement.createMany({
+    data: missing.map(groomId => ({ groomId, userId })),
+  });
+  return created.count;
+}
+
+/**
  * Close the open engagement for a groom. A no-op (count 0) for a groom whose
  * engagement predates the table, which is why callers must not assert on 1.
  *
@@ -480,6 +511,7 @@ export default {
   FREE_AGENT_WHERE,
   openEngagementTx,
   ensureEngagementTx,
+  ensureEngagementsTx,
   endEngagementTx,
   releaseGroomTx,
   enterFeeGraceTx,

@@ -95,7 +95,7 @@ import {
 // the transaction that proves the engagement is live. The migration backfills none on
 // purpose. `acquirePayWeekLockTx` (fix round 1, F2): the ONE definition of the
 // per-(user, pay week) advisory lock, shared with the arrears handler.
-import { acquirePayWeekLockTx, ensureEngagementTx } from './groomEngagementService.mjs';
+import { acquirePayWeekLockTx, ensureEngagementsTx } from './groomEngagementService.mjs';
 // Equoria-ypb7d.3: what happens when the money is not there — one week of grace,
 // then release to the grooms-for-hire pool. Replaces the never-working
 // `handleInsufficientFunds` + `terminateGroomsForNonPayment` pair.
@@ -452,26 +452,35 @@ export async function processWeeklySalaries(now = new Date(), { userId: scopeUse
               // the payment rows — no orphan ledger drift. paymentDate uses
               // the run's `now` so the row lands inside the pay-week window
               // the idempotency predicate queries.
+              //
+              // Equoria-cmw85.37: written in two statements for the whole staff
+              // (engagement backstop, then one createMany), so the statement count
+              // per player does not grow with the number of grooms.
+              //
+              // Equoria-ypb7d.2 backstop: a groom on staff since before
+              // `groom_engagements` existed has no engagement row, and the
+              // migration deliberately backfills none. Open one now, inside the
+              // fee transaction that proves the engagement is live. Idempotent,
+              // and the partial unique index means a concurrent second attempt
+              // aborts this transaction rather than creating a second open row.
+              await ensureEngagementsTx(
+                tx,
+                unpaidAssignments.map(({ groom }) => groom.id),
+                userId,
+              );
+
+              await tx.groomSalaryPayment.createMany({
+                data: unpaidAssignments.map(({ groom, salary }) => ({
+                  groomId: groom.id,
+                  userId,
+                  amount: salary,
+                  paymentDate: now,
+                  paymentType: 'weeklySalary',
+                  status: 'paid',
+                })),
+              });
+
               for (const { groom, salary } of unpaidAssignments) {
-                // Equoria-ypb7d.2 backstop: a groom on staff since before
-                // `groom_engagements` existed has no engagement row, and the
-                // migration deliberately backfills none. Open one now, inside the
-                // fee transaction that proves the engagement is live. Idempotent,
-                // and the partial unique index means a concurrent second attempt
-                // aborts this transaction rather than creating a second open row.
-                await ensureEngagementTx(tx, groom.id, userId);
-
-                await tx.groomSalaryPayment.create({
-                  data: {
-                    groomId: groom.id,
-                    userId,
-                    amount: salary,
-                    paymentDate: now,
-                    paymentType: 'weeklySalary',
-                    status: 'paid',
-                  },
-                });
-
                 logger.info(
                   `[groomSalaryService] Paid $${salary} weekly fee for groom ${groom.name} (user ${user.username})`,
                 );

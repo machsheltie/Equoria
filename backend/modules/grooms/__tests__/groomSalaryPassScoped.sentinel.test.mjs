@@ -82,6 +82,9 @@ const GUARDED_FILES = [
   // Equoria-6p398.14: the ownership predicate on the fee count. It runs the pass for
   // one fixture employer, scoped to its own user.
   'modules/grooms/__tests__/groomFeeOwnership.integration.test.mjs',
+  // Equoria-cmw85.37: the statement-count case for the batched payment writes. It
+  // runs the pass against a six-groom fixture staff, scoped to its own user.
+  'modules/grooms/__tests__/groomSalaryBatchedWrites.integration.test.mjs',
   'tests/integration/groomSalarySystem.test.mjs',
 ];
 
