@@ -410,13 +410,10 @@ const MyStablePage: React.FC = () => {
   // AGE decide who can breed (3+), never the sex string.
   const breedingAge = horses.filter((horse) => horse.ageYears >= 3);
   const breedingPairs = Math.min(
-    breedingAge.filter((horse) => isMaleHorseSex(horse.sex ?? horse.gender)).length,
-    breedingAge.filter((horse) => isFemaleHorseSex(horse.sex ?? horse.gender)).length
+    breedingAge.filter((horse) => isMaleHorseSex(horse.sex)).length,
+    breedingAge.filter((horse) => isFemaleHorseSex(horse.sex)).length
   );
-  const totalEarnings = horses.reduce(
-    (sum, horse) => sum + Number(horse.totalEarnings ?? horse.earnings ?? 0),
-    0
-  );
+  const totalEarnings = horses.reduce((sum, horse) => sum + Number(horse.totalEarnings ?? 0), 0);
 
   // Story 21S-4: competitionsEntered + firstPlaceFinishes come from the backend
   // aggregation. While that query is pending or has failed they are UNKNOWN

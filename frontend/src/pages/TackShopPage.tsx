@@ -23,16 +23,16 @@ import PageHero from '@/components/layout/PageHero';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
 import { CanonicalTabs } from '@/components/ui/game';
-import type { HorseSummary } from '@/lib/api-client';
+import type { HorseCardData } from '@/lib/api-client';
 import type { TackShopTab } from './tack-shop/constants';
 import { ShopTab } from './tack-shop/ShopTab';
 import { HorsesTackTab } from './tack-shop/HorsesTackTab';
 
 const TackShopPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TackShopTab>('horses');
-  const [selectedHorse, setSelectedHorse] = useState<HorseSummary | null>(null);
+  const [selectedHorse, setSelectedHorse] = useState<HorseCardData | null>(null);
 
-  const handleSelectHorse = (horse: HorseSummary) => {
+  const handleSelectHorse = (horse: HorseCardData) => {
     setSelectedHorse(horse);
   };
 

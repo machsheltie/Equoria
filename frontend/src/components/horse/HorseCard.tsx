@@ -20,7 +20,7 @@ import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-ut
 import { getPregnancyProgress, GESTATION_DAYS } from '@/lib/utils/pregnancyChances';
 import { CareChip } from '@/components/common/CareChip';
 import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
-import type { HorseSummary } from '@/lib/api-client';
+import type { HorseCardData, HorseSummary } from '@/lib/api-client';
 
 const STAT_KEYS: { label: string; key: keyof HorseSummary['stats'] }[] = [
   { label: 'PRC', key: 'precision' },
@@ -37,12 +37,12 @@ const STAT_KEYS: { label: string; key: keyof HorseSummary['stats'] }[] = [
   { label: 'FCS', key: 'focus' },
 ];
 
-function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number {
+function getStat(horse: HorseCardData, stat: keyof HorseSummary['stats']): number {
   return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
 }
 
 interface HorseCardProps {
-  horse: HorseSummary;
+  horse: HorseCardData;
   onClick?: () => void;
   /** Hide the bottom care strip (e.g., when used in a horse picker modal). */
   hideCareStrip?: boolean;

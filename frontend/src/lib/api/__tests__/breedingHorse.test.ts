@@ -45,6 +45,9 @@ function listHorse(overrides: Partial<HorseSummary> = {}): HorseSummary {
 }
 
 describe('toBreedingHorse', () => {
+  // Old contract: the view also carried `imageUrl` and `level`. Equoria-apik2
+  // (HorseListItemDto): GET /horses sends neither, BreedingHorse is now picked from
+  // the list DTO, and nothing in the breeding UI read them, so they are not carried.
   it('projects a valid list horse into the breeding view', () => {
     expect(toBreedingHorse(listHorse({ imageUrl: '/img/a.jpg', level: 4 }))).toEqual({
       id: 7,
@@ -54,8 +57,6 @@ describe('toBreedingHorse', () => {
       breedName: 'Arabian',
       healthStatus: 'Excellent',
       dateOfBirth: '2020-01-01T00:00:00.000Z',
-      imageUrl: '/img/a.jpg',
-      level: 4,
     });
   });
 

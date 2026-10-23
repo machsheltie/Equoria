@@ -34,10 +34,10 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { getXPProgressPercent } from '@/lib/xp-utils';
 import { isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
 import { retirementAgeYears } from '@/lib/horseAgePolicy';
-import type { HorseSummary } from '@/lib/api-client';
+import type { HorseCardData, HorseSummary } from '@/lib/api-client';
 
 /** Resolve stat value from flat fields or nested stats object — used by list view's top-stat reducer. */
-function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number {
+function getStat(horse: HorseCardData, stat: keyof HorseSummary['stats']): number {
   return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
 }
 
@@ -53,7 +53,7 @@ function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number
  * on every tab). Match the sex GROUP instead — a filly is a young mare and a
  * colt a young stallion.
  */
-function getHorseCategory(horse: HorseSummary): string {
+function getHorseCategory(horse: HorseCardData): string {
   const age = horse.ageYears;
   const sex = horse.sex ?? horse.gender;
   if (age >= retirementAgeYears) return 'retired';
@@ -102,7 +102,15 @@ const StableView = () => {
   // Compute categories for each horse — the category tabs operate on the
   // full roster. (Search/filter lives on the Horse Marketplace, not here —
   // user decision 2026-08-18 removing the Equoria-oey96.3 stable surface.)
-  const horsesWithCategory = (horsesData ?? []).map((horse) => ({
+  //
+  // Equoria-apik2: the rows are typed HorseCardData (the list item plus the
+  // detail-only fields as OPTIONAL) on purpose. The list view below reads
+  // `level`, `imageUrl`, `lastShod` and `trainingCooldown`, none of which GET
+  // /horses sends, so today its Level column is always an em dash, its Shod and
+  // Cooldown chips are always unknown and the row portrait is the breed picture.
+  // Dropping those columns, or feeding them real values, is a layout decision for
+  // the owner (see the issue filed from this audit), so the behaviour is unchanged.
+  const horsesWithCategory = (horsesData ?? []).map((horse: HorseCardData) => ({
     horse,
     category: getHorseCategory(horse),
   }));

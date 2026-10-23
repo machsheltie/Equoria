@@ -13,10 +13,10 @@ import { Sparkles, X } from 'lucide-react';
 import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import { useUnequipDecoration } from '@/hooks/api/useTackShop';
-import type { HorseSummary } from '@/lib/api-client';
+import type { HorseCardData } from '@/lib/api-client';
 
 interface DecorationsPanelProps {
-  horse: HorseSummary;
+  horse: HorseCardData;
 }
 
 export const DecorationsPanel: React.FC<DecorationsPanelProps> = ({ horse }) => {

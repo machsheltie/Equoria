@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ApiError,
+  HorseListItemDto,
   HorseSummary,
   HorseTrainingHistoryEntry,
   HorseTrainingAnalytics,
@@ -16,7 +17,7 @@ const horseKeys = {
 };
 
 export const useHorses = () =>
-  useQuery<HorseSummary[], ApiError>({
+  useQuery<HorseListItemDto[], ApiError>({
     queryKey: horseKeys.all,
     queryFn: horsesApi.list,
     staleTime: 2 * 60 * 1000, // 2 minutes — core entity, moderate update frequency

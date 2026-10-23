@@ -22,7 +22,7 @@ import { AlertCircle, CheckCircle, Dna, ChevronDown, ChevronUp } from 'lucide-re
 import { useAuth } from '@/contexts/AuthContext';
 import { breedingApi, horsesApi } from '@/lib/api-client';
 import { toBreedingHorses, type BreedingHorse } from '@/lib/api/breedingHorse';
-import type { HorseSummary } from '@/lib/api/types';
+import type { HorseListItemDto } from '@/lib/api/types';
 import HorseSelector from '@/components/breeding/HorseSelector';
 import BreedingPredictionsPanel from './BreedingPredictionsPanel';
 import LethalWhiteWarning from '@/components/breeding/LethalWhiteWarning';
@@ -95,7 +95,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     isLoading: loadingHorses,
     error: horsesError,
     refetch: refetchHorses,
-  } = useQuery<HorseSummary[], Error, BreedingHorse[]>({
+  } = useQuery<HorseListItemDto[], Error, BreedingHorse[]>({
     // Equoria-bvddn.33: this reads the same session-scoped horse list every
     // other list consumer reads (horsesApi.list() takes no userId — the
     // cookie session determines the owner). The prior ['horses', userId] key

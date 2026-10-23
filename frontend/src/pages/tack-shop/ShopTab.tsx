@@ -21,12 +21,12 @@ import { Select } from '@/components/ui/form';
 import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import type { TackItem } from '@/hooks/api/useTackShop';
-import type { HorseSummary } from '@/lib/api-client';
+import type { HorseCardData } from '@/lib/api-client';
 import { TackItemCard } from './TackItemCard';
 import { DEFAULT_CATEGORY_NAMES, DISCIPLINE_OPTIONS } from './constants';
 
 interface ShopTabProps {
-  selectedHorse: HorseSummary | null;
+  selectedHorse: HorseCardData | null;
   onSwitchToHorses: () => void;
 }
 

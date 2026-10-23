@@ -38,7 +38,7 @@ import {
   horseNeedsCare,
   isReadyToTrain,
 } from '@/lib/utils/care-status-utils';
-import type { HorseSummary } from '@/lib/api-client';
+import type { HorseCardData, HorseSummary } from '@/lib/api-client';
 import { userMessageFor } from '@/lib/http/userMessage';
 
 /**
@@ -46,12 +46,12 @@ import { userMessageFor } from '@/lib/http/userMessage';
  * null (rendered "—"), never 0 — a real zero stat must stay distinguishable
  * (Equoria-qqhwh).
  */
-function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number | null {
+function getStat(horse: HorseCardData, stat: keyof HorseSummary['stats']): number | null {
   return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? null;
 }
 
 /* ─── Legacy route-local horse summary; not a reusable design pattern ─── */
-function HorseCard({ horse }: { horse: HorseSummary }) {
+function HorseCard({ horse }: { horse: HorseCardData }) {
   const breedName = getBreedName(horse.breed);
   const sex = horse.sex ?? '';
   const ageStr = horse.age != null ? `${horse.age} yrs` : '';

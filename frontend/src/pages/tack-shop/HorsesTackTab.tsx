@@ -18,12 +18,12 @@ import { SectionLoading, ErrorState } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
 import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
-import type { HorseSummary } from '@/lib/api-client';
+import type { HorseCardData } from '@/lib/api-client';
 import { DecorationsPanel } from './DecorationsPanel';
 
 interface HorsesTackTabProps {
-  selectedHorse: HorseSummary | null;
-  onSelectHorse: (_horse: HorseSummary) => void;
+  selectedHorse: HorseCardData | null;
+  onSelectHorse: (_horse: HorseCardData) => void;
   onGoToShop: () => void;
 }
 

@@ -7,6 +7,7 @@
 
 import { apiClient } from '../http/apiClient.js';
 import type {
+  HorseListItemDto,
   HorseProgression,
   HorseSummary,
   HorseTrainingAnalytics,
@@ -79,7 +80,7 @@ export const horsesApi = {
   // `DELETE /api/v1/horses/:id` is closed (403) for every caller. A player parts
   // with a horse by listing it in the marketplace, never by destroying it. Do not
   // add a delete helper or a "remove from stable" affordance that calls one.
-  list: () => apiClient.get<HorseSummary[]>(`/api/v1/horses?t=${Date.now()}`),
+  list: () => apiClient.get<HorseListItemDto[]>(`/api/v1/horses?t=${Date.now()}`),
   get: (horseId: number) =>
     apiClient.get<HorseSummary>(`/api/v1/horses/${horseId}?t=${Date.now()}`),
   getTrainingHistory: (horseId: number) =>

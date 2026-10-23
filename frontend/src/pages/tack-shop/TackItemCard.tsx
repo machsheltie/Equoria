@@ -16,12 +16,12 @@ import { ItemCard } from '@/components/ui/ItemCard';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import type { TackItem } from '@/hooks/api/useTackShop';
-import type { HorseSummary } from '@/lib/api-client';
+import type { HorseCardData } from '@/lib/api-client';
 import { CATEGORY_ICONS, TIER_COLORS } from './constants';
 
 interface TackItemCardProps {
   item: TackItem;
-  selectedHorse: HorseSummary | null;
+  selectedHorse: HorseCardData | null;
   onPurchase: (_item: TackItem) => void;
   isPurchasing: boolean;
 }

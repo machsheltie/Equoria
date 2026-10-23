@@ -26,20 +26,17 @@
 
 import { getBreedName } from '../utils.js';
 import type { HorseSex } from '../../types/breeding.js';
-import type { HorseSummary } from './types.js';
+import type { HorseListItemDto } from './types.js';
 
 export type BreedingHorse = Pick<
-  HorseSummary,
-  // `level` and `imageUrl` are always undefined from GET /horses today:
-  // HORSE_LIST_SELECT does not send them. Stud fee is player-set (owner
-  // ruling, Equoria-q4uem.9); the game never derives it from `level`.
+  HorseListItemDto,
+  // Stud fee is player-set (owner ruling, Equoria-q4uem.9); the game never
+  // derives it from a horse's level, and the list does not send one.
   | 'id'
   | 'name'
   | 'dateOfBirth'
   | 'healthStatus'
   | 'displayedHealth'
-  | 'imageUrl'
-  | 'level'
   | 'breedingCooldownEndsAt'
   | 'inFoal'
 > & {
@@ -68,7 +65,7 @@ export function parseHorseSex(sex: string | null | undefined): HorseSex | null {
 }
 
 /** Normalize one list horse; null when its sex is missing or unrecognised. */
-export function toBreedingHorse(horse: HorseSummary): BreedingHorse | null {
+export function toBreedingHorse(horse: HorseListItemDto): BreedingHorse | null {
   const sex = parseHorseSex(horse.sex);
   if (!sex) return null;
 
@@ -85,8 +82,6 @@ export function toBreedingHorse(horse: HorseSummary): BreedingHorse | null {
     // Equoria-u0jop: the selector's Fair-or-better gate and health label.
     displayedHealth: horse.displayedHealth,
     dateOfBirth: horse.dateOfBirth,
-    imageUrl: horse.imageUrl,
-    level: horse.level,
     // Server truth (Equoria-q4uem.9): the selector's cooldown and in-foal
     // gates read these; without them a mare on cooldown looked breedable.
     breedingCooldownEndsAt: horse.breedingCooldownEndsAt,
@@ -95,6 +90,6 @@ export function toBreedingHorse(horse: HorseSummary): BreedingHorse | null {
 }
 
 /** Normalize a list response, dropping horses toBreedingHorse rejects. */
-export function toBreedingHorses(horses: readonly HorseSummary[]): BreedingHorse[] {
+export function toBreedingHorses(horses: readonly HorseListItemDto[]): BreedingHorse[] {
   return horses.map(toBreedingHorse).filter((horse): horse is BreedingHorse => horse !== null);
 }

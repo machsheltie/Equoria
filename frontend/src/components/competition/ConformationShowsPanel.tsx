@@ -52,7 +52,7 @@ const ConformationShowsPanel = (): JSX.Element => {
     if (!show || !horse) return;
     setEntry({
       show: { id: show.id, name: show.name, entryFee: show.entryFee },
-      horse: { id: horse.id, name: horse.name, sex: horse.sex ?? horse.gender },
+      horse: { id: horse.id, name: horse.name, sex: horse.sex },
     });
   };
 
