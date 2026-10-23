@@ -207,7 +207,7 @@ const isWinSql = Prisma.sql`"placement" = 1`;
  * @param {{ take: number, skip: number }} page
  * @returns {Promise<{ rows: Array<{ horseId: number, wins: number, showsEntered: number }>, total: number }>}
  */
-async function rankHorseRecords(board, { take, skip }, discipline) {
+async function rankHorseRecords(board, { take, skip }, discipline, since) {
   const having =
     board === 'winPercentage'
       ? Prisma.sql`COUNT(*) >= ${winPercentageMinShows}`
@@ -221,13 +221,15 @@ async function rankHorseRecords(board, { take, skip }, discipline) {
   // Only the discipline boards narrow the record to one discipline.
   const disciplineFilter =
     discipline === undefined ? Prisma.empty : Prisma.sql` AND "discipline" = ${discipline}`;
+  // A period narrows the record to results run on or after its start (Equoria-5uptv).
+  const periodFilter = since === undefined ? Prisma.empty : Prisma.sql` AND "runDate" >= ${since}`;
   const records = Prisma.sql`
     SELECT
       "horseId",
       (COUNT(*) FILTER (WHERE ${isWinSql}))::int AS "wins",
       COUNT(*)::int AS "showsEntered"
     FROM "competition_results"
-    WHERE "placement" IS NOT NULL${disciplineFilter}
+    WHERE "placement" IS NOT NULL${disciplineFilter}${periodFilter}
     GROUP BY "horseId"
     HAVING ${having}`;
 
@@ -254,9 +256,10 @@ export function rankHorsesByWins(page) {
 /**
  * Horses with at least one win in `discipline`, by wins there (Equoria-pthuj).
  * `showsEntered` counts the horse's settled results in that discipline only.
+ * With `since`, only results run on or after it count (Equoria-5uptv).
  */
-export function rankHorsesByWinsIn(discipline, page) {
-  return rankHorseRecords('wins', page, discipline);
+export function rankHorsesByWinsIn(discipline, page, since) {
+  return rankHorseRecords('wins', page, discipline, since);
 }
 
 /**

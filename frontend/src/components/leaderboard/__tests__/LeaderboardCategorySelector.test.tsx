@@ -59,8 +59,10 @@ describe('LeaderboardCategorySelector', () => {
       expect(screen.getByTestId('category-recent-winners')).toBeInTheDocument();
     });
 
+    // Equoria-5uptv: the period buttons belong to boards built from dated results
+    // (discipline wins, recent winners); the tests that exercise them select one.
     it('renders all four time period buttons', () => {
-      render(<LeaderboardCategorySelector {...defaultProps} />);
+      render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="recent-winners" />);
       expect(screen.getByTestId('period-all-time')).toBeInTheDocument();
       expect(screen.getByTestId('period-monthly')).toBeInTheDocument();
       expect(screen.getByTestId('period-weekly')).toBeInTheDocument();
@@ -78,7 +80,7 @@ describe('LeaderboardCategorySelector', () => {
     });
 
     it('displays human-readable time period labels', () => {
-      render(<LeaderboardCategorySelector {...defaultProps} />);
+      render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="recent-winners" />);
       expect(screen.getByText('All-Time')).toBeInTheDocument();
       expect(screen.getByText('Monthly')).toBeInTheDocument();
       expect(screen.getByText('Weekly')).toBeInTheDocument();
@@ -146,14 +148,20 @@ describe('LeaderboardCategorySelector', () => {
 
   describe('Time Period Selection', () => {
     it('highlights the selected time period', () => {
-      render(<LeaderboardCategorySelector {...defaultProps} selectedPeriod="monthly" />);
+      render(
+        <LeaderboardCategorySelector
+          {...defaultProps}
+          selectedCategory="recent-winners"
+          selectedPeriod="monthly"
+        />
+      );
       const monthlyButton = screen.getByTestId('period-monthly');
       expect(monthlyButton).toHaveClass('bg-[var(--status-info)]');
     });
 
     it('calls onPeriodChange when a time period is clicked', async () => {
       const user = userEvent.setup();
-      render(<LeaderboardCategorySelector {...defaultProps} />);
+      render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="recent-winners" />);
 
       await user.click(screen.getByTestId('period-weekly'));
 
@@ -229,7 +237,13 @@ describe('LeaderboardCategorySelector', () => {
     });
 
     it('disables all period buttons when loading', () => {
-      render(<LeaderboardCategorySelector {...defaultProps} isLoading={true} />);
+      render(
+        <LeaderboardCategorySelector
+          {...defaultProps}
+          selectedCategory="recent-winners"
+          isLoading={true}
+        />
+      );
 
       expect(screen.getByTestId('period-all-time')).toBeDisabled();
       expect(screen.getByTestId('period-monthly')).toBeDisabled();

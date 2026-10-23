@@ -76,11 +76,20 @@ const CATEGORIES: LeaderboardCategory[] = [
 ];
 
 /**
- * Lifetime-record boards (Equoria-xxdqh, owner ruling 2026-10-22): win
- * percentage and number of wins are counted over a horse's whole career, so
- * the time period filter does not apply and is not shown for them.
+ * Boards with no time dimension. Win percentage and number of wins are counted
+ * over a horse's whole career (Equoria-xxdqh, owner ruling 2026-10-22); player
+ * level, prize money and owner totals are lifetime counters, not dated results
+ * (Equoria-5uptv). The time period filter cannot apply to any of them, so it is
+ * not shown. Discipline wins and recent winners are built from dated results and
+ * keep it.
  */
-export const lifetimeCategories: ReadonlySet<LeaderboardCategory> = new Set(['win-rate', 'wins']);
+export const lifetimeCategories: ReadonlySet<LeaderboardCategory> = new Set([
+  'level',
+  'prize-money',
+  'win-rate',
+  'wins',
+  'owner',
+]);
 
 /**
  * Human-readable labels for each time period.
@@ -173,7 +182,7 @@ const LeaderboardCategorySelector = ({
         ))}
       </Tabs>
 
-      {/* Time Period Filter — not shown for lifetime-record boards */}
+      {/* Time Period Filter — not shown for boards with no time dimension */}
       {!lifetimeCategories.has(selectedCategory) && (
         <div className="flex gap-2 mt-3" role="group" aria-label="Time period filter">
           {PERIODS.map((period) => {

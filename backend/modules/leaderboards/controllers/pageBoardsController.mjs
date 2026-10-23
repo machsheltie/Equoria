@@ -22,6 +22,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
+import { MS_PER_WEEK } from '../../../constants/time.mjs';
+import { startOfGameDay } from '../../../utils/gameTime.mjs';
 import { isKnownDiscipline } from '../../competition/index.mjs';
 import {
   fetchHorseDetailsByIds,
@@ -34,6 +36,37 @@ export { winPercentageBoard, winsBoard } from './horseRecordBoardsController.mjs
 const cacheTtl = 300; // 5 minutes, the leaderboard convention
 
 const pageWindow = req => parsePaginationParams(req, { defaultLimit: 50, maxLimit: 100 });
+
+/**
+ * The periods the page offers on the boards built from dated results (Equoria-5uptv).
+ * Same windows as GET /competition: weekly is the last 7 days, monthly the last 30,
+ * each from 00:00 Eastern of its first game day; daily is today's game day.
+ * `all-time` (or no period) has no start.
+ */
+const periodStarts = {
+  'all-time': () => null,
+  daily: now => startOfGameDay(now),
+  weekly: now => startOfGameDay(new Date(now.getTime() - MS_PER_WEEK)),
+  monthly: now => startOfGameDay(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)),
+};
+
+/**
+ * The start of the requested period, `null` for all-time, or `undefined` when the
+ * request names a period the boards do not know (the caller answers 400).
+ */
+function periodStart(req) {
+  const { period = 'all-time' } = req.query;
+  const start = periodStarts[period];
+  return typeof start === 'function' && Object.hasOwn(periodStarts, period)
+    ? start(new Date())
+    : undefined;
+}
+
+const unknownPeriodResponse = res =>
+  res.status(400).json({
+    success: false,
+    message: 'Period must be one of: all-time, daily, weekly, monthly',
+  });
 
 /** Run `load` through the cache and answer with the page shape. */
 async function serveBoard(req, res, { boardName, cacheKey, window, load }) {
@@ -174,13 +207,21 @@ export const disciplineBoard = (req, res) => {
   if (!isKnownDiscipline(discipline)) {
     return res.status(400).json({ success: false, message: 'A known discipline is required' });
   }
+  const since = periodStart(req);
+  if (since === undefined) {
+    return unknownPeriodResponse(res);
+  }
   const window = pageWindow(req);
   return serveBoard(req, res, {
     boardName: 'discipline',
-    cacheKey: `leaderboard:page:discipline:${discipline}:${window.limit}:${window.skip}`,
+    cacheKey: `leaderboard:page:discipline:${discipline}:${req.query.period ?? 'all-time'}:${window.limit}:${window.skip}`,
     window,
     load: async ({ take, skip }) => {
-      const { rows, total } = await rankHorsesByWinsIn(discipline, { take, skip });
+      const { rows, total } = await rankHorsesByWinsIn(
+        discipline,
+        { take, skip },
+        since ?? undefined,
+      );
       const horses = await fetchHorseDetailsByIds(rows.map(row => row.horseId));
       const horseById = new Map(horses.map(horse => [horse.id, horse]));
       return {
@@ -210,15 +251,22 @@ export const disciplineBoard = (req, res) => {
 export const recentWinnersBoard = async (req, res) => {
   try {
     const { discipline } = req.query;
+    const since = periodStart(req);
+    if (since === undefined) {
+      return unknownPeriodResponse(res);
+    }
     const { limit } = parsePaginationParams(req, { defaultLimit: 20, maxLimit: 50 });
     // placement is the Int rank (Equoria-f46tb).
     const whereClause = { placement: 1 };
+    if (since !== null) {
+      whereClause.runDate = { gte: since };
+    }
 
     if (discipline) {
       whereClause.discipline = discipline;
     }
 
-    const cacheKey = `leaderboard:recent-winners:${discipline ?? 'all'}:${limit}`;
+    const cacheKey = `leaderboard:recent-winners:${discipline ?? 'all'}:${req.query.period ?? 'all-time'}:${limit}`;
     const results = await getCachedQuery(
       cacheKey,
       () =>
