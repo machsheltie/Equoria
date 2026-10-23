@@ -142,6 +142,17 @@ export const mfaVerifyEnrollment = async (req, res, next) => {
 };
 
 /**
+ * Refuse the second factor with a stable `code` the form can branch on
+ * (Equoria-3f4vw): MFA_CODE_INCORRECT means retype the code, MFA_CHALLENGE_EXPIRED
+ * means the challenge is spent and the player must log in again, MFA_LOCKED is the
+ * per-user lockout. Each says nothing the caller does not already know.
+ */
+function refuseChallenge(res, status, code, message, extra = {}) {
+  logger.warn(`[mfaController.mfaChallenge] refused: ${code}`);
+  return res.status(status).json({ success: false, code, message, ...extra });
+}
+
+/**
  * POST /api/v1/auth/mfa/challenge  (public — second factor of login)
  *
  * Consumes the short-lived signed mfaChallengeToken from /auth/login and
@@ -164,10 +175,20 @@ export const mfaChallenge = async (req, res, next) => {
         algorithms: ['HS256'],
       });
     } catch {
-      throw new AppError('MFA challenge expired or invalid. Please log in again.', 401);
+      return refuseChallenge(
+        res,
+        401,
+        'MFA_CHALLENGE_EXPIRED',
+        'MFA challenge expired or invalid. Please log in again.',
+      );
     }
     if (!payload || payload.type !== 'mfa_challenge' || !payload.userId) {
-      throw new AppError('MFA challenge expired or invalid. Please log in again.', 401);
+      return refuseChallenge(
+        res,
+        401,
+        'MFA_CHALLENGE_EXPIRED',
+        'MFA challenge expired or invalid. Please log in again.',
+      );
     }
 
     // Equoria-kg7i2: per-userId lockout — defeats brute-force of the 10^6
@@ -180,12 +201,13 @@ export const mfaChallenge = async (req, res, next) => {
         userId: payload.userId,
         retryAfterSec: lockState.retryAfterSec,
       });
-      return res.status(429).json({
-        success: false,
-        message:
-          'Too many failed MFA attempts. The challenge has been revoked — please log in again.',
-        retryAfter: lockState.retryAfterSec,
-      });
+      return refuseChallenge(
+        res,
+        429,
+        'MFA_LOCKED',
+        'Too many failed MFA attempts. The challenge has been revoked — please log in again.',
+        { retryAfter: lockState.retryAfterSec },
+      );
     }
 
     const user = await prisma.user.findUnique({
@@ -205,7 +227,12 @@ export const mfaChallenge = async (req, res, next) => {
       },
     });
     if (!user || !user.mfaEnabled || !user.mfaSecret) {
-      throw new AppError('MFA is not enabled for this account', 401);
+      return refuseChallenge(
+        res,
+        401,
+        'MFA_CHALLENGE_EXPIRED',
+        'MFA is not enabled for this account',
+      );
     }
 
     let verified = false;
@@ -242,7 +269,7 @@ export const mfaChallenge = async (req, res, next) => {
       // On the threshold-crossing failure the user becomes locked; the very
       // next request hits the isLocked() branch above and returns 429.
       await mfaLockoutService.recordFailure(payload.userId);
-      throw new AppError('Invalid MFA credentials', 401);
+      return refuseChallenge(res, 401, 'MFA_CODE_INCORRECT', 'Invalid MFA credentials');
     }
 
     // Equoria-kg7i2: a successful challenge resets the failure counter so a
