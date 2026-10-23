@@ -91,6 +91,8 @@ export type SeededPlayerSession = AuthedSession & {
   userId: string;
   email: string;
   username: string;
+  /** Id of the onboarding starter horse, from the advance-onboarding response. */
+  starterHorseId: number;
   /** Path to the storage state the spec's `page` must be created from. */
   storageStatePath: string;
 };
@@ -202,6 +204,16 @@ export async function createSeededPlayerSession(browser: Browser): Promise<Seede
     `POST /api/v1/auth/advance-onboarding returned ${onboardingResponse.status()}: ` +
       `${await onboardingResponse.text()} — the seeded player would be bounced to /onboarding`
   ).toBe(true);
+  // The response names the persisted starter horse, so callers can seed it
+  // without a GET /api/v1/horses that would warm this player's list cache.
+  const onboardingJson = (await onboardingResponse.json()) as {
+    data?: { horse?: { id?: unknown } | null };
+  };
+  const starterHorseId = onboardingJson?.data?.horse?.id;
+  expect(
+    Number.isInteger(starterHorseId) && (starterHorseId as number) > 0,
+    `advance-onboarding must return the starter horse id, got ${JSON.stringify(onboardingJson?.data?.horse)}`
+  ).toBe(true);
 
   const completeResponse = await request.post('/api/v1/auth/complete-onboarding', {
     data: {},
@@ -226,6 +238,7 @@ export async function createSeededPlayerSession(browser: Browser): Promise<Seede
     userId: userId!,
     email,
     username,
+    starterHorseId: starterHorseId as number,
     storageStatePath,
   };
 }

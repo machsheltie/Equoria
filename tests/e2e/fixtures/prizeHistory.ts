@@ -35,11 +35,11 @@ const SHOW_NAME_PREFIX = 'E2E-PrizeHistory-';
 
 type PrismaSubset = {
   show: {
-    create: (_args: { data: Record<string, unknown> }) => Promise<{ id: number; name: string }>;
+    create: (_args: {
+      data: Record<string, unknown>;
+      select: { id: true; competitionResults: { select: { id: true } } };
+    }) => Promise<{ id: number; competitionResults: Array<{ id: number }> }>;
     deleteMany: (_args: { where: { id: number } }) => Promise<{ count: number }>;
-  };
-  competitionResult: {
-    create: (_args: { data: Record<string, unknown> }) => Promise<{ id: number }>;
   };
 };
 
@@ -48,13 +48,13 @@ type PrismaSubset = {
 async function getPrisma(): Promise<PrismaSubset> {
   const mod = await import(/* @vite-ignore */ prismaClientPath);
   const prisma = mod.default as Partial<PrismaSubset> | undefined;
-  if (!prisma?.show || !prisma?.competitionResult) {
+  if (!prisma?.show) {
     throw new Error('Could not resolve prisma from packages/database/prismaClient.mjs');
   }
   return prisma as PrismaSubset;
 }
 
-export type SeededPrizeResult = { showId: number; resultId: number };
+export type SeededPrizeResult = { showId: number; resultId: number; showName: string };
 
 /**
  * One completed show, run yesterday, in which `horseId` placed 1st and won 500.
@@ -62,9 +62,12 @@ export type SeededPrizeResult = { showId: number; resultId: number };
 export async function seedPrizeResult(horseId: number): Promise<SeededPrizeResult> {
   const prisma = await getPrisma();
   const runDate = new Date(Date.now() - DAY_MS);
+  const showName = `${SHOW_NAME_PREFIX}${randomUUID()}`;
+  // One nested write, so Prisma commits the show and its result together: a
+  // failed result can never leave an orphaned completed show behind.
   const show = await prisma.show.create({
     data: {
-      name: `${SHOW_NAME_PREFIX}${randomUUID()}`,
+      name: showName,
       discipline: 'Dressage',
       levelMin: 1,
       levelMax: 20,
@@ -73,21 +76,26 @@ export async function seedPrizeResult(horseId: number): Promise<SeededPrizeResul
       runDate,
       closeDate: runDate,
       status: 'completed',
+      competitionResults: {
+        create: {
+          score: 92.5,
+          placement: 1,
+          discipline: 'Dressage',
+          runDate,
+          showName,
+          horseId,
+          prizeWon: 500,
+        },
+      },
     },
+    select: { id: true, competitionResults: { select: { id: true } } },
   });
-  const result = await prisma.competitionResult.create({
-    data: {
-      score: 92.5,
-      placement: 1,
-      discipline: 'Dressage',
-      runDate,
-      showName: show.name,
-      horseId,
-      showId: show.id,
-      prizeWon: 500,
-    },
-  });
-  return { showId: show.id, resultId: result.id };
+  if (show.competitionResults.length !== 1) {
+    throw new Error(
+      `prizeHistory fixture expected one result on show ${show.id}, found ${show.competitionResults.length}`
+    );
+  }
+  return { showId: show.id, resultId: show.competitionResults[0].id, showName };
 }
 
 /** Delete the seeded show (its result cascades). Fails loudly unless one show was removed. */

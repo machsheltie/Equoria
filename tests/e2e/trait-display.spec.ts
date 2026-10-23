@@ -124,32 +124,48 @@ test.describe('Trait Display — Genetics tab (Equoria-2xa8l)', () => {
       throw new Error('E2E_TEST_HORSE_ID missing in process.env');
     }
 
+    // The indicator's state is decided by the REAL discovery-status counts, so
+    // read them from the response the page itself makes.
+    const discoveryRes = page.waitForResponse(
+      (resp) =>
+        resp.url().includes(`/api/v1/traits/discovery-status/${testHorseId}`) &&
+        resp.request().method() === 'GET' &&
+        resp.status() === 200,
+      { timeout: 30000 }
+    );
     await openGeneticsTab(page, testHorseId);
+    const discoveryJson = (await (await discoveryRes).json()) as {
+      data?: { traitCounts?: { visible?: number; hidden?: number } };
+    };
+    const visible = discoveryJson.data?.traitCounts?.visible ?? 0;
+    const hidden = discoveryJson.data?.traitCounts?.hidden ?? 0;
 
     const discoverySection = page.locator('[data-testid="hidden-traits-section"]');
     await expect(discoverySection).toBeVisible({ timeout: 10000 });
 
-    // The HiddenTraitIndicator renders one of two REAL states from the backend
-    // discovery-status: either hidden-trait placeholders ("???" squares with an
-    // accessible label) when traits remain hidden, or the "All Traits
-    // Discovered!" state when none are. Both are honest real-data outcomes.
-    const hiddenPlaceholder = page.getByLabel('Hidden trait - not yet discovered').first();
-    const allDiscovered = discoverySection.getByText(/All Traits Discovered/i);
-
-    const sawHidden = await hiddenPlaceholder
-      .waitFor({ state: 'visible', timeout: 8000 })
-      .then(() => true)
-      .catch(() => false);
-
     // Equoria-gu8jk. OLD CONTRACT: when hidden traits existed, a "Discover
     // Traits" button had to be present. NEW RULING (owner, 2026-10-20): players
     // never reveal traits — grooms will — so there is no discover control in
-    // either state.
+    // any state.
     await expect(page.locator('[data-testid="discover-traits-button"]')).toHaveCount(0);
 
-    if (!sawHidden) {
-      // No hidden traits → the indicator shows the all-discovered state.
-      await expect(allDiscovered).toBeVisible({ timeout: 5000 });
+    // HiddenTraitIndicator renders exactly one of three REAL states.
+    // Equoria-kjlub (2026-10-22). OLD CONTRACT: a horse with no hidden traits
+    // always showed "All Traits Discovered!", including a horse with no traits
+    // at all (a vacuous 0-of-0). NEW: a zero-trait horse reads "No traits
+    // discovered yet"; the all-discovered state needs at least one trait.
+    const hiddenPlaceholder = page.getByLabel('Hidden trait - not yet discovered').first();
+    const allDiscovered = discoverySection.getByText(/All Traits Discovered/i);
+    const noneYet = discoverySection.getByText('No traits discovered yet', { exact: true });
+    if (hidden > 0) {
+      await expect(hiddenPlaceholder).toBeVisible({ timeout: 8000 });
+      await expect(allDiscovered).toHaveCount(0);
+    } else if (visible > 0) {
+      await expect(allDiscovered).toBeVisible({ timeout: 8000 });
+      await expect(noneYet).toHaveCount(0);
+    } else {
+      await expect(noneYet).toBeVisible({ timeout: 8000 });
+      await expect(allDiscovered).toHaveCount(0);
     }
   });
 

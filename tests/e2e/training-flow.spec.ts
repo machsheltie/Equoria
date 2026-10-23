@@ -25,6 +25,7 @@
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, type AuthedSession } from './helpers/api';
 import { seedOwnedHorse } from './fixtures/ownedHorses';
+import { markHorseFedTwoDaysAgo } from './fixtures/feedHistory';
 import { assertValidNextTrainingDate } from './helpers/training';
 
 test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
@@ -65,6 +66,12 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
       { requireHorseListVisibility: false }
     );
     trainingHorseId = horse.id;
+
+    // Behaviour change 2026-10-23: a never-fed horse counts as critical health
+    // and cannot train ("Feed and vet to restore health"). Old contract: a
+    // freshly seeded horse could train at once. New: it has to have been fed,
+    // so it is given a feeding two days ago (fixtures/feedHistory.ts).
+    await markHorseFedTwoDaysAgo(horse.id);
   });
 
   test.afterAll(async () => {
