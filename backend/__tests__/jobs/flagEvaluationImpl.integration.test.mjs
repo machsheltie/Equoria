@@ -83,6 +83,7 @@ describe('INTEGRATION: flagEvaluation impl module (Equoria-urqic.3.2) — real D
       // so this test fails if the impl ever stops feeding eligible foals through.
       const eligibleIds = await getEligibleHorses(new Date());
       expect(eligibleIds).toContain(foal.id);
+      expect(foal.epigeneticFlags ?? []).toEqual([]);
 
       const summary = await flagEvaluationImpl.evaluateWeeklyFlags();
 
@@ -94,15 +95,25 @@ describe('INTEGRATION: flagEvaluation impl module (Equoria-urqic.3.2) — real D
 
       // Internal consistency: succeeded + errors never exceeds evaluated.
       expect(summary.succeeded + summary.errors).toBeLessThanOrEqual(summary.evaluated);
-
-      // The impl evaluated AT LEAST every eligible horse — so our foal counts.
-      expect(summary.evaluated).toBeGreaterThanOrEqual(eligibleIds.length);
       expect(summary.evaluated).toBeGreaterThanOrEqual(1);
 
-      // The foal still exists (the evaluation never deletes horses) and is the
-      // one we created.
-      const stillThere = await prisma.horse.findUnique({ where: { id: foal.id } });
-      expect(stillThere).not.toBeNull();
+      // Equoria-7u4br: the impl evaluated OUR foal — proven on the foal's own
+      // row, not by comparing counts of the shared horse table. (The old
+      // `evaluated >= eligibleIds.length` compared the impl's eligible snapshot
+      // with an EARLIER one; sibling suites deleting their young horses, or a
+      // horse aging past the 21-day window in between, shrank the impl's set:
+      // 95 vs 98 in run 2026-08-18.) The foal has no groom interactions and
+      // bond 0, which is exactly the canonical aloof trigger (interactions < 3,
+      // bond <= 30, positive interactions <= 2), so evaluating it assigns
+      // 'aloof'. The flag can only appear if the impl passed this foal through
+      // evaluateHorseFlags and wrote the result.
+      const after = await prisma.horse.findUnique({
+        where: { id: foal.id },
+        select: { epigeneticFlags: true },
+      });
+      // The foal still exists (the evaluation never deletes horses).
+      expect(after).not.toBeNull();
+      expect(after.epigeneticFlags).toContain('aloof');
     }, 120000);
   });
 
