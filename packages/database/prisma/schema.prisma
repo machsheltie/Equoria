@@ -834,6 +834,9 @@ model Show {
   /// placements scored at claim time (never a re-roll). Cleared (with
   /// claimedAt) on every terminal write.
   stagedOrdering     Json?
+  /// Equoria-c7mx0.1 (owner ruling 2026-10-23): failed execution attempts
+  /// counted by the show-execution reaper; at 3 the show is 'quarantined'.
+  executionAttempts  Int                 @default(0)
   /// User who created this show (BA-1)
   createdByUserId    String?
   /// Club that created this show (BA-1)
@@ -1994,6 +1997,9 @@ enum ShowStatus {
   closed
   executing
   completed
+  /// Equoria-c7mx0.1: execution failed 3 times; never retried automatically.
+  /// Owner/Admin resolve it from the staff list.
+  quarantined
 }
 
 // ── BA-3: Show entry model ─────────────────────────────────────────────────────
