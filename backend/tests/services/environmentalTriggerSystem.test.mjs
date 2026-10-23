@@ -23,7 +23,6 @@ import {
   loadEnvironmentalTriggerSnapshot,
   cumulativeExposure,
   detectTriggers,
-  traitExpressionProbability,
   triggerThresholds,
 } from '../../modules/traits/services/environmentalTriggerSystem.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
@@ -288,54 +287,6 @@ describe('Environmental Trigger System', () => {
     });
   });
 
-  describe('evaluateTraitExpressionProbability', () => {
-    test('should calculate trait expression probability based on environmental exposure', async () => {
-      const [horse] = testHorses;
-
-      // Create environmental exposure
-      await prisma.groomInteraction.create({
-        data: {
-          groomId: testGrooms[0].id,
-          foalId: horse.id,
-          interactionType: 'enrichment',
-          duration: 30,
-          taskType: 'trust_building',
-          bondingChange: 2,
-          stressChange: 1,
-          quality: 'good',
-          cost: 30.0,
-        },
-      });
-
-      const probability = await analyze(horse.id, traitExpressionProbability, 'confident');
-
-      expect(probability).toBeDefined();
-      expect(probability.traitName).toBe('confident');
-      expect(probability.baseProbability).toBeDefined();
-      expect(probability.environmentalModifier).toBeDefined();
-      expect(probability.ageModifier).toBeDefined();
-      expect(probability.stressModifier).toBeDefined();
-      expect(probability.finalProbability).toBeDefined();
-      expect(probability.expressionLikelihood).toBeDefined();
-
-      expect(probability.finalProbability).toBeGreaterThanOrEqual(0);
-      expect(probability.finalProbability).toBeLessThanOrEqual(1);
-    });
-
-    test('should handle trait expression for different trait types', async () => {
-      const horse = testHorses[2]; // Stressed horse
-
-      const fearfulProb = await analyze(horse.id, traitExpressionProbability, 'fearful');
-      const braveProb = await analyze(horse.id, traitExpressionProbability, 'brave');
-
-      expect(fearfulProb.finalProbability).toBeDefined();
-      expect(braveProb.finalProbability).toBeDefined();
-
-      // Stressed horse should have higher probability for fearful traits
-      expect(fearfulProb.finalProbability).toBeGreaterThan(braveProb.finalProbability);
-    });
-  });
-
   describe('trackCumulativeExposure', () => {
     test('should track cumulative environmental exposure over time', async () => {
       const horse = testHorses[1];
@@ -397,14 +348,13 @@ describe('Environmental Trigger System', () => {
       expect(report.horseId).toBe(horse.id);
       expect(report.environmentalTriggers).toBeDefined();
       expect(report.triggerThresholds).toBeDefined();
-      expect(report.traitExpressionProbabilities).toBeDefined();
+      // Owner ruling 2026-10-07 (Equoria-huuaf): no forecasts. Old contract: traitExpressionProbabilities.
+      expect(report).not.toHaveProperty('traitExpressionProbabilities');
       expect(report.cumulativeExposure).toBeDefined();
       // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: criticalPeriodSensitivity and recommendations defined).
       expect(report).not.toHaveProperty('criticalPeriodSensitivity');
       expect(report).not.toHaveProperty('recommendations');
       expect(report.reportTimestamp).toBeDefined();
-
-      expect(report.traitExpressionProbabilities.length).toBeGreaterThan(0);
     });
   });
 });

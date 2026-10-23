@@ -206,8 +206,8 @@ describe('Advanced Epigenetic API Routes', () => {
       expect(response.body.data.horseId).toBe(testHorses[0].id);
       expect(response.body.data.environmentalTriggers).toBeDefined();
       expect(response.body.data.triggerThresholds).toBeDefined();
-      expect(response.body.data.traitExpressionProbabilities).toBeDefined();
-      expect(Array.isArray(response.body.data.traitExpressionProbabilities)).toBe(true);
+      // Owner ruling 2026-10-07 (Equoria-huuaf): no forecasts. Old contract: traitExpressionProbabilities.
+      expect(response.body.data.traitExpressionProbabilities).toBeUndefined();
     });
 
     test('should require authentication for environmental endpoints', async () => {

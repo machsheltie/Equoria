@@ -149,14 +149,16 @@ describe('analyzeTraitSnapshot', () => {
     expect(temporalModel.timeWindow).toBe(60);
     expect(temporalModel.interactionEvolution.map(step => step.day)).toEqual([0, 7, 14, 21, 28, 35, 42, 49, 56]);
     expect(temporalModel.interactionEvolution[0].maturityFactor).toBe(1);
-    expect(temporalModel.emergingPatterns[0].pattern).toBe('mature_expression');
-    expect(temporalModel.projectedChanges.synergyChanges.timeframe).toBe('60 days');
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no forecasts and no age-stage pattern. Old contract:
+    // projectedChanges, and emergingPatterns[0] was the age stage ('mature_expression').
+    expect(temporalModel).not.toHaveProperty('projectedChanges');
+    expect(temporalModel.emergingPatterns.map(entry => entry.pattern)).not.toContain('mature_expression');
 
     const dayBefore = analyzeTraitSnapshot(snapshot(), {
       now: new Date('2026-05-31T12:00:00Z'),
     }).temporalModel;
     expect(dayBefore.timeWindow).toBe(30);
-    expect(dayBefore.emergingPatterns[0].pattern).toBe('stabilization_period');
+    expect(dayBefore.emergingPatterns.map(entry => entry.pattern)).not.toContain('stabilization_period');
     expect(dayBefore.interactionEvolution[0].maturityFactor).toBeCloseTo(89 / 90, 10);
   });
 

@@ -5,8 +5,8 @@
  * every analysis output over the fixtures and calls in
  * helpers/environmentalTriggerGrid.mjs: 13 foals of chosen age, stress, bond
  * and interaction history (one with three interactions sharing a timestamp),
- * plus a horse that does not exist; detection, thresholds, 10 trait
- * probabilities, exposure and the full report. It was
+ * plus a horse that does not exist; detection, thresholds,
+ * exposure and the full report. It was
  * recorded from the pre-S4 per-function API (git show b69fd4af4) with
  * Math.random pinned at 0.5 and then 0.9 (the analysis draws unruled trigger
  * factors at random; owner question WS7-Q2).
@@ -31,7 +31,6 @@ import {
   detectTriggers,
   environmentalReport,
   loadEnvironmentalTriggerSnapshot,
-  traitExpressionProbability,
   triggerThresholds,
 } from '../services/environmentalTriggerSystem.mjs';
 import {
@@ -48,7 +47,6 @@ const load = id => loadEnvironmentalTriggerSnapshot(id);
 const API = {
   detect: async id => detectTriggers(await load(id)),
   thresholds: async id => triggerThresholds(await load(id)),
-  probability: async (id, trait) => traitExpressionProbability(await load(id), trait),
   exposure: async id => cumulativeExposure(await load(id)),
   report: async id => environmentalReport(await load(id)),
 };

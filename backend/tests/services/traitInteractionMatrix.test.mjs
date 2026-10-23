@@ -467,22 +467,11 @@ describe('Trait Interaction Matrix', () => {
       // Owner ruling 2026-10-23 (Equoria-w2sb8): stabilityTrends is removed (old contract: toBeDefined).
       expect(temporalModel).not.toHaveProperty('stabilityTrends');
       expect(temporalModel.emergingPatterns).toBeDefined();
-      expect(temporalModel.projectedChanges).toBeDefined();
+      // Owner ruling 2026-10-07 (Equoria-huuaf): no forecasts. Old contract: projectedChanges.
+      expect(temporalModel).not.toHaveProperty('projectedChanges');
 
       expect(Array.isArray(temporalModel.interactionEvolution)).toBe(true);
       expect(Array.isArray(temporalModel.emergingPatterns)).toBe(true);
-    });
-
-    test('should project future interaction changes', async () => {
-      const complexHorse = testHorses[2];
-
-      const temporalModel = (await generateInteractionMatrix(complexHorse.id, { timeWindow: 60 })).temporalModel;
-
-      expect(temporalModel.projectedChanges).toBeDefined();
-      expect(temporalModel.projectedChanges.synergyChanges).toBeDefined();
-      expect(temporalModel.projectedChanges.conflictChanges).toBeDefined();
-      expect(temporalModel.projectedChanges.dominanceShifts).toBeDefined();
-      expect(temporalModel.projectedChanges.stabilityForecast).toBeDefined();
     });
   });
 

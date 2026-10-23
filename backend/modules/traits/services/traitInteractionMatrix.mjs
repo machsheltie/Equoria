@@ -156,8 +156,7 @@ export function analyzeTraitSnapshot(snapshot, { timeWindow = 30, now = new Date
     horseId,
     timeWindow,
     interactionEvolution,
-    emergingPatterns: identifyEmergingPatterns(traits, ageInDays),
-    projectedChanges: projectFutureChanges(counts, timeWindow),
+    emergingPatterns: identifyEmergingPatterns(traits),
     analysisTimestamp: now,
   };
 
@@ -445,52 +444,14 @@ function modelInteractionEvolution(
   return evolution;
 }
 
-function identifyEmergingPatterns(traits, ageInDays) {
-  let stage = {
-    pattern: 'mature_expression',
-    description: 'Trait interactions have reached mature expression',
-    confidence: 0.9,
-  };
-  if (ageInDays < 30) {
-    stage = {
-      pattern: 'early_development',
-      description: 'Traits are still forming and highly malleable',
-      confidence: 0.8,
-    };
-  } else if (ageInDays < MATURITY_PERIOD_DAYS) {
-    stage = {
-      pattern: 'stabilization_period',
-      description: 'Trait interactions are beginning to stabilize',
-      confidence: 0.7,
-    };
-  }
+/**
+ * The named patterns the horse's traits form together. Owner ruling 2026-10-07
+ * (Equoria-huuaf): no developmental stages or forecasts, so the age-stage entry
+ * (early_development, stabilization_period, mature_expression) is gone.
+ */
+function identifyEmergingPatterns(traits) {
   const traitPatterns = TRAIT_PATTERNS.filter(entry =>
     entry.requires.every(trait => traits.includes(trait)),
   ).map(({ pattern, description, confidence }) => ({ pattern, description, confidence }));
-  return [stage, ...traitPatterns];
-}
-
-function projectFutureChanges(counts, timeWindow) {
-  return {
-    synergyChanges: {
-      expected: counts.synergies > 0 ? 'strengthening' : 'stable',
-      confidence: 0.6,
-      timeframe: `${timeWindow} days`,
-    },
-    conflictChanges: {
-      expected: counts.conflicts > 2 ? 'intensifying' : 'stable',
-      confidence: 0.5,
-      timeframe: `${timeWindow} days`,
-    },
-    dominanceShifts: {
-      expected: 'gradual_stabilization',
-      confidence: 0.7,
-      description: 'Dominant traits will become more established over time',
-    },
-    stabilityForecast: {
-      expected: counts.synergies > counts.conflicts ? 'improving' : 'declining',
-      confidence: 0.65,
-      factors: ['trait_maturation', 'environmental_consistency', 'care_quality'],
-    },
-  };
+  return traitPatterns;
 }

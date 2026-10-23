@@ -64,7 +64,8 @@ describe('generateEnvironmentalReport reads one snapshot', () => {
     const [, horseId] = fx.horses.find(([key]) => key === 'curious');
     const { result: report, statements } = await recorder.measure(() => generateEnvironmentalReport(horseId));
 
-    expect(report.traitExpressionProbabilities).toHaveLength(7);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no forecasts. Old contract: seven traitExpressionProbabilities.
+    expect(report).not.toHaveProperty('traitExpressionProbabilities');
     expect(report.cumulativeExposure.exposureTimeline.length).toBeGreaterThan(0);
     expect(selectsOn(statements, 'horses')).toHaveLength(1);
     expect(selectsOn(statements, 'groom_interactions')).toHaveLength(1);

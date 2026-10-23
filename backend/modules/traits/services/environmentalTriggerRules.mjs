@@ -141,46 +141,6 @@ export const THRESHOLD_AGE_BANDS = deepFreeze([
   [Infinity, 1.0],
 ]);
 
-// Trait expression: base x environmental x age x stress (multiplied in this order).
-export const BASE_EXPRESSION_PROBABILITY = 0.1;
-export const EXPRESSION_AGE_BANDS = deepFreeze([
-  [30, 1.5],
-  [90, 1.2],
-  [Infinity, 0.8],
-]);
-export const STRESS_AMPLIFIED_TRAITS = deepFreeze([
-  'fearful',
-  'reactive',
-  'insecure',
-  'fragile',
-  'antisocial',
-]);
-export const STRESS_DAMPENED_TRAITS = deepFreeze([
-  'brave',
-  'confident',
-  'social',
-  'curious',
-  'calm',
-]);
-// [minProbability, likelihood]; the first whose minimum is met, else the fallback.
-export const EXPRESSION_LIKELIHOOD_BANDS = deepFreeze([
-  [0.7, 'very_likely'],
-  [0.5, 'likely'],
-  [0.3, 'possible'],
-  [0.1, 'unlikely'],
-]);
-export const EXPRESSION_LIKELIHOOD_FALLBACK = 'very_unlikely';
-// The traits the full report evaluates, in report order.
-export const REPORT_TRAITS = deepFreeze([
-  'brave',
-  'fearful',
-  'confident',
-  'curious',
-  'calm',
-  'reactive',
-  'social',
-]);
-
 // Exposure per interaction: hours of contact, scaled (in this order).
 export const EXPOSURE_SCALING = deepFreeze([
   [{ field: 'stressChange', op: 'gt', value: 2 }, 1.5],

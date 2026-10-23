@@ -22,7 +22,6 @@ import {
   loadEnvironmentalTriggerSnapshot,
   cumulativeExposure,
   detectTriggers,
-  traitExpressionProbability,
   triggerThresholds,
 } from '../services/environmentalTriggerSystem.mjs';
 const analyze = async (horseId, project, ...rest) => project(await loadEnvironmentalTriggerSnapshot(horseId), ...rest);
@@ -281,51 +280,6 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     expect(result.ageModifier).toBe(1.0);
   });
 
-  // ── evaluateTraitExpressionProbability ───────────────────────────────────
-
-  it('evaluateTraitExpressionProbability: returns expressionLikelihood for brave (positive trait)', async () => {
-    const result = await analyze(etsHorseMature.id, traitExpressionProbability, 'brave');
-    expect(result.traitName).toBe('brave');
-    expect(typeof result.finalProbability).toBe('number');
-    expect(result.finalProbability).toBeGreaterThanOrEqual(0);
-    expect(result.finalProbability).toBeLessThanOrEqual(1);
-    expect(
-      ['very_likely', 'likely', 'possible', 'unlikely', 'very_unlikely'].includes(result.expressionLikelihood),
-    ).toBe(true);
-  });
-
-  it('evaluateTraitExpressionProbability: fearful (negative trait) has stress modifier applied', async () => {
-    const result = await analyze(etsHorseMature.id, traitExpressionProbability, 'fearful');
-    expect(result.traitName).toBe('fearful');
-    // stressModifier > 1.0 since fearful is in negativeTraits list (even for stressLevel=50)
-    expect(result.stressModifier).toBeGreaterThan(0);
-  });
-
-  it('evaluateTraitExpressionProbability: neutral trait (not in negative/positive list)', async () => {
-    const result = await analyze(etsHorseMature.id, traitExpressionProbability, 'curious');
-    expect(result.traitName).toBe('curious');
-    // curious is in positiveTraits → stressModifier applied; finalProbability still in [0,1]
-    expect(result.finalProbability).toBeGreaterThanOrEqual(0);
-  });
-
-  it('evaluateTraitExpressionProbability: young foal ageModifier=1.5 (≤30 days)', async () => {
-    const result = await analyze(etsHorseYoung.id, traitExpressionProbability, 'brave');
-    // ageInDays=15 ≤30 → ageModifier=1.5
-    expect(result.ageModifier).toBe(1.5);
-  });
-
-  it('evaluateTraitExpressionProbability: developing foal ageModifier=1.2 (≤90 days)', async () => {
-    const result = await analyze(etsHorseDeveloping.id, traitExpressionProbability, 'brave');
-    // ageInDays=45 ≤90 → ageModifier=1.2
-    expect(result.ageModifier).toBe(1.2);
-  });
-
-  it('evaluateTraitExpressionProbability: mature horse ageModifier=0.8 (>90 days)', async () => {
-    const result = await analyze(etsHorseMature.id, traitExpressionProbability, 'calm');
-    // ageInDays=200 >90 → ageModifier=0.8
-    expect(result.ageModifier).toBe(0.8);
-  });
-
   // ── generateEnvironmentalReport ──────────────────────────────────────────
 
   it('generateEnvironmentalReport: returns aggregated report for mature horse', async () => {
@@ -333,8 +287,8 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     expect(result.horseId).toBe(etsHorseMature.id);
     expect(result.environmentalTriggers).toBeDefined();
     expect(result.triggerThresholds).toBeDefined();
-    expect(Array.isArray(result.traitExpressionProbabilities)).toBe(true);
-    expect(result.traitExpressionProbabilities.length).toBeGreaterThan(0);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no forecasts. Old contract: traitExpressionProbabilities, one per trait.
+    expect(result).not.toHaveProperty('traitExpressionProbabilities');
     expect(result.cumulativeExposure).toBeDefined();
     // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: criticalPeriodSensitivity and recommendations defined).
     expect(result).not.toHaveProperty('criticalPeriodSensitivity');
@@ -372,14 +326,6 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
   });
 
   // ── evaluateTraitExpressionProbability — with detected triggers ───────────
-
-  it('evaluateTraitExpressionProbability: fearful with stress_inducing → relevantTriggers populated (line 288)', async () => {
-    const result = await analyze(etsHorseMature.id, traitExpressionProbability, 'fearful');
-    // stress_inducing.traits_affected includes 'fearful' → environmentalModifier increases
-    expect(result.relevantTriggers.length).toBeGreaterThan(0);
-    expect(result.relevantTriggers[0].type).toBe('stress_inducing');
-    expect(result.environmentalModifier).toBeGreaterThan(1.0);
-  });
 
   // ── generateEnvironmentalReport — highly sensitive horse ─────────────────
 

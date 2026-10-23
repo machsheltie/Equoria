@@ -5,8 +5,7 @@
  * triggers it implies (Equoria-q4uem.7 S4):
  *
  *   loadEnvironmentalTriggerSnapshot(horseId)    two reads: the horse, its interactions
- *     -> detectTriggers / triggerThresholds / traitExpressionProbability /
- *        cumulativeExposure   pure projections
+ *     -> detectTriggers / triggerThresholds / cumulativeExposure   pure projections
  *     -> environmentalReport (composes them once)
  *   generateEnvironmentalReport(horseId)          load + report
  *
@@ -20,7 +19,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyTemporaryFlag } from './temporaryFlagSystem.mjs';
 import {
-  BASE_EXPRESSION_PROBABILITY,
   BASE_TRIGGER_THRESHOLD,
   CUMULATIVE_EFFECTS_EVERY,
   DEFAULT_FACTOR_PRESENT_ABOVE,
@@ -28,14 +26,8 @@ import {
   ENVIRONMENTAL_EVENT_TO_TEMP_FLAG,
   ENVIRONMENTAL_TRIGGERS,
   EXPOSURE_SCALING,
-  EXPRESSION_AGE_BANDS,
-  EXPRESSION_LIKELIHOOD_BANDS,
-  EXPRESSION_LIKELIHOOD_FALLBACK,
   FACTOR_PRESENCE_RULES,
   QUALITY_SCORES,
-  REPORT_TRAITS,
-  STRESS_AMPLIFIED_TRAITS,
-  STRESS_DAMPENED_TRAITS,
   THRESHOLD_AGE_BANDS,
   TRIGGER_DETECTION_THRESHOLD,
   TRIGGER_SCORE_RULES,
@@ -183,58 +175,6 @@ export function triggerThresholds({ horseId, horse, now }) {
   };
 }
 
-/**
- * Probability that a trait is expressed, from the detected triggers, the horse's
- * age and its stress. Throws when the horse does not exist.
- * `detected` lets a caller that already ran detectTriggers reuse it.
- */
-export function traitExpressionProbability(
-  snapshot,
-  traitName,
-  detected = detectTriggers(snapshot),
-) {
-  const { horseId, horse, now } = snapshot;
-  if (!horse) {
-    throw new Error(`Horse not found: ${horseId}`);
-  }
-  const baseProbability = BASE_EXPRESSION_PROBABILITY;
-
-  let environmentalModifier = 1.0;
-  detected.detectedTriggers.forEach(trigger => {
-    if (trigger.affectedTraits.includes(traitName)) {
-      environmentalModifier += trigger.strength * 0.5; // Up to 50% per relevant trigger
-    }
-  });
-
-  const ageModifier = bandValue(EXPRESSION_AGE_BANDS, getHorseAgeDays(horse.dateOfBirth, now));
-
-  let stressModifier = 1.0;
-  if (STRESS_AMPLIFIED_TRAITS.includes(traitName)) {
-    stressModifier = 1.0 + horse.stressLevel / 20;
-  } else if (STRESS_DAMPENED_TRAITS.includes(traitName)) {
-    stressModifier = Math.max(0.5, 1.0 - horse.stressLevel / 30);
-  }
-
-  const finalProbability = Math.max(
-    0,
-    Math.min(1, baseProbability * environmentalModifier * ageModifier * stressModifier),
-  );
-  const band = EXPRESSION_LIKELIHOOD_BANDS.find(([min]) => finalProbability >= min);
-
-  return {
-    horseId,
-    traitName,
-    baseProbability,
-    environmentalModifier,
-    ageModifier,
-    stressModifier,
-    finalProbability,
-    expressionLikelihood: band ? band[1] : EXPRESSION_LIKELIHOOD_FALLBACK,
-    relevantTriggers: detected.detectedTriggers.filter(t => t.affectedTraits.includes(traitName)),
-    analysisTimestamp: now,
-  };
-}
-
 /** Exposure accumulated over every interaction, oldest first. */
 export function cumulativeExposure({ horseId, interactions, now }) {
   if (interactions.length === 0) {
@@ -297,15 +237,11 @@ export function environmentalReport(snapshot) {
   const environmentalTriggers = detectTriggers(snapshot);
   const triggerThresholdsResult = triggerThresholds(snapshot);
   const exposure = cumulativeExposure(snapshot);
-  const traitExpressionProbabilities = REPORT_TRAITS.map(trait =>
-    traitExpressionProbability(snapshot, trait, environmentalTriggers),
-  );
 
   return {
     horseId: snapshot.horseId,
     environmentalTriggers,
     triggerThresholds: triggerThresholdsResult,
-    traitExpressionProbabilities,
     cumulativeExposure: exposure,
     reportTimestamp: snapshot.now,
   };

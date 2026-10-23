@@ -10,13 +10,12 @@
  * are comparable across runs. The golden digests were recorded from the pre-S4
  * per-function API (439e793d6..b69fd4af4 line) through this same grid.
  *
- * The outputs here are mostly UNROUNDED (thresholds, probabilities, exposure),
+ * The outputs here are mostly UNROUNDED (thresholds, exposure),
  * so the order of every multiplication and sum reaches the digests: the grid
- * varies age, stress and bond together so the 4-factor threshold and
- * probability products all vary.
+ * varies age, stress and bond together so the 4-factor threshold
+ * products all vary.
  *
- * api = async { detect(id), thresholds(id), probability(id, trait),
- *               exposure(id), report(id) }
+ * api = async { detect(id), thresholds(id), exposure(id), report(id) }
  */
 
 import { createHash } from 'node:crypto';
@@ -296,19 +295,6 @@ const FOALS = [
   ['tied', 30, 5, 20, 'tied'],
 ];
 
-export const PROBABILITY_TRAITS = [
-  'brave',
-  'fearful',
-  'confident',
-  'curious',
-  'calm',
-  'reactive',
-  'social',
-  'insecure',
-  'withdrawn',
-  'unlistedTrait',
-];
-
 export async function buildTriggerFixtures(prisma, token, colour) {
   const now = Date.now();
   const user = await prisma.user.create({
@@ -427,9 +413,6 @@ export async function runTriggerGrid(api, fx) {
     };
     await record('detect', () => api.detect(id));
     await record('thresholds', () => api.thresholds(id));
-    for (const trait of PROBABILITY_TRAITS) {
-      await record(`probability:${trait}`, () => api.probability(id, trait));
-    }
     await record('exposure', () => api.exposure(id));
     await record('report', () => api.report(id));
   }

@@ -398,13 +398,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
   },
   "temporalModel": {
     "analysisTimestamp": "<analysisTimestamp>",
-    "emergingPatterns": [
-      {
-        "confidence": 0.8,
-        "description": "Traits are still forming and highly malleable",
-        "pattern": "early_development",
-      },
-    ],
+    "emergingPatterns": [],
     "horseId": "<horseId>",
     "interactionEvolution": [
       {
@@ -443,32 +437,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) conflicti
         "synergyStrength": 0.3377777777777778,
       },
     ],
-    "projectedChanges": {
-      "conflictChanges": {
-        "confidence": 0.5,
-        "expected": "intensifying",
-        "timeframe": "30 days",
-      },
-      "dominanceShifts": {
-        "confidence": 0.7,
-        "description": "Dominant traits will become more established over time",
-        "expected": "gradual_stabilization",
-      },
-      "stabilityForecast": {
-        "confidence": 0.65,
-        "expected": "declining",
-        "factors": [
-          "trait_maturation",
-          "environmental_consistency",
-          "care_quality",
-        ],
-      },
-      "synergyChanges": {
-        "confidence": 0.6,
-        "expected": "strengthening",
-        "timeframe": "30 days",
-      },
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -598,13 +566,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) empty hor
   },
   "temporalModel": {
     "analysisTimestamp": "<analysisTimestamp>",
-    "emergingPatterns": [
-      {
-        "confidence": 0.8,
-        "description": "Traits are still forming and highly malleable",
-        "pattern": "early_development",
-      },
-    ],
+    "emergingPatterns": [],
     "horseId": "<horseId>",
     "interactionEvolution": [
       {
@@ -643,32 +605,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) empty hor
         "synergyStrength": 0,
       },
     ],
-    "projectedChanges": {
-      "conflictChanges": {
-        "confidence": 0.5,
-        "expected": "stable",
-        "timeframe": "30 days",
-      },
-      "dominanceShifts": {
-        "confidence": 0.7,
-        "description": "Dominant traits will become more established over time",
-        "expected": "gradual_stabilization",
-      },
-      "stabilityForecast": {
-        "confidence": 0.65,
-        "expected": "declining",
-        "factors": [
-          "trait_maturation",
-          "environmental_consistency",
-          "care_quality",
-        ],
-      },
-      "synergyChanges": {
-        "confidence": 0.6,
-        "expected": "stable",
-        "timeframe": "30 days",
-      },
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -1189,11 +1125,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
     "analysisTimestamp": "<analysisTimestamp>",
     "emergingPatterns": [
       {
-        "confidence": 0.9,
-        "description": "Trait interactions have reached mature expression",
-        "pattern": "mature_expression",
-      },
-      {
         "confidence": 0.75,
         "description": "Curiosity and intelligence create accelerated learning potential",
         "pattern": "learning_acceleration",
@@ -1242,32 +1173,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) matureEme
         "synergyStrength": 4.500000000000001,
       },
     ],
-    "projectedChanges": {
-      "conflictChanges": {
-        "confidence": 0.5,
-        "expected": "stable",
-        "timeframe": "30 days",
-      },
-      "dominanceShifts": {
-        "confidence": 0.7,
-        "description": "Dominant traits will become more established over time",
-        "expected": "gradual_stabilization",
-      },
-      "stabilityForecast": {
-        "confidence": 0.65,
-        "expected": "improving",
-        "factors": [
-          "trait_maturation",
-          "environmental_consistency",
-          "care_quality",
-        ],
-      },
-      "synergyChanges": {
-        "confidence": 0.6,
-        "expected": "strengthening",
-        "timeframe": "30 days",
-      },
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -1730,13 +1635,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
   },
   "temporalModel": {
     "analysisTimestamp": "<analysisTimestamp>",
-    "emergingPatterns": [
-      {
-        "confidence": 0.7,
-        "description": "Trait interactions are beginning to stabilize",
-        "pattern": "stabilization_period",
-      },
-    ],
+    "emergingPatterns": [],
     "horseId": "<horseId>",
     "interactionEvolution": [
       {
@@ -1775,32 +1674,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) socialAnd
         "synergyStrength": 2.25,
       },
     ],
-    "projectedChanges": {
-      "conflictChanges": {
-        "confidence": 0.5,
-        "expected": "stable",
-        "timeframe": "30 days",
-      },
-      "dominanceShifts": {
-        "confidence": 0.7,
-        "description": "Dominant traits will become more established over time",
-        "expected": "gradual_stabilization",
-      },
-      "stabilityForecast": {
-        "confidence": 0.65,
-        "expected": "improving",
-        "factors": [
-          "trait_maturation",
-          "environmental_consistency",
-          "care_quality",
-        ],
-      },
-      "synergyChanges": {
-        "confidence": 0.6,
-        "expected": "strengthening",
-        "timeframe": "30 days",
-      },
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -2108,11 +1981,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
     "analysisTimestamp": "<analysisTimestamp>",
     "emergingPatterns": [
       {
-        "confidence": 0.7,
-        "description": "Trait interactions are beginning to stabilize",
-        "pattern": "stabilization_period",
-      },
-      {
         "confidence": 0.6,
         "description": "Social confidence may lead to leadership behaviors",
         "pattern": "leadership_emergence",
@@ -2156,32 +2024,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) synergist
         "synergyStrength": 1.8133333333333335,
       },
     ],
-    "projectedChanges": {
-      "conflictChanges": {
-        "confidence": 0.5,
-        "expected": "stable",
-        "timeframe": "30 days",
-      },
-      "dominanceShifts": {
-        "confidence": 0.7,
-        "description": "Dominant traits will become more established over time",
-        "expected": "gradual_stabilization",
-      },
-      "stabilityForecast": {
-        "confidence": 0.65,
-        "expected": "improving",
-        "factors": [
-          "trait_maturation",
-          "environmental_consistency",
-          "care_quality",
-        ],
-      },
-      "synergyChanges": {
-        "confidence": 0.6,
-        "expected": "strengthening",
-        "timeframe": "30 days",
-      },
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {
@@ -2324,13 +2166,7 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) unknownTr
   },
   "temporalModel": {
     "analysisTimestamp": "<analysisTimestamp>",
-    "emergingPatterns": [
-      {
-        "confidence": 0.7,
-        "description": "Trait interactions are beginning to stabilize",
-        "pattern": "stabilization_period",
-      },
-    ],
+    "emergingPatterns": [],
     "horseId": "<horseId>",
     "interactionEvolution": [
       {
@@ -2369,32 +2205,6 @@ exports[`trait interaction analysis characterization (Equoria-q4uem.5) unknownTr
         "synergyStrength": 0,
       },
     ],
-    "projectedChanges": {
-      "conflictChanges": {
-        "confidence": 0.5,
-        "expected": "stable",
-        "timeframe": "30 days",
-      },
-      "dominanceShifts": {
-        "confidence": 0.7,
-        "description": "Dominant traits will become more established over time",
-        "expected": "gradual_stabilization",
-      },
-      "stabilityForecast": {
-        "confidence": 0.65,
-        "expected": "declining",
-        "factors": [
-          "trait_maturation",
-          "environmental_consistency",
-          "care_quality",
-        ],
-      },
-      "synergyChanges": {
-        "confidence": 0.6,
-        "expected": "stable",
-        "timeframe": "30 days",
-      },
-    },
     "timeWindow": 30,
   },
   "traitInteractions": {

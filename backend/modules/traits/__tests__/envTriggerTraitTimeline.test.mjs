@@ -13,7 +13,6 @@ import {
   loadEnvironmentalTriggerSnapshot,
   cumulativeExposure,
   detectTriggers,
-  traitExpressionProbability,
   triggerThresholds,
 } from '../services/environmentalTriggerSystem.mjs';
 const analyze = async (horseId, project, ...rest) => project(await loadEnvironmentalTriggerSnapshot(horseId), ...rest);
@@ -97,26 +96,6 @@ describe('calculateTriggerThresholds', () => {
   });
 });
 
-describe('evaluateTraitExpressionProbability', () => {
-  it('returns probability shape for brave trait', async () => {
-    const result = await analyze(horse.id, traitExpressionProbability, 'brave');
-    expect(result.horseId).toBe(horse.id);
-    expect(result.traitName).toBe('brave');
-    expect(typeof result.baseProbability).toBe('number');
-    expect(typeof result.finalProbability).toBe('number');
-    expect(typeof result.expressionLikelihood).toBe('string');
-    expect(result.finalProbability).toBeGreaterThanOrEqual(0);
-    expect(result.finalProbability).toBeLessThanOrEqual(1);
-    expect(realDateOrReason(result.analysisTimestamp)).toBe('valid date');
-  });
-
-  it('returns probability shape for fearful trait', async () => {
-    const result = await analyze(horse.id, traitExpressionProbability, 'fearful');
-    expect(typeof result.expressionLikelihood).toBe('string');
-    expect(Array.isArray(result.relevantTriggers)).toBe(true);
-  });
-});
-
 describe('trackCumulativeExposure', () => {
   it('returns zero exposure for horse with no interactions', async () => {
     const result = await analyze(horse.id, cumulativeExposure);
@@ -134,8 +113,8 @@ describe('generateEnvironmentalReport', () => {
     expect(result.horseId).toBe(horse.id);
     expect(typeof result.environmentalTriggers).toBe('object');
     expect(typeof result.triggerThresholds).toBe('object');
-    expect(Array.isArray(result.traitExpressionProbabilities)).toBe(true);
-    expect(result.traitExpressionProbabilities.length).toBeGreaterThan(0);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no forecasts. Old contract: traitExpressionProbabilities.
+    expect(result).not.toHaveProperty('traitExpressionProbabilities');
     expect(typeof result.cumulativeExposure).toBe('object');
     // Owner ruling 2026-10-07 (Equoria-5nxw0): no advice, windows or forecasts (old contract: criticalPeriodSensitivity and recommendations present).
     expect(result).not.toHaveProperty('criticalPeriodSensitivity');
@@ -251,32 +230,6 @@ describe('age-bracket branches (Equoria-jkht)', () => {
   it('calculateTriggerThresholds: ageModifier=1.0 for horse 100 days old (>90d bracket)', async () => {
     const result = await analyze(horse100d.id, triggerThresholds);
     expect(result.ageModifier).toBe(1.0);
-  });
-
-  // ── evaluateTraitExpressionProbability ageModifier + expressionLikelihood ───
-
-  it('evaluateTraitExpressionProbability: ageModifier=1.2 for horse 60 days old (31-90d)', async () => {
-    const result = await analyze(horse60d.id, traitExpressionProbability, 'calm');
-    expect(result.ageModifier).toBe(1.2);
-  });
-
-  it('evaluateTraitExpressionProbability: ageModifier=0.8 for horse 100 days old (>90d)', async () => {
-    const result = await analyze(horse100d.id, traitExpressionProbability, 'patient');
-    expect(result.ageModifier).toBe(0.8);
-  });
-
-  it('expressionLikelihood=unlikely for horse 60d with calm trait (finalP≈0.12)', async () => {
-    // stressLevel=0: stressModifier=Math.max(0.5, 1.0-0/30)=1.0; no interactions → envModifier=1.0
-    // finalP = 0.1 * 1.0 * 1.2 * 1.0 = 0.12 → 0.1 ≤ 0.12 < 0.3 → 'unlikely'
-    const result = await analyze(horse60d.id, traitExpressionProbability, 'calm');
-    expect(result.expressionLikelihood).toBe('unlikely');
-  });
-
-  it('expressionLikelihood=very_unlikely for horse 100d with neutral trait (finalP≈0.08)', async () => {
-    // 'patient' is not in negativeTraits or positiveTraits → stressModifier=1.0
-    // finalP = 0.1 * 1.0 * 0.8 * 1.0 = 0.08 → < 0.1 → 'very_unlikely'
-    const result = await analyze(horse100d.id, traitExpressionProbability, 'patient');
-    expect(result.expressionLikelihood).toBe('very_unlikely');
   });
 });
 
