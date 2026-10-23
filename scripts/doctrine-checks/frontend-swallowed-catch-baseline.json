@@ -1,0 +1,17 @@
+{
+  "frontend/src/components/hub/WhileYouWereGone.tsx": 2,
+  "frontend/src/components/layout/SidebarNav.tsx": 2,
+  "frontend/src/components/theme/CelestialThemeProvider.tsx": 4,
+  "frontend/src/components/ui/dialogPresence.ts": 2,
+  "frontend/src/hooks/useSound.ts": 1,
+  "frontend/src/lib/activity-utils.ts": 1,
+  "frontend/src/lib/featureFlags.tsx": 1,
+  "frontend/src/lib/http/apiClient.ts": 2,
+  "frontend/src/lib/http/crossTabRefresh.ts": 2,
+  "frontend/src/lib/safeRedirect.ts": 1,
+  "frontend/src/lib/soundManager.ts": 5,
+  "frontend/src/lib/traitEventSeen.ts": 3,
+  "frontend/src/pages/Index.tsx": 1,
+  "frontend/src/pages/OnboardingPage.tsx": 6,
+  "frontend/src/pages/SettingsPage.tsx": 1
+}
