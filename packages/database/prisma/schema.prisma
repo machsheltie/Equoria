@@ -952,6 +952,14 @@ model CompetitionResult {
   /// settled before Equoria-q4uem.10 and on conformation results, which award
   /// no Horse Points today.
   horsePointsAwarded Int?
+  /// Equoria-4q02c (owner ruling q01, 2026-10-23): every input of the score for
+  /// a ridden entry, `{ base, trainingPoints, tackPoints, luckPercent,
+  /// riderPercent, temperamentPercent, healthPercent }`, written at settlement
+  /// from the staged ordering. Visible ONLY to the Owner and Admins (staff
+  /// capability results.scoreInputs.view); never a player or moderator surface,
+  /// so every player-facing read selects columns or omits this one. NULL on
+  /// rows settled before this column and on conformation results.
+  scoreInputs Json?
   /// Foreign keys
   horseId    Int
   showId     Int
