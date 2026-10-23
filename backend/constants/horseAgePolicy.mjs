@@ -26,12 +26,15 @@
  */
 
 // First game-year at which training / competition / breeding all begin.
-export const MIN_ACTIVE_AGE_YEARS = 3;
+// camelCase spelling for new consumers (Equoria-pjvp8 ratchet); same value.
+export const minActiveAgeYears = 3;
+export const MIN_ACTIVE_AGE_YEARS = minActiveAgeYears;
 
 // Last ACTIVE game-year, inclusive. A horse aged exactly 20 is still active;
 // 21 is over the cap. Tuning this changes lifetime training opportunity and
 // competition balance; require a fresh owner ruling and coordinated review.
-export const MAX_ACTIVE_AGE_YEARS = 20;
+export const maxActiveAgeYears = 20;
+export const MAX_ACTIVE_AGE_YEARS = maxActiveAgeYears;
 
 // Display / UX label: the age at which a horse "retires" (one past the last
 // active year). Not itself a gate — the gate is `age > MAX_ACTIVE_AGE_YEARS`.

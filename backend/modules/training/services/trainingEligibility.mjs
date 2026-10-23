@@ -12,7 +12,7 @@
  * gate as breeding and every show entry).
  */
 
-import { MIN_ACTIVE_AGE_YEARS, MAX_ACTIVE_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
+import { minActiveAgeYears, maxActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 
 /**
@@ -22,10 +22,10 @@ import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
  * @returns {string|null} the player-facing reason it cannot train, or null
  */
 export function trainingRefusalReason(horse, effectiveAge) {
-  if (effectiveAge < MIN_ACTIVE_AGE_YEARS) {
+  if (effectiveAge < minActiveAgeYears) {
     return 'Horse is under age';
   }
-  if (effectiveAge > MAX_ACTIVE_AGE_YEARS) {
+  if (effectiveAge > maxActiveAgeYears) {
     return 'Horse is too old to train';
   }
   // Case-insensitive against healthStatus casing drift; a null status is not injured.

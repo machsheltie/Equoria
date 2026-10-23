@@ -6,8 +6,7 @@
  * breeding, competitions, userProgress, marketplace) and re-exported from the
  * api-client barrel. They live here so the remaining inline domains can be
  * extracted to ./api/<domain>.ts in follow-up slices without a circular
- * dependency on the barrel. The api-client barrel re-exports every type below
- * unchanged, so the public type surface is preserved.
+ * dependency on the barrel, which re-exports every type below unchanged.
  *
  * NOTE: `normalizeFoalDevelopment` (the runtime flattener) stays in
  * api-client.ts because it is exported from the barrel and bound to the
@@ -28,7 +27,6 @@ export interface TrainableHorse {
   age?: number;
   ageYears?: number;
   canTrain?: boolean;
-  /** Why the server will not train this horse right now (age, health); null when it will. */
   ineligibleReason?: string | null;
   bestDisciplines?: string[];
   trainableDisciplines?: string[];
