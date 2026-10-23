@@ -24,7 +24,7 @@ import { buildDatabaseUrl } from '../../../../../packages/database/dbPoolConfig.
 import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
-import { gameCalendarDate } from '../../../../utils/gameTime.mjs';
+import { birthDateForAge } from '../../../../utils/horseAge.mjs';
 
 export const ORIGIN = 'http://localhost:3000';
 
@@ -61,7 +61,10 @@ export async function makeHorse(prefix, { ownerId, sex, breedId, ...overrides })
       ...fixtureColor(),
       name: `${prefix}-${sex}-${tag()}`,
       sex,
-      dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
+      // A 5-game-year-old (1 game year = 7 days). The old -5 * 365 days made
+      // every fixture ~260 game-years old, which breeding now refuses (owner
+      // ruling 2026-10-23: horses breed only at 3-20, Equoria-e7tgc.4).
+      dateOfBirth: birthDateForAge(5),
       age: 5,
       breedId,
       userId: ownerId,

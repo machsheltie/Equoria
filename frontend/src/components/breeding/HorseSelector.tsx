@@ -33,6 +33,12 @@ export function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: strin
     return { canBreed: false, reason: `Too young (${horse.age}y, needs 3+y)` };
   }
 
+  // Owner ruling 2026-10-23: horses breed only through age 20; at 21 they are
+  // retired (the server refuses them too).
+  if (horse.age > 20) {
+    return { canBreed: false, reason: `Retired (${horse.age}y; breeds until 20)` };
+  }
+
   // Health check
   if (horse.healthStatus && horse.healthStatus.toLowerCase() === 'injured') {
     return { canBreed: false, reason: 'Injured' };

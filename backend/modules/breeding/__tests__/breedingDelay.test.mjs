@@ -67,7 +67,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
       create: { name: 'Thoroughbred', description: 'Shared test breed' },
     });
 
-    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 7);
     const sire = await prisma.horse.create({
       data: {
         ...fixtureColor(),

@@ -119,6 +119,19 @@ describe('canHorseBreed', () => {
     });
   });
 
+  describe('breeding age window 3-20 (owner ruling 2026-10-23, Equoria-e7tgc.4)', () => {
+    it('allows a 20-year-old', () => {
+      expect(canHorseBreed(createHorse({ age: 20 }))).toEqual({ canBreed: true });
+    });
+
+    it('refuses a 21-year-old as retired', () => {
+      expect(canHorseBreed(createHorse({ age: 21 }))).toEqual({
+        canBreed: false,
+        reason: 'Retired (21y; breeds until 20)',
+      });
+    });
+  });
+
   describe('in-foal validation (Equoria-q4uem.9)', () => {
     it('refuses a mare the server reports in foal', () => {
       const horse = createHorse({ sex: 'Mare', age: 6, inFoal: true });

@@ -11,7 +11,9 @@
  *   - neither horse in critical displayed health (Equoria-2e7e)
  *   - sire and dam are different horses, exactly 'Stallion' and 'Mare'
  *     (Equoria-mhdul)
- *   - both at least MIN_BREEDING_AGE_YEARS game-years old (PRD-08 s2.5)
+ *   - both between minBreedingAgeYears (3) and maxBreedingAgeYears (20)
+ *     game-years old, inclusive; a retired horse (21+) cannot breed (owner
+ *     ruling, Stacey 2026-10-23, Equoria-e7tgc.4)
  *   - the DAM is off cooldown: DAM_BREEDING_COOLDOWN_DAYS after lastBredDate.
  *     Mares only; stallions have no cooldown or limit (owner rulings 2026-07-02,
  *     2026-10-02, S2 2026-10-15; S-Q1 2026-10-16 keeps 7 days)
@@ -34,7 +36,15 @@ import {
 } from '../../../utils/gameTime.mjs';
 
 /** Minimum breeding age in game-years (PRD-08 s2.5). 3 game-years = 21 real days. */
-export const MIN_BREEDING_AGE_YEARS = 3;
+export const minBreedingAgeYears = 3;
+
+/**
+ * Maximum breeding age in game-years, inclusive (owner ruling, Stacey
+ * 2026-10-23, Equoria-e7tgc.4): mares and stallions breed only at 3-20; at 21
+ * a horse is retired and cannot breed. The same last year as the active-age
+ * window in constants/horseAgePolicy.mjs.
+ */
+export const maxBreedingAgeYears = 20;
 
 /**
  * Dam cooldown in real days after conception (user decision 2026-07-02):
@@ -91,21 +101,36 @@ export async function validateBreedingPair({ sire, dam, client = prisma }) {
     return refuse(400, `Dam must be a Mare (${dam.name} is ${dam.sex})`, 'mare');
   }
 
-  // Guard 3: minimum breeding age (3 game-years = 21 real days).
+  // Guard 3: breeding age window, 3-20 game-years inclusive (3 game-years = 21
+  // real days; owner ruling 2026-10-23 closes the top at 20 for both sexes).
   // Uses horseAge.mjs date-only, Eastern game clock arithmetic (Equoria-vdw5) — never inline math.
   const sireAgeYears = getHorseAgeYears(sire.dateOfBirth);
-  if (sireAgeYears < MIN_BREEDING_AGE_YEARS) {
+  if (sireAgeYears < minBreedingAgeYears) {
     return refuse(
       400,
-      `${sire.name} is too young to breed (${sireAgeYears} game-year(s); minimum is ${MIN_BREEDING_AGE_YEARS})`,
+      `${sire.name} is too young to breed (${sireAgeYears} game-year(s); minimum is ${minBreedingAgeYears})`,
+      'sire',
+    );
+  }
+  if (sireAgeYears > maxBreedingAgeYears) {
+    return refuse(
+      400,
+      `${sire.name} is retired and can no longer breed (${sireAgeYears} game-years; horses breed until ${maxBreedingAgeYears})`,
       'sire',
     );
   }
   const damAgeYears = getHorseAgeYears(dam.dateOfBirth);
-  if (damAgeYears < MIN_BREEDING_AGE_YEARS) {
+  if (damAgeYears < minBreedingAgeYears) {
     return refuse(
       400,
-      `${dam.name} is too young to breed (${damAgeYears} game-year(s); minimum is ${MIN_BREEDING_AGE_YEARS})`,
+      `${dam.name} is too young to breed (${damAgeYears} game-year(s); minimum is ${minBreedingAgeYears})`,
+      'mare',
+    );
+  }
+  if (damAgeYears > maxBreedingAgeYears) {
+    return refuse(
+      400,
+      `${dam.name} is retired and can no longer breed (${damAgeYears} game-years; horses breed until ${maxBreedingAgeYears})`,
       'mare',
     );
   }

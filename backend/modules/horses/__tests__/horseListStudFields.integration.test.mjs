@@ -127,7 +127,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
         ...fixtureColor(),
         name: `${PREFIX}-${sex}-${tag()}`,
         sex,
-        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
+        dateOfBirth: gameCalendarDate(new Date(), -5 * 7),
         age: 5,
         breedId: breed.id,
         userId: ownerId,

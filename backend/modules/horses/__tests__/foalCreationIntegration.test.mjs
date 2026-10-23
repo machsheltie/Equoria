@@ -98,7 +98,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     });
 
     // Create a real sire (adult stallion)
-    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
+    const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 7);
     testSire = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -117,7 +117,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     });
 
     // Create a real dam (adult mare)
-    const fourYearsAgo = gameCalendarDate(new Date(), -4 * 365);
+    const fourYearsAgo = gameCalendarDate(new Date(), -4 * 7);
     testDam = await prisma.horse.create({
       data: {
         ...fixtureColor(),
