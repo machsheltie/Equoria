@@ -144,16 +144,21 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
   const {
     data: geneticProbability,
     isLoading: loadingGenetic,
-    error: geneticError,
+    refetch: refetchGenetic,
   } = useGeneticProbability(sireId, damId);
-  const { data: inbreedingAnalysis, isLoading: loadingInbreeding } = useInbreedingAnalysis(
-    sireId,
-    damId
-  );
+  const {
+    data: inbreedingAnalysis,
+    isLoading: loadingInbreeding,
+    refetch: refetchInbreeding,
+  } = useInbreedingAnalysis(sireId, damId);
   // Real 3-generation ancestor tree (Equoria-55bo.2) — replaces the flat
   // common-ancestor overlap in the Pedigree tab with the game's actual
   // recursive sire/dam lineage from the backend lineage-analysis endpoint.
-  const { data: lineageAnalysis, isLoading: loadingLineage } = useLineageAnalysis(sireId, damId);
+  const {
+    data: lineageAnalysis,
+    isLoading: loadingLineage,
+    refetch: refetchLineage,
+  } = useLineageAnalysis(sireId, damId);
 
   // Map the real responses; null when prediction is unavailable so the
   // preview renders an honest loading/empty state (no fabricated numbers).
@@ -399,26 +404,17 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* 4-tab CompatibilityPreview — real backend genetics (Equoria-to87r) */}
       {selectedSire && selectedDam && (
-        <>
-          {geneticError && !loadingPreview && (
-            <div
-              role="alert"
-              className="glass-panel rounded-[var(--radius-xl)] border border-[var(--role-danger-border)] p-4 mb-3 flex items-start gap-2 text-sm text-[var(--role-danger-text)] font-[var(--font-body)]"
-            >
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
-              <span>
-                Breeding genetics prediction is unavailable right now. Compatibility figures are
-                intentionally hidden rather than estimated — try again shortly.
-              </span>
-            </div>
-          )}
-          <CompatibilityPreview
-            mareName={selectedDam.name}
-            stallionName={selectedSire.name}
-            data={previewData}
-            isLoading={loadingPreview}
-          />
-        </>
+        <CompatibilityPreview
+          mareName={selectedDam.name}
+          stallionName={selectedSire.name}
+          data={previewData}
+          isLoading={loadingPreview}
+          onRetry={() => {
+            void refetchGenetic();
+            void refetchInbreeding();
+            void refetchLineage();
+          }}
+        />
       )}
 
       {/* Equoria-wodz — lethal-foal warning. Renders above the predictions

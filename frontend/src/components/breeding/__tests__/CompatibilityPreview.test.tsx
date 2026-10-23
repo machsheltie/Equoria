@@ -7,7 +7,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { CompatibilityPreview, type CompatibilityData } from '../CompatibilityPreview';
 
 const sampleData: CompatibilityData = {
@@ -58,11 +58,32 @@ describe('CompatibilityPreview', () => {
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
-  it('shows loading skeleton when data is null', () => {
+  // Equoria-wohv4 (owner doctrine FRONTEND_ASYNC_STATE_DOCTRINE §1): this case used
+  // to pin "no data and not loading shows the skeleton", which put a pair whose
+  // prediction failed (or finished without data) on a skeleton forever. Loading is
+  // signalled by `isLoading`; once it is false, no data is an honest unavailable
+  // state, never a skeleton.
+  it('shows an honest unavailable state, not a skeleton, when finished loading without data', () => {
     const { container } = render(
       <CompatibilityPreview mareName="Luna" stallionName="Atlas" data={null} />
     );
-    expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+    expect(container.querySelector('.animate-pulse')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/unavailable/i);
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+  });
+
+  it('offers a retry on the unavailable state when the caller provides one', async () => {
+    const onRetry = vi.fn();
+    render(
+      <CompatibilityPreview mareName="Luna" stallionName="Atlas" data={null} onRetry={onRetry} />
+    );
+    await userEvent.click(screen.getByRole('button', { name: /try again/i }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers no retry button when the caller provides none', () => {
+    render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={null} />);
+    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
   });
 
   describe('Tab switching', () => {

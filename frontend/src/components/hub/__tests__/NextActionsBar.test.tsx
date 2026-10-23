@@ -17,13 +17,15 @@
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import { http, HttpResponse, delay } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '@/test/utils';
 import { server } from '@/test/msw/server';
 import { NextActionsBar } from '../NextActionsBar';
-import type { NextAction } from '@/hooks/api/useNextActions';
+import { nextActionsKeys, type NextAction } from '@/hooks/api/useNextActions';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const NEXT_ACTIONS_PATH = `${base}/api/v1/next-actions`;
@@ -76,29 +78,68 @@ describe('NextActionsBar', () => {
     await waitFor(() => expect(screen.getByText('Thunder is ready to train!')).toBeInTheDocument());
   });
 
-  it('returns null when the boundary returns no actions', async () => {
+  // Equoria-oey96.51 / Equoria-wohv4 (owner doctrine FRONTEND_ASYNC_STATE_DOCTRINE §1):
+  // these two cases used to pin "renders nothing" for an empty list and for a
+  // failed read. A failed read is not an empty one, and a genuinely empty list
+  // owes the player an honest resting line (Story 23.1 AC, literal copy).
+  it('renders the resting line when the boundary returns no actions', async () => {
     stubNextActions([]);
 
-    const { container } = renderBar();
-    // Empty actions → component renders nothing (after the query settles).
-    await waitFor(() => expect(container.querySelectorAll('.animate-pulse').length).toBe(0));
-    expect(container.innerHTML).toBe('');
+    renderBar();
+    expect(
+      await screen.findByText('Your stable is resting — check back soon.')
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('returns null when the boundary errors', async () => {
+  it('does not show the resting line while loading', async () => {
+    server.use(
+      http.get(NEXT_ACTIONS_PATH, async () => {
+        await delay(100);
+        return HttpResponse.json({ success: true, data: { actions: [] } });
+      })
+    );
+
+    renderBar();
+    expect(screen.queryByText(/your stable is resting/i)).not.toBeInTheDocument();
+    expect(await screen.findByText(/your stable is resting/i)).toBeInTheDocument();
+  });
+
+  it('shows a visible error with a working retry when the boundary errors, never the resting line', async () => {
+    const SENTINEL = 'Failed to fetch next actions: connect ECONNRESET 10.0.0.7';
     server.use(
       http.get(NEXT_ACTIONS_PATH, () =>
-        HttpResponse.json(
-          { success: false, message: 'Failed to fetch next actions' },
-          { status: 500 }
-        )
+        HttpResponse.json({ success: false, message: SENTINEL }, { status: 500 })
       )
     );
 
-    const { container } = renderBar();
-    // On error, the hook surfaces `error` (retry:false) and the bar renders nothing.
-    await waitFor(() => expect(container.querySelectorAll('.animate-pulse').length).toBe(0));
-    expect(container.innerHTML).toBe('');
+    renderBar();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(userMessageFor({ statusCode: 500 }).message);
+    expect(alert).not.toHaveTextContent('ECONNRESET');
+    expect(screen.queryByText(/your stable is resting/i)).not.toBeInTheDocument();
+
+    // Retry re-reads the endpoint; a recovered read replaces the error.
+    stubNextActions(mockActions);
+    await userEvent.click(screen.getByRole('button', { name: /try again/i }));
+    expect(await screen.findByText('Thunder is ready to train!')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('refreshes the list every 60 seconds (Story 23.1 AC)', async () => {
+    stubNextActions(mockActions);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <NextActionsBar />
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+    await screen.findByText('Thunder is ready to train!');
+
+    const query = queryClient.getQueryCache().find({ queryKey: nextActionsKeys.all });
+    expect(query?.observers[0]?.options.refetchInterval).toBe(60_000);
   });
 
   it('renders action cards with narrative text from boundary data', async () => {

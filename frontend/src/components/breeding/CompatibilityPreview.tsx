@@ -15,6 +15,7 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { ScoreBreakdownRadar } from '@/components/competition/ScoreBreakdownRadar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
+import { ErrorState } from '@/components/ui/state';
 import type { PedigreeTree, PedigreeTreeNode } from './pedigreeTreeFromLineage';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -48,8 +49,11 @@ export interface CompatibilityData {
 interface CompatibilityPreviewProps {
   mareName: string;
   stallionName: string;
+  /** The prediction; null once loading has finished means it is unavailable, not still coming. */
   data: CompatibilityData | null;
   isLoading?: boolean;
+  /** Re-requests the prediction. When given, the unavailable state offers Try Again. */
+  onRetry?: () => void;
   className?: string;
 }
 
@@ -350,12 +354,16 @@ export function CompatibilityPreview({
   stallionName,
   data,
   isLoading = false,
+  onRetry,
   className = '',
 }: CompatibilityPreviewProps) {
-  // Each panel renders the loading skeleton until real data arrives; the
-  // render-callback form keeps `data` access guarded per panel.
+  // Each panel renders the loading skeleton while the prediction is in flight; the
+  // render-callback form keeps `data` access guarded per panel. Once loading has
+  // finished without data the tabs give way to the unavailable state below, so a
+  // failed or empty prediction is never a skeleton that never resolves.
   const panel = (render: (_d: CompatibilityData) => React.ReactNode) =>
     isLoading || !data ? <LoadingSkeleton /> : render(data);
+  const isUnavailable = !isLoading && !data;
 
   return (
     <div
@@ -372,41 +380,51 @@ export function CompatibilityPreview({
         </p>
       </div>
 
-      {/* Tabs — CanonicalTabs underline variant (Equoria-o5hub.11) */}
-      <Tabs defaultValue="Stats">
-        <TabsList aria-label="Compatibility tabs" className="px-2">
-          {TABS.map((tab) => (
-            <TabsTrigger key={tab} value={tab}>
-              {tab}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="Stats" className="mt-0 p-4">
-          {panel((d) => (
-            <StatRangesTab statRanges={d.statRanges} />
-          ))}
-        </TabsContent>
-        <TabsContent value="Traits" className="mt-0 p-4">
-          {panel((d) => (
-            <TraitsTab traits={d.traits} />
-          ))}
-        </TabsContent>
-        <TabsContent value="Inbreeding" className="mt-0 p-4">
-          {panel((d) => (
-            <InbreedingTab coefficient={d.inbreedingCoefficient} />
-          ))}
-        </TabsContent>
-        <TabsContent value="Pedigree" className="mt-0 p-4">
-          {panel((d) => (
-            <PedigreeTab
-              overlap={d.pedigreeOverlap}
-              tree={d.pedigreeTree}
-              mareName={mareName}
-              stallionName={stallionName}
-            />
-          ))}
-        </TabsContent>
-      </Tabs>
+      {/* Unavailable state, else the tabs — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+      {isUnavailable ? (
+        <ErrorState
+          title="Compatibility unavailable"
+          message="Compatibility figures are unavailable for this pairing right now. They are hidden rather than estimated, so try again shortly."
+          retry={onRetry ? { label: 'Try Again', onClick: onRetry } : undefined}
+          className="py-2"
+          focusOnMount={false}
+        />
+      ) : (
+        <Tabs defaultValue="Stats">
+          <TabsList aria-label="Compatibility tabs" className="px-2">
+            {TABS.map((tab) => (
+              <TabsTrigger key={tab} value={tab}>
+                {tab}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value="Stats" className="mt-0 p-4">
+            {panel((d) => (
+              <StatRangesTab statRanges={d.statRanges} />
+            ))}
+          </TabsContent>
+          <TabsContent value="Traits" className="mt-0 p-4">
+            {panel((d) => (
+              <TraitsTab traits={d.traits} />
+            ))}
+          </TabsContent>
+          <TabsContent value="Inbreeding" className="mt-0 p-4">
+            {panel((d) => (
+              <InbreedingTab coefficient={d.inbreedingCoefficient} />
+            ))}
+          </TabsContent>
+          <TabsContent value="Pedigree" className="mt-0 p-4">
+            {panel((d) => (
+              <PedigreeTab
+                overlap={d.pedigreeOverlap}
+                tree={d.pedigreeTree}
+                mareName={mareName}
+                stallionName={stallionName}
+              />
+            ))}
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }

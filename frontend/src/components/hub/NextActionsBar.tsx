@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNextActions } from '@/hooks/api/useNextActions';
+import { ErrorState } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import type { NextAction } from '@/hooks/api/useNextActions';
 
 /* ─── Narrative copy for each action type ───────────────────────────────── */
@@ -136,7 +138,7 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
 }
 
 export function NextActionsBar() {
-  const { data: actions, isLoading, error } = useNextActions();
+  const { data: actions, isLoading, error, refetch } = useNextActions();
 
   if (isLoading) {
     return (
@@ -156,8 +158,32 @@ export function NextActionsBar() {
     );
   }
 
-  if (error || !actions?.length) {
-    return null;
+  // ERROR before EMPTY (doctrine §1): a failed read is not "nothing to suggest".
+  // A failed 60s refresh keeps the last good list on screen rather than blanking it.
+  if (error && !actions) {
+    const { title, message, retryable } = userMessageFor(error);
+    return (
+      <section aria-label="Suggested next actions">
+        <ErrorState
+          title={title}
+          message={message}
+          retry={retryable ? { label: 'Try Again', onClick: () => void refetch() } : undefined}
+          className="py-2"
+          focusOnMount={false}
+        />
+      </section>
+    );
+  }
+
+  // Genuine zero-action success: the resting line (Story 23.1 AC, literal copy).
+  if (!actions?.length) {
+    return (
+      <section aria-label="Suggested next actions">
+        <p className="glass-panel-subtle rounded-xl px-4 py-3 text-sm text-[var(--text-secondary)]">
+          Your stable is resting — check back soon.
+        </p>
+      </section>
+    );
   }
 
   return (

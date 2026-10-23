@@ -5,7 +5,9 @@
  * Server computes priorities based on cooldowns, foal ages, pending results.
  * Client formats narrative text in NextActionsBar.
  *
- * Cache: 2min staleTime (actions change on user activity, not real-time)
+ * Cache: 2min staleTime; refetches every 60s while the tab is visible (Story 23.1 AC —
+ * cooldowns and results change while the page is open). React Query pauses the
+ * interval for a hidden tab by default (refetchIntervalInBackground is false).
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -43,6 +45,7 @@ export function useNextActions() {
       return result.actions ?? [];
     },
     staleTime: 2 * 60 * 1000,
+    refetchInterval: 60_000,
     gcTime: 5 * 60 * 1000,
     retry: false,
   });
