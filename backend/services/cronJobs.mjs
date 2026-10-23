@@ -22,6 +22,7 @@ import * as groomCareerProgressionImpl from './jobs/impl/groomCareerProgression.
 // instead of carrying ten inline cron.schedule(...) blocks.
 import { CRON_JOB_REGISTRY } from './jobs/index.mjs';
 import { runEmailOutbox } from '../modules/staff/index.mjs';
+import { postDailyNewsEntries } from '../modules/news/index.mjs';
 // Equoria-urqic.3.5: the run-observability concern (heartbeat liveness,
 // CronRunLog persistence, the /api/admin/cron/health surface, and the
 // stale-alert debounce) is now a dedicated collaborator that this scheduler
@@ -371,6 +372,15 @@ class CronJobService {
    */
   async deliverEmailOutbox(opts) {
     return runEmailOutbox(opts);
+  }
+
+  /**
+   * Daily News posting (Equoria-wbt8l): the game-written entries due at the
+   * start of the Eastern game day (club news, new store items). Idempotent.
+   * @returns {Promise<{ clubNews: number, newItems: number }>}
+   */
+  async postDailyNews() {
+    return postDailyNewsEntries();
   }
 
   /**

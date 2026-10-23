@@ -95,6 +95,9 @@ import clubRoutes from '../modules/community/routes/clubRoutes.mjs';
 import marketplaceRoutes from '../modules/marketplace/routes/marketplaceRoutes.mjs';
 import bankRoutes from '../modules/bank/routes/bankRoutes.mjs';
 import craftingRoutes from '../modules/crafting/routes/craftingRoutes.mjs';
+// Equoria-wbt8l: News — the players' feed and the staff News Desk.
+import newsRoutes from '../modules/news/routes/newsRoutes.mjs';
+import newsDeskRoutes from '../modules/news/routes/newsDeskRoutes.mjs';
 // Imported directly, never through the staff barrel: this file is the only
 // allowed importer of the staff Router (STAFF-CR-05, check-staff-routes-mount).
 import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
@@ -214,6 +217,7 @@ export function buildRouters() {
   authRouter.use('/shows', showRoutes);
   authRouter.use('/bank', bankRoutes);
   authRouter.use('/crafting', craftingRoutes);
+  authRouter.use('/news', newsRoutes);
 
   // Groom management system
   authRouter.use('/grooms', groomRoutes);
@@ -259,6 +263,8 @@ export function buildRouters() {
   authRouter.use('/personality-evolution', personalityEvolutionRoutes);
 
   // ADMIN ROUTES (Admin role required)
+  // Equoria-wbt8l: the News Desk; per-type rules live in the news module.
+  adminRouter.use('/news', newsDeskRoutes);
   adminRouter.use('/', adminRoutes);
 
   // STAFF ROUTES (Equoria-puj1e.1) — the Steward's Office API. Deliberately

@@ -5,6 +5,10 @@
  * controllers/tackShopController.mjs so the economy barrel can export data and
  * policy without exporting an HTTP controller file. Consumers: horses (via the
  * barrel), competition scoring, marketplace reconciliation, inventory controller.
+ *
+ * News (Equoria-wbt8l): an item added after launch carries
+ * `addedOn: 'YYYY-MM-DD'` (its Eastern game date); the nightly News pass
+ * announces it under New Items that day. Launch items carry none.
  */
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────

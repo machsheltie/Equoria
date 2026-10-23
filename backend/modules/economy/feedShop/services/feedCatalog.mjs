@@ -5,6 +5,10 @@
  * controllers/feedShopController.mjs so the economy barrel can export the catalog
  * without exporting an HTTP controller file. Consumers: horses feed controller and
  * feed service (via the barrel), the feed-shop controller itself.
+ *
+ * News (Equoria-wbt8l): an item added after launch carries
+ * `addedOn: 'YYYY-MM-DD'` (its Eastern game date); the nightly News pass
+ * announces it under New Items that day. Launch items carry none.
  */
 
 // 5-tier feed catalog (feed-system redesign 2026-04-29).

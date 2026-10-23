@@ -35,6 +35,7 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 import { eraseOrAnonymizeOwnedHorses } from './gdprHorseLineageErasure.mjs';
 import { exportBreedingRecords, closeBreedingRecordsForErasureTx } from './gdprBreedingRecords.mjs';
 import { scrubTicketEmailFilerTx } from '../../staff/index.mjs';
+import { exportAuthoredNews, scrubNewsSignaturesForErasureTx } from '../../news/index.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
   SYSTEM_ACCOUNT_BURN,
@@ -161,6 +162,7 @@ export async function buildUserDataExport(userId) {
       asBuyer: horseSalesAsBuyer,
     },
     breedingRecords: await exportBreedingRecords(userId), // Equoria-q4uem.9, both sides
+    newsPostsWritten: await exportAuthoredNews(userId), // Equoria-wbt8l
   };
 }
 
@@ -548,6 +550,7 @@ export async function eraseUserAccount(userId) {
       // filed stop naming them (before the user row goes, while filedById
       // still points here). Emails addressed to them cascade with the user.
       await scrubTicketEmailFilerTx(tx, userId);
+      await scrubNewsSignaturesForErasureTx(tx, userId); // Equoria-wbt8l: posts lose the signature
 
       // ── Riders / Trainers owned by the user ───────────────────────────────
       // Their assignments cascade-delete with the rider/trainer (schema

@@ -7,8 +7,15 @@
  * Owner ruling 2026-10-23 (Equoria-4tleh): three staff levels, held in the
  * existing `User.role` string — `owner` (Head Admin, the project owner),
  * `admin`, `moderator`. The owner holds every admin capability plus the
- * owner-only ones. Only the owner and admins post News (`news.post`); only the
- * owner sees hidden traits (`traits.hidden.view`). This module is the single
+ * owner-only ones. Only the owner and admins use the News Desk (`news.post`);
+ * only the owner sees hidden traits (`traits.hidden.view`).
+ *
+ * News post types (owner answers 2026-10-23, Equoria-wbt8l): one capability
+ * per staff-written type, `news.<postType>`. Seasonal events, Head Admin
+ * letters, updates and contests are the owner's alone; an Admin writes their
+ * own letter (`news.adminLetter`, which the owner also holds as an admin
+ * capability); moderators write nothing. `news.manageAll` lets the owner edit
+ * or remove any staff post, not only her own. This module is the single
  * policy: staff routes ask through requireStaffCapability, the legacy admin
  * gates through satisfiesRole (requireRole in middleware/auth.mjs) and inline
  * checks through can().
@@ -41,8 +48,16 @@ const adminOnly = [
   'time-back',
   'horse.admin',
   'news.post',
+  'news.adminLetter',
 ];
-const ownerOnly = ['traits.hidden.view'];
+const ownerOnly = [
+  'traits.hidden.view',
+  'news.seasonalEvent',
+  'news.headAdminLetter',
+  'news.update',
+  'news.contest',
+  'news.manageAll',
+];
 
 // Private and frozen (STAFF-CR-12): no importer can reach a mutable copy of
 // the policy. Callers ask through hasCapability and capabilitiesFor only.
