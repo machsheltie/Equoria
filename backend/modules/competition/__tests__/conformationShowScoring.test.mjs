@@ -628,24 +628,18 @@ describe('validateConformationEntry (real DB)', () => {
     expect(result.errors.some(e => e.includes('at least'))).toBe(true);
   });
 
-  test('rejects when horse health is not Excellent or Good', async () => {
-    const sickHorse = { ...horse, health: 'Poor' };
-    const result = await validateConformationEntry(sickHorse, groom, user.id);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.toLowerCase().includes('health'))).toBe(true);
-  });
-
-  test('rejects "Injured" health', async () => {
-    const injuredHorse = { ...horse, health: 'Injured' };
-    const result = await validateConformationEntry(injuredHorse, groom, user.id);
-    expect(result.valid).toBe(false);
-  });
-
-  test('rejects "Fair" health', async () => {
-    const fairHorse = { ...horse, health: 'Fair' };
-    const result = await validateConformationEntry(fairHorse, groom, user.id);
-    expect(result.valid).toBe(false);
-  });
+  // Old contract: this validator refused any health other than Excellent/Good.
+  // Owner ruling 2026-10-23 (Equoria-0d4wa): conformation uses the one health
+  // bar — only critical displayed health blocks — applied by the entry route
+  // and checkConformationEntryInTx (healthIsTheOnlyConsequence.integration).
+  test.each(['Poor', 'Fair', 'Injured'])(
+    'does not judge health itself (%s) — the entry route applies the critical-health bar',
+    async health => {
+      const result = await validateConformationEntry({ ...horse, health }, groom, user.id);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    },
+  );
 
   test('accepts horse with age 0 (Weanling)', async () => {
     const weanling = { ...horse, age: 0, health: 'Excellent' };

@@ -355,18 +355,21 @@ describe('validateConformationEntry — pure-input branches (Equoria-jkht)', () 
     expect(result.errors.some(e => e.includes('invalid'))).toBe(true);
   });
 
-  it('pushes health error when healthStatus is not Excellent or Good (lines 398-401)', async () => {
+  // Old contract: an Excellent/Good health requirement and a high-stress
+  // warning. Owner rulings 2026-10-23 (Equoria-0d4wa): only critical displayed
+  // health blocks (applied by the entry route), and the stress warning is gone.
+  it('pushes no health error of its own (owner ruling 2026-10-23)', async () => {
     const horse = { id: null, age: 2, healthStatus: 'Injured', stressLevel: 5, conformationScores: null };
     const groom = { id: null };
     const result = await validateConformationEntry(horse, groom, 'uid');
-    expect(result.errors.some(e => e.includes('healthy'))).toBe(true);
+    expect(result.errors.some(e => /health/i.test(e))).toBe(false);
   });
 
-  it('adds stress warning when stressLevel > 80 (lines 404-406)', async () => {
+  it('adds no stress warning, however high the stress (owner ruling 2026-10-23)', async () => {
     const horse = { id: null, age: 2, healthStatus: 'Good', stressLevel: 90, conformationScores: null };
     const groom = { id: null };
     const result = await validateConformationEntry(horse, groom, 'uid');
-    expect(result.warnings.some(w => w.includes('stress'))).toBe(true);
+    expect(result.warnings.some(w => /stress/i.test(w))).toBe(false);
   });
 
   it('adds no-conformationScores warning when conformationScores is null (lines 409-411)', async () => {

@@ -128,7 +128,12 @@ export class ConformationGroomMissingError extends Error {
  *  - groom is not actively assigned to the horse
  *  - groom assignment is younger than MIN_GROOM_ASSIGNMENT_DAYS
  *  - horse.age < 0 (negative age is invalid)
- *  - horse.health is not "Excellent" or "Good"
+ *
+ * Health is not judged here. Owner ruling 2026-10-23 (Equoria-0d4wa): the only
+ * health bar is critical displayed health, the same one breeding, training and
+ * ridden shows use; the entry route and checkConformationEntryInTx apply it
+ * (getDisplayedHealth), so the old Excellent/Good requirement is gone. The
+ * high-stress entry warning went with it (no stress consequence exists).
  *
  * Note: No training score or discipline prerequisite — conformation is innate (AC3).
  *
@@ -207,18 +212,6 @@ export async function validateConformationEntry(horse, groom, userId, client = p
 
     // Assign age class for the entry
     const ageClass = age >= 0 ? getConformationAgeClass(age) : null;
-
-    // Health — "Excellent" or "Good" map to healthy; all others rejected — AC3
-    // Note: Prisma schema field is `healthStatus`; handle both for compatibility
-    const healthValue = horse.healthStatus ?? horse.health;
-    if (healthValue !== 'Excellent' && healthValue !== 'Good') {
-      errors.push('Horse must be healthy (Excellent or Good health) to enter conformation shows');
-    }
-
-    // Stress advisory warning (does not block entry)
-    if (horse.stressLevel && horse.stressLevel > 80) {
-      warnings.push('Horse has high stress levels — may affect performance');
-    }
 
     // Conformation scores advisory (show will use default 50 if missing)
     if (!horse.conformationScores) {

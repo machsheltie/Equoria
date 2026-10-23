@@ -15,11 +15,13 @@
  * Re-anchoring the deleted placement-notification sentinel onto the live
  * executeClosedShows path is tracked separately as Equoria-dfet1.
  *
- * What remains in this file (both still actively imported):
- *   - validateCompetitionEntry — pure eligibility validator, used by tests +
- *     potential future call sites.
+ * What remains in this file:
  *   - getCompetitionEligibilitySummary — imported by competitionRoutes.mjs
  *     (GET /api/competition/eligibility/:horseId/:discipline).
+ *
+ * validateCompetitionEntry was deleted (owner ruling 2026-10-23, Equoria-0d4wa):
+ * nothing called it, and its Good/Excellent health requirement contradicted
+ * the one health bar (critical displayed health; utils/competitionEntryRules).
  */
 
 import logger from '../utils/logger.mjs';
@@ -34,88 +36,7 @@ import {
   loadActiveDisciplineTypes,
   riderRefusal,
 } from '../utils/competitionEntryRules.mjs';
-import {
-  calculateHorseLevel,
-  checkAgeRequirements,
-  checkTraitRequirements,
-  getDisciplineConfig,
-} from '../utils/competitionLogic.mjs';
-
-/**
- * Validate horse eligibility for competition entry
- * @param {Object} horse - Horse object
- * @param {Object} show - Show object
- * @param {Object} user - User object
- * @returns {Object} Validation result
- */
-export async function validateCompetitionEntry(horse, show, user) {
-  try {
-    const errors = [];
-
-    // Age requirements (3-21 years old)
-    if (!checkAgeRequirements(horse)) {
-      if (horse.age < 3) {
-        errors.push(`Horse is too young (${horse.age} years old). Minimum age is 3 years.`);
-      } else if (horse.age > 21) {
-        errors.push(`Horse has retired (${horse.age} years old). Maximum age is 21 years.`);
-      }
-    }
-
-    // Trait requirements (e.g., Gaited)
-    if (!checkTraitRequirements(horse, show.discipline)) {
-      const disciplineConfig = getDisciplineConfig(show.discipline);
-      if (disciplineConfig.requiresTrait) {
-        errors.push(
-          `Horse must have the '${disciplineConfig.requiresTrait}' trait to compete in ${show.discipline}.`,
-        );
-      }
-    }
-
-    // Horse level requirements
-    const horseLevel = calculateHorseLevel(horse, show.discipline);
-    if (horseLevel < show.levelMin || horseLevel > show.levelMax) {
-      errors.push(
-        `Horse level ${horseLevel} is outside the required range (${show.levelMin}-${show.levelMax}) for this competition.`,
-      );
-    }
-
-    // Health requirements
-    if (horse.healthStatus !== 'Good' && horse.healthStatus !== 'Excellent') {
-      errors.push(
-        `Horse health status must be Good or Excellent. Current status: ${horse.healthStatus}`,
-      );
-    }
-
-    // Financial requirements
-    if (user.money < show.entryFee) {
-      errors.push(`Insufficient funds. Entry fee: $${show.entryFee}, Available: $${user.money}`);
-    }
-
-    // Discipline score requirements (if any)
-    const disciplineScore = horse.disciplineScores?.[show.discipline] || 0;
-    const minDisciplineScore = 0; // Could be configurable per show
-    if (disciplineScore < minDisciplineScore) {
-      errors.push(
-        `Horse discipline score too low. Required: ${minDisciplineScore}, Current: ${disciplineScore}`,
-      );
-    }
-
-    return {
-      eligible: errors.length === 0,
-      errors,
-      horseLevel,
-      disciplineScore,
-    };
-  } catch (error) {
-    logger.error('[enhancedCompetitionSimulation.validateCompetitionEntry] Error:', error.message);
-    return {
-      eligible: false,
-      errors: ['Validation error occurred'],
-      horseLevel: 1,
-      disciplineScore: 0,
-    };
-  }
-}
+import { calculateHorseLevel, getDisciplineConfig } from '../utils/competitionLogic.mjs';
 
 /**
  * Get competition eligibility summary for a horse (GET /competition/eligibility).

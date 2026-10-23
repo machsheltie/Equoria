@@ -88,10 +88,10 @@ export async function enterConformationShow(req, res) {
 
     // Critical-health gate (A12): a horse whose displayedHealth has decayed
     // to 'critical' (via stale lastFedDate, stale lastVettedDate, or an
-    // explicit vet finding) cannot enter competitions. Fires before the
-    // service-level validation so the rejection message specifically calls
-    // out critical health (not the older 'must be Excellent or Good' check
-    // in conformationShowService.validateConformationEntry).
+    // explicit vet finding) cannot enter competitions. This is the only
+    // health bar (owner ruling 2026-10-23, Equoria-0d4wa: the same one as
+    // breeding, training and ridden shows); checkConformationEntryInTx
+    // decides it again inside the entry transaction.
     if (getDisplayedHealth(horse) === 'critical') {
       logger.info(
         `[conformationShowController.POST /enter] Rejected entry: horse ${horseId} is in critical health`,
@@ -322,8 +322,16 @@ export async function checkConformationEligibility(req, res) {
       groom = await prisma.groom.findUnique({ where: { id: assignment.groomId } });
     }
 
-    // Run eligibility check via service layer
+    // Run eligibility check via service layer, plus the entry route's health
+    // bar (critical displayed health only, owner ruling 2026-10-23) so this
+    // never calls a horse eligible for an entry the route refuses.
     const result = await validateConformationEntry(horse, groom, userId);
+    if (getDisplayedHealth(horse) === 'critical') {
+      result.valid = false;
+      result.errors.push(
+        `${horse.name} is in critical health and cannot enter competitions. Feed and vet to restore health.`,
+      );
+    }
 
     logger.info(
       `[conformationShowController.GET /eligibility] Horse ${horseId}: eligible=${result.valid} groomAssigned=${!!assignment}`,
