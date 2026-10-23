@@ -72,8 +72,18 @@ function runCheck(scriptBasename) {
     });
     return { code: 0, output: stdout ?? '' };
   } catch (err) {
-    const output = `${err.stdout ?? ''}${err.stderr ?? ''}`;
-    return { code: typeof err.status === 'number' ? err.status : 1, output };
+    // Equoria-8kkuf: a check that could not be run (spawn error, killed by a
+    // signal) has no exit status. It used to be reported as code 1 with empty
+    // output, which reads as "the gate fired, but not on our plant" and
+    // matches the unexplained shard-7 failures exactly. It is not a verdict
+    // about the plant, so say what actually happened.
+    if (typeof err.status !== 'number') {
+      throw new Error(
+        `could not run ${scriptBasename}: code=${err.code ?? 'none'} signal=${err.signal ?? 'none'}: ${err.message}`,
+        { cause: err },
+      );
+    }
+    return { code: err.status, output: `${err.stdout ?? ''}${err.stderr ?? ''}` };
   }
 }
 
