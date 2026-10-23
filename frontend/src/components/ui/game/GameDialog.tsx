@@ -201,15 +201,31 @@ const GameDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivE
 );
 GameDialogFooter.displayName = 'GameDialogFooter';
 
+/**
+ * Dialog title typography (DESIGN.md Typography roles):
+ * - functional (default): Proda Sans 600 — ordinary dialog titles.
+ * - ceremonial: Basteleur Moonlight 400 — result/reward/reveal dialog titles
+ *   where ceremony is appropriate (Equoria-ru830). Opt-in per dialog; routine
+ *   confirmations stay functional.
+ */
+export type GameDialogTitleVariant = 'functional' | 'ceremonial';
+
+interface GameDialogTitleProps extends React.ComponentPropsWithoutRef<typeof DialogTitle> {
+  variant?: GameDialogTitleVariant;
+}
+
 const GameDialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogTitle>,
-  React.ComponentPropsWithoutRef<typeof DialogTitle>
->(({ className, ...props }, ref) => (
+  GameDialogTitleProps
+>(({ className, variant = 'functional', ...props }, ref) => (
   <DialogTitle
     ref={ref}
+    data-title-variant={variant}
     className={cn(
-      'text-xl font-semibold tracking-wide',
-      'font-[var(--font-heading)] text-[var(--gold-400)]',
+      'text-xl text-[var(--gold-400)]',
+      variant === 'ceremonial'
+        ? 'type-ceremonial-title'
+        : 'font-semibold tracking-wide font-[var(--font-body)]',
       className
     )}
     {...props}

@@ -27,15 +27,12 @@ export default {
         '2xs': 'var(--text-2xs)',
       },
       fontFamily: {
-        // Celestial Night token-referencing aliases (Story 22-1) — prefer these
-        display: ['var(--font-display)', 'Georgia', 'serif'],
-        heading: ['var(--font-heading)', 'Georgia', 'serif'],
+        // Token-referencing aliases for the two functional faces. The
+        // expressive roles (wordmark, announcer, entity, accent) are not
+        // Tailwind aliases on purpose: they attach to semantic role classes
+        // in index.css (DESIGN.md, The No Universal Heading Rule).
         body: ['var(--font-body)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'monospace'],
-        // Legacy names retained for existing usages (do not use in new code)
-        'fantasy-title': ['Cinzel Decorative', 'Georgia', 'serif'],
-        'fantasy-header': ['Cinzel', 'Georgia', 'serif'],
-        'fantasy-body': ['Proda Sans', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

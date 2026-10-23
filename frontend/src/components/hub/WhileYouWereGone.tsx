@@ -194,12 +194,7 @@ export function WhileYouWereGone() {
 
         {/* Header — centered */}
         <div className="text-center mb-5">
-          <h2
-            className="text-xl font-semibold text-[var(--gold-primary)]"
-            style={{ fontFamily: 'var(--font-heading)' }}
-          >
-            While You Were Away
-          </h2>
+          <h2 className="type-section-heading text-[var(--gold-primary)]">While You Were Away</h2>
           <p className="text-xs text-[var(--cream)] mt-1 opacity-60">
             Here&apos;s what happened in your stable
           </p>

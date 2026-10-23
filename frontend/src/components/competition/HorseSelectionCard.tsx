@@ -196,7 +196,7 @@ const StatItem = memo(({ name, value }: { name: string; value: number }) => {
       )}
     >
       <span>{name}</span>
-      <span className="font-mono">{value}</span>
+      <span className="tabular-nums">{value}</span>
     </div>
   );
 });

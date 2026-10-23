@@ -1,8 +1,8 @@
 /**
- * GameLabel — Inter font label with optional smallCaps prop (Story 22-6)
+ * GameLabel — Proda Sans label with optional smallCaps prop (Story 22-6)
  *
  * Owns all visual styling for labels. Naked label.tsx is the Radix forwarder.
- * Visual: Inter font, --cream color (default), small-caps via smallCaps prop,
+ * Visual: Proda Sans, --cream color (default), small-caps via smallCaps prop,
  * --gold-400 text via required prop.
  * Spec: "optional smallCaps prop adds font-variant: small-caps"
  */

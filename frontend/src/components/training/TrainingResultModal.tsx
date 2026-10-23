@@ -143,7 +143,8 @@ const TrainingResultModal = ({
             />
             <GameDialogTitle
               id="training-result-title"
-              className="text-2xl font-bold text-[var(--role-success-text)]"
+              variant="ceremonial"
+              className="text-2xl text-[var(--role-success-text)]"
             >
               Training Complete!
             </GameDialogTitle>

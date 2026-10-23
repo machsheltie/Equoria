@@ -219,7 +219,9 @@ function GettingStartedCard() {
       <div className="relative text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-[var(--gold-primary)]" />
-          <h3 className="type-card-title text-[var(--gold-primary)]">Your Adventure Begins</h3>
+          <h3 className="type-enchanted-accent text-[var(--gold-primary)]">
+            Your Adventure Begins
+          </h3>
         </div>
         <p className="text-sm text-role-primary leading-relaxed max-w-md mx-auto">
           Welcome to Equoria, rider. The stables are warm, the training grounds await, and the

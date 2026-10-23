@@ -22,11 +22,13 @@
  *                         Enchanted Equestrian Night rewrite, Equoria-6uf63)
  *   Proda Sans          — all functional UI and body text (static 400/500/600/700
  *                         + italics; replaced Inter, user ruling 2026-08-14)
- *   Artavion Mono     — the Ledger face: registry records and data readouts only
- *                       (400/500/600 + 400 oblique; user ruling 2026-08-18,
- *                       fills the --font-mono slot JetBrains Mono never occupied)
- *                       + italics; user-supplied 2026-08-17 — role assignment is a
- *                       user decision per DESIGN.md's replacement rule)
+ *   Artavion Mono      — the Ledger face (--font-mono): registry records only —
+ *                         genotype notation, registry IDs, transaction refs
+ *                         (400/500/600 + 400 oblique; user ruling 2026-08-18,
+ *                         fills the --font-mono slot JetBrains Mono never occupied)
+ *
+ * Every face above is a DESIGN.md Typography role. The deprecated heading-face
+ * alias token is retired (Equoria-ely1r); there is no generic heading face.
  *
  * font-display: swap — text renders in fallback while WOFF2 loads, then swaps.
  * unicode-range      — browser only downloads the subset needed for the page content.

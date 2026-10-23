@@ -221,6 +221,34 @@
     color: var(--text-primary);
   }
 
+  /* Ceremonial title roles (DESIGN.md Typography; Equoria-ru830, -cunq3).
+     Each face ships exactly one weight, so synthesis is off — a stray
+     font-semibold/font-bold utility must not smear the letterforms.
+       type-ceremonial-title  Basteleur Moonlight: result/reward/reveal dialog
+                              titles and substantial panel titles
+       type-announcer-title   Basteleur Bold: cinematic announcements (birth,
+                              championship, major reward) — 24px and up
+       type-enchanted-accent  Whisperleaf: short static strings only, never
+                              below 20px (its proven readability floor) */
+  .type-ceremonial-title {
+    font-family: var(--font-entity);
+    font-weight: 400;
+    font-synthesis: none;
+  }
+
+  .type-announcer-title {
+    font-family: var(--font-announcer);
+    font-weight: 700;
+    font-synthesis: none;
+  }
+
+  .type-enchanted-accent {
+    font-family: var(--font-accent);
+    font-size: var(--text-xl); /* floor — enlarge, never shrink */
+    font-weight: 400;
+    font-synthesis: none;
+  }
+
   .type-card-title {
     font-family: var(--font-body);
     font-size: var(--text-lg);

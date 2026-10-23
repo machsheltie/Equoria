@@ -41,20 +41,34 @@ const FrostedPanelHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes
 );
 FrostedPanelHeader.displayName = 'FrostedPanelHeader';
 
-const FrostedPanelTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <CardTitle
-    ref={ref}
-    className={cn(
-      'text-xl font-semibold leading-snug tracking-wide',
-      'font-[var(--font-heading)] text-[var(--gold-400)]',
-      className
-    )}
-    {...props}
-  />
-));
+/**
+ * Panel title typography (DESIGN.md Typography roles):
+ * - functional (default): Proda Sans 600 — ordinary panel titles.
+ * - ceremonial: Basteleur Moonlight 400 — a substantial panel or feature title
+ *   (Equoria-ru830). Opt-in per consumer; never a blanket default.
+ */
+export type FrostedPanelTitleVariant = 'functional' | 'ceremonial';
+
+interface FrostedPanelTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  variant?: FrostedPanelTitleVariant;
+}
+
+const FrostedPanelTitle = React.forwardRef<HTMLParagraphElement, FrostedPanelTitleProps>(
+  ({ className, variant = 'functional', ...props }, ref) => (
+    <CardTitle
+      ref={ref}
+      data-title-variant={variant}
+      className={cn(
+        'text-xl leading-snug text-[var(--gold-400)]',
+        variant === 'ceremonial'
+          ? 'type-ceremonial-title'
+          : 'font-semibold tracking-wide font-[var(--font-body)]',
+        className
+      )}
+      {...props}
+    />
+  )
+);
 FrostedPanelTitle.displayName = 'FrostedPanelTitle';
 
 const FrostedPanelDescription = React.forwardRef<

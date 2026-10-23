@@ -104,7 +104,7 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
+      <div className="rounded-lg border border-[var(--alpha-celestial-primary-30)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
         <div className="text-center text-sm text-[var(--text-secondary)]">
           Loading Horse Points...
         </div>
@@ -135,12 +135,12 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
   // values are final here.
 
   return (
-    <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
+    <div className="rounded-lg border border-[var(--alpha-celestial-primary-30)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
       {/* Header: Level Display */}
       <div className="mb-3 flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">Level</p>
-          <h3 className="text-2xl font-bold text-emerald-400">Level {level}</h3>
+          <h3 className="text-2xl font-bold text-[var(--celestial-secondary)]">Level {level}</h3>
         </div>
         <div className="text-right">
           <p className="text-xs text-[var(--text-secondary)]">Horse Points</p>
@@ -166,7 +166,7 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
 
         {/* Tooltip */}
         {showTooltip && (
-          <div className="absolute left-1/2 top-full z-[var(--z-raised)] mt-2 w-64 -translate-x-1/2 rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-3 shadow-lg">
+          <div className="absolute left-1/2 top-full z-[var(--z-raised)] mt-2 w-64 -translate-x-1/2 rounded-lg border border-[var(--alpha-celestial-primary-30)] bg-[rgba(15,35,70,0.5)] p-3 shadow-lg">
             <div className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
               Horse Points Breakdown
             </div>
@@ -181,9 +181,9 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
                   {xpData.availableStatPoints}
                 </span>
               </div>
-              <div className="flex justify-between border-t border-[rgba(37,99,235,0.3)] pt-1">
+              <div className="flex justify-between border-t border-[var(--alpha-celestial-primary-30)] pt-1">
                 <span className="text-[var(--text-secondary)]">Next Stat Point:</span>
-                <span className="font-medium text-emerald-400">
+                <span className="font-medium text-[var(--celestial-secondary)]">
                   {xpData.xpToNextStatPoint} Horse Points
                 </span>
               </div>

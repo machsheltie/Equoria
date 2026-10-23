@@ -112,7 +112,7 @@ export default function CinematicMoment({
 
         {/* Title */}
         <h2
-          className="fantasy-header text-2xl font-bold mb-2"
+          className="type-announcer-title text-2xl mb-2"
           style={{ color: config.accentColor }}
           data-testid="cinematic-moment-title"
         >

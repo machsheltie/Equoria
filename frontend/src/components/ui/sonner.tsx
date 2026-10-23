@@ -21,14 +21,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
           actionButton: [
             '!bg-gradient-to-r !from-[var(--gold-primary)] !to-[var(--gold-light)]',
             '!text-[var(--bg-deep-space)] !font-semibold',
-            '!font-[var(--font-heading)] !rounded-full',
+            '!font-[var(--font-body)] !rounded-full',
             '!border-0',
           ].join(' '),
           cancelButton: [
             '!bg-[rgba(15,23,42,0.6)] !text-[var(--text-secondary)]',
             '!border !border-[var(--glass-border)] !rounded-full',
           ].join(' '),
-          title: '!text-[var(--text-primary)] !font-[var(--font-heading)] !font-medium',
+          title: '!text-[var(--text-primary)] !font-[var(--font-body)] !font-medium',
           icon: '!text-[var(--gold-primary)]',
           success: '!border-l-4 !border-l-[var(--status-success)]',
           error: '!border-l-4 !border-l-[var(--status-danger)]',

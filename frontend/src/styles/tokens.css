@@ -320,16 +320,10 @@
   /* Enchanted Accent (DESIGN.md role) — Whisperleaf, opt-in specialist for a
      few short static strings where readability is proven (shop-sign labels
      over location art, rare epithets). Never controls, tabs, statuses, data,
-     or dynamic names; every use is an explicit user opt-in (Equoria-cunq3).
+     or dynamic names; use only through .type-enchanted-accent, and only at
+     DESIGN.md's candidate spots (Equoria-cunq3).
      Single weight 400. */
   --font-accent: 'Whisperleaf', Georgia, serif;
-  /* DEPRECATED transitional alias (Equoria-6uf63): the Cinzel heading era is
-     over — DESIGN.md assigns functional UI (buttons, tabs, nav, toasts,
-     stats, ordinary titles) to Proda Sans, so this resolves to the body
-     stack. Existing consumers render correctly; new code uses --font-body
-     directly (or --font-announcer / --font-entity for ceremonial roles).
-     Per-consumer sweep tracked in bd. */
-  --font-heading: 'Proda Sans', system-ui, sans-serif;
   --font-body:
     'Proda Sans', system-ui, sans-serif; /* All UI text — replaced Inter (user ruling 2026-08-14); default figures proportional, numeric columns need tabular-nums */
   --font-mono:

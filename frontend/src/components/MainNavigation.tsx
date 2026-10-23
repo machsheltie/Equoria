@@ -101,7 +101,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           {/* Coins pill */}
           <Link
             to="/bank"
-            className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-[var(--gold-light)] bg-[rgba(200,168,78,0.08)] px-3 py-1 rounded-[var(--radius-sm)] border border-[rgba(200,168,78,0.15)] hover:bg-[rgba(200,168,78,0.15)] transition-colors"
+            className="flex items-center gap-1.5 text-xs tabular-nums font-semibold text-[var(--gold-light)] bg-[rgba(200,168,78,0.08)] px-3 py-1 rounded-[var(--radius-sm)] border border-[rgba(200,168,78,0.15)] hover:bg-[rgba(200,168,78,0.15)] transition-colors"
             data-testid="coins-display"
             data-onboarding-target="nav-coins"
           >

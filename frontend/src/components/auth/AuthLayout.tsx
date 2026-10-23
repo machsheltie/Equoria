@@ -65,7 +65,8 @@ export interface AuthFooterLinkProps {
  * Authentication page header with logo wordmark.
  * Renders the Equoria h1 wordmark. AuthLayout renders this once — pages must NOT
  * render their own wordmark h1 (DECISIONS.md §2, Equoria-o5hub.16).
- * text-5xl matches the pages' existing design; font-display is the correct brand token.
+ * text-5xl matches the pages' existing design; .wordmark-title owns the face
+ * (Dragon Tales via --font-wordmark).
  */
 export const AuthHeader: React.FC = () => (
   <div className="text-center select-none">

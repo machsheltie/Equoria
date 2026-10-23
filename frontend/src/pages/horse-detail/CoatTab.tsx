@@ -104,9 +104,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
       {/* Section 1 — Color & markings (ea3n)                              */}
       {/* ----------------------------------------------------------------- */}
       <section data-testid="coat-color-section">
-        <h2 className="text-xl font-display text-[var(--text-primary)] mb-3">
-          Color &amp; Markings
-        </h2>
+        <h2 className="type-section-heading mb-3">Color &amp; Markings</h2>
         {colorQuery.isLoading && <LoadingBlock label="Loading color data..." />}
         {colorQuery.isError && (
           <ErrorState
@@ -123,10 +121,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
               <div className="text-sm uppercase tracking-wide text-[var(--alpha-gold-primary-80)]">
                 Coat color
               </div>
-              <div
-                className="text-2xl font-display text-[var(--text-primary)]"
-                data-testid="coat-color-name"
-              >
+              <div className="text-2xl text-[var(--text-primary)]" data-testid="coat-color-name">
                 {colorQuery.data.colorName ?? 'not recorded'}
                 {colorQuery.data.shade ? ` — ${colorQuery.data.shade}` : ''}
               </div>
@@ -222,9 +217,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
       {/* Section 2 — Genotype table (oovy)                                */}
       {/* ----------------------------------------------------------------- */}
       <section data-testid="coat-genotype-section">
-        <h2 className="text-xl font-display text-[var(--text-primary)] mb-3">
-          Genotype (Breeding Planning)
-        </h2>
+        <h2 className="type-section-heading mb-3">Genotype (Breeding Planning)</h2>
         {geneticsQuery.isLoading && <LoadingBlock label="Loading genotype..." />}
         {geneticsQuery.isError && (
           <ErrorState

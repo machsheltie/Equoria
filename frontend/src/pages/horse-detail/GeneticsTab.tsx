@@ -212,7 +212,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Hidden Traits & Discovery Section (Equoria-hriey) */}
       {discoveryStatus && (
         <div data-testid="hidden-traits-section">
-          <h3 className="type-section-heading mb-4">Trait Discovery</h3>
+          <h3 className="type-enchanted-accent text-[var(--text-primary)] mb-4">Trait Discovery</h3>
 
           <HiddenTraitIndicator discoveryStatus={discoveryStatus} />
         </div>

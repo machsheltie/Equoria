@@ -417,9 +417,8 @@ const OnboardingPage: React.FC = () => {
           {/* Header — matches PageHero title/subtitle styling */}
           <div className="text-center mb-5">
             <h1
-              className="text-2xl sm:text-3xl font-bold text-[var(--gold-400)] tracking-wide"
+              className="type-ceremonial-title text-2xl sm:text-3xl text-[var(--gold-400)]"
               style={{
-                fontFamily: 'var(--font-heading)',
                 textShadow:
                   '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 30px var(--alpha-gold-ember-30)',
               }}
