@@ -108,7 +108,10 @@ describe('Epigenetic Trait System Integration Tests', () => {
 
     // Create test horse (young foal for epigenetic testing)
     const foalBirthDate = new Date();
-    foalBirthDate.setDate(foalBirthDate.getDate() - 60); // 60 days old
+    // 10 real days = game age 1. A foal is under game age 3 (21 days); the old
+    // 60-day fixture was ~8 game years old and only passed the retired 1,095-day
+    // gate (owner ruling: 7 days = 1 game year; Equoria-xggat).
+    foalBirthDate.setDate(foalBirthDate.getDate() - 10);
 
     testHorse = await prisma.horse.create({
       data: {
