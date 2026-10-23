@@ -113,13 +113,15 @@ async function scoreOrdering(show, entries, scoreRng, now) {
     ...(scoreRng ? { rng: scoreRng } : {}),
   });
   return rankScoredEntries(scored, scoreRng ?? Math.random).map(
-    ({ entry, score, assignment }, i) => ({
+    ({ entry, score, assignment, breakdown }, i) => ({
       horseId: entry.horseId,
       userId: entry.userId,
       horseName: entry.horse?.name ?? null,
       score,
       placement: i + 1,
       riderId: assignment?.riderId ?? null,
+      // Every input of the score, kept for staff to audit (Equoria-4q02c).
+      scoreInputs: breakdown,
     }),
   );
 }

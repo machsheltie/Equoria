@@ -47,7 +47,7 @@ export async function calculateLegacyScore(horseId) {
   const horse = await prisma.horse.findUnique({
     where: { id: horseId },
     include: {
-      competitionResults: true,
+      competitionResults: { omit: { scoreInputs: true } },
       damOffspring: true,
       sireOffspring: true,
     },

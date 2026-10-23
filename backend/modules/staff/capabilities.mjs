@@ -52,6 +52,9 @@ const adminOnly = [
   // Equoria-c7mx0.1 (owner ruling 2026-10-23): quarantined shows are listed for
   // the Owner/Admin to resolve.
   'shows.quarantine.view',
+  // Equoria-4q02c (owner ruling q01): a show entry's recorded luck roll and
+  // score inputs are for the Owner and Admins only, never moderators or players.
+  'results.scoreInputs.view',
 ];
 const ownerOnly = [
   'traits.hidden.view',

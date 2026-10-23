@@ -127,7 +127,10 @@ export async function buildUserDataExport(userId) {
     prisma.horseSale.findMany({ where: { sellerId: userId } }),
     prisma.horseSale.findMany({ where: { buyerId: userId } }),
     // Competition history for horses the user owns (their personal sporting record).
-    prisma.competitionResult.findMany({ where: { horse: { userId } } }),
+    prisma.competitionResult.findMany({
+      where: { horse: { userId } },
+      omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
+    }),
   ]);
 
   return {

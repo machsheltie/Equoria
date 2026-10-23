@@ -130,6 +130,7 @@ async function getHorseWithHistory(horseId) {
       },
       // Competition results for performance tracking
       competitionResults: {
+        omit: { scoreInputs: true },
         orderBy: { createdAt: 'asc' },
       },
       // Parent information for lineage checks (ultraRareTraits JSON is a scalar,

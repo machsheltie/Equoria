@@ -25,6 +25,7 @@ export async function getUserPrizeHistory(userId, { limit, offset }) {
     }),
     prisma.competitionResult.findMany({
       where: { horse: { userId } },
+      omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
       orderBy: { runDate: 'desc' },
       take: limit,
       skip: offset,

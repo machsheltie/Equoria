@@ -129,6 +129,7 @@ async function getResultById(resultId) {
   try {
     const result = await prisma.competitionResult.findUnique({
       where: { id: numericId },
+      omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
       include: {
         horse: {
           include: {
@@ -171,6 +172,7 @@ async function getResultsByUser(userId, options = {}) {
 
   const results = await prisma.competitionResult.findMany({
     where: whereClause,
+    omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
     include: {
       horse: {
         include: {

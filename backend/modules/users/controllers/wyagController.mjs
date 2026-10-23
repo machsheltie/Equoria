@@ -52,6 +52,7 @@ export async function getWhileYouWereGone(req, res) {
           horse: { userId },
           createdAt: { gte: since },
         },
+        omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
         include: { horse: { select: { name: true } }, show: { select: { name: true } } },
         orderBy: { createdAt: 'desc' },
         take: 3,

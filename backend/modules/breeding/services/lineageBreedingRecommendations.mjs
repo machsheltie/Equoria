@@ -53,11 +53,11 @@ export async function generateLineageBreedingRecommendations(stallionId, mareId)
     await Promise.all([
       prisma.horse.findUnique({
         where: { id: stallionId },
-        include: { competitionResults: true },
+        include: { competitionResults: { omit: { scoreInputs: true } } },
       }),
       prisma.horse.findUnique({
         where: { id: mareId },
-        include: { competitionResults: true },
+        include: { competitionResults: { omit: { scoreInputs: true } } },
       }),
     ])
   ).map(withoutUnrevealedTraits);

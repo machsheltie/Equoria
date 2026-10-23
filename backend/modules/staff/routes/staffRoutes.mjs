@@ -30,7 +30,7 @@ import {
   replyToTicket,
 } from '../controllers/staffTicketController.mjs';
 import { listStaff, lookupUser, setUserRole } from '../controllers/staffRolesController.mjs';
-import { getQuarantinedShows } from '../controllers/staffShowsController.mjs';
+import { getQuarantinedShows, getShowScoreInputs } from '../controllers/staffShowsController.mjs';
 
 const router = express.Router();
 
@@ -68,6 +68,14 @@ router.get(
   '/shows/quarantined',
   requireStaffCapability('shows.quarantine.view'),
   getQuarantinedShows,
+);
+
+// Owner and admins: the luck roll and score inputs recorded per entry
+// (Equoria-4q02c, owner ruling q01). Never moderators or players.
+router.get(
+  '/shows/:showId/score-inputs',
+  requireStaffCapability('results.scoreInputs.view'),
+  getShowScoreInputs,
 );
 
 export default router;

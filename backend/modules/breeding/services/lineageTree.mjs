@@ -34,6 +34,7 @@ async function withCompetitionResults(rows) {
   }
   const results = await prisma.competitionResult.findMany({
     where: { horseId: { in: ids } },
+    omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
     orderBy: { id: 'asc' },
   });
   const byHorse = new Map(ids.map(id => [id, []]));
