@@ -5,7 +5,6 @@
  * - Displays horse name and selected discipline
  * - Shows expected outcome with base score gain
  * - Shows current score -> new score calculation
- * - Displays trait modifiers (positive/negative with color coding)
  * - Shows next training availability date
  * - Cancel and Confirm buttons
  * - Loading state for confirm button
@@ -28,11 +27,6 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
-
-export interface TraitModifier {
-  name: string;
-  modifier: number;
-}
 
 export interface TrainingConfirmModalProps {
   /**
@@ -71,11 +65,6 @@ export interface TrainingConfirmModalProps {
   currentScore: number;
 
   /**
-   * Array of trait modifiers affecting the training
-   */
-  traitModifiers: TraitModifier[];
-
-  /**
    * Days until next training is available
    */
   cooldownDays: number;
@@ -84,13 +73,6 @@ export interface TrainingConfirmModalProps {
    * Loading state during training mutation
    */
   isLoading?: boolean;
-}
-
-/**
- * Calculates total modifier from trait array
- */
-function calculateTotalModifier(traitModifiers: TraitModifier[]): number {
-  return traitModifiers.reduce((sum, trait) => sum + trait.modifier, 0);
 }
 
 /**
@@ -118,14 +100,12 @@ const TrainingConfirmModal = ({
   disciplineName,
   baseScoreGain,
   currentScore,
-  traitModifiers,
   cooldownDays,
   isLoading = false,
 }: TrainingConfirmModalProps) => {
   // Calculate derived values
-  const totalModifier = calculateTotalModifier(traitModifiers);
-  const expectedGain = Math.max(0, baseScoreGain + totalModifier);
-  const newScore = currentScore + expectedGain;
+  // Owner ruling 2026-10-23: a session adds a flat +5; no trait or trainer scaling.
+  const newScore = currentScore + baseScoreGain;
   const nextAvailableDate = getNextAvailableDate(cooldownDays);
 
   return (
@@ -222,53 +202,6 @@ const TrainingConfirmModal = ({
                   </span>
                 </span>
               </div>
-
-              {/* Trait Modifiers */}
-              {traitModifiers.length > 0 && (
-                <div className="border-t border-[var(--glass-border)] pt-3 mt-3">
-                  <h4 className="text-xs font-medium text-role-secondary uppercase tracking-wider mb-2">
-                    Trait Modifiers
-                  </h4>
-                  <ul className="space-y-1" data-testid="trait-modifiers-list">
-                    {traitModifiers.map((trait, index) => (
-                      <li
-                        key={`${trait.name}-${index}`}
-                        className="flex justify-between items-center text-sm"
-                        data-testid={`trait-modifier-${index}`}
-                      >
-                        <span className="text-role-secondary">{trait.name}</span>
-                        <span
-                          className={`font-semibold ${
-                            trait.modifier >= 0
-                              ? 'text-[var(--role-success-text)]'
-                              : 'text-[var(--role-danger-text)]'
-                          }`}
-                          data-testid={`trait-modifier-value-${index}`}
-                        >
-                          {trait.modifier >= 0 ? '+' : ''}
-                          {trait.modifier}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-[var(--glass-border)]">
-                    <span className="text-sm font-medium text-[var(--text-primary)]">
-                      Total Modifier
-                    </span>
-                    <span
-                      className={`font-semibold ${
-                        totalModifier >= 0
-                          ? 'text-[var(--role-success-text)]'
-                          : 'text-[var(--role-danger-text)]'
-                      }`}
-                      data-testid="total-modifier"
-                    >
-                      {totalModifier >= 0 ? '+' : ''}
-                      {totalModifier}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Next Training Availability */}

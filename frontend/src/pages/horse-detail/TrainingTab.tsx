@@ -17,9 +17,7 @@ import React, { useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { AlertCircle, Loader2, Dumbbell, Clock, CheckCircle } from 'lucide-react';
 import DisciplinePicker from '../../components/training/DisciplinePicker';
-import TrainingConfirmModal, {
-  TraitModifier,
-} from '../../components/training/TrainingConfirmModal';
+import TrainingConfirmModal from '../../components/training/TrainingConfirmModal';
 import TrainingResultModal from '../../components/training/TrainingResultModal';
 import { ErrorState } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
@@ -35,7 +33,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   const [trainingResult, setTrainingResult] = useState<{
     scoreGain: number;
     baseScoreGain: number;
-    traitBonus: number;
     newScore: number;
     xpGain?: number;
     // Equoria-gzvwa — the authoritative server next-eligible value (ISO string)
@@ -98,25 +95,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       .map((d) => d.discipline);
   }
 
-  // Calculate trait modifiers for the selected discipline from real horse traits.
-  function getTraitModifiers(_disciplineId: string): TraitModifier[] {
-    if (!horse.traits || horse.traits.length === 0) return [];
-
-    const modifiers: TraitModifier[] = [];
-
-    if (horse.traits.includes('Fast Learner')) {
-      modifiers.push({ name: 'Fast Learner', modifier: 1 });
-    }
-    if (horse.traits.includes('Strong Build')) {
-      modifiers.push({ name: 'Strong Build', modifier: 1 });
-    }
-    if (horse.traits.includes('Nervous')) {
-      modifiers.push({ name: 'Nervous', modifier: -1 });
-    }
-
-    return modifiers;
-  }
-
   // Handle discipline selection
   const handleDisciplineSelect = (disciplineId: string) => {
     setSelectedDiscipline(disciplineId);
@@ -141,15 +119,13 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
       // Equoria-o1x6g: read the REAL backend-computed values instead of
       // inferring them client-side. The route now emits the authoritative
-      // disciplineScoreIncrease (base +5, trait- and temperament-modified) and
+      // disciplineScoreIncrease (the flat +5, owner ruling 2026-10-23) and
       // the real awarded XP (xpAwarded), so the modal shows what actually
       // happened rather than a recomputed estimate that drifts from the server.
-      const baseGain = 5; // Base score gain (pre-modifier) — for the breakdown line.
-      const traitModifiers = getTraitModifiers(selectedDiscipline);
-      const traitBonus = traitModifiers.reduce((sum, t) => sum + t.modifier, 0);
-      // Prefer the authoritative server value; fall back to the local estimate
+      const baseGain = 5; // A session's flat gain — for the breakdown line.
+      // Prefer the authoritative server value; fall back to the flat gain
       // only on the legacy path that omits it.
-      const scoreGain = result.disciplineScoreIncrease ?? Math.max(0, baseGain + traitBonus);
+      const scoreGain = result.disciplineScoreIncrease ?? baseGain;
       const currentScore = getDisciplineScore(
         {
           id: horse.id,
@@ -164,7 +140,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       setTrainingResult({
         scoreGain,
         baseScoreGain: baseGain,
-        traitBonus,
         newScore: result.updatedScore ?? currentScore + scoreGain,
         // Equoria-o1x6g: the REAL awarded XP, not the trait-only delta
         // (traitEffects.xpModifier) it was previously wired to.
@@ -377,7 +352,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             },
             selectedDiscipline
           )}
-          traitModifiers={getTraitModifiers(selectedDiscipline)}
           cooldownDays={7}
           isLoading={trainHorse.isPending}
         />
@@ -391,7 +365,6 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           disciplineName={formatDisciplineName(selectedDiscipline || '')}
           scoreGain={trainingResult.scoreGain}
           baseScoreGain={trainingResult.baseScoreGain}
-          traitBonus={trainingResult.traitBonus}
           newScore={trainingResult.newScore}
           xpGain={trainingResult.xpGain}
           nextTrainingDate={trainingResult.nextTrainingDate}

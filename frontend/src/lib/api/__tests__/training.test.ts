@@ -58,7 +58,7 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
           disciplineScoreIncrease: 5,
           xpAwarded: 5,
           nextEligibleDate: realIso,
-          traitEffects: { appliedTraits: [], scoreModifier: 0, xpModifier: 0 },
+          traitEffects: { appliedTraits: [], xpModifier: 0 },
         })
       )
     );

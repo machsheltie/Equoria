@@ -106,7 +106,7 @@ export const createMockTrainingResult = (disciplineId: string) => ({
   nextEligibleDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   xpAwarded: 25,
   disciplineScoreIncrease: 5,
-  traitEffects: { appliedTraits: ['Fast Learner'], scoreModifier: 1, xpModifier: 25 },
+  traitEffects: { appliedTraits: ['Fast Learner'], xpModifier: 25 },
   discipline: disciplineId,
   horseId: 1,
 });

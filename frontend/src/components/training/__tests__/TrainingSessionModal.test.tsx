@@ -166,3 +166,39 @@ describe('TrainingSessionModal — GameDialog migration (Equoria-8l8zc)', () => 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * Equoria-576c0.1 — weekly training adds a flat +5 (owner ruling 2026-10-23).
+ *
+ * Old contract: the modal showed a "Trait Modifiers" panel built from fixed
+ * per-discipline lists (the same for every horse), per-discipline trait badges on
+ * the picker, and an expected score that added those invented modifiers to the
+ * base. The server never applied them; the ruling removes the chips.
+ */
+describe('TrainingSessionModal — flat +5, no trait chips (Equoria-576c0.1)', () => {
+  it('shows no trait modifiers panel or trait badges, and expects current score + 5', async () => {
+    server.use(
+      http.get(`${base}/api/v1/training/status/:horseId/:discipline`, ({ params }) =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            discipline: params.discipline,
+            score: 40,
+            nextEligibleDate: null,
+            lastTrainedAt: null,
+          },
+        })
+      )
+    );
+
+    renderModal();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Score 40 - Ready/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('trait-modifiers-section')).not.toBeInTheDocument();
+    expect(screen.queryByText(/trait modifiers/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('discipline-trait-indicators')).not.toBeInTheDocument();
+    expect(screen.getByTestId('expected-score-value')).toHaveTextContent('45');
+  });
+});

@@ -59,7 +59,6 @@ export interface StatGain {
 
 export interface TraitEffects {
   appliedTraits: string[];
-  scoreModifier: number;
   xpModifier: number;
 }
 
@@ -73,8 +72,8 @@ export interface TrainingResult {
   // not emit it.
   xpAwarded?: number | null;
   // Equoria-o1x6g — the authoritative discipline-score delta computed by the
-  // backend (base +5, trait- and trainer-modified, floor-1). The frontend
-  // must read this instead of recomputing base+traitBonus, which drifts.
+  // backend (the flat +5, owner ruling 2026-10-23). The frontend must read
+  // this instead of recomputing the gain, which drifts.
   disciplineScoreIncrease?: number | null;
   // Equoria-3kegj — the assigned trainer's per-training fee this session
   // charged (0 when the horse has no trainer).

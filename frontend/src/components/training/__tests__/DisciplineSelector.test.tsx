@@ -274,34 +274,10 @@ describe('DisciplineSelector', () => {
     });
   });
 
-  // Equoria-pfp1w: personalized recommendations + per-discipline trait
-  // indicators. Asserts the selector renders the real ⭐ bonus / ⚠ penalty
-  // badges when traitIndicators are supplied (from the horse's real traits).
-  describe('Trait indicators (Equoria-pfp1w)', () => {
-    it('renders a bonus trait indicator on a discipline', () => {
-      render(
-        <DisciplineSelector
-          selectedDiscipline=""
-          onDisciplineChange={mockOnChange}
-          traitIndicators={{ Racing: [{ trait: 'athletic', kind: 'bonus' }] }}
-        />
-      );
-      const bonus = screen.getByTestId('trait-indicator-bonus');
-      expect(bonus).toBeInTheDocument();
-      expect(bonus).toHaveTextContent('Athletic');
-    });
-
-    it('renders a penalty trait indicator on a discipline', () => {
-      render(
-        <DisciplineSelector
-          selectedDiscipline=""
-          onDisciplineChange={mockOnChange}
-          traitIndicators={{ Racing: [{ trait: 'stubborn', kind: 'penalty' }] }}
-        />
-      );
-      expect(screen.getByTestId('trait-indicator-penalty')).toHaveTextContent('Stubborn');
-    });
-
+  // Owner rulings 2026-10-07 and 2026-10-23: the game never recommends a discipline
+  // and training is a flat +5, so the selector shows no per-trait bonus/penalty badges
+  // (old contract, Equoria-pfp1w: it rendered them from the horse's traits).
+  describe('No recommendations or trait badges', () => {
     // Owner ruling 2026-10-07 (Stacey) changed this test's contract. OLD: the
     // picker showed a ranked "Recommended for this horse" set with match-score
     // percentage badges. NEW: the game never recommends; one flat alphabetical
@@ -319,11 +295,13 @@ describe('DisciplineSelector', () => {
       expect(names).toEqual(sorted);
     });
 
-    it('does not render trait indicator container when none supplied', () => {
+    it('renders no trait indicator badges', () => {
       render(
         <DisciplineSelector selectedDiscipline="Dressage" onDisciplineChange={mockOnChange} />
       );
       expect(screen.queryByTestId('discipline-trait-indicators')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('trait-indicator-bonus')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('trait-indicator-penalty')).not.toBeInTheDocument();
     });
   });
 });

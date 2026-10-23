@@ -3,7 +3,7 @@
  *
  * Modal for displaying training session results with celebration styling:
  * - Success message with celebration emoji
- * - Score gain breakdown showing base and trait bonus
+ * - Score gain breakdown (the flat +5 a session adds)
  * - New score display
  * - Additional gains section (stat gains and XP)
  * - Next training availability date
@@ -40,7 +40,7 @@ export interface TrainingResultModalProps {
   disciplineName: string;
 
   /**
-   * Total score gain (base + trait bonus)
+   * Total score gain
    */
   scoreGain: number;
 
@@ -48,11 +48,6 @@ export interface TrainingResultModalProps {
    * Base score gain from training (+5 typically)
    */
   baseScoreGain: number;
-
-  /**
-   * Trait bonus modifier
-   */
-  traitBonus: number;
 
   /**
    * New total discipline score after training
@@ -90,13 +85,8 @@ function formatNextTrainingDate(date: string | Date | null | undefined): string 
 /**
  * Formats the score breakdown text
  */
-function formatScoreBreakdown(baseScoreGain: number, traitBonus: number): string {
-  if (traitBonus === 0) {
-    return `+${baseScoreGain} base`;
-  }
-
-  const traitSign = traitBonus > 0 ? '+' : '';
-  return `+${baseScoreGain} base, ${traitSign}${traitBonus} trait bonus`;
+function formatScoreBreakdown(baseScoreGain: number): string {
+  return `+${baseScoreGain} base`;
 }
 
 /**
@@ -108,14 +98,13 @@ const TrainingResultModal = ({
   disciplineName,
   scoreGain,
   baseScoreGain,
-  traitBonus,
   newScore,
   xpGain,
   nextTrainingDate,
 }: TrainingResultModalProps) => {
   // Format values for display
   const formattedDate = formatNextTrainingDate(nextTrainingDate);
-  const scoreBreakdown = formatScoreBreakdown(baseScoreGain, traitBonus);
+  const scoreBreakdown = formatScoreBreakdown(baseScoreGain);
   // Training never raises a horse stat (owner rulings 2026-10-19, 2026-10-21);
   // the only additional gain is the player's XP.
   const hasAdditionalGains = xpGain !== undefined && xpGain > 0;

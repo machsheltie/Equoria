@@ -14,7 +14,6 @@ import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
-import { computeTrainerModifiers } from '../../trainers/index.mjs';
 import { MIN_ACTIVE_AGE_YEARS, MAX_ACTIVE_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
 
 /**
@@ -171,6 +170,10 @@ async function computeCanTrain(parsedHorseId, discipline) {
   };
 }
 
+// Owner ruling 2026-10-23 (Equoria-576c0.1): a weekly session adds exactly +5 to the
+// trained discipline, whatever the horse's traits, temperament or trainer.
+const TRAINING_DISCIPLINE_GAIN = 5;
+
 /** The result trainHorse returns when it refuses a session (nothing was written). */
 const refusal = reason => ({
   success: false,
@@ -242,10 +245,9 @@ async function trainHorse(horseId, discipline) {
     const nextEligibleClaim = new Date(cooldownNow);
     nextEligibleClaim.setDate(nextEligibleClaim.getDate() + cooldownDaysForGate);
 
-    // Equoria-oey96.7: load the active trainer (if any) for the training
-    // modifier. Fail-soft — a trainer load / DB error degrades to the
-    // no-trainer path (net modifier 0) and must NEVER block the primary
-    // discipline-score write.
+    // Equoria-3kegj: the assigned trainer (if any) is paid a fee per session.
+    // Fail-soft — a trainer load / DB error degrades to the no-trainer path
+    // (no fee) and must NEVER block the primary discipline-score write.
     let activeTrainer = null;
     try {
       const activeTrainerAssignment = await prisma.trainerAssignment.findFirst({
@@ -261,48 +263,11 @@ async function trainHorse(horseId, discipline) {
       );
     }
 
-    // Equoria-oey96.7: trainer training modifier. Defensive — {0,0} for a
-    // null/malformed trainer, so the no-trainer path is byte-identical to the
-    // pre-feature behavior. Applies to the discipline-score GAIN only (NOT user
-    // XP), per the live trainer-modifier contract.
-    const trainerModifier = computeTrainerModifiers({
-      trainer: activeTrainer,
-      discipline,
-      horseTemperament: horse.temperament,
-    });
-    const trainerNet = trainerModifier.bonusPercent - trainerModifier.penaltyPercent;
-
-    // Discipline-score gain composed in a SINGLE terminal round
-    // (Equoria-oey96.7): traits → trainer. Owner ruling 2026-10-21: a horse's
-    // temperament has no training modifier (it was a third stage). The previous code
-    // rounded after EACH stage, which lost sub-integer modifiers and made the
-    // composition order observable; one terminal round fixes both. Focused
-    // integration tests pin the composition. XP is unaffected (trainer never touches XP)
-    // and keeps its own per-stage rounding further below.
-    const BASE_DISCIPLINE_GAIN = 5;
-    const traitScoreMod =
-      traitEffects.trainingXpModifier !== null && traitEffects.trainingXpModifier !== undefined
-        ? traitEffects.trainingXpModifier
-        : 0;
-    const disciplineScoreIncrease = Math.max(
-      1,
-      Math.round(BASE_DISCIPLINE_GAIN * (1 + traitScoreMod) * (1 + trainerNet)),
-    );
-
-    // Trait-only delta (pre-trainer) preserved for the
-    // response contract's traitEffects.scoreModifier reporting field.
-    const traitAdjustedScore = Math.round(BASE_DISCIPLINE_GAIN * (1 + traitScoreMod));
-
-    if (traitScoreMod !== 0) {
-      logger.info(
-        `[trainingController.trainHorse] Trait training modifier applied to discipline score: ${(traitScoreMod * 100).toFixed(1)}%`,
-      );
-    }
-    if (trainerNet !== 0) {
-      logger.info(
-        `[trainingController.trainHorse] Trainer modifier applied to discipline score: +${(trainerModifier.bonusPercent * 100).toFixed(1)}% / -${(trainerModifier.penaltyPercent * 100).toFixed(1)}% (net ${(trainerNet * 100).toFixed(1)}%)`,
-      );
-    }
+    // OWNER RULING 2026-10-23 (Equoria-576c0.1): a weekly session adds a FLAT +5
+    // to the trained discipline. No trainer bonus, no trait scaling, no
+    // temperament scaling. (Old contract, Equoria-oey96.7: the gain was
+    // max(1, round(5 * (1 + trait trainingXpModifier) * (1 + trainer net))).)
+    const disciplineScoreIncrease = TRAINING_DISCIPLINE_GAIN;
 
     // Owner rulings 2026-10-19 and 2026-10-21: training adds to the trained
     // discipline's score and never raises a horse stat, in every discipline.
@@ -393,18 +358,8 @@ async function trainHorse(horseId, discipline) {
       trainingFee,
       message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.`,
       nextEligible: nextEligible.toISOString(),
-      // Equoria-oey96.7: surface the trainer contribution honestly so the UI
-      // can show the effect even in sessions where the single terminal round
-      // absorbs the integer point delta. net can be negative (an incompatible
-      // or retired trainer). {0,0,0} when no trainer is assigned.
-      trainerModifier: {
-        bonusPercent: trainerModifier.bonusPercent,
-        penaltyPercent: trainerModifier.penaltyPercent,
-        net: trainerNet,
-      },
       traitEffects: {
         appliedTraits: allTraits,
-        scoreModifier: traitAdjustedScore - 5, // trait-only delta (pre-trainer)
         xpModifier: traitAdjustedXp - 5, // trait-only delta
       },
     };
@@ -560,18 +515,14 @@ async function trainRouteHandler(req, res) {
         success: true,
         message: `${result.updatedHorse.name} trained in ${discipline}. +${actualIncrease} added.`,
         updatedScore,
-        // Authoritative score delta computed by trainHorse (base +5, trait- and
-        // trainer-modified, floor-1). null-coalesced to 5 above for the
-        // message; surface the same value as a first-class field.
+        // Authoritative score delta computed by trainHorse (the flat +5).
+        // null-coalesced to 5 above for the message; surface the same value as
+        // a first-class field.
         disciplineScoreIncrease: actualIncrease,
         // Real awarded XP (post-trait, floor-1). null only if
         // trainHorse somehow omitted it (older return shape) — keep it explicit.
         xpAwarded: result.xpAwarded ?? null,
         trainingFee: result.trainingFee ?? 0, // Equoria-3kegj: the trainer fee charged
-        // Equoria-oey96.7: { bonusPercent, penaltyPercent, net } trainer
-        // contribution to the discipline-score gain (net can be negative;
-        // {0,0,0} when no trainer). null only for an older trainHorse shape.
-        trainerModifier: result.trainerModifier ?? null,
         nextEligibleDate: result.nextEligible,
         traitEffects: result.traitEffects,
       });

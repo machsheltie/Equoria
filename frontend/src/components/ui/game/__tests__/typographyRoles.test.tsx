@@ -143,7 +143,6 @@ describe('ceremonial consumers', () => {
         disciplineName="Dressage"
         scoreGain={6}
         baseScoreGain={5}
-        traitBonus={1}
         newScore={51}
         nextTrainingDate={new Date('2026-02-07')}
       />

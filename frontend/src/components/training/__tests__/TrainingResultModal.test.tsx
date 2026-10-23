@@ -37,10 +37,9 @@ describe('TrainingResultModal', () => {
     isOpen: true,
     onClose: vi.fn(),
     disciplineName: 'Dressage',
-    scoreGain: 6,
+    scoreGain: 5,
     baseScoreGain: 5,
-    traitBonus: 1,
-    newScore: 51,
+    newScore: 50,
     nextTrainingDate: new Date('2026-02-07'),
   };
 
@@ -93,7 +92,7 @@ describe('TrainingResultModal', () => {
       render(<TrainingResultModal {...defaultProps} />);
 
       const scoreGain = screen.getByTestId('score-gain');
-      expect(scoreGain).toHaveTextContent('+6');
+      expect(scoreGain).toHaveTextContent('+5');
       expect(scoreGain).toHaveClass('text-4xl', 'font-bold', 'text-[var(--role-success-text)]');
     });
 
@@ -102,18 +101,21 @@ describe('TrainingResultModal', () => {
 
       const newScore = screen.getByTestId('new-score');
       expect(newScore).toHaveTextContent('New Score:');
-      expect(newScore).toHaveTextContent('51');
+      expect(newScore).toHaveTextContent('50');
     });
   });
 
   // ==================== SCORE DISPLAY TESTS ====================
   describe('Score Display', () => {
-    it('should show correct score gain breakdown (base + trait bonus)', () => {
+    // Owner ruling 2026-10-23 (Equoria-576c0.1): a session adds a flat +5, so the
+    // breakdown names the base only. Old contract: it appended a trait bonus
+    // ("+5 base, +1 trait bonus").
+    it('should show the score gain breakdown as the base only', () => {
       render(<TrainingResultModal {...defaultProps} />);
 
       const breakdown = screen.getByTestId('score-breakdown');
-      expect(breakdown).toHaveTextContent('+5 base');
-      expect(breakdown).toHaveTextContent('+1 trait bonus');
+      expect(breakdown).toHaveTextContent('(+5 base)');
+      expect(breakdown).not.toHaveTextContent('trait bonus');
     });
 
     it('should format score gain with + symbol', () => {
@@ -121,28 +123,6 @@ describe('TrainingResultModal', () => {
 
       const scoreGain = screen.getByTestId('score-gain');
       expect(scoreGain).toHaveTextContent('+10');
-    });
-
-    it('should display breakdown text correctly for positive trait bonus', () => {
-      render(<TrainingResultModal {...defaultProps} baseScoreGain={5} traitBonus={2} />);
-
-      const breakdown = screen.getByTestId('score-breakdown');
-      expect(breakdown).toHaveTextContent('(+5 base, +2 trait bonus)');
-    });
-
-    it('should handle zero trait bonus (only shows base)', () => {
-      render(<TrainingResultModal {...defaultProps} traitBonus={0} scoreGain={5} />);
-
-      const breakdown = screen.getByTestId('score-breakdown');
-      expect(breakdown).toHaveTextContent('(+5 base)');
-      expect(breakdown).not.toHaveTextContent('trait bonus');
-    });
-
-    it('should handle negative trait modifiers correctly', () => {
-      render(<TrainingResultModal {...defaultProps} traitBonus={-2} scoreGain={3} />);
-
-      const breakdown = screen.getByTestId('score-breakdown');
-      expect(breakdown).toHaveTextContent('(+5 base, -2 trait bonus)');
     });
   });
 
@@ -296,7 +276,6 @@ describe('TrainingResultModal', () => {
           {...defaultProps}
           scoreGain={9999}
           baseScoreGain={9000}
-          traitBonus={999}
           newScore={99999}
         />
       );

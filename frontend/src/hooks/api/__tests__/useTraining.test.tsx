@@ -71,7 +71,6 @@ describe('useTrainHorse', () => {
       nextEligibleDate: '2026-02-06T10:00:00Z',
       traitEffects: {
         appliedTraits: ['Athletic'],
-        scoreModifier: 5,
         xpModifier: 1.1,
       },
     };
@@ -107,7 +106,6 @@ describe('useTrainHorse', () => {
       nextEligibleDate: '2026-02-06T10:00:00Z',
       traitEffects: {
         appliedTraits: ['Determined', 'Hardy'],
-        scoreModifier: 8,
         xpModifier: 1.15,
       },
     };
@@ -125,7 +123,6 @@ describe('useTrainHorse', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data?.traitEffects?.appliedTraits).toEqual(['Determined', 'Hardy']);
-    expect(result.current.data?.traitEffects?.scoreModifier).toBe(8);
     expect(result.current.data?.traitEffects?.xpModifier).toBe(1.15);
   });
 

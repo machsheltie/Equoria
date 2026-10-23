@@ -83,7 +83,10 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
       });
     });
 
-    test('Shows trait modifiers if any', async () => {
+    // Owner ruling 2026-10-23 (Equoria-576c0.1): weekly training adds a flat +5, so the
+    // confirm dialog lists no trait modifiers. Old contract: a horse with the "Fast Learner"
+    // trait saw a trait-modifiers list here (a hardcoded +1 the server never applied).
+    test('Shows no trait modifiers, even for a horse with traits', async () => {
       global.fetch = createFetchMock();
       const user = userEvent.setup();
 
@@ -100,8 +103,10 @@ describe('HorseDetailPage Training Tab — Confirmation Flow', () => {
 
       await waitFor(() => {
         const modal = screen.getByTestId('training-confirm-modal');
-        // Horse has "Fast Learner" trait which adds +1
-        expect(within(modal).getByTestId('trait-modifiers-list')).toBeInTheDocument();
+        // The horse has the "Fast Learner" trait; it changes nothing about the +5.
+        expect(within(modal).getByTestId('base-score-gain')).toHaveTextContent('+5');
+        expect(within(modal).queryByTestId('trait-modifiers-list')).not.toBeInTheDocument();
+        expect(within(modal).queryByText(/trait modifiers/i)).not.toBeInTheDocument();
       });
     });
 

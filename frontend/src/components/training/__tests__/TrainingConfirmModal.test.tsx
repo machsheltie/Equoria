@@ -5,14 +5,14 @@
  * - Rendering when open/closed
  * - Display of horse name, discipline, and scores
  * - Score calculation and progression display
- * - Trait modifiers with color coding (positive/negative)
+ * - No trait or trainer modifier display (flat +5, owner ruling 2026-10-23)
  * - Next training availability date
  * - Button interactions (Confirm, Cancel, X button)
  * - Keyboard interaction (Escape key)
  * - Outside-interaction dismissal (GameDialog-owned)
  * - Loading state behavior
  * - Accessibility (ARIA attributes, focus management)
- * - Edge cases (zero gain, large values, empty modifiers)
+ * - Edge cases (zero gain, large values)
  *
  * Story 4-1: Training Session Interface - Task 4
  * Migrated from hand-rolled `fixed inset-0` portal overlay → GameDialog
@@ -25,7 +25,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TrainingConfirmModal from '../TrainingConfirmModal';
 
@@ -38,10 +38,6 @@ describe('TrainingConfirmModal', () => {
     disciplineName: 'Dressage',
     baseScoreGain: 5,
     currentScore: 25,
-    traitModifiers: [
-      { name: 'Quick Learner', modifier: 2 },
-      { name: 'Nervous', modifier: -1 },
-    ],
     cooldownDays: 7,
     isLoading: false,
   };
@@ -182,15 +178,15 @@ describe('TrainingConfirmModal', () => {
 
       const scoreProgression = screen.getByTestId('score-progression');
       expect(scoreProgression).toHaveTextContent('25');
-      expect(scoreProgression).toHaveTextContent('31'); // 25 + 5 + (2 - 1) = 31
+      expect(scoreProgression).toHaveTextContent('30'); // 25 + the flat 5
     });
 
-    it('should calculate new score correctly including modifiers', () => {
-      // Base: 5, Quick Learner: +2, Nervous: -1 = Total gain: 6
-      // Current: 25, New: 31
+    // Owner ruling 2026-10-23: weekly training adds a flat +5 with no trait or trainer
+    // scaling. Old contract: new score = current + base + the sum of trait modifiers (31).
+    it('should calculate new score as current plus the flat gain', () => {
       render(<TrainingConfirmModal {...defaultProps} />);
 
-      expect(screen.getByTestId('new-score')).toHaveTextContent('31');
+      expect(screen.getByTestId('new-score')).toHaveTextContent('30');
     });
 
     it('should format score display properly with arrow', () => {
@@ -202,49 +198,17 @@ describe('TrainingConfirmModal', () => {
     });
   });
 
-  // ==================== TRAIT MODIFIERS DISPLAY ====================
-  describe('Trait Modifiers Display', () => {
-    it('should display positive modifiers in green with + symbol', () => {
+  // ==================== NO TRAIT MODIFIERS ====================
+  // Owner ruling 2026-10-23 (Equoria-576c0.1): training adds a flat +5; the confirm
+  // dialog shows no trait modifier list and no modifier total. Old contract: it listed
+  // each trait modifier with a colour-coded value and a total.
+  describe('No trait modifiers', () => {
+    it('shows no trait modifier list and no modifier total', () => {
       render(<TrainingConfirmModal {...defaultProps} />);
 
-      const quickLearnerValue = screen.getByTestId('trait-modifier-value-0');
-      expect(quickLearnerValue).toHaveTextContent('+2');
-      expect(quickLearnerValue).toHaveClass('text-[var(--role-success-text)]');
-    });
-
-    it('should display negative modifiers in red with - symbol', () => {
-      render(<TrainingConfirmModal {...defaultProps} />);
-
-      const nervousValue = screen.getByTestId('trait-modifier-value-1');
-      expect(nervousValue).toHaveTextContent('-1');
-      expect(nervousValue).toHaveClass('text-[var(--role-danger-text)]');
-    });
-
-    it('should handle empty trait modifiers array', () => {
-      render(<TrainingConfirmModal {...defaultProps} traitModifiers={[]} />);
-
-      // Should not render trait modifiers section
       expect(screen.queryByTestId('trait-modifiers-list')).not.toBeInTheDocument();
-    });
-
-    it('should display multiple trait modifiers correctly', () => {
-      const manyModifiers = [
-        { name: 'Quick Learner', modifier: 2 },
-        { name: 'Nervous', modifier: -1 },
-        { name: 'Athletic', modifier: 1 },
-        { name: 'Stubborn', modifier: -2 },
-      ];
-
-      render(<TrainingConfirmModal {...defaultProps} traitModifiers={manyModifiers} />);
-
-      const modifiersList = screen.getByTestId('trait-modifiers-list');
-      const modifierItems = within(modifiersList).getAllByRole('listitem');
-      expect(modifierItems).toHaveLength(4);
-
-      expect(screen.getByTestId('trait-modifier-0')).toHaveTextContent('Quick Learner');
-      expect(screen.getByTestId('trait-modifier-1')).toHaveTextContent('Nervous');
-      expect(screen.getByTestId('trait-modifier-2')).toHaveTextContent('Athletic');
-      expect(screen.getByTestId('trait-modifier-3')).toHaveTextContent('Stubborn');
+      expect(screen.queryByTestId('total-modifier')).not.toBeInTheDocument();
+      expect(screen.queryByText(/trait modifiers/i)).not.toBeInTheDocument();
     });
   });
 
@@ -292,7 +256,7 @@ describe('TrainingConfirmModal', () => {
   // ==================== EDGE CASES ====================
   describe('Edge Cases', () => {
     it('should handle zero base score gain', () => {
-      render(<TrainingConfirmModal {...defaultProps} baseScoreGain={0} traitModifiers={[]} />);
+      render(<TrainingConfirmModal {...defaultProps} baseScoreGain={0} />);
 
       expect(screen.getByTestId('base-score-gain')).toHaveTextContent('+0');
       expect(screen.getByTestId('new-score')).toHaveTextContent('25'); // Current score remains
@@ -302,8 +266,8 @@ describe('TrainingConfirmModal', () => {
       render(<TrainingConfirmModal {...defaultProps} currentScore={999999} baseScoreGain={1000} />);
 
       expect(screen.getByTestId('current-score')).toHaveTextContent('999999');
-      // 999999 + 1000 + (2 - 1) = 1001000
-      expect(screen.getByTestId('new-score')).toHaveTextContent('1001000');
+      // 999999 + 1000 = 1000999
+      expect(screen.getByTestId('new-score')).toHaveTextContent('1000999');
     });
 
     it('should handle multiple rapid open/close cycles', async () => {
@@ -379,40 +343,6 @@ describe('TrainingConfirmModal', () => {
 
       const confirmButton = screen.getByTestId('confirm-button');
       expect(confirmButton).toHaveAttribute('aria-busy', 'true');
-    });
-  });
-
-  // ==================== TOTAL MODIFIER DISPLAY ====================
-  describe('Total Modifier Display', () => {
-    it('should show total modifier when traits exist', () => {
-      render(<TrainingConfirmModal {...defaultProps} />);
-
-      const totalModifier = screen.getByTestId('total-modifier');
-      // Quick Learner: +2, Nervous: -1 = +1
-      expect(totalModifier).toHaveTextContent('+1');
-    });
-
-    it('should show positive total modifier in green', () => {
-      render(<TrainingConfirmModal {...defaultProps} />);
-
-      const totalModifier = screen.getByTestId('total-modifier');
-      expect(totalModifier).toHaveClass('text-[var(--role-success-text)]');
-    });
-
-    it('should show negative total modifier in red', () => {
-      render(
-        <TrainingConfirmModal
-          {...defaultProps}
-          traitModifiers={[
-            { name: 'Nervous', modifier: -1 },
-            { name: 'Stubborn', modifier: -2 },
-          ]}
-        />
-      );
-
-      const totalModifier = screen.getByTestId('total-modifier');
-      expect(totalModifier).toHaveTextContent('-3');
-      expect(totalModifier).toHaveClass('text-[var(--role-danger-text)]');
     });
   });
 

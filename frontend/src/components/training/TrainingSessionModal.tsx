@@ -6,11 +6,11 @@
  * - View current training status and scores
  * - Check eligibility before training
  * - Execute training sessions
- * - View training results with trait modifiers
+ * - View training results
  *
  * Features:
- * - Discipline selection with trait modifier display
- * - Net effect calculation based on trait bonuses/penalties
+ * - Discipline selection
+ * - The flat +5 a session adds (owner ruling 2026-10-23: no trait or trainer scaling)
  * - Eligibility checking with server-side validation
  * - Training execution with result display
  * - Error handling with user-friendly messages
@@ -32,15 +32,10 @@ import {
   useTrainingStatus,
 } from '@/hooks/api/useTraining';
 import type { TrainableHorse, TrainingResult } from '@/lib/api-client';
-import { useHorse } from '@/hooks/api/useHorses';
-import { disciplineTraitIndicators } from './disciplineTraitIndicators';
 import DisciplineSelector from './DisciplineSelector';
 import HorseStatsCard from './HorseStatsCard';
 import TrainingResultsDisplay from './TrainingResultsDisplay';
-import TraitModifierList from './TraitModifierList';
 import EligibilityAlternatives from './EligibilityAlternatives';
-import type { TraitModifier } from './TraitModifierBadge';
-import { getDisciplineTraitModifiers } from './disciplineTraitGrouping';
 
 interface TrainingSessionModalProps {
   horse: TrainableHorse;
@@ -62,27 +57,6 @@ interface TrainingSessionModalProps {
   onSwitchHorse?: (_horse: TrainableHorse) => void;
 }
 
-/**
- * Discipline trait modifiers now come from the shared
- * ./disciplineTraitGrouping module (Equoria-svilx) — single source of
- * truth shared with disciplineTraitIndicators so the Trait-Modifiers panel
- * and the per-discipline trait indicators cannot drift.
- */
-
-/**
- * Calculates the net effect of trait modifiers on training gain.
- * Net Effect = Base Gain + Positive Bonuses - Negative Penalties
- */
-const calculateNetEffect = (base: number, modifiers: TraitModifier[]): number => {
-  const positiveSum = modifiers
-    .filter((m) => m.category === 'positive')
-    .reduce((sum, m) => sum + m.effect, 0);
-  const negativeSum = Math.abs(
-    modifiers.filter((m) => m.category === 'negative').reduce((sum, m) => sum + m.effect, 0)
-  );
-  return base + positiveSum - negativeSum;
-};
-
 // Equoria-2dnd2: the krjw5 invalid-date guard + date+time formatting now come
 // from the shared util. The prior bare toLocaleString() (locale-default
 // "12/10/2025, 12:00:00 AM") is normalized to the canonical app format
@@ -102,15 +76,8 @@ const TrainingSessionModal = ({
   const [trainingResult, setTrainingResult] = useState<TrainingResult | null>(null);
   const [previousScore, setPreviousScore] = useState<number | undefined>(undefined);
 
-  // useHorse fetches the full HorseSummary (traits) for the per-discipline
-  // trait badges. Owner ruling 2026-10-07: no discipline ranking or
-  // recommendation — the player chooses.
-  const { data: horseDetail } = useHorse(horse.id);
-  const personalizedTraitIndicators = useMemo(
-    () => disciplineTraitIndicators(horseDetail),
-    [horseDetail]
-  );
-
+  // Owner ruling 2026-10-07: no discipline ranking or recommendation — the
+  // player chooses.
   const { data: status } = useTrainingStatus(horse.id, discipline);
   const {
     data: eligibility,
@@ -119,22 +86,13 @@ const TrainingSessionModal = ({
   } = useTrainingEligibility(horse.id, discipline);
   const { mutateAsync: runTraining, isPending: isTraining } = useTrainingSession();
 
-  // Base training gain constant
-  const BASE_GAIN = 5;
-
-  // Calculate trait modifiers based on selected discipline
-  const traitModifiers = useMemo(() => {
-    return getDisciplineTraitModifiers(discipline);
-  }, [discipline]);
-
-  // Calculate net effect for expected score display
-  const netEffect = useMemo(() => {
-    return calculateNetEffect(BASE_GAIN, traitModifiers);
-  }, [traitModifiers]);
+  // Owner ruling 2026-10-23: a weekly session adds a flat +5 to the trained
+  // discipline, whatever the horse's traits or trainer.
+  const TRAINING_GAIN = 5;
 
   // Calculate expected new score
   const currentScore = status?.score ?? 0;
-  const expectedNewScore = currentScore + netEffect;
+  const expectedNewScore = currentScore + TRAINING_GAIN;
 
   useEffect(() => {
     setErrorMessage(null);
@@ -260,26 +218,11 @@ const TrainingSessionModal = ({
               <DisciplineSelector
                 selectedDiscipline={discipline}
                 onDisciplineChange={setDiscipline}
-                traitIndicators={personalizedTraitIndicators}
               />
             </div>
 
             <div className="mt-3 rounded-md border border-[var(--role-neutral-border)] bg-[var(--role-neutral-bg)] px-3 py-2 text-sm text-[var(--text-primary)]">
               {statusSummary}
-            </div>
-
-            {/* Trait Modifiers Section */}
-            <div className="mt-4" data-testid="trait-modifiers-section">
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                  Trait Modifiers
-                </h3>
-              </div>
-              <TraitModifierList
-                modifiers={traitModifiers}
-                baseGain={BASE_GAIN}
-                showNetEffect={true}
-              />
             </div>
 
             {/* Expected Score Display */}
@@ -290,7 +233,7 @@ const TrainingSessionModal = ({
               <span className="font-semibold">Expected New Score:</span>{' '}
               <span data-testid="expected-score-value">{expectedNewScore}</span>
               <span className="text-[var(--gold-400)] ml-2">
-                (Current: {currentScore} + Net Effect: {netEffect})
+                (Current: {currentScore} + {TRAINING_GAIN})
               </span>
             </div>
 

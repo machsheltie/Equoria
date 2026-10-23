@@ -1,47 +1,20 @@
 /**
- * 🧪 INTEGRATION TEST: trainer training modifier (Equoria-oey96.7)
+ * INTEGRATION TEST: weekly training adds a FLAT +5 (Equoria-576c0.1)
  *
- * THE DEFECT (audit finding P1-6): an assigned trainer has ZERO effect on
- * training outcomes. `trainingController.trainHorse` composes the
- * discipline-score gain from trait effects + horse temperament ONLY; the
- * active TrainerAssignment is loaded solely to award trainer XP. The frontend
- * (`TrainersPage.tsx`) tells players "Trainers ... boost training session
- * effectiveness" — currently untrue (Constitution §2, fake product claim on a
- * beta surface).
+ * OWNER RULING 2026-10-23: weekly training adds a FLAT +5 to the trained
+ * discipline. There is no trainer bonus and no trait scaling of the gain
+ * (supersedes the 2026-10-19 trainer +5/+10 for the training gain).
  *
- * THE FIX (path (a), user-ratified 2026-07-07 —
- * docs/design/2026-07-07-game-balance-formulas.md §2):
- *   computeTrainerModifiers({ trainer, discipline, horseTemperament })
- *     → { bonusPercent, penaltyPercent }
- *   applied to the discipline-score GAIN only (not user XP, not stat-gain
- *   chance), composed traits → trainer with a SINGLE terminal round:
- *   gain = max(1, round(5·(1+trait)·(1+net))).
+ * Old contract (Equoria-oey96.7, user-ratified 2026-07-07): the gain was
+ *   max(1, round(5 * (1 + trait trainingXpModifier) * (1 + trainerNet)))
+ * so a matched expert trainer gained 6, an `intelligent` horse with that
+ * trainer gained 8, and the response surfaced a `trainerModifier` breakdown
+ * and a `traitEffects.scoreModifier` delta. Those assertions are replaced
+ * here by the ruling; the trainer-fit pure function (computeTrainerModifiers)
+ * is unchanged and keeps its unit matrix in the second describe block.
  *
- * Owner ruling 2026-10-21: a horse's temperament has no training modifier.
- * Old contract: a temperament stage sat between traits and trainer,
- * gain = max(1, round(5·(1+trait)·(1+temp)·(1+net))), so T1's Calm control
- * gained 6 and T3b pinned rounding with Bold's +0.05. The expected values
- * below are recomputed without it; the trainer's compat with the horse's
- * temperament (trainer fit) is unchanged.
- *
- * This suite drives the REAL train endpoint against the REAL DB (no mocks) and
- * proves the two-arm contract the issue mandates:
- *   T1 (fail-first): identical horse WITH a matched+compatible expert trainer
- *      gets a HIGHER disciplineScoreIncrease than an identical no-trainer
- *      control. On pre-fix master both arms are identical → this FAILS.
- *   T2: mismatched/incompatible trainer engages the penalty path (net < 0),
- *      surfaced honestly in the payload; the gain never exceeds the control.
- *   T3: composition-order pin — trait × trainer, single round.
- *   T7: no-trainer control gain is byte-identical to pre-feature behavior.
- *   T8: the response payload surfaces the trainerModifier breakdown.
- *   T9: user XP is unchanged by the trainer (trainer touches score only).
- *
- * The pure-function unit matrix (T4 cap, T5 canonical-set guard, T6 retired)
- * lives in the second describe block and imports computeTrainerModifiers via
- * the trainers module barrel (cross-module public API).
- *
- * 🔄 MOCKING: none. Real Prisma, real controller, real DB. Fixtures are scoped
- *    (TestFixture- name prefix + id-collector cleanup) per CLAUDE.md §2/§3.
+ * This suite drives the REAL train path against the REAL DB (no mocks).
+ * Fixtures are scoped (TestFixture- name prefix + id-collector cleanup).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -181,52 +154,18 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     return trainer;
   }
 
-  // ── T1: the mandated two-arm fail-first test ────────────────────────────────
-  it('T1: a matched+compatible expert trainer yields a HIGHER gain than the no-trainer control', async () => {
-    // Control: Calm horse, no trainer. Trained: identical Calm horse with an
-    // expert `technical` trainer specialised in the trained discipline
-    // (technical+Calm compat = +0.03 → net clamps to the +0.20 bonus cap).
+  // -- T1: the flat +5, whatever the trainer ---------------------------------
+  it('T1: a matched expert trainer, a penalised trainer and no trainer all give exactly +5', async () => {
     const controlHorse = await makeHorse('t1-control', { temperament: 'Calm' });
-    const trainedHorse = await makeHorse('t1-trained', { temperament: 'Calm' });
-    await assignTrainer(trainedHorse.id, {
+    const expertHorse = await makeHorse('t1-expert', { temperament: 'Calm' });
+    const badHireHorse = await makeHorse('t1-badhire', { temperament: 'Nervous' });
+    await assignTrainer(expertHorse.id, {
       skillLevel: 'expert',
       level: 10,
       speciality: 'Dressage',
       personality: 'technical',
     });
-
-    const control = await trainHorse(controlHorse.id, 'Dressage');
-    const trained = await trainHorse(trainedHorse.id, 'Dressage');
-
-    expect(control.success).toBe(true);
-    expect(trained.success).toBe(true);
-
-    // No temperament modifier (owner ruling 2026-10-21); base 5. Control: 5.
-    // Trained: round(5·1.20) = 6. 6 > 5. (Old contract: Calm +0.10 → 6 vs 7.)
-    expect(control.disciplineScoreIncrease).toBe(5);
-    expect(trained.disciplineScoreIncrease).toBe(6);
-    expect(trained.disciplineScoreIncrease).toBeGreaterThan(control.disciplineScoreIncrease);
-
-    // T8 (payload honesty): the trainer contribution is surfaced, not folded in.
-    expect(trained.trainerModifier).toEqual({
-      bonusPercent: TRAINER_BONUS_CAP,
-      penaltyPercent: 0,
-      net: TRAINER_BONUS_CAP,
-    });
-    // Control surfaces a zero (no-trainer) breakdown, never undefined.
-    expect(control.trainerModifier).toEqual({ bonusPercent: 0, penaltyPercent: 0, net: 0 });
-
-    // T9 (user XP unchanged by the trainer): both arms award identical XP.
-    expect(trained.xpAwarded).toBe(control.xpAwarded);
-  });
-
-  // ── T2: mismatch / incompatible trainer engages the penalty path ───────────
-  it('T2: an incompatible trainer engages the penalty path and never exceeds the control', async () => {
-    const controlHorse = await makeHorse('t2-control', { temperament: 'Nervous' });
-    const mismatchHorse = await makeHorse('t2-mismatch', { temperament: 'Nervous' });
-    // competitive + Nervous = −0.04 (the PRD-06 §3 worked example); novice
-    // skill (+0.02), wrong discipline (no match) → net = 0.02 − 0.04 = −0.02.
-    await assignTrainer(mismatchHorse.id, {
+    await assignTrainer(badHireHorse.id, {
       skillLevel: 'novice',
       level: 1,
       speciality: 'Racing',
@@ -234,29 +173,23 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     });
 
     const control = await trainHorse(controlHorse.id, 'Dressage');
-    const mismatch = await trainHorse(mismatchHorse.id, 'Dressage');
+    const expert = await trainHorse(expertHorse.id, 'Dressage');
+    const badHire = await trainHorse(badHireHorse.id, 'Dressage');
 
-    expect(control.success).toBe(true);
-    expect(mismatch.success).toBe(true);
-
-    // Penalty is live and surfaced honestly.
-    expect(mismatch.trainerModifier.penaltyPercent).toBeCloseTo(0.04, 10);
-    expect(mismatch.trainerModifier.bonusPercent).toBeCloseTo(0.02, 10);
-    expect(mismatch.trainerModifier.net).toBeLessThan(0);
-
-    // A bad hire is never better than no hire. (At base 5 the −2% net is
-    // absorbed by rounding — the real cost is the lifetime delta, per §2.2.)
-    expect(mismatch.disciplineScoreIncrease).toBeLessThanOrEqual(control.disciplineScoreIncrease);
+    for (const result of [control, expert, badHire]) {
+      expect(result.success).toBe(true);
+      expect(result.disciplineScoreIncrease).toBe(5);
+    }
+    // The stored score moved by exactly 5 as well, not just the reported number.
+    for (const horse of [controlHorse, expertHorse, badHireHorse]) {
+      const row = await prisma.horse.findUnique({ where: { id: horse.id }, select: { disciplineScores: true } });
+      expect(row.disciplineScores.Dressage).toBe(5);
+    }
   });
 
-  // ── T3: composition-order pin (trait × trainer, single round) ────────────
-  it('T3: composition is trait → trainer with ONE terminal round', async () => {
-    // intelligent trait (trainingXpModifier +0.25) + Calm temperament (no
-    // training modifier, owner ruling 2026-10-21) + technical/expert/L10/Dressage
-    // trainer (compat +0.03 → net clamps to +0.20).
-    // gain = max(1, round(5 · 1.25 · 1.20)) = round(7.5) = 8.
-    // (Old contract with Calm +0.10: round(8.25) = 8.)
-    const horse = await makeHorse('t3-pin', {
+  // -- T2: traits never scale the gain ----------------------------------------
+  it('T2: an `intelligent` horse (trainingXpModifier +0.25) with an expert trainer still gains exactly +5', async () => {
+    const horse = await makeHorse('t2-intelligent', {
       temperament: 'Calm',
       positiveTraits: ['intelligent'],
     });
@@ -270,54 +203,26 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     const result = await trainHorse(horse.id, 'Dressage');
 
     expect(result.success).toBe(true);
-    expect(result.disciplineScoreIncrease).toBe(8);
-    expect(result.trainerModifier.net).toBeCloseTo(TRAINER_BONUS_CAP, 10);
-  });
-
-  // ── T3b: the SINGLE terminal round is load-bearing (divergence pin) ─────────
-  it('T3b: single terminal round differs from per-stage rounding (regression pin)', async () => {
-    // intelligent trait (+0.25); no temperament; a `patient` developing trainer
-    // with NO discipline match → net = +0.05.
-    //   single round : round(5 · 1.25 · 1.05)        = round(6.5625) = 7
-    //   per-stage    : round(round(5 · 1.25) · 1.05) = round(6 · 1.05) = round(6.3) = 6
-    // A refactor back to per-stage rounding would yield 6 and fail here — this
-    // is the sentinel the worked-example T3 does NOT provide. Old contract used
-    // Bold's +0.05 temperament stage (6 vs 5); owner ruling 2026-10-21 removed it.
-    const horse = await makeHorse('t3b-round', {
-      temperament: null,
-      positiveTraits: ['intelligent'],
-    });
-    await assignTrainer(horse.id, {
-      skillLevel: 'developing', // +0.05
-      level: 1, // +0
-      speciality: 'Racing', // ≠ Dressage → no match
-      personality: 'patient', // null temperament → no compat → 0
-    });
-
-    const result = await trainHorse(horse.id, 'Dressage');
-
-    expect(result.success).toBe(true);
-    expect(result.trainerModifier.net).toBeCloseTo(0.05, 10);
-    expect(result.disciplineScoreIncrease).toBe(7); // single-round; per-stage would be 6
-  });
-
-  // ── T7: no-trainer control gain is byte-identical to pre-feature behavior ──
-  it('T7: the no-trainer path is unchanged (control invariance)', async () => {
-    // No trait, no trainer, null temperament → base gain exactly 5, exactly as
-    // pre-feature master produced. This is the no-trainer path sentinel.
-    const horse = await makeHorse('t7-plain', { temperament: null });
-    const result = await trainHorse(horse.id, 'Dressage');
-
-    expect(result.success).toBe(true);
     expect(result.disciplineScoreIncrease).toBe(5);
-    expect(result.trainerModifier).toEqual({ bonusPercent: 0, penaltyPercent: 0, net: 0 });
-    // Owner ruling 2026-10-21: no temperamentEffects in the result (old contract: null here).
+    const row = await prisma.horse.findUnique({ where: { id: horse.id }, select: { disciplineScores: true } });
+    expect(row.disciplineScores.Dressage).toBe(5);
+  });
+
+  // -- T3: the result no longer reports trainer / trait score scaling ---------
+  it('T3: trainHorse reports no trainerModifier and no trait score delta', async () => {
+    const horse = await makeHorse('t3-payload', { temperament: null, positiveTraits: ['intelligent'] });
+    const result = await trainHorse(horse.id, 'Dressage');
+
+    expect(result.success).toBe(true);
+    expect(result).not.toHaveProperty('trainerModifier');
+    expect(result.traitEffects).not.toHaveProperty('scoreModifier');
+    // Owner ruling 2026-10-21: no temperamentEffects in the result either.
     expect(result).not.toHaveProperty('temperamentEffects');
   });
 
-  // ── T8 (route surface): trainRouteHandler emits the trainerModifier ────────
-  it('T8: the POST /train response body surfaces the trainerModifier breakdown', async () => {
-    const horse = await makeHorse('t8-route', { temperament: 'Calm' });
+  // -- T4: route surface -------------------------------------------------------
+  it('T4: the POST /train response is +5 with no trainerModifier, even with an expert trainer', async () => {
+    const horse = await makeHorse('t4-route', { temperament: 'Calm', positiveTraits: ['intelligent'] });
     await assignTrainer(horse.id, {
       skillLevel: 'expert',
       level: 10,
@@ -331,12 +236,10 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
 
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body).toHaveProperty('trainerModifier');
-    expect(res.body.trainerModifier).toEqual({
-      bonusPercent: TRAINER_BONUS_CAP,
-      penaltyPercent: 0,
-      net: TRAINER_BONUS_CAP,
-    });
+    expect(res.body.disciplineScoreIncrease).toBe(5);
+    expect(res.body.updatedScore).toBe(5);
+    expect(res.body).not.toHaveProperty('trainerModifier');
+    expect(res.body.traitEffects).not.toHaveProperty('scoreModifier');
   });
 });
 

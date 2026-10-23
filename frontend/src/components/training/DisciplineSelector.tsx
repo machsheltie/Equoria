@@ -27,7 +27,6 @@
 
 import React from 'react';
 import { Lock } from 'lucide-react';
-import type { DisciplineTraitIndicator } from './disciplineTraitIndicators';
 
 // ── Discipline stat map (mirrors backend/utils/statMap.mjs) ───────────────────
 
@@ -88,40 +87,15 @@ function StatPill({ stat, tier }: { stat: string; tier: 'primary' | 'secondary' 
 
 // ── Discipline option button ──────────────────────────────────────────────────
 
-function TraitIndicatorBadge({ indicator }: { indicator: DisciplineTraitIndicator }) {
-  const isBonus = indicator.kind === 'bonus';
-  const label = indicator.trait
-    .split(/[\s-]/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-  return (
-    <span
-      data-testid={`trait-indicator-${indicator.kind}`}
-      title={`${label} trait ${isBonus ? 'boosts' : 'reduces'} training in this discipline`}
-      className={[
-        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold border font-[var(--font-body)] whitespace-nowrap',
-        isBonus
-          ? 'text-[var(--role-success-text)] bg-[var(--role-success-bg)] border-[var(--role-success-border)]'
-          : 'text-[var(--role-danger-text)] bg-[var(--role-danger-bg)] border-[var(--role-danger-border)]',
-      ].join(' ')}
-    >
-      <span aria-hidden="true">{isBonus ? '⭐' : '⚠'}</span>
-      {label}
-    </span>
-  );
-}
-
 function DisciplineOption({
   discipline,
   isSelected,
-  traitIndicators,
   isIneligible,
   ineligibleReason,
   onSelect,
 }: {
   discipline: string;
   isSelected: boolean;
-  traitIndicators?: DisciplineTraitIndicator[];
   isIneligible?: boolean;
   ineligibleReason?: string;
   onSelect: () => void;
@@ -166,13 +140,6 @@ function DisciplineOption({
           <StatPill stat={stats[2]} tier="tertiary" />
         </div>
       )}
-      {traitIndicators && traitIndicators.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1.5" data-testid="discipline-trait-indicators">
-          {traitIndicators.map((ind) => (
-            <TraitIndicatorBadge key={`${ind.trait}-${ind.kind}`} indicator={ind} />
-          ))}
-        </div>
-      )}
     </button>
   );
 }
@@ -184,12 +151,6 @@ interface DisciplineSelectorProps {
   onDisciplineChange: (_discipline: string) => void;
   disciplines?: string[];
   description?: string;
-  /**
-   * Real per-discipline trait indicators (Equoria-pfp1w) keyed by discipline
-   * name — e.g. { "Racing": [{ trait: "athletic", kind: "bonus" }] }. Derived
-   * from the horse's actual traits; surfaces ⭐ bonus / ⚠ penalty badges.
-   */
-  traitIndicators?: Record<string, DisciplineTraitIndicator[]>;
   /** Disciplines the horse is ineligible for, with reason strings */
   ineligibleDisciplines?: Record<string, string>;
 }
@@ -199,7 +160,6 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
   onDisciplineChange,
   disciplines = ALL_DISCIPLINES,
   description,
-  traitIndicators,
   ineligibleDisciplines,
 }) => {
   // One flat alphabetical list — no ranking, no recommended subset.
@@ -226,7 +186,6 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
               key={d}
               discipline={d}
               isSelected={selectedDiscipline === d}
-              traitIndicators={traitIndicators?.[d]}
               isIneligible={!!ineligibleDisciplines?.[d]}
               ineligibleReason={ineligibleDisciplines?.[d]}
               onSelect={() => onDisciplineChange(d)}
