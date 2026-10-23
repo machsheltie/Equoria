@@ -11,8 +11,12 @@
  * Implementation notes:
  *   - Uses the seedCoatGenotypeHorses() fixture from a0i6 (with the wrm5
  *     locus-key bug-fix — see fixtures/coatGenotypeHorses.ts).
- *   - No bypass headers. Uses createAuthedSession() to lift the
- *     global-setup user's auth cookies + a real CSRF token.
+ *   - No bypass headers. Runs as its OWN player (fixtures/seededPlayer.ts),
+ *     registered and onboarded over the real API with no horse-list read, so
+ *     the horses seeded below are in the first GET /api/v1/horses the
+ *     breeding page makes. On the shared global-setup account that list was
+ *     already cached server-side for 120s by earlier page loads, so the
+ *     seeded pairs could be invisible to /breeding (Equoria-dz3jj).
  *   - Navigates by visible text + role queries (matches the breeding.spec.ts
  *     pattern). Does NOT depend on testids on HorseSelector cards.
  *   - The fixture writes directly through Prisma so we get deterministic
@@ -21,10 +25,24 @@
  */
 
 import { test as base, expect } from '@playwright/test';
-import { createAuthedSession, type AuthedSession } from './helpers/api';
+import { createSeededPlayerSession, type SeededPlayerSession } from './fixtures/seededPlayer';
 import { seedCoatGenotypeHorses, cleanupCoatGenotypeHorses } from './fixtures/coatGenotypeHorses';
 
-const test = base.extend<{ browserConsole: void }>({
+const test = base.extend<{ browserConsole: void }, { seededPlayer: SeededPlayerSession }>({
+  // Equoria-dz3jj: a dedicated player whose horse-list cache key is cold.
+  // Worker-scoped, and `storageState` derives from it, so every test's `page`
+  // is this player (see the usage notes in fixtures/seededPlayer.ts).
+  seededPlayer: [
+    async ({ browser }, use) => {
+      const player = await createSeededPlayerSession(browser);
+      await use(player);
+      await player.context.close();
+    },
+    { scope: 'worker' },
+  ],
+  storageState: async ({ seededPlayer }, use) => {
+    await use(seededPlayer.storageStatePath);
+  },
   browserConsole: [
     async ({ page }, use, testInfo) => {
       const consoleLines: string[] = [];
@@ -57,25 +75,17 @@ const test = base.extend<{ browserConsole: void }>({
 });
 
 test.describe('Lethal White Warning (wrm5)', () => {
-  let session: AuthedSession;
+  let ownerId: string;
 
-  test.beforeAll(async ({ browser }) => {
+  // Seeds BEFORE any page opens as this player, so the breeding page's first
+  // horse-list read is the cache miss that loads these rows from the database.
+  test.beforeAll(async ({ seededPlayer }) => {
     test.setTimeout(120000);
-    session = await createAuthedSession(browser);
+    ownerId = seededPlayer.userId;
 
-    // ── 1. Resolve userId from /api/v1/auth/me ────────────────────────────────
-    const meRes = await session.request.get('/api/v1/auth/me');
-    expect(meRes.ok(), `GET /api/v1/auth/me returned ${meRes.status()}`).toBeTruthy();
-    const meJson = (await meRes.json()) as Record<string, unknown>;
-    // Auth profile responses use { success, data: { user: {...} } } shape.
-    const meData = (meJson?.data ?? meJson) as Record<string, unknown>;
-    const userObj = (meData?.user ?? meData) as Record<string, unknown>;
-    const userId = userObj?.id as string | undefined;
-    expect(userId, 'userId must be present in /api/v1/auth/me response').toBeTruthy();
-
-    // ── 2. Resolve a real breedId ────────────────────────────────────────────
-    const breedsRes = await session.request.get('/api/v1/breeds');
-    expect(breedsRes.ok(), `GET /api/breeds returned ${breedsRes.status()}`).toBeTruthy();
+    // ── 1. Resolve a real breedId ────────────────────────────────────────────
+    const breedsRes = await seededPlayer.request.get('/api/v1/breeds');
+    expect(breedsRes.ok(), `GET /api/v1/breeds returned ${breedsRes.status()}`).toBeTruthy();
     const breedsJson = await breedsRes.json();
     const breeds = (breedsJson?.data ?? breedsJson ?? []) as Array<{ id: number }>;
     expect(
@@ -84,41 +94,17 @@ test.describe('Lethal White Warning (wrm5)', () => {
     ).toBeTruthy();
     const breedId = breeds[0].id;
 
-    // ── 3. Seed all three scenarios (idempotent — safe under worker retries) ──
-    const lethal = await seedCoatGenotypeHorses({
-      userId: userId!,
-      breedId,
-      scenario: 'frame-overo',
-    });
-    const safe = await seedCoatGenotypeHorses({
-      userId: userId!,
-      breedId,
-      scenario: 'homozygous-e',
-    });
-    const legacy = await seedCoatGenotypeHorses({
-      userId: userId!,
-      breedId,
-      scenario: 'legacy-null',
-    });
-
-    // Store fixture context for test cases to reference the seeded horses.
-    // (Currently unused but needed for future test variations.)
-    void {
-      userId: userId!,
-      breedId,
-      lethalSireId: lethal.sireId,
-      lethalDamId: lethal.damId,
-      safeSireId: safe.sireId,
-      safeDamId: safe.damId,
-      legacySireId: legacy.sireId,
-      legacyDamId: legacy.damId,
-    };
+    // ── 2. Seed all three scenarios (idempotent — safe under worker retries) ──
+    for (const scenario of ['frame-overo', 'homozygous-e', 'legacy-null'] as const) {
+      await seedCoatGenotypeHorses({ userId: ownerId, breedId, scenario });
+    }
   });
 
   test.afterAll(async () => {
-    // Scoped cleanup — only deletes horses with FIXTURE_NAME_PREFIX.
-    await cleanupCoatGenotypeHorses();
-    await session?.context.close();
+    // Scoped cleanup — only this player's horses with FIXTURE_NAME_PREFIX.
+    if (ownerId) {
+      await cleanupCoatGenotypeHorses(ownerId);
+    }
   });
 
   // Helper: select sire + dam by their fixture names, then wait for the

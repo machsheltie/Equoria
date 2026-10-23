@@ -30,7 +30,7 @@
  *   });
  *
  *   test.afterAll(async () => {
- *     await cleanupCoatGenotypeHorses();
+ *     await cleanupCoatGenotypeHorses(userId);
  *   });
  */
 
@@ -170,13 +170,17 @@ export async function seedCoatGenotypeHorses(opts: SeedOptions): Promise<SeededP
 }
 
 /**
- * Remove every horse whose name starts with FIXTURE_NAME_PREFIX.
- * Scoped per CLAUDE.md Rule 2 — never touches real user horses.
+ * Remove the fixture horses (names starting with FIXTURE_NAME_PREFIX) owned by
+ * one player. Scoped to that owner so a concurrent worker's fixtures are never
+ * deleted from under it (CLAUDE.md Rule 2 — never touches real user horses).
  */
-export async function cleanupCoatGenotypeHorses(): Promise<number> {
+export async function cleanupCoatGenotypeHorses(userId: string): Promise<number> {
+  if (!userId) {
+    throw new Error('cleanupCoatGenotypeHorses requires the owning userId');
+  }
   const prisma = await getPrisma();
   const result = await prisma.horse.deleteMany({
-    where: { name: { startsWith: FIXTURE_NAME_PREFIX } },
+    where: { userId, name: { startsWith: FIXTURE_NAME_PREFIX } },
   });
   return result.count;
 }
