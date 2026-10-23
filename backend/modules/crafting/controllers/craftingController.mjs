@@ -13,6 +13,7 @@
  *   POST /api/v1/crafting/craft      → craft an item from a recipe
  */
 
+import { randomUUID } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
@@ -235,7 +236,9 @@ export async function craftItem(req, res) {
     }
 
     const newItem = {
-      id: `crafted-${Date.now()}-${recipe.result}`,
+      // A real unique id: a millisecond timestamp collides for two crafts in the same
+      // millisecond, and equip/unequip address records by id (Equoria-d5ncx).
+      id: `crafted-${randomUUID()}-${recipe.result}`,
       itemId: recipe.result,
       category: recipe.resultCategory,
       name: recipe.resultName,
