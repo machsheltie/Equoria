@@ -101,6 +101,15 @@ import newsDeskRoutes from '../modules/news/routes/newsDeskRoutes.mjs';
 // Imported directly, never through the staff barrel: this file is the only
 // allowed importer of the staff Router (STAFF-CR-05, check-staff-routes-mount).
 import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
+// Equoria-ehlbj: the owner's quarantined-show tools are the competition module's;
+// the staff routes reach them through a port only this layer can fill (staff
+// cannot import competition without a cycle).
+import { registerQuarantinedShowTools } from '../modules/staff/index.mjs';
+import {
+  diagnoseQuarantinedShow,
+  previewQuarantinedShow,
+  runQuarantinedShow,
+} from '../modules/competition/index.mjs';
 // Equoria-q4uem.4 (WS4 S3): application-level cross-domain reads. This router
 // holds the /horses routes that compose data from more than one domain
 // (overview, history, trainable horses, training history, breeding data, trait
@@ -120,6 +129,12 @@ import bankUserTransactionsRoutes from '../modules/bank/routes/bankUserTransacti
  * the composition root to attach in the documented order.
  */
 export function buildRouters() {
+  registerQuarantinedShowTools({
+    diagnoseQuarantinedShow,
+    previewQuarantinedShow,
+    runQuarantinedShow,
+  });
+
   // Public router - No authentication required
   const publicRouter = express.Router();
 

@@ -18,6 +18,10 @@
  *   GET  /api/v1/staff/tickets/:id?before → { ticket (with a page of replies), olderRepliesCursor }
  *   POST /api/v1/staff/tickets/:id/replies → 201 { reply }
  *   POST /api/v1/staff/tickets/:id/status → { ticket }
+ *   GET  /api/v1/staff/shows/quarantined  → { shows }                         (owner only)
+ *   GET  /api/v1/staff/shows/quarantined/:id/diagnose → { diagnosis }         (owner only)
+ *   POST /api/v1/staff/shows/quarantined/:id/preview  → { preview }           (owner only)
+ *   POST /api/v1/staff/shows/quarantined/:id/run      → { result }            (owner only)
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -127,6 +131,44 @@ export interface FileTicketPayload {
   note: string;
 }
 
+/** A show held back after three failed runs (Equoria-ehlbj). */
+export interface QuarantinedShow {
+  id: number;
+  name: string;
+  discipline: string;
+  showType: string;
+  closeDate: string | null;
+  executionAttempts: number;
+  prizeEscrow: number;
+  feeEscrow: number;
+  entryCount: number;
+  updatedAt: string;
+}
+
+/** What Run Show would pay; nothing has moved (Equoria-ehlbj). */
+export interface QuarantinedShowPreview {
+  showId: number;
+  name: string;
+  kind: 'unexecuted' | 'halfSettled';
+  attempts: number;
+  entryCount: number;
+  placements: Array<{
+    placement: number;
+    horseId: number;
+    horseName: string | null;
+    ownerName: string | null;
+    score: number;
+    prize: number;
+  }>;
+  prizeToPlacings: number;
+  unpaidPrizeShareToHost: number;
+  entryFeesToHost: number;
+  previewDigest: string;
+}
+
+/** The export handed to Claude Code or Codex; its shape is the backend's own. */
+export type QuarantinedShowDiagnosis = Record<string, unknown>;
+
 const BASE = '/api/v1/staff';
 
 export const staffApi = {
@@ -166,4 +208,21 @@ export const staffApi = {
     apiClient.post<{ reply: StaffTicketReply }>(`${BASE}/tickets/${id}/replies`, { body }),
   setTicketStatus: (id: number, status: TicketStatus) =>
     apiClient.post<{ ticket: StaffTicket }>(`${BASE}/tickets/${id}/status`, { status }),
+
+  listQuarantinedShows: () =>
+    apiClient.get<{ shows: QuarantinedShow[] }>(`${BASE}/shows/quarantined`),
+  diagnoseQuarantinedShow: (showId: number) =>
+    apiClient.get<{ diagnosis: QuarantinedShowDiagnosis }>(
+      `${BASE}/shows/quarantined/${showId}/diagnose`
+    ),
+  previewQuarantinedShow: (showId: number) =>
+    apiClient.post<{ preview: QuarantinedShowPreview }>(
+      `${BASE}/shows/quarantined/${showId}/preview`,
+      {}
+    ),
+  runQuarantinedShow: (showId: number, previewDigest: string) =>
+    apiClient.post<{ result: { showId: number; status: 'completed'; settled: number } }>(
+      `${BASE}/shows/quarantined/${showId}/run`,
+      { previewDigest }
+    ),
 };

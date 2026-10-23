@@ -10,6 +10,11 @@
  */
 
 export { can, rolesWithCapability, satisfiesRole } from './capabilities.mjs';
+// Equoria-ehlbj: the owner's quarantine tools live in the competition module. They
+// write the staff audit record, and the staff routes reach them through a port
+// the app layer fills (staff cannot import competition: that edge would be a cycle).
+export { recordStaffActionTx, recordStaffFailure } from './services/staffActionLogService.mjs';
+export { registerQuarantinedShowTools } from './services/quarantinedShowToolsPort.mjs';
 export { retireStaffCheckinCodesTx } from './services/staffChallengeRetirement.mjs';
 export { purgeStaleStaffCheckinRecords } from './services/staffCheckinRetentionService.mjs';
 export {

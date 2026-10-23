@@ -156,6 +156,42 @@ export function readRecoverableOrdering(show) {
  * pins it; this raw SQL is kept as it is, unambiguous in every runtime.
  * Id-scoped by construction.
  */
-export async function clearStagedOrdering(showId) {
-  await prisma.$executeRaw`UPDATE "shows" SET "stagedOrdering" = NULL WHERE "id" = ${showId}`;
+export async function clearStagedOrdering(showId, client = prisma) {
+  await client.$executeRaw`UPDATE "shows" SET "stagedOrdering" = NULL WHERE "id" = ${showId}`;
+}
+
+/**
+ * Owner ruling 2026-10-23 (Equoria-o1vns, q56): a show whose payout cannot be
+ * finished after this many failed tries is quarantined, like a show the reaper
+ * gives up on (Equoria-c7mx0.1). Same count and same column.
+ */
+export const maxSettlementAttempts = 3;
+
+/**
+ * Count one failed payout run of a 'completed' show; the third quarantines it.
+ *
+ * A show that keeps a placing it can never pay (broken entry data) used to be
+ * re-driven at every scan for ever, keeping cron red. Both writes are guarded
+ * on the show still being 'completed', so a show the owner has already run, or
+ * a concurrent run that counted first, is never touched twice. A quarantined
+ * show keeps its staged ordering and its escrow for the owner's Run Show; no
+ * scan selects it ('completed' is the half-settled scan's predicate).
+ *
+ * @param {number} showId
+ * @returns {Promise<'quarantined'|'counted'|'skipped'>}
+ */
+export async function recordFailedSettlementAttempt(showId) {
+  const fence = { id: showId, status: 'completed' };
+  const quarantined = await prisma.show.updateMany({
+    where: { ...fence, executionAttempts: { gte: maxSettlementAttempts - 1 } },
+    data: { status: 'quarantined', executionAttempts: { increment: 1 } },
+  });
+  if (quarantined.count === 1) {
+    return 'quarantined';
+  }
+  const counted = await prisma.show.updateMany({
+    where: fence,
+    data: { executionAttempts: { increment: 1 } },
+  });
+  return counted.count === 1 ? 'counted' : 'skipped';
 }

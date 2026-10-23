@@ -10,8 +10,8 @@
  * (Show.executionAttempts). The stranding that makes the third attempt sets
  * the show 'quarantined' instead of releasing it: no re-drive, no executor or
  * reaper scan selects it again, and its escrow is left exactly as it was for
- * a staff decision. Owners and admins see it at GET /api/v1/staff/shows/
- * quarantined; moderators and players do not.
+ * a staff decision. Only the owner sees it, at GET /api/v1/staff/shows/
+ * quarantined (Equoria-ehlbj); admins, moderators and players do not.
  *
  * Real controllers build and fund the show (createShow / enterShow), the real
  * reaper and executor run, the staff route goes through the real app with a
@@ -235,25 +235,30 @@ describe('Equoria-c7mx0.1 — the reaper counts failed attempts and quarantines 
     beforeEach(() => startEmailCapture());
     afterEach(() => stopEmailCapture());
 
-    it('lists the quarantined show for an admin and for the owner', async () => {
-      for (const role of ['admin', 'owner']) {
-        const user = await staff.makeUser(role);
-        const device = await checkIn(user);
-        const res = await get(`${staffApi}/shows/quarantined`, user, device);
-        expect(res.status).toBe(200);
-        const listed = res.body.shows.find(s => s.id === quarantinedId);
-        expect(listed).toMatchObject({
-          id: quarantinedId,
-          executionAttempts: maxExecutionAttempts,
-          prizeEscrow: prize,
-          feeEscrow: entryFee,
-          entryCount: 1,
-        });
-        expect(res.body.shows.every(s => s.status === 'quarantined')).toBe(true);
-      }
+    // Owner ruling 2026-10-23 (Equoria-ehlbj, q29): the old contract listed these
+    // for owner and admins; quarantined shows are now visible to the Owner alone.
+    it('lists the quarantined show for the owner', async () => {
+      const user = await staff.makeUser('owner');
+      const device = await checkIn(user);
+      const res = await get(`${staffApi}/shows/quarantined`, user, device);
+      expect(res.status).toBe(200);
+      const listed = res.body.shows.find(s => s.id === quarantinedId);
+      expect(listed).toMatchObject({
+        id: quarantinedId,
+        executionAttempts: maxExecutionAttempts,
+        prizeEscrow: prize,
+        feeEscrow: entryFee,
+        entryCount: 1,
+      });
+      expect(res.body.shows.every(s => s.status === 'quarantined')).toBe(true);
     }, 60_000);
 
-    it('is refused to a moderator and hidden from a player', async () => {
+    it('is refused to an admin and a moderator and hidden from a player', async () => {
+      const admin = await staff.makeUser('admin');
+      const adminDevice = await checkIn(admin);
+      const asAdmin = await get(`${staffApi}/shows/quarantined`, admin, adminDevice);
+      expect(asAdmin.status).toBe(403);
+      expect(asAdmin.body.shows).toBeUndefined();
       const mod = await staff.makeUser('moderator');
       const modDevice = await checkIn(mod);
       const asMod = await get(`${staffApi}/shows/quarantined`, mod, modDevice);

@@ -30,7 +30,13 @@ import {
   replyToTicket,
 } from '../controllers/staffTicketController.mjs';
 import { listStaff, lookupUser, setUserRole } from '../controllers/staffRolesController.mjs';
-import { getQuarantinedShows, getShowScoreInputs } from '../controllers/staffShowsController.mjs';
+import {
+  diagnoseShow,
+  getQuarantinedShows,
+  getShowScoreInputs,
+  previewShow,
+  runShow,
+} from '../controllers/staffShowsController.mjs';
 
 const router = express.Router();
 
@@ -63,11 +69,28 @@ router.post(
 );
 router.post('/tickets/:id/status', requireStaffCapability('ticket.resolve'), changeTicketStatus);
 
-// Owner and admins: shows quarantined after 3 failed executions (Equoria-c7mx0.1).
+// Owner only (Equoria-ehlbj, rulings q29/q30/q41): shows quarantined after 3 failed
+// executions (Equoria-c7mx0.1) or 3 failed payouts (Equoria-o1vns), and the tools to
+// resolve them: Diagnose (a downloadable export), then Run Show in two steps.
 router.get(
   '/shows/quarantined',
   requireStaffCapability('shows.quarantine.view'),
   getQuarantinedShows,
+);
+router.get(
+  '/shows/quarantined/:showId/diagnose',
+  requireStaffCapability('shows.quarantine.resolve'),
+  diagnoseShow,
+);
+router.post(
+  '/shows/quarantined/:showId/preview',
+  requireStaffCapability('shows.quarantine.resolve'),
+  previewShow,
+);
+router.post(
+  '/shows/quarantined/:showId/run',
+  requireStaffCapability('shows.quarantine.resolve'),
+  runShow,
 );
 
 // Owner and admins: the luck roll and score inputs recorded per entry

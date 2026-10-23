@@ -27,14 +27,14 @@ import {
   findPartiallySettledShowIds,
   planPlacementPayouts,
   readRecoverableOrdering,
+  recordFailedSettlementAttempt,
 } from './showSettlementRecovery.mjs';
 // Equoria-c7mx0: scoring extracted verbatim to the shared scoring service;
 // readStagedOrdering implements the 2026-07-06 staged-ordering replay contract.
-import {
-  rankScoredEntries,
-  readStagedOrdering,
-  scoreShowEntries,
-} from '../services/competitionScoring.mjs';
+import { readStagedOrdering } from '../services/competitionScoring.mjs';
+// Equoria-ehlbj: the scoring helpers moved to ./showOrdering.mjs so the owner's
+// quarantine tools score through the same code.
+import { scoreOrdering, scoringHorseSelect } from './showOrdering.mjs';
 // Equoria-oey96.4: horse XP / owner XP / stat gains — the executor's progression
 // gap (it paid prize + rider XP but zero player/horse progression). Tx-aware helper
 // so the awards run INSIDE the per-entry tx below without a nested transaction.
@@ -54,79 +54,6 @@ import { invalidateHorseXpCaches } from '../../horses/index.mjs';
 // ── BA-4: Overnight show execution ────────────────────────────────────────────
 
 /**
- * The horse fields the ridden scorer (scoreShowEntries) reads: every stat a
- * discipline can weigh (Equoria-576c0 B4a), the temperament percent term (B6),
- * and, for epic Equoria-k1p62 (owner rulings 2026-10-23), the trained values
- * behind the training points, the tack behind the saddle/bridle points and the
- * health fields behind the health percent term. Traits and flags are not read:
- * they contribute nothing until traits are reworked.
- */
-const scoringHorseSelect = {
-  id: true,
-  name: true,
-  userId: true,
-  speed: true,
-  stamina: true,
-  agility: true,
-  balance: true,
-  precision: true,
-  boldness: true,
-  intelligence: true,
-  flexibility: true,
-  obedience: true,
-  focus: true,
-  temperament: true,
-  disciplineScores: true,
-  tack: true,
-  age: true,
-  healthStatus: true,
-  lastFedDate: true,
-  lastVettedDate: true,
-};
-
-/**
- * Score a show's entries and rank them into the ordering its payout replays
- * (Equoria-c7mx0). The active RiderAssignment per entry is resolved here, in
- * one query (Equoria-5bkh): it drives both the score's rider modifier and,
- * through the staged riderId, the rider's competition stats after payout.
- *
- * @returns {Promise<Array<{horseId: number, userId: string, horseName: string|null, score: number, placement: number, riderId: number|null}>>}
- */
-async function scoreOrdering(show, entries, scoreRng, now) {
-  const horseIds = entries.map(e => e.horseId);
-  const riderAssignments = horseIds.length
-    ? await prisma.riderAssignment.findMany({
-        where: { horseId: { in: horseIds }, isActive: true },
-        include: { rider: true },
-      })
-    : [];
-  const assignmentByHorseId = new Map(riderAssignments.map(ra => [ra.horseId, ra]));
-
-  // Score (extracted verbatim to competitionScoring.mjs) + rank. Equal scores
-  // are separated by a luck re-roll among the tied horses (owner ruling
-  // 2026-10-22, Equoria-bvddn.22): no shared placings, no split prizes.
-  const scored = scoreShowEntries({
-    show,
-    entries,
-    assignmentByHorseId,
-    now,
-    ...(scoreRng ? { rng: scoreRng } : {}),
-  });
-  return rankScoredEntries(scored, scoreRng ?? Math.random).map(
-    ({ entry, score, assignment, breakdown }, i) => ({
-      horseId: entry.horseId,
-      userId: entry.userId,
-      horseName: entry.horse?.name ?? null,
-      score,
-      placement: i + 1,
-      riderId: assignment?.riderId ?? null,
-      // Every input of the score, kept for staff to audit (Equoria-4q02c).
-      scoreInputs: breakdown,
-    }),
-  );
-}
-
-/**
  * Settle one staged placement — a pure REPLAY of the ordering persisted at
  * claim time (Equoria-c7mx0): identity, score and placement come from the
  * staging, the prize from the staged placement through the untouched 50/30/20
@@ -138,109 +65,121 @@ async function scoreOrdering(show, entries, scoreRng, now) {
  * the tx because it is fail-soft (existing contract — it must never block show
  * execution or undo a payout).
  */
-async function settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGainRng }) {
+export async function settleEntryInTx(
+  tx,
+  show,
+  staged,
+  { prize, unpaidPrizeShare, now, statGainRng },
+) {
   const { horseId, userId, horseName, placement, riderId } = staged;
 
-  await prisma.$transaction(async tx => {
-    // Create competition result (row shape owned by competitionResultRecord)
-    await tx.competitionResult.create({
-      data: buildRiddenResultRow({ show, staged, prize, now }),
-    });
-
-    // Equoria-si69u: pay the winner from SystemAccount[showEscrow]
-    // (which was credited at createShow), decrement Show.prizeEscrow
-    // by the same amount, and credit the winner's User.money. All in
-    // the same tx so a failure in any leg rolls back the whole prize
-    // payout and the competitionResult.create above.
-    //
-    // Backwards compat for the cohort of shows created BEFORE the
-    // si69u migration (or for test fixtures that build a Show row
-    // directly via prisma.show.create rather than through createShow):
-    // those rows have prizeEscrow = 0 even though the prize was
-    // notionally funded under the legacy "system implicitly mints
-    // at payout" model. Detect that case via `show.prizeEscrow >=
-    // prize` and skip the escrow debit. The winner is still paid
-    // under the legacy path so in-flight shows can drain. New shows
-    // always go through the escrow path.
-    if (prize > 0) {
-      if (show.prizeEscrow >= prize) {
-        await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
-          category: 'showPayoutPrize',
-          description: `Prize payout for show ${show.id}, placement ${placement}`,
-          linkedUserId: userId,
-          metadata: { showId: show.id, placement },
-        });
-        await tx.show.update({
-          where: { id: show.id },
-          data: { prizeEscrow: { decrement: prize } },
-        });
-      }
-      await tx.user.update({
-        where: { id: userId },
-        data: { money: { increment: prize } },
-      });
-      // Equoria-xal4m: the horse's lifetime winnings (Horse.totalEarnings, read
-      // by the earnings leaderboard and horse pages) grow with the same prize,
-      // in the same tx, so totalEarnings == SUM(prizeWon) of its results.
-      // User before Horse, as everywhere (lock order).
-      await tx.horse.update({
-        where: { id: horseId },
-        data: { totalEarnings: { increment: prize } },
-      });
-    }
-    if (placement === 1) {
-      await refundUnpaidPrizeShareInTx(tx, {
-        showId: show.id,
-        creatorId: show.createdByUserId,
-        amount: unpaidPrizeShare,
-      });
-    }
-
-    // Set firstEverWin milestone if 1st place
-    if (placement === 1) {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { settings: true },
-      });
-      const settings = user?.settings ?? {};
-      const milestones = settings.milestones ?? {};
-      if (!milestones.firstWin) {
-        // Finding 1 (Equoria-6p398.1): `milestones` path only.
-        await updateUserSettingsPaths(tx, userId, {
-          set: { milestones: { ...milestones, firstWin: now.toISOString() } },
-        });
-      }
-    }
-
-    // Increment rider competition stats using the staged riderId (the
-    // active assignment resolved at claim time — Equoria-5bkh).
-    if (riderId) {
-      await tx.rider.update({
-        where: { id: riderId },
-        data: {
-          totalCompetitions: { increment: 1 },
-          ...(placement === 1 ? { totalWins: { increment: 1 } } : {}),
-        },
-      });
-    }
-
-    // Equoria-oey96.4: award horse XP (ALL entrants) + owner XP & a
-    // chance-gated stat gain (top-3) via tx-aware cores, INSIDE this tx — a
-    // crash mid-award rolls back result+prize+XP together (AC5).
-    // competitionResult.create stays the FIRST write so [showId,horseId]
-    // uniqueness is the idempotency token; placement-at-END keeps lock order.
-    const progression = await awardPlacementProgression(tx, {
-      horseId,
-      ownerId: userId,
-      placementNumber: placement,
-      discipline: show.discipline,
-      horseName,
-      showId: show.id,
-      ...(statGainRng ? { rng: statGainRng } : {}),
-    });
-    // Equoria-q4uem.10 (owner ruling R6): the result records what it awarded.
-    await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
+  // Create competition result (row shape owned by competitionResultRecord)
+  await tx.competitionResult.create({
+    data: buildRiddenResultRow({ show, staged, prize, now }),
   });
+
+  // Equoria-si69u: pay the winner from SystemAccount[showEscrow]
+  // (which was credited at createShow), decrement Show.prizeEscrow
+  // by the same amount, and credit the winner's User.money. All in
+  // the same tx so a failure in any leg rolls back the whole prize
+  // payout and the competitionResult.create above.
+  //
+  // Backwards compat for the cohort of shows created BEFORE the
+  // si69u migration (or for test fixtures that build a Show row
+  // directly via prisma.show.create rather than through createShow):
+  // those rows have prizeEscrow = 0 even though the prize was
+  // notionally funded under the legacy "system implicitly mints
+  // at payout" model. Detect that case via `show.prizeEscrow >=
+  // prize` and skip the escrow debit. The winner is still paid
+  // under the legacy path so in-flight shows can drain. New shows
+  // always go through the escrow path.
+  if (prize > 0) {
+    if (show.prizeEscrow >= prize) {
+      await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
+        category: 'showPayoutPrize',
+        description: `Prize payout for show ${show.id}, placement ${placement}`,
+        linkedUserId: userId,
+        metadata: { showId: show.id, placement },
+      });
+      await tx.show.update({
+        where: { id: show.id },
+        data: { prizeEscrow: { decrement: prize } },
+      });
+    }
+    await tx.user.update({
+      where: { id: userId },
+      data: { money: { increment: prize } },
+    });
+    // Equoria-xal4m: the horse's lifetime winnings (Horse.totalEarnings, read
+    // by the earnings leaderboard and horse pages) grow with the same prize,
+    // in the same tx, so totalEarnings == SUM(prizeWon) of its results.
+    // User before Horse, as everywhere (lock order).
+    await tx.horse.update({
+      where: { id: horseId },
+      data: { totalEarnings: { increment: prize } },
+    });
+  }
+  if (placement === 1) {
+    await refundUnpaidPrizeShareInTx(tx, {
+      showId: show.id,
+      creatorId: show.createdByUserId,
+      amount: unpaidPrizeShare,
+    });
+  }
+
+  // Set firstEverWin milestone if 1st place
+  if (placement === 1) {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { settings: true },
+    });
+    const settings = user?.settings ?? {};
+    const milestones = settings.milestones ?? {};
+    if (!milestones.firstWin) {
+      // Finding 1 (Equoria-6p398.1): `milestones` path only.
+      await updateUserSettingsPaths(tx, userId, {
+        set: { milestones: { ...milestones, firstWin: now.toISOString() } },
+      });
+    }
+  }
+
+  // Increment rider competition stats using the staged riderId (the
+  // active assignment resolved at claim time — Equoria-5bkh).
+  if (riderId) {
+    await tx.rider.update({
+      where: { id: riderId },
+      data: {
+        totalCompetitions: { increment: 1 },
+        ...(placement === 1 ? { totalWins: { increment: 1 } } : {}),
+      },
+    });
+  }
+
+  // Equoria-oey96.4: award horse XP (ALL entrants) + owner XP & a
+  // chance-gated stat gain (top-3) via tx-aware cores, INSIDE this tx — a
+  // crash mid-award rolls back result+prize+XP together (AC5).
+  // competitionResult.create stays the FIRST write so [showId,horseId]
+  // uniqueness is the idempotency token; placement-at-END keeps lock order.
+  const progression = await awardPlacementProgression(tx, {
+    horseId,
+    ownerId: userId,
+    placementNumber: placement,
+    discipline: show.discipline,
+    horseName,
+    showId: show.id,
+    ...(statGainRng ? { rng: statGainRng } : {}),
+  });
+  // Equoria-q4uem.10 (owner ruling R6): the result records what it awarded.
+  await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
+}
+
+/**
+ * What follows a committed placement settlement (Equoria-ehlbj: split out of
+ * settleEntry so the owner's single-transaction settlement can run it after its
+ * commit). Fail-soft: neither the cache drop nor the notification may undo a payout.
+ */
+export async function announceSettledEntry(show, staged, prize) {
+  const { horseId, userId, horseName, placement } = staged;
 
   // Equoria-7vhgr: the horse XP routes cache a horse's XP status and history
   // for 60s. The award above has committed, so drop them now and the owner sees
@@ -280,6 +219,11 @@ async function settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGai
       );
     }
   }
+}
+
+async function settleEntry(show, staged, options) {
+  await prisma.$transaction(tx => settleEntryInTx(tx, show, staged, options));
+  await announceSettledEntry(show, staged, options.prize);
 }
 
 /**
@@ -360,6 +304,9 @@ async function payOutPlacements(show, stagedOrdering, settledHorseIds, { now, st
   // Equoria-c7mx0: only a fully settled show discards its staged ordering.
   if (failures.length === 0) {
     await clearStagedOrdering(show.id);
+  } else {
+    // Equoria-o1vns: a run that left a placing unpaid is one failed try; the third quarantines.
+    await recordFailedSettlementAttempt(show.id);
   }
   return failures;
 }
@@ -375,6 +322,7 @@ async function payOutPlacements(show, stagedOrdering, settledHorseIds, { now, st
 async function recoverPartiallySettledShow(show, { now, statGainRng }) {
   const stagedOrdering = readRecoverableOrdering(show);
   if (!stagedOrdering) {
+    await recordFailedSettlementAttempt(show.id); // Equoria-o1vns: a failed try like any other
     throw new Error(`Show ${show.id} is half-settled but its staged ordering is unreadable`);
   }
   const results = await prisma.competitionResult.findMany({

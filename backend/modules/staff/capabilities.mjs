@@ -51,9 +51,6 @@ const adminOnly = [
   'horse.admin',
   'news.post',
   'news.adminLetter',
-  // Equoria-c7mx0.1 (owner ruling 2026-10-23): quarantined shows are listed for
-  // the Owner/Admin to resolve.
-  'shows.quarantine.view',
   // Equoria-4q02c (owner ruling q01): a show entry's recorded luck roll and
   // score inputs are for the Owner and Admins only, never moderators or players.
   'results.scoreInputs.view',
@@ -61,6 +58,11 @@ const adminOnly = [
 const ownerOnly = [
   // Only the owner appoints admins, in the Steward's Office (Equoria-i1hgt).
   'roles.appointAdmin',
+  // Equoria-ehlbj (owner ruling 2026-10-23, q29/q30/q41; narrows Equoria-c7mx0.1,
+  // which listed quarantined shows for admins too): quarantined shows are visible
+  // to the Owner alone. One capability covers Diagnose and the two-step Run Show.
+  'shows.quarantine.view',
+  'shows.quarantine.resolve',
   'traits.hidden.view',
   'news.seasonalEvent',
   'news.headAdminLetter',

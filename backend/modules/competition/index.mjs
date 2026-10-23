@@ -33,3 +33,10 @@ export { readRecordedAwards } from './services/competitionResultRecord.mjs';
 // req/res or a synthetic `{ body: { showIds } }`, and wired by shows/showRoutes.mjs
 // as POST /shows/execute. Moved out of the controller file in WS4 S4 (review M2).
 export { executeClosedShows } from './shows/showExecutionService.mjs';
+// Equoria-ehlbj: the owner's quarantined-show tools (diagnose, preview, run). The app
+// layer hands them to the staff routes' port (staff cannot import this module).
+export {
+  diagnoseQuarantinedShow,
+  previewQuarantinedShow,
+  runQuarantinedShow,
+} from './shows/showQuarantineResolution.mjs';

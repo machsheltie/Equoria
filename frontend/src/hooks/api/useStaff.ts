@@ -25,6 +25,7 @@ export const staffKeys = {
   logActors: ['staff', 'log', 'actors'] as const,
   roles: ['staff', 'roles'] as const,
   tickets: ['staff', 'tickets'] as const,
+  quarantinedShows: ['staff', 'quarantined-shows'] as const,
   ticket: (id: number) => ['staff', 'tickets', id] as const,
 };
 
@@ -216,6 +217,45 @@ export function useSetTicketStatus(id: number) {
     onSuccess: () => {
       // The prefix covers both the list and this ticket's thread.
       queryClient.invalidateQueries({ queryKey: staffKeys.tickets });
+      queryClient.invalidateQueries({ queryKey: staffKeys.log });
+    },
+  });
+}
+
+/** The shows held back after three failed runs; owner only (Equoria-ehlbj). */
+export function useQuarantinedShows(enabled: boolean) {
+  return useQuery({
+    queryKey: staffKeys.quarantinedShows,
+    queryFn: staffApi.listQuarantinedShows,
+    enabled,
+  });
+}
+
+/** Diagnose is a read; it is a mutation here only because it runs on a click. */
+export function useDiagnoseQuarantinedShow() {
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'diagnose-show'],
+    mutationFn: (showId: number) => staffApi.diagnoseQuarantinedShow(showId),
+  });
+}
+
+/** Step one of Run Show: placements and prize money, nothing moved. */
+export function usePreviewQuarantinedShow() {
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'preview-show'],
+    mutationFn: (showId: number) => staffApi.previewQuarantinedShow(showId),
+  });
+}
+
+/** Step two of Run Show: settle once. The ledger and the list both change. */
+export function useRunQuarantinedShow() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [...staffKeys.all, 'run-show'],
+    mutationFn: (args: { showId: number; previewDigest: string }) =>
+      staffApi.runQuarantinedShow(args.showId, args.previewDigest),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.quarantinedShows });
       queryClient.invalidateQueries({ queryKey: staffKeys.log });
     },
   });
