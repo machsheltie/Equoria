@@ -5,6 +5,7 @@ import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
+import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { getUserWithHorses } from '../../users/index.mjs';
 
 /**
@@ -274,12 +275,12 @@ async function getTrainableHorses(userId) {
           sex: horse.sex ?? null,
           phenotype: horse.phenotype ?? null,
           trainableDisciplines: availableDisciplines,
-          bestDisciplines: horse.disciplineScores
-            ? Object.entries(horse.disciplineScores)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 3)
-                .map(([name]) => name)
-            : [],
+          // disciplineScores is a Json column: asFlagObject (Equoria-8sic9) so a
+          // drifted string/array/null yields [] rather than Object.entries garbage.
+          bestDisciplines: Object.entries(asFlagObject(horse.disciplineScores))
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 3)
+            .map(([name]) => name),
           nextEligibleAt: null,
         };
 
