@@ -251,10 +251,11 @@ describe('Enhanced Reporting API Routes', () => {
       expect(response.body.data.horseId).toBe(testHorses[2].id);
       expect(response.body.data.traitAnalysis).toBeDefined();
       expect(response.body.data.environmentalInfluences).toBeDefined();
-      expect(response.body.data.developmentalProgress).toBeDefined();
-      expect(response.body.data.predictiveInsights).toBeDefined();
-      expect(response.body.data.recommendations).toBeDefined();
-      expect(Array.isArray(response.body.data.recommendations)).toBe(true);
+      // Owner ruling 2026-10-07 (Equoria-5ovgv): no advice, no forecast, no milestone countdown.
+      // Old contract: developmentalProgress, predictiveInsights and recommendations were returned.
+      expect(response.body.data).not.toHaveProperty('developmentalProgress');
+      expect(response.body.data).not.toHaveProperty('predictiveInsights');
+      expect(response.body.data).not.toHaveProperty('recommendations');
     });
 
     test('GET /api/v1/horses/:id/trait-timeline should return detailed trait development timeline', async () => {

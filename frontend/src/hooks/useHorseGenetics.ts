@@ -37,8 +37,7 @@ import { apiClient } from '@/lib/api-client';
 /**
  * GET /api/horses/:id/epigenetic-insights → data
  * (backend/modules/traits/routes/enhancedReportingRoutes.mjs)
- * Shape: { horseId, traitAnalysis, environmentalInfluences,
- *          developmentalProgress, predictiveInsights, recommendations }
+ * Shape: { horseId, traitAnalysis, environmentalInfluences }
  * traitAnalysis is the full generateInteractionMatrix() result
  * (backend/modules/traits/services/traitInteractionMatrix.mjs):
  *   { horseId, traitInteractions, synergies, conflicts, dominance,
@@ -69,9 +68,6 @@ export interface RawEpigeneticInsights {
   horseId?: number;
   traitAnalysis?: RawTraitAnalysis;
   environmentalInfluences?: unknown;
-  developmentalProgress?: unknown;
-  predictiveInsights?: unknown;
-  recommendations?: string[];
 }
 
 /**

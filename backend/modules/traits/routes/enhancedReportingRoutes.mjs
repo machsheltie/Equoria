@@ -38,16 +38,11 @@ import {
   generateInteractionMatrix,
   toTraitAnalysisSnapshot,
 } from '../services/traitInteractionMatrix.mjs';
-import {
-  assessDevelopmentalMilestones,
-  forecastDevelopment,
-  trackDevelopmentalMilestones,
-} from '../services/developmentalWindowSystem.mjs';
+import { trackDevelopmentalMilestones } from '../services/developmentalWindowSystem.mjs';
 
 // Import enhanced reporting service functions
 import {
   generateTraitHistoryInsights,
-  generateEpigeneticRecommendations,
   buildTraitTimeline,
   identifyCriticalPeriods,
   mapEnvironmentalEvents,
@@ -186,21 +181,10 @@ router.get(
       const environmentalSnapshot = await loadEnvironmentalTriggerSnapshot(horseId, { horse });
       const environmentalInfluences = environmentalReport(environmentalSnapshot);
       const traitAnalysis = analyzeTraitSnapshot(toTraitAnalysisSnapshot(horse));
-      const developmentalProgress = assessDevelopmentalMilestones({
-        horseId,
-        horse,
-        interactions: environmentalSnapshot.interactions,
-      });
-      const predictiveInsights = await forecastDevelopment(horseId, horse, 60);
 
-      // Generate recommendations
-      const recommendations = generateEpigeneticRecommendations(
-        horse,
-        environmentalInfluences,
-        traitAnalysis,
-        developmentalProgress,
-      );
-
+      // Owner ruling 2026-10-07 (no advice, no forecasts, no milestone countdowns),
+      // enforced on this response by Equoria-5ovgv: it carries the trait and
+      // environment analyses only.
       logger.info(`Epigenetic insights generated for horse ${horseId} by user ${req.user.id}`);
 
       res.json({
@@ -209,9 +193,6 @@ router.get(
           horseId,
           traitAnalysis,
           environmentalInfluences,
-          developmentalProgress,
-          predictiveInsights,
-          recommendations,
         },
       });
     } catch (error) {

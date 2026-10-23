@@ -51,9 +51,6 @@ const realEpigeneticInsights = {
     interactionStrength: 0.6,
   },
   environmentalInfluences: {},
-  developmentalProgress: {},
-  predictiveInsights: {},
-  recommendations: ['Continue current care approach'],
 };
 
 const realTraitInteractions = {

@@ -74,64 +74,6 @@ export function generateTraitHistoryInsights(
 }
 
 /**
- * Generate epigenetic recommendations
- */
-export function generateEpigeneticRecommendations(
-  horse,
-  environmentalInfluences,
-  traitAnalysis,
-  developmentalProgress,
-) {
-  const recommendations = [];
-
-  // Age-based recommendations
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
-
-  if (ageInDays < 30) {
-    recommendations.push('Critical early development period - focus on consistent, gentle care');
-  } else if (ageInDays < 90) {
-    recommendations.push(
-      'Important socialization period - provide varied but controlled experiences',
-    );
-  }
-
-  // Stress-based recommendations
-  if (horse.stressLevel > 6) {
-    recommendations.push('High stress detected - implement stress reduction protocols');
-  }
-
-  // Bonding recommendations
-  if (horse.bondScore < 20) {
-    recommendations.push('Low bonding score - increase positive interaction frequency');
-  }
-
-  // Environmental recommendations
-  if (environmentalInfluences.environmentalTriggers.triggerStrength > 0.6) {
-    recommendations.push(
-      'Strong environmental triggers detected - monitor environmental factors carefully',
-    );
-  }
-
-  // Trait interaction recommendations
-  if (traitAnalysis.conflicts.totalConflictStrength > 0.5) {
-    recommendations.push(
-      'Trait conflicts detected - consider targeted interventions to resolve conflicts',
-    );
-  }
-
-  // Developmental recommendations
-  if (developmentalProgress.pendingMilestones.length > 0) {
-    recommendations.push(
-      `${developmentalProgress.pendingMilestones.length} developmental milestones pending - focus on milestone achievement`,
-    );
-  }
-
-  return recommendations.length > 0
-    ? recommendations
-    : ['Continue current care approach - horse is developing well'];
-}
-
-/**
  * Build trait timeline from history and interactions
  */
 export function buildTraitTimeline(traitHistory, interactions) {

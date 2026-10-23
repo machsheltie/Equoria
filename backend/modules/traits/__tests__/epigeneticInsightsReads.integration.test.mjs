@@ -50,8 +50,6 @@ const recorder = createQueryEventRecorder(observedClient);
 const { default: app } = await import('../../../app.mjs');
 const { generateInteractionMatrix } = await import('../services/traitInteractionMatrix.mjs');
 const { generateEnvironmentalReport } = await import('../services/environmentalTriggerSystem.mjs');
-const { trackDevelopmentalMilestones } = await import('../services/developmentalMilestones.mjs');
-const { generateDevelopmentalForecast } = await import('../services/developmentalForecast.mjs');
 const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs');
 const { createCleanupTracker } = await import('../../../__tests__/helpers/failLoudCleanup.mjs');
 
@@ -142,19 +140,17 @@ describe('epigenetic-insights reads one horse and one interaction history (Equor
     const response = await get();
     expect(response.status).toBe(200);
     const data = response.body.data;
-    const [traitAnalysis, environmentalInfluences, developmentalProgress, predictiveInsights] = await Promise.all([
+    const [traitAnalysis, environmentalInfluences] = await Promise.all([
       generateInteractionMatrix(horse.id),
       generateEnvironmentalReport(horse.id),
-      trackDevelopmentalMilestones(horse.id),
-      generateDevelopmentalForecast(horse.id, 60),
     ]);
 
     expect(data.horseId).toBe(horse.id);
     expect(withoutTimestamps(data.traitAnalysis)).toEqual(withoutTimestamps(traitAnalysis));
     expect(withoutTimestamps(data.environmentalInfluences)).toEqual(withoutTimestamps(environmentalInfluences));
-    expect(withoutTimestamps(data.developmentalProgress)).toEqual(withoutTimestamps(developmentalProgress));
-    expect(withoutTimestamps(data.predictiveInsights)).toEqual(withoutTimestamps(predictiveInsights));
     expect(data.environmentalInfluences.environmentalTriggers.interactionCount).toBeGreaterThan(0);
-    expect(Array.isArray(data.recommendations)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-5ovgv): no advice, no forecast, no milestone countdown.
+    // Old contract: developmentalProgress, predictiveInsights and recommendations were returned.
+    expect(Object.keys(data).sort()).toEqual(['environmentalInfluences', 'horseId', 'traitAnalysis']);
   }, 60000);
 });

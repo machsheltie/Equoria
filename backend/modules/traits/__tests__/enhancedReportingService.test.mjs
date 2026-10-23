@@ -10,7 +10,6 @@ import { describe, it, expect } from '@jest/globals';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import {
   generateTraitHistoryInsights,
-  generateEpigeneticRecommendations,
   buildTraitTimeline,
   mapEnvironmentalEvents,
   generateStableOverview,
@@ -150,77 +149,6 @@ describe('generateTraitHistoryInsights', () => {
     const ti = makeTraitInteractions({ traitInteractions: { overallHarmony: 0.3 } });
     const result = generateTraitHistoryInsights([makeTraitLog()], makeEnvContext(), ti);
     expect(result.some(s => s.includes('Poor trait harmony'))).toBe(true);
-  });
-});
-
-// ── generateEpigeneticRecommendations ────────────────────────────────────────
-
-describe('generateEpigeneticRecommendations', () => {
-  const goodEnv = makeEnvContext({ environmentalTriggers: { detectedTriggers: [], triggerStrength: 0.2 } });
-  const goodDev = { pendingMilestones: [] };
-  const goodTrait = makeTraitInteractions({ conflicts: { conflictPairs: [], totalConflictStrength: 0.1 } });
-
-  it('returns default when horse is well-managed', () => {
-    const horse = makeHorse({
-      dateOfBirth: gameCalendarDate(new Date(), -400),
-      stressLevel: 3,
-      bondScore: 40,
-    });
-    const result = generateEpigeneticRecommendations(horse, goodEnv, goodTrait, goodDev);
-    expect(result).toEqual(['Continue current care approach - horse is developing well']);
-  });
-
-  it('adds critical period recommendation for < 30 days old', () => {
-    const horse = makeHorse({
-      dateOfBirth: gameCalendarDate(new Date(), -10),
-      stressLevel: 3,
-      bondScore: 40,
-    });
-    const result = generateEpigeneticRecommendations(horse, goodEnv, goodTrait, goodDev);
-    expect(result.some(r => r.includes('Critical early development'))).toBe(true);
-  });
-
-  it('adds socialization recommendation for 30-89 days old', () => {
-    const horse = makeHorse({
-      dateOfBirth: gameCalendarDate(new Date(), -60),
-      stressLevel: 3,
-      bondScore: 40,
-    });
-    const result = generateEpigeneticRecommendations(horse, goodEnv, goodTrait, goodDev);
-    expect(result.some(r => r.includes('socialization period'))).toBe(true);
-  });
-
-  it('adds stress recommendation when stressLevel > 6', () => {
-    const horse = makeHorse({ stressLevel: 8, bondScore: 40 });
-    const result = generateEpigeneticRecommendations(horse, goodEnv, goodTrait, goodDev);
-    expect(result.some(r => r.includes('High stress detected'))).toBe(true);
-  });
-
-  it('adds bonding recommendation when bondScore < 20', () => {
-    const horse = makeHorse({ bondScore: 10, stressLevel: 3 });
-    const result = generateEpigeneticRecommendations(horse, goodEnv, goodTrait, goodDev);
-    expect(result.some(r => r.includes('Low bonding score'))).toBe(true);
-  });
-
-  it('adds environmental recommendation when triggerStrength > 0.6', () => {
-    const env = makeEnvContext({ environmentalTriggers: { detectedTriggers: [], triggerStrength: 0.8 } });
-    const horse = makeHorse({ bondScore: 40, stressLevel: 3 });
-    const result = generateEpigeneticRecommendations(horse, env, goodTrait, goodDev);
-    expect(result.some(r => r.includes('Strong environmental triggers'))).toBe(true);
-  });
-
-  it('adds conflict recommendation when totalConflictStrength > 0.5', () => {
-    const ti = makeTraitInteractions({ conflicts: { conflictPairs: [], totalConflictStrength: 0.7 } });
-    const horse = makeHorse({ bondScore: 40, stressLevel: 3 });
-    const result = generateEpigeneticRecommendations(horse, goodEnv, ti, goodDev);
-    expect(result.some(r => r.includes('Trait conflicts detected'))).toBe(true);
-  });
-
-  it('adds milestone recommendation when pendingMilestones present', () => {
-    const dev = { pendingMilestones: ['firstTrait', 'secondTrait'] };
-    const horse = makeHorse({ bondScore: 40, stressLevel: 3 });
-    const result = generateEpigeneticRecommendations(horse, goodEnv, goodTrait, dev);
-    expect(result.some(r => r.includes('2 developmental milestones pending'))).toBe(true);
   });
 });
 

@@ -122,7 +122,10 @@ describe('GET /api/horses/:id/epigenetic-insights', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
     expect(res.body.data.horseId).toBe(horse1.id);
-    expect(res.body.data.recommendations).toBeDefined();
+    // Owner ruling 2026-10-07 (Equoria-5ovgv): no advice or forecast (old contract: recommendations defined).
+    expect(res.body.data).not.toHaveProperty('recommendations');
+    expect(res.body.data).not.toHaveProperty('developmentalProgress');
+    expect(res.body.data).not.toHaveProperty('predictiveInsights');
   });
 
   it('returns 404 for a horse not owned by user', async () => {
