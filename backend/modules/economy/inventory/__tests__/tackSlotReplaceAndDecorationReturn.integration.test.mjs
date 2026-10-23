@@ -186,6 +186,58 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
     expect(readDecorationsOf(await readTack(horse.id))).not.toContain(browband);
   });
 
+  it('an inventory saddle equipped over a shop-bought saddle returns the shop saddle to inventory (Equoria-063xk)', async () => {
+    expect((await post('/api/v1/tack-shop/purchase', token, { horseId: horse.id, itemId: shopSaddle })).status).toBe(
+      200,
+    );
+    await setInventory([record('inv-saddle', inventorySaddle, 'saddle')]);
+
+    const equipped = await post('/api/v1/inventory/equip', token, {
+      inventoryItemId: 'inv-saddle',
+      horseId: horse.id,
+    });
+    expect(equipped.status).toBe(200);
+    expect((await readTack(horse.id)).saddle).toBe(inventorySaddle);
+
+    // The paid-for shop saddle is not destroyed: it has an inventory record, off the horse.
+    const returned = (await readInventory(owner.id)).filter(i => i.itemId === shopSaddle);
+    expect(returned).toEqual([
+      expect.objectContaining({
+        id: `${horse.id}-${shopSaddle}`,
+        category: 'saddle',
+        equippedToHorseId: null,
+      }),
+    ]);
+    // The response the client renders carries it too.
+    expect(equipped.body.data.items.some(i => i.itemId === shopSaddle)).toBe(true);
+
+    // And it can be put back on, which returns the inventory saddle in turn.
+    const back = await post('/api/v1/inventory/equip', token, {
+      inventoryItemId: returned[0].id,
+      horseId: horse.id,
+    });
+    expect(back.status).toBe(200);
+    expect((await readTack(horse.id)).saddle).toBe(shopSaddle);
+    const after = await readInventory(owner.id);
+    expect(after.find(i => i.id === 'inv-saddle')).toMatchObject({ equippedToHorseId: null });
+    expect(after.filter(i => i.itemId === shopSaddle)).toHaveLength(1);
+  });
+
+  it('an inventory saddle replacing another inventory saddle adds no phantom record (Equoria-063xk)', async () => {
+    await setInventory([record('inv-a', inventorySaddle, 'saddle'), record('inv-b', shopSaddleForRace, 'saddle')]);
+    expect((await post('/api/v1/inventory/equip', token, { inventoryItemId: 'inv-a', horseId: horse.id })).status).toBe(
+      200,
+    );
+    expect((await post('/api/v1/inventory/equip', token, { inventoryItemId: 'inv-b', horseId: horse.id })).status).toBe(
+      200,
+    );
+
+    const inventory = await readInventory(owner.id);
+    expect(inventory.map(i => i.id).sort()).toEqual(['inv-a', 'inv-b']);
+    expect(inventory.find(i => i.id === 'inv-a')).toMatchObject({ equippedToHorseId: null });
+    expect(inventory.find(i => i.id === 'inv-b')).toMatchObject({ equippedToHorseId: horse.id });
+  });
+
   it('an equip racing a tack purchase for the same horse keeps the purchased item', async () => {
     await setInventory([record('inv-browband', browband, 'decorative')]);
 

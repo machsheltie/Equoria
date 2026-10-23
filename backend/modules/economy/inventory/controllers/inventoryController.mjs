@@ -77,6 +77,38 @@ function deriveInventoryFromHorseTack(horses) {
 }
 
 /**
+ * The inventory record for a shop-bought piece of tack a replacement pushes off
+ * a horse (Equoria-063xk). `tackShopController.purchaseTackItem` writes only
+ * `Horse.tack`, so such an item has no record, and overwriting its slot would
+ * destroy a paid-for item. Shape and `<horseId>-<itemId>` id scheme match
+ * marketplace `deriveReturnedItem` (the sale path); the id stays unique because
+ * equip/unequip address records by id.
+ *
+ * @param {number} horseId
+ * @param {string} category - the tack slot ('saddle', 'bridle')
+ * @param {string} itemId
+ * @param {Array} inventory - the owner's records, for id uniqueness
+ */
+function recordForDisplacedTack(horseId, category, itemId, inventory) {
+  const taken = new Set(inventory.map(record => record.id).filter(Boolean));
+  let id = `${horseId}-${itemId}`;
+  for (let suffix = 2; taken.has(id); suffix += 1) {
+    id = `${horseId}-${itemId}-${suffix}`;
+  }
+  const definition = TACK_INVENTORY.find(entry => entry.id === itemId);
+  return {
+    id,
+    itemId,
+    category: definition?.category ?? category,
+    name: definition?.name ?? itemId,
+    bonus: definition?.bonus ?? null,
+    quantity: 1,
+    equippedToHorseId: null,
+    equippedToHorseName: null,
+  };
+}
+
+/**
  * Enrich inventory items with horse name for equippedToHorseId lookups.
  * @param {Array} inventory - raw inventory from User.settings
  * @param {Array} horses - User's horses array
@@ -397,11 +429,44 @@ export async function equipItem(req, res) {
         tackChanges.push({ id: horseId, tack: updatedTack });
         tackChanges.sort((a, b) => a.id - b.id);
 
+        // Equoria-063xk: a shop-bought item in the slot being replaced has no
+        // inventory record to release. Without one it vanishes with the slot
+        // overwrite, so it gets a record now, the way a sale returns it. An item
+        // that DOES have a record pointing at this horse was released by the
+        // same-category clear above.
+        const displacedId =
+          item.category === DECORATIVE_CATEGORY ? undefined : freshTack.get(horseId)[item.category];
+        let finalInventory = updatedInventory;
+        if (
+          typeof displacedId === 'string' &&
+          displacedId !== '' &&
+          !inventory.some(
+            i =>
+              i.category === item.category &&
+              i.itemId === displacedId &&
+              i.equippedToHorseId === horseId,
+          )
+        ) {
+          finalInventory = [
+            ...updatedInventory,
+            recordForDisplacedTack(horseId, item.category, displacedId, updatedInventory),
+          ];
+          // The row is already locked by the write above; this second
+          // compare-and-swap is against the array that write produced.
+          const returned = await updateUserSettingsPaths(tx, userId, {
+            set: { inventory: finalInventory },
+            expect: { inventory: { equals: updatedInventory, whenMissing: [] } },
+          });
+          if (returned !== 1) {
+            throw httpError(409, INVENTORY_CONFLICT);
+          }
+        }
+
         for (const change of tackChanges) {
           await applyTackChange(tx, userId, change);
         }
 
-        return { user, horse, item, itemIndex, updatedInventory, updatedTack };
+        return { user, horse, item, itemIndex, updatedInventory: finalInventory, updatedTack };
       }),
       { message: 'Inventory is busy right now, please retry in a moment.' },
     );
