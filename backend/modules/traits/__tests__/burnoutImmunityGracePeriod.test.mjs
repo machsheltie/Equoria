@@ -1,12 +1,16 @@
 /**
- * Burnout Immunity Grace Period Test Suite
- * Tests for the 2-day grace period in burnout immunity streak tracking
+ * Care Streak Grace Period Test Suite
+ * Tests for the 2-day grace period in consecutive-day care streak tracking
+ *
+ * Owner ruling 2026-10-23 (Equoria-0gl9o): there is no burnout. The "burnout
+ * immunity" label (checkBurnoutImmunity, BURNOUT_STATUS, Horse.burnoutStatus)
+ * is gone; the care streak and its 2-day grace period stay. (The file keeps
+ * its historical name.)
  *
  * 🎯 FEATURES TESTED:
  * - 2-day grace period for missed grooming days
  * - Streak preservation within grace period
  * - Streak reset after grace period expires
- * - Burnout immunity achievement at 7 consecutive days
  * - Per-horse streak tracking (not global)
  * - Integration with existing groom bonding system
  *
@@ -17,15 +21,13 @@
  *
  * 📋 BUSINESS RULES TESTED:
  * - Grace period: Up to 2 days missed before streak reset
- * - Burnout immunity: Triggered at 7+ consecutive days
  * - Per-horse tracking: Each horse has independent streak
- * - Streak bonus: +10 points for trait evaluation when immunity achieved
- * - Grace period consistency: Same 2-day period for both burnout and foal streaks
+ * - Streak bonus: +10% at 7 consecutive days
  *
  * 🧪 TESTING APPROACH:
  * - Real: All business logic, streak calculations, grace period handling.
  *   No mocks (Equoria-arepn / CLAUDE.md §3). The three functions exercised
- *   here — updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking —
+ *   here — updateConsecutiveDays and updateStreakTracking —
  *   are pure (no logger, no prisma); the previous logger.mjs mock was purely
  *   cosmetic for a code path this suite never touches (processGroomingSession),
  *   so it was removed and the dynamic imports replaced with static imports.
@@ -33,15 +35,11 @@
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
-import {
-  updateConsecutiveDays,
-  checkBurnoutImmunity,
-  updateStreakTracking,
-} from '../../../utils/groomBondingSystem.mjs';
+import { updateConsecutiveDays, updateStreakTracking } from '../../../utils/groomBondingSystem.mjs';
 
 import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 
-describe('Burnout Immunity Grace Period', () => {
+describe('Care Streak Grace Period', () => {
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
 
@@ -109,53 +107,13 @@ describe('Burnout Immunity Grace Period', () => {
     });
 
     it('should reset at 3-day lapse (beyond grace period)', () => {
-      const currentStreak = 8; // Even with immunity, streak resets
+      const currentStreak = 8; // Even a long streak resets
       const daysSinceLastGrooming = 3;
 
       const result = updateConsecutiveDays(currentStreak, false, daysSinceLastGrooming);
 
       expect(result.newConsecutiveDays).toBe(0);
       expect(result.wasReset).toBe(true);
-    });
-  });
-
-  describe('Burnout Immunity Achievement', () => {
-    it('should grant immunity at 7 consecutive days', () => {
-      const consecutiveDays = 7;
-
-      const result = checkBurnoutImmunity(consecutiveDays);
-
-      expect(result.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.IMMUNE);
-      expect(result.immunityGranted).toBe(true);
-      expect(result.daysToImmunity).toBe(0);
-    });
-
-    it('should maintain immunity above 7 days', () => {
-      const consecutiveDays = 12;
-
-      const result = checkBurnoutImmunity(consecutiveDays);
-
-      expect(result.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.IMMUNE);
-      expect(result.immunityGranted).toBe(true);
-    });
-
-    it('should show days remaining before immunity', () => {
-      const consecutiveDays = 4;
-
-      const result = checkBurnoutImmunity(consecutiveDays);
-
-      expect(result.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.NONE);
-      expect(result.immunityGranted).toBe(false);
-      expect(result.daysToImmunity).toBe(3); // 7 - 4 = 3 days remaining
-    });
-
-    it('should handle edge case at 6 days (one day before immunity)', () => {
-      const consecutiveDays = 6;
-
-      const result = checkBurnoutImmunity(consecutiveDays);
-
-      expect(result.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.NONE);
-      expect(result.daysToImmunity).toBe(1);
     });
   });
 
@@ -211,7 +169,7 @@ describe('Burnout Immunity Grace Period', () => {
     it('should reset streak beyond grace period', () => {
       const lastGroomed = fourDaysAgo; // 4 days ago (referenceDate - 4 days)
       // Using referenceDate-based currentDate from describe block
-      const currentStreak = 8; // Had immunity, but lost it
+      const currentStreak = 8; // A long streak, but lost
 
       const result = updateStreakTracking(lastGroomed, currentDate, currentStreak);
 
@@ -252,7 +210,7 @@ describe('Burnout Immunity Grace Period', () => {
       const resultB = updateStreakTracking(horseB.lastGroomed, currentDate, horseB.currentStreak);
       const resultC = updateStreakTracking(horseC.lastGroomed, currentDate, horseC.currentStreak);
 
-      // Horse A: Achieves immunity
+      // Horse A: Reaches the 7-day streak bonus
       expect(resultA.consecutiveDays).toBe(7);
       expect(resultA.bonusEligible).toBe(true);
 
@@ -270,15 +228,16 @@ describe('Burnout Immunity Grace Period', () => {
 
   describe('Configuration Validation', () => {
     it('should use correct grace period configuration', () => {
-      expect(GROOM_CONFIG.BURNOUT_RESET_GRACE_DAYS).toBe(2);
       expect(GROOM_CONFIG.FOAL_STREAK_GRACE_DAYS).toBe(2);
-      expect(GROOM_CONFIG.BURNOUT_IMMUNITY_THRESHOLD_DAYS).toBe(7);
       expect(GROOM_CONFIG.FOAL_STREAK_BONUS_THRESHOLD).toBe(7);
     });
 
-    it('should have consistent grace periods across systems', () => {
-      // Burnout system and foal streak system should use same grace period
-      expect(GROOM_CONFIG.BURNOUT_RESET_GRACE_DAYS).toBe(GROOM_CONFIG.FOAL_STREAK_GRACE_DAYS);
+    // Old contract: BURNOUT_RESET_GRACE_DAYS drove updateConsecutiveDays and had
+    // to equal FOAL_STREAK_GRACE_DAYS. Now the streak uses the one constant.
+    it('updateConsecutiveDays keeps the streak for FOAL_STREAK_GRACE_DAYS and resets one day later', () => {
+      const grace = GROOM_CONFIG.FOAL_STREAK_GRACE_DAYS;
+      expect(updateConsecutiveDays(5, false, grace).newConsecutiveDays).toBe(5);
+      expect(updateConsecutiveDays(5, false, grace + 1).wasReset).toBe(true);
     });
   });
 
@@ -340,26 +299,19 @@ describe('Burnout Immunity Grace Period', () => {
       expect(wouldResetResult.wasReset).toBe(true);
     });
 
-    it('should handle immunity achievement and maintenance', () => {
-      // Build up to immunity
+    it('should keep building the streak past seven days', () => {
       let streak = 6;
 
-      // Day 7: Achieve immunity
+      // Day 7
       let result = updateConsecutiveDays(streak, true);
       streak = result.newConsecutiveDays;
-
       expect(streak).toBe(7);
 
-      let immunityCheck = checkBurnoutImmunity(streak);
-      expect(immunityCheck.immunityGranted).toBe(true);
-
-      // Day 8-10: Maintain immunity
+      // Days 8-10
       for (let day = 8; day <= 10; day++) {
         result = updateConsecutiveDays(streak, true);
         streak = result.newConsecutiveDays;
-
-        immunityCheck = checkBurnoutImmunity(streak);
-        expect(immunityCheck.immunityGranted).toBe(true);
+        expect(result.wasReset).toBe(false);
       }
 
       expect(streak).toBe(10);

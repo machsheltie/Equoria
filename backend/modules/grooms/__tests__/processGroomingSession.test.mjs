@@ -45,7 +45,6 @@ async function createHorse(userId, overrides = {}) {
       age: overrides.age ?? ADULT_HORSE_AGE,
       bondScore: overrides.bondScore ?? 20,
       daysGroomedInARow: overrides.daysGroomedInARow ?? 0,
-      burnoutStatus: overrides.burnoutStatus ?? 'none',
       temperament: overrides.temperament ?? null,
       taskLog: overrides.taskLog ?? null,
       user: { connect: { id: userId } },
@@ -93,7 +92,7 @@ describe('processGroomingSession() — real DB persistence', () => {
   afterEach(cleanupSuite);
 
   describe('Happy path: groom assigned', () => {
-    it('returns success:true with bondingEffects, consecutiveDaysUpdate, immunityCheck', async () => {
+    it('returns success:true with bondingEffects and consecutiveDaysUpdate, and no burnout label', async () => {
       const user = await createUser();
       const horse = await createHorse(user.id);
       const groom = await createGroom(user.id);
@@ -103,7 +102,10 @@ describe('processGroomingSession() — real DB persistence', () => {
       expect(result.success).toBe(true);
       expect(result.bondingEffects).toBeDefined();
       expect(result.consecutiveDaysUpdate).toBeDefined();
-      expect(result.immunityCheck).toBeDefined();
+      // Owner ruling 2026-10-23 (Equoria-0gl9o): no burnout, so no 'burnout
+      // immunity' label (old contract: immunityCheck was returned).
+      expect(result).not.toHaveProperty('immunityCheck');
+      expect(result.horse).not.toHaveProperty('newBurnoutStatus');
     });
 
     it('creates GroomInteraction with correct fields when groomId is provided', async () => {
@@ -126,7 +128,7 @@ describe('processGroomingSession() — real DB persistence', () => {
       expect(Number.isInteger(i.bondingChange)).toBe(true);
     });
 
-    it('updates horse with rounded bondScore, new streak, burnoutStatus, lastGroomed, taskLog', async () => {
+    it('updates horse with rounded bondScore, new streak, lastGroomed, taskLog', async () => {
       const user = await createUser();
       const horse = await createHorse(user.id);
       const groom = await createGroom(user.id);
@@ -137,7 +139,6 @@ describe('processGroomingSession() — real DB persistence', () => {
       expect(Number.isInteger(after.bondScore)).toBe(true);
       expect(after.bondScore).toBe(22); // 20 + round(2) = 22 (no temperament synergy)
       expect(after.daysGroomedInARow).toBe(1);
-      expect(typeof after.burnoutStatus).toBe('string');
       // Cross-realm-safe Date check: under jest --experimental-vm-modules
       // (npm test), each test file runs in its own V8 context, so the Date
       // returned by Prisma (constructed in the Prisma module's realm) is
@@ -312,18 +313,21 @@ describe('processGroomingSession() — real DB persistence', () => {
     });
   });
 
-  describe('Burnout immunity progression', () => {
-    it('grants burnout immunity after reaching threshold consecutive days', async () => {
-      const threshold = GROOM_CONFIG.BURNOUT_IMMUNITY_THRESHOLD_DAYS;
+  // Old contract: a 7-day streak granted 'burnout immunity' (immunityCheck +
+  // Horse.burnoutStatus 'immune'). Owner ruling 2026-10-23 (Equoria-0gl9o):
+  // there is no burnout; the streak itself is kept.
+  describe('Care streak at seven days', () => {
+    it('counts the seventh consecutive day and grants no burnout label', async () => {
       const user = await createUser();
-      const horse = await createHorse(user.id, { daysGroomedInARow: threshold - 1 });
+      const horse = await createHorse(user.id, { daysGroomedInARow: 6 });
       const groom = await createGroom(user.id);
 
       const result = await processGroomingSession(horse.id, groom.id, 'brushing', 30);
 
-      expect(result.immunityCheck.immunityGranted).toBe(true);
+      expect(result.consecutiveDaysUpdate.newConsecutiveDays).toBe(7);
+      expect(result).not.toHaveProperty('immunityCheck');
       const after = await prisma.horse.findUnique({ where: { id: horse.id } });
-      expect(after.burnoutStatus).toBe(GROOM_CONFIG.BURNOUT_STATUS.IMMUNE);
+      expect(after.daysGroomedInARow).toBe(7);
     });
   });
 });

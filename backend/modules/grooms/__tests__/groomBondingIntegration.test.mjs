@@ -8,7 +8,7 @@
  * - New grooming tasks (brushing, hand-walking, stall_care) for horses 3+ years old
  * - Integration with existing daily interaction limits
  * - Bond score updates in horse records
- * - Consecutive day tracking and burnout immunity
+ * - Consecutive day (care streak) tracking
  * - Proper interaction recording with new task types
  * - Age-based task validation
  *
@@ -138,7 +138,6 @@ describe('Groom Bonding System Integration', () => {
         userId: testUser.id,
         bondScore: 20,
         daysGroomedInARow: 3,
-        burnoutStatus: 'none',
       },
     });
     createdHorseIds.add(testHorse.id);
@@ -253,7 +252,6 @@ describe('Groom Bonding System Integration', () => {
           userId: testUser.id,
           bondScore: 0,
           daysGroomedInARow: 0,
-          burnoutStatus: 'none',
         },
       });
       createdHorseIds.add(youngHorse.id);
@@ -316,14 +314,17 @@ describe('Groom Bonding System Integration', () => {
       // Check updated horse record
       const updatedHorse = await prisma.horse.findUnique({
         where: { id: testHorse.id },
-        select: { bondScore: true, daysGroomedInARow: true, burnoutStatus: true },
+        select: { bondScore: true, daysGroomedInARow: true },
       });
 
       expect(updatedHorse.bondScore).toBeGreaterThan(initialBondScore);
       expect(updatedHorse.daysGroomedInARow).toBeGreaterThanOrEqual(3); // Should increase to 3
     });
 
-    it('should grant burnout immunity after 7 consecutive days', async () => {
+    // Old contract: the seventh day set Horse.burnoutStatus 'immune'. Owner
+    // ruling 2026-10-23 (Equoria-0gl9o): there is no burnout, so the session
+    // keeps the streak and returns no 'burnout immunity' label.
+    it('counts the seventh consecutive day and returns no burnout immunity label', async () => {
       // Update horse to 6 consecutive days with a recent lastGroomed date
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
@@ -336,7 +337,7 @@ describe('Groom Bonding System Integration', () => {
         },
       });
 
-      await request(app)
+      const response = await request(app)
         .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
@@ -350,14 +351,13 @@ describe('Groom Bonding System Integration', () => {
           duration: 30,
         });
 
-      // Check immunity granted
+      expect(response.body.data.streakTracking.consecutiveDays).toBe(7);
+      expect(response.body.data).not.toHaveProperty('burnoutImmunity');
       const updatedHorse = await prisma.horse.findUnique({
         where: { id: testHorse.id },
-        select: { daysGroomedInARow: true, burnoutStatus: true },
+        select: { daysGroomedInARow: true },
       });
-
-      expect(updatedHorse.daysGroomedInARow).toBeGreaterThanOrEqual(6);
-      expect(updatedHorse.burnoutStatus).toBe('immune');
+      expect(updatedHorse.daysGroomedInARow).toBe(7);
     });
   });
 

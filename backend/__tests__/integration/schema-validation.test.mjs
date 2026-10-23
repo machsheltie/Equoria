@@ -121,7 +121,6 @@ describe('Schema Validation', () => {
         taskLog: { trust_building: 3, desensitization: 2 },
         lastGroomed: new Date(),
         daysGroomedInARow: 5,
-        burnoutStatus: 'none',
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });
@@ -130,7 +129,6 @@ describe('Schema Validation', () => {
     expect(horse.bondScore).toBe(50);
     expect(horse.stressLevel).toBe(20);
     expect(horse.daysGroomedInARow).toBe(5);
-    expect(horse.burnoutStatus).toBe('none');
   });
 
   it('should create groom with all required fields', async () => {

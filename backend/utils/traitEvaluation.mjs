@@ -437,7 +437,7 @@ function evaluateEpigeneticTagsFromFoalTasks(taskLog, streak = 0) {
     return [];
   }
 
-  // Calculate streak bonus (burnout immunity bonus)
+  // Care-streak bonus: 7+ consecutive days of care adds trait points
   const streakBonus = streak >= 7 ? 10 : 0;
   logger.info(
     `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Streak bonus: ${streakBonus} (streak: ${streak})`,

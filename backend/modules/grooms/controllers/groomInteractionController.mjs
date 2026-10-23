@@ -18,7 +18,6 @@ import {
   updateTaskLog,
   updateStreakTracking,
   checkTaskMutualExclusivity as _checkTaskMutualExclusivity,
-  checkBurnoutImmunity,
 } from '../../../utils/groomBondingSystem.mjs';
 import { DEVELOPMENTAL_WINDOWS } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -252,15 +251,12 @@ export async function recordInteraction(req, res) {
       );
     }
 
-    // Calculate burnout immunity status based on consecutive days
-    const immunityCheck = checkBurnoutImmunity(streakUpdate.consecutiveDays);
-
     // -------------------------------------------------------------------------
     // Equoria-po1fl: ONE grooming session is ONE player-state change.
     //
     // Before this fix the handler issued five independent writes with no
     // transaction: GroomInteraction.create, Horse.update (bond, stress,
-    // taskLog, lastGroomed, streak, burnout), FoalActivity.create, the groom's
+    // taskLog, lastGroomed, streak), FoalActivity.create, the groom's
     // +2 XP, and the GroomHorseSynergy row - the last three wrapped in
     // fail-soft try/catch arms that logged and continued. Any failure partway
     // through left state that never legally existed: an interaction row with no
@@ -299,7 +295,7 @@ export async function recordInteraction(req, res) {
         newBondScore = Math.max(0, Math.min(100, current.bondScore + effectiveBondingChange));
         newStressLevel = Math.max(0, Math.min(100, current.stressLevel + effects.stressChange));
 
-        // 1. Horse row - bond, stress, task log, streak, burnout.
+        // 1. Horse row - bond, stress, task log, streak.
         await tx.horse.update({
           where: { id: foalId },
           data: {
@@ -308,7 +304,6 @@ export async function recordInteraction(req, res) {
             taskLog: taskLogUpdate.taskLog,
             lastGroomed: streakUpdate.lastGroomed,
             daysGroomedInARow: streakUpdate.consecutiveDays,
-            burnoutStatus: immunityCheck.status,
           },
         });
 
@@ -403,11 +398,6 @@ export async function recordInteraction(req, res) {
           bonusEligible: streakUpdate.bonusEligible,
           streakBroken: streakUpdate.streakBroken,
           lastGroomed: streakUpdate.lastGroomed,
-        },
-        burnoutImmunity: {
-          status: immunityCheck.status,
-          immunityGranted: immunityCheck.immunityGranted,
-          daysToImmunity: immunityCheck.daysToImmunity,
         },
       },
     });

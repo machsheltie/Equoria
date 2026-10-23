@@ -7,7 +7,7 @@
  * - Consecutive days foal care streak tracking
  * - Last care date timestamp management
  * - Task repetition history for trait evaluation
- * - Streak-based bonuses and burnout immunity logic
+ * - Streak-based bonus logic
  * - Grace period handling for streak maintenance
  *
  * 🔧 DEPENDENCIES:
@@ -19,7 +19,7 @@
  * - Task log stores task repetition counts as JSON: {"desensitization": 3, "early_touch": 5}
  * - Consecutive days counter tracks unbroken care streaks
  * - Last care date enables grace period calculations
- * - Streak data supports burnout immunity and bonus mechanics
+ * - Streak data supports the streak bonus mechanics
  * - Task history enables trait evaluation and development tracking
  *
  * 🧪 TESTING APPROACH:

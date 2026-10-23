@@ -73,7 +73,6 @@ describe('Schema Field Test', () => {
         lastGroomed: new Date(),
         daysGroomedInARow: 5,
         consecutiveDaysFoalCare: 7, // This is the field we're testing
-        burnoutStatus: 'none',
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });

@@ -11,7 +11,6 @@
  * - Task-specific personality bonuses and penalties
  * - Dynamic success rate modifications based on horse traits
  * - Streak growth and bonding rate adjustments
- * - Burnout risk modifications for high-energy personalities
  * - Trait influence amplification for specific personality-task combinations
  * - Integration with existing groom interaction system
  * - Comprehensive personality effect calculations

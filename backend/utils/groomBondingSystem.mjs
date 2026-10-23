@@ -1,18 +1,17 @@
 /**
- * Groom Bonding & Burnout Prevention System
- * Enhanced groom system with bonding mechanics and burnout immunity
+ * Groom Bonding System
+ * Groom system with bonding mechanics and the consecutive-day care streak
  *
  * 🎯 FEATURES IMPLEMENTED:
  * - Age-based task eligibility with progressive complexity (0-2, 1-3, 3+ years)
  * - Foal enrichment tasks (0-2 years) for epigenetic trait development
  * - Foal grooming tasks (1-3 years) for visual prep and bonding
- * - General grooming tasks (3+ years) for burnout prevention
+ * - General grooming tasks (3+ years)
  * - Task logging system for frequency tracking and trait evaluation
  * - Streak tracking with grace period logic for consecutive care bonuses
  * - Task mutual exclusivity enforcement (one enrichment OR one grooming per day)
  * - Bonding effect calculations for grooming sessions
- * - Consecutive day tracking for burnout immunity
- * - Burnout immunity status management
+ * - Consecutive day (care streak) tracking
  * - Complete grooming session processing workflow
  *
  * 🔧 DEPENDENCIES:
@@ -28,7 +27,6 @@
  * - Task logging: JSON format tracking frequency for trait evaluation
  * - Streak tracking: 2-day grace period, +10% bonus for 7 consecutive days
  * - Bond scores: 0-100 range with configurable daily gain
- * - Burnout immunity: Configurable consecutive day threshold
  *
  * 🧪 TESTING APPROACH:
  * - Mock: Database operations (Prisma), external dependencies
@@ -235,11 +233,11 @@ export function updateConsecutiveDays(
   }
 
   // Check if we need to reset due to lapse
-  if (daysSinceLastGrooming > GROOM_CONFIG.BURNOUT_RESET_GRACE_DAYS) {
+  if (daysSinceLastGrooming > GROOM_CONFIG.FOAL_STREAK_GRACE_DAYS) {
     return {
       newConsecutiveDays: 0,
       wasReset: true,
-      reason: `Reset due to ${daysSinceLastGrooming} day lapse (grace period: ${GROOM_CONFIG.BURNOUT_RESET_GRACE_DAYS} days)`,
+      reason: `Reset due to ${daysSinceLastGrooming} day lapse (grace period: ${GROOM_CONFIG.FOAL_STREAK_GRACE_DAYS} days)`,
     };
   }
 
@@ -248,31 +246,6 @@ export function updateConsecutiveDays(
     newConsecutiveDays: currentConsecutiveDays,
     wasReset: false,
     reason: `Within grace period (${daysSinceLastGrooming} days)`,
-  };
-}
-
-/**
- * Check burnout immunity status based on consecutive days
- * @param {number} consecutiveDays - Number of consecutive grooming days
- * @returns {Object} Burnout immunity status
- */
-export function checkBurnoutImmunity(consecutiveDays) {
-  if (consecutiveDays >= GROOM_CONFIG.BURNOUT_IMMUNITY_THRESHOLD_DAYS) {
-    return {
-      status: GROOM_CONFIG.BURNOUT_STATUS.IMMUNE,
-      immunityGranted: true,
-      daysToImmunity: 0,
-      reason: `Immunity granted after ${consecutiveDays} consecutive days`,
-    };
-  }
-
-  const daysToImmunity = GROOM_CONFIG.BURNOUT_IMMUNITY_THRESHOLD_DAYS - consecutiveDays;
-
-  return {
-    status: GROOM_CONFIG.BURNOUT_STATUS.NONE,
-    immunityGranted: false,
-    daysToImmunity,
-    reason: `${daysToImmunity} more consecutive days needed for immunity`,
   };
 }
 
@@ -294,7 +267,6 @@ export async function processGroomingSession(horseId, groomId, groomingTask, dur
       age: true,
       bondScore: true,
       daysGroomedInARow: true,
-      burnoutStatus: true,
       temperament: true,
       taskLog: true,
     },
@@ -333,9 +305,6 @@ export async function processGroomingSession(horseId, groomId, groomingTask, dur
   // Update consecutive days (assuming groomed today)
   const consecutiveDaysUpdate = updateConsecutiveDays(horse.daysGroomedInARow || 0, true);
 
-  // Check burnout immunity
-  const immunityCheck = checkBurnoutImmunity(consecutiveDaysUpdate.newConsecutiveDays);
-
   // Update task log with completed task
   const taskLogUpdate = updateTaskLog(horse.taskLog, groomingTask);
 
@@ -362,27 +331,24 @@ export async function processGroomingSession(horseId, groomId, groomingTask, dur
     data: {
       bondScore: Math.round(bondingEffects.newBondScore),
       daysGroomedInARow: consecutiveDaysUpdate.newConsecutiveDays,
-      burnoutStatus: immunityCheck.status,
       lastGroomed: new Date(),
       taskLog: taskLogUpdate.taskLog,
     },
   });
 
   logger.info(
-    `[groomBondingSystem.processGroomingSession] Horse ${horseId}: bondScore → ${Math.round(bondingEffects.newBondScore)}, streak → ${consecutiveDaysUpdate.newConsecutiveDays}, burnout → ${immunityCheck.status}`,
+    `[groomBondingSystem.processGroomingSession] Horse ${horseId}: bondScore → ${Math.round(bondingEffects.newBondScore)}, streak → ${consecutiveDaysUpdate.newConsecutiveDays}`,
   );
 
   return {
     success: true,
     bondingEffects,
     consecutiveDaysUpdate,
-    immunityCheck,
     horse: {
       id: horse.id,
       name: horse.name,
       newBondScore: bondingEffects.newBondScore,
       newConsecutiveDays: consecutiveDaysUpdate.newConsecutiveDays,
-      newBurnoutStatus: immunityCheck.status,
     },
   };
 }

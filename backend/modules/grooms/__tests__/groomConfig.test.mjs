@@ -52,21 +52,15 @@ describe('GROOM_CONFIG age thresholds', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Burnout system
+// No burnout. Old contract: BURNOUT_IMMUNITY_THRESHOLD_DAYS 7,
+// BURNOUT_RESET_GRACE_DAYS 2 and BURNOUT_STATUS {NONE, AT_RISK, IMMUNE}.
+// Owner ruling 2026-10-23 (Equoria-0gl9o): there is no burnout, so the grooming
+// burnout immunity label and Horse.burnoutStatus are gone.
+// The care-streak grace period lives on as FOAL_STREAK_GRACE_DAYS (below).
 // ---------------------------------------------------------------------------
-describe('GROOM_CONFIG burnout system', () => {
-  it('has BURNOUT_IMMUNITY_THRESHOLD_DAYS of 7', () => {
-    expect(GROOM_CONFIG.BURNOUT_IMMUNITY_THRESHOLD_DAYS).toBe(7);
-  });
-
-  it('has BURNOUT_RESET_GRACE_DAYS of 2', () => {
-    expect(GROOM_CONFIG.BURNOUT_RESET_GRACE_DAYS).toBe(2);
-  });
-
-  it('BURNOUT_STATUS has NONE, AT_RISK, IMMUNE', () => {
-    expect(GROOM_CONFIG.BURNOUT_STATUS.NONE).toBeDefined();
-    expect(GROOM_CONFIG.BURNOUT_STATUS.AT_RISK).toBeDefined();
-    expect(GROOM_CONFIG.BURNOUT_STATUS.IMMUNE).toBeDefined();
+describe('GROOM_CONFIG has no burnout settings', () => {
+  it('carries no burnout immunity threshold, burnout grace period or burnout status', () => {
+    expect(Object.keys(GROOM_CONFIG).filter(key => /burnout/i.test(key))).toEqual([]);
   });
 });
 

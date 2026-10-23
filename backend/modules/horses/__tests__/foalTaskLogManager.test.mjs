@@ -12,7 +12,6 @@ import {
   getTotalTaskCount,
   getCompletedTasks,
   calculateStreakFromLastCareDate,
-  hasBurnoutImmunity,
   updateFoalCareData,
   validateTaskLog,
   getFoalCareSummary,
@@ -195,32 +194,6 @@ describe('calculateStreakFromLastCareDate', () => {
 });
 
 // ---------------------------------------------------------------------------
-// hasBurnoutImmunity
-// ---------------------------------------------------------------------------
-describe('hasBurnoutImmunity', () => {
-  it('returns true when consecutiveDays meets threshold', () => {
-    expect(hasBurnoutImmunity(7)).toBe(true);
-  });
-
-  it('returns true when consecutiveDays exceeds threshold', () => {
-    expect(hasBurnoutImmunity(10)).toBe(true);
-  });
-
-  it('returns false when below threshold', () => {
-    expect(hasBurnoutImmunity(6)).toBe(false);
-  });
-
-  it('returns false for non-number input', () => {
-    expect(hasBurnoutImmunity('seven')).toBe(false);
-  });
-
-  it('respects custom immunityThreshold', () => {
-    expect(hasBurnoutImmunity(3, 3)).toBe(true);
-    expect(hasBurnoutImmunity(2, 3)).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // updateFoalCareData
 // ---------------------------------------------------------------------------
 describe('updateFoalCareData', () => {
@@ -304,13 +277,16 @@ describe('getFoalCareSummary', () => {
     expect(summary).toHaveProperty('uniqueTasksCompleted');
     expect(summary).toHaveProperty('completedTaskTypes');
     expect(summary).toHaveProperty('consecutiveDaysOfCare');
-    expect(summary).toHaveProperty('hasBurnoutImmunity');
     expect(summary).toHaveProperty('streakStatus');
   });
 
-  it('reflects burnout immunity when consecutive days >= 7', () => {
-    const foalData = { taskLog: {}, daysGroomedInARow: 7, lastGroomed: null };
-    expect(getFoalCareSummary(foalData).hasBurnoutImmunity).toBe(true);
+  // Old contract: hasBurnoutImmunity (true from 7 consecutive days). Owner
+  // ruling 2026-10-23 (Equoria-0gl9o): there is no burnout, so the summary
+  // carries the streak but no burnout immunity label.
+  it('reports a seven-day streak without a burnout immunity label', () => {
+    const summary = getFoalCareSummary({ taskLog: {}, daysGroomedInARow: 7, lastGroomed: null });
+    expect(summary.consecutiveDaysOfCare).toBe(7);
+    expect(summary).not.toHaveProperty('hasBurnoutImmunity');
   });
 
   it('counts total task completions correctly', () => {
@@ -399,7 +375,7 @@ describe('resetFoalCareStreak', () => {
 // completedTaskTypes, lastCareDate round-trip) not covered by the shape/total
 // tests above.
 describe('getFoalCareSummary — exact field values (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  it('reports exact totals, unique count, ordered task types, immunity, and lastCareDate', () => {
+  it('reports exact totals, unique count, ordered task types, streak, and lastCareDate', () => {
     const lastGroomed = new Date('2026-05-01T00:00:00.000Z');
     const foalData = {
       taskLog: { trust_building: 5, desensitization: 3, early_touch: 2 },
@@ -411,14 +387,13 @@ describe('getFoalCareSummary — exact field values (merged from legacy backend/
     expect(summary.uniqueTasksCompleted).toBe(3);
     expect(summary.completedTaskTypes).toEqual(['trust_building', 'desensitization', 'early_touch']);
     expect(summary.consecutiveDaysOfCare).toBe(8);
-    expect(summary.hasBurnoutImmunity).toBe(true);
     expect(summary.lastCareDate).toEqual(lastGroomed);
   });
 
-  it('handles fully empty foal data (null taskLog, no immunity)', () => {
+  it('handles fully empty foal data (null taskLog, no streak)', () => {
     const summary = getFoalCareSummary({ taskLog: null, lastGroomed: null, daysGroomedInARow: 0 });
     expect(summary.totalTaskCompletions).toBe(0);
     expect(summary.uniqueTasksCompleted).toBe(0);
-    expect(summary.hasBurnoutImmunity).toBe(false);
+    expect(summary.consecutiveDaysOfCare).toBe(0);
   });
 });

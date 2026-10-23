@@ -6,7 +6,7 @@
  * - Integration between database schema and utility functions
  * - Real-world foal care scenarios with task logging and streak tracking
  * - Task influence mapping integration with task log storage
- * - Streak calculation and burnout immunity in practice
+ * - Streak calculation in practice
  * - Grace period handling and streak maintenance
  *
  * 🔧 DEPENDENCIES:
@@ -17,7 +17,7 @@
  *
  * 📋 BUSINESS RULES TESTED:
  * - Task log stores and retrieves task repetition counts correctly
- * - Streak data enables burnout immunity and bonus mechanics
+ * - Streak data enables the streak bonus mechanics
  * - Grace period allows for missed days without breaking streaks
  * - Task history supports trait evaluation and development tracking
  * - Integration between daily task exclusivity and streak tracking
@@ -185,7 +185,9 @@ describe('Foal Task Log and Streak Data Integration', () => {
       expect(foal.lastGroomed).toEqual(day10);
     });
 
-    it('should achieve burnout immunity after 7 consecutive days', async () => {
+    // Old contract: the seventh day reported hasBurnoutImmunity. Owner ruling
+    // 2026-10-23 (Equoria-0gl9o): there is no burnout; the streak stays.
+    it('builds a 7-day care streak with no burnout immunity label', async () => {
       // Simulate 7 consecutive days of care
       const tasks = [
         'trust_building',
@@ -210,12 +212,11 @@ describe('Foal Task Log and Streak Data Integration', () => {
         });
       }
 
-      // Verify burnout immunity achieved
       const foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
       const summary = getFoalCareSummary(foal);
 
       expect(summary.consecutiveDaysOfCare).toBe(7);
-      expect(summary.hasBurnoutImmunity).toBe(true);
+      expect(summary).not.toHaveProperty('hasBurnoutImmunity');
       expect(summary.totalTaskCompletions).toBe(7);
       expect(summary.uniqueTasksCompleted).toBe(4); // trust_building, desensitization, early_touch, showground_exposure
     });
@@ -379,7 +380,6 @@ describe('Foal Task Log and Streak Data Integration', () => {
       expect(summary.totalTaskCompletions).toBe(24);
       expect(summary.uniqueTasksCompleted).toBe(5);
       expect(summary.consecutiveDaysOfCare).toBe(12);
-      expect(summary.hasBurnoutImmunity).toBe(true);
       expect(summary.completedTaskTypes).toContain('trust_building');
       expect(summary.completedTaskTypes).toContain('desensitization');
       expect(summary.completedTaskTypes).toContain('early_touch');

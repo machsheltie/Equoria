@@ -1,17 +1,16 @@
 // DO NOT MODIFY: Configuration locked for consistency
 /**
  * Groom System Configuration
- * Centralized configuration for groom bonding and burnout prevention mechanics
+ * Centralized configuration for groom bonding and care-streak mechanics
  *
  * 🎯 FEATURES IMPLEMENTED:
  * - Age-based task eligibility with progressive complexity (0-2, 1-3, 3+ years)
  * - Foal enrichment tasks (0-2 years) for epigenetic trait development
  * - Foal grooming tasks (1-3 years) for visual prep and bonding
- * - Adult grooming tasks (3+ years) for burnout prevention
+ * - Adult grooming tasks (3+ years)
  * - Task logging system for frequency tracking and trait evaluation
  * - Streak tracking with grace period logic for consecutive care bonuses
  * - Bonding mechanics configuration (bond score limits, daily gains)
- * - Burnout immunity system (consecutive day tracking, immunity thresholds)
  * - Environment variable overrides for key settings
  *
  * 🔧 DEPENDENCIES:
@@ -25,7 +24,6 @@
  * - Task logging: JSON format tracking frequency for trait evaluation
  * - Streak tracking: 2-day grace period, +10% bonus for 7 consecutive days
  * - Bond scores: 0-100 range with +2 daily gain cap
- * - Burnout immunity: 7 consecutive days, 2-day grace period
  *
  * 🧪 TESTING APPROACH:
  * - Mock: Environment variables
@@ -47,10 +45,6 @@ export const GROOM_CONFIG = {
   BOND_SCORE_START: 0,
   BOND_SCORE_MAX: 100,
   DAILY_BOND_GAIN: 2,
-
-  // Burnout immunity system
-  BURNOUT_IMMUNITY_THRESHOLD_DAYS: 7,
-  BURNOUT_RESET_GRACE_DAYS: 2,
 
   // Age restrictions and thresholds
   MIN_AGE_FOR_GROOMING_TASKS: 0, // Allow grooms to work with foals from birth
@@ -90,30 +84,18 @@ export const GROOM_CONFIG = {
 
   // Task logging and streak tracking
   FOAL_STREAK_BONUS_THRESHOLD: 7, // 7 consecutive days for +10% bonus
-  FOAL_STREAK_GRACE_DAYS: 2, // Same as burnout system for consistency
+  // Days a care streak (Horse.daysGroomedInARow) survives without grooming
+  // before it resets (Equoria-0gl9o: formerly also BURNOUT_RESET_GRACE_DAYS).
+  FOAL_STREAK_GRACE_DAYS: 2,
 
   // Task type categories for mutual exclusivity checking
   TASK_CATEGORIES: {
     ENRICHMENT: 'enrichment',
     GROOMING: 'grooming',
   },
-
-  // Burnout status values
-  BURNOUT_STATUS: {
-    NONE: 'none',
-    AT_RISK: 'atRisk',
-    IMMUNE: 'immune',
-  },
 };
 
 // Environment variable overrides
-if (process.env.BURNOUT_IMMUNITY_THRESHOLD_DAYS) {
-  GROOM_CONFIG.BURNOUT_IMMUNITY_THRESHOLD_DAYS = parseInt(
-    process.env.BURNOUT_IMMUNITY_THRESHOLD_DAYS,
-    10,
-  );
-}
-
 if (process.env.DAILY_BOND_GAIN) {
   GROOM_CONFIG.DAILY_BOND_GAIN = parseInt(process.env.DAILY_BOND_GAIN, 10);
 }

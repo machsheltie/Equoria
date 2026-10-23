@@ -1,11 +1,16 @@
 /**
- * Burnout Immunity & Trait Integration Tests
+ * Care Streak & Trait Integration Tests
  *
  * Tests the complete workflow integrating groomBondingSystem streak logic
  * with trait milestone evaluation.
  *
- * updateConsecutiveDays / checkBurnoutImmunity are pure functions — all
- * assertions on them are fully deterministic.
+ * Owner ruling 2026-10-23 (Equoria-0gl9o): there is no burnout. The "burnout
+ * immunity" label (checkBurnoutImmunity, BURNOUT_STATUS, Horse.burnoutStatus)
+ * is gone; the care streak and its 2-day grace period stay. (The file keeps
+ * its historical name.)
+ *
+ * updateConsecutiveDays is a pure function — all assertions on it are fully
+ * deterministic.
  *
  * evaluateEpigeneticTagsFromFoalTasks uses Math.random() internally.
  * Assertions on its output are limited to structural guarantees (always
@@ -16,10 +21,9 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { updateConsecutiveDays, checkBurnoutImmunity } from '../../../utils/groomBondingSystem.mjs';
+import { updateConsecutiveDays } from '../../../utils/groomBondingSystem.mjs';
 import { evaluateEpigeneticTagsFromFoalTasks } from '../../../utils/traitEvaluation.mjs';
 import { getTraitMetadata } from '../../../utils/epigeneticTraits.mjs';
-import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -34,14 +38,8 @@ function buildStreak(days) {
 // ─── Complete Foal Development Workflow ──────────────────────────────────────
 
 describe('Complete Foal Development Workflow', () => {
-  it('builds streak to 7 and grants burnout immunity', () => {
-    const streak = buildStreak(7);
-
-    expect(streak).toBe(7);
-
-    const immunity = checkBurnoutImmunity(streak);
-    expect(immunity.immunityGranted).toBe(true);
-    expect(immunity.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.IMMUNE);
+  it('builds streak to 7', () => {
+    expect(buildStreak(7)).toBe(7);
   });
 
   it('preserves streak within 2-day grace period and increments on resume', () => {
@@ -102,14 +100,8 @@ describe('Complete Foal Development Workflow', () => {
 // ─── Streak Loss and Recovery ─────────────────────────────────────────────────
 
 describe('Streak Loss and Recovery', () => {
-  it('streak of 6 has daysToImmunity = 1 and immunityGranted = false', () => {
-    const streak = buildStreak(6);
-
-    expect(streak).toBe(6);
-
-    const immunity = checkBurnoutImmunity(streak);
-    expect(immunity.immunityGranted).toBe(false);
-    expect(immunity.daysToImmunity).toBe(1);
+  it('builds streak to 6', () => {
+    expect(buildStreak(6)).toBe(6);
   });
 
   it('3-day gap beyond grace period resets streak to 0', () => {
@@ -120,13 +112,12 @@ describe('Streak Loss and Recovery', () => {
     expect(lossResult.wasReset).toBe(true);
   });
 
-  it('rebuilds to 8 and achieves immunity after streak loss', () => {
-    const streak = buildStreak(8);
-
+  it('rebuilds to 8 after streak loss', () => {
+    let streak = updateConsecutiveDays(buildStreak(6), false, 3).newConsecutiveDays;
+    for (let i = 0; i < 8; i++) {
+      streak = updateConsecutiveDays(streak, true).newConsecutiveDays;
+    }
     expect(streak).toBe(8);
-
-    const immunity = checkBurnoutImmunity(streak);
-    expect(immunity.immunityGranted).toBe(true);
   });
 
   it('trait evaluation after rebuild returns an array with no duplicates', () => {
@@ -154,16 +145,6 @@ describe('Per-Horse Independent Tracking', () => {
     expect(horseAStreak).toBe(10);
     expect(horseBStreak).toBe(5);
     expect(horseCStreak).toBe(3);
-  });
-
-  it('reports correct immunity status for each independently-tracked horse', () => {
-    const immunityA = checkBurnoutImmunity(10);
-    const immunityB = checkBurnoutImmunity(5);
-    const immunityC = checkBurnoutImmunity(3);
-
-    expect(immunityA.immunityGranted).toBe(true);
-    expect(immunityB.immunityGranted).toBe(false);
-    expect(immunityC.immunityGranted).toBe(false);
   });
 
   it('evaluates traits independently for each horse and all results are arrays without duplicates', () => {
@@ -286,13 +267,8 @@ describe('Real-World Player Scenarios', () => {
     expect(new Set(traits).size).toBe(traits.length);
   });
 
-  it('dedicated player: 14-day streak achieves immunity', () => {
-    const streak = buildStreak(14);
-
-    expect(streak).toBe(14);
-
-    const immunity = checkBurnoutImmunity(streak);
-    expect(immunity.immunityGranted).toBe(true);
+  it('dedicated player: 14-day streak', () => {
+    expect(buildStreak(14)).toBe(14);
   });
 
   it('dedicated player: extensive task log returns array without duplicates and all traits have metadata', () => {

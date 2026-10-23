@@ -4,14 +4,13 @@
  *
  * 🎯 PURPOSE:
  * Provides functions to manage foal task repetition history and streak tracking
- * for trait evaluation and burnout immunity mechanics.
+ * for trait evaluation.
  *
  * 📋 BUSINESS RULES:
  * - Task log stores task repetition counts as JSON: {"desensitization": 3, "early_touch": 5}
- * - Consecutive days tracking for streak-based bonuses and burnout immunity
+ * - Consecutive days tracking for streak-based bonuses
  * - Last care date enables grace period calculations (2-day grace period)
  * - Task history supports trait evaluation and epigenetic development
- * - Streak data supports 7-day burnout immunity mechanics
  *
  * 🔧 INTEGRATION:
  * - Works with existing Horse model fields: taskLog, lastGroomed, daysGroomedInARow
@@ -149,16 +148,6 @@ export function calculateStreakFromLastCareDate(
 }
 
 /**
- * Determine if foal has burnout immunity based on consecutive days
- * @param {number} consecutiveDays - Number of consecutive days of care
- * @param {number} immunityThreshold - Days needed for immunity (default: 7)
- * @returns {boolean} Whether foal has burnout immunity
- */
-export function hasBurnoutImmunity(consecutiveDays, immunityThreshold = 7) {
-  return typeof consecutiveDays === 'number' && consecutiveDays >= immunityThreshold;
-}
-
-/**
  * Update foal care data with new task completion
  * @param {Object} currentData - Current foal data
  * @param {string} taskName - Name of completed task
@@ -243,7 +232,6 @@ export function getFoalCareSummary(foalData) {
   const totalTasks = getTotalTaskCount(taskLog);
   const completedTaskTypes = getCompletedTasks(taskLog);
   const consecutiveDays = foalData.daysGroomedInARow || 0;
-  const hasImmunity = hasBurnoutImmunity(consecutiveDays);
 
   const streakInfo = calculateStreakFromLastCareDate(foalData.lastGroomed);
 
@@ -252,7 +240,6 @@ export function getFoalCareSummary(foalData) {
     uniqueTasksCompleted: completedTaskTypes.length,
     completedTaskTypes,
     consecutiveDaysOfCare: consecutiveDays,
-    hasBurnoutImmunity: hasImmunity,
     lastCareDate: foalData.lastGroomed,
     streakStatus: {
       isActive: streakInfo.isStreakActive,
@@ -282,7 +269,6 @@ export default {
   getTotalTaskCount,
   getCompletedTasks,
   calculateStreakFromLastCareDate,
-  hasBurnoutImmunity,
   updateFoalCareData,
   validateTaskLog,
   getFoalCareSummary,

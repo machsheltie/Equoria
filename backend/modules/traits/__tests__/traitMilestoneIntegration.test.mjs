@@ -11,8 +11,9 @@
  * inputs). Assertions that require specific random outcomes are omitted.
  *
  * getFoalCareSummary is deterministic for totalTaskCompletions,
- * uniqueTasksCompleted, consecutiveDaysOfCare, and hasBurnoutImmunity —
- * all of these are fully asserted.
+ * uniqueTasksCompleted and consecutiveDaysOfCare — all of these are fully
+ * asserted. (hasBurnoutImmunity was removed: owner ruling 2026-10-23,
+ * Equoria-0gl9o — there is no burnout.)
  *
  * Fixtures: prefix TestFixture-TraitMilestone-  Cleaned in beforeAll/afterAll.
  */
@@ -101,7 +102,6 @@ describe('getFoalCareSummary from persisted taskLog', () => {
     expect(summary.totalTaskCompletions).toBe(48); // 12+8+5+10+6+4+3
     expect(summary.uniqueTasksCompleted).toBe(7);
     expect(summary.consecutiveDaysOfCare).toBe(10);
-    expect(summary.hasBurnoutImmunity).toBe(true);
   });
 
   it('counts totalTaskCompletions correctly for a minimal task log', async () => {
@@ -113,7 +113,6 @@ describe('getFoalCareSummary from persisted taskLog', () => {
     expect(summary.totalTaskCompletions).toBe(3);
     expect(summary.uniqueTasksCompleted).toBe(2);
     expect(summary.consecutiveDaysOfCare).toBe(3);
-    expect(summary.hasBurnoutImmunity).toBe(false);
   });
 
   it('returns zero totals for an empty task log', async () => {
@@ -122,22 +121,16 @@ describe('getFoalCareSummary from persisted taskLog', () => {
 
     expect(summary.totalTaskCompletions).toBe(0);
     expect(summary.uniqueTasksCompleted).toBe(0);
-    expect(summary.hasBurnoutImmunity).toBe(false);
   });
 
-  it('returns hasBurnoutImmunity true at exactly 7 consecutive days', async () => {
+  // Old contract: hasBurnoutImmunity true from 7 consecutive days. Owner ruling
+  // 2026-10-23 (Equoria-0gl9o): no burnout; the summary keeps the streak only.
+  it('reports a 7-day streak with no burnout immunity label', async () => {
     const foal = await setFoalTaskLog({ trust_building: 1 }, 7);
     const summary = getFoalCareSummary(foal);
 
-    expect(summary.hasBurnoutImmunity).toBe(true);
     expect(summary.consecutiveDaysOfCare).toBe(7);
-  });
-
-  it('returns hasBurnoutImmunity false at 6 consecutive days', async () => {
-    const foal = await setFoalTaskLog({ trust_building: 1 }, 6);
-    const summary = getFoalCareSummary(foal);
-
-    expect(summary.hasBurnoutImmunity).toBe(false);
+    expect(summary).not.toHaveProperty('hasBurnoutImmunity');
   });
 });
 

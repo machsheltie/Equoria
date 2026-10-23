@@ -4,7 +4,7 @@
  *
  * The five writes are:
  *   1. Horse.update        — bondScore, stressLevel, taskLog, lastGroomed,
- *                            daysGroomedInARow, burnoutStatus
+ *                            daysGroomedInARow
  *   2. GroomInteraction.create — the row the DAILY LIMIT check keys off
  *   3. FoalActivity.create     — the canonical foal-activity event log
  *                                (Equoria-2emg: taskLog is its derived cache)

@@ -16,7 +16,6 @@ import {
   validateGroomingEligibility,
   processGroomingSession,
   updateConsecutiveDays,
-  checkBurnoutImmunity,
   updateTaskLog,
   updateStreakTracking,
   checkTaskMutualExclusivity,
@@ -165,22 +164,6 @@ describe('updateConsecutiveDays', () => {
     const result = updateConsecutiveDays(3, false, 10);
     expect(result.wasReset).toBe(true);
     expect(result.newConsecutiveDays).toBe(0);
-  });
-});
-
-// ── checkBurnoutImmunity ──────────────────────────────────────────────────────
-
-describe('checkBurnoutImmunity', () => {
-  it('returns object with status field', () => {
-    const result = checkBurnoutImmunity(0);
-    expect(typeof result).toBe('object');
-    expect(typeof result.status).toBe('string');
-  });
-
-  it('returns immune status for high consecutive days', () => {
-    const result = checkBurnoutImmunity(100);
-    expect(result.immunityGranted).toBe(true);
-    expect(result.status).toBe('immune');
   });
 });
 
@@ -343,7 +326,7 @@ describe('calculateBondingEffects — branch coverage', () => {
 
 describe('updateConsecutiveDays — branch coverage', () => {
   it('maintains current count when within grace period', () => {
-    const result = updateConsecutiveDays(5, false, GROOM_CONFIG.BURNOUT_RESET_GRACE_DAYS);
+    const result = updateConsecutiveDays(5, false, GROOM_CONFIG.FOAL_STREAK_GRACE_DAYS);
     expect(result.newConsecutiveDays).toBe(5);
     expect(result.wasReset).toBe(false);
   });
@@ -352,29 +335,6 @@ describe('updateConsecutiveDays — branch coverage', () => {
     const result = updateConsecutiveDays(4, false, 1);
     expect(result.newConsecutiveDays).toBe(4);
     expect(result.wasReset).toBe(false);
-  });
-});
-
-// ── checkBurnoutImmunity — branch coverage ────────────────────────────────────
-
-describe('checkBurnoutImmunity — branch coverage', () => {
-  const THRESHOLD = GROOM_CONFIG.BURNOUT_IMMUNITY_THRESHOLD_DAYS;
-
-  it('grants immunity at exactly the threshold', () => {
-    const result = checkBurnoutImmunity(THRESHOLD);
-    expect(result.immunityGranted).toBe(true);
-    expect(result.daysToImmunity).toBe(0);
-  });
-
-  it('does not grant immunity one day below threshold', () => {
-    const result = checkBurnoutImmunity(THRESHOLD - 1);
-    expect(result.immunityGranted).toBe(false);
-    expect(result.daysToImmunity).toBe(1);
-  });
-
-  it('daysToImmunity equals threshold when consecutiveDays is 0', () => {
-    const result = checkBurnoutImmunity(0);
-    expect(result.daysToImmunity).toBe(THRESHOLD);
   });
 });
 
@@ -545,7 +505,10 @@ describe('processGroomingSession() — happy path, groomId=null (lines 300-380)'
     expect(result.success).toBe(true);
     expect(result.bondingEffects).toBeDefined();
     expect(result.consecutiveDaysUpdate).toBeDefined();
-    expect(result.immunityCheck).toBeDefined();
+    // Owner ruling 2026-10-23 (Equoria-0gl9o): no burnout, so no 'burnout immunity'
+    // label (old contract: immunityCheck + newBurnoutStatus were returned).
+    expect(result).not.toHaveProperty('immunityCheck');
+    expect(result.horse).not.toHaveProperty('newBurnoutStatus');
     expect(result.horse).toBeDefined();
     expect(result.horse.id).toBe(horse.id);
   });
@@ -577,8 +540,9 @@ describe('processGroomingSession() — happy path, groomId provided (line 337 + 
 
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
 // Exact-value bond mechanics, eligible-task recognition, age-restriction reasons,
-// and burnout-immunity thresholds not covered by the shape-only tests above.
-describe('groomBondingSystem — exact bonding/burnout values (merged from legacy backend/tests, Equoria-wvuin)', () => {
+// not covered by the shape-only tests above. (The burnout-immunity thresholds
+// went with the label, Equoria-0gl9o.)
+describe('groomBondingSystem — exact bonding values (merged from legacy backend/tests, Equoria-wvuin)', () => {
   describe('bond score mechanics', () => {
     it('starts at BOND_SCORE_START of 0', () => {
       expect(GROOM_CONFIG.BOND_SCORE_START).toBe(0);
@@ -651,24 +615,6 @@ describe('groomBondingSystem — exact bonding/burnout values (merged from legac
       const result = updateConsecutiveDays(5, false, 1);
       expect(result.newConsecutiveDays).toBe(5);
       expect(result.wasReset).toBe(false);
-    });
-  });
-
-  describe('burnout immunity — exact thresholds', () => {
-    it('grants immunity at exactly 7 consecutive days', () => {
-      const result = checkBurnoutImmunity(7);
-      expect(result.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.IMMUNE);
-      expect(result.immunityGranted).toBe(true);
-    });
-
-    it('stays NONE at 6 consecutive days', () => {
-      const result = checkBurnoutImmunity(6);
-      expect(result.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.NONE);
-      expect(result.immunityGranted).toBe(false);
-    });
-
-    it('is NONE when consecutive days reset to 0', () => {
-      expect(checkBurnoutImmunity(0).status).toBe(GROOM_CONFIG.BURNOUT_STATUS.NONE);
     });
   });
 });
