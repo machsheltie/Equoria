@@ -111,8 +111,8 @@ describe('epigenetic-insights reads one horse and one interaction history (Equor
     cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
     for (const [interactionType, quality] of [
       ['brushing', 'excellent'],
-      ['trust_building', 'good'],
-      ['desensitization', 'good'],
+      ['bonding', 'good'],
+      ['desensitizing', 'good'],
     ]) {
       await prisma.groomInteraction.create({
         data: { interactionType, duration: 20, quality, foalId: horse.id, groomId: groom.id },

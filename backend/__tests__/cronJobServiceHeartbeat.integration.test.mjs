@@ -15,10 +15,10 @@ import cron from 'node-cron';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { initializeCronJobs, stopCronJobs } from '../services/cronJobService.mjs';
 import cronJobService from '../services/cronJobs.mjs';
-import CRON_JOB_SERVICE_REGISTRY from '../services/cron-job-service-jobs/index.mjs';
+import serviceRegistry from '../services/cron-job-service-jobs/index.mjs';
 import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
 
-const REGISTRY_NAMES = CRON_JOB_SERVICE_REGISTRY.map(job => job.jobName);
+const registryNames = serviceRegistry.map(job => job.jobName);
 
 describe('cronJobService registry heartbeat coverage (Equoria-cmw85.9)', () => {
   let cronSnapshot;
@@ -34,7 +34,7 @@ describe('cronJobService registry heartbeat coverage (Equoria-cmw85.9)', () => {
     stopCronJobs();
     // Only the rows this suite's own scheduled run wrote (name + start window).
     await prisma.cronRunLog.deleteMany({
-      where: { jobName: { in: REGISTRY_NAMES }, startedAt: { gte: suiteStart } },
+      where: { jobName: { in: registryNames }, startedAt: { gte: suiteStart } },
     });
     restoreCronSingleton(cronSnapshot);
   });
@@ -44,7 +44,7 @@ describe('cronJobService registry heartbeat coverage (Equoria-cmw85.9)', () => {
   });
 
   it('every registry descriptor declares a staleness budget', () => {
-    for (const job of CRON_JOB_SERVICE_REGISTRY) {
+    for (const job of serviceRegistry) {
       expect({ jobName: job.jobName, ok: Number.isFinite(job.staleAfterMs) && job.staleAfterMs > 0 }).toEqual({
         jobName: job.jobName,
         ok: true,
@@ -55,17 +55,15 @@ describe('cronJobService registry heartbeat coverage (Equoria-cmw85.9)', () => {
   it('cron health lists all five registry jobs once the service is initialised', () => {
     initializeCronJobs();
     const health = cronJobService.getHealth();
-    for (const jobName of REGISTRY_NAMES) {
+    for (const jobName of registryNames) {
       expect(health.jobs).toHaveProperty(jobName);
-      expect(health.jobs[jobName].stalenessMs).toBe(
-        CRON_JOB_SERVICE_REGISTRY.find(job => job.jobName === jobName).staleAfterMs,
-      );
+      expect(health.jobs[jobName].stalenessMs).toBe(serviceRegistry.find(job => job.jobName === jobName).staleAfterMs);
     }
   });
 
   it('a scheduled registry run records a heartbeat and a CronRunLog row', async () => {
     initializeCronJobs();
-    const tokenCleanup = CRON_JOB_SERVICE_REGISTRY.find(job => job.jobName === 'tokenCleanup');
+    const tokenCleanup = serviceRegistry.find(job => job.jobName === 'tokenCleanup');
     const task = [...cron.getTasks().values()].find(t => t.getPattern() === tokenCleanup.schedule);
     expect(task).toBeDefined();
 

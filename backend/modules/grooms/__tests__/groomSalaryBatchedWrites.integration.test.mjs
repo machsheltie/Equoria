@@ -44,12 +44,13 @@ const { createQueryEventRecorder } = await import('../../../__tests__/helpers/qu
 const recorder = createQueryEventRecorder(observedClient);
 
 const { processWeeklySalaries } = await import('../services/groomSalaryService.mjs');
-const { SYSTEM_ACCOUNT_BURN } = await import('../../economy/index.mjs');
+// Name of the burn system account (the economy module's SYSTEM_ACCOUNT_BURN value).
+const burnAccount = 'burn';
 const { fixtureColor } = await import('../../../tests/helpers/fixtureColor.mjs');
 
 const PREFIX = `TestFixture-cmw8537-${randomBytes(3).toString('hex')}`;
-const STAFF_SIZE = 6;
-const FEE_ONE_HORSE = 70; // one groom on one horse (Equoria-95yrv)
+const staffSize = 6;
+const feeOneHorse = 70; // one groom on one horse (Equoria-95yrv)
 
 let user;
 const groomIds = [];
@@ -63,8 +64,8 @@ const selects = (statements, table) =>
 beforeAll(async () => {
   expect(prisma).toBe(appClientHandle);
   await prisma.systemAccount.upsert({
-    where: { name: SYSTEM_ACCOUNT_BURN },
-    create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
+    where: { name: burnAccount },
+    create: { name: burnAccount, balance: 0 },
     update: {},
   });
   user = await prisma.user.create({
@@ -77,7 +78,7 @@ beforeAll(async () => {
       money: 10000,
     },
   });
-  for (let i = 0; i < STAFF_SIZE; i++) {
+  for (let i = 0; i < staffSize; i++) {
     const groom = await prisma.groom.create({
       data: {
         name: `${PREFIX}-Groom-${i}`,
@@ -122,9 +123,9 @@ describe('weekly fee pass batches a player’s writes (Equoria-cmw85.37)', () =>
     const { result, statements } = await recorder.measure(() => processWeeklySalaries(now, { userId: user.id }));
 
     expect(result.successful).toBe(1);
-    expect(result.totalAmount).toBe(STAFF_SIZE * FEE_ONE_HORSE);
+    expect(result.totalAmount).toBe(staffSize * feeOneHorse);
 
-    // The batching claim: statement counts do not scale with STAFF_SIZE.
+    // The batching claim: statement counts do not scale with staffSize.
     expect(inserts(statements, 'groom_salary_payments')).toHaveLength(1);
     expect(selects(statements, 'groom_engagements')).toHaveLength(1);
     expect(inserts(statements, 'groom_engagements')).toHaveLength(1);
@@ -132,21 +133,21 @@ describe('weekly fee pass batches a player’s writes (Equoria-cmw85.37)', () =>
     // Same outcome as the per-row writes: one paid row per groom, each at its fee,
     // every groom with exactly one open engagement, and the wallet debited once.
     const rows = await prisma.groomSalaryPayment.findMany({ where: { userId: user.id } });
-    expect(rows).toHaveLength(STAFF_SIZE);
+    expect(rows).toHaveLength(staffSize);
     expect(new Set(rows.map(row => row.groomId))).toEqual(new Set(groomIds));
     for (const row of rows) {
-      expect(row).toMatchObject({ amount: FEE_ONE_HORSE, status: 'paid', paymentType: 'weeklySalary' });
+      expect(row).toMatchObject({ amount: feeOneHorse, status: 'paid', paymentType: 'weeklySalary' });
     }
     const engagements = await prisma.groomEngagement.findMany({
       where: { groomId: { in: groomIds }, endedAt: null },
     });
-    expect(engagements).toHaveLength(STAFF_SIZE);
+    expect(engagements).toHaveLength(staffSize);
     const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
-    expect(Number(after.money)).toBe(10000 - STAFF_SIZE * FEE_ONE_HORSE);
+    expect(Number(after.money)).toBe(10000 - staffSize * feeOneHorse);
 
     // Re-running in the same pay week pays nobody twice (Equoria-icqqm still holds).
     const rerun = await processWeeklySalaries(now, { userId: user.id });
     expect(rerun.skipped).toBe(1);
-    expect(await prisma.groomSalaryPayment.count({ where: { userId: user.id } })).toBe(STAFF_SIZE);
+    expect(await prisma.groomSalaryPayment.count({ where: { userId: user.id } })).toBe(staffSize);
   }, 60000);
 });
