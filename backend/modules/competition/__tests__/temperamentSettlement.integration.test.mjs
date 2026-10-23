@@ -62,7 +62,11 @@ describe('nightly settlement scores temperament as a percent term (B6)', () => {
           dateOfBirth: new Date('2018-01-01'),
           age: 7,
           userId: owner.id,
-          healthStatus: 'healthy',
+          // Owner ruling 2026-10-23 (decision C, Equoria-k1p62): health is a percent term in
+          // every score; Good health (fed today) is 0%, so this test still isolates its
+          // own factor. Old fixture: healthStatus 'healthy' (no health term then).
+          healthStatus: 'Good',
+          lastFedDate: new Date(),
           temperament,
           ...STATS_100,
         },

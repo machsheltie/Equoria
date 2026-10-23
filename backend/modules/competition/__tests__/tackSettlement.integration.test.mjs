@@ -50,7 +50,8 @@ async function makeHorse(ownerId, base, tack, horseIds) {
       dateOfBirth: new Date('2018-01-01'),
       age: 7,
       userId: ownerId,
-      healthStatus: 'healthy',
+      healthStatus: 'Good', // with fed today: displayed Good, 0%
+      lastFedDate: new Date(),
       temperament: 'Bold', // Dressage: neutral (0%)
       precision: base,
       focus: base,

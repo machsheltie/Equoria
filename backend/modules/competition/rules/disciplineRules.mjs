@@ -15,10 +15,7 @@
  */
 
 import { HORSE_TEMPERAMENT_VALUES } from '../../../constants/schema.mjs';
-import {
-  disciplineAffinityKey,
-  normalizeEpigeneticModifiers,
-} from '../../../utils/epigeneticTraitKeyMap.mjs';
+import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 /** [50% primary, 30% secondary, 20% tertiary] per competition discipline. */
 export const DISCIPLINE_STATS = Object.freeze({
@@ -140,30 +137,21 @@ export function temperamentPercent(discipline, temperament) {
 }
 
 /**
- * Flat score points for a horse whose discipline trait matches the show's
- * discipline: owner rulings 2026-10-19/20 (+5, added to the base before the
- * luck, rider and temperament percentages) and decision D (2026-10-23, epic
- * Equoria-k1p62: flat points, not a percent).
- */
-export const matchingTraitBonus = 5;
-
-/**
- * The matching-trait points for a ridden discipline (Equoria-k1p62.1).
+ * The flat score points a horse's training adds in a ridden discipline show
+ * (owner ruling 2026-10-23, decision B, epic Equoria-k1p62): its trained
+ * value in that discipline, which every week of training there raises by +5
+ * (five weeks of Saddleseat = +25 in a Saddleseat show). It is the score
+ * training writes, Horse.disciplineScores[discipline]; training in another
+ * discipline adds nothing. A missing, non-numeric or negative value is 0.
  *
- * The owner's discipline trait replaces the 23 disciplineAffinity<Discipline>
- * traits, and until it has storage of its own that trait is how a horse carries
- * it. Only a revealed trait (epigeneticModifiers.positive) counts: a hidden
- * trait is inert until revealed (owner ruling 2026-10-19). Legacy snake-case
- * keys are normalized first.
- *
- * @param {unknown} epigeneticModifiers - Horse.epigeneticModifiers (JSONB).
+ * @param {unknown} disciplineScores - Horse.disciplineScores (JSONB).
  * @param {string} discipline - The show's discipline.
- * @returns {number} matchingTraitBonus or 0 (also 0 outside the 24).
+ * @returns {number} The trained value, or 0 (also 0 outside the 24).
  */
-export function matchingTraitPoints(epigeneticModifiers, discipline) {
+export function disciplineTrainingPoints(disciplineScores, discipline) {
   if (!isKnownDiscipline(discipline)) {
     return 0;
   }
-  const { positive } = normalizeEpigeneticModifiers(epigeneticModifiers);
-  return positive.includes(disciplineAffinityKey(discipline)) ? matchingTraitBonus : 0;
+  const value = asFlagObject(disciplineScores)[discipline];
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0;
 }

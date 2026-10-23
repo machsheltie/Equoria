@@ -67,9 +67,10 @@ async function clearStagedOrdering(showId) {
 /**
  * The horse fields the ridden scorer (scoreShowEntries) reads: every stat a
  * discipline can weigh (Equoria-576c0 B4a), the temperament percent term (B6),
- * the epigenetic flags behind the rider flag-compatibility bias
- * (Equoria-grys6), the traits behind the matching-trait points
- * (Equoria-k1p62.1) and the tack behind the saddle/bridle points (k1p62.2).
+ * and, for epic Equoria-k1p62 (owner rulings 2026-10-23), the trained values
+ * behind the training points, the tack behind the saddle/bridle points and the
+ * health fields behind the health percent term. Traits and flags are not read:
+ * they contribute nothing until traits are reworked.
  */
 const scoringHorseSelect = {
   id: true,
@@ -86,9 +87,12 @@ const scoringHorseSelect = {
   obedience: true,
   focus: true,
   temperament: true,
-  epigeneticFlags: true,
-  epigeneticModifiers: true,
+  disciplineScores: true,
   tack: true,
+  age: true,
+  healthStatus: true,
+  lastFedDate: true,
+  lastVettedDate: true,
 };
 
 /**
@@ -99,7 +103,7 @@ const scoringHorseSelect = {
  *
  * @returns {Promise<Array<{horseId: number, userId: string, horseName: string|null, score: number, placement: number, riderId: number|null}>>}
  */
-async function scoreOrdering(show, entries, scoreRng) {
+async function scoreOrdering(show, entries, scoreRng, now) {
   const horseIds = entries.map(e => e.horseId);
   const riderAssignments = horseIds.length
     ? await prisma.riderAssignment.findMany({
@@ -116,6 +120,7 @@ async function scoreOrdering(show, entries, scoreRng) {
     show,
     entries,
     assignmentByHorseId,
+    now,
     ...(scoreRng ? { rng: scoreRng } : {}),
   });
   return rankScoredEntries(scored, scoreRng ?? Math.random).map(
@@ -301,7 +306,7 @@ async function settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGai
  *
  * @returns {Promise<{ entries: Array, stagedOrdering: Array }>}
  */
-async function finalEntriesAndOrdering(show, claimedOrdering, scoreRng) {
+async function finalEntriesAndOrdering(show, claimedOrdering, scoreRng, now) {
   const finalEntries = await prisma.showEntry.findMany({
     where: { showId: show.id },
     select: { horseId: true },
@@ -318,7 +323,7 @@ async function finalEntriesAndOrdering(show, claimedOrdering, scoreRng) {
     where: { showId: show.id },
     include: { horse: { select: scoringHorseSelect } },
   });
-  const stagedOrdering = await scoreOrdering(show, entries, scoreRng);
+  const stagedOrdering = await scoreOrdering(show, entries, scoreRng, now);
   const restaged = await prisma.show.updateMany({
     where: { id: show.id, status: 'executing' },
     data: { stagedOrdering },
@@ -350,7 +355,8 @@ async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
   // (fresh show, or a stranding predating the staging migration) scores
   // fresh; readStagedOrdering carries the JSONB shape guards.
   const claimedOrdering =
-    readStagedOrdering(show, show.entries) ?? (await scoreOrdering(show, show.entries, scoreRng));
+    readStagedOrdering(show, show.entries) ??
+    (await scoreOrdering(show, show.entries, scoreRng, now));
 
   // Equoria-dyj3y: ATOMICALLY claim the show. A conditional updateMany
   // scoped to the still-open status performs read-and-claim in a single
@@ -377,6 +383,7 @@ async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
     show,
     claimedOrdering,
     scoreRng,
+    now,
   );
 
   if (entries.length === 0) {

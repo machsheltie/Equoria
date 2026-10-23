@@ -24,6 +24,15 @@
  * edit, the flagged and no-flag horses produce IDENTICAL scores here (flags
  * never touch this engine), so the exact-score + strict-inequality assertions
  * fail. After the edit they diverge by the predicted amount.
+ *
+ * CONTRACT CHANGED BY THE OWNER, 2026-10-23 (epic Equoria-k1p62): traits
+ * contribute NOTHING to a show score until traits are reworked, and flags are
+ * traits (owner ruling 2026-10-19). Old contract (grys6): positive flags raised
+ * a ridden horse's rider bonus x1.08, so the flagged rider horse scored 116 to
+ * the no-flag horse's 115. New contract: both score 115. The rest of the setup
+ * is unchanged, so this suite now proves the flags have no effect, with or
+ * without a rider. Health is a percent term in every score since the same day
+ * (decision C); the fixture is Good health, 0% (old fixture: 'healthy').
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
@@ -64,7 +73,8 @@ const STAT_BASE = {
   sex: 'Mare',
   dateOfBirth: new Date('2018-01-01'),
   age: 7,
-  healthStatus: 'healthy',
+  healthStatus: 'Good', // with fed today: displayed Good, 0% (decision C)
+  lastFedDate: new Date(),
   speed: 100,
   stamina: 100,
   agility: 100,
@@ -225,8 +235,8 @@ async function runScopedShow(horseIds) {
   return byHorse;
 }
 
-describe('executeClosedShows — rider flag-compatibility (Equoria-grys6)', () => {
-  it('EXACT sentinel: positive-flag rider horse scores the flag-attributable amount above the identical no-flag rider horse', async () => {
+describe('executeClosedShows — horse flags do not move the rider percents (owner ruling 2026-10-23)', () => {
+  it('EXACT sentinel: a positive-flag rider horse scores exactly what the identical no-flag rider horse scores', async () => {
     const scores = await runScopedShow([horseFlaggedWithRider.id, horseNoFlagWithRider.id]);
 
     const flaggedScore = scores.get(horseFlaggedWithRider.id);
@@ -234,17 +244,13 @@ describe('executeClosedShows — rider flag-compatibility (Equoria-grys6)', () =
     expect(flaggedScore).toBeDefined();
     expect(noFlagScore).toBeDefined();
 
-    // C1/C2 (B5): base = 100, luck = +6%, rider bonus = 0.090, penalty = 0.
-    // No-flag: 100 * (1 + 0.06 + 0.090) = 115.0 -> 115
-    // Flagged (+4 net -> factor 1.08): bonus 0.090 * 1.08 = 0.0972 ->
-    //   100 * (1 + 0.06 + 0.0972) = 115.72 -> 116
-    // (Old contract: luck 0, then x (1 + bonus): 109 and 110.)
+    // C1/C2 (B5): base = 100, luck = +6%, rider bonus = 0.090, penalty = 0,
+    // Good health 0%: 100 * (1 + 0.06 + 0.090) = 115.0 -> 115 for BOTH horses.
+    // (grys6 contract, retired 2026-10-23: the flagged horse's bonus was
+    // 0.090 * 1.08 = 0.0972 -> 115.72 -> 116.)
     expect(noFlagScore).toBe(115);
-    expect(flaggedScore).toBe(116);
-
-    // And the strict relationship — the flagged horse is strictly higher, and
-    // the gap is the rider-compat term, not any base-path effect.
-    expect(flaggedScore).toBeGreaterThan(noFlagScore);
+    expect(flaggedScore).toBe(115);
+    expect(flaggedScore).toBe(noFlagScore);
   }, 60000);
 
   it('REGRESSION-SAFE: no-rider horses are UNAFFECTED by flags (flagged == no-flag)', async () => {
@@ -255,9 +261,9 @@ describe('executeClosedShows — rider flag-compatibility (Equoria-grys6)', () =
     expect(flaggedNoRider).toBeDefined();
     expect(noFlagNoRider).toBeDefined();
 
-    // With NO rider, computeRiderModifiers returns 0/0; the compat guard only
-    // runs when assignment?.rider is present, so flags never touch the score.
-    // base 100, luck +6% (C1, B5), no rider -> 106 exactly for BOTH (old: luck 0 -> 100).
+    // With NO rider, computeRiderModifiers returns 0/0, and flags never touch
+    // the score. base 100, luck +6% (C1, B5), Good health 0%, no rider -> 106
+    // exactly for BOTH (old: luck 0 -> 100).
     expect(noFlagNoRider).toBe(106);
     expect(flaggedNoRider).toBe(106);
     expect(flaggedNoRider).toBe(noFlagNoRider);

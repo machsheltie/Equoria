@@ -629,9 +629,16 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     const expectedMoney = initialMoney - testShow.entryFee + Number(competitionResult.prizeWon);
     expect(userForBusinessRules.money).toBe(expectedMoney);
 
-    // Competition results realistic
-    expect(Number(competitionResult.score)).toBeGreaterThan(0);
-    expect(Number(competitionResult.score)).toBeLessThanOrEqual(100);
+    // Competition results realistic.
+    // Owner rulings 2026-10-23 (Equoria-k1p62): the score adds the horse's trained
+    // value in the show's discipline as flat points (decision B) and a health
+    // percent (decision C); stats are never capped, so scores are not bounded at
+    // 100 (old assertion: score <= 100). Racing base 0.5*80 + 0.3*78 + 0.2*0 =
+    // 63.4, + Racing training 75 = 138.4; Excellent health +5%, no temperament,
+    // a developing rider with no affinity 0, luck +1..+10% (unpinned here):
+    // 138.4 x 1.06 = 146.7 -> 147 up to 138.4 x 1.15 = 159.16 -> 159.
+    expect(Number(competitionResult.score)).toBeGreaterThanOrEqual(147);
+    expect(Number(competitionResult.score)).toBeLessThanOrEqual(159);
     expect(Number(competitionResult.placement)).toBeGreaterThan(0);
 
     // Data integrity maintained

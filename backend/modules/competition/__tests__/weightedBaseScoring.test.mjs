@@ -35,9 +35,14 @@ const STATS = [
   'obedience',
   'focus',
 ];
+// Owner ruling 2026-10-23 (decision C, Equoria-k1p62): health is a percent term in
+// every score. Good health (fed today, Good vet finding) is 0%, so this test still
+// isolates its own factor. Old fixture: no health fields (then: no health term).
 const horse = (overrides = {}) => ({
   name: 'TestFixture-b4a',
   epigeneticFlags: null,
+  healthStatus: 'Good',
+  lastFedDate: new Date(),
   ...Object.fromEntries(STATS.map(s => [s, 50])),
   ...overrides,
 });

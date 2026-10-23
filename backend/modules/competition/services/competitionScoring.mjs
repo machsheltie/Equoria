@@ -38,8 +38,11 @@
  *
  * Current state: simulateCompetition.mjs was deleted as dead code on
  * 2026-10-21, so the nightly scorer below is the only engine. Epic
- * Equoria-k1p62 brings the owner's locked factors into it: the matching
- * discipline trait (k1p62.1) and saddle/bridle tack (k1p62.2) as flat points.
+ * Equoria-k1p62 brings the owner's locked factors into it (rulings
+ * 2026-10-23): the trained value and saddle/bridle tack as flat points, health
+ * as a percent term, and no trait effect at all until traits are reworked -
+ * so the scorer no longer calls applyRiderCompatibility below (horse flags
+ * are traits).
  */
 
 import { BONUS_CAP, PENALTY_CAP, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
@@ -47,10 +50,11 @@ import { calculateRiderFlagCompatibility } from '../../../utils/riderFlagCompati
 import logger from '../../../utils/logger.mjs';
 import {
   DISCIPLINE_STATS,
+  disciplineTrainingPoints,
   isKnownDiscipline,
-  matchingTraitPoints,
   temperamentPercent,
 } from '../rules/disciplineRules.mjs';
+import { healthScorePercent } from '../rules/healthScoring.mjs';
 import { tackPoints } from '../rules/tackScoring.mjs';
 
 /**
@@ -98,6 +102,10 @@ export function applyPercentTerms(base, percentTerms) {
  * Apply behavioral-flag rider compatibility (Equoria-yzqhj.6, grys6) to the
  * rider's effective bonus/penalty percentages.
  *
+ * NOT APPLIED to show scores since the owner ruling of 2026-10-23 (Equoria-k1p62):
+ * traits, flags included, contribute nothing until traits are reworked. Kept
+ * for that rework; scoreShowEntries does not call it.
+ *
  * Pure function. Returns `{ bonusPercent, penaltyPercent }` clamped to the
  * canonical `BONUS_CAP` / `PENALTY_CAP` so the output is always a legal
  * input to `applyRiderModifiers`. When the input flags net to zero valence
@@ -141,26 +149,33 @@ export function applyRiderCompatibility({
  * executeClosedShows, Equoria-c7mx0): the discipline's 50/30/20 base
  * (Equoria-576c0 B4a; was a flat 5-stat average) plus the flat points, times
  * (1 + the summed modifier percents), rounded once, x.5 up (B5, owner rulings
- * C1/C2). The flat points are the matching discipline trait (+5,
- * Equoria-k1p62.1) and the saddle and bridle (discipline tack +5 each in its
- * own discipline, All Purpose +2 each, Equoria-k1p62.2). The percent terms
- * are luck (+1..+10%), the rider's bonus
- * minus penalty (with flag compatibility) and temperament (+5 / 0 / -5, B6).
- * Before B5, luck was ±9 points added to the base and the rider was a second
- * multiplication.
+ * C1/C2). Epic Equoria-k1p62, owner rulings 2026-10-23: the flat points are
+ * the horse's trained value in the discipline (decision B) and the saddle and
+ * bridle (discipline tack +5 each in its own discipline, All Purpose +2 each,
+ * decision A). The percent terms are luck (+1..+10%), the rider's bonus minus
+ * penalty, temperament (+5 / 0 / -5, B6) and health (+5 / +3 / 0 / -3 / -5,
+ * decision C). Traits add nothing until they are reworked. Before B5, luck was
+ * ±9 points added to the base and the rider was a second multiplication.
  *
  * @param {Object} input
  * @param {Object} input.show    - Show row (discipline read).
  * @param {Array}  input.entries - ShowEntry rows incl. `horse` stats,
- *   epigeneticModifiers and tack.
+ *   temperament, disciplineScores, tack and the health fields.
  * @param {Map}    input.assignmentByHorseId - horseId -> active RiderAssignment.
  * @param {Function} [input.rng] - Luck RNG (default Math.random), called once
  *   per entry; tests pass a fixed value (0 gives +1%, 0.5 gives +6%).
+ * @param {Date} [input.now] - Settlement time, for the horse's health.
  * @returns {Array<{entry: Object, score: number, assignment: Object|undefined,
  *   breakdown: Object}>} `breakdown` holds every input of the score (base, flat
  *   points, each percent term) so a result can be audited (Equoria-4q02c).
  */
-export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Math.random }) {
+export function scoreShowEntries({
+  show,
+  entries,
+  assignmentByHorseId,
+  rng = Math.random,
+  now = new Date(),
+}) {
   // A show row whose discipline is outside the 24 (a legacy name) keeps the
   // pre-B4a flat 5-stat average, so the show still settles instead of failing
   // the nightly run.
@@ -190,30 +205,14 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
     // computeRiderModifiers returns 0/0 for missing/null/malformed input —
     // safe to call unconditionally.
     const assignment = assignmentByHorseId.get(entry.horseId);
-    let { bonusPercent, penaltyPercent } = computeRiderModifiers({
+    const { bonusPercent, penaltyPercent } = computeRiderModifiers({
       rider: assignment?.rider ?? null,
       discipline: show.discipline,
     });
-
-    // Equoria-grys6 / Equoria-pqdte: behavioral-flag rider compatibility
-    // (adjacent to simulateCompetition.mjs yzqhj.6). ONLY when a rider is
-    // present, the horse's behavioral epigenetic flags modulate HOW WELL
-    // that rider performs with THIS horse — see applyRiderCompatibility
-    // above for the cap-clamped shared implementation.
-    if (assignment?.rider) {
-      const compatResult = applyRiderCompatibility({
-        bonusPercent,
-        penaltyPercent,
-        epigeneticFlags: h.epigeneticFlags,
-      });
-      if (compatResult.compatFactor !== undefined) {
-        bonusPercent = compatResult.bonusPercent;
-        penaltyPercent = compatResult.penaltyPercent;
-        logger.info(
-          `[competitionScoring] Horse ${h.name}: Rider flag-compatibility factor ${compatResult.compatFactor.toFixed(3)} applied (bonus -> ${(bonusPercent * 100).toFixed(2)}%, penalty -> ${(penaltyPercent * 100).toFixed(2)}%)`,
-        );
-      }
-    }
+    // Owner ruling 2026-10-23 (Equoria-k1p62): traits contribute nothing to a
+    // show score until they are reworked, and flags are traits (2026-10-19),
+    // so the horse's flags no longer adjust the rider percents
+    // (applyRiderCompatibility, Equoria-grys6, is not applied).
     // Temperament (R1, B6): +5 / 0 / -5 from the owner's matrix. A null or
     // unknown-name temperament contributes 0, as every horse did before B6,
     // and is logged once per show (O5 interim, approved 2026-10-17). A legacy discipline has
@@ -228,28 +227,32 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
       }
     }
 
-    // Flat points join the base before the percentages (owner ruling
-    // 2026-10-20, decision D 2026-10-23). A legacy discipline keeps its
-    // pre-B4a scoring, so it gets none.
-    const traitPoints = weighted ? matchingTraitPoints(h.epigeneticModifiers, show.discipline) : 0;
+    // Flat points join the base before the percentages: the trained value
+    // (decision B) and the saddle and bridle (decisions A and D). Health is a
+    // percent term (decision C). A legacy discipline keeps its pre-B4a
+    // scoring, so it gets none of these.
+    const trainingPoints = weighted
+      ? disciplineTrainingPoints(h.disciplineScores, show.discipline)
+      : 0;
     const tackBonus = weighted ? tackPoints(h.tack, show.discipline) : 0;
+    const healthPercent = weighted ? healthScorePercent(h, now) : 0;
 
-    // C2: each modifier as a percent, summed, applied once. Health stays out
-    // until the owner settles decision C (Equoria-k1p62).
+    // C2: each modifier as a percent, summed, applied once.
     const riderPercent = (bonusPercent - penaltyPercent) * 100;
-    const percentTerms = [luckPercent, riderPercent, temperamentTerm];
+    const percentTerms = [luckPercent, riderPercent, temperamentTerm, healthPercent];
     const breakdown = {
       base,
-      traitPoints,
+      trainingPoints,
       tackPoints: tackBonus,
       luckPercent,
       riderPercent,
       temperamentPercent: temperamentTerm,
+      healthPercent,
     };
 
     return {
       entry,
-      score: applyPercentTerms(base + traitPoints + tackBonus, percentTerms),
+      score: applyPercentTerms(base + trainingPoints + tackBonus, percentTerms),
       assignment,
       breakdown,
     };

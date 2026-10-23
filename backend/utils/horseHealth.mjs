@@ -164,6 +164,57 @@ export function getDisplayedHealth(horse, now = new Date()) {
 }
 
 /**
+ * The owner's five health states, best first (owner rulings 2026-10-23,
+ * epic Equoria-k1p62): Excellent, Very Good, Good, Fair, Bad.
+ */
+const healthGradeOrder = Object.freeze(['excellent', 'veryGood', 'good', 'fair', 'bad']);
+
+/** Any health word, lower-cased with spaces removed, to its state. */
+const healthGradeByWord = Object.freeze({
+  excellent: 'excellent',
+  verygood: 'veryGood',
+  good: 'good',
+  fair: 'fair',
+  // Owner ruling 2026-10-23: the care vocabulary's Poor, and Critical, are Bad.
+  poor: 'bad',
+  bad: 'bad',
+  critical: 'bad',
+});
+
+/**
+ * THE health mapping (owner rulings 2026-10-23): any health word - the care
+ * bands, a vet finding, the owner's own vocabulary - to one of the five
+ * states. Poor, Bad and Critical are all Bad. A word it does not know (a free
+ * vet finding such as 'Lameness') is Bad, as worseOf already reads it.
+ *
+ * @param {unknown} word
+ * @returns {'excellent'|'veryGood'|'good'|'fair'|'bad'}
+ */
+export function healthGradeOf(word) {
+  const key = typeof word === 'string' ? word.replace(/\s+/g, '').toLowerCase() : '';
+  return Object.hasOwn(healthGradeByWord, key) ? healthGradeByWord[key] : 'bad';
+}
+
+/**
+ * A horse's health state: the worse of its feed and vet health, each graded
+ * by healthGradeOf. For the five care bands this is exactly the graded
+ * displayed health; it also keeps a 'Very Good' vet finding, which the care
+ * bands do not know. Retirement is not a health state, so a retired horse is
+ * graded on the care underneath it.
+ *
+ * @param {{ age?: number|null, lastFedDate?: Date|string|null,
+ *   lastVettedDate?: Date|string|null, healthStatus?: string|null }} horse
+ * @param {Date} [now=new Date()]
+ * @returns {'excellent'|'veryGood'|'good'|'fair'|'bad'}
+ */
+export function horseHealthGrade(horse, now = new Date()) {
+  const care = { ...horse, age: null };
+  const feed = healthGradeOrder.indexOf(healthGradeOf(getFeedHealth(care, now)));
+  const vet = healthGradeOrder.indexOf(healthGradeOf(getVetHealth(care, now)));
+  return healthGradeOrder[Math.max(feed, vet)];
+}
+
+/**
  * Decorate a horse plain-object with the three derived health bands. Used
  * by horse-read serializers (list, overview, etc.) so the frontend doesn't
  * have to recompute. Pure: does not mutate the input.

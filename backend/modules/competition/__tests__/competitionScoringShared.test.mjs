@@ -101,16 +101,28 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
   it('SENTINEL: the show executor consumes the shared scoring service', () => {
     // The executor's entire cron-path scorer was extracted into the shared
     // service (Equoria-c7mx0): executeClosedShows (showExecutionService.mjs since
-    // Equoria-q4uem.4) imports scoreShowEntries from competitionScoring.mjs, and
-    // scoreShowEntries itself calls applyRiderCompatibility — asserted below so
-    // the chain cannot silently drop the flag-compat step.
+    // Equoria-q4uem.4) imports scoreShowEntries from competitionScoring.mjs.
+    //
+    // CONTRACT CHANGED BY THE OWNER, 2026-10-23 (epic Equoria-k1p62): traits,
+    // flags included, contribute nothing to a show score until traits are
+    // reworked. Old contract: scoreShowEntries called applyRiderCompatibility so
+    // the horse's flags scaled the rider percents. New contract: it must not call
+    // it. The call is looked for in the function's code, comments stripped.
     const showSrc = readFileSync(resolve(ROOT, 'modules/competition/shows/showExecutionService.mjs'), 'utf8');
     expect(showSrc).toMatch(
       /scoreShowEntries.*from '..\/services\/competitionScoring.mjs'|from '..\/services\/competitionScoring.mjs'/,
     );
     expect(showSrc).toMatch(/scoreShowEntries/);
     const scoringSrc = readFileSync(resolve(ROOT, 'modules/competition/services/competitionScoring.mjs'), 'utf8');
-    expect(scoringSrc).toMatch(/scoreShowEntries[\s\S]*applyRiderCompatibility/);
+    const start = scoringSrc.indexOf('export function scoreShowEntries(');
+    const end = scoringSrc.indexOf('\n}\n', start);
+    expect(start).toBeGreaterThan(-1);
+    const scorerCode = scoringSrc
+      .slice(start, end)
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '');
+    expect(scorerCode).toMatch(/computeRiderModifiers\(/);
+    expect(scorerCode).not.toMatch(/applyRiderCompatibility\(/);
   });
 
   it('SENTINEL: applyRiderModifiers still accepts inputs up to the (post-helper) caps', () => {

@@ -39,10 +39,15 @@ const RIDER_10 = { skillLevel: 'experienced', level: 10, prestige: 100, personal
 // experienced +3% bonus, retired -8% penalty = -5%.
 const RIDER_RETIRED = { skillLevel: 'experienced', level: 1, prestige: 0, personality: 'gentle', retired: true };
 
+// Owner ruling 2026-10-23 (decision C, Equoria-k1p62): health is a percent term in
+// every score. Good health (fed today, Good vet finding) is 0%, so this test still
+// isolates its own factor. Old fixture: no health fields (then: no health term).
+const goodHealth = { healthStatus: 'Good', lastFedDate: new Date() };
+
 function score(base, { rng = () => 0, rider = null, discipline = 'Dressage' } = {}) {
   const [{ score: s }] = scoreShowEntries({
     show: { id: 0, discipline },
-    entries: [{ horseId: 1, horse: { name: 'TestFixture-b5', epigeneticFlags: null, ...flat(base) } }],
+    entries: [{ horseId: 1, horse: { name: 'TestFixture-b5', epigeneticFlags: null, ...goodHealth, ...flat(base) } }],
     assignmentByHorseId: new Map(rider ? [[1, { rider }]] : []),
     rng,
   });

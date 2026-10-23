@@ -37,7 +37,18 @@ function score(base, temperament, { discipline = 'Dressage', rider = null } = {}
     entries: [
       {
         horseId: 1,
-        horse: { id: 1, name: 'TestFixture-b6', epigeneticFlags: null, temperament, ...flat(base) },
+        horse: {
+          id: 1,
+          name: 'TestFixture-b6',
+          epigeneticFlags: null,
+          temperament,
+          // Owner ruling 2026-10-23 (decision C, Equoria-k1p62): health is a percent
+          // term in every score; Good health is 0%, so this test still isolates the
+          // temperament term. Old fixture: no health fields (then: no health term).
+          healthStatus: 'Good',
+          lastFedDate: new Date(),
+          ...flat(base),
+        },
       },
     ],
     assignmentByHorseId: new Map(rider ? [[1, { rider }]] : []),
