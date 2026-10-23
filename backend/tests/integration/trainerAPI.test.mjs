@@ -214,7 +214,11 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       expect(res.body.success).toBe(false);
     });
 
-    it('should hire a trainer and deduct correct cost (4 × sessionRate)', async () => {
+    // Equoria-3kegj. OLD CONTRACT: the hire deducted 4 × sessionRate ("one
+    // month upfront") and refused a short balance. NEW RULING (owner,
+    // 2026-10-22): hiring a trainer is free; its sessionRate is the fee
+    // charged each time a horse trains with it.
+    it('should hire a trainer for free (Equoria-3kegj)', async () => {
       const userBefore = await prisma.user.findUnique({ where: { id: testUser.id } });
 
       const res = await request(app)
@@ -228,20 +232,16 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toHaveProperty('trainer');
-      expect(res.body.data).toHaveProperty('cost');
-      expect(res.body.data).toHaveProperty('remainingMoney');
-
-      // Cost = sessionRate × 4 (one month upfront)
-      const expectedCost = marketplaceTrainer.sessionRate * 4;
-      expect(res.body.data.cost).toBe(expectedCost);
-      expect(res.body.data.remainingMoney).toBe(userBefore.money - expectedCost);
+      expect(res.body.data.cost).toBe(0);
+      const userAfter = await prisma.user.findUnique({ where: { id: testUser.id } });
+      expect(userAfter.money).toBe(userBefore.money);
     });
 
-    it('should reject hiring with insufficient funds', async () => {
-      // Equoria-oey96.8 placed a roster-cap fast-path BEFORE the funds guard,
-      // and the hire test above fills the level-1 cap of 1 — park the active
-      // roster so this request actually reaches the funds check, then restore
-      // exactly the trainers parked here (not any previously-retired ones).
+    it('should hire with a 1-coin balance: a short balance never refuses a free hire', async () => {
+      // Equoria-oey96.8 placed a roster-cap fast-path first, and the hire test
+      // above fills the level-1 cap of 1 — park the active roster so this
+      // request is judged on money alone, then restore exactly the trainers
+      // parked here (not any previously-retired ones).
       const parked = await prisma.trainer.findMany({
         where: { userId: testUser.id, retired: false },
         select: { id: true },
@@ -266,10 +266,13 @@ describe('🎓 INTEGRATION: Trainer API', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: trainerToHire.marketplaceId });
 
-      expect(res.status).toBe(400);
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toContain('Insufficient funds');
+      expect(res.status).toBe(201);
+      expect(res.body.data.cost).toBe(0);
+      const userAfter = await prisma.user.findUnique({ where: { id: testUser.id } });
+      expect(userAfter.money).toBe(1);
 
+      // Remove the trainer hired here so the parked roster comes back as it was.
+      await prisma.trainer.delete({ where: { id: res.body.data.trainer.id } });
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
       await prisma.trainer.updateMany({
         where: { id: { in: parked.map(t => t.id) } },

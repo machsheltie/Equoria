@@ -12,10 +12,42 @@
  * in-database increment on the committed row value. The caller computes all
  * inputs (modifiers, XP amount) before calling. Training never writes a horse
  * stat (owner rulings 2026-10-19 and 2026-10-21).
+ *
+ * Trainer fee (owner ruling 2026-10-22, Equoria-3kegj): when the horse trains
+ * with an assigned trainer, the owner pays that trainer's advertised
+ * per-training fee (Trainer.sessionRate) once, inside this transaction. The
+ * debit is taken before the cooldown claim, so a second click or a retry that
+ * loses the claim rolls its debit back: one charge, one training per week.
  */
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { addXpToUserCore } from '../../users/index.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import {
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+  recordTransactionTx,
+  SYSTEM_ACCOUNT_BURN,
+} from '../../economy/index.mjs';
+
+/**
+ * The per-training fee for a session with `trainer` (the horse's active
+ * assigned trainer, or null): its advertised Trainer.sessionRate. No trainer,
+ * no fee. Retirement ends a trainer's assignments, so a retired trainer here is
+ * a defensive dead-end and is never paid.
+ *
+ * @param {object|null} trainer
+ * @returns {{trainerId:number, trainerName:string, amount:number}|null}
+ */
+export function trainingFeeFor(trainer) {
+  if (!trainer || trainer.retired === true || !(Number(trainer.sessionRate) > 0)) {
+    return null;
+  }
+  return {
+    trainerId: trainer.id,
+    trainerName: `${trainer.firstName} ${trainer.lastName}`,
+    amount: Number(trainer.sessionRate),
+  };
+}
 
 // Thrown inside the transaction when the atomic cooldown claim loses the race,
 // so every write already made in it rolls back; caught by identity below.
@@ -31,8 +63,13 @@ const COOLDOWN_CLAIM_LOST = Symbol('trainingCooldownClaimLost');
  * @param {Date} p.cooldownNow - claim succeeds if trainingCooldown is null or <= this
  * @param {Date} p.nextEligible - the new trainingCooldown value
  * @param {number} p.disciplineScoreIncrease
+ * @param {{trainerId:number, trainerName:string, amount:number}|null} [p.trainerFee] -
+ *   the assigned trainer's advertised per-training fee, charged to ownerId
+ *   (null or a non-positive amount: nothing is charged)
  * @returns {Promise<{trainingLog:object, updatedHorse:object, xpCore:object|null}|null>}
- *   null when the cooldown claim lost (nothing was written).
+ *   null when the cooldown claim lost (nothing was written);
+ *   { feeUnpaid: true } when the owner cannot pay the trainer fee (nothing was
+ *   written).
  */
 export async function commitTrainingSession({
   horseId,
@@ -43,6 +80,7 @@ export async function commitTrainingSession({
   cooldownNow,
   nextEligible,
   disciplineScoreIncrease,
+  trainerFee = null,
 }) {
   try {
     return await withRetryableTxMapping(
@@ -59,6 +97,29 @@ export async function commitTrainingSession({
             xpAmount,
             `Trained horse ${horseName} in ${discipline}`,
           );
+        }
+
+        // Equoria-3kegj: the trainer's per-training fee, on the User row this
+        // transaction already holds (lock order User -> Horse -> staff). An
+        // owner who cannot pay rolls everything back ({ feeUnpaid: true }).
+        if (ownerId && trainerFee && trainerFee.amount > 0) {
+          const feeMetadata = { trainerId: trainerFee.trainerId, horseId, discipline };
+          await debitMoneyOrThrow(tx, {
+            userId: ownerId,
+            amount: trainerFee.amount,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'trainingFeeBurn',
+            description: `Training fee — ${trainerFee.trainerName}`,
+            metadata: feeMetadata,
+          });
+          await recordTransactionTx(tx, {
+            userId: ownerId,
+            type: 'debit',
+            amount: trainerFee.amount,
+            category: 'trainingFee',
+            description: `${trainerFee.trainerName} trained ${horseName} in ${discipline}`,
+            metadata: feeMetadata,
+          });
         }
 
         // Equoria-0ihyi: atomic cooldown claim. Only the first racer flips
@@ -117,6 +178,9 @@ export async function commitTrainingSession({
   } catch (txError) {
     if (txError === COOLDOWN_CLAIM_LOST) {
       return null;
+    }
+    if (txError instanceof InsufficientFundsError && trainerFee) {
+      return { feeUnpaid: true };
     }
     throw txError;
   }

@@ -15,7 +15,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import {
-  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
@@ -210,6 +209,12 @@ export async function refreshTrainerMarketplace(req, res) {
 
 /**
  * POST /api/trainers/marketplace/hire
+ *
+ * Equoria-3kegj. OLD CONTRACT: hiring charged sessionRate * 4 ("one month of
+ * sessions upfront"). NEW RULING (owner, 2026-10-22): hiring a trainer is
+ * FREE. The only trainer charge is the trainer's advertised per-training fee
+ * (sessionRate), taken once each time the player trains a horse with this
+ * trainer (training/services/trainingSessionTx.mjs).
  */
 export async function hireTrainerFromMarketplace(req, res) {
   try {
@@ -242,11 +247,10 @@ export async function hireTrainerFromMarketplace(req, res) {
     }
 
     const trainerData = offers[trainerIndex];
-    const hiringCost = trainerData.sessionRate * 4; // One month of sessions upfront
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { money: true, level: true },
+      select: { level: true },
     });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found', data: null });
@@ -268,17 +272,14 @@ export async function hireTrainerFromMarketplace(req, res) {
       });
     }
 
-    if (user.money < hiringCost) {
-      return res.status(400).json({
-        success: false,
-        code: staffHireRefusal.insufficientFunds,
-        message: `Insufficient funds. Hiring costs $${hiringCost} (one month upfront)`,
-        data: { required: hiringCost, available: user.money },
-      });
-    }
-
-    const { newTrainer, updatedUser } = await withRetryableTxMapping(
+    const newTrainer = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
+        // Lock the User row first (lock order User -> staff) so concurrent
+        // same-user hires serialize here and the roster re-count below sees
+        // every committed sibling. (The hire used to take this lock through
+        // its money debit; the hire is free now, so it takes it explicitly.)
+        await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+
         const trainer = await tx.trainer.create({
           data: {
             userId,
@@ -292,27 +293,12 @@ export async function hireTrainerFromMarketplace(req, res) {
           },
         });
 
-        // Equoria-hjzwt: atomic debit via shared helper (was inline conditional
-        // updateMany after kyrqo). InsufficientFundsError rolls back the tx
-        // including the trainer.create above. Helper centralizes the race-safe
-        // shape so all 7+ debit sites land on one tested pattern.
-        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-        const userMoneyAfter = await debitMoneyOrThrow(tx, {
-          userId,
-          amount: hiringCost,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'trainerHireBurn',
-          description: `Trainer hire fee — ${trainer.firstName} ${trainer.lastName}`,
-          metadata: { trainerId: trainer.id, marketplaceId },
-        });
-        const userUpdate = { money: userMoneyAfter };
         // Equoria-oey96.8: authoritative roster-cap re-count (mirrors the groom
-        // Equoria-n4m5j / hduc5 pattern). debitMoneyOrThrow above row-locked the
-        // User row, so concurrent same-user hires serialize through here and this
-        // count observes every committed sibling. trainer.create ran first, so the
-        // count INCLUDES this hire — if it now exceeds the cap the last slot was
-        // already taken by a racing sibling; throw so the create + debit + ledger
-        // roll back together (no over-cap trainer, no charge, no ledger row). Only
+        // Equoria-n4m5j / hduc5 pattern). The User row lock above serializes
+        // concurrent same-user hires, so this count observes every committed
+        // sibling. trainer.create ran first, so the count INCLUDES this hire — if
+        // it now exceeds the cap the last slot was already taken by a racing
+        // sibling; throw so the create rolls back (no over-cap trainer). Only
         // NON-retired trainers count. rosterCap is from the pre-tx User.level
         // (monotonic; a concurrent level-up only RAISES the cap).
         const rosterCountInTx = await tx.trainer.count({ where: { userId, retired: false } });
@@ -321,26 +307,13 @@ export async function hireTrainerFromMarketplace(req, res) {
             `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your stable level before hiring another.`,
           );
         }
-        // Equoria-ye2r3: migrated to recordTransactionTx(tx, opts). tx is now
-        // structurally required (first arg); balanceAfter is read inside the
-        // service from the same tx (caller no longer supplies it), so the
-        // debit above and the ledger row share rollback semantics.
-        await recordTransactionTx(tx, {
-          userId,
-          type: 'debit',
-          amount: hiringCost,
-          category: 'trainerHire',
-          description: `Hired trainer ${trainer.firstName} ${trainer.lastName}`,
-          metadata: { trainerId: trainer.id, marketplaceId },
-        });
-
         // Equoria-bvddn.19: remove the hired offer from the persisted list
         // INSIDE this transaction, compare-and-swapped against the exact
         // `offers` snapshot read before the transaction opened. If a
         // concurrent hire (same offer, a different offer, or a marketplace
         // refresh) already changed the row, zero rows match and the whole
-        // hire — trainer.create, debit, ledger — rolls back rather than
-        // double-charging or resurrecting an already-hired offer.
+        // hire rolls back rather than creating a second trainer from one offer
+        // or resurrecting an already-hired offer.
         const updatedOffers = offers.filter((_, i) => i !== trainerIndex);
         const offerClaim = await removeMarketplaceOfferCas(tx, {
           userId,
@@ -354,33 +327,29 @@ export async function hireTrainerFromMarketplace(req, res) {
           );
         }
 
-        return { newTrainer: trainer, updatedUser: userUpdate };
+        return trainer;
       }),
       { message: 'The marketplace is busy right now, please retry in a moment.' },
     );
 
-    logger.info(
-      `[trainerMarketplace] User ${userId} hired trainer ${newTrainer.id} for $${hiringCost}`,
-    );
+    logger.info(`[trainerMarketplace] User ${userId} hired trainer ${newTrainer.id} (free)`);
 
     res.status(201).json({
       success: true,
       message: 'Trainer hired successfully',
       data: {
         trainer: { ...newTrainer, name: `${newTrainer.firstName} ${newTrainer.lastName}` },
-        cost: hiringCost,
-        remainingMoney: updatedUser.money,
+        // Hiring is free (owner ruling 2026-10-22, Equoria-3kegj).
+        cost: 0,
       },
     });
   } catch (error) {
-    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping
-    // (above the InsufficientFundsError check so the 503 wins first).
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
     if (error?.status === 503) {
       return res.status(503).json({ success: false, message: error.message, data: null });
     }
     // Equoria-oey96.8: the post-lock re-count rejected an over-cap racing hire.
-    // trainer.create + debit + ledger rolled back atomically (user left at exactly
-    // the cap, not charged, no trainer row, no ledger row).
+    // trainer.create rolled back (user left at exactly the cap, no trainer row).
     if (error instanceof RosterCapExceededError) {
       return res.status(400).json({
         success: false,
@@ -389,18 +358,9 @@ export async function hireTrainerFromMarketplace(req, res) {
         data: null,
       });
     }
-    if (error instanceof InsufficientFundsError) {
-      return res.status(400).json({
-        success: false,
-        code: staffHireRefusal.insufficientFunds,
-        message: 'Insufficient funds at debit time (concurrent hire?)',
-        data: null,
-      });
-    }
     // Equoria-bvddn.19: the in-tx CAS lost the offer to a concurrent hire or
-    // refresh. trainer.create + debit + ledger rolled back atomically (no
-    // orphan trainer, no charge). Surface as 409 so the client re-fetches the
-    // marketplace before retrying.
+    // refresh. trainer.create rolled back (no orphan trainer). Surface as 409
+    // so the client re-fetches the marketplace before retrying.
     if (error instanceof StaleOfferError) {
       return res.status(409).json({ success: false, message: error.message, data: null });
     }

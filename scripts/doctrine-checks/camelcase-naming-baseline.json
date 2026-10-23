@@ -741,7 +741,6 @@
   "backend/modules/trainers/__tests__/trainerAssignRetiredGuard.integration.test.mjs": 4,
   "backend/modules/trainers/__tests__/trainerController.test.mjs": 12,
   "backend/modules/trainers/__tests__/trainerHireConcurrentRace.integration.test.mjs": 6,
-  "backend/modules/trainers/__tests__/trainerMarketplaceController.recordTransactionTx.integration.test.mjs": 6,
   "backend/modules/trainers/__tests__/trainerMarketplaceHireOfferCas.integration.test.mjs": 15,
   "backend/modules/trainers/__tests__/trainerMarketplaceRefreshTx.integration.test.mjs": 16,
   "backend/modules/trainers/__tests__/trainerReassignHistory.integration.test.mjs": 4,

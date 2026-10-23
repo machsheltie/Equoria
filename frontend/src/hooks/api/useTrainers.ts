@@ -75,11 +75,7 @@ export function useTrainerMarketplace(options: Record<string, unknown> = {}) {
 export function useHireTrainer() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    { trainer: TrainerEntry; cost: number; remainingMoney: number },
-    ApiError,
-    string
-  >({
+  return useMutation<{ trainer: TrainerEntry; cost: number }, ApiError, string>({
     mutationFn: (marketplaceId) => trainersApi.hireTrainer(marketplaceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: trainerKeys.all });

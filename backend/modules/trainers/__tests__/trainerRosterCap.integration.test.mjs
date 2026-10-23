@@ -9,9 +9,13 @@
  *
  * Enforcement mirrors the landed groom pattern (Equoria-n4m5j / hduc5): a
  * fast-path pre-check PLUS an authoritative post-lock in-tx re-count of
- * non-retired trainers after debitMoneyOrThrow row-locks the User row, throwing
- * RosterCapExceededError → 400 so the create + debit + ledger roll back
- * together. Only NON-retired trainers count; enforcement is hire-time only.
+ * non-retired trainers after the User row is locked, throwing
+ * RosterCapExceededError → 400 so the create rolls back. Only NON-retired
+ * trainers count; enforcement is hire-time only.
+ *
+ * Equoria-3kegj. OLD CONTRACT: a hire debited sessionRate * 4 and the debit
+ * took the User row lock. NEW RULING (owner, 2026-10-22): hiring a trainer is
+ * free; the hire locks the User row explicitly, and no coins move on any path.
  *
  * Real DB, no mocks, id-scoped fail-loud cleanup.
  */
@@ -29,8 +33,7 @@ import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-oey96_8-trainer';
-const SESSION_RATE = 50; // hiringCost = sessionRate * 4 = 200 (one month upfront)
-const HIRING_COST = SESSION_RATE * 4;
+const SESSION_RATE = 50; // the trainer's per-training fee; the hire itself is free
 
 const createdUserIds = [];
 const cleanup = createCleanupTracker();
@@ -199,7 +202,7 @@ describe('POST /api/trainers/marketplace/hire — roster cap (Equoria-oey96.8)',
     expect(activeCount).toBe(1);
   });
 
-  it('CONCURRENT at cap-1 (SL1, cap 1): exactly one 201; roster == cap; money debited once', async () => {
+  it('CONCURRENT at cap-1 (SL1, cap 1): exactly one 201; roster == cap; no coins move', async () => {
     const { user, token } = await makeUser({ level: 1, money: 2000 });
     await seedTrainers(user.id, { active: 0 }); // one slot (cap 1)
     const marketplaceIds = await seedMarketplace(user.id, 2);
@@ -214,6 +217,6 @@ describe('POST /api/trainers/marketplace/hire — roster cap (Equoria-oey96.8)',
     const activeCount = await prisma.trainer.count({ where: { userId: user.id, retired: false } });
     expect(activeCount).toBe(1); // exactly at cap, never over
     const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
-    expect(Number(after.money)).toBe(2000 - HIRING_COST); // exactly one debit
+    expect(Number(after.money)).toBe(2000); // hiring is free (Equoria-3kegj)
   });
 });

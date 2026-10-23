@@ -19,6 +19,12 @@
  *   - The buyer's money never goes negative.
  *   - At most floor(initialMoney / hiringCost) hires succeed.
  *
+ * Equoria-3kegj. OLD CONTRACT: each hire cost sessionRate * 4, the buyer held
+ * exactly one hire's worth, and the money debit was the guard. NEW RULING
+ * (owner, 2026-10-22): hiring a trainer is free. The same-buyer race is now
+ * guarded by the roster cap re-count under the User row lock: a level-1 buyer
+ * (cap 1) firing N concurrent hires gets at most one trainer, and no coins move.
+ *
  * Real DB, no mocks, scoped fixtures.
  */
 
@@ -40,7 +46,6 @@ const N_HIRES = 4;
 let buyer;
 let buyerToken;
 let marketplaceIds;
-let hiringCost;
 const createdUserIds = [];
 const createdMarketplaceStateIds = [];
 const cleanup = createCleanupTracker();
@@ -66,14 +71,8 @@ async function makeUser(suffix, money) {
 }
 
 beforeAll(async () => {
+  // A level-1 buyer (trainer roster cap 1) with no coins: hiring is free.
   ({ user: buyer, token: buyerToken } = await makeUser('buyer', 0));
-
-  // Build a marketplace with N trainer offers each costing the same.
-  // sessionRate * 4 = hiringCost (controller line 191). Use 100 → 400 each.
-  hiringCost = 100 * 4;
-  // Seed buyer with EXACTLY one hire's worth — if any race lets two through,
-  // money would go negative.
-  await prisma.user.update({ where: { id: buyer.id }, data: { money: hiringCost } });
 
   marketplaceIds = Array.from({ length: N_HIRES }, () => `mid-${randomBytes(4).toString('hex')}`);
   const offers = marketplaceIds.map((mid, i) => ({
@@ -121,9 +120,9 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 30000);
 
 describe('POST /api/trainers/marketplace/hire — concurrent-race sentinel (Equoria-kyrqo)', () => {
-  it('SENTINEL: N parallel hires from same buyer with only ONE hire of money, never goes negative', async () => {
+  it('SENTINEL: N parallel hires from a cap-1 buyer: at most one trainer, no coins move', async () => {
     // Fire N concurrent hire requests for N different marketplaceIds.
-    // Buyer has exactly hiringCost in wallet — only ONE may succeed.
+    // The buyer's roster cap is 1 — only ONE may succeed.
     // Each request needs a CSRF token (real production middleware, no bypass).
     const csrfPerReq = await Promise.all(marketplaceIds.map(() => fetchCsrf(app)));
     const results = await Promise.all(
@@ -141,23 +140,22 @@ describe('POST /api/trainers/marketplace/hire — concurrent-race sentinel (Equo
     );
 
     const successes = results.filter(r => r.status === 201);
-    // At most one 201 — buyer only had hiringCost; second would go negative.
+    // At most one 201 — a second would exceed the roster cap.
     expect(successes.length).toBeLessThanOrEqual(1);
 
-    // All non-success responses are 4xx (400 insufficient funds, 429 rate-limit,
-    // or 404). Never 500, never 201 beyond the cap.
+    // All non-success responses are 4xx (400 roster cap, 409 stale offer,
+    // 429 rate-limit). Never 500, never 201 beyond the cap.
     for (const r of results) {
       expect(r.status === 201 || (r.status >= 400 && r.status < 500)).toBe(true);
     }
 
-    // Final money state: if 0 successes (all lost), money == hiringCost. If
-    // 1 success, money == 0. NEVER negative.
+    // Hiring is free: the buyer's coins never move and no ledger row is written.
     const after = await prisma.user.findUnique({
       where: { id: buyer.id },
       select: { money: true },
     });
-    expect(Number(after.money)).toBeGreaterThanOrEqual(0);
-    expect([0, hiringCost]).toContain(Number(after.money));
+    expect(Number(after.money)).toBe(0);
+    expect(await prisma.userTransaction.count({ where: { userId: buyer.id } })).toBe(0);
 
     // Number of trainer rows created == number of successes.
     const trainerCount = await prisma.trainer.count({ where: { userId: buyer.id } });

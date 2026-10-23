@@ -157,6 +157,10 @@ export const useTrainHorse = (userIdForInvalidate?: string) => {
 
       // Invalidate all training queries as fallback
       queryClient.invalidateQueries({ queryKey: trainingKeys.all });
+
+      // Equoria-3kegj: a session with an assigned trainer charges its fee, so
+      // every live balance consumer refreshes.
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 };

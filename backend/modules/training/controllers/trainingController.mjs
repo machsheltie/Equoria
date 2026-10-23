@@ -5,7 +5,7 @@ import {
   getTrainableHorses,
 } from '../services/trainingModelService.mjs';
 import { getHorseById } from '../../horses/index.mjs';
-import { commitTrainingSession } from '../services/trainingSessionTx.mjs';
+import { commitTrainingSession, trainingFeeFor } from '../services/trainingSessionTx.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
@@ -323,6 +323,8 @@ async function trainHorse(horseId, discipline) {
       );
     }
 
+    // Equoria-3kegj: the trainer whose modifier applied is the one paid.
+    const trainerFee = trainingFeeFor(activeTrainer);
     const txResult = await commitTrainingSession({
       horseId: parsedHorseId,
       ownerId,
@@ -332,7 +334,12 @@ async function trainHorse(horseId, discipline) {
       cooldownNow,
       nextEligible: nextEligibleClaim,
       disciplineScoreIncrease,
+      trainerFee,
     });
+    if (txResult?.feeUnpaid) {
+      const reason = `Not enough coins to pay ${trainerFee.trainerName}'s training fee of ${trainerFee.amount}`;
+      return { success: false, reason, updatedHorse: null, message: reason, nextEligible: null };
+    }
     if (!txResult) {
       logger.info(
         `[trainingController.trainHorse] Atomic cooldown claim lost the race for horse ${horseId}`,
@@ -390,6 +397,8 @@ async function trainHorse(horseId, discipline) {
       // inferring it from traitEffects.xpModifier (a trait-only delta, not the
       // awarded amount).
       xpAwarded: baseXp,
+      // Equoria-3kegj: the trainer fee this session charged (0 with no trainer).
+      trainingFee: trainerFee ? trainerFee.amount : 0,
       message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.`,
       nextEligible: nextEligible.toISOString(),
       // Equoria-oey96.7: surface the trainer contribution honestly so the UI
@@ -566,6 +575,7 @@ async function trainRouteHandler(req, res) {
         // Real awarded XP (post-trait, floor-1). null only if
         // trainHorse somehow omitted it (older return shape) — keep it explicit.
         xpAwarded: result.xpAwarded ?? null,
+        trainingFee: result.trainingFee ?? 0, // Equoria-3kegj: the trainer fee charged
         // Equoria-oey96.7: { bonusPercent, penaltyPercent, net } trainer
         // contribution to the discipline-score gain (net can be negative;
         // {0,0,0} when no trainer). null only for an older trainHorse shape.

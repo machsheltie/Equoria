@@ -13,10 +13,10 @@
  * The fix moves the removal INSIDE the hire transaction as a compare-and-swap
  * (`removeMarketplaceOfferCas`, backend/utils/staffMarketplaceOfferCas.mjs):
  * the UPDATE only applies if `offers` still equals the exact snapshot this
- * request read. debitMoneyOrThrow row-locks the User row first, so the two
+ * request read. The hire row-locks the User row first, so the two
  * concurrent transactions serialize there; the second to commit re-checks its
  * CAS precondition against the ALREADY-UPDATED row and loses (0 rows), rolling
- * its whole hire back (no trainer, no charge) and surfacing 409.
+ * its whole hire back (no trainer) and surfacing 409.
  *
  * This is its OWN sentinel (not covered by the shared-helper argument alone):
  * trainerMarketplaceController has its own catch/409 mapping (a SINGLE outer
@@ -32,8 +32,9 @@
  * the second concurrent hire with a roster-cap 400 before it ever reaches the
  * offer CAS, masking the defect this test exists to prove.
  *
- * Buyer is funded far beyond the (here fixed, not randomly generated)
- * hiring cost so insufficient-funds can never be the reason for a rejection.
+ * Equoria-3kegj (owner ruling 2026-10-22): hiring a trainer is free, so the
+ * winner is charged nothing and no hire ledger row is written; the race is
+ * about one offer producing one trainer.
  *
  * Real DB, no mocks, id-scoped cleanup (CLAUDE.md §3).
  */
@@ -45,12 +46,9 @@ import { hireTrainerFromMarketplace } from '../controllers/trainerMarketplaceCon
 
 const FIXTURE_PREFIX = 'TestFixture-bvddn19-trainer';
 
-// hireTrainerFromMarketplace: hiringCost = trainerData.sessionRate * 4.
+// The trainer's per-training fee; the hire itself is free (Equoria-3kegj).
 const SESSION_RATE = 120;
-const HIRING_COST = SESSION_RATE * 4;
-// Fund the buyer far beyond what even several concurrent hires could ever
-// cost — the scenario under test is the offer-list race, not money.
-const BUYER_FUNDS = HIRING_COST * 1000;
+const BUYER_FUNDS = 1000;
 // User.level 5 -> getStableLevel -> stable level 2 -> trainer roster cap 2.
 // (Stable level 1's cap is exactly 1 and would mask the race under test.)
 const BUYER_LEVEL = 5;
@@ -148,7 +146,7 @@ afterAll(async () => {
 }, 30000);
 
 describe('trainerMarketplaceController.hireTrainerFromMarketplace offer-removal race (Equoria-bvddn.19)', () => {
-  it('SENTINEL: two concurrent hires of the SAME offer -> exactly one 201, one 409, charged once', async () => {
+  it('SENTINEL: two concurrent hires of the SAME offer -> exactly one 201, one 409, one trainer', async () => {
     const buyer = await makeUser(BUYER_FUNDS);
     const marketplaceId = await makeSingleOfferMarketplace(buyer.id);
 
@@ -169,21 +167,21 @@ describe('trainerMarketplaceController.hireTrainerFromMarketplace offer-removal 
     const successes = responses.filter(r => r.statusCode === 201);
     const conflicts = responses.filter(r => r.statusCode === 409);
 
-    // Pre-fix: both requests get 201 (both charged for the same offer).
+    // Pre-fix: both requests get 201 (two trainers from one offer).
     expect(successes.length).toBe(1);
     expect(conflicts.length).toBe(1);
     expect(conflicts[0].body?.success).toBe(false);
     expect(conflicts[0].body?.message).toMatch(/already hired|marketplace changed/i);
 
-    // Exactly one trainer exists, exactly one debit ledger row, charged once.
+    // Exactly one trainer exists; the free hire wrote no ledger row and moved no coins.
     const trainerCount = await prisma.trainer.count({ where: { userId: buyer.id } });
     expect(trainerCount).toBe(1);
 
     const debitRows = await prisma.userTransaction.findMany({
       where: { userId: buyer.id, category: 'trainerHire' },
     });
-    expect(debitRows).toHaveLength(1);
-    expect(await userMoney(buyer.id)).toBe(moneyBefore - HIRING_COST);
+    expect(debitRows).toHaveLength(0);
+    expect(await userMoney(buyer.id)).toBe(moneyBefore);
 
     // The offer is gone from the persisted list — not resurrected by the
     // loser's stale-snapshot write.

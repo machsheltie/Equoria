@@ -15,10 +15,15 @@
  * GameDialog for the hire confirmation (replaces page-local fixed-inset
  * overlay), canonical SectionLoading / ErrorState / EmptyState, semantic
  * role tokens (no raw palette / text-white/NN).
+ *
+ * Cost (owner ruling 2026-10-22, Equoria-3kegj): hiring a trainer is free. A
+ * trainer's only cost is its advertised per-training fee (sessionRate), charged
+ * once each time it trains one of the player's horses (one training per horse
+ * per week).
  */
 
 import React, { useState, useMemo } from 'react';
-import { GraduationCap, Coins, RefreshCw, AlertCircle } from 'lucide-react';
+import { GraduationCap, Coins, RefreshCw } from 'lucide-react';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import {
   useTrainerMarketplace,
@@ -90,10 +95,6 @@ const TrainerList: React.FC<TrainerListProps> = () => {
   const { data, isLoading, isError, error, refetch } = useTrainerMarketplace();
   const hireMutation = useHireTrainer();
   const refreshMutation = useRefreshTrainerMarketplace();
-
-  const calculateHiringCost = (sessionRate: number) => sessionRate * 4; // 4-week upfront
-
-  const canAfford = (sessionRate: number) => (user?.money ?? 0) >= calculateHiringCost(sessionRate);
 
   const filteredAndSortedTrainers = useMemo(() => {
     const trainers: MarketplaceTrainer[] = data?.trainers ?? [];
@@ -256,8 +257,8 @@ const TrainerList: React.FC<TrainerListProps> = () => {
             className="w-full"
           >
             <option value="name">Name</option>
-            <option value="rate-asc">Rate (Low → High)</option>
-            <option value="rate-desc">Rate (High → Low)</option>
+            <option value="rate-asc">Training fee (Low → High)</option>
+            <option value="rate-desc">Training fee (High → Low)</option>
           </Select>
         </div>
       </Surface>
@@ -289,8 +290,6 @@ const TrainerList: React.FC<TrainerListProps> = () => {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
           >
             {filteredAndSortedTrainers.map((trainer) => {
-              const hiringCost = calculateHiringCost(trainer.sessionRate);
-              const affordable = canAfford(trainer.sessionRate);
               const skillMeta = SKILL_LEVEL_LABELS[trainer.skillLevel] ?? SKILL_LEVEL_LABELS.novice;
               const showSpeciality =
                 trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0;
@@ -322,10 +321,10 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                   {/* Details */}
                   <div className="space-y-2 text-sm border-y border-[var(--glass-border)] py-3 mb-4">
                     <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)]">Weekly Rate:</span>
+                      <span className="text-[var(--text-muted)]">Training fee:</span>
                       <span className="font-semibold inline-flex items-center gap-1">
                         <Currency amount={trainer.sessionRate} />
-                        /wk
+                        per training
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -359,21 +358,15 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                   <Button
                     type="button"
                     onClick={() => handleHireClick(trainer)}
-                    disabled={!affordable || hireMutation.isPending}
+                    disabled={hireMutation.isPending}
                     className="w-full"
                     aria-label={`Hire ${trainer.firstName} ${trainer.lastName}`}
                     data-testid={`hire-button-${trainer.marketplaceId}`}
                   >
                     {hireMutation.isPending &&
-                    selectedTrainer?.marketplaceId === trainer.marketplaceId ? (
-                      'Hiring...'
-                    ) : affordable ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        Hire — <Currency amount={hiringCost} />
-                      </span>
-                    ) : (
-                      'Insufficient Funds'
-                    )}
+                    selectedTrainer?.marketplaceId === trainer.marketplaceId
+                      ? 'Hiring...'
+                      : 'Hire'}
                   </Button>
                 </Surface>
               );
@@ -381,14 +374,6 @@ const TrainerList: React.FC<TrainerListProps> = () => {
           </div>
         )}
       </div>
-
-      {/* Low balance warning */}
-      {user && (user.money ?? 0) < 5000 && (
-        <div className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-md)] bg-[var(--role-warning-bg)] border border-[var(--role-warning-border)] text-sm text-[var(--role-warning-text)]">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p>Low balance — hiring requires a 4-week upfront payment.</p>
-        </div>
-      )}
 
       {/* Hire Confirmation Dialog — GameDialog (DECISIONS.md §8). Overlay +
           blur owned by GameDialogOverlay (single-blur rule). */}
@@ -409,21 +394,17 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                 <strong className="text-[var(--text-primary)]">
                   {selectedTrainer.firstName} {selectedTrainer.lastName}
                 </strong>
-                ? They will join your training staff.
+                ? They will join your training staff. Hiring is free.
               </p>
 
               <Surface variant="subtle" className="p-4 space-y-2 text-sm">
                 <div className="flex justify-between text-[var(--text-secondary)]">
-                  <span>Weekly Rate:</span>
-                  <Currency amount={selectedTrainer.sessionRate} />
+                  <span className="font-bold">Training fee:</span>
+                  <Currency amount={selectedTrainer.sessionRate} variant="balance" />
                 </div>
-                <div className="flex justify-between border-t border-[var(--glass-border)] pt-2">
-                  <span className="font-bold text-[var(--text-secondary)]">Upfront (4 weeks):</span>
-                  <Currency
-                    amount={calculateHiringCost(selectedTrainer.sessionRate)}
-                    variant="balance"
-                  />
-                </div>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Paid each time this trainer trains one of your horses — once per horse, per week.
+                </p>
               </Surface>
 
               {hireMutation.isError && (

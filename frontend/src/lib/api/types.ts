@@ -74,6 +74,9 @@ export interface TrainingResult {
   // backend (base +5, trait- and trainer-modified, floor-1). The frontend
   // must read this instead of recomputing base+traitBonus, which drifts.
   disciplineScoreIncrease?: number | null;
+  // Equoria-3kegj — the assigned trainer's per-training fee this session
+  // charged (0 when the horse has no trainer).
+  trainingFee?: number;
   traitEffects?: TraitEffects;
   // Equoria-8vmdv: these are NOT deprecated — the prior "deprecated, will be
   // removed" label was inverted vs the real /train contract. The flat-shape

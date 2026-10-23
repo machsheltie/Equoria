@@ -6,6 +6,12 @@
  * could not say which one stopped the player. Each now carries a `code`
  * (rosterCapReached / insufficientFunds) beside the existing message and
  * data. Real app, real DB, id-scoped fail-loud cleanup.
+ *
+ * Equoria-3kegj. OLD CONTRACT: the hire charged four sessions up front, so a
+ * player with less than that got 400 insufficientFunds. NEW RULING (owner,
+ * 2026-10-22): hiring a trainer is free (the trainer's fee is charged per
+ * training instead), so a trainer hire never refuses for money: a player with
+ * no coins hires and is charged nothing. rosterCapReached is the only refusal.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -22,7 +28,6 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 
 const fixturePrefix = 'TestFixture-dosig-trainer';
 const offerRate = 50;
-const hiringCost = offerRate * 4; // the backend charges four sessions up front
 
 const createdUserIds = [];
 const cleanup = createCleanupTracker();
@@ -138,17 +143,17 @@ describe('POST /api/v1/trainers/marketplace/hire — refusal codes (Equoria-dosi
     expect(await moneyOf(user.id)).toBe(1000);
   });
 
-  it('an unaffordable hire answers 400 with code insufficientFunds and no debit', async () => {
-    const { user, token } = await makeUser({ level: 1, money: hiringCost - 1 });
+  it('a player with no coins hires a trainer for free (Equoria-3kegj)', async () => {
+    const { user, token } = await makeUser({ level: 1, money: 0 });
     const [mid] = await seedMarketplace(user.id, 1);
 
     const res = await hire(token, mid);
 
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe('insufficientFunds');
-    expect(res.body.data).toEqual({ required: hiringCost, available: hiringCost - 1 });
-    expect(await moneyOf(user.id)).toBe(hiringCost - 1);
-    expect(await prisma.trainer.count({ where: { userId: user.id } })).toBe(0);
+    expect(res.status).toBe(201);
+    expect(res.body.data.cost).toBe(0);
+    expect(await moneyOf(user.id)).toBe(0);
+    expect(await prisma.trainer.count({ where: { userId: user.id } })).toBe(1);
+    expect(await prisma.userTransaction.count({ where: { userId: user.id } })).toBe(0);
   });
 
   it('a racing hire that loses the last slot still carries rosterCapReached', async () => {

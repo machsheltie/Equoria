@@ -96,10 +96,10 @@ export const trainersApi = {
   getAssignments: () => apiClient.get<TrainerAssignmentEntry[]>('/api/v1/trainers/assignments'),
   getMarketplace: () => apiClient.get<TrainerMarketplaceData>('/api/v1/trainers/marketplace'),
   hireTrainer: (marketplaceId: string) =>
-    apiClient.post<{ trainer: TrainerEntry; cost: number; remainingMoney: number }>(
-      '/api/v1/trainers/marketplace/hire',
-      { marketplaceId }
-    ),
+    // Hiring is free (owner ruling 2026-10-22, Equoria-3kegj): cost is 0.
+    apiClient.post<{ trainer: TrainerEntry; cost: number }>('/api/v1/trainers/marketplace/hire', {
+      marketplaceId,
+    }),
   refreshMarketplace: (force: boolean = false) =>
     apiClient.post<TrainerMarketplaceData>('/api/v1/trainers/marketplace/refresh', { force }),
   assignTrainer: (data: { trainerId: number; horseId: number; notes?: string }) =>
