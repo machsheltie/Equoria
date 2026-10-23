@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { formatDate } from '@/lib/formatDate';
+import { healthLabel } from '@/lib/healthWords';
 import { Link } from 'react-router';
 import { Clock, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,10 +28,13 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     ? [{ date: horse.lastVettedDate, type: 'Vet check' }]
     : [];
 
+  // One health vocabulary (owner ruling 2026-10-23, Equoria-u0jop): the
+  // displayed health every gate checks, worded by lib/healthWords.
+  const word = healthLabel(horse.displayedHealth);
   const healthColor =
-    horse.healthStatus?.toLowerCase() === 'healthy'
+    word === 'Excellent' || word === 'Very Good' || word === 'Good'
       ? 'text-[var(--status-success)]'
-      : horse.healthStatus?.toLowerCase().includes('injured')
+      : word === 'Bad'
         ? 'text-[var(--gold-primary)]'
         : 'text-[var(--text-secondary)]';
 
@@ -44,7 +48,9 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
               Status
             </p>
-            <p className={`font-semibold text-xl ${healthColor}`}>{horse.healthStatus}</p>
+            <p className={`font-semibold text-xl ${healthColor}`} data-testid="health-status-word">
+              {word}
+            </p>
           </div>
         </div>
       </div>

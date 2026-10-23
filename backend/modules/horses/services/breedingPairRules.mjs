@@ -8,7 +8,8 @@
  * in each caller's transaction, where the lock-order sentinel can see them.
  *
  * Rules (unchanged; owner rulings cited where they exist):
- *   - neither horse in critical displayed health (Equoria-2e7e)
+ *   - both horses Fair or better: neither in Bad displayed health (Equoria-2e7e;
+ *     owner ruling 2026-10-23, Equoria-u0jop — was 'critical' only)
  *   - sire and dam are different horses, exactly 'Stallion' and 'Mare'
  *     (Equoria-mhdul)
  *   - both between minBreedingAgeYears (3) and maxBreedingAgeYears (20)
@@ -27,7 +28,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
-import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import {
   calendarDateDayIndex,
@@ -70,22 +71,14 @@ function refuse(status, message, kind) {
  *   | { ok: false, status: 400 | 500, message: string, kind: 'sire' | 'mare' | 'pair' | 'server' }>}
  */
 export async function validateBreedingPair({ sire, dam, client = prisma }) {
-  // Critical-health gate (Equoria-2e7e): mirrors conformationShowController's A12 check.
-  if (getDisplayedHealth(sire) === 'critical') {
-    logger.info(`[breedingPairRules] Rejected: sire ${sire.id} is in critical health`);
-    return refuse(
-      400,
-      `${sire.name} is in critical health and cannot breed. Feed and vet to restore health.`,
-      'sire',
-    );
+  // Health gate (Equoria-2e7e, Equoria-u0jop): both horses Fair or better.
+  if (hasBadHealth(sire)) {
+    logger.info(`[breedingPairRules] Rejected: sire ${sire.id} is in Bad health`);
+    return refuse(400, badHealthMessage(sire.name, 'breed'), 'sire');
   }
-  if (getDisplayedHealth(dam) === 'critical') {
-    logger.info(`[breedingPairRules] Rejected: dam ${dam.id} is in critical health`);
-    return refuse(
-      400,
-      `${dam.name} is in critical health and cannot breed. Feed and vet to restore health.`,
-      'mare',
-    );
+  if (hasBadHealth(dam)) {
+    logger.info(`[breedingPairRules] Rejected: dam ${dam.id} is in Bad health`);
+    return refuse(400, badHealthMessage(dam.name, 'breed'), 'mare');
   }
 
   // Guard 1: self-cross (CONTRIBUTING.md s4 pattern)

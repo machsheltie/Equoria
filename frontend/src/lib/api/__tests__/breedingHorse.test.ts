@@ -98,6 +98,12 @@ describe('toBreedingHorse', () => {
     expect(horse?.inFoal).toBe(true);
   });
 
+  // Equoria-u0jop: the selector's health gate and label read the server's
+  // displayed health (Fair or better to breed), so the projection keeps it.
+  it("carries the server's displayed health", () => {
+    expect(toBreedingHorse(listHorse({ displayedHealth: 'Fair' }))?.displayedHealth).toBe('Fair');
+  });
+
   it('toBreedingHorses drops rejected horses and keeps order', () => {
     const horses = toBreedingHorses([
       listHorse({ id: 1, sex: 'Stallion' }),

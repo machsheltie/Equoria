@@ -70,14 +70,17 @@ export const HORSE_TEMPERAMENT = Object.freeze({
 export const HORSE_TEMPERAMENT_VALUES = Object.freeze(Object.values(HORSE_TEMPERAMENT));
 
 /**
- * Horse health status constants
+ * Horse health words (owner ruling 2026-10-23, Equoria-u0jop): exactly
+ * Excellent, Very Good, Good, Fair, Bad. Stored Poor / Critical read as Bad
+ * through utils/horseHealth.mjs toHealthWord. Old contract: Excellent, Good,
+ * Fair, Poor, Injured.
  */
 export const HORSE_HEALTH_STATUS = {
   EXCELLENT: 'Excellent',
+  VERY_GOOD: 'Very Good',
   GOOD: 'Good',
   FAIR: 'Fair',
-  POOR: 'Poor',
-  INJURED: 'Injured',
+  BAD: 'Bad',
 };
 
 export const HORSE_HEALTH_STATUS_VALUES = Object.values(HORSE_HEALTH_STATUS);

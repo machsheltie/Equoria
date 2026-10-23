@@ -43,6 +43,19 @@ describe('normalizeHorseDetail', () => {
     expect(normalizeHorseDetail(detail({ breed: 'Thoroughbred' })).breed).toBe('Thoroughbred');
   });
 
+  // Equoria-u0jop: the detail page dropped displayedHealth, so its health badge
+  // never showed. The server's displayed health is what every gate checks.
+  it('keeps the server-derived feed, vet and displayed health', () => {
+    const horse = normalizeHorseDetail(
+      detail({ feedHealth: 'Fair', vetHealth: 'Excellent', displayedHealth: 'Fair' })
+    );
+    expect([horse.feedHealth, horse.vetHealth, horse.displayedHealth]).toEqual([
+      'Fair',
+      'Excellent',
+      'Fair',
+    ]);
+  });
+
   it('falls back to sex when gender is empty', () => {
     expect(normalizeHorseDetail(detail()).gender).toBe('Mare');
     expect(normalizeHorseDetail(detail({ gender: 'Stallion', sex: 'Mare' })).gender).toBe(

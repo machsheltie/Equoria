@@ -150,6 +150,10 @@ export function normalizeHorseDetail(raw: HorseSummary): Horse {
     lastVettedDate: raw.lastVettedDate ?? null,
     equippedFeedType: raw.equippedFeedType ?? null,
     feedHealth: raw.feedHealth,
+    // Equoria-u0jop: the server's displayed health (worse of feed and vet) is
+    // what every gate checks and what the health badge and labels show.
+    vetHealth: raw.vetHealth,
+    displayedHealth: raw.displayedHealth,
     // Equoria-8xfo (31F-FE-2) — conformation title fields. currentTitle is null
     // for never-shown horses; titlePoints starts at 0; breedingValueBoost is a
     // 0..N multiplier (0.10 == +10%).

@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/form';
 import EmptyState from '@/components/ui/EmptyState';
 import { isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
 import { gameDayIndex } from '@/lib/gameTime';
+import { healthLabel, isBadHealth } from '@/lib/healthWords';
 import type { Horse } from '@/types/breeding';
 
 export interface HorseSelectorProps {
@@ -42,6 +43,12 @@ export function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: strin
   // Health check
   if (horse.healthStatus && horse.healthStatus.toLowerCase() === 'injured') {
     return { canBreed: false, reason: 'Injured' };
+  }
+
+  // Owner ruling 2026-10-23 (Equoria-u0jop): Fair or better to breed. The
+  // server's displayed health is the gate it applies (Bad is refused).
+  if (isBadHealth(horse.displayedHealth)) {
+    return { canBreed: false, reason: 'Bad health' };
   }
 
   // A mare already in foal cannot be bred again (the server refuses it).
@@ -205,10 +212,12 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                     {/* Health & Status */}
                     <div className="flex items-center gap-2 mt-2">
                       {/* Health Status */}
-                      {horse.healthStatus && (
+                      {horse.displayedHealth && (
                         <div className="flex items-center gap-1 text-xs text-role-secondary">
                           <Heart className="h-3 w-3" />
-                          <span className="capitalize">{horse.healthStatus}</span>
+                          <span data-testid="horse-health">
+                            {healthLabel(horse.displayedHealth)}
+                          </span>
                         </div>
                       )}
 

@@ -16,10 +16,11 @@
  *   7. visit-vet      — an injured horse, or one in bad health
  *      feed           — a horse in bad health (Equoria-cn6kt)
  *
- * Health gate (owner ruling 2026-10-22, Equoria-3tna6): bad health is the only
- * consequence — a horse in bad health cannot train, breed or enter shows, so
- * none of those is suggested for it. Bad health is the threshold the breeding
- * guard applies: displayed health 'critical' (utils/horseHealth.mjs).
+ * Health gate (owner rulings 2026-10-22 Equoria-3tna6, 2026-10-23
+ * Equoria-u0jop): bad health is the only consequence — a horse must be Fair or
+ * better to train, breed or enter shows, so none of those is suggested for a
+ * horse in Bad health. The gate is the one those actions apply:
+ * utils/horseHealth.mjs hasBadHealth (was displayed health 'critical' only).
  *
  * Actions are emitted PER real entity (one train per trainable horse, one
  * breed per breedable horse, one visit-vet per injured horse, one groom-foal
@@ -60,7 +61,7 @@ import {
   loadActiveDisciplineTypes,
 } from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
-import { alreadyFedToday, getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { alreadyFedToday, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
 
 // Story 23.4 priority table. 1 = highest.
@@ -92,9 +93,9 @@ const isInjured = healthStatus => String(healthStatus).toLowerCase() === 'injure
 // `age` is a nullable Int on Horse — a null age must not pass the gate.
 const isActiveAge = age => typeof age === 'number' && age >= minActiveAge;
 
-// The bad-health gate the breeding guard, training and show entry apply
-// (Equoria-3tna6): displayed health (worse of feed and vet health) 'critical'.
-const isInBadHealth = (h, now) => getDisplayedHealth(h, now) === 'critical';
+// The health gate breeding, training and show entry apply (Equoria-3tna6,
+// Equoria-u0jop): displayed health (worse of feed and vet health) Bad.
+const isInBadHealth = (h, now) => hasBadHealth(h, now);
 
 const isTrainable = (h, now) =>
   isActiveAge(h.age) &&
@@ -334,7 +335,7 @@ export async function getNextActions(req, res) {
     }
 
     // ── visit-vet + feed (priority 7) — care for injured / bad-health horses ──
-    // Owner ruling 2026-10-22 (Equoria-cn6kt): a horse in critical health is
+    // Owner ruling 2026-10-22 (Equoria-cn6kt): a horse in Bad health is
     // suggested BOTH a vet visit and feeding. An injured horse keeps its vet
     // visit; a horse that is both gets one vet suggestion. Feeding is offered
     // only while the horse can still be fed today (the feed path refuses a
@@ -356,7 +357,7 @@ export async function getNextActions(req, res) {
           priority: SPEC_PRIORITY.feed,
           horseId: h.id,
           horseName: h.name,
-          metadata: { displayedHealth: 'critical' },
+          metadata: { displayedHealth: 'Bad' },
         });
       }
     }

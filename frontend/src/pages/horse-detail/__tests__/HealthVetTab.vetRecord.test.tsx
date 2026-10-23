@@ -87,3 +87,24 @@ describe('HealthVetTab (Equoria-oey96.56)', () => {
     expect(screen.getByRole('link', { name: /go to vet clinic/i })).toHaveAttribute('href', '/vet');
   });
 });
+
+// Owner ruling 2026-10-23 (Equoria-u0jop): health shows as one of Excellent,
+// Very Good, Good, Fair, Bad — the displayed health every gate checks. Old
+// contract: the raw stored healthStatus (default 'Excellent' forever, even for
+// a horse the gates refuse as Bad).
+describe('HealthVetTab current health (Equoria-u0jop)', () => {
+  it('shows the displayed health word, not the stored vet finding', () => {
+    renderTab({ healthStatus: 'Excellent', displayedHealth: 'Bad' });
+    expect(screen.getByTestId('health-status-word')).toHaveTextContent('Bad');
+  });
+
+  it('shows Very Good as Very Good', () => {
+    renderTab({ displayedHealth: 'Very Good' });
+    expect(screen.getByTestId('health-status-word')).toHaveTextContent('Very Good');
+  });
+
+  it('shows an em dash, never a fake word, when health is unknown', () => {
+    renderTab({ healthStatus: 'Excellent', displayedHealth: undefined });
+    expect(screen.getByTestId('health-status-word')).toHaveTextContent('—');
+  });
+});

@@ -20,6 +20,7 @@ describe('HorseSelector - Story 6-1', () => {
       sex: 'Stallion',
       breedName: 'Thoroughbred',
       healthStatus: 'Healthy',
+      displayedHealth: 'Good',
       dateOfBirth: '2019-01-01',
       canBreed: true,
     },
@@ -30,6 +31,7 @@ describe('HorseSelector - Story 6-1', () => {
       sex: 'Mare',
       breedName: 'Arabian',
       healthStatus: 'Healthy',
+      displayedHealth: 'Good',
       dateOfBirth: '2020-01-01',
       canBreed: true,
     },
@@ -40,6 +42,7 @@ describe('HorseSelector - Story 6-1', () => {
       sex: 'Stallion',
       breedName: 'Quarter Horse',
       healthStatus: 'Healthy',
+      displayedHealth: 'Good',
       dateOfBirth: '2022-01-01',
       canBreed: false,
     },
@@ -50,6 +53,7 @@ describe('HorseSelector - Story 6-1', () => {
       sex: 'Stallion',
       breedName: 'Mustang',
       healthStatus: 'Injured',
+      displayedHealth: 'Bad',
       dateOfBirth: '2018-01-01',
       canBreed: false,
     },
@@ -60,6 +64,7 @@ describe('HorseSelector - Story 6-1', () => {
       sex: 'Mare',
       breedName: 'Appaloosa',
       healthStatus: 'Healthy',
+      displayedHealth: 'Good',
       dateOfBirth: '2019-06-01',
       breedingCooldownEndsAt: new Date(Date.now() + 86400000 * 10).toISOString(), // 10 days
       canBreed: false,
@@ -313,8 +318,12 @@ describe('HorseSelector - Story 6-1', () => {
         />
       );
 
-      const healthElements = screen.getAllByText(/Healthy|Injured/i);
-      expect(healthElements.length).toBeGreaterThan(0);
+      // Owner ruling 2026-10-23 (Equoria-u0jop): the server's displayed health
+      // in the five words. Old contract: the raw healthStatus ('Healthy').
+      const healthElements = screen.getAllByTestId('horse-health');
+      expect(healthElements.map((el) => el.textContent)).toEqual(
+        expect.arrayContaining(['Good', 'Bad'])
+      );
     });
 
     it('should display availability summary', () => {

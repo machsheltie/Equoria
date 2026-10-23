@@ -26,7 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { settleShowFeeEscrowInTx } from '../shows/showEscrowTx.mjs';
-import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import { checkGroomMayWork } from '../../../utils/groomWorkRules.mjs';
 import { EntryRefusalError } from './entryEligibility.mjs';
 
@@ -129,10 +129,11 @@ export class ConformationGroomMissingError extends Error {
  *  - groom assignment is younger than MIN_GROOM_ASSIGNMENT_DAYS
  *  - horse.age < 0 (negative age is invalid)
  *
- * Health is not judged here. Owner ruling 2026-10-23 (Equoria-0d4wa): the only
- * health bar is critical displayed health, the same one breeding, training and
- * ridden shows use; the entry route and checkConformationEntryInTx apply it
- * (getDisplayedHealth), so the old Excellent/Good requirement is gone. The
+ * Health is not judged here. Owner rulings 2026-10-23 (Equoria-0d4wa,
+ * Equoria-u0jop): the only health bar is Fair or better (displayed health not
+ * Bad), the same one breeding, training and ridden shows use; the entry route
+ * and checkConformationEntryInTx apply it (hasBadHealth), so the old
+ * Excellent/Good requirement is gone. The
  * high-stress entry warning went with it (no stress consequence exists).
  *
  * Note: No training score or discipline prerequisite — conformation is innate (AC3).
@@ -248,7 +249,7 @@ export async function validateConformationEntry(horse, groom, userId, client = p
  * takes the User row, so User -> Groom here cannot deadlock with them). Every
  * rule then reads the rows as they are now: the groom still on the entrant's
  * staff, allowed to work (checkGroomMayWork: not retired, active, fee paid),
- * assigned to the horse long enough, and the horse not in critical health and
+ * assigned to the horse long enough, and the horse Fair or better (not Bad) and
  * otherwise eligible (validateConformationEntry, on this transaction).
  *
  * @param {Object} tx - the entry transaction
@@ -269,10 +270,10 @@ export async function checkConformationEntryInTx(tx, { horseId, groomId, userId 
   }
 
   const horse = await tx.horse.findUnique({ where: { id: horseId } });
-  if (getDisplayedHealth(horse) === 'critical') {
+  if (hasBadHealth(horse)) {
     throw new EntryRefusalError(
       'CONFORMATION_INELIGIBLE',
-      `${horse.name} is in critical health and cannot enter competitions. Feed and vet to restore health.`,
+      badHealthMessage(horse.name, 'enter competitions'),
     );
   }
   const result = await validateConformationEntry(horse, groom, userId, tx);

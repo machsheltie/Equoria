@@ -389,9 +389,11 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       .expect(401);
   });
 
-  // ── Critical-health gate (Equoria-2e7e) ─────────────────────────────────────
+  // ── Health gate (Equoria-2e7e) ──────────────────────────────────────────────
+  // Owner ruling 2026-10-23 (Equoria-u0jop): never fed is Bad health, and Bad
+  // blocks breeding. Old contract: the refusal said "critical health".
 
-  it('should return 400 when sire is in critical health (lastFedDate null)', async () => {
+  it('should return 400 when sire is in Bad health (lastFedDate null)', async () => {
     await resetDamPregnancy();
     await prisma.horse.update({ where: { id: testSire.id }, data: { lastFedDate: null } });
 
@@ -411,13 +413,13 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       .expect(400);
 
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toMatch(/critical health/i);
+    expect(response.body.message).toMatch(/Bad health/);
 
     // Restore sire for subsequent tests
     await prisma.horse.update({ where: { id: testSire.id }, data: { lastFedDate: new Date() } });
   });
 
-  it('should return 400 when dam is in critical health (lastFedDate null)', async () => {
+  it('should return 400 when dam is in Bad health (lastFedDate null)', async () => {
     await resetDamPregnancy();
     await prisma.horse.update({ where: { id: testDam.id }, data: { lastFedDate: null } });
 
@@ -437,7 +439,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       .expect(400);
 
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toMatch(/critical health/i);
+    expect(response.body.message).toMatch(/Bad health/);
 
     // Restore dam health and pregnancy state for subsequent tests
     await prisma.horse.update({

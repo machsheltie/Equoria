@@ -20,6 +20,7 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     sex: 'Stallion',
     breedName: 'Thoroughbred',
     healthStatus: 'Healthy',
+    displayedHealth: 'Very Good',
     dateOfBirth: '2019-01-01',
     level: 10,
     temperament: 'Bold',
@@ -32,6 +33,7 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     sex: 'Mare',
     breedName: 'Arabian',
     healthStatus: 'Healthy',
+    displayedHealth: 'Very Good',
     dateOfBirth: '2020-01-01',
     level: 8,
     temperament: 'Calm',
@@ -115,11 +117,13 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
       expect(screen.getByText('4 years')).toBeInTheDocument();
     });
 
+    // Owner ruling 2026-10-23 (Equoria-u0jop): health shows as the server's
+    // displayed health in the five words. Old contract: the raw healthStatus.
     it('should display health status', () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
-      const healthElements = screen.getAllByText(/Healthy/i);
-      expect(healthElements.length).toBeGreaterThanOrEqual(2);
+      const healthElements = screen.getAllByTestId('breeding-horse-health');
+      expect(healthElements.map((el) => el.textContent)).toEqual(['Very Good', 'Very Good']);
     });
 
     it('should display level information', () => {
@@ -409,14 +413,15 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
       expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
     });
 
+    // Old contract: a missing health printed an invented "Good". Unknown is an
+    // em dash, never a reassuring fake word (PRODUCT.md; Equoria-u0jop).
     it('should handle missing health status', () => {
-      const sireNoHealth = { ...mockSire, healthStatus: undefined };
+      const sireNoHealth = { ...mockSire, healthStatus: undefined, displayedHealth: undefined };
 
       render(<BreedingConfirmationModal {...defaultProps} sire={sireNoHealth} />);
 
-      // Should display default "Good" health status (getAllByText: the real
-      // "good" recommendation verdict also matches this pattern)
-      expect(screen.getAllByText(/Good/i).length).toBeGreaterThanOrEqual(1);
+      const healthElements = screen.getAllByTestId('breeding-horse-health');
+      expect(healthElements.map((el) => el.textContent)).toEqual(['—', 'Very Good']);
     });
 
     it('should handle horses without images', () => {

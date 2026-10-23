@@ -1,7 +1,7 @@
 # Feed and Pregnancy-Care Contract
 
 - **Status:** Active gameplay contract
-- **Updated:** 2026-08-19
+- **Updated:** 2026-10-23
 - **Origin:** Equoria-3gqg feed-system redesign, implemented in 2026-04
 
 This document preserves the durable player-facing rules that are expensive to
@@ -48,27 +48,39 @@ and `focus`. `coordination` is not a horse stat.
 
 ## Health contract
 
+Owner ruling 2026-10-23 (Equoria-u0jop): health is exactly **Excellent, Very
+Good, Good, Fair, Bad**. Stored or legacy Poor, Bad and Critical all read as
+Bad. `backend/utils/horseHealth.mjs` `healthGradeOf` is the one mapping every
+gate, serializer and the show score use (`toHealthWord` words it);
+`frontend/src/lib/healthWords.ts` `formatHealth` / `healthLabel` is the one
+on-screen formatter.
+
 Health shown to the player is the worse of feed health and vet health.
-`retired` is a terminal state rather than a degradation band.
+`retired` is a terminal state rather than a health word; the age rules, not
+the health gate, refuse a retired horse.
 
-Feed health is based on UTC calendar days since `lastFedDate`:
+Feed health is based on Eastern game days since `lastFedDate`:
 
-|            Days | Band        |
+|            Days | Health      |
 | --------------: | ----------- |
-|             0–2 | `excellent` |
-|             3–4 | `good`      |
-|             5–6 | `fair`      |
-|             7–8 | `poor`      |
-| 9+ or never fed | `critical`  |
+|             0–2 | `Excellent` |
+|             3–4 | `Good`      |
+|             5–6 | `Fair`      |
+| 7+ or never fed | `Bad`       |
 
-Vet health uses the explicit `healthStatus` finding when present; otherwise it
-decays from `lastVettedDate`: 0–7 days `excellent`, 8–14 `good`, 15–21 `fair`,
-22–28 `poor`, and 29+ or never vetted `critical`. Known band names are compared
-case-insensitively. An unknown free-form vet finding is conservatively treated
-as critical for combined-health ordering.
+Vet health uses the explicit `healthStatus` finding when present, read through
+`toHealthWord`; otherwise it decays from `lastVettedDate`: 0–7 days
+`Excellent`, 8–14 `Good`, 15–21 `Fair`, and 22+ or never vetted `Bad`. An
+unknown free-form vet finding (for example `Injured`) is Bad. No decay band
+produces Very Good; it appears only as a stored finding.
 
-Critical displayed health blocks breeding and competition entry. Feeding does
-not erase an independent vet problem, and a vet visit does not erase neglect.
+A horse must be **Fair or better** to breed, train, or enter any show (ridden
+or conformation): displayed health Bad blocks all three (`hasBadHealth`).
+Next-actions applies the same gate and suggests feeding and a vet visit for a
+horse in Bad health. Feeding does not erase an independent vet problem, and a
+vet visit does not erase neglect. The show-score health modifier keyed on the
+five words reads `horseHealthGrade`
+(`backend/modules/competition/rules/healthScoring.mjs`).
 
 ## Pregnancy-care contract
 
@@ -107,7 +119,7 @@ beyond the weighted average and cannot make the missed-day count negative.
 - Frontend formula mirror: `frontend/src/lib/utils/pregnancyChances.ts`
 
 Load this document only when changing or reviewing feed purchase/equipment,
-the daily feed action, feed/vet/displayed health, critical-health gates,
+the daily feed action, feed/vet/displayed health, the Fair-or-better health gate,
 pregnancy feeding counters, the seven-day foaling window, or the pregnancy
 bonus calculation. Do not load it for unrelated horse pages, generic inventory
 work, visual styling, or ordinary economy changes.

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { formatDate } from '@/lib/formatDate';
+import { healthLabel } from '@/lib/healthWords';
 import { Surface } from '@/components/ui/Surface';
 import type { Horse } from './HorseDetailPageTypes';
 
@@ -15,7 +16,9 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Health Status</p>
-          <p className="fantasy-body text-[var(--text-primary)]">{horse.healthStatus}</p>
+          <p className="fantasy-body text-[var(--text-primary)]">
+            {healthLabel(horse.displayedHealth)}
+          </p>
         </Surface>
         <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Age</p>

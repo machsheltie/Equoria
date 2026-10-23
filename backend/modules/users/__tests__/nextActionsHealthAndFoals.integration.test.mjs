@@ -2,14 +2,19 @@
  * next-actions: the health gate and the foal window.
  *
  * Equoria-3tna6 — owner ruling 2026-10-22: bad health is the only consequence;
- * a horse in bad health cannot breed, train or enter shows. Bad health is the
- * threshold the breeding guard applies (displayed health 'critical',
- * utils/horseHealth.mjs getDisplayedHealth). next-actions offered 'train' and
- * 'breed' (and 'compete') for such a horse, because it checked only
- * healthStatus 'injured'. It must not suggest an action the gate would refuse.
+ * a horse in bad health cannot breed, train or enter shows. next-actions
+ * offered 'train' and 'breed' (and 'compete') for such a horse, because it
+ * checked only healthStatus 'injured'. It must not suggest an action the gate
+ * would refuse.
  *
- * Equoria-cn6kt — owner ruling 2026-10-22: for a horse in critical health,
+ * Equoria-cn6kt — owner ruling 2026-10-22: for a horse in bad health,
  * next-actions suggests BOTH a vet visit and feeding.
+ *
+ * Equoria-u0jop — owner ruling 2026-10-23: health is Excellent, Very Good,
+ * Good, Fair, Bad (Poor/Bad/Critical = Bad) and a horse must be Fair or better
+ * to breed, train or show. next-actions uses the SAME gate as those actions
+ * (utils/horseHealth.mjs hasBadHealth). Old contract: only 'critical' was bad,
+ * so a horse seven days unfed (then 'poor') was still suggested for training.
  *
  * Equoria-fr2kg Q11 — owner ruling 2026-10-22: remove the
  * FoalDevelopment.isActive filter (the column never turns false). The
@@ -59,8 +64,11 @@ async function makeUser() {
   return user;
 }
 
-/** An adult mare, off every cooldown, with a rider; `fed` decides her health. */
-async function adultMare(user, { fed }) {
+/**
+ * An adult mare, off every cooldown, with a rider. `fed` decides her health:
+ * fed today is Excellent, unfed is ten days (Bad); `daysUnfed` sets the gap.
+ */
+async function adultMare(user, { fed, daysUnfed = fed ? 0 : 10 }) {
   const horse = await createTestHorse(
     prisma,
     {
@@ -69,8 +77,8 @@ async function adultMare(user, { fed }) {
       age: 7,
       dateOfBirth: competitionDateOfBirth(7),
       healthStatus: 'Excellent',
-      // Never fed (or fed 10 game days ago) is feed health 'critical'.
-      lastFedDate: fed ? new Date() : new Date(Date.now() - 10 * DAY),
+      // Fed 10 game days ago is feed health Bad; 7 days is Bad (was 'poor'); 5 is Fair.
+      lastFedDate: daysUnfed === 0 ? new Date() : new Date(Date.now() - daysUnfed * DAY),
       trainingCooldown: null,
       lastBredDate: null,
       userId: user.id,
@@ -124,7 +132,7 @@ describe('next-actions respects the health gate (Equoria-3tna6)', () => {
     expect(types).not.toContain('feed');
   });
 
-  it('a mare in critical health is suggested for none of train, breed or compete', async () => {
+  it('a mare in Bad health is suggested for none of train, breed or compete', async () => {
     const user = await makeUser();
     const mare = await adultMare(user, { fed: false });
 
@@ -136,14 +144,36 @@ describe('next-actions respects the health gate (Equoria-3tna6)', () => {
     expect(types).not.toContain('compete');
   });
 
-  it('a mare in critical health is suggested for a vet visit AND feeding (Equoria-cn6kt)', async () => {
+  it('a mare in Bad health is suggested for a vet visit AND feeding (Equoria-cn6kt)', async () => {
     const user = await makeUser();
     const mare = await adultMare(user, { fed: false });
 
     const actions = (await actionsFor(user)).filter(a => a.horseId === mare.id);
 
     expect(actions.filter(a => a.type === 'visit-vet')).toHaveLength(1);
-    expect(actions.filter(a => a.type === 'feed')).toHaveLength(1);
+    expect(actions.filter(a => a.type === 'feed')).toEqual([
+      expect.objectContaining({ metadata: { displayedHealth: 'Bad' } }),
+    ]);
+  });
+
+  it('a mare seven days unfed (was Poor, now Bad) gets vet + feeding and no train, breed or compete', async () => {
+    const user = await makeUser();
+    const mare = await adultMare(user, { daysUnfed: 7 });
+
+    const types = (await actionsFor(user)).filter(a => a.horseId === mare.id).map(a => a.type);
+
+    expect(types.sort()).toEqual(['feed', 'visit-vet']);
+  });
+
+  it('a mare in Fair health (five days unfed) is still suggested for train, breed and compete', async () => {
+    const user = await makeUser();
+    const mare = await adultMare(user, { daysUnfed: 5 });
+
+    const types = (await actionsFor(user)).filter(a => a.horseId === mare.id).map(a => a.type);
+
+    expect(types).toEqual(expect.arrayContaining(['train', 'breed', 'compete']));
+    expect(types).not.toContain('visit-vet');
+    expect(types).not.toContain('feed');
   });
 
   it('an injured mare already fed today gets one vet visit and no feeding', async () => {

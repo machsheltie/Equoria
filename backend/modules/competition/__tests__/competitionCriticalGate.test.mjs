@@ -1,10 +1,12 @@
 /**
- * Critical-health gate on conformation show entry (Equoria-71zs, parent: Equoria-3gqg).
+ * Bad-health gate on conformation show entry (Equoria-71zs, parent: Equoria-3gqg).
  *
- * Spec §x: a horse whose `displayedHealth === 'critical'` cannot enter
- * any competition. The gate fires in `enterConformationShow` before the
- * service-level validation, so the rejection message is specifically
- * about critical health (not e.g. 'Horse must be healthy').
+ * Owner ruling 2026-10-23 (Equoria-u0jop): a horse must be Fair or better to
+ * enter any competition; displayed health 'Bad' (Poor, Bad and Critical all
+ * map to Bad) is refused. Old contract: only `displayedHealth === 'critical'`
+ * was refused, with a "critical health" message. The gate fires in
+ * `enterConformationShow` before the service-level validation, so the
+ * rejection message is specifically about Bad health.
  *
  * Pattern: controller-direct (buildReq/buildRes) per the established
  * conformation-test pattern in modules/competition/__tests__/. Avoids
@@ -165,14 +167,14 @@ async function cleanupSuite() {
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
 
-describe('Critical-health gate on conformation show entry', () => {
+describe('Bad-health gate on conformation show entry', () => {
   beforeAll(cleanupSuite);
   afterAll(cleanupSuite);
   afterEach(cleanupSuite);
 
-  it('rejects entry with 400 when feed-derived health is critical (10 days un-fed)', async () => {
+  it('rejects entry with 400 when feed-derived health is Bad (10 days un-fed)', async () => {
     const user = await createUser();
-    // 10 days un-fed → feedHealth = 'critical' → displayedHealth = 'critical'
+    // 10 days un-fed → feedHealth = 'Bad' → displayedHealth = 'Bad'
     // healthStatus 'Excellent' ensures the SERVICE-level health check would
     // pass, isolating the A12 gate as the actual rejector.
     const horse = await createHorse(user.id, {
@@ -193,7 +195,7 @@ describe('Critical-health gate on conformation show entry', () => {
 
     expect(res.statusValue).toBe(400);
     expect(res.jsonValue.success).toBe(false);
-    expect(res.jsonValue.message).toMatch(/critical health|cannot enter/i);
+    expect(res.jsonValue.message).toMatch(/Bad health.*Fair health or better/);
 
     // No show entry was persisted.
     const entries = await prisma.showEntry.findMany({
@@ -202,8 +204,8 @@ describe('Critical-health gate on conformation show entry', () => {
     expect(entries).toHaveLength(0);
   });
 
-  it('rejects entry when vet-finding override sets healthStatus to critical', async () => {
-    // Sentinel-positive against a different path to displayedHealth='critical':
+  it('rejects entry when vet-finding override sets healthStatus to Critical (= Bad)', async () => {
+    // Sentinel-positive against a different path to displayedHealth='Bad':
     // healthStatus override (case-insensitive normalization in getVetHealth).
     const user = await createUser();
     const horse = await createHorse(user.id, {
@@ -223,10 +225,10 @@ describe('Critical-health gate on conformation show entry', () => {
     await enterConformationShow(req, res);
 
     expect(res.statusValue).toBe(400);
-    expect(res.jsonValue.message).toMatch(/critical health|cannot enter/i);
+    expect(res.jsonValue.message).toMatch(/Bad health.*Fair health or better/);
   });
 
-  it('does NOT fire critical-health gate for a healthy horse', async () => {
+  it('does NOT fire the Bad-health gate for a healthy horse', async () => {
     // Sentinel-positive that the gate isn't a rubber stamp: a healthy
     // horse must NOT be rejected by the A12 gate. (Other validations
     // may still fail — e.g. groom assignment freshness — but the gate
@@ -250,15 +252,15 @@ describe('Critical-health gate on conformation show entry', () => {
     await enterConformationShow(req, res);
 
     // Either succeeds (201) or fails for a non-A12 reason. Either way,
-    // the response must NOT match the A12 critical-health message.
-    expect(res.jsonValue?.message ?? '').not.toMatch(/critical health/i);
+    // the response must NOT match the A12 Bad-health message.
+    expect(res.jsonValue?.message ?? '').not.toMatch(/Bad health/);
   });
 
-  it('does NOT fire for a retired horse (age >= 21) — retirement is not critical', async () => {
-    // Per worseOf(): 'retired' is a terminal state, distinct from 'critical'.
-    // A retired horse has displayedHealth='retired', NOT 'critical', so the
+  it('does NOT fire for a retired horse (age >= 21) — retirement is not a health word', async () => {
+    // Per worseOf(): 'retired' is a terminal state, distinct from 'Bad'.
+    // A retired horse has displayedHealth='retired', NOT 'Bad', so the
     // A12 gate must not fire. (The service may have its own retired-horse
-    // policy; A12 specifically is about critical-health.)
+    // policy; A12 specifically is about Bad health.)
     const user = await createUser();
     const horse = await createHorse(user.id, { age: 22 });
     const groom = await createGroom(user.id);
@@ -273,6 +275,6 @@ describe('Critical-health gate on conformation show entry', () => {
 
     await enterConformationShow(req, res);
 
-    expect(res.jsonValue?.message ?? '').not.toMatch(/critical health/i);
+    expect(res.jsonValue?.message ?? '').not.toMatch(/Bad health/);
   });
 });

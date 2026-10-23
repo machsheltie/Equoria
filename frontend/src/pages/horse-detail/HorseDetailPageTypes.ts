@@ -7,6 +7,8 @@
  * additional fields (parentIds, tack, feed-system fields, etc.).
  */
 
+import type { HealthBand } from '@/lib/healthWords';
+
 export interface HorseStats {
   precision: number;
   strength: number;
@@ -63,9 +65,9 @@ export interface Horse {
   // The date of the horse's last vet check (Horse.lastVettedDate; Equoria-oey96.56).
   lastVettedDate?: string | null;
   equippedFeedType?: string | null;
-  feedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
-  vetHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired' | string;
-  displayedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
+  feedHealth?: HealthBand;
+  vetHealth?: HealthBand;
+  displayedHealth?: HealthBand;
   // Feed-system redesign 2026-04-29 (B6, Equoria-ta4s): in-foal state on the
   // mare's row. Set by `breedFoal()` (B3); consumed by `runFoalingJob()` (B5).
   inFoalSinceDate?: string | null;

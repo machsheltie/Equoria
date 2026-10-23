@@ -10,7 +10,7 @@ import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
-import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
@@ -114,18 +114,16 @@ async function computeCanTrain(parsedHorseId, discipline) {
     return { eligible: false, reason: 'Horse is injured and cannot train' };
   }
 
-  // Bad-health gate (owner ruling 2026-10-22, Equoria-0d4wa): a horse in bad
-  // health cannot train. "Bad health" is the threshold breeding and
-  // conformation entry already apply: displayed health (worse of feed and vet
-  // health) is 'critical'.
-  if (getDisplayedHealth(horse) === 'critical') {
+  // Health gate (owner rulings 2026-10-22 Equoria-0d4wa, 2026-10-23
+  // Equoria-u0jop): a horse must be Fair or better to train; displayed health
+  // Bad (Poor, Bad and Critical all = Bad) is refused. The same gate as
+  // breeding and every show entry (utils/horseHealth.mjs hasBadHealth).
+  // Old contract: only 'critical' was refused.
+  if (hasBadHealth(horse)) {
     logger.info(
-      `[trainingController.canTrain] Horse ${parsedHorseId} is in critical health — cannot train`,
+      `[trainingController.canTrain] Horse ${parsedHorseId} is in Bad health — cannot train`,
     );
-    return {
-      eligible: false,
-      reason: 'Horse is in critical health and cannot train. Feed and vet to restore health.',
-    };
+    return { eligible: false, reason: badHealthMessage(horse.name ?? 'This horse', 'train') };
   }
 
   // Check trait requirements for specific disciplines (e.g., Gaited)

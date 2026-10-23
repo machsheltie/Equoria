@@ -18,6 +18,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { EntityHeader } from '@/components/layout/EntityHeader';
 import { Surface } from '@/components/ui/Surface';
 import HealthBadge from '../../components/horse/HealthBadge';
+import { healthLabel } from '@/lib/healthWords';
 import MarkingsPanel from '../../components/horse/MarkingsPanel';
 import PregnancyFeedingPanel from '../../components/horse/PregnancyFeedingPanel';
 import { getHorseImage, getHorseImageStyle } from '@/lib/breed-images';
@@ -133,12 +134,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
     <div className="min-w-0 space-y-1">
       {/* Badges row */}
       <div className="flex items-center gap-3 flex-wrap">
-        {horse.displayedHealth && (
-          <HealthBadge
-            band={horse.displayedHealth}
-            showCriticalWarning={horse.displayedHealth === 'critical'}
-          />
-        )}
+        {horse.displayedHealth && <HealthBadge band={horse.displayedHealth} showBadHealthWarning />}
         {/* Equoria-8xfo (31F-FE-2) — Conformation title ribbon.
             Hidden when never-shown (titlePoints === 0 || currentTitle === null).
             Tooltip surfaces breedingValueBoost as +X%. */}
@@ -177,7 +173,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
         <span>•</span>
         <span>Gender: {horse.gender}</span>
         <span>•</span>
-        <span>Health: {horse.healthStatus}</span>
+        <span>Health: {healthLabel(horse.displayedHealth)}</span>
       </div>
       {/* Equoria-8k7k + Equoria-876o — temperament line w/ reference modal trigger */}
       <div

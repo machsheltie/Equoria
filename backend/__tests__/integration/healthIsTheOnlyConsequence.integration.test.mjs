@@ -7,11 +7,13 @@
  *   - Bad health is the ONLY consequence: a horse in bad health cannot breed,
  *     train or enter shows.
  *
- * "Bad health" is the threshold the breeding and conformation gates already
- * used, and the one the feed-system health contract names
- * (docs/features/feed-system.md: "Critical displayed health blocks breeding
- * and competition entry"): displayed health — the worse of feed health and vet
- * health, utils/horseHealth.mjs getDisplayedHealth — equal to 'critical'.
+ * Owner rulings 2026-10-23 (Equoria-u0jop), superseding the same-day
+ * "only critical blocks" ruling: health is exactly Excellent, Very Good, Good,
+ * Fair, Bad (Poor, Bad and Critical all = Bad), and a horse must be FAIR OR
+ * BETTER to breed, train or enter any show. The gate is
+ * utils/horseHealth.mjs hasBadHealth: displayed health (the worse of feed and
+ * vet health) equal to 'Bad'. Old contract: only 'critical' blocked, and a
+ * horse in Poor health could still train, breed and show.
  *
  * Every action goes through the real HTTP route (supertest on the app, auth +
  * CSRF) against the real DB. Shows are free (entryFee 0) so no escrow moves.
@@ -38,8 +40,13 @@ const groomIds = [];
 let owner;
 let token;
 
-/** Ten Eastern days without feed: feed health 'critical' (bands: 9+ days). */
-const tenDaysAgo = () => new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+/** Ten Eastern days without feed: feed health Bad (was 'critical'). */
+const tenDaysAgo = () => daysAgo(10);
+/** Seven Eastern days without feed: feed health Bad (was 'poor', which passed). */
+const sevenDaysAgo = () => daysAgo(7);
+/** Five Eastern days without feed: feed health Fair (bands 5-6 days). */
+const fiveDaysAgo = () => daysAgo(5);
 
 beforeAll(async () => {
   owner = await prisma.user.create({
@@ -57,6 +64,7 @@ beforeAll(async () => {
   cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');
   cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: { in: horseIds } } }), 'logs');
   cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: { in: groomIds } } }), 'groom assignments');
+  cleanup.add(() => prisma.breedingRecord.deleteMany({ where: { damId: { in: horseIds } } }), 'breeding records');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
   cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: groomIds } } }), 'grooms');
   cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: riderIds } } }), 'riders');
@@ -146,14 +154,14 @@ describe('No burnout (owner ruling 2026-10-22)', () => {
 });
 
 describe('Bad health blocks training', () => {
-  it('refuses a horse in critical health (ten days unfed) and writes nothing', async () => {
+  it('refuses a horse in Bad health (ten days unfed) and writes nothing', async () => {
     const horse = await makeHorse({ lastFedDate: tenDaysAgo() });
 
     const res = await post('/api/v1/training/train', { horseId: horse.id, discipline: 'Dressage' });
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toMatch(/critical health/i);
+    expect(res.body.message).toMatch(/Bad health.*Fair health or better/);
     expect(await prisma.trainingLog.count({ where: { horseId: horse.id } })).toBe(0);
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
@@ -162,15 +170,27 @@ describe('Bad health blocks training', () => {
     expect(after.disciplineScores?.Dressage ?? 0).toBe(0);
   });
 
-  it('refuses a horse with a critical vet finding even when fed today', async () => {
-    const horse = await makeHorse({ healthStatus: 'Critical' });
+  it.each(['Critical', 'Poor', 'Bad'])(
+    'refuses a horse whose stored vet finding is %s (= Bad) even when fed today',
+    async healthStatus => {
+      const horse = await makeHorse({ healthStatus });
+      const res = await post('/api/v1/training/train', { horseId: horse.id, discipline: 'Dressage' });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/Bad health/);
+      expect(await prisma.trainingLog.count({ where: { horseId: horse.id } })).toBe(0);
+    },
+  );
+
+  // Old contract: 'still trains a horse in poor (not critical) health'.
+  it('refuses a horse seven days unfed (was Poor, now Bad)', async () => {
+    const horse = await makeHorse({ lastFedDate: sevenDaysAgo() });
     const res = await post('/api/v1/training/train', { horseId: horse.id, discipline: 'Dressage' });
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/critical health/i);
+    expect(res.body.message).toMatch(/Bad health/);
   });
 
-  it('still trains a horse in poor (not critical) health', async () => {
-    const horse = await makeHorse({ healthStatus: 'Poor' });
+  it('trains a horse in Fair health (five days unfed)', async () => {
+    const horse = await makeHorse({ lastFedDate: fiveDaysAgo() });
     const res = await post('/api/v1/training/train', { horseId: horse.id, discipline: 'Dressage' });
     expect(res.status).toBe(200);
   });
@@ -186,7 +206,7 @@ describe.each([
     return horse;
   }
 
-  it('refuses a horse in critical health (ten days unfed) and creates no entry', async () => {
+  it('refuses a horse in Bad health (ten days unfed) and creates no entry', async () => {
     const show = await makeShow();
     const horse = await riddenHorse({ lastFedDate: tenDaysAgo() });
 
@@ -194,10 +214,26 @@ describe.each([
 
     expect({ status: res.status, code: res.body.code }).toEqual({
       status: 400,
-      code: 'horseCriticalHealth',
+      code: 'horseBadHealth',
     });
-    expect(res.body.message).toMatch(/critical health/i);
+    expect(res.body.message).toMatch(/Bad health.*Fair health or better/);
     expect(await prisma.showEntry.count({ where: { showId: show.id, horseId: horse.id } })).toBe(0);
+  });
+
+  it('refuses a horse whose stored vet finding is Poor (= Bad)', async () => {
+    const show = await makeShow();
+    const horse = await riddenHorse({ healthStatus: 'Poor' });
+
+    const res = await enter(show.id, horse.id);
+
+    expect({ status: res.status, code: res.body.code }).toEqual({ status: 400, code: 'horseBadHealth' });
+    expect(await prisma.showEntry.count({ where: { showId: show.id, horseId: horse.id } })).toBe(0);
+  });
+
+  it('accepts a horse in Fair health', async () => {
+    const show = await makeShow();
+    const horse = await riddenHorse({ healthStatus: 'Fair' });
+    expect((await enter(show.id, horse.id)).status).toBe(201);
   });
 
   it('accepts the same horse once it is fed (control)', async () => {
@@ -208,7 +244,7 @@ describe.each([
 });
 
 describe('Bad health blocks conformation show entry', () => {
-  it('refuses a horse in critical health before any groom or show lookup', async () => {
+  it('refuses a horse in Bad health before any groom or show lookup', async () => {
     const horse = await makeHorse({ lastFedDate: tenDaysAgo() });
     const res = await post('/api/v1/competition/conformation/enter', {
       horseId: horse.id,
@@ -216,17 +252,18 @@ describe('Bad health blocks conformation show entry', () => {
       showId: 1,
     });
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/critical health/i);
+    expect(res.body.message).toMatch(/Bad health.*Fair health or better/);
   });
 });
 
 /**
- * Owner rulings 2026-10-23 (Equoria-0d4wa follow-ups): conformation entry uses
- * the SAME health bar as breeding, training and ridden shows — only critical
- * displayed health blocks (the old Excellent/Good requirement is gone) — and
- * the non-blocking high-stress warning on entry is removed.
+ * Owner rulings 2026-10-23: conformation entry uses the SAME health bar as
+ * breeding, training and ridden shows — Fair or better (Equoria-u0jop; the
+ * earlier same-day "only critical blocks" ruling and the old Excellent/Good
+ * requirement are both gone) — and the non-blocking high-stress warning on
+ * entry is removed (Equoria-0d4wa follow-up).
  */
-describe('Conformation entry: only critical health blocks (owner ruling 2026-10-23)', () => {
+describe('Conformation entry: Fair or better (owner ruling 2026-10-23)', () => {
   /** An entry-ready conformation horse: a groom on staff, assigned five days ago. */
   async function conformationHorse(fields) {
     const horse = await makeHorse(fields);
@@ -261,7 +298,8 @@ describe('Conformation entry: only critical health blocks (owner ruling 2026-10-
       showId: show.id,
     });
 
-  it.each(['Poor', 'Fair'])('enters a horse in %s (not critical) health', async healthStatus => {
+  // Old contract: Poor entered too (only critical blocked).
+  it.each(['Fair', 'Good', 'Very Good'])('enters a horse in %s health', async healthStatus => {
     const show = await conformationShow();
     const entrant = await conformationHorse({ healthStatus });
 
@@ -281,45 +319,52 @@ describe('Conformation entry: only critical health blocks (owner ruling 2026-10-
     expect(res.body.data.warnings.filter(w => /stress/i.test(w))).toEqual([]);
   });
 
-  it('refuses a horse with a critical vet finding and creates no entry', async () => {
-    const show = await conformationShow();
-    const entrant = await conformationHorse({ healthStatus: 'Critical' });
+  it.each(['Critical', 'Poor'])(
+    'refuses a horse with a %s vet finding (= Bad) and creates no entry',
+    async healthStatus => {
+      const show = await conformationShow();
+      const entrant = await conformationHorse({ healthStatus });
 
-    const res = await enterConformation(show, entrant);
+      const res = await enterConformation(show, entrant);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/critical health/i);
-    expect(await prisma.showEntry.count({ where: { showId: show.id } })).toBe(0);
-  });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/Bad health.*Fair health or better/);
+      expect(await prisma.showEntry.count({ where: { showId: show.id } })).toBe(0);
+    },
+  );
 
-  it('the eligibility check applies the same bar: poor is eligible, critical is not', async () => {
+  it('the eligibility check applies the same bar: Fair is eligible, Poor and unfed are not', async () => {
+    const fair = await conformationHorse({ healthStatus: 'Fair' });
     const poor = await conformationHorse({ healthStatus: 'Poor' });
     const unfed = await conformationHorse({ lastFedDate: tenDaysAgo() });
 
+    const fairRes = await get(`/api/v1/competition/conformation/eligibility/${fair.horse.id}`);
     const poorRes = await get(`/api/v1/competition/conformation/eligibility/${poor.horse.id}`);
     const unfedRes = await get(`/api/v1/competition/conformation/eligibility/${unfed.horse.id}`);
 
-    expect({ status: poorRes.status, eligible: poorRes.body.data.eligible }).toEqual({
+    expect({ status: fairRes.status, eligible: fairRes.body.data.eligible }).toEqual({
       status: 200,
       eligible: true,
     });
-    expect({ status: unfedRes.status, eligible: unfedRes.body.data.eligible }).toEqual({
-      status: 200,
-      eligible: false,
-    });
-    expect(unfedRes.body.data.errors.join(' ')).toMatch(/critical health/i);
+    for (const res of [poorRes, unfedRes]) {
+      expect({ status: res.status, eligible: res.body.data.eligible }).toEqual({
+        status: 200,
+        eligible: false,
+      });
+      expect(res.body.data.errors.join(' ')).toMatch(/Bad health/);
+    }
   });
 });
 
 describe('Bad health blocks breeding', () => {
-  it('refuses a pair when the mare is in critical health and starts no pregnancy', async () => {
+  it('refuses a pair when the mare is in Bad health and starts no pregnancy', async () => {
     const sire = await makeHorse({ sex: 'Stallion' });
     const dam = await makeHorse({ lastFedDate: tenDaysAgo() });
 
     const res = await post('/api/v1/horses/foals', { sireId: sire.id, damId: dam.id });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/critical health/i);
+    expect(res.body.message).toMatch(/Bad health.*Fair health or better/);
     const after = await prisma.horse.findUnique({
       where: { id: dam.id },
       select: { inFoalSinceDate: true, lastBredDate: true },
@@ -327,11 +372,36 @@ describe('Bad health blocks breeding', () => {
     expect(after).toEqual({ inFoalSinceDate: null, lastBredDate: null });
   });
 
-  it('refuses a pair when the stallion is in critical health', async () => {
+  it('refuses a pair when the stallion is in Bad health', async () => {
     const sire = await makeHorse({ sex: 'Stallion', lastFedDate: null });
     const dam = await makeHorse();
     const res = await post('/api/v1/horses/foals', { sireId: sire.id, damId: dam.id });
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/critical health/i);
+    expect(res.body.message).toMatch(/Bad health/);
+  });
+
+  it('refuses a pair when the mare carries a Poor vet finding (= Bad)', async () => {
+    const sire = await makeHorse({ sex: 'Stallion' });
+    const dam = await makeHorse({ healthStatus: 'Poor' });
+    const res = await post('/api/v1/horses/foals', { sireId: sire.id, damId: dam.id });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/Bad health/);
+    const after = await prisma.horse.findUnique({ where: { id: dam.id }, select: { inFoalSinceDate: true } });
+    expect(after.inFoalSinceDate).toBeNull();
+  });
+
+  it('breeds a pair when both are in Fair health', async () => {
+    // Same breed with a breed profile, as the pair rules require (Equoria-5nwwf).
+    const breed = await prisma.breed.upsert({
+      where: { name: 'Thoroughbred' },
+      update: {},
+      create: { name: 'Thoroughbred', description: 'Shared test breed' },
+    });
+    const sire = await makeHorse({ sex: 'Stallion', healthStatus: 'Fair', breedId: breed.id });
+    const dam = await makeHorse({ lastFedDate: fiveDaysAgo(), breedId: breed.id });
+    const res = await post('/api/v1/horses/foals', { sireId: sire.id, damId: dam.id });
+    expect(res.status).toBe(200);
+    const after = await prisma.horse.findUnique({ where: { id: dam.id }, select: { inFoalSinceDate: true } });
+    expect(after.inFoalSinceDate).not.toBeNull();
   });
 });

@@ -86,6 +86,8 @@ export const horseHandlers = [
         ageYears: 5,
         dateOfBirth: '2020-01-01T00:00:00Z',
         healthStatus: 'Good',
+        // The server-derived health every gate and screen reads (Equoria-u0jop).
+        displayedHealth: 'Good',
         imageUrl: undefined,
         stats: { speed: 75, stamina: 70, agility: 65, strength: 60, intelligence: 55, health: 80 },
         disciplineScores: { dressage: 45, showJumping: 55 },

@@ -23,6 +23,7 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { foalRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
+import { healthWords } from '../../../utils/horseHealth.mjs';
 import { horseNameBodyRule } from './_validators.mjs';
 
 const router = express.Router();
@@ -111,10 +112,11 @@ const validateFoalCreation = [
   // `stripClientOwnerFields` below before validation runs (Equoria-6w3ur;
   // same shape the audit closed in Findings 2 and 3).
   body('stableId').optional().isInt({ min: 1 }).withMessage('Stable ID must be a positive integer'),
+  // The five health words (owner ruling 2026-10-23, Equoria-u0jop).
   body('healthStatus')
     .optional()
-    .isIn(['Excellent', 'Good', 'Fair', 'Poor', 'Critical'])
-    .withMessage('Health status must be one of: Excellent, Good, Fair, Poor, Critical'),
+    .isIn(healthWords)
+    .withMessage(`Health status must be one of: ${healthWords.join(', ')}`),
 
   (req, res, next) => {
     const errors = validationResult(req);

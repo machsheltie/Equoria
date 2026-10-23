@@ -37,6 +37,7 @@ export type BreedingHorse = Pick<
   | 'name'
   | 'dateOfBirth'
   | 'healthStatus'
+  | 'displayedHealth'
   | 'imageUrl'
   | 'level'
   | 'breedingCooldownEndsAt'
@@ -81,6 +82,8 @@ export function toBreedingHorse(horse: HorseSummary): BreedingHorse | null {
     sex,
     breedName: getBreedName(horse.breed),
     healthStatus: horse.healthStatus,
+    // Equoria-u0jop: the selector's Fair-or-better gate and health label.
+    displayedHealth: horse.displayedHealth,
     dateOfBirth: horse.dateOfBirth,
     imageUrl: horse.imageUrl,
     level: horse.level,

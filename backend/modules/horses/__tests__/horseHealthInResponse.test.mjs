@@ -79,12 +79,12 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       expect(Array.isArray(horses)).toBe(true);
       const fresh = horses.find(h => h.id === horseId);
       expect(fresh).toBeDefined();
-      expect(fresh.feedHealth).toBe('excellent');
-      expect(fresh.vetHealth).toBe('excellent');
-      expect(fresh.displayedHealth).toBe('excellent');
+      expect(fresh.feedHealth).toBe('Excellent');
+      expect(fresh.vetHealth).toBe('Excellent');
+      expect(fresh.displayedHealth).toBe('Excellent');
     });
 
-    it('reflects stale lastFedDate (10 days = critical)', async () => {
+    it('reflects stale lastFedDate (10 days = Bad)', async () => {
       await prisma.horse.update({
         where: { id: horseId },
         data: { lastFedDate: new Date(Date.now() - 10 * 86_400_000) },
@@ -96,14 +96,15 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
         .set('Authorization', `Bearer ${token}`);
 
       const fresh = res.body.data.find(h => h.id === horseId);
-      expect(fresh.feedHealth).toBe('critical');
-      // displayedHealth = worseOf(feedHealth='critical', vetHealth='excellent')
-      expect(fresh.displayedHealth).toBe('critical');
+      expect(fresh.feedHealth).toBe('Bad');
+      // displayedHealth = worseOf(feedHealth='Bad', vetHealth='Excellent')
+      expect(fresh.displayedHealth).toBe('Bad');
     });
 
-    it('reflects healthStatus override on vetHealth', async () => {
+    it('reflects healthStatus override on vetHealth, read as a health word', async () => {
       // Vet-finding override: any non-null healthStatus wins over the
-      // weekly-decay band, per getVetHealth().
+      // weekly-decay band, per getVetHealth(). A stored 'poor' reads as Bad
+      // (owner ruling 2026-10-23, Equoria-u0jop; old contract: 'poor').
       await prisma.horse.update({
         where: { id: horseId },
         data: { healthStatus: 'poor' },
@@ -115,9 +116,9 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
         .set('Authorization', `Bearer ${token}`);
 
       const fresh = res.body.data.find(h => h.id === horseId);
-      expect(fresh.vetHealth).toBe('poor');
-      // displayedHealth = worseOf('excellent', 'poor') === 'poor'
-      expect(fresh.displayedHealth).toBe('poor');
+      expect(fresh.vetHealth).toBe('Bad');
+      // displayedHealth = worseOf('Excellent', 'Bad') === 'Bad'
+      expect(fresh.displayedHealth).toBe('Bad');
     });
   });
 
@@ -129,9 +130,9 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.feedHealth).toBe('excellent');
-      expect(res.body.data.vetHealth).toBe('excellent');
-      expect(res.body.data.displayedHealth).toBe('excellent');
+      expect(res.body.data.feedHealth).toBe('Excellent');
+      expect(res.body.data.vetHealth).toBe('Excellent');
+      expect(res.body.data.displayedHealth).toBe('Excellent');
     });
 
     it('reflects stale lastFedDate on overview detail', async () => {
@@ -145,8 +146,8 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res.body.data.feedHealth).toBe('critical');
-      expect(res.body.data.displayedHealth).toBe('critical');
+      expect(res.body.data.feedHealth).toBe('Bad');
+      expect(res.body.data.displayedHealth).toBe('Bad');
     });
 
     it('retired horse (age >= 21) is reported as retired on all three bands', async () => {
@@ -176,12 +177,12 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.feedHealth).toBe('excellent');
-      expect(res.body.data.vetHealth).toBe('excellent');
-      expect(res.body.data.displayedHealth).toBe('excellent');
+      expect(res.body.data.feedHealth).toBe('Excellent');
+      expect(res.body.data.vetHealth).toBe('Excellent');
+      expect(res.body.data.displayedHealth).toBe('Excellent');
     });
 
-    it('reflects stale lastFedDate (10 days = critical)', async () => {
+    it('reflects stale lastFedDate (10 days = Bad)', async () => {
       await prisma.horse.update({
         where: { id: horseId },
         data: { lastFedDate: new Date(Date.now() - 10 * 86_400_000) },
@@ -193,8 +194,8 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.feedHealth).toBe('critical');
-      expect(res.body.data.displayedHealth).toBe('critical');
+      expect(res.body.data.feedHealth).toBe('Bad');
+      expect(res.body.data.displayedHealth).toBe('Bad');
     });
   });
 });

@@ -112,6 +112,19 @@ describe('canHorseBreed', () => {
       expect(result.canBreed).toBe(true);
     });
 
+    // Owner ruling 2026-10-23 (Equoria-u0jop): a horse must be Fair or better
+    // to breed; the server's displayed health is the gate.
+    it('should prevent breeding for a horse whose displayed health is Bad', () => {
+      const horse = createHorse({ age: 5, displayedHealth: 'Bad' });
+      const result = canHorseBreed(horse);
+      expect(result).toEqual({ canBreed: false, reason: 'Bad health' });
+    });
+
+    it('should allow breeding for a horse in Fair health', () => {
+      const horse = createHorse({ age: 5, displayedHealth: 'Fair' });
+      expect(canHorseBreed(horse).canBreed).toBe(true);
+    });
+
     it('should allow breeding for horses with other health statuses', () => {
       const horse = createHorse({ age: 5, healthStatus: 'recovering' });
       const result = canHorseBreed(horse);
@@ -617,17 +630,19 @@ describe('HorseSelector Component', () => {
       expect(screen.getByText(/5 years old/)).toBeInTheDocument();
     });
 
+    // Owner ruling 2026-10-23 (Equoria-u0jop): the selector shows the server's
+    // displayed health in the five words. Old contract: the raw healthStatus.
     it('should display health status when present', () => {
       render(
         <HorseSelector
-          horses={[stallion1]}
+          horses={[{ ...stallion1, displayedHealth: 'Good' }]}
           selectedHorse={null}
           onSelect={mockOnSelect}
           filter="male"
           title="Select Sire"
         />
       );
-      expect(screen.getByText(/healthy/i)).toBeInTheDocument();
+      expect(screen.getByTestId('horse-health')).toHaveTextContent('Good');
     });
   });
 

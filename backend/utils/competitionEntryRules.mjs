@@ -17,13 +17,14 @@
  *   - no double entry in one show; no general competition cooldown;
  *   - R9: XP and points never gate entry (the level/range returns with B8).
  * Health: an injured horse is refused, and so is any horse whose displayed
- * health is critical (owner ruling 2026-10-22, Equoria-0d4wa).
+ * health is Bad — a horse must be Fair or better to enter (owner rulings
+ * 2026-10-22 Equoria-0d4wa, 2026-10-23 Equoria-u0jop).
  * C11: conformation keeps its own age 0+ / groom rules; only double entry
  * applies to it here.
  */
 
 import { getHorseAgeYears } from './horseAge.mjs';
-import { getDisplayedHealth } from './horseHealth.mjs';
+import { hasBadHealth } from './horseHealth.mjs';
 
 export const MIN_ENTRY_AGE_YEARS = 3;
 export const MAX_ENTRY_AGE_YEARS = 20;
@@ -39,9 +40,11 @@ export const ENTRY_REFUSALS = Object.freeze({
   AGE_TOO_OLD: Object.freeze({ status: 400, message: 'Horses over 20 years old cannot compete' }),
   HORSE_INJURED: Object.freeze({ status: 400, message: 'Injured horses cannot compete' }),
   // camelCase: new codes may not add snake-case names (Equoria-pjvp8 ratchet).
-  horseCriticalHealth: Object.freeze({
+  // Owner ruling 2026-10-23 (Equoria-u0jop); was horseCriticalHealth.
+  horseBadHealth: Object.freeze({
     status: 400,
-    message: 'Horses in critical health cannot compete. Feed and vet to restore health.',
+    message:
+      'Horses in Bad health cannot compete. A horse must be in Fair health or better to breed, train or enter a show. Feed and vet to restore health.',
   }),
   RIDER_REQUIRED: Object.freeze({
     status: 400,
@@ -209,9 +212,9 @@ export function ageRefusal(dateOfBirth, now = new Date()) {
 
 /**
  * Health rule: a refusal code or null. An injured horse keeps its own code; any
- * other horse in bad health is refused too (owner ruling 2026-10-22,
- * Equoria-0d4wa: bad health blocks show entry). Bad health is the threshold
- * breeding and conformation entry already apply: displayed health 'critical'.
+ * other horse in Bad health is refused too (owner rulings 2026-10-22
+ * Equoria-0d4wa, 2026-10-23 Equoria-u0jop: Fair or better to enter). The gate
+ * is the one breeding, training and conformation entry apply: hasBadHealth.
  *
  * @param {{ healthStatus?: string|null, age?: number|null,
  *   lastFedDate?: Date|string|null, lastVettedDate?: Date|string|null }|null|undefined} horse
@@ -221,7 +224,7 @@ export function healthRefusal(horse, now = new Date()) {
   if (String(horse?.healthStatus).toLowerCase() === 'injured') {
     return 'HORSE_INJURED';
   }
-  return horse && getDisplayedHealth(horse, now) === 'critical' ? 'horseCriticalHealth' : null;
+  return horse && hasBadHealth(horse, now) ? 'horseBadHealth' : null;
 }
 
 /** C10 rider rule over the horse's active assignment: a refusal code or null. */

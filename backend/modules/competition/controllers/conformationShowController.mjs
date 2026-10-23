@@ -18,7 +18,7 @@ import { validationResult } from 'express-validator';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
-import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import { sendEntryRefusal } from '../services/entryEligibility.mjs';
 import {
   validateConformationEntry,
@@ -86,17 +86,17 @@ export async function enterConformationShow(req, res) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
     }
 
-    // Critical-health gate (A12): a horse whose displayedHealth has decayed
-    // to 'critical' (via stale lastFedDate, stale lastVettedDate, or an
-    // explicit vet finding) cannot enter competitions. This is the only
-    // health bar (owner ruling 2026-10-23, Equoria-0d4wa: the same one as
-    // breeding, training and ridden shows); checkConformationEntryInTx
-    // decides it again inside the entry transaction.
-    if (getDisplayedHealth(horse) === 'critical') {
+    // Health gate (A12): a horse must be Fair or better to enter; displayed
+    // health Bad (via stale lastFedDate, stale lastVettedDate, or a vet
+    // finding of Poor/Bad/Critical) is refused. This is the only health bar
+    // (owner rulings 2026-10-23, Equoria-0d4wa / Equoria-u0jop: the same one
+    // as breeding, training and ridden shows; was 'critical' only);
+    // checkConformationEntryInTx decides it again inside the entry transaction.
+    if (hasBadHealth(horse)) {
       logger.info(
-        `[conformationShowController.POST /enter] Rejected entry: horse ${horseId} is in critical health`,
+        `[conformationShowController.POST /enter] Rejected entry: horse ${horseId} is in Bad health`,
       );
-      const healthMsg = `${horse.name} is in critical health and cannot enter competitions. Feed and vet to restore health.`;
+      const healthMsg = badHealthMessage(horse.name, 'enter competitions');
       return res.status(400).json({
         success: false,
         message: healthMsg,
@@ -323,14 +323,12 @@ export async function checkConformationEligibility(req, res) {
     }
 
     // Run eligibility check via service layer, plus the entry route's health
-    // bar (critical displayed health only, owner ruling 2026-10-23) so this
+    // bar (Fair or better, owner ruling 2026-10-23, Equoria-u0jop) so this
     // never calls a horse eligible for an entry the route refuses.
     const result = await validateConformationEntry(horse, groom, userId);
-    if (getDisplayedHealth(horse) === 'critical') {
+    if (hasBadHealth(horse)) {
       result.valid = false;
-      result.errors.push(
-        `${horse.name} is in critical health and cannot enter competitions. Feed and vet to restore health.`,
-      );
+      result.errors.push(badHealthMessage(horse.name, 'enter competitions'));
     }
 
     logger.info(

@@ -5,6 +5,8 @@
  * These types map to the backend breeding prediction service responses.
  */
 
+import type { HealthBand } from '@/lib/healthWords';
+
 /**
  * Canonical horse-sex vocabulary (Equoria-gxcxs).
  *
@@ -29,6 +31,8 @@ export interface Horse {
   breedId?: number;
   breedName?: string;
   healthStatus: string;
+  /** The server's displayed health (Equoria-u0jop): the breeding health gate. */
+  displayedHealth?: HealthBand;
   level?: number;
   dateOfBirth: string;
   imageUrl?: string;

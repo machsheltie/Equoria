@@ -29,6 +29,7 @@ import { SectionLoading, ErrorState } from '@/components/ui/state';
 import type { Horse } from '@/types/breeding';
 import type { BreedingCompatibility } from '@/lib/api-client';
 import { getHorseImage } from '@/lib/breed-images';
+import { healthLabel } from '@/lib/healthWords';
 
 export interface BreedingConfirmationModalProps {
   isOpen: boolean;
@@ -107,8 +108,11 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
           <span className="text-role-secondary">Health:</span>
           <div className="flex items-center gap-1">
             <Heart className="h-3 w-3 text-[var(--status-danger)]" />
-            <span className="font-medium text-[var(--text-primary)] capitalize">
-              {horse.healthStatus || 'Good'}
+            <span
+              className="font-medium text-[var(--text-primary)]"
+              data-testid="breeding-horse-health"
+            >
+              {healthLabel(horse.displayedHealth)}
             </span>
           </div>
         </div>

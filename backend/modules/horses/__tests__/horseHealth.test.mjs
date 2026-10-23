@@ -7,7 +7,72 @@ import {
   getDisplayedHealth,
   worseOf,
   withHealth,
+  healthWords,
+  toHealthWord,
+  hasBadHealth,
+  badHealthMessage,
 } from '../../../utils/horseHealth.mjs';
+
+// Owner ruling 2026-10-23 (Equoria-u0jop): health is exactly Excellent, Very
+// Good, Good, Fair, Bad; Poor, Bad and Critical all map to Bad. Old contract:
+// lowercase bands excellent / good / fair / poor / critical.
+describe('toHealthWord (the one health vocabulary)', () => {
+  it('is exactly the five words, best first', () => {
+    expect(healthWords).toEqual(['Excellent', 'Very Good', 'Good', 'Fair', 'Bad']);
+  });
+
+  it('maps Poor, Bad and Critical to Bad in any case', () => {
+    for (const raw of ['Poor', 'poor', 'Bad', 'bad', 'Critical', 'critical', 'CRITICAL']) {
+      expect(toHealthWord(raw)).toBe('Bad');
+    }
+  });
+
+  it('keeps the five words and normalises their case and spacing', () => {
+    expect(toHealthWord('excellent')).toBe('Excellent');
+    expect(toHealthWord('Very Good')).toBe('Very Good');
+    expect(toHealthWord('very_good')).toBe('Very Good');
+    expect(toHealthWord('VERY GOOD')).toBe('Very Good');
+    expect(toHealthWord('Good')).toBe('Good');
+    expect(toHealthWord('fair')).toBe('Fair');
+  });
+
+  it('treats a free-form vet finding or a missing value as Bad (conservative, feed-system contract)', () => {
+    expect(toHealthWord('Injured')).toBe('Bad');
+    expect(toHealthWord('Lameness')).toBe('Bad');
+    expect(toHealthWord(null)).toBe('Bad');
+    expect(toHealthWord(undefined)).toBe('Bad');
+  });
+});
+
+describe('hasBadHealth (the Fair-or-better gate for breeding, training and shows)', () => {
+  const NOW = new Date('2026-04-29T15:30:00Z');
+  const vettedToday = { age: 5, lastVettedDate: NOW, healthStatus: null };
+
+  it('passes a Fair horse (5 days unfed)', () => {
+    expect(hasBadHealth({ ...vettedToday, lastFedDate: new Date('2026-04-24T16:00:00Z') }, NOW)).toBe(false);
+  });
+
+  it('refuses a horse whose health is Bad because it was Poor (7 days unfed)', () => {
+    expect(hasBadHealth({ ...vettedToday, lastFedDate: new Date('2026-04-22T16:00:00Z') }, NOW)).toBe(true);
+  });
+
+  it('refuses a horse whose stored vet finding is Critical or Poor', () => {
+    expect(hasBadHealth({ ...vettedToday, lastFedDate: NOW, healthStatus: 'Critical' }, NOW)).toBe(true);
+    expect(hasBadHealth({ ...vettedToday, lastFedDate: NOW, healthStatus: 'Poor' }, NOW)).toBe(true);
+  });
+
+  it('leaves a retired horse to the age rules (retirement is not a health word)', () => {
+    expect(hasBadHealth({ age: 22 }, NOW)).toBe(false);
+  });
+});
+
+describe('badHealthMessage', () => {
+  it('names the horse, the action, the Bad word and the Fair-or-better bar', () => {
+    expect(badHealthMessage('Moonflower', 'breed')).toBe(
+      'Moonflower is in Bad health and cannot breed. A horse must be in Fair health or better to breed, train or enter a show. Feed and vet to restore health.',
+    );
+  });
+});
 
 describe('getFeedHealth', () => {
   const NOW = new Date('2026-04-29T15:30:00Z');
@@ -17,35 +82,35 @@ describe('getFeedHealth', () => {
     expect(getFeedHealth({ age: 25, lastFedDate: NOW }, NOW)).toBe('retired');
   });
 
-  it('returns critical when lastFedDate is null', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: null }, NOW)).toBe('critical');
-    expect(getFeedHealth({ age: 5 }, NOW)).toBe('critical');
+  it('returns Bad when lastFedDate is null', () => {
+    expect(getFeedHealth({ age: 5, lastFedDate: null }, NOW)).toBe('Bad');
+    expect(getFeedHealth({ age: 5 }, NOW)).toBe('Bad');
   });
 
-  it('returns excellent for 0-2 day gap (Eastern game days; feeds at noon EDT)', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-29T16:00:00Z') }, NOW)).toBe('excellent');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-28T16:00:00Z') }, NOW)).toBe('excellent');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-27T16:00:00Z') }, NOW)).toBe('excellent');
+  it('returns Excellent for 0-2 day gap (Eastern game days; feeds at noon EDT)', () => {
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-29T16:00:00Z') }, NOW)).toBe('Excellent');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-28T16:00:00Z') }, NOW)).toBe('Excellent');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-27T16:00:00Z') }, NOW)).toBe('Excellent');
   });
 
-  it('returns good for 3-4 day gap', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-26T16:00:00Z') }, NOW)).toBe('good');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-25T16:00:00Z') }, NOW)).toBe('good');
+  it('returns Good for 3-4 day gap', () => {
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-26T16:00:00Z') }, NOW)).toBe('Good');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-25T16:00:00Z') }, NOW)).toBe('Good');
   });
 
-  it('returns fair for 5-6 day gap', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-24T16:00:00Z') }, NOW)).toBe('fair');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-23T16:00:00Z') }, NOW)).toBe('fair');
+  it('returns Fair for 5-6 day gap', () => {
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-24T16:00:00Z') }, NOW)).toBe('Fair');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-23T16:00:00Z') }, NOW)).toBe('Fair');
   });
 
-  it('returns poor for 7-8 day gap', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-22T16:00:00Z') }, NOW)).toBe('poor');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-21T16:00:00Z') }, NOW)).toBe('poor');
+  it('returns Bad for a 7-8 day gap (was poor; owner ruling 2026-10-23)', () => {
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-22T16:00:00Z') }, NOW)).toBe('Bad');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-21T16:00:00Z') }, NOW)).toBe('Bad');
   });
 
-  it('returns critical for 9+ day gap', () => {
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-20T16:00:00Z') }, NOW)).toBe('critical');
-    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-01T16:00:00Z') }, NOW)).toBe('critical');
+  it('returns Bad for 9+ day gap', () => {
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-20T16:00:00Z') }, NOW)).toBe('Bad');
+    expect(getFeedHealth({ age: 5, lastFedDate: new Date('2026-04-01T16:00:00Z') }, NOW)).toBe('Bad');
   });
 });
 
@@ -86,64 +151,69 @@ describe('getVetHealth', () => {
     expect(getVetHealth({ age: 21, lastVettedDate: NOW }, NOW)).toBe('retired');
   });
 
-  it('returns critical when lastVettedDate is null and no override', () => {
-    expect(getVetHealth({ age: 5, lastVettedDate: null }, NOW)).toBe('critical');
+  it('returns Bad when lastVettedDate is null and no override', () => {
+    expect(getVetHealth({ age: 5, lastVettedDate: null }, NOW)).toBe('Bad');
   });
 
-  it('returns healthStatus override when non-null', () => {
-    expect(getVetHealth({ age: 5, lastVettedDate: NOW, healthStatus: 'critical' }, NOW)).toBe('critical');
+  it('returns the healthStatus override, as a health word, when non-null', () => {
+    expect(getVetHealth({ age: 5, lastVettedDate: NOW, healthStatus: 'critical' }, NOW)).toBe('Bad');
     expect(
       getVetHealth({ age: 5, lastVettedDate: new Date('2026-01-01T00:00:00Z'), healthStatus: 'excellent' }, NOW),
-    ).toBe('excellent');
+    ).toBe('Excellent');
   });
 
-  it('returns free-form vet finding unchanged when not in KNOWN_BANDS (normalizeHealthOverride false-branch)', () => {
-    // 'Lameness' is not a known band → normalizeHealthOverride returns it unchanged
-    expect(getVetHealth({ age: 5, lastVettedDate: NOW, healthStatus: 'Lameness' }, NOW)).toBe('Lameness');
+  // Old contract: a free-form finding came back unchanged ('Lameness').
+  // Owner ruling 2026-10-23: every health value is one of the five words, so an
+  // unknown finding is Bad (the feed-system contract already ranked it critical).
+  it('maps a free-form vet finding to Bad', () => {
+    expect(getVetHealth({ age: 5, lastVettedDate: NOW, healthStatus: 'Lameness' }, NOW)).toBe('Bad');
+    expect(getVetHealth({ age: 5, lastVettedDate: NOW, healthStatus: 'Injured' }, NOW)).toBe('Bad');
   });
 
-  it('returns excellent for ≤7 day gap', () => {
-    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-22T00:00:00Z') }, NOW)).toBe('excellent');
+  it('returns Excellent for ≤7 day gap', () => {
+    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-22T00:00:00Z') }, NOW)).toBe('Excellent');
   });
 
-  it('returns good for 8-14 day gap', () => {
-    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-21T00:00:00Z') }, NOW)).toBe('good');
-    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-15T00:00:00Z') }, NOW)).toBe('good');
+  it('returns Good for 8-14 day gap', () => {
+    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-21T00:00:00Z') }, NOW)).toBe('Good');
+    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-15T00:00:00Z') }, NOW)).toBe('Good');
   });
 
-  it('returns fair for 15-21 day gap', () => {
-    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-14T00:00:00Z') }, NOW)).toBe('fair');
-    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-08T00:00:00Z') }, NOW)).toBe('fair');
+  it('returns Fair for 15-21 day gap', () => {
+    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-14T00:00:00Z') }, NOW)).toBe('Fair');
+    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-08T00:00:00Z') }, NOW)).toBe('Fair');
   });
 
-  it('returns poor for 22-28 day gap', () => {
-    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-07T00:00:00Z') }, NOW)).toBe('poor');
-    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-01T00:00:00Z') }, NOW)).toBe('poor');
+  it('returns Bad for a 22-28 day gap (was poor; owner ruling 2026-10-23)', () => {
+    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-07T00:00:00Z') }, NOW)).toBe('Bad');
+    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-01T00:00:00Z') }, NOW)).toBe('Bad');
   });
 
-  it('returns critical for 29+ day gap', () => {
-    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-03-31T00:00:00Z') }, NOW)).toBe('critical');
+  it('returns Bad for 29+ day gap', () => {
+    expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-03-31T00:00:00Z') }, NOW)).toBe('Bad');
   });
 });
 
 describe('worseOf', () => {
   it('picks the worse band', () => {
-    expect(worseOf('excellent', 'good')).toBe('good');
-    expect(worseOf('good', 'excellent')).toBe('good');
-    expect(worseOf('fair', 'critical')).toBe('critical');
-    expect(worseOf('excellent', 'excellent')).toBe('excellent');
+    expect(worseOf('Excellent', 'Good')).toBe('Good');
+    expect(worseOf('Good', 'Excellent')).toBe('Good');
+    expect(worseOf('Very Good', 'Good')).toBe('Good');
+    expect(worseOf('Excellent', 'Very Good')).toBe('Very Good');
+    expect(worseOf('Fair', 'Bad')).toBe('Bad');
+    expect(worseOf('Excellent', 'Excellent')).toBe('Excellent');
   });
 
   it('retired overrides everything', () => {
-    expect(worseOf('retired', 'critical')).toBe('retired');
-    expect(worseOf('critical', 'retired')).toBe('retired');
+    expect(worseOf('retired', 'Bad')).toBe('retired');
+    expect(worseOf('Bad', 'retired')).toBe('retired');
   });
 
-  it('treats unknown free-form vet findings as critical (sentinel for worseOf -1 bug)', () => {
-    expect(worseOf('excellent', 'Lameness')).toBe('critical');
-    expect(worseOf('Lameness', 'excellent')).toBe('critical');
-    expect(worseOf('Lameness', 'Lameness')).toBe('critical');
-    expect(worseOf('good', 'Tendon strain')).toBe('critical');
+  it('treats unknown free-form vet findings as Bad (sentinel for worseOf -1 bug)', () => {
+    expect(worseOf('Excellent', 'Lameness')).toBe('Bad');
+    expect(worseOf('Lameness', 'Excellent')).toBe('Bad');
+    expect(worseOf('Lameness', 'Lameness')).toBe('Bad');
+    expect(worseOf('Good', 'Tendon strain')).toBe('Bad');
   });
 });
 
@@ -153,22 +223,22 @@ describe('getDisplayedHealth', () => {
   it('returns the worse of feed and vet', () => {
     const horse = {
       age: 5,
-      lastFedDate: new Date('2026-04-28T16:00:00Z'), // excellent feed
-      lastVettedDate: new Date('2026-04-08T00:00:00Z'), // fair vet (21 days)
+      lastFedDate: new Date('2026-04-28T16:00:00Z'), // Excellent feed
+      lastVettedDate: new Date('2026-04-08T00:00:00Z'), // Fair vet (21 days)
     };
-    expect(getDisplayedHealth(horse, NOW)).toBe('fair');
+    expect(getDisplayedHealth(horse, NOW)).toBe('Fair');
   });
 
-  it('returns critical when feed is critical', () => {
+  it('returns Bad when feed is Bad', () => {
     const horse = {
       age: 5,
-      lastFedDate: new Date('2026-04-15T16:00:00Z'), // critical feed (14 days)
-      lastVettedDate: NOW, // excellent vet
+      lastFedDate: new Date('2026-04-15T16:00:00Z'), // Bad feed (14 days)
+      lastVettedDate: NOW, // Excellent vet
     };
-    expect(getDisplayedHealth(horse, NOW)).toBe('critical');
+    expect(getDisplayedHealth(horse, NOW)).toBe('Bad');
   });
 
-  it('returns retired for age >= 21 even if vet/feed are critical', () => {
+  it('returns retired for age >= 21 even if vet/feed are Bad', () => {
     expect(getDisplayedHealth({ age: 22 }, NOW)).toBe('retired');
   });
 });
