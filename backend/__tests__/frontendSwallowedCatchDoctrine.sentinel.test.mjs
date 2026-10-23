@@ -188,7 +188,7 @@ describe('check-frontend-swallowed-catch.mjs (Equoria-axl7d)', () => {
         for (const [name, src] of Object.entries(cases)) {
           out[name] = findSwallowedCatches(src, 'case.tsx').length;
         }
-        console.log(JSON.stringify(out));
+        process.stdout.write(JSON.stringify(out));
       `;
       const res = spawnSync(
         'node',
