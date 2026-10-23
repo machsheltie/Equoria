@@ -7,19 +7,12 @@ import {
   getTopHorsesByEarnings,
   getTopHorsesByPerformance,
   getTopPlayersByHorseEarnings,
-  getRecentWinners,
   getLeaderboardStats,
   getUserRankSummary,
   getUserRankHistory,
   captureRankSnapshots,
 } from '../controllers/leaderboardController.mjs';
-import { winPercentageBoard, winsBoard } from '../controllers/horseRecordBoardsController.mjs';
-import {
-  levelBoard,
-  prizeMoneyBoard,
-  ownerBoard,
-  disciplineBoard,
-} from '../controllers/pageBoardsController.mjs';
+import * as pageBoards from '../controllers/pageBoardsController.mjs';
 import { isKnownDiscipline } from '../../competition/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
@@ -37,17 +30,13 @@ import {
 
 const router = express.Router();
 
-/**
- * The LeaderboardsPage tabs (matches LeaderboardCategorySelector.tsx). Every one answers
- * with the page shape `{ entries, currentPage, totalPages, totalEntries }` (Equoria-pthuj);
- * the canonical /players/*, /horses/* routes below keep their documented shapes.
- */
-router.get('/level', auth, levelBoard);
-router.get('/prize-money', auth, prizeMoneyBoard);
-router.get('/win-rate', auth, winPercentageBoard);
-router.get('/wins', auth, winsBoard);
-router.get('/owner', auth, ownerBoard);
-router.get('/discipline', auth, disciplineBoard);
+/** The page tabs answer { entries, currentPage, totalPages, totalEntries } (Equoria-pthuj); /players/*, /horses/* keep their shapes. */
+router.get('/level', auth, pageBoards.levelBoard);
+router.get('/prize-money', auth, pageBoards.prizeMoneyBoard);
+router.get('/win-rate', auth, pageBoards.winPercentageBoard);
+router.get('/wins', auth, pageBoards.winsBoard);
+router.get('/owner', auth, pageBoards.ownerBoard);
+router.get('/discipline', auth, pageBoards.disciplineBoard);
 
 /**
  * @swagger
@@ -393,7 +382,7 @@ router.get('/players/horse-earnings', auth, getTopPlayersByHorseEarnings);
  *       200:
  *         description: List of recent competition winners
  */
-router.get('/recent-winners', auth, getRecentWinners);
+router.get('/recent-winners', auth, pageBoards.recentWinnersBoard);
 
 /**
  * @swagger

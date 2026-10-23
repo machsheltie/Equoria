@@ -1,5 +1,5 @@
 /**
- * Page boards — level, prize money, owner and discipline (Equoria-pthuj).
+ * Page boards — level, prize money, owner, discipline and recent winners (Equoria-pthuj).
  *
  * The LeaderboardsPage reads one response shape for every tab:
  * `{ entries, currentPage, totalPages, totalEntries }`, each entry being
@@ -8,7 +8,7 @@
  * win-rate and wins tabs). The canonical routes (`/players/level`,
  * `/horses/earnings`, `/players/horse-earnings`) keep their documented
  * `users` / `horses` / `rankings` shapes; these handlers serve the page's
- * aliases (`/level`, `/prize-money`, `/owner`, `/discipline`) with the page
+ * aliases (`/level`, `/prize-money`, `/owner`, `/discipline`, `/recent-winners`) with the page
  * shape, using the same ordering as the canonical routes.
  *
  * Nothing here invents a ranking rule: level orders by (level, xp, id) like
@@ -27,6 +27,9 @@ import {
   fetchHorseDetailsByIds,
   rankHorsesByWinsIn,
 } from '../services/leaderboardCompetitionQueries.mjs';
+
+// The win-percentage and wins boards are page boards too; one module serves them all.
+export { winPercentageBoard, winsBoard } from './horseRecordBoardsController.mjs';
 
 const cacheTtl = 300; // 5 minutes, the leaderboard convention
 
@@ -197,4 +200,90 @@ export const disciplineBoard = (req, res) => {
       };
     },
   });
+};
+
+/**
+ * GET /api/v1/leaderboards/recent-winners — the latest first places. Answers the
+ * page shape beside `winners`, the list its other readers (and tests) use.
+ * Documented: limit default 20, max 50 (Equoria-9svu0).
+ */
+export const recentWinnersBoard = async (req, res) => {
+  try {
+    const { discipline } = req.query;
+    const { limit } = parsePaginationParams(req, { defaultLimit: 20, maxLimit: 50 });
+    // placement is the Int rank (Equoria-f46tb).
+    const whereClause = { placement: 1 };
+
+    if (discipline) {
+      whereClause.discipline = discipline;
+    }
+
+    const cacheKey = `leaderboard:recent-winners:${discipline ?? 'all'}:${limit}`;
+    const results = await getCachedQuery(
+      cacheKey,
+      () =>
+        prisma.competitionResult.findMany({
+          where: whereClause,
+          orderBy: [{ runDate: 'desc' }, { id: 'desc' }],
+          take: limit,
+          select: {
+            id: true,
+            runDate: true,
+            showName: true,
+            discipline: true,
+            score: true,
+            prizeWon: true,
+            horseId: true,
+            horse: {
+              select: {
+                name: true,
+                userId: true,
+                user: { select: { username: true } },
+              },
+            },
+          },
+        }),
+      cacheTtl,
+    );
+
+    const winners = results.map(entry => ({
+      id: entry.id,
+      show: entry.showName,
+      runDate: entry.runDate,
+      horse: { name: entry.horse?.name || 'Unknown Horse' },
+      owner: entry.horse?.user?.username || 'Unknown Owner',
+      competition: { discipline: entry.discipline },
+    }));
+
+    // Newest first, so rank is recency; the page reads `entries` (Equoria-pthuj).
+    const entries = results.map((entry, index) => ({
+      rank: index + 1,
+      horseId: entry.horseId,
+      horseName: entry.horse?.name ?? null,
+      ownerId: entry.horse?.userId ?? null,
+      ownerName: entry.horse?.user?.username ?? null,
+      primaryStat: Number(entry.score),
+      secondaryStats: { totalPrizeMoney: Number(entry.prizeWon ?? 0) },
+      isCurrentUser: Boolean(entry.horse?.userId) && entry.horse.userId === req.user?.id,
+    }));
+    const responseData = {
+      winners,
+      entries,
+      currentPage: 1,
+      totalPages: 1,
+      totalEntries: entries.length,
+    };
+    if (discipline) {
+      responseData.discipline = discipline;
+    }
+
+    res.json({
+      success: true,
+      message: 'Recent winners retrieved successfully',
+      data: responseData,
+    });
+  } catch (error) {
+    logger.error(`[pageBoardsController.recentWinners] Error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to retrieve recent winners' });
+  }
 };

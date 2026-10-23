@@ -383,90 +383,6 @@ export const getTopUsersByHorseEarnings = async (req, res) => {
   }
 };
 
-export const getRecentWinners = async (req, res) => {
-  try {
-    const { discipline } = req.query;
-    // Documented: limit default 20, max 50 (Equoria-9svu0).
-    const { limit } = parsePaginationParams(req, { defaultLimit: 20, maxLimit: 50 });
-    // placement is the Int rank (Equoria-f46tb); it was a string written as
-    // both '1' and '1st', which this filter used to match one by one.
-    const whereClause = { placement: 1 };
-
-    if (discipline) {
-      whereClause.discipline = discipline;
-    }
-
-    const cacheKey = `leaderboard:recent-winners:${discipline ?? 'all'}:${limit}`;
-    const results = await getCachedQuery(
-      cacheKey,
-      () =>
-        prisma.competitionResult.findMany({
-          where: whereClause,
-          orderBy: [{ runDate: 'desc' }, { id: 'desc' }],
-          take: limit,
-          select: {
-            id: true,
-            runDate: true,
-            showName: true,
-            discipline: true,
-            score: true,
-            prizeWon: true,
-            horseId: true,
-            horse: {
-              select: {
-                name: true,
-                userId: true,
-                user: { select: { username: true } },
-              },
-            },
-          },
-        }),
-      CACHE_TTL,
-    );
-
-    const winners = results.map(entry => ({
-      id: entry.id,
-      show: entry.showName,
-      runDate: entry.runDate,
-      horse: { name: entry.horse?.name || 'Unknown Horse' },
-      owner: entry.horse?.user?.username || 'Unknown Owner',
-      competition: { discipline: entry.discipline },
-    }));
-
-    // The LeaderboardsPage reads `entries` (Equoria-pthuj); `winners` stays for
-    // the other consumers of this route. Newest first, so rank is recency.
-    const entries = results.map((entry, index) => ({
-      rank: index + 1,
-      horseId: entry.horseId,
-      horseName: entry.horse?.name ?? null,
-      ownerId: entry.horse?.userId ?? null,
-      ownerName: entry.horse?.user?.username ?? null,
-      primaryStat: Number(entry.score),
-      secondaryStats: { totalPrizeMoney: Number(entry.prizeWon ?? 0) },
-      isCurrentUser: Boolean(entry.horse?.userId) && entry.horse.userId === req.user?.id,
-    }));
-    const responseData = {
-      winners,
-      entries,
-      currentPage: 1,
-      totalPages: 1,
-      totalEntries: entries.length,
-    };
-    if (discipline) {
-      responseData.discipline = discipline;
-    }
-
-    res.json({
-      success: true,
-      message: 'Recent winners retrieved successfully',
-      data: responseData,
-    });
-  } catch (error) {
-    logger.error(`[leaderboardController.getRecentWinners] Error: ${error.message}`);
-    res.status(500).json({ success: false, message: 'Failed to retrieve recent winners' });
-  }
-};
-
 export const getLeaderboardStats = async (req, res) => {
   try {
     const cacheKey = 'leaderboard:stats';
@@ -821,7 +737,6 @@ export default {
   getTopHorsesByPerformance,
   getTopUsersByHorseEarnings,
   getTopPlayersByHorseEarnings,
-  getRecentWinners,
   getLeaderboardStats,
   getUserRankSummary,
   getUserRankHistory,

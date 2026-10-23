@@ -24,8 +24,8 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 const ORIGIN = 'http://localhost:3000';
 const RUN = randomBytes(6).toString('hex');
 const DISCIPLINE = 'Vaulting';
-const OTHER_DISCIPLINE = 'Dressage';
-const FAR_FUTURE = new Date('2099-01-01T12:00:00Z');
+const otherDiscipline = 'Dressage';
+const farFuture = new Date('2099-01-01T12:00:00Z');
 
 const cleanup = createCleanupTracker();
 let user;
@@ -120,21 +120,21 @@ beforeAll(async () => {
     data: [
       // A: three Vaulting wins (mixed spellings) + one second; one Dressage win
       // that must not count towards the Vaulting board.
-      resultRow(horse.A.id, 0, { placement: '1', discipline: DISCIPLINE }),
-      resultRow(horse.A.id, 1, { placement: '1', discipline: DISCIPLINE }),
-      resultRow(horse.A.id, 2, { placement: '1st', discipline: DISCIPLINE }),
-      resultRow(horse.A.id, 3, { placement: '2', discipline: DISCIPLINE }),
-      resultRow(horse.A.id, 4, { placement: '1', discipline: OTHER_DISCIPLINE }),
+      resultRow(horse.A.id, 0, { placement: 1, discipline: DISCIPLINE }),
+      resultRow(horse.A.id, 1, { placement: 1, discipline: DISCIPLINE }),
+      resultRow(horse.A.id, 2, { placement: 1, discipline: DISCIPLINE }),
+      resultRow(horse.A.id, 3, { placement: 2, discipline: DISCIPLINE }),
+      resultRow(horse.A.id, 4, { placement: 1, discipline: otherDiscipline }),
       // B: one Vaulting win, the most recent winner anywhere (far-future runDate).
       resultRow(horse.B.id, 0, {
-        placement: '1',
+        placement: 1,
         discipline: DISCIPLINE,
         score: 87.5,
         prizeWon: 1234,
-        runDate: FAR_FUTURE,
+        runDate: farFuture,
       }),
       // C: a second place only, so it is on no win board.
-      resultRow(horse.C.id, 0, { placement: '2', discipline: DISCIPLINE }),
+      resultRow(horse.C.id, 0, { placement: 2, discipline: DISCIPLINE }),
     ],
   });
 
