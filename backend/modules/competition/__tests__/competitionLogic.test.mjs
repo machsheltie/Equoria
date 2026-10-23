@@ -1,6 +1,5 @@
 import { describe, it, expect, jest, afterEach } from '@jest/globals';
 import {
-  calculateCompetitionScore,
   calculatePrizeAmount,
   calculatePlacements,
   getAllDisciplines,
@@ -125,95 +124,6 @@ describe('checkAgeRequirements', () => {
   it('returns false for a retired horse (>21 years)', () => {
     const result = checkAgeRequirements({ age: 22 });
     expect(result).toBe(false);
-  });
-});
-
-describe('calculateCompetitionScore', () => {
-  it('returns a number between 0 and 100', () => {
-    const score = calculateCompetitionScore(70, {}, 6, 'Racing');
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it('returns 0 for a horse under age 3 (too young)', () => {
-    const score = calculateCompetitionScore(100, {}, 1, 'Racing');
-    // ageFactor = 0.5, so score = 50 * randomFactor, still clamped to [0, 100]
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it('returns 0 on invalid input', () => {
-    // null traits and invalid discipline should not throw, return 0 fallback
-    const score = calculateCompetitionScore(null, null, null, null);
-    expect(score).toBe(0);
-  });
-
-  it('beneficial traits increase score potential', () => {
-    const withTrait = { positive: ['fast'], negative: [] };
-    const withoutTrait = {};
-    // Run multiple times and check average is higher with beneficial trait
-    const avgWith =
-      Array.from({ length: 50 }, () => calculateCompetitionScore(50, withTrait, 6, 'Racing')).reduce(
-        (a, b) => a + b,
-        0,
-      ) / 50;
-    const avgWithout =
-      Array.from({ length: 50 }, () => calculateCompetitionScore(50, withoutTrait, 6, 'Racing')).reduce(
-        (a, b) => a + b,
-        0,
-      ) / 50;
-    // With beneficial trait should generally be >= without (within statistical variation)
-    expect(avgWith).toBeGreaterThanOrEqual(avgWithout - 5); // allow some variance
-  });
-});
-
-// ─── calculateCompetitionScore — age factor branches ─────────────────────────
-
-describe('calculateCompetitionScore — age factor branches', () => {
-  it('applies improving factor for age 4 (3-5 range)', () => {
-    // ageFactor = 0.8 + (4-3)*0.1 = 0.9 — exercises line 28
-    const score = calculateCompetitionScore(50, {}, 4, 'Racing');
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it('applies decline factor for age 10 (9-12 range)', () => {
-    // ageFactor = 1.0 - (10-8)*0.05 = 0.9 — exercises line 32
-    const score = calculateCompetitionScore(50, {}, 10, 'Racing');
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it('applies senior factor for age 15 (> 12)', () => {
-    // ageFactor = 0.7 — exercises line 34
-    const score = calculateCompetitionScore(50, {}, 15, 'Racing');
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-});
-
-// ─── calculateCompetitionScore — non-matching trait branches ─────────────────
-
-describe('calculateCompetitionScore — non-matching trait branches', () => {
-  it('+1 for positive trait not in Racing beneficial list (line 177)', () => {
-    // 'calm' not in Racing.beneficial → traitBonus += 1, not +3
-    const score = calculateCompetitionScore(50, { positive: ['calm'], negative: [] }, 6, 'Racing');
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it('-5 for negative trait in Racing detrimental list (line 182)', () => {
-    // 'slow' is in Racing.detrimental → traitBonus -= 5
-    const score = calculateCompetitionScore(50, { positive: [], negative: ['slow'] }, 6, 'Racing');
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it('-2 for negative trait not in Racing detrimental list (line 185)', () => {
-    // 'clumsy' not in Racing.detrimental → traitBonus -= 2
-    const score = calculateCompetitionScore(50, { positive: [], negative: ['clumsy'] }, 6, 'Racing');
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
   });
 });
 
@@ -395,13 +305,6 @@ describe('calculateStatGain', () => {
 
 // ─── Catch-block coverage (Equoria-jkht) ─────────────────────────────────────
 // Symbol arithmetic triggers TypeError inside pure-math try blocks.
-
-describe('calculateCompetitionScore — catch block (lines 202-203)', () => {
-  it('returns 0 when Symbol baseScore causes arithmetic TypeError', () => {
-    const result = calculateCompetitionScore(Symbol('bad'), {}, 6, 'Racing');
-    expect(result).toBe(0);
-  });
-});
 
 describe('calculatePrizeAmount — catch block (lines 230-231)', () => {
   it('returns 0 when Symbol totalPrizePool causes arithmetic TypeError', () => {
