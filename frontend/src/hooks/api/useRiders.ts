@@ -12,6 +12,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { refreshOnConflict } from '@/lib/http/conflict';
 import {
   ridersApi,
   ApiError,
@@ -87,6 +88,8 @@ export function useHireRider() {
       queryClient.invalidateQueries({ queryKey: riderKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
+    // 409: the marketplace entry was already taken or replaced (Equoria-6p398.13).
+    onError: (error) => refreshOnConflict(queryClient, error, [riderKeys.all]),
   });
 }
 
@@ -118,6 +121,9 @@ export function useAssignRider() {
       queryClient.invalidateQueries({ queryKey: riderKeys.assignments() });
       queryClient.invalidateQueries({ queryKey: riderKeys.all });
     },
+    // 409: the horse is no longer the player's, or the assignment moved on
+    // (Equoria-6p398.13).
+    onError: (error) => refreshOnConflict(queryClient, error, [riderKeys.all]),
   });
 }
 
@@ -129,6 +135,8 @@ export function useDeleteRiderAssignment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: riderKeys.assignments() });
     },
+    // 409: the assignment is no longer the current one (Equoria-6p398.13).
+    onError: (error) => refreshOnConflict(queryClient, error, [riderKeys.all]),
   });
 }
 
@@ -149,5 +157,7 @@ export function useDismissRider() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: riderKeys.all });
     },
+    // 409: the rider's state moved on (Equoria-6p398.13).
+    onError: (error) => refreshOnConflict(queryClient, error, [riderKeys.all]),
   });
 }

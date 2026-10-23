@@ -13,6 +13,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { horseMarketplaceApi, MarketplaceBrowseFilters } from '@/lib/api-client';
 import { toast } from 'sonner';
+import { refreshOnConflict } from '@/lib/http/conflict';
 
 export function useMarketplaceListings(filters?: MarketplaceBrowseFilters) {
   return useQuery({
@@ -83,6 +84,8 @@ export function useBuyHorse() {
       qc.invalidateQueries({ queryKey: ['game-notifications'] });
     },
     onError: (err: Error) => {
+      // 409: the listing is no longer purchasable (Equoria-6p398.13).
+      refreshOnConflict(qc, err, [['marketplace'], ['horses']]);
       toast.error(err.message ?? 'Purchase failed');
     },
   });

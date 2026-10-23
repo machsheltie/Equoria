@@ -66,6 +66,10 @@ export function secondFactorMessage(error: ApiError | null | undefined): string 
   if (status === 401) {
     return "That code wasn't accepted. Enter the code showing now — or go back and sign in again if you have been waiting a while.";
   }
+  // The MFA lockout / throttle: the code itself may have been right.
+  if (status === 429) {
+    return 'Too many code attempts. Wait a few minutes, then try again.';
+  }
   if (status >= 500) {
     return 'Something went wrong on our end. Try again in a moment.';
   }
