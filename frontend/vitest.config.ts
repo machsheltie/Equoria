@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
+import RequireAllProjectsReporter from './src/test/requireAllProjectsReporter';
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,8 +27,14 @@ export default defineConfig({
     // heavy diagnostic (enable only when Vitest cannot exit). Env-gated to
     // mirror the jest DETECT_OPEN_HANDLES posture — debug with
     // `VITEST_HANGING_PROCESS=true npx vitest run <file>`.
+    //
+    // RequireAllProjectsReporter (Equoria-bnwip): a full run in which a
+    // configured project (notably the storybook browser project) executed no
+    // tests must not exit 0 — it fails loudly and names the missing project.
     reporters:
-      process.env.VITEST_HANGING_PROCESS === 'true' ? ['default', 'hanging-process'] : ['default'],
+      process.env.VITEST_HANGING_PROCESS === 'true'
+        ? ['default', 'hanging-process', new RequireAllProjectsReporter()]
+        : ['default', new RequireAllProjectsReporter()],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
