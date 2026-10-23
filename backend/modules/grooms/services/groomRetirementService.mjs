@@ -415,7 +415,7 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
     //   player would lose care on their horse silently, which is exactly the
     //   failure the in-transaction notification exists to prevent. Currently
     //   unreachable (no unengaged non-retired groom has an active assignment —
-    //   Equoria-ypb7d.2: "ownerless", a word `owner` cannot match)
+    //   Equoria-ypb7d.2: "ownerless", a word `\bowner\b` cannot match)
     //   but the owner's "the game should notify a player" requirement is
     //   absolute, so it does not rely on that staying true. That population's
     //   SIZE is deliberately not quoted: it moves with ordinary play (56 when
