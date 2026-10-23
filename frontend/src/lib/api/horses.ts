@@ -6,8 +6,8 @@
  */
 
 import { apiClient } from '../http/apiClient.js';
+import type { HorseListItemDto } from './horseList.js';
 import type {
-  HorseListItemDto,
   HorseProgression,
   HorseSummary,
   HorseTrainingAnalytics,

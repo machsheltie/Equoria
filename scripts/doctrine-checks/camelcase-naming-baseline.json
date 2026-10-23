@@ -417,7 +417,7 @@
   "backend/modules/economy/inventory/__tests__/inventorySettingsRace.integration.test.mjs": 24,
   "backend/modules/economy/inventory/__tests__/tackDocumentIntegrity.integration.test.mjs": 10,
   "backend/modules/economy/inventory/__tests__/tackReturnOnHorseSaleRace.integration.test.mjs": 13,
-  "backend/modules/economy/inventory/controllers/inventoryController.mjs": 18,
+  "backend/modules/economy/inventory/controllers/inventoryController.mjs": 17,
   "backend/modules/economy/services/financialLedgerService.mjs": 2,
   "backend/modules/economy/tackShop/__tests__/tackPurchaseConcurrentRace.integration.test.mjs": 7,
   "backend/modules/economy/tackShop/__tests__/tackPurchaseLedgerMigration.integration.test.mjs": 9,

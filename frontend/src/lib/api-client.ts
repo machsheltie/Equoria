@@ -40,8 +40,6 @@ import type {
   GroomAssignmentLogEntry,
   GroomMetrics,
   GroomProfile,
-  HorseCardData,
-  HorseListItemDto,
   HorseProgression,
   HorseSummary,
   HorseTrainingAnalytics,
@@ -134,6 +132,7 @@ export type { VetService, VetAppointmentResult } from './api/vet.js';
 // Extracted to ./api/breeds (Equoria-jog8w). Re-exported for barrel compat.
 export { breedsApi } from './api/breeds.js';
 export type { Breed } from './api/breeds.js';
+export type { HorseListItemDto, HorseCardData } from './api/horseList.js';
 
 // -- Horse Marketplace (Epic 21) --
 // Extracted to ./api/horseMarketplace (Equoria-jog8w). Re-exported for barrel compat.
@@ -336,8 +335,6 @@ export type {
   GroomMetrics,
   GroomProfile,
   GroomAssignmentLogEntry,
-  HorseCardData,
-  HorseListItemDto,
   HorseProgression,
   HorseSummary,
   HorseTrainingAnalytics,

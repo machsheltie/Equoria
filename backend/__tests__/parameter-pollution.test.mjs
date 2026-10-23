@@ -972,42 +972,14 @@ describe('Parameter Pollution Attack Integration Tests', () => {
           .send({ name: 'Update2' }),
       ]);
 
-      // PUT /horses/:id is no longer a rename path (Equoria-4fnro): a body
-      // carrying `name` is refused outright, so neither request can win.
-      // Equoria-oj5jw: both must be that exact refusal (the old [200,409,400]
-      // set also passed when both answered 400 AND when a write was lost) and
-      // the stored name must be untouched.
+      // PUT is no longer a rename path (Equoria-4fnro), so neither request can win:
+      // both are refused (not [200, 409, 400], which a lost update also satisfied) and
+      // the name is untouched (Equoria-oj5jw). Renames race in horseRenameConcurrent.
       expect(response1.status).toBe(400);
       expect(response2.status).toBe(400);
 
       const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
       expect(horse.name).toBe(originalName);
-    });
-
-    it('lets exactly one of two concurrent renames win, and neither is lost (Equoria-oj5jw)', async () => {
-      const originalName = testHorse.name;
-      const rename = name =>
-        request(app)
-          .patch(`/api/v1/horses/${testHorse.id}/name`)
-          .set('Authorization', `Bearer ${validToken}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .send({ name });
-
-      const [response1, response2] = await Promise.all([rename('RenameOne'), rename('RenameTwo')]);
-
-      // Renames are unrestricted (owner ruling 2026-09-08): both are accepted,
-      // and the committed name is exactly one of the two, never the original
-      // and never a blend.
-      expect(response1.status).toBe(200);
-      expect(response2.status).toBe(200);
-      const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
-      expect(['RenameOne', 'RenameTwo']).toContain(horse.name);
-      expect(horse.name).not.toBe(originalName);
-
-      // Put the fixture's name back so later tests in this file see what they expect.
-      await prisma.horse.update({ where: { id: testHorse.id }, data: { name: originalName } });
     });
   });
 });

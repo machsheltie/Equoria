@@ -22,7 +22,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
-import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { startOfGameDay } from '../../../utils/gameTime.mjs';
 import { isKnownDiscipline } from '../../competition/index.mjs';
 import {
@@ -43,11 +42,12 @@ const pageWindow = req => parsePaginationParams(req, { defaultLimit: 50, maxLimi
  * each from 00:00 Eastern of its first game day; daily is today's game day.
  * `all-time` (or no period) has no start.
  */
+const dayMs = 24 * 60 * 60 * 1000;
 const periodStarts = {
   'all-time': () => null,
   daily: now => startOfGameDay(now),
-  weekly: now => startOfGameDay(new Date(now.getTime() - MS_PER_WEEK)),
-  monthly: now => startOfGameDay(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)),
+  weekly: now => startOfGameDay(new Date(now.getTime() - 7 * dayMs)),
+  monthly: now => startOfGameDay(new Date(now.getTime() - 30 * dayMs)),
 };
 
 /**

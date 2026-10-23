@@ -236,7 +236,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
       // refusal and never the server's words.
       selectStub({
         isError: true,
-        error: { statusCode: 400, message: 'Invalid talent selection: insufficient_level' },
+        error: { statusCode: 400, message: 'raw server words about the talent tier' },
       })
     );
     renderPanel({ groomLevel: 5, groomPersonality: 'energetic' });
@@ -246,7 +246,7 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
     expect(err).toHaveTextContent(
       "That talent can't be chosen yet. Check the groom's level and the talent's prerequisites."
     );
-    expect(err).not.toHaveTextContent('insufficient_level');
+    expect(err).not.toHaveTextContent('raw server words');
     expect(err).toHaveAttribute('role', 'alert');
   });
 

@@ -24,7 +24,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { useAssignGroom, useGroomHorseSynergy } from '../hooks/api/useGrooms';
-import { userMessageFor } from '@/lib/http/userMessage';
 import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';

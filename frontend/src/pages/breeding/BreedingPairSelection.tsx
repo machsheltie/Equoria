@@ -22,7 +22,7 @@ import { AlertCircle, CheckCircle, Dna, ChevronDown, ChevronUp } from 'lucide-re
 import { useAuth } from '@/contexts/AuthContext';
 import { breedingApi, horsesApi } from '@/lib/api-client';
 import { toBreedingHorses, type BreedingHorse } from '@/lib/api/breedingHorse';
-import type { HorseListItemDto } from '@/lib/api/types';
+import type { HorseListItemDto } from '@/lib/api/horseList';
 import HorseSelector from '@/components/breeding/HorseSelector';
 import BreedingPredictionsPanel from './BreedingPredictionsPanel';
 import LethalWhiteWarning from '@/components/breeding/LethalWhiteWarning';

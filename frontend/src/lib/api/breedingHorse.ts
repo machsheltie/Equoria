@@ -26,7 +26,7 @@
 
 import { getBreedName } from '../utils.js';
 import type { HorseSex } from '../../types/breeding.js';
-import type { HorseListItemDto } from './types.js';
+import type { HorseListItemDto } from './horseList.js';
 
 export type BreedingHorse = Pick<
   HorseListItemDto,

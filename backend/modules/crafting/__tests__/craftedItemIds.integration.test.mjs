@@ -16,9 +16,9 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { craftItem } from '../controllers/craftingController.mjs';
-import { CRAFTING_RECIPES } from '../data/craftingRecipes.mjs';
+import { findRecipe } from '../data/craftingRecipes.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-d5ncx-craft';
+const fixturePrefix = 'TestFixture-d5ncx-craft';
 const cleanup = createCleanupTracker();
 
 let user;
@@ -41,11 +41,11 @@ function fakeRes() {
 
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
-  const recipe = CRAFTING_RECIPES.find(r => r.tier === 0);
+  const recipe = findRecipe('basic-halter');
   user = await prisma.user.create({
     data: {
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: await bcrypt.hash('TestPassword123!', 1),
       firstName: 'Craft',
       lastName: 'Ids',
@@ -64,7 +64,7 @@ afterAll(() => cleanup.run(), 30000);
 
 describe('crafted item ids (Equoria-d5ncx)', () => {
   it('two crafts of the same recipe in the same millisecond get different inventory ids', async () => {
-    const recipe = CRAFTING_RECIPES.find(r => r.tier === 0);
+    const recipe = findRecipe('basic-halter');
     const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
     try {
       for (let i = 0; i < 2; i += 1) {
