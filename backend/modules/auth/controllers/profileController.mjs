@@ -102,6 +102,9 @@ export const getProfile = async (req, res, next) => {
     const completedOnboarding = settings.completedOnboarding === true;
     const onboardingStep =
       typeof settings.onboardingStep === 'number' ? settings.onboardingStep : 0;
+    // Equoria-kd2dd: always a boolean, so the client can tell "not yet shown" (false)
+    // from a payload that predates the flag (absent).
+    const welcomeSeen = settings.welcomeSeen === true;
     const milestones = settings.milestones ?? {};
     const notifications =
       typeof settings.notifications === 'object' && settings.notifications !== null
@@ -144,6 +147,7 @@ export const getProfile = async (req, res, next) => {
           updatedAt: user.updatedAt,
           completedOnboarding,
           onboardingStep,
+          welcomeSeen,
           milestones,
           notifications,
           display,

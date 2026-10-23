@@ -164,6 +164,40 @@ export const completeOnboarding = async (req, res, next) => {
 };
 
 /**
+ * POST /api/v1/auth/welcome-seen   (Equoria-kd2dd)
+ * Records that the player has seen the one-time welcome note shown after the
+ * three-step signup. The flag is `User.settings.welcomeSeen` in the existing
+ * settings jsonb (no schema change), so "once" follows the player across
+ * browsers. Idempotent, and it writes ONLY that key (path update, Finding 1
+ * Equoria-6p398.1) so a concurrent bank claim or inventory write is never undone.
+ */
+export const markWelcomeSeen = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const affected = await updateUserSettingsPaths(prisma, userId, {
+      set: { welcomeSeen: true },
+    });
+
+    if (affected !== 1) {
+      throw new AppError('User not found', 404);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Welcome note recorded',
+      data: { welcomeSeen: true },
+    });
+  } catch (error) {
+    logger.error('[onboardingController.markWelcomeSeen] Error:', maskEmailsInError(error));
+    if (AppError.isAppError(error)) {
+      return next(error);
+    }
+    next(new AppError('Failed to record the welcome note.', 500));
+  }
+};
+
+/**
  * POST /api/v1/auth/advance-onboarding
  * Increments the authenticated user's onboarding step.
  * When the user reaches step 10, also sets completedOnboarding: true.

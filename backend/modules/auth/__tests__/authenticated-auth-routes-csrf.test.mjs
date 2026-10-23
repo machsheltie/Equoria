@@ -11,6 +11,7 @@
  *   - POST   /api/v1/auth/resend-verification
  *   - POST   /api/v1/auth/complete-onboarding
  *   - POST   /api/v1/auth/advance-onboarding
+ *   - POST   /api/v1/auth/welcome-seen
  *   - PATCH  /api/v1/auth/profile/preferences
  *
  * For each, we prove:
@@ -115,6 +116,7 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
     { method: 'post', path: '/api/v1/auth/resend-verification', body: {} },
     { method: 'post', path: '/api/v1/auth/complete-onboarding', body: {} },
     { method: 'post', path: '/api/v1/auth/advance-onboarding', body: {} },
+    { method: 'post', path: '/api/v1/auth/welcome-seen', body: {} },
     { method: 'patch', path: '/api/v1/auth/profile/preferences', body: {} },
   ];
 

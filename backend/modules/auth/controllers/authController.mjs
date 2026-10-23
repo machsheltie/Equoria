@@ -539,7 +539,7 @@ export {
 // The generateStarterStats helper + BREED_STARTER_STATS data loader moved
 // alongside (no other consumers).
 // ─────────────────────────────────────────────────────────────────────────
-export { completeOnboarding, advanceOnboarding } from './onboardingController.mjs';
+export { completeOnboarding, advanceOnboarding, markWelcomeSeen } from './onboardingController.mjs';
 
 // ─────────────────────────────────────────────────────────────────────────
 // TOTP MFA (OWASP A07, Equoria-2vwwh)

@@ -120,6 +120,9 @@ router.get('/verification-status', authController.getVerificationStatus);
 // POST /auth/complete-onboarding
 router.post('/complete-onboarding', profileRateLimiter, authController.completeOnboarding);
 
+// POST /auth/welcome-seen (Equoria-kd2dd): the one-time welcome note has been shown.
+router.post('/welcome-seen', profileRateLimiter, authController.markWelcomeSeen);
+
 // POST /auth/advance-onboarding
 // Equoria-gu8jk: the body is allow-listed to the wizard's { horseName, breedId,
 // gender } (the tour's own advances send {}). Any other field — a protected
