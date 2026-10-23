@@ -47,6 +47,22 @@
  * is much too short for dailyHorseAging) so the lock is held for the full
  * duration of the work.
  *
+ * DECISION (Equoria-mquci): the lock stays transaction-scoped; a session lock on a
+ * dedicated connection was considered and REJECTED. (1) Production's runtime
+ * DATABASE_URL is the Supabase pooler in transaction mode (pgbouncer=true, see
+ * packages/database/dbPoolConfig.mjs; only migrations use DIRECT_URL). A session
+ * advisory lock is not safe there: the lock sticks to whichever backend ran the
+ * lock statement while the unlock can land on another, leaving the job skipped
+ * on every replica until that backend recycles. A Prisma interactive transaction
+ * pins one backend for its whole life, which is what makes the xact lock exact.
+ * (2) The reproduced ways a "held" lock silently vanished mid-handler were two
+ * client copies in one process (Equoria-fefh2.44, see prismaClient.mjs) and a
+ * middleware that re-bound $queryRaw/$executeRaw to the root client (deleted,
+ * Equoria-6q7wr; rawStatementsStayInTransaction.sentinel.test.mjs guards it). No
+ * degradation under pool pressure alone has been demonstrated.
+ * cronLockHeldDuringHandler.integration.test.mjs proves the production path keeps
+ * a second session out for the full handler.
+ *
  * KEY DERIVATION
  * --------------
  * Postgres advisory-lock keys are bigints. We hash the canonical job name
