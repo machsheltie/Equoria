@@ -60,7 +60,7 @@ const test = base.extend<object, { seededPlayer: SeededPlayerSession; pair: Pair
 });
 
 /** The three canned lines the retired fallback rendered on every pair. */
-const RETIRED_RECOMMENDATIONS = [
+const retiredRecommendations = [
   'Compatible temperaments for stable offspring',
   'Good genetic diversity reduces inbreeding risk',
   'Strong trait synergy for athletic abilities',
@@ -140,7 +140,7 @@ test.describe('Breeding compatibility — live payload (Equoria-3jnsz)', () => {
     if (live!.overallScore !== 75) {
       await expect(modal.getByText('75/100', { exact: true })).toHaveCount(0);
     }
-    for (const line of RETIRED_RECOMMENDATIONS) {
+    for (const line of retiredRecommendations) {
       await expect(page.getByText(line)).toHaveCount(0);
     }
     for (const retiredLabel of ['Temperament Match', 'Trait Synergy']) {

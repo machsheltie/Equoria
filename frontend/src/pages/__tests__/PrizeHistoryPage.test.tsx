@@ -595,7 +595,7 @@ describe('PrizeHistoryPage', () => {
     it('an unresolved query with no data renders neither zero stats nor the empty state', async () => {
       let requests = 0;
       server.use(
-        http.get(PRIZE_HISTORY_PATH, () => {
+        http.get(`${base}/api/v1/users/:id/prize-history`, () => {
           requests += 1;
           return HttpResponse.json(prizeHistoryEnvelope());
         })
@@ -619,7 +619,7 @@ describe('PrizeHistoryPage', () => {
       expect(screen.queryByTestId('stat-total-competitions')).not.toBeInTheDocument();
       expect(screen.queryByTestId('stat-win-rate')).not.toBeInTheDocument();
       expect(screen.queryByTestId('stats-error')).not.toBeInTheDocument();
-      // The query is disabled without a user id — nothing was fetched, so
+      // The query is disabled without a user id — no prize history was fetched for anyone, so
       // nothing may be presented as a result.
       expect(requests).toBe(0);
     });
