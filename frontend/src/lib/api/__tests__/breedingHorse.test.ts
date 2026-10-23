@@ -59,9 +59,12 @@ describe('toBreedingHorse', () => {
     });
   });
 
-  it('falls back to `age` when ageYears is absent or 0 (the prior `ageYears || age` read)', () => {
-    expect(toBreedingHorse(listHorse({ ageYears: undefined, age: 5 }))?.age).toBe(5);
-    expect(toBreedingHorse(listHorse({ ageYears: 0, age: 2 }))?.age).toBe(2);
+  // Old contract: `ageYears || age` — `age` stood in when ageYears was absent
+  // or 0. Owner ruling 2026-10-23 (Equoria-x49d): the fallback goes; the
+  // backend serves ageYears on every list horse, so it is the only age read.
+  it('reads ageYears alone: a horse in its first year is 0, never the legacy `age`', () => {
+    expect(toBreedingHorse(listHorse({ ageYears: 0, age: 2 }))?.age).toBe(0);
+    expect(toBreedingHorse(listHorse({ ageYears: 4, age: 9 }))?.age).toBe(4);
   });
 
   it('canonicalizes the sex case-insensitively, as the selector group checks did', () => {

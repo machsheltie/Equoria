@@ -64,8 +64,10 @@ export function toBreedingHorse(horse: HorseSummary): BreedingHorse | null {
   return {
     id: horse.id,
     name: horse.name,
-    // `||`, not `??`: a 0-year-old reads `age`, exactly as the page did.
-    age: horse.ageYears || horse.age,
+    // ageYears alone (owner ruling 2026-10-23, Equoria-x49d): the backend serves
+    // it on every list horse, so the legacy `age` fallback would only mask a
+    // regression — and it misread a horse in its first year (ageYears 0).
+    age: horse.ageYears,
     sex,
     breedName: getBreedName(horse.breed),
     healthStatus: horse.healthStatus,
