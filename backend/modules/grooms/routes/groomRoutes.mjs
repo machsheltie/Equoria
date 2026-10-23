@@ -304,7 +304,7 @@ router.post(
     body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
     body('interactionType')
       .isIn(getAllValidInteractionTypes())
-      .withMessage(`interactionType must be one of: ${getAllValidInteractionTypes().join(', ')}`),
+      .withMessage('interactionType is not a recognized interaction'),
     body('duration')
       .isInt({ min: 5, max: 480 })
       .withMessage('duration must be between 5 and 480 minutes'),
@@ -478,17 +478,17 @@ router.post(
       .withMessage('name must be between 2 and 100 characters'),
     body('speciality')
       .isIn(GROOM_SPECIALTY_VALUES)
-      .withMessage(`speciality must be one of: ${GROOM_SPECIALTY_VALUES.join(', ')}`),
+      .withMessage('speciality is not a recognized specialty'),
     body('experience')
       .optional()
       .isInt({ min: 1, max: 20 })
       .withMessage('experience must be between 1 and 20 years'),
     body('skill_level')
       .isIn(GROOM_SKILL_LEVEL_VALUES)
-      .withMessage(`skill_level must be one of: ${GROOM_SKILL_LEVEL_VALUES.join(', ')}`),
+      .withMessage('skill_level is not a recognized skill level'),
     body('personality')
       .isIn(GROOM_PERSONALITY_VALUES)
-      .withMessage(`personality must be one of: ${GROOM_PERSONALITY_VALUES.join(', ')}`),
+      .withMessage('personality is not a recognized personality'),
     body('sessionRate')
       .optional()
       .isFloat({ min: 5, max: 100 })

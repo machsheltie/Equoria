@@ -87,7 +87,6 @@ export function buildTraitTimeline(traitHistory, interactions) {
       event: `Discovered trait: ${log.traitName}`,
       method: log.sourceType,
       context: log.sourceId || 'unknown',
-      data: log,
     });
   });
 
@@ -102,7 +101,6 @@ export function buildTraitTimeline(traitHistory, interactions) {
         bondingChange: interaction.bondingChange,
         stressChange: interaction.stressChange,
         quality: interaction.quality,
-        data: interaction,
       });
     }
   });

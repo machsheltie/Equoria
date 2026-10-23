@@ -302,6 +302,42 @@ describe('Horse Genetics Hooks', () => {
       expect(timeline[0].traitName).toBe('Discovered trait: brave');
     });
 
+    // Equoria-bdpvw (owner ruling 2026-10-23): a stored code never reaches the
+    // player. The backend's `method` is a stored source code.
+    it('shows the source of a timeline entry as words, never as the stored code', async () => {
+      server.use(
+        http.get(`${base}/api/v1/horses/456/trait-timeline`, () =>
+          HttpResponse.json({
+            success: true,
+            data: {
+              horseId: 456,
+              timeline: [
+                {
+                  date: '2024-01-15T10:00:00Z',
+                  type: 'trait_discovery',
+                  event: 'Discovered trait: brave',
+                  method: 'daily_evaluation',
+                },
+                {
+                  date: '2024-01-16T10:00:00Z',
+                  type: 'trait_discovery',
+                  event: 'Discovered trait: calm',
+                  method: 'groomInteraction',
+                },
+              ],
+            },
+          })
+        )
+      );
+      const { result } = renderHook(() => useHorseTraitTimeline(456), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const timeline = result.current.data?.timeline ?? [];
+      expect(timeline.map((entry) => entry.source)).toEqual([
+        'Daily Evaluation',
+        'Groom Interaction',
+      ]);
+    });
+
     it('does not crash when timeline items are missing the type field', async () => {
       server.use(
         http.get(`${base}/api/v1/horses/123/trait-timeline`, () =>

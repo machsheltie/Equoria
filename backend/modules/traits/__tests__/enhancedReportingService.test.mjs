@@ -184,6 +184,17 @@ describe('buildTraitTimeline', () => {
     expect(timeline).toHaveLength(1);
   });
 
+  // Equoria-bdpvw: a timeline item is a summary for the player, not the stored
+  // row. The whole groom_interactions / trait-history row used to ride along in
+  // `data`, visible in the network tab.
+  it('carries no raw database row on any item', () => {
+    const timeline = buildTraitTimeline([makeTraitLog()], [makeInteraction({ bondingChange: 3, stressChange: 0 })]);
+    expect(timeline).toHaveLength(2);
+    for (const item of timeline) {
+      expect(item).not.toHaveProperty('data');
+    }
+  });
+
   it('sorts timeline by date ascending', () => {
     const early = makeTraitLog({ timestamp: new Date('2025-01-01') });
     const later = makeTraitLog({ traitName: 'bold', timestamp: new Date('2025-06-01') });

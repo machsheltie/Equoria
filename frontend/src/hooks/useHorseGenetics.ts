@@ -190,10 +190,15 @@ export interface TraitTimelineResponse {
  * default, never `undefined` on a field the UI dereferences.
  * ==========================================================================*/
 
-/** Format a snake_or_camel trait-name string into a Title Case label. */
+/**
+ * Format a snake_or_camel stored name into a Title Case label. A player never
+ * sees a stored code (owner ruling 2026-10-23), so camelCase splits into words
+ * as well as snake_case.
+ */
 function humanizeTraitName(name: string): string {
   if (!name) return 'Unknown Trait';
   return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -314,7 +319,11 @@ export function mapTraitTimeline(
         eventType, // never undefined
         timestamp,
         description: typeof e.event === 'string' ? e.event : undefined,
-        source: typeof e.method === 'string' ? e.method : undefined,
+        // `method` is a stored code (daily_evaluation, milestone...); show words.
+        source:
+          typeof e.method === 'string' && e.method.length > 0
+            ? humanizeTraitName(e.method)
+            : undefined,
       };
     });
 
