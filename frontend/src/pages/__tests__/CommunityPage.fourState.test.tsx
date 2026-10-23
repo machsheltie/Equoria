@@ -303,7 +303,7 @@ describe('CommunityPage — hub stats four-state (Equoria-r4cyk)', () => {
       http.get(CLUBS, offline),
       http.get(UNREAD, offline),
       http.get(CONVERSATIONS, offline),
-      http.get(OPEN_ELECTIONS, offline),
+      http.get(`${base}/api/v1/clubs/elections/open-count`, offline),
       http.get(ACTIVITY, offline),
       http.get(HORSES, offline),
       http.get(HISTORY, offline)

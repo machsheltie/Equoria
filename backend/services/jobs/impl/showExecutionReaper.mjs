@@ -40,7 +40,7 @@
  *
  * BOUNDED ATTEMPTS (Equoria-c7mx0.1, owner ruling 2026-10-23): each stranding
  * this reaper finds is one failed execution attempt, counted in
- * Show.executionAttempts. The stranding that makes the MAX_EXECUTION_ATTEMPTS-th
+ * Show.executionAttempts. The stranding that makes the maxExecutionAttempts-th
  * (3rd) attempt does not release the show: it sets it 'quarantined', which no
  * executor or reaper scan selects, so a show that crashes the executor every
  * cycle stops looping. Quarantine touches no money: both escrow columns and
@@ -62,7 +62,7 @@ import { executeClosedShows } from '../../../modules/competition/index.mjs';
 export const STALE_CLAIM_THRESHOLD_MS = 2 * 60 * 60 * 1000;
 
 /** Owner ruling 2026-10-23 (Equoria-c7mx0.1): the 3rd failed attempt quarantines the show. */
-export const MAX_EXECUTION_ATTEMPTS = 3;
+export const maxExecutionAttempts = 3;
 
 /**
  * Staleness predicate for a stranded 'executing' claim, shared by the scan
@@ -92,7 +92,7 @@ function staleClaimPredicate(cutoff) {
 function emitReaperAlert(staleShows, releasedIds, quarantinedIds) {
   try {
     logger.error(
-      `[ShowExecutionReaper] ALERT: reaper fired — ${staleShows.length} show(s) stranded in 'executing' > 2h (ids: ${staleShows.map(s => s.id).join(', ')})${quarantinedIds.length > 0 ? `; QUARANTINED after ${MAX_EXECUTION_ATTEMPTS} failed attempts, needs Owner/Admin: ${quarantinedIds.join(', ')}` : ''}`,
+      `[ShowExecutionReaper] ALERT: reaper fired — ${staleShows.length} show(s) stranded in 'executing' > 2h (ids: ${staleShows.map(s => s.id).join(', ')})${quarantinedIds.length > 0 ? `; QUARANTINED after ${maxExecutionAttempts} failed attempts, needs Owner/Admin: ${quarantinedIds.join(', ')}` : ''}`,
       {
         alertType: 'show_execution_reaper_fired',
         eventType: 'operational',
@@ -159,7 +159,7 @@ export async function reapStaleExecutingShows({ showIds } = {}) {
   // ordering the crashed claim persisted (see DETERMINISM in the docblock).
   //
   // Equoria-c7mx0.1: this stranding is one failed execution attempt. The first
-  // fenced write quarantines the show when it is the MAX_EXECUTION_ATTEMPTS-th;
+  // fenced write quarantines the show when it is the maxExecutionAttempts-th;
   // otherwise the second releases it. Both count the attempt in the same
   // statement and re-assert status + staleness, so neither can touch a show
   // whose state moved after the scan.
@@ -169,7 +169,7 @@ export async function reapStaleExecutingShows({ showIds } = {}) {
     const fence = { id: show.id, status: 'executing', OR: staleClaimPredicate(cutoff) };
     const countAttempt = { executionAttempts: { increment: 1 } };
     const quarantined = await prisma.show.updateMany({
-      where: { ...fence, executionAttempts: { gte: MAX_EXECUTION_ATTEMPTS - 1 } },
+      where: { ...fence, executionAttempts: { gte: maxExecutionAttempts - 1 } },
       data: { status: 'quarantined', claimedAt: null, ...countAttempt },
     });
     if (quarantined.count === 1) {

@@ -30,9 +30,9 @@ import {
 import { getHorseAgeYears } from './horseAge.mjs';
 // Equoria-cmw85.38: the per-flag trigger rules and the predisposition bias live in
 // flagTriggerRules.mjs (moved verbatim so this file stays under the 600-line cap).
-import { FLAG_PREDISPOSITION_BIAS, evaluateFlagTriggers } from './flagTriggerRules.mjs';
+import { flagPredispositionBias, evaluateFlagTriggers } from './flagTriggerRules.mjs';
 
-export { FLAG_PREDISPOSITION_BIAS };
+export { flagPredispositionBias };
 
 // Equoria-wpqr: FLAG_EVALUATION_AGE_RANGE is expressed in canonical
 // game-years (1 game-week = 1 game-year = 7 real days). The DB-level
@@ -256,7 +256,7 @@ async function evaluateLoadedHorseFlags(horse, predisposedFlags, evaluationDate,
  * Horses read per batch by batchEvaluateFlags (Equoria-cmw85.38). Bounds the
  * id list and the interaction rows held in memory at once.
  */
-export const FLAG_BATCH_SIZE = 200;
+export const flagBatchSize = 200;
 
 /**
  * Read one batch for the weekly evaluation: the horses with their care-window
@@ -291,7 +291,7 @@ async function loadFlagBatch(client, horseIds, evaluationDate) {
  * Batch evaluate flags for multiple horses.
  *
  * Equoria-cmw85.38 (decision 2026-10-23, option B): set-based READS, SERIAL
- * writes. Each batch of FLAG_BATCH_SIZE ids costs two reads (horses with their
+ * writes. Each batch of flagBatchSize ids costs two reads (horses with their
  * interactions, then parents) instead of ~4 statements per horse, and uses no
  * extra connection: the writes are one update per horse that gains flags, in
  * input order, exactly as before. Results are unchanged: same entries, same
@@ -309,8 +309,8 @@ export async function batchEvaluateFlags(
 ) {
   const results = [];
 
-  for (let start = 0; start < horseIds.length; start += FLAG_BATCH_SIZE) {
-    const batchIds = horseIds.slice(start, start + FLAG_BATCH_SIZE);
+  for (let start = 0; start < horseIds.length; start += flagBatchSize) {
+    const batchIds = horseIds.slice(start, start + flagBatchSize);
     let batch;
     try {
       batch = await loadFlagBatch(client, batchIds, evaluationDate);

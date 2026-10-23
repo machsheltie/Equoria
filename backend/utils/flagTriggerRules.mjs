@@ -4,7 +4,7 @@
  *
  * Pure functions: given a flag definition and a horse's analysed care patterns,
  * decide whether the flag triggers. flagEvaluationEngine.mjs is the only
- * consumer and re-exports FLAG_PREDISPOSITION_BIAS and evaluateFlagTriggers, so
+ * consumer and re-exports flagPredispositionBias and evaluateFlagTriggers, so
  * every existing importer is unchanged. Canonical engine: see
  * modules/traits/__tests__/flagEngineSingleSource.sentinel.test.mjs.
  */
@@ -28,14 +28,14 @@ import logger from './logger.mjs';
  *
  * Bias mechanism (single named constant, conservative): when a flag is in the
  * foal's predisposed set, the NUMERIC care-pattern thresholds for THAT flag are
- * relaxed by FLAG_PREDISPOSITION_BIAS (a multiplier on `>=` minimums and a
+ * relaxed by flagPredispositionBias (a multiplier on `>=` minimums and a
  * reciprocal widening on `<=` maximums). 0.85 = a 15% reduction in the required
  * care-pattern strength. Non-predisposed flags are evaluated with the unchanged
  * thresholds, so a foal with no parents / no parent flags behaves EXACTLY as
  * before (regression-safe). Predisposition only ever lowers a bar; it never
  * raises one and never sets `triggered` true on its own.
  */
-export const FLAG_PREDISPOSITION_BIAS = 0.85;
+export const flagPredispositionBias = 0.85;
 
 /**
  * Relax a `>=` minimum threshold for a predisposed flag.
@@ -44,7 +44,7 @@ export const FLAG_PREDISPOSITION_BIAS = 0.85;
  * @returns {number} The (possibly relaxed) minimum. Predisposition lowers it.
  */
 function relaxMin(threshold, predisposed) {
-  return predisposed ? threshold * FLAG_PREDISPOSITION_BIAS : threshold;
+  return predisposed ? threshold * flagPredispositionBias : threshold;
 }
 
 /**
@@ -56,7 +56,7 @@ function relaxMin(threshold, predisposed) {
  * @returns {number} The (possibly widened) maximum.
  */
 function relaxMax(threshold, predisposed) {
-  return predisposed ? threshold / FLAG_PREDISPOSITION_BIAS : threshold;
+  return predisposed ? threshold / flagPredispositionBias : threshold;
 }
 
 /**
@@ -65,7 +65,7 @@ function relaxMax(threshold, predisposed) {
  * @param {Object} carePatterns - Care pattern analysis results
  * @param {boolean} [predisposed=false] - Equoria-yzqhj.4: whether the foal is
  *   predisposed to this flag via parent inheritance. When true, this flag's
- *   numeric care thresholds are relaxed by FLAG_PREDISPOSITION_BIAS. Defaults to
+ *   numeric care thresholds are relaxed by flagPredispositionBias. Defaults to
  *   false so every existing caller (and unknown-flag path) is unchanged.
  * @returns {Object} Evaluation result with trigger status and score
  */

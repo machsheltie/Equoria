@@ -28,13 +28,8 @@ import { competitionDateOfBirth, giveEligibleRider } from './helpers/eligibleCom
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { createShow, enterShow } from '../modules/competition/shows/showController.mjs';
 import { executeClosedShows } from '../modules/competition/index.mjs';
+import { maxExecutionAttempts, reapStaleExecutingShows } from '../services/jobs/impl/showExecutionReaper.mjs';
 import {
-  MAX_EXECUTION_ATTEMPTS,
-  STALE_CLAIM_THRESHOLD_MS,
-  reapStaleExecutingShows,
-} from '../services/jobs/impl/showExecutionReaper.mjs';
-import {
-  STAFF_API,
   checkIn,
   createUserFactory,
   get,
@@ -43,6 +38,9 @@ import {
 } from '../modules/staff/__tests__/helpers/staffFixtures.mjs';
 
 const prefix = 'TestFixture-c7mx0_1-quarantine';
+const staffApi = '/api/v1/staff';
+// Older than the reaper's 2h stale-claim threshold, as the crash suite plants.
+const staleClaimAgeMs = 3 * 60 * 60 * 1000;
 const prize = 1000;
 const entryFee = 50;
 const cleanup = createCleanupTracker();
@@ -122,7 +120,7 @@ async function plantCrash(showId, executionAttempts) {
     data: {
       closeDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
       status: 'executing',
-      claimedAt: new Date(Date.now() - STALE_CLAIM_THRESHOLD_MS - 60 * 60 * 1000),
+      claimedAt: new Date(Date.now() - staleClaimAgeMs),
       executionAttempts,
     },
   });
@@ -185,7 +183,7 @@ afterAll(() => cleanup.run(), 60_000);
 
 describe('Equoria-c7mx0.1 — the reaper counts failed attempts and quarantines at 3', () => {
   it('the limit is the owner ruling: 3 attempts', () => {
-    expect(MAX_EXECUTION_ATTEMPTS).toBe(3);
+    expect(maxExecutionAttempts).toBe(3);
   });
 
   it('a first stranding is attempt 1: released and re-driven to completion', async () => {
@@ -206,7 +204,7 @@ describe('Equoria-c7mx0.1 — the reaper counts failed attempts and quarantines 
   it('the stranding that makes attempt 3 quarantines the show: no re-drive, escrow untouched', async () => {
     const showId = await buildFundedShow();
     quarantinedId = showId;
-    await plantCrash(showId, MAX_EXECUTION_ATTEMPTS - 1);
+    await plantCrash(showId, maxExecutionAttempts - 1);
     const before = await showState(showId);
 
     const summary = await reapStaleExecutingShows({ showIds: [showId] });
@@ -216,7 +214,7 @@ describe('Equoria-c7mx0.1 — the reaper counts failed attempts and quarantines 
     const state = await showState(showId);
     expect(state).toMatchObject({
       status: 'quarantined',
-      executionAttempts: MAX_EXECUTION_ATTEMPTS,
+      executionAttempts: maxExecutionAttempts,
       claimedAt: null,
       prizeEscrow: before.prizeEscrow,
       feeEscrow: before.feeEscrow,
@@ -241,12 +239,12 @@ describe('Equoria-c7mx0.1 — the reaper counts failed attempts and quarantines 
       for (const role of ['admin', 'owner']) {
         const user = await staff.makeUser(role);
         const device = await checkIn(user);
-        const res = await get(`${STAFF_API}/shows/quarantined`, user, device);
+        const res = await get(`${staffApi}/shows/quarantined`, user, device);
         expect(res.status).toBe(200);
         const listed = res.body.shows.find(s => s.id === quarantinedId);
         expect(listed).toMatchObject({
           id: quarantinedId,
-          executionAttempts: MAX_EXECUTION_ATTEMPTS,
+          executionAttempts: maxExecutionAttempts,
           prizeEscrow: prize,
           feeEscrow: entryFee,
           entryCount: 1,
@@ -258,11 +256,11 @@ describe('Equoria-c7mx0.1 — the reaper counts failed attempts and quarantines 
     it('is refused to a moderator and hidden from a player', async () => {
       const mod = await staff.makeUser('moderator');
       const modDevice = await checkIn(mod);
-      const asMod = await get(`${STAFF_API}/shows/quarantined`, mod, modDevice);
+      const asMod = await get(`${staffApi}/shows/quarantined`, mod, modDevice);
       expect(asMod.status).toBe(403);
       expect(asMod.body.shows).toBeUndefined();
       const player = await staff.makeUser('user');
-      const asPlayer = await get(`${STAFF_API}/shows/quarantined`, player);
+      const asPlayer = await get(`${staffApi}/shows/quarantined`, player);
       expect(asPlayer.status).toBe(404);
       expect(asPlayer.body.shows).toBeUndefined();
     }, 60_000);

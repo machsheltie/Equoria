@@ -33,5 +33,3 @@ export { readRecordedAwards } from './services/competitionResultRecord.mjs';
 // req/res or a synthetic `{ body: { showIds } }`, and wired by shows/showRoutes.mjs
 // as POST /shows/execute. Moved out of the controller file in WS4 S4 (review M2).
 export { executeClosedShows } from './shows/showExecutionService.mjs';
-// Equoria-c7mx0.1: the staff list of shows the reaper quarantined.
-export { listQuarantinedShows } from './shows/showQuarantine.mjs';

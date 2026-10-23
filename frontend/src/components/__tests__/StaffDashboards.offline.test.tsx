@@ -24,7 +24,7 @@ import MyTrainersDashboard from '../MyTrainersDashboard';
 import MyGroomsDashboard from '../MyGroomsDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'user-i2xxj';
+const userId = 'user-i2xxj';
 const offline = () => HttpResponse.error();
 
 function renderOffline(ui: React.ReactElement) {
@@ -49,7 +49,7 @@ describe('Staff Manage tabs — offline shows the error, never a false empty (Eq
       http.get(`${base}/api/v1/riders/user/:userId`, offline),
       http.get(`${base}/api/v1/riders/assignments`, offline)
     );
-    renderOffline(<MyRidersDashboard userId={USER_ID} onBrowseMarketplace={() => {}} />);
+    renderOffline(<MyRidersDashboard userId={userId} onBrowseMarketplace={() => {}} />);
 
     expect(await screen.findByText(/couldn't load your riders/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('Staff Manage tabs — offline shows the error, never a false empty (Eq
       http.get(`${base}/api/v1/trainers/user/:userId`, offline),
       http.get(`${base}/api/v1/trainers/assignments`, offline)
     );
-    renderOffline(<MyTrainersDashboard userId={USER_ID} />);
+    renderOffline(<MyTrainersDashboard userId={userId} />);
 
     expect(await screen.findByText(/couldn't load your trainers/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('Staff Manage tabs — offline shows the error, never a false empty (Eq
       http.get(`${base}/api/v1/groom-assignments`, offline),
       http.get(`${base}/api/v1/groom-salaries/cost`, offline)
     );
-    renderOffline(<MyGroomsDashboard userId={USER_ID} onBrowseMarketplace={() => {}} />);
+    renderOffline(<MyGroomsDashboard userId={userId} onBrowseMarketplace={() => {}} />);
 
     expect(await screen.findByText(/couldn't load your grooms/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();

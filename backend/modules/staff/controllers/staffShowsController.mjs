@@ -7,7 +7,7 @@
  * to resolve). Read-only: resolving a quarantined show is not built yet.
  */
 
-import { listQuarantinedShows } from '../../competition/index.mjs';
+import { listQuarantinedShows } from '../services/quarantinedShowsService.mjs';
 
 /** GET /api/v1/staff/shows/quarantined */
 export async function getQuarantinedShows(req, res, next) {
