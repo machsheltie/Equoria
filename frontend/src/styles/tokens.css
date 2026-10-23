@@ -85,6 +85,17 @@
   --status-rare: #a78bfa; /* rare traits, special discoveries      */
   --status-legendary: #f5e6a3; /* ultra-rare, legendary events          */
 
+  /* ── Health and hunger levels (owner request 2026-10-23, Equoria-0l0tq) ─
+     Five fill-bar levels. The level label is always printed beside the colour,
+     never colour alone. */
+  --health-excellent: #22c55e; /* Excellent  — green        */
+  --health-very-good: #84cc16; /* Very Good  — yellow-green */
+  --health-good: #eab308; /* Good       — yellow       */
+  --health-fair: #f97316; /* Fair       — orange       */
+  --health-bad: #ef4444; /* Bad        — red          */
+  --glow-text-danger: 0 0 8px rgba(239, 68, 68, 0.75); /* overdue date: the Bad pill's red   */
+  --glow-text-ready: 0 0 8px rgba(34, 197, 94, 0.75); /* can-do-now date: Excellent green   */
+
   /* ── Interactive Button Colors ──────────────────────────────────────── */
   --btn-primary-bg: var(--gold-primary); /* T1 primary button bg (gold)  */
   --btn-primary-border: var(--gold-light); /* T1 primary button border     */

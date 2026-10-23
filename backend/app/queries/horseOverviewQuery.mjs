@@ -7,7 +7,8 @@
  * codes are unchanged.
  */
 import { getResultsByHorse, readRecordedAwards } from '../../modules/competition/index.mjs';
-import { activeTrainingCooldownEnd } from '../../modules/training/index.mjs';
+import { activeTrainingCooldownEnd, getTrainingVerdict } from '../../modules/training/index.mjs';
+import { canGroomToday } from '../../modules/grooms/index.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import logger from '../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../utils/horseHealth.mjs';
@@ -115,8 +116,12 @@ export async function getHorseOverview(req, res) {
         // getVetHealth() to derive feedHealth, vetHealth, displayedHealth on
         // the response. See backend/utils/horseHealth.mjs.
         lastFedDate: true,
+        hungerSince: true,
         lastVettedDate: true,
         healthStatus: true,
+        // Current Status dates (Equoria-0l0tq).
+        lastShod: true,
+        lastGroomed: true,
         // Pregnancy state (B6 / Equoria-1adr): /overview is a projection used
         // by future consumers; include the same pregnancy fields the full
         // GET /:id route surfaces so /overview is not silently missing them.
@@ -149,6 +154,23 @@ export async function getHorseOverview(req, res) {
         `[horseController.getHorseOverview] Error calculating next training date: ${error.message}`,
       );
       // Continue with null next training date
+    }
+
+    // The server's verdicts for the horse page's Last Trained / Last Groomed
+    // lines (Equoria-0l0tq): the same rules the train and groom actions apply.
+    // A verdict that cannot be read is null (unknown), never a guessed false.
+    let lastTrainedAt = null;
+    let canTrainNow = null;
+    let canGroomTodayVerdict = null;
+    try {
+      const training = await getTrainingVerdict(horse);
+      lastTrainedAt = training.lastTrainedAt ? training.lastTrainedAt.toISOString() : null;
+      canTrainNow = training.canTrainNow;
+      canGroomTodayVerdict = await canGroomToday(horseId);
+    } catch (error) {
+      logger.warn(
+        `[horseController.getHorseOverview] Error reading care verdicts: ${error.message}`,
+      );
     }
 
     // Get most recent show result
@@ -197,6 +219,12 @@ export async function getHorseOverview(req, res) {
       lastShowResult,
       rider: horse.rider || 'none',
       tack: horse.tack || {},
+      // Current Status (Equoria-0l0tq): dates and the server's can-do-now verdicts.
+      lastShod: horse.lastShod ? horse.lastShod.toISOString() : null,
+      lastGroomed: horse.lastGroomed ? horse.lastGroomed.toISOString() : null,
+      lastTrainedAt,
+      canTrainNow,
+      canGroomToday: canGroomTodayVerdict,
       // Derived health bands (A11). See backend/utils/horseHealth.mjs.
       feedHealth: getFeedHealth(horse),
       vetHealth: getVetHealth(horse),

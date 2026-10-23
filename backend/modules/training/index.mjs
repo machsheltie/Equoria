@@ -15,3 +15,4 @@ export {
   getAnyRecentTraining,
   getTrainableHorses,
 } from './services/trainingModelService.mjs';
+export { getTrainingVerdict } from './services/trainingVerdict.mjs';

@@ -13,3 +13,4 @@ export { checkBonusEligibility, getBonusTraits } from './services/groomBonusTrai
 export { processWeeklyCareerProgression } from './services/groomCareerProgressionService.mjs';
 export { updateGroomSynergy } from './services/groomProgressionService.mjs';
 export { processWeeklySalaries } from './services/groomSalaryService.mjs';
+export { canGroomToday } from './services/groomVerdict.mjs';
