@@ -30,7 +30,11 @@ import { GESTATION_DAYS } from '../../../constants/time.mjs';
 import { gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { validateBreedingPair, pregnancyClaimData } from '../../horses/index.mjs';
-import { recordTransactionTx } from '../../economy/index.mjs';
+import {
+  InsufficientFundsError,
+  TransferPayeeNotFoundError,
+  transferUserMoneyOrThrow,
+} from '../../economy/index.mjs';
 import {
   PRIVATE_STUD,
   BUSY_MESSAGE,
@@ -320,13 +324,31 @@ export async function approveStudRequest(req, res) {
             return null;
           };
 
-          // ── Money: User rows first, ascending id (the PINNED fee, S6) ──
-          const debitMareOwner = async () => {
-            const debit = await tx.user.updateMany({
-              where: { id: mareOwnerId, money: { gte: fee } },
-              data: { money: { decrement: fee } },
-            });
-            if (debit.count !== 1) {
+          // ── Money: User rows first (the helper locks them in ascending id);
+          //    the PINNED fee, S6 ──
+          if (fee > 0) {
+            try {
+              await transferUserMoneyOrThrow(tx, {
+                fromUserId: mareOwnerId,
+                toUserId: approverId,
+                amount: fee,
+                debitCategory: 'studFeePaid',
+                creditCategory: 'studFeeReceived',
+                debitDescription: `Stud fee: ${dam.name} to ${sire.name}`,
+                creditDescription: `Stud fee: ${sire.name} covered ${dam.name}`,
+                metadata: { recordId: requestId, damId: dam.id, sireId: sire.id },
+              });
+            } catch (error) {
+              if (error instanceof TransferPayeeNotFoundError) {
+                throw new BookingRefusal(409, {
+                  success: false,
+                  code: 'STUD_OWNER_UNAVAILABLE',
+                  message: 'Your account could not take the stud fee right now.',
+                });
+              }
+              if (!(error instanceof InsufficientFundsError)) {
+                throw error;
+              }
               throw (
                 (await declineForMareState()) ??
                 new Decline(
@@ -334,28 +356,6 @@ export async function approveStudRequest(req, res) {
                   `The mare's owner could not pay the ${fee}-coin stud fee.`,
                 )
               );
-            }
-          };
-          const creditApprover = async () => {
-            const credit = await tx.user.updateMany({
-              where: { id: approverId },
-              data: { money: { increment: fee } },
-            });
-            if (credit.count !== 1) {
-              throw new BookingRefusal(409, {
-                success: false,
-                code: 'STUD_OWNER_UNAVAILABLE',
-                message: 'Your account could not take the stud fee right now.',
-              });
-            }
-          };
-          if (fee > 0) {
-            if (mareOwnerId < approverId) {
-              await debitMareOwner();
-              await creditApprover();
-            } else {
-              await creditApprover();
-              await debitMareOwner();
             }
           }
 
@@ -403,26 +403,6 @@ export async function approveStudRequest(req, res) {
           });
           if (claimed.count !== 1) {
             throw new BookingRefusal(409, REQUEST_NOT_PENDING);
-          }
-
-          if (fee > 0) {
-            const metadata = { recordId: requestId, damId: dam.id, sireId: sire.id };
-            await recordTransactionTx(tx, {
-              userId: mareOwnerId,
-              type: 'debit',
-              amount: fee,
-              category: 'studFeePaid',
-              description: `Stud fee: ${dam.name} to ${sire.name}`,
-              metadata: { ...metadata, counterpartyId: approverId },
-            });
-            await recordTransactionTx(tx, {
-              userId: approverId,
-              type: 'credit',
-              amount: fee,
-              category: 'studFeeReceived',
-              description: `Stud fee: ${sire.name} covered ${dam.name}`,
-              metadata: { ...metadata, counterpartyId: mareOwnerId },
-            });
           }
 
           const foalDueDate = startOfGameDayIndex(gameDayIndex(now) + GESTATION_DAYS).toISOString();

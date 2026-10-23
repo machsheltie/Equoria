@@ -48,6 +48,9 @@ const USER_WRITE = new RegExp(
   String.raw`\.user\.${PRISMA_WRITE}\s*\(` +
     // debitMoneyOrThrow's first statement is `client.user.updateMany(...)`.
     String.raw`|\bdebitMoneyOrThrow\s*\(` +
+    // transferUserMoneyOrThrow's writes are `tx.user.updateMany(...)` on both
+    // players (Equoria-e7tgc.3).
+    String.raw`|\btransferUserMoneyOrThrow\s*\(` +
     // updateUserSettingsPaths is one raw `UPDATE "User"` (Equoria-6p398.19).
     String.raw`|\bupdateUserSettingsPaths\s*\(` +
     String.raw`|UPDATE\s+"User"`,
@@ -180,6 +183,18 @@ describe('SENTINEL: User rows are locked before Horse rows inside a transaction'
     const result = analyzeUserBeforeHorse(compliant);
     expect(result).toHaveLength(1);
     expect(result[0].violation).toBe(false);
+  });
+
+  it('DETECTOR PROOF: a player-to-player transfer counts as a User write (Equoria-e7tgc.3)', () => {
+    const planted = `
+      await prisma.$transaction(async tx => {
+        await tx.horse.updateMany({ where: { id: damId, inFoalSinceDate: null }, data });
+        await transferUserMoneyOrThrow(tx, { fromUserId, toUserId, amount: fee });
+      });
+    `;
+    const result = analyzeUserBeforeHorse(planted);
+    expect(result).toHaveLength(1);
+    expect(result[0].violation).toBe(true);
   });
 
   it('DETECTOR PROOF: a raw UPDATE on horses counts as a Horse write', () => {

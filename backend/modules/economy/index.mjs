@@ -21,4 +21,8 @@ export {
   recordTransaction,
   recordTransactionTx,
 } from './services/financialLedgerService.mjs';
+export {
+  TransferPayeeNotFoundError,
+  transferUserMoneyOrThrow,
+} from './services/userMoneyTransfer.mjs';
 export { TACK_INVENTORY, resolveTackBonus } from './tackShop/services/tackInventory.mjs';

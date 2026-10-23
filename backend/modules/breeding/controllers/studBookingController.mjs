@@ -23,8 +23,9 @@
  *     txUserBeforeHorseLockOrder.sentinel), then horse rows in ascending id,
  *     then the BreedingRecord insert. All writes are inline in this file so the
  *     sentinel sees them.
- *   - The debit is a guarded `updateMany` (money >= fee, count must be 1); no
- *     row is locked with SELECT…FOR-UPDATE.
+ *   - The fee moves through transferUserMoneyOrThrow (Equoria-e7tgc.3): a
+ *     guarded debit (money >= fee), the credit and both ledger rows on this
+ *     transaction; no row is locked with SELECT…FOR-UPDATE.
  *   - The sire pin re-proves the listing at commit (owner, Public Stud, fee),
  *     so an unlist, reprice or sale that lands mid-request rolls everything
  *     back and the fee only ever reaches the stallion's owner at commit.
@@ -48,7 +49,11 @@ import {
   pregnancyClaimData,
   pendingRequestMessage,
 } from '../../horses/index.mjs';
-import { recordTransactionTx } from '../../economy/index.mjs';
+import {
+  InsufficientFundsError,
+  TransferPayeeNotFoundError,
+  transferUserMoneyOrThrow,
+} from '../../economy/index.mjs';
 import {
   PUBLIC_STUD,
   BUSY_MESSAGE,
@@ -112,13 +117,30 @@ export async function bookPublicStud(req, res) {
             tx.user.findUnique({ where: { id: stallionOwnerId }, select: { username: true } }),
           ]);
 
-          // ── Money: User rows first, ascending id ──
-          const debitMareOwner = async () => {
-            const debit = await tx.user.updateMany({
-              where: { id: requesterId, money: { gte: fee } },
-              data: { money: { decrement: fee } },
-            });
-            if (debit.count !== 1) {
+          // ── Money: User rows first (the helper locks them in ascending id) ──
+          if (fee > 0) {
+            try {
+              await transferUserMoneyOrThrow(tx, {
+                fromUserId: requesterId,
+                toUserId: stallionOwnerId,
+                amount: fee,
+                debitCategory: 'studFeePaid',
+                creditCategory: 'studFeeReceived',
+                debitDescription: `Stud fee: ${dam.name} to ${sire.name}`,
+                creditDescription: `Stud fee: ${sire.name} covered ${dam.name}`,
+                metadata: { damId, sireId },
+              });
+            } catch (error) {
+              if (error instanceof TransferPayeeNotFoundError) {
+                throw new BookingRefusal(409, {
+                  success: false,
+                  code: 'STUD_OWNER_UNAVAILABLE',
+                  message: "The stallion's owner can't take bookings right now.",
+                });
+              }
+              if (!(error instanceof InsufficientFundsError)) {
+                throw error;
+              }
               // Review M-d: a booking that queued behind another breeding of
               // this mare (a double submit) can find the money already spent.
               // A fresh read (it sees that breeding's commit) says which loss
@@ -135,28 +157,6 @@ export async function bookPublicStud(req, res) {
                 code: 'INSUFFICIENT_FUNDS',
                 message: `You need ${fee} coins to pay this stud fee.`,
               });
-            }
-          };
-          const creditStallionOwner = async () => {
-            const credit = await tx.user.updateMany({
-              where: { id: stallionOwnerId },
-              data: { money: { increment: fee } },
-            });
-            if (credit.count !== 1) {
-              throw new BookingRefusal(409, {
-                success: false,
-                code: 'STUD_OWNER_UNAVAILABLE',
-                message: "The stallion's owner can't take bookings right now.",
-              });
-            }
-          };
-          if (fee > 0) {
-            if (requesterId < stallionOwnerId) {
-              await debitMareOwner();
-              await creditStallionOwner();
-            } else {
-              await creditStallionOwner();
-              await debitMareOwner();
             }
           }
 
@@ -223,26 +223,6 @@ export async function bookPublicStud(req, res) {
               resolvedAt: now,
             },
           });
-
-          if (fee > 0) {
-            const metadata = { recordId: record.id, damId, sireId };
-            await recordTransactionTx(tx, {
-              userId: requesterId,
-              type: 'debit',
-              amount: fee,
-              category: 'studFeePaid',
-              description: `Stud fee: ${dam.name} to ${sire.name}`,
-              metadata: { ...metadata, counterpartyId: stallionOwnerId },
-            });
-            await recordTransactionTx(tx, {
-              userId: stallionOwnerId,
-              type: 'credit',
-              amount: fee,
-              category: 'studFeeReceived',
-              description: `Stud fee: ${sire.name} covered ${dam.name}`,
-              metadata: { ...metadata, counterpartyId: requesterId },
-            });
-          }
 
           const notification = {
             userId: stallionOwnerId,
