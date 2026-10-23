@@ -38,7 +38,6 @@ export const recoveryGraceMs = 30 * 60 * 1000;
  * @returns {Promise<number[]>}
  */
 export async function findPartiallySettledShowIds({ now, showIds }) {
-  const cutoff = new Date(now.getTime() - recoveryGraceMs);
   const named = Array.isArray(showIds) && showIds.length > 0 ? showIds : null;
   const rows = named
     ? await prisma.$queryRaw`
@@ -48,8 +47,21 @@ export async function findPartiallySettledShowIds({ now, showIds }) {
     : await prisma.$queryRaw`
         SELECT "id" FROM "shows"
         WHERE "status" = 'completed' AND "showType" <> 'conformation'
-          AND "stagedOrdering" IS NOT NULL AND "executedAt" <= ${cutoff}`;
-  return rows.map(r => r.id);
+          AND "stagedOrdering" IS NOT NULL`;
+  if (named || rows.length === 0) {
+    return rows.map(r => r.id);
+  }
+  // The grace period is applied through the client, not in the raw SQL: a Date bound
+  // there is compared to the zone-less executedAt column in the database session's
+  // zone, which skews it by the local UTC offset.
+  const settled = await prisma.show.findMany({
+    where: {
+      id: { in: rows.map(r => r.id) },
+      executedAt: { lte: new Date(now.getTime() - recoveryGraceMs) },
+    },
+    select: { id: true },
+  });
+  return settled.map(s => s.id);
 }
 
 /** Each placing's share of the prize: 1st / 2nd / 3rd. */
