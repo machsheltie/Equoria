@@ -1,5 +1,5 @@
 import { useTrainingOverview } from '@/hooks/api/useTraining';
-import { useHorseTrainingHistory } from '@/hooks/api/useHorses';
+import { useHorse, useHorseTrainingHistory } from '@/hooks/api/useHorses';
 import { userMessageFor } from '@/lib/http/userMessage';
 
 interface TrainingHistoryPanelProps {
@@ -12,6 +12,16 @@ interface TrainingHistoryPanelProps {
 // ("Dec 10, 2025, 12:00 AM"); the 'Date unavailable' fallback is preserved.
 import { formatDateTime } from '@/lib/formatDate';
 
+/**
+ * The score a session recorded (Equoria-da2fw): before to after when both were
+ * logged, the after-score alone when only it is known. Sessions logged before
+ * scores were recorded carry neither, and read as an honest em dash.
+ */
+function sessionScoreLabel(before?: number | null, after?: number | null): string {
+  if (typeof after !== 'number') return '—';
+  return typeof before === 'number' ? `${before} → ${after}` : `${after}`;
+}
+
 const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
   // Only query when we have a valid horseId - hooks have enabled guards
   const { data, isLoading, error } = useTrainingOverview(horseId || 0);
@@ -20,6 +30,9 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
     isLoading: historyLoading,
     error: historyError,
   } = useHorseTrainingHistory(horseId || 0);
+  // The status endpoint sends cooldowns, never scores; a discipline's current
+  // score is the horse's own Horse.disciplineScores (keyed by discipline name).
+  const { data: horse } = useHorse(horseId || 0);
 
   // Early return if no horse selected - queries won't execute due to enabled guards
   if (!horseId) {
@@ -55,7 +68,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
                 {entry.discipline.replace(/_/g, ' ')}
               </span>
               <span className="text-xs text-role-secondary">
-                Score: {entry.score !== undefined ? entry.score : '—'}
+                Score: {horse?.disciplineScores?.[entry.discipline] ?? '—'}
               </span>
             </div>
             <div className="text-xs text-role-secondary">
@@ -94,8 +107,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
                 </span>
               </div>
               <div className="text-xs text-role-secondary">
-                Score: {entry.score !== undefined ? entry.score : '—'}{' '}
-                {entry.notes ? `• ${entry.notes}` : ''}
+                Score: {sessionScoreLabel(entry.scoreBefore, entry.scoreAfter)}
               </div>
             </div>
           ))}
