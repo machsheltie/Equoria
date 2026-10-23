@@ -28,6 +28,7 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../modules/economy/index.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-576c0 B9: entering needs age 3-20 game years and an eligible rider
 // (owner entry rules + C10); horses that enter get a game-age dateOfBirth and a
@@ -37,6 +38,7 @@ import { createShow, enterShow } from '../modules/competition/shows/showControll
 import { executeClosedShows } from '../modules/competition/index.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-si69u-conserv';
+const cleanup = createCleanupTracker();
 
 let creator;
 let entrants;
@@ -130,30 +132,41 @@ beforeAll(async () => {
   entrantHorses = await Promise.all(entrants.map(e => makeHorse(e.id)));
 }, 60000);
 
-afterAll(async () => {
+// Equoria-bmnch: fail-loud cleanup. Each step used to end in
+// `.catch(err => console.warn(...))`, so a delete that failed left fixtures in the
+// canonical database while the suite stayed green. The tracker runs every step even
+// if an earlier one throws, then fails afterAll with one aggregated error.
+// Registration order is the delete order (shows, horses, transactions, riders, users).
+cleanup.add(async () => {
   for (const sid of createdShowIds) {
-    await prisma.competitionResult
-      .deleteMany({ where: { showId: sid } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.showEntry
-      .deleteMany({ where: { showId: sid } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.show.delete({ where: { id: sid } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.competitionResult.deleteMany({ where: { showId: sid } });
+    await prisma.showEntry.deleteMany({ where: { showId: sid } });
+    await prisma.show.deleteMany({ where: { id: sid } });
   }
+}, 'shows, results and entries');
+cleanup.add(async () => {
   if (createdHorseIds.length) {
-    await prisma.horse
-      .deleteMany({ where: { id: { in: createdHorseIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
   }
+}, 'horses');
+cleanup.add(async () => {
   if (createdUserIds.length) {
-    await prisma.userTransaction
-      .deleteMany({ where: { userId: { in: createdUserIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.rider.deleteMany({ where: { id: { in: createdRiderIds } } });
-    await prisma.user
-      .deleteMany({ where: { id: { in: createdUserIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.userTransaction.deleteMany({ where: { userId: { in: createdUserIds } } });
   }
+}, 'user transactions');
+cleanup.add(async () => {
+  if (createdRiderIds.length) {
+    await prisma.rider.deleteMany({ where: { id: { in: createdRiderIds } } });
+  }
+}, 'riders');
+cleanup.add(async () => {
+  if (createdUserIds.length) {
+    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+  }
+}, 'users');
+
+afterAll(async () => {
+  await cleanup.run();
   // Equoria-3n2g4: do NOT reset the shared SystemAccount[showEscrow]/[burn]
   // rows here. Those rows are SHARED across every money-conservation suite, and
   // sibling suites run concurrently under maxWorkers=50%. Forcing them to 0
