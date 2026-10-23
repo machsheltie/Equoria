@@ -24,7 +24,7 @@
  * Do NOT consolidate without first agreeing on a unified UX spec.
  */
 
-import { getDisciplinesByCategory } from '../../lib/utils/training-utils.js';
+import { getDisciplinesByCategory, scoreForDiscipline } from '../../lib/utils/training-utils.js';
 
 export interface DisciplinePickerProps {
   /**
@@ -92,7 +92,7 @@ const DisciplineCategory = ({
         {disciplines.map((discipline) => {
           const isSelected = selectedDiscipline === discipline.id;
           const isDisabled = disabledDisciplines.includes(discipline.id) || isLoading;
-          const score = disciplineScores[discipline.id] || 0;
+          const score = scoreForDiscipline(disciplineScores, discipline.id);
 
           return (
             <button

@@ -301,10 +301,24 @@ export function canTrain(
 }
 
 /**
+ * A horse's score in one discipline, read from `disciplineScores` as the API
+ * sends it: keyed by the discipline's NAME ('Show Jumping'), not by the kebab id
+ * this module uses for its own bookkeeping ('show-jumping'). The id is kept as a
+ * fallback key for payloads that still use it (Equoria-znmtg).
+ */
+export function scoreForDiscipline(
+  scores: Record<string, number> | undefined,
+  disciplineId: string
+): number {
+  const name = getDisciplineById(disciplineId)?.name;
+  return (name !== undefined ? scores?.[name] : undefined) ?? scores?.[disciplineId] ?? 0;
+}
+
+/**
  * Get the current score for a specific discipline
  */
 export function getDisciplineScore(horse: Horse, disciplineId: string): number {
-  return horse.disciplineScores?.[disciplineId] || 0;
+  return scoreForDiscipline(horse.disciplineScores, disciplineId);
 }
 
 /**
