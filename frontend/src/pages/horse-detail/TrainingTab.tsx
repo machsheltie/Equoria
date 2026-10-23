@@ -203,10 +203,11 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   const disabledDisciplines = getDisabledDisciplines();
   const isOnCooldown = globalCooldown !== null;
 
-  // Determine if ineligibility is due to cooldown vs age
+  // Determine if ineligibility is due to cooldown, or to a standing refusal (too
+  // young, retired, Bad health): a refusal is never shown as "Ready to train".
   const isIneligibleDueToCooldown =
     !eligibility.eligible && eligibility.reason?.includes('cooldown');
-  const isIneligibleDueToAge = !eligibility.eligible && eligibility.reason?.includes('3 years old');
+  const isRefused = !eligibility.eligible && !isIneligibleDueToCooldown;
 
   return (
     <div className="space-y-6" data-testid="training-tab">
@@ -225,7 +226,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <Loader2 className="w-4 h-4 animate-spin mr-2" />
             Loading training status...
           </div>
-        ) : isIneligibleDueToAge ? (
+        ) : isRefused ? (
           <div
             className="flex items-center text-[var(--status-danger)]"
             data-testid="training-status-ineligible"
@@ -283,8 +284,8 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         )}
       </div>
 
-      {/* Age/Eligibility Warning - only show for age-based ineligibility */}
-      {isIneligibleDueToAge && (
+      {/* Eligibility Warning - for a standing refusal (age, health), not a cooldown */}
+      {isRefused && (
         <div
           className="glass-panel border border-[var(--role-danger-border)] rounded-lg p-4"
           data-testid="training-eligibility-warning"
