@@ -122,7 +122,6 @@ export const apiInfoHandler = (req, res) => {
     message: 'Equoria API v1.0',
     documentation: '/api-docs',
     versioned: '/api/v1',
-    labs: '/api/v1/labs',
     endpoints: {
       auth: '/api/auth',
       horses: '/api/horses',

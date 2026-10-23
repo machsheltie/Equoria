@@ -139,17 +139,12 @@ export const FLAG_DEFINITIONS = {
   },
 
   // ============================================
-  // Beta/Labs Flags
+  // Beta Flags
   // ============================================
   FF_BETA_FEATURES: {
     type: 'USER_LIST',
     description: 'Comma-separated list of beta tester user IDs',
     defaultValue: '',
-  },
-  FF_LABS_ENABLED: {
-    type: 'BOOLEAN',
-    description: 'Enable /labs experimental endpoints',
-    defaultValue: true, // Already active
   },
 
   // ============================================
