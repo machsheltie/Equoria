@@ -167,6 +167,24 @@ export function getHorseCompetitionResultsForPrizeSummary(horseId) {
 }
 
 /**
+ * A horse's offspring for the pedigree tab (Equoria-oey96.55, owner ruling
+ * 2026-10-23): every horse whose sire or dam it is, oldest first, whoever owns
+ * it now. One query, and only `id` and `name` leave it — offspring sold to other
+ * players are listed by name and nothing else (no owner, stats, genetics or
+ * traits, hidden or revealed).
+ *
+ * @param {number} horseId
+ * @returns {Promise<Array<{ id: number, name: string }>>}
+ */
+export function listOffspring(horseId) {
+  return prisma.horse.findMany({
+    where: { OR: [{ sireId: horseId }, { damId: horseId }] },
+    select: { id: true, name: true },
+    orderBy: [{ dateOfBirth: 'asc' }, { id: 'asc' }],
+  });
+}
+
+/**
  * The horses module's by-id read (Equoria-q4uem.7 S2: moved here from the former
  * horseModelService, the query half of its command/query split). Returns the horse
  * with its breed and stable, or null. The owner's user row (password hash, MFA

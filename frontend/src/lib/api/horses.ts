@@ -58,6 +58,15 @@ export interface HorseColorResponse {
   modifiers: Record<string, unknown> | null;
 }
 
+/**
+ * One offspring from GET /api/v1/horses/:id/offspring (Equoria-oey96.55): its id
+ * and name only — a foal sold to another player exposes nothing more.
+ */
+export interface HorseOffspring {
+  id: number;
+  name: string;
+}
+
 export const horsesApi = {
   // NOTE (Equoria-6p398.2, 2026-09-05 audit Finding 2): there is deliberately
   // no `create` here. `POST /api/v1/horses` handed any authenticated player a
@@ -75,6 +84,8 @@ export const horsesApi = {
     apiClient.get<HorseSummary>(`/api/v1/horses/${horseId}?t=${Date.now()}`),
   getTrainingHistory: (horseId: number) =>
     apiClient.get<HorseTrainingAnalytics>(`/api/v1/horses/${horseId}/training-history`),
+  getOffspring: (horseId: number) =>
+    apiClient.get<HorseOffspring[]>(`/api/v1/horses/${horseId}/offspring`),
   getBreedingData: (horseId: number) =>
     apiClient.get<HorseBreedingData>(`/api/v1/horses/${horseId}/breeding-data`),
   getXP: (horseId: number) => apiClient.get<HorseXP>(`/api/v1/horses/${horseId}/xp`),

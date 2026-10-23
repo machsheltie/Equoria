@@ -8,6 +8,7 @@
  *   POST   /:id/stud-listing           — list a stallion at stud (set fee)
  *   DELETE /:id/stud-listing           — unlist a stallion from stud
  *   GET    /:id/breeding-data          — horse breeding data + trait predictions
+ *   GET    /:id/offspring              — the horse's foals, id + name only
  *   POST   /:id/foal-now               — admin/E2E: skip gestation, materialise foal
  *
  * Mounting: this router is mounted at the SAME path as the parent
@@ -31,7 +32,7 @@
 
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
-import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
@@ -40,10 +41,37 @@ import {
   unlistHorseAtStud,
 } from '../controllers/horseController.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
+import { listOffspring } from '../services/horseRouteQueries.mjs';
 import logger from '../../../utils/logger.mjs';
 import { validateHorseId, rejectPollutedRequest, handleValidationErrors } from './_validators.mjs';
 
 const router = express.Router();
+
+/**
+ * GET /horses/:id/offspring (Equoria-oey96.55, owner ruling 2026-10-23)
+ * The horse's foals for the pedigree tab, each as `{ id, name }` only — a foal
+ * sold to another player is still listed, by name, with nothing private.
+ *
+ * Security: the pedigree tab sits on the owner-only horse page, so the parent
+ * horse must be the caller's (requireOwnership answers 404 otherwise).
+ */
+router.get(
+  '/:id/offspring',
+  queryRateLimiter,
+  authenticateToken,
+  rejectPollutedRequest,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const offspring = await listOffspring(req.horse.id);
+      return res.json({ success: true, data: offspring });
+    } catch (error) {
+      logger.error(`[horseBreedingRoutes.GET /:id/offspring] Error: ${error.message}`);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  },
+);
 
 /**
  * POST /horses/breeding/color-prediction

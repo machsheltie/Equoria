@@ -6,11 +6,13 @@ import {
   HorseTrainingAnalytics,
   horsesApi,
 } from '@/lib/api-client';
+import type { HorseOffspring } from '@/lib/api/horses';
 
 const horseKeys = {
   all: ['horses'] as const,
   detail: (horseId: number) => ['horses', horseId] as const,
   trainingHistory: (horseId: number) => ['horses', horseId, 'training-history'] as const,
+  offspring: (horseId: number) => ['horses', horseId, 'offspring'] as const,
 };
 
 export const useHorses = () =>
@@ -35,6 +37,19 @@ export const useHorseTrainingHistory = (horseId: number) =>
     enabled: Boolean(horseId),
     staleTime: 30 * 1000,
     select: (data) => data.trainingHistory, // Extract the array from the analytics object
+  });
+
+/**
+ * A horse's offspring for the pedigree tab (Equoria-oey96.55): id + name each,
+ * oldest first, including foals now owned by other players. Under the
+ * ['horses'] prefix, so a rename refreshes the names here too.
+ */
+export const useHorseOffspring = (horseId: number) =>
+  useQuery<HorseOffspring[], ApiError>({
+    queryKey: horseKeys.offspring(horseId),
+    queryFn: () => horsesApi.getOffspring(horseId),
+    enabled: Boolean(horseId),
+    staleTime: 60 * 1000,
   });
 
 /**
