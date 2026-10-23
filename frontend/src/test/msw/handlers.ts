@@ -50,7 +50,6 @@
  * GET    /api/v1/horses/:horseId/prize-summary      prize earnings summary
  * GET    /api/v1/horses/:horseId/xp-history         XP gain history
  * POST   /api/v1/horses/foals                       create foal / start pregnancy
- * GET    /api/v1/horses/user/eligible               horses eligible for competition
  * GET    /api/v1/horses/:id/conformation            conformation scores (8 regions)
  * GET    /api/v1/breeds/:id/conformation-averages   breed average conformation scores
  * (deleted dead: /level-info, /add-xp — no api-client call, no test ref)
@@ -69,7 +68,6 @@
  * POST   /api/v1/competition/enter                  enter show (singular)
  * GET    /api/v1/competitions                       paginated competition list
  * GET    /api/v1/competitions/:id                   competition detail
- * GET    /api/v1/competitions/:id/entries           competition entries
  * GET    /api/v1/competition/show/:showId/results   show results (scoped DTO)
  * GET    /api/v1/competitions/:compId/eligibility/:userId  user eligibility
  * POST   /api/v1/competitions/enter                 enter competition (bulk)

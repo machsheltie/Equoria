@@ -167,18 +167,4 @@ export const competitionHandlers = [
   // (Equoria-0fw18) Deleted dead unversioned POST /api/competitions/enter — the
   // v1 twin POST /api/v1/competitions/enter (v1-mirror block) serves
   // submitCompetitionEntry (frontend/src/lib/api/competitions.ts).
-
-  // Competition System - Entries (legacy)
-  http.get(`${base}/api/v1/competitions/:id/entries`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [],
-    })
-  ),
-  http.get(`${base}/api/v1/horses/user/eligible`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [],
-    })
-  ),
 ];

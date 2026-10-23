@@ -18,14 +18,6 @@ export type {
   Competition as CompetitionDetail,
 } from './CompetitionDetailModal';
 
-export { default as HorseSelectionCard } from './HorseSelectionCard';
-export type {
-  HorseSelectionCardProps,
-  Horse,
-  EligibilityStatus,
-  RelevantStat,
-} from './HorseSelectionCard';
-
 export { default as EntryConfirmationModal } from './EntryConfirmationModal';
 export type {
   EntryConfirmationModalProps,
