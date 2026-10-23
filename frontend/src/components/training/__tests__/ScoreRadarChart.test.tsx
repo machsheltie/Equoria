@@ -365,11 +365,30 @@ describe('ScoreRadarChart', () => {
       expect(angleAxis).toHaveAttribute('data-datakey', 'discipline');
     });
 
-    it('configures PolarRadiusAxis with 0-100 domain', () => {
-      render(<ScoreRadarChart disciplineScores={sampleScores} />);
+    // Equoria-ycivq. Old contract: the radius axis was fixed at [0, 100]. Owner
+    // ruling 2026-10-07: stats are never capped, so the axis follows the data.
+    it('scales the PolarRadiusAxis to the highest score, not a fixed 100', () => {
+      const scores = { ...sampleScores, [DISCIPLINES[0].id]: 2400 };
+      render(<ScoreRadarChart disciplineScores={scores} />);
       const radiusAxis = screen.getByTestId('polar-radius-axis');
       const domain = JSON.parse(radiusAxis.getAttribute('data-domain') || '[]');
-      expect(domain).toEqual([0, 100]);
+      expect(domain).toEqual([0, 2400]);
+    });
+
+    it('keeps a usable axis when every score is zero', () => {
+      render(<ScoreRadarChart disciplineScores={{}} />);
+      const radiusAxis = screen.getByTestId('polar-radius-axis');
+      const domain = JSON.parse(radiusAxis.getAttribute('data-domain') || '[]');
+      expect(domain[0]).toBe(0);
+      expect(domain[1]).toBeGreaterThan(0);
+    });
+
+    it('does not tell screen readers that scores stop at 100', () => {
+      render(<ScoreRadarChart disciplineScores={sampleScores} />);
+      const description = document.getElementById('radar-chart-description');
+      expect(description).not.toBeNull();
+      expect(description?.textContent).not.toMatch(/0 to 100/);
+      expect(description?.textContent).toMatch(/no upper limit/i);
     });
 
     it('sets fill opacity to 0.6', () => {

@@ -2,9 +2,13 @@
  * ScoreRadarChart Component
  *
  * Visualizes all 24 discipline scores for a horse using a Recharts radar chart.
- * Each axis represents one discipline, with scores ranging from 0-100.
+ * Each axis represents one discipline, scaled to the highest score (scores have no cap).
  * Categories are color-coded: Western (orange), English (blue),
  * Specialized (purple), Racing (red).
+ *
+ * Recharts is a rejected library (PRODUCT.md); this component's replacement awaits
+ * owner direction on the visual (Equoria-ycivq). Until then only the axis and the
+ * screen-reader text are corrected in place.
  *
  * Story 4-1: Training Session Interface - Task: ScoreRadarChart
  */
@@ -26,7 +30,7 @@ import { DISCIPLINES } from '../../lib/utils/training-utils';
  * Props for ScoreRadarChart component
  */
 interface ScoreRadarChartProps {
-  /** Object mapping discipline IDs to their scores (0-100) */
+  /** Object mapping discipline IDs to their scores (uncapped) */
   disciplineScores: { [disciplineId: string]: number };
   /** Height of the chart in pixels (default: 400) */
   height?: number;
@@ -86,7 +90,7 @@ const CustomTooltip = ({
  * ScoreRadarChart Component
  *
  * Displays a radar chart visualization of discipline scores for a horse.
- * All 24 disciplines are shown with their scores on axes from 0-100.
+ * All 24 disciplines are shown with their scores on axes scaled to the data.
  *
  * @example
  * ```tsx
@@ -115,12 +119,16 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
   // Uses a gradient-like approach with the first category color as primary
   const primaryColor = CATEGORY_COLORS.Western;
 
+  // The axis follows the data: scores have no cap (owner ruling 2026-10-07,
+  // Equoria-ycivq). An all-zero horse still gets a drawable axis.
+  const axisMax = Math.max(1, ...chartData.map((point) => point.score));
+
   // Hidden description for screen readers
   const descriptionId = 'radar-chart-description';
   const descriptionText =
     'Radar chart showing scores for all 24 horse disciplines. ' +
     'Categories include Western, English, Specialized, and Racing disciplines. ' +
-    'Scores range from 0 to 100 on each axis.';
+    'Scores have no upper limit; each axis scales to the highest score on the chart.';
 
   return (
     <div className={className}>
@@ -145,7 +153,7 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
           />
           <PolarRadiusAxis
             angle={30}
-            domain={[0, 100]}
+            domain={[0, axisMax]}
             tick={{ fontSize: 9, fill: 'var(--text-secondary)' }}
           />
           <Radar
