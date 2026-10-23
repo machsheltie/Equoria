@@ -18,6 +18,7 @@ import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { toPredictionView } from '../../breeding/index.mjs';
+import { minBreedingAgeYears } from '../../horses/index.mjs';
 import {
   INT4_MAX,
   MAX_AGE_YEARS,
@@ -118,7 +119,14 @@ export async function browseStudListings(req, res) {
     const where = {
       studStatus: { in: statuses },
       sex: 'Stallion',
-      AND: [{ userId: { not: null } }, { userId: { not: viewerId } }],
+      AND: [
+        { userId: { not: null } },
+        { userId: { not: viewerId } },
+        // A stallion too young to breed is never offered, even if he was
+        // listed before the listing guard existed (owner ruling 2026-10-23,
+        // Equoria-e7tgc.2). Same game-year convention as minAge below.
+        { dateOfBirth: { lte: birthDateForAge(minBreedingAgeYears) } },
+      ],
     };
     if (name) {
       where.name = { contains: name, mode: 'insensitive' };

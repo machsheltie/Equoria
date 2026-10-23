@@ -24,6 +24,8 @@ import { AppError } from '../../../errors/index.mjs';
 import { studStatuses } from '../../../constants/schema.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
 import { declinePendingRequestsForSire } from '../services/studRequestCleanup.mjs';
+import { minBreedingAgeYears } from '../services/breedingPairRules.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /** Owner ruling 2026-10-15: the stallion owner chooses Public Stud or Private Stud. */
 const STUD_STATUS_BY_MODE = Object.freeze({
@@ -84,6 +86,17 @@ export async function listHorseAtStud(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Only stallions can be listed at stud',
+      });
+    }
+
+    // Owner ruling (Stacey, 2026-10-23, Equoria-e7tgc.2): a stallion cannot
+    // stand at stud until he is old enough to breed. Age only grows, so this
+    // read cannot be raced into a wrong answer.
+    if (getHorseAgeYears(req.horse.dateOfBirth) < minBreedingAgeYears) {
+      return res.status(400).json({
+        success: false,
+        code: 'stallionTooYoungForStud',
+        message: `${req.horse.name} cannot stand at stud until he is ${minBreedingAgeYears} years old.`,
       });
     }
 
