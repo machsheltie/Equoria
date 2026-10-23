@@ -2,7 +2,8 @@
  * Onboarding Flow — E2E Tests
  *
  * Tests the new-user onboarding wizard:
- *  - Fresh (unauthenticated) user gets redirected to /login
+ *  - Fresh (unauthenticated) user gets redirected to /login (also for /onboarding itself:
+ *    Equoria-bvddn.36, owner ruling 2026-10-19 "keep the onboarding login requirement")
  *  - Register a new user → lands on home or onboarding
  *  - Onboarding step 1: Welcome message
  *  - Onboarding step 2: Horse selection (BreedSelector)
@@ -12,7 +13,7 @@
  * Uses a fresh session with a NEW user registration to avoid
  * storageState from the global-setup user (who already completed onboarding).
  */
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 test.describe('Onboarding Flow', () => {
   // All tests in this group use a fresh session (no auth cookies)
@@ -26,12 +27,41 @@ test.describe('Onboarding Flow', () => {
     // Successful registrations are never counted, so no bypass needed.
   });
 
-  test('unauthenticated user visiting /onboarding can see the wizard', async ({ page }) => {
-    // /onboarding is NOT a ProtectedRoute — it's a public route
+  /**
+   * Equoria-bvddn.36 (owner ruling 2026-10-19): /onboarding requires a session.
+   * The wizard tests used to visit it logged out. They now sign in the way a
+   * real new player does: register, which sets the auth cookies, then open the
+   * wizard (OnboardingGuard already sends a brand-new account there).
+   */
+  async function registerFreshPlayer(page: Page, prefix: string): Promise<void> {
+    const timestamp = Date.now();
+    const password = 'Password123!';
+
+    await page.goto('/register', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('h2')).toContainText('Join the Realm', { timeout: 15000 });
+    await page.fill('input[name="firstName"]', 'Onboard');
+    await page.fill('input[name="lastName"]', 'Tester');
+    await page.fill('input[name="username"]', `${prefix}_${timestamp}`);
+    await page.fill('input[name="email"]', `${prefix}_${timestamp}@example.com`);
+    // Equoria-iqzn / Equoria-9tlha: COPPA age gate requires a valid adult DOB.
+    await page.fill('input[name="dateOfBirth"]', '1990-01-01');
+    await page.fill('input[name="password"]', password);
+    await page.fill('input[name="confirmPassword"]', password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/(onboarding)?$/, { timeout: 30000 });
+
+    await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
+  }
+
+  test('unauthenticated user visiting /onboarding is sent to /login, not the wizard', async ({
+    page,
+  }) => {
+    // Equoria-bvddn.36: /onboarding is a ProtectedRoute. A logged-out visitor
+    // must not be able to walk the wizard and only fail on submit.
     await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
 
-    // OnboardingPage renders step 1 heading: "Welcome to Equoria"
-    await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
+    await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
+    await expect(page.locator('h1', { hasText: 'Welcome to Equoria' })).toHaveCount(0);
   });
 
   test('register new user and reach onboarding or home', async ({ page }) => {
@@ -68,8 +98,8 @@ test.describe('Onboarding Flow', () => {
   });
 
   test('onboarding wizard step 1 shows Welcome to Equoria', async ({ page }) => {
-    // Go directly to /onboarding (public route)
-    await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
+    // Sign in as a brand-new player (the wizard requires a session), then open the wizard
+    await registerFreshPlayer(page, 'e2e_wiz1');
 
     // Step 1 heading
     await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
@@ -93,7 +123,7 @@ test.describe('Onboarding Flow', () => {
   });
 
   test('onboarding wizard step 2 shows Choose Your Horse', async ({ page }) => {
-    await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
+    await registerFreshPlayer(page, 'e2e_wiz2');
 
     // Wait for step 1 to load
     await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
@@ -119,7 +149,7 @@ test.describe('Onboarding Flow', () => {
   });
 
   test('onboarding wizard step 3 shows Ready confirmation', async ({ page }) => {
-    await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
+    await registerFreshPlayer(page, 'e2e_wiz3');
 
     // Wait for step 1
     await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
@@ -169,7 +199,7 @@ test.describe('Onboarding Flow', () => {
   });
 
   test('onboarding progress dots reflect current step', async ({ page }) => {
-    await page.goto('/onboarding', { waitUntil: 'domcontentloaded' });
+    await registerFreshPlayer(page, 'e2e_wiz4');
 
     await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
 
