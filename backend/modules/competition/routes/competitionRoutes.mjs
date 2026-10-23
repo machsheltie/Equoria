@@ -2,7 +2,7 @@ import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
 import { getResultsByHorse, getUserResultsSummary } from '../services/resultModelService.mjs';
-import { getShowResultsView } from '../services/competitionResultRecord.mjs';
+import { getShowResultsView, toPlayerShowStatus } from '../services/competitionResultRecord.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 // Equoria-kacla: enterAndRunShow / executeEnhancedCompetition /
 // validateCompetitionEntry are no longer imported — the legacy instant
@@ -187,7 +187,7 @@ router.get(
           discipline: show.discipline,
           entryFee: show.entryFee,
           maxEntries: show.maxEntries,
-          status: show.status,
+          ...toPlayerShowStatus(show.status),
           closeDate: show.closeDate,
         },
         entryCount: field.length,

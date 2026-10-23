@@ -176,7 +176,7 @@ export async function getShowResultsView(showId, viewerId) {
           name: show.name,
           discipline: show.discipline,
           showType: show.showType,
-          status: show.status,
+          ...toPlayerShowStatus(show.status),
           scheduledRunDate: toIsoOrNull(show.runDate),
           executedAt: toIsoOrNull(show.executedAt),
           prize: show.prize,
@@ -194,10 +194,34 @@ const HORSE_SHOW_SELECT = {
   runDate: true,
 };
 
+/**
+ * What a player is told about a show the reaper quarantined after three failed
+ * executions (owner ruling q30, Equoria-c7mx0.1): its results are delayed. The
+ * stored word never reaches a player; the label is authored text.
+ */
+export const resultsDelayedStatus = 'resultsDelayed';
+export const resultsDelayedLabel = 'Results delayed';
+
+/**
+ * The player-facing status of a show: `quarantined` reads as resultsDelayed
+ * (with its label); every other status passes through untouched.
+ *
+ * @param {string} status - Show.status
+ * @returns {{ status: string, statusLabel?: string }}
+ */
+export function toPlayerShowStatus(status) {
+  return status === 'quarantined'
+    ? { status: resultsDelayedStatus, statusLabel: resultsDelayedLabel }
+    : { status };
+}
+
 /** Where a show stands for one horse: the result row decides "completed". */
 function horseShowStatus(show, result) {
   if (result || show.status === 'completed') {
     return 'completed';
+  }
+  if (show.status === 'quarantined') {
+    return resultsDelayedStatus;
   }
   return show.status === 'executing' ? 'running' : 'upcoming';
 }
@@ -216,6 +240,7 @@ export function toHorseShowRow(show, result) {
     showName: show.name ?? result?.showName ?? null,
     competitionType: { showType: show.showType, discipline: show.discipline },
     status: horseShowStatus(show, result),
+    ...(!result && show.status === 'quarantined' ? { statusLabel: resultsDelayedLabel } : {}),
     date: toIsoOrNull(result?.runDate ?? show.runDate),
     placement: result ? toPlacement(result.placement) : null,
     horsePointsAwarded: result?.horsePointsAwarded ?? null,
@@ -296,6 +321,8 @@ export function buildRiddenResultRow({ show, staged, prize, now }) {
     prizeWon: prize,
     horseId: staged.horseId,
     showId: show.id,
+    // Staff-only audit record (Equoria-4q02c); absent on orderings staged before it.
+    ...(isPlainObject(staged.scoreInputs) ? { scoreInputs: staged.scoreInputs } : {}),
   };
 }
 
