@@ -102,6 +102,8 @@ model User {
   emailOutbox               EmailOutbox[]
   breedingRecordsAsMareOwner     BreedingRecord[]  @relation("BreedingRecordsAsMareOwner")
   breedingRecordsAsStallionOwner BreedingRecord[]  @relation("BreedingRecordsAsStallionOwner")
+  /// Equoria-wbt8l: News posts this account wrote at the News Desk.
+  newsItemsAuthored              NewsItem[]        @relation("NewsItemAuthor")
 
   @@index([email])
   @@index([emailVerified])
@@ -2352,4 +2354,46 @@ model BreedingRecord {
   @@index([damId, status])
   @@index([sireId, status])
   @@map("breeding_records")
+}
+
+/// Equoria-wbt8l — one entry on the News page (owner rulings 2026-10-23,
+/// Stacey). Two kinds of writer:
+///   - the owner (Head Admin) or an Admin, at the News Desk: postType
+///     seasonalEvent, headAdminLetter (an announcement), contest or store;
+///   - the game, at the start of each Eastern game day: postType
+///     electionOpened, runoffResult, newStoreItem or seasonalEventStarted.
+/// postType is a plain string checked by backend/modules/news (a new post
+/// type needs no migration). A row is visible to players from publishAt on;
+/// a seasonal event is written ahead and publishes at the start of the 1st.
+model NewsItem {
+  id              Int       @id @default(autoincrement())
+  postType        String
+  title           String
+  body            String
+  /// Image tiles under a seasonal event: [{ imageUrl, caption }]; [] otherwise.
+  tiles           Json      @default("[]")
+  /// The staff account that wrote it; null for game entries, and SetNull if
+  /// the account is erased (the snapshots below keep the signature readable).
+  authorUserId    String?
+  author          User?     @relation("NewsItemAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+  /// Signature snapshot at posting time: the author's username and staff
+  /// level ("Head Admin", "Admin"). Null for game entries.
+  authorName      String?
+  authorRoleLabel String?
+  /// In-game path a game entry links to (a club, a shop). Null when none.
+  linkPath        String?
+  /// When what the post announces ends (polls close, contest entries close,
+  /// the month's event ends). Shown under "Ahead" while it is in the future.
+  endsAt          DateTime?
+  /// Game entries only: what the entry announces, e.g. "electionOpened:42".
+  /// Unique, so a re-run of the nightly job never posts the same thing twice.
+  sourceKey       String?   @unique
+  publishAt       DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([publishAt(sort: Desc), id(sort: Desc)])
+  @@index([endsAt])
+  @@index([authorUserId])
+  @@map("news_items")
 }
