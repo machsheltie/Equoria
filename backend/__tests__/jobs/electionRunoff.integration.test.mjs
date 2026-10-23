@@ -3,10 +3,12 @@
  *
  * Owner ruling 2026-10-22 (Stacey): a tied club election goes to a 1-day
  * run-off between the tied candidates; the run-off winner takes the seat.
- * The run-off runs for one Eastern game day. A run-off that is itself tied has
- * no rule yet (returned to the owner): it fails safe — no seat is assigned, no
- * further round is invented, and the election records an explicit `tied`
- * outcome that the job summary reports.
+ * The run-off runs for one Eastern game day.
+ *
+ * Owner ruling 2026-10-23: a run-off that is itself tied starts ANOTHER 1-day
+ * run-off between the still-tied candidates, repeating until someone wins.
+ * Old contract (replaced): a tied run-off failed safe with an explicit `tied`
+ * outcome, no seat and no further round.
  *
  * Scoped cleanup only: every fixture user/club uses the PREFIX and is removed in
  * FK order by id.
@@ -234,7 +236,69 @@ describe('Club election run-off (Equoria-bvddn.22) — real DB', () => {
     expect(parent.winnerCandidateId).toBe(parentB.id);
   }, 60000);
 
-  it('fails safe on a tied run-off: explicit tied outcome, no seat, no further round', async () => {
+  /** Cast `votes` ([candidate user, voter users]) in `round`, then end its day. */
+  async function voteAndEnd(round, votes) {
+    for (const [candidateUser, voters] of votes) {
+      const candidate = await prisma.clubCandidate.findFirst({
+        where: { electionId: round.id, userId: candidateUser.id },
+      });
+      for (const voter of voters) {
+        await prisma.clubBallot.create({
+          data: { electionId: round.id, candidateId: candidate.id, voterId: voter.id },
+        });
+      }
+    }
+    await prisma.clubElection.update({
+      where: { id: round.id },
+      data: { endsAt: new Date(Date.now() - 60_000) },
+    });
+  }
+
+  // Owner ruling 2026-10-23 replaces the old fail-safe (`tied`, no seat, no
+  // further round): a tied run-off opens another one-day run-off.
+  it('opens another one-Eastern-day run-off between ONLY the still-tied candidates of a tied run-off', async () => {
+    const { users, club, a, b, c } = await setup();
+    const election = await endedElection(
+      club,
+      [
+        [a, 1],
+        [b, 1],
+        [c, 1],
+      ],
+      users,
+    );
+    await transitionElectionStatuses();
+    const firstRunoff = await runoffOf(election.id);
+
+    // a and b stay tied at the top; c falls away.
+    await voteAndEnd(firstRunoff, [
+      [a, [users[3]]],
+      [b, [users[4]]],
+    ]);
+    const result = await transitionElectionStatuses();
+
+    const closedRunoff = await prisma.clubElection.findUnique({ where: { id: firstRunoff.id } });
+    expect(closedRunoff.status).toBe('closed');
+    expect(closedRunoff.outcome).toBe('runoff');
+    expect(closedRunoff.winnerCandidateId).toBeNull();
+
+    const secondRunoff = await runoffOf(firstRunoff.id);
+    expect(secondRunoff).not.toBeNull();
+    expect(secondRunoff.clubId).toBe(club.id);
+    expect(secondRunoff.position).toBe('president');
+    expect(secondRunoff.status).toBe('open');
+    expect(gameDayIndex(secondRunoff.endsAt)).toBe(gameDayIndex(secondRunoff.startsAt) + 1);
+    expect(secondRunoff.endsAt).toEqual(sameGameClockDaysLater(secondRunoff.startsAt, 1));
+    const secondCandidates = await prisma.clubCandidate.findMany({ where: { electionId: secondRunoff.id } });
+    expect(secondCandidates.map(rc => rc.userId).sort()).toEqual([a.id, b.id].sort());
+    expect(result.runoffs).toBeGreaterThanOrEqual(1);
+
+    // Nothing is seated while the tie stands.
+    const parent = await prisma.clubElection.findUnique({ where: { id: election.id } });
+    expect(parent.winnerCandidateId).toBeNull();
+  }, 60000);
+
+  it('repeats until someone wins, then seats the winner on every round back to the original election', async () => {
     const { users, club, a, b } = await setup();
     const election = await endedElection(
       club,
@@ -245,31 +309,37 @@ describe('Club election run-off (Equoria-bvddn.22) — real DB', () => {
       users,
     );
     await transitionElectionStatuses();
-    const runoff = await runoffOf(election.id);
-    const [ra, rb] = await Promise.all(
-      [a, b].map(u => prisma.clubCandidate.findFirst({ where: { electionId: runoff.id, userId: u.id } })),
-    );
-    await prisma.clubBallot.createMany({
-      data: [
-        { electionId: runoff.id, candidateId: ra.id, voterId: users[2].id },
-        { electionId: runoff.id, candidateId: rb.id, voterId: users[3].id },
-      ],
-    });
-    await prisma.clubElection.update({
-      where: { id: runoff.id },
-      data: { endsAt: new Date(Date.now() - 60_000) },
-    });
+    const first = await runoffOf(election.id);
+    await voteAndEnd(first, [
+      [a, [users[2]]],
+      [b, [users[3]]],
+    ]);
+    await transitionElectionStatuses();
+    const second = await runoffOf(first.id);
+    await voteAndEnd(second, []); // nobody votes: still tied, 0-0
+    await transitionElectionStatuses();
+    const third = await runoffOf(second.id);
+    expect(third).not.toBeNull();
+    await voteAndEnd(third, [
+      [a, [users[2], users[4]]],
+      [b, [users[3]]],
+    ]);
 
-    const result = await transitionElectionStatuses();
+    await transitionElectionStatuses();
 
-    const tied = await prisma.clubElection.findUnique({ where: { id: runoff.id } });
-    expect(tied.status).toBe('closed');
-    expect(tied.outcome).toBe('tied');
-    expect(tied.winnerCandidateId).toBeNull();
-    expect(await runoffOf(runoff.id)).toBeNull();
-    const parent = await prisma.clubElection.findUnique({ where: { id: election.id } });
-    expect(parent.winnerCandidateId).toBeNull();
-    expect(result.tiedElectionIds).toContain(runoff.id);
+    const decided = await prisma.clubElection.findUnique({ where: { id: third.id } });
+    expect(decided.outcome).toBe('won');
+    expect(await runoffOf(third.id)).toBeNull();
+    for (const round of [third, second, first, election]) {
+      const row = await prisma.clubElection.findUnique({ where: { id: round.id } });
+      const seat = await prisma.clubCandidate.findFirst({ where: { electionId: round.id, userId: a.id } });
+      expect({ id: round.id, winner: row.winnerCandidateId }).toEqual({ id: round.id, winner: seat.id });
+    }
+    const outcomes = await prisma.clubElection.findMany({
+      where: { id: { in: [election.id, first.id, second.id] } },
+      select: { outcome: true },
+    });
+    expect(outcomes.map(o => o.outcome)).toEqual(['runoff', 'runoff', 'runoff']);
   }, 60000);
 
   it('records the outright winner of an untied election and creates no run-off', async () => {

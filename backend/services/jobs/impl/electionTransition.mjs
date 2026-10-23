@@ -16,12 +16,13 @@
  *   - The top vote count is tied: outcome `runoff`, and a run-off round opens
  *     at once between ONLY the tied candidates (same club and position, their
  *     statements carried over) for one Eastern game day. When the run-off has
- *     a winner, the run-off records `won` and the tied election's seat goes to
- *     that candidate's candidacy on the tied election.
- *   - A run-off that is itself tied has no rule yet (returned to the owner):
- *     it records `tied`, assigns no seat and opens no further round. The job
- *     summary lists it (tiedElectionIds) and the job logs a warning, so it is
- *     visible to an admin.
+ *     a winner, the run-off records `won` and every round it decides, back to
+ *     the original election, seats that candidate's candidacy on that round.
+ *   - Owner ruling 2026-10-23: a run-off that is itself tied is decided the
+ *     same way — outcome `runoff` and ANOTHER one-day run-off between the
+ *     still-tied candidates, repeating until someone wins. (This replaced a
+ *     fail-safe that stopped a tied run-off with outcome `tied` and no seat;
+ *     the enum value stays in the schema but nothing writes it.)
  *   - No candidates: closed with no outcome.
  */
 
@@ -36,7 +37,7 @@ import { sameGameClockDaysLater } from '../../../utils/gameTime.mjs';
  *
  * @param {number} electionId
  * @param {Date} now
- * @returns {Promise<null|'won'|'runoff'|'tied'|'none'>} null when already closed
+ * @returns {Promise<null|'won'|'runoff'|'none'>} null when already closed
  */
 async function closeAndDecide(electionId, now) {
   return prisma.$transaction(async tx => {
@@ -70,25 +71,22 @@ async function closeAndDecide(electionId, now) {
         where: { id: electionId },
         data: { outcome: 'won', winnerCandidateId: winner.id },
       });
-      if (election.runoffOfId !== null) {
-        // The run-off winner takes the tied election's seat.
+      // The run-off winner takes the seat of every tied round it decides,
+      // back to the original election.
+      let decidedId = election.runoffOfId;
+      while (decidedId !== null) {
         const seat = await tx.clubCandidate.findFirst({
-          where: { electionId: election.runoffOfId, userId: winner.userId },
+          where: { electionId: decidedId, userId: winner.userId },
           select: { id: true },
         });
-        if (seat) {
-          await tx.clubElection.update({
-            where: { id: election.runoffOfId },
-            data: { winnerCandidateId: seat.id },
-          });
-        }
+        const decided = await tx.clubElection.update({
+          where: { id: decidedId },
+          data: { winnerCandidateId: seat?.id ?? null },
+          select: { runoffOfId: true },
+        });
+        decidedId = decided.runoffOfId;
       }
       return 'won';
-    }
-
-    if (election.runoffOfId !== null) {
-      await tx.clubElection.update({ where: { id: electionId }, data: { outcome: 'tied' } });
-      return 'tied';
     }
 
     await tx.clubElection.update({ where: { id: electionId }, data: { outcome: 'runoff' } });
@@ -116,7 +114,7 @@ async function closeAndDecide(electionId, now) {
  * Returns counts of each transition type.
  *
  * @param {Date} [now=new Date()]
- * @returns {Promise<{ opened: number, closed: number, runoffs: number, tied: number, tiedElectionIds: number[] }>}
+ * @returns {Promise<{ opened: number, closed: number, runoffs: number }>}
  */
 export async function transitionElectionStatuses(now = new Date()) {
   const startTime = Date.now();
@@ -139,7 +137,6 @@ export async function transitionElectionStatuses(now = new Date()) {
 
   let closed = 0;
   let runoffs = 0;
-  const tiedElectionIds = [];
   for (const { id } of due) {
     const outcome = await closeAndDecide(id, now);
     if (outcome === null) {
@@ -148,24 +145,17 @@ export async function transitionElectionStatuses(now = new Date()) {
     closed += 1;
     if (outcome === 'runoff') {
       runoffs += 1;
-    } else if (outcome === 'tied') {
-      tiedElectionIds.push(id);
-      logger.warn(
-        `[CronJobService.transitionElectionStatuses] Run-off election ${id} ended tied; no seat assigned — waiting for an admin (Equoria-bvddn.22)`,
-      );
     }
   }
 
   const duration = Date.now() - startTime;
   logger.info(
-    `[CronJobService.transitionElectionStatuses] Completed in ${duration}ms: opened=${openedResult.count}, closed=${closed}, runoffs=${runoffs}, tied=${tiedElectionIds.length}`,
+    `[CronJobService.transitionElectionStatuses] Completed in ${duration}ms: opened=${openedResult.count}, closed=${closed}, runoffs=${runoffs}`,
   );
 
   return {
     opened: openedResult.count,
     closed,
     runoffs,
-    tied: tiedElectionIds.length,
-    tiedElectionIds,
   };
 }

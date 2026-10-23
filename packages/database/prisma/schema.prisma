@@ -1869,14 +1869,17 @@ enum ElectionStatus {
 
 /// How a closed club election was decided (Equoria-bvddn.22, owner ruling
 /// 2026-10-22: a tied election goes to a one-day run-off between the tied
-/// candidates, and the run-off winner takes the seat).
+/// candidates, and the run-off winner takes the seat; 2026-10-23: a tied
+/// run-off opens another one-day run-off, repeating until someone wins).
 enum ElectionOutcome {
   /// One candidate had the most votes; winnerCandidateId holds the seat.
   won
-  /// The top vote count was tied; `runoff` is the run-off round deciding it.
+  /// The top vote count was tied (in an election or a run-off); `runoff` is
+  /// the run-off round deciding it.
   runoff
-  /// A run-off round was itself tied. No rule exists yet (question returned to
-  /// the owner), so no seat is assigned and the tie waits for an admin.
+  /// Written by nothing since the owner ruling of 2026-10-23 (a tied run-off
+  /// now records `runoff` and opens another round). Kept only because dropping
+  /// an enum value needs a migration.
   tied
 }
 
