@@ -104,12 +104,10 @@ const StableView = () => {
   // user decision 2026-08-18 removing the Equoria-oey96.3 stable surface.)
   //
   // Equoria-apik2: the rows are typed HorseCardData (the list item plus the
-  // detail-only fields as OPTIONAL) on purpose. The list view below reads
-  // `level`, `imageUrl`, `lastShod` and `trainingCooldown`, none of which GET
-  // /horses sends, so today its Level column is always an em dash, its Shod and
-  // Cooldown chips are always unknown and the row portrait is the breed picture.
-  // Dropping those columns, or feeding them real values, is a layout decision for
-  // the owner (see the issue filed from this audit), so the behaviour is unchanged.
+  // detail-only fields as OPTIONAL) on purpose. Equoria-9spb2 (owner ruling
+  // 2026-10-23): GET /horses sends `imageUrl`, `lastShod` and `trainingCooldown`,
+  // so the portrait, the Shod chip and the Cooldown column are real; a horse has
+  // no level, so the list has no Level column.
   const horsesWithCategory = (horsesData ?? []).map((horse: HorseCardData) => ({
     horse,
     category: getHorseCategory(horse),
@@ -238,9 +236,8 @@ const StableView = () => {
         ) : (
           <div className="space-y-1">
             {/* List header */}
-            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-2 text-2xs text-[var(--text-secondary)] uppercase tracking-wider font-medium border-b border-[var(--glass-border)]">
+            <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-3 py-2 text-2xs text-[var(--text-secondary)] uppercase tracking-wider font-medium border-b border-[var(--glass-border)]">
               <span>Horse</span>
-              <span>Level</span>
               <span>Top Stat</span>
               <span>Status</span>
               <span>Cooldown</span>
@@ -273,7 +270,7 @@ const StableView = () => {
                   key={horse.id}
                   type="button"
                   onClick={() => navigate(`/horses/${horse.id}`)}
-                  className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-2.5 items-center text-left rounded-[var(--radius-sm)] transition-colors hover:bg-[var(--glass-glow)] cursor-pointer border border-transparent hover:border-[var(--glass-border)]"
+                  className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-3 py-2.5 items-center text-left rounded-[var(--radius-sm)] transition-colors hover:bg-[var(--glass-glow)] cursor-pointer border border-transparent hover:border-[var(--glass-border)]"
                 >
                   <span className="flex items-center gap-2 min-w-0">
                     <img
@@ -288,7 +285,6 @@ const StableView = () => {
                       {horse.name}
                     </span>
                   </span>
-                  <span className="text-sm text-[var(--gold-light)]">{horse.level ?? '—'}</span>
                   <span className="text-sm text-[var(--text-primary)] capitalize">
                     {topStat.label ? `${topStat.label} ${topStat.value}` : '—'}
                   </span>

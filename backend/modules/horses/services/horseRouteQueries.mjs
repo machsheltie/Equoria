@@ -61,6 +61,11 @@ export const HORSE_LIST_SELECT = Object.freeze({
   currentTitle: true,
   breedingValueBoost: true,
   phenotype: true,
+  // Equoria-9spb2 (owner ruling 2026-10-23): the stable list view's Shod chip,
+  // Cooldown column and row portrait read these.
+  lastShod: true,
+  trainingCooldown: true,
+  imageUrl: true,
   // Equoria-q4uem.9 slice 6: the player's stud listing and the breeding state
   // the list derives breedingCooldownEndsAt / inFoal from.
   studStatus: true,

@@ -11,8 +11,10 @@ import type { HorseSummary } from './types.js';
  * The list serializer (backend/modules/horses/routes/horseRoutes.mjs over
  * HORSE_LIST_SELECT in services/horseRouteQueries.mjs) sends a narrower row than
  * the detail read: no nested `stats`, no `disciplineScores`, no `gender`, `level`,
- * `imageUrl`, `description`, `traits`, `parentIds` or `tack`, and none of the
- * detail-only care/pregnancy fields. Typing the list as HorseSummary let a list
+ * `description`, `traits`, `parentIds` or `tack`, and none of the other
+ * detail-only care/pregnancy fields. It does send `imageUrl`, `lastShod` and
+ * `trainingCooldown` (Equoria-9spb2, owner ruling 2026-10-23): the stable list
+ * view's portrait, Shod chip and Cooldown column read them. Typing the list as HorseSummary let a list
  * consumer read any of those and get a silent `undefined`. The list is its own
  * type so a read of an absent field fails the type check.
  *
@@ -25,13 +27,10 @@ export type HorseListItemDto = Omit<
   | 'disciplineScores'
   | 'gender'
   | 'level'
-  | 'imageUrl'
   | 'description'
   | 'traits'
   | 'parentIds'
   | 'tack'
-  | 'trainingCooldown'
-  | 'lastShod'
   | 'lastGroomed'
   | 'earnings'
   | 'finalDisplayColor'
