@@ -33,9 +33,13 @@ describe('StatisticsCard', () => {
       expect(screen.getByText('1,234')).toBeInTheDocument();
     });
 
-    it('should handle undefined value by showing 0', () => {
+    // Old contract: an undefined value rendered a reassuring '0'. Owner ruling
+    // 2026-10-22 (Equoria-jie7g): a missing or unknown number shows an em dash;
+    // only a real 0 shows 0.
+    it('should show an em dash, not 0, when the value is undefined', () => {
       render(<StatisticsCard value={undefined} label="Breeding Count" />);
-      expect(screen.getByText('0')).toBeInTheDocument();
+      expect(screen.getByText('—')).toBeInTheDocument();
+      expect(screen.queryByText('0')).not.toBeInTheDocument();
     });
 
     it('should display the label', () => {
@@ -311,14 +315,18 @@ describe('StatisticsCard', () => {
       expect(screen.getByText('42')).toBeInTheDocument();
     });
 
-    it('should handle NaN value by showing 0', () => {
+    // Old contract: NaN and null rendered '0'. Owner ruling 2026-10-22
+    // (Equoria-jie7g): an unknown number shows an em dash, never a fake zero.
+    it('should show an em dash, not 0, for a NaN value', () => {
       render(<StatisticsCard value={NaN} label="Unknown" />);
-      expect(screen.getByText('0')).toBeInTheDocument();
+      expect(screen.getByText('—')).toBeInTheDocument();
+      expect(screen.queryByText('0')).not.toBeInTheDocument();
     });
 
-    it('should handle null value by showing 0', () => {
+    it('should show an em dash, not 0, for a null value', () => {
       render(<StatisticsCard value={null as unknown as number} label="Empty" />);
-      expect(screen.getByText('0')).toBeInTheDocument();
+      expect(screen.getByText('—')).toBeInTheDocument();
+      expect(screen.queryByText('0')).not.toBeInTheDocument();
     });
 
     it('should handle large positive trend', () => {

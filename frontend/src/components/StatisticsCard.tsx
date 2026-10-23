@@ -149,7 +149,7 @@ const StatisticsCardSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }
  * Statistics Card Component
  */
 const StatisticsCard: React.FC<StatisticsCardProps> = ({
-  value = 0,
+  value,
   label,
   icon,
   type,
@@ -160,16 +160,17 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({
 }) => {
   // Format the value based on type
   const displayValue = (() => {
-    // Handle edge cases
-    const safeValue = value ?? 0;
-    if (Number.isNaN(safeValue)) return '0';
+    // Owner ruling 2026-10-22 (Equoria-jie7g): a missing or unknown number
+    // (undefined, null, NaN) shows an em dash, never a reassuring 0. A real 0
+    // stays 0.
+    if (typeof value !== 'number' || Number.isNaN(value)) return '—';
 
     // WIN_RATE displays as percentage
     if (type === StatisticType.WIN_RATE) {
-      return formatPercentage(safeValue);
+      return formatPercentage(value);
     }
 
-    return formatStatistic(safeValue);
+    return formatStatistic(value);
   })();
 
   // Size-based styling
