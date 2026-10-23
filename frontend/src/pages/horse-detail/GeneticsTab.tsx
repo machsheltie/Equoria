@@ -29,6 +29,7 @@ import {
   type HorseTrait,
 } from '../../hooks/useHorseTraits';
 import type { Horse } from './HorseDetailPageTypes';
+import { userMessageFor } from '../../lib/http/userMessage';
 import TraitFilters, {
   type FilterRarityValue,
   type FilterSourceValue,
@@ -161,7 +162,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           <h4 className="font-semibold">Error Loading Genetics Data</h4>
         </div>
         <p className="text-[var(--status-danger)] text-sm">
-          {epigeneticError?.message || interactionsError?.message || timelineError?.message}
+          {userMessageFor(epigeneticError ?? interactionsError ?? timelineError).message}
         </p>
       </div>
     );

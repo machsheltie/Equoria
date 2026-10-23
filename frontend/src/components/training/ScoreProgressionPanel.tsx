@@ -17,6 +17,7 @@ import React from 'react';
 import { useHorseTrainingHistory } from '@/hooks/api/useHorses';
 import type { HorseTrainingHistoryEntry } from '@/lib/api/types';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
+import { userMessageFor } from '@/lib/http/userMessage';
 import ScoreRadarChart from './ScoreRadarChart';
 import TrainingHistoryTable from './TrainingHistoryTable';
 import type { TrainingHistoryEntry } from './TrainingHistoryTable';
@@ -177,7 +178,7 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
               />
             </svg>
           </div>
-          <p className="text-[var(--role-danger-text)]">{error.message}</p>
+          <p className="text-[var(--role-danger-text)]">{userMessageFor(error).message}</p>
           <button
             type="button"
             onClick={handleRetry}

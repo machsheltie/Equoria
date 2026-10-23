@@ -30,6 +30,7 @@ import { http, HttpResponse, delay } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/msw/server';
 import ScoreProgressionPanel from '../ScoreProgressionPanel';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const trainingHistoryPath = (horseId: number | string) =>
@@ -443,11 +444,18 @@ describe('ScoreProgressionPanel', () => {
       );
     });
 
-    it('shows error message on fetch failure', async () => {
+    // Equoria-0vm61 (owner doctrine FRONTEND_ASYNC_STATE_DOCTRINE §4): this case used
+    // to pin the server body's message rendered verbatim. A 5xx body can carry
+    // internals, so the panel shows the shared mapper's copy instead and never the
+    // server text.
+    it('shows the mapped server-fault message, not the server text, on fetch failure', async () => {
       render(<ScoreProgressionPanel horseId={1} disciplineScores={horseDisciplineScores} />, {
         wrapper: createWrapper(),
       });
-      expect(await screen.findByText(/Failed to retrieve training history/)).toBeInTheDocument();
+      expect(
+        await screen.findByText(userMessageFor({ statusCode: 500 }).message)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Failed to retrieve training history/)).not.toBeInTheDocument();
     });
 
     it('shows Try Again button on error', async () => {

@@ -27,6 +27,7 @@ import { server } from '@/test/msw/server';
 import { RewardToastProvider } from '@/components/feedback';
 import { createAppQueryClient } from '@/lib/queryClient';
 import FoalDetailPage from '../FoalDetailPage';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const FOAL_ID = 4242;
@@ -132,6 +133,10 @@ describe('FoalDetailPage — failed development answer (Equoria-v61q2)', () => {
     // that re-fetch and so must not loop.
     expect(developmentRequests).toBeLessThanOrEqual(2);
     expect(screen.queryByText(/loading foal/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Internal server error')).toBeInTheDocument();
+    // Equoria-0vm61 (owner doctrine FRONTEND_ASYNC_STATE_DOCTRINE §4): this line used
+    // to pin the 500 body's text rendered verbatim. A 5xx body can carry internals, so
+    // the tracker shows the shared mapper's server-fault copy and never the body text.
+    expect(screen.getByText(userMessageFor({ statusCode: 500 }).message)).toBeInTheDocument();
+    expect(screen.queryByText('Internal server error')).not.toBeInTheDocument();
   });
 });

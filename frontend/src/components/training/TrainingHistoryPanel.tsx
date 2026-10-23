@@ -1,5 +1,6 @@
 import { useTrainingOverview } from '@/hooks/api/useTraining';
 import { useHorseTrainingHistory } from '@/hooks/api/useHorses';
+import { userMessageFor } from '@/lib/http/userMessage';
 
 interface TrainingHistoryPanelProps {
   horseId?: number;
@@ -39,7 +40,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
       {isLoading && <div className="mt-2 text-sm text-role-secondary">Loading status…</div>}
       {error && (
         <div className="mt-2 rounded-md border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] px-3 py-2 text-sm text-[var(--role-warning-text)]">
-          {error.message}
+          {userMessageFor(error).message}
         </div>
       )}
 
@@ -77,7 +78,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
         {historyLoading && <div className="text-sm text-role-secondary">Loading history…</div>}
         {historyError && (
           <div className="mt-1 rounded-md border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] px-3 py-2 text-sm text-[var(--role-warning-text)]">
-            {historyError.message}
+            {userMessageFor(historyError).message}
           </div>
         )}
         <div className="mt-2 space-y-2">

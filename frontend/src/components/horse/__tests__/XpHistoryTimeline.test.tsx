@@ -25,6 +25,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import XpHistoryTimeline from '../XpHistoryTimeline';
+import { userMessageFor } from '@/lib/http/userMessage';
 import type { XpGain } from '../XpHistoryEntry';
 
 describe('XpHistoryTimeline', () => {
@@ -291,7 +292,11 @@ describe('XpHistoryTimeline', () => {
 
       const errorState = screen.getByTestId('error-state');
       expect(errorState).toBeInTheDocument();
-      expect(screen.getByText(/Failed to load XP history/i)).toBeInTheDocument();
+      // Equoria-0vm61 (owner doctrine FRONTEND_ASYNC_STATE_DOCTRINE §4): this case used
+      // to pin the handed-in error's own message rendered verbatim. The timeline
+      // shows the shared mapper's copy instead; a plain Error maps to the generic line.
+      expect(screen.getByText(userMessageFor(error).message)).toBeInTheDocument();
+      expect(screen.queryByText(/Failed to load XP history/i)).not.toBeInTheDocument();
     });
 
     it('should not display entries when error is present', () => {

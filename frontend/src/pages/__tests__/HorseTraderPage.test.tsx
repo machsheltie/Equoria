@@ -23,6 +23,7 @@ import { MemoryRouter } from 'react-router';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import HorseTraderPage from '../HorseTraderPage';
+import { userMessageFor } from '@/lib/http/userMessage';
 import React from 'react';
 
 const BREEDS_FIXTURE = [
@@ -217,5 +218,34 @@ describe('HorseTraderPage — error path', () => {
 
     // Success state must NOT be shown after a failed purchase
     expect(screen.queryByTestId('purchase-success')).not.toBeInTheDocument();
+  });
+
+  // Equoria-0vm61 (owner doctrine FRONTEND_ASYNC_STATE_DOCTRINE §4): only the 400
+  // refusal has action-level copy (an unaffordable purchase). Any other failure
+  // shows the shared mapper's copy and never the server body's text.
+  it('does not echo a 500 body message into the purchase error', async () => {
+    const SENTINEL = 'PG_CONN_RESET_SENTINEL: relation "horses" at 10.0.0.7:5432';
+    server.use(
+      makeBreedsHandler(),
+      makeProfileHandler(5000),
+      http.post('*/api/v1/marketplace/store/buy', () =>
+        HttpResponse.json({ success: false, status: 'error', message: SENTINEL }, { status: 500 })
+      )
+    );
+
+    const user = userEvent.setup();
+    renderPage();
+
+    const searchInput = await screen.findByLabelText(/breed/i);
+    await waitFor(() => expect(searchInput).not.toBeDisabled());
+    await user.click(searchInput);
+    await user.click(await screen.findByText('Arabian'));
+    const buyButton = screen.getByTestId('buy-horse-button');
+    await waitFor(() => expect(buyButton).not.toBeDisabled());
+    await user.click(buyButton);
+
+    const errorBox = await screen.findByTestId('purchase-error');
+    expect(errorBox).toHaveTextContent(userMessageFor({ statusCode: 500 }).message);
+    expect(errorBox).not.toHaveTextContent('PG_CONN_RESET_SENTINEL');
   });
 });

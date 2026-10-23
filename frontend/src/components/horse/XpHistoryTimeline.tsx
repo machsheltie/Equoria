@@ -21,6 +21,7 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Trophy, Calendar, AlertCircle } from 'lucide-react';
 import XpHistoryEntry from './XpHistoryEntry';
+import { userMessageFor } from '@/lib/http/userMessage';
 import type { XpGain } from './XpHistoryEntry';
 
 /**
@@ -186,7 +187,7 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           {/* Error display */}
           <div data-testid="error-state" className="py-8 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-3" aria-hidden="true" />
-            <p className="text-sm text-red-400 font-medium mb-1">{error.message}</p>
+            <p className="text-sm text-red-400 font-medium mb-1">{userMessageFor(error).message}</p>
             <p className="text-xs text-slate-400">Please try again later.</p>
           </div>
         </div>
