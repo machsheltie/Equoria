@@ -59,8 +59,10 @@ import {
   evaluateEntryRules,
   loadActiveAssignments,
   loadActiveDisciplineTypes,
+  loadHorsesWithConformationGroom,
 } from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { maxActiveAgeYears, minActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { alreadyFedToday, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
 
@@ -80,9 +82,10 @@ const SPEC_PRIORITY = Object.freeze({
 // Story 23.4 AC: "max 10 actions returned".
 const maxActions = 10;
 
-// Minimum active age for training / competing / breeding (mirrors enterShow /
-// trainingController — the horses schema stores `age` as an Int column).
-const minActiveAge = 3;
+// The active ages for training / competing / breeding come from the one horse
+// age policy (constants/horseAgePolicy.mjs: 3-20 inclusive; Equoria-2nacc). The
+// horses schema stores `age` as an Int column.
+const minActiveAge = minActiveAgeYears;
 
 // Case-insensitive injured check — the canonical persisted value is 'Injured'
 // (Horse.healthStatus default 'Excellent'). enterShow uses the same
@@ -91,7 +94,8 @@ const minActiveAge = 3;
 const isInjured = healthStatus => String(healthStatus).toLowerCase() === 'injured';
 
 // `age` is a nullable Int on Horse — a null age must not pass the gate.
-const isActiveAge = age => typeof age === 'number' && age >= minActiveAge;
+const isActiveAge = age =>
+  typeof age === 'number' && age >= minActiveAgeYears && age <= maxActiveAgeYears;
 
 // The health gate breeding, training and show entry apply (Equoria-3tna6,
 // Equoria-u0jop): displayed health (worse of feed and vet health) Bad.
@@ -170,9 +174,9 @@ export async function getNextActions(req, res) {
     let openShows = [];
     try {
       openShows = await prisma.show.findMany({
-        // Ridden shows only: a conformation entry needs a groom, which this hub
-        // cannot judge, so it is not suggested here (Equoria-576c0 B9).
-        where: { status: 'open', closeDate: { gt: now }, showType: { not: 'conformation' } },
+        // Ridden and conformation shows (Equoria-576c0.2): a conformation show is
+        // offered only for a horse with a groom ready to handle it (below).
+        where: { status: 'open', closeDate: { gt: now } },
         select: {
           id: true,
           name: true,
@@ -254,9 +258,10 @@ export async function getNextActions(req, res) {
     // needs gaiting, not already entered, not injured. XP never gates entry (R9).
     if (horses.length > 0 && openShows.length > 0) {
       const horseIds = horses.map(h => h.id);
-      const [assignments, activeTypes, entries] = await Promise.all([
+      const [assignments, activeTypes, groomReady, entries] = await Promise.all([
         loadActiveAssignments(prisma, horseIds),
         loadActiveDisciplineTypes(prisma, horseIds),
+        loadHorsesWithConformationGroom(prisma, horseIds, userId, now),
         prisma.showEntry.findMany({
           where: { horseId: { in: horseIds }, showId: { in: openShows.map(s => s.id) } },
           select: { showId: true, horseId: true },
@@ -267,6 +272,7 @@ export async function getNextActions(req, res) {
         const eligible = horses.find(
           h =>
             !isInBadHealth(h, now) &&
+            (show.showType !== 'conformation' || groomReady.has(h.id)) &&
             evaluateEntryRules({
               show,
               horse: h,

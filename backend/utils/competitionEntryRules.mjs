@@ -25,9 +25,14 @@
 
 import { getHorseAgeYears } from './horseAge.mjs';
 import { hasBadHealth } from './horseHealth.mjs';
+import { checkGroomMayWork } from './groomWorkRules.mjs';
+import { maxActiveAgeYears, minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 
-export const MIN_ENTRY_AGE_YEARS = 3;
-export const MAX_ENTRY_AGE_YEARS = 20;
+// The ridden entry window is the horse age policy's active window (Equoria-2nacc).
+export const MIN_ENTRY_AGE_YEARS = minActiveAgeYears;
+export const MAX_ENTRY_AGE_YEARS = maxActiveAgeYears;
+/** Days a groom must have been assigned to a horse before a conformation entry (C11). */
+export const minConformationGroomAssignmentDays = 2;
 /** At most this many discipline types active at once (owner entry rules; B10). */
 export const MAX_ACTIVE_DISCIPLINE_TYPES = 3;
 
@@ -143,6 +148,50 @@ export async function loadActiveDisciplineTypes(db, horseIds) {
     }
   }
   return new Map([...byHorse].map(([id, types]) => [id, [...types].sort()]));
+}
+
+/**
+ * Which of these horses have a groom ready for a conformation entry (C11): an
+ * active assignment, to a groom on `userId`'s staff, who may work now
+ * (checkGroomMayWork) and has been assigned for at least
+ * minConformationGroomAssignmentDays. The same groom rules the entry
+ * transaction applies (checkConformationEntryInTx), so a suggestion built on it
+ * is one the entry will accept. Works with the prisma client or a tx client.
+ *
+ * @param {object} db
+ * @param {number[]} horseIds
+ * @param {string} userId
+ * @param {Date} [now]
+ * @returns {Promise<Set<number>>}
+ */
+export async function loadHorsesWithConformationGroom(db, horseIds, userId, now = new Date()) {
+  if (horseIds.length === 0) {
+    return new Set();
+  }
+  const rows = await db.groomAssignment.findMany({
+    where: { foalId: { in: horseIds }, userId, isActive: true },
+    select: {
+      foalId: true,
+      createdAt: true,
+      groom: {
+        select: { userId: true, name: true, retired: true, isActive: true, feeUnpaidSince: true },
+      },
+    },
+  });
+  const minAgeMs = minConformationGroomAssignmentDays * 24 * 60 * 60 * 1000;
+  const ready = new Set();
+  for (const row of rows) {
+    const assignedMs = row.createdAt ? new Date(row.createdAt).getTime() : NaN;
+    if (
+      row.groom?.userId === userId &&
+      checkGroomMayWork(row.groom).allowed &&
+      Number.isFinite(assignedMs) &&
+      now.getTime() - assignedMs >= minAgeMs
+    ) {
+      ready.add(row.foalId);
+    }
+  }
+  return ready;
 }
 
 function hasGaiting(gaitScores) {

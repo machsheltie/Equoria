@@ -6,6 +6,7 @@
  */
 
 import logger from './logger.mjs';
+import { maxActiveAgeYears, minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 import { DISCIPLINE_STATS } from '../modules/competition/index.mjs';
 
 /**
@@ -260,7 +261,8 @@ export function calculateHorseLevel(horse, discipline) {
 }
 
 /**
- * Check if horse meets age requirements (3-21 years old)
+ * Check if horse meets age requirements: the active window in
+ * constants/horseAgePolicy.mjs (3-20 inclusive; 21 is retirement, Equoria-2nacc)
  *
  * Equoria-8y0v: Horse.age stores GAME-YEARS (per Equoria-son6). Compare directly;
  * do NOT divide by 7 — that produced a double-divide because the cron already
@@ -272,7 +274,7 @@ export function calculateHorseLevel(horse, discipline) {
 export function checkAgeRequirements(horse) {
   try {
     const ageInYears = horse.age || 0;
-    return ageInYears >= 3 && ageInYears <= 21;
+    return ageInYears >= minActiveAgeYears && ageInYears <= maxActiveAgeYears;
   } catch (error) {
     logger.error('[competitionLogic.checkAgeRequirements] Error:', error.message);
     return false;

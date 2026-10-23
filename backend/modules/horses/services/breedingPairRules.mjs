@@ -28,6 +28,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
+import { maxActiveAgeYears, minActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import {
@@ -37,7 +38,7 @@ import {
 } from '../../../utils/gameTime.mjs';
 
 /** Minimum breeding age in game-years (PRD-08 s2.5). 3 game-years = 21 real days. */
-export const minBreedingAgeYears = 3;
+export const minBreedingAgeYears = minActiveAgeYears;
 
 /**
  * Maximum breeding age in game-years, inclusive (owner ruling, Stacey
@@ -45,7 +46,7 @@ export const minBreedingAgeYears = 3;
  * a horse is retired and cannot breed. The same last year as the active-age
  * window in constants/horseAgePolicy.mjs.
  */
-export const maxBreedingAgeYears = 20;
+export const maxBreedingAgeYears = maxActiveAgeYears;
 
 /**
  * Dam cooldown in real days after conception (user decision 2026-07-02):

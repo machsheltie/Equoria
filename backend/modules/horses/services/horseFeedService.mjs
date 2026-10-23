@@ -29,6 +29,7 @@ import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { FEED_CATALOG } from '../../economy/index.mjs';
 import { alreadyFedToday, startOfGameDay } from '../../../utils/horseHealth.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 
 // 12-stat boost pool. Names match Horse schema fields exactly.
@@ -186,7 +187,8 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
         e.status = 404;
         throw e;
       }
-      const retired = horse.age !== null && horse.age !== undefined && horse.age >= 21;
+      const retired =
+        horse.age !== null && horse.age !== undefined && horse.age >= retirementAgeYears;
       if (retired && horse.inFoalSinceDate === null) {
         return { kind: 'retired', horse };
       }

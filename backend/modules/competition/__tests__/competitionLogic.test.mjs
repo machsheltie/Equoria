@@ -111,9 +111,15 @@ describe('checkAgeRequirements', () => {
     expect(result).toBe(true);
   });
 
-  it('returns true for a horse age 21 (maximum eligible)', () => {
-    const result = checkAgeRequirements({ age: 21 });
+  // Owner rulings 2026-10-07 / 2026-10-23 (Equoria-2nacc): active ages are 3-20,
+  // retirement at 21. Old contract: 21 was the maximum eligible age.
+  it('returns true for a horse age 20 (maximum eligible)', () => {
+    const result = checkAgeRequirements({ age: 20 });
     expect(result).toBe(true);
+  });
+
+  it('returns false for a retired horse age 21', () => {
+    expect(checkAgeRequirements({ age: 21 })).toBe(false);
   });
 
   it('returns false for a foal under minimum age', () => {
@@ -121,7 +127,7 @@ describe('checkAgeRequirements', () => {
     expect(result).toBe(false);
   });
 
-  it('returns false for a retired horse (>21 years)', () => {
+  it('returns false for a retired horse (22 years)', () => {
     const result = checkAgeRequirements({ age: 22 });
     expect(result).toBe(false);
   });

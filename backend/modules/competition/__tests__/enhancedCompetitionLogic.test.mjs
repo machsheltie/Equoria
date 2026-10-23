@@ -101,13 +101,15 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
 
   describe('🎂 Age Requirements', () => {
     // Equoria-8y0v: Horse.age stores GAME-YEARS directly (post Equoria-son6).
-    test('should accept horses aged 3-21 game-years', () => {
+    test('should accept horses aged 3-20 game-years and refuse 21', () => {
       expect(checkAgeRequirements({ age: 3 })).toBe(true); // minimum eligible
       expect(checkAgeRequirements({ age: 10 })).toBe(true);
-      expect(checkAgeRequirements({ age: 21 })).toBe(true); // maximum eligible
+      // Equoria-2nacc (owner 2026-10-23): 3-20 active, 21 retired. Old contract: 21 eligible.
+      expect(checkAgeRequirements({ age: 20 })).toBe(true); // maximum eligible
+      expect(checkAgeRequirements({ age: 21 })).toBe(false); // retired
     });
 
-    test('should reject horses under 3 or over 21 game-years', () => {
+    test('should reject horses under 3 or over 20 game-years', () => {
       expect(checkAgeRequirements({ age: 2 })).toBe(false); // too young
       expect(checkAgeRequirements({ age: 22 })).toBe(false); // retired
       expect(checkAgeRequirements({ age: 0 })).toBe(false); // newborn

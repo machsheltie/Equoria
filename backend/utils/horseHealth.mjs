@@ -22,6 +22,7 @@
 
 // Days here are Eastern game days (owner ruling 2026-10-09; utils/gameTime.mjs).
 import { calendarDateDayIndex, gameDayIndex, startOfGameDay } from './gameTime.mjs';
+import { retirementAgeYears } from '../constants/horseAgePolicy.mjs';
 
 // Re-exported for the feed path's "not yet fed today" SQL cutoff.
 export { startOfGameDay };
@@ -92,7 +93,8 @@ export function toHealthWord(raw) {
   return wordByGrade[healthGradeOf(raw)];
 }
 
-const isRetiredAge = horse => horse.age !== null && horse.age !== undefined && horse.age >= 21;
+const isRetiredAge = horse =>
+  horse.age !== null && horse.age !== undefined && horse.age >= retirementAgeYears;
 
 /**
  * Has the horse been fed on the same Eastern game day as `now`?
