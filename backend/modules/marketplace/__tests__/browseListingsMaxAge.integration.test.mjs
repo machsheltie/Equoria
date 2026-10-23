@@ -28,7 +28,7 @@ const run = randomBytes(4).toString('hex');
 const PREFIX = `TestFixture-k724f-${run}`;
 
 // Days old -> game-years: 20 = 2, 21 = 3 (birthday), 27 = 3 (last day), 28 = 4.
-const DAYS_OLD = [20, 21, 27, 28];
+const fixtureDaysOld = [20, 21, 27, 28];
 
 function get(token, path) {
   return request(app).get(path).set('Authorization', `Bearer ${token}`);
@@ -85,7 +85,7 @@ describe('maxAge filter boundaries (Equoria-k724f)', () => {
     cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [viewer.id, owner.id] } } }), 'users');
 
-    for (const days of DAYS_OLD) {
+    for (const days of fixtureDaysOld) {
       await horse('Mare', days, { forSale: true, salePrice: 500 });
       await horse('Stallion', days, { studStatus: 'At Public Stud', studFee: 100 });
     }
@@ -100,7 +100,7 @@ describe('maxAge filter boundaries (Equoria-k724f)', () => {
       .sort();
 
   it('fixtures read the game-years the comments claim', () => {
-    const ages = DAYS_OLD.map(days => getHorseAgeYears(gameCalendarDate(new Date(), -days)));
+    const ages = fixtureDaysOld.map(days => getHorseAgeYears(gameCalendarDate(new Date(), -days)));
     expect(ages).toEqual([2, 3, 3, 4]);
   });
 

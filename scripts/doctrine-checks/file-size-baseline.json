@@ -23,7 +23,6 @@
   "backend/modules/leaderboards/controllers/leaderboardController.mjs": 744,
   "backend/modules/leaderboards/routes/leaderboardRoutes.mjs": 817,
   "backend/modules/marketplace/controllers/marketplaceController.mjs": 742,
-  "backend/modules/traits/__tests__/enhancedReportingService.test.mjs": 910,
   "backend/modules/traits/__tests__/environmentalFactorEngineService.test.mjs": 848,
   "backend/modules/traits/services/enhancedReportingService.mjs": 817,
   "backend/modules/users/controllers/userController.mjs": 631,
