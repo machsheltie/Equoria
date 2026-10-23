@@ -26,7 +26,7 @@ import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 
 async function createUser(suffix) {
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${suffix}`;
@@ -131,7 +131,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam, sire } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: { performance: 7 },
     });
 
@@ -198,7 +198,7 @@ describe('runFoalingJob (B5)', () => {
     createdUserIds.push(user.id);
 
     // 7 days + a 1-second epsilon to dodge clock skew across the boundary.
-    const inFoal = new Date(Date.now() - 7 * DAY_MS - 1000);
+    const inFoal = new Date(Date.now() - 7 * dayMs - 1000);
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
@@ -216,7 +216,7 @@ describe('runFoalingJob (B5)', () => {
     const user = await createUser('early');
     createdUserIds.push(user.id);
 
-    const inFoal = new Date(Date.now() - 3 * DAY_MS);
+    const inFoal = new Date(Date.now() - 3 * dayMs);
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
@@ -243,7 +243,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: { basic: 7 },
     });
 
@@ -264,7 +264,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
     });
 
@@ -289,7 +289,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: { elite: 7 }, // positive_chance = 20%
     });
 
@@ -312,7 +312,7 @@ describe('runFoalingJob (B5)', () => {
       const { dam } = await createMareSirePair({
         userId: user.id,
         breedId,
-        inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+        inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancyFeedingsByTier: { performance: 5 },
       });
       dams.push(dam);
@@ -337,7 +337,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: { performance: 3 },
     });
 
@@ -381,7 +381,7 @@ describe('runFoalingJob (B5)', () => {
         breedId,
         userId: user.id,
         healthStatus: 'Good',
-        inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+        inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancySireId: 999_999_999, // sire that doesn't exist
         pregnancyFeedingsByTier: { performance: 3 },
       },
@@ -396,7 +396,7 @@ describe('runFoalingJob (B5)', () => {
         breedId,
         userId: user.id,
         healthStatus: 'Good',
-        inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+        inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancySireId: validSire.id,
         pregnancyFeedingsByTier: { performance: 3 },
       },
@@ -419,7 +419,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
     });
 
@@ -446,7 +446,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
     });
 
@@ -487,7 +487,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId, // dam's own breed = Thoroughbred
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
     });
 
@@ -522,7 +522,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
     });
 
@@ -559,7 +559,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
     });
 
@@ -597,7 +597,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
       pregnancySireId: otherBreedSire.id,
     });
@@ -622,7 +622,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
     });
 
@@ -690,7 +690,7 @@ describe('runFoalingJob (B5)', () => {
         breedId,
         userId: user.id,
         healthStatus: 'Good',
-        inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+        inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancySireId: sire.id,
         pregnancyFeedingsByTier: {},
         colorGenotype: {
@@ -729,7 +729,7 @@ describe('runFoalingJob (B5)', () => {
     const { dam } = await createMareSirePair({
       userId: user.id,
       breedId,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancyFeedingsByTier: {},
     });
 

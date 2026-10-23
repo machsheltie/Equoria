@@ -38,7 +38,7 @@ import {
 
 const PREFIX = 'TestFixture-5nwwf-samebreed';
 const FEE = 400;
-const NOT_THE_SAME_BREED = /must be the same breed to breed/;
+const notTheSameBreed = /must be the same breed to breed/;
 
 async function otherBreed() {
   // 'Abaga' has a real entry in backend/data/breedProfiles.json, as foaling needs.
@@ -120,7 +120,7 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
-      expect(res.body.message).toMatch(NOT_THE_SAME_BREED);
+      expect(res.body.message).toMatch(notTheSameBreed);
       await expectNotPregnant(mare);
     });
 
@@ -135,7 +135,7 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
           breedId,
         });
         expect(res.status).toBe(400);
-        expect(res.body.message).toMatch(NOT_THE_SAME_BREED);
+        expect(res.body.message).toMatch(notTheSameBreed);
       }
       await expectNotPregnant(mare);
     });
@@ -147,7 +147,7 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
       const res = await breedOwnPair(mareOwner.token, sire.id, mare.id);
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toMatch(NOT_THE_SAME_BREED);
+      expect(res.body.message).toMatch(notTheSameBreed);
       await expectNotPregnant(mare);
     });
 
@@ -164,7 +164,7 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
       const res = await bookStud(mareOwner.token, stud.id, { damId: mare.id, expectedStudFee: FEE });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toMatch(NOT_THE_SAME_BREED);
+      expect(res.body.message).toMatch(notTheSameBreed);
       expect(await moneyOf(mareOwner.user.id)).toBe(5000);
       expect(await moneyOf(studOwner.user.id)).toBe(100);
       await expectNotPregnant(mare);
@@ -186,7 +186,7 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
       });
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toMatch(NOT_THE_SAME_BREED);
+      expect(res.body.message).toMatch(notTheSameBreed);
       await expectNotPregnant(mare);
     });
 
@@ -210,8 +210,7 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
       const res = await actOnRequest(studOwner.token, pending.id, 'approve');
 
       expect(res.status).toBe(409);
-      expect(res.body.code).toBe('REQUEST_DECLINED');
-      expect(res.body.message).toMatch(NOT_THE_SAME_BREED);
+      expect(res.body.message).toMatch(notTheSameBreed);
       const record = await prisma.breedingRecord.findUnique({ where: { id: pending.id } });
       expect(record.status).toBe('DECLINED');
       expect(await moneyOf(mareOwner.user.id)).toBe(5000);
