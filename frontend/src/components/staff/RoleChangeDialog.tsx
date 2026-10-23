@@ -24,7 +24,7 @@ import { staffErrorMessage } from './staffMessages';
 
 export interface RoleChange {
   member: StaffMember;
-  toRole: 'moderator' | 'user';
+  toRole: 'moderator' | 'admin' | 'user';
 }
 
 export interface RoleChangeDialogProps {
@@ -34,11 +34,17 @@ export interface RoleChangeDialogProps {
   onChanged: (member: StaffMember) => void;
 }
 
+const CONFIRM_LABELS = {
+  admin: 'Make admin',
+  moderator: 'Make moderator',
+  user: 'Revoke role',
+} as const;
+
 const ROLE_MESSAGES = {
   400: 'Write a reason first.',
-  403: "This account's role can't be changed here.",
+  403: "This account's role can't be changed here, or only the owner can do it.",
   404: 'That player no longer exists.',
-  409: 'That account changed meanwhile, or it needs a verified email to become a moderator. Look it up again and retry.',
+  409: 'That account changed meanwhile, or it needs a verified email to become staff. Look it up again and retry.',
 };
 
 export function RoleChangeDialog({ change, onClose, onChanged }: RoleChangeDialogProps) {
@@ -58,7 +64,7 @@ export function RoleChangeDialog({ change, onClose, onChanged }: RoleChangeDialo
   }
 
   const { member, toRole } = change;
-  const promoting = toRole === 'moderator';
+  const promoting = toRole !== 'user';
   const trimmed = reason.trim();
 
   const confirm = () => {
@@ -96,9 +102,9 @@ export function RoleChangeDialog({ change, onClose, onChanged }: RoleChangeDialo
       >
         <GameDialogHeader>
           <GameDialogTitle>
-            {promoting
-              ? `Make ${member.username} a moderator?`
-              : `Revoke ${member.username}'s moderator role?`}
+            {toRole === 'admin' && `Make ${member.username} an admin?`}
+            {toRole === 'moderator' && `Make ${member.username} a moderator?`}
+            {toRole === 'user' && `Revoke ${member.username}'s moderator role?`}
           </GameDialogTitle>
           <GameDialogDescription>
             {promoting
@@ -133,7 +139,7 @@ export function RoleChangeDialog({ change, onClose, onChanged }: RoleChangeDialo
               pending={setRole.isPending}
               disabled={trimmed === ''}
             >
-              {promoting ? 'Make moderator' : 'Revoke role'}
+              {CONFIRM_LABELS[toRole]}
             </Button>
             {setRole.isError && (
               <InlineError message={staffErrorMessage(setRole.error, ROLE_MESSAGES)} />

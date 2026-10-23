@@ -149,7 +149,7 @@ export const staffApi = {
   listStaff: () => apiClient.get<{ staff: StaffMember[] }>(`${BASE}/roles`),
   lookupUser: (username: string) =>
     apiClient.post<StaffMember>(`${BASE}/roles/lookup`, { username }),
-  setRole: (userId: string, role: 'moderator' | 'user', reason: string) =>
+  setRole: (userId: string, role: 'moderator' | 'admin' | 'user', reason: string) =>
     apiClient.post<StaffMember>(`${BASE}/roles/${encodeURIComponent(userId)}`, { role, reason }),
 
   listTickets: (cursor?: string) =>

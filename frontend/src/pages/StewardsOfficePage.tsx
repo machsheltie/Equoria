@@ -76,7 +76,12 @@ export default function StewardsOfficePage() {
               onCheckinRequired={onCheckinRequired}
             />
           )}
-          {can('roles.manage') && <StaffRoles onCheckinRequired={onCheckinRequired} />}
+          {can('roles.manage') && (
+            <StaffRoles
+              onCheckinRequired={onCheckinRequired}
+              canAppointAdmin={can('roles.appointAdmin')}
+            />
+          )}
           {(can('log.view.own') || can('log.view.all')) && (
             <StaffActionLog
               selfId={user?.id === undefined ? undefined : String(user.id)}

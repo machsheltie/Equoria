@@ -3,11 +3,15 @@
  *
  * An admin or the owner promotes a player to moderator and revokes them. Every
  * route runs behind requireStaffCapability('roles.manage'), which only admins
- * and the owner hold (Equoria-4tleh).
+ * and the owner hold (Equoria-4tleh). Only the owner appoints admins (owner
+ * ruling 2026-10-23, Equoria-i1hgt): roles.appointAdmin, refused for anyone
+ * else before the target is even read.
  *
  * assertActionableTarget is deliberately not used: it refuses any staff
- * target, and revoking targets a moderator. Instead the admin may not act on
- * their own account or on any admin, and the role must actually change.
+ * target, and revoking targets a moderator. Instead nobody may act on the
+ * owner or on their own account, an admin's role cannot be changed here by
+ * anyone, and the role must actually change. Every refusal carries a machine
+ * code and an authored message; the Steward's Office shows its own words.
  *
  * The role write, the target's trusted-device revocation, the retirement of
  * their outstanding check-in codes, on demotion the deletion of their unread
@@ -19,18 +23,19 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { deleteUnreadNotificationsTx } from '../../../utils/notificationService.mjs';
-import { staffRoles } from '../capabilities.mjs';
+import { hasCapability, staffRoles, staffTargetRefusal } from '../capabilities.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import { retireStaffCheckinCodesTx } from '../services/staffChallengeRetirement.mjs';
 
-const ASSIGNABLE_ROLES = new Set(['moderator', 'user']);
+const ASSIGNABLE_ROLES = new Set(['moderator', 'admin', 'user']);
 const MAX_TEXT = 100;
 const MAX_REASON = 1000;
 const PUBLIC_FIELDS = { id: true, username: true, role: true };
 // Bells that link into the Steward's Office (STAFF-CR-11).
 const STAFF_BELL_TYPES = ['staffTicket', 'staffTicketUpdate'];
 
-const fail = (res, status, message) => res.status(status).json({ success: false, message });
+const fail = (res, status, message, code) =>
+  res.status(status).json({ success: false, message, ...(code ? { code } : {}) });
 
 const isText = (value, max) =>
   typeof value === 'string' && value.trim() !== '' && value.length <= max;
@@ -70,20 +75,34 @@ export async function lookupUser(req, res, next) {
   }
 }
 
-/** Returns [status, message] when the change is refused, or null. */
-function refusal(actorId, target, toRole) {
-  // Nobody's admin or owner role changes here (Equoria-4tleh).
-  if (target.id === actorId || target.role === 'admin' || target.role === 'owner') {
-    return [403, "This account's role cannot be changed here"];
+const ADMIN_ROLE_FIXED = {
+  code: 'ADMIN_ROLE_NOT_CHANGEABLE',
+  message: "An admin's role cannot be changed here.",
+};
+
+/** Returns [status, message, code?] when the change is refused, or null. */
+function refusal(actor, target, toRole) {
+  // Nobody acts on the owner or on themselves (Equoria-i1hgt).
+  const generic = staffTargetRefusal({ actor, targetUser: target });
+  if (generic && generic.code !== 'STAFF_TARGET_STAFF') {
+    return [403, generic.message, generic.code];
+  }
+  // An admin's role changes nowhere in this office (Equoria-4tleh).
+  if (target.role === 'admin') {
+    const fixed = generic ?? ADMIN_ROLE_FIXED;
+    return [403, fixed.message, fixed.code];
   }
   if (toRole === 'moderator' && target.role !== 'user') {
     return [409, 'This account is not a plain player'];
   }
+  if (toRole === 'admin' && target.role !== 'user' && target.role !== 'moderator') {
+    return [409, 'This account is not a player or a moderator'];
+  }
   if (toRole === 'user' && target.role !== 'moderator') {
     return [409, 'This account is not a moderator'];
   }
-  if (toRole === 'moderator' && target.emailVerified !== true) {
-    return [409, 'A moderator needs a verified email address'];
+  if (toRole !== 'user' && target.emailVerified !== true) {
+    return [409, 'Staff need a verified email address'];
   }
   return null;
 }
@@ -100,6 +119,9 @@ export async function setUserRole(req, res, next) {
     if (!isText(reason, MAX_REASON)) {
       return fail(res, 400, 'A reason is required');
     }
+    if (toRole === 'admin' && !hasCapability(req.staff.role, 'roles.appointAdmin')) {
+      return fail(res, 403, 'Only the owner can appoint an admin.', 'ADMIN_APPOINTMENT_OWNER_ONLY');
+    }
     if (!isText(userId, MAX_TEXT)) {
       return fail(res, 404, 'No such player');
     }
@@ -111,7 +133,7 @@ export async function setUserRole(req, res, next) {
     if (!target) {
       return fail(res, 404, 'No such player');
     }
-    const refused = refusal(req.staff.id, target, toRole);
+    const refused = refusal(req.staff, target, toRole);
     if (refused) {
       return fail(res, ...refused);
     }
@@ -122,7 +144,7 @@ export async function setUserRole(req, res, next) {
         where: {
           id: target.id,
           role: fromRole,
-          ...(toRole === 'moderator' ? { emailVerified: true } : {}),
+          ...(toRole !== 'user' ? { emailVerified: true } : {}),
         },
         data: { role: toRole },
       });

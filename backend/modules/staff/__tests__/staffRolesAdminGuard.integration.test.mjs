@@ -207,7 +207,8 @@ describe('Admin promotes and revokes moderators (Equoria-puj1e.1)', () => {
     const { admin, adminDevice } = await checkedInAdmin();
     const player = await makeUser('user');
     const bad = [
-      { role: 'admin', reason: 'x' },
+      // Owner ruling 2026-10-23 (Equoria-i1hgt): an admin role is now a real
+      // request, refused by who asks (staffModerationPermissions), not malformed.
       { role: 'player', reason: 'x' },
       { role: ['moderator'], reason: 'x' },
       { reason: 'x' },

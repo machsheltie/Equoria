@@ -151,7 +151,7 @@ export function useSetUserRole() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: [...staffKeys.all, 'set-role'],
-    mutationFn: (args: { userId: string; role: 'moderator' | 'user'; reason: string }) =>
+    mutationFn: (args: { userId: string; role: 'moderator' | 'admin' | 'user'; reason: string }) =>
       staffApi.setRole(args.userId, args.role, args.reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: staffKeys.roles });

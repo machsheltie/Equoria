@@ -42,24 +42,44 @@ const LOOKUP_MESSAGES = {
 function RoleControl({
   member,
   onChange,
+  canAppointAdmin,
 }: {
   member: StaffMember;
   onChange: (change: RoleChange) => void;
+  canAppointAdmin: boolean;
 }) {
+  if (member.role !== 'moderator' && member.role !== 'user') {
+    return null;
+  }
+  // Only the owner appoints admins (owner ruling 2026-10-23); the server
+  // refuses everyone else, so the control is simply not offered.
+  const appoint = canAppointAdmin ? (
+    <Button
+      variant="secondary"
+      size="sm"
+      aria-label={`Make ${member.username} an admin`}
+      onClick={() => onChange({ member, toRole: 'admin' })}
+    >
+      Make admin
+    </Button>
+  ) : null;
   if (member.role === 'moderator') {
     return (
-      <Button
-        variant="destructive"
-        size="sm"
-        aria-label={`Revoke ${member.username}`}
-        onClick={() => onChange({ member, toRole: 'user' })}
-      >
-        Revoke
-      </Button>
+      <span className="flex gap-2">
+        {appoint}
+        <Button
+          variant="destructive"
+          size="sm"
+          aria-label={`Revoke ${member.username}`}
+          onClick={() => onChange({ member, toRole: 'user' })}
+        >
+          Revoke
+        </Button>
+      </span>
     );
   }
-  if (member.role === 'user') {
-    return (
+  return (
+    <span className="flex gap-2">
       <Button
         variant="secondary"
         size="sm"
@@ -68,16 +88,18 @@ function RoleControl({
       >
         Make moderator
       </Button>
-    );
-  }
-  return null;
+      {appoint}
+    </span>
+  );
 }
 
 export interface StaffRolesProps {
   onCheckinRequired: () => void;
+  /** The viewer holds roles.appointAdmin (the owner). */
+  canAppointAdmin?: boolean;
 }
 
-export function StaffRoles({ onCheckinRequired }: StaffRolesProps) {
+export function StaffRoles({ onCheckinRequired, canAppointAdmin = false }: StaffRolesProps) {
   const staff = useStaffList(true);
   const lookup = useLookupUser();
   const [username, setUsername] = useState('');
@@ -132,7 +154,7 @@ export function StaffRoles({ onCheckinRequired }: StaffRolesProps) {
               {member.username}{' '}
               <span className="text-sm text-role-secondary">— {staffTitles[member.role]}</span>
             </span>
-            <RoleControl member={member} onChange={setChange} />
+            <RoleControl member={member} onChange={setChange} canAppointAdmin={canAppointAdmin} />
           </li>
         ))}
       </ul>
@@ -177,7 +199,7 @@ export function StaffRoles({ onCheckinRequired }: StaffRolesProps) {
           <p className="text-[var(--text-primary)]">
             {found.username} is {ROLE_WORDS[found.role] ?? found.role}.
           </p>
-          <RoleControl member={found} onChange={setChange} />
+          <RoleControl member={found} onChange={setChange} canAppointAdmin={canAppointAdmin} />
         </div>
       )}
 

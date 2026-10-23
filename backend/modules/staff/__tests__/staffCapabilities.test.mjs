@@ -10,6 +10,7 @@ import {
   hasCapability,
   isStaffRole,
   assertActionableTarget,
+  staffTargetRefusal,
   capabilitiesFor,
   can,
   rolesWithCapability,
@@ -25,7 +26,24 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
     });
 
     it('denies moderator admin-only capabilities', () => {
-      expect(hasCapability('moderator', 'ban.ip')).toBe(false);
+      // Owner ruling 2026-10-23 (Equoria-i1hgt): moderators may issue IP and
+      // device bans, so ban.ip is no longer admin-only. Was asserting ban.ip.
+      expect(hasCapability('moderator', 'ticket.resolve')).toBe(false);
+      expect(hasCapability('moderator', 'roles.manage')).toBe(false);
+    });
+
+    it('lets moderators and admins issue IP and device bans (Equoria-i1hgt)', () => {
+      for (const role of ['moderator', 'admin', 'owner']) {
+        expect(hasCapability(role, 'ban.ip')).toBe(true);
+        expect(hasCapability(role, 'ban.device')).toBe(true);
+      }
+      expect(hasCapability('user', 'ban.ip')).toBe(false);
+    });
+
+    it('lets only the owner appoint admins (Equoria-i1hgt)', () => {
+      expect(hasCapability('owner', 'roles.appointAdmin')).toBe(true);
+      expect(hasCapability('admin', 'roles.appointAdmin')).toBe(false);
+      expect(hasCapability('moderator', 'roles.appointAdmin')).toBe(false);
     });
 
     it('grants admin the admin-only capabilities', () => {
@@ -210,5 +228,51 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
     it('does not throw for an ordinary other user', () => {
       expect(() => assertActionableTarget({ actorId: 'a', targetUser: { id: 'b', role: 'user' } })).not.toThrow();
     });
+  });
+});
+
+describe('staffTargetRefusal (Equoria-i1hgt)', () => {
+  const actor = role => ({ id: 'actor', role });
+  const target = role => ({ id: 'target', role });
+
+  it('refuses a moderator or admin acting on a moderator or admin', () => {
+    for (const actorRole of ['moderator', 'admin']) {
+      for (const targetRole of ['moderator', 'admin']) {
+        expect(staffTargetRefusal({ actor: actor(actorRole), targetUser: target(targetRole) })?.code).toBe(
+          'STAFF_TARGET_STAFF',
+        );
+      }
+    }
+  });
+
+  it('refuses anyone acting on the owner, the owner included', () => {
+    for (const actorRole of ['moderator', 'admin', 'owner']) {
+      expect(staffTargetRefusal({ actor: actor(actorRole), targetUser: target('owner') })?.code).toBe(
+        'STAFF_TARGET_OWNER',
+      );
+    }
+    expect(
+      staffTargetRefusal({ actor: { id: 'x', role: 'owner' }, targetUser: { id: 'x', role: 'owner' } })?.code,
+    ).toBe('STAFF_TARGET_OWNER');
+  });
+
+  it('refuses acting on oneself and allows acting on a player', () => {
+    expect(
+      staffTargetRefusal({ actor: { id: 'x', role: 'admin' }, targetUser: { id: 'x', role: 'admin' } })?.code,
+    ).toBe('STAFF_TARGET_SELF');
+    for (const actorRole of ['moderator', 'admin', 'owner']) {
+      expect(staffTargetRefusal({ actor: actor(actorRole), targetUser: target('user') })).toBeNull();
+    }
+  });
+
+  it('lets the owner act on a moderator or an admin', () => {
+    expect(staffTargetRefusal({ actor: actor('owner'), targetUser: target('moderator') })).toBeNull();
+    expect(staffTargetRefusal({ actor: actor('owner'), targetUser: target('admin') })).toBeNull();
+  });
+
+  it('gives every refusal an authored message, never the code', () => {
+    const refusal = staffTargetRefusal({ actor: actor('moderator'), targetUser: target('admin') });
+    expect(refusal.message).toMatch(/\s/);
+    expect(refusal.message).not.toContain('STAFF_TARGET');
   });
 });

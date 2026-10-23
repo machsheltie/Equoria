@@ -53,4 +53,36 @@ describe('StaffRoles: Owner, Admin, Moderator', () => {
     expect(within(admin).queryByRole('button')).not.toBeInTheDocument();
     expect(within(mod).getByRole('button', { name: 'Revoke Willow' })).toBeInTheDocument();
   });
+
+  it('offers Make admin only when the viewer may appoint admins (Equoria-i1hgt)', async () => {
+    server.use(
+      http.get(`${STAFF}/roles`, () =>
+        HttpResponse.json({
+          staff: [
+            { id: 'admin-1', username: 'Hazel', role: 'admin' },
+            { id: 'mod-1', username: 'Willow', role: 'moderator' },
+          ],
+        })
+      )
+    );
+
+    const { unmount } = render(
+      <QueryClientProvider client={queryClient}>
+        <StaffRoles onCheckinRequired={() => undefined} />
+      </QueryClientProvider>
+    );
+    await screen.findByText('Willow');
+    expect(screen.queryByRole('button', { name: 'Make Willow an admin' })).not.toBeInTheDocument();
+    unmount();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StaffRoles onCheckinRequired={() => undefined} canAppointAdmin />
+      </QueryClientProvider>
+    );
+    const mod = (await screen.findByText('Willow')).closest('li') as HTMLElement;
+    const admin = screen.getByText('Hazel').closest('li') as HTMLElement;
+    expect(within(mod).getByRole('button', { name: 'Make Willow an admin' })).toBeInTheDocument();
+    expect(within(admin).queryByRole('button')).not.toBeInTheDocument();
+  });
 });

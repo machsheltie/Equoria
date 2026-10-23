@@ -31,6 +31,10 @@ const MODERATOR = [
   'warn',
   'freeze',
   'ban.account',
+  // Owner ruling 2026-10-23 (Equoria-i1hgt): moderators may also issue IP and
+  // device bans; admins and the owner inherit them from this list.
+  'ban.ip',
+  'ban.device',
   'rename',
   'post.moderate',
   'post.review',
@@ -40,8 +44,6 @@ const MODERATOR = [
 const adminOnly = [
   'ticket.resolve',
   'log.view.all',
-  'ban.ip',
-  'ban.device',
   'view.identity',
   'roles.manage',
   'jobs.hold',
@@ -57,6 +59,8 @@ const adminOnly = [
   'results.scoreInputs.view',
 ];
 const ownerOnly = [
+  // Only the owner appoints admins, in the Steward's Office (Equoria-i1hgt).
+  'roles.appointAdmin',
   'traits.hidden.view',
   'news.seasonalEvent',
   'news.headAdminLetter',
@@ -163,4 +167,43 @@ export function assertActionableTarget({ actorId, targetUser }) {
   if (targetUser.id === actorId || isStaffRole(targetUser.role)) {
     throw new AppError('Staff tools cannot act on this account', 403);
   }
+}
+
+const TARGET_REFUSALS = Object.freeze({
+  owner: Object.freeze({
+    code: 'STAFF_TARGET_OWNER',
+    message: 'No one can act on the owner.',
+  }),
+  staff: Object.freeze({
+    code: 'STAFF_TARGET_STAFF',
+    message: 'Moderators and admins cannot act on another moderator or admin.',
+  }),
+  self: Object.freeze({
+    code: 'STAFF_TARGET_SELF',
+    message: 'You cannot act on your own account.',
+  }),
+});
+
+/**
+ * The refusal for a staff action on a target account, or null when the action
+ * may proceed (owner ruling 2026-10-23, Equoria-i1hgt): nobody can act on the
+ * owner, and a moderator or admin can never act on another moderator or admin
+ * (only the owner can). Acting on oneself is refused too. The refusal carries a
+ * machine code for the API and an authored message, never the code, for a person.
+ * Pure policy, like assertActionableTarget; callers pass the actor and the
+ * target as read under their own lock.
+ * @param {{ actor: { id: string, role: string }, targetUser: { id: string, role: string } }} params
+ * @returns {{ code: string, message: string } | null}
+ */
+export function staffTargetRefusal({ actor, targetUser }) {
+  if (targetUser.role === 'owner') {
+    return TARGET_REFUSALS.owner;
+  }
+  if (targetUser.id === actor.id) {
+    return TARGET_REFUSALS.self;
+  }
+  if (isStaffRole(targetUser.role) && actor.role !== 'owner') {
+    return TARGET_REFUSALS.staff;
+  }
+  return null;
 }
