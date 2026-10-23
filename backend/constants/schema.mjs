@@ -238,6 +238,22 @@ export const BREEDING_LIMITS = {
 };
 
 /**
+ * Stud listing states — the values of Horse.studStatus (Equoria-e7tgc.2).
+ * Owner rulings (Stacey, 2026-10-02 / 2026-10-15): the stallion's owner
+ * chooses whether he stands at stud and whether at Public Stud (bookings go
+ * through automatically) or Private Stud (requests wait for approval).
+ * 'Not at Stud' is the column default (schema.prisma Horse.studStatus).
+ */
+export const STUD_STATUS = Object.freeze({
+  NONE: 'Not at Stud',
+  PUBLIC: 'At Public Stud',
+  PRIVATE: 'At Private Stud',
+});
+
+/** The studStatus values that mean "standing at stud" (either mode). */
+export const STUD_LISTED_STATUSES = Object.freeze([STUD_STATUS.PUBLIC, STUD_STATUS.PRIVATE]);
+
+/**
  * Foal trait discovery age limits
  */
 export const FOAL_LIMITS = {

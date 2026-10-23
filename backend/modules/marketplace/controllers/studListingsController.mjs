@@ -14,6 +14,7 @@
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { STUD_STATUS } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { toPredictionView } from '../../breeding/index.mjs';
@@ -26,8 +27,11 @@ import {
   single,
 } from '../services/listingQueryParams.mjs';
 
-const STUD_MODES = Object.freeze({ public: 'At Public Stud', private: 'At Private Stud' });
-const MODE_BY_STATUS = Object.freeze({ 'At Public Stud': 'public', 'At Private Stud': 'private' });
+const STUD_MODES = Object.freeze({ public: STUD_STATUS.PUBLIC, private: STUD_STATUS.PRIVATE });
+const MODE_BY_STATUS = Object.freeze({
+  [STUD_STATUS.PUBLIC]: 'public',
+  [STUD_STATUS.PRIVATE]: 'private',
+});
 
 // A null studFee is a legacy 0, so it sorts with the cheapest. Every order ends
 // on `id` so ties (common: every unpriced stud reads as 0) page deterministically.

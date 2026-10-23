@@ -21,11 +21,15 @@ import {
   RetryableTransactionError,
 } from '../../../utils/retryableTransaction.mjs';
 import { AppError } from '../../../errors/index.mjs';
+import { STUD_STATUS } from '../../../constants/schema.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
 import { declinePendingRequestsForSire } from '../services/studRequestCleanup.mjs';
 
 /** Owner ruling 2026-10-15: the stallion owner chooses Public Stud or Private Stud. */
-const STUD_STATUS_BY_MODE = Object.freeze({ public: 'At Public Stud', private: 'At Private Stud' });
+const STUD_STATUS_BY_MODE = Object.freeze({
+  public: STUD_STATUS.PUBLIC,
+  private: STUD_STATUS.PRIVATE,
+});
 
 const STUD_LISTING_SELECT = { id: true, name: true, sex: true, studStatus: true, studFee: true };
 const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a moment.';
@@ -189,7 +193,7 @@ export async function unlistHorseAtStud(req, res) {
           // Guarded claim: the caller must STILL own this horse at write time.
           const claim = await tx.horse.updateMany({
             where: { id: horseId, userId: ownerId },
-            data: { studStatus: 'Not at Stud', studFee: 0 },
+            data: { studStatus: STUD_STATUS.NONE, studFee: 0 },
           });
           if (claim.count !== 1) {
             throw horseNotFound();

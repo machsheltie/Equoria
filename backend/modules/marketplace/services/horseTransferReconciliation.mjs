@@ -64,6 +64,7 @@
 import { TACK_INVENTORY } from '../../economy/index.mjs';
 import { declinePendingRequestsForSire, cancelPendingRequestForMare } from '../../horses/index.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
+import { STUD_STATUS } from '../../../constants/schema.mjs';
 import { CRAFTING_RECIPES } from '../../crafting/index.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 // Same-module internal (NOT part of the marketplace public API): the test-only
@@ -456,7 +457,7 @@ export async function clearStudListingOnTransfer(tx, { horseId }) {
   // HORSE row already claimed by the caller — no new lock taken.
   await tx.horse.update({
     where: { id: horseId },
-    data: { studStatus: 'Not at Stud', studFee: 0 },
+    data: { studStatus: STUD_STATUS.NONE, studFee: 0 },
   });
 }
 
