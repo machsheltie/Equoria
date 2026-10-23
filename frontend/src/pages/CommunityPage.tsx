@@ -30,8 +30,8 @@ import { Surface } from '@/components/ui/Surface';
 import { IconBox } from '@/components/ui/IconBox';
 import { GameBadge } from '@/components/ui/game';
 import { Skeleton, InlineError, ErrorState } from '@/components/ui/state';
-import { FORUM_SECTIONS } from '@/lib/api-client';
-import { RETIREMENT_AGE_YEARS } from '@/lib/horseAgePolicy';
+import { forumSections } from '@/lib/api-client';
+import { retirementAgeYears } from '@/lib/horseAgePolicy';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount, useConversationsCount } from '@/hooks/api/useMessages';
 import { useClubs, useOpenElectionsCount } from '@/hooks/api/useClubs';
@@ -100,7 +100,7 @@ const CommunityPageContent: React.FC = () => {
   // MyStablePage's exact query keys so the caches are shared between the hub
   // card and the destination page.
   const horses = horsesQuery.data ?? [];
-  const retiredHorses = horses.filter((horse) => horse.ageYears >= RETIREMENT_AGE_YEARS);
+  const retiredHorses = horses.filter((horse) => horse.ageYears >= retirementAgeYears);
   const hofHistories = useQueries({
     queries: retiredHorses.map((horse) => ({
       queryKey: horseCompetitionHistoryQueryKeys.history(horse.id),
@@ -123,7 +123,7 @@ const CommunityPageContent: React.FC = () => {
   );
 
   const stats: Record<string, HubStat> = {
-    sections: staticStat('Sections', FORUM_SECTIONS.length),
+    sections: staticStat('Sections', forumSections.length),
     activeThreads: {
       label: 'Active threads',
       isPending: threadsQuery.isLoading,

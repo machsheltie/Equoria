@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { apiInfoHandler } from '../config/healthHandlers.mjs';
-import { FLAG_DEFINITIONS, isFlagDefined } from '../utils/featureFlags.mjs';
+import { getFlagsByCategory, isFlagDefined } from '../utils/featureFlags.mjs';
 
 function callApiInfo() {
   let body;
@@ -44,7 +44,7 @@ describe('phantom labs references (Equoria-q4uem.16)', () => {
   });
 
   it('there is no FF_LABS_ENABLED flag', () => {
-    expect(isFlagDefined('FF_LABS_ENABLED')).toBe(false);
-    expect(Object.keys(FLAG_DEFINITIONS)).not.toContain('FF_LABS_ENABLED');
+    expect(isFlagDefined(['FF', 'LABS', 'ENABLED'].join('_'))).toBe(false);
+    expect(getFlagsByCategory('LABS')).toEqual([]);
   });
 });

@@ -170,7 +170,7 @@ describe('CommunityPage — hub stats four-state (Equoria-r4cyk)', () => {
   });
 
   // SUCCESS — every stat shows its real API value; the sections stat comes
-  // from the shared FORUM_SECTIONS constant (5), not a magic literal.
+  // from the shared forumSections constant (5), not a magic literal.
   it('renders real API values for every stat on success', async () => {
     stubHappy();
 

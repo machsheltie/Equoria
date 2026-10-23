@@ -179,7 +179,7 @@ export type { InventoryItem, InventoryData, EquipResult, UnequipResult } from '.
 // -- Forum / Direct Messages / Bank --
 // Extracted to ./api/{forum,messages,bank} (Equoria-rfsml). Re-exported for
 // barrel compat.
-export { forumApi, FORUM_SECTIONS } from './api/forum.js';
+export { forumApi, forumSections } from './api/forum.js';
 export type {
   ForumSection,
   ForumAuthor,

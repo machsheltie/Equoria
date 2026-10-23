@@ -12,7 +12,7 @@ export type ForumSection = 'general' | 'art' | 'sales' | 'services' | 'venting';
  * "how many sections exist" so no surface hardcodes a magic count
  * (Equoria-r4cyk).
  */
-export const FORUM_SECTIONS: readonly ForumSection[] = [
+export const forumSections: readonly ForumSection[] = [
   'general',
   'art',
   'sales',

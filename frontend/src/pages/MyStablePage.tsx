@@ -37,7 +37,7 @@ import {
 } from '@/lib/api/competitionResults';
 import { horseCompetitionHistoryQueryKeys } from '@/hooks/api/useHorseCompetitionHistory';
 import { getBreedName, isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
-import { RETIREMENT_AGE_YEARS } from '@/lib/horseAgePolicy';
+import { retirementAgeYears } from '@/lib/horseAgePolicy';
 
 type StableTab = 'profile' | 'legacy';
 
@@ -367,7 +367,7 @@ const MyStablePage: React.FC = () => {
     user?.id ?? null
   );
 
-  const retiredHorses = horses.filter((horse) => horse.ageYears >= RETIREMENT_AGE_YEARS);
+  const retiredHorses = horses.filter((horse) => horse.ageYears >= retirementAgeYears);
 
   // Story 21S-4: parallel per-horse career history for the Hall of Fame
   // list. Uses useQueries so N retired horses don't serialize on first paint.

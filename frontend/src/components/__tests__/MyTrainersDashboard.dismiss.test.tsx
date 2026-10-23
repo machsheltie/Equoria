@@ -21,10 +21,10 @@ import { server } from '@/test/msw/server';
 import MyTrainersDashboard from '../MyTrainersDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const USER_ID = 'test-user-1';
-const TRAINERS_PATH = `${base}/api/v1/trainers/user/${USER_ID}`;
-const ASSIGNMENTS_PATH = `${base}/api/v1/trainers/assignments`;
-const DISMISS_PATH = `${base}/api/v1/trainers/10/dismiss`;
+const userId = 'test-user-1';
+const trainersPath = `${base}/api/v1/trainers/user/${userId}`;
+const assignmentsPath = `${base}/api/v1/trainers/assignments`;
+const dismissPath = `${base}/api/v1/trainers/10/dismiss`;
 
 const trainer = (id: number, firstName: string) => ({
   id,
@@ -48,7 +48,7 @@ function renderDashboard() {
   return render(
     <QueryClientProvider client={qc}>
       <BrowserRouter>
-        <MyTrainersDashboard userId={USER_ID} />
+        <MyTrainersDashboard userId={userId} />
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -60,14 +60,14 @@ describe('MyTrainersDashboard — dismiss a trainer (Equoria-oey96.71)', () => {
     let dismissed = false;
     const deletes: string[] = [];
     server.use(
-      http.get(TRAINERS_PATH, () =>
+      http.get(trainersPath, () =>
         HttpResponse.json({
           success: true,
           data: dismissed ? [trainer(11, 'Bram')] : [trainer(10, 'Alice'), trainer(11, 'Bram')],
         })
       ),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] })),
-      http.delete(DISMISS_PATH, ({ request }) => {
+      http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] })),
+      http.delete(dismissPath, ({ request }) => {
         deletes.push(new URL(request.url).pathname);
         dismissed = true;
         return HttpResponse.json({ success: true, data: null });
@@ -90,11 +90,11 @@ describe('MyTrainersDashboard — dismiss a trainer (Equoria-oey96.71)', () => {
     const user = userEvent.setup();
     let deletes = 0;
     server.use(
-      http.get(TRAINERS_PATH, () =>
+      http.get(trainersPath, () =>
         HttpResponse.json({ success: true, data: [trainer(10, 'Alice')] })
       ),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] })),
-      http.delete(DISMISS_PATH, () => {
+      http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] })),
+      http.delete(dismissPath, () => {
         deletes += 1;
         return HttpResponse.json({ success: true, data: null });
       })
@@ -113,11 +113,11 @@ describe('MyTrainersDashboard — dismiss a trainer (Equoria-oey96.71)', () => {
   it('a failed dismissal keeps the trainer and says so at the card, without the raw server text', async () => {
     const user = userEvent.setup();
     server.use(
-      http.get(TRAINERS_PATH, () =>
+      http.get(trainersPath, () =>
         HttpResponse.json({ success: true, data: [trainer(10, 'Alice'), trainer(11, 'Bram')] })
       ),
-      http.get(ASSIGNMENTS_PATH, () => HttpResponse.json({ success: true, data: [] })),
-      http.delete(DISMISS_PATH, () =>
+      http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] })),
+      http.delete(dismissPath, () =>
         HttpResponse.json({ success: false, message: 'RAW-SERVER-DETAIL' }, { status: 500 })
       )
     );

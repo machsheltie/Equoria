@@ -46,7 +46,7 @@ import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import { useThreads, useCreateThread } from '@/hooks/api/useForum';
-import { FORUM_SECTIONS } from '@/lib/api-client';
+import { forumSections } from '@/lib/api-client';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
 
 const THREADS_PER_PAGE = 20;
@@ -78,8 +78,6 @@ const sectionConfig: Record<ForumSection, { label: string; emoji: string; descri
     description: 'Celebrations & frustrations',
   },
 };
-
-const sections = FORUM_SECTIONS;
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -174,7 +172,7 @@ const MessageBoardPage: React.FC = () => {
         {/* Section Tabs + Thread List — CanonicalTabs underline variant (Equoria-o5hub.11) */}
         <Tabs value={activeSection} onValueChange={(v) => handleSectionChange(v as ForumSection)}>
           <TabsList aria-label="Board sections" data-testid="section-tabs">
-            {sections.map((section) => {
+            {forumSections.map((section) => {
               const config = sectionConfig[section];
               return (
                 <TabsTrigger
@@ -198,7 +196,7 @@ const MessageBoardPage: React.FC = () => {
           {/* Thread List — only the active section's panel mounts, so the shared
               data-testid="thread-list" is unique in the DOM. Thread data comes
               from useThreads(activeSection) above. */}
-          {sections.map((section) => (
+          {forumSections.map((section) => (
             <TabsContent key={section} value={section} data-testid="thread-list">
               {isLoading && (
                 <div className="space-y-2">

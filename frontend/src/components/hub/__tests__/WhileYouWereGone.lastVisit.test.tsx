@@ -22,11 +22,11 @@ import { server } from '@/test/msw/server';
 import { WhileYouWereGone } from '../WhileYouWereGone';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const WYAG_PATH = `${base}/api/v1/while-you-were-gone`;
+const wyagPath = `${base}/api/v1/while-you-were-gone`;
 
-const SCOPED_KEY = `equoria-last-visit:${defaultMockUser.id}`;
-const FIVE_HOURS_AGO = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
-const ONE_HOUR_AGO = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+const scopedKey = `equoria-last-visit:${defaultMockUser.id}`;
+const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
 const items = [
   {
@@ -52,16 +52,16 @@ function renderWYAG() {
   );
 }
 
-const storedLastVisit = () => localStorage.getItem(SCOPED_KEY);
+const storedLastVisit = () => localStorage.getItem(scopedKey);
 
 describe('WhileYouWereGone last-visit timing (Equoria-oey96.53)', () => {
   beforeEach(() => {
     localStorage.clear();
     server.use(
-      http.get(WYAG_PATH, () =>
+      http.get(wyagPath, () =>
         HttpResponse.json({
           success: true,
-          data: { items, since: FIVE_HOURS_AGO, hasMore: false },
+          data: { items, since: fiveHoursAgo, hasMore: false },
         })
       )
     );
@@ -72,22 +72,22 @@ describe('WhileYouWereGone last-visit timing (Equoria-oey96.53)', () => {
   });
 
   it('leaves the last-visit time alone while the overlay is open and undismissed', async () => {
-    localStorage.setItem(SCOPED_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(scopedKey, fiveHoursAgo);
     renderWYAG();
     await screen.findByRole('dialog');
     await screen.findByText('Thunder won 1st place!');
 
-    expect(storedLastVisit()).toBe(FIVE_HOURS_AGO);
+    expect(storedLastVisit()).toBe(fiveHoursAgo);
   });
 
   it('closing the tab with the overlay still open does not mark the events seen', async () => {
-    localStorage.setItem(SCOPED_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(scopedKey, fiveHoursAgo);
     renderWYAG();
     await screen.findByRole('dialog');
 
     window.dispatchEvent(new Event('beforeunload'));
 
-    expect(storedLastVisit()).toBe(FIVE_HOURS_AGO);
+    expect(storedLastVisit()).toBe(fiveHoursAgo);
   });
 
   it.each([
@@ -95,44 +95,44 @@ describe('WhileYouWereGone last-visit timing (Equoria-oey96.53)', () => {
     ['the X button', () => fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))],
     ['the Escape key', () => fireEvent.keyDown(window, { key: 'Escape' })],
   ])('dismissing with %s records the visit', async (_label, dismiss) => {
-    localStorage.setItem(SCOPED_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(scopedKey, fiveHoursAgo);
     renderWYAG();
     await screen.findByRole('dialog');
 
     dismiss();
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(storedLastVisit()).not.toBe(FIVE_HOURS_AGO);
+    expect(storedLastVisit()).not.toBe(fiveHoursAgo);
     expect(Date.now() - new Date(storedLastVisit() as string).getTime()).toBeLessThan(60_000);
   });
 
   it('clicking the backdrop records the visit', async () => {
-    localStorage.setItem(SCOPED_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(scopedKey, fiveHoursAgo);
     renderWYAG();
     const dialog = await screen.findByRole('dialog');
 
     fireEvent.click(dialog.querySelector('[aria-hidden="true"]') as HTMLElement);
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(storedLastVisit()).not.toBe(FIVE_HOURS_AGO);
+    expect(storedLastVisit()).not.toBe(fiveHoursAgo);
   });
 
   it('following an item link inside the overlay counts as dismissal', async () => {
-    localStorage.setItem(SCOPED_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(scopedKey, fiveHoursAgo);
     renderWYAG();
     const dialog = await screen.findByRole('dialog');
 
     fireEvent.click(await within(dialog).findByRole('link', { name: /Thunder won 1st place!/ }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(storedLastVisit()).not.toBe(FIVE_HOURS_AGO);
+    expect(storedLastVisit()).not.toBe(fiveHoursAgo);
   });
 
   it('a short absence shows no overlay and still refreshes the time on mount', async () => {
-    localStorage.setItem(SCOPED_KEY, ONE_HOUR_AGO);
+    localStorage.setItem(scopedKey, oneHourAgo);
     renderWYAG();
 
-    await waitFor(() => expect(storedLastVisit()).not.toBe(ONE_HOUR_AGO));
+    await waitFor(() => expect(storedLastVisit()).not.toBe(oneHourAgo));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 

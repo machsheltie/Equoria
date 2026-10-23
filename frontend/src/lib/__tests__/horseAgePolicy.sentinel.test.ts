@@ -7,7 +7,7 @@
  * either could half-apply.
  *
  * Now the age lives in lib/horseAgePolicy.ts (mirroring the backend's
- * constants/horseAgePolicy.mjs) and the board's tabs come from FORUM_SECTIONS.
+ * constants/horseAgePolicy.mjs) and the board's tabs come from forumSections.
  *
  * Sentinel-positive: each assertion fails when its consolidation is undone.
  */
@@ -15,8 +15,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { RETIREMENT_AGE_YEARS } from '../horseAgePolicy';
-import { FORUM_SECTIONS } from '../api/forum';
+import { retirementAgeYears } from '../horseAgePolicy';
+import { forumSections } from '../api/forum';
 
 const read = (relative: string) => readFileSync(join(__dirname, relative), 'utf8');
 
@@ -26,7 +26,7 @@ describe('shared retirement age (Equoria-iehtc)', () => {
     const match = /export const RETIREMENT_AGE_YEARS = (\d+);/.exec(backend);
 
     expect(match).not.toBeNull();
-    expect(RETIREMENT_AGE_YEARS).toBe(Number(match?.[1]));
+    expect(retirementAgeYears).toBe(Number(match?.[1]));
   });
 
   it.each([
@@ -36,26 +36,26 @@ describe('shared retirement age (Equoria-iehtc)', () => {
   ])('%s imports the shared constant instead of declaring or hardcoding it', (_name, path) => {
     const source = read(path);
 
-    expect(source).toMatch(/RETIREMENT_AGE_YEARS[\s\S]*from '@\/lib\/horseAgePolicy'/);
-    expect(source).not.toMatch(/const RETIREMENT_AGE_YEARS\s*=/);
+    expect(source).toMatch(/retirementAgeYears[\s\S]*from '@\/lib\/horseAgePolicy'/);
+    expect(source).not.toMatch(/const (RETIREMENT_AGE_YEARS|retirementAgeYears)\s*=/);
     expect(source).not.toMatch(/>=\s*21\b/);
     expect(source).not.toMatch(/\?\?\s*21\b/);
   });
 });
 
 describe('message board sections (Equoria-iehtc)', () => {
-  it('MessageBoardPage takes its sections from FORUM_SECTIONS, not a private list', () => {
+  it('MessageBoardPage takes its sections from forumSections, not a private list', () => {
     const source = read('../../pages/MessageBoardPage.tsx');
 
-    expect(source).toMatch(/FORUM_SECTIONS/);
+    expect(source).toMatch(/forumSections/);
     expect(source).not.toMatch(/const sections: ForumSection\[\]/);
   });
 
   it('every shared section has board copy (label, emoji, description)', async () => {
     // The page keeps its copy keyed by the same union; a section added to
-    // FORUM_SECTIONS without copy would render a blank tab.
+    // forumSections without copy would render a blank tab.
     const source = read('../../pages/MessageBoardPage.tsx');
-    for (const section of FORUM_SECTIONS) {
+    for (const section of forumSections) {
       expect(source).toMatch(new RegExp(`\\b${section}:\\s*\\{`));
     }
   });

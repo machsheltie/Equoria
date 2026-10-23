@@ -10,4 +10,4 @@
  */
 
 /** The age, in game-years, at which a horse retires. Not a gate by itself: the backend enforces eligibility. */
-export const RETIREMENT_AGE_YEARS = 21;
+export const retirementAgeYears = 21;
