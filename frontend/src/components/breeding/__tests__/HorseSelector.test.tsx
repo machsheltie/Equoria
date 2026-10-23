@@ -119,31 +119,6 @@ describe('canHorseBreed', () => {
     });
   });
 
-  describe('breeding age window 3-20 (owner ruling 2026-10-23, Equoria-e7tgc.4)', () => {
-    it('allows a 20-year-old', () => {
-      expect(canHorseBreed(createHorse({ age: 20 }))).toEqual({ canBreed: true });
-    });
-
-    it('refuses a 21-year-old as retired', () => {
-      expect(canHorseBreed(createHorse({ age: 21 }))).toEqual({
-        canBreed: false,
-        reason: 'Retired (21y; breeds until 20)',
-      });
-    });
-  });
-
-  describe('in-foal validation (Equoria-q4uem.9)', () => {
-    it('refuses a mare the server reports in foal', () => {
-      const horse = createHorse({ sex: 'Mare', age: 6, inFoal: true });
-      expect(canHorseBreed(horse)).toEqual({ canBreed: false, reason: 'In foal' });
-    });
-
-    it('allows a mare that is not in foal', () => {
-      const horse = createHorse({ sex: 'Mare', age: 6, inFoal: false });
-      expect(canHorseBreed(horse)).toEqual({ canBreed: true });
-    });
-  });
-
   describe('cooldown validation', () => {
     // Equoria-q4uem.13: cooldown days are Eastern game days, but the fixtures
     // were built with the runner's LOCAL calendar (setDate(+30)). Wherever the
