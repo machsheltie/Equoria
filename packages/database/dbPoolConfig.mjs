@@ -29,6 +29,11 @@ export const getPoolConfig = (env = process.env) => {
     // far under the real 100 ceiling (6 workers × 3 = 18; even 3 overlapping
     // runs = 54). Override with TEST_DB_POOL_SIZE for a capacity-constrained
     // environment.
+    // Three connections is a deliberate budget: the nightly jobs and the request
+    // path share it, and every locked cron job holds one in its advisory-lock
+    // transaction for the whole run. A request that times out (408,
+    // backend/middleware/resourceManagement.mjs) does NOT free its connection —
+    // the query or transaction finishes on its own (Equoria-cmw85.40).
     connection_limit: 3,
     pool_timeout: 30,
     connect_timeout: 30,

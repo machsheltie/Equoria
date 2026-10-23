@@ -323,6 +323,19 @@ export function memoryMonitoringMiddleware(options = {}) {
 
 /**
  * Request timeout middleware with resource cleanup
+ *
+ * KNOWN LIMITATION (Equoria-cmw85.40, decided: document, do not cancel): the 408
+ * answers the CLIENT only. The handler keeps running, and any query it already
+ * sent keeps its pooled connection until it finishes. Prisma 6.8 has no
+ * per-query cancellation (no AbortSignal), and a database-wide statement_timeout
+ * would also cut the long cron transactions (utils/cronLock.mjs holds one for up
+ * to an hour) and does not suit the Supabase transaction pooler. What bounds the
+ * damage today: an interactive $transaction rolls back and releases its
+ * connection at its own `timeout` (Prisma's default is 5 s; the cron paths set
+ * their own), and a lone statement ends when the database finishes it. The pool
+ * is only three connections (packages/database/dbPoolConfig.mjs), so a burst of
+ * slow requests can still queue others behind connections whose callers already
+ * got a 408; keep request-path queries short rather than relying on this timer.
  */
 export function requestTimeoutMiddleware(timeout = 30000) {
   return (req, res, next) => {
