@@ -20,7 +20,20 @@ dotenv.config({
 // is re-exported below so backend modules can build parameterized raw queries
 // through this wrapper — @prisma/client itself is not resolvable from
 // backend/node_modules (it lives in packages/database). (Equoria-lnblu)
-const { PrismaClient, Prisma } = await import('@prisma/client');
+//
+// Equoria-27xvj: take `PrismaClient` and `Prisma` from the SAME runtime copy as the
+// client cached on `globalThis.__prisma`. Under a single-process Jest run the
+// host process's globalSetup caches a client on the host global, and
+// jest-environment-node forwards that handle into each test sandbox, where this module
+// is evaluated a second time. Reusing the forwarded client while importing a second,
+// sandbox-side copy of @prisma/client left `Prisma.DbNull` / `Prisma.JsonNull` minted by
+// one runtime and checked by another; Prisma tells them from plain objects by class
+// identity, so they were written as `{}`. The pair is cached next to the client so every
+// evaluation exports the namespace that belongs to the client it exports. Never cached in
+// production, where there is one evaluation.
+const cachedRuntime =
+  process.env.NODE_ENV === 'production' ? undefined : globalThis.__prismaRuntime;
+const { PrismaClient, Prisma } = cachedRuntime ?? (await import('@prisma/client'));
 
 // Re-exported so tests that need a SECOND client (multi-replica simulations
 // like cronDistributedLock) construct it from THIS module's copy of
@@ -108,6 +121,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   if (!globalThis.__prisma) {
     globalThis.__prisma = applyHorseSexExtension(new PrismaClient(connectionConfig));
+    globalThis.__prismaRuntime = { PrismaClient, Prisma };
   }
   prisma = globalThis.__prisma;
 }

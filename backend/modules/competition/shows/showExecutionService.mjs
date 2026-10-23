@@ -48,10 +48,15 @@ import { invalidateHorseXpCaches } from '../../horses/index.mjs';
 /**
  * Set shows.stagedOrdering to SQL NULL (Equoria-c7mx0). Raw parameterized SQL
  * rather than `data: { stagedOrdering: Prisma.DbNull }` because the DbNull
- * sentinel is identity-checked by the client and fails open under Jest's
- * experimental-vm-modules dual-registry interop (empirically serialized as
- * `{}` there, while plain node behaves) — raw SQL is unambiguous in both
- * runtimes. Id-scoped by construction.
+ * sentinel is identity-checked by the client. Root cause (Equoria-27xvj): under
+ * a single-process Jest run the sandbox reused a client cached by the host's
+ * globalSetup while importing its own copy of @prisma/client, so the sentinel
+ * and the client came from different runtime copies and DbNull serialized as
+ * `{}`. packages/database/prismaClient.mjs now exports the namespace that
+ * belongs to the cached client and
+ * backend/__tests__/prismaNamespaceMatchesSharedClient.integration.test.mjs
+ * pins it; this raw SQL is kept as it is, unambiguous in every runtime.
+ * Id-scoped by construction.
  */
 async function clearStagedOrdering(showId) {
   await prisma.$executeRaw`UPDATE "shows" SET "stagedOrdering" = NULL WHERE "id" = ${showId}`;
