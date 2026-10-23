@@ -60,7 +60,7 @@
  * @module modules/marketplace/services/horseTransferReconciliation
  */
 
-import { TACK_INVENTORY } from '../../economy/index.mjs';
+import { TACK_INVENTORY, tackEffectFields } from '../../economy/index.mjs';
 import { declinePendingRequestsForSire, cancelPendingRequestForMare } from '../../horses/index.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
 import { studStatuses } from '../../../constants/schema.mjs';
@@ -222,7 +222,7 @@ function deriveReturnedItem(horseId, entry, takenIds) {
     itemId: entry.itemId,
     category: definition?.category ?? entry.category,
     name: definition?.name ?? entry.itemId,
-    bonus: definition?.bonus ?? null,
+    ...tackEffectFields(definition ?? CRAFTING_RECIPES.find(r => r.result === entry.itemId)),
     quantity: 1,
     equippedToHorseId: null,
     equippedToHorseName: null,

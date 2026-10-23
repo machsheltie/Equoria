@@ -12,31 +12,22 @@
  *   - result: the inventory item produced (matches TACK_INVENTORY id or is crafting-only)
  *   - resultName: display name of produced item
  *   - resultCategory: tack category (saddle|bridle|halter|blanket|cosmetic)
- *   - bonus: human-readable bonus description
+ *   - bonus (saddles and bridles only): what the item scores, from the same
+ *     label the tack shop uses. Only saddles and bridles score (owner decision A);
+ *     any other crafted item has no effect text.
+ *   - comingSoon: true for crafted items that do not score yet (owner ruling q32,
+ *     2026-10-23); the client says "Coming soon" and no effect.
  *   - isCosmetic: true if no stat bonus
  *   - disciplines (saddles and bridles only): the disciplines the item is made
  *     for, as in the tack shop catalogue; empty = All Purpose. Ridden show
  *     scoring reads it (owner decision A, Equoria-k1p62): discipline tack +5 in
- *     its own disciplines, All Purpose +2 anywhere. Items whose discipline is
- *     ambiguous are empty (All Purpose) until the owner classifies them.
+ *     its own discipline, All Purpose +2 anywhere.
  */
+
+import { tackBonusLabel } from '../../economy/index.mjs';
 
 const recipes = [
   // ── Tier 0 — Basic cosmetic tack ─────────────────────────────────────────
-  {
-    id: 'simple-bridle',
-    name: 'Simple Bridle',
-    description: 'A hand-stitched leather bridle. Functional and elegant.',
-    tier: 0,
-    cost: 100,
-    materials: { leather: 1, cloth: 0, dye: 1, metal: 0, thread: 0 },
-    result: 'crafted-simple-bridle',
-    resultName: 'Handcrafted Bridle',
-    resultCategory: 'bridle',
-    bonus: '+2 all disciplines',
-    isCosmetic: true,
-    disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
-  },
   {
     id: 'basic-halter',
     name: 'Basic Halter',
@@ -47,8 +38,8 @@ const recipes = [
     result: 'crafted-basic-halter',
     resultName: 'Handcrafted Halter',
     resultCategory: 'halter',
-    bonus: 'Cosmetic — no stat bonus',
     isCosmetic: true,
+    comingSoon: true,
   },
   {
     id: 'cloth-blanket',
@@ -60,25 +51,11 @@ const recipes = [
     result: 'crafted-cloth-blanket',
     resultName: 'Handwoven Blanket',
     resultCategory: 'blanket',
-    bonus: 'Cosmetic — no stat bonus',
     isCosmetic: true,
+    comingSoon: true,
   },
 
-  // ── Tier 1 — Basic workshop (rare colorations & functional gear) ──────────
-  {
-    id: 'dyed-bridle',
-    name: 'Dyed Leather Bridle',
-    description: 'A bridle with rich custom-dyed leather. Available only at a proper workshop.',
-    tier: 1,
-    cost: 220,
-    materials: { leather: 1, cloth: 0, dye: 2, metal: 0, thread: 0 },
-    result: 'crafted-dyed-bridle',
-    resultName: 'Dyed Leather Bridle',
-    resultCategory: 'bridle',
-    bonus: '+2 all disciplines',
-    isCosmetic: false,
-    disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
-  },
+  // ── Tier 1 — Basic workshop ───────────────────────────────────────────────
   {
     id: 'overlay-saddle-pad',
     name: 'Overlay Saddle Pad',
@@ -90,26 +67,11 @@ const recipes = [
     result: 'crafted-overlay-saddle-pad',
     resultName: 'Artisan Saddle Pad',
     resultCategory: 'blanket',
-    bonus: '+1 dressage score',
     isCosmetic: false,
+    comingSoon: true,
   },
 
   // ── Tier 2 — Upgraded workshop (stat-enhancing gear) ─────────────────────
-  {
-    id: 'event-saddle',
-    name: 'Event Saddle',
-    description:
-      'A masterwork saddle crafted for multi-discipline events. Improves agility through superior fit.',
-    tier: 2,
-    cost: 350,
-    materials: { leather: 2, cloth: 1, dye: 0, metal: 1, thread: 0 },
-    result: 'crafted-event-saddle',
-    resultName: 'Artisan Event Saddle',
-    resultCategory: 'saddle',
-    bonus: '+2 all disciplines',
-    isCosmetic: false,
-    disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
-  },
   {
     id: 'precision-bridle',
     name: 'Precision Bridle',
@@ -121,26 +83,9 @@ const recipes = [
     result: 'crafted-precision-bridle',
     resultName: 'Artisan Precision Bridle',
     resultCategory: 'bridle',
-    bonus: '+5 in Dressage shows',
+    bonus: tackBonusLabel(['Dressage']),
     isCosmetic: false,
     disciplines: ['Dressage'],
-  },
-
-  // ── Tier 3 — Master workshop (legacy prestige items) ─────────────────────
-  {
-    id: 'legacy-tack-set',
-    name: 'Legacy Tack Set',
-    description:
-      'A complete matching set of legacy-grade tack. Awarded only to masters of the craft. The golden thread glows faintly.',
-    tier: 3,
-    cost: 1000,
-    materials: { leather: 2, cloth: 0, dye: 0, metal: 0, thread: 2 },
-    result: 'crafted-legacy-tack-set',
-    resultName: 'Legacy Tack Set',
-    resultCategory: 'saddle',
-    bonus: '+2 all disciplines + visual glow',
-    isCosmetic: false,
-    disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },
 ];
 

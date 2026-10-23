@@ -27,6 +27,10 @@ export {
 } from './services/userMoneyTransfer.mjs';
 export {
   TACK_INVENTORY,
+  allPurposeTackPoints,
   allTackItems,
+  disciplineTackPoints,
+  tackBonusLabel,
   tackCatalogItems,
+  tackEffectFields,
 } from './tackShop/services/tackInventory.mjs';

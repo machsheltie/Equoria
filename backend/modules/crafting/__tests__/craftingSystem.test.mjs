@@ -247,16 +247,16 @@ describe('craftingController (real DB)', () => {
       });
 
       const res = makeRes();
-      await craftItem(makeReq(user.id, { body: { recipeId: 'simple-bridle' } }), res);
+      await craftItem(makeReq(user.id, { body: { recipeId: 'basic-halter' } }), res);
 
       expect(res._body.success).toBe(true);
       expect(res._body.data.item.origin).toBe('crafted');
-      expect(res._body.data.item.itemId).toBe('crafted-simple-bridle');
-      expect(res._body.data.coinsSpent).toBe(100);
+      expect(res._body.data.item.itemId).toBe('crafted-basic-halter');
+      expect(res._body.data.coinsSpent).toBe(75);
 
       // Verify the DB was actually mutated.
       const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true, settings: true } });
-      expect(after.money).toBe(400); // 500 - 100
+      expect(after.money).toBe(425); // 500 - 75
       expect(after.settings.craftingMaterials.leather).toBe(4); // 5 - 1
     });
 
@@ -267,11 +267,11 @@ describe('craftingController (real DB)', () => {
       });
 
       const res = makeRes();
-      await craftItem(makeReq(user.id, { body: { recipeId: 'simple-bridle' } }), res);
+      await craftItem(makeReq(user.id, { body: { recipeId: 'basic-halter' } }), res);
 
-      // simple-bridle needs 1 leather + 1 dye
+      // basic-halter needs 1 leather
       expect(res._body.data.remainingMaterials.leather).toBe(4);
-      expect(res._body.data.remainingMaterials.dye).toBe(4);
+      expect(res._body.data.remainingMaterials.dye).toBe(5);
       expect(res._body.data.remainingMaterials.cloth).toBe(5);
     });
 
@@ -288,11 +288,11 @@ describe('craftingController (real DB)', () => {
     it('returns 403 when workshopTier is too low for the recipe', async () => {
       const user = await createUser({
         money: 9999,
-        settings: makeSettings({ workshopTier: 0 }), // event-saddle needs tier 2
+        settings: makeSettings({ workshopTier: 0 }), // precision-bridle needs tier 2
       });
 
       const res = makeRes();
-      await craftItem(makeReq(user.id, { body: { recipeId: 'event-saddle' } }), res);
+      await craftItem(makeReq(user.id, { body: { recipeId: 'precision-bridle' } }), res);
 
       expect(res._status).toBe(403);
       expect(res._body.message).toMatch(/upgrade required/i);
@@ -305,7 +305,7 @@ describe('craftingController (real DB)', () => {
       });
 
       const res = makeRes();
-      await craftItem(makeReq(user.id, { body: { recipeId: 'simple-bridle' } }), res);
+      await craftItem(makeReq(user.id, { body: { recipeId: 'basic-halter' } }), res);
 
       expect(res._status).toBe(400);
       expect(res._body.message).toMatch(/insufficient coins/i);
@@ -321,7 +321,7 @@ describe('craftingController (real DB)', () => {
       });
 
       const res = makeRes();
-      await craftItem(makeReq(user.id, { body: { recipeId: 'simple-bridle' } }), res);
+      await craftItem(makeReq(user.id, { body: { recipeId: 'basic-halter' } }), res);
 
       expect(res._status).toBe(400);
       expect(res._body.message).toMatch(/insufficient materials/i);
@@ -331,7 +331,7 @@ describe('craftingController (real DB)', () => {
       const res = makeRes();
       await craftItem(
         makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`, {
-          body: { recipeId: 'simple-bridle' },
+          body: { recipeId: 'basic-halter' },
         }),
         res,
       );

@@ -23,7 +23,10 @@ export interface TackItem {
   name: string;
   description: string;
   cost: number;
-  bonus: string;
+  /** What the item scores (saddles and bridles only); absent for Coming soon tack. */
+  bonus?: string;
+  /** True for tack that does not score yet (owner ruling 2026-10-23). */
+  comingSoon?: boolean;
   /** Presence bonus for parade shows (decorative items only) */
   presenceBonus?: number;
   tier: 'basic' | 'quality' | 'premium';

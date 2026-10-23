@@ -31,8 +31,10 @@ is a layout, a page structure or a copy deck.
   horse (or none, for the pooled feed and materials) and happens one request at
   a time.
 - Tack in a show (owner rulings 2026-10-23, epic Equoria-k1p62): only a saddle
-  and a bridle score, one of each per horse; a discipline saddle or bridle adds
-  5 points in its own discipline and nothing in any other; an All Purpose
+  and a bridle score, one of each per horse; a discipline saddle or bridle is for
+  one discipline only and adds 5 points there and nothing in any other (the four
+  driving disciplines wear a harness in the saddle slot, and every one of the 24
+  disciplines has one saddle or harness and one bridle); an All Purpose
   saddle or bridle adds 2 in any discipline; the points are flat, not
   percentages, so tack adds at most 10. Decorations never score in a discipline
   show; they only lift the presentation part of a parade score. Traits add
@@ -97,11 +99,17 @@ is a layout, a page structure or a copy deck.
   removing a decoration returns it to the inventory instead of destroying it.
   An item is on at most one horse at a time.
 - Show scoring reads the item standing in the saddle and bridle slots and that
-  item's own discipline list: empty means All Purpose. A crafted saddle or
-  bridle whose discipline is ambiguous is classed All Purpose until the owner
-  classifies it. No number is stored beside the ids: the retired
-  `saddleBonus` / `bridleBonus` mirrors and the per-item `numericBonus` are no
-  longer written or read (a mirror still stored on an older horse is inert).
+  item's own discipline list: empty means All Purpose. A saddle or bridle that
+  an older horse still wears from before the one-discipline ruling keeps working
+  as a hidden alias of the first discipline it listed. An id that no longer
+  exists scores nothing. Tack points join the base before the percentage
+  modifiers. The retired `saddleBonus` and `bridleBonus` numbers are not read
+  and `backend/scripts/backfill-tack-rulings.mjs` deletes them from saved
+  horses.
+- Tack that does not score (halters, saddle pads, leg wraps, girths, reins,
+  breastplates, crafted blankets) stays in the game marked "Coming soon" with no
+  effect text. Every inventory record takes its effect fields from the catalogue
+  or recipe (`tackEffectFields`), so stale wording is never shown.
 
 ## Vet
 
@@ -134,7 +142,11 @@ is a layout, a page structure or a copy deck.
   row, the new inventory item and the ledger row commit together or not at all.
   Two simultaneous crafts cannot spend the same materials.
 - Crafted saddles and bridles carry a discipline list in their recipe and score
-  by the tack rules above. Crafted halters, blankets and cosmetics score nothing.
+  by the tack rules above. Crafted halters, blankets and cosmetics score nothing
+  and are marked "Coming soon". The Handcrafted Bridle, Dyed Leather Bridle,
+  Artisan Event Saddle and Legacy Tack Set were deleted by the owner on
+  2026-10-23; their saved copies were removed (no refund: the crafting fee was
+  burned and the ledger has no pattern for paying a burn back).
 
 ## Shipped gaps
 
@@ -145,12 +157,6 @@ owner decision and a fresh issue.
   (and by a backfill script for older accounts), and every account begins at
   workshop tier 0. No shipped route grants more materials or raises the
   workshop tier, so tier 1 to 3 recipes cannot be unlocked by play.
-- **Shop bonus text drifts from scoring.** The tack catalog still carries a
-  per-item `bonus` string (for example a bonus label on halters, pads,
-  wraps, reins, girths and breastplates). Only the saddle and bridle slots
-  score, at 5 or 2. A player reading the shop can be promised a bonus she will
-  not receive (the owner ruling on those labels is tracked as Equoria-cv3if;
-  delete this bullet when it lands).
 - **Hoof condition has no gameplay consequence** beyond prompting the next
   farrier booking.
 

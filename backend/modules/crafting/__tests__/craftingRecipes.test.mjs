@@ -11,7 +11,6 @@ const REQUIRED_FIELDS = [
   'result',
   'resultName',
   'resultCategory',
-  'bonus',
   'isCosmetic',
 ];
 const MATERIAL_KEYS = ['leather', 'cloth', 'dye', 'metal', 'thread'];
@@ -23,8 +22,23 @@ describe('CRAFTING_RECIPES', () => {
     expect(Array.isArray(CRAFTING_RECIPES)).toBe(true);
   });
 
-  it('contains at least 8 recipes', () => {
-    expect(CRAFTING_RECIPES.length).toBeGreaterThanOrEqual(8);
+  // Owner ruling q05 (2026-10-23) deleted four of the eight recipes.
+  it('contains at least 4 recipes', () => {
+    expect(CRAFTING_RECIPES.length).toBeGreaterThanOrEqual(4);
+  });
+
+  // Owner ruling q32 (2026-10-23): only a saddle or bridle has effect text; any
+  // other crafted item is marked comingSoon.
+  it('only saddles and bridles carry a bonus; everything else is comingSoon', () => {
+    for (const recipe of CRAFTING_RECIPES) {
+      if (['saddle', 'bridle'].includes(recipe.resultCategory)) {
+        expect(typeof recipe.bonus).toBe('string');
+        expect(recipe.comingSoon).toBeUndefined();
+      } else {
+        expect(recipe).not.toHaveProperty('bonus');
+        expect(recipe.comingSoon).toBe(true);
+      }
+    }
   });
 
   it('every recipe has all required fields', () => {
@@ -92,22 +106,6 @@ describe('CRAFTING_RECIPES', () => {
     }
   });
 
-  it('includes simple-bridle (tier 0, cosmetic, cost 100)', () => {
-    const recipe = CRAFTING_RECIPES.find(r => r.id === 'simple-bridle');
-    expect(recipe).toBeDefined();
-    expect(recipe.tier).toBe(0);
-    expect(recipe.isCosmetic).toBe(true);
-    expect(recipe.cost).toBe(100);
-    expect(recipe.resultCategory).toBe('bridle');
-  });
-
-  it('includes legacy-tack-set (tier 3, non-cosmetic)', () => {
-    const recipe = CRAFTING_RECIPES.find(r => r.id === 'legacy-tack-set');
-    expect(recipe).toBeDefined();
-    expect(recipe.tier).toBe(3);
-    expect(recipe.isCosmetic).toBe(false);
-  });
-
   it('all recipes have at least one material with quantity > 0', () => {
     for (const recipe of CRAFTING_RECIPES) {
       const totalMaterials = MATERIAL_KEYS.reduce((sum, k) => sum + recipe.materials[k], 0);
@@ -118,10 +116,10 @@ describe('CRAFTING_RECIPES', () => {
 
 describe('findRecipe', () => {
   it('returns the correct recipe for a known id', () => {
-    const recipe = findRecipe('simple-bridle');
+    const recipe = findRecipe('basic-halter');
     expect(recipe).toBeDefined();
-    expect(recipe.id).toBe('simple-bridle');
-    expect(recipe.name).toBe('Simple Bridle');
+    expect(recipe.id).toBe('basic-halter');
+    expect(recipe.name).toBe('Basic Halter');
   });
 
   it('returns undefined for an unknown id', () => {
@@ -132,33 +130,11 @@ describe('findRecipe', () => {
     expect(findRecipe('')).toBeUndefined();
   });
 
-  it('returns the correct tier-1 recipe (dyed-bridle)', () => {
-    const recipe = findRecipe('dyed-bridle');
-    expect(recipe).toBeDefined();
-    expect(recipe.tier).toBe(1);
-    expect(recipe.isCosmetic).toBe(false);
-  });
-
   it('returns the correct tier-2 recipe (precision-bridle)', () => {
     const recipe = findRecipe('precision-bridle');
     expect(recipe).toBeDefined();
     expect(recipe.tier).toBe(2);
     expect(recipe.resultCategory).toBe('bridle');
-  });
-
-  it('returns the legacy-tack-set recipe', () => {
-    const recipe = findRecipe('legacy-tack-set');
-    expect(recipe).toBeDefined();
-    expect(recipe.tier).toBe(3);
-    expect(recipe.cost).toBe(1000);
-  });
-
-  it('returns the event-saddle recipe with agility bonus', () => {
-    const recipe = findRecipe('event-saddle');
-    expect(recipe).toBeDefined();
-    expect(recipe.resultCategory).toBe('saddle');
-    expect(recipe.tier).toBe(2);
-    expect(recipe.materials.leather).toBe(2);
   });
 
   it('findRecipe result is the same object as in CRAFTING_RECIPES', () => {

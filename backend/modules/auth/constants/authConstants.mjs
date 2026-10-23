@@ -41,8 +41,7 @@ export const STARTER_KIT_INVENTORY = [
 
 /**
  * Starter crafting materials — enough to craft at least one Tier 0 recipe (4.3 fix).
- * Tier 0 recipes: simple-bridle (leather:1, dye:1), basic-halter (leather:1),
- *                 cloth-blanket (cloth:2, dye:2, thread:1).
+ * Tier 0 recipes: basic-halter (leather:1), cloth-blanket (cloth:2, dye:1, thread:1).
  */
 export const STARTER_CRAFTING_MATERIALS = Object.freeze({
   leather: 2,

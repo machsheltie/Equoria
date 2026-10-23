@@ -173,9 +173,9 @@ describe('craftingController integration', () => {
 // happy path: successful craft, synchronous ledger write, material deduction,
 // inventory preservation, money decrement — none covered above.
 describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  it('exports at least 5 recipes, each with the required fields', async () => {
+  it('exports at least 4 recipes, each with the required fields', async () => {
     const { CRAFTING_RECIPES } = await import('../data/craftingRecipes.mjs');
-    expect(CRAFTING_RECIPES.length).toBeGreaterThanOrEqual(5);
+    expect(CRAFTING_RECIPES.length).toBeGreaterThanOrEqual(4);
     for (const r of CRAFTING_RECIPES) {
       expect(r).toHaveProperty('id');
       expect(r).toHaveProperty('name');
@@ -189,9 +189,9 @@ describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvu
     }
   });
 
-  it('findRecipe returns the correct recipe by id (simple-bridle: tier 0, cosmetic)', async () => {
+  it('findRecipe returns the correct recipe by id (basic-halter: tier 0, cosmetic)', async () => {
     const { findRecipe } = await import('../data/craftingRecipes.mjs');
-    const recipe = findRecipe('simple-bridle');
+    const recipe = findRecipe('basic-halter');
     expect(recipe).toBeDefined();
     expect(recipe.tier).toBe(0);
     expect(recipe.isCosmetic).toBe(true);
@@ -200,13 +200,6 @@ describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvu
   it('findRecipe returns undefined for an unknown id', async () => {
     const { findRecipe } = await import('../data/craftingRecipes.mjs');
     expect(findRecipe('nonexistent-recipe')).toBeUndefined();
-  });
-
-  it('includes the Tier 3 legacy tack recipe', async () => {
-    const { findRecipe } = await import('../data/craftingRecipes.mjs');
-    const legacy = findRecipe('legacy-tack-set');
-    expect(legacy).toBeDefined();
-    expect(legacy.tier).toBe(3);
   });
 });
 
@@ -265,14 +258,14 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
   it('successfully crafts a tier 0 item with origin:crafted, coinsSpent and newBalance', async () => {
     await setState(tier0State());
     const res = makeRes();
-    await craftItem(makeReq({ body: { recipeId: 'simple-bridle' } }), res);
+    await craftItem(makeReq({ body: { recipeId: 'basic-halter' } }), res);
     expect(res._body).toEqual(
       expect.objectContaining({
         success: true,
         data: expect.objectContaining({
-          item: expect.objectContaining({ origin: 'crafted', category: 'bridle' }),
-          coinsSpent: 100,
-          newBalance: 400,
+          item: expect.objectContaining({ origin: 'crafted', category: 'halter' }),
+          coinsSpent: 75,
+          newBalance: 425,
         }),
       }),
     );
@@ -282,7 +275,7 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
     await setState(tier0State());
     const before = await prisma.userTransaction.count({ where: { userId: craftUser.id, category: 'crafting' } });
     const res = makeRes();
-    await craftItem(makeReq({ body: { recipeId: 'simple-bridle' } }), res);
+    await craftItem(makeReq({ body: { recipeId: 'basic-halter' } }), res);
     expect(res._body.success).toBe(true);
     // No await-tick: with a fire-and-forget bug the count would still be `before`.
     const after = await prisma.userTransaction.count({ where: { userId: craftUser.id, category: 'crafting' } });
@@ -292,11 +285,11 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
       orderBy: { createdAt: 'desc' },
     });
     expect(row.type).toBe('debit');
-    expect(row.amount).toBe(100);
+    expect(row.amount).toBe(75);
     await prisma.userTransaction.deleteMany({ where: { userId: craftUser.id, category: 'crafting' } });
   });
 
-  it('deducts the correct materials on craft (1 leather + 1 dye)', async () => {
+  it('deducts the correct materials on craft (1 leather)', async () => {
     await setState({
       settings: {
         workshopTier: 0,
@@ -306,9 +299,9 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
       money: 500,
     });
     const res = makeRes();
-    await craftItem(makeReq({ body: { recipeId: 'simple-bridle' } }), res);
+    await craftItem(makeReq({ body: { recipeId: 'basic-halter' } }), res);
     expect(res._body.data.remainingMaterials.leather).toBe(2);
-    expect(res._body.data.remainingMaterials.dye).toBe(2);
+    expect(res._body.data.remainingMaterials.dye).toBe(3);
   });
 
   it('preserves existing inventory items when appending the crafted item', async () => {
@@ -321,7 +314,7 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
       },
       money: 500,
     });
-    await craftItem(makeReq({ body: { recipeId: 'simple-bridle' } }), makeRes());
+    await craftItem(makeReq({ body: { recipeId: 'basic-halter' } }), makeRes());
     const updated = await prisma.user.findUnique({ where: { id: craftUser.id } });
     expect(updated.settings.inventory).toHaveLength(2);
     expect(updated.settings.inventory[0]).toEqual(existingItem);
@@ -330,8 +323,8 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
 
   it('decrements user money by the recipe cost', async () => {
     await setState(tier0State());
-    await craftItem(makeReq({ body: { recipeId: 'simple-bridle' } }), makeRes());
+    await craftItem(makeReq({ body: { recipeId: 'basic-halter' } }), makeRes());
     const updated = await prisma.user.findUnique({ where: { id: craftUser.id } });
-    expect(updated.money).toBe(400);
+    expect(updated.money).toBe(425);
   });
 });

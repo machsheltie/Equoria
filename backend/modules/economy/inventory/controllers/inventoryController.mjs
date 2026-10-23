@@ -17,6 +17,7 @@ import logger from '../../../../utils/logger.mjs';
 import { updateUserSettingsPaths } from '../../../../utils/userSettingsPaths.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import { TACK_INVENTORY } from '../../tackShop/controllers/tackShopController.mjs';
+import { tackEffectFields } from '../../tackShop/services/tackInventory.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -66,7 +67,7 @@ function deriveInventoryFromHorseTack(horses) {
         itemId: def.id,
         category: def.category,
         name: def.name,
-        bonus: def.bonus,
+        ...tackEffectFields(def),
         quantity: 1,
         equippedToHorseId: horse.id,
         equippedToHorseName: horse.name,
@@ -74,6 +75,11 @@ function deriveInventoryFromHorseTack(horses) {
     }
   }
   return items;
+}
+
+function withoutEffect(record) {
+  const { bonus: _bonus, comingSoon: _comingSoon, ...rest } = record;
+  return rest;
 }
 
 /**
@@ -107,7 +113,11 @@ function recordForDisplacedTack(horseId, category, itemId, inventory) {
  * @param {Array} horses - User's horses array
  */
 function enrichInventory(inventory, horses) {
-  return inventory.map(item => {
+  return inventory.map(rawItem => {
+    // A catalogue item's effect text always comes from the catalogue, so wording
+    // stored before the owner's tack rulings never reaches the client (q32).
+    const def = TACK_INVENTORY.find(i => i.id === rawItem.itemId);
+    const item = def ? { ...withoutEffect(rawItem), ...tackEffectFields(def) } : rawItem;
     if (item.equippedToHorseId) {
       const horse = horses.find(h => h.id === item.equippedToHorseId);
       return { ...item, equippedToHorseName: horse ? horse.name : null };

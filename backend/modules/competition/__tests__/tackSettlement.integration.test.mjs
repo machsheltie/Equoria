@@ -82,8 +82,8 @@ describe('nightly settlement adds saddle and bridle points (decision A, k1p62.2)
       ['mirrors only', 50, { saddleBonus: 7, bridleBonus: 5 }, 51],
       // Decorations and a halter: 52 x 1.01 = 52.52 -> 53.
       ['decorations', 52, { halter: 'show-halter', decorations: ['parade-blanket'] }, 53],
-      // Ambiguous crafted pair (All Purpose until the owner rules): (56 + 4) x 1.01 = 60.6 -> 61.
-      ['ambiguous crafted pair', 56, { saddle: 'crafted-event-saddle', bridle: 'crafted-dyed-bridle' }, 61],
+      // Items the owner deleted (q05, 2026-10-23) still named in the slots score nothing: 56 x 1.01 = 56.56 -> 57.
+      ['deleted crafted pair', 56, { saddle: 'crafted-event-saddle', bridle: 'crafted-dyed-bridle' }, 57],
     ];
     const horses = [];
     for (const [label, base, tack, expected] of cases) {

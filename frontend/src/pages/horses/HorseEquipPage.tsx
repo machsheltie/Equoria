@@ -142,7 +142,7 @@ const HorseEquipPage: React.FC = () => {
                 const pendingThisItem =
                   (equipItem.isPending && equipItem.variables?.inventoryItemId === item.id) ||
                   (unequipItem.isPending && unequipItem.variables?.inventoryItemId === item.id);
-                const description = item.bonus ?? undefined;
+                const description = item.bonus ?? (item.comingSoon ? 'Coming soon' : undefined);
 
                 const action = isEquipped ? (
                   <Button

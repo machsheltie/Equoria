@@ -57,6 +57,9 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({
       {item.bonus && (
         <span className="text-2xs text-[var(--gold-light)] font-medium">{item.bonus}</span>
       )}
+      {item.comingSoon && (
+        <span className="text-2xs text-[var(--text-muted)] font-medium">Coming soon</span>
+      )}
       {item.disciplines.map((d) => (
         <span
           key={d}

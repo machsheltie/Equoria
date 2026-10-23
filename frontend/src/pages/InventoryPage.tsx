@@ -127,7 +127,7 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
   // Description: feed uses catalog description; tack uses bonus field.
   const description = isFeed
     ? (feedMeta?.description ?? item.bonus ?? undefined)
-    : (item.bonus ?? undefined);
+    : (item.bonus ?? (item.comingSoon ? 'Coming soon' : undefined));
 
   // Action: unequip for equipped tack only; nothing for feed or unequipped tack.
   let action: React.ReactNode;

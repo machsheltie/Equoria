@@ -242,7 +242,9 @@ export async function craftItem(req, res) {
       itemId: recipe.result,
       category: recipe.resultCategory,
       name: recipe.resultName,
-      bonus: recipe.bonus,
+      // Only a saddle or bridle has effect text; the rest is marked comingSoon (q32).
+      ...(recipe.bonus ? { bonus: recipe.bonus } : {}),
+      ...(recipe.comingSoon ? { comingSoon: true } : {}),
       isCosmetic: recipe.isCosmetic,
       quantity: 1,
       origin: 'crafted',

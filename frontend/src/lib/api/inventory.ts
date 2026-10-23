@@ -14,6 +14,8 @@ export interface InventoryItem {
   category: 'saddle' | 'bridle' | 'feed';
   name: string;
   bonus?: string;
+  /** True for tack that does not score yet (owner ruling 2026-10-23). */
+  comingSoon?: boolean;
   quantity: number;
   equippedToHorseId?: number | null;
   equippedToHorseName?: string | null;

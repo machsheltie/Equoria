@@ -25,7 +25,10 @@ export interface CraftingRecipe {
   result: string;
   resultName: string;
   resultCategory: string;
-  bonus: string;
+  /** What the item scores (saddles and bridles only). */
+  bonus?: string;
+  /** True for crafted items that do not score yet. */
+  comingSoon?: boolean;
   isCosmetic: boolean;
   locked: boolean;
   affordable: boolean;
@@ -38,7 +41,8 @@ export interface CraftedItem {
   itemId: string;
   category: string;
   name: string;
-  bonus: string;
+  bonus?: string;
+  comingSoon?: boolean;
   isCosmetic: boolean;
   quantity: number;
   origin: 'crafted';

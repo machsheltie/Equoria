@@ -122,7 +122,11 @@ function RecipeCard({
             <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">
               {recipe.name}
             </h3>
-            {recipe.isCosmetic ? (
+            {recipe.comingSoon ? (
+              <span className="text-xs px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--badge-rare-bg)] text-[var(--text-muted)] whitespace-nowrap">
+                Coming soon
+              </span>
+            ) : recipe.isCosmetic ? (
               <span className="text-xs px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--badge-rare-bg)] text-[var(--status-rare)] whitespace-nowrap">
                 Cosmetic
               </span>

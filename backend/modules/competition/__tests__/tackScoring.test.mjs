@@ -9,8 +9,7 @@
  *
  * The table below pins how every saddle and bridle that exists today is
  * classified: the tack shop catalogue's `disciplines` list (empty = All
- * Purpose) and the crafted items' recipes. Crafted items whose discipline is
- * ambiguous count as All Purpose until the owner rules (k1p62 audit note).
+ * Purpose) and the crafted items' recipes.
  * Pure: no database.
  */
 
@@ -50,34 +49,45 @@ const disciplines = [
   'Pleasure Driving',
 ];
 
-/** slot -> item id -> its own disciplines, or allPurpose. */
-const expectedClassification = {
-  saddle: {
-    'dressage-saddle': ['Dressage'],
-    'jumping-saddle': ['Show Jumping', 'Cross Country'],
-    'all-purpose-saddle': allPurpose,
-    'basic-all-purpose-saddle': allPurpose,
-    'western-saddle': ['Western Pleasure', 'Reining', 'Barrel Racing', 'Cutting', 'Roping'],
-    'endurance-saddle': ['Endurance'],
-    'racing-exercise-saddle': ['Racing', 'Steeplechase'],
-    // Crafted, ambiguous -> All Purpose until the owner rules.
-    'crafted-event-saddle': allPurpose,
-    'crafted-legacy-tack-set': allPurpose,
-  },
-  bridle: {
-    'all-purpose-bridle': allPurpose,
-    'standard-bridle': allPurpose,
-    'snaffle-bridle': ['Dressage', 'Show Jumping'],
-    hackamore: ['Western Pleasure', 'Endurance'],
-    'double-bridle': ['Dressage'],
-    'figure-eight-bridle': ['Show Jumping', 'Cross Country', 'Eventing'],
-    'racing-bridle': ['Racing', 'Steeplechase', 'Harness Racing'],
-    'crafted-precision-bridle': ['Dressage'],
-    // Crafted, ambiguous -> All Purpose until the owner rules.
-    'crafted-simple-bridle': allPurpose,
-    'crafted-dyed-bridle': allPurpose,
-  },
+/**
+ * Owner rulings q02/q03/q05 (2026-10-23): every saddle, harness and bridle is
+ * for ONE discipline; each of the 24 disciplines has one of each (a harness for
+ * the driving disciplines, in the saddle slot); the four hallucinated crafted
+ * items are gone. Items sold before the ruling as multi-discipline tack stay as
+ * hidden aliases of one discipline, so a horse wearing one keeps a valid item.
+ */
+const drivingDisciplines = ['Combined Driving', 'Fine Harness', 'Harness Racing', 'Pleasure Driving'];
+const slugOf = name => name.toLowerCase().replaceAll(' ', '-');
+const saddleIdFor = discipline => {
+  if (drivingDisciplines.includes(discipline)) {
+    return discipline === 'Fine Harness' ? 'fine-harness' : `${slugOf(discipline)}-harness`;
+  }
+  return `${slugOf(discipline)}-saddle`;
 };
+
+const expectedClassification = { saddle: {}, bridle: {} };
+for (const discipline of disciplines) {
+  expectedClassification.saddle[saddleIdFor(discipline)] = [discipline];
+  expectedClassification.bridle[`${slugOf(discipline)}-bridle`] = [discipline];
+}
+Object.assign(expectedClassification.saddle, {
+  'all-purpose-saddle': allPurpose,
+  'basic-all-purpose-saddle': allPurpose,
+  // Sold as multi-discipline saddles; now the first discipline they listed.
+  'jumping-saddle': ['Show Jumping'],
+  'western-saddle': ['Western Pleasure'],
+  'racing-exercise-saddle': ['Racing'],
+});
+Object.assign(expectedClassification.bridle, {
+  'all-purpose-bridle': allPurpose,
+  'standard-bridle': allPurpose,
+  'snaffle-bridle': ['Dressage'],
+  hackamore: ['Western Pleasure'],
+  'double-bridle': ['Dressage'],
+  'figure-eight-bridle': ['Show Jumping'],
+  // The one crafted bridle that scores.
+  'crafted-precision-bridle': ['Dressage'],
+});
 
 const asExpected = own => (own.length === 0 ? allPurpose : own);
 
@@ -130,8 +140,8 @@ describe('tackPoints (decision A, flat points)', () => {
   it('discipline tack scores +5 each in its own disciplines and 0 in every other', () => {
     for (const discipline of disciplines) {
       const ownSaddle = discipline === 'Dressage' ? 5 : 0;
-      const ownBridle = ['Show Jumping', 'Cross Country', 'Eventing'].includes(discipline) ? 5 : 0;
-      expect(tackPoints({ saddle: 'dressage-saddle', bridle: 'figure-eight-bridle' }, discipline)).toBe(
+      const ownBridle = discipline === 'Show Jumping' ? 5 : 0;
+      expect(tackPoints({ saddle: 'dressage-saddle', bridle: 'show-jumping-bridle' }, discipline)).toBe(
         ownSaddle + ownBridle,
       );
     }
@@ -145,12 +155,33 @@ describe('tackPoints (decision A, flat points)', () => {
   });
 
   it('caps at +10: one saddle and one bridle', () => {
-    expect(tackPoints({ saddle: 'dressage-saddle', bridle: 'double-bridle' }, 'Dressage')).toBe(10);
+    expect(tackPoints({ saddle: 'dressage-saddle', bridle: 'dressage-bridle' }, 'Dressage')).toBe(10);
   });
 
   it('mixes discipline and All Purpose tack', () => {
     expect(tackPoints({ saddle: 'dressage-saddle', bridle: 'all-purpose-bridle' }, 'Dressage')).toBe(7);
     expect(tackPoints({ saddle: 'dressage-saddle', bridle: 'all-purpose-bridle' }, 'Racing')).toBe(2);
+  });
+
+  it('a harness takes the saddle slot and scores +5 in its own driving discipline only', () => {
+    expect(tackPoints({ saddle: 'pleasure-driving-harness' }, 'Pleasure Driving')).toBe(5);
+    expect(tackPoints({ saddle: 'pleasure-driving-harness' }, 'Combined Driving')).toBe(0);
+    expect(
+      tackPoints({ saddle: 'pleasure-driving-harness', bridle: 'pleasure-driving-bridle' }, 'Pleasure Driving'),
+    ).toBe(10);
+  });
+
+  it('an item deleted by owner ruling q05 scores nothing', () => {
+    for (const id of [
+      'crafted-simple-bridle',
+      'crafted-dyed-bridle',
+      'crafted-event-saddle',
+      'crafted-legacy-tack-set',
+    ]) {
+      expect(tackPoints({ saddle: id, bridle: id }, 'Dressage')).toBe(0);
+      expect(tackItemDisciplines('saddle', id)).toBeNull();
+      expect(tackItemDisciplines('bridle', id)).toBeNull();
+    }
   });
 
   it('ignores the stored bonus mirrors, decorations and every other slot', () => {
@@ -167,7 +198,7 @@ describe('tackPoints (decision A, flat points)', () => {
       ),
     ).toBe(0);
     // The mirror never overrides the item in the slot.
-    expect(tackPoints({ saddle: 'racing-exercise-saddle', saddleBonus: 7 }, 'Racing')).toBe(5);
+    expect(tackPoints({ saddle: 'racing-saddle', saddleBonus: 7 }, 'Racing')).toBe(5);
   });
 
   it('scores nothing for missing, malformed or unknown tack, or a non-competition discipline', () => {

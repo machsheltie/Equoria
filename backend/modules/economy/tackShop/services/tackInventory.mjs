@@ -9,44 +9,149 @@
  * News (Equoria-wbt8l): an item added after launch carries
  * `addedOn: 'YYYY-MM-DD'` (its Eastern game date); the nightly News pass
  * announces it under New Items that day. Launch items carry none.
+ *
+ * Owner rulings 2026-10-23 (Stacey, epic Equoria-k1p62, Equoria-cv3if):
+ *   - Only saddles and bridles score. Each one is for ONE discipline and gives
+ *     +5 there (0 elsewhere); the All Purpose saddle and bridle give +2 in every
+ *     discipline. Every one of the 24 disciplines has one discipline saddle (a
+ *     harness for the four driving disciplines, which take the saddle slot) and
+ *     one discipline bridle. The discipline names come from DISCIPLINES in
+ *     constants/schema.mjs, the one discipline list.
+ *   - Tack that does not score is kept in the game marked `comingSoon`, with no
+ *     effect text.
+ *   - A new discipline item has no art yet: it carries no `image`, so the client
+ *     shows its image fallback. Do not invent art.
  */
+
+import { DISCIPLINES, DISCIPLINE_VALUES } from '../../../../constants/schema.mjs';
+
+/** Points for each discipline saddle, harness or bridle in its own discipline. */
+export const disciplineTackPoints = 5;
+/** Points for each All Purpose saddle or bridle, in any discipline. */
+export const allPurposeTackPoints = 2;
+
+/**
+ * The player-facing bonus label for a saddle or bridle, derived from the same
+ * disciplines list the score reads, so the shop, the crafted item and the
+ * inventory say what the score really does with it.
+ *
+ * @param {string[]} disciplines - The item's disciplines ([] = All Purpose).
+ * @returns {string} '+2 all disciplines' or '+5 in A, B and C shows'.
+ */
+export function tackBonusLabel(disciplines) {
+  if (disciplines.length === 0) {
+    return `+${allPurposeTackPoints} all disciplines`;
+  }
+  const names =
+    disciplines.length === 1
+      ? disciplines[0]
+      : `${disciplines.slice(0, -1).join(', ')} and ${disciplines[disciplines.length - 1]}`;
+  return `+${disciplineTackPoints} in ${names} shows`;
+}
+
+// ── Discipline saddles, harnesses and bridles ───────────────────────────────
+
+/** The driving disciplines wear a harness in the saddle slot. */
+const harnessDisciplines = new Set([
+  DISCIPLINES.COMBINED_DRIVING,
+  DISCIPLINES.FINE_HARNESS,
+  DISCIPLINES.HARNESS_RACING,
+  DISCIPLINES.PLEASURE_DRIVING,
+]);
+
+const allPurposeSaddleCost = 400;
+const allPurposeBridleCost = 300;
+
+/**
+ * Prices an item had before it became a one-discipline item; the others take
+ * the All Purpose price for their slot until the owner sets one (Equoria-k1p62).
+ */
+const keptCost = Object.freeze({
+  'dressage-saddle': 800,
+  'endurance-saddle': 850,
+  'racing-bridle': 600,
+});
+
+const keptImage = Object.freeze({
+  'dressage-saddle': '/images/tack/dressage-saddle.png',
+});
+
+const slug = discipline => discipline.toLowerCase().replaceAll(' ', '-');
+
+function disciplineSaddleOrHarness(discipline) {
+  const harness = harnessDisciplines.has(discipline);
+  // Fine Harness already says what it is; the others take the noun.
+  const name = discipline.endsWith('Harness')
+    ? discipline
+    : `${discipline} ${harness ? 'Harness' : 'Saddle'}`;
+  const id = slug(name);
+  return {
+    id,
+    category: 'saddle',
+    name,
+    description: harness
+      ? `A harness built for ${discipline}, worn where other disciplines use a saddle.`
+      : `A saddle made for ${discipline} and no other discipline.`,
+    cost: keptCost[id] ?? allPurposeSaddleCost,
+    bonus: tackBonusLabel([discipline]),
+    tier: 'quality',
+    disciplines: [discipline],
+    ...(keptImage[id] ? { image: keptImage[id] } : {}),
+  };
+}
+
+function disciplineBridle(discipline) {
+  const id = `${slug(discipline)}-bridle`;
+  return {
+    id,
+    category: 'bridle',
+    name: `${discipline} Bridle`,
+    description: `A bridle made for ${discipline} and no other discipline.`,
+    cost: keptCost[id] ?? allPurposeBridleCost,
+    bonus: tackBonusLabel([discipline]),
+    tier: 'quality',
+    disciplines: [discipline],
+  };
+}
+
+const disciplineSaddles = DISCIPLINE_VALUES.map(disciplineSaddleOrHarness);
+const disciplineBridles = DISCIPLINE_VALUES.map(disciplineBridle);
+
+/**
+ * Saddles and bridles that were shared by several disciplines before the
+ * one-discipline ruling (q02). Players may still have them on a horse, so they
+ * keep working as hidden aliases of the single-discipline item named by
+ * `target` (the first discipline they listed) at the price they were sold for.
+ * `racing-bridle` kept its id on the Racing bridle and needs no alias.
+ */
+const retiredSharedTack = Object.freeze([
+  { id: 'jumping-saddle', target: 'show-jumping-saddle', cost: 750 },
+  { id: 'western-saddle', target: 'western-pleasure-saddle', cost: 700 },
+  { id: 'racing-exercise-saddle', target: 'racing-saddle', cost: 900 },
+  { id: 'snaffle-bridle', target: 'dressage-bridle', cost: 200 },
+  { id: 'hackamore', target: 'western-pleasure-bridle', cost: 180 },
+  { id: 'double-bridle', target: 'dressage-bridle', cost: 500 },
+  { id: 'figure-eight-bridle', target: 'show-jumping-bridle', cost: 450 },
+]);
+
+const retiredSharedAliases = retiredSharedTack.map(({ id, target, cost }) => {
+  const item = [...disciplineSaddles, ...disciplineBridles].find(i => i.id === target);
+  return { ...item, id, cost, isLegacyAlias: true };
+});
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────
 
 export const TACK_INVENTORY = [
-  // ── Saddles ──────────────────────────────────────────────────────────────
-  {
-    id: 'dressage-saddle',
-    category: 'saddle',
-    name: 'Dressage Saddle',
-    description:
-      'Deep-seated saddle designed for precision movements. Enhances rider position in dressage disciplines.',
-    cost: 800,
-    bonus: '+5 in Dressage shows',
-    tier: 'quality',
-    disciplines: ['Dressage'],
-    image: '/images/tack/dressage-saddle.png',
-  },
-  {
-    id: 'jumping-saddle',
-    category: 'saddle',
-    name: 'Jump Saddle',
-    description: 'Forward-cut saddle with knee rolls for optimal balance over fences.',
-    cost: 750,
-    bonus: '+5 in Show Jumping and Cross Country shows',
-    tier: 'quality',
-    disciplines: ['Show Jumping', 'Cross Country'],
-  },
+  // ── All Purpose saddle and bridle (+2 in every discipline) ──────────────
   {
     id: 'all-purpose-saddle',
     category: 'saddle',
     name: 'All Purpose Saddle',
     description:
       'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
-    cost: 400,
-    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
-    // empty list is how the shop filter shows an item under every discipline.
-    bonus: '+2 all disciplines',
+    cost: allPurposeSaddleCost,
+    // An empty list is how the shop filter shows an item under every discipline.
+    bonus: tackBonusLabel([]),
     tier: 'basic',
     disciplines: [],
     image: '/images/tack/allpurposesaddle.png',
@@ -59,59 +164,20 @@ export const TACK_INVENTORY = [
     name: 'All Purpose Saddle',
     description:
       'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
-    cost: 400,
-    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
-    // empty list is how the shop filter shows an item under every discipline.
-    bonus: '+2 all disciplines',
+    cost: allPurposeSaddleCost,
+    bonus: tackBonusLabel([]),
     tier: 'basic',
     disciplines: [],
     image: '/images/tack/allpurposesaddle.png',
   },
-  {
-    id: 'western-saddle',
-    category: 'saddle',
-    name: 'Western Saddle',
-    description:
-      'Classic western saddle with deep seat and horn. Built for comfort and security in western events.',
-    cost: 700,
-    bonus: '+5 in Western Pleasure, Reining, Barrel Racing, Cutting and Roping shows',
-    tier: 'quality',
-    disciplines: ['Western Pleasure', 'Reining', 'Barrel Racing', 'Cutting', 'Roping'],
-  },
-  {
-    id: 'endurance-saddle',
-    category: 'saddle',
-    name: 'Endurance Saddle',
-    description:
-      'Lightweight saddle designed for long-distance riding. Minimises rider fatigue and horse soreness.',
-    cost: 850,
-    bonus: '+5 in Endurance shows',
-    tier: 'quality',
-    disciplines: ['Endurance'],
-  },
-  {
-    id: 'racing-exercise-saddle',
-    category: 'saddle',
-    name: 'Racing Exercise Saddle',
-    description:
-      'Ultra-light flat saddle used for race training and competition. Every gram counts at top speed.',
-    cost: 900,
-    bonus: '+5 in Racing and Steeplechase shows',
-    tier: 'premium',
-    disciplines: ['Racing', 'Steeplechase'],
-  },
-
-  // ── Bridles ──────────────────────────────────────────────────────────────
   {
     id: 'all-purpose-bridle',
     category: 'bridle',
     name: 'All Purpose Bridle',
     description:
       'Versatile bridle suitable for general training and competition across disciplines.',
-    cost: 300,
-    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
-    // empty list is how the shop filter shows an item under every discipline.
-    bonus: '+2 all disciplines',
+    cost: allPurposeBridleCost,
+    bonus: tackBonusLabel([]),
     tier: 'basic',
     disciplines: [],
   },
@@ -123,86 +189,36 @@ export const TACK_INVENTORY = [
     name: 'All Purpose Bridle',
     description:
       'Versatile bridle suitable for general training and competition across disciplines.',
-    cost: 300,
-    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
-    // empty list is how the shop filter shows an item under every discipline.
-    bonus: '+2 all disciplines',
+    cost: allPurposeBridleCost,
+    bonus: tackBonusLabel([]),
     tier: 'basic',
     disciplines: [],
   },
-  {
-    id: 'snaffle-bridle',
-    category: 'bridle',
-    name: 'Snaffle Bridle',
-    description: 'Classic English bridle with snaffle bit. Suitable for training and competition.',
-    cost: 200,
-    bonus: '+5 in Dressage and Show Jumping shows',
-    tier: 'basic',
-    disciplines: ['Dressage', 'Show Jumping'],
-  },
-  {
-    id: 'hackamore',
-    category: 'bridle',
-    name: 'Hackamore',
-    description: 'Bitless bridle offering gentle control. Popular in western and trail riding.',
-    cost: 180,
-    bonus: '+5 in Western Pleasure and Endurance shows',
-    tier: 'basic',
-    disciplines: ['Western Pleasure', 'Endurance'],
-  },
-  {
-    id: 'double-bridle',
-    category: 'bridle',
-    name: 'Double Bridle',
-    description:
-      'Two-bit bridle with bradoon and curb for advanced riders. Provides refined aids in upper-level dressage.',
-    cost: 500,
-    bonus: '+5 in Dressage shows',
-    tier: 'quality',
-    disciplines: ['Dressage'],
-  },
-  {
-    id: 'figure-eight-bridle',
-    category: 'bridle',
-    name: 'Figure-Eight Bridle',
-    description:
-      'Crossed noseband prevents the horse from opening its mouth. Favoured in show jumping.',
-    cost: 450,
-    bonus: '+5 in Show Jumping, Cross Country and Eventing shows',
-    tier: 'quality',
-    disciplines: ['Show Jumping', 'Cross Country', 'Eventing'],
-  },
-  {
-    id: 'racing-bridle',
-    category: 'bridle',
-    name: 'Racing Bridle',
-    description:
-      'Minimal, lightweight bridle designed for speed. Reduces interference while maintaining control.',
-    cost: 600,
-    bonus: '+5 in Racing, Steeplechase and Harness Racing shows',
-    tier: 'premium',
-    disciplines: ['Racing', 'Steeplechase', 'Harness Racing'],
-  },
+
+  // ── One +5 saddle or harness and one +5 bridle per discipline ───────────
+  ...disciplineSaddles,
+  ...disciplineBridles,
+  ...retiredSharedAliases,
 
   // ── Halters ──────────────────────────────────────────────────────────────
   {
     id: 'leather-halter',
     category: 'halter',
+    comingSoon: true,
     name: 'Leather Halter',
     description: 'Durable leather halter for daily handling and turnout. A stable essential.',
     cost: 80,
-    bonus: '+1 handling',
     tier: 'basic',
     disciplines: [],
   },
   {
     id: 'show-halter',
     category: 'halter',
+    comingSoon: true,
     name: 'Show Halter',
     description:
       'Polished halter with silver fittings for in-hand showing. Presents your horse at its best.',
     cost: 250,
-    bonus: '+3 conformation score',
     tier: 'quality',
     disciplines: ['Halter', 'In-Hand'],
   },
@@ -211,21 +227,21 @@ export const TACK_INVENTORY = [
   {
     id: 'basic-saddle-pad',
     category: 'saddle_pad',
+    comingSoon: true,
     name: 'Cotton Saddle Pad',
     description: 'Standard cotton pad providing cushioning and sweat absorption under the saddle.',
     cost: 60,
-    bonus: '+1 comfort',
     tier: 'basic',
     disciplines: [],
   },
   {
     id: 'memory-foam-pad',
     category: 'saddle_pad',
+    comingSoon: true,
     name: 'Memory Foam Saddle Pad',
     description:
       "Contoured memory foam pad that moulds to the horse's back. Reduces pressure points during long rides.",
     cost: 200,
-    bonus: '+2 comfort',
     tier: 'quality',
     disciplines: ['Endurance', 'Eventing', 'Cross Country'],
   },
@@ -234,32 +250,32 @@ export const TACK_INVENTORY = [
   {
     id: 'polo-wraps',
     category: 'leg_wraps',
+    comingSoon: true,
     name: 'Polo Wraps',
     description: 'Soft fleece wraps providing light support and protection during exercise.',
     cost: 50,
-    bonus: '+1 protection',
     tier: 'basic',
     disciplines: [],
   },
   {
     id: 'splint-boots',
     category: 'leg_wraps',
+    comingSoon: true,
     name: 'Splint Boots',
     description:
       'Hard-shell boots protecting the cannon bone and splint area from strikes during jumping.',
     cost: 150,
-    bonus: '+2 protection',
     tier: 'quality',
     disciplines: ['Show Jumping', 'Cross Country', 'Eventing'],
   },
   {
     id: 'sport-medicine-boots',
     category: 'leg_wraps',
+    comingSoon: true,
     name: 'Sport Medicine Boots',
     description:
       'High-performance boots with fetlock support and shock absorption. Used by top competitors.',
     cost: 350,
-    bonus: '+3 protection',
     tier: 'premium',
     disciplines: ['Show Jumping', 'Cross Country', 'Barrel Racing', 'Reining'],
   },
@@ -268,21 +284,21 @@ export const TACK_INVENTORY = [
   {
     id: 'leather-girth',
     category: 'girth',
+    comingSoon: true,
     name: 'Leather Girth',
     description: 'Traditional leather girth. Durable and reliable for everyday riding.',
     cost: 100,
-    bonus: '+1 stability',
     tier: 'basic',
     disciplines: [],
   },
   {
     id: 'anatomic-girth',
     category: 'girth',
+    comingSoon: true,
     name: 'Anatomic Girth',
     description:
       'Contoured girth with cutaway design for shoulder freedom. Improves comfort and movement.',
     cost: 280,
-    bonus: '+2 comfort',
     tier: 'quality',
     disciplines: ['Dressage', 'Show Jumping', 'Eventing'],
   },
@@ -291,21 +307,21 @@ export const TACK_INVENTORY = [
   {
     id: 'rubber-reins',
     category: 'reins',
+    comingSoon: true,
     name: 'Rubber Grip Reins',
     description: 'Leather reins with rubber grip for secure hold in all conditions.',
     cost: 70,
-    bonus: '+1 control',
     tier: 'basic',
     disciplines: [],
   },
   {
     id: 'laced-reins',
     category: 'reins',
+    comingSoon: true,
     name: 'Laced Reins',
     description:
       'Hand-laced leather reins providing excellent grip without bulk. Preferred for jumping.',
     cost: 120,
-    bonus: '+2 control',
     tier: 'quality',
     disciplines: ['Show Jumping', 'Cross Country', 'Eventing', 'Hunter'],
   },
@@ -314,21 +330,21 @@ export const TACK_INVENTORY = [
   {
     id: 'hunting-breastplate',
     category: 'breastplate',
+    comingSoon: true,
     name: 'Hunting Breastplate',
     description: 'Three-point breastplate preventing saddle slip on galloping and jumping horses.',
     cost: 180,
-    bonus: '+2 stability',
     tier: 'quality',
     disciplines: ['Cross Country', 'Eventing', 'Hunter', 'Steeplechase'],
   },
   {
     id: 'five-point-breastplate',
     category: 'breastplate',
+    comingSoon: true,
     name: 'Five-Point Breastplate',
     description:
       'Full chest breastplate distributing pressure evenly. Maximum saddle stability for demanding courses.',
     cost: 320,
-    bonus: '+3 stability',
     tier: 'premium',
     disciplines: ['Cross Country', 'Eventing', 'Steeplechase'],
   },
@@ -337,11 +353,11 @@ export const TACK_INVENTORY = [
   {
     id: 'foal-halter',
     category: 'halter',
+    comingSoon: true,
     name: 'Foal Halter',
     description:
       'Adjustable halter sized for young horses. Used for early handling and desensitisation.',
     cost: 40,
-    bonus: '+1 handling',
     tier: 'basic',
     disciplines: [],
     ageRestriction: 2,
@@ -349,11 +365,11 @@ export const TACK_INVENTORY = [
   {
     id: 'surcingle',
     category: 'saddle_pad',
+    comingSoon: true,
     name: 'Surcingle',
     description:
       'Training surcingle for backing and lunging young horses. Introduces the feel of girth pressure.',
     cost: 120,
-    bonus: '+2 training prep',
     tier: 'basic',
     disciplines: [],
     ageRestriction: 2,
@@ -440,6 +456,22 @@ export const TACK_INVENTORY = [
     seasonalTag: 'winter',
   },
 ];
+
+/**
+ * The player-facing effect fields of a catalogue item or crafting recipe: its
+ * `bonus` label when it scores, `comingSoon: true` when it does not yet (owner
+ * ruling q32, 2026-10-23). Every inventory record is written from this, so no
+ * stale or invented effect text is copied into a player's inventory.
+ *
+ * @param {{ bonus?: string, comingSoon?: boolean } | null | undefined} definition
+ * @returns {{ bonus?: string, comingSoon?: true }}
+ */
+export function tackEffectFields(definition) {
+  return {
+    ...(definition?.bonus ? { bonus: definition.bonus } : {}),
+    ...(definition?.comingSoon ? { comingSoon: true } : {}),
+  };
+}
 
 /**
  * The catalogue items of one category, legacy aliases included. Ridden show

@@ -12,40 +12,22 @@
  *
  * An item's own disciplines come from its definition: the tack shop
  * catalogue's `disciplines` list, or a crafted item's recipe. An empty list
- * means All Purpose. A crafted item whose discipline is ambiguous carries an
- * empty list until the owner classifies it (k1p62 audit note), so it counts as
- * All Purpose. The item in the slot decides: no per-item number is stored or
+ * means All Purpose. Each discipline item is for exactly one discipline (owner
+ * ruling q02, 2026-10-23). The item in the slot decides: no per-item number is stored or
  * read (the old `numericBonus` and the `saddleBonus` / `bridleBonus` mirrors were
  * retired, Equoria-lsudd; a mirror still stored on an older horse is ignored).
  */
 
-import { tackCatalogItems } from '../../economy/index.mjs';
+import {
+  allPurposeTackPoints,
+  disciplineTackPoints,
+  tackBonusLabel,
+  tackCatalogItems,
+} from '../../economy/index.mjs';
 import { craftedItemRecipes } from '../../crafting/index.mjs';
 import { isKnownDiscipline } from './disciplineRules.mjs';
 
-/** Points for each discipline saddle or bridle in its own discipline (decision A). */
-export const disciplineTackPoints = 5;
-/** Points for each All Purpose saddle or bridle, in any discipline (decision A). */
-export const allPurposeTackPoints = 2;
-
-/**
- * The player-facing bonus label for a saddle or bridle, derived from the same
- * disciplines list the score reads (Equoria-k1p62.4), so the shop, the crafted
- * item and the inventory say what the score really does with it.
- *
- * @param {string[]} disciplines - The item's disciplines ([] = All Purpose).
- * @returns {string} '+2 all disciplines' or '+5 in A, B and C shows'.
- */
-export function tackBonusLabel(disciplines) {
-  if (disciplines.length === 0) {
-    return `+${allPurposeTackPoints} all disciplines`;
-  }
-  const names =
-    disciplines.length === 1
-      ? disciplines[0]
-      : `${disciplines.slice(0, -1).join(', ')} and ${disciplines[disciplines.length - 1]}`;
-  return `+${disciplineTackPoints} in ${names} shows`;
-}
+export { allPurposeTackPoints, disciplineTackPoints, tackBonusLabel };
 
 /** The Horse.tack slots that score, one item each. */
 const scoringTackSlots = Object.freeze(['saddle', 'bridle']);

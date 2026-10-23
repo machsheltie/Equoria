@@ -34,7 +34,7 @@ export { TACK_INVENTORY } from '../services/tackInventory.mjs';
 // ── Category display configuration ──────────────────────────────────────────
 
 const CATEGORY_DISPLAY = {
-  saddle: 'Saddles',
+  saddle: 'Saddles & Harnesses',
   bridle: 'Bridles',
   halter: 'Halters',
   saddle_pad: 'Saddle Pads',
