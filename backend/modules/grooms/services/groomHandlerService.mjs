@@ -49,7 +49,7 @@ export const PERSONALITY_DISCIPLINE_SYNERGY = {
     bonus: 0.04, // 4% bonus
   },
   patient: {
-    beneficial: ['Endurance', 'Combined Driving', 'Obedience Training'],
+    beneficial: ['Endurance', 'Combined Driving'],
     bonus: 0.035, // 3.5% bonus
   },
   strict: {
@@ -99,13 +99,7 @@ export const SPECIALTY_DISCIPLINE_BONUSES = {
     bonus: 0.06, // 6% bonus
   },
   training: {
-    disciplines: [
-      'Obedience Training',
-      'Combined Driving',
-      'Endurance',
-      'Eventing',
-      'Cross Country',
-    ],
+    disciplines: ['Combined Driving', 'Endurance', 'Eventing', 'Cross Country'],
     bonus: 0.05, // 5% bonus
   },
   foalCare: {
