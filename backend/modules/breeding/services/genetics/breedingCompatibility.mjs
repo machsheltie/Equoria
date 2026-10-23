@@ -18,7 +18,12 @@ import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 
 import { calculateAdvancedGeneticDiversity } from './geneticDiversityMetrics.mjs';
-import { calculateDetailedInbreedingCoefficient } from './inbreedingAnalysis.mjs';
+import {
+  inbreedingGenerations,
+  calculateDetailedInbreedingCoefficient,
+  calculateDetailedInbreedingCoefficientFromGraph,
+} from './inbreedingAnalysis.mjs';
+import { fetchPedigreeGraph } from '../../../../utils/pedigreeWalker.mjs';
 import { withoutUnrevealedTraits } from '../predictionHorseView.mjs';
 
 // Re-export for back-compat: the facade exports
@@ -70,6 +75,16 @@ export async function assessBreedingPairCompatibility(stallionId, mareId) {
     throw new Error('One or both horses not found');
   }
 
+  const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(stallionId, mareId);
+  return scoreBreedingPair(stallion, mare, inbreedingAnalysis.coefficient);
+}
+
+/**
+ * Score one pair from the two horses' rows and their inbreeding coefficient.
+ * Pure: the pair search loads every horse and pedigree once and scores each
+ * pair here (Equoria-cmw85.5).
+ */
+function scoreBreedingPair(stallion, mare, inbreedingRisk) {
   // Owner ruling S-Q9 (2026-10-16): unrevealed hidden traits never count
   // toward a forecast anyone can read (Equoria-q4uem.9 slice 4).
   const stallionView = withoutUnrevealedTraits(stallion);
@@ -77,8 +92,6 @@ export async function assessBreedingPairCompatibility(stallionId, mareId) {
 
   const geneticCompatibility = calculateGeneticCompatibility(stallionView, mareView);
   const diversityImpact = calculateDiversityImpact(stallionView, mareView);
-  const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(stallionId, mareId);
-  const inbreedingRisk = inbreedingAnalysis.coefficient;
   const expectedTraits = predictOffspringTraits(stallionView, mareView);
   const overallScore = calculateCompatibilityScore(
     geneticCompatibility,
@@ -250,9 +263,24 @@ export async function generateOptimalBreedingRecommendations(
   const optimalPairs = [];
   const avoidPairs = [];
 
+  // One pedigree fetch covers every pair (Equoria-cmw85.5): the queries do not
+  // grow with the number of stallion x mare pairs.
+  const graph =
+    stallions.length && mares.length
+      ? await fetchPedigreeGraph(
+          horses.filter(h => h.sex === 'Stallion' || h.sex === 'Mare').map(h => h.id),
+          inbreedingGenerations,
+        )
+      : new Map();
+
   for (const stallion of stallions) {
     for (const mare of mares) {
-      const compatibility = await assessBreedingPairCompatibility(stallion.id, mare.id);
+      const { coefficient } = calculateDetailedInbreedingCoefficientFromGraph(
+        stallion.id,
+        mare.id,
+        graph,
+      );
+      const compatibility = scoreBreedingPair(stallion, mare, coefficient);
 
       if (compatibility.overallScore >= 80) {
         optimalPairs.push({

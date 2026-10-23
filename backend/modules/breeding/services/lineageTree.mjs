@@ -15,7 +15,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { withoutUnrevealedTraits } from './predictionHorseView.mjs';
-import { collectAncestorIdsBFS } from './pedigreeWalker.mjs';
+import { collectAncestorIdsBFS } from '../../../utils/pedigreeWalker.mjs';
 
 /**
  * Attach `competitionResults` to every row, in one batched read.

@@ -11,7 +11,10 @@
  */
 
 import logger from '../../../../utils/logger.mjs';
-import { walkPedigree } from '../pedigreeWalker.mjs';
+import { fetchPedigreeGraph, walkPedigreeInGraph } from '../../../../utils/pedigreeWalker.mjs';
+
+/** Generations walked up each parent's side. */
+export const inbreedingGenerations = 5;
 
 /**
  * Detailed inbreeding analysis between a stallion and a mare.
@@ -24,8 +27,23 @@ export async function calculateDetailedInbreedingCoefficient(stallionId, mareId)
     `[inbreedingAnalysis.calculateDetailedInbreedingCoefficient] Analyzing stallion ${stallionId} and mare ${mareId}`,
   );
 
-  const stallionLineage = await walkPedigree(stallionId, 5);
-  const mareLineage = await walkPedigree(mareId, 5);
+  const graph = await fetchPedigreeGraph([stallionId, mareId], inbreedingGenerations);
+  return calculateDetailedInbreedingCoefficientFromGraph(stallionId, mareId, graph);
+}
+
+/**
+ * The same analysis read out of an already-fetched pedigree graph
+ * (pedigreeWalker.fetchPedigreeGraph, at least inbreedingGenerations deep from
+ * both parents): no queries, so a caller scoring many pairs fetches the union
+ * of their pedigrees once (Equoria-cmw85.4, cmw85.5).
+ * @param {number} stallionId
+ * @param {number} mareId
+ * @param {Map<number, {id:number,name:string,sireId:number|null,damId:number|null}>} graph
+ * @returns {Object} {coefficient, commonAncestors, pathAnalysis, riskAssessment, recommendations}
+ */
+export function calculateDetailedInbreedingCoefficientFromGraph(stallionId, mareId, graph) {
+  const stallionLineage = walkPedigreeInGraph(graph, stallionId, inbreedingGenerations);
+  const mareLineage = walkPedigreeInGraph(graph, mareId, inbreedingGenerations);
 
   const commonAncestors = findCommonAncestors(stallionLineage, mareLineage);
   const pathAnalysis = calculatePathAnalysis(stallionId, mareId, commonAncestors);

@@ -19,7 +19,11 @@ import {
   calculateEffectivePopulationSize,
   identifyGeneticFounders,
 } from './geneticDiversityMetrics.mjs';
-import { calculateDetailedInbreedingCoefficient } from './inbreedingAnalysis.mjs';
+import {
+  inbreedingGenerations,
+  calculateDetailedInbreedingCoefficientFromGraph,
+} from './inbreedingAnalysis.mjs';
+import { fetchPedigreeGraph } from '../../../../utils/pedigreeWalker.mjs';
 
 /**
  * Population genetic-health snapshot: diversity, effective size, inbreeding,
@@ -74,24 +78,28 @@ export async function analyzePopulationInbreeding(horseIds) {
     select: { id: true, sireId: true, damId: true },
   });
 
+  // One pedigree fetch for the whole population (one query per generation, however
+  // many horses): every parent of a horse with both parents known (Equoria-cmw85.4).
+  const parentIds = horses.flatMap(h => (h.sireId && h.damId ? [h.sireId, h.damId] : []));
+  const graph = await fetchPedigreeGraph(parentIds, inbreedingGenerations);
+
   let totalInbreeding = 0;
   let inbredHorses = 0;
   const inbreedingDistribution = { low: 0, medium: 0, high: 0, critical: 0 };
 
   for (const horse of horses) {
     if (horse.sireId && horse.damId) {
-      try {
-        const inbreeding = await calculateDetailedInbreedingCoefficient(horse.sireId, horse.damId);
-        totalInbreeding += inbreeding.coefficient;
+      const inbreeding = calculateDetailedInbreedingCoefficientFromGraph(
+        horse.sireId,
+        horse.damId,
+        graph,
+      );
+      totalInbreeding += inbreeding.coefficient;
 
-        if (inbreeding.coefficient > 0) {
-          inbredHorses++;
-          inbreedingDistribution[inbreeding.riskAssessment.level]++;
-        } else {
-          inbreedingDistribution.low++;
-        }
-      } catch (_error) {
-        // skip horses with calculation errors
+      if (inbreeding.coefficient > 0) {
+        inbredHorses++;
+        inbreedingDistribution[inbreeding.riskAssessment.level]++;
+      } else {
         inbreedingDistribution.low++;
       }
     } else {

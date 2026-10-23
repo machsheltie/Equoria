@@ -20,6 +20,7 @@
 
 import { createHorse } from './horseCreation.mjs';
 import { getHorseById } from './horseRouteQueries.mjs';
+import { gatherLineage } from './foalLineage.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 import {
   generateConformationScores,
@@ -149,79 +150,6 @@ function assessFeedQualityFromMare(mare) {
   } catch (error) {
     logger.error(`[foalingService.assessFeedQualityFromMare] ${error.message}`);
     return 50;
-  }
-}
-
-/**
- * Walk the sire/dam ancestry up to `generations` generations and return a
- * flattened array of ancestor records keyed by id (cycle-guarded). The
- * returned shape matches the legacy controller output so trait roll logic
- * keeps its existing behavior.
- */
-async function gatherLineage(sireId, damId, generations) {
-  try {
-    const ancestors = [];
-    const toProcess = [
-      { id: sireId, generation: 0 },
-      { id: damId, generation: 0 },
-    ];
-    const processed = new Set();
-
-    while (toProcess.length > 0) {
-      const { id, generation } = toProcess.shift();
-      if (processed.has(id) || generation >= generations) {
-        continue;
-      }
-      processed.add(id);
-
-      const horse = await prisma.horse.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          name: true,
-          sireId: true,
-          damId: true,
-          disciplineScores: true,
-          trait: true,
-          temperament: true,
-        },
-      });
-      if (!horse) {
-        continue;
-      }
-
-      let primaryDiscipline = null;
-      if (horse.disciplineScores && typeof horse.disciplineScores === 'object') {
-        let maxScore = 0;
-        Object.entries(horse.disciplineScores).forEach(([discipline, score]) => {
-          if (typeof score === 'number' && score > maxScore) {
-            maxScore = score;
-            primaryDiscipline = discipline;
-          }
-        });
-      }
-
-      ancestors.push({
-        id: horse.id,
-        name: horse.name,
-        discipline: primaryDiscipline,
-        disciplineScores: horse.disciplineScores,
-        generation,
-        trait: horse.trait,
-        temperament: horse.temperament,
-      });
-
-      if (horse.sireId && generation + 1 < generations) {
-        toProcess.push({ id: horse.sireId, generation: generation + 1 });
-      }
-      if (horse.damId && generation + 1 < generations) {
-        toProcess.push({ id: horse.damId, generation: generation + 1 });
-      }
-    }
-    return ancestors;
-  } catch (error) {
-    logger.error(`[foalingService.gatherLineage] Error: ${error.message}`);
-    return [];
   }
 }
 
