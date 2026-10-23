@@ -160,9 +160,8 @@ export const guideSectionsShows: readonly GuideSection[] = [
         ],
       },
       {
-        kind: 'pending',
-        topic: 'Conformation classes',
-        ownerQuestion: "Classes by age or sex aren't decided yet.",
+        kind: 'paragraph',
+        text: 'Every conformation show is one open class. There are no separate classes by age or sex.',
       },
       {
         kind: 'paragraph',

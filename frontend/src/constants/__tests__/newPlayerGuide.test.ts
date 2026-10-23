@@ -163,6 +163,57 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23', () => {
     ]);
   });
 
+  it('says conformation shows are one open class', () => {
+    expect(allText).toContain(
+      'Every conformation show is one open class. There are no separate classes by age or sex.'
+    );
+  });
+
+  it('says traits do not change a show score yet, and promises no premium trainers', () => {
+    const joined = allText.join(' ');
+    expect(joined).toContain("Right now traits don't change a show score.");
+    expect(joined).not.toMatch(/premium trainer/i);
+  });
+
+  it('describes the two live leaderboards and only hints that more are coming', () => {
+    const boards = blocksOf('leaderboards').flatMap(textOf);
+    expect(boards).toContain('More boards are coming.');
+    expect(boards.join(' ')).toContain('**Win percentage:**');
+    expect(boards.join(' ')).toContain('**Wins:**');
+  });
+
+  it('keeps the Very Good note pending and names the unbuilt health system without describing it as live', () => {
+    const veryGood = newPlayerGuide
+      .flatMap((section) => section.blocks)
+      .find(
+        (block): block is Extract<GuideBlock, { kind: 'pending' }> =>
+          block.kind === 'pending' && block.topic === 'How Very Good health is earned'
+      );
+    expect(veryGood?.ownerQuestion).toContain('Equoria-qwz60');
+    // The new vetting bands (8-14 Very Good, 29+ Bad) are not in any player-facing text.
+    expect(allText.join(' ')).not.toMatch(/22-28|29\+|29 or more/);
+  });
+
+  it('leaves exactly the owner-queued questions undecided', () => {
+    const topics = newPlayerGuide
+      .flatMap((section) => section.blocks)
+      .filter(
+        (block): block is Extract<GuideBlock, { kind: 'pending' }> => block.kind === 'pending'
+      )
+      .map((block) => block.topic);
+    expect(topics.sort()).toEqual(
+      [
+        'How Very Good health is earned',
+        'What hoof condition affects',
+        'When riders retire',
+        'Levels above 200',
+        'Hosting limits and where entry fees go',
+        'What trainer fit changes',
+        'The event shop',
+      ].sort()
+    );
+  });
+
   it('no longer lists the settled questions as undecided', () => {
     const topics = newPlayerGuide
       .flatMap((section) => section.blocks)
@@ -175,6 +226,10 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23', () => {
       'What the better feeds add',
       'How much of the temperament chart players see',
       'Parades',
+      'Conformation classes',
+      'What each trait does',
+      'Other leaderboards',
+      'More about trainers',
     ]) {
       expect(topics).not.toContain(settled);
     }

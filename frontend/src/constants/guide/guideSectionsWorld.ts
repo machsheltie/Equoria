@@ -246,10 +246,8 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         ],
       },
       {
-        kind: 'pending',
-        topic: 'What each trait does',
-        ownerQuestion:
-          "Traits are being reworked. Today they don't change show scores, and each trait's effect is still to be decided.",
+        kind: 'paragraph',
+        text: "Right now traits don't change a show score. A show score is built from the stats, training and tack described under [Competitions](#competitions), plus the day's adjustments.",
       },
     ],
   },
@@ -392,10 +390,8 @@ export const guideSectionsWorld: readonly GuideSection[] = [
         ],
       },
       {
-        kind: 'pending',
-        topic: 'Other leaderboards',
-        ownerQuestion:
-          'The other boards, Horse Level (which currently ranks players) and the discipline board, are waiting on rulings (Equoria-rghuf).',
+        kind: 'paragraph',
+        text: 'More boards are coming.',
       },
     ],
   },

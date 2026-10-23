@@ -171,7 +171,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
         kind: 'pending',
         topic: 'How Very Good health is earned',
         ownerQuestion:
-          'No care band produces Very Good yet. Should, say, feeding 3 days ago give Very Good, or is Very Good kept for vet findings only? (Equoria-j0254)',
+          'No care band produces Very Good yet. Owner ruling 2026-10-23 (not built yet, Equoria-qwz60): a new health and hunger system, with vetting days 0-7 Excellent, 8-14 Very Good, 15-21 Good, 22-28 Fair and 29+ Bad. Until it is built the guide describes only the live bands above and keeps this note; do not describe the new rule as live. (Equoria-j0254)',
       },
       {
         kind: 'paragraph',
@@ -247,12 +247,6 @@ export const guideSectionsStart: readonly GuideSection[] = [
           'A horse needs an assigned trainer to train. **Hiring a trainer is free** at **Trainers for Hire**.',
           "Each trainer advertises a **training fee**. You pay it **once**, when you press **Train** at the **Training Center**. You're never charged twice for the same session.",
         ],
-      },
-      {
-        kind: 'pending',
-        topic: 'More about trainers',
-        ownerQuestion:
-          'Premium trainers giving +10 are planned (three tiers), but not designed yet.',
       },
       {
         kind: 'paragraph',
