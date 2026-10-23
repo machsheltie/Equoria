@@ -230,18 +230,23 @@ describe('GroomDetailPanel — talent tree (Equoria-oey96.6)', () => {
       profileResult({ data: { metrics: fullMetrics } }),
       profileResult({ data: [] }),
       profileResult({ data: null }),
-      // The select mutation rejected (e.g. locked/invalid tier) with the real
-      // backend message.
+      // The select mutation rejected (e.g. locked/invalid tier). Equoria-mr1kq
+      // (FRONTEND_ASYNC_STATE_DOCTRINE section 4): the old contract showed the
+      // backend's own message verbatim; the panel now shows mapped copy for the
+      // refusal and never the server's words.
       selectStub({
         isError: true,
-        error: { message: 'Invalid talent selection: insufficient_level' },
+        error: { statusCode: 400, message: 'Invalid talent selection: insufficient_level' },
       })
     );
     renderPanel({ groomLevel: 5, groomPersonality: 'energetic' });
 
     const err = screen.getByTestId('groom-talent-select-error-7');
     expect(err).toBeInTheDocument();
-    expect(err).toHaveTextContent('Invalid talent selection: insufficient_level');
+    expect(err).toHaveTextContent(
+      "That talent can't be chosen yet. Check the groom's level and the talent's prerequisites."
+    );
+    expect(err).not.toHaveTextContent('insufficient_level');
     expect(err).toHaveAttribute('role', 'alert');
   });
 

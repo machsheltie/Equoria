@@ -35,6 +35,7 @@
  * needed.
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import type { JSX } from 'react';
 import { AlertCircle, Palette } from 'lucide-react';
 import { useColorPrediction } from '@/hooks/api/useColorPrediction';
@@ -91,9 +92,7 @@ export default function ColorPredictionChart({
           <AlertCircle className="h-4 w-4 text-[var(--role-danger-text)] flex-shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-semibold text-[var(--text-primary)]">Color prediction unavailable</p>
-            <p className="text-[var(--role-danger-text)] mt-1">
-              {error instanceof Error ? error.message : 'An error occurred'}
-            </p>
+            <p className="text-[var(--role-danger-text)] mt-1">{userMessageFor(error).message}</p>
           </div>
         </div>
       </div>

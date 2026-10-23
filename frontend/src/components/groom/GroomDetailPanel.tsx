@@ -18,6 +18,7 @@
  * dashboard with N grooms does not fire 2N requests until a panel is opened.
  */
 
+import { actionMessageFor } from '@/lib/http/actionMessage';
 import React from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { TrendingUp, History, Award } from 'lucide-react';
@@ -265,15 +266,18 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
 
         {!talentsLoading && !talentsError && (
           <>
-            {/* AC5 — a rejected selection (e.g. locked tier) surfaces the real
-                backend message here; it is never silently swallowed. */}
+            {/* AC5 — a rejected selection (e.g. locked tier) surfaces here as mapped
+                copy (never the server's own text, Equoria-mr1kq); it is never silently
+                swallowed. */}
             {selectTalent.isError && (
               <p
                 className="text-xs text-red-400 mb-2"
                 role="alert"
                 data-testid={`groom-talent-select-error-${groomId}`}
               >
-                {selectTalent.error?.message ?? 'Could not select talent.'}
+                {actionMessageFor(selectTalent.error, {
+                  400: "That talent can't be chosen yet. Check the groom's level and the talent's prerequisites.",
+                })}
               </p>
             )}
             <GroomTalentTree

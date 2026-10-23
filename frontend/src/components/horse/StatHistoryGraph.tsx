@@ -14,6 +14,7 @@
  * Story 3-4: XP & Progression Display - Task 2
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import React, { useState, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -248,7 +249,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
         <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-2">XP History</h3>
         <div className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded p-4 text-center">
           <p className="text-red-400 mb-3">
-            Failed to fetch XP history: {error.message || 'Unknown error'}
+            Failed to fetch XP history: {userMessageFor(error).message}
           </p>
           <button
             onClick={() => refetch()}

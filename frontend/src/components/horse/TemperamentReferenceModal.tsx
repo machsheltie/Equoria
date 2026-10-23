@@ -15,6 +15,7 @@
  * keydown listener was removed). Status colors use role tokens.
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import { AlertCircle } from 'lucide-react';
 import { useTemperamentDefinitions } from '@/hooks/api/useTemperamentDefinitions';
 import {
@@ -71,7 +72,7 @@ const TemperamentReferenceModal = ({
                     Failed to load temperament reference
                   </p>
                   <p className="text-sm text-role-secondary mt-1">
-                    {error.message || 'Please try again later.'}
+                    {userMessageFor(error).message}
                   </p>
                 </div>
               </div>

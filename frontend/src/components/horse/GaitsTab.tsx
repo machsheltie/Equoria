@@ -9,6 +9,7 @@
  * the useHorseGaits React Query hook.
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import { AlertCircle } from 'lucide-react';
 import { useHorseGaits } from '@/hooks/api/useGaits';
 
@@ -81,9 +82,7 @@ const GaitsTab = ({ horseId }: GaitsTabProps) => {
           <AlertCircle className="h-5 w-5 text-rose-400 mt-0.5" aria-hidden="true" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-rose-300">Error loading gait scores</p>
-            <p className="text-sm text-rose-400 mt-1">
-              {error.message || 'Failed to fetch gait scores'}
-            </p>
+            <p className="text-sm text-rose-400 mt-1">{userMessageFor(error).message}</p>
             <button
               onClick={() => refetch()}
               className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-rose-700"

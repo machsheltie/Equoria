@@ -22,6 +22,7 @@
  *   - useBookFarrierService() → POST /api/farrier/book-service
  */
 
+import { actionMessageFor } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -360,7 +361,11 @@ const FarrierPage: React.FC = () => {
             role="alert"
           >
             Booking failed:{' '}
-            {bookMutation.error?.message ?? 'An unexpected error occurred. Please try again.'}
+            {actionMessageFor(bookMutation.error, {
+              400: "The farrier couldn't take that booking. Check the horse and your balance.",
+              404: "That horse or service couldn't be found. Reload and try again.",
+              409: 'Your stable changed while that was in flight. Reload and try again.',
+            })}
           </div>
         )}
 

@@ -7,6 +7,7 @@
  * Uses horsesApi.get with live empty/error states.
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Sparkles, AlertCircle } from 'lucide-react';
@@ -71,7 +72,7 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
           <div>
             <p className="font-semibold text-[var(--text-primary)]">Error loading horse data</p>
             <p className="text-sm text-[var(--role-danger-text)] mt-1">
-              {error instanceof Error ? error.message : 'An error occurred'}
+              {userMessageFor(error).message}
             </p>
           </div>
         </div>

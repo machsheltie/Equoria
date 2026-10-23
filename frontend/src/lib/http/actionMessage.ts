@@ -101,6 +101,28 @@ export const assignStaffRefusalCodes: ActionCodeCopy = {
   horseRetired: 'Retired horses (21 and over) cannot be given a new groom, rider or trainer.',
 };
 
+/**
+ * A refused training session. The backend answers cooldown, age and health
+ * refusals with a 400, and its own wording is not player copy (Equoria-mr1kq).
+ */
+export const trainRefused: ActionCopy = {
+  400: "That training session couldn't go ahead. The horse may be on cooldown, too young or in poor health.",
+};
+
+/** A refused show entry, ridden or conformation (Equoria-mr1kq). */
+export const enterShowRefused: ActionCopy = {
+  400: "That horse can't be entered in this show right now.",
+  404: "That show or horse couldn't be found. Reload and try again.",
+  409: 'That entry conflicts with the show as it stands now. Reload and try again.',
+};
+
+/** A refused equip or unequip of tack or feed (Equoria-mr1kq). */
+export const equipRefused: ActionCopy = {
+  400: "That item can't be used that way.",
+  404: "That item or horse couldn't be found. Reload and try again.",
+  409: 'Your stable changed while that was in flight. Reload and try again.',
+};
+
 /** Refreshing a staff marketplace: a 400 is the refresh fee the balance can't cover. */
 export const refreshRefused: ActionCopy = {
   400: "The marketplace couldn't be refreshed. Your balance may not cover the fee.",

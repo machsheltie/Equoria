@@ -10,6 +10,7 @@
  * Story 3-5: Conformation Scoring UI - Task 5
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useState } from 'react';
 import { AlertCircle, Info, TrendingUp } from 'lucide-react';
 import ConformationScoreCard from './ConformationScoreCard';
@@ -71,7 +72,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
           <div className="flex-1">
             <p className="text-sm font-semibold text-rose-300">Error Loading Conformation Data</p>
             <p className="text-sm text-rose-400 mt-1">
-              {conformationError.message || 'Failed to fetch conformation scores'}
+              {userMessageFor(conformationError).message}
             </p>
             <button
               onClick={() => refetchConformation()}

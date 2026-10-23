@@ -15,6 +15,7 @@
  * error states — never fabricated values.
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import React from 'react';
 import { Loader2, AlertCircle, Brain } from 'lucide-react';
 import {
@@ -82,7 +83,7 @@ const BehavioralFlagsPanel: React.FC<BehavioralFlagsPanelProps> = ({ horseId }) 
           data-testid="behavioral-flags-error"
         >
           <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{flagsError.message || 'Could not load behavioral flags.'}</span>
+          <span>{userMessageFor(flagsError).message}</span>
         </div>
       )}
 

@@ -10,6 +10,7 @@
  * Story 3-4: XP & Progression Display - Task 2
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useState, useMemo } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import {
@@ -180,9 +181,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   if (isError || !historyData) {
     return (
       <div className="rounded-lg border border-rose-500/30 bg-[rgba(239,68,68,0.1)] p-6 shadow-sm">
-        <div className="text-sm text-rose-400">
-          {error?.message || 'Failed to fetch Horse Points history'}
-        </div>
+        <div className="text-sm text-rose-400">{userMessageFor(error).message}</div>
         <button
           onClick={() => refetch()}
           className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"

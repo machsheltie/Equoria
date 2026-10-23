@@ -17,6 +17,7 @@
  * the real API and renders backend-sourced eligibility reasons verbatim.
  */
 
+import { actionMessageFor, enterShowRefused } from '@/lib/http/actionMessage';
 import { type JSX, useState } from 'react';
 import {
   GameDialog,
@@ -88,8 +89,7 @@ export default function ConformationEntryModal({
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to enter conformation show.';
-      setFormError(msg);
+      setFormError(actionMessageFor(err, enterShowRefused));
     }
   };
 

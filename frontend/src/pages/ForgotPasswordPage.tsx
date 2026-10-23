@@ -9,6 +9,7 @@
  *   text-role-danger with role="alert".
  */
 
+import { actionMessageFor } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
@@ -121,7 +122,9 @@ const ForgotPasswordPage: React.FC = () => {
         {/* API error */}
         {error && (
           <p className="text-role-danger text-sm text-center" role="alert">
-            {error.message || 'Something went wrong. Please try again.'}
+            {actionMessageFor(error, {
+              400: "That email address couldn't be used. Check it and try again.",
+            })}
           </p>
         )}
 

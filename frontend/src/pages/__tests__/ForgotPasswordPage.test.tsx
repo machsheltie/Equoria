@@ -471,8 +471,10 @@ describe('ForgotPasswordPage', () => {
     test('displays API error message', async () => {
       const user = userEvent.setup();
       // 400 (not 429) — a 429 is special-cased by the api-client into its own
-      // "Too many requests" message, which would not match this assertion. A
-      // generic 4xx carries the server message through verbatim.
+      // "Too many requests" message, which would not match this assertion.
+      // Equoria-mr1kq (FRONTEND_ASYNC_STATE_DOCTRINE section 4): the old contract
+      // rendered a generic 4xx's server message verbatim; the page now shows its
+      // own mapped copy for a refused request and never the server's words.
       mockForgotError(400, 'Rate limit exceeded. Please try again later.');
 
       renderForgotPasswordPage();
@@ -485,9 +487,12 @@ describe('ForgotPasswordPage', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText('Rate limit exceeded. Please try again later.')
+          screen.getByText("That email address couldn't be used. Check it and try again.")
         ).toBeInTheDocument();
       });
+      expect(
+        screen.queryByText('Rate limit exceeded. Please try again later.')
+      ).not.toBeInTheDocument();
     });
 
     test('displays a generic error message when the server sends no message body', async () => {
@@ -530,9 +535,11 @@ describe('ForgotPasswordPage', () => {
       const submitButton = screen.getByRole('button', { name: /send reset link/i });
       await user.click(submitButton);
 
-      // Wait for error to appear
+      // Wait for error to appear (mapped copy, never the server's words: Equoria-mr1kq)
       await waitFor(() => {
-        expect(screen.getByText('Server error')).toBeInTheDocument();
+        expect(
+          screen.getByText("That email address couldn't be used. Check it and try again.")
+        ).toBeInTheDocument();
       });
 
       // Clear input and type new value
@@ -541,7 +548,9 @@ describe('ForgotPasswordPage', () => {
 
       // Error should be cleared
       await waitFor(() => {
-        expect(screen.queryByText('Server error')).not.toBeInTheDocument();
+        expect(
+          screen.queryByText("That email address couldn't be used. Check it and try again.")
+        ).not.toBeInTheDocument();
       });
     });
 
@@ -558,9 +567,11 @@ describe('ForgotPasswordPage', () => {
       const submitButton = screen.getByRole('button', { name: /send reset link/i });
       await user.click(submitButton);
 
-      // Wait for error
+      // Wait for error (mapped copy, never the server's words: Equoria-mr1kq)
       await waitFor(() => {
-        expect(screen.getByText('Network error')).toBeInTheDocument();
+        expect(
+          screen.getByText("That email address couldn't be used. Check it and try again.")
+        ).toBeInTheDocument();
       });
 
       // Second attempt succeeds — swap the handler before retrying.

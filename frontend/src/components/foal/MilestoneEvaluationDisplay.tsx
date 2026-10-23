@@ -7,6 +7,7 @@
  * Uses breedingApi.getFoalDevelopment with live empty/error states.
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Award, AlertCircle } from 'lucide-react';
@@ -67,7 +68,7 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
               Error loading foal development
             </p>
             <p className="text-sm text-[var(--text-secondary)] mt-1">
-              {error instanceof Error ? error.message : 'An error occurred'}
+              {userMessageFor(error).message}
             </p>
           </div>
         </div>

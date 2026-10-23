@@ -13,6 +13,7 @@
  * Story 4-1: Training Session Interface - Task 6
  */
 
+import { actionMessageFor, trainRefused } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { AlertCircle, Loader2, Dumbbell, Clock, CheckCircle } from 'lucide-react';
@@ -156,9 +157,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       setIsResultModalOpen(true);
     } catch (error) {
       // Keep modal open on error so user can retry
-      const errorMessage =
-        error instanceof Error ? error.message : 'Training failed. Please try again.';
-      setTrainingError(errorMessage);
+      setTrainingError(actionMessageFor(error, trainRefused));
     }
   };
 

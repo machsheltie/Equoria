@@ -5,6 +5,7 @@
  * and racing red accents set the tone.
  */
 
+import { actionMessageFor, enterShowRefused } from '@/lib/http/actionMessage';
 import { type JSX, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -143,7 +144,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
       ]);
     },
     onError: (apiError) => {
-      setEntryError(apiError?.message ?? 'Failed to enter competition.');
+      setEntryError(actionMessageFor(apiError, enterShowRefused));
     },
   });
 

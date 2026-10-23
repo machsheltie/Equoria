@@ -15,6 +15,7 @@
  * text sizing match the rest of the system.
  */
 
+import { actionMessageFor, equipRefused } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -152,10 +153,7 @@ const HorseEquipPage: React.FC = () => {
                         { inventoryItemId: item.id },
                         {
                           onSuccess: () => toast.success(`Unequipped ${item.name}.`),
-                          onError: (err) =>
-                            toast.error(
-                              (err as { message?: string })?.message ?? 'Failed to unequip.'
-                            ),
+                          onError: (err) => toast.error(actionMessageFor(err, equipRefused)),
                         }
                       );
                     }}
@@ -174,10 +172,7 @@ const HorseEquipPage: React.FC = () => {
                         { inventoryItemId: item.id, horseId },
                         {
                           onSuccess: () => toast.success(`Equipped ${item.name}.`),
-                          onError: (err) =>
-                            toast.error(
-                              (err as { message?: string })?.message ?? 'Failed to equip.'
-                            ),
+                          onError: (err) => toast.error(actionMessageFor(err, equipRefused)),
                         }
                       );
                     }}
@@ -257,10 +252,7 @@ const HorseEquipPage: React.FC = () => {
                       e.stopPropagation();
                       unequipFeed.mutate(undefined, {
                         onSuccess: () => toast.success('Unequipped.'),
-                        onError: (err) =>
-                          toast.error(
-                            (err as { message?: string })?.message ?? 'Failed to unequip.'
-                          ),
+                        onError: (err) => toast.error(actionMessageFor(err, equipRefused)),
                       });
                     }}
                     disabled={unequipFeed.isPending}
@@ -283,8 +275,7 @@ const HorseEquipPage: React.FC = () => {
                           toast.success(
                             currentlyEquippedFeed ? `Switched to ${f.name}.` : `Equipped ${f.name}.`
                           ),
-                        onError: (err) =>
-                          toast.error((err as { message?: string })?.message ?? 'Failed to equip.'),
+                        onError: (err) => toast.error(actionMessageFor(err, equipRefused)),
                       });
                     }}
                     disabled={equipFeed.isPending}

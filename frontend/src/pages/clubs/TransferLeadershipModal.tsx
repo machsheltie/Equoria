@@ -11,6 +11,7 @@
  * Select / InlineError / role tokens.
  */
 
+import { actionMessageFor } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -51,11 +52,16 @@ export const TransferLeadershipModal: React.FC<{
       });
       setSuccessMsg('Leadership transferred successfully.');
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : 'Failed to transfer leadership.';
-      setErrorMsg(msg);
+      const couldNot =
+        "Leadership couldn't be transferred to that member. Reload the club and try again.";
+      setErrorMsg(
+        actionMessageFor(err, {
+          400: couldNot,
+          403: "Only the club's president can transfer leadership.",
+          404: couldNot,
+          409: couldNot,
+        })
+      );
     }
   };
 

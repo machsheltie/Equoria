@@ -24,6 +24,8 @@
  * restoration come from the native Dialog primitive — no longer re-implemented.
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, trainRefused } from '@/lib/http/actionMessage';
 import { useEffect, useMemo, useState } from 'react';
 import { GameDialog, GameDialogContent, GameDialogTitle } from '@/components/ui/game/GameDialog';
 import {
@@ -112,7 +114,7 @@ const TrainingSessionModal = ({
       setErrorMessage(null);
       await checkEligibility();
     } catch (error) {
-      setErrorMessage((error as { message?: string }).message ?? 'Unable to check eligibility');
+      setErrorMessage(userMessageFor(error).message);
     }
   };
 
@@ -130,7 +132,7 @@ const TrainingSessionModal = ({
         onCompleted(result);
       }
     } catch (error) {
-      setErrorMessage((error as { message?: string }).message ?? 'Training failed');
+      setErrorMessage(actionMessageFor(error, trainRefused));
     }
   };
 

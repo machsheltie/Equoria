@@ -10,6 +10,7 @@
  * Story 3-4: XP & Progression Display - Task 1
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useEffect, useRef, useState } from 'react';
 import { useHorseXP } from '@/hooks/api/useHorseXP';
 import FenceJumpBar from '@/components/ui/FenceJumpBar';
@@ -116,9 +117,7 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
   if (isError || !xpData) {
     return (
       <div className="rounded-lg border border-rose-500/30 bg-[rgba(239,68,68,0.1)] p-4 shadow-sm">
-        <div className="text-sm text-rose-400">
-          {error?.message || 'Failed to fetch Horse Points'}
-        </div>
+        <div className="text-sm text-rose-400">{userMessageFor(error).message}</div>
         <button
           onClick={() => refetch()}
           className="mt-2 rounded bg-rose-600 px-3 py-1 text-sm text-[var(--text-primary)] hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"

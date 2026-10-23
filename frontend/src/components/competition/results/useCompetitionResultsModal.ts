@@ -7,6 +7,7 @@
  * callback. The container wires it to the presentational parts.
  */
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCompetitionResults } from '@/hooks/api/useCompetitionResults';
 import type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
@@ -83,7 +84,8 @@ export function useCompetitionResultsModal({
   } = useCompetitionResults(competitionId);
 
   const results: CompetitionResults | null = fetchedResults ?? null;
-  const error = isError ? (fetchError?.message ?? 'Failed to load competition results') : null;
+  // Mapped copy, never the server's own text (Equoria-mr1kq, doctrine section 4).
+  const error = isError ? userMessageFor(fetchError).message : null;
 
   // Calculate user prizes for PrizeSummaryCard (Story 5-3)
   const userPrizes: HorsePrize[] = useMemo(() => {
