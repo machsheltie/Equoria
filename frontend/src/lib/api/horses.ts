@@ -7,15 +7,7 @@
 
 import { apiClient } from '../http/apiClient.js';
 import type { HorseListItemDto } from './horseList.js';
-import type {
-  HorseProgression,
-  HorseSummary,
-  HorseTrainingAnalytics,
-  HorseXP,
-  HorseXPHistory,
-  RecentGains,
-  StatHistory,
-} from './types.js';
+import type { HorseSummary, HorseTrainingAnalytics, HorseXP, HorseXPHistory } from './types.js';
 
 /**
  * 31E-4 — coat-color genetics & color response types (Equoria-lsdb).
@@ -97,12 +89,6 @@ export const horsesApi = {
     const queryString = params.toString() ? `?${params.toString()}` : '';
     return apiClient.get<HorseXPHistory>(`/api/v1/horses/${horseId}/xp-history${queryString}`);
   },
-  getProgression: (horseId: number) =>
-    apiClient.get<HorseProgression>(`/api/v1/horses/${horseId}/progression`),
-  getStatHistory: (horseId: number, timeRange = '30d') =>
-    apiClient.get<StatHistory>(`/api/v1/horses/${horseId}/stats/history?range=${timeRange}`),
-  getRecentGains: (horseId: number, days = 30) =>
-    apiClient.get<RecentGains>(`/api/v1/horses/${horseId}/gains/recent?days=${days}`),
   // NOTE (Equoria-4fnro, owner ruling 2026-09-14): there is deliberately no
   // `update` here any more. It existed to carry `{ name }` to PUT
   // /api/v1/horses/:id; renaming now has its own endpoint (`rename` below) and

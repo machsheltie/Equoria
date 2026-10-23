@@ -342,48 +342,6 @@ export interface HorseXPHistory {
   };
 }
 
-export interface HorseProgression {
-  horseId: number;
-  horseName: string;
-  currentLevel: number;
-  currentXP: number;
-  xpToNextLevel: number;
-  totalXP: number;
-  progressPercentage: number;
-  recentLevelUps: Array<{
-    level: number;
-    timestamp: string;
-    xpGained: number;
-  }>;
-}
-
-export interface StatHistory {
-  horseId: number;
-  horseName: string;
-  timeRange: string;
-  statData: Array<{
-    timestamp: string;
-    speed: number;
-    stamina: number;
-    agility: number;
-    strength: number;
-    intelligence: number;
-    temperament: number;
-  }>;
-}
-
-export interface RecentGains {
-  horseId: number;
-  horseName: string;
-  days: number;
-  gains: Array<{
-    stat: string;
-    change: number;
-    percentage: number;
-    timestamp: string;
-  }>;
-}
-
 /**
  * Groom interfaces
  */

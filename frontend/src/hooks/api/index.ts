@@ -2,7 +2,6 @@ export * from '../useAuth';
 export * from './useTraining';
 export * from './useBreeding';
 export * from './useHorses';
-export * from './useProgression';
 export * from './useHorseXP';
 export * from './useBreedingPrediction';
 export * from './useCompetitionsFiltered';
