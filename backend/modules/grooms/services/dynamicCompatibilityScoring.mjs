@@ -390,10 +390,10 @@ export function compatibilityTrends(inputs, groomId) {
 }
 
 /**
- * History modifier from this groom's recent interactions with the horse: up to
- * HISTORY_SAMPLE in the last HISTORY_WINDOW_DAYS, taken in id order (which ten
- * of more is Equoria-ld219). A failed interaction read counts as neutral (1.0),
- * as before S6.
+ * History modifier from this groom's recent interactions with the horse: the
+ * NEWEST HISTORY_SAMPLE in the last HISTORY_WINDOW_DAYS, by createdAt then id,
+ * both descending (owner ruling 2026-10-23, Equoria-ld219). A failed
+ * interaction read counts as neutral (1.0), as before S6.
  */
 function calculateHistoricalModifier(inputs, groomId) {
   if (inputs.interactionsError) {
@@ -403,7 +403,7 @@ function calculateHistoricalModifier(inputs, groomId) {
   const since = new Date(inputs.now.getTime() - HISTORY_WINDOW_DAYS * DAY_MS);
   const recentInteractions = inputs.interactions
     .filter(i => i.groomId === groomId && i.createdAt >= since)
-    .sort((a, b) => a.id - b.id)
+    .sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
     .slice(0, HISTORY_SAMPLE);
 
   if (recentInteractions.length === 0) {
