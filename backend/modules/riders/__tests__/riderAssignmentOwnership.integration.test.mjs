@@ -19,7 +19,7 @@
  * transfer, scoped fail-loud fixtures. No mocks.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 
@@ -29,10 +29,12 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { createBarrierClient, holdLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-6-owner';
 const LIST_PRICE = 500;
+const barrierClient = createBarrierClient();
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -166,6 +168,8 @@ describe('rider assignment ownership (finding 6)', () => {
 
   afterEach(() => cleanup.run(), 30000);
 
+  afterAll(() => barrierClient.$disconnect(), 30000);
+
   it('a former owner cannot clear the new owner’s rider through the historical assignment', async () => {
     // A assigns their rider, then sells the horse to B.
     const assigned = await assignRiderRequest(seller.token, sellerRider.id, horse.id);
@@ -255,6 +259,69 @@ describe('rider assignment ownership (finding 6)', () => {
     expect((await horseRow(horse.id)).rider).toBeNull();
     expect((await assignmentRow(assignmentId)).isActive).toBe(false);
   }, 60000);
+
+  it('a failure AFTER the horse write rolls the unassignment back (both representations)', async () => {
+    // Equoria-6p398.21. The unassign transaction writes in this order: clear
+    // `Horse.rider`, THEN deactivate the assignment row. A failure on that second
+    // write must undo the first. The old forcing mechanism (a composite-unique
+    // rejection on deactivation) was removed with Equoria-kccmt, and deactivation
+    // cannot fail on data any more, so the failure is forced the way a real
+    // contended database forces one: a separate session holds the ASSIGNMENT row
+    // FOR UPDATE, so the second write blocks past Prisma's interactive-transaction
+    // timeout and the transaction expires. The first write (`Horse.rider = null`)
+    // has by then already been executed inside it. Nothing is mocked: every query is
+    // the production query, delayed by a lock the database arbitrates, and the
+    // endpoint's own retryable-transaction mapping answers 503.
+    const assigned = await assignRiderRequest(seller.token, sellerRider.id, horse.id);
+    const assignmentId = assigned.body.data.id;
+    expect((await horseRow(horse.id)).rider.id).toBe(sellerRider.id);
+
+    const barrier = await holdLock(
+      barrierClient,
+      tx => tx.$queryRaw`SELECT "id" FROM "rider_assignments" WHERE "id" = ${assignmentId} FOR UPDATE`,
+    );
+    let unassign;
+    try {
+      const inFlight = unassignRequest(seller.token, assignmentId);
+      // Observed blocked on the held lock (pg_blocking_pids), not assumed by timer.
+      // Nothing in steps 1-2 touches that row, so a blocked session means the
+      // request is parked at the deactivation, after the horse write.
+      await barrier.waitForQueued(1);
+      // Hold the lock past Prisma's interactive-transaction timeout (5000 ms, the
+      // default; this repo sets none). The timeout is what makes the transaction
+      // fail: once it has expired, the blocked write cannot be allowed to commit,
+      // so the request answers with the retryable-transaction error and the
+      // transaction is rolled back, horse write included. Releasing earlier would
+      // let the deactivation succeed and the request return 200.
+      await new Promise(resolve => setTimeout(resolve, 6500));
+      await barrier.release();
+      unassign = await inFlight;
+    } finally {
+      await barrier.release();
+    }
+
+    expect(unassign.status).toBe(503);
+    expect(unassign.body.success).toBe(false);
+
+    // Read the FINAL state: take the horse row lock on a separate session, which
+    // queues until the expired transaction has really finished (its rollback runs
+    // once the blocked statement is released), then read inside that lock.
+    const finalHorse = await barrierClient.$transaction(
+      async tx => {
+        await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horse.id} FOR UPDATE`;
+        const rows = await tx.$queryRaw`SELECT "rider" FROM "horses" WHERE "id" = ${horse.id}`;
+        return rows[0];
+      },
+      { maxWait: 20000, timeout: 30000 },
+    );
+
+    // Neither representation moved: the horse still carries the rider and the
+    // assignment is still the active one. A transaction that wrote the horse
+    // outside `tx` would leave `rider` null with the assignment still active.
+    expect(finalHorse.rider).not.toBeNull();
+    expect(finalHorse.rider.id).toBe(sellerRider.id);
+    expect((await assignmentRow(assignmentId)).isActive).toBe(true);
+  }, 90000);
 
   it('a failed assignment write leaves the horse rider untouched (both representations roll back)', async () => {
     const assigned = await assignRiderRequest(seller.token, sellerRider.id, horse.id);
