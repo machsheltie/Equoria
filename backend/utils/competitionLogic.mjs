@@ -194,7 +194,7 @@ function configFor(discipline) {
 }
 
 /** The top horse level (owner ruling 2026-10-23, Equoria-v89t8). */
-export const MAX_HORSE_LEVEL = 20;
+export const maxHorseLevel = 20;
 
 /**
  * The one level table. Up to a weighted stat score of 500 each level spans 50
@@ -206,7 +206,7 @@ export const MAX_HORSE_LEVEL = 20;
 export function levelForScore(totalScore) {
   const score = Number.isFinite(totalScore) && totalScore > 0 ? totalScore : 0;
   const level = score < 500 ? Math.floor(score / 50) + 1 : 11 + Math.floor((score - 500) / 100);
-  return Math.min(MAX_HORSE_LEVEL, Math.max(1, level));
+  return Math.min(maxHorseLevel, Math.max(1, level));
 }
 
 /**

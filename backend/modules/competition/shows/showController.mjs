@@ -12,7 +12,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { MAX_HORSE_LEVEL } from '../../../utils/competitionLogic.mjs';
+import { maxHorseLevel } from '../../../utils/competitionLogic.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 // Equoria-si69u: show money now routes through a named system-account escrow
@@ -86,7 +86,7 @@ export async function createShow(req, res) {
     let levelMax = 999;
     if (level !== undefined && level !== null) {
       const lvl = Number(level);
-      if (!Number.isInteger(lvl) || lvl < 1 || lvl > MAX_HORSE_LEVEL) {
+      if (!Number.isInteger(lvl) || lvl < 1 || lvl > maxHorseLevel) {
         return res
           .status(400)
           .json({ success: false, message: 'Level must be an integer between 1 and 20' });

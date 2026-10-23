@@ -41,7 +41,7 @@ import {
 import { riderAgeYears } from './riderRetirementScheduleService.mjs';
 
 /** The notification type players receive a week before a rider retires. */
-export const RIDER_RETIRING_NOTIFICATION_TYPE = 'riderRetiring';
+export const riderRetiringNotificationType = 'riderRetiring';
 
 /**
  * Riders with a schedule, with the hidden age read for this pass only. The age
@@ -165,7 +165,7 @@ export async function noticeRidersRetiringNextWeek() {
           .filter(a => (a.userId ?? a.horse?.userId) === recipientId && a.horse)
           .map(a => ({ id: a.horse.id, name: a.horse.name }));
         const payload = { riderId: rider.id, riderName, horses };
-        await createNotificationTx(tx, recipientId, RIDER_RETIRING_NOTIFICATION_TYPE, payload);
+        await createNotificationTx(tx, recipientId, riderRetiringNotificationType, payload);
         sent.push({ recipientId, payload });
       }
       return sent;
@@ -174,7 +174,7 @@ export async function noticeRidersRetiringNextWeek() {
     if (committed) {
       noticedIds.push(rider.id);
       for (const { recipientId, payload } of committed) {
-        finalizeNotificationAfterCommit(recipientId, RIDER_RETIRING_NOTIFICATION_TYPE, payload);
+        finalizeNotificationAfterCommit(recipientId, riderRetiringNotificationType, payload);
       }
     }
   }

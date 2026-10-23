@@ -34,8 +34,8 @@ import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useShoeHorse } from '@/hooks/api/useFarrier';
 
-/** Shown on the button; the server charges the same 50 (farrierController SHOEING_COST). */
-const SHOEING_COST = 50;
+/** Shown on the button; the server charges the same 50 (farrierController shoeingCost). */
+const shoeingCost = 50;
 
 const titleCase = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
@@ -197,7 +197,7 @@ const FarrierPage: React.FC = () => {
             data-onboarding-target="farrier-book-button"
           >
             <span className="flex items-center gap-1.5">
-              Shoe horse — <Currency amount={SHOEING_COST} />
+              Shoe horse — <Currency amount={shoeingCost} />
             </span>
           </Button>
         </Surface>

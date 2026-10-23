@@ -19,11 +19,25 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 
+// The twelve horse stats a shoeing can raise.
+const horseStatKeys = [
+  'speed',
+  'stamina',
+  'agility',
+  'endurance',
+  'strength',
+  'precision',
+  'balance',
+  'intelligence',
+  'focus',
+  'obedience',
+  'boldness',
+  'flexibility',
+];
 const ORIGIN = 'http://localhost:3000';
 // The owner-ruled price (2026-10-23), pinned here rather than imported.
-const SHOEING_COST = 50;
+const shoeingCost = 50;
 const DAY = 24 * 60 * 60 * 1000;
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 
@@ -75,7 +89,7 @@ async function shoe(token, body) {
     .send(body);
 }
 
-const statSum = h => HORSE_STAT_VALUES.reduce((n, k) => n + (h[k] ?? 0), 0);
+const statSum = h => horseStatKeys.reduce((n, k) => n + (h[k] ?? 0), 0);
 
 describe('POST /api/v1/farrier/shoe-horse', () => {
   it('shoes the horse: 50 coins, lastShod set, +1 to exactly one stat, one ledger row', async () => {
@@ -87,10 +101,10 @@ describe('POST /api/v1/farrier/shoe-horse', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.cost).toBe(SHOEING_COST);
+    expect(res.body.data.cost).toBe(shoeingCost);
     expect(res.body.data.remainingMoney).toBe(950);
     expect(res.body.data.horse.lastShod).toBeTruthy();
-    expect(HORSE_STAT_VALUES).toContain(res.body.data.statGained);
+    expect(horseStatKeys).toContain(res.body.data.statGained);
 
     const after = await prisma.horse.findUnique({ where: { id: horse.id } });
     expect(after.lastShod).not.toBeNull();

@@ -26,10 +26,10 @@ import config from '../../../config/config.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
-  RIDER_START_AGE_MIN,
-  RIDER_START_AGE_MAX,
-  RIDER_RETIREMENT_AGE_MIN,
-  RIDER_RETIREMENT_AGE_MAX,
+  riderStartAgeMin,
+  riderStartAgeMax,
+  riderRetirementAgeMin,
+  riderRetirementAgeMax,
   drawRiderStartAge,
   drawRiderRetirementAge,
   riderAgeYears,
@@ -39,8 +39,8 @@ import { processRiderRetirement, backfillRiderRetirementSchedules } from '../ind
 
 // Anything that reads, writes or draws the hidden age: the relation key or client
 // accessor, the table, the ensure/draw functions, the band constants.
-const ACCESS_PATTERN =
-  /riderRetirementSchedule\s*[:.]|\.riderRetirementSchedule|rider_retirement_schedules|ensureRiderRetirementSchedule|drawRiderRetirementAge|RIDER_RETIREMENT_AGE/;
+const accessPattern =
+  /riderRetirementSchedule\s*[:.]|\.riderRetirementSchedule|rider_retirement_schedules|ensureRiderRetirementSchedule|drawRiderRetirementAge|riderRetirementAge(Min|Max)/;
 const PREFIX = 'TestFixture-or2ua';
 const tag = () => randomBytes(4).toString('hex');
 const userIds = [];
@@ -129,8 +129,8 @@ describe('the rolls (Equoria-or2ua)', () => {
     expect(Math.max(...starts)).toBe(25);
     expect(Math.min(...retirements)).toBe(40);
     expect(Math.max(...retirements)).toBe(65);
-    expect([RIDER_START_AGE_MIN, RIDER_START_AGE_MAX]).toEqual([18, 25]);
-    expect([RIDER_RETIREMENT_AGE_MIN, RIDER_RETIREMENT_AGE_MAX]).toEqual([40, 65]);
+    expect([riderStartAgeMin, riderStartAgeMax]).toEqual([18, 25]);
+    expect([riderRetirementAgeMin, riderRetirementAgeMax]).toEqual([40, 65]);
   });
 
   it('generated marketplace riders carry a start age of 18-25', () => {
@@ -254,7 +254,7 @@ describe('rider payloads never carry the retirement age (Equoria-or2ua)', () => 
           if (allowed.has(rel) || rel.split(sep)[0] === 'scripts') {
             continue;
           }
-          if (ACCESS_PATTERN.test(readFileSync(full, 'utf8'))) {
+          if (accessPattern.test(readFileSync(full, 'utf8'))) {
             // Only the hire path may call the draw (a value-discarding statement).
             if (rel === join('modules', 'riders', 'controllers', 'riderMarketplaceController.mjs')) {
               const src = readFileSync(full, 'utf8');

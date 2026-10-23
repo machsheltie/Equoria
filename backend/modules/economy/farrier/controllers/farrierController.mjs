@@ -2,7 +2,7 @@
  * Farrier Controller (owner ruling 2026-10-23, Equoria-zmqzf).
  *
  * The farrier has ONE action: once a week the player shoes a horse for
- * SHOEING_COST coins. The horse's `lastShod` is set to now and, for now, one
+ * shoeingCost coins. The horse's `lastShod` is set to now and, for now, one
  * random stat gains +1. There are no tiers, trims, durations, outcome grades,
  * hoof condition or decay.
  *
@@ -28,19 +28,19 @@ import {
   SYSTEM_ACCOUNT_BURN,
 } from '../../services/financialLedgerService.mjs';
 
-export const SHOEING_COST = 50;
+export const shoeingCost = 50;
 /** Game days that must pass between two shoeings of the same horse. */
-export const SHOEING_INTERVAL_DAYS = 7;
+export const shoeingIntervalDays = 7;
 
 class AlreadyShodThisWeekError extends Error {}
 
 /**
  * Prisma `where` fragment: the horse has never been shod, or its last shoeing
- * was at least SHOEING_INTERVAL_DAYS Eastern calendar days ago.
+ * was at least shoeingIntervalDays Eastern calendar days ago.
  * @param {Date} now
  */
 function shoeableWhere(now) {
-  const cutoff = startOfGameDayIndex(gameDayIndex(now) - (SHOEING_INTERVAL_DAYS - 1));
+  const cutoff = startOfGameDayIndex(gameDayIndex(now) - (shoeingIntervalDays - 1));
   return { OR: [{ lastShod: null }, { lastShod: { lt: cutoff } }] };
 }
 
@@ -75,7 +75,7 @@ export async function shoeHorse(req, res) {
           // User row first. Equoria-kl16c: paired SystemAccount burn credit.
           const balance = await debitMoneyOrThrow(tx, {
             userId,
-            amount: SHOEING_COST,
+            amount: shoeingCost,
             systemAccount: SYSTEM_ACCOUNT_BURN,
             category: 'farrierServiceBurn',
             description: `Farrier fee, shoeing ${horse.name}`,
@@ -98,7 +98,7 @@ export async function shoeHorse(req, res) {
           await recordTransactionTx(tx, {
             userId,
             type: 'debit',
-            amount: SHOEING_COST,
+            amount: shoeingCost,
             category: 'farrierService',
             description: `Shoeing for ${horse.name}`,
             metadata: { horseId },
@@ -111,8 +111,8 @@ export async function shoeHorse(req, res) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient funds. Shoeing costs ${SHOEING_COST} coins`,
-          data: { required: SHOEING_COST },
+          message: `Insufficient funds. Shoeing costs ${shoeingCost} coins`,
+          data: { required: shoeingCost },
         });
       }
       if (txErr instanceof AlreadyShodThisWeekError) {
@@ -133,7 +133,7 @@ export async function shoeHorse(req, res) {
       data: {
         horse: { id: updatedHorse.id, name: updatedHorse.name, lastShod: updatedHorse.lastShod },
         statGained: stat,
-        cost: SHOEING_COST,
+        cost: shoeingCost,
         remainingMoney: moneyAfter,
       },
     });

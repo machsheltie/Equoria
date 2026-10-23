@@ -31,10 +31,10 @@
 
 import { randomInt } from 'node:crypto';
 
-export const RIDER_START_AGE_MIN = 18;
-export const RIDER_START_AGE_MAX = 25;
-export const RIDER_RETIREMENT_AGE_MIN = 40;
-export const RIDER_RETIREMENT_AGE_MAX = 65;
+export const riderStartAgeMin = 18;
+export const riderStartAgeMax = 25;
+export const riderRetirementAgeMin = 40;
+export const riderRetirementAgeMax = 65;
 
 /**
  * Draw a start age uniformly from [18, 25] inclusive.
@@ -42,7 +42,7 @@ export const RIDER_RETIREMENT_AGE_MAX = 65;
  * @returns {number}
  */
 export function drawRiderStartAge() {
-  return randomInt(RIDER_START_AGE_MIN, RIDER_START_AGE_MAX + 1);
+  return randomInt(riderStartAgeMin, riderStartAgeMax + 1);
 }
 
 /**
@@ -50,7 +50,7 @@ export function drawRiderStartAge() {
  * @returns {number}
  */
 export function drawRiderRetirementAge() {
-  return randomInt(RIDER_RETIREMENT_AGE_MIN, RIDER_RETIREMENT_AGE_MAX + 1);
+  return randomInt(riderRetirementAgeMin, riderRetirementAgeMax + 1);
 }
 
 /**

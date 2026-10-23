@@ -5,11 +5,11 @@
  * Pure function, no DB, no mocks.
  */
 import { describe, it, expect } from '@jest/globals';
-import { levelForScore, calculateHorseLevel, MAX_HORSE_LEVEL } from '../utils/competitionLogic.mjs';
+import { levelForScore, calculateHorseLevel, maxHorseLevel } from '../utils/competitionLogic.mjs';
 
 describe('levelForScore (Equoria-v89t8)', () => {
   it('the top level is 20', () => {
-    expect(MAX_HORSE_LEVEL).toBe(20);
+    expect(maxHorseLevel).toBe(20);
   });
 
   it.each([

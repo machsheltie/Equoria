@@ -18,7 +18,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { HORSE_STAT_VALUES } from '../../../../constants/schema.mjs';
-import { shoeHorse, SHOEING_COST } from '../controllers/farrierController.mjs';
+import { shoeHorse, shoeingCost } from '../controllers/farrierController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-6g8wm-farrier';
 const N = 5;
@@ -80,7 +80,7 @@ afterAll(async () => {
 
 describe('farrier shoeHorse (Equoria-6g8wm / Equoria-u9mw9 / Equoria-zmqzf)', () => {
   it('SENTINEL: N parallel shoeings of one horse shoe, charge and raise a stat exactly once', async () => {
-    const { user, horse } = await makeFixture(SHOEING_COST * N * 2);
+    const { user, horse } = await makeFixture(shoeingCost * N * 2);
     const before = await prisma.horse.findUnique({ where: { id: horse.id } });
 
     const responses = await Promise.all(
@@ -95,7 +95,7 @@ describe('farrier shoeHorse (Equoria-6g8wm / Equoria-u9mw9 / Equoria-zmqzf)', ()
       expect(f.statusCode).toBe(409);
     }
     const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
-    expect(Number(money.money)).toBe(SHOEING_COST * N * 2 - SHOEING_COST);
+    expect(Number(money.money)).toBe(shoeingCost * N * 2 - shoeingCost);
     const after = await prisma.horse.findUnique({ where: { id: horse.id } });
     expect(statSum(after) - statSum(before)).toBe(1);
     const rows = await prisma.userTransaction.findMany({ where: { userId: user.id, category: 'farrierService' } });
@@ -103,7 +103,7 @@ describe('farrier shoeHorse (Equoria-6g8wm / Equoria-u9mw9 / Equoria-zmqzf)', ()
   });
 
   it('SENTINEL: the ledger row is written in the same tx, balanceAfter is the post-debit balance', async () => {
-    const start = SHOEING_COST + 1000;
+    const start = shoeingCost + 1000;
     const { user, horse } = await makeFixture(start);
     const res = fakeRes();
     await shoeHorse({ user: { id: user.id }, body: { horseId: horse.id } }, res);
@@ -111,19 +111,19 @@ describe('farrier shoeHorse (Equoria-6g8wm / Equoria-u9mw9 / Equoria-zmqzf)', ()
     const rows = await prisma.userTransaction.findMany({ where: { userId: user.id, category: 'farrierService' } });
     expect(rows).toHaveLength(1);
     expect(rows[0].type).toBe('debit');
-    expect(Number(rows[0].amount)).toBe(SHOEING_COST);
-    expect(Number(rows[0].balanceAfter)).toBe(start - SHOEING_COST);
+    expect(Number(rows[0].amount)).toBe(shoeingCost);
+    expect(Number(rows[0].balanceAfter)).toBe(start - shoeingCost);
   });
 
   it('SENTINEL: an insufficient-funds failure leaves no ledger row, no debit and an unchanged horse', async () => {
-    const { user, horse } = await makeFixture(SHOEING_COST - 1);
+    const { user, horse } = await makeFixture(shoeingCost - 1);
     const before = await prisma.horse.findUnique({ where: { id: horse.id } });
     const res = fakeRes();
     await shoeHorse({ user: { id: user.id }, body: { horseId: horse.id } }, res);
     expect(res.statusCode).toBe(400);
     expect(await prisma.userTransaction.count({ where: { userId: user.id, category: 'farrierService' } })).toBe(0);
     const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
-    expect(Number(money.money)).toBe(SHOEING_COST - 1);
+    expect(Number(money.money)).toBe(shoeingCost - 1);
     const after = await prisma.horse.findUnique({ where: { id: horse.id } });
     expect(after.lastShod).toEqual(before.lastShod);
     expect(statSum(after)).toBe(statSum(before));
@@ -138,7 +138,7 @@ describe('farrier shoeHorse (Equoria-6g8wm / Equoria-u9mw9 / Equoria-zmqzf)', ()
     await shoeHorse({ user: { id: user.id }, body: { horseId: horse.id } }, second);
     expect(second.statusCode).toBe(409);
     const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
-    expect(Number(money.money)).toBe(1000 - SHOEING_COST);
+    expect(Number(money.money)).toBe(1000 - shoeingCost);
     expect(await prisma.userTransaction.count({ where: { userId: user.id, category: 'farrierService' } })).toBe(1);
   });
 });

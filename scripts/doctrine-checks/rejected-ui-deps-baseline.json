@@ -13,7 +13,6 @@
   "frontend/src/hooks/api/useStudListing.ts": { "sonner": 1, "toast()": 4 },
   "frontend/src/hooks/api/useTrainers.ts": { "sonner": 1, "toast()": 2 },
   "frontend/src/hooks/useAuth.ts": { "sonner": 1, "toast()": 2 },
-  "frontend/src/pages/FarrierPage.tsx": { "sonner": 1, "toast()": 2 },
   "frontend/src/pages/FeedShopPage.tsx": { "sonner": 1, "toast()": 2 },
   "frontend/src/pages/InventoryPage.tsx": { "sonner": 1, "toast()": 2 },
   "frontend/src/pages/OnboardingPage.tsx": { "sonner": 1, "toast()": 1 },
