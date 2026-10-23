@@ -36,7 +36,7 @@ export const validateHorseData = (horseData, isUpdate = false) => {
 
   // Sex validation
   if (sanitized.sex) {
-    const validSexes = ['Stallion', 'Mare', 'Colt', 'Filly', 'Rig'];
+    const validSexes = ['Stallion', 'Mare', 'Colt', 'Filly'];
     if (!validSexes.includes(sanitized.sex)) {
       errors.push('Invalid horse sex');
     }

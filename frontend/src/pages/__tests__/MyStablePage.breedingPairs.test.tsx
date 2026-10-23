@@ -1,7 +1,7 @@
 /**
  * MyStablePage "Breeding Pairs" counts by sex GROUP and AGE (Equoria-e2qs6).
  *
- * The canonical sex vocabulary is Stallion/Mare/Colt/Filly/Rig. A colt is a
+ * The canonical sex vocabulary is Stallion/Mare/Colt/Filly. A colt is a
  * young stallion and a filly a young mare, and `sex` is never relabeled as a
  * horse ages, so a 5-year-old born as a Filly is stored as 'Filly'. Counting
  * only the exact strings 'stallion'/'mare' dropped every naturally bred adult.

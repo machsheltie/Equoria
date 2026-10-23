@@ -46,7 +46,7 @@ function getStat(horse: HorseCardData, stat: keyof HorseSummary['stats']): numbe
 /**
  * Determine horse category from age + sex.
  *
- * Equoria-gxcxs: the canonical sex vocabulary is Stallion/Mare/Colt/Filly/Rig
+ * Equoria-gxcxs: the canonical sex vocabulary is Stallion/Mare/Colt/Filly
  * (backend/constants/schema.mjs HORSE_SEX) — a horse born via foaling is
  * never relabeled from Colt/Filly as it ages, so an exact 'stallion'/'mare'
  * match silently dropped every naturally-bred adult into 'unknown' (invisible

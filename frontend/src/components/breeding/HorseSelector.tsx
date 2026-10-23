@@ -100,7 +100,7 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
   const filteredHorses = useMemo(() => {
     let filtered = horses.filter((horse) => {
       // Filter by sex. horse.sex is the canonical value the API/DB actually
-      // stores (Stallion/Mare/Colt/Filly/Rig) — 'Male'/'Female' never occurs
+      // stores (Stallion/Mare/Colt/Filly) — 'Male'/'Female' never occurs
       // (Equoria-gxcxs). Match the GROUP: a filly is a young mare and a colt
       // a young stallion, so both must count toward the corresponding
       // filter; the separate age gate below (canHorseBreed) is what excludes

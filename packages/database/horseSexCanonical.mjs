@@ -3,7 +3,7 @@
  *
  * The DB stores `horse.sex` as a free String column. Without canonicalization,
  * different write paths drift: foaling/auth use Title Case ('Mare', 'Stallion',
- * 'Filly', 'Colt', 'Rig'); the marketplace store endpoint historically
+ * 'Filly', 'Colt'); the marketplace store endpoint historically
  * accepted 'mare'/'stallion' lowercase; tests and seeds used both. Result on
  * the frontend: horse cards show mixed casing.
  *
@@ -12,13 +12,7 @@
  * migration's allow-list) imports from here.
  */
 
-export const CANONICAL_HORSE_SEX_VALUES = Object.freeze([
-  'Stallion',
-  'Mare',
-  'Colt',
-  'Filly',
-  'Rig',
-]);
+export const CANONICAL_HORSE_SEX_VALUES = Object.freeze(['Stallion', 'Mare', 'Colt', 'Filly']);
 
 const LOWER_TO_CANONICAL = new Map(CANONICAL_HORSE_SEX_VALUES.map((v) => [v.toLowerCase(), v]));
 

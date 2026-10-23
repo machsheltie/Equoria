@@ -66,7 +66,8 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
       expect(HORSE_SEX.MARE).toBe('Mare');
       expect(HORSE_SEX.COLT).toBe('Colt');
       expect(HORSE_SEX.FILLY).toBe('Filly');
-      expect(HORSE_SEX.RIG).toBe('Rig');
+      // Owner ruling 2026-08-19 (Equoria-z92x3): no rigs. Old contract: HORSE_SEX.RIG was 'Rig'.
+      expect(HORSE_SEX).not.toHaveProperty('RIG');
     });
 
     it('should validate horse sex correctly', () => {
@@ -80,7 +81,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     it('should have consistent values array', () => {
       expect(HORSE_SEX_VALUES).toContain('Stallion');
       expect(HORSE_SEX_VALUES).toContain('Mare');
-      expect(HORSE_SEX_VALUES).toHaveLength(5);
+      expect(HORSE_SEX_VALUES).toHaveLength(4);
     });
   });
 
@@ -187,14 +188,15 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     it('should validate breeding age correctly', () => {
       expect(isBreedingAge(2, 'Stallion')).toBe(false);
       expect(isBreedingAge(3, 'Stallion')).toBe(true);
-      expect(isBreedingAge(25, 'Stallion')).toBe(true);
-      expect(isBreedingAge(26, 'Stallion')).toBe(false);
+      // Owner ruling 2026-10-23 (Equoria-2nacc): both sexes breed 3-20. Old contract: a stallion to 25.
+      expect(isBreedingAge(20, 'Stallion')).toBe(true);
+      expect(isBreedingAge(21, 'Stallion')).toBe(false);
 
       expect(isBreedingAge(3, 'Mare')).toBe(true);
       expect(isBreedingAge(20, 'Mare')).toBe(true);
       expect(isBreedingAge(21, 'Mare')).toBe(false);
 
-      expect(isBreedingAge(5, 'Rig')).toBe(false); // Rigs can't breed
+      expect(isBreedingAge(5, 'Colt')).toBe(false); // a Colt is a young stallion, not breeding stock
     });
   });
 

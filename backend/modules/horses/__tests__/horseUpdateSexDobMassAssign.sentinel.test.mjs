@@ -34,12 +34,12 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
   let user;
   let token;
   let foal; // newly "born" horse — the un-ageing target
-  // The game's canonical sex values are Stallion/Mare/Colt/Filly/Rig (no
-  // distinct "Gelding" value — see packages/database/horseSexCanonical.mjs).
-  // 'Rig' is the closest real analogue to the issue's "un-gelding" scenario:
-  // a male horse NOT presented as a breeding stallion, which the pre-fix
-  // route let a player silently flip to 'Stallion'.
-  let rig; // a Rig — the un-gelding-equivalent target
+  // The game's canonical sex values are Stallion/Mare/Colt/Filly (no Rig, no
+  // Gelding — see packages/database/horseSexCanonical.mjs). A 'Colt' is the
+  // closest real analogue to the issue's "un-gelding" scenario: a male horse
+  // NOT presented as a breeding stallion, which the pre-fix route let a player
+  // silently flip to 'Stallion'.
+  let rig; // a Colt — the un-gelding-equivalent target
   const createdHorseIds = [];
   const createdUserIds = [];
 
@@ -82,7 +82,7 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
         ...fixtureColor(),
         name: `TestFixture-bvddn2-rig-${suffix}`,
         userId: user.id,
-        sex: 'Rig',
+        sex: 'Colt',
         dateOfBirth: new Date('2018-01-01'),
       },
     });
@@ -124,7 +124,7 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
     expect(after.dateOfBirth.toISOString()).toBe(foal.dateOfBirth.toISOString());
   });
 
-  it('rejects PUT { sex } — 400, a Rig cannot be flipped to Stallion (sentinel-positive)', async () => {
+  it('rejects PUT { sex } — 400, a Colt cannot be flipped to Stallion (sentinel-positive)', async () => {
     // Sentinel: pre-fix this returned 200 with no value validation at all —
     // any string was accepted and silently written to the sex column.
     const response = await request(app)
@@ -143,7 +143,7 @@ describe('PUT /horses/:id — sex/gender/dateOfBirth mass-assignment guard (Equo
       where: { id: rig.id },
       select: { sex: true },
     });
-    expect(after.sex).toBe('Rig');
+    expect(after.sex).toBe('Colt');
   });
 
   it('rejects PUT { gender } — 400, gender is off the allowlist too', async () => {

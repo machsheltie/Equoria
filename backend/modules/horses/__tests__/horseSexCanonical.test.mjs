@@ -46,7 +46,6 @@ describe('canonicalizeHorseSex (pure helper)', () => {
     ['STALLION', 'Stallion'],
     ['filly', 'Filly'],
     ['colt', 'Colt'],
-    ['rig', 'Rig'],
     ['  mare  ', 'Mare'],
   ])('canonicalizes %j → %j', (input, expected) => {
     expect(canonicalizeHorseSex(input)).toBe(expected);
@@ -54,6 +53,9 @@ describe('canonicalizeHorseSex (pure helper)', () => {
 
   it('throws RangeError on unknown values', () => {
     expect(() => canonicalizeHorseSex('alien')).toThrow(RangeError);
+    // Owner ruling 2026-08-19 (Equoria-z92x3): no rigs and no geldings. Old contract: 'Rig' was canonical.
+    expect(() => canonicalizeHorseSex('rig')).toThrow(RangeError);
+    expect(() => canonicalizeHorseSex('Gelding')).toThrow(RangeError);
     expect(() => canonicalizeHorseSex('')).toThrow(RangeError);
   });
 
@@ -71,7 +73,7 @@ describe('canonicalizeHorseSex (pure helper)', () => {
   });
 
   it('canonical list contains exactly the expected values', () => {
-    expect([...CANONICAL_HORSE_SEX_VALUES].sort()).toEqual(['Colt', 'Filly', 'Mare', 'Rig', 'Stallion']);
+    expect([...CANONICAL_HORSE_SEX_VALUES].sort()).toEqual(['Colt', 'Filly', 'Mare', 'Stallion']);
   });
 });
 

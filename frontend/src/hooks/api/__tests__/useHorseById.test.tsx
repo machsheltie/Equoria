@@ -35,7 +35,7 @@ const mockHorse = {
   name: 'Thunder',
   breed: 'Arabian',
   age: 4,
-  sex: 'gelding' as const,
+  sex: 'stallion' as const,
   ownerId: 1,
 };
 

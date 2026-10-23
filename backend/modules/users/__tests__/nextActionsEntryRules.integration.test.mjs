@@ -64,7 +64,7 @@ async function makeHorse(user, { years = 7, rider = true, ...fields } = {}) {
     prisma,
     {
       name: `TestFixture-b9na-${rand()}`,
-      sex: 'Rig',
+      sex: 'Colt',
       age: years,
       dateOfBirth: competitionDateOfBirth(years),
       healthStatus: 'Excellent',

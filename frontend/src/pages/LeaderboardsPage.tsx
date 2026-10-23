@@ -149,13 +149,7 @@ const emptyBoardCopy: Partial<Record<LeaderboardCategory, { title: string; descr
 // HorseDetailData.sex is a fixed union; the backend returns a free string.
 // Known values pass through; anything else is UNKNOWN (null -> "—"), never a
 // plausible real value such as 'Stallion' (Equoria-b9yi1, doctrine §4).
-const VALID_SEXES: ReadonlyArray<HorseDetailData['sex']> = [
-  'Stallion',
-  'Mare',
-  'Colt',
-  'Filly',
-  'Rig',
-];
+const VALID_SEXES: ReadonlyArray<HorseDetailData['sex']> = ['Stallion', 'Mare', 'Colt', 'Filly'];
 
 function coerceSex(sex: string | undefined): HorseDetailData['sex'] {
   return (VALID_SEXES as readonly string[]).includes(sex ?? '')

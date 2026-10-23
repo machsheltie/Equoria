@@ -55,8 +55,8 @@ describe('HORSE_SEX', () => {
     expect(typeof HORSE_SEX.FILLY).toBe('string');
   });
 
-  it('has RIG', () => {
-    expect(typeof HORSE_SEX.RIG).toBe('string');
+  it('has no RIG (owner ruling 2026-08-19: no rigs, no geldings)', () => {
+    expect(HORSE_SEX).not.toHaveProperty('RIG');
   });
 });
 

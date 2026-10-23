@@ -47,7 +47,7 @@ beforeAll(async () => {
     data: {
       ...fixtureColor(),
       name: `TestFixture-FarrierHorse-${Date.now()}`,
-      sex: 'Rig',
+      sex: 'Colt',
       dateOfBirth: new Date('2017-01-01'),
       age: 8,
       userId: user.id,

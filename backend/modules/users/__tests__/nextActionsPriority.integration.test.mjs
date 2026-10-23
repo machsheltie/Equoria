@@ -302,12 +302,12 @@ describe('GET /api/v1/next-actions — check-results off viewedAt (Equoria-oey96
       prisma,
       {
         name: `TestFixture-nextact-${label}-${rand()}`,
-        sex: 'Rig',
+        sex: 'Colt',
         age: 5,
         dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
         lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        // No rider → no compete pollution (B9). Rig → no breed.
+        // No rider → no compete pollution (B9). Colt → no breed.
         horseXp: xpForLevel(1900),
         // Cooldown still running → no train, so check-results stands alone.
         trainingCooldown: new Date(now.getTime() + 2 * MS_PER_DAY),
@@ -370,7 +370,7 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
       prisma,
       {
         name: `TestFixture-nextact-posH-${rand()}`,
-        sex: 'Rig',
+        sex: 'Colt',
         age: 5,
         dateOfBirth: competitionDateOfBirth(5),
         healthStatus: 'Excellent',
@@ -388,7 +388,7 @@ describe('GET /api/v1/next-actions — compete gated on open shows (Equoria-oey9
       prisma,
       {
         name: `TestFixture-nextact-negH-${rand()}`,
-        sex: 'Rig',
+        sex: 'Colt',
         age: 5,
         dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',
@@ -499,14 +499,14 @@ describe('GET /api/v1/next-actions — caps at 10 actions (Equoria-oey96.28)', (
 
   beforeAll(async () => {
     user = await makeUser(userIds);
-    // 12 trainable Rigs at an unreachable level (no compete), never bred,
+    // 12 trainable Colts at an unreachable level (no compete), never bred,
     // so each yields exactly ONE `train` candidate → 12 candidates → cap 10.
     for (let i = 0; i < TRAINABLE_COUNT; i += 1) {
       await createTestHorse(
         prisma,
         {
           name: `TestFixture-nextact-cap-${i}-${rand()}`,
-          sex: 'Rig',
+          sex: 'Colt',
           age: 5,
           dateOfBirth: gameCalendarDate(now, -5 * 365),
           healthStatus: 'Excellent',

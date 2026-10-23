@@ -194,9 +194,7 @@ async function auditBreedlessHorses() {
     totals: {
       horsesInDatabase: totalHorses,
       breedlessHorses: report.length,
-      breedlessMaresAndFillies: report.filter(
-        h => h.sex !== 'Stallion' && h.sex !== 'Colt' && h.sex !== 'Gelding',
-      ).length,
+      breedlessMaresAndFillies: report.filter(h => h.sex !== 'Stallion' && h.sex !== 'Colt').length,
       lineageAncestors: report.filter(h => h.isLineageAncestor).length,
       deletableWithoutForce: report.filter(h => h.deletable).length,
       blockedFromDeletion: report.filter(h => !h.deletable).length,

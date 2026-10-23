@@ -5,7 +5,7 @@
  *
  * Observable behaviour it must preserve (BreedingPairSelection before this
  * change): a horse whose `sex` is missing or outside the canonical
- * Stallion/Mare/Colt/Filly/Rig vocabulary (case-insensitive) never appears
+ * Stallion/Mare/Colt/Filly vocabulary (case-insensitive) never appears
  * in either the sire or the dam selector, and `gender` was never read.
  */
 
@@ -71,7 +71,6 @@ describe('toBreedingHorse', () => {
   it('canonicalizes the sex case-insensitively, as the selector group checks did', () => {
     expect(toBreedingHorse(listHorse({ sex: 'stallion' }))?.sex).toBe('Stallion');
     expect(toBreedingHorse(listHorse({ sex: 'FILLY' }))?.sex).toBe('Filly');
-    expect(toBreedingHorse(listHorse({ sex: 'Rig' }))?.sex).toBe('Rig');
   });
 
   it('rejects a horse with no sex', () => {
@@ -81,6 +80,8 @@ describe('toBreedingHorse', () => {
   it('rejects a horse whose sex is outside the canonical vocabulary', () => {
     expect(toBreedingHorse(listHorse({ sex: 'Male' }))).toBeNull();
     expect(toBreedingHorse(listHorse({ sex: 'Gelding' }))).toBeNull();
+    // Owner ruling 2026-08-19 (Equoria-z92x3): no rigs and no geldings. Old contract: 'Rig' was canonical.
+    expect(toBreedingHorse(listHorse({ sex: 'Rig' }))).toBeNull();
   });
 
   it('does not fall back to `gender` — the list endpoint never emits it', () => {
@@ -128,7 +129,7 @@ describe('parseHorseSex', () => {
       'Mare',
       'Colt',
       'Filly',
-      'Rig',
+      null,
     ]);
   });
 });

@@ -18,6 +18,8 @@
  * - User progression and game mechanics
  */
 
+import { maxActiveAgeYears, minActiveAgeYears } from './horseAgePolicy.mjs';
+
 /**
  * Horse sex/gender constants. The canonical Title Case form is enforced at
  * the Prisma client layer via the $extends interceptor in
@@ -30,7 +32,6 @@ export const HORSE_SEX = {
   MARE: 'Mare',
   COLT: 'Colt',
   FILLY: 'Filly',
-  RIG: 'Rig',
 };
 
 export const HORSE_SEX_VALUES = Object.values(HORSE_SEX);
@@ -217,8 +218,8 @@ export const HORSE_STAT_VALUES = Object.values(HORSE_STATS);
  * Training age limits
  */
 export const TRAINING_LIMITS = {
-  MIN_AGE: 3,
-  MAX_AGE: 20,
+  MIN_AGE: minActiveAgeYears,
+  MAX_AGE: maxActiveAgeYears,
   COOLDOWN_DAYS: 7,
 };
 
@@ -226,18 +227,18 @@ export const TRAINING_LIMITS = {
  * Competition age limits
  */
 export const COMPETITION_LIMITS = {
-  MIN_AGE: 3,
-  MAX_AGE: 20,
+  MIN_AGE: minActiveAgeYears,
+  MAX_AGE: maxActiveAgeYears,
 };
 
 /**
  * Breeding age limits
  */
 export const BREEDING_LIMITS = {
-  MIN_STALLION_AGE: 3,
-  MIN_MARE_AGE: 3,
-  MAX_STALLION_AGE: 25,
-  MAX_MARE_AGE: 20,
+  MIN_STALLION_AGE: minActiveAgeYears,
+  MIN_MARE_AGE: minActiveAgeYears,
+  MAX_STALLION_AGE: maxActiveAgeYears,
+  MAX_MARE_AGE: maxActiveAgeYears,
 };
 
 /**

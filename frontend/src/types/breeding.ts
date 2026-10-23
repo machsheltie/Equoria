@@ -17,7 +17,7 @@ import type { HealthBand } from '@/lib/healthWords';
  * from '@/lib/utils' for any breeding-eligibility group check instead of
  * comparing against a single exact value.
  */
-export type HorseSex = 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
+export type HorseSex = 'Stallion' | 'Mare' | 'Colt' | 'Filly';
 
 /**
  * Horse entity for breeding system

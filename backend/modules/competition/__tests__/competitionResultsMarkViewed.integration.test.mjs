@@ -101,7 +101,7 @@ describe('POST /api/v1/competition/results/viewed (Equoria-oey96.28)', () => {
       prisma,
       {
         name: `TestFixture-markviewed-${label}-${rand()}`,
-        sex: 'Rig',
+        sex: 'Colt',
         age: 5,
         dateOfBirth: gameCalendarDate(now, -5 * 365),
         healthStatus: 'Excellent',

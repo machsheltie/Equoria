@@ -47,10 +47,17 @@ describe('validateHorseData', () => {
   });
 
   it('accepts valid sex values', () => {
-    for (const sex of ['Stallion', 'Mare', 'Colt', 'Filly', 'Rig']) {
+    for (const sex of ['Stallion', 'Mare', 'Colt', 'Filly']) {
       const result = validateHorseData({ sex });
       const hasError = result.errors.some(e => e.includes('sex'));
       expect(hasError).toBe(false);
+    }
+  });
+
+  it('rejects Rig and Gelding (owner ruling 2026-08-19: no rigs, no geldings)', () => {
+    for (const sex of ['Rig', 'Gelding']) {
+      const result = validateHorseData({ sex });
+      expect(result.errors.some(e => e.includes('sex'))).toBe(true);
     }
   });
 

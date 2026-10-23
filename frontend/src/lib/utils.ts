@@ -28,14 +28,15 @@ export function getBreedName(breed: unknown): string {
  * Horse.sex is a free string canonicalized server-side to Title Case
  * (backend/constants/schema.mjs HORSE_SEX; packages/database/horseSexCanonical.mjs).
  * The database never stores 'Male'/'Female' — the real vocabulary is
- * Stallion, Mare, Colt, Filly, Rig. Per the marketplace controller's
+ * Stallion, Mare, Colt, Filly. Per the marketplace controller's
  * horseSexFilterValues (Equoria-di2n5, user ruling 2026-08-19), 'Filly' and
  * 'Colt' are not separate sexes: they are mares and stallions under three
  * years old. Any female/male eligibility check must therefore match the
  * GROUP, not the exact stored string, or every young horse (and, since
  * `sex` is never relabeled as a horse ages past 3, every horse that was
  * ever born rather than bought as breeding stock) silently disappears from
- * the check. 'Rig' (a cryptorchid) groups male.
+ * the check. There are no rigs and no geldings in the game (owner ruling
+ * 2026-08-19, Equoria-z92x3).
  *
  * Case-insensitive: canonicalizeHorseSex on the backend accepts any casing,
  * and some older callers/fixtures (e.g. `gender: 'stallion'`) still pass a
@@ -48,5 +49,5 @@ export function isFemaleHorseSex(sex: string | null | undefined): boolean {
 
 export function isMaleHorseSex(sex: string | null | undefined): boolean {
   const s = sex?.toLowerCase();
-  return s === 'stallion' || s === 'colt' || s === 'rig';
+  return s === 'stallion' || s === 'colt';
 }

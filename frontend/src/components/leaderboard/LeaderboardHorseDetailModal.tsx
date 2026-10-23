@@ -58,7 +58,7 @@ export interface HorseDetailData {
   breed: string;
   age: number;
   /** null = the backend sent a token outside the vocabulary; shown as "—" (Equoria-b9yi1) */
-  sex: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig' | null;
+  sex: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | null;
   level: number;
   stats: {
     speed: number;

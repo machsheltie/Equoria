@@ -50,7 +50,6 @@ const CANONICAL_HORSE_SEX: ReadonlyMap<string, HorseSex> = new Map<string, Horse
   ['mare', 'Mare'],
   ['colt', 'Colt'],
   ['filly', 'Filly'],
-  ['rig', 'Rig'],
 ]);
 
 /**
