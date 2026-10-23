@@ -35,6 +35,11 @@
  * consume" is this module: the rider flag-compat fragment was the only
  * scoring step that was actually duplicated. The other formula differences
  * are intentional, not duplication.
+ *
+ * Current state: simulateCompetition.mjs was deleted as dead code on
+ * 2026-10-21, so the nightly scorer below is the only engine. Epic
+ * Equoria-k1p62 brings the owner's locked factors into it: the matching
+ * discipline trait as flat points (k1p62.1).
  */
 
 import { BONUS_CAP, PENALTY_CAP, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
@@ -43,6 +48,7 @@ import logger from '../../../utils/logger.mjs';
 import {
   DISCIPLINE_STATS,
   isKnownDiscipline,
+  matchingTraitPoints,
   temperamentPercent,
 } from '../rules/disciplineRules.mjs';
 
@@ -132,19 +138,24 @@ export function applyRiderCompatibility({
 /**
  * Score the entries of a nightly (cron-path) show (extracted from
  * executeClosedShows, Equoria-c7mx0): the discipline's 50/30/20 base
- * (Equoria-576c0 B4a; was a flat 5-stat average) times (1 + the summed
- * modifier percents), rounded once, x.5 up (B5, owner rulings C1/C2). The
- * terms are luck (+1..+10%), the rider's bonus minus penalty (with flag
- * compatibility) and temperament (+5 / 0 / -5, B6). Before B5, luck was ±9
- * points added to the base and the rider was a second multiplication.
+ * (Equoria-576c0 B4a; was a flat 5-stat average) plus the flat points, times
+ * (1 + the summed modifier percents), rounded once, x.5 up (B5, owner rulings
+ * C1/C2). The flat points are the matching discipline trait (+5,
+ * Equoria-k1p62.1). The percent terms are luck (+1..+10%), the rider's bonus
+ * minus penalty (with flag compatibility) and temperament (+5 / 0 / -5, B6).
+ * Before B5, luck was ±9 points added to the base and the rider was a second
+ * multiplication.
  *
  * @param {Object} input
  * @param {Object} input.show    - Show row (discipline read).
- * @param {Array}  input.entries - ShowEntry rows incl. `horse` stats.
+ * @param {Array}  input.entries - ShowEntry rows incl. `horse` stats and
+ *   epigeneticModifiers.
  * @param {Map}    input.assignmentByHorseId - horseId -> active RiderAssignment.
  * @param {Function} [input.rng] - Luck RNG (default Math.random), called once
  *   per entry; tests pass a fixed value (0 gives +1%, 0.5 gives +6%).
- * @returns {Array<{entry: Object, score: number, assignment: Object|undefined}>}
+ * @returns {Array<{entry: Object, score: number, assignment: Object|undefined,
+ *   breakdown: Object}>} `breakdown` holds every input of the score (base, flat
+ *   points, each percent term) so a result can be audited (Equoria-4q02c).
  */
 export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Math.random }) {
   // A show row whose discipline is outside the 24 (a legacy name) keeps the
@@ -214,11 +225,29 @@ export function scoreShowEntries({ show, entries, assignmentByHorseId, rng = Mat
       }
     }
 
-    // C2: each modifier as a percent, summed, applied once. Health follows
-    // with O1.
-    const percentTerms = [luckPercent, (bonusPercent - penaltyPercent) * 100, temperamentTerm];
+    // Flat points join the base before the percentages (owner ruling
+    // 2026-10-20, decision D 2026-10-23). A legacy discipline keeps its
+    // pre-B4a scoring, so it gets none.
+    const traitPoints = weighted ? matchingTraitPoints(h.epigeneticModifiers, show.discipline) : 0;
 
-    return { entry, score: applyPercentTerms(base, percentTerms), assignment };
+    // C2: each modifier as a percent, summed, applied once. Health stays out
+    // until the owner settles decision C (Equoria-k1p62).
+    const riderPercent = (bonusPercent - penaltyPercent) * 100;
+    const percentTerms = [luckPercent, riderPercent, temperamentTerm];
+    const breakdown = {
+      base,
+      traitPoints,
+      luckPercent,
+      riderPercent,
+      temperamentPercent: temperamentTerm,
+    };
+
+    return {
+      entry,
+      score: applyPercentTerms(base + traitPoints, percentTerms),
+      assignment,
+      breakdown,
+    };
   });
   if (unrecognizedTemperamentHorseIds.length > 0) {
     logger.error(
