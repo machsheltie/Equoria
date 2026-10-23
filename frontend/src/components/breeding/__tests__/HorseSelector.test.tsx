@@ -13,7 +13,7 @@
  * - Disabled horses display (age, health, cooldown)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import HorseSelector, { canHorseBreed } from '../HorseSelector';
 import type { Horse } from '@/types/breeding';
@@ -120,6 +120,25 @@ describe('canHorseBreed', () => {
   });
 
   describe('cooldown validation', () => {
+    // Equoria-q4uem.13: cooldown days are Eastern game days, but the fixtures
+    // were built with the runner's LOCAL calendar (setDate(+30)). Wherever the
+    // runner's daylight-saving dates differ from Eastern's (UTC in CI, London,
+    // Tokyo), 120 of the year's 17,520 half-hour instants landed on 29 or 31
+    // Eastern days (measured: the hour around Eastern midnight within ~30 days
+    // of a US clock change). Only Date is faked, at a fixed instant, and the
+    // 30-day case is written as two explicit instants that straddle the
+    // 2026-11-01 change, so it now also proves the change adds no phantom day.
+    const NOW = new Date('2026-10-23T16:00:00.000Z'); // noon EDT, Oct 23
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(NOW);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('should allow breeding when no cooldown is set', () => {
       const horse = createHorse({ age: 5, breedingCooldownEndsAt: undefined });
       const result = canHorseBreed(horse);
@@ -139,8 +158,9 @@ describe('canHorseBreed', () => {
     });
 
     it('should prevent breeding when cooldown is active (30 days remaining)', () => {
-      const future = new Date();
-      future.setDate(future.getDate() + 30);
+      // Noon EST on Nov 22: 30 Eastern days after noon EDT on Oct 23, across the
+      // Nov 1 clock change (30 x 24h + 1h of wall clock).
+      const future = new Date('2026-11-22T17:00:00.000Z');
       const horse = createHorse({
         age: 5,
         breedingCooldownEndsAt: future.toISOString(),
