@@ -36,6 +36,7 @@ import bcrypt from 'bcryptjs';
 import app from '../../../app.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { seededRng } from '../../../__tests__/helpers/seededRng.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -507,17 +508,23 @@ describe('inheritColorGenotype — missing parent fallback', () => {
 
 describe('inheritColorGenotype — statistical Mendelian ratio (AC5)', () => {
   // 10000 trials matches project standard (pre-31d-chi-squared-flakiness-fix).
-  // p=0.001 critical value for df=2 = 13.816 — far less likely to flake than p=0.05.
+  // p=0.001 critical value for df=2 = 13.816.
+  // Equoria-b6n4k: the draws come from a SEEDED rng (the function's own rng
+  // argument), not Math.random. On Math.random a correct implementation still
+  // failed the p=0.001 bound once per ~1000 runs by construction; seeded, the
+  // same sample is drawn every run, a correct 1:2:1 split passes every time and
+  // a biased split still yields a huge statistic and fails.
   const TRIALS = 10000;
 
   it('Ee × Ee produces ~25% EE, ~50% Ee or eE, ~25% ee (chi-squared p > 0.001)', () => {
     const sire = buildGenotype({ E_Extension: 'E/e' });
     const dam = buildGenotype({ E_Extension: 'E/e' });
+    const rng = seededRng(0x5eed);
 
     const counts = { EE: 0, Ee: 0, ee: 0 };
 
     for (let i = 0; i < TRIALS; i++) {
-      const foal = inheritColorGenotype(sire, dam);
+      const foal = inheritColorGenotype(sire, dam, null, rng);
       const ext = foal.E_Extension;
       if (ext === 'E/E') {
         counts.EE++;
@@ -673,14 +680,19 @@ describe('inheritLocus — reroll exhaustion fallback (Equoria-xb5k)', () => {
 describe('inheritColorGenotype — O/n × O/n renormalized distribution (Equoria-bkbo)', () => {
   // After lethal removal: P(O/n or n/O) = 2/3, P(n/n) = 1/3.
   // 10000 trials, chi-squared df=1, p=0.001 critical = 10.828.
+  // Equoria-b6n4k: seeded rng, so the bound is checked against one reproducible
+  // sample instead of failing ~1 run in 1000 on Math.random (gate 2026-10-20:
+  // chiSq 12.5 on an unrelated commit). A broken renormalisation (O/O kept, or
+  // a 1:1 split) still lands far above 10.828 and fails.
   it('O/n × O/n produces ~67% O/n and ~33% n/n (chi-squared df=1 p > 0.001)', () => {
     const TRIALS = 10000;
     const sire = buildGenotype({ O_FrameOvero: 'O/n' });
     const dam = buildGenotype({ O_FrameOvero: 'O/n' });
+    const rng = seededRng(0x5eed);
 
     const counts = { On: 0, nn: 0 };
     for (let i = 0; i < TRIALS; i++) {
-      const foal = inheritColorGenotype(sire, dam);
+      const foal = inheritColorGenotype(sire, dam, null, rng);
       const o = foal.O_FrameOvero;
       if (o === 'n/n') {
         counts.nn++;

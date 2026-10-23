@@ -2,7 +2,9 @@
 // Tests: weighted random selection, breed-specific generation, edge cases,
 // statistical distribution (chi-squared), and backward compatibility.
 
+import { jest } from '@jest/globals';
 import logger from '../../../utils/logger.mjs';
+import { seededRng } from '../../../__tests__/helpers/seededRng.mjs';
 import { generateTemperament, weightedRandomSelect } from '../services/temperamentService.mjs';
 import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
@@ -273,12 +275,20 @@ describe('Temperament Assignment Service', () => {
         // types (df ≤ 10, critical ≈ 29.6), the single-trial test has
         // P(false-fail under H0) = 0.001 — CI-safe; weekly across ~10 runs
         // expected false-fails = 0.01, i.e. once a decade.
-        // If this ever flakes in practice, prefer Option C (seed Math.random)
-        // over restoring the two-trial workaround.
+        // Equoria-0frwt: it did flake (gate 2026-09-15: 30.04 vs 29.588), so
+        // Option C: Math.random is seeded for the sampling loop. Every run now
+        // draws the same 10000 samples through the real weightedRandomSelect;
+        // weights that match the profile pass every run, and a mis-weighted or
+        // ignored profile still blows far past the critical value.
         const observed = {};
-        for (let i = 0; i < SAMPLE_SIZE; i++) {
-          const t = generateTemperament(breed.name);
-          observed[t] = (observed[t] || 0) + 1;
+        const random = jest.spyOn(Math, 'random').mockImplementation(seededRng(0x5eed + breed.id));
+        try {
+          for (let i = 0; i < SAMPLE_SIZE; i++) {
+            const t = generateTemperament(breed.name);
+            observed[t] = (observed[t] || 0) + 1;
+          }
+        } finally {
+          random.mockRestore();
         }
         const { stat, df } = chiSquared(observed, expected);
         const criticalValue = CHI2_CRITICAL_P001[df] ?? CHI2_CRITICAL_P001[20];
