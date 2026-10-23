@@ -21,12 +21,12 @@ import {
   updatePost,
   uploadImage,
 } from '../controllers/newsController.mjs';
-import { NEWS_IMAGE_MAX_BYTES } from '../services/newsImageStorage.mjs';
+import { newsImageMaxBytes } from '../services/newsImageStorage.mjs';
 
 const router = express.Router();
 
-const POST_FIELDS = ['postType', 'title', 'body', 'tiles', 'month', 'closesOn'];
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const deskPostFields = ['postType', 'title', 'body', 'tiles', 'month', 'closesOn'];
+const imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 const handleValidation = (req, res, next) => {
   const errors = validationResult(req);
@@ -49,21 +49,21 @@ router.get('/', getDesk);
 // The picture itself is the body (Content-Type image/*), parsed only here.
 router.post(
   '/images',
-  express.raw({ type: IMAGE_TYPES, limit: NEWS_IMAGE_MAX_BYTES }),
+  express.raw({ type: imageTypes, limit: newsImageMaxBytes }),
   [query('filename').isString().isLength({ min: 1, max: 200 }), handleValidation],
   uploadImage,
 );
 
 router.post(
   '/',
-  allowOnlyBodyFields(POST_FIELDS),
+  allowOnlyBodyFields(deskPostFields),
   [body('postType').isString(), ...textFields, handleValidation],
   createPost,
 );
 
 router.put(
   '/:id',
-  allowOnlyBodyFields(POST_FIELDS),
+  allowOnlyBodyFields(deskPostFields),
   [param('id').isInt({ min: 1 }), body('postType').optional().isString(), ...textFields],
   handleValidation,
   updatePost,

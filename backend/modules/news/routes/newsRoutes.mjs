@@ -7,7 +7,7 @@ import express from 'express';
 import { query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { getNews } from '../controllers/newsController.mjs';
-import { NEWS_CURSOR_PATTERN, NEWS_PAGE_SIZE_MAX } from '../services/newsFeedService.mjs';
+import { newsCursorPattern, newsPageSizeMax } from '../services/newsFeedService.mjs';
 
 const router = express.Router();
 // Declared here as well as on the authRouter mount, so the guard travels with
@@ -25,8 +25,8 @@ const handleValidation = (req, res, next) => {
 router.get(
   '/',
   [
-    query('before').optional().isString().matches(NEWS_CURSOR_PATTERN),
-    query('limit').optional().isInt({ min: 1, max: NEWS_PAGE_SIZE_MAX }),
+    query('before').optional().isString().matches(newsCursorPattern),
+    query('limit').optional().isInt({ min: 1, max: newsPageSizeMax }),
     handleValidation,
   ],
   getNews,

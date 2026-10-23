@@ -21,15 +21,17 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { FEED_CATALOG, TACK_INVENTORY } from '../../economy/index.mjs';
-import { GAME_TIME_ZONE, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
+import { allTackItems, feedCatalogItems } from '../../economy/index.mjs';
+import { gameDateKey, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import { isGamePostType } from '../newsPostTypes.mjs';
 
-const LOOKBACK_GAME_DAYS = 2;
-const MS_PER_DAY = 86_400_000;
+const lookbackGameDays = 2;
+const msPerDay = 86_400_000;
 
-const gameDayFormatter = new Intl.DateTimeFormat('en-GB', {
-  timeZone: GAME_TIME_ZONE,
+// Game dates are read on the Eastern clock (gameDateKey), then named on UTC so
+// the calendar date never shifts.
+const calendarDayFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'UTC',
   weekday: 'long',
   day: 'numeric',
   month: 'long',
@@ -37,7 +39,8 @@ const gameDayFormatter = new Intl.DateTimeFormat('en-GB', {
 
 /** "Sunday 26 October": the last Eastern game day before an end instant. */
 function lastGameDayLabel(endsAt) {
-  return gameDayFormatter.format(new Date(endsAt.getTime() - 1));
+  const lastDay = gameDateKey(endsAt.getTime() - 1);
+  return calendarDayFormatter.format(new Date(`${lastDay}T00:00:00Z`));
 }
 
 /** "Ann", "Ann and Bo", "Ann, Bo and Cy". */
@@ -54,7 +57,7 @@ function isNonEmptyString(value) {
 /**
  * Post game-written entries of ONE type. Every game entry goes through here.
  *
- * @param {string} postType - one of GAME_POST_TYPES
+ * @param {string} postType - one of gamePostTypes
  * @param {Array<{ sourceKey: string, title: string, body: string,
  *                 linkPath?: string|null, endsAt?: Date|null }>} entries
  *   sourceKey must start with "<postType>:" and name what is announced.
@@ -100,7 +103,7 @@ export async function postGameNewsEntries(postType, entries, now = new Date()) {
  */
 export async function collectClubNews(now) {
   const today = gameDayIndex(now);
-  const lookbackStart = startOfGameDayIndex(today - LOOKBACK_GAME_DAYS);
+  const lookbackStart = startOfGameDayIndex(today - lookbackGameDays);
   const todayEnd = startOfGameDayIndex(today + 1);
 
   const opening = await prisma.clubElection.findMany({
@@ -172,9 +175,9 @@ function defaultStoreCatalogs() {
       shop: 'tack',
       shopName: 'the Tack Shop',
       linkPath: '/tack-shop',
-      items: TACK_INVENTORY.filter(item => !item.isLegacyAlias),
+      items: allTackItems().filter(item => !item.isLegacyAlias),
     },
-    { shop: 'feed', shopName: 'the Feed Shop', linkPath: '/feed-shop', items: FEED_CATALOG },
+    { shop: 'feed', shopName: 'the Feed Shop', linkPath: '/feed-shop', items: feedCatalogItems() },
   ];
 }
 
@@ -194,8 +197,8 @@ export function collectNewItems(now, catalogs = defaultStoreCatalogs()) {
       if (typeof item.addedOn !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(item.addedOn)) {
         continue;
       }
-      const addedIndex = Date.parse(`${item.addedOn}T00:00:00Z`) / MS_PER_DAY;
-      if (addedIndex > today || addedIndex < today - LOOKBACK_GAME_DAYS) {
+      const addedIndex = Date.parse(`${item.addedOn}T00:00:00Z`) / msPerDay;
+      if (addedIndex > today || addedIndex < today - lookbackGameDays) {
         continue;
       }
       entries.push({

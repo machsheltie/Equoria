@@ -11,7 +11,7 @@
 import type { NewsItem } from '@/lib/api/news';
 import type { NewsEmblemName } from './NewsEmblem';
 
-const MS_PER_DAY = 86_400_000;
+const msPerDay = 86_400_000;
 
 export interface Night {
   gameDate: string;
@@ -22,7 +22,7 @@ export interface Night {
 }
 
 function dayNumber(dateKey: string): number {
-  return Date.parse(`${dateKey}T00:00:00Z`) / MS_PER_DAY;
+  return Date.parse(`${dateKey}T00:00:00Z`) / msPerDay;
 }
 
 /** Newest-first entries → nights, newest first. Nights with no news never appear. */
@@ -67,14 +67,14 @@ export function nightsRemaining(today: string, lastGameDate: string): number {
 }
 
 /** Written by the owner or an Admin, shown in the night's framed panel. */
-export const FEATURE_POST_TYPES: readonly string[] = [
+export const featurePostTypes: readonly string[] = [
   'seasonalEvent',
   'headAdminLetter',
   'adminLetter',
 ];
 
 export function isFeaturePost(item: NewsItem): boolean {
-  return FEATURE_POST_TYPES.includes(item.postType);
+  return featurePostTypes.includes(item.postType);
 }
 
 /** The emblem for an entry row on the road. */

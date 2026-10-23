@@ -11,7 +11,7 @@ import { NewsEmblem } from './NewsEmblem';
 import { emblemFor, endWordsFor, formatGameDate } from './newsRoad';
 
 /** Game-written types carry no signature. */
-const GAME_TYPES = new Set([
+const gameTypes = new Set([
   'newItem',
   'clubNews',
   'seasonalCompetitionOpen',
@@ -66,7 +66,7 @@ function EntryShell({ item, detail, byline }: EntryShellProps) {
 
 export function NewsEntryRow({ item }: { item: NewsItem }) {
   let byline: string | null = null;
-  if (!GAME_TYPES.has(item.postType)) {
+  if (!gameTypes.has(item.postType)) {
     const { name, role } = signatureOf(item);
     byline = role ? `Posted by ${name}, ${role}` : `Posted by ${name}`;
   }

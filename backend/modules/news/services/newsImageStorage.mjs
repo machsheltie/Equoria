@@ -24,10 +24,10 @@ import { assertSafeUpload } from '../../../utils/uploadGuard.mjs';
 import { validateOutboundUrl } from '../../../utils/ssrfGuard.mjs';
 
 /** News tile images are pictures for a row of small tiles: 5 MB is plenty. */
-export const NEWS_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const newsImageMaxBytes = 5 * 1024 * 1024;
 
-const UPLOAD_TIMEOUT_MS = 20_000;
-const BUCKET_PATTERN = /^[a-z0-9][a-z0-9._-]{1,62}$/;
+const uploadTimeoutMs = 20_000;
+const bucketPattern = /^[a-z0-9][a-z0-9._-]{1,62}$/;
 
 /**
  * The storage configuration, or null when it is not (fully) set.
@@ -37,7 +37,7 @@ export function newsImageStorageConfig() {
   const rawUrl = process.env.SUPABASE_URL?.trim();
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   const bucket = process.env.SUPABASE_NEWS_BUCKET?.trim();
-  if (!rawUrl || !key || !bucket || !BUCKET_PATTERN.test(bucket)) {
+  if (!rawUrl || !key || !bucket || !bucketPattern.test(bucket)) {
     return null;
   }
   let baseUrl;
@@ -89,7 +89,7 @@ export async function uploadNewsImage({ filename, contentType, buffer }) {
     filename,
     declaredMimeType: contentType,
     buffer,
-    maxBytes: NEWS_IMAGE_MAX_BYTES,
+    maxBytes: newsImageMaxBytes,
   });
 
   const config = newsImageStorageConfig();
@@ -102,7 +102,7 @@ export async function uploadNewsImage({ filename, contentType, buffer }) {
 
   const objectPath = `news/${safe.checksum}.${safe.extension}`;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), uploadTimeoutMs);
   let response;
   try {
     response = await fetch(`${config.baseUrl}/storage/v1/object/${config.bucket}/${objectPath}`, {

@@ -15,15 +15,15 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { gameDateKey } from '../../../utils/gameTime.mjs';
 import { toNewsItemDto } from './newsItemShape.mjs';
 
-export const NEWS_PAGE_SIZE = 30;
-export const NEWS_PAGE_SIZE_MAX = 50;
-const AHEAD_LIMIT = 12;
+export const newsPageSize = 30;
+export const newsPageSizeMax = 50;
+const aheadLimit = 12;
 
 /** A cursor is "<publishAt epoch ms>.<id>" of the last entry on a page. */
-export const NEWS_CURSOR_PATTERN = /^\d{1,15}\.\d{1,10}$/;
+export const newsCursorPattern = /^\d{1,15}\.\d{1,10}$/;
 
 /**
- * @param {string} cursor - already matched against NEWS_CURSOR_PATTERN
+ * @param {string} cursor - already matched against newsCursorPattern
  * @returns {{ publishAt: Date, id: number }}
  */
 function parseCursor(cursor) {
@@ -36,10 +36,10 @@ function parseCursor(cursor) {
  */
 export async function listPublishedNews({
   cursor = null,
-  limit = NEWS_PAGE_SIZE,
+  limit = newsPageSize,
   now = new Date(),
 } = {}) {
-  const take = Math.min(Math.max(1, limit), NEWS_PAGE_SIZE_MAX);
+  const take = Math.min(Math.max(1, limit), newsPageSizeMax);
   const where = { publishAt: { lte: now } };
   if (cursor) {
     const after = parseCursor(cursor);
@@ -63,7 +63,7 @@ export async function listPublishedNews({
     : await prisma.newsItem.findMany({
         where: { publishAt: { lte: now }, endsAt: { gt: now } },
         orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
-        take: AHEAD_LIMIT,
+        take: aheadLimit,
       });
 
   return {

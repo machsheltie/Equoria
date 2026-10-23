@@ -7,10 +7,10 @@
 import type { ActionCopy } from '@/lib/http/actionMessage';
 import type { StaffNewsPostType } from '@/lib/api/news';
 
-export const NEWS_TITLE_MAX = 120;
-export const NEWS_BODY_MAX = 6000;
-export const NEWS_CAPTION_MAX = 60;
-export const NEWS_TILES_MAX = 4;
+export const newsTitleMax = 120;
+export const newsBodyMax = 6000;
+export const newsCaptionMax = 60;
+export const newsTilesMax = 4;
 
 /** The desk's name and one-line purpose for a post type. */
 export function deskTypeCopy(

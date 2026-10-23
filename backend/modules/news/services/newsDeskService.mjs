@@ -13,7 +13,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { gameDateKey, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 import {
-  STAFF_POST_TYPES,
+  staffPostTypes,
   isStaffPostType,
   mayManageAllNews,
   mayPostNewsType,
@@ -24,13 +24,13 @@ import {
 import { lastGameDateBefore, readTiles, toNewsItemDto } from './newsItemShape.mjs';
 import { isNewsImageUrl, newsImageStorageConfig } from './newsImageStorage.mjs';
 
-export const NEWS_TITLE_MAX = 120;
-export const NEWS_BODY_MAX = 6000;
-export const NEWS_TILE_CAPTION_MAX = 60;
-export const NEWS_TILES_MAX = 4;
-const DESK_LIST_LIMIT = 60;
-const MS_PER_DAY = 86_400_000;
-const LETTER_TYPES = Object.freeze(['headAdminLetter', 'adminLetter']);
+export const newsTitleMax = 120;
+export const newsBodyMax = 6000;
+export const newsTileCaptionMax = 60;
+export const newsTilesMax = 4;
+const deskListLimit = 60;
+const msPerDay = 86_400_000;
+const letterTypes = Object.freeze(['headAdminLetter', 'adminLetter']);
 
 /** @returns {Promise<{ id: string, username: string, role: string }>} */
 async function loadStaffWriter(userId) {
@@ -59,8 +59,8 @@ function readTileInput(raw) {
   if (raw === undefined) {
     return [];
   }
-  if (!Array.isArray(raw) || raw.length > NEWS_TILES_MAX) {
-    throw new AppError(`A seasonal event has at most ${NEWS_TILES_MAX} picture tiles.`, 400);
+  if (!Array.isArray(raw) || raw.length > newsTilesMax) {
+    throw new AppError(`A seasonal event has at most ${newsTilesMax} picture tiles.`, 400);
   }
   if (raw.length > 0 && !newsImageStorageConfig()) {
     throw new AppError(
@@ -77,7 +77,7 @@ function readTileInput(raw) {
     }
     return {
       imageUrl: tile.imageUrl,
-      caption: requiredText(tile.caption, NEWS_TILE_CAPTION_MAX, 'tile caption'),
+      caption: requiredText(tile.caption, newsTileCaptionMax, 'tile caption'),
     };
   });
 }
@@ -91,8 +91,8 @@ function monthBounds(month) {
   const year = Number(match[1]);
   const monthIndex = Number(match[2]) - 1;
   return {
-    start: startOfGameDayIndex(Date.UTC(year, monthIndex, 1) / MS_PER_DAY),
-    end: startOfGameDayIndex(Date.UTC(year, monthIndex + 1, 1) / MS_PER_DAY),
+    start: startOfGameDayIndex(Date.UTC(year, monthIndex, 1) / msPerDay),
+    end: startOfGameDayIndex(Date.UTC(year, monthIndex + 1, 1) / msPerDay),
   };
 }
 
@@ -103,7 +103,7 @@ function closingInstant(closesOn) {
   if (!match || Number.isNaN(dayMs) || new Date(dayMs).toISOString().slice(0, 10) !== closesOn) {
     throw new AppError('The closing day must be a date.', 400);
   }
-  return startOfGameDayIndex(dayMs / MS_PER_DAY + 1);
+  return startOfGameDayIndex(dayMs / msPerDay + 1);
 }
 
 /**
@@ -112,8 +112,8 @@ function closingInstant(closesOn) {
  */
 function postFields(postType, input, now, existing) {
   const fields = {
-    title: requiredText(input.title, NEWS_TITLE_MAX, 'title'),
-    body: requiredText(input.body, NEWS_BODY_MAX, 'body'),
+    title: requiredText(input.title, newsTitleMax, 'title'),
+    body: requiredText(input.body, newsBodyMax, 'body'),
   };
 
   if (postType !== 'seasonalEvent' && input.tiles !== undefined && input.tiles.length !== 0) {
@@ -168,7 +168,7 @@ function mayChangePost(writer, post) {
   if (post.authorUserId === writer.id || mayManageAllNews(writer.role)) {
     return true;
   }
-  return !LETTER_TYPES.includes(post.postType) && mayPostNewsType(writer.role, post.postType);
+  return !letterTypes.includes(post.postType) && mayPostNewsType(writer.role, post.postType);
 }
 
 async function loadStaffPost(id, writer) {
@@ -206,9 +206,9 @@ function toDeskDto(row, now) {
 export async function getNewsDesk({ writerId, now = new Date() }) {
   const writer = await loadStaffWriter(writerId);
   const rows = await prisma.newsItem.findMany({
-    where: { postType: { in: [...STAFF_POST_TYPES] } },
+    where: { postType: { in: [...staffPostTypes] } },
     orderBy: [{ publishAt: 'desc' }, { id: 'desc' }],
-    take: DESK_LIST_LIMIT,
+    take: deskListLimit,
   });
   return {
     allowedTypes: newsTypesForRole(writer.role),

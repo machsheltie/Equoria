@@ -37,7 +37,7 @@ import { listPublishedNews } from '../services/newsFeedService.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = `TestFixture-wbt8l-${Date.now()}`;
-const PNG_BYTES = Buffer.concat([
+const pngBytes = Buffer.concat([
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
   Buffer.from('a tiny stand-in picture body'),
 ]);
@@ -424,7 +424,7 @@ describe('News Desk pictures', () => {
     delete process.env.SUPABASE_NEWS_BUCKET;
     const res = await mutate('post', actors.admin, '/api/v1/admin/news/images?filename=tack.png')
       .set('Content-Type', 'image/png')
-      .send(PNG_BYTES);
+      .send(pngBytes);
     expect(res.status).toBe(503);
     expect(res.body.message).toMatch(/not set up/i);
   });
@@ -433,7 +433,7 @@ describe('News Desk pictures', () => {
     envSnap = snapshotEnv();
     const res = await mutate('post', actors.moderator, '/api/v1/admin/news/images?filename=a.png')
       .set('Content-Type', 'image/png')
-      .send(PNG_BYTES);
+      .send(pngBytes);
     expect(res.status).toBe(403);
   });
 
@@ -441,11 +441,11 @@ describe('News Desk pictures', () => {
     envSnap = snapshotEnv();
     stub = await startStorageStub();
     useStorage(stub.url);
-    const checksum = createHash('sha256').update(PNG_BYTES).digest('hex');
+    const checksum = createHash('sha256').update(pngBytes).digest('hex');
 
     const res = await mutate('post', actors.admin, '/api/v1/admin/news/images?filename=tack.png')
       .set('Content-Type', 'image/png')
-      .send(PNG_BYTES);
+      .send(pngBytes);
 
     expect(res.status).toBe(201);
     expect(res.body.data.imageUrl).toBe(`${stub.url}/storage/v1/object/public/news-test/news/${checksum}.png`);
@@ -455,7 +455,7 @@ describe('News Desk pictures', () => {
     expect(sent.url).toBe(`/storage/v1/object/news-test/news/${checksum}.png`);
     expect(sent.headers.authorization).toBe('Bearer test-service-key');
     expect(sent.headers['content-type']).toBe('image/png');
-    expect(sent.body.equals(PNG_BYTES)).toBe(true);
+    expect(sent.body.equals(pngBytes)).toBe(true);
   });
 
   it('accepts tile pictures from the News bucket only', async () => {

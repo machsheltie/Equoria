@@ -13,7 +13,7 @@
 
 // 5-tier feed catalog (feed-system redesign 2026-04-29).
 // All packs sold in 100-unit increments only. Per spec §5.5.
-export const FEED_CATALOG = [
+const feedCatalogEntries = [
   {
     id: 'basic',
     name: 'Basic Feed',
@@ -61,3 +61,15 @@ export const FEED_CATALOG = [
     pregnancyBonusPct: 20,
   },
 ];
+
+export const FEED_CATALOG = feedCatalogEntries;
+
+/**
+ * The feed catalog (camelCase accessor; the nightly News pass reads new items
+ * through it, Equoria-wbt8l).
+ *
+ * @returns {ReadonlyArray<object>}
+ */
+export function feedCatalogItems() {
+  return feedCatalogEntries;
+}

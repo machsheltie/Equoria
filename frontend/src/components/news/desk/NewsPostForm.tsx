@@ -15,10 +15,10 @@ import { useCreateNewsPost, useUpdateNewsPost, useUploadNewsImage } from '@/hook
 import { actionMessageFor } from '@/lib/http/actionMessage';
 import type { NewsDesk, NewsDeskPost, StaffNewsPostType } from '@/lib/api/news';
 import {
-  NEWS_BODY_MAX,
-  NEWS_CAPTION_MAX,
-  NEWS_TILES_MAX,
-  NEWS_TITLE_MAX,
+  newsBodyMax,
+  newsCaptionMax,
+  newsTilesMax,
+  newsTitleMax,
   deskRefused,
   deskTypeCopy,
   uploadRefused,
@@ -65,17 +65,17 @@ function draftFrom(post: NewsDeskPost | null): Draft {
 function problemsOf(draft: Draft): Record<string, string> {
   const problems: Record<string, string> = {};
   if (!draft.title.trim()) problems.title = 'Give the post a title.';
-  else if (draft.title.trim().length > NEWS_TITLE_MAX)
-    problems.title = `A title can be at most ${NEWS_TITLE_MAX} characters.`;
+  else if (draft.title.trim().length > newsTitleMax)
+    problems.title = `A title can be at most ${newsTitleMax} characters.`;
   if (!draft.body.trim()) problems.body = 'Write the post.';
-  else if (draft.body.trim().length > NEWS_BODY_MAX)
-    problems.body = `A post can be at most ${NEWS_BODY_MAX} characters.`;
+  else if (draft.body.trim().length > newsBodyMax)
+    problems.body = `A post can be at most ${newsBodyMax} characters.`;
   if (draft.postType === 'seasonalEvent') {
     if (!/^\d{4}-\d{2}$/.test(draft.month)) problems.month = 'Choose the month the event runs.';
     if (draft.tiles.some((t) => !t.imageUrl || !t.caption.trim()))
       problems.tiles = 'Each tile needs an uploaded picture and a caption.';
-    else if (draft.tiles.some((t) => t.caption.trim().length > NEWS_CAPTION_MAX))
-      problems.tiles = `A caption can be at most ${NEWS_CAPTION_MAX} characters.`;
+    else if (draft.tiles.some((t) => t.caption.trim().length > newsCaptionMax))
+      problems.tiles = `A caption can be at most ${newsCaptionMax} characters.`;
   }
   return problems;
 }
@@ -215,7 +215,7 @@ export function NewsPostForm({ desk, editing, onDone, onCancelEdit }: NewsPostFo
               <Input
                 {...p}
                 value={draft.title}
-                maxLength={NEWS_TITLE_MAX}
+                maxLength={newsTitleMax}
                 onChange={(e) => set({ title: e.target.value })}
               />
             )}
@@ -232,7 +232,7 @@ export function NewsPostForm({ desk, editing, onDone, onCancelEdit }: NewsPostFo
                 {...p}
                 rows={8}
                 value={draft.body}
-                maxLength={NEWS_BODY_MAX}
+                maxLength={newsBodyMax}
                 onChange={(e) => set({ body: e.target.value })}
               />
             )}
@@ -289,7 +289,7 @@ export function NewsPostForm({ desk, editing, onDone, onCancelEdit }: NewsPostFo
                           <Input
                             {...p}
                             value={tile.caption}
-                            maxLength={NEWS_CAPTION_MAX}
+                            maxLength={newsCaptionMax}
                             onChange={(e) => setTile(tile.key, { caption: e.target.value })}
                           />
                         )}
@@ -305,7 +305,7 @@ export function NewsPostForm({ desk, editing, onDone, onCancelEdit }: NewsPostFo
                       </Button>
                     </div>
                   ))}
-                  {draft.tiles.length < NEWS_TILES_MAX && (
+                  {draft.tiles.length < newsTilesMax && (
                     <Button
                       type="button"
                       variant="secondary"

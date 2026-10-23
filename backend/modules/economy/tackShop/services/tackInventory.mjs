@@ -485,7 +485,17 @@ export const TACK_INVENTORY = [
  * @returns {Array<object>}
  */
 export function tackCatalogItems(category) {
-  return TACK_INVENTORY.filter(item => item.category === category);
+  return allTackItems().filter(item => item.category === category);
+}
+
+/**
+ * Every catalogue item, legacy aliases included (camelCase accessor; the
+ * nightly News pass reads new items through it, Equoria-wbt8l).
+ *
+ * @returns {ReadonlyArray<object>}
+ */
+export function allTackItems() {
+  return TACK_INVENTORY;
 }
 
 /**

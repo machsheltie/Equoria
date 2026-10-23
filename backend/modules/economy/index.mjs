@@ -9,7 +9,7 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export { FEED_CATALOG } from './feedShop/services/feedCatalog.mjs';
+export { FEED_CATALOG, feedCatalogItems } from './feedShop/services/feedCatalog.mjs';
 export {
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
@@ -27,6 +27,7 @@ export {
 } from './services/userMoneyTransfer.mjs';
 export {
   TACK_INVENTORY,
+  allTackItems,
   resolveTackBonus,
   tackCatalogItems,
 } from './tackShop/services/tackInventory.mjs';

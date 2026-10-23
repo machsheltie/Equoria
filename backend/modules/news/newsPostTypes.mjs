@@ -30,7 +30,7 @@
 
 import { can } from '../staff/index.mjs';
 
-export const STAFF_POST_TYPES = Object.freeze([
+export const staffPostTypes = Object.freeze([
   'seasonalEvent',
   'headAdminLetter',
   'adminLetter',
@@ -38,7 +38,7 @@ export const STAFF_POST_TYPES = Object.freeze([
   'contest',
 ]);
 
-export const GAME_POST_TYPES = Object.freeze([
+export const gamePostTypes = Object.freeze([
   'newItem',
   'clubNews',
   'seasonalCompetitionOpen',
@@ -54,14 +54,14 @@ export const GAME_POST_TYPES = Object.freeze([
  * letter ('From Admin <name>'); moderators write nothing.
  */
 /** Signature role label per staff role that may post News. */
-const ROLE_LABELS = Object.freeze({ owner: 'Head Admin', admin: 'Admin' });
+const roleLabels = Object.freeze({ owner: 'Head Admin', admin: 'Admin' });
 
 /**
  * @param {unknown} postType
  * @returns {boolean}
  */
 export function isStaffPostType(postType) {
-  return STAFF_POST_TYPES.includes(postType);
+  return staffPostTypes.includes(postType);
 }
 
 /**
@@ -69,7 +69,7 @@ export function isStaffPostType(postType) {
  * @returns {boolean}
  */
 export function isGamePostType(postType) {
-  return GAME_POST_TYPES.includes(postType);
+  return gamePostTypes.includes(postType);
 }
 
 /**
@@ -107,7 +107,7 @@ export function mayUseNewsDesk(role) {
  * @returns {string[]}
  */
 export function newsTypesForRole(role) {
-  return STAFF_POST_TYPES.filter(postType => mayPostNewsType(role, postType));
+  return staffPostTypes.filter(postType => mayPostNewsType(role, postType));
 }
 
 /**
@@ -116,5 +116,5 @@ export function newsTypesForRole(role) {
  * @returns {string|null}
  */
 export function newsRoleLabel(role) {
-  return typeof role === 'string' && Object.hasOwn(ROLE_LABELS, role) ? ROLE_LABELS[role] : null;
+  return typeof role === 'string' && Object.hasOwn(roleLabels, role) ? roleLabels[role] : null;
 }
