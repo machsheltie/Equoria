@@ -302,6 +302,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
               horseName: r.horseName ?? '—',
               placement: r.rank,
               prizeMoney: r.prizeWon,
+              horsePointsAwarded: r.horsePointsAwarded,
             },
           ]
         : []

@@ -15,6 +15,7 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Trophy, Medal, Star, Coins, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
+import { sumHorsePoints } from '@/lib/api/competitionResults';
 
 /**
  * Individual horse prize data structure
@@ -24,6 +25,11 @@ export interface HorsePrize {
   horseName: string;
   placement: number;
   prizeMoney: number;
+  /**
+   * Horse Points the placing recorded at settlement (Equoria-m3yq1); null or
+   * absent when none was recorded, which makes the card's total unknown.
+   */
+  horsePointsAwarded?: number | null;
 }
 
 /**
@@ -177,6 +183,15 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
     }
   }, [onToggleExpand]);
 
+  // Owner ruling 2026-10-23 (Equoria-m3yq1): the third tile is the Horse Points
+  // the placings earned — the bible's 10/5/3/1, as recorded at settlement. A
+  // placing with none recorded makes the total unknown (an em dash), never a
+  // partial sum (owner rulings R6/R7).
+  const totalHorsePoints = useMemo(
+    () => sumHorsePoints(prizes.map((p) => ({ horsePointsAwarded: p.horsePointsAwarded ?? null }))),
+    [prizes]
+  );
+
   // Get card styling based on best placement
   const cardClasses = getCardClasses(bestPlacement);
 
@@ -217,8 +232,8 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
         </div>
 
         {/* Summary Stats Row */}
-        {/* Two tiles since the invented XP tile went (R7); controller ruling, fix round 1. */}
-        <div className="grid grid-cols-2 gap-4 mb-3">
+        {/* Prize, placed, and Horse Points earned (owner ruling 2026-10-23, Equoria-m3yq1). */}
+        <div className="grid grid-cols-3 gap-4 mb-3">
           {/* Total Prize Money */}
           <div className="text-center p-2 rounded-lg bg-[rgba(15,35,70,0.4)]">
             <div className="flex items-center justify-center gap-1 mb-1">
@@ -241,6 +256,24 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
             </div>
             <p className="text-lg font-bold text-[rgb(220,235,255)]" data-testid="placed-count">
               {placedCount}
+            </p>
+          </div>
+
+          {/* Horse Points earned */}
+          <div className="text-center p-2 rounded-lg bg-[rgba(15,35,70,0.4)]">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Star className="h-4 w-4 text-[var(--gold-primary)]" aria-hidden="true" />
+              <span className="text-xs text-[var(--text-secondary)]">Horse Points</span>
+            </div>
+            <p
+              className="text-lg font-bold text-[rgb(220,235,255)] tabular-nums"
+              data-testid="total-horse-points"
+            >
+              {totalHorsePoints === null ? (
+                <span aria-label="Horse Points not recorded">—</span>
+              ) : (
+                totalHorsePoints
+              )}
             </p>
           </div>
         </div>

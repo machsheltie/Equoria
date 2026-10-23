@@ -164,14 +164,77 @@ describe('PrizeSummaryCard', () => {
       expect(screen.getByText(/Jan 2[45], 2026/)).toBeInTheDocument();
     });
 
-    // Controller ruling (fix round 1, 2026-10-15): with the XP tile removed (R7),
-    // the two remaining tiles fill the stats row instead of leaving an empty third.
-    it('lays the two summary tiles across the whole stats row', () => {
+    // Old contract (controller ruling, fix round 1, 2026-10-15): with the XP tile
+    // removed (R7), two tiles filled the stats row. Owner ruling 2026-10-23
+    // (Equoria-m3yq1): the third slot shows the Horse Points earned.
+    it('lays three summary tiles across the stats row: prize, placed, Horse Points', () => {
       render(<PrizeSummaryCard {...defaultProps} />);
 
       const row = screen.getByTestId('placed-count').closest('.grid');
-      expect(row).toHaveClass('grid-cols-2');
-      expect(row?.children).toHaveLength(2);
+      expect(row).toHaveClass('grid-cols-3');
+      expect(row?.children).toHaveLength(3);
+      expect(row).toContainElement(screen.getByTestId('total-horse-points'));
+    });
+
+    it('shows the Horse Points the placings recorded, summed', () => {
+      render(
+        <PrizeSummaryCard
+          {...defaultProps}
+          prizes={[
+            {
+              horseId: 101,
+              horseName: 'Thunder Bolt',
+              placement: 1,
+              prizeMoney: 5000,
+              horsePointsAwarded: 10,
+            },
+            {
+              horseId: 102,
+              horseName: 'Lightning Flash',
+              placement: 2,
+              prizeMoney: 2500,
+              horsePointsAwarded: 5,
+            },
+            {
+              horseId: 103,
+              horseName: 'Storm Chaser',
+              placement: 3,
+              prizeMoney: 1000,
+              horsePointsAwarded: 3,
+            },
+          ]}
+        />
+      );
+
+      const tile = screen.getByTestId('total-horse-points').closest('div.text-center');
+      expect(tile).toHaveTextContent('Horse Points');
+      expect(screen.getByTestId('total-horse-points')).toHaveTextContent(/^18$/);
+    });
+
+    it('shows an em dash, never a partial sum, when a placing recorded no Horse Points', () => {
+      render(
+        <PrizeSummaryCard
+          {...defaultProps}
+          prizes={[
+            {
+              horseId: 101,
+              horseName: 'Thunder Bolt',
+              placement: 1,
+              prizeMoney: 5000,
+              horsePointsAwarded: 10,
+            },
+            {
+              horseId: 102,
+              horseName: 'Lightning Flash',
+              placement: 2,
+              prizeMoney: 2500,
+              horsePointsAwarded: null,
+            },
+          ]}
+        />
+      );
+
+      expect(screen.getByTestId('total-horse-points')).toHaveTextContent(/^—$/);
     });
 
     it('shows total prize money with currency formatting', () => {
