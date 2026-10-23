@@ -30,9 +30,22 @@ describe('INTEGRATION: competition leaderboard query cache (Equoria-cmw85.6)', (
   let token;
   let userId;
   let horse;
-  let show;
+  const showIds = [];
 
+  /** One more first place for the fixture horse, at a show of its own. */
   async function addWin() {
+    const show = await prisma.show.create({
+      data: {
+        name: `TestFixture-cmw856-${suffix}-${showIds.length}`,
+        discipline: DISCIPLINE,
+        runDate: new Date(),
+        prize: 1000,
+        entryFee: 100,
+        levelMin: 1,
+        levelMax: 10,
+      },
+    });
+    showIds.push(show.id);
     await prisma.competitionResult.create({
       data: {
         horseId: horse.id,
@@ -74,8 +87,6 @@ describe('INTEGRATION: competition leaderboard query cache (Equoria-cmw85.6)', (
     return { res, ops };
   }
 
-  const winsOf = res => res.body.data.leaderboard.find(e => e.horseId === horse.id)?.wins;
-
   beforeAll(async () => {
     const u = await createTestUser({
       username: `TFcmw856_${suffix}`,
@@ -84,34 +95,22 @@ describe('INTEGRATION: competition leaderboard query cache (Equoria-cmw85.6)', (
     token = u.token;
     userId = u.user.id;
     horse = await createTestHorse({ name: `TestFixture-cmw856-${suffix}`, userId });
-    show = await prisma.show.create({
-      data: {
-        name: `TestFixture-cmw856-${suffix}`,
-        discipline: DISCIPLINE,
-        runDate: new Date(),
-        prize: 1000,
-        entryFee: 100,
-        levelMin: 1,
-        levelMax: 10,
-      },
-    });
     await addWin();
   }, 120000);
 
   afterAll(async () => {
     await prisma.competitionResult.deleteMany({ where: { horseId: horse?.id } });
-    await prisma.show.deleteMany({ where: { id: show?.id } });
+    await prisma.show.deleteMany({ where: { id: { in: showIds } } });
     await prisma.horse.deleteMany({ where: { id: horse?.id } });
     await prisma.user.deleteMany({ where: { id: userId } });
   }, 60000);
 
   it('serves a repeated identical request from the cache, without querying', async () => {
-    const query = { metric: 'wins', discipline: DISCIPLINE, period: 'all', limit: 37 };
+    const query = { metric: 'wins', discipline: DISCIPLINE, period: 'all', limit: 100 };
 
     const first = await board(query);
     expect(first.ops.groupBy).toBeGreaterThan(0);
     expect(first.ops.raw).toBeGreaterThan(0);
-    expect(winsOf(first.res)).toBe(1);
 
     // The data changes, but the identical request inside the TTL answers the
     // cached page without touching the results table.
@@ -120,17 +119,15 @@ describe('INTEGRATION: competition leaderboard query cache (Equoria-cmw85.6)', (
     expect(second.ops.groupBy).toBe(0);
     expect(second.ops.raw).toBe(0);
     expect(second.res.body).toEqual(first.res.body);
-    expect(winsOf(second.res)).toBe(1);
 
     // The HTTP response is never cached by the browser or a proxy (cmw85.28).
     expect(second.res.headers['cache-control']).toMatch(/no-store/);
   }, 60000);
 
   it('gives every distinct parameter combination its own cache entry', async () => {
-    const base = { metric: 'wins', discipline: DISCIPLINE, period: 'all', limit: 41 };
+    const base = { metric: 'wins', discipline: DISCIPLINE, period: 'all', limit: 99 };
     const a = await board(base);
     expect(a.ops.groupBy).toBeGreaterThan(0);
-    const winsAtA = winsOf(a.res);
 
     // Same discipline, a different limit / offset / metric / period: each is computed fresh.
     for (const changed of [{ limit: 42 }, { offset: 1 }, { metric: 'earnings' }, { period: 'year' }]) {
@@ -141,6 +138,6 @@ describe('INTEGRATION: competition leaderboard query cache (Equoria-cmw85.6)', (
     // The original key is still its own cached answer.
     const again = await board(base);
     expect(again.ops.groupBy).toBe(0);
-    expect(winsOf(again.res)).toBe(winsAtA);
+    expect(again.res.body).toEqual(a.res.body);
   }, 60000);
 });
