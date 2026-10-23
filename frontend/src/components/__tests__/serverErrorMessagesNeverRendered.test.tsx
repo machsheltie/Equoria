@@ -3,7 +3,7 @@
  *
  * Each surface below used to print the thrown error's `.message` verbatim, and
  * the api-client puts the server body's `message` on that error. A 500 whose
- * body carries internals (here a SENTINEL) therefore leaked to the player.
+ * body carries internals (here a sentinel) therefore leaked to the player.
  *
  * The REAL components, hooks and api-client run; only the network boundary is
  * stubbed (MSW). Every surface must show the shared mapper's copy for a 5xx and
@@ -25,13 +25,13 @@ import type { Horse } from '@/pages/horse-detail/HorseDetailPageTypes';
 import { userMessageFor } from '@/lib/http/userMessage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const SENTINEL = 'PG_CONN_RESET_SENTINEL: relation "horses" at 10.0.0.7:5432';
-const SERVER_FAULT_COPY = userMessageFor({ statusCode: 500 }).message;
+const sentinel = 'internal detail: connection reset by 10.0.0.7:5432, relation "horses"';
+const serverFaultCopy = userMessageFor({ statusCode: 500 }).message;
 
 function failEverythingWithSentinel() {
   server.use(
     http.get(`${base}/api/v1/*`, () =>
-      HttpResponse.json({ success: false, message: SENTINEL }, { status: 500 })
+      HttpResponse.json({ success: false, message: sentinel }, { status: 500 })
     )
   );
 }
@@ -73,32 +73,32 @@ describe('server error text is mapped, never echoed (Equoria-0vm61)', () => {
     failEverythingWithSentinel();
     renderWithQuery(<FoalDevelopmentTracker foalId={77} />);
 
-    expect(await screen.findByText(SERVER_FAULT_COPY)).toBeInTheDocument();
-    expect(screen.queryByText(new RegExp('PG_CONN_RESET_SENTINEL'))).not.toBeInTheDocument();
+    expect(await screen.findByText(serverFaultCopy)).toBeInTheDocument();
+    expect(screen.queryByText(/connection reset by 10\.0\.0\.7/)).not.toBeInTheDocument();
   });
 
   it('TrainingHistoryPanel shows the mapped copy for both failed reads', async () => {
     failEverythingWithSentinel();
     renderWithQuery(<TrainingHistoryPanel horseId={5} />);
 
-    const copies = await screen.findAllByText(SERVER_FAULT_COPY);
+    const copies = await screen.findAllByText(serverFaultCopy);
     expect(copies).toHaveLength(2);
-    expect(screen.queryByText(new RegExp('PG_CONN_RESET_SENTINEL'))).not.toBeInTheDocument();
+    expect(screen.queryByText(/connection reset by 10\.0\.0\.7/)).not.toBeInTheDocument();
   });
 
   it('GeneticsTab shows the mapped copy for a failed genetics read', async () => {
     failEverythingWithSentinel();
     renderWithQuery(<GeneticsTab horse={horse} />);
 
-    expect(await screen.findByText(SERVER_FAULT_COPY)).toBeInTheDocument();
-    expect(screen.queryByText(new RegExp('PG_CONN_RESET_SENTINEL'))).not.toBeInTheDocument();
+    expect(await screen.findByText(serverFaultCopy)).toBeInTheDocument();
+    expect(screen.queryByText(/connection reset by 10\.0\.0\.7/)).not.toBeInTheDocument();
   });
 
   it('XpHistoryTimeline shows the mapped copy for the error it is handed', () => {
-    const error = Object.assign(new Error(SENTINEL), { statusCode: 500 });
+    const error = Object.assign(new Error(sentinel), { statusCode: 500 });
     render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={[]} error={error} />);
 
-    expect(screen.getByText(SERVER_FAULT_COPY)).toBeInTheDocument();
-    expect(screen.queryByText(new RegExp('PG_CONN_RESET_SENTINEL'))).not.toBeInTheDocument();
+    expect(screen.getByText(serverFaultCopy)).toBeInTheDocument();
+    expect(screen.queryByText(/connection reset by 10\.0\.0\.7/)).not.toBeInTheDocument();
   });
 });

@@ -43,7 +43,7 @@ import { actionMessageFor } from '@/lib/http/actionMessage';
 // The page reaches this tracker only after the foal record itself loaded, so a 404 from
 // /development means the horse has aged past foalhood. Same wording the backend sent
 // (foalModel.mjs), now owned here instead of echoed from the response body.
-const NOT_A_FOAL_COPY = 'Horse is not a foal (must be 1 year old or younger)';
+const notAFoalCopy = 'Horse is not a foal (must be 1 year old or younger)';
 
 interface FoalDevelopmentTrackerProps {
   foalId: number;
@@ -72,7 +72,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
         {/* Error */}
         {devError && (
           <div className="glass-panel rounded-xl border border-[var(--role-danger-border)] px-4 py-3 text-sm text-[var(--role-danger-text)] font-[var(--font-body)]">
-            {actionMessageFor(devError, { 404: NOT_A_FOAL_COPY })}
+            {actionMessageFor(devError, { 404: notAFoalCopy })}
           </div>
         )}
 

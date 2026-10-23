@@ -224,12 +224,12 @@ describe('HorseTraderPage — error path', () => {
   // refusal has action-level copy (an unaffordable purchase). Any other failure
   // shows the shared mapper's copy and never the server body's text.
   it('does not echo a 500 body message into the purchase error', async () => {
-    const SENTINEL = 'PG_CONN_RESET_SENTINEL: relation "horses" at 10.0.0.7:5432';
+    const sentinel = 'internal detail: connection reset by 10.0.0.7:5432, relation "horses"';
     server.use(
       makeBreedsHandler(),
       makeProfileHandler(5000),
       http.post('*/api/v1/marketplace/store/buy', () =>
-        HttpResponse.json({ success: false, status: 'error', message: SENTINEL }, { status: 500 })
+        HttpResponse.json({ success: false, status: 'error', message: sentinel }, { status: 500 })
       )
     );
 
@@ -246,6 +246,6 @@ describe('HorseTraderPage — error path', () => {
 
     const errorBox = await screen.findByTestId('purchase-error');
     expect(errorBox).toHaveTextContent(userMessageFor({ statusCode: 500 }).message);
-    expect(errorBox).not.toHaveTextContent('PG_CONN_RESET_SENTINEL');
+    expect(errorBox).not.toHaveTextContent('connection reset by');
   });
 });

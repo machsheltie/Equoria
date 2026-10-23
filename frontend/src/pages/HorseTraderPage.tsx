@@ -33,7 +33,7 @@ import { useProfile } from '@/hooks/useAuth';
 const STORE_PRICE = 1000;
 
 // The wording the Horse Trader has always shown for a refused purchase (owner copy).
-const INSUFFICIENT_FUNDS_COPY = 'Insufficient funds for store purchase.';
+const insufficientFundsCopy = 'Insufficient funds for store purchase.';
 
 const HorseTraderPage: React.FC = () => {
   const {
@@ -152,7 +152,7 @@ const HorseTraderPage: React.FC = () => {
           // Only a 400 has action-level copy here: the purchase was refused,
           // overwhelmingly because the balance does not cover it. Anything else
           // gets the shared mapper's copy, never the server body's text.
-          setErrorMessage(actionMessageFor(err, { 400: INSUFFICIENT_FUNDS_COPY }));
+          setErrorMessage(actionMessageFor(err, { 400: insufficientFundsCopy }));
         },
       }
     );

@@ -94,7 +94,7 @@ describe('NextActionsBar', () => {
 
   it('does not show the resting line while loading', async () => {
     server.use(
-      http.get(NEXT_ACTIONS_PATH, async () => {
+      http.get(`${base}/api/v1/next-actions`, async () => {
         await delay(100);
         return HttpResponse.json({ success: true, data: { actions: [] } });
       })
