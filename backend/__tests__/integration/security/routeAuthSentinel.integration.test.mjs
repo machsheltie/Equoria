@@ -7,7 +7,7 @@
  * The three-tier router split lives in backend/app/routers.mjs:
  *   - publicRouter : no auth (health, docs, login/register)
  *   - authRouter   : authenticateToken + csrfProtection on every route
- *   - adminRouter  : authenticateToken + requireRole('admin') + requireAdminMfa
+ *   - adminRouter  : authenticateToken + requireRole('admin')
  * Auth is therefore conferred BY THE MOUNT. Before this sentinel there was no
  * test proving that a state-changing endpoint (a mutation) can't be hit by an
  * anonymous caller. If someone re-mounted a sensitive router on publicRouter, or

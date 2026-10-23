@@ -15,7 +15,7 @@
  *   no way to stop validation internals being echoed back in 400 responses.
  *   This mirrors the same fix already applied to cookies (COOKIE_SECURE /
  *   COOKIE_SAMESITE), rate limiting (RATE_LIMIT_REQUIRE_REDIS), the query cache
- *   (CACHE_REQUIRE_REDIS), and admin MFA (ADMIN_MFA_REQUIRED).
+ *   (CACHE_REQUIRE_REDIS).
  *
  * DEFAULT (deliberately CLOSED for deployable envs — this is a tightening):
  *   Verbose detail is exposed by default ONLY in the non-deployable local

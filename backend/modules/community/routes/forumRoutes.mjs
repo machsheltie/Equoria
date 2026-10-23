@@ -13,7 +13,7 @@
 import express from 'express';
 import { body, query, validationResult } from 'express-validator';
 import logger from '../../../utils/logger.mjs';
-import { requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
+import { requireRole } from '../../../middleware/auth.mjs';
 import {
   getThreads,
   getThread,
@@ -90,11 +90,7 @@ router.post(
 
 router.post('/threads/:id/view', incrementView);
 
-// Equoria-e4a2y: this router rides the authRouter (authRouter.use('/forum', ...)),
-// NOT the adminRouter, so the adminRouter's requireAdminMfa does not cover this
-// admin-only pin toggle. requireAdminMfa is added directly after requireRole('admin')
-// (requireRole runs first → non-admins rejected before the MFA gate) so the
-// optional ADMIN_MFA_REQUIRED policy gates it too. Flag off (default) → no-op.
-router.patch('/threads/:id/pin', requireRole('admin'), requireAdminMfa, pinThread);
+// Admin-only pin toggle.
+router.patch('/threads/:id/pin', requireRole('admin'), pinThread);
 
 export default router;

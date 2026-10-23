@@ -16,7 +16,7 @@
  *   a real MitM / CSRF exposure that NO explicit operator switch could
  *   correct. This mirrors the implicit-NODE_ENV problem already solved for
  *   rate limiting (`RATE_LIMIT_REQUIRE_REDIS`, Equoria-4kfbh), the query cache
- *   (`CACHE_REQUIRE_REDIS`, Equoria-1tu03), and admin MFA (`ADMIN_MFA_REQUIRED`):
+ *   (`CACHE_REQUIRE_REDIS`, Equoria-1tu03):
  *   default to the historical NODE_ENV-derived value, but let an explicit env
  *   var override it independently of NODE_ENV.
  *

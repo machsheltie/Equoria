@@ -139,7 +139,7 @@ router.get(
  *
  * Resolution chosen (brief step 1, first option): remove the manual award from
  * the player API outright rather than gate it behind
- * `requireRole('admin') + requireAdminMfa`. There is no supported admin use to
+ * `requireRole('admin')`. There is no supported admin use to
  * preserve — nothing in the repository called this endpoint: no admin route, no
  * script, no seed, no E2E spec, and the frontend `addXp()` / `useAddXp()` pair
  * had zero live component consumers (both removed with this change). Adding an

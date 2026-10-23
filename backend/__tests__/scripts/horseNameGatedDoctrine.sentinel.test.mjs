@@ -62,7 +62,7 @@ function cleanupPlants() {
 }
 
 // Equoria-rfv9j (gate equoria-shard-7QaJDm): another suite's plant directory under
-// backend/modules (e.g. adminMfaCoverage's _e4a2y_doctrine_sentinel) can vanish between
+// backend/modules (another suite's doctrine-sentinel plant) can vanish between
 // this scan's readdir and its stat. A vanished entry is not one of OUR strays — ours are
 // removed synchronously in cleanupPlants() before every scan, so a leftover of ours still
 // exists — so ENOENT alone is ignored (readdirSyncTolerant / throwIfNoEntry:false) and

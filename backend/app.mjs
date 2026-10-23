@@ -53,9 +53,7 @@ import performanceMetricsRouter from './utils/performanceMonitor.mjs';
 
 // Equoria-xfqy4 (SECURITY P1): authenticateToken + requireRole gate the
 // detailed performance-metrics mount admin-only (see mount below).
-// Equoria-e4a2y: requireAdminMfa added so the optional ADMIN_MFA_REQUIRED policy
-// also covers this app-level admin mount (it does not ride the adminRouter).
-import { authenticateToken, requireRole, requireAdminMfa } from './middleware/auth.mjs';
+import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
 // CSRF protection error handler
 import { csrfErrorHandler } from './middleware/csrf.mjs';
@@ -341,16 +339,7 @@ app.use('/api/v1/breeds', breedRoutes);
 // /ready (real DB ping) — those are intentionally unauthenticated and are NOT
 // touched here. URL is unchanged (/api/v1/performance/metrics) — admin-only,
 // not moved.
-// Equoria-e4a2y: requireAdminMfa is mounted directly after requireRole('admin')
-// (this mount is at app level, NOT on the adminRouter, so the global gate does
-// not reach it) so the optional ADMIN_MFA_REQUIRED policy covers it too.
-app.use(
-  '/api/v1/performance',
-  authenticateToken,
-  requireRole('admin'),
-  requireAdminMfa,
-  performanceMetricsRouter,
-);
+app.use('/api/v1/performance', authenticateToken, requireRole('admin'), performanceMetricsRouter);
 
 // Admin routes (requires auth + admin role)
 app.use('/api/v1/admin', adminRouter);

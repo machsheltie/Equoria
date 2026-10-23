@@ -333,6 +333,6 @@ export async function getHorseXpHistory(req, res) {
  * service — `horseXpModelService.addXpToHorseCore` / `addXpToHorse` — from
  * server-computed competition results. Do not reintroduce a request-supplied
  * `amount` path here; if a genuine admin grant is ever required, it belongs on
- * the admin router behind `requireRole('admin') + requireAdminMfa` with an
+ * the admin router behind `requireRole('admin')` with an
  * owner-approved contract.
  */

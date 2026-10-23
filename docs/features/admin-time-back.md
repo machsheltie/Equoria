@@ -33,7 +33,7 @@ the 8-day world-wide foaling fast-forward does not.
 1. Game time froze at the outage start `S` and resumes at the end `E`; the pause
    length is `N = E − S`.
 2. Only the admin can apply or reverse a time-back, and only with MFA enrolled
-   and verified, even when the global `ADMIN_MFA_REQUIRED` flag is off.
+   and verified.
 3. A time-back applies only while nightly jobs are **held** (below).
 4. Apply and its record are one transaction: the change set and the
    `staff action` entry cannot disagree. Nothing changes if apply fails.

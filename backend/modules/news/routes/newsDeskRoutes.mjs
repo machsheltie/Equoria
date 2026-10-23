@@ -2,7 +2,7 @@
  * News Desk routes (Equoria-wbt8l): staff write News.
  *
  * Mounted at /api/v1/admin/news on the adminRouter, which already applies
- * authenticateToken + requireRole('admin') + requireAdminMfa + CSRF;
+ * authenticateToken + requireRole('admin') + CSRF;
  * requireRole asks satisfiesRole, so the owner (Head Admin) passes too
  * (Equoria-4tleh). The desk service then re-reads the writer's role and asks
  * the staff capability policy per post type (news.post to use the desk,
