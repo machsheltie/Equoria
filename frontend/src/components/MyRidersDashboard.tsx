@@ -16,6 +16,7 @@ import { Users, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { ErrorState, InlineError } from '@/components/ui/state';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
@@ -478,7 +479,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                         // keeps the raw server body off the screen (§3).
                         onError: (error) =>
                           toast.error('Could not assign the rider', {
-                            description: userMessageFor(error).message,
+                            description: actionMessageFor(error, {}, assignStaffRefusalCodes),
                           }),
                       }
                     );

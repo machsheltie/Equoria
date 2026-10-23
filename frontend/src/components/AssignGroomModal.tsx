@@ -25,6 +25,7 @@ import React, { useState, useEffect } from 'react';
 import { User, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { useAssignGroom, useGroomHorseSynergy } from '../hooks/api/useGrooms';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
 import {
@@ -160,7 +161,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   // Custom error handler
   const handleMutationError = (err: unknown) => {
     // Class-mapped copy only: a server body can carry internals (§3).
-    setError(userMessageFor(err).message);
+    setError(actionMessageFor(err, {}, assignStaffRefusalCodes));
     setSuccess(false);
   };
 

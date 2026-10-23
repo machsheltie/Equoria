@@ -91,6 +91,16 @@ export function hireRefusalCodes(staff: HireStaffKind): ActionCodeCopy {
   };
 }
 
+/**
+ * The refusal code the four staff assign endpoints (groom, rider, trainer, and
+ * the horse-page rider picker) answer for a retired horse, 21 and over and not in
+ * foal (Equoria-70gu6). userMessageFor's 4xx copy ("check the highlighted
+ * fields") is no answer to it. Pass as the third argument of `actionMessageFor`.
+ */
+export const assignStaffRefusalCodes: ActionCodeCopy = {
+  horseRetired: 'Retired horses (21 and over) cannot be given a new groom, rider or trainer.',
+};
+
 /** Refreshing a staff marketplace: a 400 is the refresh fee the balance can't cover. */
 export const refreshRefused: ActionCopy = {
   400: "The marketplace couldn't be refreshed. Your balance may not cover the fee.",

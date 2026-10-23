@@ -25,6 +25,7 @@ import {
 // Equoria-8cnzr — single error-taxonomy mapping point. Used for mutation
 // failure toasts so a raw server body message is never surfaced (§3).
 import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 
 // Re-export types for convenience
 export type {
@@ -126,7 +127,7 @@ export function useAssignTrainer() {
     // per mutation; userMessageFor keeps the raw server body off screen (§3).
     onError: (error) => {
       toast.error('Could not assign the trainer', {
-        description: userMessageFor(error).message,
+        description: actionMessageFor(error, {}, assignStaffRefusalCodes),
       });
     },
   });

@@ -22,6 +22,7 @@ import {
   GameDialogTitle,
 } from '@/components/ui/game';
 import { useAssignRider, type Rider } from '@/hooks/api/useRiders';
+import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 
 interface RiderPickerModalProps {
   isOpen: boolean;
@@ -91,8 +92,10 @@ const RiderPickerModal: React.FC<RiderPickerModalProps> = ({
                         `${rider.firstName} ${rider.lastName} assigned to ${horseName}`
                       );
                     },
-                    onError: () => {
-                      toast.error('Failed to assign rider. Please try again.');
+                    onError: (error) => {
+                      toast.error('Failed to assign rider.', {
+                        description: actionMessageFor(error, {}, assignStaffRefusalCodes),
+                      });
                     },
                   }
                 );
