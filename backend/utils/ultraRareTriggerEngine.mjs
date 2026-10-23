@@ -7,128 +7,27 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { ULTRA_RARE_TRAITS, EXOTIC_TRAITS } from './ultraRareTraits.mjs';
+import {
+  evaluateShadowFollowerConditions,
+  evaluateGhostwalkerConditions,
+  evaluateSoulbondedConditions,
+  evaluateFeyKissedConditions,
+  evaluateDreamtwinConditions,
+} from './exoticTriggerEvaluators.mjs';
+import {
+  topBondThreshold,
+  topConformationThreshold,
+  careGapDays,
+  stressSpikeThreshold,
+  asPlainObject,
+  textIncludesAny,
+  hasCareGap,
+} from './ultraRareTriggerHelpers.mjs';
 
-// ─── Equoria-oey96.9: trigger thresholds mapped onto EXISTING relations ─────────
-// The exotic + Born Leader/Stormtouched evaluators previously read relations that
-// never exist (a per-day care-log relation, a groom-task-log relation, a
-// same-parents siblings relation) and a nonexistent per-flag object property, so
-// they could NEVER fire. They are rewritten here against the relations the engine
-// actually loads (groomInteractions, milestoneTraitLogs, traitHistoryLogs,
-// competitionResults, sire/dam) plus derived full-siblings. Three conditions with
-// no honest per-event representation were reworked to SNAPSHOT form per the
-// ratified DECISION 2026-07-06 (NO new schema): Soulbonded perfect-care →
-// daysGroomedInARow; Fey-Kissed perfect-grooming → foal-stage groom-interaction
-// quality; Dreamtwin raised-together → groom-interaction count parity.
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const TOP_BOND_SCORE = 85; // Born Leader — top-tier bond snapshot
-const TOP_CONFORMATION_SCORE = 80; // Born Leader — top-tier conformation snapshot
-const CARE_GAP_DAYS = 7; // Stormtouched — missed-care-week gap (PRD-04 §3.3)
-const STRESS_SPIKE_THRESHOLD = 5; // Stormtouched — groomInteraction stressChange spike
-const FAILED_MILESTONE_SCORE = 50; // Shadow-Follower — failed/missed milestone score
-const AGE_2_DAYS = 730; // late-bond boundary (after age 2)
-const AGE_3_DAYS = 1095; // Ghostwalker — youth window (first 3 years)
-const EARLY_BOND_MAX = 50; // Shadow-Follower — early bond must be below this
-const LATE_BOND_MIN = 70; // Shadow-Follower — late bond must reach this
-const LOW_YOUTH_BOND_MAX = 30; // Ghostwalker — youth bond stays below this
-const SOULBONDED_MIN_MILESTONES = 4; // Soulbonded — same groom for all 4 milestones
-const SOULBONDED_MIN_BOND = 90; // Soulbonded — >90 bond during each milestone
-const SOULBONDED_MIN_CARE_STREAK = 7; // Soulbonded — perfect-care snapshot proxy
-const FEY_FOAL_AGE_DAYS = 365; // Fey-Kissed — foal-stage window
-const FEY_MIN_FOAL_GROOMS = 10; // Fey-Kissed — min foal-stage groom interactions
-const FEY_MIN_QUALITY = 0.8; // Fey-Kissed — every foal groom must be high quality
-const TWIN_SAME_DAY_MS = MS_PER_DAY; // Dreamtwin — twins born within one day
-const RAISED_TOGETHER_TOLERANCE = 10; // Dreamtwin — comparable interaction volume
-
-/**
- * JSONB type guard (CONTRIBUTING.md rule 1): return the value only when it is a
- * plain object (not null / not an array), else null.
- */
-function asPlainObject(value) {
-  return value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)
-    ? value
-    : null;
-}
-
-/**
- * Collect bond-score-by-age points from the age-tagged log relations
- * (milestoneTraitLogs + traitHistoryLogs), used for early-vs-late bond analysis.
- * @returns {Array<{ bondScore: number, ageInDays: number }>}
- */
-function collectBondByAge(horse) {
-  const points = [];
-  for (const log of [...(horse.milestoneTraitLogs || []), ...(horse.traitHistoryLogs || [])]) {
-    if (typeof log.bondScore === 'number' && typeof log.ageInDays === 'number') {
-      points.push({ bondScore: log.bondScore, ageInDays: log.ageInDays });
-    }
-  }
-  return points;
-}
-
-/** True if any String[] flag contains one of the given lowercase substrings. */
-function hasFlagMatching(flags, patterns) {
-  if (!Array.isArray(flags)) {
-    return false;
-  }
-  return flags.some(
-    flag => typeof flag === 'string' && patterns.some(p => flag.toLowerCase().includes(p)),
-  );
-}
-
-/** True if `text` is a string containing any of the lowercase needles. */
-function textIncludesAny(text, needles) {
-  if (typeof text !== 'string') {
-    return false;
-  }
-  const lower = text.toLowerCase();
-  return needles.some(n => lower.includes(n));
-}
-
-/** Distinct non-null groomIds referenced by a list of groom interactions. */
-function uniqueGroomIds(interactions) {
-  return [
-    ...new Set(
-      (interactions || []).map(i => i.groomId).filter(id => id !== null && id !== undefined),
-    ),
-  ];
-}
-
-/** True if any consecutive pair of interaction timestamps is >= minGapDays apart. */
-function hasCareGap(interactions, minGapDays) {
-  const times = (interactions || [])
-    .map(i => new Date(i.timestamp).getTime())
-    .filter(t => !Number.isNaN(t))
-    .sort((a, b) => a - b);
-  for (let i = 1; i < times.length; i++) {
-    if ((times[i] - times[i - 1]) / MS_PER_DAY >= minGapDays) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * True when a parent horse carries at least one ultra-rare or exotic trait —
- * checked via its ultraRareTraits JSON snapshot OR its trait-history log names.
- */
-function parentHasUltraRareTrait(parent) {
-  if (!parent) {
-    return false;
-  }
-  const snapshot = asPlainObject(parent.ultraRareTraits);
-  if (snapshot) {
-    if (Array.isArray(snapshot.ultraRare) && snapshot.ultraRare.length > 0) {
-      return true;
-    }
-    if (Array.isArray(snapshot.exotic) && snapshot.exotic.length > 0) {
-      return true;
-    }
-  }
-  const registryKeys = new Set([...Object.keys(ULTRA_RARE_TRAITS), ...Object.keys(EXOTIC_TRAITS)]);
-  return (parent.traitHistoryLogs || []).some(log => {
-    const normalized = log.traitName?.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    return Boolean(normalized) && registryKeys.has(normalized);
-  });
-}
+// Thresholds and pure helpers live in ultraRareTriggerHelpers.mjs and the five
+// exotic evaluators in exoticTriggerEvaluators.mjs (split by Equoria-owj33; the
+// Equoria-oey96.9 notes on how each condition maps onto existing relations travel
+// with them).
 
 /**
  * Evaluate ultra-rare trait trigger conditions for a horse
@@ -335,7 +234,11 @@ async function evaluateExoticUnlockConditions(horse, traitDef, _context) {
       return await evaluateSoulbondedConditions(horse, conditions);
 
     case 'Fey-Kissed':
-      return await evaluateFeyKissedConditions(horse, conditions);
+      return await evaluateFeyKissedConditions(
+        horse,
+        conditions,
+        new Set([...Object.keys(ULTRA_RARE_TRAITS), ...Object.keys(EXOTIC_TRAITS)]),
+      );
 
     case 'Dreamtwin':
       return await evaluateDreamtwinConditions(horse, conditions);
@@ -490,7 +393,7 @@ async function evaluateBornLeaderConditions(horse, conditions) {
   try {
     // Top-tier bond — snapshot on the horse's current bondScore (Equoria-oey96.9:
     // replaces the average over the nonexistent per-day care-log relation).
-    const topBondScore = (horse.bondScore || 0) >= TOP_BOND_SCORE;
+    const topBondScore = (horse.bondScore || 0) >= topBondThreshold;
 
     // Steady / assertive temperament (real scalar column).
     const temperament = horse.temperament?.toLowerCase();
@@ -509,7 +412,7 @@ async function evaluateBornLeaderConditions(horse, conditions) {
         conformationScore = nums.length ? nums.reduce((s, v) => s + v, 0) / nums.length : 0;
       }
     }
-    const topConformation = conformationScore >= TOP_CONFORMATION_SCORE;
+    const topConformation = conformationScore >= topConformationThreshold;
 
     // Leadership moments — from milestone finalTrait / reasoning and trait-history
     // traitName (Equoria-oey96.9: milestone logs have finalTrait/reasoning, NOT the
@@ -557,7 +460,7 @@ async function evaluateStormtouchedConditions(horse, conditions) {
     // Missed care week — a >= 7-day gap between consecutive groom interactions
     // (Equoria-oey96.9: matches PRD-04 §3.3 "no groom interaction for 7+ days";
     // replaces the date scan over the nonexistent per-day care-log relation).
-    const missedWeekOfCare = hasCareGap(interactions, CARE_GAP_DAYS);
+    const missedWeekOfCare = hasCareGap(interactions, careGapDays);
 
     // Novelty interaction event — a groom interaction whose taskType indicates a
     // novelty/new/exposure task (Equoria-oey96.9: taskType lives on
@@ -570,7 +473,7 @@ async function evaluateStormtouchedConditions(horse, conditions) {
     // (Equoria-oey96.9: stressChange lives on GroomInteraction; replaces the
     // stressLevel-delta scan over the nonexistent per-day care-log relation).
     const stressSpikes = interactions.filter(
-      i => typeof i.stressChange === 'number' && i.stressChange >= STRESS_SPIKE_THRESHOLD,
+      i => typeof i.stressChange === 'number' && i.stressChange >= stressSpikeThreshold,
     ).length;
 
     const meetsConditions =
@@ -587,248 +490,6 @@ async function evaluateStormtouchedConditions(horse, conditions) {
   } catch (error) {
     logger.error(
       `[ultraRareTriggerEngine] Error evaluating Stormtouched conditions: ${error.message}`,
-    );
-    return false;
-  }
-}
-
-/**
- * Shadow-Follower: Missed socialization + late bond formation
- */
-async function evaluateShadowFollowerConditions(horse, conditions) {
-  try {
-    // Missed socialization events — socialization milestones that FAILED (score
-    // below threshold, PRD-04 §3.3 "Failed milestone scored below threshold").
-    // Equoria-oey96.9: milestoneType/score are real; the prior code also read a
-    // nonexistent log.notes and counted absent milestones by a fixed opportunity
-    // count.
-    const missedSocializationEvents = (horse.milestoneTraitLogs || []).filter(
-      log =>
-        textIncludesAny(log.milestoneType, ['social']) &&
-        (typeof log.score === 'number' ? log.score : 100) < FAILED_MILESTONE_SCORE,
-    ).length;
-
-    // Late bond formation (after age 2) — early bond low, late bond high, using the
-    // real ageInDays on the bond-bearing logs (Equoria-oey96.9: replaces the age
-    // proxy derived from the nonexistent per-day care-log count).
-    const bondByAge = collectBondByAge(horse);
-    const earlyBonds = bondByAge.filter(b => b.ageInDays < AGE_2_DAYS).map(b => b.bondScore);
-    const lateBonds = bondByAge.filter(b => b.ageInDays >= AGE_2_DAYS).map(b => b.bondScore);
-    const earlyMaxBond = earlyBonds.length ? Math.max(...earlyBonds) : 0;
-    const lateMaxBond = lateBonds.length ? Math.max(...lateBonds) : 0;
-    const lateBondFormation = earlyMaxBond < EARLY_BOND_MAX && lateMaxBond >= LATE_BOND_MIN;
-
-    const meetsConditions =
-      missedSocializationEvents >= conditions.missedSocializationEvents && lateBondFormation;
-
-    logger.debug(
-      `[ultraRareTriggerEngine] Shadow-Follower evaluation: missed socialization: ${missedSocializationEvents}, late bond: ${lateBondFormation}, meets conditions: ${meetsConditions}`,
-    );
-
-    return meetsConditions;
-  } catch (error) {
-    logger.error(
-      `[ultraRareTriggerEngine] Error evaluating Shadow-Follower conditions: ${error.message}`,
-    );
-    return false;
-  }
-}
-
-/**
- * Ghostwalker: Low bond throughout youth + resilient flag
- */
-async function evaluateGhostwalkerConditions(horse, _conditions) {
-  try {
-    // Low bond throughout youth (first 3 years) — max bond among youth-age
-    // bond-bearing logs < 30, AND the current bond snapshot < 30 (Equoria-oey96.9:
-    // uses real ageInDays instead of the nonexistent per-day care-log relation).
-    const bondByAge = collectBondByAge(horse);
-    const youthBonds = bondByAge.filter(b => b.ageInDays < AGE_3_DAYS).map(b => b.bondScore);
-    const maxBondInYouth = youthBonds.length ? Math.max(...youthBonds) : horse.bondScore || 0;
-    const lowBondThroughoutYouth =
-      maxBondInYouth < LOW_YOUTH_BOND_MAX && (horse.bondScore || 0) < LOW_YOUTH_BOND_MAX;
-
-    // Resilient / survivor flag — epigeneticFlags is a String[] (Equoria-oey96.9:
-    // FIX — the prior code read a per-flag object property that never exists on a
-    // String[]).
-    const resilientFlag = hasFlagMatching(horse.epigeneticFlags, ['resilient', 'survivor']);
-
-    // Emotional detachment indicators — from milestone reasoning/finalTrait and
-    // trait-history traitName (Equoria-oey96.9: real fields; prior code read a
-    // nonexistent log.notes).
-    const emotionalDetachment =
-      (horse.milestoneTraitLogs || []).some(
-        log =>
-          textIncludesAny(log.reasoning, ['detached', 'withdrawn', 'isolated']) ||
-          textIncludesAny(log.finalTrait, ['detached', 'withdrawn', 'isolated']),
-      ) ||
-      (horse.traitHistoryLogs || []).some(log =>
-        textIncludesAny(log.traitName, ['detached', 'withdrawn', 'isolated']),
-      );
-
-    const meetsConditions = lowBondThroughoutYouth && resilientFlag && emotionalDetachment;
-
-    logger.debug(
-      `[ultraRareTriggerEngine] Ghostwalker evaluation: low bond: ${lowBondThroughoutYouth}, resilient flag: ${resilientFlag}, detachment: ${emotionalDetachment}, meets conditions: ${meetsConditions}`,
-    );
-
-    return meetsConditions;
-  } catch (error) {
-    logger.error(
-      `[ultraRareTriggerEngine] Error evaluating Ghostwalker conditions: ${error.message}`,
-    );
-    return false;
-  }
-}
-
-/**
- * Soulbonded: Same groom for all milestones + >90 bond during each
- */
-async function evaluateSoulbondedConditions(horse, _conditions) {
-  try {
-    const milestones = horse.milestoneTraitLogs || [];
-
-    // Same groom used for all milestones (Equoria-oey96.9: groomId is real on
-    // MilestoneTraitLog).
-    const milestoneGrooms = milestones
-      .filter(log => log.groomId !== null && log.groomId !== undefined)
-      .map(log => log.groomId);
-    const uniqueMilestoneGrooms = [...new Set(milestoneGrooms)];
-    const sameGroomAllMilestones =
-      uniqueMilestoneGrooms.length === 1 && milestoneGrooms.length >= SOULBONDED_MIN_MILESTONES;
-
-    // >90 bond during each milestone (Equoria-oey96.9: bondScore is real on
-    // MilestoneTraitLog).
-    const milestoneBondScores = milestones
-      .filter(log => typeof log.bondScore === 'number')
-      .map(log => log.bondScore);
-    const highBondAllMilestones =
-      milestoneBondScores.length >= SOULBONDED_MIN_MILESTONES &&
-      milestoneBondScores.every(score => score >= SOULBONDED_MIN_BOND);
-
-    // Perfect care history — SNAPSHOT on the horse's current uninterrupted grooming
-    // streak (Equoria-oey96.9 / DECISION 2026-07-06: replaces the day-gap scan over
-    // the nonexistent per-day care-log relation; daysGroomedInARow is the real
-    // care-consistency counter).
-    const perfectCareHistory = (horse.daysGroomedInARow || 0) >= SOULBONDED_MIN_CARE_STREAK;
-
-    const meetsConditions = sameGroomAllMilestones && highBondAllMilestones && perfectCareHistory;
-
-    logger.debug(
-      `[ultraRareTriggerEngine] Soulbonded evaluation: same groom: ${sameGroomAllMilestones}, high bond: ${highBondAllMilestones}, perfect care: ${perfectCareHistory}, meets conditions: ${meetsConditions}`,
-    );
-
-    return meetsConditions;
-  } catch (error) {
-    logger.error(
-      `[ultraRareTriggerEngine] Error evaluating Soulbonded conditions: ${error.message}`,
-    );
-    return false;
-  }
-}
-
-/**
- * Fey-Kissed: Both parents ultra-rare + perfect grooming history
- */
-async function evaluateFeyKissedConditions(horse, _conditions) {
-  try {
-    // Both parents carry an ultra-rare/exotic trait — via each parent's
-    // ultraRareTraits JSON snapshot or trait-history names (Equoria-oey96.9).
-    const bothParentsUltraRare =
-      parentHasUltraRareTrait(horse.sire) && parentHasUltraRareTrait(horse.dam);
-
-    // Perfect foal-stage grooming — SNAPSHOT on the foal-stage groom interactions
-    // (Equoria-oey96.9 / DECISION 2026-07-06: replaces the 300-daily-task check over
-    // the nonexistent per-day care-log + groom-task-log relations). A perfect record
-    // means a meaningful number of foal-stage interactions, all high quality.
-    const birthMs = new Date(horse.dateOfBirth).getTime();
-    const foalGrooms = (horse.groomInteractions || []).filter(i => {
-      const taskMs = new Date(i.timestamp).getTime();
-      if (Number.isNaN(taskMs) || Number.isNaN(birthMs)) {
-        return false;
-      }
-      const ageAtTaskDays = (taskMs - birthMs) / MS_PER_DAY;
-      return ageAtTaskDays <= FEY_FOAL_AGE_DAYS;
-    });
-    const perfectGroomingHistory =
-      foalGrooms.length >= FEY_MIN_FOAL_GROOMS &&
-      foalGrooms.every(
-        i => (typeof i.qualityScore === 'number' ? i.qualityScore : 0) >= FEY_MIN_QUALITY,
-      );
-
-    const meetsConditions = bothParentsUltraRare && perfectGroomingHistory;
-
-    logger.debug(
-      `[ultraRareTriggerEngine] Fey-Kissed evaluation: both parents ultra-rare: ${bothParentsUltraRare}, perfect grooming: ${perfectGroomingHistory}, meets conditions: ${meetsConditions}`,
-    );
-
-    return meetsConditions;
-  } catch (error) {
-    logger.error(
-      `[ultraRareTriggerEngine] Error evaluating Fey-Kissed conditions: ${error.message}`,
-    );
-    return false;
-  }
-}
-
-/**
- * Dreamtwin: Twin birth + raised together + same groom + matching flags
- */
-async function evaluateDreamtwinConditions(horse, _conditions) {
-  try {
-    // Twin birth — a full sibling (shares BOTH sire and dam) born within one day
-    // (Equoria-oey96.9: derived full-siblings from getHorseWithHistory, NOT the
-    // nonexistent same-parents siblings relation).
-    const siblings = horse.fullSiblings || [];
-    const horseBirthMs = new Date(horse.dateOfBirth).getTime();
-    const twins = siblings.filter(sibling => {
-      const siblingBirthMs = new Date(sibling.dateOfBirth).getTime();
-      return (
-        !Number.isNaN(siblingBirthMs) &&
-        !Number.isNaN(horseBirthMs) &&
-        Math.abs(siblingBirthMs - horseBirthMs) < TWIN_SAME_DAY_MS
-      );
-    });
-
-    const twinBirth = twins.length > 0;
-    if (!twinBirth) {
-      return false; // No twin, cannot have Dreamtwin trait
-    }
-
-    const [twin] = twins;
-
-    // Raised together — SNAPSHOT on comparable groom-interaction volume between the
-    // twins (Equoria-oey96.9 / DECISION 2026-07-06: replaces the count comparison
-    // over the nonexistent per-day care-log relation).
-    const horseInteractionCount = (horse.groomInteractions || []).length;
-    const twinInteractionCount = (twin.groomInteractions || []).length;
-    const raisedTogether =
-      Math.abs(horseInteractionCount - twinInteractionCount) <= RAISED_TOGETHER_TOLERANCE;
-
-    // Same single groom for both twins (Equoria-oey96.9: via groomInteractions,
-    // NOT the nonexistent groom-task-log relation).
-    const horseGrooms = uniqueGroomIds(horse.groomInteractions);
-    const twinGrooms = uniqueGroomIds(twin.groomInteractions);
-    const sameGroom =
-      horseGrooms.length === 1 && twinGrooms.length === 1 && horseGrooms[0] === twinGrooms[0];
-
-    // Matching epigenetic flags — epigeneticFlags is a String[] (Equoria-oey96.9:
-    // FIX — the prior code read a per-flag object property, always undefined).
-    const horseFlags = Array.isArray(horse.epigeneticFlags) ? horse.epigeneticFlags : [];
-    const twinFlags = Array.isArray(twin.epigeneticFlags) ? twin.epigeneticFlags : [];
-    const matchingFlags =
-      horseFlags.length > 0 && horseFlags.every(flag => twinFlags.includes(flag));
-
-    const meetsConditions = twinBirth && raisedTogether && sameGroom && matchingFlags;
-
-    logger.debug(
-      `[ultraRareTriggerEngine] Dreamtwin evaluation: twin birth: ${twinBirth}, raised together: ${raisedTogether}, same groom: ${sameGroom}, matching flags: ${matchingFlags}, meets conditions: ${meetsConditions}`,
-    );
-
-    return meetsConditions;
-  } catch (error) {
-    logger.error(
-      `[ultraRareTriggerEngine] Error evaluating Dreamtwin conditions: ${error.message}`,
     );
     return false;
   }
