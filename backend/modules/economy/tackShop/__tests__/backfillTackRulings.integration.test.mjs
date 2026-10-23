@@ -82,6 +82,15 @@ const staleInventory = () => [
     bonus: '+2 all disciplines',
     quantity: 1,
   },
+  // The legacy All Purpose bridle id (Equoria-8apf).
+  {
+    id: 'inv-legacy',
+    itemId: 'standard-bridle',
+    category: 'bridle',
+    name: 'All Purpose Bridle',
+    bonus: '+2 all disciplines',
+    quantity: 1,
+  },
   { id: 'inv-feed', itemId: 'premium-feed', category: 'feed', name: 'Premium Feed', quantity: 3 },
 ];
 
@@ -122,8 +131,8 @@ describe('rewriteInventory and rewriteHorseTack (pure)', () => {
   it('drops the four deleted items and rewrites effect fields from the catalogue and recipes', () => {
     const { inventory, removed, relabelled } = rewriteInventory(staleInventory());
     expect(removed).toBe(4);
-    expect(relabelled).toBe(3);
-    expect(inventory.map(r => r.id)).toEqual(['inv-1', 'inv-2', 'inv-3', 'inv-starter', 'inv-feed']);
+    expect(relabelled).toBe(4);
+    expect(inventory.map(r => r.id)).toEqual(['inv-1', 'inv-2', 'inv-3', 'inv-starter', 'inv-legacy', 'inv-feed']);
     const byId = Object.fromEntries(inventory.map(r => [r.id, r]));
     expect(byId['inv-1'].bonus).toBe('+5 in Western Pleasure shows');
     expect(byId['inv-2']).not.toHaveProperty('bonus');
@@ -131,6 +140,7 @@ describe('rewriteInventory and rewriteHorseTack (pure)', () => {
     expect(byId['inv-3']).not.toHaveProperty('bonus');
     expect(byId['inv-3'].comingSoon).toBe(true);
     expect(byId['inv-starter'].bonus).toBe('+2 all disciplines');
+    expect(byId['inv-legacy'].itemId).toBe('all-purpose-bridle');
     expect(byId['inv-feed']).toEqual({
       id: 'inv-feed',
       itemId: 'premium-feed',
@@ -152,13 +162,13 @@ describe('rewriteInventory and rewriteHorseTack (pure)', () => {
       tack: { bridle: 'dressage-bridle', decorations: ['show-ribbon'] },
       changed: true,
       mirrorsRemoved: 2,
-      slotsCleared: 1,
+      slotsRewritten: 1,
     });
   });
 
   it('is a no-op on tack and inventories that are already clean', () => {
     const clean = { saddle: 'dressage-saddle', bridle: 'all-purpose-bridle' };
-    expect(rewriteHorseTack(clean)).toEqual({ tack: clean, changed: false, mirrorsRemoved: 0, slotsCleared: 0 });
+    expect(rewriteHorseTack(clean)).toEqual({ tack: clean, changed: false, mirrorsRemoved: 0, slotsRewritten: 0 });
     const once = rewriteInventory(staleInventory()).inventory;
     const twice = rewriteInventory(once);
     expect(twice).toEqual({ inventory: once, removed: 0, relabelled: 0 });
@@ -176,7 +186,7 @@ describe('backfillTackRulings against the real database', () => {
     const user = await makeUser(settings);
     const stale = await makeHorse(user.id, {
       saddle: 'crafted-legacy-tack-set',
-      bridle: 'all-purpose-bridle',
+      bridle: 'standard-bridle',
       saddleBonus: 7,
       bridleBonus: 2,
     });
@@ -187,10 +197,10 @@ describe('backfillTackRulings against the real database', () => {
       usersScanned: 1,
       usersChanged: 1,
       inventoryRecordsRemoved: 4,
-      inventoryRecordsRelabelled: 3,
+      inventoryRecordsRelabelled: 4,
       horsesChanged: 1,
       mirrorKeysRemoved: 2,
-      slotsCleared: 1,
+      slotsRewritten: 2,
       failed: 0,
     });
     expect(await settingsOf(user.id)).toEqual(settings);
@@ -200,7 +210,14 @@ describe('backfillTackRulings against the real database', () => {
     expect(wet).toEqual(dry);
 
     const after = await settingsOf(user.id);
-    expect(after.inventory.map(r => r.id)).toEqual(['inv-1', 'inv-2', 'inv-3', 'inv-starter', 'inv-feed']);
+    expect(after.inventory.map(r => r.id)).toEqual([
+      'inv-1',
+      'inv-2',
+      'inv-3',
+      'inv-starter',
+      'inv-legacy',
+      'inv-feed',
+    ]);
     expect(after.inventory[0].bonus).toBe('+5 in Western Pleasure shows');
     expect(after.inventory[1]).not.toHaveProperty('bonus');
     expect(after.inventory[1].comingSoon).toBe(true);
@@ -218,7 +235,7 @@ describe('backfillTackRulings against the real database', () => {
       inventoryRecordsRelabelled: 0,
       horsesChanged: 0,
       mirrorKeysRemoved: 0,
-      slotsCleared: 0,
+      slotsRewritten: 0,
       failed: 0,
     });
     expect(await settingsOf(user.id)).toEqual(after);

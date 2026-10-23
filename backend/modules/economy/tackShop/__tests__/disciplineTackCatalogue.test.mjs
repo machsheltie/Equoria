@@ -15,10 +15,12 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { DISCIPLINE_VALUES } from '../../../../constants/schema.mjs';
-import { TACK_INVENTORY, tackCatalogItems } from '../services/tackInventory.mjs';
-import { CRAFTING_RECIPES } from '../../../crafting/index.mjs';
+import { DISCIPLINES } from '../../../../constants/schema.mjs';
+import { allTackItems, tackCatalogItems } from '../services/tackInventory.mjs';
+import { craftedItemRecipes } from '../../../crafting/index.mjs';
 
+const disciplineNames = Object.values(DISCIPLINES);
+const allRecipes = ['saddle', 'bridle', 'halter', 'blanket', 'cosmetic'].flatMap(craftedItemRecipes);
 const drivingDisciplines = ['Combined Driving', 'Fine Harness', 'Harness Racing', 'Pleasure Driving'];
 const visible = items => items.filter(item => !item.isLegacyAlias);
 const discipline5 = items => visible(items).filter(item => item.disciplines.length > 0);
@@ -27,13 +29,13 @@ describe('one +5 saddle or harness and one +5 bridle per discipline (q02, q03)',
   it('has exactly one discipline saddle or harness per discipline, each for that discipline alone', () => {
     const saddles = discipline5(tackCatalogItems('saddle'));
     expect(saddles.every(item => item.disciplines.length === 1)).toBe(true);
-    expect(saddles.map(item => item.disciplines[0]).sort()).toEqual([...DISCIPLINE_VALUES].sort());
+    expect(saddles.map(item => item.disciplines[0]).sort()).toEqual([...disciplineNames].sort());
   });
 
   it('has exactly one discipline bridle per discipline, each for that discipline alone', () => {
     const bridles = discipline5(tackCatalogItems('bridle'));
     expect(bridles.every(item => item.disciplines.length === 1)).toBe(true);
-    expect(bridles.map(item => item.disciplines[0]).sort()).toEqual([...DISCIPLINE_VALUES].sort());
+    expect(bridles.map(item => item.disciplines[0]).sort()).toEqual([...disciplineNames].sort());
   });
 
   it('names a harness for the driving disciplines and a saddle for the rest', () => {
@@ -63,7 +65,7 @@ describe('one +5 saddle or harness and one +5 bridle per discipline (q02, q03)',
   });
 
   it('gives every item an unique id', () => {
-    const ids = TACK_INVENTORY.map(item => item.id);
+    const ids = allTackItems().map(item => item.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
@@ -78,22 +80,20 @@ describe('the four hallucinated crafted items are gone (q05)', () => {
   const retiredNames = ['Handcrafted Bridle', 'Dyed Leather Bridle', 'Artisan Event Saddle', 'Legacy Tack Set'];
 
   it('has no recipe for them', () => {
-    expect(CRAFTING_RECIPES.filter(r => retiredResults.includes(r.result))).toEqual([]);
-    expect(CRAFTING_RECIPES.filter(r => retiredNames.includes(r.resultName) || retiredNames.includes(r.name))).toEqual(
-      [],
-    );
+    expect(allRecipes.filter(r => retiredResults.includes(r.result))).toEqual([]);
+    expect(allRecipes.filter(r => retiredNames.includes(r.resultName) || retiredNames.includes(r.name))).toEqual([]);
   });
 
   it('has no shop item with those names', () => {
-    expect(TACK_INVENTORY.filter(item => retiredNames.includes(item.name))).toEqual([]);
+    expect(allTackItems().filter(item => retiredNames.includes(item.name))).toEqual([]);
   });
 });
 
 describe('tack that does not score is Coming soon with no effect text (q32)', () => {
-  const nonScoring = ['halter', 'saddle_pad', 'leg_wraps', 'girth', 'reins', 'breastplate'];
+  const scoringOrDecorative = ['saddle', 'bridle', 'decorative'];
 
   it('marks every non-scoring shop item comingSoon and strips effect fields', () => {
-    const items = TACK_INVENTORY.filter(item => nonScoring.includes(item.category));
+    const items = allTackItems().filter(item => !scoringOrDecorative.includes(item.category));
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) {
       expect(item.comingSoon).toBe(true);
@@ -103,7 +103,7 @@ describe('tack that does not score is Coming soon with no effect text (q32)', ()
   });
 
   it('marks non-scoring crafted recipes comingSoon and strips effect text', () => {
-    const recipes = CRAFTING_RECIPES.filter(r => !['saddle', 'bridle'].includes(r.resultCategory));
+    const recipes = allRecipes.filter(r => !['saddle', 'bridle'].includes(r.resultCategory));
     expect(recipes.length).toBeGreaterThan(0);
     for (const recipe of recipes) {
       expect(recipe.comingSoon).toBe(true);

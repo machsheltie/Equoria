@@ -12,6 +12,8 @@
  *        materials, and the ledger has no pattern for paying a burned fee back
  *        out (a credit would have to mint coins or debit the burn account). The
  *        owner can ask for one; see the report on Equoria-cv3if.
+ *      - A record of the legacy All Purpose ids (basic-all-purpose-saddle,
+ *        standard-bridle) becomes the current All Purpose id (Equoria-8apf).
  *      - Every other tack record gets its effect fields rewritten from the
  *        catalogue or crafting recipe by itemId (tackEffectFields): a saddle or
  *        bridle keeps its current label, tack that does not score loses its
@@ -19,7 +21,8 @@
  *        not know (feed, anything else) are left untouched.
  *   2. Horse.tack
  *      - The retired mirror keys saddleBonus and bridleBonus are deleted.
- *      - A slot that still names one of the four deleted items is cleared.
+ *      - A slot that still names one of the four deleted items is cleared; a slot
+ *        that names a legacy All Purpose id is set to the current id.
  *
  * Idempotent: a second run finds nothing to change. Transactional: each user
  * (their settings.inventory and their horses' tack) is rewritten in one
@@ -36,8 +39,8 @@
 import { fileURLToPath } from 'node:url';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { updateUserSettingsPaths } from '../utils/userSettingsPaths.mjs';
-import { TACK_INVENTORY, tackEffectFields } from '../modules/economy/index.mjs';
-import { CRAFTING_RECIPES } from '../modules/crafting/index.mjs';
+import { allTackItems, tackEffectFields } from '../modules/economy/index.mjs';
+import { craftedItemRecipes } from '../modules/crafting/index.mjs';
 
 /** The four crafted items the owner deleted (q05), by inventory itemId. */
 export const deletedTackItemIds = Object.freeze([
@@ -65,10 +68,24 @@ const canonical = value =>
   );
 const sameJson = (a, b) => canonical(a) === canonical(b);
 
+const craftedRecipes = ['saddle', 'bridle', 'halter', 'blanket', 'cosmetic'].flatMap(
+  craftedItemRecipes,
+);
+
+/**
+ * The legacy All Purpose ids (Equoria-8apf) and the current ids they become, in
+ * both inventory records and Horse.tack slots. The two aliases are gone from the
+ * catalogue once this has run.
+ */
+export const legacyAllPurposeIds = Object.freeze({
+  'basic-all-purpose-saddle': 'all-purpose-saddle',
+  'standard-bridle': 'all-purpose-bridle',
+});
+
 function definitionFor(itemId) {
   return (
-    TACK_INVENTORY.find(item => item.id === itemId) ??
-    CRAFTING_RECIPES.find(recipe => recipe.result === itemId) ??
+    allTackItems().find(item => item.id === itemId) ??
+    craftedRecipes.find(recipe => recipe.result === itemId) ??
     null
   );
 }
@@ -97,14 +114,15 @@ export function rewriteInventory(inventory) {
       removed += 1;
       continue;
     }
-    const definition = definitionFor(record.itemId);
+    const currentId = legacyAllPurposeIds[record.itemId] ?? record.itemId;
+    const definition = definitionFor(currentId);
     if (definition === null) {
       next.push(record);
       continue;
     }
     // Drop the stored effect text, then write back what the definition says.
     const { bonus: _bonus, comingSoon: _comingSoon, ...rest } = record;
-    const rewritten = { ...rest, ...tackEffectFields(definition) };
+    const rewritten = { ...rest, itemId: currentId, ...tackEffectFields(definition) };
     if (sameJson(rewritten, record)) {
       next.push(record);
     } else {
@@ -119,15 +137,15 @@ export function rewriteInventory(inventory) {
  * Rewrite one Horse.tack object.
  *
  * @param {unknown} tack - Horse.tack.
- * @returns {{ tack: unknown, changed: boolean, mirrorsRemoved: number, slotsCleared: number }}
+ * @returns {{ tack: unknown, changed: boolean, mirrorsRemoved: number, slotsRewritten: number }}
  */
 export function rewriteHorseTack(tack) {
   if (!isPlainObject(tack)) {
-    return { tack, changed: false, mirrorsRemoved: 0, slotsCleared: 0 };
+    return { tack, changed: false, mirrorsRemoved: 0, slotsRewritten: 0 };
   }
   const next = { ...tack };
   let mirrorsRemoved = 0;
-  let slotsCleared = 0;
+  let slotsRewritten = 0;
   for (const key of retiredMirrorKeys) {
     if (Object.hasOwn(next, key)) {
       delete next[key];
@@ -137,11 +155,14 @@ export function rewriteHorseTack(tack) {
   for (const [slot, value] of Object.entries(next)) {
     if (typeof value === 'string' && deleted.has(value)) {
       delete next[slot];
-      slotsCleared += 1;
+      slotsRewritten += 1;
+    } else if (typeof value === 'string' && Object.hasOwn(legacyAllPurposeIds, value)) {
+      next[slot] = legacyAllPurposeIds[value];
+      slotsRewritten += 1;
     }
   }
-  const changed = mirrorsRemoved + slotsCleared > 0;
-  return { tack: changed ? next : tack, changed, mirrorsRemoved, slotsCleared };
+  const changed = mirrorsRemoved + slotsRewritten > 0;
+  return { tack: changed ? next : tack, changed, mirrorsRemoved, slotsRewritten };
 }
 
 const emptySummary = () => ({
@@ -151,7 +172,7 @@ const emptySummary = () => ({
   inventoryRecordsRelabelled: 0,
   horsesChanged: 0,
   mirrorKeysRemoved: 0,
-  slotsCleared: 0,
+  slotsRewritten: 0,
   failed: 0,
 });
 
@@ -172,7 +193,7 @@ async function rewriteHorses(tx, where, summary, beforeHorseWrite) {
     await tx.horse.update({ where: { id: horse.id }, data: { tack: result.tack } });
     summary.horsesChanged += 1;
     summary.mirrorKeysRemoved += result.mirrorsRemoved;
-    summary.slotsCleared += result.slotsCleared;
+    summary.slotsRewritten += result.slotsRewritten;
   }
 }
 
@@ -227,7 +248,7 @@ export async function backfillTackRulings(opts = {}) {
             if (result.changed) {
               summary.horsesChanged += 1;
               summary.mirrorKeysRemoved += result.mirrorsRemoved;
-              summary.slotsCleared += result.slotsCleared;
+              summary.slotsRewritten += result.slotsRewritten;
             }
           }
           if (!sameJson(before, summary)) {
@@ -289,7 +310,7 @@ export async function backfillTackRulings(opts = {}) {
           if (result.changed) {
             summary.horsesChanged += 1;
             summary.mirrorKeysRemoved += result.mirrorsRemoved;
-            summary.slotsCleared += result.slotsCleared;
+            summary.slotsRewritten += result.slotsRewritten;
           }
         }
       } else {
@@ -299,7 +320,7 @@ export async function backfillTackRulings(opts = {}) {
         });
         summary.horsesChanged += perOwnerless.horsesChanged;
         summary.mirrorKeysRemoved += perOwnerless.mirrorKeysRemoved;
-        summary.slotsCleared += perOwnerless.slotsCleared;
+        summary.slotsRewritten += perOwnerless.slotsRewritten;
       }
     } catch (err) {
       summary.failed += 1;

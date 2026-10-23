@@ -23,7 +23,7 @@
  *     shows its image fallback. Do not invent art.
  */
 
-import { DISCIPLINES, DISCIPLINE_VALUES } from '../../../../constants/schema.mjs';
+import { DISCIPLINES } from '../../../../constants/schema.mjs';
 
 /** Points for each discipline saddle, harness or bridle in its own discipline. */
 export const disciplineTackPoints = 5;
@@ -53,11 +53,14 @@ export function tackBonusLabel(disciplines) {
 
 /** The driving disciplines wear a harness in the saddle slot. */
 const harnessDisciplines = new Set([
-  DISCIPLINES.COMBINED_DRIVING,
-  DISCIPLINES.FINE_HARNESS,
-  DISCIPLINES.HARNESS_RACING,
-  DISCIPLINES.PLEASURE_DRIVING,
+  'Combined Driving',
+  'Fine Harness',
+  'Harness Racing',
+  'Pleasure Driving',
 ]);
+
+/** Every discipline, from the one discipline list in constants/schema.mjs. */
+const allDisciplines = Object.values(DISCIPLINES);
 
 const allPurposeSaddleCost = 400;
 const allPurposeBridleCost = 300;
@@ -114,8 +117,8 @@ function disciplineBridle(discipline) {
   };
 }
 
-const disciplineSaddles = DISCIPLINE_VALUES.map(disciplineSaddleOrHarness);
-const disciplineBridles = DISCIPLINE_VALUES.map(disciplineBridle);
+const disciplineSaddles = allDisciplines.map(disciplineSaddleOrHarness);
+const disciplineBridles = allDisciplines.map(disciplineBridle);
 
 /**
  * Saddles and bridles that were shared by several disciplines before the
@@ -156,35 +159,8 @@ export const TACK_INVENTORY = [
     disciplines: [],
     image: '/images/tack/allpurposesaddle.png',
   },
-  // Legacy alias — kept for backwards compat during migration window; do not remove until all Horse.tack records are migrated
-  {
-    id: 'basic-all-purpose-saddle',
-    isLegacyAlias: true,
-    category: 'saddle',
-    name: 'All Purpose Saddle',
-    description:
-      'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
-    cost: allPurposeSaddleCost,
-    bonus: tackBonusLabel([]),
-    tier: 'basic',
-    disciplines: [],
-    image: '/images/tack/allpurposesaddle.png',
-  },
   {
     id: 'all-purpose-bridle',
-    category: 'bridle',
-    name: 'All Purpose Bridle',
-    description:
-      'Versatile bridle suitable for general training and competition across disciplines.',
-    cost: allPurposeBridleCost,
-    bonus: tackBonusLabel([]),
-    tier: 'basic',
-    disciplines: [],
-  },
-  // Legacy alias — kept for backwards compat during migration window
-  {
-    id: 'standard-bridle',
-    isLegacyAlias: true,
     category: 'bridle',
     name: 'All Purpose Bridle',
     description:

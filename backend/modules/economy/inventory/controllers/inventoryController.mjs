@@ -17,7 +17,7 @@ import logger from '../../../../utils/logger.mjs';
 import { updateUserSettingsPaths } from '../../../../utils/userSettingsPaths.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import { TACK_INVENTORY } from '../../tackShop/controllers/tackShopController.mjs';
-import { tackEffectFields } from '../../tackShop/services/tackInventory.mjs';
+import { allTackItems, tackEffectFields } from '../../tackShop/services/tackInventory.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -116,7 +116,7 @@ function enrichInventory(inventory, horses) {
   return inventory.map(rawItem => {
     // A catalogue item's effect text always comes from the catalogue, so wording
     // stored before the owner's tack rulings never reaches the client (q32).
-    const def = TACK_INVENTORY.find(i => i.id === rawItem.itemId);
+    const def = allTackItems().find(i => i.id === rawItem.itemId);
     const item = def ? { ...withoutEffect(rawItem), ...tackEffectFields(def) } : rawItem;
     if (item.equippedToHorseId) {
       const horse = horses.find(h => h.id === item.equippedToHorseId);

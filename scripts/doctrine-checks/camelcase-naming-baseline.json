@@ -394,7 +394,7 @@
   "backend/modules/crafting/__tests__/craftingController.recordTransactionTx.integration.test.mjs": 5,
   "backend/modules/crafting/__tests__/craftingController.test.mjs": 3,
   "backend/modules/crafting/__tests__/craftingInventoryEquip.integration.test.mjs": 12,
-  "backend/modules/crafting/__tests__/craftingRecipes.test.mjs": 27,
+  "backend/modules/crafting/__tests__/craftingRecipes.test.mjs": 26,
   "backend/modules/crafting/__tests__/craftingSystem.test.mjs": 16,
   "backend/modules/crafting/controllers/craftingController.mjs": 4,
   "backend/modules/crafting/data/craftingRecipes.mjs": 1,

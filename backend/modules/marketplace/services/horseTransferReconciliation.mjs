@@ -64,7 +64,7 @@ import { TACK_INVENTORY, tackEffectFields } from '../../economy/index.mjs';
 import { declinePendingRequestsForSire, cancelPendingRequestForMare } from '../../horses/index.mjs';
 import { finalizeNotificationAfterCommit } from '../../../utils/notificationService.mjs';
 import { studStatuses } from '../../../constants/schema.mjs';
-import { CRAFTING_RECIPES } from '../../crafting/index.mjs';
+import { CRAFTING_RECIPES, craftedItemRecipes } from '../../crafting/index.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 // Same-module internal (NOT part of the marketplace public API): the test-only
 // interleaving/abort seam. See `reconcileHorseOnTransfer` for why it is here.
@@ -222,7 +222,9 @@ function deriveReturnedItem(horseId, entry, takenIds) {
     itemId: entry.itemId,
     category: definition?.category ?? entry.category,
     name: definition?.name ?? entry.itemId,
-    ...tackEffectFields(definition ?? CRAFTING_RECIPES.find(r => r.result === entry.itemId)),
+    ...tackEffectFields(
+      definition ?? craftedItemRecipes(entry.category).find(r => r.result === entry.itemId),
+    ),
     quantity: 1,
     equippedToHorseId: null,
     equippedToHorseName: null,

@@ -72,7 +72,6 @@ for (const discipline of disciplines) {
 }
 Object.assign(expectedClassification.saddle, {
   'all-purpose-saddle': allPurpose,
-  'basic-all-purpose-saddle': allPurpose,
   // Sold as multi-discipline saddles; now the first discipline they listed.
   'jumping-saddle': ['Show Jumping'],
   'western-saddle': ['Western Pleasure'],
@@ -80,7 +79,6 @@ Object.assign(expectedClassification.saddle, {
 });
 Object.assign(expectedClassification.bridle, {
   'all-purpose-bridle': allPurpose,
-  'standard-bridle': allPurpose,
   'snaffle-bridle': ['Dressage'],
   hackamore: ['Western Pleasure'],
   'double-bridle': ['Dressage'],
@@ -147,10 +145,9 @@ describe('tackPoints (decision A, flat points)', () => {
     }
   });
 
-  it('All Purpose tack scores +2 each in every discipline, legacy aliases included', () => {
+  it('All Purpose tack scores +2 each in every discipline', () => {
     for (const discipline of disciplines) {
       expect(tackPoints({ saddle: 'all-purpose-saddle', bridle: 'all-purpose-bridle' }, discipline)).toBe(4);
-      expect(tackPoints({ saddle: 'basic-all-purpose-saddle', bridle: 'standard-bridle' }, discipline)).toBe(4);
     }
   });
 
