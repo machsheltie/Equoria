@@ -7,7 +7,7 @@
  * numbers, the stable's championship border only the ordinals, and the legacy
  * score compared the string to numbers and counted no placings at all. The owner ruled (2026-10-22, options A and C)
  * that placement is an Int, with the ordinal rows backfilled by the migration
- * 20261022200000_competition_result_placement_int.
+ * 20261023110000_competition_result_placement_int.
  *
  * The fixture horse has seven results: 1, 1, 1, 1, 2, 3, 5. Every reader must
  * see 4 wins and 6 top-three placings.
