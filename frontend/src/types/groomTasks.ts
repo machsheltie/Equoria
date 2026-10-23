@@ -38,7 +38,7 @@ export const TASK_AGE_THRESHOLDS = {
 } as const;
 
 /** All task definitions with durations and effects */
-export const TASK_DATA: TaskInfo[] = [
+export const taskData: TaskInfo[] = [
   // Foal Enrichment Tasks (0-2 years)
   {
     id: 'desensitization',
@@ -285,7 +285,7 @@ export const TASK_CATEGORY_INFO: Record<
  * Mirrors backend age eligibility logic from groomConfig.mjs.
  */
 export function getTasksForAge(ageYears: number): TaskInfo[] {
-  return TASK_DATA.filter((task) => {
+  return taskData.filter((task) => {
     const meetsMin = ageYears >= task.minAge;
     const meetsMax = task.maxAge === undefined || ageYears <= task.maxAge;
     return meetsMin && meetsMax;
