@@ -6,7 +6,7 @@
  *   1. win percentage = wins / shows entered; only horses with at least 100
  *      shows entered qualify;
  *   2. number of wins.
- * A win is a first place, stored as '1' or '1st' until the placement Int
+ * A win is a first place, stored as the Int 1 since the placement Int
  * migration (Equoria-f46tb) lands. "Shows entered" counts settled results
  * (placement NOT NULL); a placeholder row for a show that has not run yet does
  * not count. Ties break on horseId ascending.
@@ -38,17 +38,17 @@ const get = path => request(app).get(path).set('Origin', ORIGIN).set('Authorizat
 
 /**
  * Give `horseId` one result per show for the first `completed` shows: the first
- * `wins` are first places (alternating '1' / '1st' when `mixed`), the rest are
+ * `wins` are first places (placement 1), the rest are
  * second places. `pending` extra shows get a NULL-placement placeholder row.
  */
-function resultRows(horseId, { completed, wins, mixed = false, pending = 0 }) {
+function resultRows(horseId, { completed, wins, pending = 0 }) {
   const rows = [];
   for (let i = 0; i < completed + pending; i++) {
     let placement = null;
     if (i < wins) {
-      placement = mixed && i % 2 === 1 ? '1st' : '1';
+      placement = 1; // Int rank since Equoria-f46tb (the '1'/'1st' spellings were migrated to 1)
     } else if (i < completed) {
-      placement = '2';
+      placement = 2;
     }
     rows.push({
       horseId,
@@ -110,12 +110,12 @@ beforeAll(async () => {
   await prisma.competitionResult.createMany({
     data: [
       // A: exactly 100 settled shows (+1 not yet run), 60 wins as '1' and '1st'.
-      ...resultRows(horse.A.id, { completed: 100, wins: 60, mixed: true, pending: 1 }),
+      ...resultRows(horse.A.id, { completed: 100, wins: 60, pending: 1 }),
       // B: 120 shows, 90 wins.
       ...resultRows(horse.B.id, { completed: 120, wins: 90 }),
       // C: 99 settled shows, all won as '1st', + 1 not yet run — 100 rows but
       // only 99 shows entered, so not qualified.
-      ...resultRows(horse.C.id, { completed: 99, wins: 99, mixed: true, pending: 1 }),
+      ...resultRows(horse.C.id, { completed: 99, wins: 99, pending: 1 }),
       // D: same record as A (60 / 100), created later.
       ...resultRows(horse.D.id, { completed: 100, wins: 60 }),
       // E: 3 shows, no wins.

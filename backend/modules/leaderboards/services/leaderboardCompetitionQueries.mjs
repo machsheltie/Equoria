@@ -194,9 +194,9 @@ export async function countDistinctHorses(whereClause) {
  */
 export const winPercentageMinShows = 100;
 
-// A win is a first place. `placement` is still a String column holding '1' or
-// '1st' until the Int migration (Equoria-f46tb); both spellings count.
-const isWinSql = Prisma.sql`"placement" IN ('1', '1st')`;
+// A win is a first place. `placement` is the Int rank since the Equoria-f46tb
+// migration, which converted every stored '1'/'1st' to 1.
+const isWinSql = Prisma.sql`"placement" = 1`;
 
 /**
  * Per-horse record over settled results (placement NOT NULL — a placeholder
