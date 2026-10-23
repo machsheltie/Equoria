@@ -21,8 +21,8 @@ import { loadCompatibilityInputs, scoreCompatibility } from '../services/dynamic
 
 const SCOPE = 'TestFixture-ld219';
 const RUN = randomBytes(5).toString('hex');
-const HOUR_MS = 60 * 60 * 1000;
-const CONTEXT = { taskType: 'trust_building', environmentalFactors: [] };
+const hourMs = 60 * 60 * 1000;
+const CONTEXT = { taskType: 'desensitization', environmentalFactors: [] };
 
 const cleanup = createCleanupTracker();
 let user;
@@ -82,13 +82,13 @@ afterAll(() => cleanup.run(), 60_000);
 async function interact({ hoursAgo, quality, bondingChange }) {
   return prisma.groomInteraction.create({
     data: {
-      interactionType: 'trust_building',
+      interactionType: 'desensitization',
       duration: 30,
       quality,
       bondingChange,
       foalId: horse.id,
       groomId: groom.id,
-      createdAt: new Date(now.getTime() - hoursAgo * HOUR_MS),
+      createdAt: new Date(now.getTime() - hoursAgo * hourMs),
     },
   });
 }
