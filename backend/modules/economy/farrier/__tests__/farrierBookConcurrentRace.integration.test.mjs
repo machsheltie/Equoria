@@ -1,20 +1,27 @@
 /**
- * POST /api/farrier/book-service — concurrent-race sentinel (Equoria-6g8wm).
- * Sibling of vetBookConcurrentRace — same shape, farrier surface.
+ * Farrier shoeing: concurrency and money-integrity sentinels
+ * (Equoria-6g8wm race sentinel, Equoria-u9mw9 ledger-in-tx sentinel; rewritten
+ * for the one-action farrier, owner ruling 2026-10-23, Equoria-zmqzf).
+ *
+ * OLD CONTRACT: N parallel bookings with money for ONE service, exactly one
+ * succeeds. NEW RULING: one shoeing per horse per week for 50 coins. So N
+ * parallel shoeings of one horse with money for ALL of them must still shoe,
+ * charge and raise a stat exactly once; and a failed shoeing leaves no ledger
+ * row, no debit and no change on the horse.
+ *
+ * Real DB, no mocks; the controller is driven directly.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
-import { bookFarrierService, FARRIER_SERVICES } from '../controllers/farrierController.mjs';
+import { HORSE_STAT_VALUES } from '../../../../constants/schema.mjs';
+import { shoeHorse, SHOEING_COST } from '../controllers/farrierController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-6g8wm-farrier';
 const N = 5;
-
-let user;
-let horse;
 const createdUserIds = [];
 const createdHorseIds = [];
 
@@ -34,24 +41,21 @@ function fakeRes() {
   return res;
 }
 
-beforeAll(async () => {
+async function makeFixture(money) {
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
-  const service = FARRIER_SERVICES[0];
-
-  user = await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       username: `${FIXTURE_PREFIX}-${tag}`,
       email: `${FIXTURE_PREFIX}-${tag}@example.com`,
       password: pw,
       firstName: 'Farrier',
       lastName: 'Race',
-      money: service.cost,
+      money,
     },
   });
   createdUserIds.push(user.id);
-
-  horse = await prisma.horse.create({
+  const horse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
       name: `${FIXTURE_PREFIX}-horse-${tag}`,
@@ -63,49 +67,78 @@ beforeAll(async () => {
     },
   });
   createdHorseIds.push(horse.id);
-}, 60000);
+  return { user, horse };
+}
+
+const statSum = h => HORSE_STAT_VALUES.reduce((n, k) => n + (h[k] ?? 0), 0);
 
 afterAll(async () => {
-  if (createdHorseIds.length) {
-    await prisma.horse
-      .deleteMany({ where: { id: { in: createdHorseIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-  }
-  if (createdUserIds.length) {
-    await prisma.userTransaction
-      .deleteMany({ where: { userId: { in: createdUserIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.user
-      .deleteMany({ where: { id: { in: createdUserIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-  }
+  await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
+  await prisma.userTransaction.deleteMany({ where: { userId: { in: createdUserIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
 }, 30000);
 
-describe('farrier bookFarrierService concurrent-race sentinel (Equoria-6g8wm)', () => {
-  it('SENTINEL: N parallel bookings with money for ONE — exactly 1 succeeds, money never negative', async () => {
-    const service = FARRIER_SERVICES[0];
-    const reqs = Array.from({ length: N }, () => ({
-      user: { id: user.id },
-      body: { horseId: horse.id, serviceId: service.id },
-    }));
+describe('farrier shoeHorse (Equoria-6g8wm / Equoria-u9mw9 / Equoria-zmqzf)', () => {
+  it('SENTINEL: N parallel shoeings of one horse shoe, charge and raise a stat exactly once', async () => {
+    const { user, horse } = await makeFixture(SHOEING_COST * N * 2);
+    const before = await prisma.horse.findUnique({ where: { id: horse.id } });
+
     const responses = await Promise.all(
-      reqs.map(req => {
+      Array.from({ length: N }, () => {
         const res = fakeRes();
-        return bookFarrierService(req, res).then(() => res);
+        return shoeHorse({ user: { id: user.id }, body: { horseId: horse.id } }, res).then(() => res);
       }),
     );
-    const successes = responses.filter(r => r.statusCode === 200);
-    const failures = responses.filter(r => r.statusCode !== 200);
-    expect(successes).toHaveLength(1);
-    for (const f of failures) {
-      expect(f.statusCode).toBe(400);
-      expect(String(f.body?.message ?? '')).toMatch(/insufficient funds/i);
+
+    expect(responses.filter(r => r.statusCode === 200)).toHaveLength(1);
+    for (const f of responses.filter(r => r.statusCode !== 200)) {
+      expect(f.statusCode).toBe(409);
     }
-    const after = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { money: true },
-    });
-    expect(Number(after.money)).toBe(0);
-    expect(Number(after.money)).toBeGreaterThanOrEqual(0);
+    const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
+    expect(Number(money.money)).toBe(SHOEING_COST * N * 2 - SHOEING_COST);
+    const after = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(statSum(after) - statSum(before)).toBe(1);
+    const rows = await prisma.userTransaction.findMany({ where: { userId: user.id, category: 'farrierService' } });
+    expect(rows).toHaveLength(1);
+  });
+
+  it('SENTINEL: the ledger row is written in the same tx, balanceAfter is the post-debit balance', async () => {
+    const start = SHOEING_COST + 1000;
+    const { user, horse } = await makeFixture(start);
+    const res = fakeRes();
+    await shoeHorse({ user: { id: user.id }, body: { horseId: horse.id } }, res);
+    expect(res.statusCode).toBe(200);
+    const rows = await prisma.userTransaction.findMany({ where: { userId: user.id, category: 'farrierService' } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].type).toBe('debit');
+    expect(Number(rows[0].amount)).toBe(SHOEING_COST);
+    expect(Number(rows[0].balanceAfter)).toBe(start - SHOEING_COST);
+  });
+
+  it('SENTINEL: an insufficient-funds failure leaves no ledger row, no debit and an unchanged horse', async () => {
+    const { user, horse } = await makeFixture(SHOEING_COST - 1);
+    const before = await prisma.horse.findUnique({ where: { id: horse.id } });
+    const res = fakeRes();
+    await shoeHorse({ user: { id: user.id }, body: { horseId: horse.id } }, res);
+    expect(res.statusCode).toBe(400);
+    expect(await prisma.userTransaction.count({ where: { userId: user.id, category: 'farrierService' } })).toBe(0);
+    const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
+    expect(Number(money.money)).toBe(SHOEING_COST - 1);
+    const after = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(after.lastShod).toEqual(before.lastShod);
+    expect(statSum(after)).toBe(statSum(before));
+  });
+
+  it('SENTINEL: a refused second shoeing rolls its debit back (no money lost, one ledger row)', async () => {
+    const { user, horse } = await makeFixture(1000);
+    const first = fakeRes();
+    await shoeHorse({ user: { id: user.id }, body: { horseId: horse.id } }, first);
+    expect(first.statusCode).toBe(200);
+    const second = fakeRes();
+    await shoeHorse({ user: { id: user.id }, body: { horseId: horse.id } }, second);
+    expect(second.statusCode).toBe(409);
+    const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
+    expect(Number(money.money)).toBe(1000 - SHOEING_COST);
+    expect(await prisma.userTransaction.count({ where: { userId: user.id, category: 'farrierService' } })).toBe(1);
   });
 });

@@ -69,7 +69,7 @@ for play.
 **Rule 1 — past events:** `Horse.dateOfBirth` (only horses under 21 at `S`; a
 horse that turned 21 inside the window returns to 20), `Horse.lastBredDate`,
 `Horse.inFoalSinceDate`, `Horse.lastVettedDate`, `Horse.lastGroomed`,
-`Horse.lastFarrierDate`, `Horse.lastFedDate`, `TrainingLog.trainedAt` (the
+`Horse.lastShod`, `Horse.lastFedDate`, `TrainingLog.trainedAt` (the
 7-day `canTrain` gate — moves together with `Horse.trainingCooldown`),
 `GroomAssignment.createdAt` and `startDate` (tenure gates), `GroomInteraction`
 `timestamp` and `createdAt` for interactions inside the trailing care windows

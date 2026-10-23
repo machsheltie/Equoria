@@ -122,14 +122,13 @@ is a layout, a page structure or a copy deck.
 
 ## Farrier
 
-- The farrier sells fixed one-horse services that set the horse's hoof
-  condition and farrier date; the shoeing services also set the last-shod date.
-- A nightly job (03:45 on the game clock) steps hoof condition down one level per elapsed decay
-  interval since the last farrier visit, never up, so a booked service is never
-  undone early and a horse never visited is left alone. The interval is
-  configurable and falls back to a default in the decay service.
-- Hoof condition is a prompt to rebook. Nothing in show scoring or the
-  breeding and entry health gates reads it today.
+- The farrier has one action (owner ruling 2026-10-23): once a week the player
+  clicks Shoe horse for 50 coins. It records the horse's last-shod date and,
+  for now, gives +1 to one random stat. The week is game time (Eastern): a
+  horse can be shod again seven Eastern calendar days after its last
+  shoeing, enforced in the transaction by a guarded update on the horse row.
+- There are no hoof trims, shoeing tiers, hoof condition, decay job or
+  corrective conformation effects.
 
 ## Crafting
 
@@ -157,8 +156,6 @@ owner decision and a fresh issue.
   (and by a backfill script for older accounts), and every account begins at
   workshop tier 0. No shipped route grants more materials or raises the
   workshop tier, so tier 1 to 3 recipes cannot be unlocked by play.
-- **Hoof condition has no gameplay consequence** beyond prompting the next
-  farrier booking.
 
 ## Live implementation map
 
@@ -168,10 +165,8 @@ owner decision and a fresh issue.
 - Feed catalog and purchase: `backend/modules/economy/feedShop/`
 - Tack catalog, purchase and decoration removal: `backend/modules/economy/tackShop/`
 - Inventory equip and unequip: `backend/modules/economy/inventory/`
-- Vet services: `backend/modules/economy/vet/`; farrier services:
-  `backend/modules/economy/farrier/`; hoof decay:
-  `backend/modules/horses/services/hoofConditionDecayService.mjs` and its job
-  under `backend/services/jobs/`
+- Vet services: `backend/modules/economy/vet/`; the farrier:
+  `backend/modules/economy/farrier/`
 - Crafting recipes and craft: `backend/modules/crafting/`
 - Tack points in a show: `backend/modules/competition/rules/tackScoring.mjs`
 - Starter money, starter tack and starter materials:

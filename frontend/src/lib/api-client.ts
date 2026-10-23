@@ -157,7 +157,7 @@ export type {
 // ── Farrier ───────────────────────────────────────────────────────────────────
 // Extracted to ./api/farrier (Equoria-rfsml). Re-exported for barrel compat.
 export { farrierApi } from './api/farrier.js';
-export type { FarrierService, FarrierBookingResult } from './api/farrier.js';
+export type { FarrierShoeingResult } from './api/farrier.js';
 
 // -- Feed Shop / per-horse feed --
 // Extracted to ./api/feedShop (Equoria-rfsml). Re-exported for barrel compat.

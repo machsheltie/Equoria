@@ -3,7 +3,7 @@
  *
  * PROBLEM (from Equoria-iot0h)
  * ---------------------------
- * `backend/services/cronJobs.mjs` schedules dailyHorseAging, decayHoofConditions,
+ * `backend/services/cronJobs.mjs` schedules dailyHorseAging,
  * executeClosedShows, auditLogRetention, processHorseBirthdays, etc. with
  * `node-cron`. node-cron schedules fire **per process** — every Railway replica
  * runs every schedule. On a single-replica deployment this is invisible. The
@@ -12,7 +12,6 @@
  *
  *   - dailyHorseAging:    every horse ages N times in a row → off-by-N years
  *   - executeClosedShows: every prize is paid N times → double-spend
- *   - decayHoofConditions: every horse's hoof-condition decays N rungs at once
  *   - auditLogRetention:   N parallel scoped-DELETEs of audit_logs rows
  *   - processHorseBirthdays: notifications and milestones fired N times
  *

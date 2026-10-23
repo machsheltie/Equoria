@@ -38,7 +38,6 @@ const EXPECTED_JOBS = [
   { jobName: 'electionStatusTransition', schedule: '3,18,33,48 * * * *', staleAfterMs: 30 * 60 * 1000 },
   { jobName: 'nightlyShowExecution', schedule: '0 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'auditLogRetention', schedule: '30 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
-  { jobName: 'hoofConditionDecay', schedule: '45 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'weeklyFlagEvaluation', schedule: '30 0 * * 1', staleAfterMs: 192 * 60 * 60 * 1000 },
   { jobName: 'temporaryFlagExpiry', schedule: '20 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   // Equoria-qr114: appended at the end (does not reorder the original ten).
@@ -125,7 +124,6 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       electionStatusTransition: 'transitionElectionStatuses',
       nightlyShowExecution: 'executeOvernightShows',
       auditLogRetention: 'purgeExpiredAuditLogs',
-      hoofConditionDecay: 'decayHoofConditions',
       weeklyFlagEvaluation: 'evaluateWeeklyFlags',
       temporaryFlagExpiry: 'sweepExpiredTemporaryFlags',
       docCoverageSnapshot: 'recordDocCoverageSnapshot',

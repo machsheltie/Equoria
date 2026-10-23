@@ -40,7 +40,6 @@ import weeklyRiderTrainerCareerJob from './weeklyRiderTrainerCareerJob.mjs';
 import electionTransitionJob from './electionTransitionJob.mjs';
 import nightlyShowExecutionJob from './nightlyShowExecutionJob.mjs';
 import auditLogRetentionJob from './auditLogRetentionJob.mjs';
-import hoofConditionDecayJob from './hoofConditionDecayJob.mjs';
 import weeklyFlagEvaluationJob from './weeklyFlagEvaluationJob.mjs';
 import temporaryFlagExpiryJob from './temporaryFlagExpiryJob.mjs';
 import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
@@ -56,7 +55,7 @@ import dailyNewsPostingJob from './dailyNewsPostingJob.mjs';
  * order in cronJobs.mjs#start() exactly:
  *   dailyTraitEvaluation, dailyHorseAging, dailyFoalMilestoneEvaluation,
  *   weeklyRiderTrainerCareerWeeks, electionStatusTransition,
- *   nightlyShowExecution, auditLogRetention, hoofConditionDecay,
+ *   nightlyShowExecution, auditLogRetention,
  *   weeklyFlagEvaluation, temporaryFlagExpiry.
  *
  * docCoverageSnapshot (Equoria-qr114) is APPENDED at the end so the pre-existing
@@ -83,7 +82,6 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   electionTransitionJob,
   nightlyShowExecutionJob,
   auditLogRetentionJob,
-  hoofConditionDecayJob,
   weeklyFlagEvaluationJob,
   temporaryFlagExpiryJob,
   docCoverageSnapshotJob,

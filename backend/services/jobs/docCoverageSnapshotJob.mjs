@@ -7,8 +7,7 @@
  * stays bounded.
  *
  * Schedule: 04:00 Eastern — a low-traffic time AFTER the existing nightly cluster
- * (nightlyShowExecution 03:00, auditLogRetention 03:30, hoofConditionDecay
- * 03:45) so the heaviest jobs don't overlap.
+ * (nightlyShowExecution 03:00, auditLogRetention 03:30) so the heaviest jobs don't overlap.
  *
  * advisory-locked (so exactly one replica records per day), runWithHeartbeat
  * (so /api/admin/cron/health surfaces staleness + the recorded/purged summary).

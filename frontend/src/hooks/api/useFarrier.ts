@@ -1,40 +1,25 @@
 /**
- * Farrier API Hooks (Epic 10)
+ * Farrier API Hooks (Epic 10; one weekly action since Equoria-zmqzf)
  *
- * Centralized hooks for farrier clinic API calls:
- * - List available farrier services
- * - Book a service for a horse
+ * - Shoe a horse (once a week, 50 coins)
  *
  * Follows useVet.ts / useGrooms.ts pattern.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { farrierApi, ApiError, FarrierService, FarrierBookingResult } from '@/lib/api-client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { farrierApi, ApiError, FarrierShoeingResult } from '@/lib/api-client';
 
-export type { FarrierService, FarrierBookingResult };
+export type { FarrierShoeingResult };
 
-export const farrierKeys = {
-  all: ['farrier'] as const,
-  services: () => [...farrierKeys.all, 'services'] as const,
-};
-
-export function useFarrierServices() {
-  return useQuery<FarrierService[], ApiError>({
-    queryKey: farrierKeys.services(),
-    queryFn: farrierApi.getServices,
-    staleTime: 10 * 60 * 1000, // 10 minutes — catalog rarely changes
-  });
-}
-
-export function useBookFarrierService() {
+export function useShoeHorse() {
   const queryClient = useQueryClient();
 
-  return useMutation<FarrierBookingResult, ApiError, { horseId: number; serviceId: string }>({
-    mutationFn: (data) => farrierApi.bookService(data),
+  return useMutation<FarrierShoeingResult, ApiError, { horseId: number }>({
+    mutationFn: (data) => farrierApi.shoeHorse(data),
     onSuccess: () => {
-      // Invalidate horse data so hoofCondition / lastFarrierDate / lastShod refresh
+      // Invalidate horse data so lastShod and the stat that rose refresh
       queryClient.invalidateQueries({ queryKey: ['horses'] });
-      // The booking spends coins: refresh the live balance (nav + Bank) — Equoria-z3yv3
+      // Shoeing spends coins: refresh the live balance (nav + Bank) — Equoria-z3yv3
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });

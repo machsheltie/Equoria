@@ -1,38 +1,24 @@
 /**
- * Farrier API client (Equoria-rfsml).
+ * Farrier API client (Equoria-rfsml; one weekly action since Equoria-zmqzf).
  *
- *   GET  /api/v1/farrier/services     → FarrierService[]
- *   POST /api/v1/farrier/book-service → FarrierBookingResult
+ *   POST /api/v1/farrier/shoe-horse → FarrierShoeingResult
  */
 
 import { apiClient } from '../http/apiClient.js';
 
-export interface FarrierService {
-  id: string;
-  name: string;
-  description: string;
-  duration: string;
-  cost: number;
-  hoofConditionOutcome: string;
-  includesShoing: boolean;
-  icon?: string;
-}
-
-export interface FarrierBookingResult {
+export interface FarrierShoeingResult {
   horse: {
     id: number;
     name: string;
-    hoofCondition: string | null;
-    lastFarrierDate: string | null;
     lastShod: string | null;
   };
-  service: FarrierService;
+  /** The stat that gained +1 from this shoeing (for now). */
+  statGained: string;
   cost: number;
   remainingMoney: number;
 }
 
 export const farrierApi = {
-  getServices: () => apiClient.get<FarrierService[]>('/api/v1/farrier/services'),
-  bookService: (data: { horseId: number; serviceId: string }) =>
-    apiClient.post<FarrierBookingResult>('/api/v1/farrier/book-service', data),
+  shoeHorse: (data: { horseId: number }) =>
+    apiClient.post<FarrierShoeingResult>('/api/v1/farrier/shoe-horse', data),
 };

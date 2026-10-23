@@ -175,13 +175,7 @@ export const guideSectionsStart: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: '**The Farrier.** Book a Hoof Trim, Standard Shoeing, Corrective Shoeing or Emergency Care, and pay per visit. Hoof condition slips one step at a time as weeks pass since the last visit.',
-      },
-      {
-        kind: 'pending',
-        topic: 'What hoof condition affects',
-        ownerQuestion:
-          "What hoof condition affects. Today it doesn't change health, training or show scores.",
+        text: '**The Farrier.** Once a week you can shoe a horse for 50 coins. The horse is recorded as shod, and for now it gains +1 in one stat.',
       },
       {
         kind: 'paragraph',
@@ -274,10 +268,8 @@ export const guideSectionsStart: readonly GuideSection[] = [
         ],
       },
       {
-        kind: 'pending',
-        topic: 'When riders retire',
-        ownerQuestion:
-          'When riders retire. Today the game retires them and the warnings on screen disagree about when (Equoria-oey96.26).',
+        kind: 'paragraph',
+        text: '**Riders retire on their own.** The game decides when, and nobody can see it coming. You get a notice a week before a rider retires, so you can hire a replacement.',
       },
     ],
   },

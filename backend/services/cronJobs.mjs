@@ -394,15 +394,6 @@ class CronJobService {
   }
 
   /**
-   * Nightly hoof-condition decay / farrier re-booking loop (Equoria-gg3v).
-   * @returns {Promise<{ decayedCount: number, decayDays: number,
-   *                      transitions: Array<{from:string,to:string,count:number}> }>}
-   */
-  async decayHoofConditions() {
-    return retentionMaintenanceImpl.decayHoofConditions();
-  }
-
-  /**
    * Equoria-urqic.3.2: thin delegator into the epigenetic-flag impl module
    * (backend/services/jobs/impl/flagEvaluation.mjs). Stays on the class because
    * the weeklyFlagEvaluationJob registry handler invokes it on the singleton

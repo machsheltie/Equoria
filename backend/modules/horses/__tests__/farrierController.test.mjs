@@ -1,214 +1,179 @@
 /**
- * farrierController integration tests (Equoria-rr7 coverage sprint).
+ * Farrier HTTP integration tests (owner ruling 2026-10-23, Equoria-zmqzf).
  *
- * Covers: getFarrierServices, bookFarrierService.
- * Routes live under authRouter at /api/v1/farrier (the unversioned /api/*
- * mount was removed in Equoria-4bs3s).
+ * OLD CONTRACT (Equoria-rr7): GET /farrier/services listed four tiered services
+ * (trim 80 / shoeing 180 / corrective 320 / emergency 250) and
+ * POST /farrier/book-service booked one, setting hoofCondition and
+ * lastFarrierDate. NEW RULING: the farrier has one action, "Shoe horse", once a
+ * week for 50 coins; it sets lastShod and gives +1 to one random stat.
+ *
+ * Real routes (supertest), real DB. Routes live under authRouter at /api/v1.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 
 const ORIGIN = 'http://localhost:3000';
+// The owner-ruled price (2026-10-23), pinned here rather than imported.
+const SHOEING_COST = 50;
+const DAY = 24 * 60 * 60 * 1000;
+const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 
-let user;
-let token;
-let horse;
-// Extra per-test fixtures (insufficient-funds case) collected here so the
-// fail-loud afterAll deletes them with scoped IN-lists instead of swallowed
-// per-test finally deletes (Equoria-n7qa3).
-const extraHorseIds = [];
-const extraUserIds = [];
+const userIds = [];
+const horseIds = [];
 const cleanup = createCleanupTracker();
+cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'ledger');
+cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
+afterAll(() => cleanup.run(), 30000);
 
-beforeAll(async () => {
-  user = await prisma.user.create({
+async function makePlayer(money = 10000, horseData = {}) {
+  const user = await prisma.user.create({
     data: {
-      email: `farrier-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
-      username: `farrier${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
+      email: `farrier-${uid()}@test.com`,
+      username: `farrier${uid()}`,
       password: 'irrelevant-hash',
       firstName: 'Farrier',
       lastName: 'Tester',
-      money: 10000,
+      money,
     },
   });
-  token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-
-  horse = await prisma.horse.create({
+  userIds.push(user.id);
+  const horse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
-      name: `TestFixture-FarrierHorse-${Date.now()}`,
-      sex: 'Colt',
+      name: `TestFixture-FarrierHorse-${uid()}`,
+      sex: 'Mare',
       dateOfBirth: new Date('2017-01-01'),
       age: 8,
       userId: user.id,
       healthStatus: 'Good',
+      ...horseData,
     },
   });
+  horseIds.push(horse.id);
+  const token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+  return { user, horse, token };
+}
 
-  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: all owned horses
-  // (the main fixture + any extra per-test "broke" horses) BEFORE their owning
-  // users — Horse.userId is onDelete:Restrict (schema:282). Callbacks read the
-  // extra-id arrays at run() time so they capture ids pushed during tests.
-  // .deleteMany so an already-gone row is a no-op (not P2025); a real scope/FK
-  // failure reds afterAll instead of being swallowed.
-  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [horse.id, ...extraHorseIds] } } }), 'horses');
-  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [user.id, ...extraUserIds] } } }), 'users');
-}, 30000);
+async function shoe(token, body) {
+  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  return request(app)
+    .post('/api/v1/farrier/shoe-horse')
+    .set('Origin', ORIGIN)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Cookie', csrf.cookieHeader)
+    .set('X-CSRF-Token', csrf.csrfToken)
+    .send(body);
+}
 
-afterAll(() => cleanup.run(), 30000);
+const statSum = h => HORSE_STAT_VALUES.reduce((n, k) => n + (h[k] ?? 0), 0);
 
-// ─── GET /api/farrier/services ────────────────────────────────────────────────
+describe('POST /api/v1/farrier/shoe-horse', () => {
+  it('shoes the horse: 50 coins, lastShod set, +1 to exactly one stat, one ledger row', async () => {
+    const { user, horse, token } = await makePlayer(1000);
+    const before = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(before.lastShod).toBeNull();
 
-describe('GET /api/farrier/services', () => {
-  it('returns 200 with list of farrier services', async () => {
+    const res = await shoe(token, { horseId: horse.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.cost).toBe(SHOEING_COST);
+    expect(res.body.data.remainingMoney).toBe(950);
+    expect(res.body.data.horse.lastShod).toBeTruthy();
+    expect(HORSE_STAT_VALUES).toContain(res.body.data.statGained);
+
+    const after = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(after.lastShod).not.toBeNull();
+    expect(statSum(after) - statSum(before)).toBe(1);
+    expect(after[res.body.data.statGained] - before[res.body.data.statGained]).toBe(1);
+
+    const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
+    expect(Number(money.money)).toBe(950);
+    const rows = await prisma.userTransaction.findMany({ where: { userId: user.id, category: 'farrierService' } });
+    expect(rows).toHaveLength(1);
+    expect(Number(rows[0].amount)).toBe(50);
+  });
+
+  it('refuses a second shoeing inside the week with 409 and charges nothing', async () => {
+    const { user, horse, token } = await makePlayer(1000);
+    expect((await shoe(token, { horseId: horse.id })).status).toBe(200);
+    const mid = await prisma.horse.findUnique({ where: { id: horse.id } });
+
+    const res = await shoe(token, { horseId: horse.id });
+
+    expect(res.status).toBe(409);
+    expect(res.body.success).toBe(false);
+    const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
+    expect(Number(money.money)).toBe(950);
+    const after = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(statSum(after)).toBe(statSum(mid));
+    expect(after.lastShod).toEqual(mid.lastShod);
+  });
+
+  it('refuses at six days and allows again after eight (Eastern calendar days)', async () => {
+    const six = await makePlayer(1000, { lastShod: new Date(Date.now() - 6 * DAY) });
+    expect((await shoe(six.token, { horseId: six.horse.id })).status).toBe(409);
+
+    const eight = await makePlayer(1000, { lastShod: new Date(Date.now() - 8 * DAY) });
+    expect((await shoe(eight.token, { horseId: eight.horse.id })).status).toBe(200);
+  });
+
+  it('returns 400 and changes nothing when the player cannot afford it', async () => {
+    const { user, horse, token } = await makePlayer(10);
+    const res = await shoe(token, { horseId: horse.id });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Insufficient funds');
+    const money = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
+    expect(Number(money.money)).toBe(10);
+    const after = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(after.lastShod).toBeNull();
+  });
+
+  it('returns 404 for a horse the player does not own', async () => {
+    const mine = await makePlayer(1000);
+    const other = await makePlayer(1000);
+    expect((await shoe(mine.token, { horseId: other.horse.id })).status).toBe(404);
+    expect((await shoe(mine.token, { horseId: 999999999 })).status).toBe(404);
+  });
+
+  it('returns 400 for a missing horseId and 401 without auth', async () => {
+    const { token } = await makePlayer(1000);
+    expect((await shoe(token, {})).status).toBe(400);
+    const csrf = await fetchCsrf(app);
     const res = await request(app)
+      .post('/api/v1/farrier/shoe-horse')
+      .set('Origin', ORIGIN)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: 1 });
+    expect(res.status).toBe(401);
+  });
+
+  it('the old tiered service list and booking routes are gone', async () => {
+    const { token, horse } = await makePlayer(1000);
+    const list = await request(app)
       .get('/api/v1/farrier/services')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBeGreaterThan(0);
-    expect(res.body.data[0]).toHaveProperty('id');
-    expect(res.body.data[0]).toHaveProperty('cost');
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/farrier/services').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/farrier/book-service ──────────────────────────────────────────
-
-describe('POST /api/farrier/book-service', () => {
-  it('returns 200 when booking a valid service for owned horse', async () => {
+    expect(list.status).toBe(404);
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
+    const book = await request(app)
       .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ horseId: horse.id, serviceId: 'hoof-trim' });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.horse).toBeDefined();
-    expect(res.body.data.service).toBeDefined();
-  });
-
-  it('returns 404 for an invalid serviceId', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/farrier/book-service')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, serviceId: 'nonexistent-service' });
-
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/farrier/book-service')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: 999999999, serviceId: 'hoof-trim' });
-
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post('/api/v1/farrier/book-service')
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, serviceId: 'hoof-trim' });
-
-    expect(res.status).toBe(401);
-  });
-
-  it('returns 200 and sets lastShod when booking a shoeing service (includesShoing=true branch)', async () => {
-    // 'shoeing' has includesShoing: true — covers the updateData.lastShod = now branch (line 107)
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/farrier/book-service')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: horse.id, serviceId: 'shoeing' });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.horse.lastShod).not.toBeNull();
-  });
-
-  it('returns 400 when user has insufficient funds (money < service.cost branch)', async () => {
-    // Create a user with only $10 — hoof-trim costs $80, so insufficient
-    const brokeUser = await prisma.user.create({
-      data: {
-        email: `farrier-broke-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
-        username: `farbroke${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
-        password: 'irrelevant-hash',
-        firstName: 'Broke',
-        lastName: 'Tester',
-        money: 10,
-      },
-    });
-    // Register for fail-loud teardown immediately after creation (Equoria-n7qa3)
-    // so the swallowed per-test finally delete is no longer needed; the suite
-    // afterAll deletes these horses before their users (FK-ordered, scoped).
-    extraUserIds.push(brokeUser.id);
-    const brokeHorse = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `TestFixture-BrokeFarrierHorse-${Date.now()}`,
-        sex: 'Mare',
-        dateOfBirth: new Date('2017-01-01'),
-        age: 8,
-        userId: brokeUser.id,
-        healthStatus: 'Good',
-      },
-    });
-    extraHorseIds.push(brokeHorse.id);
-    const brokeToken = generateTestToken({ id: brokeUser.id, email: brokeUser.email, role: 'user' });
-
-    // Bind CSRF to brokeUser (not the default token) so issuance + mutation
-    // resolve the same sessionIdentifier (Equoria-vgqam/plw0h).
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${brokeToken}`] });
-    const res = await request(app)
-      .post('/api/v1/farrier/book-service')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${brokeToken}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ horseId: brokeHorse.id, serviceId: 'hoof-trim' });
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain('Insufficient funds');
+    expect(book.status).toBe(404);
   });
 });

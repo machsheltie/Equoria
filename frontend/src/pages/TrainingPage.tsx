@@ -71,7 +71,7 @@ const TrainingPage = () => {
           <li>Horses must be at least 3 years old before they can begin formal training</li>
           <li>Each discipline has a 7-day global cooldown to prevent stat stacking</li>
           <li>Training improves the primary stats associated with each discipline</li>
-          <li>Injured horses cannot train — visit the Farrier or Vet first</li>
+          <li>Injured horses cannot train — visit the Vet first</li>
           <li>Consistent training over time unlocks higher performance ceilings in competition</li>
         </ul>
       </Surface>

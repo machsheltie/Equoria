@@ -1986,18 +1986,10 @@ paths:
       responses:
         '200': { description: 'Item purchased' }
 
-  /farrier/services:
-    get:
-      tags: [Services]
-      summary: 'Get farrier services'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Farrier services' }
-
-  /farrier/treat:
+  /farrier/shoe-horse:
     post:
       tags: [Services]
-      summary: 'Apply farrier service to a horse'
+      summary: 'Shoe a horse (once a week, 50 coins)'
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -2005,12 +1997,13 @@ paths:
           application/json:
             schema:
               type: object
-              required: [horseId, serviceId]
+              required: [horseId]
               properties:
                 horseId: { type: integer }
-                serviceId: { type: string }
       responses:
-        '200': { description: 'Service applied' }
+        '200': { description: 'Horse shod' }
+        '400': { description: 'Insufficient funds' }
+        '409': { description: 'Already shod this week' }
 
   /feed-shop/catalog:
     get:

@@ -8,8 +8,7 @@
  * (STAFF-CR-10) staff email-outbox rows sent or cancelled more than 30 days
  * ago or failed more than 90 days ago (ticketEmailOutbox.mjs).
  *
- * Schedule: 03:50 Eastern — a free minute between hoofConditionDecay (03:45)
- * and docCoverageSnapshot (04:00); advisory-locked so the DELETE runs exactly
+ * Schedule: 03:50 Eastern — a free minute before docCoverageSnapshot (04:00); advisory-locked so the DELETE runs exactly
  * once cluster-wide; runWithHeartbeat so /api/admin/cron/health shows the
  * purge summary. The purge is idempotent, so a missed or repeated night is
  * harmless.

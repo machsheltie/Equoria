@@ -1,16 +1,15 @@
 /**
  * Farrier Routes
- * All farrier endpoints under /api/farrier.
+ * All farrier endpoints under /api/v1/farrier.
  *
  * Path summary:
- *   GET  /services      → list available farrier services
- *   POST /book-service  → book a service for a horse
+ *   POST /shoe-horse  -> shoe a horse (once a week, 50 coins)
  */
 
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import logger from '../../../../utils/logger.mjs';
-import { getFarrierServices, bookFarrierService } from '../controllers/farrierController.mjs';
+import { shoeHorse } from '../controllers/farrierController.mjs';
 // Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
 import { financialRateLimiter } from '../../../../middleware/rateLimiting.mjs';
 
@@ -27,17 +26,14 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-router.get('/services', getFarrierServices);
-
 router.post(
-  '/book-service',
+  '/shoe-horse',
   financialRateLimiter,
   [
     body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
-    body('serviceId').notEmpty().withMessage('serviceId is required'),
     handleValidationErrors,
   ],
-  bookFarrierService,
+  shoeHorse,
 );
 
 export default router;

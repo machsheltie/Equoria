@@ -12,7 +12,6 @@
  *   purgeExpiredCronRunLogs      -> cronRunLogRetentionService
  *   recordDocCoverageSnapshot    -> apiDocumentationService.recordCoverageSnapshot
  *                                   + docCoverageSnapshotRetentionService
- *   decayHoofConditions          -> modules/horses decayHoofConditions
  *   processFoalMilestones        -> utils/horseAgingSystem processFoalMilestoneEvaluations
  *   tickRiderTrainerCareerWeeks  -> modules/trainers incrementWeeklyCareerWeeks
  *   executeOvernightShows        -> modules/competition executeClosedShows
@@ -27,7 +26,7 @@
  * The class keeps thin delegators with the SAME public names because every
  * registry handler (jobs/dailyMilestoneJob, jobs/weeklyRiderTrainerCareerJob,
  * jobs/nightlyShowExecutionJob, jobs/auditLogRetentionJob,
- * jobs/hoofConditionDecayJob, jobs/docCoverageSnapshotJob,
+ * jobs/docCoverageSnapshotJob,
  * jobs/cronRunLogRetentionJob) invokes them on the singleton via
  * `service.<method>()`, and integration suites
  * (cronJobsOvernightShowExecution.test.mjs calls
@@ -71,7 +70,6 @@ import logger from '../../../utils/logger.mjs';
 import { processFoalMilestoneEvaluations } from '../../../utils/horseAgingSystem.mjs';
 import { incrementWeeklyCareerWeeks } from '../../../modules/trainers/index.mjs';
 import { purgeExpiredAuditLogs as purgeExpiredAuditLogsService } from '../../../modules/admin/index.mjs';
-import { decayHoofConditions as decayHoofConditionsService } from '../../../modules/horses/index.mjs';
 import { executeClosedShows } from '../../../modules/competition/index.mjs';
 import { recordCoverageSnapshot } from '../../apiDocumentationService.mjs';
 import { purgeExpiredDocCoverageSnapshots } from '../../docCoverageSnapshotRetentionService.mjs';
@@ -249,32 +247,6 @@ export async function recordDocCoverageSnapshot() {
     deletedCount: purge.deletedCount,
     retentionDays: purge.retentionDays,
   };
-}
-
-/**
- * Equoria-gg3v: nightly hoof-condition decay (farrier re-booking loop).
- *
- * Delegates to hoofConditionDecayService.decayHoofConditions() (modules/horses
- * barrel), a decay-only scoped updateMany that steps a horse's hoofCondition
- * down one rung per elapsed HOOF_CONDITION_DECAY_DAYS interval since its last
- * farrier visit. The returned summary ({ decayedCount, decayDays, transitions })
- * flows into the heartbeat layer so /api/admin/cron/health surfaces what
- * decayed.
- *
- * @returns {Promise<{ decayedCount: number, decayDays: number,
- *                      transitions: Array<{from:string,to:string,count:number}> }>}
- */
-export async function decayHoofConditions() {
-  const startTime = Date.now();
-  logger.info('[CronJobService.decayHoofConditions] Starting hoof-condition decay');
-
-  const result = await decayHoofConditionsService();
-  const duration = Date.now() - startTime;
-  logger.info(
-    `[CronJobService.decayHoofConditions] Completed in ${duration}ms — ` +
-      `decayed ${result.decayedCount} horse(s), interval ${result.decayDays}d`,
-  );
-  return result;
 }
 
 /**

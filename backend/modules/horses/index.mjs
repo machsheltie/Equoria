@@ -35,7 +35,6 @@ export { runFoalingJob, createFoalFromPregnancy } from './services/foalingServic
 // Equoria-6p398.14 follow-up: the groom, rider and trainer assign paths refuse a retired horse.
 export { writeBirthdayTx, assertHorseTakesNewStaffTx } from './services/horseRetirementStaff.mjs';
 export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
-export { decayHoofConditions } from './services/hoofConditionDecayService.mjs';
 export { createHorse } from './services/horseCreation.mjs';
 export { getHorseById } from './services/horseRouteQueries.mjs';
 // The horse-name rule (Equoria-zalyb): auth's onboarding writes a player-typed horse name and

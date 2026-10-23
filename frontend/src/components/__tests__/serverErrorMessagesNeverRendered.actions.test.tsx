@@ -78,49 +78,28 @@ describe('ForgotPasswordPage — refused request (Equoria-mr1kq)', () => {
   });
 });
 
-describe('FarrierPage — failed booking (Equoria-mr1kq)', () => {
-  const book = async () => {
-    server.use(
-      http.get(`${base}/api/v1/farrier/services`, () =>
-        HttpResponse.json({
-          success: true,
-          data: [
-            {
-              id: 'trim',
-              name: 'Hoof Trim',
-              description: 'Routine hoof trimming.',
-              cost: 150,
-              duration: '30 min',
-              icon: null,
-            },
-          ],
-        })
-      )
-    );
+describe('FarrierPage — failed shoeing (Equoria-mr1kq; one weekly action since Equoria-zmqzf)', () => {
+  const shoe = async () => {
     const user = userEvent.setup();
     renderWith(<FarrierPage />);
-    await screen.findByTestId('horses-hoof-tab');
     await user.click(await screen.findByTestId('horse-card-1'));
-    await user.click(await screen.findByRole('button', { name: /view services/i }));
-    const servicesTab = await screen.findByTestId('farrier-services-tab');
-    const trimCard = within(servicesTab).getByTestId('farrier-service-trim');
-    await user.click(within(trimCard).getByRole('button', { name: /book/i }));
+    await user.click(screen.getByRole('button', { name: /shoe horse/i }));
   };
 
   it('shows mapped copy for a server fault', async () => {
-    server.use(http.post(`${base}/api/v1/farrier/book-service`, () => refuse(500)));
-    await book();
+    server.use(http.post(`${base}/api/v1/farrier/shoe-horse`, () => refuse(500)));
+    await shoe();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(serverFaultCopy);
     noSentinel();
   });
 
   it('shows mapped copy for a refusal', async () => {
-    server.use(http.post(`${base}/api/v1/farrier/book-service`, () => refuse(400)));
-    await book();
+    server.use(http.post(`${base}/api/v1/farrier/shoe-horse`, () => refuse(400)));
+    await shoe();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      "Booking failed: The farrier couldn't take that booking. Check the horse and your balance."
+      "Shoeing failed: The farrier couldn't shoe that horse. Check your balance."
     );
     noSentinel();
   });

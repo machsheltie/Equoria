@@ -45,7 +45,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     step: 3,
-    message: "Book a farrier appointment to keep your horse's hooves in top shape.",
+    message: 'Shoe a horse at the farrier. Each horse can be shod once a week.',
     route: '/farrier',
     highlightTarget: 'farrier-book-button',
   },

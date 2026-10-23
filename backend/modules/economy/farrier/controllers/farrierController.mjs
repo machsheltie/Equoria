@@ -1,17 +1,26 @@
 /**
- * Farrier Controller
- * Handles farrier services: listing services and booking appointments.
+ * Farrier Controller (owner ruling 2026-10-23, Equoria-zmqzf).
  *
- * Uses new Horse fields: lastFarrierDate, hoofCondition, lastShod.
+ * The farrier has ONE action: once a week the player shoes a horse for
+ * SHOEING_COST coins. The horse's `lastShod` is set to now and, for now, one
+ * random stat gains +1. There are no tiers, trims, durations, outcome grades,
+ * hoof condition or decay.
  *
- * Routes:
- *   GET  /api/farrier/services    → list available farrier services
- *   POST /api/farrier/book-service → book a service for a horse
+ * "Once a week" is game time (US Eastern, utils/gameTime.mjs): a horse can be
+ * shod again when seven Eastern calendar days have passed since its last
+ * shoeing. The limit is enforced inside the transaction by a guarded
+ * conditional updateMany on the horse row, so concurrent clicks cannot shoe
+ * (or charge for) the same horse twice.
+ *
+ * Route:
+ *   POST /api/v1/farrier/shoe-horse -> shoe a horse. Body: { horseId }
  */
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
+import { gameDayIndex, startOfGameDayIndex } from '../../../../utils/gameTime.mjs';
+import { HORSE_STAT_VALUES } from '../../../../constants/schema.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
@@ -19,126 +28,82 @@ import {
   SYSTEM_ACCOUNT_BURN,
 } from '../../services/financialLedgerService.mjs';
 
-// Predefined service catalog
-export const FARRIER_SERVICES = [
-  {
-    id: 'hoof-trim',
-    name: 'Hoof Trim',
-    description:
-      'Regular trimming and balancing of hooves to maintain proper hoof shape and angle.',
-    duration: '30 minutes',
-    cost: 80,
-    hoofConditionOutcome: 'good',
-    includesShoing: false,
-  },
-  {
-    id: 'shoeing',
-    name: 'Standard Shoeing',
-    description: 'Application of metal shoes to protect hooves during competition and training.',
-    duration: '60 minutes',
-    cost: 180,
-    hoofConditionOutcome: 'good',
-    includesShoing: true,
-  },
-  {
-    id: 'corrective',
-    name: 'Corrective Shoeing',
-    description:
-      'Specialised shoeing to address conformational issues, lameness, or rehabilitation needs.',
-    duration: '90 minutes',
-    cost: 320,
-    hoofConditionOutcome: 'excellent',
-    includesShoing: true,
-  },
-  {
-    id: 'emergency',
-    name: 'Emergency Care',
-    description: 'Urgent farrier visit for cracked hooves, lost shoes, or acute hoof issues.',
-    duration: '45 minutes',
-    cost: 250,
-    hoofConditionOutcome: 'fair',
-    includesShoing: false,
-  },
-];
+export const SHOEING_COST = 50;
+/** Game days that must pass between two shoeings of the same horse. */
+export const SHOEING_INTERVAL_DAYS = 7;
+
+class AlreadyShodThisWeekError extends Error {}
 
 /**
- * GET /api/farrier/services
+ * Prisma `where` fragment: the horse has never been shod, or its last shoeing
+ * was at least SHOEING_INTERVAL_DAYS Eastern calendar days ago.
+ * @param {Date} now
  */
-export async function getFarrierServices(_req, res) {
-  res.status(200).json({
-    success: true,
-    message: 'Farrier services retrieved successfully',
-    data: FARRIER_SERVICES,
-  });
+function shoeableWhere(now) {
+  const cutoff = startOfGameDayIndex(gameDayIndex(now) - (SHOEING_INTERVAL_DAYS - 1));
+  return { OR: [{ lastShod: null }, { lastShod: { lt: cutoff } }] };
+}
+
+function pickRandomStat() {
+  return HORSE_STAT_VALUES[Math.floor(Math.random() * HORSE_STAT_VALUES.length)];
 }
 
 /**
- * POST /api/farrier/book-service
- * Body: { horseId, serviceId }
+ * POST /api/v1/farrier/shoe-horse
+ * Body: { horseId }
  */
-export async function bookFarrierService(req, res) {
+export async function shoeHorse(req, res) {
   try {
     const userId = req.user.id;
-    const { horseId, serviceId } = req.body;
-
-    const service = FARRIER_SERVICES.find(s => s.id === serviceId);
-    if (!service) {
-      return res.status(404).json({ success: false, message: 'Service not found', data: null });
-    }
+    const { horseId } = req.body;
 
     const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
     if (!horse) {
       return res.status(404).json({ success: false, message: 'Horse not found', data: null });
     }
 
-    // Equoria-6g8wm: atomic debit through the shared helper (TOCTOU-safe).
-    // See vetController for the full rationale on why findUnique→if→update
-    // is unsafe under concurrent bookings.
     const now = new Date();
-    const updateData = {
-      lastFarrierDate: now,
-      hoofCondition: service.hoofConditionOutcome,
-    };
-    if (service.includesShoing) {
-      updateData.lastShod = now;
-    }
+    const stat = pickRandomStat();
 
     let updatedHorse;
-    let updatedUser;
+    let moneyAfter;
     try {
-      ({ updatedHorse, updatedUser } = await withRetryableTxMapping(
+      ({ updatedHorse, moneyAfter } = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
-          // Equoria-6p398.9 lock ordering: the User row is written BEFORE the
-          // Horse row. Every UPDATE holds its row write-lock until commit, so
-          // the previous Horse-then-User order deadlocked against buyHorse
-          // (which holds User(owner) and waits for Horse) whenever an owner
-          // booked a farrier service on a horse being bought. No data dependency
-          // between the two statements; only the order moved. Guarded by
-          // backend/__tests__/txUserBeforeHorseLockOrder.sentinel.test.mjs.
-          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-          const moneyAfter = await debitMoneyOrThrow(tx, {
+          // Lock order User -> Horse (Equoria-6p398.9; guarded by
+          // txUserBeforeHorseLockOrder.sentinel.test.mjs): the debit writes the
+          // User row first. Equoria-kl16c: paired SystemAccount burn credit.
+          const balance = await debitMoneyOrThrow(tx, {
             userId,
-            amount: service.cost,
+            amount: SHOEING_COST,
             systemAccount: SYSTEM_ACCOUNT_BURN,
             category: 'farrierServiceBurn',
-            description: `Farrier fee — ${service.name} for ${horse.name}`,
-            metadata: { horseId, serviceId },
+            description: `Farrier fee, shoeing ${horse.name}`,
+            metadata: { horseId },
           });
-          const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
-          const userUpdate = { money: moneyAfter };
-          // Equoria-u9mw9: tx-first ledger writer (Equoria-pqp69). Drops the
-          // caller-supplied balanceAfter — recordTransactionTx reads the
-          // authoritative balance from the same tx so the audit row cannot drift
-          // from the actual post-debit value.
+          // The weekly limit: a guarded conditional update. A second concurrent
+          // click, or a click inside the week, matches no row and rolls the
+          // debit back with the thrown error.
+          const { count } = await tx.horse.updateMany({
+            where: { id: horseId, userId, ...shoeableWhere(now) },
+            data: { lastShod: now, [stat]: { increment: 1 } },
+          });
+          if (count !== 1) {
+            throw new AlreadyShodThisWeekError();
+          }
+          const shod = await tx.horse.findUnique({
+            where: { id: horseId },
+            select: { id: true, name: true, lastShod: true },
+          });
           await recordTransactionTx(tx, {
             userId,
             type: 'debit',
-            amount: service.cost,
+            amount: SHOEING_COST,
             category: 'farrierService',
-            description: `${service.name} for ${horse.name}`,
-            metadata: { horseId, serviceId },
+            description: `Shoeing for ${horse.name}`,
+            metadata: { horseId },
           });
-          return { updatedHorse: horseUpdate, updatedUser: userUpdate };
+          return { updatedHorse: shod, moneyAfter: balance };
         }),
         { message: 'The farrier is busy right now, please retry in a moment.' },
       ));
@@ -146,31 +111,30 @@ export async function bookFarrierService(req, res) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient funds. ${service.name} costs $${service.cost}`,
-          data: { required: service.cost },
+          message: `Insufficient funds. Shoeing costs ${SHOEING_COST} coins`,
+          data: { required: SHOEING_COST },
+        });
+      }
+      if (txErr instanceof AlreadyShodThisWeekError) {
+        return res.status(409).json({
+          success: false,
+          message: `${horse.name} has already been shod this week`,
+          data: null,
         });
       }
       throw txErr;
     }
 
-    logger.info(
-      `[farrierController] User ${userId} booked "${service.name}" for horse ${horseId} — cost $${service.cost}`,
-    );
+    logger.info(`[farrierController] User ${userId} shod horse ${horseId}`);
 
     res.status(200).json({
       success: true,
-      message: `${service.name} booked successfully`,
+      message: `${horse.name} has been shod`,
       data: {
-        horse: {
-          id: updatedHorse.id,
-          name: updatedHorse.name,
-          hoofCondition: updatedHorse.hoofCondition,
-          lastFarrierDate: updatedHorse.lastFarrierDate,
-          lastShod: updatedHorse.lastShod,
-        },
-        service,
-        cost: service.cost,
-        remainingMoney: updatedUser.money,
+        horse: { id: updatedHorse.id, name: updatedHorse.name, lastShod: updatedHorse.lastShod },
+        statGained: stat,
+        cost: SHOEING_COST,
+        remainingMoney: moneyAfter,
       },
     });
   } catch (error) {
@@ -178,7 +142,7 @@ export async function bookFarrierService(req, res) {
     if (error?.status === 503) {
       return res.status(503).json({ success: false, message: error.message, data: null });
     }
-    logger.error(`[farrierController] bookService error: ${error.message}`);
-    res.status(500).json({ success: false, message: 'Failed to book farrier service', data: null });
+    logger.error(`[farrierController] shoeHorse error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to shoe horse', data: null });
   }
 }
