@@ -939,7 +939,6 @@
   "backend/tests/integration/leaderboardRoutes.test.mjs": 16,
   "backend/tests/integration/xpLogging.test.mjs": 6,
   "backend/tests/load/auth-under-load.test.js": 9,
-  "backend/tests/load/concurrent-feed-breed-foal.test.js": 24,
   "backend/tests/load/concurrent-sessions.test.js": 11,
   "backend/tests/load/distributed-rate-limiting.test.js": 18,
   "backend/tests/load/rate-limiting.test.js": 7,

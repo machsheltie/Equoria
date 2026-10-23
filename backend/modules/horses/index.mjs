@@ -30,7 +30,7 @@ export {
   declinePendingRequestsForSire,
   cancelPendingRequestForMare,
 } from './services/studRequestCleanup.mjs';
-export { runFoalingJob } from './services/foalingService.mjs';
+export { runFoalingJob, createFoalFromPregnancy } from './services/foalingService.mjs';
 // Equoria-6p398.14: the nightly aging pass writes a birthday and, at 21, releases the horse's staff.
 // Equoria-6p398.14 follow-up: the groom, rider and trainer assign paths refuse a retired horse.
 export { writeBirthdayTx, assertHorseTakesNewStaffTx } from './services/horseRetirementStaff.mjs';

@@ -231,8 +231,8 @@ router.get('/temperament-definitions', queryRateLimiter, getTemperamentDefinitio
 // load-bearing. Sub-router mounted at the bottom alongside horseFeedRoutes.
 
 // Breeding / stud / foaling routes (POST /breeding/color-prediction,
-// POST /:id/stud-listing, DELETE /:id/stud-listing, GET /:id/breeding-data,
-// POST /:id/foal-now) extracted to horseBreedingRoutes.mjs as part of the
+// POST /:id/stud-listing, DELETE /:id/stud-listing, GET /:id/breeding-data)
+// extracted to horseBreedingRoutes.mjs as part of the
 // Equoria-y8u2j god-file split. All extracted routes are either
 // /breeding/<sub> or /:id/<sub-path> (2+ segments) so they don't conflict
 // with this parent's GET /:id (1 segment). Sub-router mounted at the bottom
@@ -477,8 +477,7 @@ router.delete('/:id', mutationRateLimiter, authenticateToken, (req, res) => {
 // (method, path) tuple.
 
 // Horse XP + personality + trait-card routes extracted to horseXpRoutes.mjs.
-// GET /:id/breeding-data + POST /:id/foal-now extracted to
-// horseBreedingRoutes.mjs (Equoria-y8u2j).
+// GET /:id/breeding-data extracted to horseBreedingRoutes.mjs (Equoria-y8u2j).
 
 // ---------------------------------------------------------------------------
 // Sub-router mounts (Equoria-y8u2j god-file split)

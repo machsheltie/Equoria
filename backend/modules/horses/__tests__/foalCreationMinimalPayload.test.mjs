@@ -43,6 +43,7 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -238,14 +239,11 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       .send(body);
   }
 
-  function postFoalNow(damId) {
-    return request(app)
-      .post(`/api/v1/horses/${damId}/foal-now`)
-      .set('Authorization', `Bearer ${playerToken}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', playerCsrf.cookieHeader)
-      .set('X-CSRF-Token', playerCsrf.csrfToken)
-      .send({});
+  // Foaling runs the same service the nightly job runs. It used to go through
+  // POST /horses/:id/foal-now, a gestation-bypass route since deleted
+  // (Equoria-6nl3j); the test calls the service from its own process.
+  async function foalNow(damId) {
+    return (await createFoalFromPregnancy({ damId })).foal;
   }
 
   describe('the payload the breeding surface actually sends', () => {
@@ -277,9 +275,8 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       const bred = await postFoals({ sireId: stallion.id, damId: mare.id });
       expect(bred.status).toBe(200);
 
-      const foaled = await postFoalNow(mare.id);
-      expect(foaled.status).toBe(201);
-      const foalId = foaled.body.data.foalId;
+      const born = await foalNow(mare.id);
+      const foalId = born.id;
       expect(foalId).toBeTruthy();
       createdFoalIds.push(foalId);
 

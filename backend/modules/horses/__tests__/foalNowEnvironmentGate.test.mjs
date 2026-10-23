@@ -1,33 +1,21 @@
 /**
- * Integration test — POST /horses/:id/foal-now is not player-reachable in a
- * deploy (Equoria-bhf6n, real DB, real app, no mocks).
+ * Integration test — there is NO route that skips gestation (Equoria-6nl3j,
+ * real DB, real app, no mocks).
  *
- * The defect:
- *   backend/modules/horses/routes/horseBreedingRoutes.mjs guarded the gestation
- *   bypass with only mutationRateLimiter + authenticateToken +
- *   requireOwnership('horse'). Ownership answers "is this my mare", never "may
- *   gestation be skipped". Any authenticated role=user account could POST
- *   /horses/<its own in-foal mare>/foal-now and receive 201 with a materialised
- *   foal — collapsing the seven-day pregnancy and its pregnancy-feeding
- *   requirement at whatever rate the mutation limiter allows.
+ * OLD CONTRACT (Equoria-bhf6n): POST /horses/:id/foal-now was a gestation bypass
+ * in the production router, refused with 403 unless NODE_ENV was one of the
+ * test | beta | beta-readiness allowlist, and materialised a foal (201) inside
+ * those three. The test harnesses (Playwright specs, the k6 race harness, other
+ * jest suites) used it as their way to get a foal without waiting seven days.
  *
- * The fix: a fail-closed NODE_ENV allowlist (test | beta | beta-readiness — the
- * jest/k6/Playwright harness environments) mounted BEHIND authenticateToken and
- * BEFORE the id validator and the ownership lookup. Every other value —
- * 'production', 'staging', 'development', and crucially UNSET, which is what
- * the Railway deploy actually has — gets 403.
- *
- * What these tests CANNOT see:
- *   - They exercise the allowlist by setting process.env.NODE_ENV per request.
- *     A module-load-time behaviour that only a genuinely booted production
- *     process would have (Redis-required rate limiting, __Host-csrf cookie
- *     naming) is NOT reproduced here; only the route's own gate is.
- *   - They cannot prove the Railway deploy leaves NODE_ENV unset. That is read
- *     from railway.toml / Dockerfile by inspection; the 'unset' case below
- *     proves only that IF it is unset, the route is closed.
- *   - They say nothing about the Playwright specs, which run a real server
- *     under NODE_ENV=beta; the allowlist membership assertion is the closest
- *     proxy.
+ * NEW CONTRACT (Equoria-6nl3j, the issue's own ruling; the Codex scan of
+ * 2026-10-02 called a NODE_ENV check buried in a normal production handler not
+ * preferred): the route is gone from the application. Foals arrive only from
+ * the nightly foaling job; a test that needs a foal materialises it through
+ * foalingService from its own process (tests/e2e/fixtures/foaling.ts for
+ * Playwright, a direct createFoalFromPregnancy call in jest). An owner calling
+ * the old path now meets an ordinary 404 in EVERY environment, the three
+ * harness environments included, and her pregnancy is untouched.
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from '@jest/globals';
@@ -36,7 +24,6 @@ import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { isFoalNowEnabled } from '../routes/horseBreedingRoutes.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -46,31 +33,21 @@ import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
 const FIVE_YEARS_AGO = gameCalendarDate(new Date(), -5 * 365);
 
-describe('POST /horses/:id/foal-now — environment gate (Equoria-bhf6n, real DB)', () => {
+describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6nl3j, real DB)', () => {
   let csrf;
   let token;
   let user;
   let breed;
   let damId;
 
-  const post = (id, { authenticated = true } = {}) => {
-    // For the anonymous case the accessToken cookie must be dropped too —
-    // fetchCsrf folds it into cookieHeader, and authenticateToken accepts the
-    // cookie as well as the Authorization header, so omitting only the header
-    // would still be an authenticated request.
-    const cookies = authenticated
-      ? csrf.cookieHeader
-      : csrf.cookieHeader.filter(c => !String(c).startsWith('accessToken='));
-    const req = request(app)
+  const post = id =>
+    request(app)
       .post(`/api/v1/horses/${id}/foal-now`)
+      .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
-      .set('Cookie', cookies)
-      .set('X-CSRF-Token', csrf.csrfToken);
-    if (authenticated) {
-      req.set('Authorization', `Bearer ${token}`);
-    }
-    return req.send({});
-  };
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({});
 
   beforeAll(async () => {
     breed = await prisma.breed.upsert({
@@ -141,12 +118,16 @@ describe('POST /horses/:id/foal-now — environment gate (Equoria-bhf6n, real DB
     process.env.NODE_ENV = ORIGINAL_NODE_ENV;
   });
 
-  // ── The exploit, reproduced through the real HTTP stack ──────────────────
+  // The old route answered differently per NODE_ENV (403 outside the harness
+  // environments, 201 inside them). Now the answer is the same everywhere: 404.
   describe.each([
+    ['test', 'test'],
+    ['beta', 'beta'],
+    ['beta-readiness', 'beta-readiness'],
     ['production', 'production'],
     ['staging', 'staging'],
     ['development', 'development'],
-    ['unset (what railway.toml / Dockerfile actually leave it as)', undefined],
+    ['unset (what the Railway deploy leaves it as)', undefined],
   ])('NODE_ENV=%s', (_label, envValue) => {
     beforeEach(() => {
       if (envValue === undefined) {
@@ -156,67 +137,40 @@ describe('POST /horses/:id/foal-now — environment gate (Equoria-bhf6n, real DB
       }
     });
 
-    it('refuses the gestation bypass with 403 and materialises NO foal', async () => {
+    it('answers 404 for the owner of an in-foal mare and materialises NO foal', async () => {
       const res = await post(damId);
 
-      expect(res.status).toBe(403);
-      expect(res.body.success).toBe(false);
-      // Assert the GATE's own copy, so a 403 that actually came from CSRF or
-      // some other middleware fails this test instead of passing it.
-      expect(res.body.message).toContain('A pregnancy runs its full term');
+      expect(res.status).toBe(404);
 
       // The player-visible invariant: the pregnancy is untouched and no foal
-      // row exists. This is what the exploit destroyed.
+      // row exists.
       const dam = await prisma.horse.findUnique({ where: { id: damId } });
       expect(dam.inFoalSinceDate).not.toBeNull();
       expect(dam.pregnancySireId).not.toBeNull();
       expect(await prisma.horse.count({ where: { damId } })).toBe(0);
     });
 
-    it('is still 401 (not 403) for an anonymous caller — the gate sits behind auth', async () => {
-      const res = await post(damId, { authenticated: false });
-      expect(res.status).toBe(401);
-    });
-
-    it('gives a missing / malformed id the SAME body as an owned mare — no oracle', async () => {
+    it('gives an owned mare, a missing id and a malformed id the same answer', async () => {
       const owned = await post(damId);
       const missing = await post(2147483600);
       const malformed = await post('not-an-id');
 
+      // The 404 body echoes the requested path, so compare everything else: an
+      // owned mare is not told anything a stranger's id or garbage is not.
+      const sameButPath = res => ({ ...res.body, path: undefined });
+      expect(owned.body.message).toBe('Route not found');
       for (const res of [missing, malformed]) {
         expect(res.status).toBe(owned.status);
-        expect(res.body).toEqual(owned.body);
+        expect(sameButPath(res)).toEqual(sameButPath(owned));
       }
     });
   });
 
-  // ── The harness environments keep working (this is a gate, not a removal) ─
-  it('NODE_ENV=test still materialises the foal — the jest/k6/Playwright path is intact', async () => {
-    process.env.NODE_ENV = 'test';
-    const res = await post(damId);
+  it('the horse breeding router declares no foal-now route and exports no environment allowlist', async () => {
+    const module = await import('../routes/horseBreedingRoutes.mjs');
+    const paths = module.default.stack.map(layer => layer.route?.path).filter(Boolean);
 
-    expect(res.status).toBe(201);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.foalId).toBeTruthy();
-    expect(await prisma.horse.count({ where: { damId } })).toBe(1);
-  });
-
-  // ── The allowlist itself ─────────────────────────────────────────────────
-  describe('isFoalNowEnabled — fail-closed allowlist', () => {
-    it.each(['test', 'beta', 'beta-readiness'])('allows the %s harness', env => {
-      expect(isFoalNowEnabled(env)).toBe(true);
-    });
-
-    it.each(['production', 'PRODUCTION', 'staging', 'development', 'prod', 'Test', ' test', '', null])(
-      'fails closed for %p',
-      env => {
-        expect(isFoalNowEnabled(env)).toBe(false);
-      },
-    );
-
-    it('fails closed when NODE_ENV is not set at all', () => {
-      delete process.env.NODE_ENV;
-      expect(isFoalNowEnabled()).toBe(false);
-    });
+    expect(paths.some(path => path.includes('foal-now'))).toBe(false);
+    expect(module.isFoalNowEnabled).toBeUndefined();
   });
 });

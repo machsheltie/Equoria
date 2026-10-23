@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { seedOwnedHorses } from './fixtures/ownedHorses';
 import { markHorseFedTwoDaysAgo } from './fixtures/feedHistory';
+import { foalMareNow } from './fixtures/foaling';
 
 // Tests must run in order: each test depends on state from the previous.
 // beforeAll creates the test horses + starts the pregnancy so it is committed
@@ -46,8 +47,9 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     // closed (403). The pair needs EXACT names plus a stallion/mare at or above
     // the 3-game-year breeding minimum, which no player-facing route provides.
     // Seed from this process through the real createHorse model function; every
-    // behaviour this spec asserts (equip-feed, feed, breed, foal-now) still runs
-    // over the real HTTP routes.
+    // behaviour this spec asserts (equip-feed, feed, breed) still runs over the
+    // real HTTP routes; the final foaling step runs the real foaling service from
+    // this process (fixtures/foaling.ts, Equoria-6nl3j).
     // Seeded in ONE call so the fixture's horse-list visibility wait runs once
     // for the pair; sequential calls would make the second wait out the list
     // cache entry the first one just wrote (tests/e2e/fixtures/ownedHorses.ts).
@@ -68,14 +70,13 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
         },
       ],
       // READ THE EXCEPTION FIRST: this spec DOES read the cached horse list.
-      // The test 'foal-now endpoint materialises foal — foal appears in horse
-      // list' ends with a GET /api/v1/horses and an expect(foal).toBeDefined()
-      // on the result. That is safe to opt out of only because the foal is not
-      // seeded here: POST /horses/:id/foal-now creates it later, and
-      // foalingService.mjs performs NO cache invalidation at all, so that
-      // assertion already depends on the list key happening to be cold by then.
-      // It is a pre-existing exposure this fixture neither causes nor can fix,
-      // tracked as Equoria-awod4.
+      // The test 'a materialised foal appears in the horse list' ends with a
+      // GET /api/v1/horses and an expect(foal).toBeDefined() on the result.
+      // That is safe to opt out of only because the foal is not seeded here:
+      // the foaling fixture creates it later, and foalingService.mjs performs
+      // NO cache invalidation at all, so that assertion already depends on the
+      // list key happening to be cold by then. It is a pre-existing exposure
+      // this fixture neither causes nor can fix, tracked as Equoria-awod4.
       //
       // The opt-out therefore covers the SEEDED pair only, and for them it
       // holds: the stallion and mare are reached exclusively through UNCACHED
@@ -216,53 +217,17 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     await expect(page.getByTestId('pregnancy-counter-basic')).toContainText(/[1-9]/);
   });
 
-  test('foal-now endpoint materialises foal — foal appears in horse list', async ({ page }) => {
-    // Trigger immediate foaling for the test mare via the owner-scoped endpoint.
-    // POST /api/v1/horses/:id/foal-now bypasses the 7-day gestation wait and
-    // calls createFoalFromPregnancy directly, which applies the same epigenetic
-    // pipeline as the production foaling cron job.
-    //
-    // DEPENDENCY NOTE (Equoria-bhf6n): foal-now is a GATED test-harness route,
-    // not a player capability. It is enabled only when NODE_ENV is one of
-    // test | beta | beta-readiness (see the FOAL_NOW_ALLOWED_ENVS allowlist in
-    // backend/modules/horses/routes/horseBreedingRoutes.mjs) and returns 403 to
-    // every other environment — including an unset NODE_ENV, which is what a
-    // real deploy has. This test works because playwright.config.ts starts the
-    // backend with NODE_ENV=beta. If that ever changes, the assertion below
-    // fails on a 403: do NOT widen the allowlist to fix it.
-
-    // The horse routes live on the authRouter (has csrfProtection). Fetch a
-    // fresh CSRF token first so the POST is accepted.
-    const csrfRes = await page.request.get('http://localhost:3000/api/v1/auth/csrf-token');
-    expect(csrfRes.ok(), `GET /api/v1/auth/csrf-token returned ${csrfRes.status()}`).toBeTruthy();
-    const csrfJson = (await csrfRes.json()) as {
-      data?: { csrfToken?: string };
-      csrfToken?: string;
-    };
-    const csrfToken: string = csrfJson?.data?.csrfToken ?? csrfJson?.csrfToken ?? '';
-    expect(csrfToken.length, 'CSRF token must be non-empty').toBeGreaterThan(20);
-
-    const foalNowRes = await page.request.post(
-      `http://localhost:3000/api/v1/horses/${mareId}/foal-now`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-        },
-      }
-    );
-    expect(
-      foalNowRes.ok(),
-      `POST /api/v1/horses/${mareId}/foal-now returned ${foalNowRes.status()}`
-    ).toBeTruthy();
-
-    const body = (await foalNowRes.json()) as {
-      data?: { foalId: number; foalName: string };
-    };
-    const foalName = body?.data?.foalName;
-    expect(foalName, 'foal-now response must include foalName').toBeTruthy();
+  test('a materialised foal appears in the horse list', async ({ page }) => {
+    // Bring the pregnant mare's foal into the world without waiting out the
+    // 7-day gestation. The foal is created by the real foaling service
+    // (createFoalFromPregnancy, the same one the nightly foaling job runs) from
+    // this spec process via fixtures/foaling.ts. The old
+    // POST /api/v1/horses/:id/foal-now route that did this inside the backend
+    // was a production gestation bypass guarded only by a NODE_ENV allowlist and
+    // is gone (Equoria-6nl3j).
+    const foal = await foalMareNow(mareId);
     // The foaling service names the foal "${dam.name} Foal" when pendingFoalName is absent
-    expect(foalName).toBe(`${mareName} Foal`);
+    expect(foal.name).toBe(`${mareName} Foal`);
 
     // Verify the foal appears in the user's horse list via the API.
     const horsesRes = await page.request.get('http://localhost:3000/api/v1/horses');
@@ -273,8 +238,11 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     const horses = Array.isArray(horsesJson)
       ? horsesJson
       : ((horsesJson as { data?: Array<{ name: string }> })?.data ?? []);
-    const foal = horses.find((h) => h.name === foalName);
-    expect(foal, `Foal "${foalName}" not found in GET /api/v1/horses after foal-now`).toBeDefined();
+    const listed = horses.find((h) => h.name === foal.name);
+    expect(
+      listed,
+      `Foal "${foal.name}" not found in GET /api/v1/horses after foaling`
+    ).toBeDefined();
   });
 });
 
@@ -285,5 +253,5 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
 // The admin endpoint requires the 'admin' role which the E2E test user does not
 // hold. Duplicating cron-path coverage here would require either elevating the
 // test user to admin (masking access-control bugs) or bypassing role checks
-// (violating 21R-beta-doctrine). The foal-now endpoint above tests the same
-// createFoalFromPregnancy pipeline via an owner-scoped route instead.
+// (violating 21R-beta-doctrine). The foaling fixture above runs the same
+// createFoalFromPregnancy pipeline from the spec process instead.

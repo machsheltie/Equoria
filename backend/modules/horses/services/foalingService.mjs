@@ -232,7 +232,8 @@ async function gatherLineage(sireId, damId, generations) {
  * `pregnancyFeedingsByTier`, generates the foal exactly as the legacy
  * `createFoal` controller did, then in ONE transaction clears the dam's
  * pregnancy (guarded), inserts the foal and its foalBorn notification.
- * Callers: the foaling job and POST /:id/foal-now.
+ * Callers: the foaling job. (A POST /:id/foal-now route that skipped gestation
+ * was deleted by Equoria-6nl3j; tests call this service directly.)
  *
  * @param {object} params
  * @param {number} params.damId - id of the in-foal mare

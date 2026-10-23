@@ -3,10 +3,11 @@
  *
  * CI driver that exercises the BULK foaling cron path under concurrency.
  *
- * The k6 harness `concurrent-feed-breed-foal.test.js` drives the
- * owner-scoped `POST /horses/:id/foal-now` mutation, which materialises a
- * foal via `createFoalFromPregnancy`. That covers the mutation-vs-mutation
- * double-create window. It does NOT drive the BULK foaling job itself
+ * The mutation-vs-mutation double-create window (several callers materialising
+ * one mare's foal through `createFoalFromPregnancy`) is pinned by
+ * backend/modules/horses/__tests__/foalNowConcurrentClaim.test.mjs; the k6
+ * harness and the POST /horses/:id/foal-now route it drove are gone
+ * (Equoria-6nl3j). Neither covers the BULK foaling job itself
  * (`runFoalingJob` — the function the nightly cron `runFoalingJobScheduled`
  * calls), which sweeps EVERY due mare in one pass. The admin HTTP trigger
  * (`POST /api/v1/admin/foaling/trigger`) requires role=admin (+ optional

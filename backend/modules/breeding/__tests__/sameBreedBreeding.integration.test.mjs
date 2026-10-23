@@ -20,6 +20,7 @@
 import { describe, it, expect, beforeEach, afterEach, afterAll } from '@jest/globals';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createFoalFromPregnancy } from '../../horses/index.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
   sharedBreed,
@@ -232,9 +233,10 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
   });
 
   describe("the foal is born its parents' breed", () => {
-    // Foaling goes through POST /horses/:id/foal-now (a test-harness route that runs
-    // the same createFoalFromPregnancy the nightly job runs).
-    const foalNow = mare => sendJson('post', `/api/v1/horses/${mare.id}/foal-now`, mareOwner.token, {});
+    // Foaling runs the same createFoalFromPregnancy the nightly job runs. It used
+    // to go through POST /horses/:id/foal-now, a gestation-bypass route since
+    // deleted (Equoria-6nl3j); the test calls the service from its own process.
+    const foalNow = async mare => (await createFoalFromPregnancy({ damId: mare.id })).foal;
 
     it("ignores a breedId sent with the request: the pregnancy stores no foal breed and the foal is the parents' breed", async () => {
       const sire = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion' });
@@ -249,9 +251,8 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
       expect(res.status).toBe(200);
       expect((await dam(mare.id)).pendingFoalBreedId).toBeNull();
 
-      const foaled = await foalNow(mare);
-      expect(foaled.status).toBe(201);
-      const foal = await prisma.horse.findUnique({ where: { id: foaled.body.data.foalId } });
+      const born = await foalNow(mare);
+      const foal = await prisma.horse.findUnique({ where: { id: born.id } });
       expect(foal.breedId).toBe(breed.id);
       expect(foal.sireId).toBe(sire.id);
       expect(foal.damId).toBe(mare.id);
@@ -267,10 +268,9 @@ describe('sire and dam must be the same breed; the foal is born that breed (Equo
         pendingFoalBreedId: otherBreedRow.id,
       });
 
-      const foaled = await foalNow(mare);
+      const born = await foalNow(mare);
 
-      expect(foaled.status).toBe(201);
-      const foal = await prisma.horse.findUnique({ where: { id: foaled.body.data.foalId } });
+      const foal = await prisma.horse.findUnique({ where: { id: born.id } });
       expect(foal.breedId).toBe(breed.id);
       expect((await dam(mare.id)).pendingFoalBreedId).toBeNull();
     });

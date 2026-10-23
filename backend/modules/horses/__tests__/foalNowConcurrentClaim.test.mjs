@@ -1,5 +1,5 @@
 /**
- * Integration test — direct-branch foal-now atomic-claim guard (Equoria-wgw5k, real DB).
+ * Integration test — direct-branch foaling atomic-claim guard (Equoria-wgw5k, real DB).
  *
  * The defect class (adjacent path missed by Equoria-9gsxg's "runFoalingJob
  * already guarded" audit):
@@ -7,10 +7,11 @@
  *   foalingService.mjs) has two branches. The SNAPSHOT branch (foaling-cron,
  *   options.damSnapshot) is correctly guarded — runFoalingJob does an atomic
  *   `updateMany` claim BEFORE invoking the service. The DIRECT branch (no
- *   snapshot — used by POST /api/v1/horses/:id/foal-now) READS the dam,
+ *   snapshot — once used by POST /api/v1/horses/:id/foal-now, a route since
+ *   deleted by Equoria-6nl3j) READS the dam,
  *   validates `inFoalSinceDate`, then creates a foal UNCONDITIONALLY and clears
  *   the pregnancy only at the very END. Under READ COMMITTED, N concurrent
- *   /foal-now callers each read the same still-pregnant row, each pass
+ *   direct callers each read the same still-pregnant row, each pass
  *   validation, each create a foal: ONE pregnancy → N foals. The CI "Load
  *   Contention (advisory)" k6 harness surfaced exactly this — three concurrent
  *   POSTs all returned 201 and materialised three distinct foals from one dam.
@@ -19,7 +20,7 @@
  * an atomic `updateMany` guarded by the pregnancy columns STILL being set, just
  * before the foal insert. Exactly one concurrent caller matches (count=1) and
  * proceeds; the losers match 0 and throw "mare … is not in foal", which the
- * route (horseBreedingRoutes.mjs:250) maps to HTTP 400.
+ * route (since deleted, Equoria-6nl3j) mapped to HTTP 400.
  *
  * Proof (real DB, real prisma, no mocks):
  *   1. CONCURRENT (the AC, directly): fire N concurrent createFoalFromPregnancy
@@ -31,8 +32,11 @@
  *      (id = ? AND inFoalSinceDate IS NOT NULL AND pregnancySireId IS NOT NULL)
  *      as a raw UPDATE → affects 0 rows. An UNCONDITIONAL update affects 1 —
  *      proving the WHERE precondition is the race-closing element.
- *   3. E2E sanity: a mare materialised once through POST /:id/foal-now yields a
- *      201 then a 400 on the second attempt, with exactly one foal.
+ *   3. SEQUENTIAL sanity: a mare materialised once through the service yields a
+ *      foal, and a second attempt rejects with "not in foal", with exactly one
+ *      foal. (OLD CONTRACT: this went through POST /:id/foal-now, 201 then 400.
+ *      The route is deleted — Equoria-6nl3j — so the same two attempts now call
+ *      createFoalFromPregnancy directly.)
  *   4. SOURCE SENTINEL: the direct branch contains the guarded `updateMany`
  *      (`inFoalSinceDate: { not: null }`) + `claim.count === 0` rejection — both
  *      unique to the new code (runFoalingJob uses `{ lte: cutoff }` / `claimed
@@ -44,13 +48,9 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import request from 'supertest';
 import bcrypt from 'bcryptjs';
-import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
-import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
@@ -61,9 +61,7 @@ const FOALING_SERVICE_SRC = readFileSync(
 );
 
 describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k, real DB)', () => {
-  let csrf;
   let user;
-  let token;
   let breed;
   let damId;
 
@@ -115,9 +113,6 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
         money: 10000,
       },
     });
-    token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-
     breed = await prisma.breed.upsert({
       where: { name: 'Thoroughbred' },
       update: {},
@@ -194,27 +189,11 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
     expect(unconditional).toBe(1);
   });
 
-  it('POST /:id/foal-now materialises exactly one foal and rejects the second attempt (end-to-end)', async () => {
-    const first = await request(app)
-      .post(`/api/v1/horses/${damId}/foal-now`)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-    expect(first.status).toBe(201);
-    expect(first.body.success).toBe(true);
+  it('a second foaling attempt on a mare already foaled rejects with "not in foal" and leaves exactly one foal', async () => {
+    const { foal } = await createFoalFromPregnancy({ damId });
+    expect(foal?.id).toBeTruthy();
 
-    const second = await request(app)
-      .post(`/api/v1/horses/${damId}/foal-now`)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-    expect(second.status).toBe(400);
-    expect(second.body.success).toBe(false);
-    expect(String(second.body.message || '').toLowerCase()).toContain('foal');
+    await expect(createFoalFromPregnancy({ damId })).rejects.toThrow(/not in foal/i);
 
     const foalCount = await prisma.horse.count({ where: { damId } });
     expect(foalCount).toBe(1);
@@ -262,7 +241,7 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
   //    the global client, with `inFoalSinceDate: { not: null }` as its literal
   //    guard. New contract (Equoria-bvddn.20): the claim runs as
   //    `tx.horse.updateMany(` inside the one foaling transaction, and the
-  //    guard is `{ not: null }` for foal-now or `{ lte: dueBy }` for the job.
+  //    guard is `{ not: null }` for the direct branch or `{ lte: dueBy }` for the job.
   //    The regexes below accept either client name and the guard on the same
   //    line; the `claim.count === 0` marker is unchanged. Owner ruling
   //    2026-09-30.

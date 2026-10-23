@@ -1,6 +1,7 @@
 import { test as base, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { seedOwnedHorses } from './fixtures/ownedHorses';
+import { foalMareNow } from './fixtures/foaling';
 
 /**
  * Foal Development Lifecycle — real-backend E2E (Equoria-fogeh).
@@ -16,8 +17,9 @@ import { seedOwnedHorses } from './fixtures/ownedHorses';
  *  - createAuthedSession() loads the global-setup user (CSRF + auth cookies).
  *  - We seed a stallion + mare through the real createHorse model function,
  *    breed them via /api/v1/horses/foals (which starts a 7-day pregnancy), then
- *    skip gestation via the owner-scoped POST /api/v1/horses/:id/foal-now to
- *    mint a real foal owned by the session user (Equoria-6w3ur).
+ *    skip the wait by running the real foaling service from this process
+ *    (fixtures/foaling.ts) to mint a real foal owned by the session user
+ *    (Equoria-6w3ur, Equoria-6nl3j).
  *  - The newborn foal starts at currentDay 0 / maxDay 6 with no traits.
  *    We prove the retired develop endpoint cannot move the development day
  *    (Equoria-mwjst) and the retired reveal-traits endpoint is gone
@@ -158,21 +160,11 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     // Equoria-6w3ur: breeding starts a 7-day PREGNANCY (Phase-B feed-system
     // redesign, Equoria-q7no) — POST /horses/foals returns
     // { pregnancyStarted, damId, sireId, foalDueDate } and creates NO foal row.
-    // This beforeAll still read `data.id` off that response, so `foalId` was
-    // undefined even once the request succeeded. Materialise the foal the way
-    // the product does: start the pregnancy, then skip gestation through the
-    // POST /horses/:id/foal-now endpoint that exists for exactly this, which
-    // runs the real foalingService.
-    //
-    // DEPENDENCY NOTE (Equoria-bhf6n): foal-now is a GATED test-harness route,
-    // not a player capability. It is enabled only when NODE_ENV is one of
-    // test | beta | beta-readiness (see the FOAL_NOW_ALLOWED_ENVS allowlist in
-    // backend/modules/horses/routes/horseBreedingRoutes.mjs) and returns 403 to
-    // every other environment — including an unset NODE_ENV, which is what a
-    // real deploy has. This spec works because playwright.config.ts starts the
-    // backend with NODE_ENV=beta. If that ever changes, this beforeAll fails
-    // with "Foaling failed (403)": do NOT widen the allowlist to fix it —
-    // materialise the foal through the foaling cron instead.
+    // Materialise the foal the way the product does: start the pregnancy over
+    // the real route, then run the real foalingService (the nightly job's
+    // createFoalFromPregnancy) from this process via fixtures/foaling.ts. The
+    // POST /horses/:id/foal-now gestation bypass that used to do this inside the
+    // backend is gone from the application (Equoria-6nl3j).
     foalName = `E2E Foal ${suffix}`;
     const pregnancyRes = await csrfMutate(session, 'POST', '/api/v1/horses/foals', {
       sireId,
@@ -188,12 +180,8 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
       'breeding should start a pregnancy on the dam'
     ).toBe(true);
 
-    const foalRes = await csrfMutate(session, 'POST', `/api/v1/horses/${damId}/foal-now`, {});
-    if (!foalRes.ok()) {
-      throw new Error(`Foaling failed (${foalRes.status()}): ${await foalRes.text()}`);
-    }
-    const foalJson = await foalRes.json();
-    foalId = foalJson?.data?.foalId;
+    const foal = await foalMareNow(damId);
+    foalId = foal.id;
     expect(foalId, 'foalId should be returned from foaling').toBeTruthy();
   });
 

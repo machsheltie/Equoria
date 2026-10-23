@@ -35,7 +35,7 @@
  * neighbour.
  *
  * Security: `authenticateToken` (belt-and-braces — the authRouter mount already
- * applies it, matching POST /:id/foal-now) then `validateHorseId` and
+ * applies it, matching the other `/:id` routes) then `validateHorseId` and
  * `requireOwnership('horse')`, whose WHERE clause is
  * `{ id, userId: req.user.id }` — real row ownership, and a single 404 for both
  * "no such horse" and "not yours" (CWE-639). PATCH is state-changing, so the
