@@ -22,13 +22,8 @@ export const guideSectionsShows: readonly GuideSection[] = [
           '**Up to 3 disciplines at a time.** A horse can be entered in shows of up to three different disciplines at once, and in as many shows within those three as you like. It can start a fourth discipline once every show in one of its current three has run.',
           "**No cooldown** between shows, but a horse can't enter the same show twice.",
           '**Gaited shows** are for gaited breeds only.',
-          "**Levels.** Each discipline has levels based on the horse's score in it. Level 1 is a score of 0–25, Level 2 is 26–50, Level 3 is 51–100, Level 4 is 101–150 and Level 5 is 151–200. A horse whose score climbs past its level after entering stays in the show, and is judged on its score on show day.",
+          "**Levels.** Each discipline has levels based on the horse's score in it, from Level 1 up to Level 20. Up to a score of 500 each level covers 50 points: Level 1 is 0–49, Level 2 is 50–99 and so on to Level 10 at 450–499. From 500 each level covers 100 points: Level 11 is 500–599, Level 12 is 600–699 and so on, and Level 20 is 1400 and above. A horse whose score climbs past its level after entering stays in the show, and is judged on its score on show day.",
         ],
-      },
-      {
-        kind: 'pending',
-        topic: 'Levels above 200',
-        ownerQuestion: 'Levels above 200.',
       },
       {
         kind: 'list',

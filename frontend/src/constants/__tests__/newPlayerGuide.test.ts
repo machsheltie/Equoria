@@ -204,9 +204,6 @@ describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23', () => {
     expect(topics.sort()).toEqual(
       [
         'How Very Good health is earned',
-        'What hoof condition affects',
-        'When riders retire',
-        'Levels above 200',
         'Hosting limits and where entry fees go',
         'What trainer fit changes',
         'The event shop',

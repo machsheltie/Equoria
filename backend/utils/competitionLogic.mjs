@@ -193,6 +193,22 @@ function configFor(discipline) {
   return config;
 }
 
+/** The top horse level (owner ruling 2026-10-23, Equoria-v89t8). */
+export const MAX_HORSE_LEVEL = 20;
+
+/**
+ * The one level table. Up to a weighted stat score of 500 each level spans 50
+ * points (level 1 = 0-49 ... level 10 = 450-499); from 500 each level spans
+ * 100 points (level 11 = 500-599 ... level 20 = 1400 and up).
+ * @param {number} totalScore
+ * @returns {number} Level 1-20
+ */
+export function levelForScore(totalScore) {
+  const score = Number.isFinite(totalScore) && totalScore > 0 ? totalScore : 0;
+  const level = score < 500 ? Math.floor(score / 50) + 1 : 11 + Math.floor((score - 500) / 100);
+  return Math.min(MAX_HORSE_LEVEL, Math.max(1, level));
+}
+
 /**
  * Calculate horse level based on stats, traits, and training
  * @param {Object} horse - Horse object with stats and traits
@@ -242,18 +258,7 @@ export function calculateHorseLevel(horse, discipline) {
     // Calculate total score
     const totalScore = baseStatScore + legacyTraitBonus + disciplineAffinityBonus + trainingScore;
 
-    // Calculate level based on score
-    // Every 50 points up to 500, then every 100 points through 1000
-    let level = 1;
-    if (totalScore <= 500) {
-      level = Math.floor(totalScore / 50) + 1;
-    } else if (totalScore <= 1000) {
-      level = 11 + Math.floor((totalScore - 500) / 100); // Level 11+ for scores 501-1000
-    } else {
-      level = 16 + Math.floor((totalScore - 1000) / 100); // Continue pattern beyond 1000
-    }
-
-    return Math.max(1, level);
+    return levelForScore(totalScore);
   } catch (error) {
     logger.error('[competitionLogic.calculateHorseLevel] Error:', error.message);
     return 1;
