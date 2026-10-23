@@ -979,13 +979,17 @@ model CompetitionResult {
 
 model TrainingLog {
   /// Unique identifier for each training session
-  id         Int      @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   /// Training details
-  discipline String
-  trainedAt  DateTime @default(now())
+  discipline  String
+  trainedAt   DateTime @default(now())
+  /// The trained discipline's score just before and just after this session
+  /// (Equoria-ky2ob). NULL on sessions logged before they were recorded.
+  scoreBefore Int?
+  scoreAfter  Int?
   /// Foreign key
-  horseId    Int
-  horse      Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  horseId     Int
+  horse       Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
 
   @@map("training_logs")
 }
