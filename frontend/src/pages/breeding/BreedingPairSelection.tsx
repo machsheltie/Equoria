@@ -6,8 +6,8 @@
  * - CompatibilityPreview integration (4-tab: Stats/Traits/Inbreeding/Pedigree)
  * - Cost: none — both horses are the player's own, and breeding your own
  *   pair is free (owner rulings 2026-10-02 / 10-12 / 10-16, Equoria-q4uem.9)
- * - CinematicMoment on foal birth — lifetime-first only (milestones.firstBreed)
- *   Subsequent breedings show a success banner instead.
+ * - CinematicMoment when a breeding succeeds. No server fact says whether it
+ *   is the player's first breeding, so the page never claims one (Equoria-5z9pl).
  *
  * Story 6-1: Breeding Pair Selection - Main Component
  * Story 6-5: Breeding Predictions - Integration
@@ -177,12 +177,6 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     selectedSire && selectedDam && (loadingGenetic || loadingInbreeding || loadingLineage)
   );
 
-  // Determine if this is the user's first-ever breed (milestone check)
-  const userRecord = user as unknown as Record<string, unknown> | undefined;
-  const settingsRecord = userRecord?.settings as Record<string, unknown> | undefined;
-  const milestonesRecord = settingsRecord?.milestones as Record<string, unknown> | undefined;
-  const isFirstBreed = !milestonesRecord?.firstBreed;
-
   // Breeding mutation
   //
   // Equoria-q7no: backend POST /horses/foals returns a pregnancy initiation
@@ -272,12 +266,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       // milestone. Fired once per successful breed.
       notify({
         type: 'foal-born',
-        title:
-          data.kind === 'foal'
-            ? 'A foal is born!'
-            : isFirstBreed
-              ? 'First breeding successful!'
-              : 'Breeding successful!',
+        title: data.kind === 'foal' ? 'A foal is born!' : 'Breeding successful!',
         message:
           data.kind === 'pregnancy'
             ? `${selectedDam?.name ?? 'Your mare'} is now in foal.`
@@ -285,22 +274,17 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         meaningful: true,
       });
 
-      if (isFirstBreed) {
-        // Lifetime first: full cinematic (Epic 28-2 / 28-3)
-        setShowFoalCinematic(true);
-      }
+      // Full cinematic (Epic 28-2 / 28-3)
+      setShowFoalCinematic(true);
 
       // Only navigate to /foals/:id when we actually have a foal (legacy
       // direct-foal response). Pregnancy responses stay on this page so the
       // user can see the success banner; the foal will appear in their stable
       // after the foaling job runs.
       if (data.kind === 'foal') {
-        setTimeout(
-          () => {
-            navigate(`/foals/${data.foalId}`);
-          },
-          isFirstBreed ? 3500 : 2000
-        );
+        setTimeout(() => {
+          navigate(`/foals/${data.foalId}`);
+        }, 3500);
       }
     },
     onError: (error) => {
