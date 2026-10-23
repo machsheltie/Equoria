@@ -337,13 +337,9 @@ const Index = () => {
   }
 
   // Compute summary stats from horse data using shared helpers
-  const readyCount = horseList.filter((h) =>
-    isReadyToTrain(h as unknown as Record<string, unknown>)
-  ).length;
+  const readyCount = horseList.filter((h) => isReadyToTrain(h)).length;
 
-  const needsCareCount = horseList.filter((h) =>
-    horseNeedsCare(h as unknown as Record<string, unknown>)
-  ).length;
+  const needsCareCount = horseList.filter((h) => horseNeedsCare(h)).length;
 
   return (
     /* PageContainer full: the hub grid shares the shell with AsidePanel —

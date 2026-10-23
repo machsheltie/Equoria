@@ -165,16 +165,11 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
   const previewData: CompatibilityData | null =
     selectedSire && selectedDam
       ? (() => {
-          const base = mapPredictionToCompatibilityData(
-            geneticProbability as unknown as Parameters<typeof mapPredictionToCompatibilityData>[0],
-            inbreedingAnalysis as unknown as Parameters<typeof mapPredictionToCompatibilityData>[1]
-          );
+          const base = mapPredictionToCompatibilityData(geneticProbability, inbreedingAnalysis);
           if (!base) return null;
           return {
             ...base,
-            pedigreeTree: mapLineageToPedigreeTree(
-              lineageAnalysis as unknown as Parameters<typeof mapLineageToPedigreeTree>[0]
-            ),
+            pedigreeTree: mapLineageToPedigreeTree(lineageAnalysis),
           };
         })()
       : null;

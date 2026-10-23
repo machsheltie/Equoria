@@ -7,10 +7,29 @@
 
 import { apiClient } from '../http/apiClient.js';
 
+/**
+ * Real shape of POST /api/v1/genetics/inbreeding-analysis AFTER apiClient
+ * unwraps the { success, data } envelope — the calculateDetailedInbreedingCoefficient()
+ * result (backend/modules/breeding/services/genetics/inbreedingAnalysis.mjs).
+ * Only the fields the frontend reads are named; the previous
+ * { risk, commonAncestors[].generation } declaration and the hook's
+ * { riskLevel, warnings, inbreedingCoefficient } one were fiction (Equoria-q4uem.12).
+ */
+export interface InbreedingCommonAncestor {
+  id: number;
+  name: string;
+  /** Path-analysis contribution to the coefficient */
+  contribution?: number;
+  stallionPath?: unknown;
+  marePath?: unknown;
+}
+
 export interface InbreedingAnalysis {
+  /** 0–1, real path-analysis value (rounded to 3 dp by the backend) */
   coefficient: number;
-  risk: string;
-  commonAncestors: Array<{ name: string; generation: number }>;
+  commonAncestors?: InbreedingCommonAncestor[];
+  riskAssessment?: unknown;
+  recommendations?: string[];
 }
 
 /**
@@ -53,9 +72,36 @@ export interface LineageAnalysis {
   visualizationData: Record<string, unknown>;
 }
 
+/** Per-stat shape returned by POST /breeding/genetic-probability `statProbabilities` */
+export interface StatProbability {
+  expectedValue: number;
+  expectedRange: { min: number; max: number };
+  variance?: number;
+  distribution?: unknown;
+  parentalContribution?: unknown;
+}
+
+export interface TraitProbability {
+  trait: string;
+  /** The backend returns a percentage, 5–95 */
+  probability: number;
+  inheritancePattern: 'dominant' | 'heterozygous' | 'recessive' | string;
+}
+
+/**
+ * Real shape of POST /api/v1/breeding/genetic-probability AFTER apiClient
+ * unwraps the { success, data } envelope (the game's inheritance model).
+ * Only the fields the frontend reads are named. The previous
+ * { traitProbabilities[], statRanges } declaration and the hook's
+ * { estimatedTraitCount, … } one were fiction (Equoria-q4uem.12).
+ */
 export interface GeneticProbability {
-  traitProbabilities: Array<{ trait: string; probability: number }>;
-  statRanges: Record<string, { min: number; max: number; expected: number }>;
+  statProbabilities?: Record<string, StatProbability>;
+  traitProbabilities?: {
+    positive?: TraitProbability[];
+    negative?: TraitProbability[];
+    hidden?: TraitProbability[];
+  };
 }
 
 /**

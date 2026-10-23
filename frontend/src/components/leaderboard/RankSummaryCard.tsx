@@ -121,7 +121,7 @@ const RankChangeIndicator = ({ rankChange }: { rankChange: number }) => {
 /**
  * Loading skeleton placeholder for the RankSummaryCard.
  */
-const SkeletonCard = ({
+export const RankSummaryCardSkeleton = ({
   className = '',
   quiet = false,
 }: {
@@ -155,7 +155,7 @@ const RankSummaryCard = ({
 }: RankSummaryCardProps) => {
   // Render loading skeleton when isLoading is true
   if (isLoading) {
-    return <SkeletonCard className={className} quiet={quietWhenLoading} />;
+    return <RankSummaryCardSkeleton className={className} quiet={quietWhenLoading} />;
   }
 
   const achievement = getAchievement(ranking.rank);

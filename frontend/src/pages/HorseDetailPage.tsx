@@ -59,7 +59,8 @@ import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { hasSeenEvent, markEventSeen } from '@/lib/traitEventSeen';
 import { isUnnamed } from '@/lib/horseNamePolicy';
 // Shared types for page + lazy tabs
-import type { Horse, HorseStats } from './horse-detail/HorseDetailPageTypes';
+import type { Horse } from './horse-detail/HorseDetailPageTypes';
+import { normalizeHorseDetail } from './horse-detail/normalizeHorseDetail';
 // Equoria-kdduk — small per-tab components extracted to keep this page <600 lines
 import { type TabType } from './horse-detail/statHelpers';
 import HorseProfileCard from './horse-detail/HorseProfileCard';
@@ -250,146 +251,9 @@ const HorseDetailPage: React.FC = () => {
     );
   }
 
-  // Normalize horse data — produce a NEW object so the React Query cache is never mutated.
-  const rawHorse = horseRaw as unknown as Record<string, unknown>;
-
-  // Resolve breed: API returns a Prisma relation object { id, name, ... } but the Horse
-  // interface and downstream components expect a plain string (the breed name).
-  const resolvedBreed =
-    typeof horseRaw.breed === 'object' && horseRaw.breed !== null
-      ? (horseRaw.breed as { name: string }).name
-      : (horseRaw.breed as string);
-
-  // Resolve gender: the Prisma model stores `sex` (e.g. "MARE") but the local Horse
-  // interface uses `gender`. Fall back to `sex` when `gender` is absent.
-  const resolvedGender = (horseRaw.gender || rawHorse.sex || '') as string;
-
-  // Resolve stats: API may return flat fields (speed, stamina, …) instead of a nested
-  // stats object when coming from a Prisma raw query.
-  const resolvedStats: HorseStats = horseRaw.stats ?? {
-    precision: (rawHorse.precision as number) ?? 0,
-    strength: (rawHorse.strength as number) ?? 0,
-    speed: (rawHorse.speed as number) ?? 0,
-    agility: (rawHorse.agility as number) ?? 0,
-    endurance: (rawHorse.endurance as number) ?? 0,
-    intelligence: (rawHorse.intelligence as number) ?? 0,
-    stamina: (rawHorse.stamina as number) ?? 0,
-    balance: (rawHorse.balance as number) ?? 0,
-    boldness: (rawHorse.boldness as number) ?? 0,
-    flexibility: (rawHorse.flexibility as number) ?? 0,
-    obedience: (rawHorse.obedience as number) ?? 0,
-    focus: (rawHorse.focus as number) ?? 0,
-  };
-
-  // Shadow `horse` with the normalized copy — all downstream JSX references remain unchanged.
-  // dateOfBirth passes through from horseRaw via spread (already an ISO string from the API).
-  const horse: Horse = {
-    id: horseRaw.id,
-    name: horseRaw.name,
-    breed: resolvedBreed,
-    breedId: (horseRaw as unknown as Record<string, unknown>).breedId as number | undefined,
-    age: horseRaw.age,
-    gender: resolvedGender,
-    // Equoria-gncv — temperament was never copied off horseRaw, so the
-    // temperament line (HorseDetailPage.tsx:601) + highlightTemperament
-    // (line 803) could never show the real DB value. Carry it through
-    // (null for legacy horses with no temperament).
-    temperament: (horseRaw as unknown as { temperament?: string | null }).temperament ?? null,
-    dateOfBirth: horseRaw.dateOfBirth,
-    healthStatus: horseRaw.healthStatus,
-    imageUrl: horseRaw.imageUrl,
-    stats: resolvedStats,
-    disciplineScores: horseRaw.disciplineScores ?? {},
-    traits: horseRaw.traits,
-    description: horseRaw.description,
-    forSale: horseRaw.forSale,
-    salePrice: horseRaw.salePrice,
-    userId: horseRaw.userId,
-    parentIds: horseRaw.parentIds,
-    tack: (horseRaw as unknown as Record<string, unknown>).tack as
-      | Record<string, unknown>
-      | undefined,
-    // Resolve coat color (Equoria-lsi5 + Equoria-iwy3): we now expose BOTH
-    // fields so the render layer can apply the canonical fallback
-    // (phenotype.colorName ?? finalDisplayColor ?? 'not recorded'), mirroring
-    // HorseCard.tsx:130. The legacy finalDisplayColor TEXT column is NULL for
-    // every canonical-DB horse, so phenotype.colorName is the real source of
-    // truth.
-    finalDisplayColor: (rawHorse.finalDisplayColor as string | undefined) ?? undefined,
-    phenotype: (() => {
-      // JSONB type guard per .claude/rules/CONTRIBUTING.md §1 — Prisma returns
-      // JsonValue which can be null, primitive, array, or object. Only return
-      // a phenotype object shape after the four-part guard passes.
-      const raw = (rawHorse as unknown as { phenotype?: unknown }).phenotype;
-      if (raw === null || raw === undefined || typeof raw !== 'object' || Array.isArray(raw)) {
-        return null;
-      }
-      const ph = raw as { colorName?: unknown; [key: string]: unknown };
-      const colorName = typeof ph.colorName === 'string' ? ph.colorName : undefined;
-      return { ...ph, colorName };
-    })(),
-    // Epic 31E-3 / Equoria-ga5g — markings stored on phenotype JSONB.
-    // We pluck the marking-relevant fields off phenotype into a flat shape so
-    // the renderer can treat them as a single object regardless of JSONB drift.
-    markings: (() => {
-      const phenotype = rawHorse.phenotype as {
-        faceMarking?: string;
-        legMarkings?: {
-          frontLeft?: string;
-          frontRight?: string;
-          hindLeft?: string;
-          hindRight?: string;
-        };
-        advancedMarkings?: {
-          bloodyShoulderPresent?: boolean;
-          snowflakePresent?: boolean;
-          frostPresent?: boolean;
-        };
-        modifiers?: {
-          isSooty?: boolean;
-          isFlaxen?: boolean;
-          hasPangare?: boolean;
-          isRabicano?: boolean;
-        };
-      } | null;
-      if (!phenotype || typeof phenotype !== 'object') {
-        return null;
-      }
-      // Only return a markings object if at least one of the sub-fields exists.
-      const hasAny =
-        phenotype.faceMarking !== undefined ||
-        phenotype.legMarkings !== undefined ||
-        phenotype.advancedMarkings !== undefined ||
-        phenotype.modifiers !== undefined;
-      if (!hasAny) return null;
-      return {
-        faceMarking: phenotype.faceMarking,
-        legMarkings: phenotype.legMarkings,
-        advancedMarkings: phenotype.advancedMarkings,
-        modifiers: phenotype.modifiers,
-      };
-    })(),
-    // In-foal state — feed-system redesign 2026-04-29 (B6, Equoria-ta4s).
-    // Carried straight through from the backend Horse row.
-    inFoalSinceDate:
-      (horseRaw as unknown as { inFoalSinceDate?: string | null }).inFoalSinceDate ?? null,
-    pregnancySireId:
-      (horseRaw as unknown as { pregnancySireId?: number | null }).pregnancySireId ?? null,
-    pregnancyFeedingsByTier:
-      (horseRaw as unknown as { pregnancyFeedingsByTier?: Record<string, number> })
-        .pregnancyFeedingsByTier ?? {},
-    lastFedDate: (horseRaw as unknown as { lastFedDate?: string | null }).lastFedDate ?? null,
-    equippedFeedType:
-      (horseRaw as unknown as { equippedFeedType?: string | null }).equippedFeedType ?? null,
-    feedHealth: (horseRaw as unknown as { feedHealth?: string }).feedHealth as Horse['feedHealth'],
-    // Equoria-8xfo (31F-FE-2) — Conformation title fields from /horses/:id payload.
-    // currentTitle is null for never-shown horses; titlePoints starts at 0;
-    // breedingValueBoost is a 0..N multiplier (0.10 == +10%).
-    currentTitle: (horseRaw as unknown as { currentTitle?: string | null }).currentTitle ?? null,
-    titlePoints: (horseRaw as unknown as { titlePoints?: number }).titlePoints ?? 0,
-    breedingValueBoost:
-      (horseRaw as unknown as { breedingValueBoost?: number }).breedingValueBoost ?? 0,
-  };
+  // Normalize horse data — produces a NEW object so the React Query cache is never mutated.
+  // Shadows `horseRaw` so all downstream JSX references stay unchanged.
+  const horse: Horse = normalizeHorseDetail(horseRaw);
 
   // Tab configuration
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
@@ -481,7 +345,13 @@ const HorseDetailPage: React.FC = () => {
             Radix unmounts inactive TabsContent by default, preserving the prior
             lazy "render only the active tab" behavior. */}
         <Surface variant="panel" className="p-0 mb-6">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => {
+              const next = tabs.find((tab) => tab.id === v);
+              if (next) setActiveTab(next.id);
+            }}
+          >
             <TabsList aria-label="Horse details tabs">
               {tabs.map((tab) => (
                 <TabsTrigger key={tab.id} value={tab.id}>

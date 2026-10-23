@@ -25,6 +25,8 @@
  * "shared grandsire" placeholder — that was the 21R fake-data defect).
  */
 
+import type { LineageAnalysis, LineageTreeNode } from '@/lib/api/breedingPrediction';
+
 /** A single ancestor node in the rendered pedigree tree. */
 export interface PedigreeTreeNode {
   id: number;
@@ -41,29 +43,7 @@ export interface PedigreeTree {
   mare: PedigreeTreeNode | null;
 }
 
-/** Raw backend node shape (subset we read). */
-interface BackendLineageNode {
-  id: number;
-  name: string;
-  generation?: number;
-  sire?: BackendLineageNode | null;
-  dam?: BackendLineageNode | null;
-}
-
-interface BackendLineageResponse {
-  lineageTree?: {
-    root?: {
-      stallion?: BackendLineageNode | null;
-      mare?: BackendLineageNode | null;
-    };
-  };
-  [key: string]: unknown;
-}
-
-function mapNode(
-  node: BackendLineageNode | null | undefined,
-  depth: number
-): PedigreeTreeNode | null {
+function mapNode(node: LineageTreeNode | null | undefined, depth: number): PedigreeTreeNode | null {
   if (!node || typeof node.id !== 'number' || typeof node.name !== 'string') {
     return null;
   }
@@ -84,7 +64,7 @@ function mapNode(
  * fabricate ancestors.
  */
 export function mapLineageToPedigreeTree(
-  lineage: BackendLineageResponse | null | undefined
+  lineage: LineageAnalysis | null | undefined
 ): PedigreeTree | null {
   const root = lineage?.lineageTree?.root;
   if (!root) {

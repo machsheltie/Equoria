@@ -20,7 +20,7 @@
 
 import { Trophy, Star } from 'lucide-react';
 import { ErrorState } from '@/components/ui/state';
-import RankSummaryCard from './RankSummaryCard';
+import RankSummaryCard, { RankSummaryCardSkeleton } from './RankSummaryCard';
 import type { CategoryRanking as RankSummaryCardCategoryRanking } from './RankSummaryCard';
 
 /**
@@ -76,12 +76,7 @@ const DashboardSkeleton = () => (
     aria-label="Loading your rankings"
   >
     {Array.from({ length: SKELETON_CARD_COUNT }, (_, i) => (
-      <RankSummaryCard
-        key={`skeleton-${i}`}
-        ranking={null as unknown as CategoryRanking}
-        isLoading={true}
-        quietWhenLoading
-      />
+      <RankSummaryCardSkeleton key={`skeleton-${i}`} quiet />
     ))}
   </div>
 );

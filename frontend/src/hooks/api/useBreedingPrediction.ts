@@ -1,39 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { ApiError, breedingPredictionApi, horsesApi } from '@/lib/api-client';
-import type { BreedingCompatibility } from '@/lib/api-client';
-
-export interface HorseBreedingData {
-  horseName: string;
-  breedingQuality: string;
-  traitSummary: {
-    totalTraits: number;
-    [key: string]: unknown;
-  };
-  temperamentInfluence?: {
-    temperament?: string;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-}
-
-export interface InbreedingAnalysisResult {
-  riskLevel: 'none' | 'low' | 'moderate' | 'high' | 'extreme' | string;
-  inbreedingCoefficient: number;
-  warnings: string[];
-  recommendations: string[];
-  [key: string]: unknown;
-}
-
-export interface GeneticProbabilityResult {
-  estimatedTraitCount: {
-    expected: number;
-    min: number;
-    max: number;
-  };
-  confidenceLevel: string;
-  categoryProbabilities: Record<string, number>;
-  [key: string]: unknown;
-}
+import type {
+  BreedingCompatibility,
+  GeneticProbability,
+  HorseBreedingData,
+  InbreedingAnalysis,
+  LineageAnalysis,
+} from '@/lib/api-client';
 
 const breedingPredictionKeys = {
   root: ['breeding-prediction'] as const,
@@ -54,7 +27,7 @@ const breedingPredictionKeys = {
 export const useHorseBreedingData = (horseId: number) =>
   useQuery<HorseBreedingData, ApiError>({
     queryKey: breedingPredictionKeys.horseBreedingData(horseId),
-    queryFn: () => horsesApi.getBreedingData(horseId) as Promise<HorseBreedingData>,
+    queryFn: () => horsesApi.getBreedingData(horseId),
     enabled: Boolean(horseId),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -63,13 +36,9 @@ export const useHorseBreedingData = (horseId: number) =>
  * Calculate inbreeding analysis for a breeding pair
  */
 export const useInbreedingAnalysis = (stallionId: number, mareId: number) =>
-  useQuery<InbreedingAnalysisResult, ApiError>({
+  useQuery<InbreedingAnalysis, ApiError>({
     queryKey: breedingPredictionKeys.inbreeding(stallionId, mareId),
-    queryFn: () =>
-      breedingPredictionApi.getInbreedingAnalysis({
-        stallionId,
-        mareId,
-      }) as unknown as Promise<InbreedingAnalysisResult>,
+    queryFn: () => breedingPredictionApi.getInbreedingAnalysis({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -78,7 +47,7 @@ export const useInbreedingAnalysis = (stallionId: number, mareId: number) =>
  * Get lineage analysis for a breeding pair
  */
 export const useLineageAnalysis = (stallionId: number, mareId: number) =>
-  useQuery<unknown, ApiError>({
+  useQuery<LineageAnalysis, ApiError>({
     queryKey: breedingPredictionKeys.lineage(stallionId, mareId),
     queryFn: () => breedingPredictionApi.getLineageAnalysis(stallionId, mareId),
     enabled: Boolean(stallionId && mareId),
@@ -89,13 +58,9 @@ export const useLineageAnalysis = (stallionId: number, mareId: number) =>
  * Calculate genetic probability for offspring
  */
 export const useGeneticProbability = (stallionId: number, mareId: number) =>
-  useQuery<GeneticProbabilityResult, ApiError>({
+  useQuery<GeneticProbability, ApiError>({
     queryKey: breedingPredictionKeys.genetic(stallionId, mareId),
-    queryFn: () =>
-      breedingPredictionApi.getGeneticProbability({
-        stallionId,
-        mareId,
-      }) as unknown as Promise<GeneticProbabilityResult>,
+    queryFn: () => breedingPredictionApi.getGeneticProbability({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });

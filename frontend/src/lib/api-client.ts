@@ -97,7 +97,7 @@ export type { UltraRareTraitEvent, HorseUltraRareTraitsResponse } from './api/ul
 // Extracted to ./api/horses (Equoria-jog8w). Owns HorseGeneticsResponse +
 // HorseColorResponse (31E-4). Re-exported for barrel compat.
 export { horsesApi } from './api/horses.js';
-export type { HorseGeneticsResponse, HorseColorResponse } from './api/horses.js';
+export type { HorseGeneticsResponse, HorseColorResponse, HorseBreedingData } from './api/horses.js';
 
 // Rider types live in ./api/types (Equoria-aodym).
 
@@ -244,9 +244,12 @@ export type {
 export { breedingPredictionApi } from './api/breedingPrediction.js';
 export type {
   InbreedingAnalysis,
+  InbreedingCommonAncestor,
   LineageTreeNode,
   LineageAnalysis,
   GeneticProbability,
+  StatProbability,
+  TraitProbability,
   BreedingCompatibility,
   BreedingColorPredictionEntry,
   BreedingColorPredictionResult,

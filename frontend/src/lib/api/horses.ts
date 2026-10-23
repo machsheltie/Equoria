@@ -28,6 +28,25 @@ export interface HorseGeneticsResponse {
   phenotype: Record<string, unknown> | null;
 }
 
+/**
+ * GET /api/v1/horses/:id/breeding-data — the per-horse breeding summary. Only
+ * the fields the frontend reads are named (Equoria-q4uem.12: the hook used to
+ * cast the `unknown` this endpoint was declared to return).
+ */
+export interface HorseBreedingData {
+  horseName: string;
+  breedingQuality: string;
+  traitSummary: {
+    totalTraits: number;
+    [key: string]: unknown;
+  };
+  temperamentInfluence?: {
+    temperament?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 export interface HorseColorResponse {
   horseId: number;
   horseName: string;
@@ -57,7 +76,7 @@ export const horsesApi = {
   getTrainingHistory: (horseId: number) =>
     apiClient.get<HorseTrainingAnalytics>(`/api/v1/horses/${horseId}/training-history`),
   getBreedingData: (horseId: number) =>
-    apiClient.get<unknown>(`/api/v1/horses/${horseId}/breeding-data`),
+    apiClient.get<HorseBreedingData>(`/api/v1/horses/${horseId}/breeding-data`),
   getXP: (horseId: number) => apiClient.get<HorseXP>(`/api/v1/horses/${horseId}/xp`),
   getXPHistory: (horseId: number, options?: { limit?: number; offset?: number }) => {
     const params = new URLSearchParams();

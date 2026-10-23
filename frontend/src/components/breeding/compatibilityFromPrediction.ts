@@ -24,52 +24,21 @@
  */
 
 import type { CompatibilityData } from './CompatibilityPreview';
+import type {
+  GeneticProbability,
+  InbreedingAnalysis,
+  InbreedingCommonAncestor,
+  StatProbability,
+  TraitProbability,
+} from '@/lib/api/breedingPrediction';
 
-/** Per-stat shape returned by /breeding/genetic-probability statProbabilities */
-export interface BackendStatProbability {
-  expectedValue: number;
-  expectedRange: { min: number; max: number };
-  variance?: number;
-  distribution?: unknown;
-  parentalContribution?: unknown;
-}
-
-export interface BackendTraitProbability {
-  trait: string;
-  probability: number; // backend returns a percentage 5–95
-  inheritancePattern: 'dominant' | 'heterozygous' | 'recessive' | string;
-}
-
-export interface BackendGeneticProbability {
-  statProbabilities?: Record<string, BackendStatProbability>;
-  traitProbabilities?: {
-    positive?: BackendTraitProbability[];
-    negative?: BackendTraitProbability[];
-    hidden?: BackendTraitProbability[];
-  };
-  [key: string]: unknown;
-}
-
-export interface BackendCommonAncestor {
-  id: number;
-  name: string;
-  contribution?: number;
-  stallionPath?: unknown;
-  marePath?: unknown;
-}
-
-export interface BackendInbreedingAnalysis {
-  // The /api/v1/genetics/inbreeding-analysis route returns the
-  // calculateDetailedInbreedingCoefficient() shape whose key is `coefficient`.
-  // Some older typings/helpers expose `inbreedingCoefficient`; accept either so
-  // a typing drift can never silently fall back to a fabricated value.
-  coefficient?: number; // 0–1, real path-analysis value
-  inbreedingCoefficient?: number;
-  commonAncestors?: BackendCommonAncestor[];
-  riskAssessment?: unknown;
-  recommendations?: string[];
-  [key: string]: unknown;
-}
+// The backend response shapes live with the API client (Equoria-q4uem.12); the
+// historical Backend* names stay exported for this mapper's callers and tests.
+export type BackendStatProbability = StatProbability;
+export type BackendTraitProbability = TraitProbability;
+export type BackendGeneticProbability = GeneticProbability;
+export type BackendCommonAncestor = InbreedingCommonAncestor;
+export type BackendInbreedingAnalysis = InbreedingAnalysis;
 
 /**
  * Inbreeding coefficient that triggers the CompatibilityPreview warning.
@@ -131,13 +100,7 @@ export function mapPredictionToCompatibilityData(
   // ── Inbreeding — real path-analysis coefficient (no 0.02 fabrication) ─────
   // If the inbreeding endpoint hasn't resolved, surface 0 (no fake fallback);
   // the warning only fires on the real value crossing the real threshold.
-  const rawCoefficient =
-    inbreedingAnalysis &&
-    (typeof inbreedingAnalysis.coefficient === 'number'
-      ? inbreedingAnalysis.coefficient
-      : typeof inbreedingAnalysis.inbreedingCoefficient === 'number'
-        ? inbreedingAnalysis.inbreedingCoefficient
-        : undefined);
+  const rawCoefficient = inbreedingAnalysis?.coefficient;
   const inbreedingCoefficient =
     typeof rawCoefficient === 'number' ? Math.max(0, Math.min(1, rawCoefficient)) : 0;
 

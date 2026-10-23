@@ -46,9 +46,23 @@ export function trainingCooldownChip(cooldown: unknown): {
   return { label: 'Can Train', status: 'good' };
 }
 
+/**
+ * The horse fields the care helpers read. Every field is optional because a
+ * list or detail DTO may omit it; a horse without care data is counted as
+ * needing care (Equoria-q4uem.12: callers used to cast their typed horse to
+ * `Record<string, unknown>` to reach these).
+ */
+export interface CareStatusFields {
+  lastFedDate?: unknown;
+  lastShod?: unknown;
+  lastGroomed?: unknown;
+  lastVettedDate?: unknown;
+  trainingCooldown?: unknown;
+}
+
 /** Check if a horse needs any care (for summary counts).
  *  Horses with no care data (never fed/shod/etc.) are counted as needing care. */
-export function horseNeedsCare(horse: Record<string, unknown>): boolean {
+export function horseNeedsCare(horse: CareStatusFields): boolean {
   const statuses = [
     careChipStatus(horse.lastFedDate, 1, 3),
     careChipStatus(horse.lastShod, 7, 14),
@@ -59,6 +73,6 @@ export function horseNeedsCare(horse: Record<string, unknown>): boolean {
 }
 
 /** Check if a horse is ready to train (cooldown expired or never set) */
-export function isReadyToTrain(horse: Record<string, unknown>): boolean {
+export function isReadyToTrain(horse: CareStatusFields): boolean {
   return trainingCooldownChip(horse.trainingCooldown).status === 'good';
 }
