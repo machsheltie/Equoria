@@ -12,7 +12,7 @@
 // Equoria-95yrv fix round 1 (F1): the ten-horse cap is enforced under the same
 // transaction-scoped advisory lock the weekly fee pass uses.
 import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
-import { RETIREMENT_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
+import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
 
 /**
  * Equoria-95yrv, owner ruling 2026-09-14 10:23: "Charge the player per horse
@@ -90,8 +90,8 @@ export function calculateWeeklyFee(assignedHorses) {
  * The one exception is a mare still in foal at 21: she keeps her groom until she
  * foals, and that groom's work on her is billed as usual.
  */
-const BILLABLE_HORSE = Object.freeze({
-  OR: [{ age: null }, { age: { lt: RETIREMENT_AGE_YEARS } }, { inFoalSinceDate: { not: null } }],
+const billableHorse = Object.freeze({
+  OR: [{ age: null }, { age: { lt: retirementAgeYears } }, { inFoalSinceDate: { not: null } }],
 });
 
 /**
@@ -119,7 +119,7 @@ export async function countActiveAssignments(client, groomIds) {
     return counts;
   }
   const rows = await client.groomAssignment.findMany({
-    where: { groomId: { in: groomIds }, isActive: true, foal: BILLABLE_HORSE },
+    where: { groomId: { in: groomIds }, isActive: true, foal: billableHorse },
     select: {
       groomId: true,
       groom: { select: { userId: true } },

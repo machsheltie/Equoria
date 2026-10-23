@@ -35,13 +35,12 @@ import app from '../../../app.mjs';
 import config from '../../../config/config.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { processWeeklySalaries } from '../../grooms/index.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 
 const SCOPE = 'TestFixture-6p398_14-retire';
 const RUN = randomBytes(5).toString('hex');
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 const daysAgo = days => gameCalendarDate(new Date(), -days);
 
 const cleanup = createCleanupTracker();
@@ -164,8 +163,9 @@ let summary;
 
 beforeAll(async () => {
   await prisma.systemAccount.upsert({
-    where: { name: SYSTEM_ACCOUNT_BURN },
-    create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
+    // The economy's burn account (SYSTEM_ACCOUNT_BURN = 'burn'), which the vet fee feeds.
+    where: { name: 'burn' },
+    create: { name: 'burn', balance: 0 },
     update: {},
   });
   const breed = await prisma.breed.upsert({
@@ -215,7 +215,7 @@ beforeAll(async () => {
   inFoal21 = await makeHorse('inFoal21', {
     daysOld: 147,
     storedAge: 20,
-    inFoalSinceDate: new Date(Date.now() - 3 * DAY_MS),
+    inFoalSinceDate: new Date(Date.now() - 3 * dayMs),
     pregnancySireId: sire.id,
     equippedFeedType: 'elite',
   });

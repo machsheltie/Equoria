@@ -35,4 +35,6 @@ export const MAX_ACTIVE_AGE_YEARS = 20;
 
 // Display / UX label: the age at which a horse "retires" (one past the last
 // active year). Not itself a gate — the gate is `age > MAX_ACTIVE_AGE_YEARS`.
-export const RETIREMENT_AGE_YEARS = 21;
+// camelCase spelling for new consumers (Equoria-pjvp8 ratchet); same value.
+export const retirementAgeYears = 21;
+export const RETIREMENT_AGE_YEARS = retirementAgeYears;

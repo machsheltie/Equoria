@@ -25,7 +25,7 @@
  * (already locked by the caller), then staff assignment rows.
  */
 
-import { RETIREMENT_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
+import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
 
 /**
  * End every active groom, rider and trainer assignment on one horse and clear
@@ -94,7 +94,7 @@ export async function releaseStaffIfRetiredTx(tx, horseId) {
     where: { id: horseId },
     select: { age: true, rider: true },
   });
-  if (!horse || horse.age === null || horse.age < RETIREMENT_AGE_YEARS) {
+  if (!horse || horse.age === null || horse.age < retirementAgeYears) {
     return null;
   }
   return releaseHorseStaff(tx, { horseId, rider: horse.rider });
