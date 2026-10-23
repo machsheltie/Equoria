@@ -9,7 +9,8 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 const MAX_MARK_VIEWED_SHOWS = 100;
 
 /**
- * The most rows a horse's or a show's result list returns (Equoria-cmw85.12),
+ * The most rows a horse's result list returns (Equoria-cmw85.12; a show's list
+ * is bounded the same way in competitionResultRecord.getShowResultsView),
  * the same ceiling getResultsByUser applies.
  */
 const resultListLimit = 100;
@@ -78,76 +79,6 @@ async function getResultsByHorse(horseId) {
   } catch (error) {
     logger.error('[resultModel.getResultsByHorse] Database error: %o', error);
     throw new Error(`Database error in getResultsByHorse: ${error.message}`, { cause: error });
-  }
-}
-
-/**
- * Get all competition results for a specific show
- * @param {number} showId - Show ID
- * @returns {Array} - The show's results (at most 100), highest score first, each
- *   with its horse and show (scoped)
- */
-async function getResultsByShow(showId) {
-  // Validate showId
-  const numericId = parseInt(showId, 10);
-  if (isNaN(numericId) || numericId <= 0) {
-    throw new Error('Show ID must be a positive integer');
-  }
-
-  try {
-    const results = await prisma.competitionResult.findMany({
-      where: { showId: numericId },
-      // No statGains: a horse's stat gain is its owner's to see (owner ruling
-      // R7), and this list covers every player's horse in the show.
-      select: resultListRowSelect,
-      orderBy: [{ score: 'desc' }, { id: 'asc' }],
-      take: resultListLimit,
-    });
-
-    logger.info(
-      `[resultModel.getResultsByShow] Found ${results.length} results for show ${numericId}`,
-    );
-    return results;
-  } catch (error) {
-    logger.error('[resultModel.getResultsByShow] Database error: %o', error);
-    throw new Error(`Database error in getResultsByShow: ${error.message}`, { cause: error });
-  }
-}
-
-/**
- * Get a specific competition result by ID
- * @param {number} resultId - Result ID
- * @returns {Object|null} - Result object with relations or null if not found
- */
-async function getResultById(resultId) {
-  // Validate resultId
-  const numericId = parseInt(resultId, 10);
-  if (isNaN(numericId) || numericId <= 0) {
-    throw new Error('Result ID must be a positive integer');
-  }
-
-  try {
-    const result = await prisma.competitionResult.findUnique({
-      where: { id: numericId },
-      omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
-      include: {
-        horse: {
-          include: {
-            breed: true,
-          },
-        },
-        show: true,
-      },
-    });
-
-    if (result) {
-      logger.info(`[resultModel.getResultById] Successfully found result: ${result.id}`);
-    }
-
-    return result; // Returns null if not found
-  } catch (error) {
-    logger.error('[resultModel.getResultById] Database error: %o', error);
-    throw new Error(`Database error in getResultById: ${error.message}`, { cause: error });
   }
 }
 
@@ -366,11 +297,4 @@ async function markUserResultsViewed(userId, showIds) {
   );
 }
 
-export {
-  getResultsByHorse,
-  getResultsByShow,
-  getResultById,
-  getResultsByUser,
-  getUserResultsSummary,
-  markUserResultsViewed,
-};
+export { getResultsByHorse, getResultsByUser, getUserResultsSummary, markUserResultsViewed };

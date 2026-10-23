@@ -335,7 +335,6 @@
   "backend/modules/community/controllers/messageController.mjs": 12,
   "backend/modules/community/routes/forumRoutes.mjs": 4,
   "backend/modules/competition/__tests__/competition-rate-limiting.test.mjs": 15,
-  "backend/modules/competition/__tests__/competitionController-business-logic.test.mjs": 1,
   "backend/modules/competition/__tests__/competitionCriticalGate.test.mjs": 12,
   "backend/modules/competition/__tests__/competitionEligibilitySummary.integration.test.mjs": 4,
   "backend/modules/competition/__tests__/competitionResultsMarkViewed.integration.test.mjs": 4,

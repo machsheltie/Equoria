@@ -22,12 +22,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  getResultsByHorse,
-  getResultsByShow,
-  getResultById,
-  getResultsByUser,
-} from '../services/resultModelService.mjs';
+import { getResultsByHorse, getResultsByUser } from '../services/resultModelService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -60,11 +55,6 @@ async function mkShow(suffix) {
       runDate: new Date(),
     },
   });
-}
-
-// Normalise Prisma Decimal fields to JS number for assertions
-function toNum(v) {
-  return typeof v === 'number' ? v : parseFloat(v.toString());
 }
 
 beforeAll(async () => {
@@ -151,131 +141,6 @@ describe('getResultsByHorse', () => {
     const horse = await mkHorse('GBH3');
     const results = await getResultsByHorse(String(horse.id));
     expect(Array.isArray(results)).toBe(true);
-  });
-});
-
-// ─── getResultsByShow ─────────────────────────────────────────────────────────
-
-describe('getResultsByShow', () => {
-  it('throws for negative showId', async () => {
-    await expect(getResultsByShow(-1)).rejects.toThrow('Show ID must be a positive integer');
-  });
-
-  it('throws for non-numeric string showId', async () => {
-    await expect(getResultsByShow('invalid')).rejects.toThrow('Show ID must be a positive integer');
-  });
-
-  it('returns empty array when show has no results', async () => {
-    const show = await mkShow('GBS1');
-    const results = await getResultsByShow(show.id);
-    expect(results).toEqual([]);
-  });
-
-  it('returns results ordered by score desc and includes horse + show relations', async () => {
-    const horse1 = await mkHorse('GBS2a');
-    const horse2 = await mkHorse('GBS2b');
-    const show = await mkShow('GBS2');
-    await prisma.competitionResult.create({
-      data: {
-        horseId: horse1.id,
-        showId: show.id,
-        score: 75,
-        placement: 2,
-        discipline: 'Racing',
-        runDate: new Date(),
-        showName: show.name,
-        prizeWon: 0,
-      },
-    });
-    await prisma.competitionResult.create({
-      data: {
-        horseId: horse2.id,
-        showId: show.id,
-        score: 90,
-        placement: 1,
-        discipline: 'Racing',
-        runDate: new Date(),
-        showName: show.name,
-        prizeWon: 0,
-      },
-    });
-
-    const results = await getResultsByShow(show.id);
-
-    expect(results.length).toBe(2);
-    expect(toNum(results[0].score)).toBeGreaterThanOrEqual(toNum(results[1].score));
-    expect(results[0].horse).toBeDefined();
-    expect(results[0].show).toBeDefined();
-  });
-
-  it('accepts a string show ID (converts to integer)', async () => {
-    const show = await mkShow('GBS3');
-    const results = await getResultsByShow(String(show.id));
-    expect(Array.isArray(results)).toBe(true);
-  });
-});
-
-// ─── getResultById ────────────────────────────────────────────────────────────
-
-describe('getResultById', () => {
-  it('throws for negative resultId', async () => {
-    await expect(getResultById(-1)).rejects.toThrow('Result ID must be a positive integer');
-  });
-
-  it('throws for non-numeric string resultId', async () => {
-    await expect(getResultById('invalid')).rejects.toThrow('Result ID must be a positive integer');
-  });
-
-  it('returns null for a non-existent ID', async () => {
-    const result = await getResultById(999999999);
-    expect(result).toBeNull();
-  });
-
-  it('returns result with horse and show included', async () => {
-    const horse = await mkHorse('GBI1');
-    const show = await mkShow('GBI1');
-    const created = await prisma.competitionResult.create({
-      data: {
-        horseId: horse.id,
-        showId: show.id,
-        score: 88,
-        placement: 1,
-        discipline: 'Racing',
-        runDate: new Date(),
-        showName: show.name,
-        prizeWon: 0,
-      },
-    });
-
-    const result = await getResultById(created.id);
-
-    expect(result).not.toBeNull();
-    expect(result.id).toBe(created.id);
-    expect(result.horseId).toBe(horse.id);
-    expect(result.showId).toBe(show.id);
-    expect(result.horse).toBeDefined();
-    expect(result.show).toBeDefined();
-  });
-
-  it('accepts a string result ID (converts to integer)', async () => {
-    const horse = await mkHorse('GBI2');
-    const show = await mkShow('GBI2');
-    const created = await prisma.competitionResult.create({
-      data: {
-        horseId: horse.id,
-        showId: show.id,
-        score: 70,
-        placement: null,
-        discipline: 'Racing',
-        runDate: new Date(),
-        showName: show.name,
-        prizeWon: 0,
-      },
-    });
-
-    const result = await getResultById(String(created.id));
-    expect(result).not.toBeNull();
-    expect(result.id).toBe(created.id);
   });
 });
 

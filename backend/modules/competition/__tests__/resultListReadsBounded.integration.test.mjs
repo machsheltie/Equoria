@@ -3,7 +3,7 @@
  * (Equoria-cmw85.12).
  *
  * The defect: getResultsByHorse (GET /api/v1/competition/horse/:horseId/results
- * and the horse history read) and getResultsByShow returned EVERY result, each
+ * and the horse history read) and the show results read returned EVERY result, each
  * with the whole horse row (genotype, colour genotype, epigenetic modifiers and
  * every other JSONB column) and the whole show row (its staged ordering of
  * every entrant, escrow columns, creator id). The lists grew without limit with
@@ -26,7 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { getResultsByHorse, getResultsByShow } from '../services/resultModelService.mjs';
+import { getResultsByHorse } from '../services/resultModelService.mjs';
 
 const PREFIX = 'TestFixture-cmw8512';
 const ORIGIN = 'http://localhost:3000';
@@ -172,17 +172,20 @@ describe('result list reads (Equoria-cmw85.12)', () => {
     expect(results[0].statGains).toEqual({ stat: 'speed', gain: 1 });
   }, 60000);
 
-  it("a show's results: the top 100 by score, scoped, no stat gains", async () => {
-    const results = await getResultsByShow(bigShow.id);
+  it("a show's results (GET /competition/show/:showId/results): the top 100 by placement, scoped, no foreign stat gains", async () => {
+    const token = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
+    const res = await request(app)
+      .get(`/api/v1/competition/show/${bigShow.id}/results`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
 
-    expect(results).toHaveLength(LIMIT);
-    for (let i = 1; i < results.length; i++) {
-      expect(Number(results[i - 1].score)).toBeGreaterThanOrEqual(Number(results[i].score));
-    }
-    for (const row of results) {
-      expectScopedRow(row);
-      expect(row).not.toHaveProperty('statGains');
-    }
+    expect(res.status).toBe(200);
+    // ROWS (105) results exist; the route never returns, or loads, more than LIMIT.
+    expect(res.body.count).toBe(LIMIT);
+    expect(res.body.results).toHaveLength(LIMIT);
+    // The cut is the top of the field: placements 1..LIMIT, in order.
+    expect(res.body.results.map(r => r.placement)).toEqual(Array.from({ length: LIMIT }, (_, i) => i + 1));
+    expect(JSON.stringify(res.body)).not.toMatch(privatePattern);
   }, 60000);
 
   it('GET /api/v1/competition/horse/:horseId/results keeps its shape, bounded and scoped', async () => {

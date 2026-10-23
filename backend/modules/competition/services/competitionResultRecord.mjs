@@ -139,6 +139,13 @@ const RESULT_SELECT = {
   horse: { select: { name: true, userId: true, user: { select: { username: true } } } },
 };
 
+/**
+ * The most results one show's list returns (Equoria-cmw85.12, moved here by
+ * Equoria-0aej5): the top of the field by placement. A show can have any number
+ * of entrants; no player needs more than this in one view.
+ */
+export const showResultsLimit = 100;
+
 const SHOW_SELECT = {
   id: true,
   name: true,
@@ -162,7 +169,15 @@ const SHOW_SELECT = {
 export async function getShowResultsView(showId, viewerId) {
   const [show, rows] = await Promise.all([
     prisma.show.findUnique({ where: { id: showId }, select: SHOW_SELECT }),
-    prisma.competitionResult.findMany({ where: { showId }, select: RESULT_SELECT }),
+    prisma.competitionResult.findMany({
+      where: { showId },
+      select: RESULT_SELECT,
+      // The same order byPlacementThenScore applies below, so the rows kept are
+      // the top of the field: placement ascending (unplaced last), score
+      // descending, id breaking ties so the cut is stable.
+      orderBy: [{ placement: { sort: 'asc', nulls: 'last' } }, { score: 'desc' }, { id: 'asc' }],
+      take: showResultsLimit,
+    }),
   ]);
   const results = rows.map(row => toResultView(row, viewerId)).sort(byPlacementThenScore);
   return {
