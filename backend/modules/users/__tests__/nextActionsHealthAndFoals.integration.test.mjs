@@ -28,6 +28,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const rand = () => randomBytes(6).toString('hex');
 const DAY = 24 * 60 * 60 * 1000;
@@ -166,7 +167,7 @@ describe('groom-foal follows game age, not FoalDevelopment.isActive (Equoria-fr2
         name: `TestFixture-q11-foal-${rand()}`,
         sex: 'Filly',
         age: 2,
-        dateOfBirth: new Date(Date.now() - 15 * DAY),
+        dateOfBirth: gameCalendarDate(new Date(), -15),
         healthStatus: 'Excellent',
         lastFedDate: new Date(),
         userId: user.id,
@@ -180,7 +181,7 @@ describe('groom-foal follows game age, not FoalDevelopment.isActive (Equoria-fr2
         name: `TestFixture-q11-grown-${rand()}`,
         sex: 'Mare',
         age: 3,
-        dateOfBirth: new Date(Date.now() - 22 * DAY),
+        dateOfBirth: gameCalendarDate(new Date(), -22),
         healthStatus: 'Excellent',
         lastFedDate: new Date(),
         trainingCooldown: new Date(Date.now() + 2 * DAY),

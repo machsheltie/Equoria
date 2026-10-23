@@ -28,7 +28,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 const TAG = randomBytes(4).toString('hex');
 const PREFIX = `TestFixture-3kegj-${TAG}`;
 const FEE = 120;
-const N_PARALLEL = 5;
+const parallelRequests = 5;
 
 const userIds = [];
 const horseIds = [];
@@ -141,10 +141,10 @@ describe('trainer fee at train time (Equoria-3kegj)', () => {
 });
 
 describe('double-click / retry race (Equoria-3kegj)', () => {
-  it(`${N_PARALLEL} concurrent train requests: one 200, one charge, one training`, async () => {
+  it(`${parallelRequests} concurrent train requests: one 200, one charge, one training`, async () => {
     const s = await stable({ money: 1000 });
 
-    const results = await Promise.all(Array.from({ length: N_PARALLEL }, () => s.train('Dressage')));
+    const results = await Promise.all(Array.from({ length: parallelRequests }, () => s.train('Dressage')));
 
     const ok = results.filter(r => r.status === 200);
     expect(ok).toHaveLength(1);

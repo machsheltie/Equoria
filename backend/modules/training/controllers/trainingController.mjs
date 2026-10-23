@@ -173,6 +173,15 @@ async function computeCanTrain(parsedHorseId, discipline) {
   };
 }
 
+/** The result trainHorse returns when it refuses a session (nothing was written). */
+const refusal = reason => ({
+  success: false,
+  reason,
+  updatedHorse: null,
+  message: `Training not allowed: ${reason}`,
+  nextEligible: null,
+});
+
 /**
  * Train a horse in a specific discipline (with eligibility validation and trait effects)
  * @param {number} horseId - ID of the horse to train
@@ -191,13 +200,7 @@ async function trainHorse(horseId, discipline) {
 
     if (!eligibilityCheck.eligible) {
       logger.warn(`[trainingController.trainHorse] Training rejected: ${eligibilityCheck.reason}`);
-      return {
-        success: false,
-        reason: eligibilityCheck.reason,
-        updatedHorse: null,
-        message: `Training not allowed: ${eligibilityCheck.reason}`,
-        nextEligible: null,
-      };
+      return refusal(eligibilityCheck.reason);
     }
 
     // Get horse data with traits for effect calculations
@@ -323,8 +326,6 @@ async function trainHorse(horseId, discipline) {
       );
     }
 
-    // Equoria-3kegj: the trainer whose modifier applied is the one paid.
-    const trainerFee = trainingFeeFor(activeTrainer);
     const txResult = await commitTrainingSession({
       horseId: parsedHorseId,
       ownerId,
@@ -334,26 +335,19 @@ async function trainHorse(horseId, discipline) {
       cooldownNow,
       nextEligible: nextEligibleClaim,
       disciplineScoreIncrease,
-      trainerFee,
+      trainerFee: trainingFeeFor(activeTrainer), // Equoria-3kegj: the trainer applied is paid
     });
-    if (txResult?.feeUnpaid) {
-      const reason = `Not enough coins to pay ${trainerFee.trainerName}'s training fee of ${trainerFee.amount}`;
-      return { success: false, reason, updatedHorse: null, message: reason, nextEligible: null };
+    if (txResult?.refused) {
+      return refusal(txResult.refused);
     }
     if (!txResult) {
       logger.info(
         `[trainingController.trainHorse] Atomic cooldown claim lost the race for horse ${horseId}`,
       );
-      return {
-        success: false,
-        reason: 'Training cooldown active for this horse',
-        updatedHorse: null,
-        message: 'Training not allowed: Training cooldown active for this horse',
-        nextEligible: null,
-      };
+      return refusal('Training cooldown active for this horse');
     }
 
-    const { trainingLog, updatedHorse, xpCore } = txResult;
+    const { trainingLog, updatedHorse, xpCore, trainingFee } = txResult;
 
     if (xpCore) {
       logger.info(
@@ -398,7 +392,7 @@ async function trainHorse(horseId, discipline) {
       // awarded amount).
       xpAwarded: baseXp,
       // Equoria-3kegj: the trainer fee this session charged (0 with no trainer).
-      trainingFee: trainerFee ? trainerFee.amount : 0,
+      trainingFee,
       message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.`,
       nextEligible: nextEligible.toISOString(),
       // Equoria-oey96.7: surface the trainer contribution honestly so the UI

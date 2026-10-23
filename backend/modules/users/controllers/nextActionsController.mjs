@@ -77,11 +77,11 @@ const SPEC_PRIORITY = Object.freeze({
 });
 
 // Story 23.4 AC: "max 10 actions returned".
-const MAX_ACTIONS = 10;
+const maxActions = 10;
 
 // Minimum active age for training / competing / breeding (mirrors enterShow /
 // trainingController — the horses schema stores `age` as an Int column).
-const MIN_ACTIVE_AGE = 3;
+const minActiveAge = 3;
 
 // Case-insensitive injured check — the canonical persisted value is 'Injured'
 // (Horse.healthStatus default 'Excellent'). enterShow uses the same
@@ -90,7 +90,7 @@ const MIN_ACTIVE_AGE = 3;
 const isInjured = healthStatus => String(healthStatus).toLowerCase() === 'injured';
 
 // `age` is a nullable Int on Horse — a null age must not pass the gate.
-const isActiveAge = age => typeof age === 'number' && age >= MIN_ACTIVE_AGE;
+const isActiveAge = age => typeof age === 'number' && age >= minActiveAge;
 
 // The bad-health gate the breeding guard, training and show entry apply
 // (Equoria-3tna6): displayed health (worse of feed and vet health) 'critical'.
@@ -139,7 +139,7 @@ export async function getNextActions(req, res) {
     //
     // Equoria-fr2kg Q11 (owner ruling 2026-10-22): no isActive filter — the
     // legacy FoalDevelopment.isActive column never turns false. A horse is a
-    // foal while its game age is under 3 (MIN_ACTIVE_AGE).
+    // foal while its game age is under 3 (minActiveAge).
     //
     // 21R-PROD-BUG-1 (Equoria-j8s2): the FoalDevelopment model has a `foal`
     // relation (named `FoalDevelopmentFoal` via foalId FK); it does NOT have a
@@ -151,7 +151,7 @@ export async function getNextActions(req, res) {
     try {
       activeFoals = await prisma.foalDevelopment.findMany({
         where: {
-          foal: { userId, age: { lt: MIN_ACTIVE_AGE } },
+          foal: { userId, age: { lt: minActiveAge } },
         },
         select: { foalId: true, foal: { select: { name: true, dateOfBirth: true } } },
       });
@@ -365,7 +365,7 @@ export async function getNextActions(req, res) {
     // is preserved within a priority), cap at 10, then renumber the emitted
     // priority to a contiguous 1..N rank.
     actions.sort((a, b) => a.priority - b.priority);
-    const topActions = actions.slice(0, MAX_ACTIONS).map((action, index) => ({
+    const topActions = actions.slice(0, maxActions).map((action, index) => ({
       ...action,
       priority: index + 1,
     }));

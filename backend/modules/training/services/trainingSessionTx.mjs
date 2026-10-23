@@ -51,7 +51,7 @@ export function trainingFeeFor(trainer) {
 
 // Thrown inside the transaction when the atomic cooldown claim loses the race,
 // so every write already made in it rolls back; caught by identity below.
-const COOLDOWN_CLAIM_LOST = Symbol('trainingCooldownClaimLost');
+const cooldownClaimLost = Symbol('trainingCooldownClaimLost');
 
 /**
  * @param {object} p
@@ -66,10 +66,11 @@ const COOLDOWN_CLAIM_LOST = Symbol('trainingCooldownClaimLost');
  * @param {{trainerId:number, trainerName:string, amount:number}|null} [p.trainerFee] -
  *   the assigned trainer's advertised per-training fee, charged to ownerId
  *   (null or a non-positive amount: nothing is charged)
- * @returns {Promise<{trainingLog:object, updatedHorse:object, xpCore:object|null}|null>}
- *   null when the cooldown claim lost (nothing was written);
- *   { feeUnpaid: true } when the owner cannot pay the trainer fee (nothing was
- *   written).
+ * @returns {Promise<{trainingLog:object, updatedHorse:object, xpCore:object|null,
+ *   trainingFee:number}|{refused:string}|null>}
+ *   trainingFee is the trainer fee charged (0 when none); null when the
+ *   cooldown claim lost; { refused } when the owner cannot pay the trainer fee
+ *   (nothing was written in either case).
  */
 export async function commitTrainingSession({
   horseId,
@@ -101,8 +102,9 @@ export async function commitTrainingSession({
 
         // Equoria-3kegj: the trainer's per-training fee, on the User row this
         // transaction already holds (lock order User -> Horse -> staff). An
-        // owner who cannot pay rolls everything back ({ feeUnpaid: true }).
-        if (ownerId && trainerFee && trainerFee.amount > 0) {
+        // owner who cannot pay rolls everything back ({ refused }).
+        const trainingFee = ownerId && trainerFee && trainerFee.amount > 0 ? trainerFee.amount : 0;
+        if (trainingFee > 0) {
           const feeMetadata = { trainerId: trainerFee.trainerId, horseId, discipline };
           await debitMoneyOrThrow(tx, {
             userId: ownerId,
@@ -132,7 +134,7 @@ export async function commitTrainingSession({
           data: { trainingCooldown: nextEligible },
         });
         if (claim.count === 0) {
-          throw COOLDOWN_CLAIM_LOST;
+          throw cooldownClaimLost;
         }
 
         // disciplineScores[discipline] += increase, on the committed value.
@@ -171,16 +173,18 @@ export async function commitTrainingSession({
           include: { breed: true, user: true, stable: true },
         });
 
-        return { trainingLog, updatedHorse, xpCore };
+        return { trainingLog, updatedHorse, xpCore, trainingFee };
       }),
       { message: 'The stable is busy right now, please try training again in a moment.' },
     );
   } catch (txError) {
-    if (txError === COOLDOWN_CLAIM_LOST) {
+    if (txError === cooldownClaimLost) {
       return null;
     }
     if (txError instanceof InsufficientFundsError && trainerFee) {
-      return { feeUnpaid: true };
+      return {
+        refused: `Not enough coins to pay ${trainerFee.trainerName}'s training fee of ${trainerFee.amount}`,
+      };
     }
     throw txError;
   }
