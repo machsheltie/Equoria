@@ -60,6 +60,9 @@ router.post(
       .optional()
       .isArray()
       .withMessage('Environmental factors must be an array'),
+    body('context.environmentalFactors.*')
+      .isString()
+      .withMessage('Each environmental factor must be a string'),
     body('context.recentInteractions')
       .optional()
       .isArray()
@@ -103,10 +106,18 @@ router.post(
       .optional()
       .isInt({ min: 5, max: 120 })
       .withMessage('Duration must be between 5 and 120 minutes'),
+    body('context.timeOfDay')
+      .optional()
+      .isString()
+      .isIn(['morning', 'afternoon', 'evening'])
+      .withMessage('Time of day must be morning, afternoon, or evening'),
     body('context.environmentalFactors')
       .optional()
       .isArray()
       .withMessage('Environmental factors must be an array'),
+    body('context.environmentalFactors.*')
+      .isString()
+      .withMessage('Each environmental factor must be a string'),
   ],
   handleValidationErrors,
   predictOutcome,
@@ -139,6 +150,9 @@ router.post(
       .optional()
       .isArray()
       .withMessage('Environmental factors must be an array'),
+    body('context.environmentalFactors.*')
+      .isString()
+      .withMessage('Each environmental factor must be a string'),
   ],
   handleValidationErrors,
   getRecommendations,
