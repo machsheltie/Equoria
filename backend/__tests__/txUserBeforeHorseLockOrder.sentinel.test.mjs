@@ -53,6 +53,9 @@ const USER_WRITE = new RegExp(
     String.raw`|\btransferUserMoneyOrThrow\s*\(` +
     // updateUserSettingsPaths is one raw `UPDATE "User"` (Equoria-6p398.19).
     String.raw`|\bupdateUserSettingsPaths\s*\(` +
+    // inventoryController's swapInventory is one updateUserSettingsPaths CAS
+    // (Equoria-063xk extracted it for equip/unequip).
+    String.raw`|\bswapInventory\s*\(` +
     String.raw`|UPDATE\s+"User"`,
   'g',
 );
