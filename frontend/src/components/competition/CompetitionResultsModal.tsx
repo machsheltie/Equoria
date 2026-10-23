@@ -309,7 +309,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
     );
   }, [results]);
 
-  // Check if user has any prizes
   const hasUserPrizes = userPrizes.length > 0;
 
   // Get the best prize for notification modal (highest placement)

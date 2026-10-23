@@ -21,10 +21,10 @@ import { server } from '@/test/msw/server';
 import { WhileYouWereGone } from '../WhileYouWereGone';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const WYAG_PATH = `${base}/api/v1/while-you-were-gone`;
+const wyagPath = `${base}/api/v1/while-you-were-gone`;
 
-const LAST_VISIT_KEY = 'equoria-last-visit';
-const FIVE_HOURS_AGO = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+const lastVisitKey = 'equoria-last-visit';
+const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
 
 const mockItems = [
   {
@@ -50,10 +50,10 @@ const mockItems = [
  */
 function stubWyag(items: typeof mockItems, opts: { hasMore?: boolean } = {}) {
   server.use(
-    http.get(WYAG_PATH, () =>
+    http.get(wyagPath, () =>
       HttpResponse.json({
         success: true,
-        data: { items, since: FIVE_HOURS_AGO, hasMore: opts.hasMore ?? false },
+        data: { items, since: fiveHoursAgo, hasMore: opts.hasMore ?? false },
       })
     )
   );
@@ -86,26 +86,26 @@ describe('WhileYouWereGone', () => {
 
   it('does not show when user has not been away long enough', () => {
     // Set last visit to 1 hour ago (under 4h threshold)
-    localStorage.setItem(LAST_VISIT_KEY, new Date(Date.now() - 60 * 60 * 1000).toISOString());
+    localStorage.setItem(lastVisitKey, new Date(Date.now() - 60 * 60 * 1000).toISOString());
     renderWYAG();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('does not show for users who have not completed onboarding', () => {
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG({ completedOnboarding: false });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('shows overlay when user has been away for 4+ hours', async () => {
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('While You Were Away')).toBeInTheDocument();
   });
 
   it('renders in a portal (document.body)', async () => {
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
     await screen.findByRole('dialog');
     const dialog = document.body.querySelector('[role="dialog"]');
@@ -113,7 +113,7 @@ describe('WhileYouWereGone', () => {
   });
 
   it('displays WYAG items fetched from the network boundary', async () => {
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
     expect(await screen.findByText('Thunder won 1st place!')).toBeInTheDocument();
     expect(screen.getByText('Luna reached weanling stage')).toBeInTheDocument();
@@ -151,7 +151,7 @@ describe('WhileYouWereGone', () => {
         actionUrl: '/marketplace',
       },
     ]);
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
     expect(await screen.findByText('RiderJane joined Dressage Masters')).toBeInTheDocument();
     expect(screen.getByText('Thunder is ready to train again')).toBeInTheDocument();
@@ -160,14 +160,14 @@ describe('WhileYouWereGone', () => {
   });
 
   it('dismisses on "Continue to Stable" button click', async () => {
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
     fireEvent.click(await screen.findByText('Continue to Stable'));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('dismisses on Escape key press', async () => {
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
@@ -175,7 +175,7 @@ describe('WhileYouWereGone', () => {
   });
 
   it('dismisses on X button click', async () => {
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
     fireEvent.click(await screen.findByLabelText('Dismiss'));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -184,15 +184,15 @@ describe('WhileYouWereGone', () => {
   it('shows loading skeletons while the boundary request is in flight', async () => {
     // Delay the network response so the loading state is observable.
     server.use(
-      http.get(WYAG_PATH, async () => {
+      http.get(wyagPath, async () => {
         await delay(100);
         return HttpResponse.json({
           success: true,
-          data: { items: mockItems, since: FIVE_HOURS_AGO, hasMore: false },
+          data: { items: mockItems, since: fiveHoursAgo, hasMore: false },
         });
       })
     );
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     const { container } = renderWYAG();
     // Dialog is shown immediately on long-absence; skeletons render while loading.
     await screen.findByRole('dialog');
@@ -203,7 +203,7 @@ describe('WhileYouWereGone', () => {
 
   it('shows empty message when the boundary returns no items', async () => {
     stubWyag([]);
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
     expect(await screen.findByText(/resting peacefully/)).toBeInTheDocument();
   });
@@ -214,7 +214,7 @@ describe('WhileYouWereGone', () => {
   // Away" and remove that line.
   it('keeps its title and shows no "+ more activity" line when there is more activity', async () => {
     stubWyag(mockItems, { hasMore: true });
-    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
 
     expect(await screen.findByText('Thunder won 1st place!')).toBeInTheDocument();
