@@ -9,6 +9,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import AppCrashFallback from '@/components/AppCrashFallback';
 import GallopingLoader from '@/components/ui/GallopingLoader';
 import { RewardToastProvider } from '@/components/feedback';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
@@ -48,7 +49,7 @@ const StewardsOfficePage = lazy(() => import('./pages/StewardsOfficePage'));
 const queryClient = createAppQueryClient();
 
 const App = () => (
-  <ErrorBoundary fallback={<p className="text-[var(--text-primary)] p-8">Something went wrong.</p>}>
+  <ErrorBoundary fallback={({ reset }) => <AppCrashFallback onRetry={reset} />}>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>

@@ -15,7 +15,11 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
  */
 interface ErrorBoundaryProps {
   children: ReactNode;
-  fallback: ReactNode;
+  /**
+   * What to show once a descendant has thrown. A function receives `reset`,
+   * which clears the error so the children render again (a "Try Again" control).
+   */
+  fallback: ReactNode | ((api: { reset: () => void }) => ReactNode);
 }
 
 interface ErrorBoundaryState {
@@ -29,6 +33,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     return { hasError: true };
   }
 
+  reset = (): void => {
+    this.setState({ hasError: false });
+  };
+
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // The browser console is the only sink now. Keep the component stack: it is
     // what makes an uncaught render error diagnosable from a bug report.
@@ -37,7 +45,8 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   render(): ReactNode {
     if (this.state.hasError) {
-      return this.props.fallback;
+      const { fallback } = this.props;
+      return typeof fallback === 'function' ? fallback({ reset: this.reset }) : fallback;
     }
     return this.props.children;
   }
