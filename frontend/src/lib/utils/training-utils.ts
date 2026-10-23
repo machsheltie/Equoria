@@ -11,6 +11,7 @@
  */
 
 import { formatDate } from '@/lib/formatDate';
+import { retirementAgeYears } from '@/lib/horseAgePolicy';
 
 export interface Discipline {
   id: string;
@@ -210,6 +211,12 @@ export interface Horse {
   name: string;
   age: number;
   health?: number;
+  /**
+   * Why the server refuses to train this horse (too old, bad health, ...), as the
+   * trainable-horses list reports it; null or absent when it does not refuse. The
+   * server owns these rules, so a horse carrying one is never shown as ready.
+   */
+  ineligibleReason?: string | null;
   trainingCooldown?: Date | string | null;
   disciplineScores?: { [discipline: string]: number };
 }
@@ -254,7 +261,8 @@ export function calculateExpectedGain(baseGain: number, traitModifiers: number[]
  * Check if a horse is eligible for training
  *
  * Requirements:
- * - Horse must be 3+ years old
+ * - Horse must be 3 to 20 years old (21 and over are retired)
+ * - Horse must not be refused by the server (`ineligibleReason`: bad health and the like)
  * - Horse must not be on cooldown
  * - Horse must have sufficient health (optional check)
  */
@@ -270,6 +278,22 @@ export function canTrain(
     return {
       eligible: false,
       reason: 'Horse must be at least 3 years old to train',
+    };
+  }
+
+  // Retired horses do not train (the backend refuses them too).
+  if (horse.age >= retirementAgeYears) {
+    return {
+      eligible: false,
+      reason: 'Horse is too old to train',
+    };
+  }
+
+  // A refusal the server has already made (it owns the health rules).
+  if (horse.ineligibleReason) {
+    return {
+      eligible: false,
+      reason: horse.ineligibleReason,
     };
   }
 

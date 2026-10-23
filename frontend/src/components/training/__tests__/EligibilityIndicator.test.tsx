@@ -619,3 +619,18 @@ describe('EligibilityIndicator', () => {
     });
   });
 });
+
+describe('EligibilityIndicator when the server refuses a horse (Equoria-du9bn)', () => {
+  it('shows "Not Fit to Train", never "Ready to Train", for a horse with a server refusal', () => {
+    const unwell: Horse = {
+      id: 9,
+      name: 'Unwell',
+      age: 8,
+      trainingCooldown: null,
+      ineligibleReason: 'Unwell is in Bad health and cannot train.',
+    };
+    render(<EligibilityIndicator horse={unwell} />);
+    expect(screen.getByText('Not Fit to Train')).toBeInTheDocument();
+    expect(screen.queryByText('Ready to Train')).not.toBeInTheDocument();
+  });
+});

@@ -52,7 +52,7 @@ export interface EligibilityIndicatorProps {
 /**
  * Eligibility status type for internal use
  */
-type EligibilityStatus = 'ready' | 'cooldown' | 'too-young' | 'too-old';
+type EligibilityStatus = 'ready' | 'cooldown' | 'too-young' | 'too-old' | 'unfit';
 
 /**
  * Configuration for each eligibility status
@@ -102,6 +102,14 @@ const statusConfigs: Record<EligibilityStatus, StatusConfig> = {
     iconColor: 'text-[var(--role-danger-text)]',
     Icon: AlertCircle,
   },
+  unfit: {
+    text: 'Not Fit to Train',
+    bgColor: 'bg-[var(--role-danger-bg)]',
+    borderColor: 'border-[var(--role-danger-border)]',
+    textColor: 'text-[var(--role-danger-text)]',
+    iconColor: 'text-[var(--role-danger-text)]',
+    Icon: AlertCircle,
+  },
 };
 
 /**
@@ -130,8 +138,8 @@ function getEligibilityStatus(horse: Horse): EligibilityStatus {
     return 'cooldown';
   }
 
-  // Default to ready if no specific reason (shouldn't happen with valid data)
-  return 'ready';
+  // Refused for another reason (the server's health ruling): never shown as ready.
+  return 'unfit';
 }
 
 /**

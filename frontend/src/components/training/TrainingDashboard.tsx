@@ -54,6 +54,7 @@ function toHorseFormat(horse: TrainableHorse): Horse {
     name: horse.name,
     age: horse.ageYears ?? 5, // Default to eligible age if not specified
     trainingCooldown: horse.nextEligibleAt ?? null,
+    ineligibleReason: horse.ineligibleReason ?? null,
   };
 }
 

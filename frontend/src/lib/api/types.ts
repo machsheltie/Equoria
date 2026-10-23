@@ -28,6 +28,8 @@ export interface TrainableHorse {
   age?: number;
   ageYears?: number;
   canTrain?: boolean;
+  /** Why the server will not train this horse right now (age, health); null when it will. */
+  ineligibleReason?: string | null;
   bestDisciplines?: string[];
   trainableDisciplines?: string[];
   nextEligibleAt?: string | null;
