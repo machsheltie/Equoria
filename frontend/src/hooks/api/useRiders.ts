@@ -43,6 +43,10 @@ export function useUserRiders(userId: string | number) {
     queryFn: () => ridersApi.getUserRiders(userId),
     enabled: Boolean(userId),
     staleTime: 2 * 60 * 1000, // 2 minutes
+    // Owner ruling 2026-10-23 (Equoria-i2xxj): an offline read ends in the
+    // Manage tab's error with Try Again. The default networkMode 'online'
+    // paused it, and the paused tab fell through to a false "none hired".
+    networkMode: 'always',
   });
 }
 
@@ -51,6 +55,10 @@ export function useRiderAssignments() {
     queryKey: riderKeys.assignments(),
     queryFn: ridersApi.getAssignments,
     staleTime: 60 * 1000, // 1 minute
+    // Owner ruling 2026-10-23 (Equoria-i2xxj): an offline read ends in the
+    // Manage tab's error with Try Again. The default networkMode 'online'
+    // paused it, and the paused tab fell through to a false "none hired".
+    networkMode: 'always',
   });
 }
 

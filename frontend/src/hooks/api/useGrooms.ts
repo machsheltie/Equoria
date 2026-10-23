@@ -49,6 +49,10 @@ export function useUserGrooms(userId: string | number) {
     queryFn: () => groomsApi.getUserGrooms(userId),
     enabled: Boolean(userId),
     staleTime: 2 * 60 * 1000, // 2 minutes
+    // Owner ruling 2026-10-23 (Equoria-i2xxj): an offline read ends in the
+    // Manage tab's error with Try Again. The default networkMode 'online'
+    // paused it, and the paused tab fell through to a false "none hired".
+    networkMode: 'always',
   });
 }
 
@@ -57,6 +61,10 @@ export function useGroomAssignments() {
     queryKey: groomKeys.assignments(),
     queryFn: groomsApi.getAssignments,
     staleTime: 60 * 1000, // 1 minute
+    // Owner ruling 2026-10-23 (Equoria-i2xxj): an offline read ends in the
+    // Manage tab's error with Try Again. The default networkMode 'online'
+    // paused it, and the paused tab fell through to a false "none hired".
+    networkMode: 'always',
   });
 }
 
@@ -65,6 +73,10 @@ export function useGroomSalaries() {
     queryKey: groomKeys.salaries(),
     queryFn: groomsApi.getSalaryCost,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    // Owner ruling 2026-10-23 (Equoria-i2xxj): an offline read ends in the
+    // Manage tab's error with Try Again. The default networkMode 'online'
+    // paused it, and the paused tab fell through to a false "none hired".
+    networkMode: 'always',
   });
 }
 
