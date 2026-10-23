@@ -19,17 +19,17 @@
  * read here: the item in the slot decides.
  */
 
-import { TACK_INVENTORY } from '../../economy/index.mjs';
-import { CRAFTING_RECIPES } from '../../crafting/index.mjs';
+import { tackCatalogItems } from '../../economy/index.mjs';
+import { craftedItemRecipes } from '../../crafting/index.mjs';
 import { isKnownDiscipline } from './disciplineRules.mjs';
 
 /** Points for each discipline saddle or bridle in its own discipline (decision A). */
-export const DISCIPLINE_TACK_POINTS = 5;
+export const disciplineTackPoints = 5;
 /** Points for each All Purpose saddle or bridle, in any discipline (decision A). */
-export const ALL_PURPOSE_TACK_POINTS = 2;
+export const allPurposeTackPoints = 2;
 
 /** The Horse.tack slots that score, one item each. */
-const SCORING_TACK_SLOTS = Object.freeze(['saddle', 'bridle']);
+const scoringTackSlots = Object.freeze(['saddle', 'bridle']);
 
 const disciplinesOf = definition =>
   Array.isArray(definition.disciplines) ? definition.disciplines : [];
@@ -43,14 +43,14 @@ const disciplinesOf = definition =>
  *   slot does not score or the id is not a saddle/bridle of that slot.
  */
 export function tackItemDisciplines(slot, itemId) {
-  if (!SCORING_TACK_SLOTS.includes(slot) || typeof itemId !== 'string') {
+  if (!scoringTackSlots.includes(slot) || typeof itemId !== 'string') {
     return null;
   }
-  const shopItem = TACK_INVENTORY.find(item => item.id === itemId && item.category === slot);
+  const shopItem = tackCatalogItems(slot).find(item => item.id === itemId);
   if (shopItem) {
     return disciplinesOf(shopItem);
   }
-  const recipe = CRAFTING_RECIPES.find(r => r.result === itemId && r.resultCategory === slot);
+  const recipe = craftedItemRecipes(slot).find(r => r.result === itemId);
   return recipe ? disciplinesOf(recipe) : null;
 }
 
@@ -71,15 +71,15 @@ export function tackPoints(tack, discipline) {
     return 0;
   }
   let points = 0;
-  for (const slot of SCORING_TACK_SLOTS) {
+  for (const slot of scoringTackSlots) {
     const disciplines = tackItemDisciplines(slot, tack[slot]);
     if (disciplines === null) {
       continue;
     }
     if (disciplines.length === 0) {
-      points += ALL_PURPOSE_TACK_POINTS;
+      points += allPurposeTackPoints;
     } else if (disciplines.includes(discipline)) {
-      points += DISCIPLINE_TACK_POINTS;
+      points += disciplineTackPoints;
     }
   }
   return points;

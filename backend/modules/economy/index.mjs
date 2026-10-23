@@ -25,4 +25,8 @@ export {
   TransferPayeeNotFoundError,
   transferUserMoneyOrThrow,
 } from './services/userMoneyTransfer.mjs';
-export { TACK_INVENTORY, resolveTackBonus } from './tackShop/services/tackInventory.mjs';
+export {
+  TACK_INVENTORY,
+  resolveTackBonus,
+  tackCatalogItems,
+} from './tackShop/services/tackInventory.mjs';

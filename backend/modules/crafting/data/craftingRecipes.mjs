@@ -22,7 +22,7 @@
  *     ambiguous are empty (All Purpose) until the owner classifies them.
  */
 
-export const CRAFTING_RECIPES = [
+const recipes = [
   // ── Tier 0 — Basic cosmetic tack ─────────────────────────────────────────
   {
     id: 'simple-bridle',
@@ -158,5 +158,20 @@ export const CRAFTING_RECIPES = [
  * @param {string} recipeId
  */
 export function findRecipe(recipeId) {
-  return CRAFTING_RECIPES.find(r => r.id === recipeId);
+  return recipes.find(r => r.id === recipeId);
 }
+
+/**
+ * The recipes whose crafted item goes in one tack category. Ridden show
+ * scoring reads a crafted saddle's or bridle's `disciplines` through this
+ * (competition/rules/tackScoring.mjs, Equoria-k1p62.2).
+ * @param {string} resultCategory - e.g. 'saddle', 'bridle'.
+ * @returns {Array<object>}
+ */
+export function craftedItemRecipes(resultCategory) {
+  return recipes.filter(r => r.resultCategory === resultCategory);
+}
+
+// The recipe list keeps its snake-case export name for its current consumers
+// until the camelCase conversion renames them (Equoria-pjvp8).
+export { recipes as CRAFTING_RECIPES };

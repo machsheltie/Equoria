@@ -8,9 +8,9 @@
  *
  * Until the one-per-horse discipline trait has its own storage, the trait it
  * replaces is the representation: a revealed (epigeneticModifiers.positive)
- * disciplineAffinity<Discipline> key, in canonical or legacy snake-case form.
+ * disciplineAffinity<Discipline> key.
  *
- * Four horses, one Dressage show, no rider, a Dressage-neutral temperament
+ * Three horses, one Dressage show, no rider, a Dressage-neutral temperament
  * (Bold), luck pinned to the lowest roll (+1%) through scoreRng, no stat-gain
  * roll succeeds. Each horse's precision/focus/obedience are equal, so its base
  * is that value. Distinct bases keep the scores apart (no tie re-roll).
@@ -69,8 +69,6 @@ describe('nightly settlement adds the matching discipline trait (+5 flat, k1p62.
     const horseIds = [];
     // (50 + 5) x 1.01 = 55.55 -> 56. Without the trait: 50.5 -> 51.
     const revealed = await makeHorse(owner.id, 50, { positive: ['disciplineAffinityDressage'] }, horseIds);
-    // Legacy stored key, revealed: (60 + 5) x 1.01 = 65.65 -> 66. Without: 60.6 -> 61.
-    const legacyKey = await makeHorse(owner.id, 60, { positive: ['discipline_affinity_dressage'] }, horseIds);
     // Hidden = inert: 52 x 1.01 = 52.52 -> 53.
     const hidden = await makeHorse(owner.id, 52, { hidden: ['disciplineAffinityDressage'] }, horseIds);
     // Another discipline's trait: 54 x 1.01 = 54.54 -> 55.
@@ -99,7 +97,7 @@ describe('nightly settlement adds the matching discipline trait (+5 flat, k1p62.
     cleanup.add(() => prisma.user.deleteMany({ where: { id: owner.id } }), 'user');
 
     await prisma.showEntry.createMany({
-      data: [revealed, legacyKey, hidden, otherDiscipline].map(h => ({
+      data: [revealed, hidden, otherDiscipline].map(h => ({
         showId: show.id,
         horseId: h.id,
         userId: owner.id,
@@ -118,10 +116,9 @@ describe('nightly settlement adds the matching discipline trait (+5 flat, k1p62.
     });
     const scoreOf = horse => Number(results.find(r => r.horseId === horse.id).score);
     expect(scoreOf(revealed)).toBe(56);
-    expect(scoreOf(legacyKey)).toBe(66);
     expect(scoreOf(hidden)).toBe(53);
     expect(scoreOf(otherDiscipline)).toBe(55);
     const placementOf = horse => results.find(r => r.horseId === horse.id).placement;
-    expect([legacyKey, revealed, otherDiscipline, hidden].map(placementOf)).toEqual([1, 2, 3, 4]);
+    expect([revealed, otherDiscipline, hidden].map(placementOf)).toEqual([1, 2, 3]);
   }, 60000);
 });

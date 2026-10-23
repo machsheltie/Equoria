@@ -9,4 +9,4 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export { CRAFTING_RECIPES } from './data/craftingRecipes.mjs';
+export { CRAFTING_RECIPES, craftedItemRecipes } from './data/craftingRecipes.mjs';

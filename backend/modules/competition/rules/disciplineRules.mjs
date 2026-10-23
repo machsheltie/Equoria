@@ -145,7 +145,7 @@ export function temperamentPercent(discipline, temperament) {
  * luck, rider and temperament percentages) and decision D (2026-10-23, epic
  * Equoria-k1p62: flat points, not a percent).
  */
-export const MATCHING_TRAIT_POINTS = 5;
+export const matchingTraitBonus = 5;
 
 /**
  * The matching-trait points for a ridden discipline (Equoria-k1p62.1).
@@ -158,12 +158,12 @@ export const MATCHING_TRAIT_POINTS = 5;
  *
  * @param {unknown} epigeneticModifiers - Horse.epigeneticModifiers (JSONB).
  * @param {string} discipline - The show's discipline.
- * @returns {number} MATCHING_TRAIT_POINTS or 0 (also 0 outside the 24).
+ * @returns {number} matchingTraitBonus or 0 (also 0 outside the 24).
  */
 export function matchingTraitPoints(epigeneticModifiers, discipline) {
   if (!isKnownDiscipline(discipline)) {
     return 0;
   }
   const { positive } = normalizeEpigeneticModifiers(epigeneticModifiers);
-  return positive.includes(disciplineAffinityKey(discipline)) ? MATCHING_TRAIT_POINTS : 0;
+  return positive.includes(disciplineAffinityKey(discipline)) ? matchingTraitBonus : 0;
 }

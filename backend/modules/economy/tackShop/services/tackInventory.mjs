@@ -473,6 +473,18 @@ export const TACK_INVENTORY = [
 ];
 
 /**
+ * The catalogue items of one category, legacy aliases included. Ridden show
+ * scoring reads a saddle's or bridle's `disciplines` through this
+ * (competition/rules/tackScoring.mjs, Equoria-k1p62.2).
+ *
+ * @param {string} category - e.g. 'saddle', 'bridle', 'decorative'.
+ * @returns {Array<object>}
+ */
+export function tackCatalogItems(category) {
+  return TACK_INVENTORY.filter(item => item.category === category);
+}
+
+/**
  * Resolve tack bonuses from a Horse.tack JSON object.
  *
  * @param {Object} tack - Horse.tack JSON object
@@ -499,14 +511,14 @@ export function resolveTackBonus(tack, showType = 'ridden') {
   let bridleBonus = 0;
 
   if (tack.saddle) {
-    const saddleItem = TACK_INVENTORY.find(i => i.id === tack.saddle && i.category === 'saddle');
+    const saddleItem = tackCatalogItems('saddle').find(i => i.id === tack.saddle);
     if (saddleItem) {
       saddleBonus = saddleItem.numericBonus;
     }
   }
 
   if (tack.bridle) {
-    const bridleItem = TACK_INVENTORY.find(i => i.id === tack.bridle && i.category === 'bridle');
+    const bridleItem = tackCatalogItems('bridle').find(i => i.id === tack.bridle);
     if (bridleItem) {
       bridleBonus = bridleItem.numericBonus;
     }
@@ -517,7 +529,7 @@ export function resolveTackBonus(tack, showType = 'ridden') {
   if (showType === 'parade') {
     const decorations = Array.isArray(tack.decorations) ? tack.decorations : [];
     for (const itemId of decorations) {
-      const item = TACK_INVENTORY.find(i => i.id === itemId && i.category === 'decorative');
+      const item = tackCatalogItems('decorative').find(i => i.id === itemId);
       if (item && typeof item.presenceBonus === 'number') {
         presenceBonus += item.presenceBonus;
       }
