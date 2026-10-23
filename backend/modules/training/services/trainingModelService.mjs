@@ -2,7 +2,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
-import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
@@ -158,6 +157,24 @@ async function getHorseAge(horseId) {
 }
 
 /**
+ * When a horse's training cooldown ends, from Horse.trainingCooldown, the one
+ * source of truth (Equoria-w0qb7). The train call claims it atomically
+ * (trainingSessionTx), so every reader of "can this horse train yet" asks here
+ * instead of inferring it from TrainingLog, which is history only.
+ *
+ * @param {Date|string|null|undefined} trainingCooldown - the column value
+ * @param {Date} [now]
+ * @returns {Date|null} the end of the running cooldown, or null when none is running
+ */
+function activeTrainingCooldownEnd(trainingCooldown, now = new Date()) {
+  if (!trainingCooldown) {
+    return null;
+  }
+  const end = new Date(trainingCooldown);
+  return Number.isNaN(end.getTime()) || end <= now ? null : end;
+}
+
+/**
  * Get the most recent training date for a horse across all disciplines
  * @param {number} horseId - ID of the horse
  * @returns {Date|null} - Most recent training date across all disciplines or null if never trained
@@ -301,18 +318,12 @@ async function getTrainableHorses(userId) {
           continue;
         }
 
-        // Cooldown check: TrainingLog is the single source of truth
-        const lastTrainingDate = await getAnyRecentTraining(horse.id);
-        const now = new Date();
-        const sevenDays = MS_PER_WEEK;
-
-        if (lastTrainingDate) {
-          const diff = now - new Date(lastTrainingDate);
-          if (diff < sevenDays) {
-            const nextEligible = new Date(new Date(lastTrainingDate).getTime() + sevenDays);
-            horseData.nextEligibleAt = nextEligible.toISOString();
-            horseData.canTrain = false;
-          }
+        // Cooldown check: Horse.trainingCooldown is the single source of truth
+        // (Equoria-w0qb7); the train call claims that same column.
+        const cooldownEnd = activeTrainingCooldownEnd(horse.trainingCooldown);
+        if (cooldownEnd) {
+          horseData.nextEligibleAt = cooldownEnd.toISOString();
+          horseData.canTrain = false;
         }
 
         allHorses.push(horseData);
@@ -341,4 +352,5 @@ export {
   getHorseAge,
   getAnyRecentTraining,
   getTrainableHorses,
+  activeTrainingCooldownEnd,
 };

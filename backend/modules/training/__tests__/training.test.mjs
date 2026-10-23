@@ -240,6 +240,12 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         trainedAt: new Date(), // Just trained now
       },
     });
+    // Equoria-w0qb7: a real train call also claims Horse.trainingCooldown, the one
+    // cooldown source the readers use (old contract: they read the latest TrainingLog).
+    await prisma.horse.update({
+      where: { id: trainedHorse.id },
+      data: { trainingCooldown: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    });
 
     // Equoria-6yaqy: register scoped, FK-ordered cleanup. Children (training
     // logs) before horses, horses before the user — Horse.userId is

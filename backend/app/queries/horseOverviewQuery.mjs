@@ -7,7 +7,7 @@
  * codes are unchanged.
  */
 import { getResultsByHorse, readRecordedAwards } from '../../modules/competition/index.mjs';
-import { getAnyRecentTraining } from '../../modules/training/index.mjs';
+import { activeTrainingCooldownEnd } from '../../modules/training/index.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import logger from '../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../utils/horseHealth.mjs';
@@ -101,6 +101,8 @@ export async function getHorseOverview(req, res) {
         id: true,
         name: true,
         age: true,
+        // The one training-cooldown source (Equoria-w0qb7).
+        trainingCooldown: true,
         // dateOfBirth required by getHorseAgeYears() — supplies the
         // ageYears field on the overview response (Equoria-lvjy).
         dateOfBirth: true,
@@ -136,16 +138,11 @@ export async function getHorseOverview(req, res) {
     // Calculate next training date
     let nextTrainingDate = 'never';
     try {
-      const lastTrainingDate = await getAnyRecentTraining(horseId);
-      if (lastTrainingDate) {
-        const nextTraining = new Date(lastTrainingDate);
-        nextTraining.setDate(nextTraining.getDate() + 7); // Add 7 days
-
-        // Only set next training date if it's in the future
-        const now = new Date();
-        if (nextTraining > now) {
-          nextTrainingDate = nextTraining.toISOString();
-        }
+      // Horse.trainingCooldown is the one cooldown source (Equoria-w0qb7); it is
+      // only a future time while a cooldown runs.
+      const cooldownEnd = activeTrainingCooldownEnd(horse.trainingCooldown);
+      if (cooldownEnd) {
+        nextTrainingDate = cooldownEnd.toISOString();
       }
     } catch (error) {
       logger.warn(

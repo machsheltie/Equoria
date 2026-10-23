@@ -3,6 +3,7 @@ import {
   getHorseAge,
   getAnyRecentTraining,
   getTrainableHorses,
+  activeTrainingCooldownEnd,
 } from '../services/trainingModelService.mjs';
 import { getHorseById } from '../../horses/index.mjs';
 import { commitTrainingSession, trainingFeeFor } from '../services/trainingSessionTx.mjs';
@@ -106,26 +107,18 @@ async function computeCanTrain(parsedHorseId, discipline) {
     }
   }
 
-  // Check cooldown period (7 days since last training in ANY discipline)
-  const lastTrainingDate = await getAnyRecentTraining(parsedHorseId);
-
-  if (lastTrainingDate) {
-    const now = new Date();
-    const diff = now - new Date(lastTrainingDate);
-    const sevenDays = 1000 * 60 * 60 * 24 * 7; // 7 days in milliseconds
-
-    if (diff < sevenDays) {
-      const remainingTime = sevenDays - diff;
-      const remainingDays = Math.ceil(remainingTime / (1000 * 60 * 60 * 24));
-
-      logger.info(
-        `[trainingController.canTrain] Horse ${parsedHorseId} still in cooldown for any training (${remainingDays} days remaining)`,
-      );
-      return {
-        eligible: false,
-        reason: 'Training cooldown active for this horse',
-      };
-    }
+  // Cooldown (one training per horse per week, any discipline): Horse.trainingCooldown
+  // is the one source, the same column the train call claims atomically
+  // (Equoria-w0qb7). TrainingLog is history only.
+  const cooldownEnd = activeTrainingCooldownEnd(horse.trainingCooldown);
+  if (cooldownEnd) {
+    logger.info(
+      `[trainingController.canTrain] Horse ${parsedHorseId} still in training cooldown until ${cooldownEnd.toISOString()}`,
+    );
+    return {
+      eligible: false,
+      reason: 'Training cooldown active for this horse',
+    };
   }
 
   // Horse is eligible to train
@@ -205,15 +198,9 @@ async function trainHorse(horseId, discipline) {
     // Equoria-0ihyi: the cooldown claim inside the transaction below is the
     // AUTHORITATIVE gate — canTrain() above is only a fast-path pre-check.
     const cooldownNow = new Date();
-    let cooldownDaysForGate = 7;
-    if (traitEffects.trainingTimeReduction) {
-      cooldownDaysForGate = Math.max(
-        5,
-        Math.round(cooldownDaysForGate * (1 - traitEffects.trainingTimeReduction)),
-      );
-    }
-    const nextEligibleClaim = new Date(cooldownNow);
-    nextEligibleClaim.setDate(nextEligibleClaim.getDate() + cooldownDaysForGate);
+    // One training per horse per week (owner ruling 2026-10-22): the column holds
+    // exactly one week, and every reader of train-ability reads it (Equoria-w0qb7).
+    const nextEligibleClaim = new Date(cooldownNow.getTime() + MS_PER_WEEK);
 
     // Equoria-3kegj: the assigned trainer (if any) is paid a fee per session.
     // Fail-soft — a trainer load / DB error degrades to the no-trainer path
@@ -385,42 +372,40 @@ async function getTrainingStatus(horseId, discipline) {
       );
     }
 
+    // The cooldown is Horse.trainingCooldown, the column the train call claims
+    // (Equoria-w0qb7); the last session date is shown from TrainingLog (history).
+    let cooldownEnd = null;
+    try {
+      const horseRow = await getHorseById(horseId);
+      cooldownEnd = activeTrainingCooldownEnd(horseRow?.trainingCooldown);
+    } catch (error) {
+      logger.warn(
+        `[trainingController.getTrainingStatus] Error reading training cooldown: ${error.message}`,
+      );
+    }
+
     let cooldownInfo = null;
-    if (lastTrainingDateAny) {
-      const now = new Date();
-      const diff = now - new Date(lastTrainingDateAny);
-      const sevenDays = 1000 * 60 * 60 * 24 * 7;
-
-      if (diff < sevenDays) {
-        const remainingTime = sevenDays - diff;
-        const remainingDays = Math.ceil(remainingTime / (1000 * 60 * 60 * 24));
-        const remainingHours = Math.ceil(remainingTime / (1000 * 60 * 60));
-
-        cooldownInfo = {
-          active: true,
-          remainingDays,
-          remainingHours,
-          lastTrainingDate: lastTrainingDateAny,
-        };
-      } else {
-        cooldownInfo = {
-          active: false,
-          remainingDays: 0,
-          remainingHours: 0,
-          lastTrainingDate: lastTrainingDateAny,
-        };
-      }
+    if (cooldownEnd) {
+      const remainingTime = cooldownEnd.getTime() - Date.now();
+      cooldownInfo = {
+        active: true,
+        remainingDays: Math.ceil(remainingTime / (1000 * 60 * 60 * 24)),
+        remainingHours: Math.ceil(remainingTime / (1000 * 60 * 60)),
+        lastTrainingDate: lastTrainingDateAny,
+      };
+    } else if (lastTrainingDateAny) {
+      cooldownInfo = {
+        active: false,
+        remainingDays: 0,
+        remainingHours: 0,
+        lastTrainingDate: lastTrainingDateAny,
+      };
     }
 
     // Frontend reads `nextEligibleDate` per-discipline to compute the
     // global cooldown banner (components/horse/TrainingTab.tsx →
-    // getGlobalCooldown). Derive it from the global 7-day cooldown so
-    // the field is always present when the horse is still on cooldown.
-    let nextEligibleDate = null;
-    if (cooldownInfo?.active && cooldownInfo.lastTrainingDate) {
-      const lastTrainMs = new Date(cooldownInfo.lastTrainingDate).getTime();
-      nextEligibleDate = new Date(lastTrainMs + MS_PER_WEEK).toISOString();
-    }
+    // getGlobalCooldown): the column's value while the cooldown runs, else null.
+    const nextEligibleDate = cooldownEnd ? cooldownEnd.toISOString() : null;
 
     const status = {
       eligible: eligibilityCheck.eligible,

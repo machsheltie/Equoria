@@ -10,4 +10,8 @@
  */
 
 export { trainingAnalyticsService } from './services/trainingAnalyticsService.mjs';
-export { getAnyRecentTraining, getTrainableHorses } from './services/trainingModelService.mjs';
+export {
+  activeTrainingCooldownEnd,
+  getAnyRecentTraining,
+  getTrainableHorses,
+} from './services/trainingModelService.mjs';

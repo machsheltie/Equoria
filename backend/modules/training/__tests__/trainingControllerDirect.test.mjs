@@ -178,6 +178,12 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         trainedAt: threeDaysAgo,
       },
     });
+    // Equoria-w0qb7: a real train call also claims Horse.trainingCooldown, the one
+    // cooldown source the readers use (old contract: they read the latest TrainingLog).
+    await prisma.horse.update({
+      where: { id: testHorseRecentTraining.id },
+      data: { trainingCooldown: new Date(threeDaysAgo.getTime() + 7 * 24 * 60 * 60 * 1000) },
+    });
   });
 
   afterAll(async () => {

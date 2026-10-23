@@ -305,6 +305,13 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       const expectedNextTraining = new Date(lastTrainingDate);
       expectedNextTraining.setDate(expectedNextTraining.getDate() + 7);
 
+      // Equoria-w0qb7: the overview reads Horse.trainingCooldown, the column a
+      // real train call sets (old contract: it read the latest TrainingLog).
+      await prisma.horse.update({
+        where: { id: testHorse.id },
+        data: { trainingCooldown: expectedNextTraining },
+      });
+
       const response = await request(app)
         .get(`/api/v1/horses/${testHorse.id}/overview`)
         .set('Origin', 'http://localhost:3000')
