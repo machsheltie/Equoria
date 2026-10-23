@@ -34,7 +34,7 @@ const recipes = [
     result: 'crafted-simple-bridle',
     resultName: 'Handcrafted Bridle',
     resultCategory: 'bridle',
-    bonus: 'Cosmetic — no stat bonus',
+    bonus: '+2 all disciplines',
     numericBonus: 0,
     isCosmetic: true,
     disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
@@ -79,7 +79,7 @@ const recipes = [
     result: 'crafted-dyed-bridle',
     resultName: 'Dyed Leather Bridle',
     resultCategory: 'bridle',
-    bonus: '+1 all disciplines',
+    bonus: '+2 all disciplines',
     numericBonus: 1,
     isCosmetic: false,
     disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
@@ -112,7 +112,7 @@ const recipes = [
     result: 'crafted-event-saddle',
     resultName: 'Artisan Event Saddle',
     resultCategory: 'saddle',
-    bonus: '+1 agility',
+    bonus: '+2 all disciplines',
     numericBonus: 1,
     isCosmetic: false,
     disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
@@ -128,7 +128,7 @@ const recipes = [
     result: 'crafted-precision-bridle',
     resultName: 'Artisan Precision Bridle',
     resultCategory: 'bridle',
-    bonus: '+2 dressage score',
+    bonus: '+5 in Dressage shows',
     numericBonus: 2,
     isCosmetic: false,
     disciplines: ['Dressage'],
@@ -146,7 +146,7 @@ const recipes = [
     result: 'crafted-legacy-tack-set',
     resultName: 'Legacy Tack Set',
     resultCategory: 'saddle',
-    bonus: '+2 prestige + visual glow',
+    bonus: '+2 all disciplines + visual glow',
     numericBonus: 2,
     isCosmetic: false,
     disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)

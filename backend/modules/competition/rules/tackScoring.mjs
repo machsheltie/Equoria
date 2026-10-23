@@ -28,6 +28,25 @@ export const disciplineTackPoints = 5;
 /** Points for each All Purpose saddle or bridle, in any discipline (decision A). */
 export const allPurposeTackPoints = 2;
 
+/**
+ * The player-facing bonus label for a saddle or bridle, derived from the same
+ * disciplines list the score reads (Equoria-k1p62.4), so the shop, the crafted
+ * item and the inventory say what the score really does with it.
+ *
+ * @param {string[]} disciplines - The item's disciplines ([] = All Purpose).
+ * @returns {string} '+2 all disciplines' or '+5 in A, B and C shows'.
+ */
+export function tackBonusLabel(disciplines) {
+  if (disciplines.length === 0) {
+    return `+${allPurposeTackPoints} all disciplines`;
+  }
+  const names =
+    disciplines.length === 1
+      ? disciplines[0]
+      : `${disciplines.slice(0, -1).join(', ')} and ${disciplines[disciplines.length - 1]}`;
+  return `+${disciplineTackPoints} in ${names} shows`;
+}
+
 /** The Horse.tack slots that score, one item each. */
 const scoringTackSlots = Object.freeze(['saddle', 'bridle']);
 
