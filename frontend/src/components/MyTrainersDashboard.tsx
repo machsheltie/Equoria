@@ -27,11 +27,13 @@ import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import TrainerCareerPanel, { type TrainerCareerData } from './trainer/TrainerCareerPanel';
 import { TrainerDiscoveryPanelLive } from './trainer/TrainerDiscoveryPanel';
 import TrainerAssignmentCard from './trainer/TrainerAssignmentCard';
+import TrainerDismissControl from './trainer/TrainerDismissControl';
 import {
   useUserTrainers,
   useTrainerAssignments,
   useDeleteTrainerAssignment,
   useAssignTrainer,
+  useDismissTrainer,
   type TrainerEntry,
   type TrainerAssignmentEntry,
 } from '@/hooks/api/useTrainers';
@@ -86,6 +88,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
   } = useTrainerAssignments();
   const unassignMutation = useDeleteTrainerAssignment();
   const assignMutation = useAssignTrainer();
+  const dismissMutation = useDismissTrainer();
   const {
     data: horses,
     isLoading: horsesLoading,
@@ -187,6 +190,12 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
 
   const handleUnassign = (assignmentId: number) => {
     unassignMutation.mutate(assignmentId);
+  };
+
+  // Equoria-oey96.71: success is the card leaving the roster (the hook refetches);
+  // a failure shows at the card it happened on, never as a toast.
+  const handleDismiss = (trainerId: number) => {
+    dismissMutation.mutate(trainerId);
   };
 
   const handleAssignClick = (trainerId: number) => {
@@ -325,6 +334,19 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
               >
                 Assign to Horse
               </Button>
+
+              {/* Dismiss (retire) trainer: Equoria-oey96.71. */}
+              <TrainerDismissControl
+                trainerId={trainer.id}
+                trainerName={`${trainer.firstName} ${trainer.lastName}`}
+                onDismiss={handleDismiss}
+                isDismissing={dismissMutation.isPending}
+                errorMessage={
+                  dismissMutation.isError && dismissMutation.variables === trainer.id
+                    ? userMessageFor(dismissMutation.error).message
+                    : null
+                }
+              />
 
               {/* Expand Career / Discovery */}
               <button
