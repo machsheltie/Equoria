@@ -89,10 +89,25 @@ jobs:
           echo "| 🟡 Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
           echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
 
-          # Fail if critical or high vulnerabilities found
-          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "⚠️ Critical or High severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
-            exit 1
+          # Equoria-3csks: the gate is the expiry-tracked allowlist script, the
+          # same one the Quality Gate Security Gate job runs, so an advisory
+          # the owner has accepted (scripts/audit-allowlist.json) does not
+          # redden this job while an unaccepted high/critical still does.
+          # The counts above are informational raw npm audit totals.
+          set +e
+          GATE_OUTPUT=$(node ../scripts/audit-with-allowlist.mjs . high ../scripts/audit-allowlist.json 2>&1)
+          GATE_EXIT=$?
+          set -e
+          echo "$GATE_OUTPUT"
+          {
+            echo ""
+            echo '```'
+            echo "$GATE_OUTPUT"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          if [ "$GATE_EXIT" -ne 0 ]; then
+            echo "⚠️ Unallowlisted critical or high severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
+            exit "$GATE_EXIT"
           fi
 
       - name: Install dependencies (frontend)
@@ -126,10 +141,25 @@ jobs:
           echo "| 🟡 Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
           echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
 
-          # Fail if critical or high vulnerabilities found
-          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "⚠️ Critical or High severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
-            exit 1
+          # Equoria-3csks: the gate is the expiry-tracked allowlist script, the
+          # same one the Quality Gate Security Gate job runs, so an advisory
+          # the owner has accepted (scripts/audit-allowlist.json) does not
+          # redden this job while an unaccepted high/critical still does.
+          # The counts above are informational raw npm audit totals.
+          set +e
+          GATE_OUTPUT=$(node ../scripts/audit-with-allowlist.mjs . high ../scripts/audit-allowlist.json 2>&1)
+          GATE_EXIT=$?
+          set -e
+          echo "$GATE_OUTPUT"
+          {
+            echo ""
+            echo '```'
+            echo "$GATE_OUTPUT"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          if [ "$GATE_EXIT" -ne 0 ]; then
+            echo "⚠️ Unallowlisted critical or high severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
+            exit "$GATE_EXIT"
           fi
 
       - name: Upload audit reports
