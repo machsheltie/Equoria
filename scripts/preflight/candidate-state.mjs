@@ -91,8 +91,8 @@ export function parsePushRefs(text) {
   return refs;
 }
 
-function defaultGit(args, cwd) {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
+function defaultGit(args, cwd, env) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8', env });
   return {
     status: result.status ?? 1,
     stdout: result.stdout ?? '',
@@ -132,7 +132,11 @@ export function inspectCandidate({
   refsText,
   phase = 'before',
   allowNonFastForward = false,
-  git = defaultGit,
+  // The environment git runs in. In the hook it carries GIT_DIR and friends,
+  // which is what points git at the repository being pushed; a caller that
+  // inspects a different repository passes an environment without them.
+  env = process.env,
+  git = (args, dir) => defaultGit(args, dir, env),
 }) {
   const problems = [];
   const notes = [];

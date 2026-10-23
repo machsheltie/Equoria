@@ -39,7 +39,13 @@ const gitConfigArgs = [
   '-c',
   'core.autocrlf=false',
 ];
-const gitEnv = { ...process.env };
+// Inside `git push` the hook's environment carries GIT_DIR, GIT_WORK_TREE,
+// GIT_INDEX_FILE and friends, which would point every git command run in a
+// temporary directory at the REAL repository (it re-initialised it, then failed
+// on its existing remote). Every child git here runs without any GIT_* variable.
+const gitEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith('GIT_')),
+);
 
 const git = (cwd, ...args) =>
   execFileSync('git', [...gitConfigArgs, ...args], { cwd, encoding: 'utf8', env: gitEnv }).trim();
@@ -75,7 +81,7 @@ function makeWorld() {
 const refLine = (localSha, remoteSha, localRef = 'HEAD', remoteRef = 'refs/heads/master') =>
   `${localRef} ${localSha} ${remoteRef} ${remoteSha}\n`;
 
-const run = (work, refsText, extra = {}) => inspectCandidate({ cwd: work, refsText, ...extra });
+const run = (work, refsText, extra = {}) => inspectCandidate({ cwd: work, refsText, env: gitEnv, ...extra });
 
 afterAll(() => {
   rmSync(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
@@ -217,6 +223,36 @@ describe('candidate-state — what the gate would test against what git publishe
   });
 });
 
+describe('candidate-state — inside git push the hook environment must not redirect git', () => {
+  it('judges the temporary repository even when this process carries a bogus GIT_DIR', () => {
+    const { work, base } = makeWorld();
+    const saved = {};
+    for (const name of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE']) {
+      saved[name] = process.env[name];
+    }
+    process.env.GIT_DIR = path.join(scratch, 'not-the-repo');
+    process.env.GIT_WORK_TREE = path.join(scratch, 'not-the-tree');
+    process.env.GIT_INDEX_FILE = path.join(scratch, 'not-the-index');
+    try {
+      // makeWorld ran git (init, remote add, commit, push) with the hook-style
+      // variables present in this process: it must have built a real, separate repo.
+      expect(path.resolve(git(work, 'rev-parse', '--show-toplevel'))).toBe(path.resolve(work));
+      write(work, 'backend/a.mjs', 'export const a = 11;');
+      const { problems } = run(work, refLine(base, base));
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toContain('backend/a.mjs');
+    } finally {
+      for (const [name, value] of Object.entries(saved)) {
+        if (value === undefined) {
+          delete process.env[name];
+        } else {
+          process.env[name] = value;
+        }
+      }
+    }
+  });
+});
+
 describe('candidate-state — parsing and path classification', () => {
   it('parses hook stdin lines and ignores blanks', () => {
     expect(parsePushRefs('\nHEAD abc refs/heads/m def\n\n')).toEqual([
@@ -289,5 +325,22 @@ describe('candidate-state — the real entry point and the hook wiring', () => {
     expect(gate).toBeLessThan(after);
     // stdin can be read once: nothing may read it except the single capture.
     expect(hook.match(/\$\(cat\)/g)).toHaveLength(1);
+  });
+
+  it('runs the gate with the hook-supplied GIT_* variables unset, in a subshell', () => {
+    const hook = readFileSync(path.join(repoRoot, '.husky', 'pre-push'), 'utf8');
+    const unsetAt = hook.indexOf('unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE');
+    const gate = hook.indexOf('npm run test:backend:full');
+    expect(unsetAt).toBeGreaterThan(-1);
+    expect(unsetAt).toBeLessThan(gate);
+    // Same subshell as the gate: between the unset and the gate there are only
+    // continuation lines of the unset list.
+    const between = hook
+      .slice(unsetAt, gate)
+      .split(String.fromCharCode(10))
+      .map(line => line.trim())
+      .filter(Boolean);
+    expect(between.slice(1).every(line => line.startsWith('GIT_'))).toBe(true);
+    expect(hook.slice(unsetAt - 12, unsetAt)).toContain('if ! (');
   });
 });
