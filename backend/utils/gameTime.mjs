@@ -178,7 +178,7 @@ export function sameGameClockDaysLater(date, days) {
   // target day's midnight (it can spill into the next day near midnight).
   const landed = gameDateParts(guess);
   const landedMs =
-    (gameDayIndex(guess) - targetIndex) * MS_PER_DAY +
+    (gameDayIndex(guess) - targetIndex) * 24 * 3_600_000 +
     ((landed.hour * 60 + landed.minute) * 60 + landed.second) * 1000;
   return new Date(guess - (landedMs - wallMs) + subSecondMs);
 }

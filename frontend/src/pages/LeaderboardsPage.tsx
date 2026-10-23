@@ -122,16 +122,17 @@ function useLeaderboardUrlState() {
  * have entered at least 100 shows; the wins board lists horses that have won.
  * Shown only after a successful, genuinely empty response.
  */
-const EMPTY_COPY: Partial<Record<LeaderboardCategory, { title: string; description: string }>> = {
-  'win-rate': {
-    title: 'No horse has entered 100 shows yet',
-    description: 'A horse joins the win-percentage board once she has entered 100 shows.',
-  },
-  wins: {
-    title: 'No horse has won a show yet',
-    description: 'Every horse that wins a show joins this board.',
-  },
-};
+const emptyBoardCopy: Partial<Record<LeaderboardCategory, { title: string; description: string }>> =
+  {
+    'win-rate': {
+      title: 'No horse has entered 100 shows yet',
+      description: 'A horse joins the win-percentage board once she has entered 100 shows.',
+    },
+    wins: {
+      title: 'No horse has won a show yet',
+      description: 'Every horse that wins a show joins this board.',
+    },
+  };
 
 // ---------------------------------------------------------------------------
 // Helper: Build minimal HorseDetailData from a LeaderboardEntryData
@@ -352,8 +353,8 @@ const LeaderboardsPage = () => {
               totalPages={totalPages}
               onPageChange={updatePage}
               onEntryClick={handleEntryClick}
-              emptyTitle={EMPTY_COPY[category]?.title}
-              emptyDescription={EMPTY_COPY[category]?.description}
+              emptyTitle={emptyBoardCopy[category]?.title}
+              emptyDescription={emptyBoardCopy[category]?.description}
             />
           </section>
         )}

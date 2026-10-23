@@ -80,7 +80,7 @@ const CATEGORIES: LeaderboardCategory[] = [
  * percentage and number of wins are counted over a horse's whole career, so
  * the time period filter does not apply and is not shown for them.
  */
-export const LIFETIME_CATEGORIES: ReadonlySet<LeaderboardCategory> = new Set(['win-rate', 'wins']);
+export const lifetimeCategories: ReadonlySet<LeaderboardCategory> = new Set(['win-rate', 'wins']);
 
 /**
  * Human-readable labels for each time period.
@@ -174,7 +174,7 @@ const LeaderboardCategorySelector = ({
       </Tabs>
 
       {/* Time Period Filter — not shown for lifetime-record boards */}
-      {!LIFETIME_CATEGORIES.has(selectedCategory) && (
+      {!lifetimeCategories.has(selectedCategory) && (
         <div className="flex gap-2 mt-3" role="group" aria-label="Time period filter">
           {PERIODS.map((period) => {
             const isActive = selectedPeriod === period;

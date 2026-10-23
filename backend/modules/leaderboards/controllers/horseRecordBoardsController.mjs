@@ -4,7 +4,7 @@
  * Owner ruling 2026-10-22 (Stacey): the win-rate leaderboard does not rank by
  * best competition score. It has two categories:
  *   - win percentage = wins / shows entered, for horses with at least
- *     WIN_PERCENTAGE_MIN_SHOWS shows entered;
+ *     winPercentageMinShows (100) shows entered;
  *   - number of wins.
  * Ranking, qualification and the total are computed in SQL
  * (leaderboardCompetitionQueries.rankHorseRecords); ties break on horseId.
@@ -22,7 +22,7 @@ import {
   rankHorsesByWins,
 } from '../services/leaderboardCompetitionQueries.mjs';
 
-const CACHE_TTL = 300; // 5 minutes, the leaderboard convention
+const cacheTtl = 300; // 5 minutes, the leaderboard convention
 
 /** Win percentage to one decimal place, for display only (ranking uses the exact ratio). */
 const toPercent = (wins, showsEntered) => Math.round((wins / showsEntered) * 1000) / 10;
@@ -71,7 +71,7 @@ function boardHandler(boardName) {
           });
           return { entries, total };
         },
-        CACHE_TTL,
+        cacheTtl,
       );
 
       return res.json({

@@ -207,11 +207,7 @@ describe('Club election run-off (Equoria-bvddn.22) — real DB', () => {
 
     // The run-off is voted 2-1 for b, then its day ends.
     const [ra, rb] = await Promise.all(
-      [a, b].map(u =>
-        prisma.clubCandidate.findUnique({
-          where: { electionId_userId: { electionId: runoff.id, userId: u.id } },
-        }),
-      ),
+      [a, b].map(u => prisma.clubCandidate.findFirst({ where: { electionId: runoff.id, userId: u.id } })),
     );
     await prisma.clubBallot.createMany({
       data: [
@@ -233,9 +229,7 @@ describe('Club election run-off (Equoria-bvddn.22) — real DB', () => {
     expect(decided.winnerCandidateId).toBe(rb.id);
 
     const parent = await prisma.clubElection.findUnique({ where: { id: election.id } });
-    const parentB = await prisma.clubCandidate.findUnique({
-      where: { electionId_userId: { electionId: election.id, userId: b.id } },
-    });
+    const parentB = await prisma.clubCandidate.findFirst({ where: { electionId: election.id, userId: b.id } });
     expect(parent.outcome).toBe('runoff');
     expect(parent.winnerCandidateId).toBe(parentB.id);
   }, 60000);
@@ -253,11 +247,7 @@ describe('Club election run-off (Equoria-bvddn.22) — real DB', () => {
     await transitionElectionStatuses();
     const runoff = await runoffOf(election.id);
     const [ra, rb] = await Promise.all(
-      [a, b].map(u =>
-        prisma.clubCandidate.findUnique({
-          where: { electionId_userId: { electionId: runoff.id, userId: u.id } },
-        }),
-      ),
+      [a, b].map(u => prisma.clubCandidate.findFirst({ where: { electionId: runoff.id, userId: u.id } })),
     );
     await prisma.clubBallot.createMany({
       data: [
@@ -296,9 +286,7 @@ describe('Club election run-off (Equoria-bvddn.22) — real DB', () => {
     await transitionElectionStatuses();
 
     const closed = await prisma.clubElection.findUnique({ where: { id: election.id } });
-    const cb = await prisma.clubCandidate.findUnique({
-      where: { electionId_userId: { electionId: election.id, userId: b.id } },
-    });
+    const cb = await prisma.clubCandidate.findFirst({ where: { electionId: election.id, userId: b.id } });
     expect(closed.outcome).toBe('won');
     expect(closed.winnerCandidateId).toBe(cb.id);
     expect(await runoffOf(election.id)).toBeNull();

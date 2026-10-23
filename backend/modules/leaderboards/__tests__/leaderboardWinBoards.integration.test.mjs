@@ -26,7 +26,7 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const RUN = randomBytes(6).toString('hex');
-const SHOW_COUNT = 121;
+const showCount = 121;
 
 const cleanup = createCleanupTracker();
 let user;
@@ -85,7 +85,7 @@ beforeAll(async () => {
   const horseIds = Object.values(horse).map(h => h.id);
 
   await prisma.show.createMany({
-    data: Array.from({ length: SHOW_COUNT }, (_, i) => ({
+    data: Array.from({ length: showCount }, (_, i) => ({
       name: `TestFixture-LBWin-show-${i}-${RUN}`,
       discipline: 'Dressage',
       runDate: new Date(),
@@ -100,7 +100,7 @@ beforeAll(async () => {
     select: { id: true, name: true },
   });
   const byName = new Map(shows.map(s => [s.name, s.id]));
-  showIds = Array.from({ length: SHOW_COUNT }, (_, i) => byName.get(`TestFixture-LBWin-show-${i}-${RUN}`));
+  showIds = Array.from({ length: showCount }, (_, i) => byName.get(`TestFixture-LBWin-show-${i}-${RUN}`));
 
   cleanup.add(() => prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } }), 'results');
   cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'shows');

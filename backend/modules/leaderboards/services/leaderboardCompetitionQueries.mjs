@@ -192,11 +192,11 @@ export async function countDistinctHorses(whereClause) {
  * Equoria-xxdqh (owner ruling 2026-10-22): the minimum shows entered before a
  * horse appears on the win-percentage board.
  */
-export const WIN_PERCENTAGE_MIN_SHOWS = 100;
+export const winPercentageMinShows = 100;
 
 // A win is a first place. `placement` is still a String column holding '1' or
 // '1st' until the Int migration (Equoria-f46tb); both spellings count.
-const IS_WIN = Prisma.sql`"placement" IN ('1', '1st')`;
+const isWinSql = Prisma.sql`"placement" IN ('1', '1st')`;
 
 /**
  * Per-horse record over settled results (placement NOT NULL — a placeholder
@@ -210,8 +210,8 @@ const IS_WIN = Prisma.sql`"placement" IN ('1', '1st')`;
 async function rankHorseRecords(board, { take, skip }) {
   const having =
     board === 'winPercentage'
-      ? Prisma.sql`COUNT(*) >= ${WIN_PERCENTAGE_MIN_SHOWS}`
-      : Prisma.sql`COUNT(*) FILTER (WHERE ${IS_WIN}) >= 1`;
+      ? Prisma.sql`COUNT(*) >= ${winPercentageMinShows}`
+      : Prisma.sql`COUNT(*) FILTER (WHERE ${isWinSql}) >= 1`;
   // Equal ratios of integers divide to the identical float8, so equal win
   // percentages tie exactly and fall through to the horseId key.
   const orderBy =
@@ -221,7 +221,7 @@ async function rankHorseRecords(board, { take, skip }) {
   const records = Prisma.sql`
     SELECT
       "horseId",
-      (COUNT(*) FILTER (WHERE ${IS_WIN}))::int AS "wins",
+      (COUNT(*) FILTER (WHERE ${isWinSql}))::int AS "wins",
       COUNT(*)::int AS "showsEntered"
     FROM "competition_results"
     WHERE "placement" IS NOT NULL
@@ -238,7 +238,7 @@ async function rankHorseRecords(board, { take, skip }) {
   return { rows, total: Number(totals[0]?.total ?? 0) };
 }
 
-/** Horses with >= WIN_PERCENTAGE_MIN_SHOWS shows entered, by wins / shows entered. */
+/** Horses with >= winPercentageMinShows shows entered, by wins / shows entered. */
 export function rankHorsesByWinPercentage(page) {
   return rankHorseRecords('winPercentage', page);
 }

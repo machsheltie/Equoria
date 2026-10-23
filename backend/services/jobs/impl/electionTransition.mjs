@@ -72,10 +72,8 @@ async function closeAndDecide(electionId, now) {
       });
       if (election.runoffOfId !== null) {
         // The run-off winner takes the tied election's seat.
-        const seat = await tx.clubCandidate.findUnique({
-          where: {
-            electionId_userId: { electionId: election.runoffOfId, userId: winner.userId },
-          },
+        const seat = await tx.clubCandidate.findFirst({
+          where: { electionId: election.runoffOfId, userId: winner.userId },
           select: { id: true },
         });
         if (seat) {
