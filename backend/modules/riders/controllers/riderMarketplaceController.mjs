@@ -23,6 +23,10 @@ import {
 // Equoria-oey96.8: roster-cap enforcement. Same-module config deep import;
 // getStableLevel via the users barrel (cross-module); shared roster-cap error.
 import { getRiderRosterCap } from '../config/riderConfig.mjs';
+import {
+  drawRiderStartAge,
+  ensureRiderRetirementSchedule,
+} from '../services/riderRetirementScheduleService.mjs';
 import { getStableLevel } from '../../users/index.mjs';
 import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
@@ -309,8 +313,16 @@ export async function hireRiderFromMarketplace(req, res) {
               weeklyRate: riderData.weeklyRate,
               experience: riderData.experience,
               bio: riderData.bio,
+              // Owner ruling 2026-10-23 (Equoria-or2ua): the age rolled at
+              // generation; an older stored offer without one draws here.
+              startAge: Number.isInteger(riderData.startAge)
+                ? riderData.startAge
+                : drawRiderStartAge(),
             },
           });
+          // The hidden retirement age (40-65), rolled once at generation. The
+          // value is never read back here: nothing in a response can carry it.
+          await ensureRiderRetirementSchedule(tx, rider.id);
           // Equoria-hjzwt: shared atomic debit helper.
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const moneyAfter = await debitMoneyOrThrow(tx, {

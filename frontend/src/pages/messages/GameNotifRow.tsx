@@ -335,6 +335,30 @@ const StaffTicketUpdateRow: React.FC<{ notif: GameNotification }> = ({ notif }) 
   );
 };
 
+/**
+ * Equoria-or2ua: the one-week notice before a rider retires (owner ruling
+ * 2026-10-23). It names the rider and the horses that ride with them. The
+ * payload carries no age and no countdown, and this row invents none.
+ */
+const RiderRetiringRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
+  const p = notif.payload ?? {};
+  const riderName = typeof p.riderName === 'string' ? p.riderName : 'One of your riders';
+  const horseNames = retiredGroomHorseNames(p);
+  const withHorses =
+    horseNames.length > 0 ? ` ${speakHorseNames(horseNames)} will need a new rider.` : '';
+  return (
+    <GameNotifShell
+      notif={notif}
+      iconBg="bg-[var(--role-warning-bg)]"
+      emoji="🏵️"
+      badgeLabel="Rider Retiring"
+      badgeVariant="warning"
+      title={riderName}
+      body={<p>Retires within the week.{withHorses} Hire a replacement while there is time.</p>}
+    />
+  );
+};
+
 const UnknownNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
   <GameNotifShell
     notif={notif}
@@ -355,6 +379,8 @@ export const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) =
       return <FoalBornRow notif={notif} />;
     case 'groomRetired':
       return <GroomRetiredRow notif={notif} />;
+    case 'riderRetiring':
+      return <RiderRetiringRow notif={notif} />;
     case 'staffTicket':
       return <StaffTicketRow notif={notif} />;
     case 'staffTicketUpdate':

@@ -39,6 +39,7 @@ const STREAM_URL = `${API_BASE_URL}/api/v1/events/stream`;
  *   - forumReply             (forumController — reply to a thread the user authored, Equoria-pwwuz/il1e4)
  *   - clubLeadershipTransferred (clubController — you were promoted to club president, Equoria-pwwuz)
  *   - groomRetired           (groomRetirementService — a groom reached their hidden retirement age, Equoria-m9lz1)
+ *   - riderRetiring          (riderRetirementService — a rider retires within a week, Equoria-or2ua)
  *
  * Per the SSE spec, a frame with `event: <name>` dispatches ONLY to
  * addEventListener('<name>') handlers and does NOT fire the generic
@@ -57,6 +58,8 @@ export const SSE_EVENT_NAMES = [
   'forumReply',
   'clubLeadershipTransferred',
   'groomRetired',
+  // Equoria-or2ua: the one-week notice before a rider retires.
+  'riderRetiring',
   // Equoria-ypb7d.3: the two moments the weekly groom fee creates. Named events
   // are dropped by EventSource unless a listener is registered for the exact
   // name, so a producer without an entry here reaches the player only on the 5s
@@ -86,7 +89,7 @@ export const SSE_EVENT_NAMES = [
  *                          on any other week's silent debit — refresh it.
  *
  * Explicitly NOT included: statGain, foalBorn, competitionStatGain,
- * forumReply, clubLeadershipTransferred, groomRetired, groomReleased —
+ * forumReply, clubLeadershipTransferred, groomRetired, riderRetiring, groomReleased —
  * none of their producers touch User.money.
  */
 const MONEY_EVENT_NAMES = new Set<(typeof SSE_EVENT_NAMES)[number]>([

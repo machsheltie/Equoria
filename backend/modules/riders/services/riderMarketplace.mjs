@@ -8,6 +8,7 @@
 
 import crypto from 'crypto';
 import { DISCIPLINE_VALUES } from '../../../constants/schema.mjs';
+import { drawRiderStartAge } from './riderRetirementScheduleService.mjs';
 
 // Marketplace configuration
 export const RIDER_MARKETPLACE_CONFIG = {
@@ -183,6 +184,8 @@ export function generateRandomRider() {
     weeklyRate,
     experience,
     bio: generateBio(firstName, skillLevel, specialty),
+    // Owner ruling 2026-10-23 (Equoria-or2ua): a random age of 18-25.
+    startAge: drawRiderStartAge(),
     availability: true,
     knownAffinities,
   };
@@ -202,6 +205,7 @@ function generateStarterRider() {
     weeklyRate: RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES.rookie.min,
     experience: 0,
     bio: generateBio(firstName, 'rookie', specialty),
+    startAge: drawRiderStartAge(),
     availability: true,
     knownAffinities: [],
   };

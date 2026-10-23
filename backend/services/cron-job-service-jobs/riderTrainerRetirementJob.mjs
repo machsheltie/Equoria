@@ -5,9 +5,10 @@
  * Registry entry consumed by initializeCronJobs() in cronJobService.mjs.
  * Behaviour identical to the pre-split inline `cron.schedule('30 9 * * 1', ...)`:
  * Every Monday 09:30 Eastern (just after weekly salary processing), advisory-locked
- * under 'cronJobService:riderTrainerRetirement'. Retires any rider/trainer
- * whose careerWeeks have crossed the mandatory-retirement threshold
- * (Equoria-osum).
+ * under 'cronJobService:riderTrainerRetirement'. Retires trainers whose
+ * careerWeeks have crossed the mandatory-retirement threshold (Equoria-osum) and
+ * runs the rider pass: riders retire at a hidden random age after a one-week
+ * notice (Equoria-or2ua).
  *
  * `runRiderTrainerRetirement` stays the work function; cronJobService.mjs has a
  * sibling triggerRiderTrainerRetirement that calls processRiderTrainerRetirement
@@ -19,8 +20,8 @@ import { processRiderTrainerRetirement } from '../../modules/trainers/index.mjs'
 
 /**
  * Run Rider + Trainer auto-retirement pass (Equoria-osum).
- * Retires any rider/trainer with careerWeeks above the mandatory-retirement
- * threshold and deactivates their active assignments.
+ * Retires riders at their hidden age (after the one-week notice) and trainers
+ * past the mandatory-retirement threshold, deactivating their assignments.
  */
 export async function runRiderTrainerRetirement() {
   try {

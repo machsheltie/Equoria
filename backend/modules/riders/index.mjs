@@ -9,6 +9,5 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-// No production consumer imports this module through the barrel today.
-
-export {};
+export { processRiderRetirement } from './services/riderRetirementService.mjs';
+export { backfillRiderRetirementSchedules } from './services/riderRetirementBackfillService.mjs';

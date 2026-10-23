@@ -168,6 +168,8 @@ describe('useEventStream', () => {
       // Equoria-m9lz1: groomRetirementService.processRetirement emits this in
       // the same transaction as the retirement it announces.
       'groomRetired',
+      // Equoria-or2ua: riderRetirementService.noticeRidersRetiringNextWeek.
+      'riderRetiring',
       // Equoria-ypb7d.3: groomFeeArrearsService emits these in the same
       // transaction as the grace entry / release they announce.
       'groomFeeUnpaid',

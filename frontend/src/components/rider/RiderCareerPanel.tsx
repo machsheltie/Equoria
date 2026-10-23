@@ -4,7 +4,6 @@
  * Displays rider career progress:
  * - Level (generated and fixed: riders earn no XP, Equoria-dea06)
  * - Career timeline (weeks served)
- * - Retirement status / warnings
  * - Legacy contract eligibility
  * - Career milestones (hired, first win, level caps, years)
  *
@@ -12,10 +11,10 @@
  */
 
 import React from 'react';
-import { Trophy, Clock, AlertTriangle, Star, CheckCircle, Circle } from 'lucide-react';
+import { Trophy, Clock, Star, CheckCircle, Circle } from 'lucide-react';
 import {
   RiderCareerData,
-  calculateRiderRetirementStatus,
+  isRiderLegacyContractEligible,
   buildRiderCareerMilestones,
 } from '@/types/riderCareer';
 
@@ -25,12 +24,7 @@ interface RiderCareerPanelProps {
 }
 
 const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCount = 0 }) => {
-  const retirementStatus = calculateRiderRetirementStatus(
-    rider.careerWeeks,
-    rider.level,
-    rider.totalWins,
-    rider.prestige
-  );
+  const legacyContractEligible = isRiderLegacyContractEligible(rider.totalWins, rider.prestige);
   const milestones = buildRiderCareerMilestones(rider.level, rider.careerWeeks, rider.totalWins);
 
   const hasCompetitionData = rider.totalCompetitions > 0;
@@ -40,25 +34,8 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
 
   return (
     <div className="space-y-5" data-testid="rider-career-panel">
-      {/* Retirement Warning */}
-      {retirementStatus.isApproachingRetirement && (
-        <div
-          className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[var(--role-warning-bg)] border border-[var(--role-warning-border)] text-sm text-[var(--role-warning-text)]"
-          data-testid="retirement-warning"
-        >
-          <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>
-            ⚠️ Retiring in{' '}
-            <strong>
-              {retirementStatus.weeksRemaining} week
-              {retirementStatus.weeksRemaining !== 1 ? 's' : ''}
-            </strong>
-          </span>
-        </div>
-      )}
-
       {/* Legacy Contract Badge */}
-      {retirementStatus.legacyContractEligible && (
+      {legacyContractEligible && (
         <div
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-primary-30)] text-sm text-[var(--gold-primary)]"
           data-testid="legacy-contract-badge"

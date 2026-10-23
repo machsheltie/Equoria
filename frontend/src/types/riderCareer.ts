@@ -8,7 +8,10 @@
  * XP and keep the level they were generated with, so the XP-to-level progress
  * helpers that used to live here were removed.
  *
- * Rider careers are finite (weeks-based) with retirement warnings.
+ * Rider careers end at a hidden, random retirement age (owner ruling
+ * 2026-10-23, Equoria-or2ua). The client never knows or computes it: no screen
+ * counts down, warns or states when a rider retires. The one notice players get
+ * is a notification from the game a week before it happens.
  * Legacy riders (high wins/prestige) may earn special contract extensions.
  */
 
@@ -36,20 +39,6 @@ export interface RiderPerformanceMetrics {
   prestigeScore: number; // 0–100
 }
 
-export type RiderRetirementWarningReason =
-  | 'approaching_mandatory'
-  | 'level_cap'
-  | 'competition_limit';
-
-export interface RiderRetirementStatus {
-  isRetired: boolean;
-  weeksRemaining: number;
-  isApproachingRetirement: boolean;
-  legacyContractEligible: boolean; // High prestige / wins threshold
-  retirementReason?: RiderRetirementWarningReason;
-  warningReasons: RiderRetirementWarningReason[];
-}
-
 export interface RiderCareerMilestone {
   id: string;
   label: string;
@@ -59,8 +48,6 @@ export interface RiderCareerMilestone {
 
 /** Career constants for riders */
 export const RIDER_CAREER_CONSTANTS = {
-  MANDATORY_RETIREMENT_WEEKS: 104,
-  RETIREMENT_NOTICE_WEEKS: 3, // Riders get 3-week warning (vs 1 week for grooms)
   LEVEL_CAP: 10,
   LEGACY_CONTRACT_PRESTIGE_THRESHOLD: 80,
   LEGACY_CONTRACT_WINS_THRESHOLD: 50,
@@ -80,52 +67,15 @@ export const RIDER_CAREER_CONSTANTS = {
 } as const;
 
 /**
- * Calculate retirement status for a rider.
- * Mandatory at 104 weeks. Legacy contract eligible if prestige ≥ 80 or wins ≥ 50.
+ * Legacy contract eligibility: prestige >= 80 or wins >= 50. This says nothing
+ * about when a rider retires (that is hidden, Equoria-or2ua).
  */
-export function calculateRiderRetirementStatus(
-  careerWeeks: number,
-  level: number,
-  totalWins: number,
-  prestige: number
-): RiderRetirementStatus {
-  const {
-    MANDATORY_RETIREMENT_WEEKS,
-    RETIREMENT_NOTICE_WEEKS,
-    LEGACY_CONTRACT_PRESTIGE_THRESHOLD,
-    LEGACY_CONTRACT_WINS_THRESHOLD,
-  } = RIDER_CAREER_CONSTANTS;
-
-  const weeksRemaining = Math.max(0, MANDATORY_RETIREMENT_WEEKS - careerWeeks);
-  const isApproachingRetirement = weeksRemaining <= RETIREMENT_NOTICE_WEEKS && weeksRemaining > 0;
-  const isRetiredByWeeks = careerWeeks >= MANDATORY_RETIREMENT_WEEKS;
-
-  const legacyContractEligible =
-    prestige >= LEGACY_CONTRACT_PRESTIGE_THRESHOLD || totalWins >= LEGACY_CONTRACT_WINS_THRESHOLD;
-
-  const warningReasons: RiderRetirementWarningReason[] = [];
-  if (isApproachingRetirement || isRetiredByWeeks) {
-    warningReasons.push('approaching_mandatory');
-  }
-  if (level >= 10) {
-    warningReasons.push('level_cap');
-  }
-
-  let retirementReason: RiderRetirementWarningReason | undefined;
-  if (isApproachingRetirement || isRetiredByWeeks) {
-    retirementReason = 'approaching_mandatory';
-  } else if (level >= 10) {
-    retirementReason = 'level_cap';
-  }
-
-  return {
-    isRetired: isRetiredByWeeks,
-    weeksRemaining,
-    isApproachingRetirement,
-    legacyContractEligible,
-    retirementReason,
-    warningReasons,
-  };
+export function isRiderLegacyContractEligible(totalWins: number, prestige: number): boolean {
+  const { LEGACY_CONTRACT_PRESTIGE_THRESHOLD, LEGACY_CONTRACT_WINS_THRESHOLD } =
+    RIDER_CAREER_CONSTANTS;
+  return (
+    prestige >= LEGACY_CONTRACT_PRESTIGE_THRESHOLD || totalWins >= LEGACY_CONTRACT_WINS_THRESHOLD
+  );
 }
 
 /**
@@ -181,11 +131,3 @@ export function buildRiderCareerMilestones(
     },
   ];
 }
-
-/** Retirement reason display labels */
-export const RIDER_RETIREMENT_REASON_LABELS: Record<string, string> = {
-  mandatory_career_limit: 'Mandatory retirement (2-year career limit)',
-  early_level_cap: 'Early retirement (Elite level achieved)',
-  voluntary: 'Voluntary retirement',
-  legacy_contract: 'Received Legacy Contract extension',
-};

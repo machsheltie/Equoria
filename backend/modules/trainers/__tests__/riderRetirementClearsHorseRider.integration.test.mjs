@@ -2,7 +2,8 @@
  * Equoria-r9u5k: a rider retired by the weekly career job leaves no trace on
  * the horses they rode.
  *
- * The weekly job (autoRetireOverdueRiders) flipped Rider.retired and
+ * The weekly job (processRiderRetirement; autoRetireOverdueRiders before
+ * Equoria-or2ua) flipped Rider.retired and
  * deactivated the RiderAssignment rows but left the denormalised Horse.rider
  * JSON naming the retired rider, so the horse kept satisfying the competition
  * engine's rider check with a rider who had left. dismissRider already clears
@@ -28,7 +29,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createBarrierClient, holdLock } from '../../../__tests__/helpers/rowLockBarrier.mjs';
-import { autoRetireOverdueRiders } from '../services/riderTrainerRetirementService.mjs';
+import { processRiderRetirement } from '../../riders/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const fixturePrefix = 'TestFixture-r9u5k';
@@ -105,12 +106,19 @@ describe('rider retirement and Horse.rider (Equoria-r9u5k)', () => {
     const assigned = await prisma.horse.findUnique({ where: { id: horse.id }, select: { rider: true } });
     expect(assigned.rider?.id).toBe(rider.id);
 
+    // Owner ruling 2026-10-23 (Equoria-or2ua): the rider is at their hidden
+    // retirement age and the one-week notice went out in an earlier pass.
     await prisma.rider.update({
       where: { id: rider.id },
-      // Far past the mandatory-retirement threshold, whatever its value.
-      data: { careerWeeks: 10_000 },
+      data: {
+        startAge: 20,
+        careerWeeks: 30,
+        riderRetirementSchedule: {
+          create: { retirementAge: 50, noticeSentAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        },
+      },
     });
-    const result = await autoRetireOverdueRiders();
+    const result = await processRiderRetirement();
     expect(result.retiredIds).toContain(rider.id);
 
     const after = await prisma.horse.findUnique({ where: { id: horse.id }, select: { rider: true } });

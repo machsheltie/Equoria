@@ -249,9 +249,9 @@ model Horse {
   /// Horse XP System (Equoria-507mt: NOT NULL)
   horseXp                 Int                   @default(0)
   availableStatPoints     Int                   @default(0)
-  /// Farrier fields
-  lastFarrierDate         DateTime?
-  hoofCondition           String?               @default("good")
+  /// Farrier: the one weekly "Shoe horse" action records this date (owner
+  /// ruling 2026-10-23, Equoria-zmqzf). lastFarrierDate and hoofCondition were
+  /// dropped by migration 20261023220000_farrier_one_action_rider_retirement.
   lastShod                DateTime?
   /// Feed Shop fields (redesign 2026-04-29)
   equippedFeedType        String?
@@ -1645,6 +1645,10 @@ model Rider {
   level        Int               @default(1)
   /// Career weeks accumulated
   careerWeeks  Int               @default(0)
+  /// Age in game-years when the rider was generated (18-25, owner ruling
+  /// 2026-10-23, Equoria-or2ua). Age = startAge + careerWeeks. Null only for
+  /// riders that predate the ruling and have not been backfilled.
+  startAge     Int?
   /// Total competition wins
   totalWins         Int               @default(0)
   /// Total competition entries (incremented at show execution)
@@ -1662,11 +1666,39 @@ model Rider {
   updatedAt    DateTime          @updatedAt
   assignments  RiderAssignment[]
   user         User?             @relation(fields: [userId], references: [id])
+  /// The HIDDEN retirement age lives in its own table so no rider read can
+  /// serialise it (see RiderRetirementSchedule).
+  riderRetirementSchedule RiderRetirementSchedule?
 
   @@index([userId])
   @@index([level])
   @@index([retired])
   @@map("riders")
+}
+
+/// The game's HIDDEN per-rider retirement age (owner ruling 2026-10-23,
+/// Equoria-or2ua). Rolled once, uniformly from [40, 65], when the rider is
+/// generated; never recomputed, never returned by any API, never derivable.
+/// A separate table, not a column on `riders`, for the same reason as
+/// GroomRetirementSchedule: rider rows are serialised into player-facing
+/// responses and a scalar column would leak. Only riderRetirementService.mjs and
+/// the backfill service read it. The range is also enforced by a CHECK
+/// constraint in migration 20261023220000_farrier_one_action_rider_retirement
+/// (Prisma cannot express CHECK constraints; do not "restore" it here).
+model RiderRetirementSchedule {
+  /// One schedule per rider; the rider id IS the primary key.
+  riderId       Int       @id
+  /// The age (game-years) at which the game retires this rider.
+  retirementAge Int
+  /// When the one-week retirement notice was sent (null until it is). Claimed
+  /// with a guarded update so the notice is sent exactly once.
+  noticeSentAt  DateTime?
+  /// When the schedule was rolled.
+  assignedAt    DateTime  @default(now())
+
+  rider         Rider     @relation(fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@map("rider_retirement_schedules")
 }
 
 model RiderAssignment {

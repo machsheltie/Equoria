@@ -5,7 +5,6 @@
  * Displays:
  * - Slot usage ("3 of 5 rider slots used")
  * - Rider cards with personality, career level, assignment status
- * - Retirement warnings
  * - Expandable career + discovery panels
  *
  * Mirrors MyGroomsDashboard.tsx for the Rider System.
@@ -35,7 +34,6 @@ import {
 } from '@/hooks/api/useRiders';
 import { useHorses } from '@/hooks/api/useHorses';
 import { getBreedName } from '@/lib/utils';
-import { calculateRiderRetirementStatus } from '@/types/riderCareer';
 import { buildEmptyDiscoveryProfile } from '@/types/riderDiscovery';
 import { Button } from '@/components/ui/button';
 
@@ -183,10 +181,6 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
 
   const unassignedCount = finalRiders.filter((r) => getRiderAssignments(r.id).length === 0).length;
   const slotsUsed = finalRiders.length;
-  const approachingRetirement = finalRiders.filter((r) => {
-    const status = calculateRiderRetirementStatus(r.careerWeeks, r.level, r.totalWins, r.prestige);
-    return status.isApproachingRetirement;
-  });
 
   const handleAssignClick = (riderId: number) => {
     setSelectedRiderIdForAssign(riderId);
@@ -246,16 +240,6 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
         </div>
       )}
 
-      {approachingRetirement.length > 0 && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-900/20 border border-red-500/30 text-sm text-red-300">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <p>
-            <strong>{approachingRetirement.length}</strong> rider
-            {approachingRetirement.length > 1 ? 's' : ''} approaching retirement
-          </p>
-        </div>
-      )}
-
       {/* Rider Cards */}
       <div
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
@@ -264,12 +248,6 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
         {finalRiders.map((rider) => {
           const assignments = getRiderAssignments(rider.id);
           const isExpanded = expandedRiderId === rider.id;
-          const retirementStatus = calculateRiderRetirementStatus(
-            rider.careerWeeks,
-            rider.level,
-            rider.totalWins,
-            rider.prestige
-          );
 
           return (
             <div
@@ -295,12 +273,6 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                   </div>
                   <RiderPersonalityBadge personality={rider.personality} />
                 </div>
-
-                {retirementStatus.isApproachingRetirement && (
-                  <p className="text-xs text-amber-400 mt-2">
-                    ⚠️ Retiring in {retirementStatus.weeksRemaining}w
-                  </p>
-                )}
               </div>
 
               {/* Quick Stats */}

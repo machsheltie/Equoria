@@ -8,13 +8,11 @@
  * trainerController.dismissTrainer). The spec implies natural career arcs;
  * a player who never dismisses a rider/trainer would keep them forever.
  *
- * This service exposes a weekly job that retires any non-retired
- * Rider / Trainer whose careerWeeks meet or exceed the mandatory-retirement
- * threshold. The threshold mirrors the frontend
- * TrainerCareerPanel.MANDATORY_RETIREMENT_WEEKS = 80 (and is used for Rider
- * symmetrically — riders have the same career length per the existing UI
- * implication). The job is idempotent: re-running it does nothing if
- * everyone above threshold is already retired.
+ * This service exposes a weekly job. Trainers retire when careerWeeks meet or
+ * exceed the mandatory-retirement threshold (TrainerCareerPanel mirrors 80).
+ * Riders retire at a hidden random age with a one-week notice (owner ruling
+ * 2026-10-23, Equoria-or2ua); that pass lives in modules/riders and this job
+ * runs it alongside the trainer pass. The job is idempotent.
  *
  * Active assignments (riderAssignment / trainerAssignment with isActive=true)
  * are deactivated when their rider/trainer is auto-retired, matching the
@@ -26,72 +24,15 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { processRiderRetirement } from '../../riders/index.mjs';
 
 /**
- * Career-weeks threshold at which mandatory retirement triggers.
+ * Career-weeks threshold at which mandatory trainer retirement triggers.
  * Mirrors frontend TrainerCareerPanel.MANDATORY_RETIREMENT_WEEKS (80 weeks).
- * Riders use the same threshold — riders and trainers are treated as having
- * parallel career arcs in the current product model.
+ * Riders no longer share it: since owner ruling 2026-10-23 (Equoria-or2ua) they
+ * retire at a hidden random age, see modules/riders riderRetirementService.mjs.
  */
-export const RIDER_MANDATORY_RETIREMENT_WEEKS = 80;
 export const TRAINER_MANDATORY_RETIREMENT_WEEKS = 80;
-
-/**
- * Auto-retire all Riders whose careerWeeks >= RIDER_MANDATORY_RETIREMENT_WEEKS
- * and who are not already retired. Deactivates each retired rider's active
- * assignments.
- *
- * @returns {Promise<{retiredCount: number, deactivatedAssignmentCount: number, retiredIds: number[]}>}
- */
-export async function autoRetireOverdueRiders() {
-  const eligible = await prisma.rider.findMany({
-    where: {
-      retired: false,
-      careerWeeks: { gte: RIDER_MANDATORY_RETIREMENT_WEEKS },
-    },
-    select: { id: true },
-  });
-
-  if (eligible.length === 0) {
-    return { retiredCount: 0, deactivatedAssignmentCount: 0, retiredIds: [] };
-  }
-
-  const ids = eligible.map(r => r.id);
-
-  // Equoria-r9u5k: retiring a rider ends BOTH representations of their
-  // assignments, as dismissRider does (Equoria-6p398.6): the RiderAssignment
-  // rows and the denormalised Horse.rider JSON the competition engine reads.
-  // One transaction, Horse rows before staff rows (ascending ids).
-  const { updateResult, assignmentResult } = await prisma.$transaction(async tx => {
-    const active = await tx.riderAssignment.findMany({
-      where: { riderId: { in: ids }, isActive: true },
-      select: { horseId: true },
-    });
-    const horseIds = [...new Set(active.map(a => a.horseId))].sort((a, b) => a - b);
-    if (horseIds.length > 0) {
-      await tx.horse.updateMany({ where: { id: { in: horseIds } }, data: { rider: null } });
-    }
-    const deactivated = await tx.riderAssignment.updateMany({
-      where: { riderId: { in: ids }, isActive: true },
-      data: { isActive: false },
-    });
-    const retired = await tx.rider.updateMany({
-      where: { id: { in: ids } },
-      data: { retired: true },
-    });
-    return { updateResult: retired, assignmentResult: deactivated };
-  });
-
-  logger.info(
-    `[riderTrainerRetirementService.autoRetireOverdueRiders] Retired ${updateResult.count} riders (ids: ${ids.join(', ')}); deactivated ${assignmentResult.count} active assignments.`,
-  );
-
-  return {
-    retiredCount: updateResult.count,
-    deactivatedAssignmentCount: assignmentResult.count,
-    retiredIds: ids,
-  };
-}
 
 /**
  * Auto-retire all Trainers whose careerWeeks >= TRAINER_MANDATORY_RETIREMENT_WEEKS
@@ -147,11 +88,11 @@ export async function processRiderTrainerRetirement() {
     '[riderTrainerRetirementService.processRiderTrainerRetirement] Starting weekly auto-retirement pass...',
   );
   const [riders, trainers] = await Promise.all([
-    autoRetireOverdueRiders(),
+    processRiderRetirement(),
     autoRetireOverdueTrainers(),
   ]);
   logger.info(
-    `[riderTrainerRetirementService.processRiderTrainerRetirement] Complete. Riders retired: ${riders.retiredCount}; trainers retired: ${trainers.retiredCount}.`,
+    `[riderTrainerRetirementService.processRiderTrainerRetirement] Complete. Riders retired: ${riders.retiredCount}, noticed: ${riders.noticedCount}; trainers retired: ${trainers.retiredCount}.`,
   );
   return { riders, trainers };
 }
