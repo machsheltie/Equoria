@@ -58,6 +58,14 @@ const TIER_BY_ID = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
 // VALUES (lastFedDate, tier id, horse id, start-of-today) are bound via ${}.
 const STAT_COLUMN_WHITELIST = new Set(STATS);
 
+// Equoria-7uphu: "lastFedDate" is `timestamp without time zone` holding UTC wall
+// time (what every typed Prisma write stores). A JS Date bound into raw SQL
+// arrives as timestamptz and Postgres converts it in the SESSION time zone, so
+// on a non-UTC server the claim stored local wall time and its guard compared
+// against a shifted bound. Pass instants as text converted to UTC explicitly
+// (the ticketEmailOutbox precedent) so the session zone never shifts them.
+const utc = date => Prisma.sql`(${date.toISOString()}::timestamptz AT TIME ZONE 'UTC')`;
+
 // Equoria-7x9po: isRetryableTxError (Equoria-55m83) moved to the shared util
 // backend/utils/retryableTransaction.mjs so every interactive-$transaction call
 // site maps a transient P2028 timeout -> 503 through ONE place. Re-exported
@@ -266,7 +274,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       // bound parameter and is provably one of the 12 STATS (whitelist-checked
       // below). The pregnancy JSONB bump uses jsonb_set on a COALESCE'd base so a
       // NULL/absent counter starts at 0 then becomes 1.
-      const setFragments = [Prisma.sql`"lastFedDate" = ${new Date()}`];
+      const setFragments = [Prisma.sql`"lastFedDate" = ${utc(new Date())}`];
 
       if (equippedFeedClearedDueToEmpty) {
         setFragments.push(Prisma.sql`"equippedFeedType" = NULL`);
@@ -299,7 +307,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       const affected = await tx.$executeRaw(Prisma.sql`
       UPDATE "horses" SET ${Prisma.join(setFragments, ', ')}
       WHERE "id" = ${horse.id}
-      AND ("lastFedDate" IS NULL OR "lastFedDate" < ${startOfToday})`);
+      AND ("lastFedDate" IS NULL OR "lastFedDate" < ${utc(startOfToday)})`);
 
       if (affected === 0) {
         // A concurrent feed already claimed today. Reject — do NOT decrement
