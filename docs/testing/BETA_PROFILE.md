@@ -2,7 +2,7 @@
 
 **Status:** Active operational reference
 
-**Updated:** 2026-08-19
+**Updated:** 2026-10-23
 
 Equoria has two Playwright server profiles. They share real authentication,
 CSRF, ownership, and database behavior, but they serve different test lanes and
@@ -97,6 +97,25 @@ confirm that the target is the intended disposable test database.
   process, so the in-memory limiter is the intended harness behavior.
 - This readiness exception is not permission to weaken `production` or `beta`,
   and it does not authorize a bypass header.
+
+### Running the `beta` profile on a laptop without Redis
+
+The development laptop has no Redis. Under `beta` the auth, financial, breeding
+and competition limiters then fail closed with 503, so the broad suite cannot
+start (Equoria-fi658). Do not edit the validator or the limiters for this. Set
+the existing operator flag in the shell that launches Playwright, for that run
+only:
+
+```bash
+REDIS_DISABLED=true npx playwright test <spec files> --project=chromium --workers=1
+```
+
+`redisIntentionallyDisabled()` then selects the in-memory limiter, the same
+tested path the readiness profile uses. The JWT secrets come from the ignored
+`backend/env.beta` (locally generated random values, never the committed
+test-only ones, which the `beta` validator rejects) or from the same shell.
+Never add `REDIS_DISABLED` to a committed file or to CI, where Redis is
+provisioned for this lane.
 
 ## Non-negotiable evidence rules
 
