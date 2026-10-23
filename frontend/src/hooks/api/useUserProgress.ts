@@ -40,6 +40,10 @@ export function useCommunityActivity() {
     queryKey: ['community', 'activity'],
     queryFn: () => userProgressApi.getCommunityActivity(),
     staleTime: 60 * 1000, // 1 minute for global community activity
+    // Owner ruling 2026-10-23 (Equoria-m00gp, option a): the community hub shows
+    // an honest error with Try again when this cannot load. The default
+    // networkMode 'online' pauses an offline query (no data, no error) instead.
+    networkMode: 'always',
   });
 }
 

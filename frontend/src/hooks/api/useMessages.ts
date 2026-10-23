@@ -39,6 +39,10 @@ export function useUnreadCount() {
     queryKey: ['messages', 'unread-count'],
     queryFn: () => messagesApi.getUnreadCount(),
     staleTime: UNREAD_STALE_TIME,
+    // Owner ruling 2026-10-23 (Equoria-m00gp, option a): the community hub shows
+    // an honest error with Try again when this cannot load. The default
+    // networkMode 'online' pauses an offline query (no data, no error) instead.
+    networkMode: 'always',
   });
 }
 
@@ -52,6 +56,10 @@ export function useConversationsCount() {
     queryKey: ['messages', 'conversations-count'],
     queryFn: () => messagesApi.getConversationsCount(),
     staleTime: UNREAD_STALE_TIME,
+    // Owner ruling 2026-10-23 (Equoria-m00gp, option a): the community hub shows
+    // an honest error with Try again when this cannot load. The default
+    // networkMode 'online' pauses an offline query (no data, no error) instead.
+    networkMode: 'always',
   });
 }
 

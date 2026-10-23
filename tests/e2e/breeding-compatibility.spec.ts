@@ -11,6 +11,12 @@
  * real backend returned for this pair, and the retired fabrications never
  * appear.
  *
+ * Owner ruling 2026-10-23 (Equoria-3jnsz, option a): when the compatibility
+ * data cannot load, the screen shows an honest error with Try again — never an
+ * analysis that runs forever. The second test drops the network for real
+ * (context.setOffline) before the pair is chosen and proves the preview and the
+ * confirmation summary both end in that error, then recover once it is back.
+ *
  * The player is registered and onboarded over the real API with a cold
  * horse-list cache (fixtures/seededPlayer.ts); the pair is seeded through the
  * real createHorse model function (fixtures/ownedHorses.ts). No route
@@ -145,6 +151,68 @@ test.describe('Breeding compatibility — live payload (Equoria-3jnsz)', () => {
     }
     for (const retiredLabel of ['Temperament Match', 'Trait Synergy']) {
       await expect(modal.getByText(retiredLabel)).toHaveCount(0);
+    }
+  });
+
+  test('offline, compatibility ends in an error with Try again, then recovers to the live payload', async ({
+    page,
+    context,
+    pair,
+  }) => {
+    test.setTimeout(90_000);
+    await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('Sire (Stallion)').first()).toBeVisible({ timeout: 20000 });
+    const sireBtn = page.getByRole('button', { name: `Select ${pair.stallionName}` });
+    const damBtn = page.getByRole('button', { name: `Select ${pair.mareName}` });
+    await expect(sireBtn).toBeVisible({ timeout: 15000 });
+    await expect(damBtn).toBeVisible({ timeout: 15000 });
+
+    try {
+      // The connection drops before she picks the pair; the compatibility reads
+      // for this pair go out against a genuinely unreachable network.
+      await context.setOffline(true);
+      await sireBtn.click();
+      await expect(sireBtn).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
+      await damBtn.click();
+      await expect(damBtn).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
+
+      // The preview reports the failure with a retry instead of loading forever.
+      const preview = page.getByTestId('compatibility-preview');
+      await expect(preview.getByText('Compatibility unavailable', { exact: true })).toBeVisible({
+        timeout: 30000,
+      });
+      await expect(preview.getByRole('button', { name: /try again/i })).toBeVisible();
+
+      // So does the confirmation summary: the error, not "Analyzing compatibility".
+      await page.getByRole('button', { name: 'Initiate Breeding' }).click();
+      const modal = page.getByTestId('breeding-confirmation-modal');
+      await expect(modal).toBeVisible({ timeout: 10000 });
+      await expect(
+        modal.getByText('Compatibility analysis unavailable', { exact: true })
+      ).toBeVisible({ timeout: 30000 });
+      await expect(modal.getByLabel('Analyzing compatibility')).toHaveCount(0);
+      const tryAgain = modal.getByRole('button', { name: /try again/i });
+      await expect(tryAgain).toBeVisible();
+
+      // Back online, Try again re-runs the analysis and the live score renders.
+      const compatibilityOk = page.waitForResponse(
+        (resp) =>
+          resp.url().includes('/api/v1/genetics/breeding-compatibility') &&
+          resp.request().method() === 'POST' &&
+          resp.status() === 200,
+        { timeout: 30000 }
+      );
+      await context.setOffline(false);
+      await tryAgain.click();
+      const body = (await (await compatibilityOk).json()) as { data?: Compatibility };
+      const live = body.data;
+      expect(live, 'breeding-compatibility must return a payload').toBeTruthy();
+      await expect(modal.getByText(`${live!.overallScore}/100`, { exact: true })).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(modal.getByText('Compatibility analysis unavailable')).toHaveCount(0);
+    } finally {
+      await context.setOffline(false);
     }
   });
 });

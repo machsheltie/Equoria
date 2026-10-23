@@ -24,10 +24,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse, delay } from 'msw';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { MemoryRouter, MockAuthProvider } from '@/test/utils';
 import { server } from '@/test/msw/server';
 import CommunityPage from '../CommunityPage';
@@ -289,5 +289,53 @@ describe('CommunityPage — hub stats four-state (Equoria-r4cyk)', () => {
     expect(within(alert).getByRole('button', { name: /try again/i })).toBeInTheDocument();
     expect(screen.queryByText(/community is quiet/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/activity boom/i)).not.toBeInTheDocument();
+  });
+
+  // OFFLINE — owner ruling 2026-10-23 (Equoria-m00gp, option a): when the hub's
+  // data cannot load because the network is gone, the player sees the honest
+  // error with Try again, never loading placeholders that never resolve.
+  // TanStack's default networkMode 'online' PAUSES an offline query (no data,
+  // no error), which left every stat as a permanent loading region.
+  it('offline: every stat ends in the error bar with Try again, never endless loading', async () => {
+    const offline = () => HttpResponse.error();
+    server.use(
+      http.get(THREADS, offline),
+      http.get(CLUBS, offline),
+      http.get(UNREAD, offline),
+      http.get(CONVERSATIONS, offline),
+      http.get(OPEN_ELECTIONS, offline),
+      http.get(ACTIVITY, offline),
+      http.get(HORSES, offline),
+      http.get(HISTORY, offline)
+    );
+
+    onlineManager.setOnline(false);
+    try {
+      renderPage();
+
+      const errorBar = await screen.findByTestId('community-stats-error');
+      expect(within(errorBar).getByRole('button', { name: /try again/i })).toBeInTheDocument();
+      // No stat is left as a loading region: each failed one is an honest "—".
+      await waitFor(() => expect(screen.queryAllByRole('status')).toHaveLength(0));
+      expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(6);
+      // The activity feed shows its own error + retry, not a spinner.
+      expect(screen.getByText(/couldn't load community activity/i)).toBeInTheDocument();
+      expect(screen.queryByText(/community is quiet/i)).not.toBeInTheDocument();
+    } finally {
+      onlineManager.setOnline(true);
+    }
+
+    // Back online, Try again re-runs the failed reads and real values arrive.
+    stubHappy();
+    const user = userEvent.setup();
+    await user.click(
+      within(screen.getByTestId('community-stats-error')).getByRole('button', {
+        name: /try again/i,
+      })
+    );
+    expect(await screen.findAllByText('7')).not.toHaveLength(0);
+    await waitFor(() =>
+      expect(screen.queryByTestId('community-stats-error')).not.toBeInTheDocument()
+    );
   });
 });

@@ -22,6 +22,15 @@ const breedingPredictionKeys = {
 };
 
 /**
+ * Owner ruling 2026-10-23 (Equoria-m00gp / Equoria-3jnsz, option a): the breeding
+ * compatibility screen shows an honest error with Try again when its data cannot
+ * load. TanStack's default networkMode 'online' PAUSES an offline query instead
+ * (no data, no error), so the confirmation summary analysed forever. 'always'
+ * runs the request, which fails offline and ends in the error state.
+ */
+const honestOffline = { networkMode: 'always' } as const;
+
+/**
  * Fetch breeding data for a single horse
  */
 export const useHorseBreedingData = (horseId: number) =>
@@ -41,6 +50,7 @@ export const useInbreedingAnalysis = (stallionId: number, mareId: number) =>
     queryFn: () => breedingPredictionApi.getInbreedingAnalysis({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    ...honestOffline,
   });
 
 /**
@@ -52,6 +62,7 @@ export const useLineageAnalysis = (stallionId: number, mareId: number) =>
     queryFn: () => breedingPredictionApi.getLineageAnalysis(stallionId, mareId),
     enabled: Boolean(stallionId && mareId),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    ...honestOffline,
   });
 
 /**
@@ -63,6 +74,7 @@ export const useGeneticProbability = (stallionId: number, mareId: number) =>
     queryFn: () => breedingPredictionApi.getGeneticProbability({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    ...honestOffline,
   });
 
 /**
@@ -76,6 +88,7 @@ export const useBreedingCompatibility = (stallionId: number, mareId: number) =>
     queryFn: () => breedingPredictionApi.getBreedingCompatibility({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    ...honestOffline,
   });
 
 export const breedingPredictionQueryKeys = breedingPredictionKeys;

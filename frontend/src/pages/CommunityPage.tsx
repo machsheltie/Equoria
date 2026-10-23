@@ -107,6 +107,9 @@ const CommunityPageContent: React.FC = () => {
       queryFn: () => fetchHorseCompetitionHistory(horse.id),
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
+      // Owner ruling 2026-10-23 (Equoria-m00gp, option a): offline ends in the
+      // error bar with Try again, never a paused (endless) loading stat.
+      networkMode: 'always' as const,
     })),
   });
 

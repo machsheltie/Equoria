@@ -9,7 +9,11 @@
  *   1. a player whose club has a genuinely open election sees the badge;
  *   2. a player in no club does not;
  *   3. no stat is left as a permanent loading placeholder, and the club counts
- *      shown are the counts in the real GET /api/v1/clubs payload.
+ *      shown are the counts in the real GET /api/v1/clubs payload;
+ *   4. offline, the hub ends in the shared error bar with Try again — never a
+ *      stat that loads forever — and recovers once the network is back (owner
+ *      ruling 2026-10-23, option a). The failure is a genuinely unreachable
+ *      network (context.setOffline), not an intercepted response.
  *
  * Each player is registered and onboarded over the real API
  * (fixtures/seededPlayer.ts). The club and its election are created through the
@@ -166,6 +170,79 @@ test.describe('Community hub stats (Equoria-m00gp)', () => {
         page.getByTestId('community-card-clubs').getByText('Elections open', { exact: true })
       ).toHaveCount(0);
     } finally {
+      await page.close();
+    }
+  });
+
+  test('offline, the hub shows the error bar with Try again instead of endless loading, then recovers', async ({
+    outsider,
+  }) => {
+    // Owner ruling 2026-10-23 (Equoria-m00gp, option a). A real player path: she
+    // opens the hub online (route chunk loaded), steps into Clubs, comes back
+    // after the hub's cached reads have expired (React Query's 5-minute gcTime,
+    // advanced with Playwright's clock) while her connection is down. The hub
+    // must fetch again, against a genuinely unreachable network — no route
+    // interception — and end in the error bar, never a stat that loads forever.
+    test.setTimeout(90_000);
+    const page = await outsider.context.newPage();
+    try {
+      await page.clock.install();
+      const firstClubsOk = page.waitForResponse(
+        (resp) =>
+          new URL(resp.url()).pathname === '/api/v1/clubs' &&
+          resp.request().method() === 'GET' &&
+          resp.status() === 200,
+        { timeout: 30000 }
+      );
+      await page.goto('/community', { waitUntil: 'domcontentloaded' });
+      await expect(page.getByRole('heading', { name: 'Community' }).first()).toBeVisible({
+        timeout: 20000,
+      });
+      await firstClubsOk;
+      await expectNoPendingStats(page);
+
+      // Into Clubs (same document), time passes, the network drops, and back.
+      await page.getByTestId('community-card-clubs').click();
+      await expect(page).toHaveURL(/\/clubs$/);
+      await page.clock.fastForward('06:00');
+      await outsider.context.setOffline(true);
+      await page.goBack();
+      await expect(page).toHaveURL(/\/community$/);
+
+      // The shared error bar with Try again; no stat is left loading, and the
+      // failed ones show the honest "—", not a number. (Threads and
+      // conversations are read only by the hub, so their cache has expired;
+      // the HUD keeps its own unread count warm, so that stat is not pinned.)
+      const errorBar = page.getByTestId('community-stats-error');
+      await expect(errorBar).toBeVisible({ timeout: 30000 });
+      await expect(errorBar.getByRole('alert')).toBeVisible();
+      const tryAgain = errorBar.getByRole('button', { name: 'Try again' });
+      await expect(tryAgain).toBeVisible();
+      const cards = page.locator('[data-testid^="community-card-"]');
+      await expect(cards.locator('[role="status"]')).toHaveCount(0, { timeout: 30000 });
+      for (const label of ['Active threads', 'Conversations']) {
+        await expect(statValue(page.locator('body'), label)).toHaveText('—');
+      }
+
+      // Back online, Try again re-reads what failed (the threads read is the
+      // hub's own, so it certainly failed): real numbers, no error bar.
+      const threadsOk = page.waitForResponse(
+        (resp) =>
+          new URL(resp.url()).pathname === '/api/v1/forum/threads' &&
+          resp.request().method() === 'GET' &&
+          resp.status() === 200,
+        { timeout: 30000 }
+      );
+      await outsider.context.setOffline(false);
+      await tryAgain.click();
+      await threadsOk;
+      await expect(errorBar).toHaveCount(0, { timeout: 20000 });
+      await expectNoPendingStats(page);
+      const clubsRes = await outsider.request.get('/api/v1/clubs');
+      expect(clubsRes.ok(), `GET /api/v1/clubs returned ${clubsRes.status()}`).toBe(true);
+      await expectRealClubCounts(page, (await clubsRes.json()) as ClubsPayload);
+    } finally {
+      await outsider.context.setOffline(false);
       await page.close();
     }
   });

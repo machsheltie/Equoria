@@ -116,6 +116,10 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     select: toBreedingHorses,
     enabled: Boolean(userId),
     staleTime: 30000,
+    // Owner ruling 2026-10-23 (Equoria-3jnsz, option a): an offline read ends in
+    // the error below with Try Again. The default networkMode 'online' paused
+    // it instead, and the paused list fell through to empty horse selectors.
+    networkMode: 'always',
   });
 
   // Real backend breeding-genetics prediction (the game's actual inheritance
