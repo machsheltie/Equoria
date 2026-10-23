@@ -56,6 +56,8 @@ async function createHorse(horseData, client = prisma) {
       salePrice,
       healthStatus,
       lastVettedDate,
+      lastFedDate,
+      hungerSince,
       tack,
       gaitScores,
     } = horseData;
@@ -227,6 +229,9 @@ async function createHorse(horseData, client = prisma) {
         ...(salePrice !== undefined && { salePrice }),
         ...(healthStatus && { healthStatus }),
         ...(lastVettedDate && { lastVettedDate: new Date(lastVettedDate) }),
+        // A foal is born with its mare's hunger (Equoria-w4ivy).
+        ...(lastFedDate && { lastFedDate: new Date(lastFedDate) }),
+        ...(hungerSince && { hungerSince: new Date(hungerSince) }),
         ...(tack && { tack }),
         epigeneticModifiers,
         conformationScores: validateConformationScores(

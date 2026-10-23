@@ -47,6 +47,7 @@ import {
 } from '../../../utils/notificationService.mjs';
 import { UNNAMED_HORSE_NAME } from './horseNamePolicy.mjs';
 import { releaseStaffIfRetiredTx } from './horseRetirementStaff.mjs';
+import { horseHealthGrade, negativeTraitChanceMultiplier } from '../../../utils/horseHealth.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 
 // Gestation length; mirrors pregnancyBonus.mjs GESTATION_DAYS, kept local for the job's date math.
@@ -205,6 +206,16 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     sireId = dam.pregnancySireId;
   }
 
+  // A foal is born with its mare's health and hunger (owner ruling 2026-10-23,
+  // Equoria-w4ivy). A caller's snapshot may not carry the care clocks; read them.
+  if (dam.lastVettedDate === undefined || dam.lastFedDate === undefined) {
+    const careRow = await prisma.horse.findUnique({
+      where: { id: damId },
+      select: { lastVettedDate: true, lastFedDate: true, hungerSince: true },
+    });
+    dam = { ...dam, ...careRow };
+  }
+
   const sire = options.sireSnapshot ?? (await getHorseById(sireId));
   if (!sire) {
     throw new Error(`createFoalFromPregnancy: pregnancy sire ${sireId} not found`);
@@ -244,7 +255,13 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // computed by calculatePregnancyEpigeneticChances(); independent rolls.
   const rng = typeof options.rng === 'function' ? options.rng : Math.random;
   const positiveChance = Number(options.positiveTraitChance) || 0;
-  const negativeChance = Number(options.negativeTraitChance) || 0;
+  // A Fair mare raises the CURRENT negative-trait chance by 25%, a Bad mare by
+  // 50% (owner ruling 2026-10-23, Equoria-w4ivy); no other odds move.
+  const damHealthGrade = horseHealthGrade(dam);
+  const negativeChance = Math.min(
+    100,
+    (Number(options.negativeTraitChance) || 0) * negativeTraitChanceMultiplier(damHealthGrade),
+  );
   const positiveTraits = [...(epigeneticTraits.positive || [])];
   const negativeTraits = [...(epigeneticTraits.negative || [])];
 
@@ -379,6 +396,9 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     playerId: options.playerId,
     stableId: options.stableId,
     healthStatus: options.healthStatus || 'Excellent',
+    lastVettedDate: dam.lastVettedDate ?? undefined,
+    lastFedDate: dam.lastFedDate ?? undefined,
+    hungerSince: dam.hungerSince ?? undefined,
     dateOfBirth: gameCalendarDate().toISOString(), // born today, Eastern
     conformationScores,
     gaitScores,
@@ -452,6 +472,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       feedQuality,
       lineageCount: lineage.length,
       pregnancyBonus: { positiveChance, negativeChance },
+      damHealthGrade,
       sire: { id: sire.id, name: sire.name },
       dam: { id: dam.id, name: dam.name },
     },
@@ -490,6 +511,9 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
       stressLevel: true,
       bondScore: true,
       healthStatus: true,
+      lastVettedDate: true,
+      lastFedDate: true,
+      hungerSince: true,
       conformationScores: true,
       gaitScores: true,
       colorGenotype: true,
