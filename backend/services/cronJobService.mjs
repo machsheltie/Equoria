@@ -20,10 +20,10 @@ import { processWeeklySalaries } from '../modules/grooms/index.mjs';
 import { runFoalingJob } from '../modules/horses/index.mjs';
 import { processRiderTrainerRetirement } from '../modules/trainers/index.mjs';
 import { captureAllUserRankSnapshots } from '../modules/leaderboards/index.mjs';
-// Equoria-dx65z: every cron handler in this file now runs under a Postgres
-// advisory lock from withAdvisoryLock — multi-replica deployments cannot
-// double-execute. Sibling of Equoria-iot0h which introduced the helper.
-import { withAdvisoryLock } from '../utils/cronLock.mjs';
+// Equoria-dx65z: every cron handler in this file runs under a Postgres advisory
+// lock — multi-replica deployments cannot double-execute. Since
+// Equoria-cmw85.9 the lock is taken by legacyCronJobs.runWithHeartbeat (which
+// also records the heartbeat), so this file no longer imports withAdvisoryLock.
 import legacyCronJobs from './cronJobs.mjs';
 // Equoria-1j167: per-job descriptors (jobName/schedule/lockKey/run) + the
 // runTokenCleanup work function (re-exported below as triggerTokenCleanup uses
@@ -46,11 +46,16 @@ export function initializeCronJobs() {
     // descriptor's schedule on the Eastern game clock. `scheduled: false` then explicit .start()
     // matches the pre-split create-then-start sequence exactly.
     for (const descriptor of CRON_JOB_SERVICE_REGISTRY) {
-      const { jobName, schedule, lockKey, run } = descriptor;
+      const { jobName, schedule, lockKey, staleAfterMs, run } = descriptor;
+      // Equoria-cmw85.9: observed like the primary registry's jobs — heartbeat,
+      // CronRunLog row, and a line in /api/admin/cron/health. The advisory lock
+      // (Equoria-dx65z) now runs inside the heartbeat under the same lockKey, so
+      // a replica that loses the race records 'skipped-locked' instead of nothing.
+      legacyCronJobs.registerExternalJob(jobName, staleAfterMs);
       const job = cron.schedule(
         schedule,
         async () => {
-          await withAdvisoryLock(lockKey, run);
+          await legacyCronJobs.runWithHeartbeat(jobName, run, { applyLock: true, lockKey });
         },
         {
           scheduled: false,
@@ -87,6 +92,7 @@ export function stopCronJobs() {
     }
 
     runningJobs.clear();
+    legacyCronJobs.clearExternalJobs();
 
     // Stop trait evaluation + horse aging jobs (defined in cronJobs.mjs)
     legacyCronJobs.stop();

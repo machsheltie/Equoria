@@ -39,5 +39,7 @@ export default Object.freeze({
   // Daily at 02:00 Eastern.
   schedule: '0 2 * * *',
   lockKey: 'cronJobService:userRankSnapshot',
+  // Heartbeat staleness budget (Equoria-cmw85.9): 24h period + 6h tolerance, as the primary registry.
+  staleAfterMs: 30 * 60 * 60 * 1000,
   run: runUserRankSnapshotCapture,
 });

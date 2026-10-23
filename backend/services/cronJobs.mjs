@@ -73,6 +73,16 @@ class CronJobService {
     return this.monitor.runWithHeartbeat(jobName, handler, opts);
   }
 
+  /** Equoria-cmw85.9 delegator → CronJobMonitor.registerExternalJob. */
+  registerExternalJob(jobName, staleAfterMs) {
+    return this.monitor.registerExternalJob(jobName, staleAfterMs);
+  }
+
+  /** Equoria-cmw85.9 delegator → CronJobMonitor.clearExternalJobs. */
+  clearExternalJobs() {
+    return this.monitor.clearExternalJobs();
+  }
+
   /** Equoria-9wby delegator → CronJobMonitor.persistRunLog. */
   async persistRunLog(entry) {
     return this.monitor.persistRunLog(entry);

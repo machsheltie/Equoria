@@ -49,5 +49,7 @@ export default Object.freeze({
   // Every Monday at 09:00 Eastern.
   schedule: '0 9 * * 1',
   lockKey: 'cronJobService:weeklySalaries',
+  // Heartbeat staleness budget (Equoria-cmw85.9): 168h period + 24h tolerance, as the primary registry.
+  staleAfterMs: 192 * 60 * 60 * 1000,
   run: runSalaryProcessing,
 });

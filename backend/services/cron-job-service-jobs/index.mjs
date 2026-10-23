@@ -8,11 +8,13 @@
  * each descriptor's `run` is the module-local work function itself, not a
  * `service => service.method()` thunk.
  *
- * Each descriptor is `{ jobName, schedule, lockKey, run }`:
+ * Each descriptor is `{ jobName, schedule, lockKey, staleAfterMs, run }`:
  *   - jobName  — canonical key (runningJobs Map key / getCronJobStatus() key).
  *   - schedule — node-cron schedule string (Eastern game clock, GAME_TIME_ZONE).
  *   - lockKey  — Postgres advisory-lock key passed to withAdvisoryLock so the
  *                side-effect runs EXACTLY ONCE cluster-wide (Equoria-dx65z).
+ *   - staleAfterMs — heartbeat staleness budget for /api/admin/cron/health
+ *                (Equoria-cmw85.9); every run is wrapped in runWithHeartbeat.
  *   - run()    — the async work function (also re-exported by its own module so
  *                the manual trigger* helpers and tests can call it directly).
  *
@@ -31,9 +33,9 @@
  *
  * Equoria-m9lz1 note: the weekly groom career/auto-retirement pass briefly lived
  * here next to riderTrainerRetirement, which it resembles. It moved to
- * backend/services/jobs/ (registry A) because this registry has no heartbeat and
- * is invisible to /api/admin/cron/health, and that pass is the one whose silent
- * failure has no external symptom. Do not move it back.
+ * backend/services/jobs/ (registry A) back when this registry had no heartbeat.
+ * Since Equoria-cmw85.9 every job here is also heartbeat-wrapped and listed by
+ * /api/admin/cron/health, but the pass stays in registry A. Do not move it back.
  */
 
 import weeklySalariesJob from './weeklySalariesJob.mjs';

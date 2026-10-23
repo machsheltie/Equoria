@@ -94,6 +94,27 @@ export class CronJobMonitor {
     // lastAlertedAt ms). One alert per stale streak; cleared on a
     // successful run so a recovered + re-staling job alerts again.
     this.staleAlertState = new Map();
+    // Equoria-cmw85.9: jobs scheduled by the sibling function-based scheduler
+    // (backend/services/cronJobService.mjs) but observed through this monitor.
+    // jobName -> staleAfterMs. They are listed by getHealth() alongside the
+    // scheduler's own jobs; a job that is not registered here is invisible to
+    // /api/admin/cron/health.
+    this.externalJobs = new Map();
+  }
+
+  /**
+   * Equoria-cmw85.9: declare a job scheduled elsewhere so the health surface
+   * reports it and judges its staleness against its own budget.
+   * @param {string} jobName
+   * @param {number} staleAfterMs
+   */
+  registerExternalJob(jobName, staleAfterMs) {
+    this.externalJobs.set(jobName, staleAfterMs);
+  }
+
+  /** Equoria-cmw85.9: forget every externally scheduled job (scheduler stopped). */
+  clearExternalJobs() {
+    this.externalJobs.clear();
   }
 
   /**
@@ -139,6 +160,9 @@ export class CronJobMonitor {
    * @param {Function} handler - async () => Promise<result>
    * @param {Object}  [opts]
    * @param {boolean} [opts.applyLock=false]
+   * @param {string}  [opts.lockKey] - advisory-lock name when it differs from
+   *   `jobName` (Equoria-cmw85.9: the function-based scheduler's jobs keep their
+   *   existing 'cronJobService:<job>' keys so a rolling deploy still excludes).
    */
   async runWithHeartbeat(jobName, handler, opts = {}) {
     const startedAt = new Date();
@@ -153,7 +177,7 @@ export class CronJobMonitor {
       let result;
       let acquired = true;
       if (applyLock) {
-        const outcome = await withAdvisoryLock(jobName, handler);
+        const outcome = await withAdvisoryLock(opts.lockKey ?? jobName, handler);
         acquired = outcome.acquired;
         result = outcome.result;
       } else {
@@ -391,9 +415,10 @@ export class CronJobMonitor {
     const perJob = {};
     let anyStale = false;
 
-    for (const jobName of jobNames) {
+    for (const jobName of new Set([...jobNames, ...this.externalJobs.keys()])) {
       const hb = this.heartbeats.get(jobName) ?? null;
-      const stalenessMs = JOB_STALENESS_MS[jobName] ?? DEFAULT_STALENESS_MS;
+      const stalenessMs =
+        JOB_STALENESS_MS[jobName] ?? this.externalJobs.get(jobName) ?? DEFAULT_STALENESS_MS;
       const lastFinishedAt = hb?.finishedAt ?? null;
       const lastStartedAt = hb?.startedAt ?? null;
       const status = hb?.status ?? 'never-run';

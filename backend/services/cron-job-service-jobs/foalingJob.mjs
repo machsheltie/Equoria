@@ -42,5 +42,7 @@ export default Object.freeze({
   // (this file and backend/services/jobs/index.mjs).
   schedule: '25 0 * * *',
   lockKey: 'cronJobService:foaling',
+  // Heartbeat staleness budget (Equoria-cmw85.9): 24h period + 6h tolerance, as the primary registry.
+  staleAfterMs: 30 * 60 * 60 * 1000,
   run: runFoalingJobScheduled,
 });

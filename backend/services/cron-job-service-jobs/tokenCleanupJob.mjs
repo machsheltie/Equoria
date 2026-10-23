@@ -61,5 +61,7 @@ export default Object.freeze({
   // Daily at 03:15 Eastern. Old: '0 3 * * *' (collided with nightlyShowExecution).
   schedule: '15 3 * * *',
   lockKey: 'cronJobService:tokenCleanup',
+  // Heartbeat staleness budget (Equoria-cmw85.9): 24h period + 6h tolerance, as the primary registry.
+  staleAfterMs: 30 * 60 * 60 * 1000,
   run: runTokenCleanup,
 });
