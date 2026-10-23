@@ -208,6 +208,17 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     expect(row.disciplineScores.Dressage).toBe(5);
   });
 
+  // -- T2b: player XP is flat too (owner ruling q31, 2026-10-23) -------------
+  it('T2b: the player XP a session awards is a flat 5, whatever the horse’s traits', async () => {
+    const horse = await makeHorse('t2b-flat-xp', { temperament: null, positiveTraits: ['intelligent'] });
+
+    const result = await trainHorse(horse.id, 'Dressage');
+
+    expect(result.success).toBe(true);
+    expect(result.xpAwarded).toBe(5);
+    expect(result.traitEffects.xpModifier).toBe(0);
+  });
+
   // -- T3: the result no longer reports trainer / trait score scaling ---------
   it('T3: trainHorse reports no trainerModifier and no trait score delta', async () => {
     const horse = await makeHorse('t3-payload', { temperament: null, positiveTraits: ['intelligent'] });

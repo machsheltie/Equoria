@@ -141,6 +141,8 @@ async function computeCanTrain(parsedHorseId, discipline) {
 // Owner ruling 2026-10-23 (Equoria-576c0.1): a weekly session adds exactly +5 to the
 // trained discipline, whatever the horse's traits, temperament or trainer.
 const TRAINING_DISCIPLINE_GAIN = 5;
+/** Player XP per weekly session (the long-standing base amount, now never scaled). */
+const TRAINING_PLAYER_XP = 5;
 
 /** The result trainHorse returns when it refuses a session (nothing was written). */
 const refusal = reason => ({
@@ -240,15 +242,11 @@ async function trainHorse(horseId, discipline) {
     // Owner rulings 2026-10-19 and 2026-10-21: training adds to the trained
     // discipline's score and never raises a horse stat, in every discipline.
 
-    // Calculate XP award with trait effects
-    let baseXp = 5;
-    if (traitEffects.trainingXpModifier !== null && traitEffects.trainingXpModifier !== undefined) {
-      baseXp = Math.round(baseXp * (1 + traitEffects.trainingXpModifier));
-    }
-
-    // Post-trait XP for traitEffects reporting
-    const traitAdjustedXp = baseXp;
-    baseXp = Math.max(1, baseXp);
+    // OWNER RULING q31 (2026-10-23, Equoria-576c0.1): the PLAYER XP a session
+    // awards is flat too, the same amount every session, with no trait or
+    // score scaling. (Old contract: round(5 * (1 + trait trainingXpModifier)),
+    // floor 1.) Horses never earn XP from training.
+    const baseXp = TRAINING_PLAYER_XP;
 
     const ownerId = horse.userId ?? null;
     if (!ownerId) {
@@ -317,7 +315,7 @@ async function trainHorse(horseId, discipline) {
       success: true,
       updatedHorse,
       disciplineScoreIncrease,
-      // Equoria-o1x6g: surface the REAL awarded XP (post-trait, floor-1) so the
+      // Equoria-o1x6g: surface the REAL awarded XP (a flat 5, q31) so the
       // route + frontend result modal can show the actual XP row instead of
       // inferring it from traitEffects.xpModifier (a trait-only delta, not the
       // awarded amount).
@@ -328,7 +326,7 @@ async function trainHorse(horseId, discipline) {
       nextEligible: nextEligible.toISOString(),
       traitEffects: {
         appliedTraits: allTraits,
-        xpModifier: traitAdjustedXp - 5, // trait-only delta
+        xpModifier: 0, // player XP is flat (q31); kept so the response shape is stable
       },
     };
   } catch (error) {
