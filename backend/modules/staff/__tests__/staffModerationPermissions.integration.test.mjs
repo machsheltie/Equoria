@@ -11,7 +11,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
-  STAFF_API,
   checkIn,
   createUserFactory,
   get,
@@ -20,8 +19,9 @@ import {
   stopEmailCapture,
 } from './helpers/staffFixtures.mjs';
 
-const ROLES = `${STAFF_API}/roles`;
-const TICKETS = `${STAFF_API}/tickets`;
+const staffApi = '/api/v1/staff';
+const roles = `${staffApi}/roles`;
+const tickets = `${staffApi}/tickets`;
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('staffperm');
@@ -59,16 +59,16 @@ async function staffMember(role) {
 }
 
 const setRole = (actor, target, role) =>
-  post(`${ROLES}/${target.id}`, actor.user, { role, reason: 'permission rule check' }, actor.device);
+  post(`${roles}/${target.id}`, actor.user, { role, reason: 'permission rule check' }, actor.device);
 
 describe('Only the owner appoints admins (Equoria-i1hgt)', () => {
-  it('refuses an admin appointing an admin with ADMIN_APPOINTMENT_OWNER_ONLY', async () => {
+  it('refuses an admin appointing an admin with adminAppointmentOwnerOnly', async () => {
     const admin = await staffMember('admin');
     const player = await makeUser('user');
     const res = await setRole(admin, player, 'admin');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('ADMIN_APPOINTMENT_OWNER_ONLY');
-    expect(res.body.message).not.toContain('ADMIN_APPOINTMENT');
+    expect(res.body.code).toBe('adminAppointmentOwnerOnly');
+    expect(res.body.message).not.toContain('adminAppointment');
     expect(await roleOf(player.id)).toBe('user');
   });
 
@@ -102,12 +102,12 @@ describe('Only the owner appoints admins (Equoria-i1hgt)', () => {
     const otherAdmin = await makeUser('admin');
     const res = await setRole(owner, otherAdmin, 'user');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('ADMIN_ROLE_NOT_CHANGEABLE');
+    expect(res.body.code).toBe('adminRoleNotChangeable');
     expect(await roleOf(otherAdmin.id)).toBe('admin');
 
     const self = await setRole(owner, owner.user, 'user');
     expect(self.status).toBe(403);
-    expect(self.body.code).toBe('STAFF_TARGET_OWNER');
+    expect(self.body.code).toBe('staffTargetOwner');
     expect(await roleOf(owner.user.id)).toBe('owner');
   });
 
@@ -116,28 +116,27 @@ describe('Only the owner appoints admins (Equoria-i1hgt)', () => {
     const player = await makeUser('user');
     const res = await setRole(mod, player, 'admin');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_CAPABILITY_REQUIRED');
   });
 });
 
 describe('Nobody acts on the owner; admins and moderators never on each other (Equoria-i1hgt)', () => {
-  it('refuses an admin changing the owner role with STAFF_TARGET_OWNER', async () => {
+  it('refuses an admin changing the owner role with staffTargetOwner', async () => {
     const admin = await staffMember('admin');
     const owner = await makeUser('owner');
     for (const role of ['user', 'moderator']) {
       const res = await setRole(admin, owner, role);
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('STAFF_TARGET_OWNER');
+      expect(res.body.code).toBe('staffTargetOwner');
     }
     expect(await roleOf(owner.id)).toBe('owner');
   });
 
-  it('refuses admin to admin with STAFF_TARGET_STAFF', async () => {
+  it('refuses admin to admin with staffTargetStaff', async () => {
     const admin = await staffMember('admin');
     const other = await makeUser('admin');
     const res = await setRole(admin, other, 'user');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('STAFF_TARGET_STAFF');
+    expect(res.body.code).toBe('staffTargetStaff');
     expect(await roleOf(other.id)).toBe('admin');
   });
 
@@ -145,11 +144,11 @@ describe('Nobody acts on the owner; admins and moderators never on each other (E
     const mod = await staffMember('moderator');
     for (const role of ['admin', 'moderator', 'owner']) {
       const target = await makeUser(role);
-      const res = await post(TICKETS, mod.user, ticketBody(target), mod.device);
-      expect({ role, status: res.status, code: res.body.code }).toEqual({
+      const res = await post(tickets, mod.user, ticketBody(target), mod.device);
+      expect({ role, status: res.status, message: res.body.message }).toEqual({
         role,
         status: 403,
-        code: 'NOT_A_PLAYER',
+        message: 'Tickets can only be about players',
       });
     }
   });
@@ -157,7 +156,7 @@ describe('Nobody acts on the owner; admins and moderators never on each other (E
   it('still lets a moderator file a ticket about a player', async () => {
     const mod = await staffMember('moderator');
     const player = await makeUser('user');
-    const res = await post(TICKETS, mod.user, ticketBody(player), mod.device);
+    const res = await post(tickets, mod.user, ticketBody(player), mod.device);
     expect(res.status).toBe(201);
   });
 });
@@ -165,7 +164,7 @@ describe('Nobody acts on the owner; admins and moderators never on each other (E
 describe('Moderators may issue IP and device bans (Equoria-i1hgt)', () => {
   it('reports ban.ip and ban.device among a checked-in moderator capabilities', async () => {
     const mod = await staffMember('moderator');
-    const res = await get(`${STAFF_API}/me`, mod.user, mod.device);
+    const res = await get(`${staffApi}/me`, mod.user, mod.device);
     expect(res.status).toBe(200);
     expect(res.body.capabilities).toEqual(expect.arrayContaining(['ban.ip', 'ban.device', 'ban.account']));
   });

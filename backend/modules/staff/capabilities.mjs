@@ -169,17 +169,17 @@ export function assertActionableTarget({ actorId, targetUser }) {
   }
 }
 
-const TARGET_REFUSALS = Object.freeze({
+const targetRefusals = Object.freeze({
   owner: Object.freeze({
-    code: 'STAFF_TARGET_OWNER',
+    code: 'staffTargetOwner',
     message: 'No one can act on the owner.',
   }),
   staff: Object.freeze({
-    code: 'STAFF_TARGET_STAFF',
+    code: 'staffTargetStaff',
     message: 'Moderators and admins cannot act on another moderator or admin.',
   }),
   self: Object.freeze({
-    code: 'STAFF_TARGET_SELF',
+    code: 'staffTargetSelf',
     message: 'You cannot act on your own account.',
   }),
 });
@@ -197,13 +197,13 @@ const TARGET_REFUSALS = Object.freeze({
  */
 export function staffTargetRefusal({ actor, targetUser }) {
   if (targetUser.role === 'owner') {
-    return TARGET_REFUSALS.owner;
+    return targetRefusals.owner;
   }
   if (targetUser.id === actor.id) {
-    return TARGET_REFUSALS.self;
+    return targetRefusals.self;
   }
   if (isStaffRole(targetUser.role) && actor.role !== 'owner') {
-    return TARGET_REFUSALS.staff;
+    return targetRefusals.staff;
   }
   return null;
 }

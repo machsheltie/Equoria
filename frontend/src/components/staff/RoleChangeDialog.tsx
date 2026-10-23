@@ -34,7 +34,7 @@ export interface RoleChangeDialogProps {
   onChanged: (member: StaffMember) => void;
 }
 
-const CONFIRM_LABELS = {
+const confirmLabels = {
   admin: 'Make admin',
   moderator: 'Make moderator',
   user: 'Revoke role',
@@ -139,7 +139,7 @@ export function RoleChangeDialog({ change, onClose, onChanged }: RoleChangeDialo
               pending={setRole.isPending}
               disabled={trimmed === ''}
             >
-              {CONFIRM_LABELS[toRole]}
+              {confirmLabels[toRole]}
             </Button>
             {setRole.isError && (
               <InlineError message={staffErrorMessage(setRole.error, ROLE_MESSAGES)} />

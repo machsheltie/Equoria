@@ -75,8 +75,8 @@ export async function lookupUser(req, res, next) {
   }
 }
 
-const ADMIN_ROLE_FIXED = {
-  code: 'ADMIN_ROLE_NOT_CHANGEABLE',
+const adminRoleFixed = {
+  code: 'adminRoleNotChangeable',
   message: "An admin's role cannot be changed here.",
 };
 
@@ -84,12 +84,12 @@ const ADMIN_ROLE_FIXED = {
 function refusal(actor, target, toRole) {
   // Nobody acts on the owner or on themselves (Equoria-i1hgt).
   const generic = staffTargetRefusal({ actor, targetUser: target });
-  if (generic && generic.code !== 'STAFF_TARGET_STAFF') {
+  if (generic && generic.code !== 'staffTargetStaff') {
     return [403, generic.message, generic.code];
   }
   // An admin's role changes nowhere in this office (Equoria-4tleh).
   if (target.role === 'admin') {
-    const fixed = generic ?? ADMIN_ROLE_FIXED;
+    const fixed = generic ?? adminRoleFixed;
     return [403, fixed.message, fixed.code];
   }
   if (toRole === 'moderator' && target.role !== 'user') {
@@ -120,7 +120,7 @@ export async function setUserRole(req, res, next) {
       return fail(res, 400, 'A reason is required');
     }
     if (toRole === 'admin' && !hasCapability(req.staff.role, 'roles.appointAdmin')) {
-      return fail(res, 403, 'Only the owner can appoint an admin.', 'ADMIN_APPOINTMENT_OWNER_ONLY');
+      return fail(res, 403, 'Only the owner can appoint an admin.', 'adminAppointmentOwnerOnly');
     }
     if (!isText(userId, MAX_TEXT)) {
       return fail(res, 404, 'No such player');

@@ -239,7 +239,7 @@ describe('staffTargetRefusal (Equoria-i1hgt)', () => {
     for (const actorRole of ['moderator', 'admin']) {
       for (const targetRole of ['moderator', 'admin']) {
         expect(staffTargetRefusal({ actor: actor(actorRole), targetUser: target(targetRole) })?.code).toBe(
-          'STAFF_TARGET_STAFF',
+          'staffTargetStaff',
         );
       }
     }
@@ -248,18 +248,18 @@ describe('staffTargetRefusal (Equoria-i1hgt)', () => {
   it('refuses anyone acting on the owner, the owner included', () => {
     for (const actorRole of ['moderator', 'admin', 'owner']) {
       expect(staffTargetRefusal({ actor: actor(actorRole), targetUser: target('owner') })?.code).toBe(
-        'STAFF_TARGET_OWNER',
+        'staffTargetOwner',
       );
     }
     expect(
       staffTargetRefusal({ actor: { id: 'x', role: 'owner' }, targetUser: { id: 'x', role: 'owner' } })?.code,
-    ).toBe('STAFF_TARGET_OWNER');
+    ).toBe('staffTargetOwner');
   });
 
   it('refuses acting on oneself and allows acting on a player', () => {
     expect(
       staffTargetRefusal({ actor: { id: 'x', role: 'admin' }, targetUser: { id: 'x', role: 'admin' } })?.code,
-    ).toBe('STAFF_TARGET_SELF');
+    ).toBe('staffTargetSelf');
     for (const actorRole of ['moderator', 'admin', 'owner']) {
       expect(staffTargetRefusal({ actor: actor(actorRole), targetUser: target('user') })).toBeNull();
     }
@@ -273,6 +273,6 @@ describe('staffTargetRefusal (Equoria-i1hgt)', () => {
   it('gives every refusal an authored message, never the code', () => {
     const refusal = staffTargetRefusal({ actor: actor('moderator'), targetUser: target('admin') });
     expect(refusal.message).toMatch(/\s/);
-    expect(refusal.message).not.toContain('STAFF_TARGET');
+    expect(refusal.message).not.toContain('staffTarget');
   });
 });
