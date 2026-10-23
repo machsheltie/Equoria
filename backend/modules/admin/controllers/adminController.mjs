@@ -210,16 +210,14 @@ export async function getTraitDefinitions(req, res) {
 /**
  * GET /api/admin/traits/analytics  (also /api/v1/admin/traits/analytics)
  *
- * Admin-scoped aggregate trait-revelation analytics sourced from TraitHistoryLog
- * (Equoria-yznve). Returns counts by traitName, by definitional category, and by
- * UTC calendar day, plus a grand total. Optional query filters:
+ * Global aggregate trait-revelation analytics from TraitHistoryLog (Equoria-yznve):
+ * counts by traitName, definitional category and game day, plus a total. Filters:
  *   ?startDate=ISO   inclusive lower bound on timestamp
  *   ?endDate=ISO     inclusive upper bound on timestamp
  *   ?sourceType=str  scope to one sourceType (e.g. 'daily_evaluation')
  *
- * Admin-only: enforced at the router level (adminRouter applies
- * authenticateToken + requireRole('admin') in app.mjs). This is a global,
- * cross-horse operator report — NOT per-user scoped (per the issue AC).
+ * Admin and owner only (adminRouter's requireRole('admin')). Rows for a trait
+ * still hidden on its horse count for the owner alone (Equoria-4tleh).
  */
 export async function getTraitRevelationAnalyticsHandler(req, res) {
   try {
@@ -241,8 +239,6 @@ export async function getTraitRevelationAnalyticsHandler(req, res) {
       endDate: endDate ?? null,
       // qs may parse repeated keys into arrays; coerce to a single string or null.
       sourceType: typeof sourceType === 'string' ? sourceType : null,
-      // Owner ruling 2026-10-23 (Equoria-4tleh): only the owner sees hidden
-      // traits; an admin's report leaves out traits still hidden on a horse.
       includeHidden: can(req.user, 'traits.hidden.view'),
     });
 

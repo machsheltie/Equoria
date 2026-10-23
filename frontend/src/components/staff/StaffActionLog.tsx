@@ -56,7 +56,7 @@ const ACTION_OPTIONS = [
 ];
 
 // Owner ruling 2026-10-23 (Equoria-4tleh): three staff levels.
-const ACTOR_TITLES: Record<string, string> = {
+const actorTitles: Record<string, string> = {
   owner: 'The owner',
   admin: 'The admin',
   moderator: 'Moderator',
@@ -93,7 +93,7 @@ function actorText(
     const former = FORMER_STEWARD.charAt(0).toUpperCase() + FORMER_STEWARD.slice(1);
     return `${former} (${shortRef(entry.actorId)})`;
   }
-  const role = ACTOR_TITLES[entry.actorRole] ?? 'Moderator';
+  const role = actorTitles[entry.actorRole] ?? 'Moderator';
   return nameOf(entry.actorId) ?? `${role} ${shortRef(entry.actorId)}`;
 }
 

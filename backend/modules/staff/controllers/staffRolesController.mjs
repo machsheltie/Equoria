@@ -19,7 +19,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { deleteUnreadNotificationsTx } from '../../../utils/notificationService.mjs';
-import { STAFF_ROLES } from '../capabilities.mjs';
+import { staffRoles } from '../capabilities.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import { retireStaffCheckinCodesTx } from '../services/staffChallengeRetirement.mjs';
 
@@ -41,7 +41,7 @@ class RoleChangedMeanwhile extends Error {}
 export async function listStaff(req, res, next) {
   try {
     const staff = await prisma.user.findMany({
-      where: { role: { in: [...STAFF_ROLES] } },
+      where: { role: { in: [...staffRoles] } },
       select: PUBLIC_FIELDS,
       orderBy: [{ role: 'asc' }, { username: 'asc' }],
     });

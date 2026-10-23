@@ -19,7 +19,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
   ORIGIN,
-  STAFF_API,
   checkIn,
   createTargetFactory,
   createUserFactory,
@@ -32,12 +31,13 @@ import {
   uid,
 } from './helpers/staffFixtures.mjs';
 
-const ME = `${STAFF_API}/me`;
-const ROLES = `${STAFF_API}/roles`;
-const TICKETS = `${STAFF_API}/tickets`;
-const CRON_STATUS = '/api/v1/admin/cron/status';
-const TRAIT_ANALYTICS = '/api/v1/admin/traits/analytics';
-const HORSES = '/api/v1/horses';
+const staffApi = '/api/v1/staff';
+const mePath = `${staffApi}/me`;
+const rolesPath = `${staffApi}/roles`;
+const ticketsPath = `${staffApi}/tickets`;
+const cronStatus = '/api/v1/admin/cron/status';
+const traitAnalytics = '/api/v1/admin/traits/analytics';
+const horsesPath = '/api/v1/horses';
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stafflevels');
@@ -68,7 +68,7 @@ afterEach(() => stopEmailCapture());
 describe('GET /staff/me names each level and its permissions', () => {
   it('owner: role owner, may post News and see hidden traits', async () => {
     const owner = await makeUser('owner');
-    const res = await get(ME, owner);
+    const res = await get(mePath, owner);
     expect(res.status).toBe(200);
     expect(res.body.role).toBe('owner');
     expect(res.body.capabilities).toEqual(expect.arrayContaining(['news.post', 'traits.hidden.view']));
@@ -76,7 +76,7 @@ describe('GET /staff/me names each level and its permissions', () => {
 
   it('admin: may post News, may not see hidden traits', async () => {
     const admin = await makeUser('admin');
-    const res = await get(ME, admin);
+    const res = await get(mePath, admin);
     expect(res.status).toBe(200);
     expect(res.body.capabilities).toContain('news.post');
     expect(res.body.capabilities).not.toContain('traits.hidden.view');
@@ -84,7 +84,7 @@ describe('GET /staff/me names each level and its permissions', () => {
 
   it('moderator: neither News nor hidden traits', async () => {
     const mod = await makeUser('moderator');
-    const res = await get(ME, mod);
+    const res = await get(mePath, mod);
     expect(res.status).toBe(200);
     expect(res.body.capabilities).not.toContain('news.post');
     expect(res.body.capabilities).not.toContain('traits.hidden.view');
@@ -92,7 +92,7 @@ describe('GET /staff/me names each level and its permissions', () => {
 
   it('a player gets the ordinary unknown-route 404', async () => {
     const player = await makeUser('user');
-    const res = await get(ME, player);
+    const res = await get(mePath, player);
     expect(res.status).toBe(404);
   });
 });
@@ -104,10 +104,10 @@ describe('the owner passes every admin gate', () => {
     const mod = await makeUser('moderator');
     const player = await makeUser('user');
 
-    expect((await bearer(request(app).get(CRON_STATUS), owner)).status).toBe(200);
-    expect((await bearer(request(app).get(CRON_STATUS), admin)).status).toBe(200);
-    expect((await bearer(request(app).get(CRON_STATUS), mod)).status).toBe(403);
-    expect((await bearer(request(app).get(CRON_STATUS), player)).status).toBe(403);
+    expect((await bearer(request(app).get(cronStatus), owner)).status).toBe(200);
+    expect((await bearer(request(app).get(cronStatus), admin)).status).toBe(200);
+    expect((await bearer(request(app).get(cronStatus), mod)).status).toBe(403);
+    expect((await bearer(request(app).get(cronStatus), player)).status).toBe(403);
   });
 
   it("an inline admin check: the owner may list another player's horses", async () => {
@@ -116,12 +116,12 @@ describe('the owner passes every admin gate', () => {
     const other = await makeUser('user');
     const horse = await makeHorse(other);
 
-    const asOwner = await bearer(request(app).get(HORSES).query({ userId: other.id }), owner);
+    const asOwner = await bearer(request(app).get(horsesPath).query({ userId: other.id }), owner);
     expect(asOwner.status).toBe(200);
     expect(asOwner.body.data.map(h => h.id)).toContain(horse.id);
 
     // A player's userId override is ignored: they only ever see their own.
-    const asPlayer = await bearer(request(app).get(HORSES).query({ userId: other.id }), player);
+    const asPlayer = await bearer(request(app).get(horsesPath).query({ userId: other.id }), player);
     expect(asPlayer.status).toBe(200);
     expect(asPlayer.body.data.map(h => h.id)).not.toContain(horse.id);
   });
@@ -132,7 +132,7 @@ describe('the owner passes every admin gate', () => {
     const player = await makeUser('user');
 
     const promoted = await post(
-      `${ROLES}/${player.id}`,
+      `${rolesPath}/${player.id}`,
       owner,
       { role: 'moderator', reason: 'helps new riders' },
       ownerDevice,
@@ -140,7 +140,7 @@ describe('the owner passes every admin gate', () => {
     expect(promoted.status).toBe(200);
     expect(promoted.body.role).toBe('moderator');
 
-    const list = await get(ROLES, owner, ownerDevice);
+    const list = await get(rolesPath, owner, ownerDevice);
     expect(list.status).toBe(200);
     expect(list.body.staff).toEqual(expect.arrayContaining([expect.objectContaining({ id: owner.id, role: 'owner' })]));
   });
@@ -150,7 +150,7 @@ describe('the owner passes every admin gate', () => {
     const admin = await makeUser('admin');
     const adminDevice = await checkIn(admin);
 
-    const res = await post(`${ROLES}/${owner.id}`, admin, { role: 'user', reason: 'coup' }, adminDevice);
+    const res = await post(`${rolesPath}/${owner.id}`, admin, { role: 'user', reason: 'coup' }, adminDevice);
     expect(res.status).toBe(403);
     const row = await prisma.user.findUnique({ where: { id: owner.id }, select: { role: true } });
     expect(row.role).toBe('owner');
@@ -164,7 +164,7 @@ describe('the owner passes every admin gate', () => {
     const subject = await makePost(await makeUser('user'));
 
     const res = await post(
-      TICKETS,
+      ticketsPath,
       mod,
       { targetType: 'post', targetId: String(subject.id), category: 'Needs the head admin', note: `n ${uid()}` },
       modDevice,
@@ -181,7 +181,7 @@ describe('the owner passes every admin gate', () => {
 });
 
 describe('hidden traits: the owner only (trait analytics)', () => {
-  const SOURCE = `TestFixture-4tleh-${uid()}${uid()}`;
+  const source = `TestFixture-4tleh-${uid()}${uid()}`;
 
   beforeAll(async () => {
     const breeder = await makeUser('user');
@@ -192,12 +192,12 @@ describe('hidden traits: the owner only (trait analytics)', () => {
     });
     for (const traitName of ['bold', 'nervous']) {
       await prisma.traitHistoryLog.create({
-        data: { horseId: horse.id, traitName, sourceType: SOURCE, isEpigenetic: true, ageInDays: 5 },
+        data: { horseId: horse.id, traitName, sourceType: source, isEpigenetic: true, ageInDays: 5 },
       });
     }
   });
 
-  const analytics = user => bearer(request(app).get(TRAIT_ANALYTICS).query({ sourceType: SOURCE }), user);
+  const analytics = user => bearer(request(app).get(traitAnalytics).query({ sourceType: source }), user);
 
   it('the owner sees the hidden trait counted', async () => {
     const res = await analytics(await makeUser('owner'));

@@ -17,6 +17,8 @@
 import AppError from '../../errors/AppError.mjs';
 
 export const STAFF_ROLES = Object.freeze(['moderator', 'admin', 'owner']);
+/** camelCase name for the same frozen list (Equoria-pjvp8 naming). */
+export const staffRoles = STAFF_ROLES;
 
 const MODERATOR = [
   'warn',
@@ -28,7 +30,7 @@ const MODERATOR = [
   'ticket.file',
   'log.view.own',
 ];
-const ADMIN_ONLY = [
+const adminOnly = [
   'ticket.resolve',
   'log.view.all',
   'ban.ip',
@@ -40,15 +42,15 @@ const ADMIN_ONLY = [
   'horse.admin',
   'news.post',
 ];
-const OWNER_ONLY = ['traits.hidden.view'];
+const ownerOnly = ['traits.hidden.view'];
 
 // Private and frozen (STAFF-CR-12): no importer can reach a mutable copy of
 // the policy. Callers ask through hasCapability and capabilitiesFor only.
-const ADMIN = [...MODERATOR.filter(c => c !== 'ticket.file'), ...ADMIN_ONLY];
+const ADMIN = [...MODERATOR.filter(c => c !== 'ticket.file'), ...adminOnly];
 const ROLE_CAPABILITIES = Object.freeze({
   moderator: Object.freeze([...MODERATOR]),
   admin: Object.freeze([...ADMIN]),
-  owner: Object.freeze([...ADMIN, ...OWNER_ONLY]),
+  owner: Object.freeze([...ADMIN, ...ownerOnly]),
 });
 
 /** The role's own frozen list, or null. Inherited keys are never roles. */
