@@ -5,12 +5,11 @@
  * so its real rendering — sortable columns, user-row highlighting, prize
  * aggregation — had no coverage. This test exercises the REAL component.
  *
- * Data injection uses the documented `_testResults` seam (Equoria-55bo.3), NOT a
- * vi.mock of useCompetitionResults: passing `_testResults` switches the modal to
- * the explicit test-injection branch and disables the production fetch
- * (`useCompetitionResults(null)`), which is the component's own contract for
- * tests. Since Equoria-q4uem.10 (owner ruling R7) the modal makes no other
- * request: the horse XP/level read behind the invented XP column is gone.
+ * The modal drives its production fetch (Equoria-a1thh removed the `_test*`
+ * injection props): each test serves the show-results wire DTO through MSW and
+ * the real useCompetitionResults hook, api client and mapper turn it into what
+ * the dialog renders. Since Equoria-q4uem.10 (owner ruling R7) the modal makes
+ * no other request: the horse XP/level read behind the invented XP column is gone.
  *
  * Assertions target user-visible behavior:
  *   - sort headers reorder the visible rows (default rank, then score desc, name)
@@ -19,7 +18,7 @@
  *   - the prize-distribution + per-row prizes render the real aggregated values
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -28,7 +27,11 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import React from 'react';
 import CompetitionResultsModal from '../CompetitionResultsModal';
-import type { CompetitionResults, ParticipantResult } from '@/lib/api/competitionResults';
+import type {
+  CompetitionResults,
+  ParticipantResult,
+  ShowResultsEnvelope,
+} from '@/lib/api/competitionResults';
 
 const RECORD = { horsePointsAwarded: null, statGain: null, conformationAward: null };
 
@@ -96,7 +99,50 @@ function recordXpRequests() {
   });
 }
 
-function renderModal(results: CompetitionResults | null = RESULTS) {
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+/**
+ * The show-results wire DTO that `toCompetitionResults` maps to `results`: the
+ * prize pool is the show's prize, the podium payouts are read from the rows.
+ */
+function toWire(results: CompetitionResults): ShowResultsEnvelope {
+  return {
+    success: true,
+    showId: results.competitionId,
+    count: results.totalParticipants,
+    show: {
+      id: results.competitionId,
+      name: results.competitionName ?? 'Unnamed show',
+      discipline: results.discipline ?? '',
+      showType: results.showType ?? 'ridden',
+      status: 'completed',
+      scheduledRunDate: results.date,
+      executedAt: results.date,
+      prize: results.prizePool ?? 0,
+    },
+    results: results.results.map((r, index) => ({
+      resultId: index + 1,
+      horseId: r.horseId,
+      horseName: r.horseName,
+      ownerName: r.ownerName,
+      isViewerHorse: r.isCurrentUser,
+      placement: r.rank,
+      score: r.finalScore,
+      prizeWon: r.prizeWon,
+      runDate: results.date,
+      horsePointsAwarded: r.horsePointsAwarded,
+      statGain: r.statGain,
+      conformationAward: r.conformationAward,
+    })),
+  };
+}
+
+function renderModal(results: CompetitionResults = RESULTS, props = {}) {
+  server.use(
+    http.get(`${apiBase}/api/v1/competition/show/${results.competitionId}/results`, () =>
+      HttpResponse.json(toWire(results))
+    )
+  );
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -106,8 +152,8 @@ function renderModal(results: CompetitionResults | null = RESULTS) {
         <CompetitionResultsModal
           isOpen
           onClose={() => {}}
-          competitionId={results?.competitionId ?? 555}
-          _testResults={results}
+          competitionId={results.competitionId}
+          {...props}
         />
       </MemoryRouter>
     </QueryClientProvider>
@@ -182,7 +228,7 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
     renderModal();
     await screen.findByTestId('results-table');
 
-    // Prize distribution block reflects the injected 50/30/20 split of 6000.
+    // Prize distribution block reflects the served 50/30/20 split of 6000.
     const dist = screen.getByTestId('prize-distribution');
     expect(within(dist).getByText('Prize Pool:').parentElement).toHaveTextContent('6,000');
     expect(within(within(dist).getByTestId('prize-1st')).getByText('3,000')).toBeInTheDocument();
@@ -201,7 +247,7 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
 
     // Comet (current user) placed 1st → the user prize summary surfaces and the
     // aggregated total reflects the real 3,000-coin win (proves the modal
-    // computed userPrizes from the injected results, not a placeholder).
+    // computed userPrizes from the served results, not a placeholder).
     expect(within(card).getByTestId('total-prize-money')).toHaveTextContent('3,000');
     // The per-horse breakdown reveals the winning horse name once expanded.
     const user = userEvent.setup();
@@ -247,20 +293,7 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
   });
 
   it('opens the prize notification without an experience line', async () => {
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={qc}>
-        <MemoryRouter>
-          <CompetitionResultsModal
-            isOpen
-            onClose={() => {}}
-            competitionId={555}
-            showPrizeNotification
-            _testResults={RESULTS}
-          />
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
+    renderModal(RESULTS, { showPrizeNotification: true });
 
     expect(await screen.findByTestId('prize-notification-modal')).toBeInTheDocument();
     expect(screen.queryByTestId('xp-gained')).not.toBeInTheDocument();
@@ -319,5 +352,78 @@ describe('CompetitionResultsModal — behavior (Equoria-o5hub.34)', () => {
     expect(screen.queryByTestId('prize-distribution')).not.toBeInTheDocument();
     expect(screen.getByTestId('prize-value')).toHaveTextContent('—');
     expect(screen.queryByTestId('prize-summary-card')).not.toBeInTheDocument();
+  });
+
+  it('shows a loading skeleton while the results are fetched, then the table', async () => {
+    renderModal();
+    expect(screen.getByRole('status', { name: /loading results/i })).toBeInTheDocument();
+    expect(screen.getAllByTestId('skeleton-row')).toHaveLength(8);
+    await screen.findByTestId('results-table');
+    expect(screen.queryByTestId('skeleton-row')).not.toBeInTheDocument();
+  });
+
+  it('shows the error state, not an empty table, when the results fail to load', async () => {
+    // The default MSW handlers answer show 999 with a 500.
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <CompetitionResultsModal isOpen onClose={() => {}} competitionId={999} />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    expect(await screen.findByTestId('error-state')).toBeInTheDocument();
+    expect(screen.queryByTestId('results-table')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
+  });
+
+  it('offers Retry on the error state only when the page passes onRetry', async () => {
+    const onRetry = vi.fn();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <CompetitionResultsModal
+            isOpen
+            onClose={() => {}}
+            competitionId={999}
+            onRetry={onRetry}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId('retry-button'));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports the first view once the player has podium prizes, and not before', async () => {
+    const onFirstView = vi.fn();
+    renderModal(RESULTS, { onFirstView });
+    await screen.findByTestId('prize-summary-card');
+    expect(onFirstView).toHaveBeenCalled();
+  });
+
+  it('does not report a first view when the player has no podium prize', async () => {
+    const onFirstView = vi.fn();
+    renderModal(
+      {
+        ...RESULTS,
+        results: RESULTS.results.map((r) => ({ ...r, isCurrentUser: false })),
+      },
+      { onFirstView }
+    );
+    await screen.findByTestId('results-table');
+    expect(onFirstView).not.toHaveBeenCalled();
+  });
+
+  // DESIGN.md: result dialog titles are Basteleur Moonlight (Equoria-spja8).
+  it('sets the show name in the ceremonial title voice', async () => {
+    renderModal();
+    const title = await screen.findByRole('heading', {
+      level: 2,
+      name: 'TestFixture-Spring Classic',
+    });
+    expect(title).toHaveClass('type-ceremonial-title');
   });
 });
