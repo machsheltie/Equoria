@@ -299,8 +299,10 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
                         •
                       </span>
                       <span>
-                        <strong>Gestation Period:</strong> The foal will be born immediately and
-                        enter the critical 30-day development phase.
+                        {/* Owner ruling 2026-10-12: a pregnancy lasts 7 days; the
+                            nightly foaling on the seventh day delivers the foal. */}
+                        <strong>Pregnancy:</strong> {dam.name} will be in foal for 7 days; the foal
+                        is born on the seventh night.
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
@@ -308,8 +310,11 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
                         •
                       </span>
                       <span>
-                        <strong>Foal Care Required:</strong> Daily enrichment activities and
-                        milestone evaluations will be needed during the foal's development.
+                        {/* Owner rulings 2026-10-14/15: grooms do enrichment for
+                            horses under 3, one activity a day the player picks;
+                            no graduation or milestones. */}
+                        <strong>Raising the Foal:</strong> Until the foal is 3, its groom does its
+                        enrichment: one activity a day, chosen by you.
                       </span>
                     </li>
                   </ul>

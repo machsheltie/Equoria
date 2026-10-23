@@ -273,24 +273,35 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
       expect(screen.queryByText(/Both parents/i)).not.toBeInTheDocument();
     });
 
-    it('should display gestation period information', () => {
+    // Contract changed by the owner (Equoria-7ga54). OLD: "the foal will be born
+    // immediately and enter the critical 30-day development phase" and the
+    // player must do "daily enrichment activities and milestone evaluations".
+    // NEW (Stacey): a pregnancy lasts 7 days (2026-10-12); grooms do a foal's
+    // enrichment until age 3, one activity a day that the player chooses, with
+    // no graduation or milestones (2026-10-14 / 10-15).
+    it('states the 7-day pregnancy', () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
-      expect(screen.getByText(/Gestation Period/i)).toBeInTheDocument();
+      expect(screen.getByText(/Pregnancy:/)).toBeInTheDocument();
       expect(
         screen.getByText(
-          /The foal will be born immediately and enter the critical 30-day development phase/i
+          /Lightning will be in foal for 7 days; the foal is born on the seventh night/
         )
       ).toBeInTheDocument();
+      expect(screen.queryByText(/born immediately/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/30-day development/i)).not.toBeInTheDocument();
     });
 
-    it('should display foal care requirements', () => {
+    it("says the foal's groom does its enrichment", () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
-      expect(screen.getByText(/Foal Care Required/i)).toBeInTheDocument();
+      expect(screen.getByText(/Raising the Foal:/)).toBeInTheDocument();
       expect(
-        screen.getByText(/Daily enrichment activities and milestone evaluations will be needed/i)
+        screen.getByText(
+          /Until the foal is 3, its groom does its enrichment: one activity a day, chosen by you/
+        )
       ).toBeInTheDocument();
+      expect(screen.queryByText(/milestone evaluations/i)).not.toBeInTheDocument();
     });
   });
 
