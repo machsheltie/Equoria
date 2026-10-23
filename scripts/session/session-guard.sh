@@ -454,8 +454,9 @@ cmd_precommit() {
 # tag or a side branch is otherwise measured against the wrong commits. With no
 # stdin (a manual run) fall back to the upstream range.
 #
-# NOTE: this consumes the hook's stdin. Nothing else in .husky/pre-push reads
-# it; if that changes, tee it there.
+# NOTE: this consumes the stdin it is given. .husky/pre-push captures the hook's
+# stdin once (PUSH_REFS) and replays it to this guard and to
+# scripts/preflight/candidate-state.mjs (Equoria-hqrqk).
 push_commits_to() {
   _out="$1"
   : > "$_out"

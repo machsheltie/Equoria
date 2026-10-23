@@ -125,6 +125,34 @@ rather than creation — `git reset --hard`, `git checkout --`, `git stash` and 
 branch force still discard the other session's uncommitted work silently, and
 no hook exists for them.
 
+## Pre-push candidate validation (Equoria-hqrqk)
+
+The pre-push gate tests the working tree of the checkout it runs in, while git
+publishes the commits named on the hook's stdin. `.husky/pre-push` captures
+that stdin once and replays it to the session guard and to
+`scripts/preflight/candidate-state.mjs`, which runs before the doctrine checks
+and again after the backend gate:
+
+- **Before:** refuses when a pushed commit is not the checked-out `HEAD`, when
+  a file under a code root (`backend/`, `frontend/`, `packages/`, `scripts/`,
+  `tests/`, `samples/`, `config/`, `utils/`, `plugins/`, `.github/`, `.husky/`
+  and the root manifests and gate configs) is modified, staged or untracked,
+  or when the remote tip is not an ancestor of what is pushed (git would reject
+  it after the gate ran). Fails closed on any git error.
+  `EQUORIA_PUSH_ALLOW_NON_FF=1` allows a deliberate non-fast-forward only.
+- **After:** re-reads `HEAD` and tracked files, so a green gate is never
+  attached to a tree edited while it ran. Untracked artifacts the suite leaves
+  behind are tolerated here.
+- **Not refused:** differences outside the code roots (docs, `EquoriaBible/`)
+  print a note. At least one backend test reads a file under
+  `EquoriaBible/RelevantFiles/`, so a modified bible file can still change a
+  verdict; this is a stated gap, not a guarantee.
+
+Admission (one gate at a time, machine-wide) is separate: the runner takes the
+lock in `backend/scripts/gate-lock.mjs`, and its scope limits are documented in
+that file. The lock is released before git updates the remote ref; a push that
+loses that race is rejected by git, never silently merged.
+
 ## Railway invariant
 
 `.railway/railway.ts` (Railway Infrastructure as Code) owns the production build, start, healthcheck and restart policy. The builder is Railpack (native Node build, no repository Dockerfile since 2026-09-30, Equoria-6q7cf); its `buildCommand` is `npm run build:production`, the same fail-fast command the CI `production-build` job runs, and the start command uses repository-relative paths because Railpack runs it from the app directory. The backend serves `frontend/dist` directly; nothing is copied into `backend/public`. Known CLI quirk (5.58.0): the plan renders `builder: 'RAILPACK'` as `null` and the apply treats null as no change, so the file keeps the plan clean but cannot move a service off `DOCKERFILE`; that switch is an `environmentPatchCommit` through `railway api` (the exact command is in the file's comment), verified by reading `environment { config }`. Railway does not read it at deploy time: a change takes effect only after `railway config plan` is reviewed and `railway config apply` is run against the linked project, so an edit without an apply is drift, not a deployment change. Prisma migration deployment must succeed before the backend starts; a non-zero migration exit must abort deployment. Preserve the direct/pooler URL behavior already encoded there and verify changes against the doctrine check that enforces fail-fast migration startup. The former `railway.toml` (Config as Code) is deprecated by Railway and was migrated on 2026-09-22; do not recreate it.

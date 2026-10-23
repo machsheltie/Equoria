@@ -77,11 +77,26 @@ fi
 # master had another session's half-finished revert inside it. Prints the
 # offending commits. ~0.2s, no-op in CI, override EQUORIA_SESSION_OVERRIDE=1.
 #
-# It CONSUMES this hook's stdin (the "<local ref> <local sha> <remote ref>
-# <remote sha>" lines git feeds a pre-push hook) so it judges the refs actually
-# being pushed rather than assuming @{upstream}..HEAD. Nothing below reads
-# stdin; if that ever changes, tee it instead of piping it here.
-sh "$REPO_ROOT/scripts/session/session-guard.sh" prepush || exit 1
+# It judges the refs on this hook's stdin (the "<local ref> <local sha> <remote
+# ref> <remote sha>" lines git feeds a pre-push hook) rather than assuming
+# @{upstream}..HEAD. stdin can be read only once, so it is captured here and
+# replayed to every consumer: the session guard and candidate-state below.
+# A terminal means a manual run: there are no refs to replay.
+if [ -t 0 ]; then
+  PUSH_REFS=""
+else
+  PUSH_REFS="$(cat)"
+fi
+printf '%s\n' "$PUSH_REFS" | sh "$REPO_ROOT/scripts/session/session-guard.sh" prepush || exit 1
+
+# Equoria-hqrqk (Phase E): validate the CANDIDATE before spending a gate run.
+# The gate tests this checkout's working tree; git publishes the commits named
+# on stdin. Refuses when the pushed commit is not the checked-out HEAD, when a
+# gate-relevant file differs from HEAD (modified, or untracked under a code
+# root), or when the remote tip is not an ancestor of what is being pushed
+# (git would reject it after the gate ran). Fail-closed on any git error. The
+# same check runs again after the gate (see the end of this file).
+printf '%s\n' "$PUSH_REFS" | node "$REPO_ROOT/scripts/preflight/candidate-state.mjs" before || exit 1
 
 # Equoria-ocy3 (B2): run doctrine-checks BEFORE the slow backend test suite.
 # Mirror what CI's doctrine-gate workflow runs on the merge commit, so a
@@ -182,3 +197,11 @@ if ! npm run test:backend:full; then
   echo "[pre-push] FATAL: authoritative backend test profile failed." >&2
   exit 1
 fi
+
+# Equoria-hqrqk: the gate ran for minutes. Re-read HEAD and the tracked files so a
+# green result is never attached to a tree that was edited while it ran.
+cd "$REPO_ROOT" || exit 1
+printf '%s\n' "$PUSH_REFS" | node "$REPO_ROOT/scripts/preflight/candidate-state.mjs" after || {
+  echo "[pre-push] FATAL: the candidate changed while the gate ran; re-run the push." >&2
+  exit 1
+}
