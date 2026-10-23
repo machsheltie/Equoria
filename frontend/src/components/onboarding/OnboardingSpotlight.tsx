@@ -19,6 +19,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdvanceOnboarding, useCompleteOnboarding } from '@/hooks/api/useOnboarding';
 import { Button } from '@/components/ui/button';
+import { isWelcomePending } from './welcomePending';
 
 /** Step definition for the guided onboarding tour */
 interface OnboardingStep {
@@ -116,13 +117,16 @@ const OnboardingSpotlight: React.FC = () => {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [windowSize, setWindowSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
-  // Only active during the guided tour (step 1–10, completedOnboarding still false)
+  // Only active during the guided tour (step 1–10, completedOnboarding still false).
+  // The one-time welcome note goes first (Equoria-kd2dd): while it is owed the tour
+  // stays quiet, so its Escape-skips-the-tour key cannot also fire on the note's Escape.
   const isActive =
     !isLoading &&
     user !== null &&
     user.completedOnboarding === false &&
     typeof user.onboardingStep === 'number' &&
-    user.onboardingStep >= 1;
+    user.onboardingStep >= 1 &&
+    !isWelcomePending(user);
 
   const stepIndex = isActive ? user!.onboardingStep! - 1 : 0;
   const activeStep = ONBOARDING_STEPS[stepIndex] ?? null;

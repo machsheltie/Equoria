@@ -50,6 +50,8 @@ export interface User {
   completedOnboarding?: boolean;
   /** Current step in the 10-step onboarding spotlight tour (0 = not started, 1-10 = in progress, 10 = complete). */
   onboardingStep?: number;
+  /** Whether the one-time welcome note has been shown (Equoria-kd2dd). Always a boolean from the server. */
+  welcomeSeen?: boolean;
   /** Backend-persisted notification preferences (see SettingsPage). */
   notifications?: Record<string, boolean | string | number> | null;
   /** Backend-persisted display/accessibility preferences (see SettingsPage). */

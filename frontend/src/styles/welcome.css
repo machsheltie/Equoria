@@ -1,0 +1,80 @@
+/**
+ * The one-time welcome note (Equoria-kd2dd) — authored CSS over Celestial Night
+ * tokens. No raw colours: every value is a token from tokens.css.
+ *
+ * Composition: a short ceremonial greeting, one warm line that is itself the
+ * door to the Guide, and a single gold action. Centered, generous spacing, no
+ * boxes inside the box.
+ */
+
+.welcome-note {
+  text-align: center;
+  padding: var(--space-6) var(--space-5) var(--space-5);
+}
+
+.welcome-note__header {
+  align-items: center;
+  /* The greeting stands alone: GameDialogHeader's ruled underline is dropped. */
+  border-bottom: 0;
+  padding-bottom: var(--space-2);
+}
+
+.welcome-note__title {
+  font-size: var(--text-h2);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* A hairline of lantern light between the greeting and the invitation. */
+.welcome-note__invitation {
+  position: relative;
+  margin: var(--space-4) 0 var(--space-6);
+  padding-top: var(--space-5);
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  line-height: 1.5;
+}
+
+.welcome-note__invitation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 6rem;
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+
+.welcome-note__guide-link {
+  color: var(--link-gold);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  /* 44px minimum touch target without changing the line's look. */
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+}
+
+.welcome-note__guide-link:hover {
+  color: var(--gold-bright);
+}
+
+.welcome-note__guide-link:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.welcome-note__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.welcome-note__error {
+  max-width: 28ch;
+  text-align: left;
+}

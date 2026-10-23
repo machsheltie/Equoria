@@ -263,6 +263,8 @@ export const authApi = {
         role?: 'user' | 'owner' | 'admin' | 'moderator';
         completedOnboarding?: boolean;
         onboardingStep?: number;
+        /** Equoria-kd2dd: whether the one-time welcome note has been shown. */
+        welcomeSeen?: boolean;
         /** Story 21S-5: canonical persisted preferences field. */
         preferences?: Partial<UserPreferences>;
         /** @deprecated Legacy JSONB columns — prefer preferences above. */
@@ -377,6 +379,12 @@ export const authApi = {
    */
   completeOnboarding: () =>
     apiClient.post<{ completedOnboarding: boolean }>('/api/v1/auth/complete-onboarding', {}),
+
+  /**
+   * Record that the player has seen the one-time welcome note (Equoria-kd2dd).
+   * Idempotent: the server sets User.settings.welcomeSeen and nothing else.
+   */
+  markWelcomeSeen: () => apiClient.post<{ welcomeSeen: boolean }>('/api/v1/auth/welcome-seen', {}),
 
   /**
    * Advance the authenticated user's onboarding step by 1.

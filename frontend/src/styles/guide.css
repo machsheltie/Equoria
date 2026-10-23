@@ -1,0 +1,370 @@
+/**
+ * The in-game Guide (Equoria-kd2dd) — authored CSS over Celestial Night tokens.
+ * No raw colours or utility classes: every value is a token from tokens.css.
+ *
+ * Composition: an announcer title standing alone over the scene, then one calm
+ * reading surface (the existing .glass-panel material) holding the chapters as
+ * open type. Phone first: one column, the chapter index folded into a single
+ * disclosure; from 1024px the index sits beside the text and stays in view.
+ */
+
+.guide {
+  padding: var(--space-6) 0 var(--space-8);
+}
+
+/* ── Title ─────────────────────────────────────────────────────────────── */
+
+.guide__hero {
+  margin-bottom: var(--space-6);
+  text-align: center;
+}
+
+.guide__title {
+  margin: 0;
+  color: var(--gold-primary);
+  font-size: var(--text-h1);
+  line-height: 1.18;
+  overflow-wrap: break-word;
+}
+
+.guide__title:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+@media (min-width: 768px) {
+  .guide__title {
+    font-size: var(--text-display);
+  }
+}
+
+/* ── Body: index + text ────────────────────────────────────────────────── */
+
+.guide__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+  max-width: 62rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .guide__body {
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+
+  .guide__aside {
+    position: sticky;
+    top: var(--space-6);
+    max-height: calc(100vh - var(--space-8));
+    overflow-y: auto;
+  }
+}
+
+.guide__text-surface {
+  padding: var(--space-5) var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .guide__text-surface {
+    padding: var(--space-6) var(--space-7);
+  }
+}
+
+/* ── Chapter index ─────────────────────────────────────────────────────── */
+
+.guide-index__heading,
+.guide-index__summary {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-entity);
+  font-size: var(--text-xl);
+  font-weight: 400;
+  color: var(--gold-light);
+}
+
+.guide-index--compact {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  padding: 0 var(--space-4);
+}
+
+.guide-index__summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.guide-index__summary:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.guide-index--compact[open] .guide-index__summary {
+  margin-bottom: var(--space-2);
+}
+
+.guide-index--compact .guide-index__nav {
+  padding-bottom: var(--space-3);
+}
+
+.guide-index__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: guide-chapter;
+}
+
+.guide-index__list > li {
+  counter-increment: guide-chapter;
+}
+
+.guide-index__link {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  text-decoration: none;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.guide-index__link::before {
+  content: counter(guide-chapter, decimal-leading-zero);
+  flex: 0 0 1.75rem;
+  color: var(--gold-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.guide-index__link:hover {
+  color: var(--gold-light);
+}
+
+.guide-index__link:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Chapters ──────────────────────────────────────────────────────────── */
+
+.guide-section {
+  /* Anchor landings are not hidden behind a fixed header. */
+  scroll-margin-top: var(--space-6);
+  max-width: 44rem;
+}
+
+.guide-section + .guide-section {
+  margin-top: var(--space-7);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--alpha-gold-primary-20);
+}
+
+.guide-section__header {
+  margin-bottom: var(--space-4);
+}
+
+.guide-section__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-h2);
+  line-height: 1.2;
+}
+
+.guide-section__title:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.guide-section__tagline {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-style: italic;
+}
+
+.guide-section__top {
+  margin: var(--space-5) 0 0;
+  font-size: var(--text-sm);
+}
+
+/* ── Text ──────────────────────────────────────────────────────────────── */
+
+.guide-text,
+.guide-list {
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.65;
+}
+
+.guide-text {
+  margin: 0 0 var(--space-4);
+}
+
+.guide-text strong,
+.guide-list strong {
+  font-weight: 600;
+  color: var(--gold-light);
+}
+
+.guide-subheading {
+  margin: var(--space-6) 0 var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--gold-primary);
+}
+
+.guide-list {
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-5);
+}
+
+.guide-list li {
+  margin-bottom: var(--space-2);
+  padding-left: var(--space-1);
+}
+
+.guide-list li::marker {
+  color: var(--gold-primary);
+}
+
+.guide-link {
+  color: var(--link-gold);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.guide-link:hover {
+  color: var(--gold-bright);
+}
+
+.guide-link:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Worked example: a quiet lantern rule down the side ───────────────── */
+
+.guide-example {
+  margin: var(--space-4) 0;
+  padding: var(--space-1) 0 var(--space-1) var(--space-4);
+  border-left: 2px solid var(--gold-dim);
+}
+
+.guide-example .guide-text {
+  margin: 0;
+}
+
+/* ── Ledger-style tables ───────────────────────────────────────────────── */
+
+.guide-table {
+  margin: var(--space-4) 0;
+  overflow-x: auto;
+}
+
+.guide-table:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.guide-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.guide-table caption {
+  padding-bottom: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-style: italic;
+  text-align: left;
+}
+
+.guide-table th,
+.guide-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+  vertical-align: top;
+}
+
+.guide-table thead th {
+  color: var(--gold-light);
+  font-weight: 600;
+  border-bottom: 1px solid var(--gold-dim);
+  white-space: nowrap;
+}
+
+.guide-table tbody th {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.guide-table td {
+  color: var(--text-primary);
+}
+
+/* ── Still being decided: quiet, never alarming ────────────────────────── */
+
+.guide-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin: var(--space-4) 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px dotted var(--gold-dim);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-style: italic;
+}
+
+.guide-pending__label {
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.guide-pending__topic::before {
+  content: '·';
+  margin-right: var(--space-3);
+}
+
+/* ── Closing line ──────────────────────────────────────────────────────── */
+
+.guide__closing {
+  margin: var(--space-7) 0 0;
+  text-align: center;
+  color: var(--gold-light);
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide * {
+    scroll-behavior: auto;
+  }
+}

@@ -26,6 +26,8 @@ const WhileYouWereGone = lazy(() =>
 );
 // OnboardingSpotlight: shown only when completedOnboarding === false && onboardingStep >= 1
 const OnboardingSpotlight = lazy(() => import('@/components/onboarding/OnboardingSpotlight'));
+// One-time welcome note after the signup wizard (Equoria-kd2dd)
+const WelcomeDialog = lazy(() => import('@/components/onboarding/WelcomeDialog'));
 
 // Auth pages — lazy loaded
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
@@ -73,6 +75,13 @@ const App = () => (
                   optional overlay with nothing to show before its chunk loads. */}
               <Suspense fallback={null}>
                 <OnboardingSpotlight />
+              </Suspense>
+              {/* One-time welcome note (Equoria-kd2dd): shown once, to a player who has just
+                  finished the signup wizard. The guided tour waits until it is dismissed.
+                  fallback={null} is deliberate (doctrine section 5 exemption): until this lazy
+                  chunk loads there is nothing to stand in for — the note announces itself. */}
+              <Suspense fallback={null}>
+                <WelcomeDialog />
               </Suspense>
               <OnboardingGuard>
                 <Suspense fallback={<GallopingLoader />}>
