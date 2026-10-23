@@ -99,9 +99,9 @@ is a layout, a page structure or a copy deck.
 - Show scoring reads the item standing in the saddle and bridle slots and that
   item's own discipline list: empty means All Purpose. A crafted saddle or
   bridle whose discipline is ambiguous is classed All Purpose until the owner
-  classifies it. The numbers stored beside the ids on the horse
-  (`saddleBonus`, `bridleBonus`) are a purchase-time mirror and are not read by
-  the scorer.
+  classifies it. No number is stored beside the ids: the retired
+  `saddleBonus` / `bridleBonus` mirrors and the per-item `numericBonus` are no
+  longer written or read (a mirror still stored on an older horse is inert).
 
 ## Vet
 
@@ -146,12 +146,11 @@ owner decision and a fresh issue.
   workshop tier 0. No shipped route grants more materials or raises the
   workshop tier, so tier 1 to 3 recipes cannot be unlocked by play.
 - **Shop bonus text drifts from scoring.** The tack catalog still carries a
-  per-item `bonus` string and `numericBonus` (for example a different number on
-  racing and figure-eight tack, and non-zero numbers on halters, pads, wraps,
-  reins, girths and breastplates). Ridden scoring ignores them; only the saddle
-  and bridle slots score, at 5 or 2. A player reading the shop can be promised a
-  bonus she will not receive (tracked as Equoria-k1p62.4; delete this bullet
-  when it lands).
+  per-item `bonus` string (for example a bonus label on halters, pads,
+  wraps, reins, girths and breastplates). Only the saddle and bridle slots
+  score, at 5 or 2. A player reading the shop can be promised a bonus she will
+  not receive (the owner ruling on those labels is tracked as Equoria-cv3if;
+  delete this bullet when it lands).
 - **Hoof condition has no gameplay consequence** beyond prompting the next
   farrier booking.
 
