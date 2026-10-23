@@ -253,18 +253,42 @@ export async function cleanupCompatibilityFixtures(prisma, fx) {
 const MISSING_GROOM_ID = 2000000002;
 const MISSING_HORSE_ID = 2000000003;
 
-function labelText(text, labels) {
+// The only place the services' text names a row id: their "Groom not found:
+// <id>" / "Horse not found: <id>" errors.
+const ID_IN_TEXT = /\b((?:Groom|Horse) not found: )(\d+)\b/g;
+
+/**
+ * Replace the fixture token and the ids a text names with stable labels.
+ *
+ * Equoria-94qvf: ids are relabeled ONLY where the text names one (ID_IN_TEXT).
+ * The old rule replaced every whole number equal to ANY fixture id anywhere in
+ * the text. On a fresh lane database (small ids) a groom or horse whose id was
+ * 72 turned "medium experience level with 72% trait strength" into "... with
+ * <calm>% ..." and every factors case of the groom with that strength missed
+ * its golden digest (2026-10-22: 'factors|energetic|*' in one lane,
+ * 'factors|methodical-novice|*' in another; the same code passed alone because
+ * the ids were different). The replacement for a named id is unchanged: the
+ * groom label first, then the horse label (the old map order), and the two
+ * missing ids keep their own labels.
+ */
+export function labelText(text, labels) {
   let out = text;
   for (const [key, label] of labels) {
-    if (key.startsWith('groom:') || key.startsWith('horse:')) {
-      out = out.replace(new RegExp(`\\b${key.split(':')[1]}\\b`, 'g'), `<${label}>`);
-    } else {
+    if (!key.startsWith('groom:') && !key.startsWith('horse:')) {
       out = out.split(key).join(label);
     }
   }
-  return out
-    .replace(new RegExp(`\\b${MISSING_GROOM_ID}\\b`, 'g'), '<missing-groom>')
-    .replace(new RegExp(`\\b${MISSING_HORSE_ID}\\b`, 'g'), '<missing-horse>');
+  return out.replace(ID_IN_TEXT, (match, prefix, digits) => {
+    const id = Number(digits);
+    if (id === MISSING_GROOM_ID) {
+      return `${prefix}<missing-groom>`;
+    }
+    if (id === MISSING_HORSE_ID) {
+      return `${prefix}<missing-horse>`;
+    }
+    const label = labels.get(`groom:${id}`) ?? labels.get(`horse:${id}`);
+    return label ? `${prefix}<${label}>` : match;
+  });
 }
 
 function normalize(value, labels, key = '') {

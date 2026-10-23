@@ -35,6 +35,7 @@ import {
   buildCompatibilityFixtures,
   caseDigests,
   cleanupCompatibilityFixtures,
+  labelText,
   runCompatibilityGrid,
 } from './helpers/dynamicCompatibilityGrid.mjs';
 
@@ -84,6 +85,29 @@ async function digestsAt(instant) {
 }
 
 describe('dynamic compatibility characterization (golden digests from the pre-S6 API)', () => {
+  // Equoria-94qvf: the digests must not depend on which ids the database hands
+  // out. A fresh lane database gives small ids, and one equal to a number in an
+  // output text (a trait-strength percentage) used to be relabeled as if the
+  // text named that row.
+  it('relabels an id only where the text names one, not a number that equals a fixture id', () => {
+    const labels = new Map([
+      ['a1b2c3', '<T>'],
+      ['groom:72', 'energetic'],
+      ['horse:33', 'flagless'],
+    ]);
+    expect(labelText('medium experience level with 72% trait strength', labels)).toBe(
+      'medium experience level with 72% trait strength',
+    );
+    expect(labelText('low experience level with 33% trait strength', labels)).toBe(
+      'low experience level with 33% trait strength',
+    );
+    expect(labelText('Groom not found: 72', labels)).toBe('Groom not found: <energetic>');
+    expect(labelText('Horse not found: 33', labels)).toBe('Horse not found: <flagless>');
+    expect(labelText('Groom not found: 2000000002', labels)).toBe('Groom not found: <missing-groom>');
+    expect(labelText('Horse not found: 2000000003', labels)).toBe('Horse not found: <missing-horse>');
+    expect(labelText('Compat Groom calm a1b2c3', labels)).toBe('Compat Groom calm <T>');
+  });
+
   for (const instant of [null, '2025-07-15T04:30:00.000Z', '2025-07-15T05:30:00.000Z', '2025-12-15T05:30:00.000Z']) {
     it(`reproduces every case digest (clock: ${instant ?? 'real'})`, async () => {
       const digests = await digestsAt(instant);
