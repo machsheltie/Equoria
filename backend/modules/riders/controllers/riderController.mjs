@@ -174,7 +174,7 @@ export async function assignRider(req, res) {
           data: {
             rider: {
               id: rider.id,
-              name: rider.name,
+              name: `${rider.firstName} ${rider.lastName}`,
               level: rider.level,
               speciality: rider.speciality,
             },
