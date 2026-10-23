@@ -753,7 +753,7 @@
   "backend/modules/training/__tests__/trainingAtomicWrites.integration.test.mjs": 8,
   "backend/modules/training/__tests__/trainingCooldownAtomicGate.integration.test.mjs": 7,
   "backend/modules/training/controllers/enhancedMilestoneController.mjs": 5,
-  "backend/modules/training/controllers/trainingController.mjs": 9,
+  "backend/modules/training/controllers/trainingController.mjs": 4,
   "backend/modules/training/services/trainingModelService.mjs": 2,
   "backend/modules/training/services/trainingSessionTx.mjs": 2,
   "backend/modules/traits/__tests__/atBirthInheritanceVisibility.test.mjs": 2,
