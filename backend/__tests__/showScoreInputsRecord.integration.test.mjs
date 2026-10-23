@@ -34,8 +34,8 @@ const uid = () => randomBytes(6).toString('hex');
 const cleanup = createCleanupTracker();
 const staff = createUserFactory('q01staff');
 const staffApi = '/api/v1/staff';
-const ORIGIN = 'http://localhost:3000';
-const STATS_100 = {
+const origin = 'http://localhost:3000';
+const stats100 = {
   speed: 100,
   stamina: 100,
   agility: 100,
@@ -88,7 +88,7 @@ beforeAll(async () => {
         healthStatus: 'Good',
         lastFedDate: new Date(),
         temperament,
-        ...STATS_100,
+        ...stats100,
       },
       horseIds,
     );
@@ -179,7 +179,7 @@ describe('score inputs are for the Owner and Admins only (q01)', () => {
   it('never appears in a player’s result views', async () => {
     const reads = await Promise.all(
       [`/api/v1/competition/show/${show.id}/results`, `/api/v1/competition/results/horse/${calm.id}`].map(path =>
-        request(app).get(path).set('Origin', ORIGIN).set('Authorization', `Bearer ${ownerToken}`),
+        request(app).get(path).set('Origin', origin).set('Authorization', `Bearer ${ownerToken}`),
       ),
     );
     for (const res of reads) {

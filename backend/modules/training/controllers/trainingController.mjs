@@ -142,7 +142,7 @@ async function computeCanTrain(parsedHorseId, discipline) {
 // trained discipline, whatever the horse's traits, temperament or trainer.
 const TRAINING_DISCIPLINE_GAIN = 5;
 /** Player XP per weekly session (the long-standing base amount, now never scaled). */
-const TRAINING_PLAYER_XP = 5;
+const trainingPlayerXp = 5;
 
 /** The result trainHorse returns when it refuses a session (nothing was written). */
 const refusal = reason => ({
@@ -246,7 +246,7 @@ async function trainHorse(horseId, discipline) {
     // awards is flat too, the same amount every session, with no trait or
     // score scaling. (Old contract: round(5 * (1 + trait trainingXpModifier)),
     // floor 1.) Horses never earn XP from training.
-    const baseXp = TRAINING_PLAYER_XP;
+    const baseXp = trainingPlayerXp;
 
     const ownerId = horse.userId ?? null;
     if (!ownerId) {

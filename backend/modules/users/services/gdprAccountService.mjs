@@ -1,8 +1,7 @@
 /**
  * gdprAccountService.mjs
  *
- * GDPR Right-to-Access (data export) + Right-to-Erasure (account deletion)
- * for Equoria (Equoria-s3rf).
+ * GDPR Right-to-Access (data export) + Right-to-Erasure (account deletion) (Equoria-s3rf).
  *
  * SAFETY DOCTRINE (CLAUDE.md §2): every query/mutation in this module is
  * scoped STRICTLY to the single authenticated `userId` passed in. There is
@@ -14,10 +13,8 @@
  *   - All rows keyed directly to the user's id (profile, horses,
  *     transactions, notifications, grooms, riders, trainers, messages,
  *     forum content, club membership, settings, tokens) are HARD-DELETED.
- *   - Horse-derived competition history cascade-deletes with the horse
- *     (schema `onDelete: Cascade`), so a user's competition results are
- *     erased along with their horses — nothing identifying the user is
- *     retained.
+ *   - Horse-derived competition history cascade-deletes with the horse (schema
+ *     `onDelete: Cascade`), so a user's results are erased with their horses.
  *   - HorseSale rows are bilateral (a buyer + a seller). The deleted
  *     user's identity is removed by deleting only the sale rows where the
  *     deleted user was a party AND the referenced horse belonged to the
@@ -129,7 +126,7 @@ export async function buildUserDataExport(userId) {
     // Competition history for horses the user owns (their personal sporting record).
     prisma.competitionResult.findMany({
       where: { horse: { userId } },
-      omit: { scoreInputs: true }, // Equoria-4q02c: staff only, never a player surface
+      omit: { scoreInputs: true },
     }),
   ]);
 
