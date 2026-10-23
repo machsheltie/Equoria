@@ -419,7 +419,7 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
         userId,
         equippedFeedType: 'elite',
         speed: 50,
-        lastFedDate: null,
+        lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
       },
     });
     horseId = horse.id;
@@ -516,7 +516,7 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
         equippedFeedType: 'elite',
         inFoalSinceDate: new Date(),
         pregnancyFeedingsByTier: {},
-        lastFedDate: null,
+        lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
         speed: 50,
       },
     });

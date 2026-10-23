@@ -28,6 +28,7 @@ import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { createTestHorse } from '../helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { competitionDateOfBirth, giveEligibleRider } from '../helpers/eligibleCompetitor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -47,6 +48,11 @@ const tenDaysAgo = () => daysAgo(10);
 const sevenDaysAgo = () => daysAgo(7);
 /** Five Eastern days without feed: feed health Fair (bands 5-6 days). */
 const fiveDaysAgo = () => daysAgo(5);
+// Owner ruling 2026-10-23 (Equoria-qwz60): health is the days since the vet
+// (22-28 Fair, 29+ Bad), lowered by hunger (Fair hunger one level, Bad hunger two).
+// Old contract: a few days unfed alone made a horse Bad, and a stored
+// healthStatus word set the band. These fixtures now give the vet days too.
+const vettedDaysAgo = days => gameCalendarDate(new Date(), -days);
 
 beforeAll(async () => {
   owner = await prisma.user.create({
@@ -155,7 +161,7 @@ describe('No burnout (owner ruling 2026-10-22)', () => {
 
 describe('Bad health blocks training', () => {
   it('refuses a horse in Bad health (ten days unfed) and writes nothing', async () => {
-    const horse = await makeHorse({ lastFedDate: tenDaysAgo() });
+    const horse = await makeHorse({ lastFedDate: tenDaysAgo(), lastVettedDate: vettedDaysAgo(25) });
 
     const res = await post('/api/v1/training/train', { horseId: horse.id, discipline: 'Dressage' });
 
@@ -183,14 +189,14 @@ describe('Bad health blocks training', () => {
 
   // Old contract: 'still trains a horse in poor (not critical) health'.
   it('refuses a horse seven days unfed (was Poor, now Bad)', async () => {
-    const horse = await makeHorse({ lastFedDate: sevenDaysAgo() });
+    const horse = await makeHorse({ lastFedDate: sevenDaysAgo(), lastVettedDate: vettedDaysAgo(22) });
     const res = await post('/api/v1/training/train', { horseId: horse.id, discipline: 'Dressage' });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/Bad health/);
   });
 
   it('trains a horse in Fair health (five days unfed)', async () => {
-    const horse = await makeHorse({ lastFedDate: fiveDaysAgo() });
+    const horse = await makeHorse({ lastFedDate: fiveDaysAgo(), lastVettedDate: vettedDaysAgo(22) });
     const res = await post('/api/v1/training/train', { horseId: horse.id, discipline: 'Dressage' });
     expect(res.status).toBe(200);
   });
@@ -208,7 +214,7 @@ describe.each([
 
   it('refuses a horse in Bad health (ten days unfed) and creates no entry', async () => {
     const show = await makeShow();
-    const horse = await riddenHorse({ lastFedDate: tenDaysAgo() });
+    const horse = await riddenHorse({ lastFedDate: tenDaysAgo(), lastVettedDate: vettedDaysAgo(25) });
 
     const res = await enter(show.id, horse.id);
 
@@ -232,7 +238,7 @@ describe.each([
 
   it('accepts a horse in Fair health', async () => {
     const show = await makeShow();
-    const horse = await riddenHorse({ healthStatus: 'Fair' });
+    const horse = await riddenHorse({ lastVettedDate: vettedDaysAgo(22) });
     expect((await enter(show.id, horse.id)).status).toBe(201);
   });
 
@@ -245,7 +251,7 @@ describe.each([
 
 describe('Bad health blocks conformation show entry', () => {
   it('refuses a horse in Bad health before any groom or show lookup', async () => {
-    const horse = await makeHorse({ lastFedDate: tenDaysAgo() });
+    const horse = await makeHorse({ lastFedDate: tenDaysAgo(), lastVettedDate: vettedDaysAgo(25) });
     const res = await post('/api/v1/competition/conformation/enter', {
       horseId: horse.id,
       groomId: 1,
@@ -334,9 +340,9 @@ describe('Conformation entry: Fair or better (owner ruling 2026-10-23)', () => {
   );
 
   it('the eligibility check applies the same bar: Fair is eligible, Poor and unfed are not', async () => {
-    const fair = await conformationHorse({ healthStatus: 'Fair' });
+    const fair = await conformationHorse({ lastVettedDate: vettedDaysAgo(22) });
     const poor = await conformationHorse({ healthStatus: 'Poor' });
-    const unfed = await conformationHorse({ lastFedDate: tenDaysAgo() });
+    const unfed = await conformationHorse({ lastFedDate: tenDaysAgo(), lastVettedDate: vettedDaysAgo(25) });
 
     const fairRes = await get(`/api/v1/competition/conformation/eligibility/${fair.horse.id}`);
     const poorRes = await get(`/api/v1/competition/conformation/eligibility/${poor.horse.id}`);
@@ -359,7 +365,7 @@ describe('Conformation entry: Fair or better (owner ruling 2026-10-23)', () => {
 describe('Bad health blocks breeding', () => {
   it('refuses a pair when the mare is in Bad health and starts no pregnancy', async () => {
     const sire = await makeHorse({ sex: 'Stallion' });
-    const dam = await makeHorse({ lastFedDate: tenDaysAgo() });
+    const dam = await makeHorse({ lastFedDate: tenDaysAgo(), lastVettedDate: vettedDaysAgo(25) });
 
     const res = await post('/api/v1/horses/foals', { sireId: sire.id, damId: dam.id });
 
@@ -373,7 +379,7 @@ describe('Bad health blocks breeding', () => {
   });
 
   it('refuses a pair when the stallion is in Bad health', async () => {
-    const sire = await makeHorse({ sex: 'Stallion', lastFedDate: null });
+    const sire = await makeHorse({ sex: 'Stallion', lastFedDate: null, lastVettedDate: vettedDaysAgo(25) });
     const dam = await makeHorse();
     const res = await post('/api/v1/horses/foals', { sireId: sire.id, damId: dam.id });
     expect(res.status).toBe(400);
@@ -397,8 +403,8 @@ describe('Bad health blocks breeding', () => {
       update: {},
       create: { name: 'Thoroughbred', description: 'Shared test breed' },
     });
-    const sire = await makeHorse({ sex: 'Stallion', healthStatus: 'Fair', breedId: breed.id });
-    const dam = await makeHorse({ lastFedDate: fiveDaysAgo(), breedId: breed.id });
+    const sire = await makeHorse({ sex: 'Stallion', lastVettedDate: vettedDaysAgo(22), breedId: breed.id });
+    const dam = await makeHorse({ lastFedDate: fiveDaysAgo(), lastVettedDate: vettedDaysAgo(22), breedId: breed.id });
     const res = await post('/api/v1/horses/foals', { sireId: sire.id, damId: dam.id });
     expect(res.status).toBe(200);
     const after = await prisma.horse.findUnique({ where: { id: dam.id }, select: { inFoalSinceDate: true } });

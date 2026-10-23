@@ -136,7 +136,7 @@ describe('HorseDetailPage — feed button disabled-reason', () => {
         ...BASE_HORSE,
         equippedFeedType: 'basic',
         lastFedDate: '2026-10-09T14:00:00Z',
-        feedHealth: 'good',
+        feedHealth: 'Excellent',
       });
       renderPage(5);
 
@@ -147,6 +147,30 @@ describe('HorseDetailPage — feed button disabled-reason', () => {
         'Fed today. Available again at midnight Eastern time.'
       );
       expect(feedBtn).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Owner ruling 2026-10-23 (Equoria-qwz60): hunger is a fill bar. Below Excellent a
+  // horse can be fed again the same Eastern game day (old contract: fed today = refused).
+  it('keeps Feed enabled when the horse was fed today but its hunger is below Excellent', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-10T02:00:00Z'));
+    try {
+      global.fetch = createFetchMock({
+        ...BASE_HORSE,
+        equippedFeedType: 'basic',
+        lastFedDate: '2026-10-09T14:00:00Z',
+        feedHealth: 'Fair',
+      });
+      renderPage(5);
+
+      await waitFor(() => expect(screen.getByText('Comet')).toBeInTheDocument());
+
+      const feedBtn = screen.getByTestId('action-feed');
+      expect(feedBtn.getAttribute('title')).toBe('Feed this horse');
+      expect(feedBtn).not.toBeDisabled();
     } finally {
       vi.useRealTimers();
     }

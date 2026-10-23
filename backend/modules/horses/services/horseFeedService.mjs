@@ -18,7 +18,9 @@
  *     no inventory mutation). Owner ruling 2026-10-23 (Equoria-6p398.14): a
  *     mare who turns 21 in foal is fed until she foals; the foal depends on it.
  *   - equippedFeedType is set (else 400)
- *   - alreadyFedToday returns false (else 400)
+ *   - hungerFeedingPlan allows a feeding (else 400): below Excellent a horse is
+ *     fed again and again, each feeding raising hunger one level; at Excellent
+ *     once per Eastern game day (owner ruling 2026-10-23, Equoria-qwz60)
  *   - inventory has >= 1 unit of equipped tier (else 400 + auto-clear
  *     equippedFeedType per the feed contract's player loop)
  *
@@ -27,7 +29,7 @@
 
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { FEED_CATALOG } from '../../economy/index.mjs';
-import { alreadyFedToday, startOfGameDay } from '../../../utils/horseHealth.mjs';
+import { hungerFeedingPlan } from '../../../utils/horseHealth.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
@@ -75,6 +77,10 @@ const utc = date => Prisma.sql`(${date.toISOString()}::timestamptz AT TIME ZONE 
 // here for backward compatibility with existing importers
 // (feedHorseRetryableTxError.test.mjs).
 export { isRetryableTxError } from '../../../utils/retryableTransaction.mjs';
+
+// The claim's compare-and-swap operand: the feed clock exactly as this feeding
+// read it (NULL stays NULL), converted to UTC wall time like utc() above.
+const asRead = date => (date ? utc(date) : null);
 
 function getInventory(settings) {
   if (!settings || typeof settings !== 'object') {
@@ -199,7 +205,9 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
         e.status = 400;
         throw e;
       }
-      if (alreadyFedToday(horse.lastFedDate)) {
+      const feedNow = new Date();
+      const feedPlan = hungerFeedingPlan(horse, feedNow);
+      if (!feedPlan.canFeed) {
         const e = new Error('Already fed today. Try again tomorrow.');
         e.status = 400;
         throw e;
@@ -249,16 +257,17 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       // for "I am today's feed". Everything that must happen exactly once per
       // feed-day rides on this ONE statement so none of it can be lost to a
       // concurrent feed:
-      //   - lastFedDate := now          (the claim itself)
+      //   - lastFedDate := now, hungerSince := the hunger clock (the claim itself)
       //   - <stat> := <stat> + 1        (stat boost, when rolled)
       //   - equippedFeedType := NULL    (when inventory hit 0)
       //   - pregnancyFeedingsByTier[tier] += 1  (when in-foal — JSONB increment)
       //
-      // The WHERE clause encodes the precondition (lastFedDate IS NULL OR
-      // lastFedDate < 00:00 Eastern today), matching `alreadyFedToday()`'s
-      // Eastern game-day semantics. Postgres evaluates the WHERE against the
-      // COMMITTED row at statement time, so the loser of a race sees the
-      // winner's already-committed lastFedDate=today and matches 0 rows.
+      // The WHERE clause is a compare-and-swap on the feed clock exactly as this
+      // feeding read it (lastFedDate and hungerSince): whether a feeding is
+      // allowed (hungerFeedingPlan) was decided from that read, so it only
+      // applies while the row still holds it. Postgres evaluates the WHERE
+      // against the COMMITTED row at statement time, so the loser of a race
+      // sees the winner's new clock and matches 0 rows.
       //
       // affected === 1 → we won; proceed to decrement inventory.
       // affected === 0 → a concurrent feed already won. We must NOT
@@ -270,7 +279,6 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       // No SELECT…FOR-UPDATE: this is a plain UPDATE taking only the ordinary
       // per-row write lock for the statement's duration — race-safe and
       // timeout-free (the FOR-UPDATE-absence sentinel stays green).
-      const startOfToday = startOfGameDay(new Date());
 
       // Equoria-lnblu: migrated off `tx.$executeRawUnsafe` (allowlisted unsafe
       // raw SQL) to the parameterized `tx.$executeRaw(Prisma.sql\`…\`)` form.
@@ -279,7 +287,10 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       // bound parameter and is provably one of the 12 STATS (whitelist-checked
       // below). The pregnancy JSONB bump uses jsonb_set on a COALESCE'd base so a
       // NULL/absent counter starts at 0 then becomes 1.
-      const setFragments = [Prisma.sql`"lastFedDate" = ${utc(new Date())}`];
+      const setFragments = [
+        Prisma.sql`"lastFedDate" = ${utc(feedNow)}`,
+        Prisma.sql`"hungerSince" = ${utc(feedPlan.hungerSince)}`,
+      ];
 
       if (equippedFeedClearedDueToEmpty) {
         setFragments.push(Prisma.sql`"equippedFeedType" = NULL`);
@@ -312,7 +323,8 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       const affected = await tx.$executeRaw(Prisma.sql`
       UPDATE "horses" SET ${Prisma.join(setFragments, ', ')}
       WHERE "id" = ${horse.id}
-      AND ("lastFedDate" IS NULL OR "lastFedDate" < ${utc(startOfToday)})`);
+      AND "lastFedDate" IS NOT DISTINCT FROM ${asRead(horse.lastFedDate)}
+      AND "hungerSince" IS NOT DISTINCT FROM ${asRead(horse.hungerSince)}`);
 
       if (affected === 0) {
         // A concurrent feed already claimed today. Reject — do NOT decrement

@@ -20,6 +20,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { FEED_CATALOG } from '../../economy/index.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
+import { withHealth } from '../../../utils/horseHealth.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 
 const VALID_TIERS = new Set(FEED_CATALOG.map(t => t.id));
@@ -233,7 +234,9 @@ export async function feedHorseHandler(req, res) {
     return res.status(200).json({
       success: true,
       message: `Fed ${result.horse.name} with ${result.feed.name}.`,
-      data: result,
+      // The horse carries its derived hunger and health so the page can show the
+      // feeding's effect without a second read (Equoria-qwz60).
+      data: { ...result, horse: withHealth(result.horse) },
     });
   } catch (error) {
     if (error.status) {

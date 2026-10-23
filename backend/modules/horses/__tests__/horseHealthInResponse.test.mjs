@@ -84,7 +84,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       expect(fresh.displayedHealth).toBe('Excellent');
     });
 
-    it('reflects stale lastFedDate (10 days = Bad)', async () => {
+    it('reflects stale lastFedDate (10 days = Bad hunger, health lowered to Good)', async () => {
       await prisma.horse.update({
         where: { id: horseId },
         data: { lastFedDate: new Date(Date.now() - 10 * 86_400_000) },
@@ -97,8 +97,9 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
 
       const fresh = res.body.data.find(h => h.id === horseId);
       expect(fresh.feedHealth).toBe('Bad');
-      // displayedHealth = worseOf(feedHealth='Bad', vetHealth='Excellent')
-      expect(fresh.displayedHealth).toBe('Bad');
+      // Owner ruling 2026-10-23 (Equoria-qwz60): Bad hunger lowers Excellent vet health
+      // two levels, to Good (old contract: worseOf(feed, vet) = Bad).
+      expect(fresh.displayedHealth).toBe('Good');
     });
 
     it('reflects healthStatus override on vetHealth, read as a health word', async () => {
@@ -147,7 +148,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.body.data.feedHealth).toBe('Bad');
-      expect(res.body.data.displayedHealth).toBe('Bad');
+      expect(res.body.data.displayedHealth).toBe('Good');
     });
 
     it('retired horse (age >= 21) is reported as retired on all three bands', async () => {
@@ -182,7 +183,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       expect(res.body.data.displayedHealth).toBe('Excellent');
     });
 
-    it('reflects stale lastFedDate (10 days = Bad)', async () => {
+    it('reflects stale lastFedDate (10 days = Bad hunger, health lowered to Good)', async () => {
       await prisma.horse.update({
         where: { id: horseId },
         data: { lastFedDate: new Date(Date.now() - 10 * 86_400_000) },
@@ -195,7 +196,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.feedHealth).toBe('Bad');
-      expect(res.body.data.displayedHealth).toBe('Bad');
+      expect(res.body.data.displayedHealth).toBe('Good');
     });
   });
 });

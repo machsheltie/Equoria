@@ -36,6 +36,7 @@ export const HORSE_LIST_SELECT = Object.freeze({
   sex: true,
   healthStatus: true,
   lastFedDate: true,
+  hungerSince: true,
   lastVettedDate: true,
   forSale: true,
   salePrice: true,

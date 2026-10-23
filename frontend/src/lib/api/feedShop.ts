@@ -12,6 +12,7 @@
 
 import { apiClient } from '../http/apiClient.js';
 import type { InventoryItem } from './inventory.js';
+import type { HealthBand } from '../healthWords';
 
 /**
  * 5-tier FEED_CATALOG entry (feed-system redesign 2026-04-29).
@@ -54,6 +55,9 @@ export interface FeedHorseResponse {
     name: string;
     lastFedDate: string | null;
     equippedFeedType: string | null;
+    // The server's derived hunger and health after the feeding (Equoria-qwz60).
+    feedHealth?: HealthBand;
+    displayedHealth?: HealthBand;
   };
   feed?: { tier: string; name: string };
   remainingUnits?: number;

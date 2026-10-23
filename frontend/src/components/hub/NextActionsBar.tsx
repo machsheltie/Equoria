@@ -41,7 +41,12 @@ const NARRATIVES: Record<NextAction['type'], (_a: NextAction) => string> = {
     const count = typeof a.metadata?.count === 'number' ? a.metadata.count : 0;
     return count > 1 ? `${count} competition results are waiting` : 'Your results are in';
   },
-  'visit-vet': (a) => (a.horseName ? `${a.horseName} needs veterinary care` : 'A horse needs care'),
+  // Owner ruling 2026-10-23 (q28): the hub line names the bad health, and adds
+  // "and fed" when the horse is hungry (the server sets needsFeeding).
+  'visit-vet': (a) =>
+    a.horseName
+      ? `${a.horseName} is in bad health and needs to be vetted${a.metadata?.needsFeeding === true ? ' and fed' : ''}`
+      : 'A horse needs care',
   // Equoria-cn6kt: a horse in critical health also needs feeding.
   feed: (a) => (a.horseName ? `${a.horseName} needs feeding` : 'A horse needs feeding'),
 };

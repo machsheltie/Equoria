@@ -211,6 +211,7 @@ export const ENTRY_RULE_HORSE_SELECT = Object.freeze({
   // Displayed health (utils/horseHealth.mjs) for the bad-health rule.
   age: true,
   lastFedDate: true,
+  hungerSince: true,
   lastVettedDate: true,
 });
 

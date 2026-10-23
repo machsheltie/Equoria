@@ -44,23 +44,38 @@ describe('healthGradeOf: the one health mapping', () => {
   });
 });
 
+// Owner ruling 2026-10-23 (Equoria-qwz60): health comes from days since the vet
+// (0-7 Excellent, 8-14 Very Good, 15-21 Good, 22-28 Fair, 29+ Bad) and hunger
+// lowers it (Fair one level, Bad two). Old contract: the worse of feed and vet
+// health, with a stored healthStatus word overriding the vet days.
+const vettedDaysAgo = days => new Date(Date.UTC(2026, 9, 23 - days));
+const care = (vetDays, fedDaysAgo = 0) => ({
+  age: 7,
+  lastVettedDate: vettedDaysAgo(vetDays),
+  lastFedDate: fedDaysAgo === null ? null : daysAgo(fedDaysAgo),
+});
+
 describe('horseHealthGrade: the horse’s displayed health, graded', () => {
-  it('is the worse of feed and vet health', () => {
-    expect(horseHealthGrade({ age: 7, healthStatus: 'Excellent', lastFedDate: now }, now)).toBe('excellent');
-    expect(horseHealthGrade({ age: 7, healthStatus: 'Good', lastFedDate: now }, now)).toBe('good');
-    // A Very Good vet finding is the owner's fifth state, not an unknown word.
-    expect(horseHealthGrade({ age: 7, healthStatus: 'Very Good', lastFedDate: now }, now)).toBe('veryGood');
-    // Fed 5 days ago: feed health fair.
-    expect(horseHealthGrade({ age: 7, healthStatus: 'Excellent', lastFedDate: daysAgo(5) }, now)).toBe('fair');
-    // Fed 7 days ago: feed health poor, which is Bad.
-    expect(horseHealthGrade({ age: 7, healthStatus: 'Excellent', lastFedDate: daysAgo(7) }, now)).toBe('bad');
-    // Never fed: critical, which is Bad.
-    expect(horseHealthGrade({ age: 7, healthStatus: 'Excellent', lastFedDate: null }, now)).toBe('bad');
+  it('grades by days since the vet when the horse is well fed', () => {
+    expect(horseHealthGrade(care(0), now)).toBe('excellent');
+    expect(horseHealthGrade(care(8), now)).toBe('veryGood');
+    expect(horseHealthGrade(care(15), now)).toBe('good');
+    expect(horseHealthGrade(care(22), now)).toBe('fair');
+    expect(horseHealthGrade(care(29), now)).toBe('bad');
+  });
+
+  it('lowers health one level for Fair hunger and two for Bad hunger, never below Bad', () => {
+    expect(horseHealthGrade(care(0, 5), now)).toBe('excellent');
+    expect(horseHealthGrade(care(0, 7), now)).toBe('veryGood');
+    expect(horseHealthGrade(care(0, 9), now)).toBe('good');
+    expect(horseHealthGrade(care(0, null), now)).toBe('good');
+    expect(horseHealthGrade(care(22, 9), now)).toBe('bad');
+    expect(horseHealthGrade(care(29, 9), now)).toBe('bad');
   });
 
   it('grades the care underneath retirement: retired is not a health state', () => {
-    expect(horseHealthGrade({ age: 21, healthStatus: 'Excellent', lastFedDate: now }, now)).toBe('excellent');
-    expect(horseHealthGrade({ age: 21, healthStatus: 'Fair', lastFedDate: now }, now)).toBe('fair');
+    expect(horseHealthGrade({ ...care(0), age: 21 }, now)).toBe('excellent');
+    expect(horseHealthGrade({ ...care(22), age: 21 }, now)).toBe('fair');
   });
 });
 
@@ -76,13 +91,13 @@ describe('healthScorePercent: the show score modifier', () => {
   });
 
   it('reads the horse’s graded health', () => {
-    const horse = health => ({ age: 7, lastFedDate: now, ...health });
-    expect(healthScorePercent(horse({ healthStatus: 'Excellent' }), now)).toBe(5);
-    expect(healthScorePercent(horse({ healthStatus: 'Very Good' }), now)).toBe(3);
-    expect(healthScorePercent(horse({ healthStatus: 'Good' }), now)).toBe(0);
-    expect(healthScorePercent(horse({ healthStatus: 'Fair' }), now)).toBe(-3);
-    expect(healthScorePercent(horse({ healthStatus: 'Poor' }), now)).toBe(-5);
-    expect(healthScorePercent(horse({ healthStatus: 'Critical' }), now)).toBe(-5);
-    expect(healthScorePercent({ age: 7, healthStatus: 'Excellent', lastFedDate: null }, now)).toBe(-5);
+    expect(healthScorePercent(care(0), now)).toBe(5);
+    expect(healthScorePercent(care(8), now)).toBe(3);
+    expect(healthScorePercent(care(15), now)).toBe(0);
+    expect(healthScorePercent(care(22), now)).toBe(-3);
+    expect(healthScorePercent(care(29), now)).toBe(-5);
+    // A stored Poor or Critical vet finding is Bad whatever the vet days.
+    expect(healthScorePercent({ ...care(0), healthStatus: 'Poor' }, now)).toBe(-5);
+    expect(healthScorePercent({ ...care(0), healthStatus: 'Critical' }, now)).toBe(-5);
   });
 });

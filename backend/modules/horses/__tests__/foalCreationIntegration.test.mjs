@@ -393,9 +393,12 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
   // Owner ruling 2026-10-23 (Equoria-u0jop): never fed is Bad health, and Bad
   // blocks breeding. Old contract: the refusal said "critical health".
 
-  it('should return 400 when sire is in Bad health (lastFedDate null)', async () => {
+  it('should return 400 when sire is in Bad health (never fed and vetted 25 days ago)', async () => {
     await resetDamPregnancy();
-    await prisma.horse.update({ where: { id: testSire.id }, data: { lastFedDate: null } });
+    await prisma.horse.update({
+      where: { id: testSire.id },
+      data: { lastFedDate: null, lastVettedDate: gameCalendarDate(new Date(), -25) },
+    });
 
     const response = await request(app)
       .post('/api/v1/horses/foals')
@@ -416,12 +419,18 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     expect(response.body.message).toMatch(/Bad health/);
 
     // Restore sire for subsequent tests
-    await prisma.horse.update({ where: { id: testSire.id }, data: { lastFedDate: new Date() } });
+    await prisma.horse.update({
+      where: { id: testSire.id },
+      data: { lastFedDate: new Date(), lastVettedDate: gameCalendarDate() },
+    });
   });
 
-  it('should return 400 when dam is in Bad health (lastFedDate null)', async () => {
+  it('should return 400 when dam is in Bad health (never fed and vetted 25 days ago)', async () => {
     await resetDamPregnancy();
-    await prisma.horse.update({ where: { id: testDam.id }, data: { lastFedDate: null } });
+    await prisma.horse.update({
+      where: { id: testDam.id },
+      data: { lastFedDate: null, lastVettedDate: gameCalendarDate(new Date(), -25) },
+    });
 
     const response = await request(app)
       .post('/api/v1/horses/foals')
@@ -444,7 +453,12 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     // Restore dam health and pregnancy state for subsequent tests
     await prisma.horse.update({
       where: { id: testDam.id },
-      data: { lastFedDate: new Date(), inFoalSinceDate: null, pregnancySireId: null },
+      data: {
+        lastFedDate: new Date(),
+        lastVettedDate: gameCalendarDate(),
+        inFoalSinceDate: null,
+        pregnancySireId: null,
+      },
     });
   });
 

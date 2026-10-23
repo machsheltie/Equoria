@@ -46,7 +46,12 @@ beforeAll(async () => {
   await make('retired', { age: 21 });
   await make('foal', { age: 2 });
   await make('injured', { age: 6, healthStatus: 'Injured' });
-  await make('unfed', { age: 6, lastFedDate: null });
+  // Owner ruling 2026-10-23: Bad health needs vet days too (never fed alone is Good).
+  await make('unfed', {
+    age: 6,
+    lastFedDate: null,
+    lastVettedDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+  });
 }, 120000);
 
 afterAll(async () => {

@@ -31,6 +31,9 @@ export function useFeedHorse(horseId: number) {
                 ...prev,
                 lastFedDate: data.horse.lastFedDate,
                 equippedFeedType: data.horse.equippedFeedType,
+                // Hunger is a fill bar: the feeding's new level comes from the server.
+                ...(data.horse.feedHealth && { feedHealth: data.horse.feedHealth }),
+                ...(data.horse.displayedHealth && { displayedHealth: data.horse.displayedHealth }),
               }
             : prev
         );

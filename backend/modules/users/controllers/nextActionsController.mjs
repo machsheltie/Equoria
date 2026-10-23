@@ -63,7 +63,7 @@ import {
 } from '../../../utils/competitionEntryRules.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
-import { alreadyFedToday, hasBadHealth } from '../../../utils/horseHealth.mjs';
+import { getFeedHealth, hasBadHealth, hungerFeedingPlan } from '../../../utils/horseHealth.mjs';
 import { damBreedingCooldownEndsAt } from '../../horses/index.mjs';
 
 // Story 23.4 priority table. 1 = highest.
@@ -134,6 +134,7 @@ export async function getNextActions(req, res) {
         sex: true,
         // Displayed health (the bad-health gate, Equoria-3tna6).
         lastFedDate: true,
+        hungerSince: true,
         lastVettedDate: true,
         // The entry rules (Equoria-576c0 B9): dateOfBirth, healthStatus, gaitScores.
         ...ENTRY_RULE_HORSE_SELECT,
@@ -349,15 +350,18 @@ export async function getNextActions(req, res) {
     for (const h of horses) {
       const badHealth = isInBadHealth(h, now);
       if (isInjured(h.healthStatus) || badHealth) {
+        // q28 (owner 2026-10-23): the hub line adds "and fed" when the horse is
+        // hungry (hunger Fair or Bad).
+        const hungry = ['Fair', 'Bad'].includes(getFeedHealth(h, now));
         actions.push({
           type: 'visit-vet',
           priority: SPEC_PRIORITY['visit-vet'],
           horseId: h.id,
           horseName: h.name,
-          metadata: { healthStatus: h.healthStatus },
+          metadata: { healthStatus: h.healthStatus, needsFeeding: hungry },
         });
       }
-      if (badHealth && !alreadyFedToday(h.lastFedDate, now)) {
+      if (badHealth && hungerFeedingPlan(h, now).canFeed) {
         actions.push({
           type: 'feed',
           priority: SPEC_PRIORITY.feed,

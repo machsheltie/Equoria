@@ -167,7 +167,7 @@ describe('daily feed limit is server-authoritative (Equoria-mwjst Finding 1)', (
       data: { settings: { inventory: performanceInventory(STARTING_UNITS) } },
     });
     const mare = await seedMare('attack', {
-      lastFedDate: null,
+      lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
       inFoalSinceDate: new Date(),
       pregnancyFeedingsByTier: {},
     });
@@ -198,7 +198,7 @@ describe('daily feed limit is server-authoritative (Equoria-mwjst Finding 1)', (
       data: { settings: { inventory: performanceInventory(STARTING_UNITS) } },
     });
     const mare = await seedMare('race', {
-      lastFedDate: null,
+      lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
       inFoalSinceDate: new Date(),
       pregnancyFeedingsByTier: {},
     });

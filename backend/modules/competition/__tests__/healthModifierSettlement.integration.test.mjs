@@ -10,8 +10,10 @@
  *
  * Five horses, one Dressage show, no rider, Bold temperament (Dressage
  * neutral), luck pinned to +1% through scoreRng, no stat-gain roll succeeds.
- * A vet-finding healthStatus with a feeding today sets the displayed band; a
- * horse never fed reads Critical. Distinct bases keep the scores apart.
+ * Owner ruling 2026-10-23 (Equoria-qwz60): the displayed band comes from days
+ * since the vet visit (0-7 Excellent, 15-21 Good, 22-28 Fair, 29+ Bad) with a
+ * feeding today; a Poor or Critical vet finding is Bad. Old contract: a stored
+ * healthStatus word set the band. Distinct bases keep the scores apart.
  *
  * Real DB, TestFixture- fixtures, id-scoped fail-loud cleanup.
  */
@@ -22,6 +24,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const uid = () => randomBytes(6).toString('hex');
 const cleanup = createCleanupTracker();
@@ -58,18 +61,19 @@ describe('nightly settlement applies the health modifier (decision C)', () => {
         horseIds,
       );
     const fedToday = new Date();
+    const vettedDaysAgo = days => gameCalendarDate(new Date(), -days);
     const cases = [
       // [label, base, health fields, expected]
       // Excellent: 100 x (1 + (1 + 5) / 100) = 106.
-      ['excellent', 100, { healthStatus: 'Excellent', lastFedDate: fedToday }, 106],
-      // Good: 102 x 1.01 = 103.02 -> 103.
-      ['good', 102, { healthStatus: 'Good', lastFedDate: fedToday }, 103],
-      // Fair: 104 x (1 + (1 - 3) / 100) = 101.92 -> 102.
-      ['fair', 104, { healthStatus: 'Fair', lastFedDate: fedToday }, 102],
+      ['excellent', 100, { lastVettedDate: vettedDaysAgo(0), lastFedDate: fedToday }, 106],
+      // Good (vetted 15 days ago): 102 x 1.01 = 103.02 -> 103.
+      ['good', 102, { lastVettedDate: vettedDaysAgo(15), lastFedDate: fedToday }, 103],
+      // Fair (vetted 22 days ago): 104 x (1 + (1 - 3) / 100) = 101.92 -> 102.
+      ['fair', 104, { lastVettedDate: vettedDaysAgo(22), lastFedDate: fedToday }, 102],
       // Poor is Bad: 108 x (1 + (1 - 5) / 100) = 103.68 -> 104.
-      ['poor', 108, { healthStatus: 'Poor', lastFedDate: fedToday }, 104],
-      // Never fed reads Critical, which is Bad: 112 x 0.96 = 107.52 -> 108.
-      ['critical', 112, { healthStatus: 'Excellent', lastFedDate: null }, 108],
+      ['poor', 108, { healthStatus: 'Poor', lastVettedDate: vettedDaysAgo(0), lastFedDate: fedToday }, 104],
+      // Vetted 29 days ago is Bad: 112 x 0.96 = 107.52 -> 108.
+      ['critical', 112, { lastVettedDate: vettedDaysAgo(29), lastFedDate: fedToday }, 108],
     ];
     const horses = [];
     for (const [label, base, health, expected] of cases) {

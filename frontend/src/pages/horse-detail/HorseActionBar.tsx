@@ -19,6 +19,7 @@ import React from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { gameDateKey } from '@/lib/gameTime';
+import { formatHealth } from '@/lib/healthWords';
 import { Backpack, Brush, Dumbbell, Heart, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFeedHorse } from '../../hooks/api/useFeedHorse';
@@ -42,9 +43,17 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
   const feedHorseMutation = useFeedHorse(Number(horse.id));
   const delistHorseMutation = useDelistHorse();
 
-  const isAlreadyFedToday = horse.lastFedDate
-    ? gameDateKey(horse.lastFedDate) === gameDateKey(new Date())
-    : false;
+  // Hunger is a fill bar (owner ruling 2026-10-23): a horse below Excellent can be
+  // fed again today; at Excellent it is fed once per Eastern game day. The level is
+  // the server's (feedHealth). Without one, fed today still means no more today.
+  const hungerIsFull =
+    horse.feedHealth === undefined ||
+    horse.feedHealth === null ||
+    formatHealth(horse.feedHealth) === 'Excellent';
+  const isAlreadyFedToday =
+    hungerIsFull && horse.lastFedDate
+      ? gameDateKey(horse.lastFedDate) === gameDateKey(new Date())
+      : false;
   const feedDisabledReason = !horse.equippedFeedType
     ? 'No feed selected. Click Equip first.'
     : isAlreadyFedToday

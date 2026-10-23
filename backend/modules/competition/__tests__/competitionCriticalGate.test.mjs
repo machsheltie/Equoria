@@ -172,13 +172,17 @@ describe('Bad-health gate on conformation show entry', () => {
   afterAll(cleanupSuite);
   afterEach(cleanupSuite);
 
-  it('rejects entry with 400 when feed-derived health is Bad (10 days un-fed)', async () => {
+  // Owner ruling 2026-10-23 (Equoria-qwz60): health is the vet days lowered by
+  // hunger. Old contract: 10 days un-fed alone made displayed health Bad.
+  it('rejects entry with 400 when hunger drags a Fair vet health to Bad (10 days un-fed)', async () => {
     const user = await createUser();
-    // 10 days un-fed → feedHealth = 'Bad' → displayedHealth = 'Bad'
+    // Vetted 25 days ago is Fair; 10 days un-fed is Bad hunger (two levels down)
+    // → displayedHealth = 'Bad'
     // healthStatus 'Excellent' ensures the SERVICE-level health check would
     // pass, isolating the A12 gate as the actual rejector.
     const horse = await createHorse(user.id, {
       lastFedDate: new Date(Date.now() - 10 * 86_400_000),
+      lastVettedDate: new Date(Date.now() - 25 * 86_400_000),
       healthStatus: 'Excellent',
     });
     const groom = await createGroom(user.id);

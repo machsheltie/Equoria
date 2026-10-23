@@ -77,8 +77,12 @@ async function adultMare(user, { fed, daysUnfed = fed ? 0 : 10 }) {
       age: 7,
       dateOfBirth: competitionDateOfBirth(7),
       healthStatus: 'Excellent',
-      // Fed 10 game days ago is feed health Bad; 7 days is Bad (was 'poor'); 5 is Fair.
+      // Owner ruling 2026-10-23 (Equoria-qwz60): health is the vet days lowered by
+      // hunger. A horse unfed 7+ days (hunger Fair or Bad) is vetted 25 days ago
+      // (Fair), so hunger drags it to Bad; fed recently it is freshly vetted.
+      // Old contract: ten days unfed alone made a horse Bad.
       lastFedDate: daysUnfed === 0 ? new Date() : new Date(Date.now() - daysUnfed * DAY),
+      lastVettedDate: daysUnfed >= 7 ? gameCalendarDate(new Date(), -25) : gameCalendarDate(),
       trainingCooldown: null,
       lastBredDate: null,
       userId: user.id,

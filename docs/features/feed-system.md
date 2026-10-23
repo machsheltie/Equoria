@@ -15,8 +15,9 @@ and `DESIGN.md` govern presentation.
   not feed a horse.
 - A horse has one persistent equipped feed tier. Equipping is separate from
   buying and feeding.
-- Feeding is a deliberate, once-per-UTC-calendar-day care action from the
-  horse's own context. It consumes one unit of the equipped tier.
+- Feeding is a deliberate care action from the horse's own context. It consumes
+  one unit of the equipped tier. Below Excellent hunger a horse may be fed again
+  the same day; at Excellent, once per Eastern game day (see the health contract).
 - Running out removes the depleted inventory row and clears that tier from the
   horse. The game must explain that the player needs to buy and equip feed; it
   must not invent units or silently feed the horse.
@@ -55,32 +56,45 @@ gate, serializer and the show score use (`toHealthWord` words it);
 `frontend/src/lib/healthWords.ts` `formatHealth` / `healthLabel` is the one
 on-screen formatter.
 
-Health shown to the player is the worse of feed health and vet health.
-`retired` is a terminal state rather than a health word; the age rules, not
-the health gate, refuse a retired horse.
+Health and hunger are two five-word levels (owner ruling 2026-10-23,
+Equoria-qwz60). Health comes from Eastern game days since the last vet visit
+(`lastVettedDate`):
 
-Feed health is based on Eastern game days since `lastFedDate`:
+|                Days | Health      |
+| ------------------: | ----------- |
+|                 0-7 | `Excellent` |
+|                8-14 | `Very Good` |
+|               15-21 | `Good`      |
+|               22-28 | `Fair`      |
+| 29+ or never vetted | `Bad`       |
 
-|            Days | Health      |
-| --------------: | ----------- |
-|             0–2 | `Excellent` |
-|             3–4 | `Good`      |
-|             5–6 | `Fair`      |
-| 7+ or never fed | `Bad`       |
+Hunger comes from Eastern game days since the hunger clock (`hungerSince`, else
+`lastFedDate`): 0-2 `Excellent`, 3-4 `Very Good`, 5-6 `Good`, 7-8 `Fair`, 9+ or
+never fed `Bad`. Hunger Fair lowers the health shown by one level, hunger Bad by
+two; the floor is Bad. A free-form or legacy vet finding in `healthStatus`
+(Injured, Poor, Critical, anything that is not Excellent, Very Good, Good or
+Fair) reads as Bad. The four good words stored in `healthStatus` no longer
+override the vet days. `retired` is a terminal state rather than a health word;
+the age rules, not the health gate, refuse a retired horse.
 
-Vet health uses the explicit `healthStatus` finding when present, read through
-`toHealthWord`; otherwise it decays from `lastVettedDate`: 0–7 days
-`Excellent`, 8–14 `Good`, 15–21 `Fair`, and 22+ or never vetted `Bad`. An
-unknown free-form vet finding (for example `Injured`) is Bad. No decay band
-produces Very Good; it appears only as a stored finding.
+Hunger is a fill bar. One feeding raises it one level. Below Excellent the horse
+may be fed again and again until it is Excellent (each feeding still consumes a
+unit and may roll a stat boost); at Excellent, feeding is once per Eastern game
+day. A feeding below Excellent back-dates `hungerSince` to the oldest day of the
+next level up; `lastFedDate` always stays the real time of the last feeding.
 
 A horse must be **Fair or better** to breed, train, or enter any show (ridden
 or conformation): displayed health Bad blocks all three (`hasBadHealth`).
-Next-actions applies the same gate and suggests feeding and a vet visit for a
-horse in Bad health. Feeding does not erase an independent vet problem, and a
-vet visit does not erase neglect. The show-score health modifier keyed on the
-five words reads `horseHealthGrade`
+Next-actions applies the same gate; its vet line reads "<Horse> is in bad health
+and needs to be vetted", plus " and fed" when hunger is Fair or Bad. Feeding does
+not erase an independent vet problem, and a vet visit does not erase neglect.
+The show-score health modifier keyed on the five words reads `horseHealthGrade`
 (`backend/modules/competition/rules/healthScoring.mjs`).
+
+A foal is born with its mare's care clocks (`lastVettedDate`, `lastFedDate`,
+`hungerSince`). A Fair mare at foaling raises the foal's negative-trait chance by
+25%, a Bad mare by 50% (`negativeTraitChanceMultiplier`, applied to the
+pregnancy negative-trait chance as it stands).
 
 ## Pregnancy-care contract
 

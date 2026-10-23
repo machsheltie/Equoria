@@ -202,12 +202,30 @@ describe('NextActionsBar', () => {
     expect(await screen.findByText('3 competition results are waiting')).toBeInTheDocument();
   });
 
-  it('links visit-vet action to /vet (not /veterinarian)', async () => {
+  // Owner ruling 2026-10-23 (q28). Old contract: "<Horse> needs veterinary care".
+  it('links visit-vet action to /vet (not /veterinarian) and names the bad health', async () => {
     stubNextActions([{ type: 'visit-vet', priority: 1, horseId: 5, horseName: 'Blaze' }]);
 
     renderBar();
-    const vetLink = await screen.findByLabelText('Blaze needs veterinary care');
+    const vetLink = await screen.findByLabelText('Blaze is in bad health and needs to be vetted');
     expect(vetLink).toHaveAttribute('href', '/vet?horseId=5');
+  });
+
+  it('adds "and fed" to the vet line when the horse is hungry (hunger Fair or Bad)', async () => {
+    stubNextActions([
+      {
+        type: 'visit-vet',
+        priority: 1,
+        horseId: 5,
+        horseName: 'Blaze',
+        metadata: { needsFeeding: true },
+      },
+    ]);
+
+    renderBar();
+    expect(
+      await screen.findByLabelText('Blaze is in bad health and needs to be vetted and fed')
+    ).toBeInTheDocument();
   });
 
   // Equoria-cn6kt (owner ruling 2026-10-22): a horse in critical health gets

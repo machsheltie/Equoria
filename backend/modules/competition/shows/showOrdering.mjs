@@ -36,6 +36,7 @@ export const scoringHorseSelect = {
   age: true,
   healthStatus: true,
   lastFedDate: true,
+  hungerSince: true,
   lastVettedDate: true,
 };
 

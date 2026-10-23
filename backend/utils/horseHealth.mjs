@@ -21,7 +21,12 @@
  */
 
 // Days here are Eastern game days (owner ruling 2026-10-09; utils/gameTime.mjs).
-import { calendarDateDayIndex, gameDayIndex, startOfGameDay } from './gameTime.mjs';
+import {
+  calendarDateDayIndex,
+  gameDayIndex,
+  sameGameClockDaysLater,
+  startOfGameDay,
+} from './gameTime.mjs';
 import { retirementAgeYears } from '../constants/horseAgePolicy.mjs';
 
 // Re-exported for the feed path's "not yet fed today" SQL cutoff.
@@ -109,40 +114,55 @@ export function alreadyFedToday(lastFedDate, now = new Date()) {
   return gameDayIndex(lastFedDate) === gameDayIndex(now);
 }
 
+/** The last day of each hunger level, best first: Excellent..Fair (9+ is Bad). */
+const hungerDayLimits = Object.freeze([2, 4, 6, 8]);
+
 /**
- * Feed health derived from horse.lastFedDate.
+ * Hunger (the horse's feed health), owner ruling 2026-10-23 (Equoria-qwz60):
+ * Eastern game days since the hunger clock, which is `hungerSince` when set and
+ * `lastFedDate` otherwise (a feeding below Excellent back-dates `hungerSince`,
+ * see hungerFeedingPlan):
+ *   0-2 -> Excellent, 3-4 -> Very Good, 5-6 -> Good, 7-8 -> Fair, 9+ -> Bad.
  *
- * Eastern game days since last feeding:
- *   0-2 → Excellent
- *   3-4 → Good
- *   5-6 → Fair
- *   7+  → Bad (7-8 was 'poor' and 9+ 'critical' before 2026-10-23)
+ * Special: age >= 21 -> 'retired'; never fed -> Bad.
  *
- * Special: age >= 21 → 'retired'; never fed → Bad.
- *
- * @param {{ age?: number, lastFedDate?: Date|string|null }} horse
+ * @param {{ age?: number, lastFedDate?: Date|string|null, hungerSince?: Date|string|null }} horse
  * @param {Date} [now=new Date()]
- * @returns {'Excellent'|'Good'|'Fair'|'Bad'|'retired'}
+ * @returns {'Excellent'|'Very Good'|'Good'|'Fair'|'Bad'|'retired'}
  */
 export function getFeedHealth(horse, now = new Date()) {
   if (isRetiredAge(horse)) {
     return retiredHealth;
   }
-  if (!horse.lastFedDate) {
+  const clock = horse.hungerSince ?? horse.lastFedDate;
+  if (!clock) {
     return 'Bad';
   }
 
-  const days = gameDayIndex(now) - gameDayIndex(horse.lastFedDate);
-  if (days <= 2) {
-    return 'Excellent';
+  const days = gameDayIndex(now) - gameDayIndex(clock);
+  const level = hungerDayLimits.findIndex(limit => days <= limit);
+  return level === -1 ? 'Bad' : healthWords[level];
+}
+
+/**
+ * What one feeding does to a horse's hunger (owner ruling 2026-10-23). Hunger
+ * is a fill bar: a feeding raises it ONE level. Below Excellent a horse may be
+ * fed again and again until it is Excellent; at Excellent it is fed once per
+ * Eastern game day.
+ *
+ * `hungerSince` is the clock the feeding writes: now at Excellent, otherwise
+ * the oldest day of the next level up.
+ *
+ * @param {{ lastFedDate?: Date|string|null, hungerSince?: Date|string|null }} horse
+ * @param {Date} [now=new Date()]
+ * @returns {{ canFeed: boolean, hungerSince: Date }}
+ */
+export function hungerFeedingPlan(horse, now = new Date()) {
+  const level = healthWords.indexOf(getFeedHealth({ ...horse, age: null }, now));
+  if (level <= 0) {
+    return { canFeed: !alreadyFedToday(horse.lastFedDate, now), hungerSince: now };
   }
-  if (days <= 4) {
-    return 'Good';
-  }
-  if (days <= 6) {
-    return 'Fair';
-  }
-  return 'Bad';
+  return { canFeed: true, hungerSince: sameGameClockDaysLater(now, -hungerDayLimits[level - 1]) };
 }
 
 /**
@@ -163,18 +183,21 @@ export function worseOf(a, b) {
   return wordByGrade[healthGradeOrder[Math.max(ai, bi)]];
 }
 
+/** The last day of each vet-health level, best first: Excellent..Fair (29+ is Bad). */
+const vetDayLimits = Object.freeze([7, 14, 21, 28]);
+
 /**
- * Vet health derived from lastVettedDate (weekly decay), with healthStatus as
- * a vet-finding override.
+ * Vet health (owner ruling 2026-10-23): Eastern game days since the last vet
+ * visit, with a non-band `healthStatus` as a vet-finding override.
  *
- *   - age >= 21 → 'retired'
- *   - healthStatus non-null → toHealthWord(healthStatus) (override wins)
- *   - lastVettedDate null → Bad
- *   - otherwise Eastern game days since the visit:
- *       ≤7    → Excellent
- *       8-14  → Good
- *       15-21 → Fair
- *       22+   → Bad (22-28 was 'poor' and 29+ 'critical' before 2026-10-23)
+ *   - age >= 21 -> 'retired'
+ *   - healthStatus that is not one of the four good words (Poor, Critical,
+ *     Injured, any free-form finding) -> Bad. The stored words Excellent, Very
+ *     Good, Good and Fair no longer override the days: health comes from days
+ *     since the vet (the column defaults to 'Excellent', which would otherwise
+ *     hide the decay for every horse).
+ *   - lastVettedDate null -> Bad
+ *   - otherwise: 0-7 Excellent, 8-14 Very Good, 15-21 Good, 22-28 Fair, 29+ Bad
  *
  * @param {{ age?: number, lastVettedDate?: Date|string|null, healthStatus?: string|null }} horse
  * @param {Date} [now=new Date()]
@@ -184,8 +207,12 @@ export function getVetHealth(horse, now = new Date()) {
   if (isRetiredAge(horse)) {
     return retiredHealth;
   }
-  if (horse.healthStatus !== null && horse.healthStatus !== undefined) {
-    return toHealthWord(horse.healthStatus);
+  if (
+    horse.healthStatus !== null &&
+    horse.healthStatus !== undefined &&
+    healthGradeOf(horse.healthStatus) === 'bad'
+  ) {
+    return 'Bad';
   }
   if (!horse.lastVettedDate) {
     return 'Bad';
@@ -193,16 +220,22 @@ export function getVetHealth(horse, now = new Date()) {
 
   // lastVettedDate is a date-only column: read it as the calendar date it is.
   const days = gameDayIndex(now) - calendarDateDayIndex(horse.lastVettedDate);
-  if (days <= 7) {
-    return 'Excellent';
-  }
-  if (days <= 14) {
-    return 'Good';
-  }
-  if (days <= 21) {
-    return 'Fair';
-  }
-  return 'Bad';
+  const level = vetDayLimits.findIndex(limit => days <= limit);
+  return level === -1 ? 'Bad' : healthWords[level];
+}
+
+/**
+ * Health after hunger: hunger Fair lowers health one level, hunger Bad two;
+ * the floor is Bad (owner ruling 2026-10-23).
+ *
+ * @param {string} vetWord - a health word
+ * @param {string} hungerWord - a health word
+ * @returns {'Excellent'|'Very Good'|'Good'|'Fair'|'Bad'}
+ */
+function healthAfterHunger(vetWord, hungerWord) {
+  const penalty = { Fair: 1, Bad: 2 }[toHealthWord(hungerWord)] ?? 0;
+  const level = healthGradeOrder.indexOf(healthGradeOf(vetWord));
+  return wordByGrade[healthGradeOrder[Math.min(healthGradeOrder.length - 1, level + penalty)]];
 }
 
 /**
@@ -214,26 +247,38 @@ export function getVetHealth(horse, now = new Date()) {
  * @returns {string} one of healthWords, or 'retired'
  */
 export function getDisplayedHealth(horse, now = new Date()) {
-  return worseOf(getFeedHealth(horse, now), getVetHealth(horse, now));
+  const vet = getVetHealth(horse, now);
+  if (vet === retiredHealth) {
+    return retiredHealth;
+  }
+  return healthAfterHunger(vet, getFeedHealth(horse, now));
 }
 
 /**
- * A horse's health state: the worse of its feed and vet health, each graded
- * by healthGradeOf. For the five care bands this is exactly the graded
- * displayed health; it also keeps a 'Very Good' vet finding, which the care
- * bands do not know. Retirement is not a health state, so a retired horse is
- * graded on the care underneath it.
+ * A horse's health state: its vet health lowered by hunger, graded. Retirement
+ * is not a health state, so a retired horse is graded on the care underneath it.
  *
- * @param {{ age?: number|null, lastFedDate?: Date|string|null,
+ * @param {{ age?: number|null, lastFedDate?: Date|string|null, hungerSince?: Date|string|null,
  *   lastVettedDate?: Date|string|null, healthStatus?: string|null }} horse
  * @param {Date} [now=new Date()]
  * @returns {'excellent'|'veryGood'|'good'|'fair'|'bad'}
  */
 export function horseHealthGrade(horse, now = new Date()) {
   const care = { ...horse, age: null };
-  const feed = healthGradeOrder.indexOf(healthGradeOf(getFeedHealth(care, now)));
-  const vet = healthGradeOrder.indexOf(healthGradeOf(getVetHealth(care, now)));
-  return healthGradeOrder[Math.max(feed, vet)];
+  return healthGradeOf(healthAfterHunger(getVetHealth(care, now), getFeedHealth(care, now)));
+}
+
+/**
+ * How a mare's health at foaling scales the foal's negative-trait chance (owner
+ * ruling 2026-10-23, Equoria-w4ivy): a Fair mare raises it by 25%, a Bad mare
+ * by 50%; Excellent, Very Good and Good leave it alone. A multiplier on the
+ * chance as it already stands, nothing else about the odds.
+ *
+ * @param {'excellent'|'veryGood'|'good'|'fair'|'bad'} grade - horseHealthGrade of the mare
+ * @returns {number}
+ */
+export function negativeTraitChanceMultiplier(grade) {
+  return { fair: 1.25, bad: 1.5 }[grade] ?? 1;
 }
 
 /**
@@ -241,7 +286,7 @@ export function horseHealthGrade(horse, now = new Date()) {
  * 2026-10-23): true when the horse's displayed health is Bad, i.e. it is NOT
  * Fair or better. A retired horse is left to the age rules.
  *
- * Requires `age`, `lastFedDate`, `lastVettedDate` and `healthStatus`.
+ * Requires `age`, `lastFedDate`, `hungerSince`, `lastVettedDate` and `healthStatus`.
  *
  * @param {object} horse
  * @param {Date} [now=new Date()]
