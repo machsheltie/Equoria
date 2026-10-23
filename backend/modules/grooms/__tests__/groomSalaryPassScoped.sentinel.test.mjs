@@ -79,6 +79,9 @@ const GUARDED_FILES = [
   // Equoria-bgdfb: the arrears cases. They drive a player into grace and then pay,
   // both scoped to this suite's own fixture user.
   'modules/grooms/__tests__/groomFeeArrearsOwed.integration.test.mjs',
+  // Equoria-6p398.14: the ownership predicate on the fee count. It runs the pass for
+  // one fixture employer, scoped to its own user.
+  'modules/grooms/__tests__/groomFeeOwnership.integration.test.mjs',
   'tests/integration/groomSalarySystem.test.mjs',
 ];
 

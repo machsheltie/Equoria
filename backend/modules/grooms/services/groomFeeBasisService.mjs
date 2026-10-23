@@ -83,27 +83,42 @@ export function calculateWeeklyFee(assignedHorses) {
 }
 
 /**
- * Count the ACTIVE assignments of each groom in `groomIds`.
+ * Count the ACTIVE assignments of each groom in `groomIds` that sit on a horse the
+ * groom's employer still owns.
  *
  * One grouped read rather than a count per groom: the weekly pass walks every
  * groom on staff, and the fee is now a function of this number.
  *
+ * Equoria-6p398.14 — OWNERSHIP PREDICATE. A sale ends the seller's assignments
+ * (horseTransferReconciliation), but a horse can also change owner without that
+ * running (an admin transfer, an anonymization). An active row left on a horse the
+ * employer no longer owns is not work the employer is paying for, so it is not
+ * counted. Prisma cannot compare two joined columns in a `where`, so the two owner
+ * ids are selected and compared here; the rows are bounded by the ten-horse cap per
+ * groom. A groom with no employer (the hire pool) has no horses to bill.
+ *
  * @param {Object} client - Prisma client or transaction client
  * @param {number[]} groomIds
- * @returns {Promise<Map<number, number>>} groomId -> active assignment count
+ * @returns {Promise<Map<number, number>>} groomId -> active owned-horse assignment count
  */
 export async function countActiveAssignments(client, groomIds) {
   const counts = new Map(groomIds.map(id => [id, 0]));
   if (groomIds.length === 0) {
     return counts;
   }
-  const grouped = await client.groomAssignment.groupBy({
-    by: ['groomId'],
+  const rows = await client.groomAssignment.findMany({
     where: { groomId: { in: groomIds }, isActive: true },
-    _count: { _all: true },
+    select: {
+      groomId: true,
+      groom: { select: { userId: true } },
+      foal: { select: { userId: true } },
+    },
   });
-  for (const row of grouped) {
-    counts.set(row.groomId, row._count._all);
+  for (const row of rows) {
+    const employerId = row.groom.userId;
+    if (employerId !== null && row.foal.userId === employerId) {
+      counts.set(row.groomId, (counts.get(row.groomId) ?? 0) + 1);
+    }
   }
   return counts;
 }
