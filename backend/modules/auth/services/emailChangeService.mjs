@@ -69,6 +69,7 @@ import * as mfaService from './mfaService.mjs';
 import * as mfaLockoutService from './mfaLockoutService.mjs';
 import * as mfaReplayProtectionService from './mfaReplayProtectionService.mjs';
 import { retireStaffCheckinCodesTx } from '../../staff/index.mjs';
+import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 
 /** Pending changes expire on the same 24h clock as signup verification. */
 export const PENDING_EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -411,7 +412,18 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
       try {
         committed = await tx.user.update({
           where: { id: owner.id },
-          data: { email: destination, emailVerified: true, emailVerifiedAt: now },
+          // `passwordChangedAt` is the CWE-613 session cut-off the JWT-verify
+          // middleware already enforces (iat < passwordChangedAt => 401). It is
+          // stamped here so every access token minted before this change dies
+          // with the refresh tokens deleted in (g) — Equoria-8p6e6. The password
+          // itself is untouched; this reuses the one existing revocation
+          // mechanism instead of inventing a second.
+          data: {
+            email: destination,
+            emailVerified: true,
+            emailVerifiedAt: now,
+            passwordChangedAt: now,
+          },
           select: { id: true, email: true, emailVerified: true, emailVerifiedAt: true },
         });
       } catch (error) {
@@ -426,10 +438,29 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
       // comes after the User write, never before it.
       await retireStaffCheckinCodesTx(tx, owner.id, now);
 
+      // (h) Equoria-8p6e6 (owner ruling 2026-09-22, Equoria-6p398.11): the
+      // recovery address is the account-recovery control, so confirming a change
+      // terminates the sessions that existed before it. A session stolen before
+      // the change must not outlive the owner reclaiming the address, and a
+      // hijacker's change must not outlive the owner taking the account back.
+      // The confirming request is the PUBLIC emailed link and carries no session
+      // identity (see the controller header), so there is no session to keep:
+      // ALL refresh tokens go, and the passwordChangedAt stamp in (f) kills live
+      // access tokens. Same order as changePassword/resetPassword: User row
+      // first, then refresh tokens — no new lock-order edge. Confirmation, not
+      // request, is the trigger: at request time the actor is not yet proven to
+      // be the legitimate owner.
+      await tx.refreshToken.deleteMany({ where: { userId: owner.id } });
+
       return committed;
     }),
     { message: 'The email change service is busy right now, please retry in a moment.' },
   );
+
+  // Equoria-2bbf: evict the per-user passwordChangedAt cache so the next
+  // authenticated request sees the fresh stamp now, not after the ~30s TTL.
+  // After the commit — an aborted transaction must not evict a correct entry.
+  evictPasswordChangedAtCache(updated.id);
 
   logger.info('[emailChangeService] Recovery address changed', {
     userId: updated.id,
