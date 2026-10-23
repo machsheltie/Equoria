@@ -39,7 +39,7 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
       {/* Genetic Contribution Visualization */}
       {allTraits.length > 0 && (
         <div className="mb-6 p-4 glass-panel rounded-lg border border-[rgba(37,99,235,0.2)]">
-          <h4 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">
+          <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
             Genetic Contribution
           </h4>
 
@@ -78,13 +78,13 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-[var(--status-info)]" aria-hidden="true"></div>
-              <span className="text-[rgb(220,235,255)]">
+              <span className="text-[var(--text-primary)]">
                 Sire: <strong>{sireTraits}</strong> ({sirePercentage}%)
               </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-[var(--status-rare)]" aria-hidden="true"></div>
-              <span className="text-[rgb(220,235,255)]">
+              <span className="text-[var(--text-primary)]">
                 Dam: <strong>{damTraits}</strong> ({damPercentage}%)
               </span>
             </div>
@@ -94,7 +94,7 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
                   className="w-3 h-3 rounded bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]"
                   aria-hidden="true"
                 ></div>
-                <span className="text-[rgb(220,235,255)]">
+                <span className="text-[var(--text-primary)]">
                   Mutations: <strong>{mutationTraits}</strong>
                 </span>
               </div>
@@ -132,19 +132,19 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
         {horse.parentIds.sireId && (
           <Link
             to={`/horses/${horse.parentIds.sireId}`}
-            className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-[var(--alpha-gold-primary-50)] transition-colors text-left"
+            className="p-4 bg-[var(--alpha-bg-midnight-40)] rounded border border-[rgba(37,99,235,0.2)] hover:border-[var(--alpha-gold-primary-50)] transition-colors text-left"
           >
             <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Sire</p>
-            <p className="fantasy-body text-[rgb(220,235,255)]">View Sire Details &rarr;</p>
+            <p className="fantasy-body text-[var(--text-primary)]">View Sire Details &rarr;</p>
           </Link>
         )}
         {horse.parentIds.damId && (
           <Link
             to={`/horses/${horse.parentIds.damId}`}
-            className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-[var(--alpha-gold-primary-50)] transition-colors text-left"
+            className="p-4 bg-[var(--alpha-bg-midnight-40)] rounded border border-[rgba(37,99,235,0.2)] hover:border-[var(--alpha-gold-primary-50)] transition-colors text-left"
           >
             <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Dam</p>
-            <p className="fantasy-body text-[rgb(220,235,255)]">View Dam Details &rarr;</p>
+            <p className="fantasy-body text-[var(--text-primary)]">View Dam Details &rarr;</p>
           </Link>
         )}
       </div>

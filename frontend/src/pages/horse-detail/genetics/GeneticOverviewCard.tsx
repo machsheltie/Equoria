@@ -91,12 +91,12 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Genetic Potential */}
-        <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
+        <div className="bg-[var(--alpha-bg-midnight-50)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
           <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
             <TrendingUp className="w-4 h-4 mr-1" />
             Genetic Potential
           </div>
-          <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">{avgScore}/100</div>
+          <div className="text-3xl font-bold text-[var(--text-primary)] mb-2">{avgScore}/100</div>
           <div
             className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden"
             aria-hidden="true"
@@ -104,18 +104,18 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
             <div className={`h-full ${potentialTier.barClass}`} style={{ width: `${avgScore}%` }} />
           </div>
           <p className="text-xs text-[rgb(160,175,200)] mt-2">
-            <span className="font-semibold text-[rgb(220,235,255)]">{potentialTier.label}</span> ·
-            based on {allTraits.length} trait{allTraits.length !== 1 ? 's' : ''}
+            <span className="font-semibold text-[var(--text-primary)]">{potentialTier.label}</span>{' '}
+            · based on {allTraits.length} trait{allTraits.length !== 1 ? 's' : ''}
           </p>
         </div>
 
         {/* Avg Trait Strength */}
-        <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
+        <div className="bg-[var(--alpha-bg-midnight-50)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
           <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
             <Shield className="w-4 h-4 mr-1" />
             Avg Trait Strength
           </div>
-          <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">{avgStrength}%</div>
+          <div className="text-3xl font-bold text-[var(--text-primary)] mb-2">{avgStrength}%</div>
           <div
             className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden"
             aria-hidden="true"
@@ -126,18 +126,20 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
             />
           </div>
           <p className="text-xs text-[rgb(160,175,200)] mt-2">
-            <span className="font-semibold text-[rgb(220,235,255)]">{strengthTier.label}</span> ·{' '}
+            <span className="font-semibold text-[var(--text-primary)]">{strengthTier.label}</span> ·{' '}
             {dominantCount} dominant / {allTraits.length} total
           </p>
         </div>
 
         {/* Breeding Value */}
-        <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
+        <div className="bg-[var(--alpha-bg-midnight-50)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
           <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
             <Award className="w-4 h-4 mr-1" />
             Breeding Value
           </div>
-          <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">{breedingValue}/100</div>
+          <div className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+            {breedingValue}/100
+          </div>
           <div
             className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden"
             aria-hidden="true"
@@ -148,18 +150,18 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
             />
           </div>
           <p className="text-xs text-[rgb(160,175,200)] mt-2">
-            <span className="font-semibold text-[rgb(220,235,255)]">{breedingTier.label}</span> ·{' '}
+            <span className="font-semibold text-[var(--text-primary)]">{breedingTier.label}</span> ·{' '}
             {rarePlusCount} rare+ traits
           </p>
         </div>
 
         {/* Optimal Combinations */}
-        <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
+        <div className="bg-[var(--alpha-bg-midnight-50)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
           <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
             <Sparkles className="w-4 h-4 mr-1" />
             Optimal Combos
           </div>
-          <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">{optimalCount}</div>
+          <div className="text-3xl font-bold text-[var(--text-primary)] mb-2">{optimalCount}</div>
           <div className="text-sm text-[rgb(160,175,200)] mb-2">{goodCount} good</div>
           <p className="text-xs text-[rgb(160,175,200)] mt-2">High-value trait synergies</p>
         </div>

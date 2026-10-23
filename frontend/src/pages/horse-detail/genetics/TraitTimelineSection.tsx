@@ -59,7 +59,7 @@ const TraitTimelineSection: React.FC<TraitTimelineSectionProps> = ({ timeline })
           return (
             <div
               key={entry.id}
-              className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border-l-4 border-[rgba(37,99,235,0.5)]"
+              className="p-4 bg-[var(--alpha-bg-midnight-40)] rounded-lg border-l-4 border-[rgba(37,99,235,0.5)]"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ const TraitTimelineSection: React.FC<TraitTimelineSectionProps> = ({ timeline })
                     <PhaseIcon className="w-3 h-3" aria-hidden="true" />
                     {eventLabel}
                   </span>
-                  <span className="text-sm font-semibold text-[rgb(220,235,255)]">
+                  <span className="text-sm font-semibold text-[var(--text-primary)]">
                     {entry.traitName}
                   </span>
                 </div>
@@ -78,7 +78,7 @@ const TraitTimelineSection: React.FC<TraitTimelineSectionProps> = ({ timeline })
                 </span>
               </div>
               {entry.description && (
-                <p className="text-sm text-[rgb(220,235,255)] mb-2">{entry.description}</p>
+                <p className="text-sm text-[var(--text-primary)] mb-2">{entry.description}</p>
               )}
               {entry.source && (
                 <div className="flex items-center gap-2">

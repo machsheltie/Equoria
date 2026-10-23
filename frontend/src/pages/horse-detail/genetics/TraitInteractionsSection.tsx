@@ -68,7 +68,7 @@ const TraitInteractionsSection: React.FC<TraitInteractionsSectionProps> = ({ int
                   {band.label} · {interaction.strength}
                 </span>
               </div>
-              <p className="text-sm text-[rgb(220,235,255)]">{interaction.effect}</p>
+              <p className="text-sm text-[var(--text-primary)]">{interaction.effect}</p>
             </div>
           );
         })}
