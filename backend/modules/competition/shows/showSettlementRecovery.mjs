@@ -19,12 +19,14 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 /**
- * How long after a show's run began an unscoped scan leaves its payout alone.
- * A healthy payout takes seconds; the same-run unique result row would abort a
- * colliding settlement before money moved, but there is no reason to start one
- * and log a false failure. Matches the half-hour cadence of the nightly
- * maintenance and reaper jobs, so a half-settled show is retried the next time
- * either runs after it.
+ * How long after a show's run began its payout is left alone. A healthy payout
+ * takes seconds and is still 'completed' with its staged ordering while it runs,
+ * so a scan inside that window would race it for the same placements: the unique
+ * result row would abort the loser before money moved, but the loser would log a
+ * false failure. Matches the half-hour cadence of the nightly maintenance and
+ * reaper jobs, so a half-settled show is retried the next time either runs after
+ * it. It applies to a show named by id too (a concurrent executor is named the
+ * same way).
  */
 export const recoveryGraceMs = 30 * 60 * 1000;
 
@@ -32,9 +34,9 @@ export const recoveryGraceMs = 30 * 60 * 1000;
  * Ids of the ridden shows still holding unpaid placements.
  *
  * @param {{ now: Date, showIds: number[] | null }} params
- *   `showIds`, when given, names the shows to look at (an admin POST
- *   /shows/execute, or a test) and skips the grace period: asking for a show
- *   by id is asking for it now. Null scans every show.
+ *   `showIds`, when given, narrows the scan to those shows (an admin POST
+ *   /shows/execute, or a test); null scans every show. Either way a show whose
+ *   run began less than recoveryGraceMs ago is not due.
  * @returns {Promise<number[]>}
  */
 export async function findPartiallySettledShowIds({ now, showIds }) {
@@ -48,8 +50,8 @@ export async function findPartiallySettledShowIds({ now, showIds }) {
         SELECT "id" FROM "shows"
         WHERE "status" = 'completed' AND "showType" <> 'conformation'
           AND "stagedOrdering" IS NOT NULL`;
-  if (named || rows.length === 0) {
-    return rows.map(r => r.id);
+  if (rows.length === 0) {
+    return [];
   }
   // The grace period is applied through the client, not in the raw SQL: a Date bound
   // there is compared to the zone-less executedAt column in the database session's

@@ -37,6 +37,14 @@ async function setEarnings(horseId, totalEarnings) {
   await prisma.horse.update({ where: { id: horseId }, data: { totalEarnings } });
 }
 
+/** Let the run that left a show half-settled be an hour old: the grace period has passed. */
+async function letGracePass(showId) {
+  await prisma.show.update({
+    where: { id: showId },
+    data: { executedAt: new Date(Date.now() - 60 * 60 * 1000) },
+  });
+}
+
 async function run(showIds) {
   try {
     await executeClosedShows({ body: { showIds } }, null);
@@ -80,8 +88,9 @@ describe('re-running a partially settled show (Equoria-cmw85.2)', () => {
     const paidOwners = show.entrants.filter(e => e !== poisoned);
     const walletsAfterFirst = await Promise.all(paidOwners.map(e => moneyOf(e.owner.id)));
 
-    // The cause is fixed; the next run finishes the show.
+    // The cause is fixed; the next run, once the grace period has passed, finishes the show.
     await setEarnings(poisoned.horse.id, 0);
+    await letGracePass(show.showId);
     expect(await run([show.showId])).toBeNull();
 
     const afterSecond = await resultsByHorse(show.showId);
@@ -141,10 +150,12 @@ describe('re-running a partially settled show (Equoria-cmw85.2)', () => {
     const winnerHorseId = ordering.find(s => s.placement === 1).horseId;
     const secondHorseId = ordering.find(s => s.placement === 2).horseId;
     await setEarnings(secondHorseId, 0);
+    await letGracePass(show.showId);
     expect(await run([show.showId])).not.toBeNull();
     expect((await resultsByHorse(show.showId)).size).toBe(1);
 
     await setEarnings(winnerHorseId, 0);
+    await letGracePass(show.showId);
     expect(await run([show.showId])).toBeNull();
 
     const results = await resultsByHorse(show.showId);
@@ -174,19 +185,20 @@ describe('re-running a partially settled show (Equoria-cmw85.2)', () => {
     expect(ids).not.toContain(open.showId);
   }, 90000);
 
-  it('gives a payout that is still running its grace period before an unscoped scan re-drives it', async () => {
+  it('leaves a payout that may still be running alone until its grace period has passed', async () => {
     const show = await fx.buildClosedShow({ prize: PRIZE, entryFee, entrantCount: 3 });
     await setEarnings(show.entrants[0].horse.id, intMax);
     expect(await run([show.showId])).not.toBeNull(); // 'completed' with its stagedOrdering kept
     const now = new Date();
 
-    // The run that left it half-settled finished just now: an unscoped scan
-    // must not collide with a payout that could still be in flight.
+    // The run that left it half-settled finished just now: a scan must not
+    // collide with a payout that could still be in flight.
     expect(await findPartiallySettledShowIds({ now, showIds: null })).not.toContain(show.showId);
-    // Named explicitly (admin POST /shows/execute), it is taken at once.
-    expect(await findPartiallySettledShowIds({ now, showIds: [show.showId] })).toContain(show.showId);
-    // Once the grace has passed the nightly scan finds it.
+    // Named explicitly (admin POST /shows/execute, a concurrent executor), the same.
+    expect(await findPartiallySettledShowIds({ now, showIds: [show.showId] })).not.toContain(show.showId);
+    // Once the grace has passed, a scan finds it, named or not.
     const later = new Date(now.getTime() + 60 * 60 * 1000);
     expect(await findPartiallySettledShowIds({ now: later, showIds: null })).toContain(show.showId);
+    expect(await findPartiallySettledShowIds({ now: later, showIds: [show.showId] })).toContain(show.showId);
   }, 90000);
 });
