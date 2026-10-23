@@ -255,12 +255,12 @@ const MISSING_HORSE_ID = 2000000003;
 
 // The only place the services' text names a row id: their "Groom not found:
 // <id>" / "Horse not found: <id>" errors.
-const ID_IN_TEXT = /\b((?:Groom|Horse) not found: )(\d+)\b/g;
+const idInText = /\b((?:Groom|Horse) not found: )(\d+)\b/g;
 
 /**
  * Replace the fixture token and the ids a text names with stable labels.
  *
- * Equoria-94qvf: ids are relabeled ONLY where the text names one (ID_IN_TEXT).
+ * Equoria-94qvf: ids are relabeled ONLY where the text names one (idInText).
  * The old rule replaced every whole number equal to ANY fixture id anywhere in
  * the text. On a fresh lane database (small ids) a groom or horse whose id was
  * 72 turned "medium experience level with 72% trait strength" into "... with
@@ -278,7 +278,7 @@ export function labelText(text, labels) {
       out = out.split(key).join(label);
     }
   }
-  return out.replace(ID_IN_TEXT, (match, prefix, digits) => {
+  return out.replace(idInText, (match, prefix, digits) => {
     const id = Number(digits);
     if (id === MISSING_GROOM_ID) {
       return `${prefix}<missing-groom>`;

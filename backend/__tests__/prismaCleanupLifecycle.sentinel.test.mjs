@@ -36,8 +36,8 @@ async function connectionExists(monitor, pid) {
 // far longer than a backend exit and far shorter than the test timeout: a
 // client that cleanup never disconnected keeps its backend alive indefinitely,
 // so it still fails here.
-const BACKEND_EXIT_BOUND_MS = 5000;
-async function connectionGoneWithin(monitor, pid, boundMs = BACKEND_EXIT_BOUND_MS) {
+const backendExitBoundMs = 5000;
+async function connectionGoneWithin(monitor, pid, boundMs = backendExitBoundMs) {
   const deadline = Date.now() + boundMs;
   for (;;) {
     if (!(await connectionExists(monitor, pid))) {
