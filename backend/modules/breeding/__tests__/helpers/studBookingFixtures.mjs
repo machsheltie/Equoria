@@ -171,12 +171,20 @@ export async function disconnectLockClient() {
  * action's result is returned as-is, so the test's own assertions report what
  * the unguarded code did instead of a harness timeout.
  *
- * `blockedSessions` > 1 waits until that many sessions are blocked on a lock
- * at once (on the held row, or on each other — e.g. a double submit whose
- * second request queues behind the first's debit). It reads pg_locks, which
- * is live; pg_stat_activity is snapshotted once per transaction and would go
- * stale inside this polling loop. Run only when no other test process is using
- * the database (the pre-run process check).
+ * `blockedSessions` > 1 waits until that many sessions are queued behind the
+ * held transaction at once: blocked on the held row itself, or on a session
+ * that is (e.g. a double submit whose second request queues behind the first's
+ * debit). It reads pg_locks, which is live; pg_stat_activity is snapshotted
+ * once per transaction and would go stale inside this polling loop.
+ *
+ * Equoria-vygw4: only sessions in the held transaction's own wait queue count
+ * (pg_blocking_pids, followed recursively). pg_locks covers the whole Postgres
+ * cluster, so the earlier "every ungranted lock" count also counted lock waits
+ * from other databases, such as the second gate lane's. One foreign waiter
+ * plus the first booking reached 2 while the second booking had not queued
+ * yet; the barrier released, the first booking committed, and the second read
+ * the mare AFTER that commit and was refused at the cooldown pre-check instead
+ * of losing the guarded dam claim (pre-push gate 2026-10-23).
  *
  * @param {(tx: object) => Promise<unknown>} rowWrite - the uncommitted change
  * @param {() => Promise<T>} action - the request(s) under test
@@ -203,17 +211,19 @@ export async function holdRowLockUntil(
       const ownPid = (await tx.$queryRaw`SELECT pg_backend_pid() AS pid`)[0].pid;
       const deadline = Date.now() + LOCK_WAIT_TIMEOUT_MS;
       for (;;) {
-        const waiting =
-          blockedSessions === 1
-            ? await tx.$queryRaw`
-                SELECT count(*)::int AS n
-                  FROM pg_locks l
-                 WHERE NOT l.granted
-                   AND ${ownPid} = ANY(pg_blocking_pids(l.pid))`
-            : await tx.$queryRaw`
-                SELECT count(DISTINCT l.pid)::int AS n
-                  FROM pg_locks l
-                 WHERE NOT l.granted`;
+        const waiting = await tx.$queryRaw`
+          WITH RECURSIVE queued(pid) AS (
+            SELECT l.pid
+              FROM pg_locks l
+             WHERE NOT l.granted
+               AND ${ownPid} = ANY(pg_blocking_pids(l.pid))
+            UNION
+            SELECT l.pid
+              FROM pg_locks l
+              JOIN queued q ON q.pid = ANY(pg_blocking_pids(l.pid))
+             WHERE NOT l.granted
+          )
+          SELECT count(*)::int AS n FROM queued`;
         if (waiting[0].n >= blockedSessions || settled) {
           break;
         }
