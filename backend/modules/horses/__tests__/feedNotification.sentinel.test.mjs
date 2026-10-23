@@ -1,11 +1,18 @@
 /**
  * Sentinel test: feeding a horse creates a Notification row when a stat boost fires.
  *
- * Feed stat boosts are probabilistic, so the test feeds the horse up to 20 times
- * and asserts at least one statGain notification was inserted into the Notification
- * table. The old JSONB code never wrote to this table, so this test fails before fix.
+ * The old JSONB code never wrote to the Notification table, so this test fails
+ * before the fix.
+ *
+ * Equoria-ltm3l: the boost roll is Math.random (elite feed: 25%). The test used
+ * to feed up to 20 times hoping one boost fired, so 0.75^20 = 0.32% of runs saw
+ * no boost and failed (pre-push gate 2026-09-15). Math.random is now pinned for
+ * the request — the whole real route, service, claim UPDATE and notification
+ * write still run — so the roll is decided: a value below the tier's 25% fires
+ * a boost on the first feed, and a value above it fires none. The pair proves
+ * the notification is written exactly when a boost fires, not on every feed.
  */
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -61,32 +68,48 @@ describe('SENTINEL: feed → statGain Notification', () => {
     await prisma.user.delete({ where: { id: user.id } });
   }, 30000);
 
-  it('creates a statGain Notification row when a stat boost fires', async () => {
-    let boostFound = false;
-    for (let i = 0; i < 20; i++) {
-      await attachCsrf(
-        request(app)
-          .post(`/api/v1/horses/${horse.id}/feed`)
-          .set('Authorization', `Bearer ${token}`)
-          .set('Origin', ORIGIN),
-        csrf,
-      );
+  const feed = () =>
+    attachCsrf(
+      request(app)
+        .post(`/api/v1/horses/${horse.id}/feed`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Origin', ORIGIN),
+      csrf,
+    );
 
-      const rows = await prisma.notification.findMany({
-        where: { userId: user.id, type: 'statGain' },
-      });
-      if (rows.length > 0) {
-        boostFound = true;
-        expect(rows[0].payload).toHaveProperty('horseName');
-        expect(rows[0].payload).toHaveProperty('stat');
-        expect(rows[0].payload).toHaveProperty('amount');
-        break;
-      }
-      await prisma.horse.update({
-        where: { id: horse.id },
-        data: { lastFedDate: null },
-      });
+  // Each feed is a new game day for the horse: clear the claim column the
+  // service guards on ("already fed today"), as the old loop did between feeds.
+  const nextDay = () => prisma.horse.update({ where: { id: horse.id }, data: { lastFedDate: null } });
+
+  it('writes no statGain Notification when the boost roll misses', async () => {
+    // 0.99 * 100 = 99 >= the elite tier's statRollPct (25): rollStatBoost returns null.
+    const random = jest.spyOn(Math, 'random').mockReturnValue(0.99);
+    try {
+      const res = await feed();
+      expect(res.status).toBe(200);
+      expect(res.body.data.statBoost).toBeNull();
+    } finally {
+      random.mockRestore();
     }
-    expect(boostFound).toBe(true);
-  }, 120000);
+    const rows = await prisma.notification.findMany({ where: { userId: user.id, type: 'statGain' } });
+    expect(rows).toHaveLength(0);
+    await nextDay();
+  }, 60000);
+
+  it('creates a statGain Notification row when a stat boost fires', async () => {
+    // First draw 0.01 * 100 = 1 < 25: a boost fires; the second draw picks
+    // STATS[floor(0.01 * 12)] = STATS[0] = 'precision'.
+    const random = jest.spyOn(Math, 'random').mockReturnValue(0.01);
+    try {
+      const res = await feed();
+      expect(res.status).toBe(200);
+      expect(res.body.data.statBoost).toEqual({ stat: 'precision', amount: 1 });
+    } finally {
+      random.mockRestore();
+    }
+    const rows = await prisma.notification.findMany({ where: { userId: user.id, type: 'statGain' } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].payload).toMatchObject({ horseName: horse.name, stat: 'precision', amount: 1 });
+    await nextDay();
+  }, 60000);
 });
