@@ -18,7 +18,7 @@ import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { toPredictionView } from '../../breeding/index.mjs';
-import { minBreedingAgeYears } from '../../horses/index.mjs';
+import { minBreedingAgeYears, maxBreedingAgeYears } from '../../horses/index.mjs';
 import {
   INT4_MAX,
   MAX_AGE_YEARS,
@@ -126,6 +126,10 @@ export async function browseStudListings(req, res) {
         // listed before the listing guard existed (owner ruling 2026-10-23,
         // Equoria-e7tgc.2). Same game-year convention as minAge below.
         { dateOfBirth: { lte: birthDateForAge(minBreedingAgeYears) } },
+        // A retired stallion (21+) cannot breed, so he is never offered
+        // (owner ruling 2026-10-23, Equoria-znpxc). A game-year is 7 days, so a
+        // stallion is still 20 until the day he turns 21: born after that date.
+        { dateOfBirth: { gt: birthDateForAge(maxBreedingAgeYears + 1) } },
       ],
     };
     if (name) {

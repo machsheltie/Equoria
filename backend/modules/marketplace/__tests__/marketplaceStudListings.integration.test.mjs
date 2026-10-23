@@ -23,7 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 const PREFIX = 'TestFixture-q4uem9-studsearch';
 const SECRET = 'q4uem9StudSearchSecret';
@@ -86,7 +86,9 @@ describe('marketplace stud listings (Equoria-q4uem.9 slice 5)', () => {
         ...fixtureColor(),
         name: `${PREFIX}-${run}-${tag()}`,
         sex,
-        dateOfBirth: gameCalendarDate(new Date(), -5 * 365),
+        // 5 game-years old: a game-year is 7 days (it read 260 years old with the old 365-day offset, which
+        // the 3-20 stud window of Equoria-znpxc would now hide).
+        dateOfBirth: birthDateForAge(5),
         age: 5,
         breedId: breed.id,
         userId: ownerId,
@@ -160,6 +162,28 @@ describe('marketplace stud listings (Equoria-q4uem.9 slice 5)', () => {
     expect(byId.get(priv.id)).toMatchObject({ studMode: 'private', studFee: 900 });
     expect(byId.get(legacy.id)).toMatchObject({ studMode: 'public', studFee: 0 });
     expect(byId.get(pub.id).owner).toEqual({ username: studOwner.user.username });
+  });
+
+  it('lists only stallions aged 3-20: retired stallions (21+) are never offered (owner ruling 2026-10-23, Equoria-znpxc)', async () => {
+    const ages = { three: 3, twenty: 20, twentyOne: 21, thirty: 30 };
+    const byAge = {};
+    for (const [label, age] of Object.entries(ages)) {
+      byAge[label] = await horse({
+        ownerId: studOwner.user.id,
+        studStatus: 'At Public Stud',
+        studFee: 100,
+        dateOfBirth: birthDateForAge(age),
+        age,
+      });
+    }
+
+    const res = await studs();
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.studs.map(s => s.id).sort((x, y) => x - y)).toEqual(
+      [byAge.three.id, byAge.twenty.id].sort((x, y) => x - y),
+    );
+    expect(res.body.data.pagination.total).toBe(2);
   });
 
   it('each entry carries exactly the listing fields: the sale-listing stat set, no money, ownership or competition internals', async () => {

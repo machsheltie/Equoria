@@ -23,6 +23,7 @@ export {
   pendingRequestMessage,
   damBreedingCooldownEndsAt,
   minBreedingAgeYears,
+  maxBreedingAgeYears,
 } from './services/breedingPairRules.mjs';
 // Equoria-q4uem.9: a sale ends the stallion's pending stud requests and the mare's (marketplace).
 export {
