@@ -339,8 +339,8 @@ describe('Advanced Epigenetic API Routes', () => {
       expect(response.body.data.overallStability).toBeDefined();
       expect(response.body.data.stabilityFactors).toBeDefined();
       expect(response.body.data.volatilityRisks).toBeDefined();
-      expect(response.body.data.recommendations).toBeDefined();
-      expect(Array.isArray(response.body.data.recommendations)).toBe(true);
+      // Owner ruling 2026-10-07 (no advice or recommendations; Equoria-5nxw0).
+      expect(response.body.data.recommendations).toBeUndefined();
     });
   });
 

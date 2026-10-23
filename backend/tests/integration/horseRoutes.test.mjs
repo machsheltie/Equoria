@@ -54,6 +54,10 @@ describe('Horse Routes Integration Tests', () => {
           sex: 'Mare',
           dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
           age: 4,
+          // Owner ruling 2026-10-22/23: a horse in Bad health cannot train, and a
+          // never-fed, never-vetted horse is Bad. The trainable fixture is cared for.
+          lastFedDate: new Date(),
+          lastVettedDate: new Date(),
           userId: u.id,
         },
       });
