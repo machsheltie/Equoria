@@ -256,6 +256,8 @@ model Horse {
   /// Feed Shop fields (redesign 2026-04-29)
   equippedFeedType        String?
   lastFedDate             DateTime?
+  /// Hunger clock (owner ruling 2026-10-23): the instant hunger days count from. Null = lastFedDate. A feeding below Excellent back-dates it so one feeding raises hunger one level.
+  hungerSince             DateTime?
   /// Conformation show title progression (Epic 31F-3)
   titlePoints             Int                   @default(0)
   currentTitle            String?
