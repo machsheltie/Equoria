@@ -10,11 +10,10 @@ import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
-import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
-import { MIN_ACTIVE_AGE_YEARS, MAX_ACTIVE_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
+import { trainingRefusalReason } from '../services/trainingEligibility.mjs';
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -81,48 +80,17 @@ async function computeCanTrain(parsedHorseId, discipline) {
   const effectiveAge =
     horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
 
-  // Active-age window 3..20 inclusive (retires at 21) — shared policy in
-  // constants/horseAgePolicy.mjs (Equoria-2nacc; PRODUCT.md Core Simulation).
-  // effectiveAge is helper-derived (getHorseAge → getHorseAgeYears, Equoria-vdw5),
-  // never inline ms-math. Reasons are distinct per state so the eligibility
-  // surface can label "too young" vs "too old" separately (Story 4.2, oey96.15).
-  if (effectiveAge < MIN_ACTIVE_AGE_YEARS) {
+  // Age window 3..20 (retires at 21), injury and Fair-or-better health: one shared
+  // rule set with the trainable-horses list (services/trainingEligibility.mjs,
+  // Equoria-2nacc, Equoria-oey96.15, Equoria-u0jop, Equoria-du9bn). effectiveAge is
+  // helper-derived (getHorseAge -> getHorseAgeYears, Equoria-vdw5), never inline ms-math.
+  // Reasons are distinct per state so the eligibility surface can label them separately.
+  const refusal = trainingRefusalReason(horse, effectiveAge);
+  if (refusal) {
     logger.info(
-      `[trainingController.canTrain] Horse ${parsedHorseId} too young (age=${effectiveAge})`,
+      `[trainingController.canTrain] Horse ${parsedHorseId} cannot train (age=${effectiveAge}): ${refusal}`,
     );
-    return { eligible: false, reason: 'Horse is under age' };
-  }
-  if (effectiveAge > MAX_ACTIVE_AGE_YEARS) {
-    logger.info(
-      `[trainingController.canTrain] Horse ${parsedHorseId} too old (age=${effectiveAge} > ${MAX_ACTIVE_AGE_YEARS})`,
-    );
-    return { eligible: false, reason: 'Horse is too old to train' };
-  }
-
-  // Injury/health gate (Equoria-oey96.15): makes SECURITY.md A04 "Injured horses
-  // cannot train" a TRUE claim (was a false-green with no enforcement here).
-  // Case-insensitive vs healthStatus casing drift (mirrors showController's
-  // competition gate); null healthStatus (DB default 'Excellent') is not injured.
-  const normalizedHealth = String(horse.healthStatus ?? '')
-    .trim()
-    .toLowerCase();
-  if (normalizedHealth === 'injured') {
-    logger.info(
-      `[trainingController.canTrain] Horse ${parsedHorseId} is injured (${horse.healthStatus}) — cannot train`,
-    );
-    return { eligible: false, reason: 'Horse is injured and cannot train' };
-  }
-
-  // Health gate (owner rulings 2026-10-22 Equoria-0d4wa, 2026-10-23
-  // Equoria-u0jop): a horse must be Fair or better to train; displayed health
-  // Bad (Poor, Bad and Critical all = Bad) is refused. The same gate as
-  // breeding and every show entry (utils/horseHealth.mjs hasBadHealth).
-  // Old contract: only 'critical' was refused.
-  if (hasBadHealth(horse)) {
-    logger.info(
-      `[trainingController.canTrain] Horse ${parsedHorseId} is in Bad health — cannot train`,
-    );
-    return { eligible: false, reason: badHealthMessage(horse.name ?? 'This horse', 'train') };
+    return { eligible: false, reason: refusal };
   }
 
   // Check trait requirements for specific disciplines (e.g., Gaited)

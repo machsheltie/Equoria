@@ -24,6 +24,7 @@ import { ErrorState } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { useTrainHorse, useTrainingOverview } from '../../hooks/api/useTraining';
 import { formatDisciplineName, canTrain, getDisciplineScore } from '../../lib/utils/training-utils';
+import { isBadHealth } from '../../lib/healthWords';
 import type { Horse } from './HorseDetailPageTypes';
 
 const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
@@ -62,6 +63,10 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     id: horse.id,
     name: horse.name,
     age: horse.age,
+    // The server refuses a horse in Bad health (owner ruling 2026-10-23); never offer one.
+    ineligibleReason: isBadHealth(horse.displayedHealth ?? horse.healthStatus)
+      ? `${horse.name} is in Bad health and cannot train. Feed and vet to restore health.`
+      : null,
     trainingCooldown: getGlobalCooldown(trainingOverview),
   });
 

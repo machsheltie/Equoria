@@ -7,6 +7,7 @@ import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { getUserWithHorses } from '../../users/index.mjs';
+import { trainingRefusalReason } from './trainingEligibility.mjs';
 
 /**
  * Log a training session for a horse in a specific discipline
@@ -282,11 +283,19 @@ async function getTrainableHorses(userId) {
             .slice(0, 3)
             .map(([name]) => name),
           nextEligibleAt: null,
+          // The server's verdict, from the same rules the train call applies (age
+          // window, injury, Fair-or-better health: Equoria-du9bn), so a client never
+          // has to re-derive it. Cooldown is reported by nextEligibleAt below.
+          canTrain: true,
+          ineligibleReason: null,
         };
 
-        // Under-age check: use effectiveAge so horses with a stale dateOfBirth
+        // Age and health refusals use effectiveAge so horses with a stale dateOfBirth
         // but a correct stored age field are not incorrectly blocked
-        if (effectiveAge < 3) {
+        const refusal = trainingRefusalReason(horse, effectiveAge);
+        if (refusal) {
+          horseData.canTrain = false;
+          horseData.ineligibleReason = refusal;
           horseData.trainableDisciplines = [];
           allHorses.push(horseData);
           continue;
@@ -302,6 +311,7 @@ async function getTrainableHorses(userId) {
           if (diff < sevenDays) {
             const nextEligible = new Date(new Date(lastTrainingDate).getTime() + sevenDays);
             horseData.nextEligibleAt = nextEligible.toISOString();
+            horseData.canTrain = false;
           }
         }
 
