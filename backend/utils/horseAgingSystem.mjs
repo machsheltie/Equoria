@@ -39,6 +39,7 @@ import {
 } from './enhancedMilestoneEvaluationSystem.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
 import { setEpigeneticModifiersKey } from '../modules/traits/index.mjs';
+import { writeBirthdayTx } from '../modules/horses/index.mjs';
 
 /** The epigeneticModifiers key the age-1 milestone records its tags under. */
 export const ageOneTagsKey = 'epigenetic_tags';
@@ -171,13 +172,14 @@ export async function updateHorseAge(horseId, knownHorse = null) {
     };
   }
 
-  // Update age in database (game-years, not days — Equoria-son6 fix)
-  await prisma.horse.update({
-    where: { id: horseId },
-    data: { age: calculatedAge },
-  });
-
+  // Update age in database (game-years, not days — Equoria-son6 fix). A 21st
+  // birthday also releases the horse's staff in the same transaction unless it
+  // is in foal (Equoria-6p398.14, owner rulings 2026-10-23).
   const hadBirthday = calculatedAge > storedAge;
+  const retiring =
+    hadBirthday &&
+    crossesThreshold(previousAgeInDays(storedAge), ageInDays, retirementMilestoneDays);
+  await prisma.$transaction(tx => writeBirthdayTx(tx, { horseId, age: calculatedAge, retiring }));
 
   logger.info(
     `[horseAgingSystem.updateHorseAge] Updated horse ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays} days)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,

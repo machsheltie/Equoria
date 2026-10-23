@@ -12,9 +12,8 @@
  *   - epigenetic-trait roll at birth (mare stress + lineage + feed quality)
  *   - conformation, gait, temperament generation (or inherited)
  *   - the actual `createHorse()` insert
- *   - clearing the dam's pregnancy, in the same transaction as the insert
- *
- * Note: B4 (per-feeding tier counters) and B5 (`runFoalingJob`) both landed here.
+ *   - clearing the dam's pregnancy, in the same transaction as the insert, and
+ *     releasing a retired (21+) dam's staff there too (Equoria-6p398.14)
  *
  * @module modules/horses/services/foalingService
  */
@@ -46,12 +45,10 @@ import {
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
 import { UNNAMED_HORSE_NAME } from './horseNamePolicy.mjs';
+import { releaseStaffIfRetiredTx } from './horseRetirementStaff.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 
-/**
- * Length of an Equoria gestation. Mirrors GESTATION_DAYS in pregnancyBonus.mjs
- * but kept local so the foaling job's date math is self-contained.
- */
+// Gestation length; mirrors pregnancyBonus.mjs GESTATION_DAYS, kept local for the job's date math.
 const GESTATION_DAYS = 7;
 
 /**
@@ -500,6 +497,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       lost.code = PREGNANCY_NOT_CLAIMABLE;
       throw lost;
     }
+    // A mare who turned 21 in foal kept her staff until now (owner ruling 2026-10-23).
+    await releaseStaffIfRetiredTx(tx, damId);
     const foal = await createHorse(horseData, tx);
     if (notifUserId) {
       await createNotificationTx(tx, notifUserId, 'foalBorn', foalBornPayload(foal, dam, sire));

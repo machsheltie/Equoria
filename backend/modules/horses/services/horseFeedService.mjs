@@ -14,7 +14,9 @@
  *     backend/middleware/ownership.mjs:14-15). This branch is unreachable
  *     when the route is wired with requireOwnership('horse'), but
  *     defense-in-depth still warrants the check.
- *   - age < 21 (else returns { skipped: 'retired' }, no inventory mutation)
+ *   - age < 21, or 21+ and still in foal (else returns { skipped: 'retired' },
+ *     no inventory mutation). Owner ruling 2026-10-23 (Equoria-6p398.14): a
+ *     mare who turns 21 in foal is fed until she foals; the foal depends on it.
  *   - equippedFeedType is set (else 400)
  *   - alreadyFedToday returns false (else 400)
  *   - inventory has >= 1 unit of equipped tier (else 400 + auto-clear
@@ -184,7 +186,8 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
         e.status = 404;
         throw e;
       }
-      if (horse.age !== null && horse.age !== undefined && horse.age >= 21) {
+      const retired = horse.age !== null && horse.age !== undefined && horse.age >= 21;
+      if (retired && horse.inFoalSinceDate === null) {
         return { kind: 'retired', horse };
       }
       if (!horse.equippedFeedType) {

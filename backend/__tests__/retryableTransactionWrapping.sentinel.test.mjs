@@ -257,6 +257,7 @@ const KNOWN_UNWRAPPED = [
   'modules/grooms/services/groomSalaryService.mjs (weekly salary cron run)',
   'modules/trainers/services/riderTrainerRetirementService.mjs (weekly rider retirement cron run; Equoria-r9u5k)',
   'utils/cronLock.mjs (advisory-lock infra; timeout IS the intended skip path)',
+  'utils/horseAgingSystem.mjs (nightly aging cron: a birthday write that, at 21, releases its staff; Equoria-6p398.14)',
   // Best-effort recovery inside a catch — not the primary mutation path.
   'modules/marketplace/controllers/marketplaceController.mjs (buyStoreHorse refund tx)',
   // NOTE (Equoria-2ksil): conformationShowService (show execute),
