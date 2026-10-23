@@ -29,7 +29,7 @@ import { updateGroomSynergy } from '../services/groomProgressionService.mjs';
 import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 import { getTemperamentGroomSynergy } from '../../horses/index.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from '../../../utils/horseAge.mjs';
-import { MIN_ACTIVE_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
+import { minActiveAgeYears } from '../../../constants/horseAgePolicy.mjs';
 import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
 // Equoria-po1fl: the five player-state writes below commit as ONE transaction,
 // so a pool-acquire / interactive-timeout P2028 must surface as a retryable 503
@@ -51,7 +51,7 @@ export function getCurrentMilestoneWindow(dateOfBirth) {
 
   // Only track milestone windows for horses under game age 3 (Equoria-xggat,
   // owner ruling 2026-10-19: the age the game shows, 21 days, not 1095 days)
-  if (getHorseAgeYears(dateOfBirth) >= MIN_ACTIVE_AGE_YEARS) {
+  if (getHorseAgeYears(dateOfBirth) >= minActiveAgeYears) {
     return null;
   }
 

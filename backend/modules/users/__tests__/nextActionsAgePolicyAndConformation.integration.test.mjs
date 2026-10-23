@@ -24,7 +24,7 @@ import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs'
 import { competitionDateOfBirth } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const rand = () => randomBytes(6).toString('hex');
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 const cleanup = createCleanupTracker();
 const userIds = [];
 const horseIds = [];
@@ -74,7 +74,7 @@ async function giveGroom(user, horse, { assignedDaysAgo = 5, groomFields = {} } 
   const groom = await prisma.groom.create({
     data: {
       name: `TestFixture-nxap-groom-${rand()}`,
-      speciality: 'show_handling',
+      speciality: 'showHandling',
       personality: 'gentle',
       skillLevel: 'expert',
       user: { connect: { id: user.id } },
@@ -88,7 +88,7 @@ async function giveGroom(user, horse, { assignedDaysAgo = 5, groomFields = {} } 
       foal: { connect: { id: horse.id } },
       user: { connect: { id: user.id } },
       isActive: true,
-      createdAt: new Date(Date.now() - assignedDaysAgo * DAY_MS),
+      createdAt: new Date(Date.now() - assignedDaysAgo * dayMs),
     },
   });
   return groom;
@@ -152,7 +152,7 @@ describe('the compete suggestion lists conformation shows with a groom check (Eq
 
   it('suggests a conformation show for a horse with a groom assigned', async () => {
     const user = await makeUser();
-    const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + DAY_MS) });
+    const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + dayMs) });
     await giveGroom(user, horse);
     const compete = conformationCompete(await nextActions(user));
     expect(compete).toHaveLength(1);
@@ -161,27 +161,27 @@ describe('the compete suggestion lists conformation shows with a groom check (Eq
 
   it('does not suggest it for a horse with no groom', async () => {
     const user = await makeUser();
-    await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + DAY_MS) });
+    await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + dayMs) });
     expect(conformationCompete(await nextActions(user))).toHaveLength(0);
   });
 
   it('does not suggest it when the groom was only just assigned', async () => {
     const user = await makeUser();
-    const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + DAY_MS) });
+    const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + dayMs) });
     await giveGroom(user, horse, { assignedDaysAgo: 0 });
     expect(conformationCompete(await nextActions(user))).toHaveLength(0);
   });
 
   it('does not suggest it when the groom cannot work (retired)', async () => {
     const user = await makeUser();
-    const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + DAY_MS) });
+    const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + dayMs) });
     await giveGroom(user, horse, { groomFields: { retired: true } });
     expect(conformationCompete(await nextActions(user))).toHaveLength(0);
   });
 
   it('does not suggest it for a horse already entered', async () => {
     const user = await makeUser();
-    const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + DAY_MS) });
+    const horse = await makeHorse(user, { years: 1, trainingCooldown: new Date(Date.now() + dayMs) });
     await giveGroom(user, horse);
     await prisma.showEntry.create({
       data: { showId: conformationShow.id, horseId: horse.id, userId: user.id, feePaid: 0 },

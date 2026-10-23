@@ -11,7 +11,7 @@ import { gameDateKey } from './gameTime.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from './epigeneticFlags.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
 import { getHorseAgeYears } from './horseAge.mjs';
-import { MIN_ACTIVE_AGE_YEARS } from '../constants/horseAgePolicy.mjs';
+import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 import { asFlagArray } from './jsonbArrayGuard.mjs';
 // Note: Using existing trait effects system instead of separate definitions
 
@@ -39,7 +39,7 @@ export async function evaluateEnhancedMilestone(
   // (utils/horseAge.mjs: 1 game-year = 7 days, so age 3 = 21 days), read
   // through the one age policy. It replaces the 1095-elapsed-day boundary of
   // Equoria-l06yb, which treated age 3 as three real years.
-  if (getHorseAgeYears(horse.dateOfBirth) >= MIN_ACTIVE_AGE_YEARS) {
+  if (getHorseAgeYears(horse.dateOfBirth) >= minActiveAgeYears) {
     return baseMilestone;
   }
 

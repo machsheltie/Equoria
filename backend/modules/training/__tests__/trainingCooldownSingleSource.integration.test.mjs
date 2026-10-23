@@ -23,7 +23,7 @@ import { canTrain, getTrainableHorses, getTrainingStatus, trainHorse } from '../
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const PREFIX = 'TestFixture-w0qb7';
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 const cleanup = createCleanupTracker();
 const userIds = [];
 const horseIds = [];
@@ -125,7 +125,7 @@ describe('every cooldown reader follows Horse.trainingCooldown (Equoria-w0qb7)',
     const { user, horse } = await makeUserWithHorse();
     await prisma.horse.update({
       where: { id: horse.id },
-      data: { trainingCooldown: new Date(Date.now() - DAY_MS) },
+      data: { trainingCooldown: new Date(Date.now() - dayMs) },
     });
     expect((await canTrain(horse.id, 'Racing')).eligible).toBe(true);
     expect((await listEntryOf(user.id, horse.id)).canTrain).toBe(true);
@@ -136,7 +136,7 @@ describe('every cooldown reader follows Horse.trainingCooldown (Equoria-w0qb7)',
     const before = Date.now();
     expect((await trainHorse(horse.id, 'Racing')).success).toBe(true);
     const column = await columnOf(horse.id);
-    const weekMs = 7 * DAY_MS;
+    const weekMs = 7 * dayMs;
     expect(column.getTime()).toBeGreaterThanOrEqual(before + weekMs - 5000);
     expect(column.getTime()).toBeLessThanOrEqual(Date.now() + weekMs + 5000);
   });

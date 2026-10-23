@@ -8,7 +8,6 @@ import {
 import { getHorseById } from '../../horses/index.mjs';
 import { commitTrainingSession, trainingFeeFor } from '../services/trainingSessionTx.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
-import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -176,7 +175,6 @@ async function trainHorse(horseId, discipline) {
     // Get horse traits and calculate combined effects
     const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
     const allTraits = [...(traits.positive || []), ...(traits.negative || [])];
-    const traitEffects = getCombinedTraitEffects(allTraits);
 
     logger.info(
       `[trainingController.trainHorse] Horse ${horseId} has traits: ${allTraits.length > 0 ? allTraits.join(', ') : 'none'}`,
