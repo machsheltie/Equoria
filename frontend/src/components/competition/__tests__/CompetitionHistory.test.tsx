@@ -466,9 +466,10 @@ describe('CompetitionHistory', () => {
       // Prize won
       expect(within(firstEntry).getByText(/5,000/)).toBeInTheDocument();
 
-      // XP gained
+      // Horse Points gained. Contract change (Equoria-q4uem.15): OLD label "XP";
+      // NEW "Horse Points" (owner ruling 2026-10-07: horse XP is Horse Points).
       expect(within(firstEntry).getByText(/150/)).toBeInTheDocument();
-      expect(within(firstEntry).getByText(/XP/i)).toBeInTheDocument();
+      expect(within(firstEntry).getByText('Horse Points')).toBeInTheDocument();
     });
   });
 
