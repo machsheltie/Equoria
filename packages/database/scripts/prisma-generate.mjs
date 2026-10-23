@@ -44,7 +44,7 @@ function main(argv) {
   const verdict = assessGenerateTarget({
     packageDir: join(__dirname, '..'),
     argv,
-    env: process.env,
+    sharedOkEnvValue: process.env.EQUORIA_PRISMA_GENERATE_SHARED_OK,
   });
   if (!verdict.allowed) {
     console.error(verdict.message);

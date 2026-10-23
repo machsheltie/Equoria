@@ -27,8 +27,7 @@
 import { lstatSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-export const SHARED_OK_FLAG = '--shared-ok';
-export const SHARED_OK_ENV = 'EQUORIA_PRISMA_GENERATE_SHARED_OK';
+export const sharedOkFlag = '--shared-ok';
 
 function isLink(path) {
   try {
@@ -77,12 +76,14 @@ export function findLinkedNodeModules(packageDir) {
  * @param {object} params
  * @param {string} params.packageDir - absolute path of packages/database
  * @param {string[]} params.argv - arguments after the script name
- * @param {Record<string, string | undefined>} params.env
+ * @param {string | undefined} params.sharedOkEnvValue - value of the
+ *   EQUORIA_PRISMA_GENERATE_SHARED_OK variable (read by the caller from
+ *   process.env); only the exact string '1' opts in
  * @returns {{allowed: boolean, linked: string[], optedIn: boolean, message: string | null}}
  */
-export function assessGenerateTarget({ packageDir, argv, env }) {
+export function assessGenerateTarget({ packageDir, argv, sharedOkEnvValue }) {
   const linked = findLinkedNodeModules(packageDir);
-  const optedIn = argv.includes(SHARED_OK_FLAG) || env[SHARED_OK_ENV] === '1';
+  const optedIn = argv.includes(sharedOkFlag) || sharedOkEnvValue === '1';
   if (linked.length === 0 || optedIn) {
     return { allowed: true, linked, optedIn, message: null };
   }
@@ -94,9 +95,9 @@ export function assessGenerateTarget({ packageDir, argv, env }) {
     '  checkout are using with one built from THIS schema.prisma, and this wrapper',
     '  would also stop node processes holding the engine DLL — possibly theirs.',
     '  Nothing was changed.',
-    `  If you are the one sanctioned owner of the shared client (integration worktree,`,
-    `  no other session mid-run), re-run with ${SHARED_OK_FLAG} (npm run generate -- ${SHARED_OK_FLAG})`,
-    `  or ${SHARED_OK_ENV}=1.`,
+    '  If you are the one sanctioned owner of the shared client (integration worktree,',
+    `  no other session mid-run), re-run with ${sharedOkFlag} (npm run generate -- ${sharedOkFlag})`,
+    '  or EQUORIA_PRISMA_GENERATE_SHARED_OK=1.',
   ].join('\n');
   return { allowed: false, linked, optedIn, message };
 }

@@ -38,13 +38,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   assessGenerateTarget,
   findLinkedNodeModules,
-  SHARED_OK_ENV,
-  SHARED_OK_FLAG,
+  sharedOkFlag,
 } from '../../../packages/database/scripts/lib/sharedClientGuard.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REAL_SCRIPTS = path.resolve(HERE, '..', '..', '..', 'packages', 'database', 'scripts');
-const LINK_TYPE = process.platform === 'win32' ? 'junction' : 'dir';
+const realScripts = path.resolve(HERE, '..', '..', '..', 'packages', 'database', 'scripts');
+const linkType = process.platform === 'win32' ? 'junction' : 'dir';
 const DLL = 'query_engine-windows.dll.node';
 
 let sandbox;
@@ -54,8 +53,8 @@ function makeLayout(name) {
   const repo = path.join(sandbox, name);
   const packageDir = path.join(repo, 'packages', 'database');
   mkdirSync(path.join(packageDir, 'scripts'), { recursive: true });
-  cpSync(path.join(REAL_SCRIPTS, 'prisma-generate.mjs'), path.join(packageDir, 'scripts', 'prisma-generate.mjs'));
-  cpSync(path.join(REAL_SCRIPTS, 'lib'), path.join(packageDir, 'scripts', 'lib'), { recursive: true });
+  cpSync(path.join(realScripts, 'prisma-generate.mjs'), path.join(packageDir, 'scripts', 'prisma-generate.mjs'));
+  cpSync(path.join(realScripts, 'lib'), path.join(packageDir, 'scripts', 'lib'), { recursive: true });
   return { repo, packageDir };
 }
 
@@ -70,7 +69,7 @@ function makeSharedNodeModules() {
 
 /**
  * Recording stand-ins for the two destructive commands the wrapper runs.
- * Each appends its name to STUB_LOG and exits 0.
+ * Each appends its name to stubLog and exits 0.
  */
 function makeStubBin() {
   const bin = path.join(sandbox, 'stub-bin');
@@ -79,7 +78,7 @@ function makeStubBin() {
     if (process.platform === 'win32') {
       writeFileSync(
         path.join(bin, `${name}.cmd`),
-        `@echo ${name} %*>>"%STUB_LOG%"
+        `@echo ${name} %*>>"%stubLog%"
 @exit /b 0
 `,
       );
@@ -88,7 +87,7 @@ function makeStubBin() {
       writeFileSync(
         file,
         `#!/bin/sh
-echo "${name} $*" >> "$STUB_LOG"
+echo "${name} $*" >> "$stubLog"
 `,
       );
       chmodSync(file, 0o755);
@@ -102,12 +101,14 @@ function runWrapper(packageDir, args = [], extraEnv = {}) {
   const stubLog = path.join(sandbox, 'destructive-steps.log');
   const env = {};
   for (const [key, value] of Object.entries(process.env)) {
-    if (key.startsWith('GIT_') || /^path$/i.test(key)) { continue; }
+    if (key.startsWith('GIT_') || /^path$/i.test(key)) {
+      continue;
+    }
     env[key] = value;
   }
-  delete env[SHARED_OK_ENV];
+  delete env.EQUORIA_PRISMA_GENERATE_SHARED_OK;
   const realPath = process.env.PATH ?? process.env.Path ?? '';
-  const childEnv = { ...env, PATH: `${stubBin}${path.delimiter}${realPath}`, STUB_LOG: stubLog, ...extraEnv };
+  const childEnv = { ...env, PATH: `${stubBin}${path.delimiter}${realPath}`, stubLog, ...extraEnv };
 
   // FAIL CLOSED: before the real wrapper is allowed to run, prove with the very
   // env it will get — through the same shell resolution execSync/spawnSync use —
@@ -157,14 +158,14 @@ describe('findLinkedNodeModules', () => {
   it('reports a linked packages/database/node_modules', () => {
     const { packageDir } = makeLayout('linked-pkg');
     const { shared } = makeSharedNodeModules();
-    symlinkSync(shared, path.join(packageDir, 'node_modules'), LINK_TYPE);
+    symlinkSync(shared, path.join(packageDir, 'node_modules'), linkType);
     expect(findLinkedNodeModules(packageDir)).toEqual([path.join(packageDir, 'node_modules')]);
   });
 
   it('reports a linked repo-root node_modules', () => {
     const { repo, packageDir } = makeLayout('linked-root');
     const { shared } = makeSharedNodeModules();
-    symlinkSync(shared, path.join(repo, 'node_modules'), LINK_TYPE);
+    symlinkSync(shared, path.join(repo, 'node_modules'), linkType);
     expect(findLinkedNodeModules(packageDir)).toEqual([path.join(repo, 'node_modules')]);
   });
 
@@ -172,7 +173,7 @@ describe('findLinkedNodeModules', () => {
     const { packageDir } = makeLayout('linked-prisma');
     const { shared } = makeSharedNodeModules();
     mkdirSync(path.join(packageDir, 'node_modules'), { recursive: true });
-    symlinkSync(path.join(shared, '.prisma'), path.join(packageDir, 'node_modules', '.prisma'), LINK_TYPE);
+    symlinkSync(path.join(shared, '.prisma'), path.join(packageDir, 'node_modules', '.prisma'), linkType);
     expect(findLinkedNodeModules(packageDir)).toEqual([path.join(packageDir, 'node_modules', '.prisma')]);
   });
 });
@@ -180,40 +181,47 @@ describe('findLinkedNodeModules', () => {
 describe('assessGenerateTarget', () => {
   const linkedLayout = () => {
     const { packageDir } = makeLayout('assess');
-    symlinkSync(makeSharedNodeModules().shared, path.join(packageDir, 'node_modules'), LINK_TYPE);
+    symlinkSync(makeSharedNodeModules().shared, path.join(packageDir, 'node_modules'), linkType);
     return packageDir;
   };
 
   it('refuses a linked target by default, naming the link and the opt-in', () => {
-    const verdict = assessGenerateTarget({ packageDir: linkedLayout(), argv: [], env: {} });
+    const verdict = assessGenerateTarget({ packageDir: linkedLayout(), argv: [], sharedOkEnvValue: undefined });
     expect(verdict.allowed).toBe(false);
     expect(verdict.message).toContain('REFUSED');
-    expect(verdict.message).toContain(SHARED_OK_FLAG);
-    expect(verdict.message).toContain(SHARED_OK_ENV);
+    expect(verdict.message).toContain(sharedOkFlag);
+    expect(verdict.message).toContain('EQUORIA_PRISMA_GENERATE_SHARED_OK');
   });
 
   it('allows a linked target with the explicit flag', () => {
-    const verdict = assessGenerateTarget({ packageDir: linkedLayout(), argv: [SHARED_OK_FLAG], env: {} });
+    const verdict = assessGenerateTarget({
+      packageDir: linkedLayout(),
+      argv: [sharedOkFlag],
+      sharedOkEnvValue: undefined,
+    });
     expect(verdict).toMatchObject({ allowed: true, optedIn: true });
     expect(verdict.linked).toHaveLength(1);
   });
 
   it('allows a linked target with the explicit environment opt-in', () => {
-    const verdict = assessGenerateTarget({ packageDir: linkedLayout(), argv: [], env: { [SHARED_OK_ENV]: '1' } });
+    const verdict = assessGenerateTarget({ packageDir: linkedLayout(), argv: [], sharedOkEnvValue: '1' });
     expect(verdict.allowed).toBe(true);
   });
 
   it('does not accept a look-alike environment value or flag', () => {
     const packageDir = linkedLayout();
     for (const value of ['', '0', 'true', 'yes']) {
-      const verdict = assessGenerateTarget({ packageDir, argv: ['--shared'], env: { [SHARED_OK_ENV]: value } });
+      const verdict = assessGenerateTarget({ packageDir, argv: ['--shared'], sharedOkEnvValue: value });
       expect(verdict.allowed).toBe(false);
     }
   });
 
   it('allows an unlinked checkout without any opt-in', () => {
     const { packageDir } = makeLayout('plain');
-    expect(assessGenerateTarget({ packageDir, argv: [], env: {} })).toMatchObject({ allowed: true, optedIn: false });
+    expect(assessGenerateTarget({ packageDir, argv: [], sharedOkEnvValue: undefined })).toMatchObject({
+      allowed: true,
+      optedIn: false,
+    });
   });
 });
 
@@ -221,7 +229,7 @@ describe('the real prisma-generate.mjs wrapper (destructive steps stubbed)', () 
   const linkedPackage = name => {
     const { packageDir } = makeLayout(name);
     const { shared, client } = makeSharedNodeModules();
-    symlinkSync(shared, path.join(packageDir, 'node_modules'), LINK_TYPE);
+    symlinkSync(shared, path.join(packageDir, 'node_modules'), linkType);
     return { packageDir, client };
   };
 
@@ -241,7 +249,7 @@ describe('the real prisma-generate.mjs wrapper (destructive steps stubbed)', () 
   it('refuses even when the opt-in is a look-alike', () => {
     const { packageDir, client } = linkedPackage('wrapper-lookalike');
 
-    const result = runWrapper(packageDir, ['--shared'], { [SHARED_OK_ENV]: 'true' });
+    const result = runWrapper(packageDir, ['--shared'], { EQUORIA_PRISMA_GENERATE_SHARED_OK: 'true' });
 
     expect(result.status).toBe(2);
     expect(result.reached).toBe('');
@@ -249,8 +257,8 @@ describe('the real prisma-generate.mjs wrapper (destructive steps stubbed)', () 
   });
 
   it.each([
-    ['the --shared-ok flag', [SHARED_OK_FLAG], {}],
-    [`${SHARED_OK_ENV}=1`, [], { [SHARED_OK_ENV]: '1' }],
+    ['the --shared-ok flag', [sharedOkFlag], {}],
+    ['EQUORIA_PRISMA_GENERATE_SHARED_OK=1', [], { EQUORIA_PRISMA_GENERATE_SHARED_OK: '1' }],
   ])('runs through to `prisma generate` with %s', (_label, args, extraEnv) => {
     const { packageDir } = linkedPackage(`wrapper-optin-${args.length}`);
 
