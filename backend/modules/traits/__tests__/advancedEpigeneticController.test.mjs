@@ -1,7 +1,7 @@
 /**
  * advancedEpigeneticRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers all 15 horse-specific epigenetic analysis endpoints.
+ * Covers the horse-specific epigenetic analysis endpoints that remain.
  * Routes are mounted at '/' in authRouter so paths are /api/v1/horses/:id/<endpoint>.
  */
 
@@ -117,26 +117,6 @@ describe('GET /api/v1/horses/:id/trigger-thresholds', () => {
   });
 });
 
-describe('GET /api/v1/horses/:id/environmental-forecast', () => {
-  it('returns 200 for owned horse with default days', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/environmental-forecast`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-
-  it('returns 400 for invalid days param', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/environmental-forecast?days=999`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-});
-
 describe('GET /api/v1/horses/:id/trait-interactions', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
@@ -170,197 +150,41 @@ describe('GET /api/v1/horses/:id/trait-stability', () => {
   });
 });
 
-describe('GET /api/v1/horses/:id/developmental-windows', () => {
-  it('returns 200 for owned horse', async () => {
+// Owner ruling 2026-10-07 (Equoria-huuaf): no potential, no developmental windows, no
+// forecasts, no advice. Old contract: these nine routes answered 200 with windows,
+// milestone countdowns, forecasts and trait-expression probabilities.
+describe('the developmental-window, forecast and trait-probability routes are gone (huuaf)', () => {
+  const getRoutes = [
+    'environmental-forecast',
+    'developmental-windows',
+    'developmental-milestones',
+    'developmental-forecast',
+    'critical-period-analysis',
+  ];
+  const postRoutes = [
+    'trait-expression-probability',
+    'evaluate-trait-opportunity',
+    'window-sensitivity',
+    'coordinate-development',
+  ];
+
+  it.each(getRoutes)('GET /horses/:id/%s is 404', async route => {
     const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/developmental-windows`)
+      .get(`/api/v1/horses/${horse.id}/${route}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-describe('GET /api/v1/horses/:id/developmental-milestones', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/developmental-milestones`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-describe('GET /api/v1/horses/:id/developmental-forecast', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/developmental-forecast`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-describe('GET /api/v1/horses/:id/critical-period-analysis', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/critical-period-analysis`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-// ─── POST endpoints ───────────────────────────────────────────────────────────
-
-describe('POST /api/v1/horses/:id/trait-expression-probability', () => {
-  it('returns 400 when traitName is missing', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/trait-expression-probability`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 200 with valid traitName for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/trait-expression-probability`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ traitName: 'calm' });
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-
-  it('returns 404 for non-owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/horses/999999999/trait-expression-probability')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ traitName: 'calm' });
     expect(res.status).toBe(404);
   });
 
-  it('returns 401 without auth', async () => {
-    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
-    // before csrfProtection runs, so no accessToken-bound token is needed.
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/trait-expression-probability`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ traitName: 'calm' });
-    expect(res.status).toBe(401);
-  });
-});
-
-describe('POST /api/v1/horses/:id/evaluate-trait-opportunity', () => {
-  it('returns 400 when required fields missing', async () => {
+  it.each(postRoutes)('POST /horses/:id/%s is 404', async route => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/evaluate-trait-opportunity`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 200 with valid body for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/evaluate-trait-opportunity`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ traitName: 'calm', windowName: 'imprinting' });
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-describe('POST /api/v1/horses/:id/window-sensitivity', () => {
-  it('returns 400 when windowName is missing', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/window-sensitivity`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 200 with valid windowName for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/window-sensitivity`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ windowName: 'imprinting' });
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-});
-
-describe('POST /api/v1/horses/:id/coordinate-development', () => {
-  it('returns 200 for owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/coordinate-development`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-
-  it('returns 404 for non-owned horse', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/horses/999999999/coordinate-development')
+      .post(`/api/v1/horses/${horse.id}/${route}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({});
     expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
-    // before csrfProtection runs, so no accessToken-bound token is needed.
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/coordinate-development`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
-    expect(res.status).toBe(401);
   });
 });

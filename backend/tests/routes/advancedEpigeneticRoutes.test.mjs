@@ -1,7 +1,8 @@
 /**
  * Advanced Epigenetic API Routes Tests
  *
- * Tests API endpoints for environmental triggers, trait interactions, and developmental windows.
+ * Tests API endpoints for environmental triggers and trait interactions. The developmental
+ * window, forecast and opportunity endpoints are gone (owner ruling 2026-10-07, Equoria-huuaf).
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
  *
  * Equoria-4bs3s — versioned API surface: the unversioned `/api/*` mounts were
@@ -31,7 +32,6 @@
  * Business Rules Tested:
  * - Environmental trigger analysis API endpoints with authentication
  * - Trait interaction matrix API endpoints with proper data formatting
- * - Developmental window API endpoints with comprehensive forecasting
  * - Authentication and authorization for all advanced epigenetic endpoints
  * - Input validation and error handling for complex epigenetic data
  * - Response formatting and data consistency across endpoints
@@ -210,45 +210,6 @@ describe('Advanced Epigenetic API Routes', () => {
       expect(Array.isArray(response.body.data.traitExpressionProbabilities)).toBe(true);
     });
 
-    test('GET /api/v1/horses/:id/environmental-forecast should return environmental forecast', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorses[0].id}/environmental-forecast`)
-        .set('Origin', 'http://localhost:3000')
-        .query({ days: 30 })
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.horseId).toBe(testHorses[0].id);
-      expect(response.body.data.forecastPeriod).toBe(30);
-      expect(response.body.data.upcomingWindows).toBeDefined();
-      expect(response.body.data.recommendations).toBeDefined();
-      expect(Array.isArray(response.body.data.recommendations)).toBe(true);
-    });
-
-    test('POST /api/v1/horses/:id/evaluate-trait-opportunity should evaluate trait development opportunity', async () => {
-      const response = await request(app)
-        .post(`/api/v1/horses/${testHorses[0].id}/evaluate-trait-opportunity`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          traitName: 'confident',
-          windowName: 'early_socialization',
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.traitName).toBe('confident');
-      expect(response.body.data.windowName).toBe('early_socialization');
-      expect(response.body.data.overallOpportunity).toBeDefined();
-      expect(response.body.data.recommendedActions).toBeDefined();
-      expect(Array.isArray(response.body.data.recommendedActions)).toBe(true);
-    });
-
     test('should require authentication for environmental endpoints', async () => {
       await request(app)
         .get(`/api/v1/horses/${testHorses[0].id}/environmental-analysis`)
@@ -344,101 +305,7 @@ describe('Advanced Epigenetic API Routes', () => {
     });
   });
 
-  describe('Developmental Window Endpoints', () => {
-    test('GET /api/v1/horses/:id/developmental-windows should return active and upcoming windows', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorses[0].id}/developmental-windows`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.activeWindows).toBeDefined();
-      expect(response.body.data.upcomingWindows).toBeDefined();
-      expect(response.body.data.closedWindows).toBeDefined();
-      expect(response.body.data.criticalityScore).toBeDefined();
-      expect(Array.isArray(response.body.data.activeWindows)).toBe(true);
-    });
-
-    test('GET /api/v1/horses/:id/developmental-forecast should return developmental forecast', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorses[0].id}/developmental-forecast`)
-        .set('Origin', 'http://localhost:3000')
-        .query({ days: 60 })
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.forecastPeriod).toBe(60);
-      expect(response.body.data.upcomingWindows).toBeDefined();
-      expect(response.body.data.traitDevelopmentPredictions).toBeDefined();
-      expect(response.body.data.milestoneProjections).toBeDefined();
-      expect(response.body.data.riskAssessment).toBeDefined();
-      expect(Array.isArray(response.body.data.traitDevelopmentPredictions)).toBe(true);
-    });
-
-    test('GET /api/v1/horses/:id/critical-period-analysis should return critical period sensitivity', async () => {
-      const response = await request(app)
-        .get(`/api/v1/horses/${testHorses[0].id}/critical-period-analysis`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.criticalPeriods).toBeDefined();
-      expect(response.body.data.sensitivityProfile).toBeDefined();
-      expect(response.body.data.riskFactors).toBeDefined();
-      expect(response.body.data.protectiveFactors).toBeDefined();
-      expect(response.body.data.interventionRecommendations).toBeDefined();
-      expect(Array.isArray(response.body.data.interventionRecommendations)).toBe(true);
-    });
-
-    test('POST /api/v1/horses/:id/coordinate-development should coordinate multi-window development', async () => {
-      const response = await request(app)
-        .post(`/api/v1/horses/${testHorses[0].id}/coordinate-development`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({})
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.activeWindows).toBeDefined();
-      expect(response.body.data.coordinatedPlan).toBeDefined();
-      expect(response.body.data.conflictResolution).toBeDefined();
-      expect(Array.isArray(response.body.data.activeWindows)).toBe(true);
-    });
-  });
-
   describe('Input Validation', () => {
-    test('should validate trait opportunity evaluation input', async () => {
-      await request(app)
-        .post(`/api/v1/horses/${testHorses[0].id}/evaluate-trait-opportunity`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          traitName: '', // Invalid empty trait name
-          windowName: 'early_socialization',
-        })
-        .expect(400);
-    });
-
-    test('should validate forecast days parameter', async () => {
-      await request(app)
-        .get(`/api/v1/horses/${testHorses[0].id}/developmental-forecast`)
-        .set('Origin', 'http://localhost:3000')
-        .query({ days: -5 }) // Invalid negative days
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(400);
-    });
-
     test('should handle non-existent horse IDs', async () => {
       await request(app)
         .get('/api/v1/horses/99999/environmental-analysis')

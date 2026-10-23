@@ -1,7 +1,7 @@
 /**
  * environmentalRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: current conditions, forecast, calculate-impact, history, comfort-zone.
+ * Covers: current conditions, calculate-impact, history, comfort-zone.
  * Routes live under authRouter at /api/v1/environment (Equoria-hsc6e: the
  * unversioned /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the
  * canonical surface — verified in backend/app.mjs:290 + backend/app/routers.mjs:189).
@@ -106,60 +106,17 @@ describe('GET /api/environment/current', () => {
   });
 });
 
-// ─── GET /api/v1/environment/forecast ─────────────────────────────────────────
+// ─── GET /api/v1/environment/forecast ────────────────────────────────────────
+// Owner ruling 2026-10-07 and 2026-10-16 (Equoria-huuaf): no forecasts, no weather
+// planning. Old contract: the route answered 200 with a day-by-day weather forecast.
 
-describe('GET /api/environment/forecast', () => {
-  it('returns 200 with weather forecast (default params)', async () => {
+describe('GET /api/environment/forecast is gone', () => {
+  it('answers 404 to a signed-in player', async () => {
     const res = await request(app)
       .get('/api/v1/environment/forecast')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.forecast).toBeDefined();
-    expect(res.body.data.location).toBeDefined();
-    expect(res.body.data.days).toBeDefined();
-    expect(res.body.data.generatedAt).toBeDefined();
-  });
-
-  it('returns 200 with custom days and region params', async () => {
-    const res = await request(app)
-      .get('/api/v1/environment/forecast?days=3&region=coastal')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.days).toBe(3);
-    expect(res.body.data.location.region).toBe('coastal');
-  });
-
-  it('returns 400 for invalid region value', async () => {
-    const res = await request(app)
-      .get('/api/v1/environment/forecast?region=mars')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 400 for days out of range', async () => {
-    const res = await request(app)
-      .get('/api/v1/environment/forecast?days=99')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/environment/forecast').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(404);
   });
 });
 

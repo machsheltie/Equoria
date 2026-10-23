@@ -340,7 +340,8 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(insights).toHaveProperty('horseId', testHorse.id);
       expect(insights).toHaveProperty('epigeneticProfile');
       expect(insights).toHaveProperty('inheritanceRisk');
-      expect(insights).toHaveProperty('recommendedCarePatterns');
+      // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: recommendedCarePatterns.
+      expect(insights).not.toHaveProperty('recommendedCarePatterns');
       expect(insights).toHaveProperty('breedingNotes');
 
       // Should have our Affectionate trait in the epigenetic profile

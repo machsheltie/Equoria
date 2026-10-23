@@ -29,7 +29,6 @@ import {
   buildEnvironmentalSnapshot,
   calculateComfortZone,
   calculateCurrentWeather,
-  generateWeatherForecast,
   getEnvironmentalHistory,
   getSeasonalFactors,
 } from '../services/environmentalFactorEngineService.mjs';
@@ -65,7 +64,6 @@ const API = {
   triggers: (d, l, h, w) => assess(d, l, h, w).triggers,
   impact: (d, l, h, w) => assess(d, l, h, w).impact,
   stress: (d, l, h, w) => assess(d, l, h, w).stress,
-  forecast: (d, l, n) => generateWeatherForecast(d, l, n),
   history: (s, e, l) => getEnvironmentalHistory(s, e, l),
 };
 

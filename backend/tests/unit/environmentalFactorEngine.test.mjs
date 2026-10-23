@@ -13,7 +13,6 @@ import _logger from '../../utils/logger.mjs';
 import {
   calculateCurrentWeather,
   getSeasonalFactors,
-  generateWeatherForecast,
   getEnvironmentalHistory as _getEnvironmentalHistory,
   calculateComfortZone,
   buildEnvironmentalSnapshot,
@@ -195,7 +194,8 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(triggers).toHaveProperty('triggerTypes');
       expect(triggers).toHaveProperty('intensity');
       expect(triggers).toHaveProperty('traitExpressionProbability');
-      expect(triggers).toHaveProperty('recommendations');
+      // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: triggers.recommendations.
+      expect(triggers).not.toHaveProperty('recommendations');
 
       expect(triggers.activeTriggersCount).toBeGreaterThanOrEqual(0);
       expect(Array.isArray(triggers.triggerTypes)).toBe(true);
@@ -203,7 +203,6 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(triggers.intensity).toBeLessThanOrEqual(100);
       expect(triggers.traitExpressionProbability).toBeGreaterThanOrEqual(0);
       expect(triggers.traitExpressionProbability).toBeLessThanOrEqual(1);
-      expect(Array.isArray(triggers.recommendations)).toBe(true);
     });
 
     test('should identify stress triggers based on weather conditions', () => {
@@ -263,7 +262,8 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(impact).toHaveProperty('healthEffect');
       expect(impact).toHaveProperty('developmentEffect');
       expect(impact).toHaveProperty('performanceEffect');
-      expect(impact).toHaveProperty('recommendations');
+      // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: impact.recommendations.
+      expect(impact).not.toHaveProperty('recommendations');
 
       // Verify impact score is within valid range
       expect(impact.overallImpact).toBeGreaterThanOrEqual(-100);
@@ -282,8 +282,6 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(impact.developmentEffect).toBeLessThanOrEqual(50);
       expect(impact.performanceEffect).toBeGreaterThanOrEqual(-30);
       expect(impact.performanceEffect).toBeLessThanOrEqual(30);
-
-      expect(Array.isArray(impact.recommendations)).toBe(true);
     });
 
     test('should provide different impacts for different environmental conditions', () => {
@@ -307,47 +305,6 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(idealImpact.overallImpact).toBeGreaterThan(harshImpact.overallImpact);
       expect(idealImpact.healthEffect).toBeGreaterThan(harshImpact.healthEffect);
       expect(idealImpact.performanceEffect).toBeGreaterThan(harshImpact.performanceEffect);
-    });
-  });
-
-  describe('🔮 Weather Forecasting', () => {
-    test('should generate weather forecast for planning', () => {
-      const forecast = generateWeatherForecast(testDate, testLocation, 7); // 7-day forecast
-
-      expect(Array.isArray(forecast)).toBe(true);
-      expect(forecast).toHaveLength(7);
-
-      forecast.forEach((day, index) => {
-        expect(day).toHaveProperty('date');
-        expect(day).toHaveProperty('weather');
-        expect(day).toHaveProperty('environmentalImpact');
-        expect(day).toHaveProperty('recommendations');
-
-        // Verify date progression
-        const expectedDate = new Date(testDate);
-        expectedDate.setDate(expectedDate.getDate() + index);
-        expect(new Date(day.date).toDateString()).toBe(expectedDate.toDateString());
-
-        // Verify weather structure
-        expect(day.weather).toHaveProperty('temperature');
-        expect(day.weather).toHaveProperty('conditions');
-
-        // Verify impact assessment
-        expect(day.environmentalImpact).toHaveProperty('severity');
-        expect(['low', 'moderate', 'high', 'extreme']).toContain(day.environmentalImpact.severity);
-      });
-    });
-
-    test('should provide seasonal forecast trends', () => {
-      const springForecast = generateWeatherForecast(new Date('2024-04-15'), testLocation, 14);
-      const winterForecast = generateWeatherForecast(new Date('2024-01-15'), testLocation, 14);
-
-      const avgSpringTemp =
-        springForecast.reduce((sum, day) => sum + day.weather.temperature, 0) / springForecast.length;
-      const avgWinterTemp =
-        winterForecast.reduce((sum, day) => sum + day.weather.temperature, 0) / winterForecast.length;
-
-      expect(avgSpringTemp).toBeGreaterThan(avgWinterTemp);
     });
   });
 
@@ -405,18 +362,18 @@ describe('🌤️ Environmental Factor Engine', () => {
       expect(stressAssessment).toHaveProperty('stressLevel');
       expect(stressAssessment).toHaveProperty('stressFactors');
       expect(stressAssessment).toHaveProperty('severity');
-      expect(stressAssessment).toHaveProperty('mitigationRecommendations');
+      // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: stress.mitigationRecommendations.
+      expect(stressAssessment).not.toHaveProperty('mitigationRecommendations');
       expect(stressAssessment).toHaveProperty('timeToRecovery');
 
       expect(stressAssessment.stressLevel).toBeGreaterThanOrEqual(0);
       expect(stressAssessment.stressLevel).toBeLessThanOrEqual(100);
       expect(['low', 'moderate', 'high', 'critical']).toContain(stressAssessment.severity);
       expect(Array.isArray(stressAssessment.stressFactors)).toBe(true);
-      expect(Array.isArray(stressAssessment.mitigationRecommendations)).toBe(true);
       expect(stressAssessment.timeToRecovery).toBeGreaterThanOrEqual(0);
     });
 
-    test('should provide stress mitigation recommendations', () => {
+    test('severe weather raises the stress severity above low', () => {
       const highStressWeather = {
         temperature: 42,
         humidity: 95,
@@ -427,15 +384,6 @@ describe('🌤️ Environmental Factor Engine', () => {
       const stressAssessment = assess(testDate, testLocation, testHorse, highStressWeather).stress;
 
       expect(stressAssessment.severity).not.toBe('low');
-      expect(stressAssessment.mitigationRecommendations.length).toBeGreaterThan(0);
-
-      // Verify recommendations are actionable
-      stressAssessment.mitigationRecommendations.forEach(recommendation => {
-        expect(recommendation).toHaveProperty('action');
-        expect(recommendation).toHaveProperty('priority');
-        expect(recommendation).toHaveProperty('effectiveness');
-        expect(['low', 'medium', 'high', 'critical']).toContain(recommendation.priority);
-      });
     });
   });
 });

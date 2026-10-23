@@ -1,8 +1,12 @@
 /**
  * Environmental Routes
  *
- * API endpoints for environmental factor engine including current conditions,
- * forecasts, and environmental impact calculations for horse management.
+ * API endpoints for environmental factor engine including current conditions
+ * and environmental impact calculations for horse management.
+ *
+ * Owner ruling 2026-10-07 and 2026-10-16 (Equoria-huuaf): no forecasts and no
+ * advice. GET /forecast is gone, and the impact, trigger and stress results
+ * carry no recommendations.
  */
 
 import express from 'express';
@@ -18,7 +22,6 @@ import {
   assessHorseEnvironment,
   buildEnvironmentalSnapshot,
   calculateComfortZone,
-  generateWeatherForecast,
   getEnvironmentalHistory,
 } from '../services/environmentalFactorEngineService.mjs';
 
@@ -104,78 +107,6 @@ router.get(
       res.status(500).json({
         success: false,
         error: 'Failed to get current environmental conditions',
-      });
-    }
-  },
-);
-
-/**
- * GET /api/environment/forecast
- * Get weather forecast for planning
- */
-router.get(
-  '/forecast',
-  authenticateToken,
-  [
-    query('latitude')
-      .optional()
-      .isFloat({ min: -90, max: 90 })
-      .withMessage('Latitude must be between -90 and 90'),
-    query('longitude')
-      .optional()
-      .isFloat({ min: -180, max: 180 })
-      .withMessage('Longitude must be between -180 and 180'),
-    query('region')
-      .optional()
-      .isIn(['tropical', 'temperate', 'arctic', 'desert', 'coastal'])
-      .withMessage('Invalid region'),
-    query('elevation')
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage('Elevation must be a positive integer'),
-    query('days')
-      .optional()
-      .isInt({ min: 1, max: 14 })
-      .withMessage('Days must be between 1 and 14'),
-  ],
-  validateRequest,
-  async (req, res) => {
-    try {
-      const {
-        latitude = 40.7128,
-        longitude = -74.006,
-        region = 'temperate',
-        elevation = 10,
-        days = 7,
-      } = req.query;
-
-      const location = {
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        region,
-        elevation: parseInt(elevation),
-      };
-
-      logger.info(
-        `[environmentalRoutes.forecast] Generating ${days}-day forecast for ${location.latitude}, ${location.longitude}`,
-      );
-
-      const forecast = generateWeatherForecast(new Date(), location, parseInt(days));
-
-      res.json({
-        success: true,
-        data: {
-          forecast,
-          location,
-          days: parseInt(days),
-          generatedAt: new Date().toISOString(),
-        },
-      });
-    } catch (error) {
-      logger.error(`[environmentalRoutes.forecast] Error: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to generate weather forecast',
       });
     }
   },

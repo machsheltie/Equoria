@@ -1,9 +1,14 @@
 /**
  * Advanced Epigenetic API Routes
  *
- * Provides API endpoints for environmental triggers, trait interactions, and developmental windows.
- * Integrates with the advanced epigenetic services to expose sophisticated functionality
- * for environmental analysis, trait interaction matrices, and developmental forecasting.
+ * Provides API endpoints for environmental triggers and trait interactions.
+ * Integrates with the advanced epigenetic services to expose environmental
+ * analysis and trait interaction matrices.
+ *
+ * Owner ruling 2026-10-07 (Equoria-huuaf): no potential, no developmental windows,
+ * no forecasts, no advice. The developmental-window, milestone, forecast and
+ * critical-period routes, the trait-opportunity evaluator, the environmental
+ * forecast and the trait-expression-probability route are gone.
  *
  * Business Rules:
  * - Authentication required for all endpoints
@@ -14,7 +19,7 @@
  */
 
 import express from 'express';
-import { body, param, query, validationResult } from 'express-validator';
+import { param, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -24,7 +29,6 @@ import {
   detectTriggers,
   generateEnvironmentalReport,
   loadEnvironmentalTriggerSnapshot,
-  traitExpressionProbability,
   triggerThresholds,
 } from '../services/environmentalTriggerSystem.mjs';
 
@@ -32,16 +36,6 @@ import {
   analyzeTraitSnapshot,
   toTraitAnalysisSnapshot,
 } from '../services/traitInteractionMatrix.mjs';
-
-import {
-  identifyDevelopmentalWindows,
-  calculateWindowSensitivity,
-  evaluateTraitDevelopmentOpportunity,
-  trackDevelopmentalMilestones,
-  coordinateMultiWindowDevelopment,
-  analyzeCriticalPeriodSensitivity,
-  generateDevelopmentalForecast,
-} from '../services/developmentalWindowSystem.mjs';
 
 const router = express.Router();
 
@@ -158,124 +152,6 @@ router.get(
   },
 );
 
-/**
- * POST /api/horses/:id/trait-expression-probability
- * Evaluate trait expression probability based on environmental exposure
- */
-router.post(
-  '/horses/:id/trait-expression-probability',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  body('traitName').notEmpty().withMessage('Trait name is required'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-      const { traitName } = req.body;
-
-      const probability = traitExpressionProbability(
-        await loadEnvironmentalTriggerSnapshot(horseId),
-        traitName,
-      );
-
-      logger.info(
-        `Trait expression probability evaluated for horse ${horseId} (${traitName}) by user ${req.user.id}`,
-      );
-
-      res.json({
-        success: true,
-        data: probability,
-      });
-    } catch (error) {
-      logger.error(
-        `Error evaluating trait expression probability for horse ${req.params.id}:`,
-        error,
-      );
-      res.status(500).json({
-        success: false,
-        message: 'Failed to evaluate trait expression probability',
-      });
-    }
-  },
-);
-
-/**
- * GET /api/horses/:id/environmental-forecast
- * Get environmental forecast for a horse over specified time period
- */
-router.get(
-  '/horses/:id/environmental-forecast',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  query('days')
-    .optional()
-    .isInt({ min: 1, max: 365 })
-    .withMessage('Days must be between 1 and 365'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-      const days = parseInt(req.query.days) || 30;
-
-      const forecast = await generateDevelopmentalForecast(horseId, days);
-
-      logger.info(
-        `Environmental forecast generated for horse ${horseId} (${days} days) by user ${req.user.id}`,
-      );
-
-      res.json({
-        success: true,
-        data: forecast,
-      });
-    } catch (error) {
-      logger.error(`Error generating environmental forecast for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate environmental forecast',
-      });
-    }
-  },
-);
-
-/**
- * POST /api/horses/:id/evaluate-trait-opportunity
- * Evaluate trait development opportunity during a specific window
- */
-router.post(
-  '/horses/:id/evaluate-trait-opportunity',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  body('traitName').notEmpty().withMessage('Trait name is required'),
-  body('windowName').notEmpty().withMessage('Window name is required'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-      const { traitName, windowName } = req.body;
-
-      const opportunity = await evaluateTraitDevelopmentOpportunity(horseId, traitName, windowName);
-
-      logger.info(
-        `Trait opportunity evaluated for horse ${horseId} (${traitName} in ${windowName}) by user ${req.user.id}`,
-      );
-
-      res.json({
-        success: true,
-        data: opportunity,
-      });
-    } catch (error) {
-      logger.error(`Error evaluating trait opportunity for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to evaluate trait development opportunity',
-      });
-    }
-  },
-);
-
 // ===== TRAIT INTERACTION ENDPOINTS =====
 
 /**
@@ -379,211 +255,6 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Failed to analyze trait stability',
-      });
-    }
-  },
-);
-
-// ===== DEVELOPMENTAL WINDOW ENDPOINTS =====
-
-/**
- * GET /api/horses/:id/developmental-windows
- * Get active and upcoming developmental windows for a horse
- */
-router.get(
-  '/horses/:id/developmental-windows',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-
-      const windows = await identifyDevelopmentalWindows(horseId);
-
-      logger.info(`Developmental windows identified for horse ${horseId} by user ${req.user.id}`);
-
-      res.json({
-        success: true,
-        data: windows,
-      });
-    } catch (error) {
-      logger.error(`Error identifying developmental windows for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to identify developmental windows',
-      });
-    }
-  },
-);
-
-/**
- * POST /api/horses/:id/window-sensitivity
- * Calculate sensitivity for a specific developmental window
- */
-router.post(
-  '/horses/:id/window-sensitivity',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  body('windowName').notEmpty().withMessage('Window name is required'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-      const { windowName } = req.body;
-
-      const sensitivity = await calculateWindowSensitivity(horseId, windowName);
-
-      logger.info(
-        `Window sensitivity calculated for horse ${horseId} (${windowName}) by user ${req.user.id}`,
-      );
-
-      res.json({
-        success: true,
-        data: sensitivity,
-      });
-    } catch (error) {
-      logger.error(`Error calculating window sensitivity for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to calculate window sensitivity',
-      });
-    }
-  },
-);
-
-/**
- * GET /api/horses/:id/developmental-milestones
- * Track developmental milestones for a horse
- */
-router.get(
-  '/horses/:id/developmental-milestones',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-
-      const milestones = await trackDevelopmentalMilestones(horseId);
-
-      logger.info(`Developmental milestones tracked for horse ${horseId} by user ${req.user.id}`);
-
-      res.json({
-        success: true,
-        data: milestones,
-      });
-    } catch (error) {
-      logger.error(`Error tracking developmental milestones for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to track developmental milestones',
-      });
-    }
-  },
-);
-
-/**
- * GET /api/horses/:id/developmental-forecast
- * Get developmental forecast for a horse
- */
-router.get(
-  '/horses/:id/developmental-forecast',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  query('days')
-    .optional()
-    .isInt({ min: 1, max: 365 })
-    .withMessage('Days must be between 1 and 365'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-      const days = parseInt(req.query.days) || 30;
-
-      const forecast = await generateDevelopmentalForecast(horseId, days);
-
-      logger.info(
-        `Developmental forecast generated for horse ${horseId} (${days} days) by user ${req.user.id}`,
-      );
-
-      res.json({
-        success: true,
-        data: forecast,
-      });
-    } catch (error) {
-      logger.error(`Error generating developmental forecast for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate developmental forecast',
-      });
-    }
-  },
-);
-
-/**
- * GET /api/horses/:id/critical-period-analysis
- * Get critical period sensitivity analysis for a horse
- */
-router.get(
-  '/horses/:id/critical-period-analysis',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-
-      const analysis = await analyzeCriticalPeriodSensitivity(horseId);
-
-      logger.info(`Critical period analysis generated for horse ${horseId} by user ${req.user.id}`);
-
-      res.json({
-        success: true,
-        data: analysis,
-      });
-    } catch (error) {
-      logger.error(`Error analyzing critical periods for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to analyze critical periods',
-      });
-    }
-  },
-);
-
-/**
- * POST /api/horses/:id/coordinate-development
- * Coordinate multi-window development for a horse
- */
-router.post(
-  '/horses/:id/coordinate-development',
-  authenticateToken,
-  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  handleValidationErrors,
-  requireOwnership('horse', { idParam: 'id' }),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id);
-
-      const coordination = await coordinateMultiWindowDevelopment(horseId);
-
-      logger.info(`Development coordination generated for horse ${horseId} by user ${req.user.id}`);
-
-      res.json({
-        success: true,
-        data: coordination,
-      });
-    } catch (error) {
-      logger.error(`Error coordinating development for horse ${req.params.id}:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to coordinate development',
       });
     }
   },

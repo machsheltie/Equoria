@@ -242,7 +242,6 @@ export async function getTraitScoreSummary(horseId) {
     percentage: (traitScore.totalScore / traitScore.maxScore) * 100,
     strengths: [],
     weaknesses: [],
-    recommendations: [],
   };
 
   // Identify strengths
@@ -265,17 +264,6 @@ export async function getTraitScoreSummary(horseId) {
   }
   if (traitScore.breakdown.groomCareConsistency < 2) {
     summary.weaknesses.push('Inconsistent early care');
-  }
-
-  // Generate recommendations
-  if (traitScore.breakdown.traitCount < MAX_TRAIT_COUNT_SCORE) {
-    summary.recommendations.push('Focus on trait development before age 4');
-  }
-  if (traitScore.breakdown.diversity < MAX_DIVERSITY_SCORE) {
-    summary.recommendations.push('Diversify trait sources (milestone, groom, environmental)');
-  }
-  if (traitScore.breakdown.rareTraits === 0) {
-    summary.recommendations.push('Work toward acquiring rare traits');
   }
 
   logger.info(

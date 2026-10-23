@@ -1,21 +1,20 @@
 /**
  * The environmental engine characterization grid (Equoria-q4uem.7 S3).
  *
- * Pure: runGrid(api) calls the eight engine projections over a fixed grid of
+ * Pure: runGrid(api) calls the seven engine projections over a fixed grid of
  * dates, locations, horses and weather overrides and returns
  * { caseKey -> output }. The golden digests in environmentalEngine.golden.json
  * were recorded from the pre-S3 engine (HEAD 439e793d6) through the same grid,
  * so a changed number, order or text anywhere in the grid fails the
  * characterization test.
  *
- * Time-zone safety: the engine's day-of-year and forecast stepping use LOCAL
+ * Time-zone safety: the engine's day-of-year stepping uses LOCAL
  * time, so every instant is at 06:00, 12:00 or 18:00 UTC (the same calendar
  * day in UTC and in US time zones) and no date range crosses a DST change.
  * That keeps the digests equal on an Eastern-time laptop and on UTC CI.
  *
  * api = { weather(d, l), seasonal(d), comfort(h), triggers(d, l, h, w),
- *         impact(d, l, h, w), stress(d, l, h, w), forecast(d, l, n),
- *         history(s, e, l) }
+ *         impact(d, l, h, w), stress(d, l, h, w), history(s, e, l) }
  */
 
 import { createHash } from 'node:crypto';
@@ -183,16 +182,8 @@ export function runGrid(api) {
       }
     }
   }
-  // Forecast and history windows stay inside one DST regime (see header).
-  for (const [fk, start] of [
-    ['jan', at('2025-01-10')],
-    ['jul', at('2025-07-10')],
-    ['oct', at('2025-10-10', 6)],
-  ]) {
-    for (const lk of ['temperate@0', 'desert@1500', 'coastal@0']) {
-      out[`forecast|${fk}|${lk}`] = api.forecast(start, loc[lk], 7);
-    }
-  }
+  // History windows stay inside one DST regime (see header). Forecast cases were
+  // removed with the forecast (owner ruling 2026-10-07, Equoria-huuaf).
   for (const [rk, s, e] of [
     ['jan', at('2025-01-05'), at('2025-01-12')],
     ['jul', at('2025-07-01'), at('2025-07-03')],

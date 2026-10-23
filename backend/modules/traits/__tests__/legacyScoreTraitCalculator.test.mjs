@@ -260,12 +260,13 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
     expect(summary.weaknesses).toContain('Inconsistent early care');
   });
 
-  // ── getTraitScoreSummary — recommendations branches ─────────────────────────
+  // ── getTraitScoreSummary — no recommendations ───────────────────────────────
+  // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: a weak horse got
+  // 'Focus on trait development before age 4', 'Diversify trait sources ...' and
+  // 'Work toward acquiring rare traits'.
 
-  it('getTraitScoreSummary: weak horse — generates all 3 recommendations (traitCount<10, diversity<5, rareTraits===0)', async () => {
+  it('getTraitScoreSummary: a weak horse is given no recommendations', async () => {
     const summary = await getTraitScoreSummary(lstWeakHorse.id);
-    expect(summary.recommendations).toContain('Focus on trait development before age 4');
-    expect(summary.recommendations).toContain('Diversify trait sources (milestone, groom, environmental)');
-    expect(summary.recommendations).toContain('Work toward acquiring rare traits');
+    expect(summary).not.toHaveProperty('recommendations');
   });
 });

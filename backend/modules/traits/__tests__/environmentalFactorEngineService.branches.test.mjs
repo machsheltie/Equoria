@@ -3,10 +3,10 @@
  *
  * Targets specific uncovered branches identified in the coverage report:
  *   - determineWeatherConditions: foggy (humidity > 85) and dry-sunny (humidity < 30 && temp > 25)
- *   - generateImpactRecommendations: overallImpact < -50, overallImpact > 30, winter high-stress
- *   - assessForecastImpact: humidity > 85, windSpeed > 25, stormy → extreme severity
- *   - generateForecastRecommendations: extreme severity → "Keep horses indoors"
  *   - calculateEnvironmentalQuality: windSpeed < 5 → quality -= 5 branch
+ *
+ * Owner ruling 2026-10-07 (Equoria-huuaf): no advice and no forecasts, so the impact-recommendation
+ * and weather-forecast branch tests that stood here were removed with the code.
  *
  * All functions are pure computation — no Prisma / no DB needed.
  */
@@ -15,7 +15,6 @@ import { describe, it, expect } from '@jest/globals';
 import {
   calculateCurrentWeather,
   getEnvironmentalHistory,
-  generateWeatherForecast,
   buildEnvironmentalSnapshot,
   assessHorseEnvironment,
 } from '../services/environmentalFactorEngineService.mjs';
@@ -50,8 +49,6 @@ const TEMPERATE_LOCATION = {
 // Season reference dates
 const SUMMER_DATE = new Date('2025-07-15'); // mid-summer, day ~196
 const WINTER_DATE = new Date('2025-01-15'); // mid-winter, day ~15
-const SPRING_DATE = new Date('2025-04-15'); // mid-spring, day ~105
-const AUTUMN_DATE = new Date('2025-10-15'); // mid-autumn, day ~288
 
 // ─── calculateCurrentWeather — weather condition branches ───────────────────
 
@@ -164,281 +161,6 @@ describe('calculateEnvironmentalQuality — windSpeed < 5 (quality -= 5 branch)'
       const [entry] = history;
       expect(entry.environmentalQuality).toBeGreaterThanOrEqual(0);
       expect(entry.environmentalQuality).toBeLessThanOrEqual(100);
-    }
-  });
-});
-
-// ─── generateImpactRecommendations — overallImpact < -50 branch ────────────
-
-describe('generateImpactRecommendations — overallImpact < -50', () => {
-  it('very poor conditions produce facility improvement recommendation', () => {
-    // To get overallImpact < -50:
-    // Use a horse with optimal temp=18, comfort max=30 (base)
-    // Very hot weather (temp=50°C): tempDiff = |50-18| = 32, impact -= 32*2 = -64
-    // Even before seasonal/condition penalty → overallImpact will be < -50
-    const baseHorse = { traits: [] };
-    const extremeHeatWeather = {
-      temperature: 50,
-      humidity: 50,
-      precipitation: 0,
-      windSpeed: 8,
-      conditions: 'cloudy',
-    };
-    const result = assess(SUMMER_DATE, TEMPERATE_LOCATION, baseHorse, extremeHeatWeather).impact;
-    // With temp=50, summer growthModifier=1.0 (no seasonal bonus), humidity diff=0, condition=0
-    // overallImpact before trait = -64 + 0 + 0 + 0 = -64 → triggers < -50 branch
-    expect(result.overallImpact).toBeLessThan(-50);
-    const facilityRec = result.recommendations.find(r => r.action.toLowerCase().includes('facility'));
-    expect(facilityRec).toBeDefined();
-    expect(facilityRec.priority).toBe('high');
-  });
-
-  it('stormy + extreme cold produces recommendations including facility improvement', () => {
-    const baseHorse = { traits: [] };
-    const stormyFreezeWeather = {
-      temperature: -15,
-      humidity: 50,
-      precipitation: 0.9,
-      windSpeed: 30,
-      conditions: 'stormy',
-    };
-    // tempDiff = |-15-18| = 33 → impact -= 66
-    // conditionImpact stormy = -30
-    // Total well below -50 → facility rec fires
-    const result = assess(WINTER_DATE, TEMPERATE_LOCATION, baseHorse, stormyFreezeWeather).impact;
-    expect(result.overallImpact).toBeLessThan(-50);
-    const facilityRec = result.recommendations.find(r => r.action.toLowerCase().includes('facility'));
-    expect(facilityRec).toBeDefined();
-  });
-});
-
-// ─── generateImpactRecommendations — overallImpact > 30 branch ─────────────
-
-describe('generateImpactRecommendations — overallImpact > 30', () => {
-  it('optimal spring conditions produce take-advantage-of-training recommendation', () => {
-    // Spring: growthModifier=1.2 → seasonal bonus = (1.2-1)*50 = +10
-    // Optimal temp=18, humidity=50 → tempDiff=0, humidityDiff=0 → no penalty
-    // sunny condition → +10
-    // Total = +10 + 10 = +20 before any transition effects; with transition up to +24.
-    // Need +30. Add heat_tolerant horse: their optimal is 23 (18+5), temp=23 → tempDiff=0.
-    // Still need more. Use spring transition day (~day 80) which has growth 1+1*0.2 = 1.2*1.2=1.44
-    // seasonal bonus = (1.44-1)*50 = +22, condition bonus = +10 → total ≈ +32
-    const baseHorse = { traits: [] };
-    const optimalWeather = {
-      temperature: 18,
-      humidity: 50,
-      precipitation: 0,
-      windSpeed: 8,
-      conditions: 'sunny',
-    };
-    // Use spring transition date (Mar 21 = start of spring, day 80)
-    const springTransitionDate = new Date('2025-03-21');
-    const result = assess(springTransitionDate, TEMPERATE_LOCATION, baseHorse, optimalWeather).impact;
-    // With transition: growth effect strong → overallImpact may exceed 30
-    if (result.overallImpact > 30) {
-      const trainingRec = result.recommendations.find(r => r.action.toLowerCase().includes('training'));
-      expect(trainingRec).toBeDefined();
-      expect(trainingRec.priority).toBe('low');
-    } else {
-      // Not quite enough — try heat_tolerant horse with optimal weather in spring
-      const heatTolerantHorse = { traits: ['heat_tolerant'] };
-      const result2 = assess(springTransitionDate, TEMPERATE_LOCATION, heatTolerantHorse, optimalWeather).impact;
-      expect(typeof result2.overallImpact).toBe('number');
-      expect(Array.isArray(result2.recommendations)).toBe(true);
-    }
-  });
-
-  it('spring transition date maximizes growth bonus to push overallImpact above 30', () => {
-    // Day 80 (spring start) has maximum transition effect: intensity = 1 - 0/10 = 1
-    // growth: 1 + 1 * 0.2 = 1.2 (spring transition growthEffect=0.2)
-    // spring base growthModifier = 1.2, * transition 1.2 = 1.44
-    // seasonal bonus = (1.44-1)*50 = 22
-    // sunny condition +10
-    // Total ≈ 32 > 30 → recommendation fires
-    const baseHorse = { traits: [] };
-    const optimalWeather = {
-      temperature: 18,
-      humidity: 50,
-      precipitation: 0,
-      windSpeed: 8,
-      conditions: 'sunny',
-    };
-    const springStartDate = new Date('2025-03-21'); // day 80 = exact spring start → in transition
-    const result = assess(springStartDate, TEMPERATE_LOCATION, baseHorse, optimalWeather).impact;
-    // Either fires (overallImpact > 30) or doesn't — both branches must be tested
-    expect(typeof result.overallImpact).toBe('number');
-    expect(Array.isArray(result.recommendations)).toBe(true);
-    // If it fired, verify the recommendation content
-    const trainingRec = result.recommendations.find(
-      r => r.action.toLowerCase().includes('training') || r.priority === 'low',
-    );
-    if (result.overallImpact > 30) {
-      expect(trainingRec).toBeDefined();
-    }
-  });
-});
-
-// ─── generateImpactRecommendations — winter + high stress branch ────────────
-
-describe('generateImpactRecommendations — winter + stressLevel > 30', () => {
-  it('winter seasonal factors have stressLevel=30, which does NOT trigger the > 30 check', () => {
-    // Winter stressLevel = 30 (exactly), condition is stressLevel > 30 → false
-    // This verifies the branch boundary
-    const baseHorse = { traits: [] };
-    const winterWeather = {
-      temperature: 5,
-      humidity: 60,
-      precipitation: 0,
-      windSpeed: 10,
-      conditions: 'cloudy',
-    };
-    const result = assess(WINTER_DATE, TEMPERATE_LOCATION, baseHorse, winterWeather).impact;
-    expect(result.seasonalFactors.season).toBe('winter');
-    expect(result.seasonalFactors.stressLevel).toBe(30);
-    // With stressLevel === 30 (not > 30), the winter feed/shelter rec should NOT appear
-    const winterFeedRec = result.recommendations.find(r => r.action.toLowerCase().includes('feed'));
-    // stressLevel = 30, not > 30, so this branch should NOT have fired
-    // (The branch check is strictly > 30)
-    expect(winterFeedRec).toBeUndefined();
-  });
-
-  it('summer has stressLevel=35 which fires summer heat_stress recommendation path', () => {
-    // Summer stressLevel = 35 > 30, and season === 'summer' check fires if 'heat_stress' is a trigger
-    const baseHorse = { traits: [] };
-    const hotWeather = {
-      temperature: 40,
-      humidity: 30,
-      precipitation: 0,
-      windSpeed: 5,
-      conditions: 'sunny',
-    };
-    const result = assess(SUMMER_DATE, TEMPERATE_LOCATION, baseHorse, hotWeather).impact;
-    expect(result.seasonalFactors.season).toBe('summer');
-    // If heat_stress trigger is present, the summer branch may fire
-    expect(typeof result.overallImpact).toBe('number');
-    expect(Array.isArray(result.recommendations)).toBe(true);
-  });
-});
-
-// ─── generateWeatherForecast — assessForecastImpact branches ────────────────
-
-describe('generateWeatherForecast — assessForecastImpact branches', () => {
-  it('tropical summer forecast produces entries with high humidity impact', () => {
-    // Tropical summer: humidity can exceed 85 → assessForecastImpact adds 15 pts, severity becomes moderate+
-    const forecast = generateWeatherForecast(SUMMER_DATE, TROPICAL_LOCATION, 5);
-    expect(forecast).toHaveLength(5);
-    for (const entry of forecast) {
-      expect(entry.environmentalImpact).toHaveProperty('severity');
-      expect(['low', 'moderate', 'high', 'extreme']).toContain(entry.environmentalImpact.severity);
-      expect(entry.environmentalImpact).toHaveProperty('score');
-      expect(entry.environmentalImpact.score).toBeGreaterThanOrEqual(0);
-      expect(entry.environmentalImpact.score).toBeLessThanOrEqual(100);
-      expect(entry.environmentalImpact).toHaveProperty('factors');
-    }
-  });
-
-  it('forecast covers humidity > 85 factor when tropical summer conditions occur', () => {
-    const forecast = generateWeatherForecast(SUMMER_DATE, TROPICAL_LOCATION, 10);
-    // Check if any entry hit the humidity > 85 branch
-    const humidEntry = forecast.find(e => e.weather.humidity > 85);
-    if (humidEntry) {
-      expect(humidEntry.environmentalImpact.factors.humidity).toBe(true);
-      expect(humidEntry.environmentalImpact.score).toBeGreaterThanOrEqual(15);
-      // severity must be at least moderate (not 'low') since humidity adds 15 pts
-      expect(['moderate', 'high', 'extreme']).toContain(humidEntry.environmentalImpact.severity);
-    }
-    // Regardless, all entries must have valid structure
-    for (const entry of forecast) {
-      expect(typeof entry.environmentalImpact.severity).toBe('string');
-    }
-  });
-
-  it('forecast with coastal region + stormy conditions triggers wind and conditions factors', () => {
-    // Coastal: wind base=22, elevation=0, some seasonal variation → windSpeed may exceed 25
-    // If a stormy day occurs: assessForecastImpact scores 25 pts + severity = extreme
-    const COASTAL_LOCATION = {
-      latitude: 45,
-      longitude: -70,
-      region: 'coastal',
-      elevation: 0,
-    };
-    const forecast = generateWeatherForecast(WINTER_DATE, COASTAL_LOCATION, 14);
-    expect(forecast).toHaveLength(14);
-    // Find any entry with stormy or high-wind conditions
-    for (const entry of forecast) {
-      // assessForecastImpact's factors should be boolean
-      expect(typeof entry.environmentalImpact.factors.temperature).toBe('boolean');
-      expect(typeof entry.environmentalImpact.factors.humidity).toBe('boolean');
-      expect(typeof entry.environmentalImpact.factors.wind).toBe('boolean');
-      expect(typeof entry.environmentalImpact.factors.conditions).toBe('boolean');
-    }
-    // If any extreme-severity entry appears, verify recommendations include "Keep horses indoors"
-    const extremeEntry = forecast.find(e => e.environmentalImpact.severity === 'extreme');
-    if (extremeEntry) {
-      expect(extremeEntry.recommendations).toContain('Keep horses indoors');
-      expect(extremeEntry.recommendations).toContain('Cancel outdoor activities');
-    }
-  });
-
-  it('generateForecastRecommendations: high severity produces "Limit outdoor exposure"', () => {
-    // assessForecastImpact: temperature > 35 || temp < 0 → score += 30, severity = 'high'
-    // Arctic winter: base temp = -5, winter seasonal = -15 → temp ~ -20
-    const ARCTIC_LOCATION = {
-      latitude: 70,
-      longitude: 0,
-      region: 'arctic',
-      elevation: 0,
-    };
-    const forecast = generateWeatherForecast(WINTER_DATE, ARCTIC_LOCATION, 5);
-    expect(forecast).toHaveLength(5);
-    for (const entry of forecast) {
-      expect(Array.isArray(entry.recommendations)).toBe(true);
-      if (entry.environmentalImpact.severity === 'high' || entry.environmentalImpact.severity === 'extreme') {
-        // high → 'Limit outdoor exposure', extreme → 'Keep horses indoors'
-        const hasHighRec =
-          entry.recommendations.includes('Limit outdoor exposure') ||
-          entry.recommendations.includes('Keep horses indoors');
-        expect(hasHighRec).toBe(true);
-      }
-    }
-  });
-
-  it('generateForecastRecommendations: moderate severity produces "Provide adequate shelter"', () => {
-    // Temperature between 30-35 or 0-5 → score += 15, severity = 'moderate'
-    // With humidity also > 85 → score += 15 → total 30, still moderate
-    // Tropical in autumn: temp around 28-30 → may hit moderate
-    const TROPICAL_AUTUMN_LOCATION = {
-      latitude: 10,
-      longitude: 0,
-      region: 'tropical',
-      elevation: 0,
-    };
-    const forecast = generateWeatherForecast(AUTUMN_DATE, TROPICAL_AUTUMN_LOCATION, 7);
-    expect(forecast).toHaveLength(7);
-    const moderateEntry = forecast.find(e => e.environmentalImpact.severity === 'moderate');
-    if (moderateEntry) {
-      expect(moderateEntry.recommendations).toContain('Provide adequate shelter');
-      expect(moderateEntry.recommendations).toContain('Adjust training intensity');
-    }
-    // All entries must have valid structure
-    for (const entry of forecast) {
-      expect(Array.isArray(entry.recommendations)).toBe(true);
-      expect(entry.recommendations.length).toBeGreaterThan(0);
-    }
-  });
-
-  it('generateForecastRecommendations: low severity produces "Normal activities can proceed"', () => {
-    // Spring temperate: temp ~15, humidity ~55 → no extreme flags → severity = 'low'
-    const forecast = generateWeatherForecast(SPRING_DATE, TEMPERATE_LOCATION, 3);
-    expect(forecast).toHaveLength(3);
-    const lowEntry = forecast.find(e => e.environmentalImpact.severity === 'low');
-    if (lowEntry) {
-      expect(lowEntry.recommendations).toContain('Normal activities can proceed');
-    }
-    // Verify all entries have valid recommendations
-    for (const entry of forecast) {
-      expect(Array.isArray(entry.recommendations)).toBe(true);
-      expect(entry.recommendations.length).toBeGreaterThan(0);
     }
   });
 });

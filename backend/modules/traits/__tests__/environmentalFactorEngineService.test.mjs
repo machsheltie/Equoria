@@ -3,7 +3,6 @@ import {
   calculateCurrentWeather,
   getSeasonalFactors,
   calculateComfortZone,
-  generateWeatherForecast,
   getEnvironmentalHistory,
   buildEnvironmentalSnapshot,
   assessHorseEnvironment,
@@ -221,39 +220,6 @@ describe('calculateComfortZone', () => {
   });
 });
 
-// ─── generateWeatherForecast ─────────────────────────────────────────────────
-
-describe('generateWeatherForecast', () => {
-  it('returns array of length matching days parameter', () => {
-    const result = generateWeatherForecast(SPRING_DATE, LOCATION, 5);
-    expect(Array.isArray(result)).toBe(true);
-    expect(result).toHaveLength(5);
-  });
-
-  it('each forecast entry has date, weather, impact, recommendations', () => {
-    const result = generateWeatherForecast(SPRING_DATE, LOCATION, 2);
-    for (const entry of result) {
-      expect(entry).toHaveProperty('date');
-      expect(entry).toHaveProperty('weather');
-      expect(entry).toHaveProperty('environmentalImpact');
-      expect(entry).toHaveProperty('recommendations');
-    }
-  });
-
-  it('returns empty array for 0 days', () => {
-    const result = generateWeatherForecast(SPRING_DATE, LOCATION, 0);
-    expect(result).toHaveLength(0);
-  });
-
-  it('forecast entries are in chronological order', () => {
-    const result = generateWeatherForecast(SUMMER_DATE, LOCATION, 3);
-    const dates = result.map(e => new Date(e.date).getTime());
-    for (let i = 1; i < dates.length; i++) {
-      expect(dates[i]).toBeGreaterThan(dates[i - 1]);
-    }
-  });
-});
-
 // ─── getEnvironmentalHistory ─────────────────────────────────────────────────
 
 describe('getEnvironmentalHistory', () => {
@@ -341,7 +307,8 @@ describe('calculateEnvironmentalTriggers', () => {
     expect(typeof result.intensity).toBe('number');
     expect(result.traitExpressionProbability).toBeGreaterThanOrEqual(0);
     expect(result.traitExpressionProbability).toBeLessThanOrEqual(1);
-    expect(Array.isArray(result.recommendations)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: a recommendations array.
+    expect(result).not.toHaveProperty('recommendations');
     expect(result.weather).toBeDefined();
     expect(result.seasonalFactors).toBeDefined();
   });
@@ -376,10 +343,6 @@ describe('calculateEnvironmentalTriggers', () => {
     const stormyWeather = { temperature: 15, humidity: 60, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
     const result = assess(AUTUMN_DATE, LOCATION, baseHorse, stormyWeather).triggers;
     expect(result.triggerTypes).toContain('storm_stress');
-    // storm recommendations should appear (intensity > 0)
-    expect(
-      result.recommendations.some(r => r.action.toLowerCase().includes('shelter') || r.priority === 'critical'),
-    ).toBe(true);
   });
 
   it('wet_conditions trigger fires for rainy conditions', () => {
@@ -447,60 +410,6 @@ describe('calculateEnvironmentalTriggers', () => {
     const result = assess(WINTER_DATE, LOCATION, baseHorse, overrideWeather).triggers;
     expect(result.weather.temperature).toBe(50); // override used, not computed
   });
-
-  it('recommendation generated for heat_stress (priority depends on intensity)', () => {
-    const hotWeather = { temperature: 60, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const result = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).triggers;
-    const heatRec = result.recommendations.find(r => r.action.toLowerCase().includes('water'));
-    expect(heatRec).toBeDefined();
-    // priority is 'high' when intensity > 50, else 'medium'
-    expect(['high', 'medium']).toContain(heatRec.priority);
-  });
-
-  it('heat_stress recommendation priority=high when many simultaneous triggers push intensity > 50', () => {
-    // storm_stress(+25) + high_humidity(+20) + seasonal_stress(+5) + heat_stress(cap 30)
-    // total > 50 → heat priority='high'
-    const nervousHorse = { traits: ['nervous'] }; // nervous multiplies by 1.3
-    const hotHumidStormyWeather = {
-      temperature: 50,
-      humidity: 99,
-      precipitation: 0.9,
-      windSpeed: 35,
-      conditions: 'stormy',
-    };
-    const result = assess(SUMMER_DATE, LOCATION, nervousHorse, hotHumidStormyWeather).triggers;
-    // nervous + stormy + heat + humidity + wind → intensity well above 50
-    const heatRec = result.recommendations.find(r => r.action.toLowerCase().includes('water'));
-    if (heatRec && result.intensity > 50) {
-      expect(heatRec.priority).toBe('high');
-    } else {
-      // heat_stress still produced a recommendation
-      expect(heatRec).toBeDefined();
-    }
-  });
-
-  it('recommendation generated for cold_stress', () => {
-    const coldWeather = { temperature: -20, humidity: 70, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const result = assess(WINTER_DATE, LOCATION, baseHorse, coldWeather).triggers;
-    const coldRec = result.recommendations.find(
-      r => r.action.toLowerCase().includes('shelter') || r.action.toLowerCase().includes('blanket'),
-    );
-    expect(coldRec).toBeDefined();
-  });
-
-  it('recommendation generated for high_humidity', () => {
-    const humidWeather = { temperature: 20, humidity: 99, precipitation: 0.3, windSpeed: 5, conditions: 'cloudy' };
-    const result = assess(SUMMER_DATE, LOCATION, baseHorse, humidWeather).triggers;
-    const humidRec = result.recommendations.find(r => r.action.toLowerCase().includes('ventilat'));
-    expect(humidRec).toBeDefined();
-  });
-
-  it('high-intensity monitoring recommendation generated when intensity > 60', () => {
-    const extremeWeather = { temperature: 70, humidity: 99, precipitation: 0.9, windSpeed: 50, conditions: 'stormy' };
-    const result = assess(SUMMER_DATE, LOCATION, baseHorse, extremeWeather).triggers;
-    const monitorRec = result.recommendations.find(r => r.action.toLowerCase().includes('monitor'));
-    expect(monitorRec).toBeDefined();
-  });
 });
 
 // ─── calculateEnvironmentalImpact ────────────────────────────────────────────
@@ -521,7 +430,8 @@ describe('calculateEnvironmentalImpact', () => {
     expect(typeof result.healthEffect).toBe('number');
     expect(typeof result.developmentEffect).toBe('number');
     expect(typeof result.performanceEffect).toBe('number');
-    expect(Array.isArray(result.recommendations)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: a recommendations array.
+    expect(result).not.toHaveProperty('recommendations');
     expect(Array.isArray(result.triggers)).toBe(true);
   });
 
@@ -614,27 +524,6 @@ describe('calculateEnvironmentalImpact', () => {
     expect(tolerant.overallImpact).toBeGreaterThan(base.overallImpact);
   });
 
-  it('winter + high stress generates feed/shelter recommendation', () => {
-    // Winter stressLevel=30, so stressLevel > 30 is false, but season='winter' check is at != summer
-    // Actually the service checks: season === 'winter' && stressLevel > 30 — winter is exactly 30
-    // So we must also check the summer heat_stress path. Let's verify both paths work.
-    const result = assess(WINTER_DATE, LOCATION, baseHorse).impact;
-    expect(Array.isArray(result.recommendations)).toBe(true);
-  });
-
-  it('positive impact generates take-advantage recommendation (overallImpact > 30)', () => {
-    // Spring + optimal weather → positive impact
-    const optimalWeather = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 8, conditions: 'sunny' };
-    const result = assess(SPRING_DATE, LOCATION, baseHorse, optimalWeather).impact;
-    if (result.overallImpact > 30) {
-      const trainingRec = result.recommendations.find(r => r.action.toLowerCase().includes('training'));
-      expect(trainingRec).toBeDefined();
-    } else {
-      // Impact not positive enough — recommendations array is still valid
-      expect(Array.isArray(result.recommendations)).toBe(true);
-    }
-  });
-
   it('uses weather override when provided', () => {
     const override = { temperature: 18, humidity: 50, precipitation: 0, windSpeed: 8, conditions: 'sunny' };
     const result = assess(WINTER_DATE, LOCATION, baseHorse, override).impact;
@@ -647,7 +536,7 @@ describe('calculateEnvironmentalImpact', () => {
 describe('assessEnvironmentalStress', () => {
   const baseHorse = { traits: [], age: 5, health: 80 };
 
-  it('returns expected shape: stressLevel, stressFactors, severity, mitigationRecommendations, timeToRecovery', () => {
+  it('returns expected shape: stressLevel, stressFactors, severity, timeToRecovery', () => {
     const result = assess(SPRING_DATE, LOCATION, baseHorse).stress;
     expect(typeof result.stressLevel).toBe('number');
     expect(result.stressLevel).toBeGreaterThanOrEqual(0);
@@ -655,7 +544,8 @@ describe('assessEnvironmentalStress', () => {
     expect(Array.isArray(result.stressFactors)).toBe(true);
     expect(typeof result.severity).toBe('string');
     expect(['critical', 'high', 'moderate', 'low']).toContain(result.severity);
-    expect(Array.isArray(result.mitigationRecommendations)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: a mitigationRecommendations array.
+    expect(result).not.toHaveProperty('mitigationRecommendations');
     expect(typeof result.timeToRecovery).toBe('number');
     expect(Array.isArray(result.triggers)).toBe(true);
     expect(result.weather).toBeDefined();
@@ -774,46 +664,6 @@ describe('assessEnvironmentalStress', () => {
     const sick = assess(SUMMER_DATE, LOCATION, sickHorse, stormyWeather).stress;
     // health >80 → factor 0.9, health <60 → factor 1.2
     expect(sick.timeToRecovery).toBeGreaterThan(healthy.timeToRecovery);
-  });
-
-  it('critical mitigation recommendation generated for Extreme heat exposure', () => {
-    const hotWeather = { temperature: 50, humidity: 30, precipitation: 0, windSpeed: 5, conditions: 'sunny' };
-    const result = assess(SUMMER_DATE, LOCATION, baseHorse, hotWeather).stress;
-    const heatRec = result.mitigationRecommendations.find(r => r.action.toLowerCase().includes('cool'));
-    expect(heatRec).toBeDefined();
-    expect(heatRec.priority).toBe('critical');
-  });
-
-  it('critical mitigation recommendation generated for Extreme cold exposure', () => {
-    const coldWeather = { temperature: -10, humidity: 70, precipitation: 0, windSpeed: 5, conditions: 'cloudy' };
-    const result = assess(WINTER_DATE, LOCATION, baseHorse, coldWeather).stress;
-    const coldRec = result.mitigationRecommendations.find(r => r.action.toLowerCase().includes('shelter'));
-    expect(coldRec).toBeDefined();
-    expect(coldRec.priority).toBe('critical');
-  });
-
-  it('high priority mitigation recommendation generated for stressLevel > 60', () => {
-    const extremeWeather = { temperature: 50, humidity: 95, precipitation: 0.9, windSpeed: 35, conditions: 'stormy' };
-    const result = assess(SUMMER_DATE, LOCATION, baseHorse, extremeWeather).stress;
-    if (result.stressLevel > 60) {
-      const highPriorityRecs = result.mitigationRecommendations.filter(r => r.priority === 'high');
-      expect(highPriorityRecs.length).toBeGreaterThan(0);
-    } else {
-      // still valid output
-      expect(Array.isArray(result.mitigationRecommendations)).toBe(true);
-    }
-  });
-
-  it('nervous horse with stressLevel > 40 gets calming supplement recommendation', () => {
-    const nervousHorse = { traits: ['nervous'], age: 5, health: 80 };
-    const hotWeather = { temperature: 50, humidity: 90, precipitation: 0.8, windSpeed: 35, conditions: 'stormy' };
-    const result = assess(SUMMER_DATE, LOCATION, nervousHorse, hotWeather).stress;
-    if (result.stressLevel > 40) {
-      const calmingRec = result.mitigationRecommendations.find(r => r.action.toLowerCase().includes('calm'));
-      expect(calmingRec).toBeDefined();
-    } else {
-      expect(Array.isArray(result.mitigationRecommendations)).toBe(true);
-    }
   });
 
   it('uses weather override when provided', () => {

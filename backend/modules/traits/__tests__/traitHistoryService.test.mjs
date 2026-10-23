@@ -181,7 +181,8 @@ describe('getBreedingInsights', () => {
     expect(result.horseId).toBe(freshHorse.id);
     expect(result.inheritanceRisk).toBe('low');
     expect(typeof result.epigeneticProfile).toBe('object');
-    expect(Array.isArray(result.recommendedCarePatterns)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: recommendedCarePatterns.
+    expect(result).not.toHaveProperty('recommendedCarePatterns');
     expect(Array.isArray(result.breedingNotes)).toBe(true);
   });
 });
@@ -195,14 +196,15 @@ describe('analyzeTraitPatterns', () => {
     expect(typeof result.commonTraits).toBe('object');
     expect(typeof result.epigeneticTrends).toBe('object');
     expect(typeof result.groomEffectiveness).toBe('object');
-    expect(Array.isArray(result.recommendations)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: recommendations.
+    expect(result).not.toHaveProperty('recommendations');
   });
 
   it('returns patterns object for a horse with no history', async () => {
     const result = await analyzeTraitPatterns([horse.id]);
     expect(result).toBeDefined();
     expect(typeof result.commonTraits).toBe('object');
-    expect(Array.isArray(result.recommendations)).toBe(true);
+    expect(result).not.toHaveProperty('recommendations');
   });
 });
 
@@ -433,8 +435,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
     const result = await getBreedingInsights(thHorse.id);
     expect(result.inheritanceRisk).toBe('high');
     expect(result.breedingNotes.length).toBeGreaterThan(0);
-    // bestGrooms branch: thGroom has averageInfluence > 2
-    expect(result.recommendedCarePatterns.length).toBeGreaterThan(0);
+    expect(result).not.toHaveProperty('recommendedCarePatterns');
   });
 
   it('getBreedingInsights returns inheritanceRisk=moderate for horse with 1 negative epigenetic trait', async () => {
@@ -442,9 +443,9 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
     expect(result.inheritanceRisk).toBe('moderate');
   });
 
-  it('analyzeTraitPatterns with groom-linked entries → groomEffectiveness populated and recommendation generated', async () => {
+  it('analyzeTraitPatterns with groom-linked entries → groomEffectiveness populated and no recommendation is given', async () => {
     const result = await analyzeTraitPatterns([thHorse.id]);
     expect(Object.keys(result.commonTraits).length).toBeGreaterThan(0);
-    expect(result.recommendations.length).toBeGreaterThan(0);
+    expect(result).not.toHaveProperty('recommendations');
   });
 });

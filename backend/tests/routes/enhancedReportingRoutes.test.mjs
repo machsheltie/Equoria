@@ -232,7 +232,9 @@ describe('Enhanced Reporting API Routes', () => {
       expect(response.body.data.horseId).toBe(testHorses[1].id);
       expect(response.body.data.traitHistory).toBeDefined();
       expect(response.body.data.environmentalContext).toBeDefined();
-      expect(response.body.data.developmentalTimeline).toBeDefined();
+      // Owner ruling 2026-10-07 (Equoria-huuaf): no developmental windows or milestone
+      // countdowns. Old contract: developmentalTimeline was returned here.
+      expect(response.body.data.developmentalTimeline).toBeUndefined();
       expect(response.body.data.traitInteractions).toBeDefined();
       expect(response.body.data.insights).toBeDefined();
       expect(Array.isArray(response.body.data.traitHistory)).toBe(true);
@@ -269,11 +271,11 @@ describe('Enhanced Reporting API Routes', () => {
       expect(response.body.data).toBeDefined();
       expect(response.body.data.horseId).toBe(testHorses[1].id);
       expect(response.body.data.timeline).toBeDefined();
-      expect(response.body.data.milestones).toBeDefined();
+      // Owner ruling 2026-10-07 (Equoria-huuaf): milestones are gone with the windows.
+      expect(response.body.data.milestones).toBeUndefined();
       expect(response.body.data.criticalPeriods).toBeDefined();
       expect(response.body.data.environmentalEvents).toBeDefined();
       expect(Array.isArray(response.body.data.timeline)).toBe(true);
-      expect(Array.isArray(response.body.data.milestones)).toBe(true);
     });
   });
 

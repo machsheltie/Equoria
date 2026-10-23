@@ -38,7 +38,6 @@ import {
   generateInteractionMatrix,
   toTraitAnalysisSnapshot,
 } from '../services/traitInteractionMatrix.mjs';
-import { trackDevelopmentalMilestones } from '../services/developmentalWindowSystem.mjs';
 
 // Import enhanced reporting service functions
 import {
@@ -120,13 +119,11 @@ router.get(
       }
 
       // Run all independent DB/compute calls in parallel to stay under the 30s request timeout
-      const [traitHistory, environmentalContext, developmentalTimeline, traitInteractions] =
-        await Promise.all([
-          findTraitHistoryByWhere(whereConditions),
-          generateEnvironmentalReport(horseId),
-          trackDevelopmentalMilestones(horseId),
-          generateInteractionMatrix(horseId),
-        ]);
+      const [traitHistory, environmentalContext, traitInteractions] = await Promise.all([
+        findTraitHistoryByWhere(whereConditions),
+        generateEnvironmentalReport(horseId),
+        generateInteractionMatrix(horseId),
+      ]);
 
       // Generate insights (depends on the parallel results above)
       const insights = generateTraitHistoryInsights(
@@ -143,7 +140,6 @@ router.get(
           horseId,
           traitHistory,
           environmentalContext,
-          developmentalTimeline,
           traitInteractions,
           insights,
           filters: { traitType, discoveryMethod, dateFrom, dateTo },
@@ -219,9 +215,8 @@ router.get(
       const horseId = parseInt(req.params.id);
 
       // Get trait history and interactions
-      const [traitHistory, milestones, interactions] = await Promise.all([
+      const [traitHistory, interactions] = await Promise.all([
         findTraitHistoryForTimeline(horseId),
-        trackDevelopmentalMilestones(horseId),
         findGroomInteractionsForTimeline(horseId),
       ]);
 
@@ -229,7 +224,7 @@ router.get(
       const timeline = buildTraitTimeline(traitHistory, interactions);
 
       // Identify critical periods
-      const criticalPeriods = identifyCriticalPeriods(timeline, milestones);
+      const criticalPeriods = identifyCriticalPeriods(timeline);
 
       // Map environmental events
       const environmentalEvents = mapEnvironmentalEvents(interactions);
@@ -241,7 +236,6 @@ router.get(
         data: {
           horseId,
           timeline,
-          milestones: milestones.achievedMilestones,
           criticalPeriods,
           environmentalEvents,
         },

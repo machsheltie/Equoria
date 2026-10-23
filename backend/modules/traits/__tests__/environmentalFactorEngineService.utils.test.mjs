@@ -8,7 +8,6 @@ import { describe, it, expect } from '@jest/globals';
 import {
   calculateCurrentWeather,
   getSeasonalFactors,
-  generateWeatherForecast,
   calculateComfortZone,
   getEnvironmentalHistory,
   buildEnvironmentalSnapshot,
@@ -227,8 +226,9 @@ describe('calculateEnvironmentalTriggers', () => {
     expect(typeof r.activeTriggersCount).toBe('number');
     expect(Array.isArray(r.triggerTypes)).toBe(true);
     expect(typeof r.intensity).toBe('number');
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: a recommendations array.
     expect(typeof r.traitExpressionProbability).toBe('number');
-    expect(Array.isArray(r.recommendations)).toBe(true);
+    expect(r).not.toHaveProperty('recommendations');
   });
 
   it('traitExpressionProbability is between 0 and 1', () => {
@@ -287,7 +287,8 @@ describe('calculateEnvironmentalImpact', () => {
     expect(typeof r.developmentEffect).toBe('number');
     expect(typeof r.performanceEffect).toBe('number');
     expect(typeof r.statModifiers).toBe('object');
-    expect(Array.isArray(r.recommendations)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: a recommendations array.
+    expect(r).not.toHaveProperty('recommendations');
     expect(Array.isArray(r.triggers)).toBe(true);
   });
 
@@ -321,50 +322,6 @@ describe('calculateEnvironmentalImpact', () => {
 });
 
 // ---------------------------------------------------------------------------
-// generateWeatherForecast
-// ---------------------------------------------------------------------------
-describe('generateWeatherForecast', () => {
-  it('returns array with correct number of entries', () => {
-    const result = generateWeatherForecast(makeSummerDate(), makeLocation(), 5);
-    expect(Array.isArray(result)).toBe(true);
-    expect(result).toHaveLength(5);
-  });
-
-  it('each forecast entry has expected shape', () => {
-    const result = generateWeatherForecast(makeSummerDate(), makeLocation(), 3);
-    for (const entry of result) {
-      expect(typeof entry.date).toBe('string');
-      expect(typeof entry.weather).toBe('object');
-      expect(typeof entry.environmentalImpact).toBe('object');
-      expect(Array.isArray(entry.recommendations)).toBe(true);
-    }
-  });
-
-  it('returns empty array for 0 days', () => {
-    const result = generateWeatherForecast(makeSummerDate(), makeLocation(), 0);
-    expect(result).toHaveLength(0);
-  });
-
-  it('dates are sequential (each 1 day apart)', () => {
-    const start = new Date('2024-07-01T00:00:00Z');
-    const result = generateWeatherForecast(start, makeLocation(), 4);
-    for (let i = 1; i < result.length; i++) {
-      const prevDate = new Date(result[i - 1].date);
-      const currDate = new Date(result[i].date);
-      const diffDays = (currDate - prevDate) / (1000 * 60 * 60 * 24);
-      expect(diffDays).toBe(1);
-    }
-  });
-
-  it('first forecast date matches startDate', () => {
-    const start = new Date('2024-07-01T00:00:00Z');
-    const result = generateWeatherForecast(start, makeLocation(), 3);
-    const firstDate = new Date(result[0].date);
-    expect(firstDate.toDateString()).toBe(start.toDateString());
-  });
-});
-
-// ---------------------------------------------------------------------------
 // assessEnvironmentalStress
 // ---------------------------------------------------------------------------
 describe('assessEnvironmentalStress', () => {
@@ -373,7 +330,8 @@ describe('assessEnvironmentalStress', () => {
     expect(typeof r.stressLevel).toBe('number');
     expect(Array.isArray(r.stressFactors)).toBe(true);
     expect(typeof r.severity).toBe('string');
-    expect(Array.isArray(r.mitigationRecommendations)).toBe(true);
+    // Owner ruling 2026-10-07 (Equoria-huuaf): no advice. Old contract: a mitigationRecommendations array.
+    expect(r).not.toHaveProperty('mitigationRecommendations');
     expect(typeof r.timeToRecovery).toBe('number');
     expect(Array.isArray(r.triggers)).toBe(true);
   });

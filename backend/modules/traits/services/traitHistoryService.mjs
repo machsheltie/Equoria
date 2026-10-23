@@ -218,14 +218,12 @@ export async function getTraitDevelopmentSummary(horseId) {
  * @returns {Object} Breeding insights based on trait development
  */
 export async function getBreedingInsights(horseId) {
-  const summary = await getTraitDevelopmentSummary(horseId);
   const history = await getTraitHistory(horseId, { isEpigenetic: true });
 
   const insights = {
     horseId,
     epigeneticProfile: {},
     inheritanceRisk: 'low',
-    recommendedCarePatterns: [],
     breedingNotes: [],
   };
 
@@ -255,19 +253,6 @@ export async function getBreedingInsights(horseId) {
     insights.breedingNotes.push('Some negative traits present - consider mate selection carefully');
   }
 
-  // Generate care pattern recommendations
-  if (summary.groomContributions) {
-    const bestGrooms = Object.entries(summary.groomContributions)
-      .filter(([_, contrib]) => contrib.averageInfluence > 2)
-      .map(([name, contrib]) => ({ name, ...contrib }));
-
-    if (bestGrooms.length > 0) {
-      insights.recommendedCarePatterns.push(
-        `Successful care patterns identified with grooms: ${bestGrooms.map(g => g.name).join(', ')}`,
-      );
-    }
-  }
-
   return insights;
 }
 
@@ -282,7 +267,6 @@ export async function analyzeTraitPatterns(horseIds) {
     epigeneticTrends: {},
     groomEffectiveness: {},
     agePatterns: {},
-    recommendations: [],
   };
 
   for (const horseId of horseIds) {
@@ -327,17 +311,6 @@ export async function analyzeTraitPatterns(horseIds) {
     data.averageInfluence = data.totalInfluence / data.totalTraits;
     data.epigeneticRate = data.epigeneticTraits / data.totalTraits;
   });
-
-  // Generate recommendations
-  const [mostEffectivePersonality] = Object.entries(patterns.groomEffectiveness).sort(
-    ([, a], [, b]) => b.averageInfluence - a.averageInfluence,
-  );
-
-  if (mostEffectivePersonality) {
-    patterns.recommendations.push(
-      `${mostEffectivePersonality[0]} personality grooms show highest trait development effectiveness`,
-    );
-  }
 
   return patterns;
 }

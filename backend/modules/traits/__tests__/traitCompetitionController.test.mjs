@@ -1,8 +1,7 @@
 /**
  * traitCompetitionController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: analyzeHorseTraitImpact, compareTraitImpactAcrossDisciplines,
- * getDisciplineRecommendations.
+ * Covers: analyzeHorseTraitImpact, compareTraitImpactAcrossDisciplines.
  * Routes live under authRouter at /api/v1/traits.
  */
 
@@ -22,7 +21,7 @@ const ORIGIN = 'http://localhost:3000';
 let user;
 let token;
 let horse;
-let horseWithTraits; // horse with epigeneticModifiers to cover getDisciplineRecommendations lines 313-506
+let horseWithTraits; // horse with epigeneticModifiers to cover the impact and comparison reads
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
@@ -49,7 +48,7 @@ beforeAll(async () => {
     },
   });
 
-  // Horse with visible traits — exercises getDisciplineRecommendations lines 313-506
+  // Horse with visible traits — exercises the impact and comparison reads
   horseWithTraits = await prisma.horse.create({
     data: {
       ...fixtureColor(),
@@ -178,99 +177,17 @@ describe('GET /api/v1/traits/competition-comparison/:horseId', () => {
 });
 
 // ─── GET /api/v1/traits/discipline-recommendations/:horseId ─────────────────────
+// Owner ruling 2026-10-07 (Equoria-huuaf): no advice or recommendations. Old contract:
+// the route ranked disciplines by trait effect and answered 200 with recommendations.
 
-describe('GET /api/v1/traits/discipline-recommendations/:horseId', () => {
-  it('returns 200 with discipline recommendations for owned horse', async () => {
+describe('GET /api/v1/traits/discipline-recommendations/:horseId is gone', () => {
+  it('answers 404 to the horse’s owner', async () => {
     const res = await request(app)
       .get(`/api/v1/traits/discipline-recommendations/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-
-  it('returns 400 for non-numeric horseId', async () => {
-    const res = await request(app)
-      .get('/api/v1/traits/discipline-recommendations/notanumber')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
-    const res = await request(app)
-      .get('/api/v1/traits/discipline-recommendations/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(404);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/traits/discipline-recommendations/${horse.id}`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── getDisciplineRecommendations — horse WITH traits (lines 313-506) ─────────
-
-describe('GET /api/v1/traits/discipline-recommendations/:horseId — horse with traits', () => {
-  it('returns 200 with non-empty recommendations for horse with visible traits', async () => {
-    const res = await request(app)
-      .get(`/api/v1/traits/discipline-recommendations/${horseWithTraits.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-    // Horse has bold+intelligent+resilient+nervous — recommendations array should exist
-    expect(Array.isArray(res.body.data.recommendations)).toBe(true);
-    expect(res.body.data.summary).toBeDefined();
-    expect(typeof res.body.data.summary.totalTraits).toBe('number');
-    expect(typeof res.body.data.summary.specializedTraits).toBe('number');
-    expect(typeof res.body.data.summary.recommendedDisciplines).toBe('number');
-  });
-
-  it('summary.totalTraits matches the number of visible traits', async () => {
-    const res = await request(app)
-      .get(`/api/v1/traits/discipline-recommendations/${horseWithTraits.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    // 3 positive + 1 negative = 4 visible traits
-    expect(res.body.data.summary.totalTraits).toBe(4);
-  });
-
-  it('each recommendation entry has discipline and traits fields', async () => {
-    const res = await request(app)
-      .get(`/api/v1/traits/discipline-recommendations/${horseWithTraits.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    for (const rec of res.body.data.recommendations) {
-      expect(typeof rec.discipline).toBe('string');
-      expect(Array.isArray(rec.specializedTraits)).toBe(true);
-      expect(typeof rec.recommendationScore).toBe('number');
-    }
-  });
-
-  it('returns 200 with no-traits message for horse with empty traits', async () => {
-    // The main fixture horse has no traits — exercises the early-return path
-    const res = await request(app)
-      .get(`/api/v1/traits/discipline-recommendations/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.recommendations).toEqual([]);
   });
 });
 

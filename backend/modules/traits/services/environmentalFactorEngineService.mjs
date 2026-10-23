@@ -7,7 +7,7 @@
  *     -> buildEnvironmentalSnapshot        { date, location, weather, seasonal }
  *     -> assessHorseEnvironment(snapshot, horse)
  *          comfort zone once, triggers once; impact and stress consume them
- *   generateWeatherForecast / getEnvironmentalHistory   day-by-day projections
+ *   getEnvironmentalHistory                             day-by-day projections
  *
  * Weather, seasonal factors and the comfort zone are pure projections that the
  * snapshot and the assessment are built from. Nothing here reads the database
@@ -42,12 +42,6 @@ import {
   TRIGGER_TRAIT_FACTORS,
   traitFactorProduct,
 } from './environmentalPolicy.mjs';
-import {
-  generateForecastRecommendations,
-  generateImpactRecommendations,
-  generateStressMitigationRecommendations,
-  generateTriggerRecommendations,
-} from './environmentalAdvice.mjs';
 
 /**
  * The one environment for a date and place. Every horse assessed against this
@@ -174,29 +168,6 @@ export function calculateComfortZone(horse) {
   };
 }
 
-/** A `days`-long daily forecast from startDate: weather, its severity and advice. Pure. */
-export function generateWeatherForecast(startDate, location, days) {
-  const forecast = [];
-
-  for (let i = 0; i < days; i++) {
-    const forecastDate = new Date(startDate);
-    forecastDate.setDate(forecastDate.getDate() + i);
-
-    const weather = calculateCurrentWeather(forecastDate, location);
-    const environmentalImpact = assessForecastImpact(weather);
-    const recommendations = generateForecastRecommendations(weather, environmentalImpact);
-
-    forecast.push({
-      date: forecastDate.toISOString(),
-      weather,
-      environmentalImpact,
-      recommendations,
-    });
-  }
-
-  return forecast;
-}
-
 /**
  * One computed entry per calendar day from startDate to endDate (inclusive):
  * weather, season and environmental quality (Equoria-axad9.1). Not stored data
@@ -271,7 +242,6 @@ function projectTriggers({ weather, seasonal }, horse, comfortZone) {
     triggerTypes: triggers,
     intensity: Math.round(intensity),
     traitExpressionProbability: Math.round(traitExpressionProbability * 100) / 100,
-    recommendations: generateTriggerRecommendations(triggers, intensity),
     weather,
     seasonalFactors: seasonal,
   };
@@ -301,7 +271,6 @@ function projectImpact({ weather, seasonal }, horse, comfortZone, triggers) {
     healthEffect: Math.max(-20, Math.min(20, healthEffect)),
     developmentEffect: Math.max(-50, Math.min(50, developmentEffect)),
     performanceEffect: Math.max(-30, Math.min(30, performanceEffect)),
-    recommendations: generateImpactRecommendations(overallImpact, triggers, seasonal),
     weather,
     seasonalFactors: seasonal,
     triggers: triggers.triggerTypes,
@@ -351,11 +320,6 @@ function projectStress({ weather }, horse, comfortZone, triggers) {
     stressLevel: Math.round(Math.min(100, stressLevel)),
     stressFactors,
     severity,
-    mitigationRecommendations: generateStressMitigationRecommendations(
-      stressLevel,
-      stressFactors,
-      horse,
-    ),
     timeToRecovery: calculateRecoveryTime(stressLevel, horse),
     triggers: triggers.triggerTypes,
     weather,
@@ -529,42 +493,4 @@ function calculateEnvironmentalQuality(weather, seasonalFactors) {
   quality -= seasonalFactors.stressLevel * 0.5;
 
   return Math.round(Math.max(0, Math.min(100, quality)));
-}
-
-function assessForecastImpact(weather) {
-  let severity = 'low';
-  let score = 0;
-
-  if (weather.temperature > 35 || weather.temperature < 0) {
-    score += 30;
-    severity = 'high';
-  } else if (weather.temperature > 30 || weather.temperature < 5) {
-    score += 15;
-    severity = 'moderate';
-  }
-  if (weather.humidity > 85) {
-    score += 15;
-    if (severity === 'low') {
-      severity = 'moderate';
-    }
-  }
-  if (weather.windSpeed > 25) {
-    score += 20;
-    severity = 'high';
-  }
-  if (weather.conditions === 'stormy') {
-    score += 25;
-    severity = 'extreme';
-  }
-
-  return {
-    severity,
-    score: Math.min(100, score),
-    factors: {
-      temperature: weather.temperature > 35 || weather.temperature < 0,
-      humidity: weather.humidity > 85,
-      wind: weather.windSpeed > 25,
-      conditions: weather.conditions === 'stormy',
-    },
-  };
 }
