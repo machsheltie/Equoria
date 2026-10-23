@@ -52,6 +52,20 @@
  * the count grew unnoticed: the palette rule caught colors, nothing caught the
  * import that brings the generic composition with it.)
  *
+ * ── toast() CALL SITES (Equoria-go70a) ────────────────────────────────────
+ * CLAUDE.md's sonner rule is broader than the import: "Do not add imports or
+ * new toast() calls." An import count alone lets a file that already imports
+ * sonner add any number of new toast() call sites while its import count stays
+ * at 1, which is exactly where the Equoria-7i4cw migration is most likely to be
+ * extended by mistake. So the same baseline also records, per file, the number
+ * of calls to sonner's `toast` (`toast(...)`, `toast.error(...)`, any member
+ * call) under the pseudo-package key "toast()", and the same arms apply: a new
+ * call in a baselined file FAILS, a removed call must lower the entry in the
+ * same commit (no banked headroom), and a file off the baseline gets zero.
+ * Only the binding imported from 'sonner' is counted (found on the TypeScript
+ * AST, so aliases, comments and strings cannot fool it); a local function that
+ * happens to be called `toast` is not sonner.
+ *
  * Scope: `frontend/src/**` for *.ts/*.tsx/*.js/*.jsx/*.mjs, tests included —
  * excluding tests would leave an obvious loophole. Matches the package as the
  * START of a quoted module specifier in an `import` / `export … from` /
@@ -68,6 +82,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 import {
   isPlantArtifactBasename,
@@ -123,6 +138,49 @@ export function findRejectedImports(src) {
   return counts;
 }
 
+/** Baseline pseudo-package key for sonner `toast` call sites (Equoria-go70a). */
+export const toastCallKey = 'toast()';
+
+/**
+ * Pure detector: how many call sites invoke sonner's `toast` in `src`. Counts a
+ * call whose callee is the binding imported from 'sonner' (`toast(...)`) or a
+ * member of it (`toast.error(...)`); a file that does not import `toast` from
+ * sonner has none. Exported for the sentinel.
+ */
+export function countToastCalls(src, fileName = 'file.tsx') {
+  if (!src.includes('sonner')) return 0;
+  const kind = /\.(tsx|jsx)$/.test(fileName) ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const sourceFile = ts.createSourceFile(fileName, src, ts.ScriptTarget.Latest, true, kind);
+
+  const bindings = new Set();
+  for (const stmt of sourceFile.statements) {
+    if (
+      ts.isImportDeclaration(stmt) &&
+      ts.isStringLiteral(stmt.moduleSpecifier) &&
+      stmt.moduleSpecifier.text === 'sonner' &&
+      stmt.importClause?.namedBindings &&
+      ts.isNamedImports(stmt.importClause.namedBindings)
+    ) {
+      for (const el of stmt.importClause.namedBindings.elements) {
+        if ((el.propertyName ?? el.name).text === 'toast') bindings.add(el.name.text);
+      }
+    }
+  }
+  if (bindings.size === 0) return 0;
+
+  let count = 0;
+  const visit = (node) => {
+    if (ts.isCallExpression(node)) {
+      let callee = node.expression;
+      while (ts.isPropertyAccessExpression(callee)) callee = callee.expression;
+      if (ts.isIdentifier(callee) && bindings.has(callee.text)) count += 1;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return count;
+}
+
 function walk(dir, acc) {
   // Tolerate ONLY ENOENT (an optional root that vanished mid-scan), loudly;
   // any other fault is rethrown so a partially-read tree can never report a
@@ -157,7 +215,8 @@ function loadBaseline() {
 function fail(lines) {
   for (const l of lines) console.error(l);
   console.error('');
-  console.error('CLAUDE.md rejects sonner, Recharts, Chart.js and react-chartjs-2.');
+  console.error('CLAUDE.md rejects sonner (imports and toast() calls), Recharts, Chart.js and');
+  console.error('react-chartjs-2.');
   console.error('Existing usage is migration state, not approval: the recorded baseline in');
   console.error(`  ${path.relative(REPO_ROOT, BASELINE_PATH).split(BACKSLASH).join('/')}`);
   console.error('may only SHRINK, never grow.');
@@ -183,6 +242,8 @@ function main() {
     const src = readScannedFileSyncTolerant(f, LABEL);
     if (src === null) continue; // vanished mid-scan (ENOENT) — skipped, noticed
     const counts = findRejectedImports(src);
+    const toastCalls = countToastCalls(src, f);
+    if (toastCalls > 0) counts[toastCallKey] = toastCalls;
     if (Object.keys(counts).length > 0) {
       observedByFile.set(toRelKey(f), counts);
       observedTotal += Object.values(counts).reduce((s, n) => s + n, 0);
@@ -215,10 +276,10 @@ function main() {
 
   if (grew.length > 0) {
     fail([
-      `[${LABEL}] FAIL — rejected-dependency imports grew above baseline:`,
+      `[${LABEL}] FAIL — rejected-dependency imports and toast() calls grew above baseline:`,
       ...grew.map(
         (v) =>
-          `  ${v.key}  imports '${v.pkg}'  baseline=${v.allowed}, observed=${v.observed} (+${v.observed - v.allowed})`
+          `  ${v.key}  ${v.pkg === toastCallKey ? 'calls sonner toast()' : `imports '${v.pkg}'`}  baseline=${v.allowed}, observed=${v.observed} (+${v.observed - v.allowed})`
       ),
     ]);
   }
@@ -232,7 +293,7 @@ function main() {
 
   if (shrank.length > 0) {
     fail([
-      `[${LABEL}] FAIL — baseline headroom left behind (the import is gone; the entry is not):`,
+      `[${LABEL}] FAIL — baseline headroom left behind (the import or toast() call is gone; the entry is not):`,
       ...shrank.map((v) => `  ${v.key}  '${v.pkg}'  baseline=${v.allowed}, observed=${v.observed}`),
     ]);
   }
@@ -243,7 +304,7 @@ function main() {
   );
   console.log(
     `[${LABEL}] OK — scanned ${files.length} frontend/src files; ` +
-      `${observedTotal} rejected-dependency imports across ${observedByFile.size} files, ` +
+      `${observedTotal} rejected-dependency imports and toast() call sites across ${observedByFile.size} files, ` +
       `exactly matching the baseline (total=${baselineTotal}; ` +
       `${REJECTED_PACKAGES.join(', ')})`
   );
