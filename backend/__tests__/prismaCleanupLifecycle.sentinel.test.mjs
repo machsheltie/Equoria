@@ -29,6 +29,27 @@ async function connectionExists(monitor, pid) {
   return result.rows[0].count > 0;
 }
 
+// Equoria-eb6yb: a client-side disconnect resolves when the socket is closed;
+// the server backend then exits and drops its pg_stat_activity row on its own
+// schedule, a few milliseconds later. An instant probe raced that exit (CI run
+// 38755984195: row still present). Poll until the row is gone, within a bound
+// far longer than a backend exit and far shorter than the test timeout: a
+// client that cleanup never disconnected keeps its backend alive indefinitely,
+// so it still fails here.
+const BACKEND_EXIT_BOUND_MS = 5000;
+async function connectionGoneWithin(monitor, pid, boundMs = BACKEND_EXIT_BOUND_MS) {
+  const deadline = Date.now() + boundMs;
+  for (;;) {
+    if (!(await connectionExists(monitor, pid))) {
+      return true;
+    }
+    if (Date.now() > deadline) {
+      return false;
+    }
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+}
+
 describe('Prisma Jest cleanup lifecycle sentinel', () => {
   test('backend Jest profiles clean Prisma in environment teardown, after suite hooks', () => {
     for (const configFile of [
@@ -183,7 +204,7 @@ describe('Prisma Jest cleanup lifecycle sentinel', () => {
 
       await cleanupPrismaInstances();
 
-      expect(await connectionExists(monitor, pid)).toBe(false);
+      expect(await connectionGoneWithin(monitor, pid)).toBe(true);
     } finally {
       await monitor.end();
     }
