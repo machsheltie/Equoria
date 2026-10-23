@@ -68,9 +68,13 @@ const backendRows = [
 
 /**
  * The mapped UI shape the hook now returns for `backendRows` — placement passed
- * through, xpGained defaulted to 0 (no XP column), claimed defaulted
- * to true (settled history), claimedAt defaulted to runDate, competitionId and
- * transactionId derived from competitionResultId.
+ * through, claimed defaulted to true (settled history), claimedAt defaulted to
+ * runDate, competitionId and transactionId derived from competitionResultId.
+ *
+ * Equoria-q4uem.15 contract change: the mapper used to fabricate `xpGained: 0`
+ * for every row (the backend records no per-row figure). Owner rulings: horse
+ * XP is Horse Points (2026-10-07) and an unrecorded value is never a fake zero
+ * (PRODUCT.md, bundle ruling 2026-10-23), so the mapped row carries no figure.
  */
 const expectedTransactions: PrizeTransaction[] = [
   {
@@ -83,7 +87,6 @@ const expectedTransactions: PrizeTransaction[] = [
     discipline: 'dressage',
     placement: 1,
     prizeMoney: 2500,
-    xpGained: 0,
     claimed: true,
     claimedAt: '2026-03-15T10:00:00Z',
   },
@@ -97,7 +100,6 @@ const expectedTransactions: PrizeTransaction[] = [
     discipline: 'jumping',
     placement: 2,
     prizeMoney: 1500,
-    xpGained: 0,
     claimed: true,
     claimedAt: '2026-02-10T14:00:00Z',
   },
@@ -111,7 +113,6 @@ const expectedTransactions: PrizeTransaction[] = [
     discipline: 'eventing',
     placement: 3,
     prizeMoney: 1000,
-    xpGained: 0,
     claimed: true,
     claimedAt: '2026-01-25T09:00:00Z',
   },

@@ -49,7 +49,6 @@ export interface PrizeTransaction {
   discipline: string;
   placement: number;
   prizeMoney: number;
-  xpGained: number;
   claimed: boolean;
   claimedAt?: string;
 }
@@ -77,7 +76,6 @@ export interface BackendPrizeHistoryRow {
   runDate: string;
   // Tolerated-if-present (a future backend may add these). The current backend
   // omits them; the mapper defaults them honestly when absent.
-  xpGained?: number;
   claimed?: boolean;
   claimedAt?: string;
 }
@@ -117,7 +115,9 @@ export function parsePlacement(placement: number | null | undefined): number {
  *                    Equoria-m1jmb)
  * - date           ← runDate
  * - placement      ← parsePlacement(placement)
- * - xpGained       ← row.xpGained ?? 0    (no XP column in the data model)
+ * - no Horse Points figure: the backend records none per row, and an unrecorded
+ *   value is never a fake zero (Equoria-q4uem.15; horse XP is Horse Points,
+ *   owner ruling 2026-10-07)
  * - claimed        ← row.claimed ?? true  (history rows are settled records;
  *                    the data model has no claim-state column, so there is no
  *                    honest per-row "unclaimed" status to surface)
@@ -134,7 +134,6 @@ export function mapBackendRowToTransaction(row: BackendPrizeHistoryRow): PrizeTr
     discipline: row.discipline,
     placement: parsePlacement(row.placement),
     prizeMoney: Number(row.prizeMoney) || 0,
-    xpGained: row.xpGained ?? 0,
     claimed: row.claimed ?? true,
     claimedAt: row.claimedAt ?? row.runDate,
   };
@@ -148,7 +147,6 @@ export interface HorsePrizeSummary {
   horseName: string;
   totalCompetitions: number;
   totalPrizeMoney: number;
-  totalXpGained: number;
   firstPlaces: number;
   secondPlaces: number;
   thirdPlaces: number;

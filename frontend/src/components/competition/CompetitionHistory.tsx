@@ -46,7 +46,7 @@ export interface CompetitionEntry {
   totalParticipants: number;
   finalScore: number;
   prizeMoney: number;
-  /** Not persisted in CompetitionResult schema; omitted by backend until Equoria-aenc migration lands. */
+  /** Horse Points for this entry. Not sent by the competition-history endpoint yet; shown as an em dash when absent. */
   xpGained?: number;
 }
 
@@ -429,14 +429,14 @@ const CompetitionEntryCard = memo(
               </span>
             </div>
 
-            {/* XP — field not yet persisted; hide when absent */}
-            {entry.xpGained !== undefined && (
-              <div className="flex items-center gap-1">
-                <Zap className="h-4 w-4 text-[var(--role-accent-text)]" aria-hidden="true" />
-                <span className="font-medium text-role-primary">{entry.xpGained}</span>
-                <span className="text-role-secondary">XP</span>
-              </div>
-            )}
+            {/* Horse Points (owner ruling 2026-10-07: horse XP is Horse Points). Not
+                recorded per entry yet, so unrecorded shows an em dash, never a zero
+                (Equoria-q4uem.15). */}
+            <div className="flex items-center gap-1">
+              <Zap className="h-4 w-4 text-[var(--role-accent-text)]" aria-hidden="true" />
+              <span className="font-medium text-role-primary">{entry.xpGained ?? '—'}</span>
+              <span className="text-role-secondary">Horse Points</span>
+            </div>
 
             {/* Participants */}
             <div className="flex items-center gap-1 text-role-secondary">

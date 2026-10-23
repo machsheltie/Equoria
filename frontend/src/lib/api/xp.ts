@@ -2,8 +2,9 @@
  * XP API Functions
  *
  * Provides API functions for the XP and leveling system:
- * - Fetching horse level information and progress
  * - Fetching XP gain history with optional filters
+ * (fetchHorseLevelInfo had no callers and was deleted, Equoria-q4uem.15; the
+ * HorseLevelInfo type is still re-exported by types.ts as HorseXP.)
  *
  * READ-ONLY BY CONTRACT (Equoria-6p398.3, audit Finding 3): there is no
  * client-side XP writer. `addXp()` used to POST an arbitrary
@@ -72,22 +73,6 @@ export class XpApiError extends Error {
     super(message);
     this.name = 'XpApiError';
   }
-}
-
-/**
- * Fetch horse level and XP progress information
- *
- * Returns current level, XP progress, and level thresholds for a horse.
- *
- * @param horseId - Horse ID to fetch level info for
- * @returns Promise<HorseLevelInfo> - Horse's level and XP data
- *
- * @example
- * const levelInfo = await fetchHorseLevelInfo(123);
- * console.log(`Level ${levelInfo.currentLevel}: ${levelInfo.progressPercent}% to next`);
- */
-export async function fetchHorseLevelInfo(horseId: number): Promise<HorseLevelInfo> {
-  return apiClient.get<HorseLevelInfo>(`/api/v1/horses/${horseId}/xp`);
 }
 
 /**

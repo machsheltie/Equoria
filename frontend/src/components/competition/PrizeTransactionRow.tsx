@@ -31,7 +31,6 @@ export interface PrizeTransaction {
   discipline: string;
   placement: number;
   prizeMoney: number;
-  xpGained: number;
   claimed: boolean;
   claimedAt?: string;
 }
