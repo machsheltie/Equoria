@@ -758,7 +758,6 @@
   "backend/modules/traits/__tests__/burnoutImmunityGracePeriod.test.mjs": 7,
   "backend/modules/traits/__tests__/burnoutImmunityTraitIntegration.test.mjs": 24,
   "backend/modules/traits/__tests__/canonicalTraitRoster.sentinel.test.mjs": 5,
-  "backend/modules/traits/__tests__/developmentalMilestoneInteractionDay.test.mjs": 7,
   "backend/modules/traits/__tests__/enhancedMilestoneCanonicalFlags.integration.test.mjs": 3,
   "backend/modules/traits/__tests__/enhancedReportingService.test.mjs": 18,
   "backend/modules/traits/__tests__/envTriggerTraitTimeline.test.mjs": 5,
