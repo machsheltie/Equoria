@@ -47,6 +47,7 @@
 import { describe, it, expect, afterEach } from '@jest/globals';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 // The check is import-safe (its scan runs only when it is the process entry
@@ -61,6 +62,7 @@ import {
   DRAW_TRIGGER_DISCARDED_CALL_RX,
   RE_EXPORT_LIST_RX,
   RE_EXPORT_STAR_RX,
+  scanRetirementScheduleLeaks,
 } from '../../scripts/doctrine-checks/check-no-retirement-schedule-leak.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -321,6 +323,98 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
         expect(RE_EXPORT_LIST_RX.test(declaration)).toBe(false);
         expect(RE_EXPORT_STAR_RX.test(declaration)).toBe(false);
       }
+    });
+  });
+
+  // ── Pattern 3 driven AT an owner-file path (Equoria-xig8c) ────────────────
+  //
+  // The arms above plant at a NON-owner path, and the owner-path case was
+  // established only by imported set membership plus regex matching. Here the
+  // real scan runs over a TEMPORARY copy of the tree laid out at the genuine
+  // owner paths, so the three-line owner branch is executed, not argued, and no
+  // tracked source is touched.
+  describe('pattern 3 at owner-file paths, on a temporary tree', () => {
+    const ownerService = 'backend/modules/grooms/services/groomRetirementService.mjs';
+    const scheduleService = 'backend/modules/grooms/services/groomRetirementScheduleService.mjs';
+    const hireController = 'backend/modules/grooms/controllers/groomRosterController.mjs';
+    const tempRoots = [];
+
+    afterEach(() => {
+      for (const dir of tempRoots.splice(0)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    /** Builds `<tmp>/backend/...` holding the given repo-relative files. */
+    function tempTree(files) {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'xig8c-owner-path-'));
+      tempRoots.push(root);
+      for (const [rel, source] of Object.entries(files)) {
+        const abs = path.join(root, rel);
+        fs.mkdirSync(path.dirname(abs), { recursive: true });
+        fs.writeFileSync(abs, source);
+      }
+      return root;
+    }
+
+    it('SENTINEL: flags `export { … }` of a schedule function inside the owner file', () => {
+      const root = tempTree({
+        [ownerService]: 'export { drawRetirementAge, ensureRetirementSchedule };\n',
+      });
+      const violations = scanRetirementScheduleLeaks(root);
+      expect(violations).toHaveLength(1);
+      expect(violations[0]).toMatchObject({ kind: 're-export', file: ownerService, line: 1 });
+    });
+
+    it('SENTINEL: flags a star re-export of the schedule module inside the owner file', () => {
+      const root = tempTree({
+        [ownerService]: "export * from './groomRetirementScheduleService.mjs';\n",
+      });
+      const violations = scanRetirementScheduleLeaks(root);
+      expect(violations).toHaveLength(1);
+      expect(violations[0]).toMatchObject({ kind: 're-export', file: ownerService, line: 1 });
+    });
+
+    it('SENTINEL: pattern 3 also applies to a draw-trigger file', () => {
+      const root = tempTree({
+        [hireController]: 'export { ensureRetirementSchedule };\n',
+      });
+      const violations = scanRetirementScheduleLeaks(root);
+      expect(violations).toHaveLength(1);
+      expect(violations[0]).toMatchObject({ kind: 're-export', file: hireController });
+    });
+
+    it('does NOT flag the schedule module declaring and default-exporting its own API (the one carve-out)', () => {
+      const root = tempTree({
+        [scheduleService]: [
+          'export function drawRetirementAge() { return 1; }',
+          'export async function ensureRetirementSchedule() { return 1; }',
+          'export default { drawRetirementAge, ensureRetirementSchedule };',
+          'export { drawRetirementAge as draw };',
+          '',
+        ].join('\n'),
+      });
+      expect(scanRetirementScheduleLeaks(root)).toEqual([]);
+    });
+
+    it('does NOT apply patterns 1 and 2 inside an owner file (only pattern 3 does)', () => {
+      const root = tempTree({
+        [ownerService]: [
+          'const row = { include: { retirementSchedule: true } };',
+          'const age = await readRetirementAge(tx, 1);',
+          'export const x = row;',
+          '',
+        ].join('\n'),
+      });
+      expect(scanRetirementScheduleLeaks(root)).toEqual([]);
+    });
+
+    it('the same re-export line at a NON-owner path is still reported (the contrast case)', () => {
+      const other = 'backend/modules/grooms/services/groomOther.mjs';
+      const root = tempTree({ [other]: 'export { drawRetirementAge };\n' });
+      const violations = scanRetirementScheduleLeaks(root);
+      expect(violations).toHaveLength(1);
+      expect(violations[0]).toMatchObject({ kind: 're-export', file: other });
     });
   });
 

@@ -101,7 +101,6 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
 
 // The only two files allowed to include/select the relation (verified against
 // current source, Equoria-sg79g / Task 19-21).
@@ -176,24 +175,26 @@ function walkDir(dir, results) {
   }
 }
 
-// CONTRIBUTING.md "CLI scripts and destructive side effects": the scan runs only
-// when this file is the process entry point, so the sentinel
-// (backend/__tests__/noRetirementScheduleLeakDoctrine.sentinel.test.mjs) can
-// IMPORT the exemption contract above and assert its narrowness directly,
-// without writing to a tracked source file to find out. run-all.sh invokes this
-// as `node <script>`, so the guard is satisfied there.
-function main() {
-  if (!fs.existsSync(BACKEND_ROOT)) {
-    process.exit(0);
+/**
+ * Scan `<repoRoot>/backend` and return every violation. Parameterised on the root
+ * so a test can drive the scan, owner-file paths included, against a temporary
+ * copy of the tree instead of mutating tracked source (Equoria-xig8c).
+ *
+ * @param {string} repoRoot
+ * @returns {{kind: string, file: string, line: number, snippet: string}[]}
+ */
+export function scanRetirementScheduleLeaks(repoRoot) {
+  const backendRoot = path.join(repoRoot, 'backend');
+  const violations = [];
+  if (!fs.existsSync(backendRoot)) {
+    return violations;
   }
 
   const files = [];
-  walkDir(BACKEND_ROOT, files);
-
-  const violations = [];
+  walkDir(backendRoot, files);
 
   for (const file of files) {
-    const rel = path.relative(REPO_ROOT, file).replace(/\\/g, '/');
+    const rel = path.relative(repoRoot, file).replace(/\\/g, '/');
     const isOwner = OWNER_FILES.has(rel);
     const isDrawTrigger = DRAW_TRIGGER_FILES.has(rel);
     // Files exempt from pattern 2 are still forbidden to RE-PUBLISH the API
@@ -248,6 +249,18 @@ function main() {
       }
     }
   }
+
+  return violations;
+}
+
+// CONTRIBUTING.md "CLI scripts and destructive side effects": the scan runs only
+// when this file is the process entry point, so the sentinel
+// (backend/__tests__/noRetirementScheduleLeakDoctrine.sentinel.test.mjs) can
+// IMPORT the exemption contract above and assert its narrowness directly,
+// without writing to a tracked source file to find out. run-all.sh invokes this
+// as `node <script>`, so the guard is satisfied there.
+function main() {
+  const violations = scanRetirementScheduleLeaks(REPO_ROOT);
 
   if (violations.length === 0) {
     process.stdout.write(
