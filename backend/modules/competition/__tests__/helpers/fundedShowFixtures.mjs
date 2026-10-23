@@ -85,7 +85,8 @@ export function createFundedShowFixtures(prefix) {
         dateOfBirth: competitionDateOfBirth(),
         age: 7,
         userId: owner.id,
-        healthStatus: 'healthy',
+        healthStatus: 'Excellent',
+        lastFedDate: new Date(), // fed today: not in bad health, which refuses entry (Equoria-0d4wa)
         speed: 60,
         stamina: 60,
         agility: 60,
