@@ -132,17 +132,31 @@ describe('ConfirmEmailChangePage', () => {
     expect(alert).toHaveTextContent(/belongs to another stable/i);
   });
 
-  it('sends a signed-out player to sign in, and a signed-in player onward', async () => {
+  it('sends a signed-out player to sign in, and says every device was signed out', async () => {
     stubConfirmAccepted();
-    const { unmount } = renderPage('/confirm-email-change?token=ec1_one', false);
+    renderPage('/confirm-email-change?token=ec1_one', false);
     await screen.findByText(NEW_ADDRESS);
     expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
-    unmount();
+    expect(screen.getByText(/every device has been signed out/i)).toBeInTheDocument();
+  });
 
-    confirmCalls = 0;
+  // Equoria-ix032. Old contract: a signed-in visitor was offered "Back to the
+  // Stable". Equoria-8p6e6 made a confirmed change end EVERY session (the link is
+  // public, so no session can be kept), so that link led to a 401 and a bounce to
+  // login with no explanation. New ruling (issue option a): always Sign In, and say why.
+  it('sends a signed-in player to sign in too, because the change ended every session', async () => {
     stubConfirmAccepted();
     renderPage('/confirm-email-change?token=ec1_two', true);
     await screen.findByText(NEW_ADDRESS);
-    expect(screen.getByRole('link', { name: /stable/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: /stable/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/every device has been signed out/i)).toBeInTheDocument();
+  });
+
+  it('does not claim a sign-out when the link was refused', async () => {
+    stubConfirmRejected(400, 'bad');
+    renderPage('/confirm-email-change?token=ec1_bad', true);
+    await screen.findByRole('alert');
+    expect(screen.queryByText(/signed out/i)).not.toBeInTheDocument();
   });
 });

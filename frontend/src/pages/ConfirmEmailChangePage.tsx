@@ -114,8 +114,13 @@ const ConfirmEmailChangePage: React.FC = () => {
           This is the address that finds you if you are ever locked out. Your old address no longer
           works for password recovery.
         </p>
+        <p className="text-xs text-role-secondary">
+          For your safety every device has been signed out. Sign in with your new address.
+        </p>
       </div>
-      {onward}
+      <Button asChild size="default" className="w-full">
+        <Link to="/login">Sign In</Link>
+      </Button>
     </AuthLayout>
   );
 };
