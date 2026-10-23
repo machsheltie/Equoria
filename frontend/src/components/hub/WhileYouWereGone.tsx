@@ -158,7 +158,8 @@ export function WhileYouWereGone() {
   const allItems = data?.items ?? [];
   const WYAG_MAX_ITEMS = 8;
   const items = allItems.slice(0, WYAG_MAX_ITEMS);
-  const hasMore = (data?.hasMore ?? false) || allItems.length > WYAG_MAX_ITEMS;
+  // No "+ more activity" line beyond the shown items (owner ruling 2026-10-23,
+  // Equoria-oey96.53): the overlay shows its items and nothing promising more.
 
   return createPortal(
     <div
@@ -241,11 +242,6 @@ export function WhileYouWereGone() {
             {items.map((item, i) => (
               <WYAGRow key={`${item.type}-${i}`} item={item} onClose={close} />
             ))}
-            {hasMore && (
-              <p className="text-xs text-[var(--cream)] mt-2 text-center opacity-60">
-                + more activity — explore your stable
-              </p>
-            )}
           </div>
         )}
 

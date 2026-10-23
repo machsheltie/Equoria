@@ -207,4 +207,18 @@ describe('WhileYouWereGone', () => {
     renderWYAG();
     expect(await screen.findByText(/resting peacefully/)).toBeInTheDocument();
   });
+
+  // Old behaviour: when the server reported more activity than the overlay
+  // shows, a "+ more activity — explore your stable" line closed the list.
+  // Owner ruling 2026-10-23 (Equoria-oey96.53): keep the title "While You Were
+  // Away" and remove that line.
+  it('keeps its title and shows no "+ more activity" line when there is more activity', async () => {
+    stubWyag(mockItems, { hasMore: true });
+    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    renderWYAG();
+
+    expect(await screen.findByText('Thunder won 1st place!')).toBeInTheDocument();
+    expect(screen.getByText('While You Were Away')).toBeInTheDocument();
+    expect(screen.queryByText(/more activity/i)).not.toBeInTheDocument();
+  });
 });
