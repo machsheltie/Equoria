@@ -18,7 +18,8 @@ import logger from '../utils/logger.mjs';
 import { gameDateKey } from './gameTime.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
 import { evaluateAndPersistUltraRareTraits } from '../modules/traits/index.mjs';
-import { getHorseAgeDays } from './horseAge.mjs';
+import { getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
+import { MIN_ACTIVE_AGE_YEARS } from '../constants/horseAgePolicy.mjs';
 
 // Milestone types and their developmental windows
 export const MILESTONE_TYPES = {
@@ -103,8 +104,9 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
   // Calculate horse age in days
   const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
-  // Only evaluate horses under 3 years (1095 days)
-  if (ageInDays >= 1095) {
+  // Only evaluate horses under game age 3 (Equoria-xggat, owner ruling
+  // 2026-10-19: the game age the player sees, 21 days, not 1095 elapsed days)
+  if (getHorseAgeYears(horse.dateOfBirth) >= MIN_ACTIVE_AGE_YEARS) {
     return {
       success: false,
       reason: 'Horse too old for milestone evaluation',

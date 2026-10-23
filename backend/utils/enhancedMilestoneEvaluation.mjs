@@ -10,7 +10,8 @@ import logger from './logger.mjs';
 import { gameDateKey } from './gameTime.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from './epigeneticFlags.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
-import { getHorseAgeDays } from './horseAge.mjs';
+import { getHorseAgeYears } from './horseAge.mjs';
+import { MIN_ACTIVE_AGE_YEARS } from '../constants/horseAgePolicy.mjs';
 import { asFlagArray } from './jsonbArrayGuard.mjs';
 // Note: Using existing trait effects system instead of separate definitions
 
@@ -28,34 +29,17 @@ export async function evaluateEnhancedMilestone(
   currentGroom,
   milestoneData,
 ) {
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
-
   // Base milestone evaluation
   const baseMilestone = await evaluateBaseMilestone(horse, milestoneData);
 
-  // Only apply enhanced (groom/epigenetic) evaluation for horses under 3 years.
+  // Only apply enhanced (groom/epigenetic) evaluation for horses under game age 3.
   //
-  // Equoria-l06yb (user decision 2026-05-20, "Option 1 — elapsed-time model"):
-  // 1095 is INTENTIONALLY an elapsed-time (~3 real-year) window boundary, NOT a
-  // game-year value. `getHorseAgeDays()` returns literal elapsed calendar days
-  // (see backend/utils/horseAge.mjs and the foalAgeUtils.mjs elapsed-time
-  // foal-development model), so this gate fires for any horse that has lived
-  // >= 1095 real days — restricting enhanced trait development to the
-  // developmental window, exactly as intended.
-  //
-  // This gate is REACHABLE and FUNCTIONAL (verified against the canonical DB
-  // 2026-05-20): 99.6% of real horses are >= 1095 elapsed days, so the early
-  // return correctly skips enhanced eval for the adult majority. It is NOT a
-  // no-op. Boundary sentinel: modules/horses/__tests__/
-  // enhancedMilestoneEvaluationTest.test.mjs ("Equoria-l06yb sentinel") pins
-  // that 1094d runs enhanced eval and 1095d is gated out.
-  //
-  // DO NOT "fix" this to a game-cadence value (e.g. days/7, or 21 game-days for
-  // "3 game-years"). Under game-years a horse maxes at ~21 game-years and
-  // ageInDays/7 would never approach 1095, making the gate ALWAYS-FALSE — so
-  // enhanced foal eval would wrongly fire on every adult horse. That is the
-  // regression this comment exists to prevent.
-  if (ageInDays >= 1095) {
+  // Equoria-xggat / Equoria-oey96.73 (owner ruling 2026-10-19, decision 18):
+  // "under 3" is the horse's GAME age, the same age the game shows
+  // (utils/horseAge.mjs: 1 game-year = 7 days, so age 3 = 21 days), read
+  // through the one age policy. It replaces the 1095-elapsed-day boundary of
+  // Equoria-l06yb, which treated age 3 as three real years.
+  if (getHorseAgeYears(horse.dateOfBirth) >= MIN_ACTIVE_AGE_YEARS) {
     return baseMilestone;
   }
 
@@ -445,40 +429,19 @@ function calculateVariance(numbers) {
  * Placeholder for base milestone evaluation
  * This would integrate with the existing milestone system
  */
-async function evaluateBaseMilestone(horse, _milestoneData) {
+async function evaluateBaseMilestone(_horse, _milestoneData) {
   // This would call the existing milestone evaluation logic
   // For now, return a basic structure
   return {
     milestoneReached: true,
     recommendedTraits: [],
-    developmentalStage: getDevelopmentalStage(horse),
   };
 }
 
-// The base milestone carries no named life stage (`ageCategory` foal /
-// weanling / yearling / two_year_old / mature was removed: Equoria-fr2kg Q5,
-// owner ruling 2026-10-15 — the named life stages are not part of the design).
-
-// Equoria-l06yb (Option 1, 2026-05-20): elapsed-time developmental-phase
-// windows on getHorseAgeDays() (elapsed calendar days). Intentionally NOT
-// game-year boundaries — see the gate comment in evaluateEnhancedMilestone().
-function getDevelopmentalStage(horse) {
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
-
-  if (ageInDays < 30) {
-    return 'imprinting';
-  }
-  if (ageInDays < 90) {
-    return 'socialization';
-  }
-  if (ageInDays < 180) {
-    return 'fear_period';
-  }
-  if (ageInDays < 365) {
-    return 'juvenile';
-  }
-  if (ageInDays < 730) {
-    return 'adolescent';
-  }
-  return 'young_adult';
-}
+// The base milestone carries no named life stage: neither `ageCategory`
+// (foal / weanling / yearling / two_year_old / mature, removed in
+// Equoria-fr2kg Q5, owner ruling 2026-10-15) nor `developmentalStage`
+// (imprinting / socialization / fear_period / juvenile / adolescent /
+// young_adult, removed in Equoria-oey96.73: it bucketed elapsed calendar days
+// on a 365-day scale, no player surface read it, and the named life stages are
+// not part of the design).

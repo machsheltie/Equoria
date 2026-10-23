@@ -221,26 +221,26 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
       },
     });
 
-    // Horse born 1100 days ago → ageInDays >= 1095 → "too old" path (lines 107-113)
+    // Horse born 21 days ago → game age 3 (Equoria-xggat; old contract was 1095 elapsed days) → "too old" path
     tooOldHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
         name: `TestFixture-EMES-TooOld-${ts}`,
         sex: 'Colt',
-        dateOfBirth: gameCalendarDate(new Date(), -1100),
-        age: 1100,
+        dateOfBirth: gameCalendarDate(new Date(), -21),
+        age: 3,
         userId: fixtureUser.id,
       },
     });
 
-    // Horse born 30 days ago → ageInDays=30 > IMPRINTING.end=1 → "wrong window" (lines 117-124)
+    // Horse born 12 days ago (game age 1) → ageInDays=12 > IMPRINTING.end=1 → "wrong window" (lines 117-124)
     wrongWindowHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
         name: `TestFixture-EMES-WrongWindow-${ts}`,
         sex: 'Filly',
-        dateOfBirth: gameCalendarDate(new Date(), -30),
-        age: 30,
+        dateOfBirth: gameCalendarDate(new Date(), -12),
+        age: 1,
         userId: fixtureUser.id,
       },
     });
@@ -282,11 +282,11 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('returns { success:false, reason:/too old/ } for horse >= 1095 days old (lines 107-113)', async () => {
+  it('returns { success:false, reason:/too old/ } for a horse of game age 3 (21 days) or older', async () => {
     const result = await evaluateEnhancedMilestone(tooOldHorse.id, MILESTONE_TYPES.IMPRINTING);
     expect(result.success).toBe(false);
     expect(result.reason).toMatch(/too old/i);
-    expect(result.ageInDays).toBeGreaterThanOrEqual(1095);
+    expect(result.ageInDays).toBeGreaterThanOrEqual(21);
   });
 
   it('returns { success:false, reason:/age window/ } when horse is outside milestone window (lines 117-124)', async () => {

@@ -59,14 +59,14 @@ afterAll(async () => {
 
 describe('Equoria-oey96.32: milestone path surfaces CANONICAL flags, not the stub empty output', () => {
   it('a young horse carrying canonical flags surfaces them at milestone time (not [])', async () => {
-    // A horse the canonical weekly engine flagged brave+confident. Under 1095
-    // elapsed days so the enhanced (foal) path runs.
+    // A horse the canonical weekly engine flagged brave+confident. Under game
+    // age 3 (21 days) so the enhanced (foal) path runs.
     const horse = await createTestHorse(
       prisma,
       {
         name: `TestFixture-oey9632-${randomBytes(4).toString('hex')}`,
         sex: 'Filly',
-        dateOfBirth: gameCalendarDate(new Date(), -100), // 100 days
+        dateOfBirth: gameCalendarDate(new Date(), -15), // 15 days (game age 2)
         age: 0,
         userId: user.id,
         epigeneticFlags: CANONICAL_FLAGS,
@@ -80,7 +80,7 @@ describe('Equoria-oey96.32: milestone path surfaces CANONICAL flags, not the stu
 
     const result = await evaluateEnhancedMilestone(fetched, { interactions: [] }, null, milestoneData);
 
-    // The enhanced path must be reached (l06yb gate: field present when < 1095d).
+    // The enhanced path must be reached (xggat gate: field present when under game age 3).
     expect(result).toHaveProperty('epigeneticFlags');
     // The load-bearing assertion: flags come from the canonical column, not the
     // stub's always-empty []. RED pre-fix (stub -> []), GREEN post-fix.
@@ -93,7 +93,7 @@ describe('Equoria-oey96.32: milestone path surfaces CANONICAL flags, not the stu
       {
         name: `TestFixture-oey9632-empty-${randomBytes(4).toString('hex')}`,
         sex: 'Colt',
-        dateOfBirth: gameCalendarDate(new Date(), -100),
+        dateOfBirth: gameCalendarDate(new Date(), -15),
         age: 0,
         userId: user.id,
         epigeneticFlags: [],

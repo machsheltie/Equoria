@@ -4,7 +4,7 @@
  *
  * enhancedMilestoneEvaluation.evaluateEnhancedMilestone takes a horse object
  * (not an ID), so no DB fixture is needed:
- *   - Old horse (>= 1095 days): early return from baseMilestone, no DB calls.
+ *   - Horse of game age 3+ (>= 21 days): early return from baseMilestone, no DB calls.
  *   - Young horse (newborn) with fake ID: ultra-rare trigger calls fail gracefully
  *     (caught internally), function still returns full result shape.
  *
@@ -58,19 +58,14 @@ describe('evaluateEnhancedMilestone — mature horse (age >= 3 years)', () => {
   });
 });
 
-// ── Equoria-l06yb: 1095-day enhanced-eval gate boundary sentinel ──────────────
-// The `if (ageInDays >= 1095) return baseMilestone` gate at
-// enhancedMilestoneEvaluation.mjs:39 gates whether ENHANCED (groom/epigenetic)
-// milestone evaluation runs. Under the Option-1 elapsed-time model
-// (user 2026-05-20, Equoria-l06yb): getHorseAgeDays() returns literal elapsed
-// calendar days (NOT game-years), so the gate fires for any horse that has
-// lived >= 1095 real days. This sentinel pins the boundary so a future reader
-// cannot silently "fix" the threshold to a game-cadence value (e.g. 21 game-
-// days) — which WOULD make the gate fire on training-age foals and break the
-// foal-development window. The presence-vs-absence of the enhanced-only
+// ── Equoria-xggat: the "under 3" enhanced-eval gate reads GAME age ────────────
+// OLD CONTRACT (Equoria-l06yb, 2026-05-20): the gate fired at 1095 elapsed
+// calendar days. NEW RULING (owner, 2026-10-19, decision 18): "under 3" uses
+// the horse's GAME age, the same age the game shows (1 game-year = 7 days, so
+// age 3 = 21 days). The presence-vs-absence of the enhanced-only
 // `epigeneticFlags` field distinguishes the two code paths: base-only result
 // (gated out) has no `epigeneticFlags`; enhanced result does.
-describe('evaluateEnhancedMilestone — 1095d gate boundary (Equoria-l06yb sentinel)', () => {
+describe('evaluateEnhancedMilestone — game-age gate boundary (Equoria-xggat)', () => {
   const makeHorse = (ageInDays, id) => ({
     id,
     name: `TestGateBoundary-${ageInDays}`,
@@ -81,11 +76,11 @@ describe('evaluateEnhancedMilestone — 1095d gate boundary (Equoria-l06yb senti
     stressLevel: 30,
   });
 
-  it('horse at 1094 days (just under gate) RUNS enhanced eval', async () => {
+  it('horse at 20 days (game age 2) RUNS enhanced eval', async () => {
     // fake id → ultra-rare trigger fails gracefully, but the enhanced path still
     // executes and attaches the enhanced-only `epigeneticFlags` field.
     const result = await evaluateEnhancedMilestone(
-      makeHorse(1094, 999999901),
+      makeHorse(20, 999999901),
       { interactions: [] },
       null,
       makeMilestoneData(),
@@ -93,9 +88,9 @@ describe('evaluateEnhancedMilestone — 1095d gate boundary (Equoria-l06yb senti
     expect(result).toHaveProperty('epigeneticFlags');
   });
 
-  it('horse at exactly 1095 days (gate boundary) is GATED OUT (base only)', async () => {
+  it('horse at exactly 21 days (game age 3) is GATED OUT (base only)', async () => {
     const result = await evaluateEnhancedMilestone(
-      makeHorse(1095, 999999902),
+      makeHorse(21, 999999902),
       { interactions: [] },
       null,
       makeMilestoneData(),
@@ -146,7 +141,7 @@ describe('evaluateEnhancedMilestone — with groom object', () => {
   const youngHorse = {
     id: 999999995,
     name: 'TestYoungHorse',
-    dateOfBirth: gameCalendarDate(new Date(), -30), // 30 days old
+    dateOfBirth: gameCalendarDate(new Date(), -15), // 15 days old (game age 2)
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     bondScore: 40,
@@ -167,65 +162,27 @@ describe('evaluateEnhancedMilestone — with groom object', () => {
   });
 });
 
-// ── developmental stage branches (getDevelopmentalStage) ─────────────────────
-//
-// Equoria-fr2kg Q5. OLD CONTRACT: the base milestone also carried
-// `ageCategory` (foal / weanling / yearling / two_year_old / mature). NEW
-// RULING (owner, 2026-10-15): the named life stages are removed, so there is
-// no ageCategory. The developmentalStage assertions are unchanged.
-
 const milestoneData = { type: 'growth', completed: true, score: 70 };
 const daysAgo = d => new Date(Date.now() - d * 24 * 60 * 60 * 1000);
 // dateOfBirth is a date-only column: store the Eastern game date, as production writers do.
 const gameDaysAgo = d => gameCalendarDate(new Date(), -d);
 
-describe('evaluateEnhancedMilestone — developmental stage branches', () => {
-  it('juvenile at 200 days', async () => {
+// Equoria-oey96.73: the base milestone carries no `developmentalStage` either.
+// OLD CONTRACT: it bucketed elapsed calendar days on a 365-day scale
+// (imprinting / socialization / fear_period / juvenile / adolescent /
+// young_adult). NEW RULING (owner, 2026-10-15): the named life stages are not
+// part of the design; no player surface read the field.
+describe('evaluateEnhancedMilestone — no named life stage', () => {
+  it('returns neither ageCategory nor developmentalStage', async () => {
     const horse = {
       id: -1,
-      dateOfBirth: gameDaysAgo(200),
-      age: 0,
-      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-    };
-    const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
-    expect(result).not.toHaveProperty('ageCategory');
-    expect(result.developmentalStage).toBe('juvenile');
-  });
-
-  it('adolescent at 400 days', async () => {
-    const horse = {
-      id: -1,
-      dateOfBirth: gameDaysAgo(400),
+      dateOfBirth: gameDaysAgo(10),
       age: 1,
       epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     };
     const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
     expect(result).not.toHaveProperty('ageCategory');
-    expect(result.developmentalStage).toBe('adolescent');
-  });
-
-  it('young_adult at 800 days', async () => {
-    const horse = {
-      id: -1,
-      dateOfBirth: gameDaysAgo(800),
-      age: 2,
-      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-    };
-    const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
-    expect(result).not.toHaveProperty('ageCategory');
-    expect(result.developmentalStage).toBe('young_adult');
-  });
-
-  it('fear_period at 100 days', async () => {
-    const horse = {
-      id: -1,
-      dateOfBirth: gameDaysAgo(100),
-      age: 0,
-      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-    };
-    const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
-    expect(result).not.toHaveProperty('ageCategory');
-    expect(result.developmentalStage).toBe('fear_period');
+    expect(result).not.toHaveProperty('developmentalStage');
   });
 });
 
@@ -234,7 +191,7 @@ describe('evaluateEnhancedMilestone — developmental stage branches', () => {
 describe('evaluateEnhancedMilestone — care consistency bonus', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: gameDaysAgo(50),
+    dateOfBirth: gameDaysAgo(10),
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
@@ -267,7 +224,7 @@ describe('evaluateEnhancedMilestone — care consistency bonus', () => {
 describe('evaluateEnhancedMilestone — care quality thresholds', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: gameDaysAgo(60),
+    dateOfBirth: gameDaysAgo(12),
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
@@ -319,7 +276,7 @@ describe('evaluateEnhancedMilestone — care quality thresholds', () => {
 describe('evaluateEnhancedMilestone — bond stability branches', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: gameDaysAgo(70),
+    dateOfBirth: gameDaysAgo(14),
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
@@ -369,7 +326,7 @@ describe('evaluateEnhancedMilestone — bond stability branches', () => {
 describe('evaluateEnhancedMilestone — stress management branches', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: gameDaysAgo(80),
+    dateOfBirth: gameDaysAgo(16),
     age: 0,
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
@@ -409,7 +366,7 @@ describe('evaluateEnhancedMilestone — stress management branches', () => {
 describe('evaluateEnhancedMilestone — personality bonus branches', () => {
   const youngHorse = {
     id: -1,
-    dateOfBirth: gameDaysAgo(45),
+    dateOfBirth: gameDaysAgo(10),
     age: 0,
     temperament: 'nervous',
     epigeneticModifiers: { positive: [], negative: [], hidden: [] },
