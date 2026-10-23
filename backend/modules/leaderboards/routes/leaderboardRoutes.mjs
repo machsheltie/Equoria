@@ -1,6 +1,5 @@
 import express from 'express';
 import { query, validationResult } from 'express-validator';
-import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   getTopPlayersByLevel,
   getTopPlayersByXP,
@@ -17,16 +16,13 @@ import { isKnownDiscipline } from '../../competition/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
 import logger from '../../../utils/logger.mjs';
-import { startOfGameDay } from '../../../utils/gameTime.mjs';
+import { getHorseProfileForLeaderboard } from '../services/leaderboardCompetitionQueries.mjs';
 import {
-  fetchHorseDetailsByIds,
-  groupWinsByHorse,
-  groupEarningsByHorse,
-  groupTopThreePlacementsByHorse,
-  groupAveragePlacementByHorse,
-  countDistinctHorses,
-  getHorseProfileForLeaderboard,
-} from '../services/leaderboardCompetitionQueries.mjs';
+  competitionBoardCacheTtl,
+  buildCompetitionBoard,
+  competitionBoardCacheKey,
+} from '../services/competitionBoard.mjs';
+import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
 
 const router = express.Router();
 
@@ -510,165 +506,27 @@ router.get(
         `[leaderboardRoutes.GET /competition] Getting competition leaderboard: discipline=${discipline}, period=${period}, metric=${metric}`,
       );
 
-      // Calculate date filter based on period
-      let dateFilter = {};
-      if (period !== 'all') {
-        const now = new Date();
-        let startDate;
-
-        switch (period) {
-          case 'week':
-            startDate = new Date(now.getTime() - MS_PER_WEEK);
-            break;
-          case 'month':
-            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            break;
-          case 'year':
-            startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-            break;
-        }
-
-        if (startDate) {
-          // Period starts at 00:00 Eastern of its first game day.
-          dateFilter = { runDate: { gte: startOfGameDay(startDate) } };
-        }
-      }
-
-      const whereClause = {
-        placement: { not: null }, // Only completed competitions
-        ...dateFilter,
+      // Equoria-cmw85.6: the whole page (ranking, horse details, count) is served from
+      // the server query cache, keyed on every parameter, at the sibling boards' 300s.
+      // The HTTP response stays no-store (Equoria-cmw85.28).
+      const params = {
+        discipline,
+        period,
+        metric,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
       };
-
-      if (discipline) {
-        whereClause.discipline = discipline;
-      }
-
-      // Get competition results based on metric
-      let results = [];
-
-      if (metric === 'wins') {
-        // Count wins (1st place) per horse
-        const winCounts = await groupWinsByHorse(whereClause, {
-          take: parseInt(limit),
-          skip: parseInt(offset),
-        });
-
-        // Get horse details for winners
-        const horseIds = winCounts.map(w => w.horseId);
-        const horses = await fetchHorseDetailsByIds(horseIds);
-
-        results = winCounts.map((winCount, index) => {
-          const horse = horses.find(h => h.id === winCount.horseId);
-          return {
-            rank: parseInt(offset) + index + 1,
-            horseId: winCount.horseId,
-            horseName: horse?.name || 'Unknown',
-            userId: horse?.userId,
-            userName: horse?.user?.username || 'Unknown',
-            wins: winCount._count.id,
-            metric: 'wins',
-            value: winCount._count.id,
-          };
-        });
-      } else if (metric === 'earnings') {
-        // Sum earnings per horse
-        const earnings = await groupEarningsByHorse(whereClause, {
-          take: parseInt(limit),
-          skip: parseInt(offset),
-        });
-
-        // Get horse details
-        const horseIds = earnings.map(e => e.horseId);
-        const horses = await fetchHorseDetailsByIds(horseIds);
-
-        results = earnings.map((earning, index) => {
-          const horse = horses.find(h => h.id === earning.horseId);
-          return {
-            rank: parseInt(offset) + index + 1,
-            horseId: earning.horseId,
-            horseName: horse?.name || 'Unknown',
-            userId: horse?.userId,
-            userName: horse?.user?.username || 'Unknown',
-            totalEarnings: Number(earning._sum.prizeWon) || 0,
-            metric: 'earnings',
-            value: Number(earning._sum.prizeWon) || 0,
-          };
-        });
-      } else if (metric === 'placements') {
-        // Count top 3 placements per horse
-        const placements = await groupTopThreePlacementsByHorse(whereClause, {
-          take: parseInt(limit),
-          skip: parseInt(offset),
-        });
-
-        // Get horse details
-        const horseIds = placements.map(p => p.horseId);
-        const horses = await fetchHorseDetailsByIds(horseIds);
-
-        results = placements.map((placement, index) => {
-          const horse = horses.find(h => h.id === placement.horseId);
-          return {
-            rank: parseInt(offset) + index + 1,
-            horseId: placement.horseId,
-            horseName: horse?.name || 'Unknown',
-            userId: horse?.userId,
-            userName: horse?.user?.username || 'Unknown',
-            topPlacements: placement._count.id,
-            metric: 'placements',
-            value: placement._count.id,
-          };
-        });
-      } else if (metric === 'average_placement') {
-        // Calculate average placement per horse
-        const avgPlacements = await groupAveragePlacementByHorse(whereClause, {
-          take: parseInt(limit),
-          skip: parseInt(offset),
-        });
-
-        // Get horse details
-        const horseIds = avgPlacements.map(a => a.horseId);
-        const horses = await fetchHorseDetailsByIds(horseIds);
-
-        results = avgPlacements.map((avgPlacement, index) => {
-          const horse = horses.find(h => h.id === avgPlacement.horseId);
-          return {
-            rank: parseInt(offset) + index + 1,
-            horseId: avgPlacement.horseId,
-            horseName: horse?.name || 'Unknown',
-            userId: horse?.userId,
-            userName: horse?.user?.username || 'Unknown',
-            averagePlacement: Number(avgPlacement._avg.placement) || 0,
-            competitionCount: avgPlacement._count.id,
-            metric: 'average_placement',
-            value: Number(avgPlacement._avg.placement) || 0,
-          };
-        });
-      }
-
-      // Get total count for pagination (service-layer, Equoria-becrm)
-      const totalCount = await countDistinctHorses(whereClause);
-
-      logger.info(
-        `[leaderboardRoutes.GET /competition] Retrieved ${results.length} leaderboard entries`,
+      const data = await getCachedQuery(
+        competitionBoardCacheKey(params),
+        () => buildCompetitionBoard(params),
+        competitionBoardCacheTtl,
       );
 
-      res.status(200).json({
-        success: true,
-        data: {
-          leaderboard: results,
-          filters: {
-            discipline,
-            period,
-            metric,
-          },
-          pagination: {
-            total: totalCount,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            hasMore: parseInt(offset) + parseInt(limit) < totalCount,
-          },
-        },
-      });
+      logger.info(
+        `[leaderboardRoutes.GET /competition] Retrieved ${data.leaderboard.length} leaderboard entries`,
+      );
+
+      res.status(200).json({ success: true, data });
     } catch (error) {
       logger.error(`[leaderboardRoutes.GET /competition] Error: ${error.message}`);
       res.status(500).json({
