@@ -327,20 +327,18 @@ describe('candidate-state — the real entry point and the hook wiring', () => {
     expect(hook.match(/\$\(cat\)/g)).toHaveLength(1);
   });
 
-  it('runs the gate with the hook-supplied GIT_* variables unset, in a subshell', () => {
+  it('unsets the hook-supplied GIT_* variables immediately before the canonical gate line', () => {
     const hook = readFileSync(path.join(repoRoot, '.husky', 'pre-push'), 'utf8');
-    const unsetAt = hook.indexOf('unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE');
-    const gate = hook.indexOf('npm run test:backend:full');
-    expect(unsetAt).toBeGreaterThan(-1);
-    expect(unsetAt).toBeLessThan(gate);
-    // Same subshell as the gate: between the unset and the gate there are only
-    // continuation lines of the unset list.
-    const between = hook
-      .slice(unsetAt, gate)
-      .split(String.fromCharCode(10))
-      .map(line => line.trim())
-      .filter(Boolean);
-    expect(between.slice(1).every(line => line.startsWith('GIT_'))).toBe(true);
-    expect(hook.slice(unsetAt - 12, unsetAt)).toContain('if ! (');
+    const lines = hook.split(String.fromCharCode(10));
+    const gateLine = lines.indexOf('if ! npm run test:backend:full; then');
+    // The exact line check-backend-test-profiles.mjs and its planted-violation
+    // sentinel parse; it must stay a one-line `if ! ...; then`.
+    expect(gateLine).toBeGreaterThan(-1);
+    const unsetLine = lines.findIndex(line => line.startsWith('unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE'));
+    expect(unsetLine).toBeGreaterThan(-1);
+    expect(unsetLine).toBe(gateLine - 1);
+    for (const name of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE']) {
+      expect(lines[unsetLine]).toContain(name);
+    }
   });
 });

@@ -197,13 +197,12 @@ fi
 # similar variables. Suites that spawn git in temporary directories would then act
 # on THIS repository instead (a sentinel re-initialised it and failed the push on
 # 2026-10-23). The gate must see the environment a standalone run sees, so they
-# are unset inside a subshell for the gate only; the candidate checks before and
-# after it keep the variables as git set them.
-if ! (
-  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR \
-    GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_QUARANTINE_PATH
-  npm run test:backend:full
-); then
+# are unset here, after every earlier check has used them. The final candidate
+# check below finds the repository from the working directory instead. The gate
+# call itself keeps its canonical one-line shape, which the doctrine checker
+# check-backend-test-profiles.mjs parses.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR   GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_QUARANTINE_PATH
+if ! npm run test:backend:full; then
   echo "[pre-push] FATAL: authoritative backend test profile failed." >&2
   exit 1
 fi
