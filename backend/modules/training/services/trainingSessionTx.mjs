@@ -74,20 +74,36 @@ export async function commitTrainingSession({
           throw COOLDOWN_CLAIM_LOST;
         }
 
-        const trainingLog = await tx.trainingLog.create({
-          data: { horseId, discipline, trainedAt: new Date() },
-        });
-
         // disciplineScores[discipline] += increase, on the committed value.
         // A non-object column (null / array / scalar) starts from {} — the
         // same four-part guard asFlagObject applies on the read side.
-        await tx.$executeRaw(Prisma.sql`
+        // RETURNING gives the score this increment produced, so the session's
+        // log row records the real before/after pair (Equoria-ky2ob).
+        const [scoreRow] = await tx.$queryRaw(Prisma.sql`
           UPDATE "horses" SET "disciplineScores" = jsonb_set(
             CASE WHEN jsonb_typeof("disciplineScores") = 'object' THEN "disciplineScores" ELSE '{}'::jsonb END,
             ARRAY[${discipline}]::text[],
             to_jsonb(COALESCE(("disciplineScores" ->> ${discipline})::numeric, 0) + ${disciplineScoreIncrease}),
             true)
-          WHERE "id" = ${horseId}`);
+          WHERE "id" = ${horseId}
+          RETURNING ("disciplineScores" ->> ${discipline})::numeric AS "scoreAfter"`);
+
+        // The columns hold whole scores; a legacy fractional score is not
+        // representable, so that session records no pair rather than a
+        // rounded one.
+        const after = Number(scoreRow?.scoreAfter);
+        const before = after - disciplineScoreIncrease;
+        const recorded = Number.isInteger(after) && Number.isInteger(before);
+
+        const trainingLog = await tx.trainingLog.create({
+          data: {
+            horseId,
+            discipline,
+            trainedAt: new Date(),
+            scoreBefore: recorded ? before : null,
+            scoreAfter: recorded ? after : null,
+          },
+        });
 
         const updatedHorse = await tx.horse.findUnique({
           where: { id: horseId },

@@ -34,7 +34,11 @@ const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
 
     {/* Score Progression Panel - Discipline scores and training history */}
     <div className="col-span-full" data-testid="score-progression-section">
-      <ScoreProgressionPanel horseId={horse.id} className="mt-4" />
+      <ScoreProgressionPanel
+        horseId={horse.id}
+        disciplineScores={horse.disciplineScores}
+        className="mt-4"
+      />
     </div>
   </div>
 );

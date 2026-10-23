@@ -25,13 +25,18 @@ import { LoadingRegion } from '@/components/ui/state';
  */
 export interface TrainingHistoryEntry {
   id: number;
-  date: string; // ISO 8601 format
-  discipline: string; // discipline ID
-  previousScore: number;
-  newScore: number;
-  scoreGain: number;
+  /** ISO 8601; null when the session has no recorded date */
+  date: string | null;
+  discipline: string; // discipline ID or name
+  /** Null when the session's scores were not recorded (Equoria-ky2ob) */
+  previousScore: number | null;
+  newScore: number | null;
+  scoreGain: number | null;
   traits?: string[];
 }
+
+/** Rendered for a value the session did not record — never an invented number. */
+const UNRECORDED = '—';
 
 /**
  * TrainingHistoryTable component props
@@ -53,7 +58,10 @@ export interface TrainingHistoryTableProps {
 /**
  * Format score gain with appropriate prefix and styling
  */
-function formatGain(gain: number): { text: string; className: string } {
+function formatGain(gain: number | null): { text: string; className: string } {
+  if (gain === null) {
+    return { text: UNRECORDED, className: 'text-role-secondary' };
+  }
   if (gain > 0) {
     return { text: `+${gain}`, className: 'text-[var(--role-success-text)]' };
   }
@@ -332,16 +340,18 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
               return (
                 <tr key={entry.id} className="even:bg-[var(--role-neutral-bg)]">
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
-                    {formatDate(entry.date, { month: 'short', day: '2-digit' })}
+                    {entry.date === null
+                      ? UNRECORDED
+                      : formatDate(entry.date, { month: 'short', day: '2-digit' })}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
                     {formatDisciplineName(entry.discipline)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
-                    {entry.previousScore}
+                    {entry.previousScore ?? UNRECORDED}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
-                    {entry.newScore}
+                    {entry.newScore ?? UNRECORDED}
                   </td>
                   <td
                     className={`whitespace-nowrap px-4 py-3 text-sm font-medium ${gainFormatted.className}`}

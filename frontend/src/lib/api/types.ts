@@ -300,6 +300,12 @@ export interface HorseTrainingHistoryEntry {
   score?: number;
   trainedAt?: string;
   notes?: string;
+  /**
+   * The trained discipline's score just before / just after the session
+   * (Equoria-ky2ob). Null on sessions logged before they were recorded.
+   */
+  scoreBefore?: number | null;
+  scoreAfter?: number | null;
 }
 
 export interface HorseTrainingAnalytics {

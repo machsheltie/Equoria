@@ -493,6 +493,28 @@ describe('TrainingHistoryTable', () => {
       expect(screen.getByText('Dressage')).toBeInTheDocument();
     });
 
+    // Equoria-ky2ob: sessions logged before scores were recorded carry no
+    // before/after/gain and the date may be absent. Each shows an em dash,
+    // never an invented number or a "now" date.
+    it('shows an em dash for an unrecorded score, gain and date', () => {
+      const legacy: TrainingHistoryEntry[] = [
+        {
+          id: 7,
+          date: null,
+          discipline: 'Dressage',
+          previousScore: null,
+          newScore: null,
+          scoreGain: null,
+        },
+      ];
+
+      render(<TrainingHistoryTable history={legacy} />);
+
+      const row = screen.getByText('Dressage').closest('tr') as HTMLElement;
+      const cells = within(row).getAllByRole('cell');
+      expect(cells.map((cell) => cell.textContent)).toEqual(['—', 'Dressage', '—', '—', '—']);
+    });
+
     it('should not show pagination when entries fit on one page', () => {
       render(<TrainingHistoryTable history={mockHistory} pageSize={10} />);
 

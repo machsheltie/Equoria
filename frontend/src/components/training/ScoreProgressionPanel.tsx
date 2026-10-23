@@ -5,9 +5,8 @@
  * fetching data with React Query for displaying horse training progression.
  *
  * Features:
- * - Radar chart showing discipline score distribution
- * - Training history table with sorting and pagination
- * - Score caps and bonuses information section
+ * - Radar chart showing the horse's real discipline scores (Horse.disciplineScores)
+ * - Training history table with each session's recorded before/after score
  * - Loading and error states with retry functionality
  * - Responsive grid layout (desktop: 2 columns, mobile: 1 column)
  *
@@ -16,6 +15,8 @@
 
 import React from 'react';
 import { useHorseTrainingHistory } from '@/hooks/api/useHorses';
+import type { HorseTrainingHistoryEntry } from '@/lib/api/types';
+import { DISCIPLINES } from '@/lib/utils/training-utils';
 import ScoreRadarChart from './ScoreRadarChart';
 import TrainingHistoryTable from './TrainingHistoryTable';
 import type { TrainingHistoryEntry } from './TrainingHistoryTable';
@@ -26,71 +27,52 @@ import type { TrainingHistoryEntry } from './TrainingHistoryTable';
 interface ScoreProgressionPanelProps {
   /** The ID of the horse to display progression for */
   horseId: number;
+  /** The horse's real Horse.disciplineScores, keyed by discipline name ('Show Jumping') */
+  disciplineScores: Record<string, number>;
   /** Optional CSS class for the container */
   className?: string;
 }
 
-const DISCIPLINES = [
-  'western-pleasure',
-  'reining',
-  'cutting',
-  'barrel-racing',
-  'roping',
-  'team-penning',
-  'rodeo',
-  'hunter',
-  'saddleseat',
-  'dressage',
-  'show-jumping',
-  'eventing',
-  'cross-country',
-  'endurance',
-  'vaulting',
-  'polo',
-  'combined-driving',
-  'fine-harness',
-  'gaited',
-  'gymkhana',
-  'racing',
-  'steeplechase',
-  'harness-racing',
-  'pleasure-driving',
-];
-
-function buildDisciplineScores(
-  history: Array<{ discipline?: string; score?: number }>
-): Record<string, number> {
-  const scores = Object.fromEntries(DISCIPLINES.map((discipline) => [discipline, 0]));
-
-  for (const entry of history) {
-    if (!entry.discipline || typeof entry.score !== 'number') continue;
-    scores[entry.discipline] = Math.max(scores[entry.discipline] ?? 0, entry.score);
+/**
+ * Map the horse's real disciplineScores (keyed by discipline name, as the
+ * backend stores them) onto the radar's discipline ids. Only real numbers are
+ * passed; a discipline the horse has never trained is left to the chart.
+ * Equoria-ky2ob: the radar used to be rebuilt from a `score` field the
+ * training-history rows never carried, so it was always all zeros.
+ */
+function toRadarScores(disciplineScores: Record<string, number>): Record<string, number> {
+  const scores: Record<string, number> = {};
+  for (const discipline of DISCIPLINES) {
+    const value = disciplineScores?.[discipline.name];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      scores[discipline.id] = value;
+    }
   }
-
   return scores;
 }
 
 /**
- * Transform API training history entries to table format
+ * Transform API training history entries to table format.
+ * Equoria-ky2ob (owner ruling 2026-10-22): before/after are the scores
+ * TrainingLog recorded for the session. Sessions logged before they were
+ * recorded keep null, and a missing date stays null — never invented numbers
+ * or a "now" date.
  */
 function transformHistoryToTableFormat(
-  history: Array<{
-    id?: number;
-    discipline?: string;
-    score?: number;
-    trainedAt?: string;
-    notes?: string;
-  }>
+  history: HorseTrainingHistoryEntry[]
 ): TrainingHistoryEntry[] {
-  return history.map((entry, index) => ({
-    id: entry.id ?? index + 1,
-    date: entry.trainedAt ?? new Date().toISOString(),
-    discipline: entry.discipline ?? 'unknown',
-    previousScore: Math.max(0, (entry.score ?? 0) - 5),
-    newScore: entry.score ?? 0,
-    scoreGain: 5,
-    traits: [],
-  }));
+  return history.map((entry, index) => {
+    const before = typeof entry.scoreBefore === 'number' ? entry.scoreBefore : null;
+    const after = typeof entry.scoreAfter === 'number' ? entry.scoreAfter : null;
+    return {
+      id: entry.id ?? index + 1,
+      date: entry.trainedAt ?? null,
+      discipline: entry.discipline ?? 'unknown',
+      previousScore: before,
+      newScore: after,
+      scoreGain: before !== null && after !== null ? after - before : null,
+    };
+  });
 }
 
 /**
@@ -134,12 +116,13 @@ function TableSkeleton() {
  */
 const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
   horseId,
+  disciplineScores,
   className = '',
 }) => {
   // Fetch training history using React Query hook
   const { data: trainingHistory, isLoading, error, refetch } = useHorseTrainingHistory(horseId);
 
-  const disciplineScores = buildDisciplineScores(trainingHistory ?? []);
+  const radarScores = toRadarScores(disciplineScores);
 
   // Handle retry button click
   const handleRetry = () => {
@@ -219,7 +202,7 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
           <h3 className="mb-4 text-lg font-semibold text-[var(--text-primary)]">
             Discipline Distribution
           </h3>
-          <ScoreRadarChart disciplineScores={disciplineScores} height={300} className="w-full" />
+          <ScoreRadarChart disciplineScores={radarScores} height={300} className="w-full" />
         </div>
 
         {/* Section 2: Training History Table */}
@@ -234,30 +217,6 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
             className="w-full"
           />
         </div>
-      </div>
-
-      {/* Section 3: Score Caps & Bonuses Info */}
-      <div
-        data-testid="score-caps-section"
-        className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4"
-      >
-        <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
-          {'\uD83D\uDCCA'} Score Caps & Bonuses
-        </h3>
-        <ul className="space-y-2 text-sm text-[var(--text-primary)]">
-          <li className="flex items-start">
-            <span className="mr-2 text-role-secondary">{'•'}</span>
-            <span>Base score cap: 100 per discipline</span>
-          </li>
-          <li className="flex items-start">
-            <span className="mr-2 text-role-secondary">{'•'}</span>
-            <span>Trait bonuses can add +10-20</span>
-          </li>
-          <li className="flex items-start">
-            <span className="mr-2 text-role-secondary">{'•'}</span>
-            <span>Groom bonuses can add +5-15</span>
-          </li>
-        </ul>
       </div>
     </div>
   );
