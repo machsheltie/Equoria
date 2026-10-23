@@ -108,7 +108,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       // Day 1: First trust building session
       let careData = updateFoalCareData(
         { taskLog: null, lastGroomed: null, daysGroomedInARow: 0 },
-        'trust_building',
+        'trustBuilding',
         day1,
       );
 
@@ -128,7 +128,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
 
       // Day 4: Another trust building session
       foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
-      careData = updateFoalCareData(foal, 'trust_building', day4);
+      careData = updateFoalCareData(foal, 'trustBuilding', day4);
 
       await prisma.horse.update({
         where: { id: testFoal.id },
@@ -139,7 +139,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
 
       expect(foal.taskLog).toEqual({
-        trust_building: 2,
+        trustBuilding: 2,
         desensitization: 1,
       });
       expect(foal.daysGroomedInARow).toBe(2); // 2 consecutive care sessions (day 3 and 4)
@@ -149,7 +149,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
     it('should handle streak break and recovery', async () => {
       // Build up a 5-day streak
       const initialData = {
-        taskLog: { trust_building: 3, early_touch: 2 },
+        taskLog: { trustBuilding: 3, earlyTouch: 2 },
         lastGroomed: day5,
         daysGroomedInARow: 5,
       };
@@ -161,7 +161,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
 
       // Miss several days (break streak)
       let foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
-      const careData = updateFoalCareData(foal, 'showground_exposure', day10);
+      const careData = updateFoalCareData(foal, 'showgroundExposure', day10);
 
       await prisma.horse.update({
         where: { id: testFoal.id },
@@ -172,9 +172,9 @@ describe('Foal Task Log and Streak Data Integration', () => {
       foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
 
       expect(foal.taskLog).toEqual({
-        trust_building: 3,
-        early_touch: 2,
-        showground_exposure: 1,
+        trustBuilding: 3,
+        earlyTouch: 2,
+        showgroundExposure: 1,
       });
       expect(foal.daysGroomedInARow).toBe(1); // Reset to 1
       expect(foal.lastGroomed).toEqual(day10);
@@ -185,13 +185,13 @@ describe('Foal Task Log and Streak Data Integration', () => {
     it('builds a 7-day care streak with no burnout immunity label', async () => {
       // Simulate 7 consecutive days of care
       const tasks = [
-        'trust_building',
+        'trustBuilding',
         'desensitization',
-        'early_touch',
-        'trust_building',
-        'showground_exposure',
-        'early_touch',
-        'trust_building',
+        'earlyTouch',
+        'trustBuilding',
+        'showgroundExposure',
+        'earlyTouch',
+        'trustBuilding',
       ];
       let currentData = { taskLog: null, lastGroomed: null, daysGroomedInARow: 0 };
 
@@ -213,7 +213,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       expect(summary.consecutiveDaysOfCare).toBe(7);
       expect(summary).not.toHaveProperty('hasBurnoutImmunity');
       expect(summary.totalTaskCompletions).toBe(7);
-      expect(summary.uniqueTasksCompleted).toBe(4); // trust_building, desensitization, early_touch, showground_exposure
+      expect(summary.uniqueTasksCompleted).toBe(4); // trustBuilding, desensitization, earlyTouch, showgroundExposure
     });
   });
 
@@ -222,7 +222,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       // Day 1: Initial care
       let careData = updateFoalCareData(
         { taskLog: null, lastGroomed: null, daysGroomedInARow: 0 },
-        'trust_building',
+        'trustBuilding',
         day1,
       );
 
@@ -253,7 +253,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
     it('should break streak beyond grace period', async () => {
       // Initial streak
       const initialData = {
-        taskLog: { trust_building: 2 },
+        taskLog: { trustBuilding: 2 },
         lastGroomed: day1,
         daysGroomedInARow: 3,
       };
@@ -271,7 +271,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       expect(streakInfo.streakBroken).toBe(true);
       expect(streakInfo.daysSinceLastCare).toBe(4);
 
-      const careData = updateFoalCareData(foal, 'early_touch', day5);
+      const careData = updateFoalCareData(foal, 'earlyTouch', day5);
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: careData,
@@ -288,11 +288,11 @@ describe('Foal Task Log and Streak Data Integration', () => {
       // Set up comprehensive foal data
       const foalData = {
         taskLog: {
-          trust_building: 8,
+          trustBuilding: 8,
           desensitization: 5,
-          early_touch: 6,
-          showground_exposure: 3,
-          hoof_handling: 2,
+          earlyTouch: 6,
+          showgroundExposure: 3,
+          hoofHandling: 2,
         },
         lastGroomed: day15,
         daysGroomedInARow: 12,
@@ -310,11 +310,11 @@ describe('Foal Task Log and Streak Data Integration', () => {
       expect(summary.totalTaskCompletions).toBe(24);
       expect(summary.uniqueTasksCompleted).toBe(5);
       expect(summary.consecutiveDaysOfCare).toBe(12);
-      expect(summary.completedTaskTypes).toContain('trust_building');
+      expect(summary.completedTaskTypes).toContain('trustBuilding');
       expect(summary.completedTaskTypes).toContain('desensitization');
-      expect(summary.completedTaskTypes).toContain('early_touch');
-      expect(summary.completedTaskTypes).toContain('showground_exposure');
-      expect(summary.completedTaskTypes).toContain('hoof_handling');
+      expect(summary.completedTaskTypes).toContain('earlyTouch');
+      expect(summary.completedTaskTypes).toContain('showgroundExposure');
+      expect(summary.completedTaskTypes).toContain('hoofHandling');
       expect(summary.lastCareDate).toEqual(foalData.lastGroomed);
     });
   });
@@ -338,11 +338,11 @@ describe('Foal Task Log and Streak Data Integration', () => {
       session5Date.setHours(14, 0, 0, 0);
 
       const careSessions = [
-        { task: 'trust_building', date: session1Date },
-        { task: 'trust_building', date: session2Date },
+        { task: 'trustBuilding', date: session1Date },
+        { task: 'trustBuilding', date: session2Date },
         { task: 'desensitization', date: session3Date },
-        { task: 'early_touch', date: session4Date },
-        { task: 'trust_building', date: session5Date },
+        { task: 'earlyTouch', date: session4Date },
+        { task: 'trustBuilding', date: session5Date },
       ];
 
       let currentData = { taskLog: null, lastGroomed: null, daysGroomedInARow: 0 };
@@ -365,9 +365,9 @@ describe('Foal Task Log and Streak Data Integration', () => {
       // Verify final state
       const finalFoal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
       expect(finalFoal.taskLog).toEqual({
-        trust_building: 3,
+        trustBuilding: 3,
         desensitization: 1,
-        early_touch: 1,
+        earlyTouch: 1,
       });
       expect(finalFoal.daysGroomedInARow).toBe(5);
     });

@@ -99,7 +99,7 @@ beforeAll(async () => {
       foalId: yearlingFoal.id,
       currentDay: 2,
       bondingLevel: 45,
-      completedActivities: { 0: ['gentle_touch'] },
+      completedActivities: { 0: ['gentleTouch'] },
       completedMilestones: { bond25: SEEDED_MILESTONE_TS },
     },
   });

@@ -442,7 +442,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
         foalId: listedHorse.id,
         groomId: groom.id,
         assignmentId: supersededGroom.id,
-        interactionType: 'daily_care',
+        interactionType: 'dailyCare',
         duration: 30,
         bondingChange: 2,
       },

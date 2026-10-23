@@ -23,6 +23,14 @@ import { MS_PER_WEEK } from '../constants/time.mjs';
 import { EPIGENETIC_FLAG_DEFINITIONS as _EPIGENETIC_FLAG_DEFINITIONS } from '../config/epigeneticFlagDefinitions.mjs';
 
 /**
+ * Whether an interaction type contains `word`. Case-insensitive because the
+ * types are camelCase: `maneTailGrooming` contains "grooming" only as "Grooming".
+ */
+function typeHas(interaction, word) {
+  return interaction.interactionType.toLowerCase().includes(word.toLowerCase());
+}
+
+/**
  * Analyze care patterns for a specific horse
  * @param {number} horseId - ID of the horse to analyze
  * @param {Date} evaluationDate - Date of evaluation (default: now)
@@ -129,7 +137,7 @@ function analyzeConsistentCare(interactions, bondScore) {
 
   // Check for daily grooming pattern
   const groomingInteractions = interactions.filter(
-    i => i.interactionType.includes('grooming') || i.interactionType.includes('daily_care'),
+    i => typeHas(i, 'grooming') || typeHas(i, 'dailyCare'),
   );
 
   const qualityInteractions = interactions.filter(i => ['good', 'excellent'].includes(i.quality));
@@ -153,9 +161,9 @@ function analyzeConsistentCare(interactions, bondScore) {
 function analyzeNoveltyExposure(interactions, bondScore) {
   const noveltyInteractions = interactions.filter(
     i =>
-      i.interactionType.includes('desensitization') ||
-      i.interactionType.includes('exploration') ||
-      i.interactionType.includes('showground_exposure'),
+      typeHas(i, 'desensitization') ||
+      typeHas(i, 'exploration') ||
+      typeHas(i, 'showgroundExposure'),
   );
 
   const noveltyWithSupport = noveltyInteractions.filter(
@@ -234,7 +242,7 @@ function analyzeEnvironmentalFactors(interactions) {
   );
 
   const routineInteractions = interactions.filter(
-    i => i.interactionType.includes('daily_care') || i.interactionType.includes('feeding'),
+    i => typeHas(i, 'dailyCare') || typeHas(i, 'feeding'),
   );
 
   // NOTE (Equoria-kbhtv, user decision 2026-06-10): an `environmentalChanges`

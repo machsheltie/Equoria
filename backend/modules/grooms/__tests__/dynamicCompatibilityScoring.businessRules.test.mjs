@@ -165,7 +165,7 @@ describe('Dynamic Compatibility Scoring', () => {
       const [fearfulHorse] = testHorses; // Fearful horse
 
       const context = {
-        taskType: 'trust_building',
+        taskType: 'trustBuilding',
         timeOfDay: 'morning',
         environmentalFactors: ['quiet', 'familiar'],
         recentInteractions: [],
@@ -190,7 +190,7 @@ describe('Dynamic Compatibility Scoring', () => {
       const [fearfulHorse] = testHorses; // Fearful horse
 
       const context = {
-        taskType: 'trust_building',
+        taskType: 'trustBuilding',
         timeOfDay: 'afternoon',
         environmentalFactors: ['noisy', 'unfamiliar'],
         recentInteractions: [],
@@ -208,7 +208,7 @@ describe('Dynamic Compatibility Scoring', () => {
       const moderateHorse = testHorses[2]; // Moderate temperament horse
 
       const context = {
-        taskType: 'hoof_handling',
+        taskType: 'hoofHandling',
         timeOfDay: 'morning',
         environmentalFactors: ['quiet', 'structured'],
         recentInteractions: [],
@@ -282,7 +282,7 @@ describe('Dynamic Compatibility Scoring', () => {
       const [fearfulHorse] = testHorses;
 
       const context = {
-        taskType: 'trust_building',
+        taskType: 'trustBuilding',
         duration: 30,
         environmentalFactors: ['quiet', 'familiar'],
       };
@@ -323,7 +323,7 @@ describe('Dynamic Compatibility Scoring', () => {
       const [horse] = testHorses; // Fearful horse
 
       const context = {
-        taskType: 'trust_building',
+        taskType: 'trustBuilding',
         timeOfDay: 'morning',
         urgency: 'normal',
         environmentalFactors: ['quiet'],
@@ -381,7 +381,7 @@ describe('Dynamic Compatibility Scoring', () => {
             foalId: horse.id,
             interactionType: 'grooming',
             duration: 30,
-            taskType: 'hoof_handling',
+            taskType: 'hoofHandling',
             bondingChange: 2 + i, // Improving over time
             quality: i === 0 ? 'fair' : i === 1 ? 'good' : 'excellent',
             cost: 28.0,

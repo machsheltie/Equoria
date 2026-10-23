@@ -25,8 +25,8 @@ describe('Groom System Constants', () => {
   });
 
   it('should define valid interaction types', () => {
-    const validInteractionTypes = ['daily_care', 'feeding', 'grooming', 'exercise', 'medical_check'];
-    expect(validInteractionTypes).toContain('daily_care');
+    const validInteractionTypes = ['dailyCare', 'feeding', 'grooming', 'exercise', 'medicalCheck'];
+    expect(validInteractionTypes).toContain('dailyCare');
     expect(validInteractionTypes).toContain('feeding');
     expect(validInteractionTypes).toContain('grooming');
   });

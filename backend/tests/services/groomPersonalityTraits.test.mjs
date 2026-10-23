@@ -228,7 +228,7 @@ describe('Groom Personality Trait System', () => {
       const [calmGroom] = testGrooms;
       const [nervousHorse] = testHorses;
 
-      const modifiers = await calculatePersonalityModifiers(calmGroom.id, nervousHorse.id, 'trust_building');
+      const modifiers = await calculatePersonalityModifiers(calmGroom.id, nervousHorse.id, 'trustBuilding');
 
       expect(modifiers).toBeDefined();
       expect(modifiers.bondingModifier).toBeGreaterThan(1.0); // Calm grooms excel with nervous horses
@@ -254,7 +254,7 @@ describe('Groom Personality Trait System', () => {
       const energeticGroom = testGrooms[1];
       const [nervousHorse] = testHorses;
 
-      const modifiers = await calculatePersonalityModifiers(energeticGroom.id, nervousHorse.id, 'trust_building');
+      const modifiers = await calculatePersonalityModifiers(energeticGroom.id, nervousHorse.id, 'trustBuilding');
 
       expect(modifiers).toBeDefined();
       expect(modifiers.compatibilityScore).toBeLessThan(0.5); // Poor compatibility
@@ -266,7 +266,7 @@ describe('Groom Personality Trait System', () => {
 
       const neutralHorse = testHorses[2];
 
-      const modifiers = await calculatePersonalityModifiers(methodicalGroom.id, neutralHorse.id, 'hoof_handling');
+      const modifiers = await calculatePersonalityModifiers(methodicalGroom.id, neutralHorse.id, 'hoofHandling');
 
       expect(modifiers).toBeDefined();
       expect(modifiers.qualityModifier).toBeGreaterThan(1.0); // Consistent high quality

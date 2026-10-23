@@ -103,8 +103,8 @@ describe('categorizeTask', () => {
     expect(result).toBe('enrichment');
   });
 
-  it('returns grooming for hoof_handling', () => {
-    const result = categorizeTask('hoof_handling');
+  it('returns grooming for hoofHandling', () => {
+    const result = categorizeTask('hoofHandling');
     expect(result).toBe('grooming');
   });
 
@@ -194,8 +194,8 @@ describe('validateGroomingEligibility', () => {
 import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 
 const ENRICHMENT_TASK = GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS[0]; // 'desensitization'
-const ENRICHMENT_TASK2 = GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS[1]; // 'trust_building'
-const FOAL_GROOM_TASK = GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS[0]; // 'hoof_handling'
+const ENRICHMENT_TASK2 = GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS[1]; // 'trustBuilding'
+const FOAL_GROOM_TASK = GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS[0]; // 'hoofHandling'
 const GENERAL_TASK = GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS[0]; // 'brushing'
 
 // ── getEligibleTasksForAge — branch coverage ──────────────────────────────────
@@ -291,8 +291,8 @@ describe('updateTaskLog — branch coverage', () => {
   });
 
   it('adds a new key to an existing log', () => {
-    const result = updateTaskLog({ desensitization: 2 }, 'hoof_handling');
-    expect(result.taskLog.hoof_handling).toBe(1);
+    const result = updateTaskLog({ desensitization: 2 }, 'hoofHandling');
+    expect(result.taskLog.hoofHandling).toBe(1);
     expect(result.taskLog.desensitization).toBe(2);
     expect(result.totalTasks).toBe(3);
   });
@@ -417,10 +417,10 @@ describe('groomBondingSystem — exact bonding values (merged from legacy backen
   });
 
   describe('eligible general grooming tasks', () => {
-    it('recognizes brushing, hand-walking, stall_care', () => {
+    it('recognizes brushing, handWalking, stallCare', () => {
       expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('brushing');
-      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('hand-walking');
-      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('stall_care');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('handWalking');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('stallCare');
     });
   });
 
@@ -437,7 +437,7 @@ describe('groomBondingSystem — exact bonding values (merged from legacy backen
     });
 
     it('allows enrichment task for a young horse with foal age group + enrichment type', async () => {
-      const result = await validateGroomingEligibility({ id: 1, age: 1.43, bondScore: 30 }, 'trust_building');
+      const result = await validateGroomingEligibility({ id: 1, age: 1.43, bondScore: 30 }, 'trustBuilding');
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
       expect(result.ageGroup).toContain('foal');

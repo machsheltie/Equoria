@@ -234,7 +234,7 @@ export function generateInteractionRecommendations(groom, horse, relationshipLev
   // Based on relationship level
   if (relationshipLevel.level < 2) {
     recommendations.push({
-      type: 'daily_care',
+      type: 'dailyCare',
       variation: 'Thorough Inspection',
       reason: 'Build familiarity through consistent care',
     });

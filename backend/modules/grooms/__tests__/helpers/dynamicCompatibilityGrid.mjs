@@ -44,7 +44,7 @@ export const CONTEXTS = [
   [
     'morning-quiet',
     {
-      taskType: 'trust_building',
+      taskType: 'trustBuilding',
       timeOfDay: 'morning',
       environmentalFactors: ['quiet', 'familiar', 'structured'],
       urgency: 'high',
@@ -58,11 +58,11 @@ export const CONTEXTS = [
       environmentalFactors: ['noisy', 'unfamiliar', 'chaotic', 'stimulating'],
     },
   ],
-  ['afternoon-plain', { taskType: 'sponge_bath', timeOfDay: 'afternoon' }],
+  ['afternoon-plain', { taskType: 'spongeBath', timeOfDay: 'afternoon' }],
   [
     'clamped-high',
     {
-      taskType: 'showground_exposure',
+      taskType: 'showgroundExposure',
       environmentalFactors: ['quiet', 'quiet', 'familiar', 'familiar', 'structured'],
     },
   ],
@@ -72,20 +72,20 @@ export const CONTEXTS = [
   [
     'hoof-junk-factors',
     {
-      taskType: 'hoof_handling',
+      taskType: 'hoofHandling',
       timeOfDay: 'night',
       environmentalFactors: ['quiet', 'windy', ['quiet'], 5, {}, 'chaotic'],
     },
   ],
   [
     'coat-array-time',
-    { taskType: 'coat_check', timeOfDay: ['morning'], environmentalFactors: ['familiar'] },
+    { taskType: 'coatCheck', timeOfDay: ['morning'], environmentalFactors: ['familiar'] },
   ],
-  ['tying-number-time', { taskType: 'tying_practice', timeOfDay: 1 }],
+  ['tying-number-time', { taskType: 'tyingPractice', timeOfDay: 1 }],
   [
     'early-touch',
     {
-      taskType: 'early_touch',
+      taskType: 'earlyTouch',
       timeOfDay: 'evening',
       environmentalFactors: ['structured', 'unfamiliar', 'noisy'],
     },
@@ -224,8 +224,8 @@ export async function buildCompatibilityFixtures(prisma, token, colour) {
       const createdAt = new Date(now - daysAgo * DAY - (n + 1) * 60 * 1000);
       await prisma.groomInteraction.create({
         data: {
-          interactionType: 'daily_care',
-          taskType: 'trust_building',
+          interactionType: 'dailyCare',
+          taskType: 'trustBuilding',
           ...fields,
           foalId: horses[h].id,
           groomId: grooms[g].id,

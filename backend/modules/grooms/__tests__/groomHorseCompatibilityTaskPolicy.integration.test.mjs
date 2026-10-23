@@ -35,16 +35,16 @@ const POLICY_MODULE = '../services/groomHorseCompatibilityTaskPolicy.mjs';
 // not in the scorer's table and fell through to the `|| 1.0` fallback, as did the
 // three accepted-but-unlisted tasks.
 const EXPECTED_TASK_MODIFIERS = {
-  trust_building: { calm: 1.3, methodical: 1.1, energetic: 0.8, balanced: 1 },
+  trustBuilding: { calm: 1.3, methodical: 1.1, energetic: 0.8, balanced: 1 },
   desensitization: { energetic: 1.1, calm: 1.2, methodical: 0.9, balanced: 1 },
-  hoof_handling: { methodical: 1.2, calm: 1.1, energetic: 0.8, balanced: 1 },
-  showground_exposure: { energetic: 1.2, calm: 0.9, methodical: 1, balanced: 1 },
-  sponge_bath: { calm: 1.2, methodical: 1.3, energetic: 0.9, balanced: 1 },
-  coat_check: { calm: 1, energetic: 1, methodical: 1, balanced: 1 },
-  tying_practice: { calm: 1, energetic: 1, methodical: 1, balanced: 1 },
-  early_touch: { calm: 1, energetic: 1, methodical: 1, balanced: 1 },
+  hoofHandling: { methodical: 1.2, calm: 1.1, energetic: 0.8, balanced: 1 },
+  showgroundExposure: { energetic: 1.2, calm: 0.9, methodical: 1, balanced: 1 },
+  spongeBath: { calm: 1.2, methodical: 1.3, energetic: 0.9, balanced: 1 },
+  coatCheck: { calm: 1, energetic: 1, methodical: 1, balanced: 1 },
+  tyingPractice: { calm: 1, energetic: 1, methodical: 1, balanced: 1 },
+  earlyTouch: { calm: 1, energetic: 1, methodical: 1, balanced: 1 },
 };
-const FORMERLY_UNSCORED_TASKS = ['coat_check', 'tying_practice', 'early_touch'];
+const FORMERLY_UNSCORED_TASKS = ['coatCheck', 'tyingPractice', 'earlyTouch'];
 const UNSUPPORTED_TASK = 'grooming';
 // POST /predict and /recommendations were retired (Equoria-a7f1p); their cases went
 // with them (Equoria-ytwl7).
@@ -247,7 +247,7 @@ describe('task modifiers', () => {
     expect(GROOM_HORSE_COMPATIBILITY_TASK_POLICY).toEqual(EXPECTED_TASK_MODIFIERS);
   });
 
-  it('keeps coat_check, tying_practice and early_touch neutral (1) for every personality', async () => {
+  it('keeps coatCheck, tyingPractice and earlyTouch neutral (1) for every personality', async () => {
     const { getTaskCompatibilityModifier, GROOM_HORSE_COMPATIBILITY_PERSONALITIES } = await import(POLICY_MODULE);
     for (const taskType of FORMERLY_UNSCORED_TASKS) {
       for (const personality of GROOM_HORSE_COMPATIBILITY_PERSONALITIES) {
@@ -332,7 +332,7 @@ describe('unsupported task types are rejected, never defaulted', () => {
       message: 'Unsupported compatibility task type: constructor',
       statusCode: 400,
     });
-    expect(thrownBy(() => getTaskCompatibilityModifier('trust_building', 'grumpy'))).toEqual({
+    expect(thrownBy(() => getTaskCompatibilityModifier('trustBuilding', 'grumpy'))).toEqual({
       message: 'Unsupported groom personality: grumpy',
       statusCode: 400,
     });
@@ -343,7 +343,7 @@ describe('unsupported task types are rejected, never defaulted', () => {
 // route's foreign-groom/foreign-horse cases live in
 // dynamicCompatibilityController.integration.test.mjs (Equoria-q4uem.2).
 describe('ownership is enforced on every compatibility route', () => {
-  const task = { taskType: 'trust_building' };
+  const task = { taskType: 'trustBuilding' };
 
   it('POST /calculate rejects a foreign groom and a foreign horse with 404', async () => {
     const g = await postWithCsrf('/calculate', {
@@ -370,18 +370,18 @@ describe('ownership is enforced on every compatibility route', () => {
   });
 });
 
-// Characterization (Equoria-q4uem.3 fix round 1): trust_building and desensitization
+// Characterization (Equoria-q4uem.3 fix round 1): trustBuilding and desensitization
 // through the FULL scorer, with a groom whose trait carries that task's bonus and a horse
 // whose flags make the trait compatible. Pins today's values; no mechanics change.
 //
 // Observed behaviour, pinned as-is: the trait task bonus is computed by
 // calculatePersonalityModifiers (taskEffectiveness rises), but the scorer uses only that
 // call's compatibilityScore, so the bonus does not reach the compatibility result. The
-// result differs from the coat_check control by exactly the policy task modifier.
+// result differs from the coatCheck control by exactly the policy task modifier.
 describe('trait task bonuses through the full scorer (characterization)', () => {
   const cases = [
     // [taskType, personality, horse, policy modifier, task overall, task effectiveness]
-    ['trust_building', 'calm', () => fearfulFlagHorse, 1.3, 1.2441, 1.23548085528],
+    ['trustBuilding', 'calm', () => fearfulFlagHorse, 1.3, 1.2441, 1.23548085528],
     ['desensitization', 'energetic', () => braveFlagHorse, 1.1, 1.0527, 1.23548085528],
   ];
   const CONTROL_OVERALL = 0.957;
@@ -389,14 +389,14 @@ describe('trait task bonuses through the full scorer (characterization)', () => 
   const BASE_COMPATIBILITY = 0.725;
 
   it.each(cases)(
-    '%s with a %s groom: policy modifier applied, trait bonus present in taskEffectiveness, coat_check control lower',
+    '%s with a %s groom: policy modifier applied, trait bonus present in taskEffectiveness, coatCheck control lower',
     async (taskType, personality, getHorse, policyModifier, overall, taskEffectiveness) => {
       const groomId = groomsByPersonality[personality].id;
       const horseId = getHorse().id;
       const task = await analyzePair(groomId, horseId, scoreCompatibility, { taskType });
-      const control = await analyzePair(groomId, horseId, scoreCompatibility, { taskType: 'coat_check' });
+      const control = await analyzePair(groomId, horseId, scoreCompatibility, { taskType: 'coatCheck' });
       const taskMods = await calculatePersonalityModifiers(groomId, horseId, taskType);
-      const controlMods = await calculatePersonalityModifiers(groomId, horseId, 'coat_check');
+      const controlMods = await calculatePersonalityModifiers(groomId, horseId, 'coatCheck');
 
       // Policy task modifier, through the full scorer.
       expect(task.taskSpecificModifier).toBe(policyModifier);

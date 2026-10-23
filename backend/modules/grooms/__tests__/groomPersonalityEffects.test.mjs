@@ -20,12 +20,12 @@ describe('GROOM_PERSONALITY_EFFECTS', () => {
     expect(Object.keys(GROOM_PERSONALITY_EFFECTS).length).toBeGreaterThanOrEqual(6);
   });
 
-  it('includes gentle, playful, firm, patient, high_energy, aloof', () => {
+  it('includes gentle, playful, firm, patient, highEnergy, aloof', () => {
     expect(GROOM_PERSONALITY_EFFECTS.gentle).toBeDefined();
     expect(GROOM_PERSONALITY_EFFECTS.playful).toBeDefined();
     expect(GROOM_PERSONALITY_EFFECTS.firm).toBeDefined();
     expect(GROOM_PERSONALITY_EFFECTS.patient).toBeDefined();
-    expect(GROOM_PERSONALITY_EFFECTS.high_energy).toBeDefined();
+    expect(GROOM_PERSONALITY_EFFECTS.highEnergy).toBeDefined();
     expect(GROOM_PERSONALITY_EFFECTS.aloof).toBeDefined();
   });
 
@@ -80,7 +80,7 @@ describe('calculatePersonalityEffects', () => {
 
   it('gentle: increases bondingChange by 1.2 multiplier', () => {
     const groom = { personality: 'gentle' };
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'stall_care', baseEffects);
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'stallCare', baseEffects);
     expect(result.bondingChange).toBe(Math.round(10 * 1.2));
   });
 
@@ -108,7 +108,7 @@ describe('calculatePersonalityEffects', () => {
 
   it('gentle: non-bonus task does not set taskBonus', () => {
     const groom = { personality: 'gentle' };
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddle_training', baseEffects);
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddleTraining', baseEffects);
     expect(result.personalityEffects.taskBonus).toBe(false);
   });
 
@@ -118,16 +118,16 @@ describe('calculatePersonalityEffects', () => {
     // the range was [0, 1095], so a 100-year-old horse counted as a foal.
     const foal = { traits: [], age: 2 };
     const adult = { traits: [], age: 3 }; // game age 3 is outside the range
-    const foalResult = calculatePersonalityEffects(groom, foal, 'grooming_game', baseEffects);
-    const adultResult = calculatePersonalityEffects(groom, adult, 'grooming_game', baseEffects);
+    const foalResult = calculatePersonalityEffects(groom, foal, 'groomingGame', baseEffects);
+    const adultResult = calculatePersonalityEffects(groom, adult, 'groomingGame', baseEffects);
     expect(foalResult.bondingChange).toBeGreaterThan(adultResult.bondingChange);
     expect(foalResult.personalityEffects.specialConditionMet).toBe(true);
   });
 
   it('patient + enrichment task: gets bonusSuccessRate from taskCategories', () => {
     const groom = { personality: 'patient' };
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddle_training', baseEffects);
-    // puddle_training → 'enrichment' category which matches patient's taskCategories
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddleTraining', baseEffects);
+    // puddleTraining → 'enrichment' category which matches patient's taskCategories
     expect(result.personalityEffects.specialConditionMet).toBe(true);
   });
 
@@ -153,14 +153,14 @@ describe('calculatePersonalityEffects', () => {
 
   it('applies traitInfluence modification', () => {
     const groom = { personality: 'firm' };
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'leading_practice', baseEffects);
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'leadingPractice', baseEffects);
     // traitInfluenceModifier: 1.3
     expect(result.traitInfluence).toBe(Math.round(5 * 1.3));
   });
 
   it('applies streakGrowth modification', () => {
     const groom = { personality: 'playful' };
-    const result = calculatePersonalityEffects(groom, { traits: [], age: 2000 }, 'grooming_game', baseEffects);
+    const result = calculatePersonalityEffects(groom, { traits: [], age: 2000 }, 'groomingGame', baseEffects);
     // streakGrowthModifier: 1.15
     expect(result.streakGrowth).toBe(Math.round(1 * 1.15));
   });
@@ -176,7 +176,7 @@ describe('calculatePersonalityEffects', () => {
   it('successRate is capped at 0.99', () => {
     const groom = { personality: 'patient' };
     const highBase = { ...baseEffects, successRate: 0.98 };
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddle_training', highBase);
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddleTraining', highBase);
     expect(result.successRate).toBeLessThanOrEqual(0.99);
   });
 });
@@ -211,12 +211,12 @@ describe('getPersonalityEffectSummary', () => {
   });
 
   it('taskBonus is false for non-bonus task', () => {
-    const result = getPersonalityEffectSummary('gentle', 'obstacle_course');
+    const result = getPersonalityEffectSummary('gentle', 'obstacleCourse');
     expect(result.taskBonus).toBe(false);
   });
 
   it('modifiers contain numeric values', () => {
-    const result = getPersonalityEffectSummary('patient', 'puddle_training');
+    const result = getPersonalityEffectSummary('patient', 'puddleTraining');
     expect(typeof result.modifiers.bonding).toBe('number');
     expect(result.modifiers.burnoutRisk).toBeUndefined(); // Equoria-0d4wa: no burnout
   });
@@ -232,21 +232,21 @@ describe('calculatePersonalityEffects — additional branches', () => {
     traitInfluence: 5,
   };
 
-  it('high_energy personality: applies extraTraitPoints branch (traitInfluence += 1)', () => {
-    const groom = { personality: 'high_energy' };
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'obstacle_course', baseEffects);
-    // high_energy traitInfluenceModifier=1.4, +1 extra = round(5*1.4)+1 = 8
+  it('highEnergy personality: applies extraTraitPoints branch (traitInfluence += 1)', () => {
+    const groom = { personality: 'highEnergy' };
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'obstacleCourse', baseEffects);
+    // highEnergy traitInfluenceModifier=1.4, +1 extra = round(5*1.4)+1 = 8
     expect(result.traitInfluence).toBe(Math.round(5 * 1.4) + 1);
-    expect(result.personalityEffects.bonusesApplied).toContain('extra_trait_points');
+    expect(result.personalityEffects.bonusesApplied).toContain('extraTraitPoints');
   });
 
   it('firm + stubborn horse: hasMatchingTrait=true but bonusSuccessRate is absent (false branch)', () => {
     const groom = { personality: 'firm' };
     const stubbornHorse = { traits: [{ name: 'stubborn' }] };
-    const result = calculatePersonalityEffects(groom, stubbornHorse, 'leading_practice', baseEffects);
+    const result = calculatePersonalityEffects(groom, stubbornHorse, 'leadingPractice', baseEffects);
     // firm has horseTraits: ['stubborn',...] but no bonusSuccessRate → bonusSuccessRate false branch
     expect(result.personalityEffects.specialConditionMet).toBe(true);
-    expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
+    expect(result.personalityEffects.bonusesApplied).toContain('traitMatch');
   });
 
   it('gentle + horse without .traits property: horseTraits false branch when horse.traits absent', () => {
@@ -257,12 +257,12 @@ describe('calculatePersonalityEffects — additional branches', () => {
     expect(result.personalityEffects.specialConditionMet).toBe(false);
   });
 
-  it('patient + leading_practice: categorizeTaskForPersonality returns "training" → taskCategories match', () => {
+  it('patient + leadingPractice: categorizeTaskForPersonality returns "training" → taskCategories match', () => {
     const groom = { personality: 'patient' };
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'leading_practice', baseEffects);
-    // patient taskCategories includes 'training'; leading_practice maps to 'training'
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'leadingPractice', baseEffects);
+    // patient taskCategories includes 'training'; leadingPractice maps to 'training'
     expect(result.personalityEffects.specialConditionMet).toBe(true);
-    expect(result.personalityEffects.bonusesApplied).toContain('category_match');
+    expect(result.personalityEffects.bonusesApplied).toContain('categoryMatch');
   });
 
   it('patient + jumping: categorizeTaskForPersonality returns "general" → taskCategories no match', () => {
@@ -276,7 +276,7 @@ describe('calculatePersonalityEffects — additional branches', () => {
     // Old contract: `specialConditions.ageRange && horse.age` skipped age 0.
     const groom = { personality: 'playful' };
     const newbornHorse = { traits: [], age: 0 };
-    const result = calculatePersonalityEffects(groom, newbornHorse, 'grooming_game', baseEffects);
+    const result = calculatePersonalityEffects(groom, newbornHorse, 'groomingGame', baseEffects);
     expect(result.personalityEffects.specialConditionMet).toBe(true);
     expect(result.personalityEffects.bonusesApplied.length).toBeGreaterThan(0);
   });
@@ -380,7 +380,7 @@ describe('calculatePersonalityEffects — trait bonusBonding branch (line 223)',
 
     // bonusBonding=0.5 → bondingChange += round(10 * 0.5) = 5 → final 15
     expect(result.bondingChange).toBe(15);
-    expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
+    expect(result.personalityEffects.bonusesApplied).toContain('traitMatch');
   });
 });
 
@@ -460,8 +460,8 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
 
   it('taskCategory matches but no bonusSuccessRate: skips rate bonus (line 252 FALSE branch)', () => {
     const groom = { personality: '_testTaskCatNoBonusRate' };
-    // puddle_training → 'enrichment' → matches taskCategories: ['enrichment']
-    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddle_training', baseEffects);
+    // puddleTraining → 'enrichment' → matches taskCategories: ['enrichment']
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddleTraining', baseEffects);
     expect(result.personalityEffects.specialConditionMet).toBe(true);
     expect(result.successRate).toBeCloseTo(baseEffects.successRate); // no bonusSuccessRate added
   });
@@ -505,7 +505,7 @@ describe('groomPersonalityEffects — exact config & bonusesApplied (merged from
     it('gentle has exact bonding 1.2 and a nervous specialCondition + 0.1 bonus', () => {
       const { gentle } = GROOM_PERSONALITY_EFFECTS;
       expect(gentle.bonusTasks).toContain('brushing');
-      expect(gentle.bonusTasks).toContain('stall_care');
+      expect(gentle.bonusTasks).toContain('stallCare');
       expect(gentle.bondingModifier).toBe(1.2);
       expect(gentle.specialConditions.horseTraits).toContain('nervous');
       expect(gentle.specialConditions.bonusSuccessRate).toBe(0.1);
@@ -521,46 +521,46 @@ describe('groomPersonalityEffects — exact config & bonusesApplied (merged from
   });
 
   describe('bonusesApplied / specialConditionMet behavioral fields', () => {
-    it('gentle + nervous horse + brushing: task_specialty + trait_match applied', () => {
+    it('gentle + nervous horse + brushing: taskSpecialty + traitMatch applied', () => {
       const result = calculatePersonalityEffects(mkGroom('gentle'), mkHorse(), 'brushing', baseEffects());
       expect(result.personalityEffects.taskBonus).toBe(true);
       expect(result.personalityEffects.specialConditionMet).toBe(true);
-      expect(result.personalityEffects.bonusesApplied).toContain('task_specialty');
-      expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
+      expect(result.personalityEffects.bonusesApplied).toContain('taskSpecialty');
+      expect(result.personalityEffects.bonusesApplied).toContain('traitMatch');
     });
 
-    it('playful + young horse: age_match applied, streakGrowth × 1.15', () => {
+    it('playful + young horse: ageMatch applied, streakGrowth × 1.15', () => {
       const result = calculatePersonalityEffects(
         mkGroom('playful'),
         // Equoria-xggat: age is game-years; 2 is under 3 (old contract: 500 inside [0, 1095])
         mkHorse({ age: 2 }),
-        'grooming_game',
+        'groomingGame',
         baseEffects(),
       );
-      expect(result.personalityEffects.bonusesApplied).toContain('task_specialty');
-      expect(result.personalityEffects.bonusesApplied).toContain('age_match');
+      expect(result.personalityEffects.bonusesApplied).toContain('taskSpecialty');
+      expect(result.personalityEffects.bonusesApplied).toContain('ageMatch');
       expect(result.streakGrowth).toBe(Math.round(baseEffects().streakGrowth * 1.15));
     });
 
-    it('firm + stubborn horse: trait_match applied, traitInfluence × 1.3', () => {
+    it('firm + stubborn horse: traitMatch applied, traitInfluence × 1.3', () => {
       const horse = mkHorse({ traits: [{ name: 'stubborn', type: 'behavioral' }] });
-      const result = calculatePersonalityEffects(mkGroom('firm'), horse, 'hand_walking', baseEffects());
-      expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
+      const result = calculatePersonalityEffects(mkGroom('firm'), horse, 'handWalking', baseEffects());
+      expect(result.personalityEffects.bonusesApplied).toContain('traitMatch');
       expect(result.traitInfluence).toBe(Math.round(baseEffects().traitInfluence * 1.3));
     });
 
     // Owner ruling 2026-10-22 (Equoria-0d4wa) replaced the old contract (patient
-    // lowered and high_energy raised a burnout risk): there is no burnout, so no
+    // lowered and highEnergy raised a burnout risk): there is no burnout, so no
     // personality produces or scales a burnoutRisk.
-    it('patient + enrichment task: category_match applied, no burnoutRisk', () => {
-      const result = calculatePersonalityEffects(mkGroom('patient'), mkHorse(), 'puddle_training', baseEffects());
-      expect(result.personalityEffects.bonusesApplied).toContain('category_match');
+    it('patient + enrichment task: categoryMatch applied, no burnoutRisk', () => {
+      const result = calculatePersonalityEffects(mkGroom('patient'), mkHorse(), 'puddleTraining', baseEffects());
+      expect(result.personalityEffects.bonusesApplied).toContain('categoryMatch');
       expect(result.burnoutRisk).toBeUndefined();
     });
 
-    it('high_energy: extra_trait_points (× 1.4 + 1), no burnoutRisk', () => {
-      const result = calculatePersonalityEffects(mkGroom('high_energy'), mkHorse(), 'obstacle_course', baseEffects());
-      expect(result.personalityEffects.bonusesApplied).toContain('extra_trait_points');
+    it('highEnergy: extraTraitPoints (× 1.4 + 1), no burnoutRisk', () => {
+      const result = calculatePersonalityEffects(mkGroom('highEnergy'), mkHorse(), 'obstacleCourse', baseEffects());
+      expect(result.personalityEffects.bonusesApplied).toContain('extraTraitPoints');
       expect(result.traitInfluence).toBe(Math.round(baseEffects().traitInfluence * 1.4) + 1);
       expect(result.burnoutRisk).toBeUndefined();
     });

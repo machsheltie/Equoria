@@ -86,7 +86,7 @@ describe('hasAlreadyCompletedFoalTaskToday()', () => {
   // ── some() — no foal-specific task in log ───────────────────────────────
 
   it('returns false when tasks today are none of the foal-specific lists', () => {
-    const foal = { dailyTaskRecord: { [TODAY]: ['brushing', 'stall_care', 'hand-walking'] } };
+    const foal = { dailyTaskRecord: { [TODAY]: ['brushing', 'stallCare', 'handWalking'] } };
     expect(hasAlreadyCompletedFoalTaskToday(foal, TODAY)).toBe(false);
   });
 

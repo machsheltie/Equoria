@@ -228,7 +228,7 @@ describe('Equoria-m9lz1 — POST /api/v1/grooms/:id/retirement/process is closed
         groomId: groom.id,
         foalId: horse.id,
         assignmentId: historical.id,
-        interactionType: 'daily_care',
+        interactionType: 'dailyCare',
         duration: 30,
         bondingChange: 3,
         quality: 'good',

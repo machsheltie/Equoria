@@ -82,8 +82,8 @@ describe('GROOM_CONFIG task arrays', () => {
     expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS.length).toBeGreaterThan(0);
   });
 
-  it('ELIGIBLE_FOAL_GROOMING_TASKS includes hoof_handling', () => {
-    expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('hoof_handling');
+  it('ELIGIBLE_FOAL_GROOMING_TASKS includes hoofHandling', () => {
+    expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('hoofHandling');
   });
 
   it('ELIGIBLE_GENERAL_GROOMING_TASKS includes brushing', () => {
@@ -129,23 +129,23 @@ describe('groomConfig — task category invariants & age eligibility (merged fro
   it('ELIGIBLE_FOAL_ENRICHMENT_TASKS is the exact expected list of 7', () => {
     expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual([
       'desensitization',
-      'trust_building',
-      'showground_exposure',
-      'early_touch',
-      'gentle_touch',
-      'feeding_assistance',
-      'environment_exploration',
+      'trustBuilding',
+      'showgroundExposure',
+      'earlyTouch',
+      'gentleTouch',
+      'feedingAssistance',
+      'environmentExploration',
     ]);
     expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toHaveLength(7);
   });
 
   it('FOAL_GROOMING_TASKS is the exact expected list of 5', () => {
     expect(FOAL_GROOMING_TASKS).toEqual([
-      'hoof_handling',
-      'tying_practice',
-      'sponge_bath',
-      'coat_check',
-      'mane_tail_grooming',
+      'hoofHandling',
+      'tyingPractice',
+      'spongeBath',
+      'coatCheck',
+      'maneTailGrooming',
     ]);
     expect(FOAL_GROOMING_TASKS).toHaveLength(5);
   });

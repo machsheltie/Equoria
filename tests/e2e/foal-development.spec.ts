@@ -273,9 +273,9 @@ test.describe('Foal Development Lifecycle (one horse page: /foals/:id lands on /
     await expect(page.getByText(/Available activities/i)).toHaveCount(0);
 
     for (const [path, body] of [
-      ['enrich', { activity: 'gentle_touch' }],
-      ['enrichment', { activity: 'gentle_touch' }],
-      ['activity', { activityType: 'gentle_touch' }],
+      ['enrich', { activity: 'gentleTouch' }],
+      ['enrichment', { activity: 'gentleTouch' }],
+      ['activity', { activityType: 'gentleTouch' }],
       ['graduate', {}],
     ] as const) {
       const res = await csrfMutate(session, 'POST', `/api/v1/foals/${foalId}/${path}`, body);

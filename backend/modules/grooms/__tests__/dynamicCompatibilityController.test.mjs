@@ -96,7 +96,7 @@ describe('getCompatibilityConfig', () => {
 describe('calculateCompatibility guard clauses', () => {
   it('returns 400 when groomId is missing', async () => {
     const req = {
-      body: { horseId: 1, context: { task: 'trust_building' } },
+      body: { horseId: 1, context: { task: 'trustBuilding' } },
       user: { id: NON_EXISTENT_USER_ID },
     };
     const res = makeRes();
@@ -110,7 +110,7 @@ describe('calculateCompatibility guard clauses', () => {
 
   it('returns 400 when horseId is missing', async () => {
     const req = {
-      body: { groomId: 1, context: { task: 'trust_building' } },
+      body: { groomId: 1, context: { task: 'trustBuilding' } },
       user: { id: NON_EXISTENT_USER_ID },
     };
     const res = makeRes();
@@ -152,7 +152,7 @@ describe('calculateCompatibility guard clauses', () => {
       body: {
         groomId: NON_EXISTENT_ID,
         horseId: NON_EXISTENT_ID + 1,
-        context: { task: 'trust_building' },
+        context: { task: 'trustBuilding' },
       },
       user: { id: NON_EXISTENT_USER_ID },
     };

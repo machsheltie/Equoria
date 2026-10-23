@@ -59,11 +59,11 @@ describe('normalizeFoalDevelopment — foal-development contract (Equoria-n3yw6)
         currentDay: 3,
         bondingLevel: 72,
         maxDay: 6,
-        completedActivities: { 0: ['gentle_touch'] },
+        completedActivities: { 0: ['gentleTouch'] },
         enrichmentDay: 3,
         enrichmentWindowOpen: true,
       },
-      availableEnrichmentActivities: [{ type: 'gentle_touch', name: 'Gentle Touch' }],
+      availableEnrichmentActivities: [{ type: 'gentleTouch', name: 'Gentle Touch' }],
     } as unknown as RawFoalDevelopmentBody;
 
     const flat = normalizeFoalDevelopment(legacyBody) as Record<string, unknown> | null;

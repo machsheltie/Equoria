@@ -83,7 +83,7 @@ async function mkInteraction(foalId, opts = {}) {
     data: {
       foalId,
       groomId,
-      interactionType: opts.interactionType ?? 'daily_care',
+      interactionType: opts.interactionType ?? 'dailyCare',
       duration: 30,
       bondingChange: opts.bondingChange ?? 3,
       quality: opts.quality ?? 'good',
@@ -96,7 +96,7 @@ async function mkInteraction(foalId, opts = {}) {
 // ─── interaction sets ─────────────────────────────────────────────────────────
 
 async function addBraveAndConfidentInteractions(foalId) {
-  // 3 desensitization + 7 daily_care across 7 days → triggers brave + confident + affectionate
+  // 3 desensitization + 7 dailyCare across 7 days → triggers brave + confident + affectionate
   await mkInteraction(foalId, {
     interactionType: 'desensitization',
     bondingChange: 3,
@@ -116,43 +116,43 @@ async function addBraveAndConfidentInteractions(foalId) {
     createdAt: daysAgo(4),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: 3,
     quality: 'good',
     createdAt: daysAgo(6),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: 3,
     quality: 'good',
     createdAt: daysAgo(5),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: 3,
     quality: 'good',
     createdAt: daysAgo(4),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: 3,
     quality: 'good',
     createdAt: daysAgo(3),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: 3,
     quality: 'good',
     createdAt: daysAgo(2),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: 3,
     quality: 'good',
     createdAt: daysAgo(1),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: 3,
     quality: 'good',
     createdAt: daysAgo(0),
@@ -184,19 +184,19 @@ async function addBraveOnlyInteractions(foalId) {
 async function addFearfulInteractions(foalId) {
   // 3 interactions with bondingChange < -3, quality 'good' — triggers fearful
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: -5,
     quality: 'good',
     createdAt: daysAgo(2),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: -5,
     quality: 'good',
     createdAt: daysAgo(1),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: -5,
     quality: 'good',
     createdAt: daysAgo(0),
@@ -206,19 +206,19 @@ async function addFearfulInteractions(foalId) {
 async function addInsecureInteractions(foalId) {
   // 3 poor-quality interactions — triggers insecure via poorQualityInteractions >= 3
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: -1,
     quality: 'poor',
     createdAt: daysAgo(2),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: -1,
     quality: 'poor',
     createdAt: daysAgo(1),
   });
   await mkInteraction(foalId, {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     bondingChange: -1,
     quality: 'poor',
     createdAt: daysAgo(0),

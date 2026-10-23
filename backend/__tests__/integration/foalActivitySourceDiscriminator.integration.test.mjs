@@ -34,6 +34,7 @@ import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import {
   FOAL_ACTIVITY_SOURCE,
+  groomInteractionSource,
   deriveTaskCountsFromActivities,
   deriveTotalActivityCount,
   reconcileTaskLogFromActivities,
@@ -81,7 +82,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
   // The collision activityType: deliberately use the SAME string for a groom
   // row and an enrichment row. Pre-8yhe3 the blind groupBy would have summed
   // both into one count. The discriminator must exclude the enrichment row.
-  const COLLISION_TASK = 'trust_building';
+  const COLLISION_TASK = 'trustBuilding';
 
   it('SENTINEL: a planted enrichment-source row is NOT counted, even when its activityType collides with a counted groom key', async () => {
     // Two groom-source rows for the collision task → these SHOULD be counted.
@@ -165,5 +166,28 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
     const second = await reconcileTaskLogFromActivities(foal.id);
     expect(second.changed).toBe(false);
     expect(second.before).toEqual(second.after);
+  });
+
+  it('counts rows stored with the camelCase source the 3f migration writes (Equoria-pjvp8.4)', async () => {
+    // Migration 20261028190000 rewrites stored sources to groomInteraction /
+    // enrichmentActivity. The code must read and write those exact values, or every
+    // converted groom row silently drops out of the trait-driving counts.
+    expect(groomInteractionSource).toBe('groomInteraction');
+    for (const source of ['groomInteraction', 'enrichmentActivity']) {
+      await prisma.foalActivity.create({
+        data: {
+          foalId: foal.id,
+          day: 2,
+          activityType: 'migratedGroomTask',
+          outcome: 'good',
+          bondingChange: 1,
+          description: `row as converted by the 3f migration (${source})`,
+          source,
+        },
+      });
+    }
+
+    const derived = await deriveTaskCountsFromActivities(foal.id);
+    expect(derived.migratedGroomTask).toBe(1);
   });
 });

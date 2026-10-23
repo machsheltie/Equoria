@@ -1094,10 +1094,10 @@ model FoalActivity {
   description   String
   /// Stream-source discriminator (Equoria-8yhe3). ENFORCES the disjointness of
   /// the two FoalActivity writers so the taskLog-count derivation can never
-  /// silently absorb a foreign stream. Values: 'groom_interaction' (the
-  /// taskLog-driving groom path) and 'enrichment_activity' (the legacy foal
+  /// silently absorb a foreign stream. Values: 'groomInteraction' (the
+  /// taskLog-driving groom path) and 'enrichmentActivity' (the legacy foal
   /// enrichment-day system, which does NOT feed taskLog). Nullable for legacy
-  /// pre-8yhe3 rows: a NULL source is treated as 'groom_interaction' by the
+  /// pre-8yhe3 rows: a NULL source is treated as 'groomInteraction' by the
   /// derivation (the only writer that wrote canonical rows before this column
   /// existed was recordInteraction). See foalActivityStore.mjs.
   source        String?

@@ -308,7 +308,7 @@ describe('POST /api/compatibility/calculate', () => {
       .send({
         groomId: grooms[0].id,
         horseId: horses[0].id,
-        context: { taskType: 'trust_building' },
+        context: { taskType: 'trustBuilding' },
       });
 
     expect(res.status).toBe(200);
@@ -342,7 +342,7 @@ describe('POST /api/compatibility/calculate', () => {
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ groomId: grooms[0].id, horseId: horses[0].id, context: { taskType: 'trust_building' } });
+      .send({ groomId: grooms[0].id, horseId: horses[0].id, context: { taskType: 'trustBuilding' } });
 
     expect(res.status).toBe(401);
   });
@@ -363,7 +363,7 @@ describe('POST /api/compatibility/calculate', () => {
         groomId: calmGroom.id,
         horseId: fearfulHorse.id,
         context: {
-          taskType: 'trust_building',
+          taskType: 'trustBuilding',
           timeOfDay: 'morning',
           environmentalFactors: ['quiet', 'familiar'],
           recentInteractions: [],
@@ -394,7 +394,7 @@ describe('POST /api/compatibility/calculate', () => {
         groomId: energeticGroom.id,
         horseId: fearfulHorse.id,
         context: {
-          taskType: 'trust_building',
+          taskType: 'trustBuilding',
           timeOfDay: 'afternoon',
           environmentalFactors: ['noisy', 'unfamiliar'],
           recentInteractions: [],

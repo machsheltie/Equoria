@@ -149,7 +149,7 @@ describe('getFoalDevelopment', () => {
       await mkDev(foal.id, {
         currentDay: 2,
         bondingLevel: 60,
-        completedActivities: { 0: ['gentle_touch'], 1: ['feeding_assistance'] },
+        completedActivities: { 0: ['gentleTouch'], 1: ['feedingAssistance'] },
       });
       const result = await getFoalDevelopment(foal.id);
       expect(result).toHaveProperty('foal');
@@ -165,7 +165,7 @@ describe('getFoalDevelopment', () => {
   it('returns no player-run enrichment or activity fields (Equoria-fr2kg)', async () => {
     const foal = await mkFoal('NoPlayerFields', { age: 0, dateOfBirth: new Date() });
     try {
-      await mkDev(foal.id, { completedActivities: { 0: ['gentle_touch'] } });
+      await mkDev(foal.id, { completedActivities: { 0: ['gentleTouch'] } });
       const result = await getFoalDevelopment(foal.id);
       expect(result.development).not.toHaveProperty('completedActivities');
       expect(result.development).not.toHaveProperty('enrichmentDay');

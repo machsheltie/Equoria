@@ -117,7 +117,7 @@ describe('Schema Validation', () => {
         userId: testUser.id,
         breedId: testBreed.id,
         bondScore: 50,
-        taskLog: { trust_building: 3, desensitization: 2 },
+        taskLog: { trustBuilding: 3, desensitization: 2 },
         lastGroomed: new Date(),
         daysGroomedInARow: 5,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },

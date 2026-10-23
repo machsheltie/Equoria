@@ -46,7 +46,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-mwjst-foaldev';
 const ORIGIN = 'http://localhost:3000';
-const DAY0_ACTIVITY = 'gentle_touch';
+const DAY0_ACTIVITY = 'gentleTouch';
 const tag = randomBytes(4).toString('hex');
 
 let owner;

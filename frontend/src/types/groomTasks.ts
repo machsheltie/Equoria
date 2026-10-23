@@ -10,7 +10,7 @@
  * - General Grooming (3+ years): Care and bonding for adult horses
  */
 
-export type TaskCategory = 'enrichment' | 'foal_grooming' | 'general_grooming';
+export type TaskCategory = 'enrichment' | 'foalGrooming' | 'generalGrooming';
 
 export interface TaskEffect {
   label: string;
@@ -55,7 +55,7 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Expose the foal to new stimuli in a controlled, safe environment.',
   },
   {
-    id: 'trust_building',
+    id: 'trustBuilding',
     name: 'Trust Building',
     category: 'enrichment',
     minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
@@ -68,7 +68,7 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Build a foundation of trust through calm, consistent interaction.',
   },
   {
-    id: 'showground_exposure',
+    id: 'showgroundExposure',
     name: 'Showground Exposure',
     category: 'enrichment',
     minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
@@ -81,7 +81,7 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Introduce the foal to the sights, sounds, and smells of competitions.',
   },
   {
-    id: 'early_touch',
+    id: 'earlyTouch',
     name: 'Early Touch',
     category: 'enrichment',
     minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
@@ -94,7 +94,7 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Gentle handling of legs, hooves, and face to normalize human touch.',
   },
   {
-    id: 'gentle_touch',
+    id: 'gentleTouch',
     name: 'Gentle Touch',
     category: 'enrichment',
     minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
@@ -104,7 +104,7 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Soft grooming and stroking to promote relaxation and socialization.',
   },
   {
-    id: 'feeding_assistance',
+    id: 'feedingAssistance',
     name: 'Feeding Assistance',
     category: 'enrichment',
     minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
@@ -117,7 +117,7 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Hand-feeding treats or supplemental nutrition to build positive associations.',
   },
   {
-    id: 'environment_exploration',
+    id: 'environmentExploration',
     name: 'Environment Exploration',
     category: 'enrichment',
     minAge: TASK_AGE_THRESHOLDS.FOAL_ENRICHMENT_MIN,
@@ -132,9 +132,9 @@ export const TASK_DATA: TaskInfo[] = [
 
   // Foal Grooming Tasks (1-3 years)
   {
-    id: 'hoof_handling',
+    id: 'hoofHandling',
     name: 'Hoof Handling',
-    category: 'foal_grooming',
+    category: 'foalGrooming',
     minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
     maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
     recommendedDurationMinutes: 20,
@@ -145,9 +145,9 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Practice picking up and holding hooves to prepare for regular farrier care.',
   },
   {
-    id: 'tying_practice',
+    id: 'tyingPractice',
     name: 'Tying Practice',
-    category: 'foal_grooming',
+    category: 'foalGrooming',
     minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
     maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
     recommendedDurationMinutes: 30,
@@ -158,9 +158,9 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Teach the foal to stand quietly while tied for grooming and care.',
   },
   {
-    id: 'sponge_bath',
+    id: 'spongeBath',
     name: 'Sponge Bath',
-    category: 'foal_grooming',
+    category: 'foalGrooming',
     minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
     maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
     recommendedDurationMinutes: 25,
@@ -168,9 +168,9 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Introduce water and bathing to normalize grooming routines.',
   },
   {
-    id: 'coat_check',
+    id: 'coatCheck',
     name: 'Coat Check',
-    category: 'foal_grooming',
+    category: 'foalGrooming',
     minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
     maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
     recommendedDurationMinutes: 15,
@@ -181,9 +181,9 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Inspect and brush the coat to maintain condition and build grooming habits.',
   },
   {
-    id: 'mane_tail_grooming',
+    id: 'maneTailGrooming',
     name: 'Mane & Tail Grooming',
-    category: 'foal_grooming',
+    category: 'foalGrooming',
     minAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MIN,
     maxAge: TASK_AGE_THRESHOLDS.FOAL_GROOMING_MAX,
     recommendedDurationMinutes: 20,
@@ -198,7 +198,7 @@ export const TASK_DATA: TaskInfo[] = [
   {
     id: 'brushing',
     name: 'Brushing',
-    category: 'general_grooming',
+    category: 'generalGrooming',
     minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
     recommendedDurationMinutes: 20,
     effects: [
@@ -208,18 +208,18 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Regular brushing to maintain coat health and prevent skin conditions.',
   },
   {
-    id: 'hand-walking',
+    id: 'handWalking',
     name: 'Hand-Walking',
-    category: 'general_grooming',
+    category: 'generalGrooming',
     minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
     recommendedDurationMinutes: 30,
     effects: [{ label: 'Maintains light exercise', type: 'positive' }],
     description: 'Light exercise and mental stimulation outside the stall.',
   },
   {
-    id: 'stall_care',
+    id: 'stallCare',
     name: 'Stall Care',
-    category: 'general_grooming',
+    category: 'generalGrooming',
     minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
     recommendedDurationMinutes: 45,
     effects: [{ label: 'Improves living conditions', type: 'positive' }],
@@ -228,7 +228,7 @@ export const TASK_DATA: TaskInfo[] = [
   {
     id: 'bathing',
     name: 'Bathing',
-    category: 'general_grooming',
+    category: 'generalGrooming',
     minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
     recommendedDurationMinutes: 40,
     effects: [
@@ -238,9 +238,9 @@ export const TASK_DATA: TaskInfo[] = [
     description: 'Full bath to maintain coat health and hygiene after training or competition.',
   },
   {
-    id: 'mane_tail_trim',
+    id: 'maneTailTrim',
     name: 'Mane & Tail Trim',
-    category: 'general_grooming',
+    category: 'generalGrooming',
     minAge: TASK_AGE_THRESHOLDS.GENERAL_GROOMING_MIN,
     recommendedDurationMinutes: 30,
     effects: [
@@ -263,7 +263,7 @@ export const TASK_CATEGORY_INFO: Record<
     badgeClass: 'bg-green-50 text-green-700 border border-green-200',
     description: 'Developmental activities for foals aged 0–2 years',
   },
-  foal_grooming: {
+  foalGrooming: {
     label: 'Foal Grooming',
     icon: '✨',
     colorClass: 'text-[var(--gold-primary)]',
@@ -271,7 +271,7 @@ export const TASK_CATEGORY_INFO: Record<
       'bg-[rgba(37,99,235,0.15)] text-[var(--gold-primary)] border border-[rgba(37,99,235,0.3)]',
     description: 'Grooming preparation tasks for foals aged 1–3 years',
   },
-  general_grooming: {
+  generalGrooming: {
     label: 'Adult Grooming',
     icon: '🪮',
     colorClass: 'text-amber-700',
@@ -299,8 +299,8 @@ export function getTasksByCategory(ageYears: number): Record<TaskCategory, TaskI
   const available = getTasksForAge(ageYears);
   return {
     enrichment: available.filter((t) => t.category === 'enrichment'),
-    foal_grooming: available.filter((t) => t.category === 'foal_grooming'),
-    general_grooming: available.filter((t) => t.category === 'general_grooming'),
+    foalGrooming: available.filter((t) => t.category === 'foalGrooming'),
+    generalGrooming: available.filter((t) => t.category === 'generalGrooming'),
   };
 }
 

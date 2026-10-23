@@ -303,7 +303,7 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
       }
 
       // Task-specific bonuses
-      if (taskType === 'trust_building' && trait.effects.trustBuilding) {
+      if (taskType === 'trustBuilding' && trait.effects.trustBuilding) {
         taskEffectiveness *= 1.0 + (trait.effects.trustBuilding - 1.0) * compatibility;
       }
       if (taskType === 'desensitization' && trait.effects.stimulationBonus) {

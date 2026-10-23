@@ -259,7 +259,7 @@ describe('poor-quality interactions (Equoria-jkht)', () => {
         data: {
           foalId: harshHorse.id,
           groomId: harshGroom.id,
-          interactionType: 'daily_care',
+          interactionType: 'dailyCare',
           duration: 30,
           bondingChange: 0,
           quality: 'poor',
@@ -277,7 +277,7 @@ describe('poor-quality interactions (Equoria-jkht)', () => {
         data: {
           foalId: harshHorse.id,
           groomId: harshGroom.id,
-          interactionType: 'daily_care',
+          interactionType: 'dailyCare',
           duration: 20,
           bondingChange: 0,
           quality: 'fair',

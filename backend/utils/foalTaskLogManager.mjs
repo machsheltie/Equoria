@@ -7,7 +7,7 @@
  * for trait evaluation.
  *
  * 📋 BUSINESS RULES:
- * - Task log stores task repetition counts as JSON: {"desensitization": 3, "early_touch": 5}
+ * - Task log stores task repetition counts as JSON: {"desensitization": 3, "earlyTouch": 5}
  * - Consecutive days tracking for streak-based bonuses
  * - Last care date enables grace period calculations (2-day grace period)
  * - Task history supports trait evaluation and epigenetic development

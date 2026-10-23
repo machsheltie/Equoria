@@ -73,13 +73,13 @@ afterAll(() => cleanup.run(), 30000);
 
 describe('FoalActivity canonical store (Equoria-2emg)', () => {
   it('event creation produces FoalActivity rows; derived counts are correct', async () => {
-    // Three "early_touch" events + two "desensitization" events.
+    // Three "earlyTouch" events + two "desensitization" events.
     for (let i = 0; i < 3; i += 1) {
       await prisma.foalActivity.create({
         data: {
           foalId: foal.id,
           day: 0,
-          activityType: 'early_touch',
+          activityType: 'earlyTouch',
           outcome: 'good',
           bondingChange: 2,
           description: 'test event',
@@ -100,7 +100,7 @@ describe('FoalActivity canonical store (Equoria-2emg)', () => {
     }
 
     const derived = await deriveTaskCountsFromActivities(foal.id);
-    expect(derived.early_touch).toBe(3);
+    expect(derived.earlyTouch).toBe(3);
     expect(derived.desensitization).toBe(2);
 
     const total = await deriveTotalActivityCount(foal.id);
@@ -110,7 +110,7 @@ describe('FoalActivity canonical store (Equoria-2emg)', () => {
   it('reconcile makes taskLog cache equal the canonical derived counts (no double-count)', async () => {
     const result = await reconcileTaskLogFromActivities(foal.id);
     expect(result.changed).toBe(true);
-    expect(result.after.early_touch).toBe(3);
+    expect(result.after.earlyTouch).toBe(3);
     expect(result.after.desensitization).toBe(2);
 
     // Cache invariant: persisted taskLog == derived from canonical log.
@@ -137,14 +137,14 @@ describe('FoalActivity canonical store (Equoria-2emg)', () => {
     // Simulate a pre-Equoria-2emg legacy count with no canonical rows.
     await prisma.horse.update({
       where: { id: foal.id },
-      data: { taskLog: { early_touch: 3, desensitization: 2, legacyOnlyTask: 7 } },
+      data: { taskLog: { earlyTouch: 3, desensitization: 2, legacyOnlyTask: 7 } },
     });
 
     const result = await reconcileTaskLogFromActivities(foal.id);
     // legacyOnlyTask has no FoalActivity rows → preserved, not dropped.
     expect(result.after.legacyOnlyTask).toBe(7);
     // canonical keys still equal their derived floor.
-    expect(result.after.early_touch).toBe(3);
+    expect(result.after.earlyTouch).toBe(3);
     expect(result.after.desensitization).toBe(2);
   });
 });

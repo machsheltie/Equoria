@@ -51,14 +51,14 @@ describe('incrementTaskCount', () => {
   });
 
   it('uses custom increment value', () => {
-    const result = incrementTaskCount({}, 'early_touch', 5);
-    expect(result.early_touch).toBe(5);
+    const result = incrementTaskCount({}, 'earlyTouch', 5);
+    expect(result.earlyTouch).toBe(5);
   });
 
   it('preserves other tasks in the log', () => {
-    const log = { desensitization: 2, early_touch: 3 };
+    const log = { desensitization: 2, earlyTouch: 3 };
     const result = incrementTaskCount(log, 'desensitization');
-    expect(result.early_touch).toBe(3);
+    expect(result.earlyTouch).toBe(3);
   });
 
   it('does not mutate the original log', () => {
@@ -90,7 +90,7 @@ describe('incrementTaskCount', () => {
 // ---------------------------------------------------------------------------
 describe('getTaskCount', () => {
   it('returns count for existing task', () => {
-    expect(getTaskCount({ early_touch: 7 }, 'early_touch')).toBe(7);
+    expect(getTaskCount({ earlyTouch: 7 }, 'earlyTouch')).toBe(7);
   });
 
   it('returns 0 for missing task', () => {
@@ -132,11 +132,11 @@ describe('getTotalTaskCount', () => {
 // ---------------------------------------------------------------------------
 describe('getCompletedTasks', () => {
   it('returns task names with count > 0', () => {
-    const log = { desensitization: 3, early_touch: 0, brushing: 5 };
+    const log = { desensitization: 3, earlyTouch: 0, brushing: 5 };
     const result = getCompletedTasks(log);
     expect(result).toContain('desensitization');
     expect(result).toContain('brushing');
-    expect(result).not.toContain('early_touch');
+    expect(result).not.toContain('earlyTouch');
   });
 
   it('returns empty array for empty log', () => {
@@ -378,14 +378,14 @@ describe('getFoalCareSummary — exact field values (merged from legacy backend/
   it('reports exact totals, unique count, ordered task types, streak, and lastCareDate', () => {
     const lastGroomed = new Date('2026-05-01T00:00:00.000Z');
     const foalData = {
-      taskLog: { trust_building: 5, desensitization: 3, early_touch: 2 },
+      taskLog: { trustBuilding: 5, desensitization: 3, earlyTouch: 2 },
       lastGroomed,
       daysGroomedInARow: 8,
     };
     const summary = getFoalCareSummary(foalData);
     expect(summary.totalTaskCompletions).toBe(10);
     expect(summary.uniqueTasksCompleted).toBe(3);
-    expect(summary.completedTaskTypes).toEqual(['trust_building', 'desensitization', 'early_touch']);
+    expect(summary.completedTaskTypes).toEqual(['trustBuilding', 'desensitization', 'earlyTouch']);
     expect(summary.consecutiveDaysOfCare).toBe(8);
     expect(summary.lastCareDate).toEqual(lastGroomed);
   });

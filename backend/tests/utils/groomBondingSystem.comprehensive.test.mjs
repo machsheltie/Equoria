@@ -63,9 +63,9 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
       // Enrichment-only band: exactly the foal enrichment task pool, NOT grooming.
-      expect(eligibleTasks).toEqual(expect.arrayContaining(['desensitization', 'trust_building', 'early_touch']));
+      expect(eligibleTasks).toEqual(expect.arrayContaining(['desensitization', 'trustBuilding', 'earlyTouch']));
       // Sentinel: foal grooming + general grooming tasks must NOT appear at age 0.5.
-      expect(eligibleTasks).not.toContain('hoof_handling'); // foal-grooming (1-3)
+      expect(eligibleTasks).not.toContain('hoofHandling'); // foal-grooming (1-3)
       expect(eligibleTasks).not.toContain('brushing'); // general-grooming (3+)
     });
 
@@ -75,7 +75,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       expect(Array.isArray(eligibleTasks)).toBe(true);
       // Overlap band: enrichment AND foal-grooming tasks present.
       expect(eligibleTasks).toContain('desensitization'); // enrichment
-      expect(eligibleTasks).toContain('hoof_handling'); // foal-grooming (1-3)
+      expect(eligibleTasks).toContain('hoofHandling'); // foal-grooming (1-3)
       // Sentinel: general (3+) grooming must NOT appear yet at age 1.5.
       expect(eligibleTasks).not.toContain('brushing');
     });
@@ -84,10 +84,10 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       const eligibleTasks = getEligibleTasksForAge(2); // 2 game-years
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
-      expect(eligibleTasks).toContain('hoof_handling'); // foal-grooming (1-3)
+      expect(eligibleTasks).toContain('hoofHandling'); // foal-grooming (1-3)
       // Sentinel: 2 < GENERAL_GROOMING_MIN_AGE (3) — general tasks excluded.
       expect(eligibleTasks).not.toContain('brushing');
-      expect(eligibleTasks).not.toContain('hand-walking');
+      expect(eligibleTasks).not.toContain('handWalking');
     });
 
     it('should return general-grooming tasks for mature horses (3+ game-years)', () => {
@@ -96,9 +96,9 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       expect(Array.isArray(eligibleTasks)).toBe(true);
       // Mature band includes the full cumulative pool: enrichment + foal + general.
       expect(eligibleTasks).toContain('desensitization'); // enrichment (still present)
-      expect(eligibleTasks).toContain('hoof_handling'); // foal-grooming
+      expect(eligibleTasks).toContain('hoofHandling'); // foal-grooming
       expect(eligibleTasks).toContain('brushing'); // general-grooming (3+)
-      expect(eligibleTasks).toContain('hand-walking'); // general-grooming (3+)
+      expect(eligibleTasks).toContain('handWalking'); // general-grooming (3+)
     });
 
     it('should switch task pools exactly at the 3-game-year general-grooming boundary', () => {
@@ -111,7 +111,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
       // Below 3: only foal-grooming, no general-grooming, and no enrichment
       // (2.99 > FOAL_ENRICHMENT_MAX_AGE=2 and < GENERAL_GROOMING_MIN_AGE=3).
-      expect(justUnder).toContain('hoof_handling'); // foal-grooming (1-3)
+      expect(justUnder).toContain('hoofHandling'); // foal-grooming (1-3)
       expect(justUnder).not.toContain('brushing'); // general not yet
       expect(justUnder).not.toContain('desensitization'); // enrichment dropped out at >2
       // At exactly 3: the 3+ band re-adds enrichment + foal + general.
@@ -145,7 +145,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
         healthStatus: 'Excellent',
       };
 
-      const result = await validateGroomingEligibility(yearling, 'hoof_handling');
+      const result = await validateGroomingEligibility(yearling, 'hoofHandling');
 
       expect(result).toHaveProperty('eligible');
       expect(result).toHaveProperty('reason');
@@ -194,9 +194,9 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       // game-years matching the eligibility bands (enrichment 0-2, foal
       // grooming 1-3, general grooming 3+).
       const edgeCases = [
-        { age: 0, task: 'early_touch', expectEligible: true }, // Newborn - valid enrichment task (0-2)
-        { age: 1, task: 'hoof_handling', expectEligible: true }, // 1 game-year - valid foal grooming task (1-3)
-        { age: 3, task: 'hoof_handling', expectEligible: true }, // 3 game-years - still in foal grooming band (1-3)
+        { age: 0, task: 'earlyTouch', expectEligible: true }, // Newborn - valid enrichment task (0-2)
+        { age: 1, task: 'hoofHandling', expectEligible: true }, // 1 game-year - valid foal grooming task (1-3)
+        { age: 3, task: 'hoofHandling', expectEligible: true }, // 3 game-years - still in foal grooming band (1-3)
         { age: 3, task: 'brushing', expectEligible: true }, // exactly 3 game-years - valid general grooming task (3+)
         { age: 5, task: 'brushing', expectEligible: true }, // 5 game-years - valid general grooming task (3+)
       ];
@@ -219,7 +219,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
   describe('Task Categorization', () => {
     it('should categorize enrichment tasks correctly', () => {
-      const enrichmentTasks = ['desensitization', 'trust_building', 'showground_exposure', 'early_touch'];
+      const enrichmentTasks = ['desensitization', 'trustBuilding', 'showgroundExposure', 'earlyTouch'];
 
       enrichmentTasks.forEach(task => {
         const category = categorizeTask(task);
@@ -228,7 +228,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     });
 
     it('should categorize grooming tasks correctly', () => {
-      const groomingTasks = ['brushing', 'hoof_handling', 'mane_tail_grooming', 'stall_care'];
+      const groomingTasks = ['brushing', 'hoofHandling', 'maneTailGrooming', 'stallCare'];
 
       groomingTasks.forEach(task => {
         const category = categorizeTask(task);
@@ -240,7 +240,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       const generalTasks = [
         'feeding', // This should return null as it's not in any category
         'exercise', // This should return null as it's not in any category
-        'medical_check', // This should return null as it's not in any category
+        'medicalCheck', // This should return null as it's not in any category
         'unknownTask', // This should return null as it's not in any category
       ];
 

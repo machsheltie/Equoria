@@ -58,27 +58,27 @@ describe('Foal Task Logging & Streak Tracking System', () => {
     it('should have foal enrichment tasks defined', () => {
       expect(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toBeDefined();
       expect(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toContain('desensitization');
-      expect(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toContain('trust_building');
-      expect(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toContain('showground_exposure');
-      expect(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toContain('early_touch');
+      expect(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toContain('trustBuilding');
+      expect(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toContain('showgroundExposure');
+      expect(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toContain('earlyTouch');
     });
 
     it('should have foal grooming tasks defined', () => {
       expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toBeDefined();
-      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('hoof_handling');
-      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('tying_practice');
-      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('sponge_bath');
-      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('coat_check');
-      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('mane_tail_grooming');
+      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('hoofHandling');
+      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('tyingPractice');
+      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('spongeBath');
+      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('coatCheck');
+      expect(GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('maneTailGrooming');
     });
 
     it('should have general grooming tasks defined', () => {
       expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toBeDefined();
       expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('brushing');
-      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('hand-walking');
-      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('stall_care');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('handWalking');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('stallCare');
       expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('bathing');
-      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('mane_tail_trim');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('maneTailTrim');
     });
 
     it('should have proper age thresholds configured', () => {
@@ -95,13 +95,13 @@ describe('Foal Task Logging & Streak Tracking System', () => {
       const youngFoal = { id: 1, age: 1, bondScore: 10 }; // 1 year old
 
       // Should allow enrichment tasks
-      const enrichmentResult = await validateGroomingEligibility(youngFoal, 'trust_building');
+      const enrichmentResult = await validateGroomingEligibility(youngFoal, 'trustBuilding');
       expect(enrichmentResult.eligible).toBe(true);
       expect(enrichmentResult.taskType).toBe('enrichment');
 
       // Should reject grooming tasks for horses under 1 year
       const zeroYearOld = { id: 2, age: 0.7, bondScore: 5 }; // 0.7 years old
-      const groomingResult = await validateGroomingEligibility(zeroYearOld, 'hoof_handling');
+      const groomingResult = await validateGroomingEligibility(zeroYearOld, 'hoofHandling');
       expect(groomingResult.eligible).toBe(false);
     });
 
@@ -114,7 +114,7 @@ describe('Foal Task Logging & Streak Tracking System', () => {
       expect(enrichmentResult.taskType).toBe('enrichment');
 
       // Should allow foal grooming tasks
-      const groomingResult = await validateGroomingEligibility(overlapAgeFoal, 'hoof_handling');
+      const groomingResult = await validateGroomingEligibility(overlapAgeFoal, 'hoofHandling');
       expect(groomingResult.eligible).toBe(true);
       expect(groomingResult.taskType).toBe('grooming');
     });
@@ -123,11 +123,11 @@ describe('Foal Task Logging & Streak Tracking System', () => {
       const adultHorse = { id: 4, age: 4, bondScore: 50 }; // 4 years old
 
       // Should allow enrichment tasks
-      const enrichmentResult = await validateGroomingEligibility(adultHorse, 'trust_building');
+      const enrichmentResult = await validateGroomingEligibility(adultHorse, 'trustBuilding');
       expect(enrichmentResult.eligible).toBe(true);
 
       // Should allow foal grooming tasks
-      const foalGroomingResult = await validateGroomingEligibility(adultHorse, 'hoof_handling');
+      const foalGroomingResult = await validateGroomingEligibility(adultHorse, 'hoofHandling');
       expect(foalGroomingResult.eligible).toBe(true);
 
       // Should allow general grooming tasks
@@ -138,16 +138,16 @@ describe('Foal Task Logging & Streak Tracking System', () => {
 
   describe('Task Categorization', () => {
     it('should correctly categorize enrichment tasks', () => {
-      expect(categorizeTask('trust_building')).toBe('enrichment');
+      expect(categorizeTask('trustBuilding')).toBe('enrichment');
       expect(categorizeTask('desensitization')).toBe('enrichment');
-      expect(categorizeTask('showground_exposure')).toBe('enrichment');
-      expect(categorizeTask('early_touch')).toBe('enrichment');
+      expect(categorizeTask('showgroundExposure')).toBe('enrichment');
+      expect(categorizeTask('earlyTouch')).toBe('enrichment');
     });
 
     it('should correctly categorize grooming tasks', () => {
-      expect(categorizeTask('hoof_handling')).toBe('grooming');
-      expect(categorizeTask('tying_practice')).toBe('grooming');
-      expect(categorizeTask('sponge_bath')).toBe('grooming');
+      expect(categorizeTask('hoofHandling')).toBe('grooming');
+      expect(categorizeTask('tyingPractice')).toBe('grooming');
+      expect(categorizeTask('spongeBath')).toBe('grooming');
       expect(categorizeTask('brushing')).toBe('grooming');
       expect(categorizeTask('bathing')).toBe('grooming');
     });
@@ -161,28 +161,28 @@ describe('Foal Task Logging & Streak Tracking System', () => {
 
   describe('Task Logging System', () => {
     it('should initialize empty task log', () => {
-      const result = updateTaskLog(null, 'trust_building');
-      expect(result.taskLog).toEqual({ trust_building: 1 });
+      const result = updateTaskLog(null, 'trustBuilding');
+      expect(result.taskLog).toEqual({ trustBuilding: 1 });
       expect(result.totalTasks).toBe(1);
     });
 
     it('should increment existing task count', () => {
-      const existingLog = { trust_building: 3, hoof_handling: 1 };
-      const result = updateTaskLog(existingLog, 'trust_building');
-      expect(result.taskLog).toEqual({ trust_building: 4, hoof_handling: 1 });
+      const existingLog = { trustBuilding: 3, hoofHandling: 1 };
+      const result = updateTaskLog(existingLog, 'trustBuilding');
+      expect(result.taskLog).toEqual({ trustBuilding: 4, hoofHandling: 1 });
       expect(result.totalTasks).toBe(5);
     });
 
     it('should add new task to existing log', () => {
-      const existingLog = { trust_building: 2 };
+      const existingLog = { trustBuilding: 2 };
       const result = updateTaskLog(existingLog, 'desensitization');
-      expect(result.taskLog).toEqual({ trust_building: 2, desensitization: 1 });
+      expect(result.taskLog).toEqual({ trustBuilding: 2, desensitization: 1 });
       expect(result.totalTasks).toBe(3);
     });
 
     it('should handle empty object task log', () => {
-      const result = updateTaskLog({}, 'hoof_handling');
-      expect(result.taskLog).toEqual({ hoof_handling: 1 });
+      const result = updateTaskLog({}, 'hoofHandling');
+      expect(result.taskLog).toEqual({ hoofHandling: 1 });
       expect(result.totalTasks).toBe(1);
     });
   });
@@ -232,14 +232,14 @@ describe('Foal Task Logging & Streak Tracking System', () => {
 
   describe('Task Mutual Exclusivity', () => {
     it('should allow first task of the day', () => {
-      const result = checkTaskMutualExclusivity(null, 'trust_building');
+      const result = checkTaskMutualExclusivity(null, 'trustBuilding');
       expect(result.allowed).toBe(true);
       expect(result.conflict).toBe(false);
     });
 
     it('should prevent mixing enrichment and grooming tasks same day', () => {
-      const existingTask = 'trust_building'; // enrichment
-      const newTask = 'hoof_handling'; // grooming
+      const existingTask = 'trustBuilding'; // enrichment
+      const newTask = 'hoofHandling'; // grooming
       const result = checkTaskMutualExclusivity(existingTask, newTask);
 
       expect(result.allowed).toBe(false);
@@ -248,7 +248,7 @@ describe('Foal Task Logging & Streak Tracking System', () => {
     });
 
     it('should allow same category tasks (if other rules permit)', () => {
-      const existingTask = 'trust_building'; // enrichment
+      const existingTask = 'trustBuilding'; // enrichment
       const newTask = 'desensitization'; // enrichment
       const result = checkTaskMutualExclusivity(existingTask, newTask);
 

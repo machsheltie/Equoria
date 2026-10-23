@@ -45,7 +45,7 @@ import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
  */
 export const GROOM_PERSONALITY_EFFECTS = {
   gentle: {
-    bonusTasks: ['brushing', 'stall_care', 'early_touch', 'quiet_bonding'],
+    bonusTasks: ['brushing', 'stallCare', 'earlyTouch', 'quietBonding'],
     effect: '10% increased success rate on nervous or timid horses',
     successRateModifier: 1.1,
     bondingModifier: 1.2,
@@ -59,7 +59,7 @@ export const GROOM_PERSONALITY_EFFECTS = {
   },
 
   playful: {
-    bonusTasks: ['grooming_game', 'socialization', 'water_play', 'treat_training'],
+    bonusTasks: ['groomingGame', 'socialization', 'waterPlay', 'treatTraining'],
     effect: 'Better bonding with foals; 15% faster streak gain',
     successRateModifier: 1.0,
     bondingModifier: 1.3,
@@ -75,7 +75,7 @@ export const GROOM_PERSONALITY_EFFECTS = {
   },
 
   firm: {
-    bonusTasks: ['hand_walking', 'obstacle_course', 'leading_practice', 'boundary_setting'],
+    bonusTasks: ['handWalking', 'obstacleCourse', 'leadingPractice', 'boundarySetting'],
     effect: 'Increased trait influence for stubborn or independent horses',
     successRateModifier: 1.05,
     bondingModifier: 0.9,
@@ -89,7 +89,7 @@ export const GROOM_PERSONALITY_EFFECTS = {
   },
 
   patient: {
-    bonusTasks: ['puddle_training', 'tarp_desensitization', 'hoof_handling', 'patience_training'],
+    bonusTasks: ['puddleTraining', 'tarpDesensitization', 'hoofHandling', 'patienceTraining'],
     effect: 'Reduces failure chance on enrichment tasks',
     successRateModifier: 1.15,
     bondingModifier: 1.3,
@@ -102,8 +102,8 @@ export const GROOM_PERSONALITY_EFFECTS = {
     },
   },
 
-  high_energy: {
-    bonusTasks: ['obstacle_course', 'hand_walking', 'fitness_work', 'emergency_handling'],
+  highEnergy: {
+    bonusTasks: ['obstacleCourse', 'handWalking', 'fitnessWork', 'emergencyHandling'],
     effect: 'Extra trait point on success',
     successRateModifier: 1.1,
     bondingModifier: 1.1,
@@ -168,7 +168,7 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
     const isTaskBonus = personalityConfig.bonusTasks.includes(taskType);
     if (isTaskBonus) {
       personalityBonuses.taskBonus = true;
-      personalityBonuses.bonusesApplied.push('task_specialty');
+      personalityBonuses.bonusesApplied.push('taskSpecialty');
     }
 
     // Apply base personality modifiers
@@ -194,7 +194,7 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
 
         if (hasMatchingTrait) {
           personalityBonuses.specialConditionMet = true;
-          personalityBonuses.bonusesApplied.push('trait_match');
+          personalityBonuses.bonusesApplied.push('traitMatch');
 
           if (specialConditions.bonusSuccessRate) {
             modifiedEffects.successRate = Math.min(
@@ -217,7 +217,7 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
         const [minAge, maxAge] = specialConditions.ageRange;
         if (horse.age >= minAge && horse.age <= maxAge) {
           personalityBonuses.specialConditionMet = true;
-          personalityBonuses.bonusesApplied.push('age_match');
+          personalityBonuses.bonusesApplied.push('ageMatch');
 
           if (specialConditions.bonusBonding) {
             modifiedEffects.bondingChange += Math.round(
@@ -232,7 +232,7 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
         const taskCategory = categorizeTaskForPersonality(taskType);
         if (specialConditions.taskCategories.includes(taskCategory)) {
           personalityBonuses.specialConditionMet = true;
-          personalityBonuses.bonusesApplied.push('category_match');
+          personalityBonuses.bonusesApplied.push('categoryMatch');
 
           if (specialConditions.bonusSuccessRate) {
             modifiedEffects.successRate = Math.min(
@@ -251,9 +251,9 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
       );
 
       // High-energy personality gets extra trait points on success
-      if (personality === 'high_energy' && specialConditions?.extraTraitPoints) {
+      if (personality === 'highEnergy' && specialConditions?.extraTraitPoints) {
         modifiedEffects.traitInfluence += 1;
-        personalityBonuses.bonusesApplied.push('extra_trait_points');
+        personalityBonuses.bonusesApplied.push('extraTraitPoints');
       }
     }
 
@@ -292,29 +292,29 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
  */
 function categorizeTaskForPersonality(taskType) {
   const enrichmentTasks = [
-    'puddle_training',
-    'tarp_desensitization',
-    'obstacle_course',
+    'puddleTraining',
+    'tarpDesensitization',
+    'obstacleCourse',
     'desensitization',
-    'showground_exposure',
-    'trust_building',
+    'showgroundExposure',
+    'trustBuilding',
   ];
 
   const trainingTasks = [
-    'leading_practice',
-    'voice_commands',
-    'patience_training',
-    'boundary_setting',
-    'emergency_handling',
+    'leadingPractice',
+    'voiceCommands',
+    'patienceTraining',
+    'boundarySetting',
+    'emergencyHandling',
   ];
 
   const groomingTasks = [
     'brushing',
-    'stall_care',
-    'early_touch',
-    'hoof_handling',
-    'tying_practice',
-    'quiet_bonding',
+    'stallCare',
+    'earlyTouch',
+    'hoofHandling',
+    'tyingPractice',
+    'quietBonding',
   ];
 
   if (enrichmentTasks.includes(taskType)) {

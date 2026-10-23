@@ -185,11 +185,11 @@ export const GROOM_PERSONALITY_VALUES = Object.values(GROOM_PERSONALITIES);
  * Groom interaction types
  */
 export const GROOM_INTERACTION_TYPES = {
-  DAILY_CARE: 'daily_care',
+  DAILY_CARE: 'dailyCare',
   FEEDING: 'feeding',
   GROOMING: 'grooming',
   EXERCISE: 'exercise',
-  MEDICAL_CHECK: 'medical_check',
+  MEDICAL_CHECK: 'medicalCheck',
 };
 
 export const GROOM_INTERACTION_TYPE_VALUES = Object.values(GROOM_INTERACTION_TYPES);

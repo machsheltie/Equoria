@@ -63,30 +63,30 @@ export const GROOM_CONFIG = {
   // Tasks used for foal bonding, epigenetics, and enrichment (ages 0-2)
   ELIGIBLE_FOAL_ENRICHMENT_TASKS: [
     'desensitization',
-    'trust_building',
-    'showground_exposure',
-    'early_touch',
-    'gentle_touch',
-    'feeding_assistance',
-    'environment_exploration',
+    'trustBuilding',
+    'showgroundExposure',
+    'earlyTouch',
+    'gentleTouch',
+    'feedingAssistance',
+    'environmentExploration',
   ],
 
   // Tasks used for grooming behavior and presentation prep (ages 1-3)
   ELIGIBLE_FOAL_GROOMING_TASKS: [
-    'hoof_handling',
-    'tying_practice',
-    'sponge_bath',
-    'coat_check',
-    'mane_tail_grooming',
+    'hoofHandling',
+    'tyingPractice',
+    'spongeBath',
+    'coatCheck',
+    'maneTailGrooming',
   ],
 
   // General grooming tasks (used for horses 3+)
   ELIGIBLE_GENERAL_GROOMING_TASKS: [
     'brushing',
-    'hand-walking',
-    'stall_care',
+    'handWalking',
+    'stallCare',
     'bathing',
-    'mane_tail_trim',
+    'maneTailTrim',
   ],
 
   // Task logging and streak tracking

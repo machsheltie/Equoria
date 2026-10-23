@@ -176,9 +176,9 @@ describe('POST /api/v1/grooms/ensure-default/:foalId (retired, q153)', () => {
 
 describe('retired player-run foal routes (Equoria-fr2kg)', () => {
   const retired = [
-    ['activity', { activityType: 'gentle_touch' }],
-    ['enrichment', { activity: 'gentle_touch' }],
-    ['enrich', { activity: 'gentle_touch' }],
+    ['activity', { activityType: 'gentleTouch' }],
+    ['enrichment', { activity: 'gentleTouch' }],
+    ['enrich', { activity: 'gentleTouch' }],
     ['graduate', {}],
   ];
 

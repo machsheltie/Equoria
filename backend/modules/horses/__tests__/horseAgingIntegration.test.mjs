@@ -139,7 +139,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
     // asserted those tags. Those names are off the owner's 2026-10-27 trait roster, so the
     // evaluation is removed (Equoria-qw4kp): the birthday ages the horse and nothing else.
     it('ages a foal on its first birthday, records no milestone, and leaves its traits and task log alone', async () => {
-      const taskLog = { trust_building: 12, desensitization: 8, early_touch: 10 };
+      const taskLog = { trustBuilding: 12, desensitization: 8, earlyTouch: 10 };
       const traits = { positive: ['athletic'], negative: [], hidden: ['mysteriousLineage'] };
       // dob is 7 game days ago so calculatedAge = floor(7 / 7) = 1 against a stored age of 0.
       const foal = await prisma.horse.create({
@@ -186,7 +186,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
               age: 0,
               userId: testUser.id,
               breedId: testBreed.id,
-              taskLog: { trust_building: 6, desensitization: 4 },
+              taskLog: { trustBuilding: 6, desensitization: 4 },
               daysGroomedInARow: 8,
               epigeneticModifiers: { positive: [], negative: [], hidden: [] },
             },

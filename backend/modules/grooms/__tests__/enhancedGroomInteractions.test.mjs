@@ -140,7 +140,7 @@ describe('checkForSpecialEvent', () => {
       groom: gentleGroom,
       horse: youngHorse,
       relationshipLevel: RELATIONSHIP_LEVELS.STRANGER,
-      interactionType: 'daily_care',
+      interactionType: 'dailyCare',
     };
     const result = checkForSpecialEvent(context);
     expect(result === null || typeof result === 'object').toBe(true);
@@ -180,10 +180,10 @@ describe('getAvailableInteractions', () => {
     expect(Array.isArray(result)).toBe(true);
   });
 
-  it('all grooms can perform care (daily_care always included)', () => {
+  it('all grooms can perform care (dailyCare always included)', () => {
     const result = getAvailableInteractions(basicGroom, youngHorse);
     const ids = result.map(i => i.id);
-    expect(ids).toContain('daily_care');
+    expect(ids).toContain('dailyCare');
   });
 
   it('enrichment is excluded for horse older than 3 game-years', () => {
@@ -200,25 +200,25 @@ describe('getAvailableInteractions', () => {
     expect(ids).toContain('enrichment');
   });
 
-  it('expert groom can perform medical (health_check) without medical speciality', () => {
+  it('expert groom can perform medical (healthCheck) without medical speciality', () => {
     const expertGroom = { ...basicGroom, skillLevel: 'expert', speciality: 'care' };
     const result = getAvailableInteractions(expertGroom, adultHorse);
     const ids = result.map(i => i.id);
-    expect(ids).toContain('health_check');
+    expect(ids).toContain('healthCheck');
   });
 
-  it('novice non-training groom cannot perform training_support', () => {
+  it('novice non-training groom cannot perform trainingSupport', () => {
     const noviceGroom = { ...basicGroom, skillLevel: 'novice', speciality: 'care' };
     const result = getAvailableInteractions(noviceGroom, adultHorse);
     const ids = result.map(i => i.id);
-    expect(ids).not.toContain('training_support');
+    expect(ids).not.toContain('trainingSupport');
   });
 
-  it('intermediate groom can perform training_support', () => {
+  it('intermediate groom can perform trainingSupport', () => {
     const interGroom = { ...basicGroom, skillLevel: 'intermediate', speciality: 'care' };
     const result = getAvailableInteractions(interGroom, adultHorse);
     const ids = result.map(i => i.id);
-    expect(ids).toContain('training_support');
+    expect(ids).toContain('trainingSupport');
   });
 
   it('each interaction in result has id, name, category, baseTime, variations', () => {

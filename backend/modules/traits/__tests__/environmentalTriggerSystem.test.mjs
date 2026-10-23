@@ -221,7 +221,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
           quality: 'excellent',
           bondingChange: 1,
         },
-        // sensory_enrichment taskType=showground_exposure branch
+        // sensory_enrichment taskType=showgroundExposure branch
         {
           foalId: etsHorseMature.id,
           groomId: etsGroom2.id,
@@ -229,7 +229,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
           duration: 8,
           quality: 'poor',
           bondingChange: -2,
-          taskType: 'showground_exposure',
+          taskType: 'showgroundExposure',
         },
       ],
     });

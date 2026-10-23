@@ -463,10 +463,10 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     expect(result.taskEffectiveness).toBeGreaterThan(1.0);
   });
 
-  // ── calculatePersonalityModifiers — trust_building task branch ────────────────
-  it('trust_building task: gentle trait trustBuilding effect applied when compatible', async () => {
+  // ── calculatePersonalityModifiers — trustBuilding task branch ────────────────
+  it('trustBuilding task: gentle trait trustBuilding effect applied when compatible', async () => {
     // outer calm groom + fearful horse → gentle trait has trustBuilding:1.4 and is compatibleWith fearful
-    const result = await calculatePersonalityModifiers(groom.id, gpHorseFearfulReactive.id, 'trust_building');
+    const result = await calculatePersonalityModifiers(groom.id, gpHorseFearfulReactive.id, 'trustBuilding');
     expect(result.taskEffectiveness).toBeGreaterThan(1.0);
   });
 

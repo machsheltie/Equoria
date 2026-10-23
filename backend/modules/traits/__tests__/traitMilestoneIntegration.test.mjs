@@ -79,13 +79,13 @@ async function setFoalTaskLog(taskLog, daysGroomedInARow = 0, age = 360) {
 describe('getFoalCareSummary from persisted taskLog', () => {
   it('counts totalTaskCompletions correctly for a comprehensive task log', async () => {
     const taskLog = {
-      trust_building: 12,
+      trustBuilding: 12,
       desensitization: 8,
-      showground_exposure: 5,
-      early_touch: 10,
-      hoof_handling: 6,
-      sponge_bath: 4,
-      coat_check: 3,
+      showgroundExposure: 5,
+      earlyTouch: 10,
+      hoofHandling: 6,
+      spongeBath: 4,
+      coatCheck: 3,
     };
 
     const foal = await setFoalTaskLog(taskLog, 10);
@@ -97,7 +97,7 @@ describe('getFoalCareSummary from persisted taskLog', () => {
   });
 
   it('counts totalTaskCompletions correctly for a minimal task log', async () => {
-    const taskLog = { trust_building: 2, early_touch: 1 };
+    const taskLog = { trustBuilding: 2, earlyTouch: 1 };
 
     const foal = await setFoalTaskLog(taskLog, 3);
     const summary = getFoalCareSummary(foal);
@@ -118,7 +118,7 @@ describe('getFoalCareSummary from persisted taskLog', () => {
   // Old contract: hasBurnoutImmunity true from 7 consecutive days. Owner ruling
   // 2026-10-23 (Equoria-0gl9o): no burnout; the summary keeps the streak only.
   it('reports a 7-day streak with no burnout immunity label', async () => {
-    const foal = await setFoalTaskLog({ trust_building: 1 }, 7);
+    const foal = await setFoalTaskLog({ trustBuilding: 1 }, 7);
     const summary = getFoalCareSummary(foal);
 
     expect(summary.consecutiveDaysOfCare).toBe(7);
@@ -131,9 +131,9 @@ describe('getFoalCareSummary from persisted taskLog', () => {
 describe('taskLog persistence round-trip', () => {
   it('stores and retrieves taskLog correctly from the DB', async () => {
     const taskLog = {
-      trust_building: 5,
+      trustBuilding: 5,
       desensitization: 3,
-      early_touch: 4,
+      earlyTouch: 4,
     };
 
     const foal = await setFoalTaskLog(taskLog, 0);

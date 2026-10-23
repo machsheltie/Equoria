@@ -53,12 +53,12 @@ import logger from './logger.mjs';
  * counts ONLY groom-source rows, so an enrichment row CANNOT be counted
  * regardless of any activityType-namespace collision.
  */
-/** camelCase spelling for new consumers (Equoria-pjvp8 ratchet); the same value. */
-export const groomInteractionSource = 'groom_interaction';
+/** Stored source of the groom path; camelCase since migration 20261028190000 (Equoria-pjvp8.4). */
+export const groomInteractionSource = 'groomInteraction';
 
 export const FOAL_ACTIVITY_SOURCE = Object.freeze({
   GROOM_INTERACTION: groomInteractionSource,
-  ENRICHMENT_ACTIVITY: 'enrichment_activity',
+  ENRICHMENT_ACTIVITY: 'enrichmentActivity',
 });
 
 /**

@@ -15,7 +15,7 @@
  * - Task influence configuration for validation
  *
  * 📋 BUSINESS RULES TESTED:
- * - Task log stores task repetition counts as JSON: {"desensitization": 3, "early_touch": 5}
+ * - Task log stores task repetition counts as JSON: {"desensitization": 3, "earlyTouch": 5}
  * - Last care date enables grace period calculations and streak tracking
  * - Task history enables trait evaluation and development tracking
  * - JSON storage preserves data types and structure
@@ -116,8 +116,8 @@ describe('Foal Task Log Storage', () => {
     it('should store task log as JSON object', async () => {
       const taskLog = {
         desensitization: 3,
-        early_touch: 5,
-        trust_building: 2,
+        earlyTouch: 5,
+        trustBuilding: 2,
       };
 
       await prisma.horse.update({
@@ -151,7 +151,7 @@ describe('Foal Task Log Storage', () => {
       // Initial task log
       const initialTaskLog = {
         desensitization: 2,
-        early_touch: 1,
+        earlyTouch: 1,
       };
 
       await prisma.horse.update({
@@ -162,8 +162,8 @@ describe('Foal Task Log Storage', () => {
       // Update with new counts
       const updatedTaskLog = {
         desensitization: 3, // Incremented
-        early_touch: 1, // Unchanged
-        trust_building: 1, // New task
+        earlyTouch: 1, // Unchanged
+        trustBuilding: 1, // New task
       };
 
       await prisma.horse.update({
@@ -182,15 +182,15 @@ describe('Foal Task Log Storage', () => {
       const comprehensiveTaskLog = {
         // Enrichment tasks
         desensitization: 5,
-        trust_building: 8,
-        showground_exposure: 3,
+        trustBuilding: 8,
+        showgroundExposure: 3,
         // Grooming tasks
-        early_touch: 6,
-        hoof_handling: 4,
-        tying_practice: 2,
-        sponge_bath: 3,
-        coat_check: 5,
-        mane_tail_grooming: 2,
+        earlyTouch: 6,
+        hoofHandling: 4,
+        tyingPractice: 2,
+        spongeBath: 3,
+        coatCheck: 5,
+        maneTailGrooming: 2,
       };
 
       await prisma.horse.update({
@@ -271,7 +271,7 @@ describe('Foal Task Log Storage', () => {
     it('should update task log and last care date together', async () => {
       const taskLog = {
         desensitization: 3,
-        early_touch: 5,
+        earlyTouch: 5,
       };
 
       await prisma.horse.update({
@@ -295,7 +295,7 @@ describe('Foal Task Log Storage', () => {
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: {
-          taskLog: { trust_building: 1 },
+          taskLog: { trustBuilding: 1 },
           lastGroomed: day1Date,
         },
       });
@@ -304,7 +304,7 @@ describe('Foal Task Log Storage', () => {
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: {
-          taskLog: { trust_building: 1, desensitization: 1 },
+          taskLog: { trustBuilding: 1, desensitization: 1 },
           lastGroomed: day3Date,
         },
       });
@@ -313,7 +313,7 @@ describe('Foal Task Log Storage', () => {
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: {
-          taskLog: { trust_building: 2, desensitization: 1 },
+          taskLog: { trustBuilding: 2, desensitization: 1 },
           lastGroomed: day5Date,
         },
       });
@@ -323,7 +323,7 @@ describe('Foal Task Log Storage', () => {
       });
 
       expect(foal.taskLog).toEqual({
-        trust_building: 2,
+        trustBuilding: 2,
         desensitization: 1,
       });
       expect(foal.lastGroomed).toEqual(day5Date);
@@ -350,7 +350,7 @@ describe('Foal Task Log Storage', () => {
 
     it('should handle very large task counts', async () => {
       const largeTaskLog = {
-        trust_building: 999,
+        trustBuilding: 999,
         desensitization: 500,
       };
 
@@ -368,8 +368,8 @@ describe('Foal Task Log Storage', () => {
 
     it('should preserve data types correctly', async () => {
       const taskLog = {
-        trust_building: 5,
-        early_touch: 3,
+        trustBuilding: 5,
+        earlyTouch: 3,
       };
 
       await prisma.horse.update({
@@ -386,7 +386,7 @@ describe('Foal Task Log Storage', () => {
 
       // Verify data types
       expect(typeof foal.taskLog).toBe('object');
-      expect(typeof foal.taskLog.trust_building).toBe('number');
+      expect(typeof foal.taskLog.trustBuilding).toBe('number');
       // Use constructor.name check to avoid cross-realm Date mismatch with --experimental-vm-modules
       expect(foal.lastGroomed?.constructor?.name).toBe('Date');
     });

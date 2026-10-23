@@ -81,7 +81,7 @@ export const TRIGGER_SCORE_RULES = deepFreeze({
   ],
   sensory_enrichment: [
     [{ field: 'taskType', op: 'eq', value: 'desensitization' }, 0.3],
-    [{ field: 'taskType', op: 'eq', value: 'showground_exposure' }, 0.2],
+    [{ field: 'taskType', op: 'eq', value: 'showgroundExposure' }, 0.2],
   ],
   routine_stability: [
     [{ field: 'groom.epigeneticInfluenceType', op: 'eq', value: 'calm' }, 0.2],

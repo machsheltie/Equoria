@@ -17,7 +17,7 @@ import logger from '../../../utils/logger.mjs';
 export const ENHANCED_INTERACTIONS = {
   // Basic care interactions
   DAILY_CARE: {
-    id: 'daily_care',
+    id: 'dailyCare',
     name: 'Daily Care',
     category: 'care',
     baseTime: 30,
@@ -43,7 +43,7 @@ export const ENHANCED_INTERACTIONS = {
 
   // Training support interactions
   TRAINING_SUPPORT: {
-    id: 'training_support',
+    id: 'trainingSupport',
     name: 'Training Support',
     category: 'training',
     baseTime: 60,
@@ -56,7 +56,7 @@ export const ENHANCED_INTERACTIONS = {
 
   // Medical and health interactions
   HEALTH_CHECK: {
-    id: 'health_check',
+    id: 'healthCheck',
     name: 'Health Assessment',
     category: 'medical',
     baseTime: 20,
@@ -69,7 +69,7 @@ export const ENHANCED_INTERACTIONS = {
 
   // Special bonding interactions
   BONDING_TIME: {
-    id: 'bonding_time',
+    id: 'bondingTime',
     name: 'Quality Time',
     category: 'bonding',
     baseTime: 40,
@@ -103,7 +103,7 @@ export const SPECIAL_EVENTS = {
   },
 
   PERFECT_HARMONY: {
-    id: 'perfect_harmony',
+    id: 'perfectHarmony',
     name: 'Perfect Harmony',
     probability: 0.03, // 3% chance
     conditions: ['relationship_level >= 4', 'groom_specialty_match'],
@@ -111,7 +111,7 @@ export const SPECIAL_EVENTS = {
   },
 
   LEARNING_MOMENT: {
-    id: 'learning_moment',
+    id: 'learningMoment',
     name: 'Learning Moment',
     probability: 0.08, // 8% chance
     // Equoria-yny4: horse.age is game-years (post Equoria-son6). 3 game-years
@@ -121,7 +121,7 @@ export const SPECIAL_EVENTS = {
   },
 
   PLAYFUL_INTERACTION: {
-    id: 'playful_interaction',
+    id: 'playfulInteraction',
     name: 'Playful Moment',
     probability: 0.1, // 10% chance
     // Equoria-yny4: horse.age is game-years (post Equoria-son6). 2 game-years
@@ -131,30 +131,54 @@ export const SPECIAL_EVENTS = {
   },
 };
 
+/**
+ * The interaction whose id is `interactionType` (e.g. `dailyCare`), or undefined.
+ * Matched on `id`, not by upper-casing into the DAILY_CARE key, because the ids
+ * are camelCase.
+ */
+export function findEnhancedInteraction(interactionType) {
+  return Object.values(ENHANCED_INTERACTIONS).find(
+    interaction => interaction.id === interactionType,
+  );
+}
+
+/**
+ * The stored interaction type for one variation: `dailyCare` + "Morning Routine"
+ * -> `dailyCareMorningRoutine`. Every run of non-alphanumerics is a word break,
+ * so "Pre-Training Prep" -> `PreTrainingPrep`.
+ */
+export function interactionWithVariationKey(interactionType, variation) {
+  const words = variation.split(/[^A-Za-z0-9]+/).filter(Boolean);
+  return (
+    interactionType +
+    words.map(word => word[0].toUpperCase() + word.slice(1).toLowerCase()).join('')
+  );
+}
+
 // Groom preferences based on personality and specialty
 export const GROOM_PREFERENCES = {
   gentle: {
-    preferred_interactions: ['bonding_time', 'daily_care'],
-    preferred_contexts: ['peaceful', 'trust', 'routine'],
-    bonus_multiplier: 1.2,
+    preferredInteractions: ['bondingTime', 'dailyCare'],
+    preferredContexts: ['peaceful', 'trust', 'routine'],
+    bonusMultiplier: 1.2,
   },
 
   energetic: {
-    preferred_interactions: ['enrichment', 'training_support'],
-    preferred_contexts: ['social', 'practice', 'mental'],
-    bonus_multiplier: 1.3,
+    preferredInteractions: ['enrichment', 'trainingSupport'],
+    preferredContexts: ['social', 'practice', 'mental'],
+    bonusMultiplier: 1.3,
   },
 
   patient: {
-    preferred_interactions: ['bonding_time', 'training_support'],
-    preferred_contexts: ['trust', 'confidence', 'preparation'],
-    bonus_multiplier: 1.2,
+    preferredInteractions: ['bondingTime', 'trainingSupport'],
+    preferredContexts: ['trust', 'confidence', 'preparation'],
+    bonusMultiplier: 1.2,
   },
 
   strict: {
-    preferred_interactions: ['training_support', 'health_check'],
-    preferred_contexts: ['practice', 'thorough', 'preventive'],
-    bonus_multiplier: 1.1,
+    preferredInteractions: ['trainingSupport', 'healthCheck'],
+    preferredContexts: ['practice', 'thorough', 'preventive'],
+    bonusMultiplier: 1.1,
   },
 };
 

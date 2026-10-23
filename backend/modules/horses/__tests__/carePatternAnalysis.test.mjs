@@ -140,7 +140,7 @@ const {
 
 function mkInteraction(daysAgo = 0, overrides = {}) {
   return {
-    interactionType: 'daily_care',
+    interactionType: 'dailyCare',
     quality: 'good',
     bondingChange: 2,
     createdAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
@@ -272,7 +272,7 @@ describe('analyzeEnvironmentalFactors — filter-predicate branch coverage (Equo
     expect(r.startleEvents).toBe(1);
   });
 
-  it('hasRoutine: true when 5+ routine interactions (interactionType daily_care)', () => {
+  it('hasRoutine: true when 5+ routine interactions (interactionType dailyCare)', () => {
     const interactions = [0, 1, 2, 3, 4].map(d => mkInteraction(d));
     const r = analyzeEnvironmentalFactors(interactions);
     expect(r.hasRoutine).toBe(true);
@@ -281,14 +281,14 @@ describe('analyzeEnvironmentalFactors — filter-predicate branch coverage (Equo
 });
 
 describe('analyzeNoveltyExposure — || and && branch coverage (line 131, Equoria-jkht)', () => {
-  it('exploration and showground_exposure types count as novelty (covers || right branches)', () => {
+  it('exploration and showgroundExposure types count as novelty (covers || right branches)', () => {
     const exploration = mkInteraction(1, {
       interactionType: 'exploration',
       bondingChange: 2,
       quality: 'good',
     });
     const showground = mkInteraction(2, {
-      interactionType: 'showground_exposure',
+      interactionType: 'showgroundExposure',
       bondingChange: 2,
       quality: 'good',
     });

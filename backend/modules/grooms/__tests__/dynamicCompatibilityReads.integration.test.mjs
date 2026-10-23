@@ -50,7 +50,7 @@ const { buildCompatibilityFixtures, cleanupCompatibilityFixtures } =
 const selects = statements => statements.filter(sql => /^SELECT\b/i.test(sql));
 const selectsOn = (statements, table) => selects(statements).filter(sql => sql.includes(`FROM "public"."${table}"`));
 const CONTEXT = {
-  taskType: 'trust_building',
+  taskType: 'trustBuilding',
   environmentalFactors: ['quiet', 'familiar', 'structured'],
 };
 

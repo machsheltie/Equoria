@@ -14,8 +14,8 @@
  *
  * 📋 BUSINESS RULES TESTED:
  * - Foals can only complete ONE task per day from either category
- * - Enrichment tasks: desensitization, trust_building, showground_exposure
- * - Grooming tasks: early_touch, hoof_handling, tying_practice, sponge_bath, coat_check, mane_tail_grooming
+ * - Enrichment tasks: desensitization, trustBuilding, showgroundExposure
+ * - Grooming tasks: earlyTouch, hoofHandling, tyingPractice, spongeBath, coatCheck, maneTailGrooming
  * - Non-foal tasks don't count toward daily limit
  * - Proper integration between configuration and validation logic
  *
@@ -36,21 +36,21 @@ describe('Foal Task Exclusivity Integration', () => {
       // Verify enrichment tasks (updated to match actual config)
       expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual([
         'desensitization',
-        'trust_building',
-        'showground_exposure',
-        'early_touch',
-        'gentle_touch',
-        'feeding_assistance',
-        'environment_exploration',
+        'trustBuilding',
+        'showgroundExposure',
+        'earlyTouch',
+        'gentleTouch',
+        'feedingAssistance',
+        'environmentExploration',
       ]);
 
       // Verify grooming tasks (updated to match actual config)
       expect(FOAL_GROOMING_TASKS).toEqual([
-        'hoof_handling',
-        'tying_practice',
-        'sponge_bath',
-        'coat_check',
-        'mane_tail_grooming',
+        'hoofHandling',
+        'tyingPractice',
+        'spongeBath',
+        'coatCheck',
+        'maneTailGrooming',
       ]);
     });
 
@@ -100,7 +100,7 @@ describe('Foal Task Exclusivity Integration', () => {
         id: 1,
         name: 'Test Foal',
         dailyTaskRecord: {
-          [today]: ['trust_building'],
+          [today]: ['trustBuilding'],
         },
       };
 
@@ -111,7 +111,7 @@ describe('Foal Task Exclusivity Integration', () => {
         id: 2,
         name: 'Test Foal 2',
         dailyTaskRecord: {
-          [today]: ['hoof_handling'],
+          [today]: ['hoofHandling'],
         },
       };
 
@@ -123,7 +123,7 @@ describe('Foal Task Exclusivity Integration', () => {
         id: 1,
         name: 'Test Foal',
         dailyTaskRecord: {
-          [today]: ['general_grooming', 'exercise', 'medical_check', 'feeding'],
+          [today]: ['generalGrooming', 'exercise', 'medicalCheck', 'feeding'],
         },
       };
 
@@ -136,7 +136,7 @@ describe('Foal Task Exclusivity Integration', () => {
         id: 1,
         name: 'Test Foal',
         dailyTaskRecord: {
-          [today]: ['general_grooming', 'trust_building', 'exercise'],
+          [today]: ['generalGrooming', 'trustBuilding', 'exercise'],
         },
       };
 
@@ -151,7 +151,7 @@ describe('Foal Task Exclusivity Integration', () => {
         id: 1,
         name: 'Test Foal',
         dailyTaskRecord: {
-          [today]: ['trust_building', 'hoof_handling', 'desensitization'],
+          [today]: ['trustBuilding', 'hoofHandling', 'desensitization'],
         },
       };
 
@@ -165,9 +165,9 @@ describe('Foal Task Exclusivity Integration', () => {
         id: 1,
         name: 'Test Foal',
         dailyTaskRecord: {
-          '2024-01-14': ['trust_building'],
+          '2024-01-14': ['trustBuilding'],
           '2024-01-15': [], // Today - empty
-          '2024-01-16': ['hoof_handling'],
+          '2024-01-16': ['hoofHandling'],
         },
       };
 
@@ -185,11 +185,11 @@ describe('Foal Task Exclusivity Integration', () => {
         id: 1,
         name: 'Test Foal',
         dailyTaskRecord: {
-          '2024-01-10': ['trust_building'],
+          '2024-01-10': ['trustBuilding'],
           '2024-01-11': ['desensitization'],
-          '2024-01-12': ['hoof_handling'],
-          '2024-01-13': ['early_touch'],
-          '2024-01-14': ['general_grooming'], // Non-foal task
+          '2024-01-12': ['hoofHandling'],
+          '2024-01-13': ['earlyTouch'],
+          '2024-01-14': ['generalGrooming'], // Non-foal task
           [today]: [], // Today - ready for new task
         },
       };

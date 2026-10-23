@@ -109,9 +109,7 @@ export const v1TrailingMirrorHandlers = [
   http.get(`${base}/api/v1/foals/:id/activities`, () =>
     HttpResponse.json({
       success: true,
-      data: [
-        { id: 1, activity: 'trust_building', duration: 30, createdAt: '2025-12-02T00:00:00Z' },
-      ],
+      data: [{ id: 1, activity: 'trustBuilding', duration: 30, createdAt: '2025-12-02T00:00:00Z' }],
     })
   ),
 

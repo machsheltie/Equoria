@@ -73,7 +73,7 @@ async function mkInteraction(foalId, opts = {}) {
     data: {
       foalId,
       groomId,
-      interactionType: opts.interactionType ?? 'daily_care',
+      interactionType: opts.interactionType ?? 'dailyCare',
       duration: 30,
       bondingChange: opts.bondingChange ?? 3,
       quality: opts.quality ?? 'good',
@@ -186,9 +186,9 @@ describe('analyzeCarePatterns', () => {
 describe('consistentCare pattern', () => {
   test('counts grooming, quality interactions and computes averageBondChange', async () => {
     const horse = await mkHorse('ConsistentCare', { bondScore: 60 });
-    // 3 interactions on 3 different days: daily_care, grooming, daily_care
+    // 3 interactions on 3 different days: dailyCare, grooming, dailyCare
     await mkInteraction(horse.id, {
-      interactionType: 'daily_care',
+      interactionType: 'dailyCare',
       bondingChange: 5,
       quality: 'good',
       createdAt: daysAgo(3),
@@ -200,7 +200,7 @@ describe('consistentCare pattern', () => {
       createdAt: daysAgo(2),
     });
     await mkInteraction(horse.id, {
-      interactionType: 'daily_care',
+      interactionType: 'dailyCare',
       bondingChange: 4,
       quality: 'good',
       createdAt: daysAgo(1),
@@ -234,13 +234,13 @@ describe('noveltyExposure pattern', () => {
       createdAt: daysAgo(3),
     });
     await mkInteraction(horse.id, {
-      interactionType: 'showground_exposure',
+      interactionType: 'showgroundExposure',
       bondingChange: 2,
       quality: 'good',
       createdAt: daysAgo(2),
     });
     await mkInteraction(horse.id, {
-      interactionType: 'daily_care',
+      interactionType: 'dailyCare',
       bondingChange: -5,
       quality: 'poor',
       createdAt: daysAgo(1),
@@ -263,7 +263,7 @@ describe('bondingPatterns pattern', () => {
     const horse = await mkHorse('BondingPatterns', { bondScore: 70 });
     // 3 interactions on 3 different days, all positive/high-quality
     await mkInteraction(horse.id, {
-      interactionType: 'daily_care',
+      interactionType: 'dailyCare',
       quality: 'excellent',
       bondingChange: 8,
       createdAt: daysAgo(6),
@@ -298,7 +298,7 @@ describe('neglectPatterns pattern', () => {
     const horse = await mkHorse('NeglectPatterns', { bondScore: 15 });
     // Two interactions with a 5-day gap between them → maxGap = 4 days
     await mkInteraction(horse.id, {
-      interactionType: 'daily_care',
+      interactionType: 'dailyCare',
       quality: 'poor',
       bondingChange: -3,
       createdAt: daysAgo(11),
@@ -328,7 +328,7 @@ describe('environmentalFactors pattern', () => {
   test('counts startleEvents and routineInteractions', async () => {
     const horse = await mkHorse('EnvFactors');
     await mkInteraction(horse.id, {
-      interactionType: 'daily_care',
+      interactionType: 'dailyCare',
       quality: 'good',
       bondingChange: 2,
       notes: 'Horse startled by loud noise',
@@ -342,7 +342,7 @@ describe('environmentalFactors pattern', () => {
       createdAt: daysAgo(2),
     });
     await mkInteraction(horse.id, {
-      interactionType: 'daily_care',
+      interactionType: 'dailyCare',
       quality: 'good',
       bondingChange: 2,
       createdAt: daysAgo(1),
@@ -351,7 +351,7 @@ describe('environmentalFactors pattern', () => {
     const result = await analyzeCarePatterns(horse.id, new Date());
 
     expect(result.patterns.environmentalFactors.startleEvents).toBe(2);
-    expect(result.patterns.environmentalFactors.routineInteractions).toBe(3); // 2 daily_care + 1 feeding
+    expect(result.patterns.environmentalFactors.routineInteractions).toBe(3); // 2 dailyCare + 1 feeding
     expect(result.patterns.environmentalFactors.meetsSkittishThreshold).toBe(true);
     expect(result.patterns.environmentalFactors.hasRoutine).toBe(false); // Needs 5+
   });
