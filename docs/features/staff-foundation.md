@@ -49,6 +49,7 @@ request. The panel shows only tools the account holds.
 | `ban.ip`, `ban.device`, `view.identity`                        | —         | yes   | yes   |
 | `roles.manage`, `jobs.hold`, `time-back`, `horse.admin`        | —         | yes   | yes   |
 | `news.post` (News, Equoria-wbt8l)                              | —         | yes   | yes   |
+| `shows.quarantine.view` (quarantined shows, Equoria-c7mx0.1)   | —         | yes   | yes   |
 | `traits.hidden.view` (hidden trait names)                      | —         | —     | yes   |
 
 Code outside the staff router asks the same policy: `can(req.user, cap)` for an

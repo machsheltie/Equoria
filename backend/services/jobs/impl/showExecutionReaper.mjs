@@ -38,6 +38,15 @@
  * nightly executor (and re-entry stays impossible — enterShow rejects any
  * show whose closeDate has passed, independent of status).
  *
+ * BOUNDED ATTEMPTS (Equoria-c7mx0.1, owner ruling 2026-10-23): each stranding
+ * this reaper finds is one failed execution attempt, counted in
+ * Show.executionAttempts. The stranding that makes the MAX_EXECUTION_ATTEMPTS-th
+ * (3rd) attempt does not release the show: it sets it 'quarantined', which no
+ * executor or reaper scan selects, so a show that crashes the executor every
+ * cycle stops looping. Quarantine touches no money: both escrow columns and
+ * the staged ordering stay as they were for the Owner/Admin, who see the show
+ * at GET /api/v1/staff/shows/quarantined.
+ *
  * Time constants (correlated set): STALE_CLAIM_THRESHOLD_MS below (2h — a
  * generous upper bound on a healthy executor pass, which takes seconds);
  * the job runs every 30 minutes (showExecutionReaperJob.mjs), so a stranded
@@ -51,6 +60,9 @@ import { executeClosedShows } from '../../../modules/competition/index.mjs';
 
 /** A claim older than this is considered stranded by a crashed executor. */
 export const STALE_CLAIM_THRESHOLD_MS = 2 * 60 * 60 * 1000;
+
+/** Owner ruling 2026-10-23 (Equoria-c7mx0.1): the 3rd failed attempt quarantines the show. */
+export const MAX_EXECUTION_ATTEMPTS = 3;
 
 /**
  * Staleness predicate for a stranded 'executing' claim, shared by the scan
@@ -77,15 +89,16 @@ function staleClaimPredicate(cutoff) {
  * visibility of stranded escrow was never the point of dropping the vendor.
  * Same posture as CronJobMonitor.evaluateStaleAlerts, which already logged.
  */
-function emitReaperAlert(staleShows, releasedIds) {
+function emitReaperAlert(staleShows, releasedIds, quarantinedIds) {
   try {
     logger.error(
-      `[ShowExecutionReaper] ALERT: reaper fired — ${staleShows.length} show(s) stranded in 'executing' > 2h (ids: ${staleShows.map(s => s.id).join(', ')})`,
+      `[ShowExecutionReaper] ALERT: reaper fired — ${staleShows.length} show(s) stranded in 'executing' > 2h (ids: ${staleShows.map(s => s.id).join(', ')})${quarantinedIds.length > 0 ? `; QUARANTINED after ${MAX_EXECUTION_ATTEMPTS} failed attempts, needs Owner/Admin: ${quarantinedIds.join(', ')}` : ''}`,
       {
         alertType: 'show_execution_reaper_fired',
         eventType: 'operational',
         staleShowsFound: staleShows.length,
         releasedCount: releasedIds.length,
+        quarantinedShowIds: quarantinedIds,
         shows: staleShows.map(s => ({
           id: s.id,
           name: s.name,
@@ -108,7 +121,8 @@ function emitReaperAlert(staleShows, releasedIds) {
  *   narrows the scan so a test only ever reaps the shows it created;
  *   anything else leaves the scan global (the production cron passes
  *   nothing).
- * @returns {Promise<{staleShowsFound: number, releasedCount: number, recoveredCount: number, failedShowIds: number[]}>}
+ * @returns {Promise<{staleShowsFound: number, releasedCount: number, recoveredCount: number, failedShowIds: number[], quarantinedShowIds?: number[]}>}
+ *   `quarantinedShowIds` is present whenever a stranded show was found.
  * @throws when any released show failed to reach 'completed' on the
  *   re-drive, so runWithHeartbeat records an 'error' heartbeat and
  *   /api/admin/cron/health surfaces the failure instead of reporting a
@@ -143,11 +157,28 @@ export async function reapStaleExecutingShows({ showIds } = {}) {
   // count === 0 means "state moved since the scan, not ours to touch".
   // stagedOrdering is deliberately NOT cleared: the re-drive must replay the
   // ordering the crashed claim persisted (see DETERMINISM in the docblock).
+  //
+  // Equoria-c7mx0.1: this stranding is one failed execution attempt. The first
+  // fenced write quarantines the show when it is the MAX_EXECUTION_ATTEMPTS-th;
+  // otherwise the second releases it. Both count the attempt in the same
+  // statement and re-assert status + staleness, so neither can touch a show
+  // whose state moved after the scan.
   const releasedIds = [];
+  const quarantinedIds = [];
   for (const show of staleShows) {
+    const fence = { id: show.id, status: 'executing', OR: staleClaimPredicate(cutoff) };
+    const countAttempt = { executionAttempts: { increment: 1 } };
+    const quarantined = await prisma.show.updateMany({
+      where: { ...fence, executionAttempts: { gte: MAX_EXECUTION_ATTEMPTS - 1 } },
+      data: { status: 'quarantined', claimedAt: null, ...countAttempt },
+    });
+    if (quarantined.count === 1) {
+      quarantinedIds.push(show.id);
+      continue;
+    }
     const released = await prisma.show.updateMany({
-      where: { id: show.id, status: 'executing', OR: staleClaimPredicate(cutoff) },
-      data: { status: 'open', claimedAt: null },
+      where: fence,
+      data: { status: 'open', claimedAt: null, ...countAttempt },
     });
     if (released.count === 1) {
       releasedIds.push(show.id);
@@ -158,7 +189,7 @@ export async function reapStaleExecutingShows({ showIds } = {}) {
     }
   }
 
-  emitReaperAlert(staleShows, releasedIds);
+  emitReaperAlert(staleShows, releasedIds, quarantinedIds);
 
   if (releasedIds.length > 0) {
     // Re-drive through the REAL settlement path, scoped to exactly the ids
@@ -190,6 +221,7 @@ export async function reapStaleExecutingShows({ showIds } = {}) {
     releasedCount: releasedIds.length,
     recoveredCount,
     failedShowIds,
+    quarantinedShowIds: quarantinedIds,
   };
   logger.info(`[ShowExecutionReaper] Cycle summary: ${JSON.stringify(summary)}`);
 

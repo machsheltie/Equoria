@@ -49,6 +49,9 @@ const adminOnly = [
   'horse.admin',
   'news.post',
   'news.adminLetter',
+  // Equoria-c7mx0.1 (owner ruling 2026-10-23): quarantined shows are listed for
+  // the Owner/Admin to resolve.
+  'shows.quarantine.view',
 ];
 const ownerOnly = [
   'traits.hidden.view',

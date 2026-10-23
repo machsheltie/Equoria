@@ -30,6 +30,7 @@ import {
   replyToTicket,
 } from '../controllers/staffTicketController.mjs';
 import { listStaff, lookupUser, setUserRole } from '../controllers/staffRolesController.mjs';
+import { getQuarantinedShows } from '../controllers/staffShowsController.mjs';
 
 const router = express.Router();
 
@@ -61,5 +62,12 @@ router.post(
   replyToTicket,
 );
 router.post('/tickets/:id/status', requireStaffCapability('ticket.resolve'), changeTicketStatus);
+
+// Owner and admins: shows quarantined after 3 failed executions (Equoria-c7mx0.1).
+router.get(
+  '/shows/quarantined',
+  requireStaffCapability('shows.quarantine.view'),
+  getQuarantinedShows,
+);
 
 export default router;
