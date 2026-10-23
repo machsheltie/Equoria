@@ -394,6 +394,11 @@ model Horse {
   /// so each group is now one index — the declared survivor. The declarations
   /// that remain are still load-bearing for the differ; do not delete them.
   ///
+  /// AS OF Equoria-34dad (owner decision 32) the three never-used GIN indexes
+  /// idx_horses_epigeneticmodifiers_gin, idx_horses_stats_gin and
+  /// idx_horses_ultrararetraits_gin are DROPPED by migration
+  /// 20261023213000_drop_unused_horse_gin_indexes and no longer declared.
+  ///
   /// THE ONE DECLARED DELETION CANDIDATE HAS BEEN DELETED.
   /// `idx_horses_userid_age` was a strict leading prefix of
   /// `idx_horses_userid_age_trainingcooldown`, so it carried no query value —
@@ -454,9 +459,6 @@ model Horse {
   @@index([userId, createdAt], map: "idx_horses_userid_createdat")
   @@index([disciplineScores], map: "idx_horses_discipline_scores_filter", type: Gin)
   @@index([epigeneticFlags(ops: ArrayOps)], map: "idx_horses_epigenetic_flags_gin", type: Gin)
-  @@index([epigeneticModifiers], map: "idx_horses_epigeneticmodifiers_gin", type: Gin)
-  @@index([conformationScores], map: "idx_horses_stats_gin", type: Gin)
-  @@index([ultraRareTraits], map: "idx_horses_ultrararetraits_gin", type: Gin)
   @@map("horses")
 }
 
