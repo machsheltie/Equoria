@@ -2,9 +2,8 @@
  * The /guide route (Equoria-kd2dd)
  *
  * The Guide is a real route in the app's route table, reached from the one-time
- * welcome note. Where its navigation link belongs is an open owner question, so
- * no navigation surface links to it yet; this test fails the moment one does
- * without that ruling being recorded here.
+ * welcome note and from its own link in the sidebar, right after News (owner
+ * ruling 2026-10-23: the Guide link goes in the sidebar).
  */
 
 import { Suspense } from 'react';
@@ -36,12 +35,14 @@ describe('/guide route (Equoria-kd2dd)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: guideTitle })).toBeInTheDocument();
   });
 
-  it('has no navigation link yet: its placement is an open owner question', () => {
-    // Every list the navigation module exports (sidebar, panel and bottom bar share them).
-    const everyLink = Object.values(layoutNavigation)
-      .filter((exported): exported is { href: string }[] => Array.isArray(exported))
-      .flat();
-    expect(everyLink.length).toBeGreaterThan(0);
-    expect(everyLink.filter(({ href }) => href === '/guide')).toEqual([]);
+  it('is linked from the sidebar, right after News (owner ruling 2026-10-23)', () => {
+    // The sidebar list is the navigation list that holds News; the bottom bar does not.
+    const sidebar = Object.values(layoutNavigation)
+      .filter((exported): exported is { name: string; href: string }[] => Array.isArray(exported))
+      .find((list) => list.some(({ href }) => href === '/news'));
+    expect(sidebar).toBeDefined();
+    const hrefs = (sidebar ?? []).map(({ href }) => href);
+    expect(hrefs[hrefs.indexOf('/news') + 1]).toBe('/guide');
+    expect((sidebar ?? []).find(({ href }) => href === '/guide')?.name).toBe('Guide');
   });
 });

@@ -91,6 +91,96 @@ describe('newPlayerGuide content', () => {
   });
 });
 
+describe('NEW_PLAYER_GUIDE owner rulings of 2026-10-23', () => {
+  const blocksOf = (id: string) =>
+    newPlayerGuide.find((section) => section.id === id)?.blocks ?? [];
+  const tableCaptioned = (caption: string) =>
+    newPlayerGuide
+      .flatMap((section) => section.blocks)
+      .find(
+        (block): block is Extract<GuideBlock, { kind: 'table' }> =>
+          block.kind === 'table' && block.caption === caption
+      );
+  const allText = newPlayerGuide.flatMap((section) => section.blocks.flatMap(textOf));
+
+  it('tells the player where to come back to the guide', () => {
+    expect(blocksOf('welcome').flatMap(textOf)).toContain(
+      'You can come back to this guide at any time from the **Guide** link.'
+    );
+  });
+
+  it('explains the feed stat chance plainly, tier by tier', () => {
+    const table = tableCaptioned('Chance of +1 to a random stat on each feeding');
+    expect(table?.rows).toEqual([
+      ['Basic', 'None'],
+      ['Performance', '10%'],
+      ['Performance Plus', '15%'],
+      ['High Performance', '20%'],
+      ['Elite', '25%'],
+    ]);
+  });
+
+  it('shows the whole temperament chart: every one of the 24 disciplines, each of the 12 temperaments once', () => {
+    const table = tableCaptioned('How each temperament fares in each discipline');
+    expect(table?.rows).toHaveLength(24);
+    const twelve = [
+      'Spirited',
+      'Nervous',
+      'Calm',
+      'Bold',
+      'Steady',
+      'Willing',
+      'Independent',
+      'Reactive',
+      'Stubborn',
+      'Driven',
+      'Lazy',
+      'Aggressive',
+    ].sort();
+    for (const [discipline, suits, neutral, poor] of table?.rows ?? []) {
+      const named = [suits, neutral, poor]
+        .flatMap((cell) => (cell === '—' ? [] : cell.split(', ')))
+        .sort();
+      expect(named, discipline).toEqual(twelve);
+    }
+  });
+
+  it('shows the competition percentages: health, temperament and luck', () => {
+    const joined = allText.join(' ');
+    expect(joined).toContain('Excellent +5%, Very Good +3%, Good no change, Fair −3%');
+    expect(joined).toContain('(+5%)');
+    expect(joined).toContain('(−5%)');
+    expect(joined).toContain('between +1% and +10%');
+  });
+
+  it('presents parades as coming soon with their 40/30/20/10 breakdown', () => {
+    expect(allText.join(' ')).toContain('**Parades are coming soon.**');
+    expect(tableCaptioned('How a parade is judged')?.rows).toEqual([
+      ['Presentation and grooming', '40%'],
+      ['Movement or gait', '30%'],
+      ['Temperament', '20%'],
+      ['Conformation', '10%'],
+    ]);
+  });
+
+  it('no longer lists the settled questions as undecided', () => {
+    const topics = newPlayerGuide
+      .flatMap((section) => section.blocks)
+      .filter(
+        (block): block is Extract<GuideBlock, { kind: 'pending' }> => block.kind === 'pending'
+      )
+      .map((block) => block.topic);
+    for (const settled of [
+      'Where the Guide link lives',
+      'What the better feeds add',
+      'How much of the temperament chart players see',
+      'Parades',
+    ]) {
+      expect(topics).not.toContain(settled);
+    }
+  });
+});
+
 describe('parseGuideInline', () => {
   it('returns plain text as one part', () => {
     expect(parseGuideInline('Just words.')).toEqual([{ kind: 'text', text: 'Just words.' }]);

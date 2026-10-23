@@ -28,10 +28,8 @@ export const guideSectionsStart: readonly GuideSection[] = [
         ],
       },
       {
-        kind: 'pending',
-        topic: 'Where the Guide link lives',
-        ownerQuestion:
-          'The draft said "You can come back to this guide at any time from the Guide link." The Guide has no navigation link yet: its placement (top bar, realm ribbon or Chronicle menu) is an open owner question. Until it is decided the page is reachable only from the welcome note.',
+        kind: 'paragraph',
+        text: 'You can come back to this guide at any time from the **Guide** link.',
       },
     ],
   },
@@ -127,10 +125,24 @@ export const guideSectionsStart: readonly GuideSection[] = [
         ],
       },
       {
-        kind: 'pending',
-        topic: 'What the better feeds add',
-        ownerQuestion:
-          'Should the guide mention that the tiers above Basic give a small daily chance of +1 to a random stat (10/15/20/25%)? This is in the feed contract but has not been confirmed against the "stats are not gifts" ruling.',
+        kind: 'paragraph',
+        text: '**A chance at a stat.** Every feeding above Basic gets one roll. If it comes up, the horse gains **+1 to one of its 12 stats**, picked at random. A better feed rolls more often:',
+      },
+      {
+        kind: 'table',
+        caption: 'Chance of +1 to a random stat on each feeding',
+        columns: ['Feed', 'Chance per feeding'],
+        rows: [
+          ['Basic', 'None'],
+          ['Performance', '10%'],
+          ['Performance Plus', '15%'],
+          ['High Performance', '20%'],
+          ['Elite', '25%'],
+        ],
+      },
+      {
+        kind: 'paragraph',
+        text: 'A horse is fed once a day, so it gets one roll a day. Stats have no cap, so a gain is always kept.',
       },
       {
         kind: 'paragraph',

@@ -22,6 +22,7 @@ import {
   Settings,
   MoreHorizontal,
   Newspaper,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -38,6 +39,8 @@ export const NAV_SECTIONS: NavItem[] = [
   { name: 'Home', href: '/', Icon: Home },
   // Equoria-wbt8l: News, where While You Were Away's "Okay" leads. Home stays.
   { name: 'News', href: '/news', Icon: Newspaper },
+  // Equoria-kd2dd: the new player guide. Owner ruling 2026-10-23 (q20): its link goes in the sidebar.
+  { name: 'Guide', href: '/guide', Icon: BookOpen },
   // D-27 (DECISIONS.md §10): /stable is the roster browser — label "Stable".
   { name: 'Stable', href: '/stable', Icon: Building2, shortName: 'Stable' },
   { name: 'Inventory', href: '/inventory', Icon: Package },

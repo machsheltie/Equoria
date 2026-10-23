@@ -103,7 +103,7 @@ export const guideSectionsShows: readonly GuideSection[] = [
         kind: 'list',
         items: [
           '**Health:** Excellent +5%, Very Good +3%, Good no change, Fair −3%. (A horse that drops to Bad after entering still runs, at −5%.)',
-          '**Temperament:** each discipline suits some temperaments (+5%), is neutral to others, and is a poor fit for a few (−5%).',
+          '**Temperament:** each discipline suits some temperaments (+5%), is neutral to others, and is a poor fit for a few (−5%). The full chart is under [Temperaments and traits](#temperaments-and-traits).',
           '**Rider:** a well-suited rider helps, and a poorly suited one costs a little.',
           '**Luck:** every horse rolls between +1% and +10% at every show.',
         ],
@@ -111,12 +111,6 @@ export const guideSectionsShows: readonly GuideSection[] = [
       {
         kind: 'paragraph',
         text: 'Luck adds suspense between close horses, but it never makes up for breeding and training.',
-      },
-      {
-        kind: 'pending',
-        topic: 'How much of the temperament chart players see',
-        ownerQuestion:
-          'Should players be able to see the full temperament-by-discipline table, or only learn it through play?',
       },
       {
         kind: 'paragraph',
@@ -172,7 +166,7 @@ export const guideSectionsShows: readonly GuideSection[] = [
       },
       {
         kind: 'paragraph',
-        text: '**Parades** are all about presentation:',
+        text: '**Parades are coming soon.** They will be all about presentation, and this is how they will be judged:',
       },
       {
         kind: 'table',
@@ -188,12 +182,6 @@ export const guideSectionsShows: readonly GuideSection[] = [
       {
         kind: 'paragraph',
         text: "Decorations from the Tack Shop's Decorative & Parade range help only the presentation part of a parade score. They do nothing in other shows.",
-      },
-      {
-        kind: 'pending',
-        topic: 'Parades',
-        ownerQuestion:
-          "Parades aren't open yet. Confirm whether the guide should describe them before they launch.",
       },
     ],
   },
