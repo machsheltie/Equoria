@@ -671,7 +671,7 @@
   "backend/modules/leaderboards/__tests__/leaderboardService.test.mjs": 5,
   "backend/modules/leaderboards/__tests__/userSummaryRouteRegistration.sentinel.test.mjs": 2,
   "backend/modules/leaderboards/controllers/leaderboardController.mjs": 11,
-  "backend/modules/leaderboards/routes/leaderboardRoutes.mjs": 5,
+  "backend/modules/leaderboards/routes/leaderboardRoutes.mjs": 1,
   "backend/modules/marketplace/__tests__/browseListingsQueryHardening.integration.test.mjs": 2,
   "backend/modules/marketplace/__tests__/buyHorseConcurrentRace.integration.test.mjs": 11,
   "backend/modules/marketplace/__tests__/buyHorseSaleIntegrity.integration.test.mjs": 6,
