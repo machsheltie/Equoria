@@ -304,7 +304,7 @@ jobs:
             pattern: 'tests/(?!integration/)|(models|seed)/[^/]+\.test\.mjs$|backend/(scripts|eslint-plugins)/[^/]+\.test\.mjs$'
           # Shard 2 — integration tests + module co-located tests
           - shard: 2
-            pattern: 'tests/integration|modules/(?!docs/__tests__/)(?!.*(?:groomSalaryPassScoped|flagEngineSingleSource)\.sentinel\.test\.mjs$).*/__tests__'
+            pattern: 'tests/integration|modules/(?!docs/__tests__/)(?!.*(?:groomSalaryPassScoped\.sentinel|flagEngineSingleSource\.sentinel|riderRetirementHidden\.integration)\.test\.mjs$).*/__tests__'
           # Shard 3 — legacy/top-level __tests__ dirs (largest volume),
           # EXCLUDING the module co-located modules/<x>/__tests__ suites that
           # shard 2 owns. The old bare '__tests__/' substring also matched every
@@ -327,7 +327,7 @@ jobs:
           # broke the local two-lane gate (WS4 S6). Guarded by
           # treeLanePinning.sentinel.test.mjs.
           - shard: 3
-            pattern: '^(?!.*modules/.*/__tests__/).*__tests__/|modules/docs/__tests__/|modules/grooms/__tests__/groomSalaryPassScoped\.sentinel\.test\.mjs$|modules/traits/__tests__/flagEngineSingleSource\.sentinel\.test\.mjs$'
+            pattern: '^(?!.*modules/.*/__tests__/).*__tests__/|modules/docs/__tests__/|modules/grooms/__tests__/groomSalaryPassScoped\.sentinel\.test\.mjs$|modules/traits/__tests__/flagEngineSingleSource\.sentinel\.test\.mjs$|modules/riders/__tests__/riderRetirementHidden\.integration\.test\.mjs$'
             serial: true
 
     steps:

@@ -48,6 +48,8 @@ export const TREE_SUITE_DIRS = Object.freeze(['__tests__', 'modules/docs/__tests
 export const TREE_SUITE_FILES = Object.freeze([
   'modules/grooms/__tests__/groomSalaryPassScoped.sentinel.test.mjs',
   'modules/traits/__tests__/flagEngineSingleSource.sentinel.test.mjs',
+  // Equoria-or2ua: walks modules/ to prove no rider payload exposes the retirement age.
+  'modules/riders/__tests__/riderRetirementHidden.integration.test.mjs',
 ]);
 
 /**
