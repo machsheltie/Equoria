@@ -7,14 +7,14 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { STUD_LISTED_STATUSES } from '../../../constants/schema.mjs';
+import { listedStudStatuses } from '../../../constants/schema.mjs';
 import { toPredictionView } from './predictionHorseView.mjs';
 
 /**
  * Owner ruling S9 (Stacey, 2026-10-15): predictions are allowed for a stallion
  * at public AND at private stud. Any other stallion must be the caller's own.
  */
-const PREDICTABLE_STUD_STATUSES = STUD_LISTED_STATUSES;
+const PREDICTABLE_STUD_STATUSES = listedStudStatuses;
 
 /**
  * Batch-validate that `userId` owns EVERY horse id in `horseIds`. Returns

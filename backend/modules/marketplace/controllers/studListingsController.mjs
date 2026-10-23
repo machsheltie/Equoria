@@ -14,7 +14,7 @@
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { STUD_STATUS } from '../../../constants/schema.mjs';
+import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { toPredictionView } from '../../breeding/index.mjs';
@@ -27,10 +27,10 @@ import {
   single,
 } from '../services/listingQueryParams.mjs';
 
-const STUD_MODES = Object.freeze({ public: STUD_STATUS.PUBLIC, private: STUD_STATUS.PRIVATE });
+const STUD_MODES = Object.freeze({ public: studStatuses.public, private: studStatuses.private });
 const MODE_BY_STATUS = Object.freeze({
-  [STUD_STATUS.PUBLIC]: 'public',
-  [STUD_STATUS.PRIVATE]: 'private',
+  [studStatuses.public]: 'public',
+  [studStatuses.private]: 'private',
 });
 
 // A null studFee is a legacy 0, so it sorts with the cheapest. Every order ends

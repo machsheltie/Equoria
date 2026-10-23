@@ -6,15 +6,15 @@
  */
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { STUD_STATUS } from '../../../constants/schema.mjs';
+import { studStatuses } from '../../../constants/schema.mjs';
 import { RetryableTransactionError } from '../../../utils/retryableTransaction.mjs';
 import {
   createNotificationTx,
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
 
-export const PUBLIC_STUD = STUD_STATUS.PUBLIC;
-export const PRIVATE_STUD = STUD_STATUS.PRIVATE;
+export const PUBLIC_STUD = studStatuses.public;
+export const PRIVATE_STUD = studStatuses.private;
 export const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a moment.';
 
 /**

@@ -53,7 +53,7 @@ const STATS: HorseSummary['stats'] = {
   focus: 50,
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 
 function listHorse(overrides: Partial<HorseSummary>): HorseSummary {
   return {
@@ -82,13 +82,13 @@ const rawList: HorseSummary[] = [
   listHorse({
     id: 23,
     name: 'TestFixture-Resting',
-    breedingCooldownEndsAt: new Date(Date.now() + 3 * DAY_MS).toISOString(),
+    breedingCooldownEndsAt: new Date(Date.now() + 3 * dayMs).toISOString(),
   }),
   listHorse({
     id: 24,
     name: 'TestFixture-InFoal',
     inFoal: true,
-    breedingCooldownEndsAt: new Date(Date.now() + 5 * DAY_MS).toISOString(),
+    breedingCooldownEndsAt: new Date(Date.now() + 5 * dayMs).toISOString(),
   }),
 ];
 

@@ -10,7 +10,7 @@ import { TEMPERAMENT_GROOM_SYNERGY } from '../services/temperamentService.mjs';
 import { predictBreedingColors } from '../services/breedingColorPredictionService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { STUD_LISTED_STATUSES } from '../../../constants/schema.mjs';
+import { listedStudStatuses } from '../../../constants/schema.mjs';
 
 /**
  * Canonical groom personalities — defined once at module scope (not per-request).
@@ -339,7 +339,7 @@ export async function getBreedingColorPrediction(req, res) {
     // and coat odds are also allowed for another player's stallion at public
     // or private stud. The dam must always be the caller's.
     const sireAvailable =
-      sire && (sire.userId === req.user.id || STUD_LISTED_STATUSES.includes(sire.studStatus));
+      sire && (sire.userId === req.user.id || listedStudStatuses.includes(sire.studStatus));
     if (!sireAvailable) {
       return res.status(404).json({
         success: false,
