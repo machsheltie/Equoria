@@ -314,13 +314,13 @@ describe('Horse Genetics Hooks', () => {
               timeline: [
                 {
                   date: '2024-01-15T10:00:00Z',
-                  type: 'trait_discovery',
+                  type: 'traitDiscovery',
                   event: 'Discovered trait: brave',
-                  method: 'daily_evaluation',
+                  method: 'dailyEvaluation',
                 },
                 {
                   date: '2024-01-16T10:00:00Z',
-                  type: 'trait_discovery',
+                  type: 'traitDiscovery',
                   event: 'Discovered trait: calm',
                   method: 'groomInteraction',
                 },

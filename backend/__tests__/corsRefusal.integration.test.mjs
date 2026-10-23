@@ -16,14 +16,14 @@ import request from 'supertest';
 import app from '../app.mjs';
 
 describe('disallowed CORS origin (Equoria-vsgi5)', () => {
-  it('answers 403 ORIGIN_NOT_ALLOWED with no CORS grant', async () => {
+  it('answers 403 originNotAllowed with no CORS grant', async () => {
     const res = await request(app).get('/ping').set('Origin', 'https://not-allowed.example');
 
     expect(res.status).toBe(403);
     expect(res.body).toEqual({
       success: false,
       message: 'This origin is not allowed to use the Equoria API.',
-      code: 'ORIGIN_NOT_ALLOWED',
+      code: 'originNotAllowed',
     });
     expect(res.headers['access-control-allow-origin']).toBeUndefined();
     expect(res.headers['access-control-allow-credentials']).toBeUndefined();
@@ -36,7 +36,7 @@ describe('disallowed CORS origin (Equoria-vsgi5)', () => {
       .set('Access-Control-Request-Method', 'GET');
 
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('ORIGIN_NOT_ALLOWED');
+    expect(res.body.code).toBe('originNotAllowed');
   });
 
   it('still serves a request with no Origin header', async () => {

@@ -14,10 +14,10 @@
  * crash card appear instead.
  */
 
-const GUARD_KEY = 'equoria:staleBuildReloadAt';
-const GUARD_WINDOW_MS = 60_000;
+const guardKey = 'equoria:staleBuildReloadAt';
+const guardWindowMs = 60_000;
 
-const STALE_BUILD_PATTERNS = [
+const staleBuildPatterns = [
   /failed to fetch dynamically imported module/i, // Chromium, Firefox
   /error loading dynamically imported module/i, // Firefox
   /importing a module script failed/i, // Safari
@@ -29,28 +29,26 @@ export function isStaleBuildError(error: unknown): boolean {
   if (error === null || typeof error !== 'object') return false;
   const { name, message } = error as { name?: unknown; message?: unknown };
   if (name === 'ChunkLoadError') return true;
-  return (
-    typeof message === 'string' && STALE_BUILD_PATTERNS.some((pattern) => pattern.test(message))
-  );
+  return typeof message === 'string' && staleBuildPatterns.some((pattern) => pattern.test(message));
 }
 
 function readGuard(): number | null {
   try {
-    const raw = window.sessionStorage.getItem(GUARD_KEY);
+    const raw = window.sessionStorage.getItem(guardKey);
     const at = raw === null ? NaN : Number(raw);
     return Number.isFinite(at) ? at : null;
   } catch {
-    // sessionStorage can throw in a locked-down browser; treat as no record.
+    // swallowed-catch: storage-guard - sessionStorage can throw in a locked-down browser; treat as no record.
     return null;
   }
 }
 
 function writeGuard(at: number): boolean {
   try {
-    window.sessionStorage.setItem(GUARD_KEY, String(at));
+    window.sessionStorage.setItem(guardKey, String(at));
     return true;
   } catch {
-    // Without a guard we cannot prove the reload will not loop, so do not reload.
+    // swallowed-catch: storage-guard - without a guard we cannot prove the reload will not loop, so do not reload.
     return false;
   }
 }
@@ -67,7 +65,7 @@ export function reloadOnceForNewBuild({
   now = Date.now(),
 }: ReloadOptions = {}): boolean {
   const last = readGuard();
-  if (last !== null && now - last < GUARD_WINDOW_MS) return false;
+  if (last !== null && now - last < guardWindowMs) return false;
   if (!writeGuard(now)) return false;
   reload();
   return true;

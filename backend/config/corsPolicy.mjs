@@ -24,8 +24,8 @@ import logger from '../utils/logger.mjs';
 
 // Code carried by the error the delegate hands to cors()'s next(err), and by the
 // 403 body errorHandler turns it into (Equoria-vsgi5).
-export const ORIGIN_NOT_ALLOWED_CODE = 'ORIGIN_NOT_ALLOWED';
-export const ORIGIN_NOT_ALLOWED_MESSAGE = 'This origin is not allowed to use the Equoria API.';
+export const originNotAllowedCode = 'originNotAllowed';
+export const originNotAllowedMessage = 'This origin is not allowed to use the Equoria API.';
 
 const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/'];
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -98,7 +98,7 @@ const isSameOrigin = (origin, hostHeader) => {
 /**
  * cors() option delegate: reflects no-origin and same-origin requests, allows
  * ALLOWED_ORIGINS (plus the local dev origins outside production), and
- * refuses everything else (error code ORIGIN_NOT_ALLOWED, answered 403).
+ * refuses everything else (error code originNotAllowed, answered 403).
  */
 export const createCorsOptionsDelegate =
   ({ nodeEnv, allowedOrigins: configuredOrigins }) =>
@@ -137,9 +137,9 @@ export const createCorsOptionsDelegate =
     // A refused origin is a client error, not a server fault. errorHandler maps
     // this code to a 403 refusal (Equoria-vsgi5).
     return callback(
-      Object.assign(new Error(ORIGIN_NOT_ALLOWED_MESSAGE), {
+      Object.assign(new Error(originNotAllowedMessage), {
         statusCode: 403,
-        code: ORIGIN_NOT_ALLOWED_CODE,
+        code: originNotAllowedCode,
       }),
     );
   };

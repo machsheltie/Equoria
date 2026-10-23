@@ -19,14 +19,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
-import {
-  GROOM_PERSONALITY_VALUES,
-  GROOM_SKILL_LEVEL_VALUES,
-  GROOM_SPECIALTY_VALUES,
-} from '../../../constants/schema.mjs';
 
 const ORIGIN = 'http://localhost:3000';
+
+// Four or more comma-separated words in a row is an enumeration of stored values.
+const noValueList = /(\w+, ){3}\w+/;
 
 describe('groom validation refusals carry no value lists (Equoria-bdpvw)', () => {
   const cleanup = createCleanupTracker();
@@ -75,7 +72,7 @@ describe('groom validation refusals carry no value lists (Equoria-bdpvw)', () =>
     const body = JSON.stringify(res.body);
     expect(body).toMatch(/interactionType/);
     expect(body).not.toMatch(/must be one of/i);
-    expect(body).not.toContain(GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS.join(', '));
+    expect(body).not.toMatch(noValueList);
   });
 
   it('bad hire fields are refused without listing the valid specialities, skill levels or personalities', async () => {
@@ -89,8 +86,6 @@ describe('groom validation refusals carry no value lists (Equoria-bdpvw)', () =>
     expect(res.status).toBe(400);
     const body = JSON.stringify(res.body);
     expect(body).not.toMatch(/must be one of/i);
-    expect(body).not.toContain(GROOM_SPECIALTY_VALUES.join(', '));
-    expect(body).not.toContain(GROOM_SKILL_LEVEL_VALUES.join(', '));
-    expect(body).not.toContain(GROOM_PERSONALITY_VALUES.join(', '));
+    expect(body).not.toMatch(noValueList);
   });
 });

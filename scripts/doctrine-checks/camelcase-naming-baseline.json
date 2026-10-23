@@ -512,7 +512,7 @@
   "backend/modules/grooms/routes/enhancedGroomRoutes.mjs": 6,
   "backend/modules/grooms/routes/groomAssignmentRoutes.mjs": 5,
   "backend/modules/grooms/routes/groomHandlerRoutes.mjs": 6,
-  "backend/modules/grooms/routes/groomRoutes.mjs": 17,
+  "backend/modules/grooms/routes/groomRoutes.mjs": 14,
   "backend/modules/grooms/services/compatibilityFactorAnalysis.mjs": 16,
   "backend/modules/grooms/services/dynamicCompatibilityRules.mjs": 13,
   "backend/modules/grooms/services/dynamicCompatibilityScoring.mjs": 28,
