@@ -17,46 +17,17 @@ import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  listShowsPaginated,
   getShowMetadata,
   getShowEntriesWithHorseStats,
   getShowForEntry,
   CONFORMATION_ENTRY_ONLY_MESSAGE,
   enterShowDeferredTx,
 } from '../services/competitionRouteQueries.mjs';
-import { parsePaginationParams, buildPaginatedResponse } from '../../../utils/paginationHelper.mjs';
+import { listOpenShows } from '../controllers/openShowsController.mjs';
 
 const router = express.Router();
 
-/**
- * GET /api/competition (and /api/v1/competition via the v1 mount)
- * List shows that are currently open for entry. Used by the frontend
- * CompetitionBrowserPage which renders cards from this response.
- *
- * Equoria-nj0y triage: this list endpoint was missing and the frontend
- * `competitionsApi.list()` call was 404'ing, leaving the browser in
- * permanent loading state and breaking the broader E2E specs that wait
- * for filter controls. The shape here matches the Competition type the
- * client expects (id, name, discipline, dates, fee, prize, status).
- */
-router.get('/', queryRateLimiter, auth, async (req, res) => {
-  try {
-    const { page, limit, skip } = parsePaginationParams(req, { defaultLimit: 20, maxLimit: 100 });
-
-    const where = { status: 'open' };
-
-    const { shows, total } = await listShowsPaginated({ where, skip, take: limit });
-
-    return buildPaginatedResponse(res, shows, { page, limit, total });
-  } catch (error) {
-    logger.error(`[competitionRoutes.GET /] Error listing competitions: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to load competitions',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal error',
-    });
-  }
-});
+router.get('/', queryRateLimiter, auth, listOpenShows);
 
 /**
  * POST /enter-show — REMOVED (Equoria-kacla, 410 Gone)

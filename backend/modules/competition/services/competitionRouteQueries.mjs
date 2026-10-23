@@ -11,19 +11,34 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { enterShowTx } from '../shows/showEscrowTx.mjs';
 import { toShowListItem } from './showListView.mjs';
+import { findKeysetPage } from '../../../utils/paginationHelper.mjs';
 
-export async function listShowsPaginated({ where, skip, take }) {
-  const [shows, total] = await Promise.all([
-    prisma.show.findMany({
+/**
+ * One page of shows, soonest first, on the keyset convention (Equoria-cmw85.19):
+ * ties on runDate are broken by id, so shows that run at the same moment keep
+ * their places between requests. A `cursor` continues after the previous page's
+ * last show; without one, `skip` is the legacy offset. `total` stays as it was,
+ * for the numbered-page client. Each show is mapped to the fields the Arena cards
+ * read, with its real entry count (Equoria-fyoca).
+ *
+ * @throws {InvalidCursorError} on a cursor that cannot be decoded
+ */
+export async function listShowsPaginated({ where, skip, limit, cursor }) {
+  const [{ items: shows, pageInfo }, total] = await Promise.all([
+    findKeysetPage(args => prisma.show.findMany(args), {
       where,
-      orderBy: [{ runDate: 'asc' }, { id: 'asc' }],
+      sort: [
+        { key: 'runDate', dir: 'asc', type: 'date' },
+        { key: 'id', dir: 'asc', type: 'int' },
+      ],
+      limit,
       skip,
-      take,
-      include: { _count: { select: { entries: true } } },
+      cursor,
+      extra: { include: { _count: { select: { entries: true } } } },
     }),
     prisma.show.count({ where }),
   ]);
-  return { shows: shows.map(toShowListItem), total };
+  return { shows: shows.map(toShowListItem), total, pageInfo };
 }
 
 export function getShowMetadata(showId) {

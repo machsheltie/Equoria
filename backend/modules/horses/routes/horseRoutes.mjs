@@ -28,6 +28,7 @@ import logger from '../../../utils/logger.mjs';
 import { satisfiesRole } from '../../staff/index.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';
+import { InvalidCursorError, clampLimit } from '../../../utils/paginationHelper.mjs';
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
       return res.status(400).json({ success: false, message: 'Invalid parameters' });
     }
 
-    const { userId: queryUserId, breedId, limit = 200, offset = 0 } = req.query;
+    const { userId: queryUserId, breedId, limit, offset = 0, cursor } = req.query;
 
     const where = {};
     // CWE-639 / IDOR fix (Equoria-tzyv8): scope results to the authenticated
@@ -91,7 +92,14 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
 
     // Read fresh every time — no server-side list cache (Equoria-de3op, owner
     // ruling 2026-10-13): any writer's committed change is in the next read.
-    const horses = await listHorses(where, { take: parseInt(limit), skip: parseInt(offset) });
+    // Keyset convention (Equoria-cmw85.19): ?cursor continues a list; ?offset still
+    // works without one. This list has always defaulted to a whole stable, so its
+    // default and cap are 200 rather than the convention's 20 / 100.
+    const { items: horses, pageInfo } = await listHorses(where, {
+      limit: clampLimit(limit, { def: 200, max: 200 }),
+      skip: Math.max(parseInt(offset) || 0, 0),
+      cursor: typeof cursor === 'string' && cursor ? cursor : null,
+    });
 
     // Equoria-55bo.5: attach a lightweight `latestEvent` (most-recent
     // competition result) so NarrativeChip.deriveLatestChapter can surface
@@ -135,6 +143,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     res.json({
       success: true,
       message: `Found ${horses.length} horses`,
+      pageInfo,
       data: horses.map(h => {
         const firstPlaceWins = firstPlaceWinsByHorse.get(h.id) ?? 0;
         return {
@@ -154,6 +163,9 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
       }),
     });
   } catch (error) {
+    if (error instanceof InvalidCursorError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     logger.error(`[horseRoutes] Error getting horses: ${error.message}`);
     res.status(500).json({
       success: false,

@@ -17,6 +17,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { findKeysetPage } from '../../../utils/paginationHelper.mjs';
 
 /**
  * The horse-list select shape (Equoria-tkyx, Equoria-lvjy, Equoria-u7e6,
@@ -71,19 +72,27 @@ export const HORSE_LIST_SELECT = Object.freeze({
 });
 
 /**
- * Paginated horse-list query for `GET /api/horses`.
+ * Paginated horse-list query for `GET /api/horses`, on the keyset convention
+ * (Equoria-cmw85.19): newest first, ties broken by id so two horses created in
+ * the same instant keep their places between requests. A `cursor` continues
+ * after the last row of the previous page; without one, `skip` is the legacy offset.
  *
  * @param {object} where - prisma where filter (userId / breedId built by route)
- * @param {{ take: number, skip: number }} pagination
- * @returns {Promise<Array<object>>}
+ * @param {{ limit: number, skip: number, cursor?: string|null }} pagination
+ * @returns {Promise<{ items: Array<object>, pageInfo: { nextCursor: string|null, hasMore: boolean } }>}
+ * @throws {InvalidCursorError} on a cursor that cannot be decoded
  */
-export function listHorses(where, { take, skip }) {
-  return prisma.horse.findMany({
+export function listHorses(where, { limit, skip, cursor }) {
+  return findKeysetPage(args => prisma.horse.findMany(args), {
     where,
-    take,
+    sort: [
+      { key: 'createdAt', dir: 'desc', type: 'date' },
+      { key: 'id', dir: 'desc', type: 'int' },
+    ],
+    limit,
     skip,
-    select: HORSE_LIST_SELECT,
-    orderBy: { createdAt: 'desc' },
+    cursor,
+    extra: { select: HORSE_LIST_SELECT },
   });
 }
 
