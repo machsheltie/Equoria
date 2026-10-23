@@ -19,7 +19,7 @@ describe('formatHealth', () => {
 
   it('keeps the five words and normalises case and spacing', () => {
     expect(formatHealth('excellent')).toBe('Excellent');
-    expect(formatHealth('very_good')).toBe('Very Good');
+    expect(formatHealth('very-good')).toBe('Very Good');
     expect(formatHealth('Very Good')).toBe('Very Good');
     expect(formatHealth('good')).toBe('Good');
     expect(formatHealth('FAIR')).toBe('Fair');

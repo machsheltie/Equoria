@@ -76,11 +76,11 @@ export const HORSE_TEMPERAMENT_VALUES = Object.freeze(Object.values(HORSE_TEMPER
  * Fair, Poor, Injured.
  */
 export const HORSE_HEALTH_STATUS = {
-  EXCELLENT: 'Excellent',
-  VERY_GOOD: 'Very Good',
-  GOOD: 'Good',
-  FAIR: 'Fair',
-  BAD: 'Bad',
+  excellent: 'Excellent',
+  veryGood: 'Very Good',
+  good: 'Good',
+  fair: 'Fair',
+  bad: 'Bad',
 };
 
 export const HORSE_HEALTH_STATUS_VALUES = Object.values(HORSE_HEALTH_STATUS);

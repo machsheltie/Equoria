@@ -59,7 +59,7 @@ const healthGradeByWord = Object.freeze({
  * bands, a vet finding, the owner's own vocabulary - to one of the five
  * states. Poor, Bad and Critical are all Bad. A word it does not know (a free
  * vet finding such as 'Lameness') is Bad, as worseOf already reads it.
- * Spaces, underscores and hyphens are ignored ('very_good' is Very Good).
+ * Spaces, underscores and hyphens are ignored ('very-good' is Very Good).
  *
  * @param {unknown} word
  * @returns {'excellent'|'veryGood'|'good'|'fair'|'bad'}

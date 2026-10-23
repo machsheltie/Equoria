@@ -30,7 +30,7 @@ describe('toHealthWord (the one health vocabulary)', () => {
   it('keeps the five words and normalises their case and spacing', () => {
     expect(toHealthWord('excellent')).toBe('Excellent');
     expect(toHealthWord('Very Good')).toBe('Very Good');
-    expect(toHealthWord('very_good')).toBe('Very Good');
+    expect(toHealthWord('very-good')).toBe('Very Good');
     expect(toHealthWord('VERY GOOD')).toBe('Very Good');
     expect(toHealthWord('Good')).toBe('Good');
     expect(toHealthWord('fair')).toBe('Fair');
