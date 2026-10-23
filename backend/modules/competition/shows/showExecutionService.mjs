@@ -22,6 +22,12 @@ import { SYSTEM_ACCOUNT_SHOW_ESCROW, debitSystemAccountOrThrow } from '../../eco
 // (extracted for deterministic testability + file-size discipline).
 import { refundUnpaidPrizeShareInTx, settleShowFeeEscrow } from './showEscrowTx.mjs';
 import { settleDueConformationShows } from '../services/conformationShowService.mjs';
+import {
+  clearStagedOrdering,
+  findPartiallySettledShowIds,
+  planPlacementPayouts,
+  readRecoverableOrdering,
+} from './showSettlementRecovery.mjs';
 // Equoria-c7mx0: scoring extracted verbatim to the shared scoring service;
 // readStagedOrdering implements the 2026-07-06 staged-ordering replay contract.
 import {
@@ -44,23 +50,6 @@ import {
 // fire-and-forget OUTSIDE the prize-payout tx (fail-soft).
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { invalidateHorseXpCaches } from '../../horses/index.mjs';
-
-/**
- * Set shows.stagedOrdering to SQL NULL (Equoria-c7mx0). Raw parameterized SQL
- * rather than `data: { stagedOrdering: Prisma.DbNull }` because the DbNull
- * sentinel is identity-checked by the client. Root cause (Equoria-27xvj): under
- * a single-process Jest run the sandbox reused a client cached by the host's
- * globalSetup while importing its own copy of @prisma/client, so the sentinel
- * and the client came from different runtime copies and DbNull serialized as
- * `{}`. packages/database/prismaClient.mjs now exports the namespace that
- * belongs to the cached client and
- * backend/__tests__/prismaNamespaceMatchesSharedClient.integration.test.mjs
- * pins it; this raw SQL is kept as it is, unambiguous in every runtime.
- * Id-scoped by construction.
- */
-async function clearStagedOrdering(showId) {
-  await prisma.$executeRaw`UPDATE "shows" SET "stagedOrdering" = NULL WHERE "id" = ${showId}`;
-}
 
 // ── BA-4: Overnight show execution ────────────────────────────────────────────
 
@@ -338,6 +327,76 @@ async function finalEntriesAndOrdering(show, claimedOrdering, scoreRng, now) {
 }
 
 /**
+ * Pay the staged placements not in `settledHorseIds`, settle the fee escrow,
+ * and discard the staged ordering once nothing failed. Returns the errors of
+ * the entries whose transaction rolled back.
+ *
+ * Equoria-wmwbr + Equoria-cmw85.1: entries settle ONE AT A TIME and each failure
+ * is held, not fatal: a Promise.all fan-out filled the three-connection pool, and
+ * its first rejection skipped the fee settlement with the show already
+ * 'completed'. A failed entry's prize stays in escrow and the show keeps its
+ * staged ordering; the next run re-drives it (Equoria-cmw85.2).
+ */
+async function payOutPlacements(show, stagedOrdering, settledHorseIds, { now, statGainRng }) {
+  const { pending, unpaidPrizeShare } = planPlacementPayouts(show, stagedOrdering, settledHorseIds);
+  const failures = [];
+  for (const { staged, prize } of pending) {
+    try {
+      await settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGainRng });
+    } catch (error) {
+      logger.error(
+        `[showExecutionService] Show ${show.id}: settlement of horse ${staged.horseId} (placement ${staged.placement}) failed and rolled back: ${error.message}`,
+      );
+      failures.push(error);
+    }
+  }
+
+  // Equoria-si69u: the fees are the creator's whatever became of the entries
+  // (Equoria-wmwbr); a no-op once the escrow has drained (Equoria-8pb6w).
+  await settleShowFeeEscrow(show.id);
+
+  // Equoria-c7mx0: only a fully settled show discards its staged ordering.
+  if (failures.length === 0) {
+    await clearStagedOrdering(show.id);
+  }
+  return failures;
+}
+
+/**
+ * Finish a 'completed' show that still holds its staged ordering
+ * (Equoria-cmw85.2): pay the staged placements with no result row. The result
+ * row is the first write of an entry's own transaction, so a row means that
+ * entry settled whole and the rest rolled back (or the process died), so each
+ * is paid exactly once; the unique [showId, horseId] guard backstops a collision.
+ * Returns `{ executed, failures }` like settleRiddenShow.
+ */
+async function recoverPartiallySettledShow(show, { now, statGainRng }) {
+  const stagedOrdering = readRecoverableOrdering(show);
+  if (!stagedOrdering) {
+    throw new Error(`Show ${show.id} is half-settled but its staged ordering is unreadable`);
+  }
+  const results = await prisma.competitionResult.findMany({
+    where: { showId: show.id },
+    select: { horseId: true },
+  });
+  const skipped = new Set(results.map(r => r.horseId));
+  // An entrant erased since the run (horse deleted) has no entry left to pay.
+  const stillEntered = new Set(show.entries.map(e => e.horseId));
+  for (const staged of stagedOrdering) {
+    if (!stillEntered.has(staged.horseId)) {
+      skipped.add(staged.horseId);
+    }
+  }
+  const unpaid = stagedOrdering.length - stagedOrdering.filter(s => skipped.has(s.horseId)).length;
+
+  const failures = await payOutPlacements(show, stagedOrdering, skipped, { now, statGainRng });
+  logger.info(
+    `Recovered show ${show.name} (id=${show.id}): ${unpaid} unpaid, ${failures.length} failed`,
+  );
+  return { executed: unpaid > 0 && failures.length < unpaid, failures };
+}
+
+/**
  * Settle one due ridden show: claim it, replay (or score and stage) its
  * ordering, settle each entry, then settle its entry-fee escrow.
  *
@@ -413,82 +472,17 @@ async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
     return { executed: false, failures: [] };
   }
 
-  const totalPrize = Math.max(0, show.prize);
-  const prizeSlots = [0.5, 0.3, 0.2]; // 1st/2nd/3rd shares
-  // Placed shares round down. Equoria-w7fnz fix round 1 (owner ruling
-  // 2026-10-19): with 3+ entrants the rounding remainder goes to the winner,
-  // so 1st = prize - 2nd - 3rd and the three shares sum to the whole prize.
-  const floorShare = placement => Math.floor(totalPrize * (prizeSlots[placement - 1] ?? 0));
-  const prizeFor = placement =>
-    placement === 1 && stagedOrdering.length >= prizeSlots.length
-      ? totalPrize - floorShare(2) - floorShare(3)
-      : floorShare(placement);
-
-  // Equoria-w7fnz (owner ruling 2026-10-19): with fewer than 3 entrants the
-  // unpaid share goes back to the creator. Placed shares round down as
-  // always; the refund is the rest of the escrow, so placed + refund ==
-  // prizeEscrow exactly. Only an escrow-funded show (the same test the
-  // payout uses below) has escrow to refund. Paid inside the 1st-place tx,
-  // so the [showId, horseId] result guard makes it exactly-once.
-  const placedTotal = stagedOrdering.reduce((sum, s) => sum + prizeFor(s.placement), 0);
-  const unpaidPrizeShare =
-    stagedOrdering.length < prizeSlots.length && show.prizeEscrow >= totalPrize
-      ? show.prizeEscrow - placedTotal
-      : 0;
-
-  // Equoria-koodu: CLAIM-THEN-PROCESS pattern. Mark the show 'completed'
-  // BEFORE processing entries. If any entry's writes fail, the cron tick
-  // (which filters on status) will NOT pick this show up again, so the
-  // worst case is a partial-but-bounded set of result/money writes — never
-  // a double-pay. The @@unique([showId, horseId]) constraint on
-  // CompetitionResult backstops any case where this ordering is bypassed
-  // by raising P2002 on duplicate writes. (stagedOrdering deliberately
-  // NOT cleared here — it outlives the payout phase so a mid-payout crash
-  // leaves the ordering available for deterministic re-drive; cleared
-  // after full settlement below.)
+  // Equoria-koodu: CLAIM-THEN-PROCESS. Mark the show 'completed' BEFORE paying
+  // its entries, so the 'open' scan never re-runs it and cannot double-pay; the
+  // @@unique([showId, horseId]) result guard backstops any bypass. stagedOrdering
+  // outlives the payout phase: a show that ends with it still set is half-settled
+  // and recoverPartiallySettledShow finishes it (Equoria-cmw85.2).
   await prisma.show.update({
     where: { id: show.id },
     data: { status: 'completed', executedAt: now, claimedAt: null },
   });
 
-  // Equoria-wmwbr + Equoria-cmw85.1: the entries settle ONE AT A TIME, and
-  // each failure is held instead of ending the show. Before, every entry's
-  // transaction started at once (Promise.all): a big show filled the
-  // three-connection production pool and queued the rest of its transactions
-  // behind it, and the first rejection skipped the fee-escrow settlement below
-  // with the show already 'completed', stranding the creator's fees for good.
-  // A failed entry's transaction rolls back whole, so its prize stays in
-  // escrow (the bounded loss koodu accepts); the other entries still settle.
-  const failures = [];
-  for (const staged of stagedOrdering) {
-    try {
-      await settleEntry(show, staged, {
-        prize: prizeFor(staged.placement),
-        unpaidPrizeShare,
-        now,
-        statGainRng,
-      });
-    } catch (error) {
-      logger.error(
-        `[showExecutionService] Show ${show.id}: settlement of horse ${staged.horseId} (placement ${staged.placement}) failed and rolled back: ${error.message}`,
-      );
-      failures.push(error);
-    }
-  }
-
-  // Equoria-si69u: settle the fee escrow AFTER the entries — whatever became
-  // of them, since the fees are the creator's either way (Equoria-wmwbr).
-  // Extracted to settleShowFeeEscrow (Equoria-8pb6w) so the read-then-write
-  // decrement semantics can be exercised deterministically against a
-  // concurrent feeEscrow increment.
-  await settleShowFeeEscrow(show.id);
-
-  // Equoria-c7mx0: the show has fully settled — only now is the staged
-  // ordering discarded. A show with a failed entry keeps it: 'completed' with
-  // a staged ordering is the record of which placements were never paid.
-  if (failures.length === 0) {
-    await clearStagedOrdering(show.id);
-  }
+  const failures = await payOutPlacements(show, stagedOrdering, new Set(), { now, statGainRng });
 
   const failedNote = failures.length > 0 ? `, ${failures.length} failed to settle` : '';
   logger.info(
@@ -498,8 +492,8 @@ async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
 }
 
 /**
- * Executes due shows (closeDate <= now, 'open'): sets status 'completed' and executedAt,
- * awards prizes and XP, sets the firstEverWin milestone. Conformation shows settle first
+ * Executes due shows (closeDate <= now, 'open'), and finishes half-settled ones
+ * (Equoria-cmw85.2): sets 'completed' and executedAt, awards prizes and XP, sets firstEverWin. Conformation shows settle first
  * on their own scorer (titles, no prize), isolated from the ridden batch (Equoria-mwjst):
  * each batch is attempted even if the other fails, and any failure is rethrown to cron.
  * Within the ridden batch each show is attempted even if an earlier one failed
@@ -549,11 +543,24 @@ export async function executeClosedShows(req, res, options) {
       include: { entries: { include: { horse: { select: scoringHorseSelect } } } },
     });
 
+    // Equoria-cmw85.2: shows an earlier run left half-settled are finished too.
+    const recoverableIds = await findPartiallySettledShowIds({ now, showIds: scopedShowIds });
+    const recoverable = recoverableIds.length
+      ? await prisma.show.findMany({
+          where: { id: { in: recoverableIds } },
+          include: { entries: { select: { horseId: true } } },
+        })
+      : [];
+
     let totalExecuted = conformation.executed ?? 0;
     const failures = [];
-    for (const show of shows) {
+    const batch = [
+      ...shows.map(show => ({ show, settle: settleRiddenShow })),
+      ...recoverable.map(show => ({ show, settle: recoverPartiallySettledShow })),
+    ];
+    for (const { show, settle } of batch) {
       try {
-        const outcome = await settleRiddenShow(show, { now, scoreRng, statGainRng });
+        const outcome = await settle(show, { now, scoreRng, statGainRng });
         totalExecuted += outcome.executed ? 1 : 0;
         failures.push(...outcome.failures);
       } catch (error) {
