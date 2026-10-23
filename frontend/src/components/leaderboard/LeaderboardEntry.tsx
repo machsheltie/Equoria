@@ -108,7 +108,7 @@ const formatPrimaryStat = (value: number, category: LeaderboardCategory): React.
   if (category === 'win-rate') {
     return `${value}%`;
   }
-  if (category === 'prize-money') {
+  if (category === 'prize-money' || category === 'owner') {
     return <Currency amount={value} />;
   }
   return String(value);

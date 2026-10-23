@@ -1439,6 +1439,21 @@ paths:
       responses:
         '200': { description: 'Owner leaderboard' }
 
+  /leaderboards/discipline:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top horses by first places in one discipline'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: discipline
+          required: true
+          schema: { type: string }
+          description: 'Exact competition discipline name, for example Show Jumping'
+      responses:
+        '200': { description: 'Page-shaped board: entries, currentPage, totalPages, totalEntries' }
+        '400': { description: 'Missing or unknown discipline' }
+
   /leaderboards/players/level:
     get:
       tags: [Leaderboards]

@@ -22,6 +22,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ErrorState } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
+import { DISCIPLINES, formatDisciplineName } from '@/lib/utils/training-utils';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/api/useLeaderboard';
@@ -113,6 +114,9 @@ function useLeaderboardUrlState() {
   };
 }
 
+// Boards whose rows are players, not horses: there is no horse to open.
+const playerBoards: ReadonlySet<LeaderboardCategory> = new Set(['level', 'owner']);
+
 // ---------------------------------------------------------------------------
 // Empty-state copy for the lifetime-record boards (Equoria-xxdqh)
 // ---------------------------------------------------------------------------
@@ -131,6 +135,10 @@ const emptyBoardCopy: Partial<Record<LeaderboardCategory, { title: string; descr
     wins: {
       title: 'No horse has won a show yet',
       description: 'Every horse that wins a show joins this board.',
+    },
+    discipline: {
+      title: 'No horse has won in this discipline yet',
+      description: 'Every horse that wins a show in the discipline joins this board.',
     },
   };
 
@@ -222,13 +230,22 @@ const LeaderboardsPage = () => {
     updatePage,
   } = useLeaderboardUrlState();
 
+  // The discipline select shows its first option until a player picks one, so
+  // that discipline is the one the board must show (Equoria-pthuj). The select
+  // holds discipline ids; the backend ranks by the discipline's name.
+  const selectedDisciplineId =
+    category === 'discipline' ? (discipline ?? DISCIPLINES[0]?.id) : discipline;
+  const disciplineName = selectedDisciplineId
+    ? formatDisciplineName(selectedDisciplineId)
+    : undefined;
+
   // Data fetching
   const {
     data: leaderboardData,
     isLoading: isLeaderboardLoading,
     isError: isLeaderboardError,
     refetch: refetchLeaderboard,
-  } = useLeaderboard({ category, period, discipline, page });
+  } = useLeaderboard({ category, period, discipline: disciplineName, page });
 
   const {
     data: userRankData,
@@ -321,7 +338,7 @@ const LeaderboardsPage = () => {
           <LeaderboardCategorySelector
             selectedCategory={category}
             selectedPeriod={period}
-            selectedDiscipline={discipline}
+            selectedDiscipline={selectedDisciplineId}
             onCategoryChange={updateCategory}
             onPeriodChange={updatePeriod}
             onDisciplineChange={updateDiscipline}
@@ -352,7 +369,7 @@ const LeaderboardsPage = () => {
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={updatePage}
-              onEntryClick={handleEntryClick}
+              onEntryClick={playerBoards.has(category) ? undefined : handleEntryClick}
               emptyTitle={emptyBoardCopy[category]?.title}
               emptyDescription={emptyBoardCopy[category]?.description}
             />

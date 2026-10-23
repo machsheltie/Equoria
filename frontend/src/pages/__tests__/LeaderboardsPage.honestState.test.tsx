@@ -45,14 +45,14 @@ const fullSummary = {
   bestRankings: [{ category: 'level', categoryLabel: 'Level', rank: 7, achievement: 'Top 10' }],
 };
 
-function renderPage() {
+function renderPage(search = '') {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: 0 } },
   });
   return render(
     <QueryClientProvider client={client}>
       <MockAuthProvider userOverrides={{ id: userId, username: 'Tester' }}>
-        <MemoryRouter initialEntries={['/leaderboards']}>
+        <MemoryRouter initialEntries={[`/leaderboards${search}`]}>
           <LeaderboardsPage />
         </MemoryRouter>
       </MockAuthProvider>
@@ -142,7 +142,9 @@ describe('LeaderboardsPage — rank summary four-state (Equoria-ffmha)', () => {
 describe('LeaderboardsPage — horse detail modal (Equoria-ffmha, Equoria-b9yi1)', () => {
   const openFirstHorse = async () => {
     const user = userEvent.setup();
-    renderPage();
+    // Equoria-pthuj: the level tab ranks players, whose rows have no horse; the
+    // prize-money tab is a real horse board.
+    renderPage('?category=prize-money');
     const rows = await screen.findAllByTestId('leaderboard-entry');
     await user.click(rows[0]);
   };

@@ -14,6 +14,12 @@ import {
   captureRankSnapshots,
 } from '../controllers/leaderboardController.mjs';
 import { winPercentageBoard, winsBoard } from '../controllers/horseRecordBoardsController.mjs';
+import {
+  levelBoard,
+  prizeMoneyBoard,
+  ownerBoard,
+  disciplineBoard,
+} from '../controllers/pageBoardsController.mjs';
 import { isKnownDiscipline } from '../../competition/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
@@ -31,12 +37,17 @@ import {
 
 const router = express.Router();
 
-/** Aliases for frontend compatibility (matches LeaderboardCategorySelector.tsx) */
-router.get('/level', auth, getTopPlayersByLevel);
-router.get('/prize-money', auth, getTopHorsesByEarnings);
+/**
+ * The LeaderboardsPage tabs (matches LeaderboardCategorySelector.tsx). Every one answers
+ * with the page shape `{ entries, currentPage, totalPages, totalEntries }` (Equoria-pthuj);
+ * the canonical /players/*, /horses/* routes below keep their documented shapes.
+ */
+router.get('/level', auth, levelBoard);
+router.get('/prize-money', auth, prizeMoneyBoard);
 router.get('/win-rate', auth, winPercentageBoard);
 router.get('/wins', auth, winsBoard);
-router.get('/owner', auth, getTopPlayersByHorseEarnings);
+router.get('/owner', auth, ownerBoard);
+router.get('/discipline', auth, disciplineBoard);
 
 /**
  * @swagger

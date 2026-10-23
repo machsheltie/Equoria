@@ -5,8 +5,49 @@ import {
   VALID_CATEGORIES,
 } from '../../fixtures/leaderboards';
 import type { LeaderboardCategory } from '@/components/leaderboard/LeaderboardCategorySelector';
+import type { LeaderboardEntryData } from '@/components/leaderboard/LeaderboardEntry';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+/**
+ * The row the backend really serves for a category (Equoria-pthuj). The
+ * generated fixture rows carry fields no backend board sends (rankChange, a
+ * level or win rate on a level row, ...); a test fed those passes on a contract
+ * the backend never served. Mirrors backend/modules/leaderboards/controllers
+ * pageBoardsController.mjs, horseRecordBoardsController.mjs and getRecentWinners.
+ */
+function toBackendEntry(entry: LeaderboardEntryData, category: LeaderboardCategory) {
+  const { rank, horseId, horseName, ownerId, ownerName, primaryStat, isCurrentUser } = entry;
+  const owner = { rank, ownerId, ownerName, primaryStat, isCurrentUser };
+  const horse = { rank, horseId, horseName, ownerId, ownerName, primaryStat, isCurrentUser };
+  const shows = entry.secondaryStats.totalCompetitions;
+
+  switch (category) {
+    case 'level':
+    case 'owner':
+      return { ...owner, secondaryStats: {} };
+    case 'prize-money':
+      return { ...horse, secondaryStats: {} };
+    case 'win-rate':
+      return {
+        ...horse,
+        secondaryStats: {
+          wins: entry.secondaryStats.wins,
+          totalCompetitions: shows,
+          winRate: primaryStat,
+        },
+      };
+    case 'wins':
+      return { ...horse, secondaryStats: { wins: primaryStat, totalCompetitions: shows } };
+    case 'discipline':
+      return { ...horse, secondaryStats: { wins: primaryStat, totalCompetitions: shows } };
+    case 'recent-winners':
+      return {
+        ...horse,
+        secondaryStats: { totalPrizeMoney: entry.secondaryStats.totalPrizeMoney },
+      };
+  }
+}
 
 /**
  * Leaderboard handlers (user-summary, by-category, horse profile).
@@ -36,7 +77,6 @@ export const leaderboardHandlers = [
   http.get(`${base}/api/v1/leaderboards/:category`, ({ params, request }) => {
     const category = params.category as string;
     const url = new URL(request.url);
-    const period = url.searchParams.get('period') || 'all-time';
     const discipline = url.searchParams.get('discipline');
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '50', 10);
@@ -68,24 +108,14 @@ export const leaderboardHandlers = [
     const totalPages = Math.ceil(totalEntries / limit);
     const startIdx = (page - 1) * limit;
     const endIdx = startIdx + limit;
-    const entries = allEntries.slice(startIdx, endIdx);
+    const entries = allEntries
+      .slice(startIdx, endIdx)
+      .map((entry) => toBackendEntry(entry, category as LeaderboardCategory));
 
-    // Find user's rank
-    const userEntry = allEntries.find((e) => e.isCurrentUser);
-    const userRank = userEntry ? { rank: userEntry.rank, entry: userEntry } : undefined;
-
+    // The real envelope: { entries, currentPage, totalPages, totalEntries }.
     return HttpResponse.json({
       success: true,
-      data: {
-        category,
-        period,
-        totalEntries,
-        currentPage: page,
-        totalPages,
-        entries,
-        userRank,
-        lastUpdated: new Date().toISOString(),
-      },
+      data: { entries, currentPage: page, totalPages, totalEntries },
     });
   }),
 

@@ -170,13 +170,15 @@ describe('Leaderboard MSW Handlers', () => {
 
     const json = await response.json();
     expect(json.success).toBe(true);
-    expect(json.data).toHaveProperty('category', 'level');
-    expect(json.data).toHaveProperty('period', 'all-time');
-    expect(json.data).toHaveProperty('entries');
-    expect(json.data).toHaveProperty('totalEntries');
+    // The backend's real envelope (Equoria-pthuj) — no category, period or
+    // lastUpdated, which the old fixture invented.
+    expect(Object.keys(json.data).sort()).toEqual([
+      'currentPage',
+      'entries',
+      'totalEntries',
+      'totalPages',
+    ]);
     expect(json.data).toHaveProperty('currentPage', 1);
-    expect(json.data).toHaveProperty('totalPages');
-    expect(json.data).toHaveProperty('lastUpdated');
     expect(json.data.entries.length).toBeLessThanOrEqual(50);
   });
 

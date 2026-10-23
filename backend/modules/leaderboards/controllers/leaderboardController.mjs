@@ -409,9 +409,13 @@ export const getRecentWinners = async (req, res) => {
             runDate: true,
             showName: true,
             discipline: true,
+            score: true,
+            prizeWon: true,
+            horseId: true,
             horse: {
               select: {
                 name: true,
+                userId: true,
                 user: { select: { username: true } },
               },
             },
@@ -429,7 +433,25 @@ export const getRecentWinners = async (req, res) => {
       competition: { discipline: entry.discipline },
     }));
 
-    const responseData = { winners };
+    // The LeaderboardsPage reads `entries` (Equoria-pthuj); `winners` stays for
+    // the other consumers of this route. Newest first, so rank is recency.
+    const entries = results.map((entry, index) => ({
+      rank: index + 1,
+      horseId: entry.horseId,
+      horseName: entry.horse?.name ?? null,
+      ownerId: entry.horse?.userId ?? null,
+      ownerName: entry.horse?.user?.username ?? null,
+      primaryStat: Number(entry.score),
+      secondaryStats: { totalPrizeMoney: Number(entry.prizeWon ?? 0) },
+      isCurrentUser: Boolean(entry.horse?.userId) && entry.horse.userId === req.user?.id,
+    }));
+    const responseData = {
+      winners,
+      entries,
+      currentPage: 1,
+      totalPages: 1,
+      totalEntries: entries.length,
+    };
     if (discipline) {
       responseData.discipline = discipline;
     }
