@@ -16,10 +16,7 @@ import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import { updateUserSettingsPaths } from '../../../../utils/userSettingsPaths.mjs';
 import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
-import {
-  TACK_INVENTORY,
-  resolveTackBonus,
-} from '../../tackShop/controllers/tackShopController.mjs';
+import { TACK_INVENTORY } from '../../tackShop/controllers/tackShopController.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -129,19 +126,16 @@ function asObject(raw) {
 }
 
 /**
- * The `Horse.tack` key a category writes to, and the two derived scoring
- * mirrors `tackShopController.purchaseTackItem` stores beside the item id.
+ * The `Horse.tack` key a category writes to.
  *
  * Decorative items are ADDITIVE and live in the `decorations` array, not in a
- * `decorative` slot: `resolveTackBonus`'s parade presence bonus and
- * `tackShopController.unequipDecoration` both read `tack.decorations` and
- * nothing else. Writing a decoration to `tack.decorative` — which this file did
- * before Equoria-6p398.12 — produced an item that was equipped, invisible to
- * scoring, and unreachable by the shop's remove endpoint.
+ * `decorative` slot: `tackShopController.unequipDecoration` reads
+ * `tack.decorations` and nothing else. Writing a decoration to
+ * `tack.decorative` — which this file did before Equoria-6p398.12 — produced an
+ * item that was equipped, invisible to the shop's remove endpoint.
  */
 const DECORATIVE_CATEGORY = 'decorative';
 const DECORATIONS_KEY = 'decorations';
-const BONUS_MIRROR_KEYS = Object.freeze({ saddle: 'saddleBonus', bridle: 'bridleBonus' });
 
 /** Read `tack.decorations` as an array of item ids. */
 function readDecorations(tack) {
@@ -161,29 +155,14 @@ function withTackItem(tack, item) {
       ? { ...tack }
       : { ...tack, [DECORATIONS_KEY]: [...decorations, item.itemId] };
   }
-  const next = { ...tack, [item.category]: item.itemId };
-  // Equoria-6p398.19: a slot that carries a bonus mirror (a shop purchase wrote
-  // it) must describe the item now in the slot, not the one it replaced —
-  // `resolveTackBonus` returns the mirror without looking at the id. The value
-  // is the catalogue's, exactly what `resolveTackBonus` reads for this id when
-  // no mirror exists, so replacing never invents or keeps a bonus. A slot with
-  // no mirror gets none: adding one would flip `hasDirect` for the other slot.
-  const resolved = resolveTackBonus({ [item.category]: item.itemId });
-  const mirrorKey = `${item.category}Bonus`;
-  if (mirrorKey in resolved && typeof tack[mirrorKey] === 'number') {
-    next[mirrorKey] = resolved[mirrorKey];
-  }
-  return next;
+  // The show-score bonus is read from the item in the slot
+  // (competition/rules/tackScoring.mjs), so nothing numeric is stored beside it
+  // (Equoria-lsudd).
+  return { ...tack, [item.category]: item.itemId };
 }
 
 /**
  * Take an item off a horse's tack document.
- *
- * The bonus mirror goes with the item. Leaving it behind is not cosmetic:
- * `resolveTackBonus` short-circuits on `typeof tack.saddleBonus === 'number' ||
- * typeof tack.bridleBonus === 'number'` and returns the stored numbers without
- * looking at any item id, so a horse holding only `{ saddleBonus: 5 }` scored
- * +5 in every ridden competition with nothing on its back.
  *
  * @param {object} tack - the horse's current tack (already object-guarded)
  * @param {{category: string, itemId: string}} item
@@ -198,10 +177,6 @@ function withoutTackItem(tack, item) {
     return next;
   }
   delete next[item.category];
-  const mirrorKey = BONUS_MIRROR_KEYS[item.category];
-  if (mirrorKey) {
-    delete next[mirrorKey];
-  }
   return next;
 }
 

@@ -14,9 +14,9 @@
  * catalogue's `disciplines` list, or a crafted item's recipe. An empty list
  * means All Purpose. A crafted item whose discipline is ambiguous carries an
  * empty list until the owner classifies it (k1p62 audit note), so it counts as
- * All Purpose. The `saddleBonus` / `bridleBonus` numbers stored beside the item
- * ids are a shop-purchase mirror of the old per-item numericBonus and are not
- * read here: the item in the slot decides.
+ * All Purpose. The item in the slot decides: no per-item number is stored or
+ * read (the old `numericBonus` and the `saddleBonus` / `bridleBonus` mirrors were
+ * retired, Equoria-lsudd; a mirror still stored on an older horse is ignored).
  */
 
 import { tackCatalogItems } from '../../economy/index.mjs';

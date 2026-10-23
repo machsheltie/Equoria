@@ -243,7 +243,6 @@ export async function craftItem(req, res) {
       category: recipe.resultCategory,
       name: recipe.resultName,
       bonus: recipe.bonus,
-      numericBonus: recipe.numericBonus,
       isCosmetic: recipe.isCosmetic,
       quantity: 1,
       origin: 'crafted',

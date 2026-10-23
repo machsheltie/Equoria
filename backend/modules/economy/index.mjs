@@ -28,6 +28,5 @@ export {
 export {
   TACK_INVENTORY,
   allTackItems,
-  resolveTackBonus,
   tackCatalogItems,
 } from './tackShop/services/tackInventory.mjs';

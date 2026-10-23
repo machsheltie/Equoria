@@ -877,7 +877,6 @@
   "backend/scripts/gate-lock.mjs": 10,
   "backend/scripts/generate-coverage-badge.mjs": 13,
   "backend/scripts/health-check.mjs": 3,
-  "backend/scripts/migrate-all-purpose-tack.mjs": 9,
   "backend/scripts/migrate-production.mjs": 2,
   "backend/scripts/migrate.mjs": 2,
   "backend/scripts/performance-regression-tests.mjs": 17,

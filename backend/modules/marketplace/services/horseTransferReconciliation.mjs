@@ -51,8 +51,7 @@
  * TACK (Equoria-6p398.12 — owner ruling on the Task-1 `unequipItem` residual)
  * Equipment is not a fitting on the horse either: it is stripped on sale and
  * returned to the SELLER's inventory. See `returnTackToSeller` below for the
- * two provenances and why they must be told apart, and `BONUS_MIRROR_KEYS` for
- * why a leftover numeric mirror is a permanent free bonus rather than clutter.
+ * two provenances and why they must be told apart.
  *
  * `reconcileHorseOnTransfer` ends with the test-only `marketplaceRaceBarrier`
  * seam so a regression can force a failure AFTER these writes and prove they
@@ -70,21 +69,6 @@ import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 // Same-module internal (NOT part of the marketplace public API): the test-only
 // interleaving/abort seam. See `reconcileHorseOnTransfer` for why it is here.
 import { __TESTING_ONLY_awaitMarketplaceRaceBarrier } from './marketplaceRaceBarrier.mjs';
-
-/**
- * `Horse.tack` mirrors the numeric bonus of the two scored categories beside
- * the item id (`tackShopController.purchaseTackItem`).
- *
- * A mirror left behind WITHOUT its item is not merely untidy, it is a
- * permanent free bonus: `resolveTackBonus` short-circuits on
- * `typeof tack.saddleBonus === 'number' || typeof tack.bridleBonus === 'number'`
- * and returns the stored numbers without ever looking at the item ids
- * (tackShopController.mjs — the `hasDirect` branch). A horse carrying only
- * `{ saddleBonus: 5 }` therefore scores +5 in every ridden competition
- * forever. So every mirror whose item key is gone is deleted here — including
- * one this sale did not create.
- */
-const BONUS_MIRROR_KEYS = Object.freeze({ saddle: 'saddleBonus', bridle: 'bridleBonus' });
 
 /**
  * The `Horse.tack` keys that name equipment.
@@ -154,11 +138,11 @@ function readInventory(settings) {
 /**
  * Flatten a `Horse.tack` document into the equipment entries it carries.
  *
- * The document is `{ <category>: <itemId>, decorations: [<itemId>...],
- * saddleBonus: <number>, bridleBonus: <number> }`. Only a string value under a
- * key in `equipmentKeys`, and the `decorations` array, name an item; the
- * numeric mirrors and every unknown key are not equipment and are left for the
- * caller.
+ * The document is `{ <category>: <itemId>, decorations: [<itemId>...] }`. Only a
+ * string value under a key in `equipmentKeys`, and the `decorations` array,
+ * name an item; every unknown key (a retired numeric `saddleBonus` /
+ * `bridleBonus` mirror still stored on an older horse, a future field) is not
+ * equipment and is left for the caller.
  *
  * @param {object} tack
  * @param {Set<string>} equipmentKeys - from `equipmentKeysFor`
@@ -185,8 +169,7 @@ function tackEntries(tack, equipmentKeys) {
 }
 
 /**
- * The tack document the buyer should receive: every returned item's key gone,
- * and every orphaned bonus mirror with it (see `BONUS_MIRROR_KEYS`).
+ * The tack document the buyer should receive: every returned item's key gone.
  *
  * @param {object} tack
  * @param {Array<{ key: string }>} entries - the equipment being returned
@@ -199,14 +182,6 @@ function stripReturnedTack(tack, entries) {
   for (const entry of entries) {
     if (entry.key in strippedTack) {
       delete strippedTack[entry.key];
-      changed = true;
-    }
-  }
-
-  for (const [category, mirrorKey] of Object.entries(BONUS_MIRROR_KEYS)) {
-    const itemStillPresent = typeof strippedTack[category] === 'string' && strippedTack[category];
-    if (!itemStillPresent && mirrorKey in strippedTack) {
-      delete strippedTack[mirrorKey];
       changed = true;
     }
   }
@@ -332,10 +307,9 @@ export async function returnTackToSeller(tx, { horseId, sellerId }) {
     .map(entry => deriveReturnedItem(horseId, entry, takenIds));
 
   // The two writes are decided INDEPENDENTLY. A horse can need the tack write
-  // with nothing to return — `{ saddleBonus: 5 }` and no saddle, which
-  // `unequipItem` produces — and skipping it there would hand the buyer a
-  // permanent scoring bonus. A horse can equally need the inventory write with
-  // no tack change, when a record points at it that the tack never named.
+  // with nothing to return when the tack names an item that is already
+  // accounted for, and it can equally need the inventory write with no tack
+  // change, when a record points at it that the tack never named.
   const { strippedTack, changed: tackChanged } = stripReturnedTack(tack, entries);
   const inventoryChanged = released.length > 0 || derived.length > 0;
 
@@ -359,7 +333,7 @@ export async function returnTackToSeller(tx, { horseId, sellerId }) {
     }
   }
 
-  // HORSE row second. Only returned keys and orphaned mirrors are removed, so a
+  // HORSE row second. Only returned keys are removed, so a
   // key this code cannot identify is preserved rather than destroyed.
   if (tackChanged) {
     await tx.horse.update({ where: { id: horseId }, data: { tack: strippedTack } });

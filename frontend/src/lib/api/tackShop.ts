@@ -24,7 +24,6 @@ export interface TackItem {
   description: string;
   cost: number;
   bonus: string;
-  numericBonus: number;
   /** Presence bonus for parade shows (decorative items only) */
   presenceBonus?: number;
   tier: 'basic' | 'quality' | 'premium';

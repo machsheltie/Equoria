@@ -12,7 +12,6 @@ const REQUIRED_FIELDS = [
   'resultName',
   'resultCategory',
   'bonus',
-  'numericBonus',
   'isCosmetic',
 ];
 const MATERIAL_KEYS = ['leather', 'cloth', 'dye', 'metal', 'thread'];
@@ -78,19 +77,10 @@ describe('CRAFTING_RECIPES', () => {
     }
   });
 
-  it('cosmetic recipes have numericBonus === 0', () => {
-    const cosmetics = CRAFTING_RECIPES.filter(r => r.isCosmetic);
-    expect(cosmetics.length).toBeGreaterThan(0);
-    for (const recipe of cosmetics) {
-      expect(recipe.numericBonus).toBe(0);
-    }
-  });
-
-  it('non-cosmetic recipes have numericBonus > 0', () => {
-    const functional = CRAFTING_RECIPES.filter(r => !r.isCosmetic);
-    expect(functional.length).toBeGreaterThan(0);
-    for (const recipe of functional) {
-      expect(recipe.numericBonus).toBeGreaterThan(0);
+  it('no recipe carries a numericBonus (Equoria-lsudd: numericBonus retired (owner decision A, 2026-10-23: the item in the slot decides the tack points).)', () => {
+    expect(CRAFTING_RECIPES.length).toBeGreaterThan(0);
+    for (const recipe of CRAFTING_RECIPES) {
+      expect(recipe).not.toHaveProperty('numericBonus');
     }
   });
 
@@ -116,7 +106,6 @@ describe('CRAFTING_RECIPES', () => {
     expect(recipe).toBeDefined();
     expect(recipe.tier).toBe(3);
     expect(recipe.isCosmetic).toBe(false);
-    expect(recipe.numericBonus).toBeGreaterThan(0);
   });
 
   it('all recipes have at least one material with quantity > 0', () => {
@@ -148,14 +137,12 @@ describe('findRecipe', () => {
     expect(recipe).toBeDefined();
     expect(recipe.tier).toBe(1);
     expect(recipe.isCosmetic).toBe(false);
-    expect(recipe.numericBonus).toBe(1);
   });
 
   it('returns the correct tier-2 recipe (precision-bridle)', () => {
     const recipe = findRecipe('precision-bridle');
     expect(recipe).toBeDefined();
     expect(recipe.tier).toBe(2);
-    expect(recipe.numericBonus).toBe(2);
     expect(recipe.resultCategory).toBe('bridle');
   });
 

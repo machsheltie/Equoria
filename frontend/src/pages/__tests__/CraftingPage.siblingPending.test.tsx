@@ -30,7 +30,6 @@ const recipe = (id: string, name: string) => ({
   resultName: name,
   resultCategory: 'tack',
   bonus: '+1',
-  numericBonus: 1,
   isCosmetic: false,
   locked: false,
   affordable: true,

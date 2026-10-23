@@ -17,12 +17,7 @@ import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 // merged from legacy backend/tests, Equoria-wvuin — pure catalog + bonus + controller-direct
-import {
-  TACK_INVENTORY,
-  resolveTackBonus,
-  purchaseTackItem,
-  unequipDecoration,
-} from '../controllers/tackShopController.mjs';
+import { TACK_INVENTORY, purchaseTackItem, unequipDecoration } from '../controllers/tackShopController.mjs';
 import { createCleanupTracker } from '../../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -216,8 +211,7 @@ describe('POST /api/tack-shop/unequip-decoration', () => {
 });
 
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
-// Pure TACK_INVENTORY decorative-item invariants, pure resolveTackBonus
-// parade-only logic, and controller-direct decorative purchase/unequip
+// Pure TACK_INVENTORY decorative-item invariants and controller-direct decorative purchase/unequip
 // behaviors (decorations-array append/dedup, ledger-sync, unequip) — none
 // covered by the HTTP shells above.
 describe('TACK_INVENTORY — decorative items (merged from legacy backend/tests, Equoria-wvuin)', () => {
@@ -231,10 +225,10 @@ describe('TACK_INVENTORY — decorative items (merged from legacy backend/tests,
     });
   });
 
-  it('every decorative item is cosmetic, numericBonus 0, presenceBonus 1–10', () => {
+  it('every decorative item is cosmetic with a presenceBonus 1–10 (no numericBonus, Equoria-lsudd: numericBonus retired (owner decision A, 2026-10-23: the item in the slot decides the tack points).)', () => {
     for (const item of decorativeItems) {
       expect(item.isCosmetic).toBe(true);
-      expect(item.numericBonus).toBe(0);
+      expect(item).not.toHaveProperty('numericBonus');
       expect(typeof item.presenceBonus).toBe('number');
       expect(item.presenceBonus).toBeGreaterThanOrEqual(1);
       expect(item.presenceBonus).toBeLessThanOrEqual(10);
@@ -246,36 +240,6 @@ describe('TACK_INVENTORY — decorative items (merged from legacy backend/tests,
     const item = decorativeItems.find(i => i.id === 'snowflake-parade-tack');
     expect(item).toBeDefined();
     expect(item.seasonalTag).toBe('winter');
-  });
-});
-
-describe('resolveTackBonus — parade-only presence bonus (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  it('presenceBonus is 0 for ridden and conformation shows even with decorations', () => {
-    const tack = { decorations: ['show-ribbon', 'floral-browband'] };
-    expect(resolveTackBonus(tack, 'ridden').presenceBonus).toBe(0);
-    expect(resolveTackBonus(tack, 'conformation').presenceBonus).toBe(0);
-  });
-
-  it('sums presenceBonus for parade shows (show-ribbon + floral-browband = 6)', () => {
-    expect(resolveTackBonus({ decorations: ['show-ribbon', 'floral-browband'] }, 'parade').presenceBonus).toBe(6);
-  });
-
-  it('presenceBonus is 0 for parade with no decorations, and ignores unknown IDs', () => {
-    expect(resolveTackBonus({ saddle: 'dressage-saddle' }, 'parade').presenceBonus).toBe(0);
-    expect(resolveTackBonus({ decorations: ['nonexistent-item'] }, 'parade').presenceBonus).toBe(0);
-  });
-
-  it('sums all 5 core decorations for parade (=17)', () => {
-    const tack = {
-      decorations: ['show-ribbon', 'braided-mane-wrap', 'parade-blanket', 'glitter-spray', 'floral-browband'],
-    };
-    expect(resolveTackBonus(tack, 'parade').presenceBonus).toBe(17);
-  });
-
-  it('returns both saddleBonus and presenceBonus when both equipped for parade', () => {
-    const result = resolveTackBonus({ saddle: 'dressage-saddle', decorations: ['parade-blanket'] }, 'parade');
-    expect(result.saddleBonus).toBe(5);
-    expect(result.presenceBonus).toBe(5);
   });
 });
 

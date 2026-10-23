@@ -11,8 +11,8 @@
  *
  *     - the BUYER received a horse still wearing the seller's saddle, bridle
  *       and decorations, and every scoring path that reads `Horse.tack`
- *       (`resolveTackBonus` in simulateCompetition, the parade presence bonus)
- *       handed the buyer bonuses paid for by the seller; and
+ *       (competition/rules/tackScoring.mjs) handed the buyer bonuses paid for
+ *       by the seller; and
  *     - the SELLER's inventory record still said `equippedToHorseId: <sold
  *       horse>`, so the item was unusable — `equipItem` moves it by writing the
  *       PREVIOUS horse's tack, which `applyTackChange` refuses for a horse the
@@ -43,8 +43,6 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { __TESTING_ONLY_setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
-// Cross-module: through the economy barrel, never the tackShop internals.
-import { resolveTackBonus } from '../../economy/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-12-tack';
@@ -360,7 +358,7 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
       expect(sold.tack[key]).toBeUndefined();
     }
     expect(sold.tack.decorations ?? []).toEqual([]);
-    // The derived scoring mirrors go with the items that produced them.
+    // No numeric scoring mirror was ever written beside the items (Equoria-lsudd).
     expect(sold.tack.saddleBonus).toBeUndefined();
     expect(sold.tack.bridleBonus).toBeUndefined();
 
@@ -447,39 +445,24 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     expect(sold.tack.saddle).toBeUndefined();
   }, 120000);
 
-  it('strips an orphaned bonus mirror, so the buyer inherits no free scoring bonus', async () => {
-    // The orphan state, seeded exactly as live rows carry it: `unequipItem`
-    // used to delete the ITEM key and leave the mirror behind (shop-buy a
-    // saddle -> GET /api/inventory seeds the record -> unequip). That is fixed
-    // now, but rows created before the fix still look like this, and
-    // `resolveTackBonus` short-circuits on ANY numeric mirror — a horse holding
-    // only `{ saddleBonus: 5 }` scores +5 in every ridden competition with
-    // nothing on its back.
+  it('leaves a retired bonus mirror alone: it is inert, so the sale neither strips it nor invents an item', async () => {
+    // Equoria-lsudd retired the numeric saddleBonus / bridleBonus mirrors (owner
+    // decision A, 2026-10-23: the item in the slot decides the tack points; old
+    // contract: a sale stripped an orphaned mirror because the scoring read it).
+    // Rows written before the retirement still carry one. Nothing reads it, so
+    // the sale leaves the stored document exactly as it was.
+    const legacyTack = { saddleBonus: 5, bridleBonus: 4 };
     await prisma.horse.update({
       where: { id: listedHorse.id },
-      data: { tack: { saddleBonus: 5, bridleBonus: 4 } },
-    });
-    expect(resolveTackBonus((await horseRow(listedHorse.id)).tack)).toEqual({
-      saddleBonus: 5,
-      bridleBonus: 4,
-      presenceBonus: 0,
+      data: { tack: legacyTack },
     });
     const inventoryBefore = await sellerInventory(seller.id);
 
     expect((await buyRequest(buyer.token, listedHorse.id)).status).toBe(200);
 
-    // Nothing was released and nothing derived — there were no items — so this
-    // also pins that the horse write is decided independently of the inventory
-    // write. An early return here is what left the mirror on the buyer's horse.
     const sold = await horseRow(listedHorse.id);
     expect(sold.userId).toBe(buyer.id);
-    expect(sold.tack.saddleBonus).toBeUndefined();
-    expect(sold.tack.bridleBonus).toBeUndefined();
-    expect(resolveTackBonus(sold.tack)).toEqual({
-      saddleBonus: 0,
-      bridleBonus: 0,
-      presenceBonus: 0,
-    });
+    expect(sold.tack).toEqual(legacyTack);
     // A mirror is not an item: nothing is invented in the seller's inventory.
     expect(await sellerInventory(seller.id)).toEqual(inventoryBefore);
   }, 90000);

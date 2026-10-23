@@ -13,7 +13,6 @@
  *   - resultName: display name of produced item
  *   - resultCategory: tack category (saddle|bridle|halter|blanket|cosmetic)
  *   - bonus: human-readable bonus description
- *   - numericBonus: numeric stat bonus (0 for cosmetic)
  *   - isCosmetic: true if no stat bonus
  *   - disciplines (saddles and bridles only): the disciplines the item is made
  *     for, as in the tack shop catalogue; empty = All Purpose. Ridden show
@@ -35,7 +34,6 @@ const recipes = [
     resultName: 'Handcrafted Bridle',
     resultCategory: 'bridle',
     bonus: '+2 all disciplines',
-    numericBonus: 0,
     isCosmetic: true,
     disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },
@@ -50,7 +48,6 @@ const recipes = [
     resultName: 'Handcrafted Halter',
     resultCategory: 'halter',
     bonus: 'Cosmetic — no stat bonus',
-    numericBonus: 0,
     isCosmetic: true,
   },
   {
@@ -64,7 +61,6 @@ const recipes = [
     resultName: 'Handwoven Blanket',
     resultCategory: 'blanket',
     bonus: 'Cosmetic — no stat bonus',
-    numericBonus: 0,
     isCosmetic: true,
   },
 
@@ -80,7 +76,6 @@ const recipes = [
     resultName: 'Dyed Leather Bridle',
     resultCategory: 'bridle',
     bonus: '+2 all disciplines',
-    numericBonus: 1,
     isCosmetic: false,
     disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },
@@ -96,7 +91,6 @@ const recipes = [
     resultName: 'Artisan Saddle Pad',
     resultCategory: 'blanket',
     bonus: '+1 dressage score',
-    numericBonus: 1,
     isCosmetic: false,
   },
 
@@ -113,7 +107,6 @@ const recipes = [
     resultName: 'Artisan Event Saddle',
     resultCategory: 'saddle',
     bonus: '+2 all disciplines',
-    numericBonus: 1,
     isCosmetic: false,
     disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },
@@ -129,7 +122,6 @@ const recipes = [
     resultName: 'Artisan Precision Bridle',
     resultCategory: 'bridle',
     bonus: '+5 in Dressage shows',
-    numericBonus: 2,
     isCosmetic: false,
     disciplines: ['Dressage'],
   },
@@ -147,7 +139,6 @@ const recipes = [
     resultName: 'Legacy Tack Set',
     resultCategory: 'saddle',
     bonus: '+2 all disciplines + visual glow',
-    numericBonus: 2,
     isCosmetic: false,
     disciplines: [], // ambiguous: All Purpose until the owner classifies it (k1p62)
   },

@@ -1,5 +1,5 @@
 /**
- * Tack inventory catalog and tack-bonus policy (economy / tackShop).
+ * Tack inventory catalog (economy / tackShop).
  *
  * Equoria-q4uem.4 (WS4 S4, controller ruling 1b): moved verbatim out of
  * controllers/tackShopController.mjs so the economy barrel can export data and
@@ -23,7 +23,6 @@ export const TACK_INVENTORY = [
       'Deep-seated saddle designed for precision movements. Enhances rider position in dressage disciplines.',
     cost: 800,
     bonus: '+5 in Dressage shows',
-    numericBonus: 5,
     tier: 'quality',
     disciplines: ['Dressage'],
     image: '/images/tack/dressage-saddle.png',
@@ -35,7 +34,6 @@ export const TACK_INVENTORY = [
     description: 'Forward-cut saddle with knee rolls for optimal balance over fences.',
     cost: 750,
     bonus: '+5 in Show Jumping and Cross Country shows',
-    numericBonus: 5,
     tier: 'quality',
     disciplines: ['Show Jumping', 'Cross Country'],
   },
@@ -49,7 +47,6 @@ export const TACK_INVENTORY = [
     // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
     // empty list is how the shop filter shows an item under every discipline.
     bonus: '+2 all disciplines',
-    numericBonus: 2,
     tier: 'basic',
     disciplines: [],
     image: '/images/tack/allpurposesaddle.png',
@@ -66,7 +63,6 @@ export const TACK_INVENTORY = [
     // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
     // empty list is how the shop filter shows an item under every discipline.
     bonus: '+2 all disciplines',
-    numericBonus: 2,
     tier: 'basic',
     disciplines: [],
     image: '/images/tack/allpurposesaddle.png',
@@ -79,7 +75,6 @@ export const TACK_INVENTORY = [
       'Classic western saddle with deep seat and horn. Built for comfort and security in western events.',
     cost: 700,
     bonus: '+5 in Western Pleasure, Reining, Barrel Racing, Cutting and Roping shows',
-    numericBonus: 5,
     tier: 'quality',
     disciplines: ['Western Pleasure', 'Reining', 'Barrel Racing', 'Cutting', 'Roping'],
   },
@@ -91,7 +86,6 @@ export const TACK_INVENTORY = [
       'Lightweight saddle designed for long-distance riding. Minimises rider fatigue and horse soreness.',
     cost: 850,
     bonus: '+5 in Endurance shows',
-    numericBonus: 5,
     tier: 'quality',
     disciplines: ['Endurance'],
   },
@@ -103,7 +97,6 @@ export const TACK_INVENTORY = [
       'Ultra-light flat saddle used for race training and competition. Every gram counts at top speed.',
     cost: 900,
     bonus: '+5 in Racing and Steeplechase shows',
-    numericBonus: 7,
     tier: 'premium',
     disciplines: ['Racing', 'Steeplechase'],
   },
@@ -119,7 +112,6 @@ export const TACK_INVENTORY = [
     // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
     // empty list is how the shop filter shows an item under every discipline.
     bonus: '+2 all disciplines',
-    numericBonus: 2,
     tier: 'basic',
     disciplines: [],
   },
@@ -135,7 +127,6 @@ export const TACK_INVENTORY = [
     // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. An
     // empty list is how the shop filter shows an item under every discipline.
     bonus: '+2 all disciplines',
-    numericBonus: 2,
     tier: 'basic',
     disciplines: [],
   },
@@ -146,7 +137,6 @@ export const TACK_INVENTORY = [
     description: 'Classic English bridle with snaffle bit. Suitable for training and competition.',
     cost: 200,
     bonus: '+5 in Dressage and Show Jumping shows',
-    numericBonus: 2,
     tier: 'basic',
     disciplines: ['Dressage', 'Show Jumping'],
   },
@@ -157,7 +147,6 @@ export const TACK_INVENTORY = [
     description: 'Bitless bridle offering gentle control. Popular in western and trail riding.',
     cost: 180,
     bonus: '+5 in Western Pleasure and Endurance shows',
-    numericBonus: 2,
     tier: 'basic',
     disciplines: ['Western Pleasure', 'Endurance'],
   },
@@ -169,7 +158,6 @@ export const TACK_INVENTORY = [
       'Two-bit bridle with bradoon and curb for advanced riders. Provides refined aids in upper-level dressage.',
     cost: 500,
     bonus: '+5 in Dressage shows',
-    numericBonus: 5,
     tier: 'quality',
     disciplines: ['Dressage'],
   },
@@ -181,7 +169,6 @@ export const TACK_INVENTORY = [
       'Crossed noseband prevents the horse from opening its mouth. Favoured in show jumping.',
     cost: 450,
     bonus: '+5 in Show Jumping, Cross Country and Eventing shows',
-    numericBonus: 4,
     tier: 'quality',
     disciplines: ['Show Jumping', 'Cross Country', 'Eventing'],
   },
@@ -193,7 +180,6 @@ export const TACK_INVENTORY = [
       'Minimal, lightweight bridle designed for speed. Reduces interference while maintaining control.',
     cost: 600,
     bonus: '+5 in Racing, Steeplechase and Harness Racing shows',
-    numericBonus: 5,
     tier: 'premium',
     disciplines: ['Racing', 'Steeplechase', 'Harness Racing'],
   },
@@ -206,7 +192,6 @@ export const TACK_INVENTORY = [
     description: 'Durable leather halter for daily handling and turnout. A stable essential.',
     cost: 80,
     bonus: '+1 handling',
-    numericBonus: 1,
     tier: 'basic',
     disciplines: [],
   },
@@ -218,7 +203,6 @@ export const TACK_INVENTORY = [
       'Polished halter with silver fittings for in-hand showing. Presents your horse at its best.',
     cost: 250,
     bonus: '+3 conformation score',
-    numericBonus: 3,
     tier: 'quality',
     disciplines: ['Halter', 'In-Hand'],
   },
@@ -231,7 +215,6 @@ export const TACK_INVENTORY = [
     description: 'Standard cotton pad providing cushioning and sweat absorption under the saddle.',
     cost: 60,
     bonus: '+1 comfort',
-    numericBonus: 1,
     tier: 'basic',
     disciplines: [],
   },
@@ -243,7 +226,6 @@ export const TACK_INVENTORY = [
       "Contoured memory foam pad that moulds to the horse's back. Reduces pressure points during long rides.",
     cost: 200,
     bonus: '+2 comfort',
-    numericBonus: 2,
     tier: 'quality',
     disciplines: ['Endurance', 'Eventing', 'Cross Country'],
   },
@@ -256,7 +238,6 @@ export const TACK_INVENTORY = [
     description: 'Soft fleece wraps providing light support and protection during exercise.',
     cost: 50,
     bonus: '+1 protection',
-    numericBonus: 1,
     tier: 'basic',
     disciplines: [],
   },
@@ -268,7 +249,6 @@ export const TACK_INVENTORY = [
       'Hard-shell boots protecting the cannon bone and splint area from strikes during jumping.',
     cost: 150,
     bonus: '+2 protection',
-    numericBonus: 2,
     tier: 'quality',
     disciplines: ['Show Jumping', 'Cross Country', 'Eventing'],
   },
@@ -280,7 +260,6 @@ export const TACK_INVENTORY = [
       'High-performance boots with fetlock support and shock absorption. Used by top competitors.',
     cost: 350,
     bonus: '+3 protection',
-    numericBonus: 3,
     tier: 'premium',
     disciplines: ['Show Jumping', 'Cross Country', 'Barrel Racing', 'Reining'],
   },
@@ -293,7 +272,6 @@ export const TACK_INVENTORY = [
     description: 'Traditional leather girth. Durable and reliable for everyday riding.',
     cost: 100,
     bonus: '+1 stability',
-    numericBonus: 1,
     tier: 'basic',
     disciplines: [],
   },
@@ -305,7 +283,6 @@ export const TACK_INVENTORY = [
       'Contoured girth with cutaway design for shoulder freedom. Improves comfort and movement.',
     cost: 280,
     bonus: '+2 comfort',
-    numericBonus: 2,
     tier: 'quality',
     disciplines: ['Dressage', 'Show Jumping', 'Eventing'],
   },
@@ -318,7 +295,6 @@ export const TACK_INVENTORY = [
     description: 'Leather reins with rubber grip for secure hold in all conditions.',
     cost: 70,
     bonus: '+1 control',
-    numericBonus: 1,
     tier: 'basic',
     disciplines: [],
   },
@@ -330,7 +306,6 @@ export const TACK_INVENTORY = [
       'Hand-laced leather reins providing excellent grip without bulk. Preferred for jumping.',
     cost: 120,
     bonus: '+2 control',
-    numericBonus: 2,
     tier: 'quality',
     disciplines: ['Show Jumping', 'Cross Country', 'Eventing', 'Hunter'],
   },
@@ -343,7 +318,6 @@ export const TACK_INVENTORY = [
     description: 'Three-point breastplate preventing saddle slip on galloping and jumping horses.',
     cost: 180,
     bonus: '+2 stability',
-    numericBonus: 2,
     tier: 'quality',
     disciplines: ['Cross Country', 'Eventing', 'Hunter', 'Steeplechase'],
   },
@@ -355,7 +329,6 @@ export const TACK_INVENTORY = [
       'Full chest breastplate distributing pressure evenly. Maximum saddle stability for demanding courses.',
     cost: 320,
     bonus: '+3 stability',
-    numericBonus: 3,
     tier: 'premium',
     disciplines: ['Cross Country', 'Eventing', 'Steeplechase'],
   },
@@ -369,7 +342,6 @@ export const TACK_INVENTORY = [
       'Adjustable halter sized for young horses. Used for early handling and desensitisation.',
     cost: 40,
     bonus: '+1 handling',
-    numericBonus: 1,
     tier: 'basic',
     disciplines: [],
     ageRestriction: 2,
@@ -382,7 +354,6 @@ export const TACK_INVENTORY = [
       'Training surcingle for backing and lunging young horses. Introduces the feel of girth pressure.',
     cost: 120,
     bonus: '+2 training prep',
-    numericBonus: 2,
     tier: 'basic',
     disciplines: [],
     ageRestriction: 2,
@@ -396,7 +367,6 @@ export const TACK_INVENTORY = [
     description: 'A silk ribbon braided into the mane. Adds elegance and charm to parade shows.',
     cost: 120,
     bonus: '+3 presentation',
-    numericBonus: 0,
     presenceBonus: 3,
     tier: 'basic',
     disciplines: ['Parade'],
@@ -410,7 +380,6 @@ export const TACK_INVENTORY = [
       'Intricate braided mane styling with gold thread accents. A staple for high-scoring parade entries.',
     cost: 200,
     bonus: '+4 presentation',
-    numericBonus: 0,
     presenceBonus: 4,
     tier: 'basic',
     disciplines: ['Parade'],
@@ -424,7 +393,6 @@ export const TACK_INVENTORY = [
       'Embroidered ceremonial blanket draped over the hindquarters. Impressive at full presentation speed.',
     cost: 350,
     bonus: '+5 presentation',
-    numericBonus: 0,
     presenceBonus: 5,
     tier: 'quality',
     disciplines: ['Parade'],
@@ -437,7 +405,6 @@ export const TACK_INVENTORY = [
     description: 'Shimmering coat spray for that extra sparkle. Limited use — 3 applications.',
     cost: 80,
     bonus: '+2 presentation',
-    numericBonus: 0,
     presenceBonus: 2,
     tier: 'basic',
     disciplines: ['Parade'],
@@ -452,7 +419,6 @@ export const TACK_INVENTORY = [
       'Fresh flowers woven into the browband. A classic touch of nature for summer parade classes.',
     cost: 160,
     bonus: '+3 presentation',
-    numericBonus: 0,
     presenceBonus: 3,
     tier: 'basic',
     disciplines: ['Parade'],
@@ -467,7 +433,6 @@ export const TACK_INVENTORY = [
       'A limited winter set with silver snowflake embroidery. Available during the frost season.',
     cost: 500,
     bonus: '+6 presentation',
-    numericBonus: 0,
     presenceBonus: 6,
     tier: 'premium',
     disciplines: ['Parade'],
@@ -496,59 +461,4 @@ export function tackCatalogItems(category) {
  */
 export function allTackItems() {
   return TACK_INVENTORY;
-}
-
-/**
- * Resolve tack bonuses from a Horse.tack JSON object.
- *
- * @param {Object} tack - Horse.tack JSON object
- * @param {string} [showType='ridden'] - Show type: 'ridden' | 'conformation' | 'parade'
- * @returns {{ saddleBonus: number, bridleBonus: number, presenceBonus: number }}
- */
-export function resolveTackBonus(tack, showType = 'ridden') {
-  if (!tack || typeof tack !== 'object') {
-    return { saddleBonus: 0, bridleBonus: 0, presenceBonus: 0 };
-  }
-
-  // If numeric fields already exist (test data / legacy), return them directly
-  const hasDirect = typeof tack.saddleBonus === 'number' || typeof tack.bridleBonus === 'number';
-  if (hasDirect) {
-    return {
-      saddleBonus: tack.saddleBonus || 0,
-      bridleBonus: tack.bridleBonus || 0,
-      presenceBonus: 0,
-    };
-  }
-
-  // Look up item IDs in the catalog
-  let saddleBonus = 0;
-  let bridleBonus = 0;
-
-  if (tack.saddle) {
-    const saddleItem = tackCatalogItems('saddle').find(i => i.id === tack.saddle);
-    if (saddleItem) {
-      saddleBonus = saddleItem.numericBonus;
-    }
-  }
-
-  if (tack.bridle) {
-    const bridleItem = tackCatalogItems('bridle').find(i => i.id === tack.bridle);
-    if (bridleItem) {
-      bridleBonus = bridleItem.numericBonus;
-    }
-  }
-
-  // Decorative presence bonus — only applies to parade shows
-  let presenceBonus = 0;
-  if (showType === 'parade') {
-    const decorations = Array.isArray(tack.decorations) ? tack.decorations : [];
-    for (const itemId of decorations) {
-      const item = tackCatalogItems('decorative').find(i => i.id === itemId);
-      if (item && typeof item.presenceBonus === 'number') {
-        presenceBonus += item.presenceBonus;
-      }
-    }
-  }
-
-  return { saddleBonus, bridleBonus, presenceBonus };
 }

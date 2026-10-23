@@ -29,7 +29,7 @@ import {
 // ../services/tackInventory.mjs (data/policy, not HTTP). Re-exported here so
 // same-module importers and tests keep their existing specifiers.
 import { TACK_INVENTORY } from '../services/tackInventory.mjs';
-export { TACK_INVENTORY, resolveTackBonus } from '../services/tackInventory.mjs';
+export { TACK_INVENTORY } from '../services/tackInventory.mjs';
 
 // ── Category display configuration ──────────────────────────────────────────
 
@@ -48,7 +48,9 @@ const CATEGORY_DISPLAY = {
 class HorseNotOwnedError extends Error {}
 
 // Merge a purchased item into Horse.tack (no mutation). Decorations are additive
-// (no duplicates); functional items replace their slot + store numeric bonuses.
+// (no duplicates); functional items replace their slot. The show-score bonus is
+// read from the item in the slot (competition/rules/tackScoring.mjs), so no
+// numeric mirror is stored beside it (Equoria-lsudd).
 function mergeTackItem(rawTack, item) {
   const current =
     rawTack !== null && typeof rawTack === 'object' && !Array.isArray(rawTack) ? rawTack : {};
@@ -61,11 +63,6 @@ function mergeTackItem(rawTack, item) {
     return updated;
   }
   updated[item.category] = item.id;
-  if (item.category === 'saddle') {
-    updated.saddleBonus = item.numericBonus;
-  } else if (item.category === 'bridle') {
-    updated.bridleBonus = item.numericBonus;
-  }
   return updated;
 }
 

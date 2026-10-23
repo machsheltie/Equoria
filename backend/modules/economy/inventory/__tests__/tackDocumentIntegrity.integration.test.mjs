@@ -5,23 +5,17 @@
  *
  * TWO DEFECTS THIS FILE PINS
  *
- * 1. ORPHANED BONUS MIRRORS. `tackShopController.purchaseTackItem` stores a
- *    numeric mirror beside the item id (`{ saddle: 'x', saddleBonus: 5 }`), and
- *    `resolveTackBonus` SHORT-CIRCUITS on the mirror:
- *
- *        const hasDirect = typeof tack.saddleBonus === 'number' || …
- *        if (hasDirect) return { saddleBonus: tack.saddleBonus || 0, … };
- *
- *    It never looks at the item ids on that branch. `unequipItem` deleted the
- *    item key and left the mirror, so a horse wearing nothing kept scoring +5
- *    in every ridden competition, permanently. The mirror now leaves with its
- *    item.
+ * 1. ORPHANED BONUS MIRRORS. A purchase used to store a numeric mirror beside
+ *    the item id (`{ saddle: 'x', saddleBonus: 5 }`) that outlived the item on
+ *    unequip. Equoria-lsudd retired the mirror (owner decision A, 2026-10-23:
+ *    the item in the slot decides the tack points; old contract: the mirror was
+ *    written and removed with its item). The pin is now that no mirror is ever
+ *    written, and unequip removes exactly the item key.
  *
  * 2. DECORATIONS THAT EQUIP INTO A DEAD SLOT. Decorative items are ADDITIVE and
- *    live in `tack.decorations[]`: the parade presence bonus and
- *    `tackShopController.unequipDecoration` read that array and nothing else.
- *    `equipItem` wrote `tack[item.category]`, i.e. `tack.decorative`, so a
- *    decoration equipped from inventory was invisible to scoring and unreachable
+ *    live in `tack.decorations[]`: `tackShopController.unequipDecoration` reads
+ *    that array and nothing else. `equipItem` wrote `tack[item.category]`, i.e.
+ *    `tack.decorative`, so a decoration equipped from inventory was unreachable
  *    by the shop's remove endpoint. Nothing hit this before, because the only
  *    producer of decorative inventory records — the tack return on sale — is new
  *    in this change; returning a ribbon the player could never use again would
@@ -37,9 +31,6 @@ import request from 'supertest';
 
 import app from '../../../../app.mjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
-// Same-module deep import (tackShop is nested inside economy, as
-// inventoryController itself does for TACK_INVENTORY).
-import { resolveTackBonus } from '../../tackShop/controllers/tackShopController.mjs';
 import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
@@ -134,27 +125,26 @@ describe('Horse.tack document integrity around equip/unequip (Equoria-6p398.12)'
 
   afterEach(() => cleanup.run(), 30000);
 
-  it('takes the bonus mirror off the horse with the item it belongs to', async () => {
+  it('stores no bonus mirror beside the item, and unequip takes off exactly the item key', async () => {
     expect(
       (await post('/api/v1/tack-shop/purchase', owner.token, { horseId: horse.id, itemId: SHOP_SADDLE })).status,
     ).toBe(200);
 
     const equipped = await readTack(horse.id);
     expect(equipped.saddle).toBe(SHOP_SADDLE);
-    expect(equipped.saddleBonus).toBe(2);
-    expect(resolveTackBonus(equipped).saddleBonus).toBe(2);
+    // Equoria-lsudd: no numeric mirror is written beside the item id.
+    expect(equipped.saddleBonus).toBeUndefined();
+    expect(equipped.bridleBonus).toBeUndefined();
 
     const record = (await inventoryOf(owner.token)).find(i => i.itemId === SHOP_SADDLE);
     expect(record).toBeDefined();
 
     expect((await post('/api/v1/inventory/unequip', owner.token, { inventoryItemId: record.id })).status).toBe(200);
 
-    // The defect: the item key went, the mirror stayed, and resolveTackBonus's
-    // hasDirect branch kept paying +5 to a bare horse forever.
     const bare = await readTack(horse.id);
     expect(bare.saddle).toBeUndefined();
     expect(bare.saddleBonus).toBeUndefined();
-    expect(resolveTackBonus(bare)).toEqual({ saddleBonus: 0, bridleBonus: 0, presenceBonus: 0 });
+    expect(bare).toEqual({});
   }, 90000);
 
   it('re-equips a decoration returned by a sale into tack.decorations, where scoring reads it', async () => {
@@ -194,8 +184,6 @@ describe('Horse.tack document integrity around equip/unequip (Equoria-6p398.12)'
     const dressed = await readTack(horse.id);
     expect(dressed.decorative).toBeUndefined();
     expect((dressed.decorations ?? []).sort()).toEqual([BROWBAND, RIBBON].sort());
-    // Scoring can actually see them now (parade-only presence bonus).
-    expect(resolveTackBonus(dressed, 'parade').presenceBonus).toBeGreaterThan(0);
 
     // Both records report themselves equipped — neither was silently cleared by
     // the same-category swap rule, which does not apply to additive items.
@@ -210,6 +198,5 @@ describe('Horse.tack document integrity around equip/unequip (Equoria-6p398.12)'
       200,
     );
     expect((await readTack(horse.id)).decorations).toEqual([BROWBAND]);
-    expect(resolveTackBonus(await readTack(horse.id), 'parade').presenceBonus).toBeGreaterThan(0);
   }, 120000);
 });

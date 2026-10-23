@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { TACK_INVENTORY, resolveTackBonus } from '../../../modules/economy/index.mjs';
+import { TACK_INVENTORY } from '../../../modules/economy/index.mjs';
 
 // ─── TACK_INVENTORY ──────────────────────────────────────────────────────────
 
@@ -48,15 +48,9 @@ describe('TACK_INVENTORY', () => {
     expect(TACK_INVENTORY.some(i => i.category === 'decorative')).toBe(true);
   });
 
-  it('saddles have numeric numericBonus', () => {
-    for (const item of TACK_INVENTORY.filter(i => i.category === 'saddle')) {
-      expect(typeof item.numericBonus).toBe('number');
-    }
-  });
-
-  it('bridles have numeric numericBonus', () => {
-    for (const item of TACK_INVENTORY.filter(i => i.category === 'bridle')) {
-      expect(typeof item.numericBonus).toBe('number');
+  it('no item carries a numericBonus (Equoria-lsudd: numericBonus retired (owner decision A, 2026-10-23: the item in the slot decides the tack points).)', () => {
+    for (const item of TACK_INVENTORY) {
+      expect(item).not.toHaveProperty('numericBonus');
     }
   });
 
@@ -80,123 +74,5 @@ describe('TACK_INVENTORY', () => {
   it('known decorative IDs are present: show-ribbon', () => {
     const ids = new Set(TACK_INVENTORY.map(i => i.id));
     expect(ids.has('show-ribbon')).toBe(true);
-  });
-});
-
-// ─── resolveTackBonus ─────────────────────────────────────────────────────────
-
-describe('resolveTackBonus — null/invalid tack', () => {
-  it('returns zeroes for null', () => {
-    expect(resolveTackBonus(null)).toEqual({ saddleBonus: 0, bridleBonus: 0, presenceBonus: 0 });
-  });
-
-  it('returns zeroes for undefined', () => {
-    expect(resolveTackBonus(undefined)).toEqual({
-      saddleBonus: 0,
-      bridleBonus: 0,
-      presenceBonus: 0,
-    });
-  });
-
-  it('returns zeroes for a string', () => {
-    expect(resolveTackBonus('bad')).toEqual({ saddleBonus: 0, bridleBonus: 0, presenceBonus: 0 });
-  });
-
-  it('returns zeroes for empty object', () => {
-    expect(resolveTackBonus({})).toEqual({ saddleBonus: 0, bridleBonus: 0, presenceBonus: 0 });
-  });
-});
-
-describe('resolveTackBonus — direct numeric fields (legacy path)', () => {
-  it('passes through saddleBonus and bridleBonus when numeric', () => {
-    const result = resolveTackBonus({ saddleBonus: 5, bridleBonus: 3 });
-    expect(result.saddleBonus).toBe(5);
-    expect(result.bridleBonus).toBe(3);
-    expect(result.presenceBonus).toBe(0);
-  });
-
-  it('uses 0 for missing fields when one numeric field exists', () => {
-    const result = resolveTackBonus({ saddleBonus: 7 });
-    expect(result.saddleBonus).toBe(7);
-    expect(result.bridleBonus).toBe(0);
-  });
-
-  it('returns presenceBonus as 0 even in parade mode for legacy path', () => {
-    const result = resolveTackBonus({ saddleBonus: 5, bridleBonus: 3 }, 'parade');
-    expect(result.presenceBonus).toBe(0);
-  });
-});
-
-describe('resolveTackBonus — catalog lookup path', () => {
-  it('resolves a valid saddle ID to its numericBonus', () => {
-    const result = resolveTackBonus({ saddle: 'dressage-saddle' });
-    expect(result.saddleBonus).toBe(5);
-    expect(result.bridleBonus).toBe(0);
-  });
-
-  it('resolves a valid bridle ID to its numericBonus (Equoria-slry: literal lock)', () => {
-    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.
-    // (spec-all-purpose-tack.md had all-purpose-bridle.numericBonus = 5.)
-    // Asserting literal value catches a regression that lowered the bonus
-    // (e.g. 5 → 1) which the prior .toBeGreaterThan(0) check let through.
-    const result = resolveTackBonus({ bridle: 'all-purpose-bridle' });
-    expect(result.bridleBonus).toBe(2);
-    expect(result.saddleBonus).toBe(0);
-  });
-
-  it('resolves both saddle and bridle together (Equoria-slry: literal lock)', () => {
-    // Owner ruling 2026-10-21: all-purpose tack is +2 in every discipline. Old contract: +5.
-    // (spec-all-purpose-tack.md had all-purpose-saddle.numericBonus = 5
-    // and all-purpose-bridle.numericBonus = 5.) Literal asserts replace
-    // the prior .toBeGreaterThan(0) which would have passed a 1+1 regression.
-    const result = resolveTackBonus({ saddle: 'all-purpose-saddle', bridle: 'all-purpose-bridle' });
-    expect(result.saddleBonus).toBe(2);
-    expect(result.bridleBonus).toBe(2);
-  });
-
-  it('returns 0 for unknown saddle ID', () => {
-    const result = resolveTackBonus({ saddle: 'nonexistent-saddle' });
-    expect(result.saddleBonus).toBe(0);
-  });
-
-  it('returns 0 for unknown bridle ID', () => {
-    const result = resolveTackBonus({ bridle: 'nonexistent-bridle' });
-    expect(result.bridleBonus).toBe(0);
-  });
-});
-
-describe('resolveTackBonus — parade decorations', () => {
-  it('returns presenceBonus = 0 for ridden shows even with decorations', () => {
-    const result = resolveTackBonus({ decorations: ['show-ribbon'] }, 'ridden');
-    expect(result.presenceBonus).toBe(0);
-  });
-
-  it('returns presenceBonus = 0 for conformation shows even with decorations', () => {
-    const result = resolveTackBonus({ decorations: ['show-ribbon'] }, 'conformation');
-    expect(result.presenceBonus).toBe(0);
-  });
-
-  it('returns presenceBonus for parade show with valid decorations', () => {
-    const result = resolveTackBonus({ decorations: ['show-ribbon'] }, 'parade');
-    expect(result.presenceBonus).toBeGreaterThan(0);
-  });
-
-  it('sums presenceBonus from multiple decorations in parade', () => {
-    const result = resolveTackBonus({ decorations: ['show-ribbon', 'braided-mane-wrap'] }, 'parade');
-    expect(result.presenceBonus).toBeGreaterThan(0);
-  });
-
-  it('ignores unknown decoration IDs in parade', () => {
-    const result = resolveTackBonus({ decorations: ['fake-decoration'] }, 'parade');
-    expect(result.presenceBonus).toBe(0);
-  });
-
-  it('handles non-array decorations gracefully (no throw)', () => {
-    expect(() => resolveTackBonus({ decorations: 'not-an-array' }, 'parade')).not.toThrow();
-  });
-
-  it('defaults to ridden show type when showType not provided', () => {
-    const result = resolveTackBonus({ decorations: ['show-ribbon'] });
-    expect(result.presenceBonus).toBe(0);
   });
 });

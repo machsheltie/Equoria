@@ -184,7 +184,7 @@ describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvu
       expect(r).toHaveProperty('materials');
       expect(r).toHaveProperty('result');
       expect(r).toHaveProperty('resultCategory');
-      expect(typeof r.numericBonus).toBe('number');
+      expect(r).not.toHaveProperty('numericBonus');
       expect(typeof r.isCosmetic).toBe('boolean');
     }
   });

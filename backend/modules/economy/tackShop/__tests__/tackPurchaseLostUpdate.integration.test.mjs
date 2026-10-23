@@ -108,12 +108,8 @@ describe('purchaseTackItem concurrent purchases for one horse (Equoria-bvddn.14)
       expect(Number(after.money)).toBe(moneyBefore - saddle.cost - bridle.cost);
 
       const { tack } = await prisma.horse.findUnique({ where: { id: horse.id }, select: { tack: true } });
-      expect(tack).toMatchObject({
-        saddle: saddle.id,
-        bridle: bridle.id,
-        saddleBonus: saddle.numericBonus,
-        bridleBonus: bridle.numericBonus,
-      });
+      // Equoria-lsudd: the ids are the whole record; no numeric mirror is stored.
+      expect(tack).toEqual({ saddle: saddle.id, bridle: bridle.id });
     }
   });
 

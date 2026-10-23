@@ -26,7 +26,6 @@ export interface CraftingRecipe {
   resultName: string;
   resultCategory: string;
   bonus: string;
-  numericBonus: number;
   isCosmetic: boolean;
   locked: boolean;
   affordable: boolean;
@@ -40,7 +39,6 @@ export interface CraftedItem {
   category: string;
   name: string;
   bonus: string;
-  numericBonus: number;
   isCosmetic: boolean;
   quantity: number;
   origin: 'crafted';

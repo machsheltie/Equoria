@@ -3,10 +3,12 @@
  * taken off (Equoria-6p398.19), and an equip never overwrites a tack purchase
  * that committed while it was in flight.
  *
- * 1. STALE MIRROR. A shop purchase stores `{ saddle: <id>, saddleBonus: <n> }`.
- *    Equipping an inventory saddle over it replaced the id and left the old
- *    `saddleBonus`, and `resolveTackBonus` short-circuits on the mirror — the
- *    horse kept the replaced saddle's bonus.
+ * 1. STALE MIRROR. A shop purchase used to store `{ saddle: <id>, saddleBonus: <n> }`
+ *    and equipping an inventory saddle over it left the old `saddleBonus`, so the
+ *    horse kept the replaced saddle's bonus. Equoria-lsudd retired the mirror
+ *    (owner decision A, 2026-10-23: the item in the slot decides the tack
+ *    points; old contract: the mirror was rewritten to the new item's number).
+ *    The pin is now that replacing a saddle leaves only the new id.
  * 2. DESTROYED DECORATION. `POST /tack-shop/unequip-decoration` deleted the
  *    decoration outright. The sale path (Equoria-6p398.12) returns the same
  *    decoration to the seller's inventory, so the two paths disagreed on
@@ -27,7 +29,6 @@ import request from 'supertest';
 
 import app from '../../../../app.mjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
-import { resolveTackBonus } from '../../tackShop/controllers/tackShopController.mjs';
 import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
@@ -40,8 +41,8 @@ import {
 
 const origin = 'http://localhost:3000';
 const fixturePrefix = 'TestFixture-6p398-19-tack';
-const shopSaddle = 'racing-exercise-saddle'; // catalogue +7
-const inventorySaddle = 'all-purpose-saddle'; // catalogue +2
+const shopSaddle = 'racing-exercise-saddle';
+const inventorySaddle = 'all-purpose-saddle';
 const shopSaddleForRace = 'dressage-saddle';
 const browband = 'floral-browband';
 
@@ -124,10 +125,12 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
   afterEach(() => cleanup.run(), 30000);
   afterAll(() => barrierClient.$disconnect());
 
-  it('an inventory saddle replacing a shop saddle carries its own bonus, not the replaced one', async () => {
+  it('an inventory saddle replacing a shop saddle leaves only its own id, with no numeric bonus beside it', async () => {
     const bought = await post('/api/v1/tack-shop/purchase', token, { horseId: horse.id, itemId: shopSaddle });
     expect(bought.status).toBe(200);
-    expect(resolveTackBonus(await readTack(horse.id)).saddleBonus).toBe(7);
+    const purchased = await readTack(horse.id);
+    expect(purchased.saddle).toBe(shopSaddle);
+    expect(purchased.saddleBonus).toBeUndefined();
 
     await setInventory([record('inv-saddle', inventorySaddle, 'saddle')]);
     const equipped = await post('/api/v1/inventory/equip', token, {
@@ -138,7 +141,7 @@ describe('Horse.tack replace / decoration return / equip-vs-purchase (Equoria-6p
 
     const tack = await readTack(horse.id);
     expect(tack.saddle).toBe(inventorySaddle);
-    expect(resolveTackBonus(tack).saddleBonus).toBe(2);
+    expect(tack.saddleBonus).toBeUndefined();
   });
 
   it('a shop-bought decoration taken off returns to the owner’s inventory and can be worn again', async () => {
