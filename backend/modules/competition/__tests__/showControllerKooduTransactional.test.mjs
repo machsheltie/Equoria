@@ -81,7 +81,11 @@ beforeAll(async () => {
   });
 
   // Closeable show: 1 entrant takes 1st = 50% of 1000 = 500.
+  // Equoria-9jdnp: created NOT yet due and made due only after its entry
+  // exists, so an executor scanning globally (the cron path's tests) cannot
+  // settle it entry-less in the gap between the two inserts.
   const pastClose = new Date(Date.now() - 60 * 60 * 1000);
+  const notYetDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const show = await prisma.show.create({
     data: {
       name: `TestFixture-koodu-Show-${uid()}`,
@@ -90,10 +94,10 @@ beforeAll(async () => {
       levelMin: 1,
       levelMax: 999,
       prize: 1000,
-      runDate: pastClose,
+      runDate: notYetDue,
       status: 'open',
       openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-      closeDate: pastClose,
+      closeDate: notYetDue,
       createdByUserId: creator.id,
     },
   });
@@ -103,6 +107,7 @@ beforeAll(async () => {
   await prisma.showEntry.create({
     data: { showId: kooduShowId, horseId: entrantHorse.id, userId: entrant.id, feePaid: 0 },
   });
+  await prisma.show.update({ where: { id: kooduShowId }, data: { closeDate: pastClose, runDate: pastClose } });
 
   // Scoped, fail-loud cleanup (Equoria-9jv9c / rd899). Dependency-ordered:
   // results + entries before the show row; horse before its owner; entrant
@@ -128,7 +133,7 @@ describe('executeClosedShows — claim-the-work + transactional contract (Equori
       select: { money: true },
     });
 
-    await executeClosedShows({}, null);
+    await executeClosedShows({ body: { showIds: [kooduShowId] } }, null);
 
     const after = await prisma.user.findUnique({
       where: { id: entrant.id },
@@ -155,7 +160,7 @@ describe('executeClosedShows — claim-the-work + transactional contract (Equori
       select: { money: true },
     });
 
-    await executeClosedShows({}, null);
+    await executeClosedShows({ body: { showIds: [kooduShowId] } }, null);
 
     const moneyAfterSecondRun = await prisma.user.findUnique({
       where: { id: entrant.id },

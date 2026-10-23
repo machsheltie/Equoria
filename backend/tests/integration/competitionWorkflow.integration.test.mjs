@@ -421,7 +421,9 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       data: { closeDate: new Date(Date.now() - 60_000), status: 'open' },
     });
 
-    await executeClosedShows(null, null);
+    // Scoped to this test's show (Equoria-9jdnp): a global scan from a test claims
+    // sibling suites' past-due shows, which is how their results went missing.
+    await executeClosedShows({ body: { showIds: [testShow.id] } }, null);
 
     // The cron marks the show completed and creates the real result.
     const afterCron = await prisma.show.findUnique({

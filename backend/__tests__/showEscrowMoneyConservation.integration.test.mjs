@@ -209,7 +209,7 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
       where: { id: showId },
       data: { closeDate: new Date(Date.now() - 60 * 60 * 1000) },
     });
-    await executeClosedShows({}, null);
+    await executeClosedShows({ body: { showIds: [showId] } }, null);
 
     // Conservation over suite-owned wallets: the prize and all fees flowed
     // among this suite's users and returned to them in full (winner + creator),
@@ -277,7 +277,7 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
       data: { createdByUserId: null, closeDate: new Date(Date.now() - 60 * 60 * 1000) },
     });
 
-    await executeClosedShows({}, null);
+    await executeClosedShows({ body: { showIds: [sid] } }, null);
 
     // The creator's user row still exists in our fixture (we only nulled the
     // FK), so we can still snap their money. The suite-user total must drop by

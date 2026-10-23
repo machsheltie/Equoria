@@ -183,6 +183,10 @@ afterEach(() => {
 async function runScopedShow(horseIds) {
   const openDate = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
   const closeDate = new Date(Date.now() - 60 * 60 * 1000);
+  // Equoria-2a095: created NOT yet due, made due once its entries exist, so an
+  // executor scanning globally (a sibling suite, the cron path's tests) cannot
+  // settle it entry-less in the gap between the two inserts.
+  const notYetDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const show = await prisma.show.create({
     data: {
       name: `TestFixture-${TAG}-Show-${randomBytes(4).toString('hex')}`,
@@ -191,10 +195,10 @@ async function runScopedShow(horseIds) {
       levelMin: 1,
       levelMax: 999,
       prize: 0,
-      runDate: closeDate,
+      runDate: notYetDue,
       status: 'open',
       openDate,
-      closeDate,
+      closeDate: notYetDue,
       createdByUserId: user.id,
     },
   });
@@ -203,6 +207,7 @@ async function runScopedShow(horseIds) {
   await prisma.showEntry.createMany({
     data: horseIds.map(horseId => ({ showId: show.id, horseId, userId: user.id, feePaid: 0 })),
   });
+  await prisma.show.update({ where: { id: show.id }, data: { closeDate, runDate: closeDate } });
 
   await executeClosedShows({ body: { showIds: [show.id] } }, null);
 

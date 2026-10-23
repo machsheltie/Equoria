@@ -172,6 +172,13 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
 
     const openDate = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
     const closeDate = new Date(Date.now() - 60 * 60 * 1000);
+    // Equoria-2a095: the shows are created NOT yet due and only made due once
+    // both entries exist. Created already past their close date, a show was
+    // claimable by any executor scanning globally (a sibling suite, the cron
+    // path's tests) in the gap before its entries were inserted; that run
+    // settled it with no entries, so this suite later found no result for it
+    // (`expect(riderResult).toBeTruthy()` failing in parallel runs).
+    const notYetDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const now = Date.now();
 
     // Create RUNS shows up front (one batch), each a head-to-head of the two
@@ -183,10 +190,10 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
       levelMin: 1,
       levelMax: 999,
       prize: 0,
-      runDate: closeDate,
+      runDate: notYetDue,
       status: 'open',
       openDate,
-      closeDate,
+      closeDate: notYetDue,
       createdByUserId: user.id,
     }));
 
@@ -205,6 +212,12 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
         { showId, horseId: horseWithRider.id, userId: user.id, feePaid: 0 },
         { showId, horseId: horseWithoutRider.id, userId: user.id, feePaid: 0 },
       ]),
+    });
+
+    // Both entries are in: now the shows are due.
+    await prisma.show.updateMany({
+      where: { id: { in: myShowIds } },
+      data: { closeDate, runDate: closeDate },
     });
 
     // ONE execute call scores all RUNS shows (each entry = independent luck).
