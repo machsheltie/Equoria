@@ -46,6 +46,7 @@ import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
 import { userMessageFor } from '@/lib/http/userMessage';
 import EmptyState from '@/components/ui/EmptyState';
 import { useThreads, useCreateThread } from '@/hooks/api/useForum';
+import { FORUM_SECTIONS } from '@/lib/api-client';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
 
 const THREADS_PER_PAGE = 20;
@@ -78,7 +79,7 @@ const sectionConfig: Record<ForumSection, { label: string; emoji: string; descri
   },
 };
 
-const sections: ForumSection[] = ['general', 'art', 'sales', 'services', 'venting'];
+const sections = FORUM_SECTIONS;
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();

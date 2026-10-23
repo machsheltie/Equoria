@@ -208,7 +208,7 @@ export interface HorseSummary {
   // Foreign key to the breed row, returned flat beside the `breed` relation.
   breedId?: number;
   age: number;
-  ageYears?: number;
+  ageYears: number;
   gender: string;
   sex?: string;
   level?: number;

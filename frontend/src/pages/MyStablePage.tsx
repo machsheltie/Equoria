@@ -37,6 +37,7 @@ import {
 } from '@/lib/api/competitionResults';
 import { horseCompetitionHistoryQueryKeys } from '@/hooks/api/useHorseCompetitionHistory';
 import { getBreedName, isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
+import { RETIREMENT_AGE_YEARS } from '@/lib/horseAgePolicy';
 
 type StableTab = 'profile' | 'legacy';
 
@@ -366,7 +367,7 @@ const MyStablePage: React.FC = () => {
     user?.id ?? null
   );
 
-  const retiredHorses = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 21);
+  const retiredHorses = horses.filter((horse) => horse.ageYears >= RETIREMENT_AGE_YEARS);
 
   // Story 21S-4: parallel per-horse career history for the Hall of Fame
   // list. Uses useQueries so N retired horses don't serialize on first paint.
@@ -386,7 +387,7 @@ const MyStablePage: React.FC = () => {
       id: String(horse.id),
       name: horse.name,
       breed: getBreedName(horse.breed),
-      retiredAge: horse.ageYears ?? horse.age ?? 21,
+      retiredAge: horse.ageYears,
       discipline: 'All disciplines',
       career: {
         competitions: history ? history.statistics.totalCompetitions : null,
@@ -403,11 +404,11 @@ const MyStablePage: React.FC = () => {
     };
   });
 
-  const activeRacers = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 3).length;
+  const activeRacers = horses.filter((horse) => horse.ageYears >= 3).length;
   // Equoria-e2qs6: count by sex GROUP (a Colt is a young stallion, a Filly a
   // young mare, and the stored sex is never relabeled as the horse ages) and let
   // AGE decide who can breed (3+), never the sex string.
-  const breedingAge = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 3);
+  const breedingAge = horses.filter((horse) => horse.ageYears >= 3);
   const breedingPairs = Math.min(
     breedingAge.filter((horse) => isMaleHorseSex(horse.sex ?? horse.gender)).length,
     breedingAge.filter((horse) => isFemaleHorseSex(horse.sex ?? horse.gender)).length

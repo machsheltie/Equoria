@@ -31,6 +31,7 @@ import { IconBox } from '@/components/ui/IconBox';
 import { GameBadge } from '@/components/ui/game';
 import { Skeleton, InlineError, ErrorState } from '@/components/ui/state';
 import { FORUM_SECTIONS } from '@/lib/api-client';
+import { RETIREMENT_AGE_YEARS } from '@/lib/horseAgePolicy';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount, useConversationsCount } from '@/hooks/api/useMessages';
 import { useClubs, useOpenElectionsCount } from '@/hooks/api/useClubs';
@@ -45,13 +46,6 @@ import ActivityFeed from '../components/ActivityFeed';
 import { ActivityType, type Activity } from '../lib/activity-utils';
 
 type CardRole = 'info' | 'accent' | 'success' | 'warning';
-
-/**
- * Horses at or past this age are Hall of Fame inductees — the same
- * definition MyStablePage uses for its legacy tab (backend horseAgePolicy:
- * active window 3–20, retires at 21).
- */
-const RETIREMENT_AGE_YEARS = 21;
 
 /**
  * Four-state model for one hub stat. `value` is only meaningful when the
@@ -106,9 +100,7 @@ const CommunityPageContent: React.FC = () => {
   // MyStablePage's exact query keys so the caches are shared between the hub
   // card and the destination page.
   const horses = horsesQuery.data ?? [];
-  const retiredHorses = horses.filter(
-    (horse) => (horse.ageYears ?? horse.age ?? 0) >= RETIREMENT_AGE_YEARS
-  );
+  const retiredHorses = horses.filter((horse) => horse.ageYears >= RETIREMENT_AGE_YEARS);
   const hofHistories = useQueries({
     queries: retiredHorses.map((horse) => ({
       queryKey: horseCompetitionHistoryQueryKeys.history(horse.id),

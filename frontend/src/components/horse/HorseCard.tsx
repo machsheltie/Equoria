@@ -63,7 +63,7 @@ export function HorseCard({
   className,
   'data-testid': dataTestId = 'horse-card',
 }: HorseCardProps) {
-  const age = horse.ageYears ?? horse.age ?? 0;
+  const age = horse.ageYears;
   const sex = horse.sex ?? horse.gender ?? '';
   const isLegendary = !!(horse as unknown as Record<string, unknown>).isLegendary;
   const traits = horse.traits ?? (horse.trait ? [horse.trait] : []);

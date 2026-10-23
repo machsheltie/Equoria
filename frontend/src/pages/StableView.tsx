@@ -33,6 +33,7 @@ import { useProfile } from '../hooks/useAuth';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { getXPProgressPercent } from '@/lib/xp-utils';
 import { isFemaleHorseSex, isMaleHorseSex } from '@/lib/utils';
+import { RETIREMENT_AGE_YEARS } from '@/lib/horseAgePolicy';
 import type { HorseSummary } from '@/lib/api-client';
 
 /** Resolve stat value from flat fields or nested stats object — used by list view's top-stat reducer. */
@@ -53,9 +54,9 @@ function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number
  * colt a young stallion.
  */
 function getHorseCategory(horse: HorseSummary): string {
-  const age = horse.ageYears ?? horse.age ?? 0;
+  const age = horse.ageYears;
   const sex = horse.sex ?? horse.gender;
-  if (age >= 21) return 'retired';
+  if (age >= RETIREMENT_AGE_YEARS) return 'retired';
   if (age < 3) return 'foal';
   if (isMaleHorseSex(sex)) return 'stallion';
   if (isFemaleHorseSex(sex)) return 'mare';
