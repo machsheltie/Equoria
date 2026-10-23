@@ -14,9 +14,20 @@
  *
  * This sentinel locks the contract:
  *   - After enterShowDeferredTx, the creator's User.money is UNCHANGED.
- *   - SystemAccount[showEscrow].balance has incremented by entryFee.
+ *   - The fee was credited to SystemAccount[showEscrow]: the entry's own
+ *     escrow-credit ledger row (category showEntryFeeEscrow, systemAccount
+ *     showEscrow, this show) exists exactly once. creditSystemAccount writes it
+ *     right after the balance increment, inside the entry transaction, so it
+ *     exists if and only if that credit committed.
  *   - Show.feeEscrow has incremented by entryFee.
- *   - Total money is conserved end-to-end.
+ *   - Total money is conserved end-to-end over the rows this suite owns.
+ *
+ * Equoria-4ug1a: the shared SystemAccount[showEscrow] singleton is NOT read.
+ * Every suite that enters, settles or cancels a show moves that one row, so
+ * `escrowAfter === escrowBefore + fee` failed whenever a sibling suite moved it
+ * between the two reads (the Equoria-dot2i flake class). The per-show feeEscrow
+ * column and the entry's ledger row are owned by this suite and prove the same
+ * routing exactly.
  *
  * Real DB, no mocks, scoped fixtures.
  */
@@ -25,7 +36,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
+import { SYSTEM_ACCOUNT_SHOW_ESCROW } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 // Equoria-576c0 B9: enterShowDeferredTx runs the shared entry rules first (age
@@ -51,11 +62,22 @@ async function snapMoney(userIds) {
   return rows.reduce((s, r) => s + Number(r.money), 0);
 }
 
-async function snapSystem() {
-  const rows = await prisma.systemAccount.findMany({
-    where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
+// The show's own escrow columns: the per-show half of the escrow invariant
+// (SystemAccount[showEscrow] == SUM(prizeEscrow + feeEscrow)), owned by this suite.
+async function snapShowEscrow(showId) {
+  const row = await prisma.show.findUnique({ where: { id: showId }, select: { prizeEscrow: true, feeEscrow: true } });
+  return Number(row.prizeEscrow) + Number(row.feeEscrow);
+}
+
+// The ledger rows creditSystemAccount writes for this show's entry-fee escrow credits.
+function escrowCreditRows(showId, userId) {
+  return prisma.userTransaction.findMany({
+    where: {
+      userId,
+      category: 'showEntryFeeEscrow',
+      metadata: { path: ['showId'], equals: showId },
+    },
   });
-  return rows.reduce((s, r) => s + Number(r.balance), 0);
 }
 
 async function makeUser(money, suffix) {
@@ -147,10 +169,8 @@ afterAll(async () => {
   // (systemAccountHelpers, showEscrowMoneyConservation, gdprShowCancel,
   // buyStoreHorse, groomSalary). A `balance: 0` set in this suite's teardown
   // clobbers whatever a concurrent sibling has in flight under --runInBand /
-  // parallel shards. Every assertion below is delta-based (escrowBefore →
-  // escrowAfter + fee, or snapSystem() before/after a single op), so this
-  // suite never depends on an absolute shared-account balance it did not
-  // itself establish — there is nothing to reset.
+  // parallel shards. No assertion below reads those rows (Equoria-4ug1a), so
+  // there is nothing to reset.
 }, 30000);
 
 describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
@@ -160,10 +180,6 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
 
     const creatorBefore = await prisma.user.findUnique({ where: { id: creator.id }, select: { money: true } });
     const entrantBefore = await prisma.user.findUnique({ where: { id: entrant.id }, select: { money: true } });
-    const escrowBefore = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-      select: { balance: true },
-    });
 
     const entry = await enterShowDeferredTx({
       show,
@@ -176,16 +192,17 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
 
     const creatorAfter = await prisma.user.findUnique({ where: { id: creator.id }, select: { money: true } });
     const entrantAfter = await prisma.user.findUnique({ where: { id: entrant.id }, select: { money: true } });
-    const escrowAfter = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-      select: { balance: true },
-    });
     const showAfter = await prisma.show.findUnique({ where: { id: show.id }, select: { feeEscrow: true } });
 
     expect(Number(entrantAfter.money)).toBe(Number(entrantBefore.money) - entryFee);
     // THE BUG GUARD: creator wallet must NOT have grown by the fee.
     expect(Number(creatorAfter.money)).toBe(Number(creatorBefore.money));
-    expect(Number(escrowAfter.balance)).toBe(Number(escrowBefore.balance) + entryFee);
+    // The fee went to SystemAccount[showEscrow]: exactly one escrow credit of
+    // the fee for this show, attributed to the entrant.
+    const credits = await escrowCreditRows(show.id, entrant.id);
+    expect(credits).toHaveLength(1);
+    expect(credits[0]).toMatchObject({ type: 'credit', amount: entryFee });
+    expect(credits[0].metadata).toMatchObject({ systemAccount: SYSTEM_ACCOUNT_SHOW_ESCROW, showId: show.id });
     expect(Number(showAfter.feeEscrow)).toBe(entryFee);
   });
 
@@ -193,15 +210,19 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
     const entryFee = 75;
     const show = await makeShow(creator.id, entryFee);
     const userIds = [creator.id, entrant.id];
-    const totalBefore = (await snapMoney(userIds)) + (await snapSystem());
+    // Every coin in this flow is in a row this suite owns: the two wallets and
+    // this show's escrow columns (the fee leaves the entrant and is held for
+    // this show). Conserved over those rows, without the shared singletons.
+    const totalBefore = (await snapMoney(userIds)) + (await snapShowEscrow(show.id));
     await enterShowDeferredTx({
       show,
       showId: show.id,
       horseId: entrantHorse.id,
       userId: entrant.id,
     });
-    const totalAfter = (await snapMoney(userIds)) + (await snapSystem());
+    const totalAfter = (await snapMoney(userIds)) + (await snapShowEscrow(show.id));
     expect(totalAfter).toBe(totalBefore);
+    expect(await escrowCreditRows(show.id, entrant.id)).toHaveLength(1);
   });
 
   it('SENTINEL: self-entry (creator entering their own show) still routes fee through escrow', async () => {
@@ -209,10 +230,6 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
     const creatorHorse = await makeHorse(creator.id);
     const show = await makeShow(creator.id, entryFee);
     const creatorBefore = await prisma.user.findUnique({ where: { id: creator.id }, select: { money: true } });
-    const escrowBefore = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-      select: { balance: true },
-    });
     await enterShowDeferredTx({
       show,
       showId: show.id,
@@ -220,13 +237,12 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
       userId: creator.id,
     });
     const creatorAfter = await prisma.user.findUnique({ where: { id: creator.id }, select: { money: true } });
-    const escrowAfter = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-      select: { balance: true },
-    });
     const showAfter = await prisma.show.findUnique({ where: { id: show.id }, select: { feeEscrow: true } });
     expect(Number(creatorAfter.money)).toBe(Number(creatorBefore.money) - entryFee);
-    expect(Number(escrowAfter.balance)).toBe(Number(escrowBefore.balance) + entryFee);
+    const credits = await escrowCreditRows(show.id, creator.id);
+    expect(credits).toHaveLength(1);
+    expect(credits[0]).toMatchObject({ type: 'credit', amount: entryFee });
+    expect(credits[0].metadata).toMatchObject({ systemAccount: SYSTEM_ACCOUNT_SHOW_ESCROW, showId: show.id });
     expect(Number(showAfter.feeEscrow)).toBe(entryFee);
   });
 });

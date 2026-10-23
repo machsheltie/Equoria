@@ -36,7 +36,6 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { enterShowAtomicTx } from '../shows/showEscrowTx.mjs';
@@ -115,21 +114,27 @@ async function makeOpenShow(entryFee) {
 }
 
 async function snapshot(showId) {
-  const [entrantRow, creatorRow, escrowRow, showRow] = await Promise.all([
+  const [entrantRow, creatorRow, showRow] = await Promise.all([
     prisma.user.findUnique({ where: { id: entrant.id }, select: { money: true } }),
     prisma.user.findUnique({ where: { id: creator.id }, select: { money: true } }),
-    prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-      select: { balance: true },
-    }),
     prisma.show.findUnique({ where: { id: showId }, select: { feeEscrow: true } }),
   ]);
   return {
     entrant: Number(entrantRow.money),
     creator: Number(creatorRow.money),
-    escrow: Number(escrowRow?.balance ?? 0),
     feeEscrow: Number(showRow.feeEscrow),
   };
+}
+
+// Every ledger row the entry transaction writes names the show in its metadata:
+// the escrow credit (showEntryFeeEscrow, written by creditSystemAccount right
+// after it increments SystemAccount[showEscrow]) and the entrant's fee debit
+// (competitionEntry). Rows for THIS show exist only if that transaction committed.
+function entryLedgerRows(showId) {
+  return prisma.userTransaction.findMany({
+    where: { userId: entrant.id, metadata: { path: ['showId'], equals: showId } },
+    select: { category: true },
+  });
 }
 
 /**
@@ -157,12 +162,16 @@ async function assertRejectsClosed(enterFn, entryFee) {
   ).rejects.toThrow('ENTRY_CLOSED');
 
   const after = await snapshot(show.id);
-  // Wallet, escrow account, and per-show feeEscrow column all UNCHANGED: the
-  // whole tx (fee debit + escrow credit + increment) rolled back on the throw.
+  // Wallets and the per-show feeEscrow column UNCHANGED: the whole tx (fee
+  // debit + escrow credit + increment) rolled back on the throw.
   expect(after.entrant).toBe(before.entrant);
   expect(after.creator).toBe(before.creator);
-  expect(after.escrow).toBe(before.escrow);
   expect(after.feeEscrow).toBe(before.feeEscrow);
+  // Equoria-t1agd: the escrow credit rolled back too, proven by its own ledger
+  // row, not by the shared SystemAccount[showEscrow] balance (which a sibling
+  // suite can move between two reads). On the paid path the credit is written
+  // BEFORE the status guard throws, so a missing rollback leaves this row.
+  expect(await entryLedgerRows(show.id)).toEqual([]);
   // No ShowEntry row was created on the already-claimed show.
   const entry = await prisma.showEntry.findFirst({
     where: { showId: show.id, horseId: entrantHorse.id },
