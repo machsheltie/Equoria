@@ -14,35 +14,31 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
-import { toPredictionView } from './predictionHorseView.mjs';
+import { withoutUnrevealedTraits } from './predictionHorseView.mjs';
 import { collectAncestorIdsBFS } from './pedigreeWalker.mjs';
 
 /**
- * Attach `competitionResults` to the rows the VIEWER owns, in one batched read.
- * The records of every other horse are withheld by toPredictionView (design §0,
- * Equoria-q4uem.9 slice 4b), so they are never loaded (Equoria-cmw85.15): an
- * include on every ancestor read an established ancestor's whole results history
- * only to discard it. Without a viewer nobody owns anything, so nothing is read.
- * @param {Array<object|null>} rows - Horse rows (userId present)
- * @param {string|undefined} viewerId
- * @returns {Promise<Array<object|null>>} rows, own ones carrying competitionResults
+ * Attach `competitionResults` to every row, in one batched read.
+ * Show records are public (owner ruling 2026-10-19, decision 14), so the
+ * records of a stallion and of every ancestor feed the prediction like the
+ * caller's own. One `horseId in [...]` read replaces an include on each horse
+ * row (Equoria-cmw85.15: an include re-reads an established ancestor's whole
+ * results history through every row that mentions it).
+ * @param {Array<object|null>} rows - Horse rows
+ * @returns {Promise<Array<object|null>>} rows, each carrying competitionResults
  */
-async function withOwnCompetitionResults(rows, viewerId) {
-  const ownedIds = rows
-    .filter(row => row && viewerId !== undefined && row.userId === viewerId)
-    .map(row => row.id);
-  if (ownedIds.length === 0) {
+async function withCompetitionResults(rows) {
+  const ids = rows.filter(Boolean).map(row => row.id);
+  if (ids.length === 0) {
     return rows;
   }
   const results = await prisma.competitionResult.findMany({
-    where: { horseId: { in: ownedIds } },
+    where: { horseId: { in: ids } },
     orderBy: { id: 'asc' },
   });
-  const byHorse = new Map(ownedIds.map(id => [id, []]));
+  const byHorse = new Map(ids.map(id => [id, []]));
   results.forEach(result => byHorse.get(result.horseId).push(result));
-  return rows.map(row =>
-    row && byHorse.has(row.id) ? { ...row, competitionResults: byHorse.get(row.id) } : row,
-  );
+  return rows.map(row => (row ? { ...row, competitionResults: byHorse.get(row.id) } : row));
 }
 
 /**
@@ -52,29 +48,22 @@ async function withOwnCompetitionResults(rows, viewerId) {
  * @param {number} maxGenerations - Maximum generations to trace
  * @returns {Object} Tree structure with nodes and relationships
  */
-export async function generateLineageTree(
-  stallionId,
-  mareId,
-  maxGenerations = 3,
-  { viewerId } = {},
-) {
+export async function generateLineageTree(stallionId, mareId, maxGenerations = 3) {
   logger.info(
     `[lineageTree.generateLineageTree] Generating tree for stallion ${stallionId} and mare ${mareId}, ${maxGenerations} generations`,
   );
 
   // Get the parent horses. Every row the tree is built from goes through
-  // toPredictionView on load — roots, ancestors and the generation lists: no
-  // unrevealed hidden traits (ruling S-Q9) and, given a viewer, no competition
-  // records of horses that viewer does not own (design §0; q4uem.9 slice 4b).
+  // withoutUnrevealedTraits on load — roots, ancestors and the generation lists:
+  // no unrevealed hidden traits (ruling S-Q9). Show records are public.
   const [stallion, mare] = (
-    await withOwnCompetitionResults(
+    await withCompetitionResults(
       await Promise.all([
         prisma.horse.findUnique({ where: { id: stallionId }, include: { sire: true, dam: true } }),
         prisma.horse.findUnique({ where: { id: mareId }, include: { sire: true, dam: true } }),
       ]),
-      viewerId,
     )
-  ).map(row => toPredictionView(row, { viewerId }));
+  ).map(withoutUnrevealedTraits);
 
   if (!stallion || !mare) {
     logger.warn('[lineageTree.generateLineageTree] Missing parent horses');
@@ -96,16 +85,15 @@ export async function generateLineageTree(
     ),
     maxGenerations - 1, // root level is depth 0; we already have stallion+mare
   );
-  const ancestorRows = await withOwnCompetitionResults(
+  const ancestorRows = await withCompetitionResults(
     ancestorIds.size > 0
       ? await prisma.horse.findMany({
           where: { id: { in: [...ancestorIds] } },
           include: { sire: true, dam: true },
         })
       : [],
-    viewerId,
   );
-  const ancestorById = new Map(ancestorRows.map(h => [h.id, toPredictionView(h, { viewerId })]));
+  const ancestorById = new Map(ancestorRows.map(h => [h.id, withoutUnrevealedTraits(h)]));
   // Seed the map with the two roots so buildHorseNode can find them by id.
   ancestorById.set(stallion.id, stallion);
   ancestorById.set(mare.id, mare);
@@ -121,7 +109,7 @@ export async function generateLineageTree(
   };
 
   // Organize by generations
-  tree.generations = await organizeByGenerations(stallionId, mareId, maxGenerations, { viewerId });
+  tree.generations = await organizeByGenerations(stallionId, mareId, maxGenerations);
   tree.totalHorses = tree.generations.reduce((total, gen) => total + gen.horses.length, 0);
 
   logger.info(
@@ -215,7 +203,7 @@ function buildHorseNode(horse, currentDepth, maxDepth, ancestorById, visited = n
  * @param {number} maxGenerations - Maximum generations
  * @returns {Array} Array of generation objects
  */
-export async function organizeByGenerations(stallionId, mareId, maxGenerations, { viewerId } = {}) {
+export async function organizeByGenerations(stallionId, mareId, maxGenerations) {
   const generations = [];
   const processed = new Set();
   let currentGeneration = [stallionId, mareId];
@@ -234,11 +222,10 @@ export async function organizeByGenerations(stallionId, mareId, maxGenerations, 
     // Map the result by id so the iteration below preserves the original
     // currentGeneration ordering (downstream callers depend on deterministic
     // ordering of horses within a generation).
-    const fetched = await withOwnCompetitionResults(
+    const fetched = await withCompetitionResults(
       toFetch.length > 0 ? await prisma.horse.findMany({ where: { id: { in: toFetch } } }) : [],
-      viewerId,
     );
-    const byId = new Map(fetched.map(h => [h.id, toPredictionView(h, { viewerId })]));
+    const byId = new Map(fetched.map(h => [h.id, withoutUnrevealedTraits(h)]));
 
     const horses = [];
     const nextGeneration = [];
@@ -300,17 +287,12 @@ export async function organizeByGenerations(stallionId, mareId, maxGenerations, 
  * @param {number} maxGenerations - Maximum generations
  * @returns {Object} Visualization data structure
  */
-export async function createVisualizationData(
-  stallionId,
-  mareId,
-  maxGenerations = 3,
-  { viewerId } = {},
-) {
+export async function createVisualizationData(stallionId, mareId, maxGenerations = 3) {
   logger.info(
     `[lineageTree.createVisualizationData] Creating visualization for stallion ${stallionId} and mare ${mareId}`,
   );
 
-  const tree = await generateLineageTree(stallionId, mareId, maxGenerations, { viewerId });
+  const tree = await generateLineageTree(stallionId, mareId, maxGenerations);
   const nodes = [];
   const edges = [];
 

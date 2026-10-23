@@ -4,11 +4,10 @@
  * Owner rulings (Stacey): 2026-10-15 — the stallion owner chooses Public Stud
  * or Private Stud and sets the fee; players browse studs inside the
  * MARKETPLACE horse search page. 2026-10-16 S-Q9 — a revealed trait is public;
- * an unrevealed hidden trait stays hidden. Design §0 default — other players'
- * competition records are not shown until the owner rules.
+ * an unrevealed hidden trait stays hidden.
  *
- * Every row goes through the breeding projection (toPredictionView) before the
- * DTO is built, and the DTO carries only the sale-listing field set plus the
+ * Every row goes through the breeding projection (withoutUnrevealedTraits) before
+ * the DTO is built, and the DTO carries only the sale-listing field set plus the
  * stud terms: no other stats, no competition records, no owner id, no money.
  * The sale listing (GET /marketplace) is untouched.
  */
@@ -17,7 +16,7 @@ import logger from '../../../utils/logger.mjs';
 import { studStatuses } from '../../../constants/schema.mjs';
 import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
-import { toPredictionView } from '../../breeding/index.mjs';
+import { withoutUnrevealedTraits } from '../../breeding/index.mjs';
 import { minBreedingAgeYears, maxBreedingAgeYears } from '../../horses/index.mjs';
 import {
   INT4_MAX,
@@ -173,7 +172,7 @@ export async function browseStudListings(req, res) {
       prisma.horse.count({ where }),
     ]);
 
-    const studs = horses.map(h => toStudListing(toPredictionView(h, { viewerId })));
+    const studs = horses.map(h => toStudListing(withoutUnrevealedTraits(h)));
 
     return res.json({
       success: true,

@@ -122,9 +122,7 @@ router.post(
       // Add lineage analysis if requested
       let lineageAnalysis = null;
       if (includeLineage) {
-        const lineageTree = await generateLineageTree(+stallionId, +mareId, generations, {
-          viewerId: userId,
-        });
+        const lineageTree = await generateLineageTree(+stallionId, +mareId, generations);
         lineageAnalysis = {
           diversityImpact: calculateGeneticDiversityImpact(stallion, mare, lineageTree),
           multiGenerationalPredictions: calculateMultiGenerationalPredictions(
@@ -209,10 +207,10 @@ router.get(
 
       const [lineageTree, diversityMetrics, performanceAnalysis, visualizationData] =
         await Promise.all([
-          generateLineageTree(+stallionId, +mareId, generations, { viewerId: userId }),
+          generateLineageTree(+stallionId, +mareId, generations),
           calculateGeneticDiversityMetrics([{ generation: 0, horses: [stallion, mare] }]),
           analyzeLineagePerformance([{ generation: 0, horses: [stallion, mare] }]),
-          createVisualizationData(+stallionId, +mareId, generations, { viewerId: userId }),
+          createVisualizationData(+stallionId, +mareId, generations),
         ]);
 
       // A lineage analysis is a read. It no longer records a `_lineage_analysis`
@@ -271,9 +269,7 @@ router.post(
         });
       }
 
-      const recommendations = await generateLineageBreedingRecommendations(+stallionId, +mareId, {
-        viewerId: userId,
-      });
+      const recommendations = await generateLineageBreedingRecommendations(+stallionId, +mareId);
 
       res.json({
         success: true,

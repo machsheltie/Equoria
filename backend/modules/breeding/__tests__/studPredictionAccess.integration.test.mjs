@@ -246,7 +246,12 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
     });
   });
 
-  describe("design §0 default (slice 4b): other players' competition records are withheld; the caller's own are kept", () => {
+  // OLD CONTRACT (design §0 default, q4uem.9 slice 4b): other players' competition
+  // records were withheld from breeding predictions behind
+  // SHOW_OTHER_PLAYERS_COMPETITION_DATA=false. NEW RULING (Stacey, 2026-10-19,
+  // decision 14): show records are ALWAYS PUBLIC, including other players'
+  // horses in breeding predictions. Hidden traits are unaffected (S-Q9).
+  describe("show records are public (owner ruling 2026-10-19): a stud's and a third player's ancestor's records appear in predictions", () => {
     const SHOW = {
       grandsire: 'q4uem9-GrandsireShow',
       stud: 'q4uem9-StudShow',
@@ -302,71 +307,49 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
       await record(mare.id, SHOW.mare, 73);
     });
 
-    it("lineage-analysis: the stud stallion and the third player's grandsire carry no records; the mare keeps hers; shapes stay arrays/objects", async () => {
+    it("lineage-analysis: the stud stallion, the third player's grandsire and the mare all carry their show records", async () => {
       const res = await ENDPOINTS.lineage(mareOwner.token, stud.id, mare.id);
 
       expect(res.status).toBe(200);
       const text = JSON.stringify(res.body);
-      expect(text).not.toContain(SHOW.stud);
-      expect(text).not.toContain(SHOW.grandsire);
+      expect(text).toContain(SHOW.stud);
+      expect(text).toContain(SHOW.grandsire);
       expect(text).toContain(SHOW.mare);
 
       const root = res.body.data.lineageTree.root;
-      const studNode = root.stallion;
       const grandsireNode = findNode(root.stallion, grandsire.id);
       expect(grandsireNode).not.toBeNull();
-      for (const node of [studNode, grandsireNode]) {
-        expect(node.competitionResults).toEqual([]);
-        expect(node.disciplineScores).toEqual({});
-      }
+      expect(root.stallion.competitionResults).toHaveLength(1);
+      expect(root.stallion.disciplineScores).toEqual({ Racing: 90 });
+      expect(grandsireNode.competitionResults).toHaveLength(1);
+      expect(grandsireNode.disciplineScores).toEqual({ Racing: 71 });
       expect(root.mare.competitionResults).toHaveLength(1);
       expect(root.mare.disciplineScores).toEqual({ Racing: 73 });
 
       for (const generation of res.body.data.lineageTree.generations) {
         for (const h of generation.horses) {
-          expect(Array.isArray(h.competitionResults)).toBe(true);
+          expect(h.competitionResults).toHaveLength(1);
           expect(typeof h.disciplineScores).toBe('object');
-          if (h.id !== mare.id) {
-            expect(h.competitionResults).toEqual([]);
-            expect(h.disciplineScores).toEqual({});
-          }
         }
       }
     });
 
-    it("genetic-probability with lineage: no record of the stud or the third player's grandsire in the response", async () => {
+    it("genetic-probability with lineage: the stud's discipline score counts (potentialScore rises above the mare's own 73)", async () => {
       const res = await ENDPOINTS.geneticProbability(mareOwner.token, stud.id, mare.id);
 
       expect(res.status).toBe(200);
-      const text = JSON.stringify(res.body);
-      expect(text).not.toContain(SHOW.stud);
-      expect(text).not.toContain(SHOW.grandsire);
+      expect(res.body.data.disciplineProbabilities.Racing.potentialScore).toBeGreaterThan(73);
     });
 
-    it('genetic-probability: the stud’s discipline score cannot be derived (potentialScore is the mare’s own 73)', async () => {
-      const res = await ENDPOINTS.geneticProbability(mareOwner.token, stud.id, mare.id);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.disciplineProbabilities.Racing).toMatchObject({
-        potentialScore: 73,
-        inheritanceStrength: 'moderate',
-      });
-    });
-
-    it('lineage-analysis performanceAnalysis has no stud contribution; the unscored stud reads as an unscored horse always did', async () => {
+    it('lineage-analysis performanceAnalysis counts the stud: the generation average is the mean of 90 and 73', async () => {
       const res = await ENDPOINTS.lineage(mareOwner.token, stud.id, mare.id);
 
       expect(res.status).toBe(200);
       const performance = res.body.data.performanceAnalysis;
-      expect(performance.generationalTrends[0].averageDisciplines).toEqual({ Racing: 73 });
-      const studPerformer = performance.performanceMetrics.topPerformers.find(p => p.id === stud.id);
-      // This analysis receives raw horse rows (no `stats` object -> 50) and
-      // "no discipline scores" falls back to 50, as an unscored horse always
-      // did; before the fix the withheld `{}` produced 0/0 = NaN -> null.
-      expect(studPerformer.performanceScore).toBe(50);
+      expect(performance.generationalTrends[0].averageDisciplines).toEqual({ Racing: 82 });
     });
 
-    it('breeding-recommendations (own pair): a scored third-party ancestor’s exact score never appears', async () => {
+    it('breeding-recommendations (own pair): a scored third-party ancestor feeds the discipline strengths', async () => {
       const ownStallion = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion', sireId: grandsire.id });
       await prisma.horse.update({ where: { id: mare.id }, data: { disciplineScores: null } });
       await prisma.horse.update({ where: { id: grandsire.id }, data: { disciplineScores: { Racing: 67 } } });
@@ -378,12 +361,12 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
 
       expect(res.status).toBe(200);
       // The grandsire is the ONLY scored horse in the lineage: any discipline
-      // strength or likely discipline could only have come from its record.
-      expect(res.body.data.strengths.filter(x => x.type === 'discipline')).toEqual([]);
-      expect(res.body.data.expectedOutcomes.likelyDisciplines).toEqual([]);
+      // strength or likely discipline can only have come from his public record.
+      expect(res.body.data.strengths.filter(x => x.type === 'discipline').length).toBeGreaterThan(0);
+      expect(res.body.data.expectedOutcomes.likelyDisciplines.length).toBeGreaterThan(0);
     });
 
-    it("the caller's OWN stallion keeps its records (only other players' horses are withheld)", async () => {
+    it("the caller's OWN stallion keeps its records, and the third player's grandsire shows his too", async () => {
       const ownStallion = await horse({ ownerId: mareOwner.user.id, sex: 'Stallion', sireId: grandsire.id });
       await record(ownStallion.id, SHOW.ownStallion, 74);
 
@@ -393,7 +376,7 @@ describe('stud-pair predictions: access and the unrevealed-trait guard (Equoria-
       const root = res.body.data.lineageTree.root;
       expect(root.stallion.competitionResults).toHaveLength(1);
       expect(root.stallion.disciplineScores).toEqual({ Racing: 74 });
-      expect(findNode(root.stallion, grandsire.id).competitionResults).toEqual([]);
+      expect(findNode(root.stallion, grandsire.id).competitionResults).toHaveLength(1);
     });
   });
 

@@ -14,11 +14,11 @@
  * still look for (they do not exist on the Horse model today — Equoria-3867b)
  * are emptied too, so fixing those readers later cannot reopen the leak.
  *
- * Competition data (competitionResults, disciplineScores) of a horse the
- * VIEWER does not own is withheld by `toPredictionView` — design §0 default
- * (q4uem.9 slice 4b) until the owner rules on the open question (keep private
- * / show publicly / show a summary). SHOW_OTHER_PLAYERS_COMPETITION_DATA is
- * the single point that flips it.
+ * Competition records are NOT withheld. Owner ruling 2026-10-19 (Stacey,
+ * decision 14): show records are always public, including other players'
+ * horses in breeding predictions, so a stallion's or an ancestor's results
+ * and discipline scores feed the predictions like the caller's own. (Until
+ * then they were withheld behind a switch, q4uem.9 slice 4b.)
  */
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
@@ -61,54 +61,4 @@ export function withoutUnrevealedTraits(horse) {
     view.dam = withoutHidden(horse.dam);
   }
   return view;
-}
-
-/**
- * Open owner question (q4uem.9 slice 4 report, option A is this default):
- * other players' competition records are withheld from breeding predictions.
- * Flip to `true` only on the owner's ruling.
- */
-export const SHOW_OTHER_PLAYERS_COMPETITION_DATA = false;
-
-function withoutCompetition(horse) {
-  const view = { ...horse };
-  if ('competitionResults' in horse) {
-    view.competitionResults = [];
-  }
-  if ('disciplineScores' in horse) {
-    view.disciplineScores = {};
-  }
-  return view;
-}
-
-/**
- * The view breeding predictions compute with, for one viewer: unrevealed
- * hidden traits removed for every horse (S-Q9) and, while the competition
- * default stands, competition records removed for every horse the viewer does
- * not own (the caller's own horses keep theirs). Empty values replace removed
- * ones (`[]` / `{}`) so response shapes stay stable for the frontend.
- *
- * FAILS CLOSED (review, slice 4 round 2): without a `viewerId` nobody counts as
- * the owner, so EVERY horse's competition records are removed. A caller that
- * needs the caller's own records must pass the viewer; forgetting it can lose
- * data, never leak it.
- *
- * @param {object | null | undefined} horse
- * @param {{ viewerId?: string }} [options]
- */
-export function toPredictionView(horse, { viewerId } = {}) {
-  const view = withoutUnrevealedTraits(horse);
-  if (!view || SHOW_OTHER_PLAYERS_COMPETITION_DATA) {
-    return view;
-  }
-  const scoped = row =>
-    row && (viewerId === undefined || row.userId !== viewerId) ? withoutCompetition(row) : row;
-  const result = scoped(view);
-  if (view.sire && typeof view.sire === 'object') {
-    result.sire = scoped(view.sire);
-  }
-  if (view.dam && typeof view.dam === 'object') {
-    result.dam = scoped(view.dam);
-  }
-  return result;
 }

@@ -20,7 +20,7 @@ import logger from '../../../utils/logger.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { organizeByGenerations } from './lineageTree.mjs';
-import { toPredictionView } from './predictionHorseView.mjs';
+import { withoutUnrevealedTraits } from './predictionHorseView.mjs';
 import {
   calculateGeneticDiversityMetrics,
   calculateInbreedingCoefficient,
@@ -39,23 +39,16 @@ import { analyzeLineagePerformance } from './lineagePerformance.mjs';
  * generateGeneticBreedingRecommendations.
  * @param {number} stallionId - Stallion ID
  * @param {number} mareId - Mare ID
- * @param {{ viewerId?: string }} [options] - the caller; ancestors they do not
- *   own contribute no competition data (design §0; q4uem.9 slice 4 round 2)
  * @returns {Object} Breeding recommendations and analysis
  */
-export async function generateLineageBreedingRecommendations(
-  stallionId,
-  mareId,
-  { viewerId } = {},
-) {
+export async function generateLineageBreedingRecommendations(stallionId, mareId) {
   logger.info(
     `[lineageBreedingRecommendations.generateLineageBreedingRecommendations] Generating recommendations for stallion ${stallionId} and mare ${mareId}`,
   );
 
-  // Get detailed horse data. The roots go through toPredictionView with the
-  // viewer too (no unrevealed hidden traits; no competition records of a horse
-  // the viewer does not own), so this no longer leans on the route's
-  // both-owned precondition (q4uem.9 slice 4 hardening).
+  // Get detailed horse data. The roots go through withoutUnrevealedTraits (no
+  // unrevealed hidden traits), so this no longer leans on the route's both-owned
+  // precondition (q4uem.9 slice 4 hardening).
   const [stallion, mare] = (
     await Promise.all([
       prisma.horse.findUnique({
@@ -67,7 +60,7 @@ export async function generateLineageBreedingRecommendations(
         include: { competitionResults: true },
       }),
     ])
-  ).map(row => toPredictionView(row, { viewerId }));
+  ).map(withoutUnrevealedTraits);
 
   if (!stallion || !mare) {
     // Equoria-4xwyi: throw a TYPED 404 (AppError, statusCode 404) instead of a
@@ -81,11 +74,11 @@ export async function generateLineageBreedingRecommendations(
   }
 
   // Get lineage data
-  const lineageData = await organizeByGenerations(stallionId, mareId, 3, { viewerId });
+  const lineageData = await organizeByGenerations(stallionId, mareId, 3);
 
   // Calculate various metrics
   const diversityMetrics = await calculateGeneticDiversityMetrics(lineageData);
-  const inbreedingCoeff = await calculateInbreedingCoefficient(stallionId, mareId, { viewerId });
+  const inbreedingCoeff = await calculateInbreedingCoefficient(stallionId, mareId);
   const performanceAnalysis = await analyzeLineagePerformance(lineageData);
 
   // Calculate compatibility score

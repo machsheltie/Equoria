@@ -1,17 +1,21 @@
 /**
- * Lineage tree — competition results are not dragged in with every horse row
- * (Equoria-cmw85.15).
+ * Lineage tree — competition results arrive in one batched read, not through an
+ * include on every horse row (Equoria-cmw85.15), and every horse's show records
+ * are in the tree (owner ruling 2026-10-19, decision 14).
  *
- * generateLineageTree() loaded `competitionResults: true` (no select, no limit)
- * with the root horses, every ancestor and every generation row — then
- * toPredictionView() blanked the records of every horse the viewer does not own
- * (design §0, Equoria-q4uem.9 slice 4b). The records of an established ancestor
- * were read from the results table only to be thrown away.
+ * generateLineageTree() once loaded `competitionResults: true` (no select, no
+ * limit) with the root horses, every ancestor and every generation row.
+ * Equoria-cmw85.15 scoped the read to the VIEWER's own horses because
+ * toPredictionView() then blanked every other player's records (design §0,
+ * Equoria-q4uem.9 slice 4b). OLD CONTRACT: other players' records were `[]`.
+ * NEW RULING (Stacey, 2026-10-19, decision 14): show records are ALWAYS PUBLIC,
+ * including other players' horses in breeding predictions, so the withholding
+ * is gone and the records are loaded for every horse in the tree.
  *
- * Contract this pins (response shape unchanged — studPredictionAccess keeps the
- * privacy rule): the viewer's OWN horses still carry their results in the tree;
- * everyone else's are `[]`; and the only competition_results read is scoped to
- * horses the viewer owns, never an include on a horse row.
+ * Contract this pins: no horse read pulls results in through an include; the
+ * results are read in batched `horseId in [...]` reads (never one read per
+ * horse); and every horse of the tree — the viewer's own and a foreign
+ * ancestor alike — carries its records.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -120,8 +124,8 @@ function findNode(node, id) {
   return node.id === id ? node : (findNode(node.sire, id) ?? findNode(node.dam, id));
 }
 
-describe('generateLineageTree() competition results (Equoria-cmw85.15)', () => {
-  it('reads results only for the viewer’s own horses and leaves the tree unchanged', async () => {
+describe('generateLineageTree() competition results (Equoria-cmw85.15; public records, decision 14)', () => {
+  it('reads every horse’s results in batched reads and the tree shows own and foreign records alike', async () => {
     const horseReads = [];
     const resultReads = [];
     const originals = {
@@ -144,7 +148,7 @@ describe('generateLineageTree() competition results (Equoria-cmw85.15)', () => {
 
     let tree;
     try {
-      tree = await generateLineageTree(stallion.id, mare.id, 3, { viewerId: viewer.id });
+      tree = await generateLineageTree(stallion.id, mare.id, 3);
     } finally {
       prisma.horse.findUnique = originals.findUnique;
       prisma.horse.findMany = originals.findMany;
@@ -156,26 +160,28 @@ describe('generateLineageTree() competition results (Equoria-cmw85.15)', () => {
     for (const read of horseReads) {
       expect(read?.include?.competitionResults).toBeUndefined();
     }
-    // The only results reads are scoped to horses the viewer owns.
+    // Results come from batched reads: a horse id list, several horses at once
+    // somewhere in the tree, and the foreign ancestor's records are among them.
     expect(resultReads.length).toBeGreaterThanOrEqual(1);
     for (const read of resultReads) {
-      const scoped = read.where.horseId.in;
-      expect(scoped).not.toContain(foreignSire.id);
-      expect(scoped.every(id => [stallion.id, mare.id].includes(id))).toBe(true);
+      expect(Array.isArray(read.where.horseId.in)).toBe(true);
     }
+    const requested = resultReads.flatMap(read => read.where.horseId.in);
+    expect(requested).toEqual(expect.arrayContaining([stallion.id, foreignSire.id]));
 
-    // Response shape: own horse keeps its record, others are [].
+    // Response shape: the own horse and the foreign ancestor both keep their record.
     const stallionNode = tree.root.stallion;
     expect(stallionNode.competitionResults).toHaveLength(1);
     expect(stallionNode.competitionResults[0].showName).toBe(`${SCOPE}-own-result-${RUN}`);
     expect(tree.root.mare.competitionResults).toEqual([]);
-    expect(findNode(stallionNode, foreignSire.id).competitionResults).toEqual([]);
+    const foreignNode = findNode(stallionNode, foreignSire.id);
+    expect(foreignNode.competitionResults).toHaveLength(1);
+    expect(foreignNode.competitionResults[0].showName).toBe(`${SCOPE}-foreign-result-${RUN}`);
     for (const generation of tree.generations) {
       for (const horse of generation.horses) {
         expect(Array.isArray(horse.competitionResults)).toBe(true);
-        expect(horse.competitionResults).toHaveLength(horse.id === stallion.id ? 1 : 0);
+        expect(horse.competitionResults).toHaveLength(horse.id === mare.id ? 0 : 1);
       }
     }
-    expect(JSON.stringify(tree)).not.toContain(`${SCOPE}-foreign-result-${RUN}`);
   }, 60_000);
 });

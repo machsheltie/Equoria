@@ -185,19 +185,16 @@ export async function identifyGeneticBottlenecks(lineageData) {
  * Calculate inbreeding coefficient for specific breeding pair
  * @param {number} stallionId - Stallion ID
  * @param {number} mareId - Mare ID
- * @param {{ viewerId?: string }} [options] - the caller (q4uem.9: threaded so a
- *   later read of scores here keeps the caller's own records; without it the
- *   lineage view fails closed and drops every horse's competition records)
  * @returns {number} Inbreeding coefficient (0-1)
  */
-export async function calculateInbreedingCoefficient(stallionId, mareId, { viewerId } = {}) {
+export async function calculateInbreedingCoefficient(stallionId, mareId) {
   try {
     logger.info(
       `[lineageDiversity.calculateInbreedingCoefficient] Calculating for stallion ${stallionId} and mare ${mareId}`,
     );
 
     // Get lineage for both horses
-    const lineageData = await organizeByGenerations(stallionId, mareId, 4, { viewerId });
+    const lineageData = await organizeByGenerations(stallionId, mareId, 4);
     const allAncestors = lineageData.flatMap(gen => gen.horses);
 
     // Find common ancestors
