@@ -21,6 +21,7 @@ import {
   User,
   Settings,
   MoreHorizontal,
+  Newspaper,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -35,6 +36,8 @@ export interface NavItem {
 /** Full navigation — used by SidebarNav (desktop) and NavPanel (hamburger overlay) */
 export const NAV_SECTIONS: NavItem[] = [
   { name: 'Home', href: '/', Icon: Home },
+  // Equoria-wbt8l: News, where While You Were Away's "Okay" leads. Home stays.
+  { name: 'News', href: '/news', Icon: Newspaper },
   // D-27 (DECISIONS.md §10): /stable is the roster browser — label "Stable".
   { name: 'Stable', href: '/stable', Icon: Building2, shortName: 'Stable' },
   { name: 'Inventory', href: '/inventory', Icon: Package },

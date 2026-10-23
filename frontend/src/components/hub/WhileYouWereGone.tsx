@@ -3,7 +3,10 @@
  *
  * Return overlay shown when user has been away for 4+ hours.
  * Glass panel overlay with prioritized activity summary (max 8 items).
- * Dismissible via: "Continue" button, Escape key, or backdrop click.
+ * One button, "Okay", which takes the player to News (owner ruling
+ * 2026-10-23, Equoria-wbt8l). It appears on every such return, even when
+ * nothing is new (keeping its "nothing new" wording). Escape and the backdrop
+ * still close it where the player is.
  *
  * Trigger detection (Task 24-3):
  *   - lastVisit stored in localStorage on beforeunload
@@ -17,8 +20,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router';
-import { X, Trophy, MessageCircle, Star, ChevronRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import { Trophy, MessageCircle, Star, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { InlineError } from '@/components/ui/state';
@@ -103,6 +106,7 @@ function WYAGRow({ item, onClose }: { item: WYAGItem; onClose: () => void }) {
 /* ─── Main overlay ───────────────────────────────────────────────────────── */
 export function WhileYouWereGone() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [since, setSince] = useState<string | null>(null);
   // True while the overlay has been shown and not yet dismissed. While it is, the
@@ -137,7 +141,7 @@ export function WhileYouWereGone() {
   }, [user?.completedOnboarding, userId]);
 
   // Escape key to dismiss
-  // Every dismissal path (Continue, X, Escape, backdrop, following an item link)
+  // Every dismissal path (Okay, Escape, backdrop, following an item link)
   // goes through here, and it is the moment the visit is recorded.
   const close = useCallback(() => {
     overlayPendingRef.current = false;
@@ -184,15 +188,6 @@ export function WhileYouWereGone() {
           WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
         }}
       >
-        {/* Close button — top right */}
-        <button
-          onClick={close}
-          aria-label="Dismiss"
-          className="absolute top-4 right-4 p-1.5 rounded-full text-role-secondary hover:text-role-primary hover:bg-white/10 transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-
         {/* Header — centered */}
         <div className="text-center mb-5">
           <h2 className="type-section-heading text-[var(--gold-primary)]">While You Were Away</h2>
@@ -245,9 +240,15 @@ export function WhileYouWereGone() {
           </div>
         )}
 
-        {/* Footer — gold gradient button */}
-        <Button onClick={close} className="mt-5 w-full">
-          Continue to Stable
+        {/* The one button: Okay, on to News (owner ruling 2026-10-23, Equoria-wbt8l). */}
+        <Button
+          onClick={() => {
+            close();
+            navigate('/news');
+          }}
+          className="mt-5 w-full"
+        >
+          Okay
         </Button>
       </div>
     </div>,

@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { http, HttpResponse, delay } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -82,6 +82,8 @@ describe('WhileYouWereGone', () => {
 
   afterEach(() => {
     localStorage.clear();
+    // "Okay" navigates the real BrowserRouter; put the address back.
+    window.history.replaceState({}, '', '/');
   });
 
   it('does not show when user has not been away long enough', () => {
@@ -159,11 +161,15 @@ describe('WhileYouWereGone', () => {
     expect(screen.getByText('Star sold for $1200')).toBeInTheDocument();
   });
 
-  it('dismisses on "Continue to Stable" button click', async () => {
+  // Owner ruling 2026-10-23 (Equoria-wbt8l) changed this contract. Old: a
+  // "Continue to Stable" button and an X both closed the overlay in place.
+  // New: one button, "Okay", which takes the player to News.
+  it('"Okay" closes the overlay and takes the player to News', async () => {
     localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
-    fireEvent.click(await screen.findByText('Continue to Stable'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Okay' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe('/news');
   });
 
   it('dismisses on Escape key press', async () => {
@@ -174,11 +180,17 @@ describe('WhileYouWereGone', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('dismisses on X button click', async () => {
+  it('has one button, "Okay", and no separate close button (Equoria-wbt8l)', async () => {
     localStorage.setItem(lastVisitKey, fiveHoursAgo);
     renderWYAG();
-    fireEvent.click(await screen.findByLabelText('Dismiss'));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog');
+    await screen.findByText('Thunder won 1st place!');
+    expect(
+      within(dialog)
+        .getAllByRole('button')
+        .map((b) => b.textContent)
+    ).toEqual(['Okay']);
+    expect(screen.queryByLabelText('Dismiss')).not.toBeInTheDocument();
   });
 
   it('shows loading skeletons while the boundary request is in flight', async () => {

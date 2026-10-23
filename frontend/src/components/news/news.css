@@ -1,0 +1,590 @@
+/*
+ * The Night Road — News page styles (Equoria-wbt8l).
+ *
+ * Authored CSS on the Celestial Night tokens (PRODUCT.md: no new utility
+ * classes). Built from the owner-chosen Option B mock and her seasonal-event
+ * sample. The scene art (PageBackground, from the layout) stays visible down
+ * the whole road; the road itself is open composition, and only the owner's
+ * letters and seasonal events are framed.
+ */
+
+.news-page {
+  container: news / inline-size;
+}
+
+/* ── Arrival ──────────────────────────────────────────────────────────── */
+.news-arrive {
+  padding: var(--space-5) 0 var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+}
+
+.news-arrive h1 {
+  margin: 0;
+  font-family: var(--font-announcer);
+  font-weight: 700;
+  font-synthesis: none;
+  font-size: 2rem;
+  line-height: 1.1;
+  color: var(--gold-light);
+  text-shadow:
+    0 1px 6px var(--bg-deep-space),
+    0 0 20px color-mix(in srgb, var(--bg-deep-space) 90%, transparent),
+    0 0 30px var(--alpha-gold-ember-30);
+}
+
+.news-arrive p {
+  margin: var(--space-2) 0 0;
+  max-width: 52ch;
+  color: var(--text-primary);
+  text-shadow: 0 1px 6px var(--bg-deep-space);
+}
+
+.news-desk-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gold-primary);
+  text-decoration: none;
+  text-shadow: 0 1px 6px var(--bg-deep-space);
+}
+
+.news-desk-link:hover {
+  color: var(--gold-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── The month's seasonal event ribbon ───────────────────────────────── */
+.news-ribbon {
+  position: relative;
+  margin: var(--space-5) 0 var(--space-6);
+  padding: var(--space-3) 40px;
+  display: grid;
+  gap: var(--space-2);
+  align-items: center;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg-twilight) 97%, transparent),
+    color-mix(in srgb, var(--bg-midnight) 97%, transparent)
+  );
+  clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 50%, 100% 100%, 0 100%, 18px 50%);
+}
+
+.news-ribbon::before {
+  content: '';
+  position: absolute;
+  inset: 5px 22px;
+  border-top: 1px solid var(--alpha-gold-primary-40);
+  border-bottom: 1px solid var(--alpha-gold-primary-40);
+  pointer-events: none;
+}
+
+.news-ribbon__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.news-ribbon__title h2 {
+  margin: 0;
+  font-family: var(--font-entity);
+  font-weight: 400;
+  font-synthesis: none;
+  font-size: var(--text-h2);
+  line-height: 1.15;
+  color: var(--gold-light);
+}
+
+.news-ribbon__title p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.news-ribbon__moon.news-emblem {
+  width: 34px;
+  height: 34px;
+  color: var(--gold-light);
+  filter: drop-shadow(0 0 10px var(--alpha-gold-ember-55));
+}
+
+.news-ribbon__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gold-primary);
+  text-decoration: none;
+}
+
+.news-ribbon__link:hover {
+  color: var(--gold-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Emblems ─────────────────────────────────────────────────────────── */
+.news-emblem {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── The road ────────────────────────────────────────────────────────── */
+.news-road {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.news-night {
+  position: relative;
+  padding: 0 0 28px 40px;
+}
+
+.news-night::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 6px;
+  bottom: -6px;
+  width: 2px;
+  background: linear-gradient(var(--gold-primary), var(--gold-dim));
+}
+
+.news-night--ahead::before {
+  width: 0;
+  background: none;
+  border-left: 2px dotted var(--alpha-gold-primary-60);
+}
+
+.news-night:last-child::before {
+  background: linear-gradient(var(--gold-dim), transparent);
+}
+
+.news-node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bg-night-sky);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-primary);
+}
+
+.news-night--today .news-node {
+  width: 32px;
+  height: 32px;
+  left: -2px;
+  top: -2px;
+  border-color: var(--gold-primary);
+  color: var(--gold-bright);
+  box-shadow: var(--glow-gold-strong);
+}
+
+.news-night--ahead .news-node {
+  border-style: dashed;
+  color: var(--text-secondary);
+}
+
+.news-night__heading {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-entity);
+  font-weight: 400;
+  font-synthesis: none;
+  font-size: var(--text-h3);
+  line-height: 1.3;
+  color: var(--gold-light);
+  text-shadow: 0 1px 6px var(--bg-deep-space);
+}
+
+.news-night__heading time {
+  display: block;
+}
+
+.news-night__heading small {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  letter-spacing: 0;
+}
+
+.news-night--ahead .news-night__heading {
+  color: var(--text-primary);
+}
+
+.news-gap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 0 26px 40px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  text-shadow: 0 1px 4px var(--bg-deep-space);
+}
+
+.news-gap::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: -6px;
+  bottom: 0;
+  border-left: 2px dotted var(--gold-dim);
+}
+
+/* ── Entry rows (the While You Were Away row pattern) ────────────────── */
+.news-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg-deep-space) 72%, transparent),
+    color-mix(in srgb, var(--bg-deep-space) 45%, transparent) 70%,
+    transparent
+  );
+}
+
+.news-entry {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--alpha-gold-primary-10);
+  color: inherit;
+  text-decoration: none;
+}
+
+.news-entries > li:last-child .news-entry {
+  border-bottom: 0;
+}
+
+.news-entry--link {
+  min-height: 44px;
+  transition: background-color var(--duration-normal) var(--ease-default);
+}
+
+.news-entry--link:hover {
+  background: var(--alpha-gold-primary-5);
+}
+
+.news-entry--link:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: -2px;
+}
+
+.news-entry__emblem {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bg-night-sky) 80%, transparent);
+  border: 1px solid var(--alpha-gold-primary-20);
+  color: var(--gold-primary);
+}
+
+.news-entry__words {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.news-entry__title {
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.news-entry__detail,
+.news-entry__byline {
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.news-entry__byline {
+  font-style: italic;
+}
+
+.news-entry__go.news-emblem {
+  margin-top: 4px;
+  color: var(--gold-primary);
+  opacity: 0.6;
+}
+
+.news-entry--link:hover .news-entry__go.news-emblem {
+  opacity: 1;
+}
+
+/* ── Framed posts: letters and seasonal events (FrostedPanel) ────────── */
+.news-feature {
+  margin: 0 0 var(--space-3);
+}
+
+/* One opaque frame, no blur: several posts can share a night, and only one
+   blurred layer may ever be visible (DESIGN.md Single Blur Rule). */
+.news-road .news-post.glass-panel {
+  background: var(--glass-surface-heavy-bg);
+  border: 1px solid var(--alpha-gold-ember-30);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent),
+    var(--shadow-raised);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: var(--space-5);
+}
+
+.news-post__kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.news-post__kicker .news-emblem {
+  width: 18px;
+  height: 18px;
+  color: var(--gold-primary);
+}
+
+.news-road .news-post__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-h2);
+  line-height: 1.2;
+  color: var(--gold-light);
+}
+
+.news-post__body {
+  max-width: 68ch;
+}
+
+.news-post__body p {
+  margin: 0 0 var(--space-3);
+  color: var(--text-primary);
+  line-height: 1.55;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.news-post__signature {
+  display: grid;
+  margin: var(--space-4) 0 0;
+}
+
+.news-post__signature-name {
+  font-family: var(--font-entity);
+  font-weight: 400;
+  font-synthesis: none;
+  font-size: var(--text-h3);
+  line-height: 1.2;
+  color: var(--gold-light);
+}
+
+.news-post__signature-role {
+  margin-top: 2px;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* The seasonal event: the owner's large format. */
+.news-road .news-post--seasonal.glass-panel {
+  padding: var(--space-5) var(--space-5) var(--space-5);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text-primary) 8%, transparent),
+    var(--shadow-raised),
+    var(--glow-gold);
+}
+
+.news-seasonal__title {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-announcer);
+  font-weight: 700;
+  font-synthesis: none;
+  font-size: 2rem;
+  line-height: 1.12;
+  color: var(--gold-light);
+  text-wrap: balance;
+}
+
+.news-tiles {
+  list-style: none;
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.news-tile {
+  position: relative;
+  margin: 0;
+  height: 112px;
+  min-width: 132px;
+  max-width: 100%;
+  overflow: hidden;
+  border: 2px solid var(--gold-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-midnight);
+  box-shadow: var(--shadow-subtle);
+}
+
+.news-tile img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: cover;
+}
+
+.news-tile figcaption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: var(--space-4) var(--space-2) var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
+  background: linear-gradient(
+    transparent,
+    color-mix(in srgb, var(--bg-deep-space) 85%, transparent)
+  );
+  text-shadow: 0 1px 3px var(--bg-deep-space);
+}
+
+/* A tile whose picture did not load keeps its caption on the night ground. */
+.news-tile:not(:has(img)) figcaption {
+  position: static;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--space-2);
+  background: none;
+}
+
+/* ── Walking further back ────────────────────────────────────────────── */
+.news-road-end {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: 0 0 var(--space-6) 40px;
+}
+
+/* ── Honest states ───────────────────────────────────────────────────── */
+.news-loading .news-emblem {
+  width: 28px;
+  height: 28px;
+  color: var(--gold-primary);
+  animation: news-wax 2.4s var(--ease-default) infinite alternate;
+}
+
+@keyframes news-wax {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .news-loading .news-emblem {
+    animation: none;
+  }
+}
+
+.news-loading {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-6) 0;
+  font-family: var(--font-entity);
+  font-size: var(--text-h3);
+  color: var(--gold-light);
+  text-shadow: 0 1px 6px var(--bg-deep-space);
+}
+
+/* ── Desktop: the night's name stands to the left of the road ────────── */
+@container news (min-width: 760px) {
+  .news-arrive h1 {
+    font-size: var(--text-display);
+  }
+
+  .news-ribbon {
+    grid-template-columns: 1fr auto;
+    padding: var(--space-4) 56px;
+  }
+
+  .news-night {
+    padding-left: 200px;
+  }
+
+  .news-night::before {
+    left: 173px;
+  }
+
+  .news-node {
+    left: 160px;
+  }
+
+  .news-night--today .news-node {
+    left: 158px;
+  }
+
+  .news-night__heading {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 140px;
+    margin: 0;
+    text-align: right;
+  }
+
+  .news-gap,
+  .news-road-end {
+    padding-left: 200px;
+  }
+
+  .news-gap::before {
+    left: 173px;
+  }
+
+  .news-seasonal__title {
+    font-size: var(--text-display);
+  }
+}

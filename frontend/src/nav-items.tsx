@@ -54,6 +54,9 @@ const MessageBoardPage = lazy(() => import('./pages/MessageBoardPage'));
 const MessageThreadPage = lazy(() => import('./pages/MessageThreadPage'));
 const ClubsPage = lazy(() => import('./pages/ClubsPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
+// Equoria-wbt8l — News (the Night Road) and the staff News Desk
+const NewsPage = lazy(() => import('./pages/NewsPage'));
+const NewsDeskPage = lazy(() => import('./pages/NewsDeskPage'));
 
 /**
  * Navigation items for the Equoria application
@@ -261,6 +264,20 @@ export const navItems = [
     to: '/messages',
     icon: null,
     Page: MessagesPage,
+  },
+  // Equoria-wbt8l — News: linked from the main navigation (navItems.ts) and
+  // from While You Were Away's "Okay". The desk is staff-only (route-only).
+  {
+    title: 'News',
+    to: '/news',
+    icon: null,
+    Page: NewsPage,
+  },
+  {
+    title: 'News Desk',
+    to: '/news/desk',
+    icon: null,
+    Page: NewsDeskPage,
   },
 ];
 

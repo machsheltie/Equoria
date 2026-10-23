@@ -4,8 +4,9 @@
  *
  * Writing "now" the moment the overlay mounts meant a player who closed the tab
  * before reading it had those events marked "seen". The summary is only
- * consumed when she dismisses it: Continue, the X, Escape, the backdrop, or
- * following one of its links all count. A visit that shows no overlay (a short
+ * consumed when she dismisses it: Okay (which also takes her to News since the
+ * owner ruling of 2026-10-23, Equoria-wbt8l, replacing Continue and the X),
+ * Escape, the backdrop, or following one of its links all count. A visit that shows no overlay (a short
  * absence) still refreshes the time on mount, as before.
  *
  * Real component, real useWhileYouWereGone hook, real AuthContext provider,
@@ -69,6 +70,7 @@ describe('WhileYouWereGone last-visit timing (Equoria-oey96.53)', () => {
 
   afterEach(() => {
     localStorage.clear();
+    window.history.replaceState({}, '', '/');
   });
 
   it('leaves the last-visit time alone while the overlay is open and undismissed', async () => {
@@ -91,8 +93,7 @@ describe('WhileYouWereGone last-visit timing (Equoria-oey96.53)', () => {
   });
 
   it.each([
-    ['the Continue button', () => fireEvent.click(screen.getByText('Continue to Stable'))],
-    ['the X button', () => fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))],
+    ['the Okay button', () => fireEvent.click(screen.getByRole('button', { name: 'Okay' }))],
     ['the Escape key', () => fireEvent.keyDown(window, { key: 'Escape' })],
   ])('dismissing with %s records the visit', async (_label, dismiss) => {
     localStorage.setItem(scopedKey, fiveHoursAgo);
