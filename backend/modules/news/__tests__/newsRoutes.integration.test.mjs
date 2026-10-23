@@ -296,6 +296,28 @@ describe('News Desk — who may write', () => {
     expect(byOwner.status).toBe(200);
   });
 
+  it('lets the owner edit any staff post, an Admin’s letter included, keeping its signature (q27)', async () => {
+    const adminLetter = await mutate('post', actors.admin, '/api/v1/admin/news').send({
+      postType: 'adminLetter',
+      title: `${PREFIX} admin letter to edit`,
+      body: 'Before.',
+    });
+    expect(adminLetter.status).toBe(201);
+    const { id } = adminLetter.body.data.post;
+    postIds.push(id);
+
+    const edited = await mutate('put', actors.owner, `/api/v1/admin/news/${id}`).send({
+      title: `${PREFIX} edited by the owner`,
+      body: 'After.',
+    });
+    expect(edited.status).toBe(200);
+    expect(edited.body.data.post).toMatchObject({
+      title: `${PREFIX} edited by the owner`,
+      body: 'After.',
+      authorName: actors.admin.user.username,
+    });
+  });
+
   it('lets an Admin edit and remove their own letter, but not another Admin’s or a game entry', async () => {
     const created = await mutate('post', actors.admin, '/api/v1/admin/news').send({
       postType: 'adminLetter',

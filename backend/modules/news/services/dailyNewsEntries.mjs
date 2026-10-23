@@ -98,7 +98,8 @@ export async function postGameNewsEntries(postType, entries, now = new Date()) {
 
 /**
  * Club News for the game day of `now`: elections opening that day (or in the
- * lookback, still open) and run-offs decided in the lookback.
+ * lookback, still open) and every election decided in the lookback (run-off
+ * rounds and outright wins; owner ruling q25).
  * @param {Date} now
  */
 export async function collectClubNews(now) {
@@ -118,9 +119,11 @@ export async function collectClubNews(now) {
     },
     orderBy: { id: 'asc' },
   });
-  const decidedRunoffs = await prisma.clubElection.findMany({
+  // Every decided result is announced (owner ruling q25, 2026-10-23): a run-off
+  // round's winner and an election won outright. A tied election itself closes
+  // with outcome 'runoff' and is announced through its run-off round.
+  const decided = await prisma.clubElection.findMany({
     where: {
-      runoffOfId: { not: null },
       status: 'closed',
       outcome: 'won',
       winnerCandidateId: { not: null },
@@ -129,6 +132,7 @@ export async function collectClubNews(now) {
     select: {
       id: true,
       position: true,
+      runoffOfId: true,
       club: { select: { name: true } },
       winnerCandidate: { select: { user: { select: { username: true } } } },
     },
@@ -154,13 +158,14 @@ export async function collectClubNews(now) {
           endsAt: election.endsAt,
         },
   );
-  for (const runoff of decidedRunoffs) {
-    const winner = runoff.winnerCandidate?.user?.username;
+  for (const election of decided) {
+    const winner = election.winnerCandidate?.user?.username;
     if (winner) {
+      const isRunoff = election.runoffOfId !== null;
       entries.push({
-        sourceKey: `clubNews:runoffResult:${runoff.id}`,
-        title: `Run-off decided at ${runoff.club.name}`,
-        body: `${winner} wins the vote for ${runoff.position}.`,
+        sourceKey: `clubNews:${isRunoff ? 'runoffResult' : 'electionResult'}:${election.id}`,
+        title: `${isRunoff ? 'Run-off' : 'Election'} decided at ${election.club.name}`,
+        body: `${winner} wins the vote for ${election.position}.`,
         linkPath: '/clubs',
       });
     }

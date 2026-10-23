@@ -153,6 +153,37 @@ beforeAll(async () => {
     data: { outcome: 'won', winnerCandidateId: fx.decided.candidates[0].id },
   });
 
+  // An election won outright, closed yesterday: Ann won. Owner ruling q25
+  // (2026-10-23, Equoria-wbt8l.3): every decided result is announced, not only
+  // run-off results.
+  fx.won = await makeElection(
+    {
+      position: 'Secretary',
+      status: 'closed',
+      startsAt: at('2035-06-11T09:00:00Z'),
+      endsAt: at('2035-06-14T09:00:00Z'),
+    },
+    [fx.ann, fx.bo],
+  );
+  await prisma.clubElection.update({
+    where: { id: fx.won.id },
+    data: { outcome: 'won', winnerCandidateId: fx.won.candidates[0].id },
+  });
+  // Decided long before the lookback: not announced.
+  fx.wonOld = await makeElection(
+    {
+      position: 'Secretary',
+      status: 'closed',
+      startsAt: at('2035-06-01T09:00:00Z'),
+      endsAt: at('2035-06-04T09:00:00Z'),
+    },
+    [fx.ann, fx.bo],
+  );
+  await prisma.clubElection.update({
+    where: { id: fx.wonOld.id },
+    data: { outcome: 'won', winnerCandidateId: fx.wonOld.candidates[0].id },
+  });
+
   cleanup.add(
     () => prisma.newsItem.deleteMany({ where: { sourceKey: { contains: `-${T}` } } }),
     'fixture store entries',
@@ -162,7 +193,11 @@ beforeAll(async () => {
       prisma.newsItem.deleteMany({
         where: {
           sourceKey: {
-            in: electionIds.flatMap(id => [`clubNews:electionOpened:${id}`, `clubNews:runoffResult:${id}`]),
+            in: electionIds.flatMap(id => [
+              `clubNews:electionOpened:${id}`,
+              `clubNews:runoffResult:${id}`,
+              `clubNews:electionResult:${id}`,
+            ]),
           },
         },
       }),
@@ -199,11 +234,17 @@ const storeCatalogs = [
 describe('the nightly News pass', () => {
   it('posts club news and new items due today, and nothing twice', async () => {
     const first = await postDailyNewsEntries(NOW, { storeCatalogs });
-    expect(first).toEqual({ clubNews: 4, newItems: 1 });
+    expect(first).toEqual({ clubNews: 5, newItems: 1 });
 
     const club_ = await prisma.newsItem.findMany({
       where: {
-        sourceKey: { in: electionIds.flatMap(id => [`clubNews:electionOpened:${id}`, `clubNews:runoffResult:${id}`]) },
+        sourceKey: {
+          in: electionIds.flatMap(id => [
+            `clubNews:electionOpened:${id}`,
+            `clubNews:runoffResult:${id}`,
+            `clubNews:electionResult:${id}`,
+          ]),
+        },
       },
     });
     expect(keysFor(club_)).toEqual(
@@ -212,6 +253,7 @@ describe('the nightly News pass', () => {
         `clubNews:electionOpened:${fx.yesterday.id}`,
         `clubNews:electionOpened:${fx.runoff.id}`,
         `clubNews:runoffResult:${fx.decided.id}`,
+        `clubNews:electionResult:${fx.won.id}`,
       ].sort(),
     );
     for (const row of club_) {
@@ -237,6 +279,11 @@ describe('the nightly News pass', () => {
     expect(result.body).toBe(`${fx.ann.username} wins the vote for Treasurer.`);
     expect(result.endsAt).toBeNull();
 
+    const won = club_.find(r => r.sourceKey === `clubNews:electionResult:${fx.won.id}`);
+    expect(won.title).toBe(`Election decided at ${club.name}`);
+    expect(won.body).toBe(`${fx.ann.username} wins the vote for Secretary.`);
+    expect(won.endsAt).toBeNull();
+
     const items = await prisma.newsItem.findMany({ where: { sourceKey: { contains: `-${T}` } } });
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({
@@ -252,7 +299,7 @@ describe('the nightly News pass', () => {
     const again = await prisma.newsItem.count({
       where: { sourceKey: { in: club_.map(r => r.sourceKey) } },
     });
-    expect(again).toBe(4);
+    expect(again).toBe(5);
   });
 
   it('never announces the launch inventory of the real catalogs', () => {

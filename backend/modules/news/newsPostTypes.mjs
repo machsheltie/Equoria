@@ -19,7 +19,7 @@
  *
  * GAME types — written by the game at the start of an Eastern game day:
  *   newItem                   'New Items'  new store items
- *   clubNews                  'Club News'  elections opening, run-off results
+ *   clubNews                  'Club News'  elections opening, every decided result
  *   seasonalCompetitionOpen   seasonal event competitions opening
  *   seasonalCompetitionClose  seasonal event competitions closing
  *   seasonalCraft             the month's special craft
