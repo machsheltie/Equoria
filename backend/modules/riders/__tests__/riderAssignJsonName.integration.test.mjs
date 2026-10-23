@@ -24,7 +24,7 @@ import config from '../../../config/config.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-oey96_50-riderName';
+const fixturePrefix = 'TestFixture-oey96_50-riderName';
 
 const createdUserIds = [];
 const createdHorseIds = [];
@@ -35,8 +35,8 @@ async function makeUser() {
   const pw = await bcrypt.hash('TestPassword123!', 1);
   const user = await prisma.user.create({
     data: {
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: pw,
       firstName: 'Assign',
       lastName: 'Guard',
@@ -66,7 +66,7 @@ async function seedHorse(userId) {
   const horse = await createTestHorse(
     prisma,
     {
-      name: `${FIXTURE_PREFIX}-horse-${randomBytes(3).toString('hex')}`,
+      name: `${fixturePrefix}-horse-${randomBytes(3).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01T00:00:00.000Z'),
       userId,

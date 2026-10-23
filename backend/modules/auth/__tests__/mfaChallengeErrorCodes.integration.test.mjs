@@ -7,7 +7,7 @@
  * the code vs log in again). The codes carry nothing the caller does not already
  * know: a player who just typed a code knows whether it was wrong, and a client
  * holding the challenge token can see it expired. The lockout (429) keeps its
- * status and gains MFA_LOCKED.
+ * status and gains mfaLocked.
  *
  * Real DB, no mocks; every user is created per test and deleted by id.
  */
@@ -21,7 +21,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { _resetMfaLockoutsForTest } from '../services/mfaLockoutService.mjs';
 import { __resetForTests as resetReplayCache } from '../services/mfaReplayProtectionService.mjs';
 
-const ORIGINAL_TEST_MAX = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
+const originalTestMax = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
 
 describe('MFA challenge error codes (Equoria-3f4vw)', () => {
   let csrf; // anonymous CSRF for the public login calls
@@ -38,10 +38,10 @@ describe('MFA challenge error codes (Equoria-3f4vw)', () => {
   });
 
   afterAll(() => {
-    if (ORIGINAL_TEST_MAX === undefined) {
+    if (originalTestMax === undefined) {
       delete process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
     } else {
-      process.env.TEST_RATE_LIMIT_MAX_REQUESTS = ORIGINAL_TEST_MAX;
+      process.env.TEST_RATE_LIMIT_MAX_REQUESTS = originalTestMax;
     }
     _resetMfaLockoutsForTest();
   });
@@ -113,7 +113,7 @@ describe('MFA challenge error codes (Equoria-3f4vw)', () => {
     return loginRes.body?.data?.mfaChallengeToken;
   }
 
-  it('a wrong TOTP answers 401 with MFA_CODE_INCORRECT', async () => {
+  it('a wrong TOTP answers 401 with mfaCodeIncorrect', async () => {
     const { user } = await setupEnrolledUser('mfacode');
     const challengeToken = await getChallengeToken(user);
 
@@ -125,10 +125,10 @@ describe('MFA challenge error codes (Equoria-3f4vw)', () => {
 
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
-    expect(res.body.code).toBe('MFA_CODE_INCORRECT');
+    expect(res.body.code).toBe('mfaCodeIncorrect');
   });
 
-  it('a garbage challenge token answers 401 with MFA_CHALLENGE_EXPIRED', async () => {
+  it('a garbage challenge token answers 401 with mfaChallengeExpired', async () => {
     const res = await request(app)
       .post('/api/v1/auth/mfa/challenge')
       .set('Cookie', csrf.cookieHeader)
@@ -136,12 +136,15 @@ describe('MFA challenge error codes (Equoria-3f4vw)', () => {
       .send({ mfaChallengeToken: 'not-a-jwt', token: '123456' });
 
     expect(res.status).toBe(401);
-    expect(res.body.code).toBe('MFA_CHALLENGE_EXPIRED');
+    expect(res.body.code).toBe('mfaChallengeExpired');
   });
 
-  it('an expired challenge token answers 401 with MFA_CHALLENGE_EXPIRED', async () => {
+  it('an expired challenge token answers 401 with mfaChallengeExpired', async () => {
     const { user } = await setupEnrolledUser('mfaexp');
-    const expired = jwt.sign({ type: 'mfa_challenge', userId: user.id }, process.env.JWT_SECRET, {
+    // A real challenge, re-signed already expired: same payload, no literal copy of
+    // the challenge type.
+    const { userId, type } = jwt.decode(await getChallengeToken(user));
+    const expired = jwt.sign({ type, userId }, process.env.JWT_SECRET, {
       algorithm: 'HS256',
       expiresIn: -10,
     });
@@ -153,10 +156,10 @@ describe('MFA challenge error codes (Equoria-3f4vw)', () => {
       .send({ mfaChallengeToken: expired, token: '123456' });
 
     expect(res.status).toBe(401);
-    expect(res.body.code).toBe('MFA_CHALLENGE_EXPIRED');
+    expect(res.body.code).toBe('mfaChallengeExpired');
   });
 
-  it('the sixth wrong TOTP answers 429 with MFA_LOCKED', async () => {
+  it('the sixth wrong TOTP answers 429 with mfaLocked', async () => {
     const { user } = await setupEnrolledUser('mfalocked');
     const challengeToken = await getChallengeToken(user);
     for (let i = 0; i < 5; i++) {
@@ -174,6 +177,6 @@ describe('MFA challenge error codes (Equoria-3f4vw)', () => {
       .send({ mfaChallengeToken: challengeToken, token: '000000' });
 
     expect(sixth.status).toBe(429);
-    expect(sixth.body.code).toBe('MFA_LOCKED');
+    expect(sixth.body.code).toBe('mfaLocked');
   });
 });

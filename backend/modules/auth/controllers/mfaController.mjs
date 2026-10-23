@@ -143,8 +143,8 @@ export const mfaVerifyEnrollment = async (req, res, next) => {
 
 /**
  * Refuse the second factor with a stable `code` the form can branch on
- * (Equoria-3f4vw): MFA_CODE_INCORRECT means retype the code, MFA_CHALLENGE_EXPIRED
- * means the challenge is spent and the player must log in again, MFA_LOCKED is the
+ * (Equoria-3f4vw): mfaCodeIncorrect means retype the code, mfaChallengeExpired
+ * means the challenge is spent and the player must log in again, mfaLocked is the
  * per-user lockout. Each says nothing the caller does not already know.
  */
 function refuseChallenge(res, status, code, message, extra = {}) {
@@ -178,7 +178,7 @@ export const mfaChallenge = async (req, res, next) => {
       return refuseChallenge(
         res,
         401,
-        'MFA_CHALLENGE_EXPIRED',
+        'mfaChallengeExpired',
         'MFA challenge expired or invalid. Please log in again.',
       );
     }
@@ -186,7 +186,7 @@ export const mfaChallenge = async (req, res, next) => {
       return refuseChallenge(
         res,
         401,
-        'MFA_CHALLENGE_EXPIRED',
+        'mfaChallengeExpired',
         'MFA challenge expired or invalid. Please log in again.',
       );
     }
@@ -204,7 +204,7 @@ export const mfaChallenge = async (req, res, next) => {
       return refuseChallenge(
         res,
         429,
-        'MFA_LOCKED',
+        'mfaLocked',
         'Too many failed MFA attempts. The challenge has been revoked — please log in again.',
         { retryAfter: lockState.retryAfterSec },
       );
@@ -230,7 +230,7 @@ export const mfaChallenge = async (req, res, next) => {
       return refuseChallenge(
         res,
         401,
-        'MFA_CHALLENGE_EXPIRED',
+        'mfaChallengeExpired',
         'MFA is not enabled for this account',
       );
     }
@@ -269,7 +269,7 @@ export const mfaChallenge = async (req, res, next) => {
       // On the threshold-crossing failure the user becomes locked; the very
       // next request hits the isLocked() branch above and returns 429.
       await mfaLockoutService.recordFailure(payload.userId);
-      return refuseChallenge(res, 401, 'MFA_CODE_INCORRECT', 'Invalid MFA credentials');
+      return refuseChallenge(res, 401, 'mfaCodeIncorrect', 'Invalid MFA credentials');
     }
 
     // Equoria-kg7i2: a successful challenge resets the failure counter so a

@@ -4,9 +4,12 @@
  *
  * leaderboardRoutes builds one `runDate: { gte }` filter from `period` and hands
  * it to the wins, earnings, placements and average-placement queries, which turn
- * it into SQL. Equoria-6lobd passed that filter as a bare string in one review
- * pass; this suite proves against the real database that a result dated outside
- * the period is left out of EVERY branch, not just the one 6lobd touched.
+ * it into SQL through the single whereToSqlConditions translation. Equoria-6lobd
+ * passed that filter as a bare string in one review pass; this suite proves
+ * against the real database that a result dated outside the period is left out of
+ * the wins, earnings and placements branches. The average-placement branch shares
+ * the same translation; its numbers are pinned by
+ * leaderboardAveragePlacementMetric.integration.test.mjs.
  *
  * Fixture: horse R has three results (1st) dated now, 20 days ago and 400 days
  * ago, worth 1 / 10 / 100. Horse O has only the 400-days-ago result. Assertions
@@ -22,7 +25,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse } from '../../../tests/helpers/testAuth.mjs';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 
 describe('INTEGRATION: competition leaderboard period filter (Equoria-zhvt4)', () => {
   const suffix = randomBytes(6).toString('hex');
@@ -88,8 +91,8 @@ describe('INTEGRATION: competition leaderboard period filter (Equoria-zhvt4)', (
     horseIds.push(horseR.id, horseO.id);
 
     const now = new Date();
-    const mid = new Date(now.getTime() - 20 * DAY_MS);
-    const old = new Date(now.getTime() - 400 * DAY_MS);
+    const mid = new Date(now.getTime() - 20 * dayMs);
+    const old = new Date(now.getTime() - 400 * dayMs);
     const showNow = await createShow('now', now);
     const showMid = await createShow('mid', mid);
     const showOld = await createShow('old', old);
@@ -142,15 +145,5 @@ describe('INTEGRATION: competition leaderboard period filter (Equoria-zhvt4)', (
     expect(await count('month')).toBe(2);
     expect(await count('year')).toBe(2);
     expect(await count('all')).toBe(3);
-  }, 60000);
-
-  it('average_placement: the three-result minimum is judged inside the period', async () => {
-    const all = (await board('average_placement', 'all')).find(r => r.horseId === horseR.id);
-    expect(all?.competitionCount).toBe(3);
-    expect(all?.averagePlacement).toBeCloseTo(2.0, 5);
-
-    // Inside a week or a year R has fewer than three results: out of the board.
-    expect((await board('average_placement', 'week')).find(r => r.horseId === horseR.id)).toBeUndefined();
-    expect((await board('average_placement', 'year')).find(r => r.horseId === horseR.id)).toBeUndefined();
   }, 60000);
 });

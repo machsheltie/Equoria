@@ -24,6 +24,7 @@ const cleanup = createCleanupTracker();
 let user;
 let token;
 let csrf;
+let taskType;
 
 beforeAll(async () => {
   const tag = `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
@@ -42,6 +43,9 @@ beforeAll(async () => {
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
   csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  // A task type the validator accepts, taken from the config endpoint.
+  const config = await request(app).get('/api/v1/compatibility/config').set('Authorization', `Bearer ${token}`);
+  [taskType] = config.body.data.taskTypes;
 }, 60000);
 
 afterAll(() => cleanup.run(), 60000);
@@ -57,7 +61,7 @@ function post(path, body) {
 }
 
 // Each case is ONE argument (a whole list), so wrap it for it.each.
-const BAD_FACTOR_LISTS = [[1], [{}], [null], ['quiet', 7]].map(list => [list]);
+const badFactorLists = [[1], [{}], [null], ['quiet', 7]].map(list => [list]);
 
 describe('compatibility context element types', () => {
   describe.each([
@@ -65,10 +69,10 @@ describe('compatibility context element types', () => {
     ['predict', { groomId: 1, horseId: 1 }],
     ['recommendations', { horseId: 1 }],
   ])('POST /%s', (path, ids) => {
-    it.each(BAD_FACTOR_LISTS)('rejects environmentalFactors %j with 400', factors => {
+    it.each(badFactorLists)('rejects environmentalFactors %j with 400', factors => {
       return post(path, {
         ...ids,
-        context: { taskType: 'trust_building', environmentalFactors: factors },
+        context: { taskType, environmentalFactors: factors },
       }).then(res => {
         expect(res.status).toBe(400);
       });
@@ -79,7 +83,7 @@ describe('compatibility context element types', () => {
     const res = await post('predict', {
       groomId: 1,
       horseId: 1,
-      context: { taskType: 'trust_building', timeOfDay: 'midnight' },
+      context: { taskType, timeOfDay: 'midnight' },
     });
     expect(res.status).toBe(400);
   });
@@ -88,7 +92,7 @@ describe('compatibility context element types', () => {
     const res = await post('predict', {
       groomId: 1,
       horseId: 1,
-      context: { taskType: 'trust_building', timeOfDay: 3 },
+      context: { taskType, timeOfDay: 3 },
     });
     expect(res.status).toBe(400);
   });
@@ -98,7 +102,7 @@ describe('compatibility context element types', () => {
       groomId: 1,
       horseId: 1,
       context: {
-        taskType: 'trust_building',
+        taskType,
         timeOfDay: 'morning',
         environmentalFactors: ['quiet', 'familiar'],
       },

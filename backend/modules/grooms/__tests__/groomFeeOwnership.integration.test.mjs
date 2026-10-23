@@ -27,17 +27,16 @@ import {
   processWeeklySalaries,
   countActiveAssignments,
 } from '../services/groomSalaryService.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-6p398_14-fee';
+const fixturePrefix = 'TestFixture-6p398_14-fee';
 const tag = () => randomBytes(6).toString('hex');
 
 async function makeUser(label, money = 50000) {
   const suffix = tag();
   return prisma.user.create({
     data: {
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`.slice(0, 30),
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`.slice(0, 30),
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Fee',
       lastName: label,
@@ -51,7 +50,7 @@ async function makeHorse(userId, label) {
   return prisma.horse.create({
     data: {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2023-05-01'),
       age: 3,
@@ -68,17 +67,11 @@ describe('Equoria-6p398.14 — fee counts only horses the employer owns', () => 
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
-    await prisma.systemAccount.upsert({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-      create: { name: SYSTEM_ACCOUNT_BURN, balance: 0 },
-      update: {},
-    });
-
     employer = await makeUser('employer');
     stranger = await makeUser('stranger');
     groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-groom-${tag()}`,
+        name: `${fixturePrefix}-groom-${tag()}`,
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
