@@ -19,17 +19,11 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
-import { AuthProvider, useAuth } from '../../contexts/AuthContext';
+import { http, HttpResponse } from 'msw';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { authApi } from '../../lib/api-client';
+import { server } from '../../test/msw/server';
 import GroomList from '../GroomList';
-
-// Mock the useAuth hook
-vi.mock('../../contexts/AuthContext', async () => {
-  const actual = await vi.importActual('../../contexts/AuthContext');
-  return {
-    ...(actual as any),
-    useAuth: vi.fn(),
-  };
-});
 
 // Mock data for testing (NO MOCKING - real data passed as props)
 const mockMarketplaceData = {
@@ -89,14 +83,34 @@ const mockUserData = {
 };
 
 // Test wrapper with required providers
-const createTestWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, cacheTime: 0 },
-      mutations: { retry: false },
-    },
-  });
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false, cacheTime: 0 },
+    mutations: { retry: false },
+  },
+});
 
+// The real AuthProvider is seeded the way the app seeds it: the profile is
+// fetched through the real api client, with MSW answering at the network
+// boundary, and lands in the real ['profile'] query the provider reads
+// (Equoria-k3854: this suite used to stub useAuth).
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+async function signInWithBalance(money: number) {
+  server.use(
+    http.get(`${apiBase}/api/v1/auth/profile`, () =>
+      HttpResponse.json({
+        status: 'success',
+        data: {
+          user: { ...mockUserData, money, username: 'groomshopper', email: 'shopper@example.com' },
+        },
+      })
+    )
+  );
+  queryClient.clear();
+  await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: authApi.getProfile });
+}
+
+const createTestWrapper = () => {
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -109,13 +123,9 @@ const createTestWrapper = () => {
 const TestWrapper = createTestWrapper();
 
 describe('GroomList Component', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    (useAuth as any).mockReturnValue({
-      user: { ...mockUserData, id: 1 },
-      isAuthenticated: true,
-      isLoading: false,
-    });
+    await signInWithBalance(mockUserData.money);
   });
 
   describe('Component Rendering', () => {
@@ -342,11 +352,7 @@ describe('GroomList Component', () => {
 
     test('disables hire button when insufficient funds', async () => {
       const poorUserData = { ...mockUserData, money: 50 };
-      (useAuth as any).mockReturnValue({
-        user: { ...poorUserData, id: 1 },
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      await signInWithBalance(poorUserData.money);
 
       render(
         <TestWrapper>
@@ -363,11 +369,7 @@ describe('GroomList Component', () => {
 
     test('shows insufficient funds message', async () => {
       const poorUserData = { ...mockUserData, money: 50 };
-      (useAuth as any).mockReturnValue({
-        user: { ...poorUserData, id: 1 },
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      await signInWithBalance(poorUserData.money);
 
       render(
         <TestWrapper>

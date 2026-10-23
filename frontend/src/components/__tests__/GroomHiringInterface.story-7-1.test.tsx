@@ -26,18 +26,12 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
-import { useAuth } from '../../contexts/AuthContext';
+import { http, HttpResponse } from 'msw';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { authApi } from '../../lib/api-client';
+import { server } from '../../test/msw/server';
 import GroomList from '../GroomList';
 import MyGroomsDashboard from '../MyGroomsDashboard';
-
-// Mock auth context
-vi.mock('../../contexts/AuthContext', async () => {
-  const actual = await vi.importActual('../../contexts/AuthContext');
-  return {
-    ...(actual as any),
-    useAuth: vi.fn(),
-  };
-});
 
 // Sample marketplace data covering all price ranges and specialties
 const marketplaceData = {
@@ -89,30 +83,43 @@ const marketplaceData = {
   maxHorsesPerGroom: 10,
 };
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+    mutations: { retry: false },
+  },
+});
+
+// The real AuthProvider is seeded the way the app seeds it: the profile is
+// fetched through the real api client, with MSW answering at the network
+// boundary, and lands in the real ['profile'] query the provider reads
+// (Equoria-k3854: this suite used to stub useAuth).
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+async function signInWithBalance(money: number) {
+  server.use(
+    http.get(`${apiBase}/api/v1/auth/profile`, () =>
+      HttpResponse.json({
+        status: 'success',
+        data: { user: { id: 1, money, username: 'groomshopper', email: 'test@test.com' } },
+      })
+    )
+  );
+  queryClient.clear();
+  await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: authApi.getProfile });
+}
+
 const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{children}</BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
 
-beforeEach(() => {
-  vi.mocked(useAuth).mockReturnValue({
-    user: { id: 1, money: 5000, email: 'test@test.com' },
-    isLoading: false,
-    isAuthenticated: true,
-    login: vi.fn(),
-    logout: vi.fn(),
-    register: vi.fn(),
-    updateProfile: vi.fn(),
-  } as any);
+beforeEach(async () => {
+  await signInWithBalance(5000);
 });
 
 afterEach(() => {
@@ -253,17 +260,9 @@ describe('Story 7-1: Groom Hiring Interface', () => {
       expect(cards[0]).toHaveTextContent(/Fields/);
     });
 
-    it('shows affordability status for each groom based on user budget', () => {
+    it('shows affordability status for each groom based on user budget', async () => {
       // User with limited budget
-      vi.mocked(useAuth).mockReturnValue({
-        user: { id: 1, money: 250, email: 'test@test.com' },
-        isLoading: false,
-        isAuthenticated: true,
-        login: vi.fn(),
-        logout: vi.fn(),
-        register: vi.fn(),
-        updateProfile: vi.fn(),
-      } as any);
+      await signInWithBalance(250);
 
       render(<GroomList userId={1} marketplaceData={marketplaceData} />, {
         wrapper: createWrapper(),

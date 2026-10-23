@@ -3,12 +3,17 @@
  *
  * Tests that protected routes redirect unauthenticated users to /login
  * and render content for authenticated users.
+ *
+ * The real AuthProvider, ProtectedRoute and OnboardingGuard run; the server's
+ * answer to GET /auth/profile (MSW, at the network boundary) decides who is
+ * signed in (Equoria-k3854: this suite used to replace the whole AuthContext
+ * module). Only the page bodies are stubbed.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuth } from './contexts/AuthContext';
+import { http, HttpResponse, delay } from 'msw';
+import { server } from './test/msw/server';
 
 // Mock pages (avoid full page rendering)
 vi.mock('./pages/StableView', () => ({
@@ -50,49 +55,66 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-// Mock AuthContext
-vi.mock('./contexts/AuthContext', () => ({
-  useAuth: vi.fn(),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const mockUseAuth = vi.mocked(useAuth);
-
-function makeAuthState(overrides = {}) {
-  return {
-    isLoading: false,
-    isAuthenticated: false,
-    user: null,
-    isEmailVerified: false,
-    error: null,
-    login: vi.fn(),
-    logout: vi.fn(),
-    register: vi.fn(),
-    hasRole: vi.fn(),
-    isAdmin: false,
-    isModerator: false,
-    ...overrides,
-  };
+// What the server says about the visitor's session.
+function signedOut() {
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, () =>
+      HttpResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 })
+    ),
+    http.post(`${base}/api/v1/auth/refresh-token`, () =>
+      HttpResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 })
+    )
+  );
 }
 
-// Import App after mocks are set up
-import App from './App';
-
-function renderApp(initialPath: string) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  // We need to use MemoryRouter since App uses BrowserRouter internally
-  // Instead we'll test via the App component directly with a history workaround
-  window.history.pushState({}, '', initialPath);
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+function signedIn(userOverrides: Record<string, unknown> = {}) {
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, () =>
+      HttpResponse.json({
+        status: 'success',
+        data: {
+          user: {
+            id: 1,
+            username: 'testuser',
+            email: 'test@example.com',
+            role: 'user',
+            emailVerified: true,
+            completedOnboarding: true,
+            onboardingStep: 10,
+            welcomeSeen: true,
+            ...userOverrides,
+          },
+        },
+      })
+    )
   );
+}
+
+function authStillLoading() {
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, async () => {
+      await delay('infinite');
+      return HttpResponse.json({});
+    })
+  );
+}
+
+// App builds its own QueryClient at import time and caches the profile for
+// minutes, so each case loads a fresh copy of App (and with it a fresh cache).
+async function renderApp(initialPath: string) {
+  vi.resetModules();
+  const { default: App } = await import('./App');
+  // App uses BrowserRouter internally, so set the address through history.
+  window.history.pushState({}, '', initialPath);
+  return render(<App />);
 }
 
 describe('App Route Protection (Story 8.1)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
   });
 
   // Route components are React.lazy in App.tsx (login/register/forgot/stable/
@@ -101,42 +123,42 @@ describe('App Route Protection (Story 8.1)', () => {
   // the resolved component appears, so we use it instead of getByTestId.
   describe('Public routes — accessible without auth', () => {
     it('renders login page at /login without auth', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState());
-      renderApp('/login');
+      signedOut();
+      await renderApp('/login');
       expect(await screen.findByTestId('login-page')).toBeInTheDocument();
     });
 
     it('renders register page at /register without auth', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState());
-      renderApp('/register');
+      signedOut();
+      await renderApp('/register');
       expect(await screen.findByTestId('register-page')).toBeInTheDocument();
     });
 
     it('renders forgot password page at /forgot-password without auth', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState());
-      renderApp('/forgot-password');
+      signedOut();
+      await renderApp('/forgot-password');
       expect(await screen.findByTestId('forgot-password-page')).toBeInTheDocument();
     });
   });
 
   describe('Protected routes — redirect unauthenticated users', () => {
     it('redirects unauthenticated user from /stable to /login', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState({ isAuthenticated: false }));
-      renderApp('/stable');
+      signedOut();
+      await renderApp('/stable');
       expect(await screen.findByTestId('login-page')).toBeInTheDocument();
       expect(screen.queryByTestId('stable-view')).not.toBeInTheDocument();
     });
 
     it('redirects unauthenticated user from /profile to /login', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState({ isAuthenticated: false }));
-      renderApp('/profile');
+      signedOut();
+      await renderApp('/profile');
       expect(await screen.findByTestId('login-page')).toBeInTheDocument();
       expect(screen.queryByTestId('profile-page')).not.toBeInTheDocument();
     });
 
     it('redirects unauthenticated user from /horses/1 to /login', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState({ isAuthenticated: false }));
-      renderApp('/horses/1');
+      signedOut();
+      await renderApp('/horses/1');
       expect(await screen.findByTestId('login-page')).toBeInTheDocument();
       expect(screen.queryByTestId('horse-detail-page')).not.toBeInTheDocument();
     });
@@ -145,35 +167,29 @@ describe('App Route Protection (Story 8.1)', () => {
     // logged-out visitor could walk the whole wizard and only fail with a 401
     // on submit.
     it('redirects unauthenticated user from /onboarding to /login', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState({ isAuthenticated: false }));
-      renderApp('/onboarding');
+      signedOut();
+      await renderApp('/onboarding');
       expect(await screen.findByTestId('login-page')).toBeInTheDocument();
       expect(screen.queryByTestId('onboarding-page')).not.toBeInTheDocument();
     });
   });
 
   describe('Protected routes — render content for authenticated users', () => {
-    const authenticatedState = {
-      isAuthenticated: true,
-      user: { id: 1, username: 'testuser', email: 'test@example.com', role: 'user' },
-      isEmailVerified: true,
-    };
-
     it('renders /stable for authenticated users', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState(authenticatedState));
-      renderApp('/stable');
+      signedIn();
+      await renderApp('/stable');
       expect(await screen.findByTestId('stable-view')).toBeInTheDocument();
     });
 
     it('renders /profile for authenticated users', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState(authenticatedState));
-      renderApp('/profile');
+      signedIn();
+      await renderApp('/profile');
       expect(await screen.findByTestId('profile-page')).toBeInTheDocument();
     });
 
     it('renders /horses/:id for authenticated users', async () => {
-      mockUseAuth.mockReturnValue(makeAuthState(authenticatedState));
-      renderApp('/horses/42');
+      signedIn();
+      await renderApp('/horses/42');
       expect(await screen.findByTestId('horse-detail-page')).toBeInTheDocument();
     });
 
@@ -182,23 +198,18 @@ describe('App Route Protection (Story 8.1)', () => {
     // (completedOnboarding: false, onboardingStep: 0) still lands on the
     // wizard when OnboardingGuard sends them there.
     it('renders /onboarding for an authenticated freshly-registered user', async () => {
-      mockUseAuth.mockReturnValue(
-        makeAuthState({
-          ...authenticatedState,
-          user: { ...authenticatedState.user, completedOnboarding: false, onboardingStep: 0 },
-        })
-      );
-      renderApp('/onboarding');
+      signedIn({ completedOnboarding: false, onboardingStep: 0 });
+      await renderApp('/onboarding');
       expect(await screen.findByTestId('onboarding-page')).toBeInTheDocument();
       expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
     });
   });
 
   describe('Loading state', () => {
-    it('shows loading spinner for protected routes while auth loads', () => {
-      mockUseAuth.mockReturnValue(makeAuthState({ isLoading: true }));
-      renderApp('/stable');
-      expect(screen.getByTestId('protected-route-loading')).toBeInTheDocument();
+    it('shows loading spinner for protected routes while auth loads', async () => {
+      authStillLoading();
+      await renderApp('/stable');
+      expect(await screen.findByTestId('protected-route-loading')).toBeInTheDocument();
     });
   });
 });
