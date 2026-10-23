@@ -11,9 +11,7 @@
  *   GET  /api/v1/competition/disciplines            → disciplines + details
  *   GET  /api/v1/competition/eligibility/:id/:disc  → eligibility
  *   POST /api/v1/competition/enter                  → entry
- *   GET  /api/v1/competitions/:id/entries           → entered horses (minimal)
  *   GET  /api/v1/competition/show/:showId/entries   → scouting field
- *   GET  /api/v1/horses/user/eligible               → eligible user horses
  */
 
 import { apiClient } from '../http/apiClient.js';
@@ -48,8 +46,30 @@ export interface ShowFieldResponse {
   entries: ShowFieldEntry[];
 }
 
+/**
+ * The list endpoint pages its open shows (100 at most per page). A page shorter
+ * than the page size is the last one, so the list is walked until then and the
+ * Arena filters see every open show, not the first twenty (Equoria-fyoca).
+ */
+const listPageSize = 100;
+// A safety stop against a server that never answers a short page; 100 pages is
+// 10,000 open shows, far past anything the game can hold open at once.
+const listMaxPages = 100;
+
+async function listAllOpenShows(): Promise<Competition[]> {
+  const shows: Competition[] = [];
+  for (let page = 1; page <= listMaxPages; page += 1) {
+    const rows = await apiClient.get<Competition[]>(
+      `/api/v1/competition?limit=${listPageSize}&page=${page}`
+    );
+    shows.push(...rows);
+    if (rows.length < listPageSize) break;
+  }
+  return shows;
+}
+
 export const competitionsApi = {
-  list: () => apiClient.get<Competition[]>('/api/v1/competition'),
+  list: listAllOpenShows,
   getDisciplines: () =>
     apiClient.get<{ disciplines: string[]; disciplineDetails: Record<string, unknown>[] }>(
       '/api/v1/competition/disciplines'
@@ -70,15 +90,6 @@ export const competitionsApi = {
       }
     ),
   /**
-   * Get the list of horses already entered into a given competition.
-   * Returns minimal entry data. No component consumes it since the unwired
-   * competition HorseSelector was deleted (Equoria-7zyn3).
-   */
-  getEntries: (competitionId: number) =>
-    apiClient.get<Array<{ horseId: number; horseName: string }>>(
-      `/api/v1/competitions/${competitionId}/entries`
-    ),
-  /**
    * Scouting (Equoria-lfkw1, UX-spec 11.3.5 / Journey 4). Returns the REAL
    * entered field for an open show: per entered horse breed / level /
    * top-3 stats / owner, plus header (entry count, max, days remaining,
@@ -86,21 +97,4 @@ export const competitionsApi = {
    */
   getShowField: (showId: number) =>
     apiClient.get<ShowFieldResponse>(`/api/v1/competition/show/${showId}/entries`),
-  /**
-   * Get the current user's horses that are eligible for competition entry.
-   * No component consumes it since the unwired competition HorseSelector was
-   * deleted (Equoria-7zyn3).
-   */
-  getEligibleUserHorses: () =>
-    apiClient.get<
-      Array<{
-        id: number;
-        name: string;
-        age: number;
-        sex: string;
-        level: number;
-        health: string;
-        disciplines: Record<string, number>;
-      }>
-    >('/api/v1/horses/user/eligible'),
 };

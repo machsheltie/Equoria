@@ -10,13 +10,20 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { enterShowTx } from '../shows/showEscrowTx.mjs';
+import { toShowListItem } from './showListView.mjs';
 
 export async function listShowsPaginated({ where, skip, take }) {
   const [shows, total] = await Promise.all([
-    prisma.show.findMany({ where, orderBy: { runDate: 'asc' }, skip, take }),
+    prisma.show.findMany({
+      where,
+      orderBy: [{ runDate: 'asc' }, { id: 'asc' }],
+      skip,
+      take,
+      include: { _count: { select: { entries: true } } },
+    }),
     prisma.show.count({ where }),
   ]);
-  return { shows, total };
+  return { shows: shows.map(toShowListItem), total };
 }
 
 export function getShowMetadata(showId) {
