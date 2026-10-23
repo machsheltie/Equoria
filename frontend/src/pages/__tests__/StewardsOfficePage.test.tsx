@@ -136,13 +136,18 @@ describe("The Steward's Office", () => {
     );
 
   // STAFF-CR-17 changed the contract: anyone who is not (or no longer) staff
-  // gets the client's not-found page in place (no route content, no redirect
-  // home), exactly as at an unknown address. The full-app comparison lives in
+  // gets the client's not-found page in place (no redirect home), exactly as at
+  // an unknown address. The full-app comparison lives in
   // src/__tests__/StewardRouteNotFound.test.tsx.
+  // Old contract (owner ruling 2026-10-15): that page was empty — no route
+  // content at all. Owner ruling 2026-10-23 (Equoria-bvddn.35): it is the
+  // in-world not-found page with its one way home, still nothing about the office.
   const meSettled = () =>
     waitFor(() => expect(queryClient.getQueryState(['staff', 'me'])?.status).toBe('error'));
   const expectNotFound = (container: HTMLElement) => {
-    expect(container).toBeEmptyDOMElement();
+    expect(within(container).getByTestId('not-found-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('stewards-office')).not.toBeInTheDocument();
+    expect(screen.queryByText(/steward/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Stable home')).not.toBeInTheDocument();
   };
 
@@ -155,7 +160,7 @@ describe("The Steward's Office", () => {
     expectNotFound(container);
   });
 
-  it('shows nothing while /me is pending (no loader), then the office for a steward', async () => {
+  it('shows the not-found page while /me is pending (no loader), then the office for a steward', async () => {
     stubStaff({
       me: async () => {
         await delay(150);
@@ -168,13 +173,16 @@ describe("The Steward's Office", () => {
     expect(await screen.findByRole('heading', { name: 'Ledger' })).toBeInTheDocument();
   });
 
-  it('gives the not-found page when /me answers 500: no error copy, no retry (owner ruling 2026-10-15)', async () => {
+  // Old contract (owner ruling 2026-10-15): no button and no alert at all, the
+  // page being empty. Owner ruling 2026-10-23 (Equoria-bvddn.35): the not-found
+  // page's single way home is the only control — still no error copy, no retry.
+  it('gives the not-found page when /me answers 500: no error copy, no retry (owner rulings 2026-10-15, 2026-10-23)', async () => {
     stubStaff({ me: () => json({ message: 'db exploded' }, 500) });
     const { container } = renderPage();
     await meSettled();
     expectNotFound(container);
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /back to the stable yard/i })).toBeInTheDocument();
     expect(
       screen.queryByText(/try again|retry|went wrong|error|db exploded/i)
     ).not.toBeInTheDocument();

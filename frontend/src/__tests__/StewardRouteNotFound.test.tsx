@@ -119,6 +119,10 @@ describe('/steward is indistinguishable from an unknown address (STAFF-CR-17)', 
       expect(steward.historyState).toEqual(unknown.historyState);
       expect(steward.html).toBe(unknown.html);
       expect(steward.html).not.toMatch(/steward/i);
+      // Owner ruling 2026-10-23 (Equoria-bvddn.35): both are the in-world
+      // not-found page with a way home (old contract: both were blank).
+      expect(unknown.html).toContain('data-testid="not-found-page"');
+      expect(unknown.html).toMatch(/Back to the stable yard/);
     }
   );
 
@@ -127,9 +131,12 @@ describe('/steward is indistinguishable from an unknown address (STAFF-CR-17)', 
     expect(steward.staffMeAsked).toBe(0);
   });
 
-  it('a steward reaches the office at /steward and nothing at an unknown address', async () => {
+  // Old name said "nothing at an unknown address"; since the 2026-10-23 owner
+  // ruling (Equoria-bvddn.35) an unknown address shows the not-found page.
+  it('a steward reaches the office at /steward and the not-found page at an unknown address', async () => {
     const unknown = await visit('staff', '/some-random-path');
     expect(unknown.html).not.toMatch(/Steward&#x27;s Office|Steward's Office/);
+    expect(unknown.html).toContain('data-testid="not-found-page"');
     expect(unknown.url).toBe('/some-random-path');
 
     stubVisitor('staff');
