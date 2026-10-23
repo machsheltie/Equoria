@@ -161,7 +161,7 @@ export function filterLethalGenotypes(genotypeProbabilities) {
   const totalProb = filtered.reduce((sum, { prob }) => sum + prob, 0);
   if (totalProb > 0 && totalProb < 1.0) {
     for (const entry of filtered) {
-      entry.prob = entry.prob / totalProb;
+      entry.prob = Math.min(1, entry.prob / totalProb);
     }
   }
 
@@ -208,7 +208,7 @@ export function filterDisallowedGenotypes(genotypeProbabilities, foalBreedProfil
   const totalProb = filtered.reduce((sum, { prob }) => sum + prob, 0);
   if (totalProb > 0 && totalProb < 1.0) {
     for (const entry of filtered) {
-      entry.prob = entry.prob / totalProb;
+      entry.prob = Math.min(1, entry.prob / totalProb);
     }
   }
 
