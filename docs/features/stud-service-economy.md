@@ -2,7 +2,7 @@
 
 **Status:** Planned; public listing exists, cross-owner breeding and private requests are not implemented
 **Owner:** Breeding and economy systems
-**Last verified:** 2026-08-19
+**Last verified:** 2026-10-23
 **Load only when:** implementing or reviewing public/private stud listings, cross-owner breeding, stud-fee transfer, stud eligibility, or private breeding requests
 **Do not load for:** own-horse breeding, unrelated economy work, generic horse-detail UI, or broad visual work
 **Live sources:** current horse-breeding routes/controllers, breeding services, financial ledger, Prisma schema/migrations, GDPR service, tests, and the current issue state
@@ -103,8 +103,10 @@ The shared rules include:
 - required public/private listing mode is still active;
 - same-breed-only beta compatibility and non-null breed IDs;
 - any supplied foal breed exists and matches the allowed pairing;
-- mare age 3–20 inclusive and stallion age at least 3;
-- neither parent's displayed health is critical;
+- both parents aged 3–20 inclusive (owner ruling, Stacey 2026-10-23: a stallion
+  cannot stand at stud before 3, and no horse breeds at 21 or later);
+- neither parent is in Bad displayed health: both must be Fair or better (owner
+  ruling 2026-10-23; an injured horse is Bad);
 - mare is not pregnant and is at least seven UTC calendar days beyond the
   conception-stamped dam cooldown;
 - requester has enough money for the applicable fee.
@@ -200,8 +202,7 @@ recomposition.
 ## Open owner decisions
 
 - permanent crossbreed compatibility rules beyond same-breed-only beta scope;
-- policy for legacy horses without a breed;
-- whether stallions receive a maximum breeding age.
+- policy for legacy horses without a breed (today they are refused, as above).
 
 Surface these decisions before expanding the beta rule. Do not infer answers
 from an old implementation plan or from common horse-game conventions.
