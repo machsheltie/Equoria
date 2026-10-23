@@ -13,6 +13,7 @@
 import { assignGroomToFoal, ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { horseRetiredCode } from '../../../errors/HorseRetiredError.mjs';
 
 /**
  * POST /api/grooms/assign
@@ -61,6 +62,16 @@ export async function assignGroom(req, res) {
     });
     return null;
   } catch (error) {
+    // Equoria-6p398.14 follow-up (owner ruling 2026-10-23): a retired horse is a
+    // business-rule refusal, not a server failure — 400 with its code.
+    if (error?.code === horseRetiredCode) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        code: error.code,
+        data: null,
+      });
+    }
     logger.error(`[groomController.assignGroom] Error: ${error.message}`);
     res.status(500).json({
       success: false,

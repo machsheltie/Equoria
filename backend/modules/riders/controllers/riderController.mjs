@@ -8,6 +8,8 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+// Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new rider.
+import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 import {
   getRevealedDiscoveryCount,
   getNextDiscoveryRevealLevel,
@@ -163,6 +165,11 @@ export async function assignRider(req, res) {
           throw httpError(404, 'Horse not found');
         }
 
+        // Owner ruling 2026-10-23: a retired horse (21+, not in foal) takes no new
+        // rider — 400 'horseRetired'. This locks the HORSE row first (lock order),
+        // so the nightly birthday release cannot slip between check and assign.
+        await assertHorseTakesNewStaffTx(tx, horseId);
+
         // HORSE row first. Syncing the horse.rider JSONB field is what makes
         // hasValidRider() true for competition entry; RiderAssignment alone is
         // not sufficient. The `userId` predicate is the authoritative ownership
@@ -230,7 +237,13 @@ export async function assignRider(req, res) {
     });
   } catch (error) {
     if (typeof error?.status === 'number') {
-      return res.status(error.status).json({ success: false, message: error.message, data: null });
+      return res.status(error.status).json({
+        success: false,
+        message: error.message,
+        // A machine-readable refusal code when the error carries one ('horseRetired').
+        ...(error.code ? { code: error.code } : {}),
+        data: null,
+      });
     }
     logger.error(`[riderController] assignRider error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to assign rider', data: null });

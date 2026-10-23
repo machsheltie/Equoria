@@ -87,6 +87,9 @@ const GUARDED_FILES = [
   'modules/grooms/__tests__/groomSalaryBatchedWrites.integration.test.mjs',
   // Equoria-6p398.14: retired horses are not billed. Runs the pass for its own fixture user.
   'modules/horses/__tests__/horseRetirementStaffRelease.integration.test.mjs',
+  // Equoria-6p398.14 follow-up: an in-foal 21+ mare's groom is billed the normal fee.
+  // Runs the pass for its own fixture user.
+  'modules/horses/__tests__/retiredHorseNewStaff.integration.test.mjs',
   'tests/integration/groomSalarySystem.test.mjs',
 ];
 

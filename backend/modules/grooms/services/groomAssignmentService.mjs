@@ -18,6 +18,8 @@ import {
 // Equoria-95yrv fix round 1 (F1): the assignment is now a transaction, and a
 // client-facing mutation's transient timeout must surface as a retryable 503.
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+// Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new groom.
+import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 
 /**
  * Assignment configuration.
@@ -184,6 +186,9 @@ export async function createAssignment(groomId, horseId, userId, options = {}) {
   const assignment = await withRetryableTxMapping(
     prisma.$transaction(async tx => {
       await acquireGroomRosterLockTx(tx, groomId);
+      // Owner ruling 2026-10-23: no new staff for a retired horse. Locks the horse
+      // row, so the nightly birthday release cannot slip between check and create.
+      await assertHorseTakesNewStaffTx(tx, horseId);
       await assertGroomHasRoomForAnotherHorse(tx, groomId, validation.groom.name);
 
       // If this is a primary assignment (priority 1) and replacePrimary is true,

@@ -26,6 +26,7 @@
  */
 
 import { retirementAgeYears } from '../../../constants/horseAgePolicy.mjs';
+import { HorseRetiredError } from '../../../errors/HorseRetiredError.mjs';
 
 /**
  * End every active groom, rider and trainer assignment on one horse and clear
@@ -98,4 +99,36 @@ export async function releaseStaffIfRetiredTx(tx, horseId) {
     return null;
   }
   return releaseHorseStaff(tx, { horseId, rider: horse.rider });
+}
+
+/**
+ * Owner ruling 2026-10-23 (Equoria-6p398.14 follow-up): a retired horse — 21 or
+ * over and NOT in foal — is given no new groom, rider or trainer. A mare of 21+
+ * still in foal is not retired from staff until she foals, so she may be.
+ *
+ * Call it inside the assignment transaction, before the assignment row is
+ * written. It locks the horse row (`FOR UPDATE`; a no-op re-lock when the caller
+ * already holds it), so the check and the new assignment are serialised against
+ * the nightly birthday write, which locks the same row before releasing staff:
+ * either the birthday commits first and this sees age 21, or this commits first
+ * and the birthday's release ends the new assignment too. Lock order stays
+ * Horse row, then staff rows. A missing horse is left to the caller's own
+ * not-found handling.
+ *
+ * @param {object} tx - interactive transaction client
+ * @param {number} horseId
+ * @returns {Promise<void>}
+ * @throws {HorseRetiredError} 400, code 'horseRetired'
+ */
+export async function assertHorseTakesNewStaffTx(tx, horseId) {
+  const [horse] = await tx.$queryRaw`
+    SELECT "age", "inFoalSinceDate" FROM "horses" WHERE "id" = ${horseId} FOR UPDATE`;
+  if (
+    horse &&
+    horse.age !== null &&
+    horse.age >= retirementAgeYears &&
+    horse.inFoalSinceDate === null
+  ) {
+    throw new HorseRetiredError();
+  }
 }

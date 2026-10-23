@@ -54,6 +54,8 @@ export async function createGroomAssignment(req, res) {
     res.status(error.statusCode || 400).json({
       success: false,
       message: error.message,
+      // A machine-readable refusal code when the error carries one ('horseRetired').
+      ...(error.code ? { code: error.code } : {}),
       data: null,
     });
   }

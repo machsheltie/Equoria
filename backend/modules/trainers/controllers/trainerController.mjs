@@ -6,6 +6,8 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+// Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new trainer.
+import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 import {
   generateDiscoverySlots,
   readDiscoverySlots,
@@ -156,6 +158,10 @@ export async function assignTrainer(req, res) {
           throw httpError(404, 'Horse not found');
         }
 
+        // Owner ruling 2026-10-23: a retired horse (21+, not in foal) takes no new
+        // trainer — 400 'horseRetired'. The horse row is already locked above.
+        await assertHorseTakesNewStaffTx(tx, horseId);
+
         // Lock the trainer row (real write — touches `updatedAt`) BEFORE the
         // existing-assignment read below, so a concurrent assign request for
         // this same trainerId blocks here until this transaction commits,
@@ -187,7 +193,13 @@ export async function assignTrainer(req, res) {
       .json({ success: true, message: 'Trainer assigned successfully', data: assignment });
   } catch (error) {
     if (typeof error?.status === 'number') {
-      return res.status(error.status).json({ success: false, message: error.message, data: null });
+      return res.status(error.status).json({
+        success: false,
+        message: error.message,
+        // A machine-readable refusal code when the error carries one ('horseRetired').
+        ...(error.code ? { code: error.code } : {}),
+        data: null,
+      });
     }
     logger.error(`[trainerController] assignTrainer error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to assign trainer', data: null });

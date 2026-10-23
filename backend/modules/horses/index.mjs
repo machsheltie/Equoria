@@ -31,7 +31,8 @@ export {
 } from './services/studRequestCleanup.mjs';
 export { runFoalingJob } from './services/foalingService.mjs';
 // Equoria-6p398.14: the nightly aging pass writes a birthday and, at 21, releases the horse's staff.
-export { writeBirthdayTx } from './services/horseRetirementStaff.mjs';
+// Equoria-6p398.14 follow-up: the groom, rider and trainer assign paths refuse a retired horse.
+export { writeBirthdayTx, assertHorseTakesNewStaffTx } from './services/horseRetirementStaff.mjs';
 export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
 export { decayHoofConditions } from './services/hoofConditionDecayService.mjs';
 export { createHorse } from './services/horseCreation.mjs';

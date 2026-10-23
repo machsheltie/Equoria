@@ -19,6 +19,8 @@ import {
   assertGroomHasRoomForAnotherHorse,
 } from './groomFeeBasisService.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+// Equoria-6p398.14 follow-up: a retired horse (21+, not in foal) is given no new groom.
+import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 
 /**
  * Assign a groom to a foal
@@ -100,6 +102,9 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
   const assignment = await withRetryableTxMapping(
     prisma.$transaction(async tx => {
       await acquireGroomRosterLockTx(tx, groomId);
+      // Owner ruling 2026-10-23: no new staff for a retired horse. Locks the horse
+      // row, so the nightly birthday release cannot slip between check and create.
+      await assertHorseTakesNewStaffTx(tx, foalId);
       await assertGroomHasRoomForAnotherHorse(tx, groomId, groom.name);
 
       // Deactivate other assignments if this is primary (priority 1)
