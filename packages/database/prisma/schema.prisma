@@ -218,9 +218,8 @@ model Horse {
   /// bondScore default stays 0 (unbonded — per user decision: bond is earned, not innate).
   bondScore               Int                   @default(0)
   stressLevel             Int                   @default(0)
-  /// Groom bonding and burnout prevention
+  /// Groom bonding: consecutive-day care streak
   daysGroomedInARow       Int                   @default(0)
-  burnoutStatus           String?               @default("none")
   /// Foal task logging and streak tracking
   taskLog                 Json?
   consecutiveDaysFoalCare Int                   @default(0)
