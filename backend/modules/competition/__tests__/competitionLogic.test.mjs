@@ -96,7 +96,7 @@ describe('getDisciplineConfig', () => {
     expect(Array.isArray(config.stats)).toBe(true);
   });
 
-  // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+  // Owner ruling R8 (2026-10-15) + C6: the bible's discipline table (23 then; Pleasure Driving made 24 on 2026-10-21) (Equoria-576c0 B3).
   // Old contract: an unknown discipline got the Racing config. New: an error.
   it('throws for an unknown discipline instead of answering with Racing', () => {
     expect(() => getDisciplineConfig('Underwater Polo')).toThrow(/Unknown discipline/);
@@ -287,7 +287,7 @@ describe('calculateStatGain', () => {
       if (result !== null) {
         expect(result).toHaveProperty('stat');
         expect(result).toHaveProperty('amount', 1);
-        // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+        // Owner ruling R8 (2026-10-15) + C6: the bible's discipline table (23 then; Pleasure Driving made 24 on 2026-10-21) (Equoria-576c0 B3).
         // Old contract: Racing stats speed / stamina / intelligence. New: Focus is tertiary (C6).
         expect(['speed', 'stamina', 'focus']).toContain(result.stat);
         gotGain = true;

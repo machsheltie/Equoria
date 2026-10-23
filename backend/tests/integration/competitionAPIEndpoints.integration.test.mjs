@@ -182,7 +182,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.disciplines).toBeInstanceOf(Array);
-      // Owner ruling R8 (2026-10-15): the 23 bible disciplines (Equoria-576c0 B3).
+      // Owner ruling R8 (2026-10-15): the bible disciplines (24 since 2026-10-21) (Equoria-576c0 B3).
       // Old contract: at least 24, which counted the training-only 'Obedience Training'.
       // Owner ruling 2026-10-21: Pleasure Driving is the 24th discipline. Old contract: 23.
       expect(response.body.data.disciplines).toHaveLength(24);

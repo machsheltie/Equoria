@@ -46,15 +46,15 @@ describe('getRelevantStats', () => {
     expect(getRelevantStats('Dressage')).toEqual(['precision', 'focus', 'obedience']);
   });
 
-  // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+  // Owner ruling R8 (2026-10-15) + C6: the bible's discipline table (23 then; Pleasure Driving made 24 on 2026-10-21) (Equoria-576c0 B3).
   // Old contract: an unknown discipline silently got the Racing stats. New: an error.
   it('throws for an unknown discipline instead of returning the Racing stats', () => {
     expect(() => getRelevantStats('Unknown Discipline')).toThrow(/Unknown competition discipline/);
   });
 
-  // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+  // Owner ruling R8 (2026-10-15) + C6: the bible's discipline table (23 then; Pleasure Driving made 24 on 2026-10-21) (Equoria-576c0 B3).
   // Old contract: the list held Trail / English Pleasure / Driving, which are not
-  // bible disciplines. New: the 23 bible disciplines.
+  // bible disciplines. New: the bible disciplines (24 since 2026-10-21).
   it('returns 3 stats for every known discipline', () => {
     const disciplines = [
       'Western Pleasure',
@@ -174,8 +174,8 @@ describe('competitionRewards — deterministic _rngFn & exhaustive coverage (mer
   }
 
   describe('getRelevantStats — every supported discipline', () => {
-    // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
-    // Old contract: Trail / English Pleasure / Driving were "supported". New: the 23.
+    // Owner ruling R8 (2026-10-15) + C6: the bible's discipline table (23 then; Pleasure Driving made 24 on 2026-10-21) (Equoria-576c0 B3).
+    // Old contract: Trail / English Pleasure / Driving were "supported". New: the 24.
     it('returns an array of 3 strings for every supported discipline', () => {
       const disciplines = [
         'Western Pleasure',

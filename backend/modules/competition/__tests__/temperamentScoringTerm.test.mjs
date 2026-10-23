@@ -92,7 +92,7 @@ describe('temperament is one percent term in the summed modifiers (R1, C2)', () 
     expect(score(100, 'Grumpy')).toBe(101);
   });
 
-  it('a legacy discipline outside the 23 has no matrix row, so temperament contributes 0', () => {
+  it('a legacy discipline outside the 24 has no matrix row, so temperament contributes 0', () => {
     expect(score(50, 'Calm', { discipline: 'Obedience Training' })).toBe(51); // 50.5 -> 51
   });
 });

@@ -1,7 +1,7 @@
 /**
  * Disciplines Test Fixture
  *
- * Complete list of 23 horse training disciplines from Equoria Training System.
+ * Complete list of 24 horse training disciplines from Equoria Training System.
  * Used for testing competition filters and discipline-related functionality.
  *
  * Source: Epic 4 Training System
@@ -35,11 +35,12 @@ export const DISCIPLINES = [
   'Endurance',
   'Trail',
 
-  // Specialized Disciplines (4)
+  // Specialized Disciplines (5)
   'Vaulting',
   'Polo',
   'Mounted Games',
   'Driving',
+  'Pleasure Driving',
 
   // Combined Disciplines (3)
   'Combined Driving',
@@ -59,7 +60,7 @@ export const DISCIPLINE_CATEGORIES = {
   DRESSAGE: ['Dressage', 'Freestyle Dressage'],
   WESTERN: ['Western Pleasure', 'Reining', 'Cutting', 'Barrel Racing'],
   ENDURANCE: ['Endurance', 'Trail'],
-  SPECIALIZED: ['Vaulting', 'Polo', 'Mounted Games', 'Driving'],
+  SPECIALIZED: ['Vaulting', 'Polo', 'Mounted Games', 'Driving', 'Pleasure Driving'],
   COMBINED: ['Combined Driving', 'Working Equitation', 'Tent Pegging'],
 } as const;
 
@@ -85,7 +86,7 @@ export function getDisciplineCategory(discipline: Discipline): string {
 /**
  * Total count verification (for testing)
  */
-export const DISCIPLINES_COUNT = 23;
+export const DISCIPLINES_COUNT = 24;
 
 // Verify fixture integrity
 if (DISCIPLINES.length !== DISCIPLINES_COUNT) {

@@ -2,7 +2,7 @@
  * settlementUnknownDiscipline.integration.test.mjs (Equoria-576c0 B3 review, item 1)
  *
  * B3 made an unknown discipline an error in the post-show stat gain. A show row
- * that still carries a discipline outside the bible's 23 (here the legacy
+ * that still carries a discipline outside the 24 disciplines (here the legacy
  * 'Obedience Training') would then throw inside the per-entry settlement
  * transaction whenever the stat-gain roll succeeds. That rejects the executor's
  * Promise.all, executeClosedShows rethrows, every later show that night is
@@ -112,7 +112,7 @@ async function createFundedShow(creatorId) {
 
 const STATS = { precision: true, focus: true, obedience: true, intelligence: true };
 
-describe('nightly settlement with a discipline outside the 23', () => {
+describe('nightly settlement with a discipline outside the 24', () => {
   it('settles the legacy show without stat gains, and the valid show in the same run still settles', async () => {
     const creator = await makeUser('c', 2 * PRIZE);
     const owner = await makeUser('o', 0);
@@ -159,7 +159,7 @@ describe('nightly settlement with a discipline outside the 23', () => {
     );
     cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [creator.id, owner.id] } } }), 'user');
 
-    // The legacy row: a discipline outside the 23, and both shows due tonight.
+    // The legacy row: a discipline outside the 24, and both shows due tonight.
     const pastClose = new Date(Date.now() - 60 * 60 * 1000);
     await prisma.show.update({
       where: { id: legacyShow.id },

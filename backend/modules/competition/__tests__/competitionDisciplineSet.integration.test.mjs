@@ -1,7 +1,7 @@
 /**
  * competitionDisciplineSet.integration.test.mjs (Equoria-576c0 B3)
  *
- * Owner ruling R8 (2026-10-15): the competition disciplines are the bible's 23.
+ * Owner ruling R8 (2026-10-15): the competition disciplines are the bible's table (23, now 24 with Pleasure Driving).
  * 'Obedience Training' is not one of them. It leaves every competition-facing
  * list: GET /competition/disciplines, the /competition/eligibility check and the
  * competition leaderboard's discipline filter. It stays a training discipline:

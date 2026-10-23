@@ -205,7 +205,7 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
     test('should have all 24 disciplines', () => {
       const disciplines = getAllDisciplines();
 
-      expect(disciplines.length).toBeGreaterThanOrEqual(23); // We should have 23+ disciplines
+      expect(disciplines.length).toBeGreaterThanOrEqual(24); // We should have 24 disciplines
       expect(disciplines).toContain('Racing');
       expect(disciplines).toContain('Dressage');
       expect(disciplines).toContain('Show Jumping');
@@ -214,7 +214,7 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
       expect(disciplines).toContain('Barrel Racing');
     });
 
-    // Owner ruling R8 (2026-10-15) + C6: the bible 23-discipline table (Equoria-576c0 B3).
+    // Owner ruling R8 (2026-10-15) + C6: the bible's discipline table (23 then; Pleasure Driving made 24 on 2026-10-21) (Equoria-576c0 B3).
     // Old contract: Racing speed/stamina/intelligence, Dressage precision/obedience/focus,
     // Western Pleasure obedience/focus/precision, Gaited flexibility/obedience/focus.
     test('should have correct stats for each discipline', () => {

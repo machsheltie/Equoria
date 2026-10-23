@@ -2,7 +2,7 @@
  * Competition Filters Component
  *
  * Filter controls for competition browser
- * - Discipline filter (23 options from training system)
+ * - Discipline filter (24 options from training system)
  * - Date range filter (4 options)
  * - Entry fee filter (5 options)
  * - Clear filters button

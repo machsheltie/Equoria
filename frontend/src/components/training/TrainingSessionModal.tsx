@@ -2,7 +2,7 @@
  * TrainingSessionModal Component
  *
  * A modal dialog for managing horse training sessions. Allows users to:
- * - Select a training discipline from 23 available options
+ * - Select a training discipline from 24 available options
  * - View current training status and scores
  * - Check eligibility before training
  * - Execute training sessions

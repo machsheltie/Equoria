@@ -107,7 +107,7 @@ describe('nightly scorer base: 50/30/20 of the discipline stats (B4a)', () => {
     }
   });
 
-  it('a legacy discipline outside the 23 keeps today’s flat 5-stat average instead of failing the show', () => {
+  it('a legacy discipline outside the 24 keeps today’s flat 5-stat average instead of failing the show', () => {
     // (20 + 20 + 20 + 90 + 20) / 5 = 34, the pre-B4a base; x 1.01 = 34.34.
     const h = horse({ precision: 90, focus: 80, obedience: 70, speed: 20, stamina: 20, agility: 20, boldness: 20 });
     expect(scoreOf('Obedience Training', h)).toBe(34);

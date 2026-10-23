@@ -2,7 +2,7 @@
  * disciplineRules.test.mjs (Equoria-576c0 B3)
  *
  * Owner ruling R8 (2026-10-15): the competition stat map is the bible's
- * 23-discipline 50/30/20 table (docs/features/13_Competitions_shows_Event_Scoring_DEEP.md,
+ * 24-discipline 50/30/20 table (docs/features/13_Competitions_shows_Event_Scoring_DEEP.md,
  * "Discipline stat model"), with Racing's tertiary stat = Focus (ruling C6,
  * 2026-10-16). One module owns it; the post-show stat gain and the competition
  * level/config read from it, and an unknown discipline is an error rather than a

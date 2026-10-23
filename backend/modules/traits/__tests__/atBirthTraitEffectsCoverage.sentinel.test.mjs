@@ -93,7 +93,7 @@ const AT_BIRTH_EMITTER = path.join(UTILS_DIR, 'applyEpigeneticTraitsAtBirth.mjs'
 //   - B4 (9o3n7.4): the dead pregnancy-bonus pool (wellNourished/vigorous/
 //     undernourished/weakImmunity/lowVigor) was repointed at approved,
 //     effect-backed canonical traits.
-//   - B5 / §F (9o3n7.5): all 23 disciplineAffinity<Discipline> traits now have
+//   - B5 / §F (9o3n7.5): all 24 disciplineAffinity<Discipline> traits now have
 //     a generated rich traitEffects entry and the emitter emits the canonical
 //     camelCase key.
 // With the baseline empty, the sentinel reduces to the pure "zero missing"
