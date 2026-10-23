@@ -22,7 +22,8 @@
 
 import { apiClient } from '../http/apiClient.js';
 
-export type StaffRole = 'moderator' | 'admin';
+/** Owner ruling 2026-10-23 (Equoria-4tleh): three staff levels. */
+export type StaffRole = 'moderator' | 'admin' | 'owner';
 /** A role an account can hold; `user` is a plain player. */
 export type AccountRole = 'user' | StaffRole;
 

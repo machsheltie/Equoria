@@ -9,6 +9,7 @@ import { param, query } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
+import { satisfiesRole } from '../../staff/index.mjs';
 import {
   getUserSalaryCost,
   getSalaryHistory,
@@ -78,7 +79,7 @@ router.get('/status', getCronStatus);
 router.post(
   '/process',
   (req, res, next) => {
-    if (!req.user || req.user.role !== 'admin') {
+    if (!req.user || !satisfiesRole(req.user.role, 'admin')) {
       return res.status(403).json({ success: false, message: 'Admin access required' });
     }
     next();

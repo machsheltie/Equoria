@@ -2,7 +2,7 @@
 
 - **Status:** Active contract
 - **Owner:** Project owner (Stacey)
-- **Last verified:** 2026-10-12
+- **Last verified:** 2026-10-23
 - **Load only when:** designing, planning, implementing, or reviewing staff
   roles, the Steward's Office page, staff 2FA, the staff action log, or staff
   tickets
@@ -20,10 +20,18 @@ conduct, content moderation, identity and ban evasion, and outage time-back
 
 ## Roles
 
-- `player` (default), `moderator`, `admin`. Moderators are ordinary player
-  accounts the admin promotes and revokes from the Steward's Office; both are
-  logged with a reason. Revocation takes effect on the moderator's next request.
-- Only the admin changes roles.
+- `player` (stored as `user`, the default), `moderator`, `admin`, `owner`.
+  Owner ruling 2026-10-23 (Equoria-4tleh): three staff levels — Owner (Head
+  Admin; the project owner), Admin, Moderator — held in the same `User.role`
+  string. The owner holds every admin capability plus the owner-only ones, and
+  passes every admin gate (`requireRole('admin')` admits the owner through
+  `satisfiesRole` in `backend/modules/staff/capabilities.mjs`).
+- Moderators are ordinary player accounts an admin or the owner promotes and
+  revokes from the Steward's Office; both are logged with a reason. Revocation
+  takes effect on the moderator's next request.
+- Only `roles.manage` holders (admin, owner) change roles, and only between
+  player and moderator. Nobody changes an admin's or the owner's role here; who
+  appoints admins is not yet ruled.
 - Staff tools never act on the acting account itself, on other staff, or on the
   admin. The server enforces this; the panel merely hides it.
 
@@ -32,14 +40,22 @@ conduct, content moderation, identity and ban evasion, and outage time-back
 Every staff tool requires a named capability, checked server-side on every
 request. The panel shows only tools the account holds.
 
-| Capability                                                     | Moderator | Admin |
-| -------------------------------------------------------------- | --------- | ----- |
-| `warn`, `freeze`, `ban.account`                                | yes       | yes   |
-| `rename` (horse, show, player), `post.moderate`, `post.review` | yes       | yes   |
-| `ticket.file`                                                  | yes       | —     |
-| `ticket.resolve`, `log.view.all`                               | —         | yes   |
-| `ban.ip`, `ban.device`, `view.identity`                        | —         | yes   |
-| `roles.manage`, `jobs.hold`, `time-back`, `horse.admin`        | —         | yes   |
+| Capability                                                     | Moderator | Admin | Owner |
+| -------------------------------------------------------------- | --------- | ----- | ----- |
+| `warn`, `freeze`, `ban.account`                                | yes       | yes   | yes   |
+| `rename` (horse, show, player), `post.moderate`, `post.review` | yes       | yes   | yes   |
+| `ticket.file`                                                  | yes       | —     | —     |
+| `ticket.resolve`, `log.view.all`                               | —         | yes   | yes   |
+| `ban.ip`, `ban.device`, `view.identity`                        | —         | yes   | yes   |
+| `roles.manage`, `jobs.hold`, `time-back`, `horse.admin`        | —         | yes   | yes   |
+| `news.post` (News, Equoria-wbt8l)                              | —         | yes   | yes   |
+| `traits.hidden.view` (hidden trait names)                      | —         | —     | yes   |
+
+Code outside the staff router asks the same policy: `can(req.user, cap)` for an
+inline check. Hidden traits: every JSON response already strips
+`epigeneticModifiers.hidden` for everyone; the admin trait-revelation analytics
+leave out history rows for traits currently hidden on their horse unless the
+caller holds `traits.hidden.view`.
 
 Moving a capability between roles is a data change, not a redesign. The exact
 moderator scope of IP and device bans is settled in the player-conduct project.

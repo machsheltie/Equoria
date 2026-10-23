@@ -25,6 +25,7 @@ import {
 } from '../services/horseRouteQueries.mjs';
 import { breedingStateFields } from '../services/breedingPairRules.mjs';
 import logger from '../../../utils/logger.mjs';
+import { satisfiesRole } from '../../staff/index.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';
 
@@ -75,7 +76,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     // considered but would break those legitimate same-user callers without a
     // coordinated frontend change. Admins (role === 'admin') retain the
     // override so support tooling can query any user's horses.
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = satisfiesRole(req.user.role, 'admin'); // the owner too (Equoria-4tleh)
     const effectiveUserId = isAdmin
       ? queryUserId || req.user.id // admin: honour the override; fall back to self
       : req.user.id; // non-admin: always self — never trust client userId

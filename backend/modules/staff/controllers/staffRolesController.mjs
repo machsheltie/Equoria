@@ -1,8 +1,9 @@
 /**
  * Staff roles controller (Equoria-puj1e.1, Task 5)
  *
- * The admin promotes a player to moderator and revokes them. Every route runs
- * behind requireStaffCapability('roles.manage'), which only the admin holds.
+ * An admin or the owner promotes a player to moderator and revokes them. Every
+ * route runs behind requireStaffCapability('roles.manage'), which only admins
+ * and the owner hold (Equoria-4tleh).
  *
  * assertActionableTarget is deliberately not used: it refuses any staff
  * target, and revoking targets a moderator. Instead the admin may not act on
@@ -18,6 +19,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { deleteUnreadNotificationsTx } from '../../../utils/notificationService.mjs';
+import { STAFF_ROLES } from '../capabilities.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
 import { retireStaffCheckinCodesTx } from '../services/staffChallengeRetirement.mjs';
 
@@ -39,7 +41,7 @@ class RoleChangedMeanwhile extends Error {}
 export async function listStaff(req, res, next) {
   try {
     const staff = await prisma.user.findMany({
-      where: { role: { in: ['moderator', 'admin'] } },
+      where: { role: { in: [...STAFF_ROLES] } },
       select: PUBLIC_FIELDS,
       orderBy: [{ role: 'asc' }, { username: 'asc' }],
     });
@@ -70,7 +72,8 @@ export async function lookupUser(req, res, next) {
 
 /** Returns [status, message] when the change is refused, or null. */
 function refusal(actorId, target, toRole) {
-  if (target.id === actorId || target.role === 'admin') {
+  // Nobody's admin or owner role changes here (Equoria-4tleh).
+  if (target.id === actorId || target.role === 'admin' || target.role === 'owner') {
     return [403, "This account's role cannot be changed here"];
   }
   if (toRole === 'moderator' && target.role !== 'user') {

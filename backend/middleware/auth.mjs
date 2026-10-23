@@ -5,6 +5,7 @@ import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';
+import { satisfiesRole } from '../modules/staff/index.mjs';
 
 /**
  * In-memory TTL cache for User.passwordChangedAt — Equoria-2bbf.
@@ -303,7 +304,9 @@ export const requireRole = (...roles) => {
         }
       }
 
-      if (!req.user.role || !roles.includes(req.user.role)) {
+      // Equoria-4tleh: the staff policy decides whether the account's role
+      // satisfies a named role, so the owner passes every admin gate.
+      if (!req.user.role || !roles.some(role => satisfiesRole(req.user.role, role))) {
         logger.warn(
           `[auth] User ${req.user.id} with role '${req.user.role}' attempted to access ${req.method} ${req.path} (requires: ${roles.join(', ')})`,
         );

@@ -6,7 +6,16 @@
  */
 
 import * as capabilities from '../capabilities.mjs';
-import { hasCapability, isStaffRole, assertActionableTarget, capabilitiesFor, STAFF_ROLES } from '../capabilities.mjs';
+import {
+  hasCapability,
+  isStaffRole,
+  assertActionableTarget,
+  capabilitiesFor,
+  can,
+  rolesWithCapability,
+  satisfiesRole,
+  STAFF_ROLES,
+} from '../capabilities.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
 describe('staff capabilities (Equoria-puj1e.2)', () => {
@@ -89,7 +98,9 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
         });
         expect(value.every(item => typeof item === 'string')).toBe(true);
       }
-      expect(STAFF_ROLES).toEqual(['moderator', 'admin']);
+      // Owner ruling 2026-10-23 (Equoria-4tleh): three staff levels. Was
+      // ['moderator', 'admin'] under the 2026-10-06 two-role contract.
+      expect(STAFF_ROLES).toEqual(['moderator', 'admin', 'owner']);
     });
 
     it('a list handed out cannot grant a capability, to that caller or to any other', () => {
@@ -109,6 +120,69 @@ describe('staff capabilities (Equoria-puj1e.2)', () => {
     it('hands each caller a fresh list', () => {
       expect(capabilitiesFor('admin')).not.toBe(capabilitiesFor('admin'));
       expect(capabilitiesFor('admin')).toEqual(capabilitiesFor('admin'));
+    });
+  });
+
+  // Owner ruling 2026-10-23 (Equoria-4tleh): Owner (Head Admin), Admin,
+  // Moderator. Only Owner and Admin post News; only the Owner sees hidden traits.
+  describe('three staff levels (Equoria-4tleh)', () => {
+    it('makes owner a staff role', () => {
+      expect(isStaffRole('owner')).toBe(true);
+    });
+
+    it('gives the owner every admin capability', () => {
+      for (const cap of capabilitiesFor('admin')) {
+        expect(hasCapability('owner', cap)).toBe(true);
+      }
+    });
+
+    it('lets owner and admin post News, never a moderator or a player', () => {
+      expect(hasCapability('owner', 'news.post')).toBe(true);
+      expect(hasCapability('admin', 'news.post')).toBe(true);
+      expect(hasCapability('moderator', 'news.post')).toBe(false);
+      expect(hasCapability('user', 'news.post')).toBe(false);
+    });
+
+    it('lets only the owner see hidden traits', () => {
+      expect(hasCapability('owner', 'traits.hidden.view')).toBe(true);
+      expect(hasCapability('admin', 'traits.hidden.view')).toBe(false);
+      expect(hasCapability('moderator', 'traits.hidden.view')).toBe(false);
+      expect(hasCapability('user', 'traits.hidden.view')).toBe(false);
+    });
+
+    it('can(user, cap) reads the account role and fails closed on anything else', () => {
+      expect(can({ role: 'owner' }, 'traits.hidden.view')).toBe(true);
+      expect(can({ role: 'admin' }, 'news.post')).toBe(true);
+      expect(can({ role: 'moderator' }, 'news.post')).toBe(false);
+      expect(can({ role: 'user' }, 'warn')).toBe(false);
+      expect(can(null, 'warn')).toBe(false);
+      expect(can(undefined, 'warn')).toBe(false);
+      expect(can({}, 'warn')).toBe(false);
+    });
+
+    it('lists the roles that hold a capability', () => {
+      expect(rolesWithCapability('ticket.resolve')).toEqual(['admin', 'owner']);
+      expect(rolesWithCapability('traits.hidden.view')).toEqual(['owner']);
+      expect(rolesWithCapability('ticket.file')).toEqual(['moderator']);
+      expect(rolesWithCapability('not.a.capability')).toEqual([]);
+      expect(Object.isFrozen(rolesWithCapability('warn'))).toBe(true);
+    });
+
+    it('lets the owner satisfy an admin role gate, and nothing else widens', () => {
+      expect(satisfiesRole('owner', 'admin')).toBe(true);
+      expect(satisfiesRole('admin', 'admin')).toBe(true);
+      expect(satisfiesRole('moderator', 'admin')).toBe(false);
+      expect(satisfiesRole('user', 'admin')).toBe(false);
+      expect(satisfiesRole('admin', 'owner')).toBe(false);
+      expect(satisfiesRole('moderator', 'moderator')).toBe(true);
+      expect(satisfiesRole('user', 'user')).toBe(true);
+      expect(satisfiesRole(undefined, 'admin')).toBe(false);
+      expect(satisfiesRole('constructor', 'admin')).toBe(false);
+      expect(satisfiesRole('', '')).toBe(false);
+    });
+
+    it('protects the owner from staff tools like any other staff account', () => {
+      expect(() => assertActionableTarget({ actorId: 'a', targetUser: { id: 'b', role: 'owner' } })).toThrow();
     });
   });
 

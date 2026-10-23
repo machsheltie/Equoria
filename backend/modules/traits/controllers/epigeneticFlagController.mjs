@@ -31,6 +31,7 @@ import {
   generateStableOverview,
 } from '../services/enhancedReportingService.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
+import { satisfiesRole } from '../../staff/index.mjs';
 
 /**
  * Get epigenetic flags for a horse
@@ -161,7 +162,7 @@ export async function getFlagDefinitions(req, res) {
 export async function batchEvaluateFlags(req, res) {
   try {
     // Check admin permission
-    if (req.user?.role !== 'admin') {
+    if (!satisfiesRole(req.user?.role, 'admin')) {
       return res.status(403).json({
         success: false,
         message: 'Admin access required for batch evaluation',

@@ -9,6 +9,7 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
+export { can, rolesWithCapability, satisfiesRole } from './capabilities.mjs';
 export { retireStaffCheckinCodesTx } from './services/staffChallengeRetirement.mjs';
 export { purgeStaleStaffCheckinRecords } from './services/staffCheckinRetentionService.mjs';
 export {

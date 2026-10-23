@@ -16,7 +16,7 @@ import {
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
 import AppError from '../../../errors/AppError.mjs';
-import { assertActionableTarget, hasCapability } from '../capabilities.mjs';
+import { assertActionableTarget, hasCapability, rolesWithCapability } from '../capabilities.mjs';
 import { recordStaffActionTx } from './staffActionLogService.mjs';
 import { olderThan, pageOf } from './staffTicketCursor.mjs';
 import { enqueueTicketEmailsTx, kickTicketEmails } from './ticketEmailOutbox.mjs';
@@ -176,8 +176,9 @@ export async function fileTicket(staff, { targetType, targetId, targetUsername, 
     const created = await tx.staffTicket.create({
       data: { filedById: staff.id, targetType, targetId: resolvedId, category, note },
     });
+    // Everyone who resolves tickets: admins and the owner (Equoria-4tleh).
     const adminRows = await tx.user.findMany({
-      where: { role: 'admin' },
+      where: { role: { in: [...rolesWithCapability('ticket.resolve')] } },
       select: { id: true, email: true, emailVerified: true },
     });
     const details = {
@@ -289,9 +290,12 @@ export async function addReply(staff, id, body) {
     // filer (filedById null) has no one to tell.
     let recipients = [];
     if (ticket.filedById !== null && staff.id === ticket.filedById) {
-      recipients = (await tx.user.findMany({ where: { role: 'admin' }, select: { id: true } })).map(
-        row => row.id,
-      );
+      recipients = (
+        await tx.user.findMany({
+          where: { role: { in: [...rolesWithCapability('ticket.resolve')] } },
+          select: { id: true },
+        })
+      ).map(row => row.id);
     } else if (await filerStillStaff(tx, ticket.filedById)) {
       recipients = [ticket.filedById];
     }

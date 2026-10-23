@@ -23,6 +23,15 @@ const ROLE_WORDS: Record<AccountRole, string> = {
   user: 'a player',
   moderator: 'a moderator',
   admin: 'the admin',
+  owner: 'the owner',
+};
+
+// Owner ruling 2026-10-23 (Equoria-4tleh): Owner (Head Admin), Admin, Moderator.
+const STAFF_TITLES: Record<StaffMember['role'], string> = {
+  user: 'Player',
+  moderator: 'Moderator',
+  admin: 'Admin',
+  owner: 'Owner',
 };
 
 const LOOKUP_MESSAGES = {
@@ -121,9 +130,7 @@ export function StaffRoles({ onCheckinRequired }: StaffRolesProps) {
           <li key={member.id} className="flex items-center justify-between gap-3 py-3">
             <span className="text-[var(--text-primary)]">
               {member.username}{' '}
-              <span className="text-sm text-role-secondary">
-                — {member.role === 'admin' ? 'Admin' : 'Moderator'}
-              </span>
+              <span className="text-sm text-role-secondary">— {STAFF_TITLES[member.role]}</span>
             </span>
             <RoleControl member={member} onChange={setChange} />
           </li>

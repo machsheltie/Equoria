@@ -27,6 +27,7 @@ import { runFoalingJob } from '../../horses/index.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
 import { getTraitRevelationAnalytics } from '../../traits/index.mjs';
+import { can } from '../../staff/index.mjs';
 import { getUserDocumentationService } from '../../users/index.mjs';
 import {
   getDocumentationMetrics,
@@ -240,6 +241,9 @@ export async function getTraitRevelationAnalyticsHandler(req, res) {
       endDate: endDate ?? null,
       // qs may parse repeated keys into arrays; coerce to a single string or null.
       sourceType: typeof sourceType === 'string' ? sourceType : null,
+      // Owner ruling 2026-10-23 (Equoria-4tleh): only the owner sees hidden
+      // traits; an admin's report leaves out traits still hidden on a horse.
+      includeHidden: can(req.user, 'traits.hidden.view'),
     });
 
     res.json({ success: true, data: analytics });

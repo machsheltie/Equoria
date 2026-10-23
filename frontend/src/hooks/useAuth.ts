@@ -21,9 +21,10 @@ import type {
 
 /**
  * Available user roles in the system.
- * Hierarchy: admin > moderator > user
+ * Hierarchy: owner (Head Admin) > admin > moderator > user (Equoria-4tleh).
+ * The server decides every permission; these only shape the UI.
  */
-export type UserRole = 'user' | 'admin' | 'moderator';
+export type UserRole = 'user' | 'owner' | 'admin' | 'moderator';
 
 /**
  * User data shape

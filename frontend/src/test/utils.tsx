@@ -42,8 +42,8 @@ export function buildMockAuthValue(overrides?: Partial<AuthContextValue>): AuthC
   const user = overrides?.user ?? defaultMockUser;
   const isAuthenticated = overrides?.isAuthenticated ?? !!user;
   const userRole: UserRole = (user?.role ?? 'user') as UserRole;
-  const isAdmin = userRole === 'admin';
-  const isModerator = userRole === 'moderator' || userRole === 'admin';
+  const isAdmin = userRole === 'admin' || userRole === 'owner';
+  const isModerator = userRole === 'moderator' || isAdmin;
 
   return {
     user,

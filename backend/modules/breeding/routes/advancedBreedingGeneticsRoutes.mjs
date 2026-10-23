@@ -11,6 +11,7 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { findOwnedResource as _findOwnedResource } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
+import { satisfiesRole } from '../../staff/index.mjs';
 import {
   validateBatchHorseOwnership,
   getUserHorseIds,
@@ -429,7 +430,7 @@ router.get(
       const requestingUserId = req.user.id;
 
       // Verify user can access this report (own report or admin)
-      if (userId !== requestingUserId && req.user.role !== 'admin') {
+      if (userId !== requestingUserId && !satisfiesRole(req.user.role, 'admin')) {
         return res.status(403).json({
           success: false,
           error: 'Access denied: You can only view your own genetic diversity report',
@@ -590,7 +591,7 @@ router.get(
       const requestingUserId = req.user.id;
 
       // Verify user can access this data (own data or admin)
-      if (userId !== requestingUserId && req.user.role !== 'admin') {
+      if (userId !== requestingUserId && !satisfiesRole(req.user.role, 'admin')) {
         return res.status(403).json({
           success: false,
           error: 'Access denied: You can only view your own population health data',

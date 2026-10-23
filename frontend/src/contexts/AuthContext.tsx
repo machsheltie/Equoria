@@ -199,8 +199,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Role helpers (Story 1-6)
   const userRole: UserRole = user?.role ?? 'user';
-  const isAdmin = userRole === 'admin';
-  const isModerator = userRole === 'moderator' || userRole === 'admin';
+  // The owner (Head Admin) holds every admin permission (Equoria-4tleh).
+  const isAdmin = userRole === 'admin' || userRole === 'owner';
+  const isModerator = userRole === 'moderator' || isAdmin;
 
   // Role check functions
   const hasRole = useCallback(

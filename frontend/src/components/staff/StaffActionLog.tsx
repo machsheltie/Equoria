@@ -55,6 +55,13 @@ const ACTION_OPTIONS = [
   { value: 'staff.checkin', label: 'Check-ins' },
 ];
 
+// Owner ruling 2026-10-23 (Equoria-4tleh): three staff levels.
+const ACTOR_TITLES: Record<string, string> = {
+  owner: 'The owner',
+  admin: 'The admin',
+  moderator: 'Moderator',
+};
+
 const shortRef = (id: string) => `#${id.slice(0, 8)}`;
 
 /**
@@ -86,7 +93,7 @@ function actorText(
     const former = FORMER_STEWARD.charAt(0).toUpperCase() + FORMER_STEWARD.slice(1);
     return `${former} (${shortRef(entry.actorId)})`;
   }
-  const role = entry.actorRole === 'admin' ? 'The admin' : 'Moderator';
+  const role = ACTOR_TITLES[entry.actorRole] ?? 'Moderator';
   return nameOf(entry.actorId) ?? `${role} ${shortRef(entry.actorId)}`;
 }
 

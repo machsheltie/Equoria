@@ -260,7 +260,7 @@ export const authApi = {
         money?: number;
         level?: number;
         xp?: number;
-        role?: 'user' | 'admin' | 'moderator';
+        role?: 'user' | 'owner' | 'admin' | 'moderator';
         completedOnboarding?: boolean;
         onboardingStep?: number;
         /** Story 21S-5: canonical persisted preferences field. */

@@ -29,6 +29,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { TRAIT_DEFINITIONS } from '../../../utils/traitEvaluation.mjs';
 import { gameDateKey } from '../../../utils/gameTime.mjs';
+import { withoutHiddenTraitHistory } from '../../../utils/publicTraitView.mjs';
 
 /**
  * Build a one-time map of traitKey -> definitional category from TRAIT_DEFINITIONS.
@@ -73,6 +74,10 @@ export function classifyTraitCategory(traitName) {
  * @param {Date|string} [options.endDate]   - inclusive upper bound on timestamp
  * @param {string}      [options.sourceType] - filter to one sourceType (e.g.
  *                       'daily_evaluation' to scope to nightly-cron reveals only)
+ * @param {boolean}     [options.includeHidden=false] - count rows naming a
+ *                       trait still hidden on its horse. Only for a caller
+ *                       holding `traits.hidden.view` (the owner, Equoria-4tleh);
+ *                       otherwise those rows are left out entirely.
  * @returns {Promise<Object>} aggregate report:
  *   {
  *     total: number,
@@ -84,7 +89,7 @@ export function classifyTraitCategory(traitName) {
  *   }
  */
 export async function getTraitRevelationAnalytics(options = {}) {
-  const { startDate = null, endDate = null, sourceType = null } = options;
+  const { startDate = null, endDate = null, sourceType = null, includeHidden = false } = options;
 
   const where = {};
 
@@ -103,11 +108,19 @@ export async function getTraitRevelationAnalytics(options = {}) {
   }
 
   // Pull only the columns the aggregation needs. No mocks — real DB read.
-  const rows = await prisma.traitHistoryLog.findMany({
+  const allRows = await prisma.traitHistoryLog.findMany({
     where,
-    select: { traitName: true, timestamp: true },
+    select: {
+      traitName: true,
+      timestamp: true,
+      horse: { select: { epigeneticModifiers: true } },
+    },
     orderBy: { timestamp: 'asc' },
   });
+  const rows =
+    includeHidden === true
+      ? allRows
+      : withoutHiddenTraitHistory(allRows, row => row.horse?.epigeneticModifiers);
 
   const byTraitNameRaw = {};
   const byCategory = { positive: 0, negative: 0, rare: 0, unknown: 0 };

@@ -308,7 +308,9 @@ describe('Admin reads staff and looks up players (Equoria-puj1e.1)', () => {
     expect(byId.has(player.id)).toBe(false);
     for (const entry of res.body.staff) {
       expect(Object.keys(entry).sort()).toEqual(['id', 'role', 'username']);
-      expect(['moderator', 'admin']).toContain(entry.role);
+      // Owner ruling 2026-10-23 (Equoria-4tleh) added the owner as a third staff
+      // level; the list was moderator and admin under the two-role contract.
+      expect(['moderator', 'admin', 'owner']).toContain(entry.role);
     }
   });
 
