@@ -42,8 +42,9 @@ import { actionMessageFor } from '@/lib/http/actionMessage';
 
 // The page reaches this tracker only after the foal record itself loaded, so a 404 from
 // /development means the horse has aged past foalhood. Same wording the backend sent
-// (foalModel.mjs), now owned here instead of echoed from the response body.
-const notAFoalCopy = 'Horse is not a foal (must be 1 year old or younger)';
+// (foalModel.mjs), now owned here instead of echoed from the response body. Development
+// data serves game ages 0-2; age 3 and older is not a foal (Equoria-lu6xo).
+const notAFoalCopy = 'Horse is not a foal (age 3 or older)';
 
 interface FoalDevelopmentTrackerProps {
   foalId: number;
