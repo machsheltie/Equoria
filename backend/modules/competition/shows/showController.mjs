@@ -29,6 +29,8 @@ import {
 import { sendEntryRefusal } from '../services/entryEligibility.mjs';
 // The 24 competition disciplines, from the one bible table (Equoria-576c0 B3 review).
 import { isKnownDiscipline } from '../rules/disciplineRules.mjs';
+// Equoria-whfj4: a player hosts at most weeklyShowCreationLimit shows per game-time week.
+import { startOfShowWeek, weeklyShowCreationLimit } from '../rules/showHostingLimits.mjs';
 
 // ── BA-2 / Equoria-nx8t1: Create a 7-day deferred-window show ──────────────────
 //
@@ -110,6 +112,16 @@ export async function createShow(req, res) {
     try {
       show = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
+          // Equoria-whfj4: the weekly hosting limit. The host's row lock is taken
+          // first (lock order: User before anything else), so two parallel
+          // creates by one host queue here and the second one counts the first.
+          await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
+          const hosted = await tx.show.count({
+            where: { createdByUserId: userId, createdAt: { gte: startOfShowWeek(openDate) } },
+          });
+          if (hosted >= weeklyShowCreationLimit(req.user)) {
+            throw new Error('weeklyShowLimitReached');
+          }
           if (prize > 0) {
             const debited = await tx.user.updateMany({
               where: { id: userId, money: { gte: prize } },
@@ -152,6 +164,13 @@ export async function createShow(req, res) {
         { message: 'Show service is busy right now, please retry in a moment.' },
       );
     } catch (txError) {
+      if (txError.message === 'weeklyShowLimitReached') {
+        return res.status(409).json({
+          success: false,
+          code: 'weeklyShowLimitReached',
+          message: `You can host up to ${weeklyShowCreationLimit(req.user)} shows a week. Try again next week.`,
+        });
+      }
       if (txError.message === 'INSUFFICIENT_FUNDS') {
         return res
           .status(400)
