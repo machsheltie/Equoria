@@ -25,6 +25,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 let user;
 let horse;
@@ -107,7 +108,7 @@ describe('evaluateTraitExpressionProbability', () => {
     expect(typeof result.expressionLikelihood).toBe('string');
     expect(result.finalProbability).toBeGreaterThanOrEqual(0);
     expect(result.finalProbability).toBeLessThanOrEqual(1);
-    expect(result.analysisTimestamp).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.analysisTimestamp)).toBe('valid date');
   });
 
   it('returns probability shape for fearful trait', async () => {
@@ -138,7 +139,7 @@ describe('assessCriticalPeriodSensitivity', () => {
     expect(typeof result.sensitivityLevel).toBe('number');
     expect(result.sensitivityLevel).toBeGreaterThanOrEqual(0);
     expect(result.sensitivityLevel).toBeLessThanOrEqual(1);
-    expect(result.analysisTimestamp).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.analysisTimestamp)).toBe('valid date');
   });
 
   it('newborn has active critical periods', async () => {
@@ -159,7 +160,7 @@ describe('generateEnvironmentalReport', () => {
     expect(typeof result.cumulativeExposure).toBe('object');
     expect(typeof result.criticalPeriodSensitivity).toBe('object');
     expect(Array.isArray(result.recommendations)).toBe(true);
-    expect(result.reportTimestamp).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.reportTimestamp)).toBe('valid date');
   });
 });
 
@@ -175,7 +176,7 @@ describe('generateTraitTimeline', () => {
     expect(typeof result.summary).toBe('object');
     expect(typeof result.bondStressTrend).toBe('object');
     expect(Array.isArray(result.excludedTraits)).toBe(true);
-    expect(result.generatedAt).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.generatedAt)).toBe('valid date');
   });
 });
 

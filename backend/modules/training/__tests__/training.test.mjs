@@ -49,6 +49,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-6yaqy: fail-loud, scoped cleanup so a leaked fixture surfaces as a
 // red suite instead of a silent canonical-DB leak.
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -667,7 +668,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const [log] = trainingLogs;
       expect(log.horseId).toBe(logTestHorse.id);
       expect(log.discipline).toBe('Reining');
-      expect(new Date(log.trainedAt)).toBeInstanceOf(Date);
+      expect(realDateOrReason(new Date(log.trainedAt))).toBe('valid date');
       expect(new Date(log.trainedAt).getTime()).toBeGreaterThanOrEqual(beforeTraining.getTime());
 
       // Clean up

@@ -23,6 +23,7 @@ import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // silent no-op catch arms swallowed delete failures, leaking the fixture horse
 // (NULL-phenotype risk) / user into the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
+import { realDateOrReason } from './helpers/expectRealDate.mjs';
 
 // ─── Shared fixture helpers ────────────────────────────────────────────────────
 
@@ -95,8 +96,8 @@ describe('trainingAnalyticsService.calculateDisciplineBalance', () => {
     const result = trainingAnalyticsService.calculateDisciplineBalance(history);
     const d = result.dressage;
 
-    expect(d.firstTrainingDate).toBeInstanceOf(Date);
-    expect(d.lastTrainingDate).toBeInstanceOf(Date);
+    expect(realDateOrReason(d.firstTrainingDate)).toBe('valid date');
+    expect(realDateOrReason(d.lastTrainingDate)).toBe('valid date');
     expect(d.lastTrainingDate.getTime()).toBeGreaterThan(d.firstTrainingDate.getTime());
   });
 
@@ -185,7 +186,7 @@ describe('trainingAnalyticsService.calculateTrainingFrequency', () => {
 
     expect(result.recentActivity).toHaveLength(1);
     expect(result.recentActivity[0].discipline).toBe('dressage');
-    expect(result.recentActivity[0].date).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.recentActivity[0].date)).toBe('valid date');
   });
 
   it('handles large history with mixed recent/old sessions', () => {

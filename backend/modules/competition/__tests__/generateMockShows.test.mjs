@@ -8,6 +8,7 @@ import { describe, it, expect } from '@jest/globals';
 import { generateMockShows, generateSingleMockShow } from '../../../utils/generateMockShows.mjs';
 // merged from legacy backend/tests, Equoria-wvuin — statMap integration assertions
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 // ---------------------------------------------------------------------------
 // generateMockShows
@@ -173,7 +174,7 @@ describe('generateMockShows — date/variety/statMap (merged from legacy backend
     const thirtyDaysFromNow = new Date(today);
     thirtyDaysFromNow.setDate(today.getDate() + 30);
     generateMockShows(20).forEach(show => {
-      expect(show.runDate).toBeInstanceOf(Date);
+      expect(realDateOrReason(show.runDate)).toBe('valid date');
       expect(show.runDate.getTime()).toBeGreaterThanOrEqual(thirtyDaysAgo.getTime() - 1000);
       expect(show.runDate.getTime()).toBeLessThanOrEqual(thirtyDaysFromNow.getTime() + 1000);
     });

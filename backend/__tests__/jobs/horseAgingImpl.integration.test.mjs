@@ -26,6 +26,7 @@ import { createTestHorse, cleanupTestHorses } from '../helpers/createTestHorse.m
 import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import * as horseAgingImpl from '../../services/jobs/impl/horseAging.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
+import { realDateOrReason } from '../helpers/expectRealDate.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
 const DAYS_PER_GAME_YEAR = 7;
@@ -110,7 +111,7 @@ describe('INTEGRATION: horseAging impl module (Equoria-urqic.3.1) — real DB', 
       expect(summarySpy).toHaveBeenCalledTimes(1);
       const summaryArg = summarySpy.mock.calls[0][0];
       expect(summaryArg.totalProcessed).toBe(1);
-      expect(summaryArg.timestamp).toBeInstanceOf(Date);
+      expect(realDateOrReason(summaryArg.timestamp)).toBe('valid date');
       expect(typeof summaryArg.duration).toBe('number');
     }, 120000);
 

@@ -21,6 +21,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 let user;
 let stallion;
@@ -90,7 +91,7 @@ describe('calculateTemperamentInfluence', () => {
     expect(typeof result.compatibilityScore).toBe('number');
     expect(Array.isArray(result.predictedOffspringTemperament)).toBe(true);
     expect(typeof result.traitInfluenceModifiers).toBe('object');
-    expect(result.calculatedAt).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.calculatedAt)).toBe('valid date');
   });
 });
 

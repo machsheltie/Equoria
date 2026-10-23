@@ -16,6 +16,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 let user;
 let foal;
@@ -85,7 +86,7 @@ describe('analyzeCarePatterns', () => {
     expect(typeof result.currentBondScore).toBe('number');
     expect(typeof result.currentStressLevel).toBe('number');
     expect(result.patterns).toBeDefined();
-    expect(result.evaluationDate).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.evaluationDate)).toBe('valid date');
   });
 
   it('returns patterns with expected keys for eligible foal', async () => {

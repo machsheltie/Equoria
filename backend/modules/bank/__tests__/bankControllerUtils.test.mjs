@@ -13,6 +13,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { getCurrentWeekStart } from '../controllers/bankController.mjs';
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 const easternFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/New_York',
@@ -43,7 +44,7 @@ function eastern(date) {
 describe('getCurrentWeekStart', () => {
   it('returns a Date object', () => {
     const result = getCurrentWeekStart();
-    expect(result).toBeInstanceOf(Date);
+    expect(realDateOrReason(result)).toBe('valid date');
   });
 
   it('returns a valid Date (not NaN)', () => {

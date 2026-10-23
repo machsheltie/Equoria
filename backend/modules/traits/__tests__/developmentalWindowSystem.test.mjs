@@ -28,6 +28,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // the suite goes red at the source. Each scope owns its own tracker; deletes
 // stay id-scoped, horse-before-user (Horse.userId onDelete: Restrict).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 let user;
 let horse;
@@ -76,7 +77,7 @@ describe('identifyDevelopmentalWindows', () => {
     expect(Array.isArray(result.upcomingWindows)).toBe(true);
     expect(Array.isArray(result.closedWindows)).toBe(true);
     expect(typeof result.criticalityScore).toBe('number');
-    expect(result.analysisTimestamp).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.analysisTimestamp)).toBe('valid date');
   });
 
   it('includes imprinting window as active for a newborn', async () => {
@@ -100,7 +101,7 @@ describe('calculateWindowSensitivity', () => {
     expect(typeof result.baseSensitivity).toBe('number');
     expect(typeof result.finalSensitivity).toBe('number');
     expect(typeof result.sensitivityLevel).toBe('string');
-    expect(result.analysisTimestamp).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.analysisTimestamp)).toBe('valid date');
   });
 
   it('finalSensitivity is between 0 and 1', async () => {
@@ -273,7 +274,7 @@ describe('developmentalWindowSystem — closed windows + coordinateMultiWindowDe
     const result = await assessWindowClosure(oldHorse.id, 'imprinting');
     expect(result.closureStatus).toBe('closed');
     expect(result.closureDate).not.toBeNull();
-    expect(result.closureDate).toBeInstanceOf(Date);
+    expect(realDateOrReason(result.closureDate)).toBe('valid date');
   });
 
   it('assessWindowClosure: futureImpact=significant when daysSinceClosure=32 (range 31-60)', async () => {

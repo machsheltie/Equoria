@@ -38,6 +38,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
+import { realDateOrReason } from '../../../__tests__/helpers/expectRealDate.mjs';
 
 describe('Foal Task Logging Integration', () => {
   // Equoria-plw0h: per-user CSRF binding derives the sessionIdentifier from
@@ -224,7 +225,7 @@ describe('Foal Task Logging Integration', () => {
         trust_building: 1,
       });
       expect(updatedFoal.lastGroomed).toBeDefined();
-      expect(new Date(updatedFoal.lastGroomed)).toBeInstanceOf(Date);
+      expect(realDateOrReason(new Date(updatedFoal.lastGroomed))).toBe('valid date');
     });
 
     it('should increment existing task count in task log', async () => {
@@ -412,7 +413,7 @@ describe('Foal Task Logging Integration', () => {
       });
 
       const lastGroomedTime = new Date(updatedFoal.lastGroomed);
-      expect(lastGroomedTime).toBeInstanceOf(Date);
+      expect(realDateOrReason(lastGroomedTime)).toBe('valid date');
       expect(lastGroomedTime.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
       expect(lastGroomedTime.getTime()).toBeLessThanOrEqual(afterTime.getTime());
     }, 10000); // 10 second timeout

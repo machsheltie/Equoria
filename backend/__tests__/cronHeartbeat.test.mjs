@@ -21,6 +21,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import cronJobService from '../services/cronJobs.mjs';
 import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
+import { realDateOrReason } from './helpers/expectRealDate.mjs';
 
 // Equoria-vi125: both describe blocks below mutate the shared CronJobService
 // singleton (clear .heartbeats, conditionally seed 'dailyHorseAging' into
@@ -55,8 +56,8 @@ describe('CronJobService.runWithHeartbeat (Equoria-0elk)', () => {
     const hb = cronJobService.heartbeats.get('dailyHorseAging');
     expect(hb).toBeDefined();
     expect(hb.status).toBe('success');
-    expect(hb.startedAt).toBeInstanceOf(Date);
-    expect(hb.finishedAt).toBeInstanceOf(Date);
+    expect(realDateOrReason(hb.startedAt)).toBe('valid date');
+    expect(realDateOrReason(hb.finishedAt)).toBe('valid date');
     expect(hb.summary).toEqual(
       expect.objectContaining({
         totalProcessed: 5,
@@ -79,7 +80,7 @@ describe('CronJobService.runWithHeartbeat (Equoria-0elk)', () => {
     const hb = cronJobService.heartbeats.get('dailyHorseAging');
     expect(hb.status).toBe('error');
     expect(hb.error).toBe('synthetic-failure');
-    expect(hb.finishedAt).toBeInstanceOf(Date);
+    expect(realDateOrReason(hb.finishedAt)).toBe('valid date');
   });
 
   it('summarizes non-object results as null without crashing', async () => {
