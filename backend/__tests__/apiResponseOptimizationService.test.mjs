@@ -246,6 +246,46 @@ describe('SerializationService.excludeFieldsFromObject', () => {
   });
 });
 
+describe('SerializationService field walkers keep a Date whole (Equoria-t7b4r)', () => {
+  // A Date is a leaf, like the string that selectFieldsFromObject already passes
+  // through. Both walkers rebuild objects, and a Date has no own enumerable
+  // properties, so recursing into one (select) or spreading one (exclude) turns a
+  // timestamp into `{}`. Same hazard compressDataStructure had in Equoria-oeg8k.
+  // The foreign Date is the shape Prisma timestamps arrive in under some module
+  // layouts: `instanceof Date` false, brand `[object Date]`, toJSON intact.
+  const foreign = () => runInNewContext('new Date(1767225600000)');
+  const sameRealm = () => new Date(1767225600000);
+
+  it.each([
+    ['same-realm', sameRealm],
+    ['foreign-realm', foreign],
+  ])('selectFieldsFromObject returns a %s Date as-is when a nested path runs through it', (_label, make) => {
+    const stamp = make();
+    const result = SerializationService.selectFieldsFromObject({ id: 1, createdAt: stamp }, ['id', 'createdAt.x']);
+    expect(result.createdAt).toBe(stamp);
+    expect(JSON.stringify(result)).toBe('{"id":1,"createdAt":"2026-01-01T00:00:00.000Z"}');
+  });
+
+  it.each([
+    ['same-realm', sameRealm],
+    ['foreign-realm', foreign],
+  ])('excludeFieldsFromObject returns a %s Date as-is when a nested path runs through it', (_label, make) => {
+    const stamp = make();
+    const result = SerializationService.excludeFieldsFromObject({ id: 1, createdAt: stamp }, ['createdAt.x']);
+    expect(result.createdAt).toBe(stamp);
+    expect(JSON.stringify(result)).toBe('{"id":1,"createdAt":"2026-01-01T00:00:00.000Z"}');
+  });
+
+  it.each([
+    ['same-realm', sameRealm],
+    ['foreign-realm', foreign],
+  ])('excludeFields and selectFields leave a bare %s Date item untouched', (_label, make) => {
+    const stamp = make();
+    expect(SerializationService.excludeFields([stamp], ['x'])[0]).toBe(stamp);
+    expect(SerializationService.selectFields([stamp], ['x'])[0]).toBe(stamp);
+  });
+});
+
 describe('SerializationService.selectFields', () => {
   it('applies field selection to an array of objects', () => {
     const data = [

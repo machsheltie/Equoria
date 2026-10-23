@@ -151,6 +151,18 @@ export class PaginationService {
 }
 
 /**
+ * A Date is a LEAF value, like the string selectFieldsFromObject and
+ * excludeFieldsFromObject already pass through, and has no own enumerable
+ * properties: recursing into one (select) or spreading one (exclude) rebuilds it as
+ * `{}`. Brand check, not `instanceof Date`, because a Prisma DateTime can come from
+ * another module realm where `instanceof` is false (the same hazard, and the same
+ * guard, as compressDataStructure; Equoria-oeg8k, Equoria-t7b4r).
+ */
+function isDateValue(value) {
+  return Object.prototype.toString.call(value) === '[object Date]';
+}
+
+/**
  * Data serialization optimization service
  */
 export class SerializationService {
@@ -218,7 +230,7 @@ export class SerializationService {
    * Select fields from a single object
    */
   static selectFieldsFromObject(obj, fields) {
-    if (!obj || typeof obj !== 'object') {
+    if (!obj || typeof obj !== 'object' || isDateValue(obj)) {
       return obj;
     }
 
@@ -241,7 +253,7 @@ export class SerializationService {
    * Exclude fields from a single object
    */
   static excludeFieldsFromObject(obj, excludeFields) {
-    if (!obj || typeof obj !== 'object') {
+    if (!obj || typeof obj !== 'object' || isDateValue(obj)) {
       return obj;
     }
 
