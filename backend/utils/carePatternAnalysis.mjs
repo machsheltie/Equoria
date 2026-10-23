@@ -34,21 +34,45 @@ export async function analyzeCarePatterns(horseId, evaluationDate = new Date()) 
   // Get horse details
   const horse = await prisma.horse.findUnique({
     where: { id: horseId },
-    include: {
-      groomInteractions: {
-        where: {
-          createdAt: {
-            gte: new Date(evaluationDate.getTime() - MS_PER_WEEK), // Last 7 days
-          },
-        },
-        orderBy: { createdAt: 'asc' },
-      },
-    },
+    include: { groomInteractions: careWindowInteractions(evaluationDate) },
   });
 
   if (!horse) {
     throw new Error(`Horse with ID ${horseId} not found`);
   }
+
+  return analyzeLoadedCarePatterns(horse, evaluationDate);
+}
+
+/**
+ * The groom-interaction window the analysis reads: the last 7 days, oldest
+ * first. Shared by the single read above and the weekly batch read
+ * (flagEvaluationEngine.batchEvaluateFlags, Equoria-cmw85.38) so both see the
+ * same rows.
+ * @param {Date} evaluationDate
+ * @returns {Object} Prisma relation arguments for `groomInteractions`
+ */
+export function careWindowInteractions(evaluationDate) {
+  return {
+    where: {
+      createdAt: {
+        gte: new Date(evaluationDate.getTime() - MS_PER_WEEK), // Last 7 days
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  };
+}
+
+/**
+ * Analyze care patterns for a horse already read with its care-window
+ * interactions (Equoria-cmw85.38: the weekly batch reads many horses at once).
+ * Pure: no database access.
+ * @param {Object} horse - { id, dateOfBirth, bondScore, stressLevel, groomInteractions }
+ * @param {Date} evaluationDate
+ * @returns {Object} Care pattern analysis results
+ */
+export function analyzeLoadedCarePatterns(horse, evaluationDate = new Date()) {
+  const horseId = horse.id;
 
   // Equoria-z183: Age in canonical game-years/game-days (1 game-week = 1
   // game-year, date-only, Eastern game clock) via the single-source-of-truth helper, NOT
@@ -341,6 +365,7 @@ function calculateAverageBondChange(interactions) {
 
 export default {
   analyzeCarePatterns,
+  analyzeLoadedCarePatterns,
   analyzeConsistentCare,
   analyzeNoveltyExposure,
   analyzeStressManagement,
