@@ -5,7 +5,7 @@
  * level progression and progress calculations.
  *
  * 📋 BUSINESS RULES TESTED:
- * - USER level progression: 200 XP per level (Level 1: 0-199 XP, Level 2: 200-299 XP, etc.)
+ * - USER level progression: 100 XP per level (Level 1: 0-99 XP, Level 2: 100-199 XP, etc.; Equoria-smqn7)
  * - HORSE levels: Separate system using base stats + traits + training (Level 1: 0-50, Level 2: 51-100, etc.)
  * - HORSE XP: Planned system for stat allocation (100 Horse XP = +1 stat point, separate from horse levels)
  * - Automatic user level-up when gaining XP through activities
@@ -215,8 +215,8 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       username: testUser.username,
       level: 1,
       xp: 0,
-      xpToNextLevel: 200, // Level 2 requires 200 XP total
-      xpForNextLevel: 200, // Level 2 threshold
+      xpToNextLevel: 100, // Level 2 begins at 100 XP (floor(xp/100)+1, Equoria-smqn7)
+      xpForNextLevel: 100, // Level 2 threshold
       xpForCurrentLevel: 0, // Level 1 threshold (0 XP)
       progressPercentage: 0,
       totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
@@ -297,10 +297,10 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       username: testUser.username,
       level: 1,
       xp: 5, // +5 XP from training
-      xpToNextLevel: 195, // 200 - 5 = 195
-      xpForNextLevel: 200,
+      xpToNextLevel: 95, // 100 - 5 = 95
+      xpForNextLevel: 100,
       xpForCurrentLevel: 0,
-      progressPercentage: 3, // 5/200 * 100 = 2.5% rounded to 3%
+      progressPercentage: 5, // 5/100 * 100
       totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
       // userProgressStats.integration.test.mjs).
@@ -362,21 +362,21 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
     expect(afterAccumulationResponse.body.data.level).toBe(1);
     expect(afterAccumulationResponse.body.data.xp).toBe(55); // 5 + (10 * 5) = 55
-    expect(afterAccumulationResponse.body.data.xpToNextLevel).toBe(145); // 200 - 55 = 145
-    expect(afterAccumulationResponse.body.data.progressPercentage).toBe(28); // 55/200 * 100 = 27.5% rounded to 28%
+    expect(afterAccumulationResponse.body.data.xpToNextLevel).toBe(45); // 100 - 55 = 45
+    expect(afterAccumulationResponse.body.data.progressPercentage).toBe(55); // 55/100 * 100
 
     // ────────────────────────────────────────────────────────────────────
     // STEP 4: Level-Up Detection & Multi-Level Progression
     // ────────────────────────────────────────────────────────────────────
     // Level up when reaching XP threshold.
     // Simulate reaching level-up threshold (like after many competitions):
-    // manually set user to 195 XP to test level-up with one more training session.
+    // manually set user to 95 XP to test level-up with one more training session.
     await prisma.user.update({
       where: { id: testUser.id },
-      data: { xp: 195, level: 1 },
+      data: { xp: 95, level: 1 },
     });
 
-    // One more training to trigger level-up (195 + 5 = 200 XP)
+    // One more training to trigger level-up (95 + 5 = 100 XP)
     const lastLogBeforeLevelUp = await prisma.trainingLog.findFirst({
       where: { horseId: testHorse.id },
       orderBy: { trainedAt: 'desc' },
@@ -421,11 +421,11 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       userId: testUser.id,
       username: testUser.username,
       level: 2, // Leveled up!
-      xp: 200, // Total XP
-      xpToNextLevel: 100, // Need 300 total for level 3, so 300 - 200 = 100
-      xpForNextLevel: 300, // Level 3 requires 300 XP total
-      xpForCurrentLevel: 200, // Level 2 required 200 XP total
-      progressPercentage: 0, // 0/200 progress toward level 3
+      xp: 100, // Total XP
+      xpToNextLevel: 100, // Need 200 total for level 3, so 200 - 100 = 100
+      xpForNextLevel: 200, // Level 3 requires 200 XP total
+      xpForCurrentLevel: 100, // Level 2 required 100 XP total
+      progressPercentage: 0, // 0/100 progress toward level 3
       totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
       // userProgressStats.integration.test.mjs).
@@ -438,12 +438,12 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     // Handle multiple level gains in single XP award.
     // Manually award large XP amount to test multi-level progression.
     // Simulate earning lots of XP from competitions (like hundreds of shows).
-    // Current: 200 XP (Level 2), Award: 150 XP = 350 XP total.
-    // Level 2: 200-299 XP, Level 3: 300-399 XP, Level 4: 400-499 XP.
-    // So 350 XP should be Level 3 (300-399 XP range).
+    // Current: 100 XP (Level 2), Award: 250 XP = 350 XP total.
+    // Level 3: 200-299 XP, Level 4: 300-399 XP, Level 5: 400-499 XP.
+    // So 350 XP should be Level 4 (300-399 XP range).
     await prisma.user.update({
       where: { id: testUser.id },
-      data: { xp: 350, level: 3 }, // Simulate the addXpToUser logic
+      data: { xp: 350, level: 4 }, // Simulate the addXpToUser logic
     });
 
     // Invalidate caches after manual database update to ensure API returns fresh data
@@ -459,11 +459,11 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     expect(afterMultiLevelResponse.body.data).toEqual({
       userId: testUser.id,
       username: testUser.username,
-      level: 3,
+      level: 4,
       xp: 350,
-      xpToNextLevel: 50, // Need 400 for level 4, so 400 - 350 = 50
+      xpToNextLevel: 50, // Need 400 for level 5, so 400 - 350 = 50
       xpForNextLevel: 400,
-      xpForCurrentLevel: 300, // Level 3 threshold
+      xpForCurrentLevel: 300, // Level 4 threshold
       progressPercentage: 50, // 50/100 * 100 = 50% progress toward level 4
       totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
@@ -483,7 +483,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       include: { xpEvents: true },
     });
 
-    expect(finalUser.level).toBe(3);
+    expect(finalUser.level).toBe(4);
     expect(finalUser.xp).toBe(350); // Updated to match our manual setting
 
     // Verify XP events structure (may be 0 due to training issues)
@@ -502,8 +502,8 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     // Validate all progress calculations
     expect(finalProgressData.level).toBe(finalUser.level);
     expect(finalProgressData.xp).toBe(finalUser.xp);
-    expect(finalProgressData.xpForCurrentLevel).toBe(300); // Level 3 threshold
-    expect(finalProgressData.xpForNextLevel).toBe(400); // Level 4 threshold
+    expect(finalProgressData.xpForCurrentLevel).toBe(300); // Level 4 threshold
+    expect(finalProgressData.xpForNextLevel).toBe(400); // Level 5 threshold
     expect(finalProgressData.xpToNextLevel).toBe(50); // 400 - 350
     expect(finalProgressData.progressPercentage).toBe(50); // 50/100 * 100
 
@@ -523,10 +523,10 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     });
 
     // Level 3 should require 300 XP, user has 350 XP
-    expect(finalUserForRules.level).toBe(3);
+    expect(finalUserForRules.level).toBe(4);
     expect(finalUserForRules.xp).toBe(350);
-    expect(finalUserForRules.xp).toBeGreaterThanOrEqual(300); // Level 3 threshold
-    expect(finalUserForRules.xp).toBeLessThan(400); // Should not be level 4 yet
+    expect(finalUserForRules.xp).toBeGreaterThanOrEqual(300); // Level 4 threshold
+    expect(finalUserForRules.xp).toBeLessThan(400); // Should not be level 5 yet
   });
 
   // Equoria-klq4v: the API-consistency / edge-case scenarios (former STEP 6)

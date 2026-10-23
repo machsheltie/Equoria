@@ -31,7 +31,12 @@
  * - Consistent response format across all endpoints
  */
 
-import { getUserProgress, getUserById, updateUser } from '../services/userModelService.mjs';
+import {
+  getUserProgress,
+  getUserById,
+  levelProgress,
+  updateUser,
+} from '../services/userModelService.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -90,11 +95,8 @@ export const getUserProgressAPI = async (req, res, next) => {
           return null;
         }
 
-        // Calculate progress percentage within current level
-        const xpForCurrentLevel = progressData.level === 1 ? 0 : progressData.level * 100;
-        const xpProgressInLevel = progressData.xp - xpForCurrentLevel;
-        const xpNeededForLevel = progressData.level === 1 ? 200 : 100;
-        const progressPercentage = Math.round((xpProgressInLevel / xpNeededForLevel) * 100);
+        // Progress inside the level, from the same curve the level-up uses (Equoria-smqn7).
+        const display = levelProgress(progressData.xp);
 
         // Equoria-oey96.2: Game-Statistics fields the ProfilePage cards read.
         // Previously omitted, so the frontend resolved them undefined → 0 for
@@ -115,8 +117,8 @@ export const getUserProgressAPI = async (req, res, next) => {
           xp: progressData.xp,
           xpToNextLevel: progressData.xpToNextLevel,
           xpForNextLevel: progressData.xpForNextLevel,
-          xpForCurrentLevel,
-          progressPercentage: Math.max(0, Math.min(100, progressPercentage)),
+          xpForCurrentLevel: display.xpForCurrentLevel,
+          progressPercentage: Math.max(0, Math.min(100, display.progressPercentage)),
           totalEarnings: user.money,
           // Equoria-oey96.2 additive Game-Statistics fields:
           totalHorses,

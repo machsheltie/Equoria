@@ -14,29 +14,41 @@ const DEFAULT_XP_PER_LEVEL = 100;
 const DEFAULT_XP_REASON = 'XP award';
 
 /**
- * Calculates the experience points threshold for a specific level.
- * @param {number} level - The level to calculate the threshold for.
- * @returns {number} The experience points threshold for the given level.
+ * The canonical stored level for a given cumulative xp (owner decision
+ * 2026-07-07, Equoria-smqn7 option A): `floor(xp / 100) + 1`. A new player is
+ * level 1 at 0 xp, level 2 at 100 xp, level 3 at 200 xp. This is the ONE curve:
+ * the level-up in `addXpToUserCore`, the progress display (`levelProgress`) and
+ * the backfill script all read it. Deriving level from xp (instead of a re-read)
+ * is also what makes the atomic award correct under concurrency.
+ *
+ * @param {number} xp - Cumulative user xp.
+ * @returns {number} The level implied by that xp (never below 1).
  */
-function xpThreshold(level) {
-  return DEFAULT_XP_PER_LEVEL * level;
+function levelForXp(xp) {
+  return Math.floor(Math.max(0, xp) / DEFAULT_XP_PER_LEVEL) + 1;
 }
 
 /**
- * The canonical stored level for a given cumulative xp.
- *
- * Mirrors the historical level-up loop (`while (xp >= xpThreshold(level + 1)) level++`)
- * evaluated from the default starting level 1: a brand-new user is level 1 at 0 xp,
- * and reaching the next level requires `xp >= 100 * (level + 1)`. That makes level 1
- * span xp 0..199 and every level k >= 2 span [100k, 100k + 99]. Closed form:
- * `max(1, floor(xp / 100))`. Deriving level from xp this way (instead of a re-read)
- * is what makes the atomic award in `addXpToUserCore` correct under concurrency.
+ * The progress display for a cumulative xp, from the same curve as levelForXp.
+ * xpForCurrentLevel / xpForNextLevel are the total xp at which the level
+ * starts / the next one begins; progressPercentage is 0-99 within the level.
  *
  * @param {number} xp - Cumulative user xp.
- * @returns {number} The level implied by that xp.
+ * @returns {{level:number, xpForCurrentLevel:number, xpForNextLevel:number,
+ *   xpToNextLevel:number, progressPercentage:number}}
  */
-function levelForXp(xp) {
-  return Math.max(1, Math.floor(xp / DEFAULT_XP_PER_LEVEL));
+function levelProgress(xp) {
+  const safeXp = Math.max(0, xp);
+  const level = levelForXp(safeXp);
+  const xpForCurrentLevel = (level - 1) * DEFAULT_XP_PER_LEVEL;
+  const xpForNextLevel = level * DEFAULT_XP_PER_LEVEL;
+  return {
+    level,
+    xpForCurrentLevel,
+    xpForNextLevel,
+    xpToNextLevel: xpForNextLevel - safeXp,
+    progressPercentage: Math.round(((safeXp - xpForCurrentLevel) / DEFAULT_XP_PER_LEVEL) * 100),
+  };
 }
 
 /**
@@ -396,13 +408,13 @@ async function getUserProgress(userId) {
       throw new Error('User not found.');
     }
 
-    const threshold = xpThreshold(user.level + 1);
+    const progress = levelProgress(user.xp);
     return {
       userId: user.id,
       level: user.level,
       xp: user.xp,
-      xpToNextLevel: threshold - user.xp,
-      xpForNextLevel: threshold,
+      xpToNextLevel: progress.xpToNextLevel,
+      xpForNextLevel: progress.xpForNextLevel,
     };
   } catch (error) {
     throw new DatabaseError(`Progress fetch failed: ${error.message}`);
@@ -463,4 +475,6 @@ export {
   getUserProgress,
   getUserStats,
   getStableLevel,
+  levelForXp,
+  levelProgress,
 };

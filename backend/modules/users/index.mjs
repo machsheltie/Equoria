@@ -24,6 +24,8 @@ export {
   getStableLevel,
   getUserById,
   getUserWithHorses,
+  levelForXp,
+  levelProgress,
 } from './services/userModelService.mjs';
 
 // Operator erasure (GDPR). No production importer outside this module; consumed by other

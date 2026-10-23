@@ -18,7 +18,7 @@
  * FIX (Equoria-jvi3u, per the oey96.4 show-xp-award architecture §4.2): a
  * tx-aware core addXpToUserCore(db, userId, amount, reason) —
  *   db.user.update({ xp: { increment: amount } })   (returns the new xp)
- *   -> targetLevel = max(1, floor(newXp / 100))  (derived from the RETURNED value)
+ *   -> targetLevel = floor(newXp / 100) + 1  (derived from the RETURNED value)
  *   -> db.user.updateMany({ where: { id, level: { lt: target } }, data: { level: target } })
  *      (CONDITIONAL — a stale concurrent writer can never LOWER the level)
  *   -> db.xpEvent.create(...)                        (same client / same tx)
@@ -30,7 +30,7 @@
  * INVARIANTS asserted:
  *   - User.xp == base + SUM(award amounts) (no lost updates under concurrency).
  *   - User.xp == SUM(XpEvent.amount) when all xp came from awards.
- *   - User.level is monotone non-decreasing and equals max(1, floor(xp/100)).
+ *   - User.level is monotone non-decreasing and equals floor(xp/100) + 1.
  *   - A failure at the audit-create boundary rolls the XP write back (atomicity).
  *
  * Real DB only, no mocks, no bypass headers. Fixtures are TestFixture- named;
@@ -65,7 +65,7 @@ async function makeUser(xp) {
       firstName: 'Jvi3u',
       lastName: 'Tester',
       money: 1000,
-      xp, // level is left at its default (1); max(1, floor(xp/100)) is the invariant
+      xp, // level is left at its default (1); floor(xp/100) + 1 is the invariant
     },
   });
   createdUserIds.push(user.id);
@@ -101,7 +101,7 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
 
     // XP conservation: all N increments applied (pre-fix: last-writer-wins loses most).
     expect(after.xp).toBe(CONCURRENCY * XP_EACH); // 50
-    // Level stays 1 (max(1, floor(50/100)) == 1).
+    // Level stays 1 (floor(50/100) + 1 == 1).
     expect(after.level).toBe(1);
     // Audit consistency: one event per award, and xp == SUM(events) (base was 0).
     expect(events.length).toBe(CONCURRENCY); // 10
@@ -110,8 +110,9 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
   }, 120000);
 
   it('SENTINEL: concurrent awards raise level exactly once when crossing a threshold', async () => {
-    // Base xp 195 -> level 1 (max(1, floor(195/100)) == 1). +50 -> 245 -> level 2.
-    const user = await makeUser(195);
+    // Base xp 70 -> level 1 (floor(70/100) + 1 == 1). +50 -> 120 -> level 2.
+    // (Curve floor(xp/100)+1, Equoria-smqn7; the base was 195 on the old curve.)
+    const user = await makeUser(70);
 
     const results = await Promise.all(
       Array.from({ length: CONCURRENCY }, () => addXpToUser(user.id, XP_EACH, 'TestFixture-jvi3u-levelup')),
@@ -124,8 +125,8 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
     });
     const events = await prisma.xpEvent.findMany({ where: { userId: user.id } });
 
-    expect(after.xp).toBe(195 + CONCURRENCY * XP_EACH); // 245
-    // Threshold crossed exactly once: 195 (L1) -> 245 (L2). Never over/under-shoots.
+    expect(after.xp).toBe(70 + CONCURRENCY * XP_EACH); // 120
+    // Threshold crossed exactly once: 70 (L1) -> 120 (L2). Never over/under-shoots.
     expect(after.level).toBe(2);
     expect(events.length).toBe(CONCURRENCY); // 10
     // Exactly one award reports the level-up.
@@ -153,13 +154,13 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
   }, 120000);
 
   it('happy path preserved: a single award increments xp, crosses the level threshold, writes one event with the reason', async () => {
-    // 195 (L1) -> 205 (L2): the sole level-1 span is xp 0..199, so this crosses.
-    const user = await makeUser(195);
+    // 95 (L1) -> 105 (L2): level 1 spans xp 0..99, so this crosses.
+    const user = await makeUser(95);
 
     const result = await addXpToUser(user.id, 10, 'TestFixture-jvi3u-single');
 
     expect(result.success).toBe(true);
-    expect(result.currentXP).toBe(205);
+    expect(result.currentXP).toBe(105);
     expect(result.currentLevel).toBe(2);
     expect(result.leveledUp).toBe(true);
     expect(result.levelsGained).toBe(1);
@@ -169,7 +170,7 @@ describe('INTEGRATION: addXpToUser atomic XP award (Equoria-jvi3u)', () => {
       where: { id: user.id },
       select: { xp: true, level: true },
     });
-    expect(after.xp).toBe(205);
+    expect(after.xp).toBe(105);
     expect(after.level).toBe(2);
 
     const events = await prisma.xpEvent.findMany({ where: { userId: user.id } });

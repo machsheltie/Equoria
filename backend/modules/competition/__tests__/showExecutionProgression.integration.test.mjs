@@ -106,10 +106,10 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
         firstName: 'Award',
         lastName: 'Owner',
         money: 0,
-        // Start at 180 xp / level 1 so the +45 total user XP crosses the level
-        // boundary (levelForXp(225) = 2) — a real level-up assertion, not a
-        // stuck-at-1 no-op.
-        xp: 180,
+        // Start at 80 xp / level 1 so the +45 total user XP crosses the level
+        // boundary (levelForXp(125) = 2 on the floor(xp/100)+1 curve, Equoria-smqn7)
+        // — a real level-up assertion, not a stuck-at-1 no-op.
+        xp: 80,
         level: 1,
       },
     });
@@ -219,7 +219,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
     }
 
     // (b) User XP: owner gains 20+15+10+0 = 45; three XpEvent rows (top-3 only);
-    //     level climbs 1 -> 2 (levelForXp(225) = 2).
+    //     level climbs 1 -> 2 (levelForXp(125) = 2).
     const ownerAfter = await prisma.user.findUnique({
       where: { id: owner.id },
       select: { money: true, xp: true, level: true },

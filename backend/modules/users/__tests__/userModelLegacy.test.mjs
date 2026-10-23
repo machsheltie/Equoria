@@ -217,7 +217,8 @@ describe('👤 User Model — Database Operations & Business Logic (real DB)', (
     it('adds XP without leveling up', async () => {
       const user = await makeUser('xp-nolevel', { xp: 50, level: 1 });
       const result = await addXpToUser(user.id, 20);
-      // xpThreshold(level+1) = 100*2 = 200; 70 < 200 → no level up.
+      // Curve floor(xp/100)+1 (owner decision 2026-07-07, Equoria-smqn7); was
+      // 200 xp for level 2. 70 < 100 → no level up.
       expect(result).toMatchObject({
         success: true,
         currentXP: 70,
@@ -230,15 +231,15 @@ describe('👤 User Model — Database Operations & Business Logic (real DB)', (
 
     it('adds XP and levels up', async () => {
       const user = await makeUser('xp-levelup', { xp: 50, level: 1 });
-      const result = await addXpToUser(user.id, 150);
-      // 50 + 150 = 200 >= xpThreshold(2)=200 → level 2.
+      const result = await addXpToUser(user.id, 50);
+      // 50 + 50 = 100 → level 2 (floor(100/100)+1); the old curve needed 200.
       expect(result).toMatchObject({
         success: true,
-        currentXP: 200,
+        currentXP: 100,
         currentLevel: 2,
         leveledUp: true,
         levelsGained: 1,
-        xpGained: 150,
+        xpGained: 50,
       });
     });
 
@@ -267,8 +268,8 @@ describe('👤 User Model — Database Operations & Business Logic (real DB)', (
         userId: user.id,
         level: 1,
         xp: 50,
-        xpToNextLevel: 150, // xpThreshold(2)=200 - 50
-        xpForNextLevel: 200,
+        xpToNextLevel: 50, // level 2 begins at 100 xp, 100 - 50
+        xpForNextLevel: 100,
       });
     });
 
