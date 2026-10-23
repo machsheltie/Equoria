@@ -19,22 +19,23 @@ interface ErrorBoundaryProps {
    * What to show once a descendant has thrown. A function receives `reset`,
    * which clears the error so the children render again (a "Try Again" control).
    */
-  fallback: ReactNode | ((api: { reset: () => void }) => ReactNode);
+  fallback: ReactNode | ((api: { reset: () => void; error: unknown }) => ReactNode);
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
+  error: unknown;
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false };
+  state: ErrorBoundaryState = { hasError: false, error: null };
 
-  static getDerivedStateFromError(): ErrorBoundaryState {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
+    return { hasError: true, error };
   }
 
   reset = (): void => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, error: null });
   };
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
@@ -46,7 +47,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render(): ReactNode {
     if (this.state.hasError) {
       const { fallback } = this.props;
-      return typeof fallback === 'function' ? fallback({ reset: this.reset }) : fallback;
+      return typeof fallback === 'function'
+        ? fallback({ reset: this.reset, error: this.state.error })
+        : fallback;
     }
     return this.props.children;
   }

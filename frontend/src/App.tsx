@@ -51,7 +51,9 @@ const StewardsOfficePage = lazy(() => import('./pages/StewardsOfficePage'));
 const queryClient = createAppQueryClient();
 
 const App = () => (
-  <ErrorBoundary fallback={({ reset }) => <AppCrashFallback onRetry={reset} />}>
+  <ErrorBoundary
+    fallback={({ reset, error }) => <AppCrashFallback onRetry={reset} error={error} />}
+  >
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
