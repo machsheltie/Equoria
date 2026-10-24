@@ -395,6 +395,17 @@ describe('Equoria-yny4 — horse.age treated as game-years', () => {
     expect(ids).not.toContain('enrichment');
   });
 
+  it('enrichment is excluded at exactly age 3 (Equoria-fjgzp: grooms do enrichment for horses under 3)', () => {
+    // Old contract: `horse.age > 3` allowed enrichment at exactly 3.
+    // Owner ruling 2026-10-14: enrichment is for horses UNDER 3.
+    const threeYearOld = { id: 'sentinel', age: 3, bondScore: 0, stressLevel: 10 };
+    const result = getAvailableInteractions(
+      { id: 'g', personality: 'gentle', skillLevel: 'expert', speciality: 'foalCare', sessionRate: 20 },
+      threeYearOld,
+    );
+    expect(result.map(i => i.id)).not.toContain('enrichment');
+  });
+
   it('age=2 game-years (would have been 2 days under legacy semantics) keeps enrichment', () => {
     // Under legacy day-semantics: 2 days < 1095 → enrichment available (right answer for wrong reason).
     // Under game-year semantics: 2 game-years < 3 → enrichment available (correct).

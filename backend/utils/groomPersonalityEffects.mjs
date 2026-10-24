@@ -223,7 +223,8 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
       }
 
       // Age-based bonuses (for playful personality with foals)
-      if (specialConditions.ageRange && horse.age) {
+      // Age 0 is a real age: a newborn qualifies (Equoria-fjgzp).
+      if (specialConditions.ageRange && horse.age !== null && horse.age !== undefined) {
         const [minAge, maxAge] = specialConditions.ageRange;
         if (horse.age >= minAge && horse.age <= maxAge) {
           personalityBonuses.specialConditionMet = true;

@@ -282,12 +282,13 @@ describe('calculatePersonalityEffects — additional branches', () => {
     expect(result.personalityEffects.specialConditionMet).toBe(false);
   });
 
-  it('playful + horse age 0: ageRange branch is false when age is 0 (falsy)', () => {
+  it('playful + horse age 0: a newborn gets the age bonus (Equoria-fjgzp; age 0 is not falsy-skipped)', () => {
+    // Old contract: `specialConditions.ageRange && horse.age` skipped age 0.
     const groom = { personality: 'playful' };
     const newbornHorse = { traits: [], age: 0 };
     const result = calculatePersonalityEffects(groom, newbornHorse, 'grooming_game', baseEffects);
-    // specialConditions.ageRange && horse.age → false when age=0 (falsy)
-    expect(result.personalityEffects.specialConditionMet).toBe(false);
+    expect(result.personalityEffects.specialConditionMet).toBe(true);
+    expect(result.personalityEffects.bonusesApplied).toContain('age_match');
   });
 
   it('null groom triggers catch block and returns baseEffects unchanged', () => {

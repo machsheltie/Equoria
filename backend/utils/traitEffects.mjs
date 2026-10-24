@@ -95,7 +95,6 @@ const traitEffects = {
     // Training effects
     trainingXpModifier: 0.25, // 25% more XP from training
     statGainChanceModifier: 0.15, // 15% higher chance of stat gains
-    trainingTimeReduction: 0.1, // 10% faster training sessions
 
     // Competition effects
     competitionScoreModifier: 0.03, // +3% to final score

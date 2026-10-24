@@ -266,10 +266,12 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
       },
     });
 
+    // Equoria-fjgzp: ageInDays is game days (7 = age 1, 14 = age 2, 21 = age 3), so the
+    // stage windows are 1/2/4/7/14/21 days. Old contract: 30/90/180/365/730/1095.
     // 7 entries on thHorse — ageInDays spread to hit every getAgeStage branch
     const entries = [
       {
-        ageInDays: 15,
+        ageInDays: 0,
         traitName: 'Calm',
         isEpigenetic: true,
         sourceType: 'groom',
@@ -277,7 +279,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
         influenceScore: 5,
       },
       {
-        ageInDays: 60,
+        ageInDays: 1,
         traitName: 'Brave',
         isEpigenetic: false,
         sourceType: 'groom',
@@ -285,7 +287,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
         influenceScore: 4,
       },
       {
-        ageInDays: 120,
+        ageInDays: 3,
         traitName: 'Curious',
         isEpigenetic: false,
         sourceType: 'environmental',
@@ -293,7 +295,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
         influenceScore: 3,
       },
       {
-        ageInDays: 200,
+        ageInDays: 5,
         traitName: 'Nervous',
         isEpigenetic: true,
         sourceType: 'groom',
@@ -301,7 +303,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
         influenceScore: 2,
       },
       {
-        ageInDays: 500,
+        ageInDays: 10,
         traitName: 'Skittish',
         isEpigenetic: true,
         sourceType: 'genetic',
@@ -309,7 +311,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
         influenceScore: 1,
       },
       {
-        ageInDays: 800,
+        ageInDays: 15,
         traitName: 'Anxious',
         isEpigenetic: true,
         sourceType: 'milestone',
@@ -317,7 +319,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
         influenceScore: 3,
       },
       {
-        ageInDays: 1200,
+        ageInDays: 25,
         traitName: 'Focused',
         isEpigenetic: false,
         sourceType: 'environmental',

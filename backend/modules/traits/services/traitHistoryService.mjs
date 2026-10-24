@@ -323,28 +323,30 @@ export async function analyzeTraitPatterns(horseIds) {
  * elapsed-calendar-day count captured at log time, the fe9k-documented
  * "pre-computed days" case), aligned with the foalAgeUtils.mjs elapsed-time
  * model. Produces a developmentalStages COUNT for a summary (display/
- * aggregation only). Intentionally NOT game-year boundaries — do not
- * re-derive to days/7 or the 365/730/1095 buckets become unreachable.
+ * aggregation only).
  * @param {number} ageInDays - Age in elapsed calendar days
  * @returns {string} Age stage name
  */
 function getAgeStage(ageInDays) {
-  if (ageInDays < 30) {
+  // Equoria-fjgzp: the stored ageInDays is game days (one game week is one game
+  // year), so the old 365 / 730 / 1095 year anniversaries are 7 / 14 / 21 and
+  // the finer early windows scale with them. Age 3 (21 days) is 'mature'.
+  if (ageInDays < 1) {
     return 'imprinting';
   }
-  if (ageInDays < 90) {
+  if (ageInDays < 2) {
     return 'socialization';
   }
-  if (ageInDays < 180) {
+  if (ageInDays < 4) {
     return 'fear_period';
   }
-  if (ageInDays < 365) {
+  if (ageInDays < 7) {
     return 'juvenile';
   }
-  if (ageInDays < 730) {
+  if (ageInDays < 14) {
     return 'adolescent';
   }
-  if (ageInDays < 1095) {
+  if (ageInDays < 21) {
     return 'young_adult';
   }
   return 'mature';

@@ -481,8 +481,9 @@ function canPerformInteraction(groom, horse, interaction) {
 
   // Age-based restrictions
   // Equoria-yny4: horse.age is game-years (post Equoria-son6). Enrichment
-  // is for horses 0-3 game-years (was > 1095 days pre-migration).
-  if (interaction.category === 'enrichment' && horse.age > 3) {
+  // is for horses UNDER 3 game-years (owner ruling 2026-10-14; Equoria-fjgzp:
+  // age 3 itself is excluded).
+  if (interaction.category === 'enrichment' && horse.age >= 3) {
     return false;
   }
 

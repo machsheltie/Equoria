@@ -26,7 +26,9 @@ export const careGapDays = 7; // Stormtouched — missed-care-week gap (PRD-04 �
 export const stressSpikeThreshold = 5; // Stormtouched — groomInteraction stressChange spike
 export const failedMilestoneScore = 50; // Shadow-Follower — failed/missed milestone score
 export const age2Days = 730; // late-bond boundary (after age 2)
-export const age3Days = 1095; // Ghostwalker — youth window (first 3 years)
+// Ghostwalker — youth window: game age 3 = 21 game days (a game week is a game year),
+// matching the stored ageInDays on bond logs (Equoria-fjgzp).
+export const age3Days = 21;
 export const earlyBondMax = 50; // Shadow-Follower — early bond must be below this
 export const lateBondMin = 70; // Shadow-Follower — late bond must reach this
 export const lowYouthBondMax = 30; // Ghostwalker — youth bond stays below this

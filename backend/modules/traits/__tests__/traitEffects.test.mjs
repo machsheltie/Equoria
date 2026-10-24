@@ -209,7 +209,8 @@ describe('traitEffects — exact per-trait definitions (merged from legacy backe
       const e = getTraitEffects('intelligent');
       expect(e.trainingXpModifier).toBe(0.25);
       expect(e.statGainChanceModifier).toBe(0.15);
-      expect(e.trainingTimeReduction).toBe(0.1);
+      // Equoria-fjgzp: no cooldown effect (one training per horse per week).
+      expect(e.trainingTimeReduction).toBeUndefined();
       expect(e.competitionScoreModifier).toBe(0.03);
       expect(e.problemSolvingBonus).toBe(true);
       expect(e.disciplineModifiers['Dressage']).toBe(0.06);
