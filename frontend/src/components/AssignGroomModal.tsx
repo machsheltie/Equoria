@@ -36,6 +36,8 @@ import {
   GameDialogTitle,
 } from '@/components/ui/game';
 import { Checkbox, Select, Textarea } from '@/components/ui/form';
+import { skillLevelLabel } from '@/lib/staffLabels';
+import { groomSpecialtyTitle } from '@/lib/groomSpecialtyLabels';
 
 // Type definitions
 interface Groom {
@@ -190,11 +192,6 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   // Get selected groom details
   const selectedGroom = availableGrooms.find((g) => g.id === selectedGroomId);
 
-  // Format specialty for display
-  const formatSpecialty = (specialty: string): string => {
-    return specialty.replace(/([A-Z])/g, ' $1').trim();
-  };
-
   return (
     <GameDialog
       open={isOpen}
@@ -285,14 +282,14 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                               <SynergyBadge groomId={groom.id} horseId={horseId} />
                             ) : null}
                             <span className="text-sm text-role-secondary capitalize">
-                              {groom.skillLevel}
+                              {skillLevelLabel(groom.skillLevel)}
                             </span>
                           </div>
                         </div>
                         <div className="text-sm text-role-secondary space-y-1">
                           <p>
                             <span className="font-medium">Specialty:</span>{' '}
-                            <span className="capitalize">{formatSpecialty(groom.specialty)}</span>
+                            <span>{groomSpecialtyTitle(groom.specialty)}</span>
                           </p>
                           <p>
                             <span className="font-medium">Experience:</span> {groom.experience}{' '}

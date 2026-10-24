@@ -13,6 +13,7 @@
  * - Stable-wide analysis and recommendations
  */
 
+import { labelWords, traitSourceLabel } from '../../../utils/playerLabels.mjs';
 import logger from '../../../utils/logger.mjs';
 import _prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateEnvironmentalReport } from './environmentalTriggerSystem.mjs';
@@ -84,9 +85,9 @@ export function buildTraitTimeline(traitHistory, interactions) {
     timeline.push({
       date: log.timestamp,
       type: 'trait_discovery',
-      event: `Discovered trait: ${log.traitName}`,
-      method: log.sourceType,
-      context: log.sourceId || 'unknown',
+      event: `Discovered trait: ${labelWords(log.traitName)}`,
+      // Authored words, never the stored sourceType / sourceId (Equoria-bdpvw).
+      method: traitSourceLabel(log.sourceType),
     });
   });
 
@@ -96,7 +97,7 @@ export function buildTraitTimeline(traitHistory, interactions) {
       timeline.push({
         date: interaction.createdAt,
         type: 'significant_interaction',
-        event: `${interaction.interactionType}: ${interaction.taskType}`,
+        event: `${labelWords(interaction.interactionType)}: ${labelWords(interaction.taskType)}`,
         groom: interaction.groom?.name,
         bondingChange: interaction.bondingChange,
         stressChange: interaction.stressChange,

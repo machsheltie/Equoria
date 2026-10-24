@@ -21,6 +21,7 @@ import GroomPersonalityBadge from './GroomPersonalityBadge';
 import GroomTaskPanel from './GroomTaskPanel';
 // Equoria-w1vq — surface temperament x personality synergy on the assignment card
 import { useGroomHorseSynergy } from '@/hooks/api/useGrooms';
+import { skillLevelLabel } from '@/lib/staffLabels';
 
 export interface GroomAssignment {
   id: number;
@@ -83,17 +84,6 @@ const SynergyChip: React.FC<{ groomId: number; horseId: number }> = ({ groomId, 
     </div>
   );
 };
-
-/** Skill level display label */
-function skillLabel(skillLevel: string): string {
-  const labels: Record<string, string> = {
-    novice: 'Novice',
-    intermediate: 'Intermediate',
-    expert: 'Expert',
-    master: 'Master',
-  };
-  return labels[skillLevel.toLowerCase()] ?? skillLevel;
-}
 
 /** Bond score progress bar */
 function BondScoreBar({ score }: { score: number }) {
@@ -219,7 +209,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
 
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="text-xs text-slate-400 capitalize" data-testid="groom-skill-level">
-                {skillLabel(assignment.skillLevel)}
+                {skillLevelLabel(assignment.skillLevel)}
               </span>
               <span className="text-[rgba(37,99,235,0.3)]">·</span>
               <span className="text-xs text-slate-400" data-testid="groom-experience">

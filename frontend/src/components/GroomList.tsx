@@ -39,6 +39,8 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
+import { skillLevelLabel } from '@/lib/staffLabels';
+import { groomSpecialtyTitle } from '@/lib/groomSpecialtyLabels';
 
 interface GroomListProps {
   onGroomHired?: (_groom: MarketplaceGroom) => void;
@@ -372,10 +374,10 @@ const GroomList: React.FC<GroomListProps> = ({
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="px-2 py-0.5 bg-[var(--role-info-bg)] text-[var(--role-info-text)] text-xs font-bold rounded-[var(--radius-sm)] uppercase border border-[var(--role-info-border)]">
-                          {groom.skillLevel}
+                          {skillLevelLabel(groom.skillLevel)}
                         </span>
                         <span className="px-2 py-0.5 bg-[var(--role-success-bg)] text-[var(--role-success-text)] text-xs font-bold rounded-[var(--radius-sm)] uppercase border border-[var(--role-success-border)]">
-                          {groom.specialty.replace(/([A-Z])/g, ' $1').trim()}
+                          {groomSpecialtyTitle(groom.specialty)}
                         </span>
                       </div>
                     </div>

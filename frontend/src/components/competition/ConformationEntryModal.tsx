@@ -35,6 +35,7 @@ import {
 } from '@/hooks/api/useConformationShow';
 import { useUserGrooms } from '@/hooks/api/useGrooms';
 import { useAuth } from '@/contexts/AuthContext';
+import { personalityLabel, skillLevelLabel } from '@/lib/staffLabels';
 
 export interface ConformationEntryModalProps {
   /** Whether the modal is open */
@@ -187,7 +188,7 @@ export default function ConformationEntryModal({
                 <option value="">Select a groom…</option>
                 {(grooms.data ?? []).map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.name} ({g.skillLevel} · {g.personality})
+                    {g.name} ({skillLevelLabel(g.skillLevel)} · {personalityLabel(g.personality)})
                   </option>
                 ))}
               </select>

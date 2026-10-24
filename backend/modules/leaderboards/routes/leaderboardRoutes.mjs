@@ -479,7 +479,7 @@ router.get(
     query('metric')
       .optional()
       .isIn(['wins', 'earnings', 'placements', 'average_placement'])
-      .withMessage('Metric must be one of: wins, earnings, placements, average_placement'),
+      .withMessage('That is not a ranking the leaderboards keep'),
     query('limit')
       .optional()
       .isInt({ min: 1, max: 100 })

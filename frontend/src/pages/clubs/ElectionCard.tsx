@@ -23,6 +23,15 @@ import { ClubQueryError } from './ClubQueryError';
 import { useVote, useNominate, useElectionResults } from '@/hooks/api/useClubs';
 import type { ClubElection, ElectionCandidate } from '@/lib/api-client';
 
+// Authored words for an election's stored status (Equoria-bdpvw): a player never
+// reads the stored value.
+const electionStatusLabel = (status: ClubElection['status']) => {
+  if (status === 'open') return 'Open';
+  if (status === 'upcoming') return 'Opens Soon';
+  if (status === 'closed') return 'Closed';
+  return 'Under Way';
+};
+
 const statusVariant = (status: ClubElection['status']) => {
   if (status === 'open') return 'success' as const;
   if (status === 'upcoming') return 'warning' as const;
@@ -48,7 +57,7 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
         <div>
           <span className="text-sm font-semibold text-role-primary">{election.position}</span>
           <GameBadge variant={statusVariant(election.status)} className="ml-2 text-[10px]">
-            {election.status}
+            {electionStatusLabel(election.status)}
           </GameBadge>
         </div>
         {isMember && election.status === 'open' && (

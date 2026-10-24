@@ -25,6 +25,7 @@ import {
   GameDialogBody,
 } from '@/components/ui/game/GameDialog';
 import type { HorseTrait } from '@/hooks/useHorseTraits';
+import { traitCategoryLabel, traitRarityLabel } from '@/lib/traitLabels';
 
 export interface LiveTraitDetailModalProps {
   isOpen: boolean;
@@ -90,13 +91,13 @@ const LiveTraitDetailModal: React.FC<LiveTraitDetailModalProps> = ({ isOpen, onC
             {/* Metadata */}
             <div className="flex flex-wrap gap-2">
               {trait.rarity && (
-                <span className="text-xs px-2 py-1 rounded-full bg-[rgba(37,99,235,0.15)] text-[rgb(160,175,200)] capitalize">
-                  Rarity: {trait.rarity}
+                <span className="text-xs px-2 py-1 rounded-full bg-[rgba(37,99,235,0.15)] text-[rgb(160,175,200)]">
+                  Rarity: {traitRarityLabel(trait.rarity)}
                 </span>
               )}
               {trait.category && (
-                <span className="text-xs px-2 py-1 rounded-full bg-[rgba(37,99,235,0.15)] text-[rgb(160,175,200)] capitalize">
-                  {trait.category}
+                <span className="text-xs px-2 py-1 rounded-full bg-[rgba(37,99,235,0.15)] text-[rgb(160,175,200)]">
+                  {traitCategoryLabel(trait.category)}
                 </span>
               )}
             </div>

@@ -70,7 +70,9 @@ export function requiredLenientInt(query, key, limit = INT4_MAX) {
 /** Own-key lookup so `__proto__` / `constructor` are rejected, never resolved. */
 export function ownValue(table, key, label) {
   if (!Object.hasOwn(table, key)) {
-    throw bad(`${label} must be one of: ${Object.keys(table).join(', ')}`);
+    // No list of the accepted keys: they are stored names, not words for players
+    // (Equoria-bdpvw).
+    throw bad(`That ${label} is not one the market offers`);
   }
   return table[key];
 }

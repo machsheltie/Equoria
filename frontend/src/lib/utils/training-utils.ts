@@ -246,6 +246,20 @@ export function formatDisciplineName(id: string): string {
 }
 
 /**
+ * A discipline as the player reads it, from any spelling a payload carries: the
+ * id ('showJumping', 'western-pleasure') or the display name ('Show Jumping').
+ * A value that is no discipline reads as a generic authored phrase, never the
+ * stored value (owner ruling 2026-10-23, Equoria-bdpvw).
+ */
+export function disciplineLabel(value: string | null | undefined): string {
+  const squash = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (typeof value !== 'string' || squash(value) === '') return 'Another Discipline';
+  const key = squash(value);
+  const match = DISCIPLINES.find((d) => squash(d.id) === key || squash(d.name) === key);
+  return match?.name ?? 'Another Discipline';
+}
+
+/**
  * Calculate expected score gain based on base gain and trait modifiers
  *
  * @param baseGain - Base score gain (+5 typically)

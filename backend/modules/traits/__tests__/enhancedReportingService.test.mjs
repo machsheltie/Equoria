@@ -163,7 +163,8 @@ describe('buildTraitTimeline', () => {
     const timeline = buildTraitTimeline([log], []);
     expect(timeline).toHaveLength(1);
     expect(timeline[0].type).toBe('trait_discovery');
-    expect(timeline[0].event).toContain('curious');
+    // Equoria-bdpvw: the event names the trait in authored words, not the stored name.
+    expect(timeline[0].event).toContain('Curious');
   });
 
   it('adds significant_interaction only when |bondingChange| > 2', () => {

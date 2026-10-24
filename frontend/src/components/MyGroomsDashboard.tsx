@@ -50,8 +50,9 @@ import {
   ageLabel,
   feeForGroom as feeForGroomIn,
   filterAndSortGrooms,
-  formatSpecialty,
 } from './groom/myGroomsRoster';
+import { skillLevelLabel } from '@/lib/staffLabels';
+import { groomSpecialtyTitle } from '@/lib/groomSpecialtyLabels';
 
 interface MyGroomsDashboardProps {
   userId: string | number;
@@ -427,10 +428,10 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 </h3>
                 <div className="flex items-center gap-2 mt-3">
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)] border border-[var(--role-neutral-border)]">
-                    {groom.skillLevel}
+                    {skillLevelLabel(groom.skillLevel)}
                   </span>
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-success-bg)] text-[var(--role-success-text)] border border-[var(--role-success-border)]">
-                    {formatSpecialty(groom.specialty)}
+                    {groomSpecialtyTitle(groom.specialty)}
                   </span>
                   {/* Equoria-fby1t: "Show a groom's age always" — with the other facts
                       a player knows about who this groom IS, in the same chip. */}

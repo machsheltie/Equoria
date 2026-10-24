@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/game';
 import { useAssignRider, type Rider } from '@/hooks/api/useRiders';
 import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
+import { personalityLabel, skillLevelLabel } from '@/lib/staffLabels';
 
 interface RiderPickerModalProps {
   isOpen: boolean;
@@ -105,8 +106,8 @@ const RiderPickerModal: React.FC<RiderPickerModalProps> = ({
               <p className="font-bold text-role-primary text-sm">
                 {rider.firstName} {rider.lastName}
               </p>
-              <p className="text-xs text-role-secondary capitalize">
-                {rider.skillLevel} · {rider.personality}
+              <p className="text-xs text-role-secondary">
+                {skillLevelLabel(rider.skillLevel)} · {personalityLabel(rider.personality)}
               </p>
             </Surface>
           ))}

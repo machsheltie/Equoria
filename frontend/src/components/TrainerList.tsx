@@ -53,6 +53,7 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
+import { disciplineLabel } from '@/lib/utils/training-utils';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -343,7 +344,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                       </p>
                       <div className="flex flex-wrap gap-1">
                         <span className="px-1.5 py-0.5 bg-[var(--badge-rare-bg)] text-[var(--status-rare)] text-[10px] rounded-[var(--radius-sm)]">
-                          {trainer.speciality}
+                          {disciplineLabel(trainer.speciality)}
                         </span>
                       </div>
                     </div>

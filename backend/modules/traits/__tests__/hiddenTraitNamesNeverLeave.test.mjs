@@ -257,7 +257,7 @@ describe('Hidden trait names never leave the server (Equoria-6dace)', () => {
     it('GET /horses/:id/trait-timeline shows the visible trait, not the hidden ones', async () => {
       const res = await get(`/api/v1/horses/${foal.id}/trait-timeline`);
       expectNoHiddenNames(res);
-      expect(res.body.data.timeline.map(e => e.event)).toContain(`Discovered trait: ${VISIBLE}`);
+      expect(res.body.data.timeline.map(e => e.event)).toContain('Discovered trait: Resilient');
     });
 
     it('GET /horses/:id/trait-card names no hidden trait', async () => {
