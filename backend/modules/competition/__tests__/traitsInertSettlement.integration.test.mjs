@@ -23,6 +23,7 @@
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
+import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
@@ -88,7 +89,7 @@ describe('traits contribute nothing to a ridden show score (owner ruling 2026-10
           dateOfBirth: new Date('2018-01-01'),
           age: 7,
           userId: owner.id,
-          healthStatus: 'Good', // with fed today: displayed Good, 0%
+          ...careForHealth('Good'), // with fed today: displayed Good, 0%
           lastFedDate: new Date(),
           temperament: 'Bold', // Dressage: neutral
           precision: 200,

@@ -17,6 +17,7 @@
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
+import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
@@ -50,7 +51,7 @@ async function makeHorse(ownerId, base, tack, horseIds) {
       dateOfBirth: new Date('2018-01-01'),
       age: 7,
       userId: ownerId,
-      healthStatus: 'Good', // with fed today: displayed Good, 0%
+      ...careForHealth('Good'), // with fed today: displayed Good, 0%
       lastFedDate: new Date(),
       temperament: 'Bold', // Dressage: neutral (0%)
       precision: base,

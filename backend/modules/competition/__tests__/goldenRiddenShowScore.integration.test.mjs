@@ -31,6 +31,7 @@
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
+import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
@@ -62,7 +63,7 @@ async function makeCompetitor({ stats, traits, training, tack, temperament, heal
     dateOfBirth: competitionDateOfBirth(),
     age: 7,
     userId: owner.id,
-    healthStatus: health,
+    ...careForHealth(health),
     lastFedDate: new Date(),
     temperament,
     ...stats,

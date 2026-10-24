@@ -19,6 +19,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
+import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { scoreShowEntries, weightedDisciplineBase } from '../services/competitionScoring.mjs';
 import { DISCIPLINE_STATS } from '../rules/disciplineRules.mjs';
 
@@ -41,7 +42,7 @@ const STATS = [
 const horse = (overrides = {}) => ({
   name: 'TestFixture-b4a',
   epigeneticFlags: null,
-  healthStatus: 'Good',
+  ...careForHealth('Good'),
   lastFedDate: new Date(),
   ...Object.fromEntries(STATS.map(s => [s, 50])),
   ...overrides,

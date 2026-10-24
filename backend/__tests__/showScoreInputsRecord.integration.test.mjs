@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
+import { careForHealth } from './helpers/healthFixture.mjs';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../app.mjs';
@@ -85,7 +86,7 @@ beforeAll(async () => {
         dateOfBirth: new Date('2018-01-01'),
         age: 7,
         userId: owner.id,
-        healthStatus: 'Good',
+        ...careForHealth('Good'),
         lastFedDate: new Date(),
         temperament,
         ...stats100,

@@ -18,6 +18,7 @@
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
+import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
@@ -66,7 +67,7 @@ async function makeHorse(ownerId, stats, horseIds) {
       // Owner ruling 2026-10-23 (decision C, Equoria-k1p62): health is a percent term in
       // every score; Good health (fed today) is 0%, so this test still isolates its
       // own factor. Old fixture: healthStatus 'healthy' (no health term then).
-      healthStatus: 'Good',
+      ...careForHealth('Good'),
       lastFedDate: new Date(),
       ...BASE_STATS,
       ...stats,

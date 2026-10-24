@@ -36,6 +36,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
+import { careForHealth } from '../../../__tests__/helpers/healthFixture.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
@@ -73,7 +74,7 @@ const STAT_BASE = {
   sex: 'Mare',
   dateOfBirth: new Date('2018-01-01'),
   age: 7,
-  healthStatus: 'Good', // with fed today: displayed Good, 0% (decision C)
+  ...careForHealth('Good'), // with fed today: displayed Good, 0% (decision C)
   lastFedDate: new Date(),
   speed: 100,
   stamina: 100,

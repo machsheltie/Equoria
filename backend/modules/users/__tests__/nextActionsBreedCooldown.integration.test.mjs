@@ -97,6 +97,8 @@ async function ownerOf(now, sex, bredDaysAgo) {
       // Fed at the pinned instant: not in bad health, so the health gate
       // (Equoria-3tna6) leaves the cooldown as the only rule under test.
       lastFedDate: now,
+      // Vetted at the pinned instant too: health is the vet days (owner ruling 2026-10-23).
+      lastVettedDate: gameCalendarDate(now),
       lastBredDate: gameCalendarDate(now, -bredDaysAgo),
       userId: user.id,
     },
