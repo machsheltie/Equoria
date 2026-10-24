@@ -41,7 +41,6 @@ import prisma from '../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../backend/tests/helpers/fixtureColor.mjs';
 import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
 import {
-  getTopUsersByLevel as getTopPlayersByLevel,
   getTopUsersByXP as getTopPlayersByXP,
   getTopHorsesByEarnings,
 } from '../backend/modules/leaderboards/controllers/leaderboardController.mjs';
@@ -144,35 +143,6 @@ describe('🏆 INTEGRATION: Leaderboard Controller — canonical-DB safe', () =>
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
     await invalidateCachePattern('leaderboard:*');
     jest.clearAllMocks();
-  });
-
-  describe('getTopPlayersByLevel', () => {
-    it('ranks the extreme-level fixtures at the top in (level desc, xp desc) order', async () => {
-      const res = makeRes();
-      await getTopPlayersByLevel({ query: { limit: '10', offset: '0' } }, res);
-
-      expect(res.json).toHaveBeenCalledTimes(1);
-      const body = res.json.mock.calls[0][0];
-      expect(body.success).toBe(true);
-      const { users, pagination } = body.data;
-
-      // Unreachable levels → deterministic ranks 1 and 2 even among real users.
-      expect(users[0].userId).toBe(user1Id);
-      expect(users[0].rank).toBe(1);
-      expect(users[0].name).toBe(user1Name);
-      expect(users[0].level).toBe(TOP_LEVEL);
-      expect(users[0].xp).toBe(50);
-      expect(users[0].money).toBe(5000);
-
-      expect(users[1].userId).toBe(user2Id);
-      expect(users[1].rank).toBe(2);
-      expect(users[1].level).toBe(RUNNER_LEVEL);
-
-      // Coexists with real data: total is the full user count, not just fixtures.
-      expect(pagination.total).toBeGreaterThanOrEqual(2);
-      expect(pagination.limit).toBe(10);
-      expect(pagination.offset).toBe(0);
-    });
   });
 
   describe('getTopPlayersByXP', () => {

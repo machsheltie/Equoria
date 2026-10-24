@@ -7,7 +7,6 @@
  * public `username` handle.
  *
  * Endpoints under test:
- *   GET /api/v1/leaderboards/players/level   (getTopUsersByLevel)
  *   GET /api/v1/leaderboards/players/xp      (getTopUsersByXP)
  *   GET /api/v1/leaderboards/horses/earnings  (getTopHorsesByEarnings — ownerName)
  *   GET /api/v1/leaderboards/user-summary/:userId (getUserRankSummary — userName)
@@ -148,26 +147,6 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
   // Bust cache before every test so fixture data is always fresh
   beforeAll(async () => {
     await invalidateCachePattern('leaderboard:*');
-  });
-
-  it('GET /api/v1/leaderboards/players/level — does NOT expose firstName/lastName, shows username as name', async () => {
-    const res = await request(app)
-      .get('/api/v1/leaderboards/players/level?limit=100')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-
-    // The fixture user has level=99 and should appear in the top-100 results
-    const users = res.body.data?.users ?? [];
-    const fixtureEntry = users.find(u => u.userId === fixtureUser.id);
-    expect(fixtureEntry).toBeDefined();
-
-    assertPiiNotExposed(res);
-
-    // Confirm the `name` field for the fixture entry is the username
-    expect(fixtureEntry.name).toBe(FIXTURE_USERNAME);
   });
 
   it('GET /api/v1/leaderboards/players/xp — does NOT expose firstName/lastName, shows username as name', async () => {

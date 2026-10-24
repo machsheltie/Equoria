@@ -59,7 +59,8 @@ export interface HorseDetailData {
   age: number;
   /** null = the backend sent a token outside the vocabulary; shown as "—" (Equoria-b9yi1) */
   sex: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | null;
-  level: number;
+  /** Only when the board row carries one; no board ranks a horse by level now. */
+  level?: number;
   stats: {
     speed: number;
     stamina: number;
@@ -264,12 +265,14 @@ const LeaderboardHorseDetailModal = ({
                     {horseData.sex ?? '—'}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[var(--bg-twilight)] text-blue-300"
-                      data-testid="level-badge"
-                    >
-                      Lvl {horseData.level}
-                    </span>
+                    {horseData.level !== undefined && (
+                      <span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[var(--bg-twilight)] text-blue-300"
+                        data-testid="level-badge"
+                      >
+                        Lvl {horseData.level}
+                      </span>
+                    )}
                     {horseData.primaryDiscipline && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--bg-midnight)] text-purple-300">
                         {horseData.primaryDiscipline}

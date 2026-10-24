@@ -15,7 +15,7 @@
  *
  * @example
  * const { data, isLoading, error } = useLeaderboard({
- *   category: 'level',
+ *   category: 'player-xp',
  *   period: 'monthly',
  *   page: 1,
  *   limit: 50,
@@ -25,7 +25,7 @@
  * // Discipline-specific leaderboard
  * const { data } = useLeaderboard({
  *   category: 'discipline',
- *   period: 'weekly',
+ *   period: 'overall',
  *   discipline: 'show-jumping',
  * });
  *

@@ -23,12 +23,12 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function stubBoard(secondaryStats: Record<string, number>) {
   server.use(
-    http.get(`${base}/api/v1/leaderboards/horse-performance`, () =>
+    http.get(`${base}/api/v1/leaderboards/boards/horseWins`, () =>
       HttpResponse.json({
         success: true,
         data: {
           category: 'horse-performance',
-          period: 'all-time',
+          period: 'overall',
           totalEntries: 1,
           currentPage: 1,
           totalPages: 1,
@@ -59,7 +59,7 @@ async function openHorseModal() {
   render(
     <QueryClientProvider client={qc}>
       <MockAuthProvider>
-        <MemoryRouter initialEntries={['/leaderboards?category=horse-performance']}>
+        <MemoryRouter initialEntries={['/leaderboards?category=horse-wins']}>
           <LeaderboardsPage />
         </MemoryRouter>
       </MockAuthProvider>

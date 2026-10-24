@@ -13,7 +13,6 @@
  * - Data filtering: Discipline-specific filtering and pagination
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. GET /api/leaderboards/players/level - Top players by level
  * 2. GET /api/leaderboards/players/xp - Top players by XP
  * 3. GET /api/leaderboards/horses/earnings - Top horses by earnings
  * 4. GET /api/leaderboards/horses/performance - Top horses by performance
@@ -364,61 +363,6 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
     await prisma.breed.deleteMany({
       where: { name: { startsWith: 'TestBreed' } },
-    });
-  });
-
-  describe('GET /api/leaderboards/players/level', () => {
-    it('should return top players by level', async () => {
-      const response = await request(app)
-        .get('/api/v1/leaderboards/players/level')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${testToken}`)
-        .query({ limit: 10, offset: 0 })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Top users by level retrieved successfully');
-      expect(response.body.data.users.length).toBeGreaterThanOrEqual(3); // At least our 3 test users
-
-      // Filter to find our test fixtures by name — real-DB may have other high-level users
-      // that precede our test fixtures, so never assert on absolute position.
-      const { users: rankings } = response.body.data;
-      // Leaderboards expose the username, not real first/last names, for
-      // privacy (Equoria-2gfor). Match on the per-run randomized username.
-      const p1 = rankings.find(u => u.name === FIXTURE_USERNAMES.p1);
-      const p2 = rankings.find(u => u.name === FIXTURE_USERNAMES.p2);
-      const p3 = rankings.find(u => u.name === FIXTURE_USERNAMES.p3);
-      if (!p1) {
-        throw new Error(`${FIXTURE_USERNAMES.p1} must appear in rankings`);
-      }
-      expect(p1.level).toBe(15);
-      if (!p2) {
-        throw new Error(`${FIXTURE_USERNAMES.p2} must appear in rankings`);
-      }
-      expect(p2.level).toBe(14);
-      expect(p2.xp).toBe(90); // Higher XP than Player 3
-      if (!p3) {
-        throw new Error(`${FIXTURE_USERNAMES.p3} must appear in rankings`);
-      }
-      expect(p3.level).toBe(14);
-      expect(p3.xp).toBe(30); // Lower XP than Player 2
-      // Relative order within test fixtures must be correct (p1 > p2 > p3)
-      const p1idx = rankings.indexOf(p1);
-      const p2idx = rankings.indexOf(p2);
-      const p3idx = rankings.indexOf(p3);
-      expect(p1idx).toBeLessThan(p2idx);
-      expect(p2idx).toBeLessThan(p3idx);
-    });
-
-    it('should handle unauthorized access', async () => {
-      const response = await request(app)
-        .get('/api/v1/leaderboards/players/level')
-        .set('Origin', 'http://localhost:3000')
-
-        .expect(401);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Access token is required');
     });
   });
 

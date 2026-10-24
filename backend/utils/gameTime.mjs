@@ -182,3 +182,25 @@ export function sameGameClockDaysLater(date, days) {
     ((landed.hour * 60 + landed.minute) * 60 + landed.second) * 1000;
   return new Date(guess - (landedMs - wallMs) + subSecondMs);
 }
+
+/**
+ * The Eastern game month of an instant as 'YYYY-MM'. The codebase had no game
+ * month before the leaderboard redesign (Equoria-y3nia): a game month is the
+ * Eastern calendar month, so it rolls over at 00:00 Eastern on the 1st.
+ * @param {Date|string|number} [date=new Date()]
+ * @returns {string}
+ */
+export function gameMonthKey(date = new Date()) {
+  const { year, month } = gameDateParts(date);
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+/**
+ * The instant of 00:00 Eastern on the 1st of the instant's game month.
+ * @param {Date|string|number} [date=new Date()]
+ * @returns {Date}
+ */
+export function startOfGameMonth(date = new Date()) {
+  const { year, month } = gameDateParts(date);
+  return startOfGameDayIndex(Date.UTC(year, month - 1, 1) / 86_400_000);
+}

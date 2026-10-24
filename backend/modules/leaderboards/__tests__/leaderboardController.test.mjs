@@ -1,7 +1,7 @@
 /**
  * leaderboardController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getLeaderboardStats, getTopPlayersByLevel, getTopHorsesByEarnings,
+ * Covers: getLeaderboardStats, getTopHorsesByEarnings,
  * getRecentWinners, getUserRankSummary, getTopHorsesByPerformance (win-rate).
  * All leaderboard routes require auth (authRouter).
  *
@@ -84,25 +84,6 @@ describe('GET /api/v1/leaderboards/stats', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app).get('/api/v1/leaderboards/stats').set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-describe('GET /api/v1/leaderboards/players/level', () => {
-  it('returns 200 with top players by level', async () => {
-    const res = await request(app)
-      .get('/api/v1/leaderboards/players/level')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data.users)).toBe(true);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/v1/leaderboards/players/level').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });

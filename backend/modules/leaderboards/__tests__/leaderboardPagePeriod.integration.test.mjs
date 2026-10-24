@@ -36,11 +36,8 @@ const horse = {};
 let showIds = [];
 
 const get = path => request(app).get(path).set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
-const disciplineBoard = period =>
-  get(`/api/v1/leaderboards/discipline?discipline=${DISCIPLINE}&limit=100&period=${period}`);
 const recentWinners = period =>
   get(`/api/v1/leaderboards/recent-winners?discipline=${DISCIPLINE}&limit=50&period=${period}`);
-const entryFor = (res, horseId) => res.body.data.entries.find(entry => entry.horseId === horseId);
 
 const resultRow = (horseId, showIndex, runDate) => ({
   horseId,
@@ -103,43 +100,6 @@ afterAll(async () => {
   await invalidateCachePattern('leaderboard:*');
   await cleanup.run();
 }, 60000);
-
-describe('GET /api/v1/leaderboards/discipline — period (Equoria-5uptv)', () => {
-  it('all-time counts every win in the discipline', async () => {
-    const res = await disciplineBoard('all-time');
-
-    expect(res.status).toBe(200);
-    expect(entryFor(res, horse.X.id).primaryStat).toBe(2);
-    expect(entryFor(res, horse.Y.id).primaryStat).toBe(1);
-  });
-
-  it('monthly counts only wins from the last 30 days', async () => {
-    const res = await disciplineBoard('monthly');
-
-    expect(entryFor(res, horse.X.id).primaryStat).toBe(1);
-    expect(entryFor(res, horse.Y.id).primaryStat).toBe(1);
-  });
-
-  it('weekly leaves out a win from 10 days ago, and a horse with no win in the week', async () => {
-    const res = await disciplineBoard('weekly');
-
-    expect(entryFor(res, horse.X.id).primaryStat).toBe(1);
-    expect(entryFor(res, horse.Y.id)).toBeUndefined();
-  });
-
-  it('daily keeps only wins run today', async () => {
-    const res = await disciplineBoard('daily');
-
-    expect(entryFor(res, horse.X.id).primaryStat).toBe(1);
-    expect(entryFor(res, horse.Y.id)).toBeUndefined();
-  });
-
-  it('refuses a period it does not know instead of ignoring it', async () => {
-    const res = await disciplineBoard('fortnightly');
-
-    expect(res.status).toBe(400);
-  });
-});
 
 describe('GET /api/v1/leaderboards/recent-winners — period (Equoria-5uptv)', () => {
   const horseIdsIn = res => res.body.data.entries.map(entry => entry.horseId);

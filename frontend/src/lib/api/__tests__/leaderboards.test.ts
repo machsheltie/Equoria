@@ -39,7 +39,7 @@ describe('fetchLeaderboard', () => {
   it('should construct the correct URL with category, period, discipline, page, and limit', async () => {
     const mockResponse = {
       category: 'discipline',
-      period: 'weekly',
+      period: 'overall',
       totalEntries: 500,
       currentPage: 2,
       totalPages: 10,
@@ -50,7 +50,7 @@ describe('fetchLeaderboard', () => {
     let capturedPath = '';
     let capturedQuery: URLSearchParams | undefined;
     server.use(
-      http.get(`${base}/api/v1/leaderboards/discipline`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/boards/discipline`, ({ request }) => {
         const url = new URL(request.url);
         capturedPath = url.pathname;
         capturedQuery = url.searchParams;
@@ -60,14 +60,14 @@ describe('fetchLeaderboard', () => {
 
     await fetchLeaderboard({
       category: 'discipline',
-      period: 'weekly',
+      period: 'overall',
       discipline: 'show-jumping',
       page: 2,
       limit: 50,
     });
 
-    expect(capturedPath).toBe('/api/v1/leaderboards/discipline');
-    expect(capturedQuery?.get('period')).toBe('weekly');
+    expect(capturedPath).toBe('/api/v1/leaderboards/boards/discipline');
+    expect(capturedQuery?.get('period')).toBe('overall');
     expect(capturedQuery?.get('discipline')).toBe('show-jumping');
     expect(capturedQuery?.get('page')).toBe('2');
     expect(capturedQuery?.get('limit')).toBe('50');
@@ -76,7 +76,7 @@ describe('fetchLeaderboard', () => {
   // Test 2: Constructs URL without optional parameters
   it('should construct URL with only required parameters when optionals are omitted', async () => {
     const mockResponse = {
-      category: 'level',
+      category: 'player-xp',
       period: 'monthly',
       totalEntries: 1254,
       currentPage: 1,
@@ -88,7 +88,7 @@ describe('fetchLeaderboard', () => {
     let capturedSearch = '';
     let capturedPath = '';
     server.use(
-      http.get(`${base}/api/v1/leaderboards/level`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/boards/playerXp`, ({ request }) => {
         const url = new URL(request.url);
         capturedPath = url.pathname;
         capturedSearch = url.search;
@@ -97,27 +97,27 @@ describe('fetchLeaderboard', () => {
     );
 
     await fetchLeaderboard({
-      category: 'level',
+      category: 'player-xp',
       period: 'monthly',
     });
 
-    // Was: expect(calledUrl).toBe('/api/v1/leaderboards/level?period=monthly')
-    expect(capturedPath).toBe('/api/v1/leaderboards/level');
+    // Was: expect(calledUrl).toBe('/api/v1/leaderboards/boards/playerXp?period=monthly')
+    expect(capturedPath).toBe('/api/v1/leaderboards/boards/playerXp');
     expect(capturedSearch).toBe('?period=monthly');
   });
 
   // Test 3: Handles API errors correctly
   it('should propagate API errors from the client', async () => {
     server.use(
-      http.get(`${base}/api/v1/leaderboards/level`, () =>
+      http.get(`${base}/api/v1/leaderboards/boards/playerXp`, () =>
         HttpResponse.json({ message: 'Internal server error', status: 'error' }, { status: 500 })
       )
     );
 
     await expect(
       fetchLeaderboard({
-        category: 'level',
-        period: 'all-time',
+        category: 'player-xp',
+        period: 'overall',
       })
     ).rejects.toMatchObject({
       message: 'Internal server error',

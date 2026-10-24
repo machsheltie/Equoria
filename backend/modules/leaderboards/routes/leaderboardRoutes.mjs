@@ -1,7 +1,6 @@
 import express from 'express';
 import { query, validationResult } from 'express-validator';
 import {
-  getTopPlayersByLevel,
   getTopPlayersByXP,
   getTopHorsesByEarnings,
   getTopHorsesByPerformance,
@@ -12,6 +11,7 @@ import {
   captureRankSnapshots,
 } from '../controllers/leaderboardController.mjs';
 import * as pageBoards from '../controllers/pageBoardsController.mjs';
+import { boardHandler } from '../controllers/boardsController.mjs';
 import { isKnownDiscipline } from '../../competition/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole } from '../../../middleware/auth.mjs';
@@ -26,83 +26,14 @@ import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
 
 const router = express.Router();
 
-/** The page tabs answer { entries, currentPage, totalPages, totalEntries } (Equoria-pthuj); /players/*, /horses/* keep their shapes. */
-router.get('/level', auth, pageBoards.levelBoard);
-router.get('/prize-money', auth, pageBoards.prizeMoneyBoard);
-router.get('/win-rate', auth, pageBoards.winPercentageBoard);
-router.get('/wins', auth, pageBoards.winsBoard);
-router.get('/owner', auth, pageBoards.ownerBoard);
-router.get('/discipline', auth, pageBoards.disciplineBoard);
-
 /**
- * @swagger
- * /api/leaderboard/players/level:
- *   get:
- *     summary: Get top players ranked by level and XP
- *     tags: [Leaderboard]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 10
- *         description: Number of players to return
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           minimum: 0
- *           default: 0
- *         description: Number of players to skip for pagination
- *     responses:
- *       200:
- *         description: List of top players by level
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     players:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           rank:
- *                             type: integer
- *                           playerId:
- *                             type: integer
- *                           username:
- *                             type: string
- *                           level:
- *                             type: integer
- *                           xp:
- *                             type: integer
- *                           progressToNext:
- *                             type: number
- *                           xpToNext:
- *                             type: integer
- *                     pagination:
- *                       type: object
- *                       properties:
- *                         total:
- *                           type: integer
- *                         limit:
- *                           type: integer
- *                         offset:
- *                           type: integer
- *                         hasMore:
- *                           type: boolean
+ * The page boards (Equoria-y3nia): playerXp, playerEarnings, playerWins,
+ * playerWinPercentage, horsePoints, horseEarnings, horseWins, horseWinPercentage
+ * and discipline, each with ?period=overall|monthly. They answer
+ * { entries, currentPage, totalPages, totalEntries }; /players/*, /horses/*
+ * keep their shapes.
  */
-router.get('/players/level', auth, getTopPlayersByLevel);
+router.get('/boards/:board', auth, boardHandler);
 
 /**
  * @swagger

@@ -75,49 +75,49 @@ test.describe('Leaderboards', () => {
       timeout: 20000,
     });
 
-    // Click the prize-money category tab
-    const prizeMoneyTab = page.locator('[data-testid="category-prize-money"]');
-    await expect(prizeMoneyTab).toBeVisible({ timeout: 10000 });
+    // Click the horse-earnings category tab
+    const horseEarningsTab = page.locator('[data-testid="category-horse-earnings"]');
+    await expect(horseEarningsTab).toBeVisible({ timeout: 10000 });
 
     // Wait for the refetch the click triggers
     const categoryRefetch = page.waitForResponse(
       (resp) =>
         resp.url().includes('/api/v1/leaderboards') &&
-        resp.url().includes('category=prize-money') &&
+        resp.url().includes('category=horse-earnings') &&
         resp.request().method() === 'GET',
       { timeout: 15000 }
     );
 
-    await prizeMoneyTab.click();
+    await horseEarningsTab.click();
 
     // URL reflects the new category (URL state per Story 5-5)
-    await expect(page).toHaveURL(/category=prize-money/, { timeout: 5000 });
+    await expect(page).toHaveURL(/category=horse-earnings/, { timeout: 5000 });
 
     // The leaderboard refetched with the new category param
     await categoryRefetch.catch(() => null);
 
-    // Click weekly period — same contract for the period axis
-    const weeklyButton = page.locator('[data-testid="period-weekly"]');
-    if (await weeklyButton.isVisible().catch(() => false)) {
-      await weeklyButton.click();
-      await expect(page).toHaveURL(/period=weekly/, { timeout: 5000 });
+    // Click monthly period — same contract for the period axis
+    const monthlyButton = page.locator('[data-testid="period-monthly"]');
+    if (await monthlyButton.isVisible().catch(() => false)) {
+      await monthlyButton.click();
+      await expect(page).toHaveURL(/period=monthly/, { timeout: 5000 });
     }
   });
 
-  test('AC3: URL params seed the initial query (category=level, period=monthly)', async ({
+  test('AC3: URL params seed the initial query (category=player-xp, period=monthly)', async ({
     page,
   }) => {
     // Network-first: assert the page issues the GET with these params
     const seededResp = page.waitForResponse(
       (resp) =>
         resp.url().includes('/api/v1/leaderboards') &&
-        resp.url().includes('category=level') &&
+        resp.url().includes('category=player-xp') &&
         resp.url().includes('period=monthly') &&
         resp.request().method() === 'GET',
       { timeout: 20000 }
     );
 
-    await page.goto('/leaderboards?category=level&period=monthly', {
+    await page.goto('/leaderboards?category=player-xp&period=monthly', {
       waitUntil: 'domcontentloaded',
     });
 

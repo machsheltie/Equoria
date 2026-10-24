@@ -61,13 +61,13 @@ describe('useLeaderboardRefresh', () => {
     const wrapper = createWrapper();
 
     // Pre-populate cache with leaderboard data
-    queryClient.setQueryData(leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50), {
-      category: 'level',
+    queryClient.setQueryData(leaderboardQueryKeys.list('player-xp', 'monthly', undefined, 1, 50), {
+      category: 'player-xp',
       entries: [],
     });
     queryClient.setQueryData(
-      leaderboardQueryKeys.list('prize-money', 'all-time', undefined, 1, 50),
-      { category: 'prize-money', entries: [] }
+      leaderboardQueryKeys.list('horse-earnings', 'overall', undefined, 1, 50),
+      { category: 'horse-earnings', entries: [] }
     );
     queryClient.setQueryData(userRankSummaryQueryKeys.user('user-123'), {
       userId: 'user-123',
@@ -100,8 +100,8 @@ describe('useLeaderboardRefresh', () => {
     const wrapper = createWrapper();
 
     // Pre-populate cache
-    queryClient.setQueryData(leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50), {
-      category: 'level',
+    queryClient.setQueryData(leaderboardQueryKeys.list('player-xp', 'monthly', undefined, 1, 50), {
+      category: 'player-xp',
       entries: [],
     });
 
@@ -110,14 +110,14 @@ describe('useLeaderboardRefresh', () => {
     const { result } = renderHook(() => useLeaderboardRefresh(), { wrapper });
 
     await act(async () => {
-      await result.current.refreshCategory('level', 'monthly');
+      await result.current.refreshCategory('player-xp', 'monthly');
     });
 
     // leaderboardQueryKeys.list now has 5 params (category, period, discipline,
     // page, limit) — refreshCategory with 2 args yields trailing `undefined`s.
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['leaderboards', 'level', 'monthly', undefined, undefined, undefined],
+        queryKey: ['leaderboards', 'player-xp', 'monthly', undefined, undefined, undefined],
       })
     );
   });
@@ -175,23 +175,26 @@ describe('useLeaderboardRefresh', () => {
     const wrapper = createWrapper();
 
     // Pre-populate cache with discipline data
-    queryClient.setQueryData(leaderboardQueryKeys.list('discipline', 'weekly', 'dressage', 1, 50), {
-      category: 'discipline',
-      entries: [],
-    });
+    queryClient.setQueryData(
+      leaderboardQueryKeys.list('discipline', 'overall', 'dressage', 1, 50),
+      {
+        category: 'discipline',
+        entries: [],
+      }
+    );
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     const { result } = renderHook(() => useLeaderboardRefresh(), { wrapper });
 
     await act(async () => {
-      await result.current.refreshCategory('discipline', 'weekly', 'dressage');
+      await result.current.refreshCategory('discipline', 'overall', 'dressage');
     });
 
     // Same shape: 5-param list-key yields trailing `undefined` for page/limit.
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['leaderboards', 'discipline', 'weekly', 'dressage', undefined, undefined],
+        queryKey: ['leaderboards', 'discipline', 'overall', 'dressage', undefined, undefined],
       })
     );
   });

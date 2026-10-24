@@ -101,21 +101,22 @@ const RankChangeIndicator = ({ rankChange }: { rankChange?: number }) => {
 
 /**
  * Formats the primary stat value based on the leaderboard category.
- * Prize money renders as coins via the canonical Currency component
+ * Earnings render as coins via the canonical Currency component
  * (DECISIONS.md §9 — game currency is never USD-formatted).
  */
 const formatPrimaryStat = (value: number, category: LeaderboardCategory): React.ReactNode => {
-  if (category === 'win-rate') {
+  if (category === 'player-win-rate' || category === 'horse-win-rate') {
     return `${value}%`;
   }
-  if (category === 'prize-money' || category === 'owner') {
+  if (category === 'player-earnings' || category === 'horse-earnings') {
     return <Currency amount={value} />;
   }
   return String(value);
 };
 
 /**
- * Renders category-specific secondary stats.
+ * Renders category-specific secondary stats: the wins and shows behind a
+ * record board. The XP, points and earnings boards have none.
  */
 const SecondaryStats = ({
   stats,
@@ -124,78 +125,30 @@ const SecondaryStats = ({
   stats: LeaderboardEntryData['secondaryStats'];
   category: LeaderboardCategory;
 }) => {
+  const showsLabel = 'Shows';
   switch (category) {
-    case 'level':
-      return (
-        <div className="flex gap-4 text-sm text-slate-400">
-          {stats.winRate !== undefined && (
-            <span data-testid="secondary-stat-win-rate">WR: {stats.winRate}%</span>
-          )}
-          {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">Comps: {stats.totalCompetitions}</span>
-          )}
-        </div>
-      );
-    case 'prize-money':
+    case 'player-win-rate':
+    case 'horse-win-rate':
       return (
         <div className="flex gap-4 text-sm text-slate-400">
           {stats.wins !== undefined && (
             <span data-testid="secondary-stat-wins">Wins: {stats.wins}</span>
           )}
           {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">Comps: {stats.totalCompetitions}</span>
+            <span data-testid="secondary-stat-competitions">
+              {showsLabel}: {stats.totalCompetitions}
+            </span>
           )}
         </div>
       );
-    case 'win-rate':
-      return (
-        <div className="flex gap-4 text-sm text-slate-400">
-          {stats.wins !== undefined && (
-            <span data-testid="secondary-stat-wins">Wins: {stats.wins}</span>
-          )}
-          {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">Shows: {stats.totalCompetitions}</span>
-          )}
-        </div>
-      );
-    case 'wins':
-      return (
-        <div className="flex gap-4 text-sm text-slate-400">
-          {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">Shows: {stats.totalCompetitions}</span>
-          )}
-        </div>
-      );
+    case 'player-wins':
+    case 'horse-wins':
     case 'discipline':
       return (
         <div className="flex gap-4 text-sm text-slate-400">
-          {stats.level !== undefined && (
-            <span data-testid="secondary-stat-level">Lvl: {stats.level}</span>
-          )}
           {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">Comps: {stats.totalCompetitions}</span>
-          )}
-        </div>
-      );
-    case 'owner':
-      return (
-        <div className="flex gap-4 text-sm text-slate-400">
-          {stats.totalPrizeMoney !== undefined && (
-            <span data-testid="secondary-stat-prize-money">
-              Prize: <Currency amount={stats.totalPrizeMoney} showIcon={false} />
-            </span>
-          )}
-          {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">Comps: {stats.totalCompetitions}</span>
-          )}
-        </div>
-      );
-    case 'recent-winners':
-      return (
-        <div className="flex gap-4 text-sm text-slate-400">
-          {stats.totalPrizeMoney !== undefined && (
-            <span data-testid="secondary-stat-prize-money">
-              Won: <Currency amount={stats.totalPrizeMoney} showIcon={false} />
+            <span data-testid="secondary-stat-competitions">
+              {showsLabel}: {stats.totalCompetitions}
             </span>
           )}
         </div>

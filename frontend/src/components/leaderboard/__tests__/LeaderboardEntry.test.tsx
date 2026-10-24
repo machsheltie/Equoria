@@ -45,25 +45,25 @@ describe('LeaderboardEntry', () => {
   describe('Entry Display', () => {
     it('renders the rank badge with correct rank number', () => {
       const entry = createEntry({ rank: 5 });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       expect(screen.getByTestId('rank-badge-5')).toBeInTheDocument();
     });
 
     it('renders the horse name', () => {
       const entry = createEntry({ horseName: 'Midnight Star' });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       expect(screen.getByText('Midnight Star')).toBeInTheDocument();
     });
 
     it('renders the owner name', () => {
       const entry = createEntry({ ownerName: 'Jane Smith' });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       expect(screen.getByText('Jane Smith')).toBeInTheDocument();
     });
 
     it('renders the primary stat value', () => {
       const entry = createEntry({ primaryStat: 42 });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       expect(screen.getByTestId('primary-stat')).toHaveTextContent('42');
     });
   });
@@ -71,7 +71,7 @@ describe('LeaderboardEntry', () => {
   describe('Current User Highlighting', () => {
     it('highlights the current user entry with light blue background', () => {
       const entry = createEntry({ isCurrentUser: true });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       const row = screen.getByTestId('leaderboard-entry');
       // Current user uses translucent blue background tokens for dark theme
       expect(row).toHaveStyle({ backgroundColor: 'rgba(37,99,235,0.15)' });
@@ -79,7 +79,7 @@ describe('LeaderboardEntry', () => {
 
     it('highlights the current user entry with blue border', () => {
       const entry = createEntry({ isCurrentUser: true });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       const row = screen.getByTestId('leaderboard-entry');
       // jsdom sets individual border properties from the shorthand
       expect(row.style.border).toContain('2px solid');
@@ -87,7 +87,7 @@ describe('LeaderboardEntry', () => {
 
     it('does not highlight non-current-user entries', () => {
       const entry = createEntry({ isCurrentUser: false });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       const row = screen.getByTestId('leaderboard-entry');
       expect(row).not.toHaveStyle({ backgroundColor: 'rgba(37,99,235,0.15)' });
     });
@@ -96,7 +96,7 @@ describe('LeaderboardEntry', () => {
   describe('Rank Change Indicators', () => {
     it('shows green up indicator for positive rank change', () => {
       const entry = createEntry({ rankChange: 3 });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       const indicator = screen.getByTestId('rank-change');
       expect(indicator).toHaveTextContent('+3');
       // Color uses tokenized status-success var
@@ -105,7 +105,7 @@ describe('LeaderboardEntry', () => {
 
     it('shows red down indicator for negative rank change', () => {
       const entry = createEntry({ rankChange: -2 });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       const indicator = screen.getByTestId('rank-change');
       expect(indicator).toHaveTextContent('-2');
       // Color uses tokenized status-error var
@@ -114,7 +114,7 @@ describe('LeaderboardEntry', () => {
 
     it('shows gray dash for no rank change', () => {
       const entry = createEntry({ rankChange: 0 });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       const indicator = screen.getByTestId('rank-change');
       // U+2014 em dash
       expect(indicator).toHaveTextContent('\u2014');
@@ -131,7 +131,7 @@ describe('LeaderboardEntry', () => {
       render(
         <LeaderboardEntryComponent
           entry={entry}
-          category="level"
+          category="player-xp"
           onClick={handleClick}
           isClickable={true}
         />
@@ -148,7 +148,7 @@ describe('LeaderboardEntry', () => {
       render(
         <LeaderboardEntryComponent
           entry={entry}
-          category="level"
+          category="player-xp"
           onClick={handleClick}
           isClickable={false}
         />
@@ -160,40 +160,39 @@ describe('LeaderboardEntry', () => {
   });
 
   describe('Category-Specific Display', () => {
-    it('displays level and win rate for horse level category', () => {
-      const entry = createEntry({
-        primaryStat: 25,
-        secondaryStats: { level: 25, winRate: 30, totalCompetitions: 50 },
-      });
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
-      expect(screen.getByTestId('secondary-stat-win-rate')).toBeInTheDocument();
-      expect(screen.getByTestId('secondary-stat-competitions')).toBeInTheDocument();
-    });
-
-    it('displays prize money and wins for prize-money category', () => {
-      const entry = createEntry({
-        primaryStat: 12500,
-        secondaryStats: { wins: 15, totalCompetitions: 50, totalPrizeMoney: 12500 },
-      });
-      render(<LeaderboardEntryComponent entry={entry} category="prize-money" />);
-      expect(screen.getByTestId('secondary-stat-wins')).toBeInTheDocument();
-      expect(screen.getByTestId('secondary-stat-competitions')).toBeInTheDocument();
-    });
-
-    it('displays win rate percentage and wins for win-rate category', () => {
+    it('shows wins and shows entered, and the percentage, on a win-rate board', () => {
       const entry = createEntry({
         primaryStat: 30,
         secondaryStats: { winRate: 30, wins: 15, totalCompetitions: 50 },
       });
-      render(<LeaderboardEntryComponent entry={entry} category="win-rate" />);
+      render(<LeaderboardEntryComponent entry={entry} category="horse-win-rate" />);
       expect(screen.getByTestId('primary-stat')).toHaveTextContent('30%');
+      expect(screen.getByTestId('secondary-stat-wins')).toHaveTextContent('Wins: 15');
+      expect(screen.getByTestId('secondary-stat-competitions')).toHaveTextContent('Shows: 50');
+    });
+
+    it('shows the shows entered beside a wins board', () => {
+      const entry = createEntry({
+        primaryStat: 15,
+        secondaryStats: { wins: 15, totalCompetitions: 50 },
+      });
+      render(<LeaderboardEntryComponent entry={entry} category="player-wins" />);
+      expect(screen.getByTestId('primary-stat')).toHaveTextContent('15');
+      expect(screen.getByTestId('secondary-stat-competitions')).toHaveTextContent('Shows: 50');
+    });
+
+    it('shows earnings as coins and nothing beside them', () => {
+      const entry = createEntry({ primaryStat: 12500, secondaryStats: {} });
+      render(<LeaderboardEntryComponent entry={entry} category="horse-earnings" />);
+      expect(screen.getByTestId('primary-stat')).toHaveTextContent('12,500');
+      expect(screen.queryByTestId('secondary-stat-wins')).not.toBeInTheDocument();
     });
   });
 
   describe('Accessibility', () => {
     it('has an accessible role of row', () => {
       const entry = createEntry();
-      render(<LeaderboardEntryComponent entry={entry} category="level" />);
+      render(<LeaderboardEntryComponent entry={entry} category="player-xp" />);
       expect(screen.getByTestId('leaderboard-entry')).toHaveAttribute('role', 'row');
     });
 
@@ -203,7 +202,7 @@ describe('LeaderboardEntry', () => {
       render(
         <LeaderboardEntryComponent
           entry={entry}
-          category="level"
+          category="player-xp"
           onClick={handleClick}
           isClickable={true}
         />

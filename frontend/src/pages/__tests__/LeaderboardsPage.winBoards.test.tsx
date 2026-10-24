@@ -20,8 +20,8 @@ import LeaderboardsPage from '../LeaderboardsPage';
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const userId = 'user-abc';
 const summaryPath = `${base}/api/v1/leaderboards/user-summary/${userId}`;
-const winRatePath = `${base}/api/v1/leaderboards/win-rate`;
-const winsPath = `${base}/api/v1/leaderboards/wins`;
+const winRatePath = `${base}/api/v1/leaderboards/boards/horseWinPercentage`;
+const winsPath = `${base}/api/v1/leaderboards/boards/horseWins`;
 
 const emptySummary = { userId, userName: 'Tester', rankings: [], bestRankings: [] };
 
@@ -66,7 +66,7 @@ describe('LeaderboardsPage — win percentage board (Equoria-xxdqh)', () => {
   it('renders the real win percentage and shows entered', async () => {
     server.use(http.get(winRatePath, () => HttpResponse.json(board([moonflower]))));
 
-    renderPage('win-rate');
+    renderPage('horse-win-rate');
 
     const table = await screen.findByRole('region', { name: /leaderboard table/i });
     const row = await within(table).findByTestId('leaderboard-entry');
@@ -79,7 +79,7 @@ describe('LeaderboardsPage — win percentage board (Equoria-xxdqh)', () => {
   it('says no horse has entered 100 shows yet only after a successful empty response', async () => {
     server.use(http.get(winRatePath, () => HttpResponse.json(board([]))));
 
-    renderPage('win-rate');
+    renderPage('horse-win-rate');
 
     expect(await screen.findByText('No horse has entered 100 shows yet')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -97,7 +97,7 @@ describe('LeaderboardsPage — win percentage board (Equoria-xxdqh)', () => {
     );
 
     const user = userEvent.setup();
-    renderPage('win-rate');
+    renderPage('horse-win-rate');
 
     const alert = await screen.findByRole('alert');
     expect(screen.queryByText('No horse has entered 100 shows yet')).not.toBeInTheDocument();
@@ -109,13 +109,25 @@ describe('LeaderboardsPage — win percentage board (Equoria-xxdqh)', () => {
     expect(calls).toBeGreaterThanOrEqual(2);
   });
 
-  it('does not offer a time period filter for a lifetime record', async () => {
-    server.use(http.get(winRatePath, () => HttpResponse.json(board([moonflower]))));
+  it('offers Overall and Monthly, and asks for the month when Monthly is pressed (Equoria-y3nia)', async () => {
+    const periods: Array<string | null> = [];
+    server.use(
+      http.get(winRatePath, ({ request }) => {
+        periods.push(new URL(request.url).searchParams.get('period'));
+        return HttpResponse.json(board([moonflower]));
+      })
+    );
 
-    renderPage('win-rate');
+    const user = userEvent.setup();
+    renderPage('horse-win-rate');
 
     await screen.findByText('Moonflower');
-    expect(screen.queryByRole('group', { name: /time period filter/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /time period filter/i })).toBeInTheDocument();
+    await user.click(screen.getByTestId('period-monthly'));
+
+    await screen.findByText('Moonflower');
+    expect(periods[0]).toBe('overall');
+    expect(periods).toContain('monthly');
   });
 });
 
@@ -135,9 +147,9 @@ describe('LeaderboardsPage — number of wins board (Equoria-xxdqh)', () => {
       )
     );
 
-    renderPage('wins');
+    renderPage('horse-wins');
 
-    expect(screen.getByTestId('category-wins')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('category-horse-wins')).toHaveAttribute('aria-selected', 'true');
     const row = await screen.findByTestId('leaderboard-entry');
     expect(row).toHaveTextContent('Moonflower');
     expect(row).toHaveTextContent('75');
@@ -147,7 +159,7 @@ describe('LeaderboardsPage — number of wins board (Equoria-xxdqh)', () => {
   it('says no horse has won a show yet after a successful empty response', async () => {
     server.use(http.get(winsPath, () => HttpResponse.json(board([]))));
 
-    renderPage('wins');
+    renderPage('horse-wins');
 
     expect(await screen.findByText('No horse has won a show yet')).toBeInTheDocument();
   });

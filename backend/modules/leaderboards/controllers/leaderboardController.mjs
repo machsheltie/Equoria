@@ -15,17 +15,6 @@ import { isKnownDiscipline } from '../../competition/index.mjs';
 
 const CACHE_TTL = 300; // 5 minutes
 
-// Utility Functions
-const calculateXpToNextLevel = currentLevelXp => {
-  const xpPerLevel = 100;
-  return xpPerLevel - currentLevelXp;
-};
-
-const calculateTotalXpForLevel = level => {
-  const xpPerLevel = 100;
-  return (level - 1) * xpPerLevel;
-};
-
 /**
  * Page window for a leaderboard. The documented `offset` (swagger) wins over
  * `page` when it is a valid non-negative integer; `limit` is clamped by
@@ -38,71 +27,6 @@ const leaderboardPaging = (req, options) => {
 };
 
 // Controllers
-export const getTopUsersByLevel = async (req, res) => {
-  const { limit, skip } = leaderboardPaging(req, { defaultLimit: 10, maxLimit: 100 });
-
-  try {
-    const cacheKey = `leaderboard:top-users:level:${limit}:${skip}`;
-    const [users, totalUsers] = await getCachedQuery(
-      cacheKey,
-      () =>
-        Promise.all([
-          prisma.user.findMany({
-            take: limit,
-            skip,
-            orderBy: [{ level: 'desc' }, { xp: 'desc' }, { id: 'asc' }],
-            select: {
-              id: true,
-              username: true,
-              level: true,
-              xp: true,
-              money: true,
-            },
-          }),
-          prisma.user.count(),
-        ]),
-      CACHE_TTL,
-    );
-
-    const rankedUsers = users.map((user, index) => {
-      const rank = skip + index + 1;
-      const xpToNext = calculateXpToNextLevel(user.xp);
-      const totalXp = calculateTotalXpForLevel(user.level) + user.xp;
-      return {
-        rank,
-        userId: user.id,
-        name: user.username,
-        level: user.level,
-        xp: user.xp,
-        xpToNext,
-        money: user.money,
-        totalXp,
-      };
-    });
-
-    res.json({
-      success: true,
-      message: 'Top users by level retrieved successfully',
-      data: {
-        users: rankedUsers,
-        pagination: {
-          limit,
-          offset: skip,
-          total: totalUsers,
-          hasMore: skip + limit < totalUsers,
-        },
-      },
-    });
-  } catch (error) {
-    logger.error(`[leaderboardController.getTopUsersByLevel] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve user level leaderboard',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-  }
-};
-
 export const getTopUsersByXP = async (req, res) => {
   const { period = 'all' } = req.query;
   const { limit, skip } = leaderboardPaging(req, { defaultLimit: 10, maxLimit: 100 });
@@ -723,14 +647,11 @@ export const getUserRankHistory = async (req, res) => {
 };
 
 // Aliases
-export const getTopPlayersByLevel = getTopUsersByLevel;
 export const getTopPlayersByXP = getTopUsersByXP;
 export const getTopPlayersByHorseEarnings = getTopUsersByHorseEarnings;
 
 // Export block
 export default {
-  getTopUsersByLevel,
-  getTopPlayersByLevel,
   getTopUsersByXP,
   getTopPlayersByXP,
   getTopHorsesByEarnings,

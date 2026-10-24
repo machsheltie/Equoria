@@ -4,61 +4,60 @@ import {
   getUserRankSummary,
   VALID_CATEGORIES,
 } from '../../fixtures/leaderboards';
+import { boardNames } from '@/lib/api/leaderboards';
 import type { LeaderboardCategory } from '@/components/leaderboard/LeaderboardCategorySelector';
 import type { LeaderboardEntryData } from '@/components/leaderboard/LeaderboardEntry';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /**
- * The row the backend really serves for a category (Equoria-pthuj). The
- * generated fixture rows carry fields no backend board sends (rankChange, a
- * level or win rate on a level row, ...); a test fed those passes on a contract
- * the backend never served. Mirrors backend/modules/leaderboards/controllers
- * pageBoardsController.mjs, horseRecordBoardsController.mjs and getRecentWinners.
+ * The row the backend really serves for a board (Equoria-y3nia). The generated
+ * fixture rows carry fields no backend board sends (rankChange, ...); a test fed
+ * those passes on a contract the backend never served. Mirrors
+ * backend/modules/leaderboards/services/boardService.mjs.
  */
 function toBackendEntry(entry: LeaderboardEntryData, category: LeaderboardCategory) {
   const { rank, horseId, horseName, ownerId, ownerName, primaryStat, isCurrentUser } = entry;
   const owner = { rank, ownerId, ownerName, primaryStat, isCurrentUser };
   const horse = { rank, horseId, horseName, ownerId, ownerName, primaryStat, isCurrentUser };
-  const shows = entry.secondaryStats.totalCompetitions;
+  const { wins, totalCompetitions: shows } = entry.secondaryStats;
 
   switch (category) {
-    case 'level':
-    case 'owner':
+    case 'player-xp':
+    case 'player-earnings':
       return { ...owner, secondaryStats: {} };
-    case 'prize-money':
+    case 'horse-points':
+    case 'horse-earnings':
       return { ...horse, secondaryStats: {} };
-    case 'win-rate':
+    case 'player-win-rate':
+      return {
+        ...owner,
+        secondaryStats: { wins, totalCompetitions: shows, winRate: primaryStat },
+      };
+    case 'horse-win-rate':
       return {
         ...horse,
-        secondaryStats: {
-          wins: entry.secondaryStats.wins,
-          totalCompetitions: shows,
-          winRate: primaryStat,
-        },
+        secondaryStats: { wins, totalCompetitions: shows, winRate: primaryStat },
       };
-    case 'wins':
-      return { ...horse, secondaryStats: { wins: primaryStat, totalCompetitions: shows } };
+    case 'player-wins':
+      return { ...owner, secondaryStats: { wins: primaryStat, totalCompetitions: shows } };
+    case 'horse-wins':
     case 'discipline':
       return { ...horse, secondaryStats: { wins: primaryStat, totalCompetitions: shows } };
-    case 'recent-winners':
-      return {
-        ...horse,
-        secondaryStats: { totalPrizeMoney: entry.secondaryStats.totalPrizeMoney },
-      };
   }
 }
+
+/** The page category a backend board name belongs to. */
+const categoryOfBoard = new Map(
+  Object.entries(boardNames).map(([category, board]) => [board, category as LeaderboardCategory])
+);
 
 /**
  * Leaderboard handlers (user-summary, by-category, horse profile).
  * Registered after the prize block, before the catalog block.
- * NOTE: user-summary MUST register before :category so "user-summary" is not
- * captured as a category param. First-match-wins order preserved.
  */
 export const leaderboardHandlers = [
   // Leaderboard System - User Rank Summary
-  // NOTE: This handler MUST appear before the :category handler so that
-  // "user-summary" is not captured as a category parameter.
   http.get(`${base}/api/v1/leaderboards/user-summary/:userId`, ({ params }) => {
     const userId = params.userId as string;
     const summary = getUserRankSummary(userId);
@@ -74,8 +73,8 @@ export const leaderboardHandlers = [
   }),
 
   // Leaderboard System - Leaderboard by Category
-  http.get(`${base}/api/v1/leaderboards/:category`, ({ params, request }) => {
-    const category = params.category as string;
+  http.get(`${base}/api/v1/leaderboards/boards/:board`, ({ params, request }) => {
+    const category = categoryOfBoard.get(params.board as string) ?? (params.board as string);
     const url = new URL(request.url);
     const discipline = url.searchParams.get('discipline');
     const page = parseInt(url.searchParams.get('page') || '1', 10);

@@ -49,6 +49,7 @@ import {
 // horses had placed. Mirrors the pi4nk pattern from enterAndRunShow:
 // fire-and-forget OUTSIDE the prize-payout tx (fail-soft).
 import { createNotification } from '../../../utils/notificationService.mjs';
+import { recordRiddenResultTotals } from '../../../utils/monthlyTotals.mjs';
 import { invalidateHorseXpCaches } from '../../horses/index.mjs';
 
 // ── BA-4: Overnight show execution ────────────────────────────────────────────
@@ -171,6 +172,8 @@ export async function settleEntryInTx(
   });
   // Equoria-q4uem.10 (owner ruling R6): the result records what it awarded.
   await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
+  // Equoria-y3nia: the Monthly boards, after the result create (a replay is refused first).
+  await recordRiddenResultTotals(tx, { show, staged, prize, now });
 }
 
 /**

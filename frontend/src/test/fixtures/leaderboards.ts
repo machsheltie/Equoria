@@ -2,8 +2,8 @@
  * Leaderboard Mock Data Fixtures
  *
  * Provides realistic leaderboard data generation functions for use in
- * MSW handlers and component tests. Generates entries for all seven
- * leaderboard categories with deterministic seeded data.
+ * MSW handlers and component tests. Generates entries for all nine
+ * leaderboard boards with deterministic seeded data.
  *
  * Story 5-5: Leaderboards - Task 7
  *
@@ -28,14 +28,24 @@ import type { CategoryRanking, BestRanking } from '@/components/leaderboard/User
 
 /** All valid leaderboard categories accepted by the API. */
 export const VALID_CATEGORIES: LeaderboardCategory[] = [
-  'level',
-  'prize-money',
-  'win-rate',
-  'wins',
+  'player-xp',
+  'player-earnings',
+  'player-wins',
+  'player-win-rate',
+  'horse-points',
+  'horse-earnings',
+  'horse-wins',
+  'horse-win-rate',
   'discipline',
-  'owner',
-  'recent-winners',
 ];
+
+/** The boards whose rows are players, not horses. */
+export const playerCategories: ReadonlySet<LeaderboardCategory> = new Set([
+  'player-xp',
+  'player-earnings',
+  'player-wins',
+  'player-win-rate',
+]);
 
 /** The rank at which the "current user" always appears in generated data. */
 export const CURRENT_USER_RANK = 42;
@@ -63,27 +73,25 @@ export function calculatePrimaryStatForCategory(
   category: LeaderboardCategory
 ): number {
   switch (category) {
-    case 'level':
-      // Top horse is level 20, decreasing by 1 every 5 ranks, minimum 1
-      return Math.max(1, 20 - Math.floor((rank - 1) / 5));
-    case 'prize-money':
-      // Top horse earns $500,000, decreasing by $5,000 per rank, minimum 0
+    case 'player-xp':
+      return Math.max(1, 5000 - (rank - 1) * 50);
+    case 'horse-points':
+      return Math.max(1, 3000 - (rank - 1) * 30);
+    case 'player-earnings':
+      // Total prize money earned by the player's stable, decreasing
+      return Math.max(0, 1000000 - (rank - 1) * 20000);
+    case 'horse-earnings':
       return Math.max(0, 500000 - (rank - 1) * 5000);
-    case 'win-rate':
-      // Top horse has 100% win rate, decreasing by 1% per rank, minimum 0
+    case 'player-win-rate':
+    case 'horse-win-rate':
+      // Top entry wins 100%, decreasing by 1% per rank, minimum 0
       return Math.max(0, 100 - (rank - 1));
-    case 'wins':
-      // Top horse has 200 wins, decreasing by 2 per rank, minimum 1
+    case 'player-wins':
+    case 'horse-wins':
       return Math.max(1, 200 - (rank - 1) * 2);
     case 'discipline':
-      // Score out of 100, decreasing by 1 per rank, minimum 0
-      return Math.max(0, 100 - (rank - 1));
-    case 'owner':
-      // Total prize money earned by owner stable, decreasing
-      return Math.max(0, 1000000 - (rank - 1) * 20000);
-    case 'recent-winners':
-      // Final score of the winning run
-      return Math.max(50, 100 - (rank - 1) * 2);
+      // Wins in the discipline, decreasing by 1 per rank, minimum 1
+      return Math.max(1, 100 - (rank - 1));
     default:
       return rank;
   }
@@ -127,39 +135,23 @@ export function generateSecondaryStats(
   const winRate = baseCompetitions > 0 ? Math.round((baseWins / baseCompetitions) * 100) : 0;
 
   switch (category) {
-    case 'level':
+    case 'player-win-rate':
+    case 'horse-win-rate':
       return {
+        wins: baseWins,
         totalCompetitions: baseCompetitions,
         winRate,
       };
-    case 'prize-money':
-      return {
-        wins: baseWins,
-        totalCompetitions: baseCompetitions,
-      };
-    case 'win-rate':
-      return {
-        wins: baseWins,
-        totalCompetitions: baseCompetitions,
-      };
-    case 'wins':
+    case 'player-wins':
+    case 'horse-wins':
       return {
         wins: Math.max(1, 200 - (rank - 1) * 2),
         totalCompetitions: 400,
       };
     case 'discipline':
       return {
-        level: Math.max(1, 20 - Math.floor((rank - 1) / 5)),
+        wins: Math.max(1, 100 - (rank - 1)),
         totalCompetitions: baseCompetitions,
-      };
-    case 'owner':
-      return {
-        totalPrizeMoney: Math.max(0, 500000 - (rank - 1) * 10000),
-        totalCompetitions: baseCompetitions * 3,
-      };
-    case 'recent-winners':
-      return {
-        totalPrizeMoney: Math.max(0, 5000 - (rank - 1) * 200),
       };
     default:
       return {};
@@ -184,18 +176,18 @@ export function generateLeaderboardEntry(
 ): LeaderboardEntryData {
   const isCurrentUser = rank === CURRENT_USER_RANK;
 
-  const horseName =
-    category === 'owner'
-      ? undefined
-      : isCurrentUser
-        ? 'My Champion'
-        : discipline
-          ? `${discipline} Star ${rank}`
-          : `Horse ${rank}`;
+  const isPlayerBoard = playerCategories.has(category);
+  const horseName = isPlayerBoard
+    ? undefined
+    : isCurrentUser
+      ? 'My Champion'
+      : discipline
+        ? `${discipline} Star ${rank}`
+        : `Horse ${rank}`;
 
   return {
     rank,
-    horseId: category === 'owner' ? undefined : 100 + rank,
+    horseId: isPlayerBoard ? undefined : 100 + rank,
     horseName,
     ownerId: isCurrentUser ? CURRENT_USER_ID : `user-${rank}`,
     ownerName: isCurrentUser ? CURRENT_USER_NAME : `Owner ${rank}`,
@@ -217,19 +209,7 @@ export function generateLeaderboardEntry(
  * @returns The total count of entries in this category's leaderboard
  */
 function getEntryCount(category: LeaderboardCategory): number {
-  switch (category) {
-    case 'level':
-    case 'prize-money':
-    case 'win-rate':
-    case 'discipline':
-      return 100;
-    case 'owner':
-      return 50;
-    case 'recent-winners':
-      return 20;
-    default:
-      return 100;
-  }
+  return playerCategories.has(category) ? 50 : 100;
 }
 
 /**

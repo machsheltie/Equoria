@@ -20,7 +20,7 @@
  * await refreshAll();
  *
  * // Refresh a specific category
- * await refreshCategory('level', 'monthly');
+ * await refreshCategory('player-xp', 'monthly');
  *
  * Story 5-5: Leaderboards - Task 5
  */

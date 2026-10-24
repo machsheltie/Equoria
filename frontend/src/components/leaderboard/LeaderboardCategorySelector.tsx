@@ -19,21 +19,25 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import { Select } from '@/components/ui/form';
 
 /**
- * Available leaderboard categories matching backend API values.
+ * The boards of the leaderboard redesign (Equoria-y3nia, owner rulings q10, q11,
+ * q40): four player boards, four horse boards and one board per discipline.
  */
 export type LeaderboardCategory =
-  | 'level'
-  | 'prize-money'
-  | 'win-rate'
-  | 'wins'
-  | 'discipline'
-  | 'owner'
-  | 'recent-winners';
+  | 'player-xp'
+  | 'player-earnings'
+  | 'player-wins'
+  | 'player-win-rate'
+  | 'horse-points'
+  | 'horse-earnings'
+  | 'horse-wins'
+  | 'horse-win-rate'
+  | 'discipline';
 
 /**
- * Time period filter options for leaderboard data.
+ * The two periods every board has: counted over the whole game, or over the
+ * current game month (Eastern time).
  */
-export type TimePeriod = 'all-time' | 'monthly' | 'weekly' | 'daily';
+export type TimePeriod = 'overall' | 'monthly';
 
 /**
  * Props for the LeaderboardCategorySelector component.
@@ -53,66 +57,52 @@ export interface LeaderboardCategorySelectorProps {
  * Human-readable labels for each leaderboard category.
  */
 const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
-  level: 'Horse Level',
-  'prize-money': 'Prize Money',
-  'win-rate': 'Win Rate',
-  wins: 'Wins',
-  discipline: 'Discipline',
-  owner: 'Owner',
-  'recent-winners': 'Recent Winners',
+  'player-xp': 'Player XP',
+  'player-earnings': 'Player Earnings',
+  'player-wins': 'Player Wins',
+  'player-win-rate': 'Player Win %',
+  'horse-points': 'Horse Points',
+  'horse-earnings': 'Horse Earnings',
+  'horse-wins': 'Horse Wins',
+  'horse-win-rate': 'Horse Win %',
+  discipline: 'By Discipline',
 };
 
 /**
  * Ordered list of categories for rendering.
  */
 const CATEGORIES: LeaderboardCategory[] = [
-  'level',
-  'prize-money',
-  'win-rate',
-  'wins',
+  'player-xp',
+  'player-earnings',
+  'player-wins',
+  'player-win-rate',
+  'horse-points',
+  'horse-earnings',
+  'horse-wins',
+  'horse-win-rate',
   'discipline',
-  'owner',
-  'recent-winners',
 ];
-
-/**
- * Boards with no time dimension. Win percentage and number of wins are counted
- * over a horse's whole career (Equoria-xxdqh, owner ruling 2026-10-22); player
- * level, prize money and owner totals are lifetime counters, not dated results
- * (Equoria-5uptv). The time period filter cannot apply to any of them, so it is
- * not shown. Discipline wins and recent winners are built from dated results and
- * keep it.
- */
-export const lifetimeCategories: ReadonlySet<LeaderboardCategory> = new Set([
-  'level',
-  'prize-money',
-  'win-rate',
-  'wins',
-  'owner',
-]);
 
 /**
  * Human-readable labels for each time period.
  */
 const PERIOD_LABELS: Record<TimePeriod, string> = {
-  'all-time': 'All-Time',
+  overall: 'Overall',
   monthly: 'Monthly',
-  weekly: 'Weekly',
-  daily: 'Daily',
 };
 
 /**
  * Ordered list of time periods for rendering.
  */
-const PERIODS: TimePeriod[] = ['all-time', 'monthly', 'weekly', 'daily'];
+const PERIODS: TimePeriod[] = ['overall', 'monthly'];
 
 /**
  * LeaderboardCategorySelector displays category tabs, a time period filter,
  * and a conditional discipline dropdown when the discipline category is selected.
  *
  * Features:
- * - Seven category tabs (CanonicalTabs underline variant, controlled)
- * - Four time period buttons
+ * - Nine category tabs (CanonicalTabs underline variant, controlled)
+ * - Overall and Monthly period buttons
  * - Discipline dropdown (visible only for discipline category)
  * - Loading state that disables all controls
  * - Radix-provided tablist/tab semantics + arrow-key navigation
@@ -182,30 +172,28 @@ const LeaderboardCategorySelector = ({
         ))}
       </Tabs>
 
-      {/* Time Period Filter — not shown for boards with no time dimension */}
-      {!lifetimeCategories.has(selectedCategory) && (
-        <div className="flex gap-2 mt-3" role="group" aria-label="Time period filter">
-          {PERIODS.map((period) => {
-            const isActive = selectedPeriod === period;
-            return (
-              <button
-                key={period}
-                onClick={() => onPeriodChange(period)}
-                disabled={isLoading}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-[var(--status-info)] text-[var(--text-primary)]'
-                    : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(37,99,235,0.2)]'
-                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                data-testid={`period-${period}`}
-                aria-pressed={isActive}
-              >
-                {PERIOD_LABELS[period]}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Every board has an Overall and a Monthly reading, so the filter always filters. */}
+      <div className="flex gap-2 mt-3" role="group" aria-label="Time period filter">
+        {PERIODS.map((period) => {
+          const isActive = selectedPeriod === period;
+          return (
+            <button
+              key={period}
+              onClick={() => onPeriodChange(period)}
+              disabled={isLoading}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-[var(--status-info)] text-[var(--text-primary)]'
+                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(37,99,235,0.2)]'
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              data-testid={`period-${period}`}
+              aria-pressed={isActive}
+            >
+              {PERIOD_LABELS[period]}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

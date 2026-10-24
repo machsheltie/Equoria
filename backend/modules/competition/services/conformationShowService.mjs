@@ -24,6 +24,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { recordSettledResultTotals } from '../../../utils/monthlyTotals.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { settleShowFeeEscrowInTx } from '../shows/showEscrowTx.mjs';
 import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
@@ -479,6 +480,20 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
             statGains: { ribbon: reward.ribbon, titlePoints: reward.titlePoints },
           })),
         });
+
+        // Equoria-y3nia: the Monthly boards, after the results are created (a
+        // duplicate settlement is refused by the [showId, horseId] unique first).
+        await recordSettledResultTotals(
+          tx,
+          placed.map(({ horse, placement }) => ({
+            horseId: horse.id,
+            ownerId: horse.userId,
+            placement,
+            prize: 0,
+            discipline: 'conformation',
+          })),
+          now,
+        );
 
         const results = placed.map(({ horse, finalScore, placement, reward }) => {
           const after = rewarded.get(horse.id);

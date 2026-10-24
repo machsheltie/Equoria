@@ -1450,14 +1450,6 @@ paths:
         '200': { description: 'Page-shaped board: entries, currentPage, totalPages, totalEntries' }
         '400': { description: 'Missing or unknown discipline' }
 
-  /leaderboards/players/level:
-    get:
-      tags: [Leaderboards]
-      summary: 'Top players by level (alias)'
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200': { description: 'Player level leaderboard' }
-
   /leaderboards/players/xp:
     get:
       tags: [Leaderboards]

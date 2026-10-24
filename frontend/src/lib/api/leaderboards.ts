@@ -133,6 +133,19 @@ export class LeaderboardApiError extends Error {
   }
 }
 
+/** The backend board each page category reads (GET /boards/:board). */
+export const boardNames: Record<LeaderboardCategory, string> = {
+  'player-xp': 'playerXp',
+  'player-earnings': 'playerEarnings',
+  'player-wins': 'playerWins',
+  'player-win-rate': 'playerWinPercentage',
+  'horse-points': 'horsePoints',
+  'horse-earnings': 'horseEarnings',
+  'horse-wins': 'horseWins',
+  'horse-win-rate': 'horseWinPercentage',
+  discipline: 'discipline',
+};
+
 /**
  * Parameters for fetching leaderboard data.
  */
@@ -155,7 +168,7 @@ export interface FetchLeaderboardParams {
  *
  * @example
  * const data = await fetchLeaderboard({
- *   category: 'level',
+ *   category: 'player-xp',
  *   period: 'monthly',
  *   page: 1,
  *   limit: 50,
@@ -165,7 +178,7 @@ export interface FetchLeaderboardParams {
 export async function fetchLeaderboard(
   params: FetchLeaderboardParams
 ): Promise<LeaderboardResponse> {
-  const path = `/api/v1/leaderboards/${params.category}`;
+  const path = `/api/v1/leaderboards/boards/${boardNames[params.category]}`;
 
   const queryParams = new URLSearchParams();
 

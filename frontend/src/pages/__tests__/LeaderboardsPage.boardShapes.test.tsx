@@ -1,7 +1,7 @@
 /**
  * LeaderboardsPage — one real-shape test per tab (Equoria-pthuj).
  *
- * The level, prize-money, owner, discipline and recent-winners tabs showed
+ * The player and horse boards and the discipline tab showed
  * "No entries found" after a successful request that held real rows, because
  * the backend answered shapes the page did not read. Each response below is the
  * exact JSON the backend serves for that board (see backend/modules/
@@ -23,7 +23,7 @@ import LeaderboardsPage from '../LeaderboardsPage';
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const userId = 'user-abc';
 const summaryPath = `${base}/api/v1/leaderboards/user-summary/${userId}`;
-const boardPath = (category: string) => `${base}/api/v1/leaderboards/${category}`;
+const boardPath = (board: string) => `${base}/api/v1/leaderboards/boards/${board}`;
 
 const emptySummary = { userId, userName: 'Tester', rankings: [], bestRankings: [] };
 
@@ -54,9 +54,9 @@ function renderPage(search: string) {
 }
 
 describe('LeaderboardsPage — real board shapes (Equoria-pthuj)', () => {
-  it('level: lists the players the backend ranked', async () => {
+  it('player-xp: lists the players the backend ranked', async () => {
     server.use(
-      http.get(boardPath('level'), () =>
+      http.get(boardPath('playerXp'), () =>
         HttpResponse.json(
           board([
             {
@@ -80,7 +80,7 @@ describe('LeaderboardsPage — real board shapes (Equoria-pthuj)', () => {
       )
     );
 
-    renderPage('category=level');
+    renderPage('category=player-xp');
 
     const rows = await screen.findAllByTestId('leaderboard-entry');
     expect(rows).toHaveLength(2);
@@ -92,9 +92,9 @@ describe('LeaderboardsPage — real board shapes (Equoria-pthuj)', () => {
     expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
   });
 
-  it('prize-money: lists the horses with their earnings', async () => {
+  it('horse-earnings: lists the horses with their earnings', async () => {
     server.use(
-      http.get(boardPath('prize-money'), () =>
+      http.get(boardPath('horseEarnings'), () =>
         HttpResponse.json(
           board([
             {
@@ -112,7 +112,7 @@ describe('LeaderboardsPage — real board shapes (Equoria-pthuj)', () => {
       )
     );
 
-    renderPage('category=prize-money');
+    renderPage('category=horse-earnings');
 
     const row = await screen.findByTestId('leaderboard-entry');
     expect(row).toHaveTextContent('Moonflower');
@@ -121,9 +121,9 @@ describe('LeaderboardsPage — real board shapes (Equoria-pthuj)', () => {
     expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
   });
 
-  it('owner: lists the owners with their summed earnings', async () => {
+  it('player-earnings: lists the players with their summed earnings', async () => {
     server.use(
-      http.get(boardPath('owner'), () =>
+      http.get(boardPath('playerEarnings'), () =>
         HttpResponse.json(
           board([
             {
@@ -139,47 +139,11 @@ describe('LeaderboardsPage — real board shapes (Equoria-pthuj)', () => {
       )
     );
 
-    renderPage('category=owner');
+    renderPage('category=player-earnings');
 
     const row = await screen.findByTestId('leaderboard-entry');
     expect(row).toHaveTextContent('Rowan');
     expect(row).toHaveTextContent('98,000');
-    expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
-  });
-
-  it('recent-winners: lists the latest winners with score and prize', async () => {
-    server.use(
-      http.get(boardPath('recent-winners'), () =>
-        HttpResponse.json({
-          success: true,
-          data: {
-            winners: [],
-            entries: [
-              {
-                rank: 1,
-                horseId: 501,
-                horseName: 'Moonflower',
-                ownerId: userId,
-                ownerName: 'Tester',
-                primaryStat: 87.5,
-                secondaryStats: { totalPrizeMoney: 1234 },
-                isCurrentUser: true,
-              },
-            ],
-            currentPage: 1,
-            totalPages: 1,
-            totalEntries: 1,
-          },
-        })
-      )
-    );
-
-    renderPage('category=recent-winners');
-
-    const row = await screen.findByTestId('leaderboard-entry');
-    expect(row).toHaveTextContent('Moonflower');
-    expect(row).toHaveTextContent('87.5');
-    expect(row).toHaveTextContent('1,234');
     expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
   });
 
@@ -233,12 +197,12 @@ describe('LeaderboardsPage — real board shapes (Equoria-pthuj)', () => {
 
   it('shows an error, never the empty state, when a board request fails', async () => {
     server.use(
-      http.get(boardPath('level'), () =>
+      http.get(boardPath('playerXp'), () =>
         HttpResponse.json({ success: false, message: 'boom' }, { status: 500 })
       )
     );
 
-    renderPage('category=level');
+    renderPage('category=player-xp');
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();

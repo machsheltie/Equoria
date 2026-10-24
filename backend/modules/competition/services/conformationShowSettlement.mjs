@@ -17,6 +17,8 @@ import { resolveTitle } from './conformationShowScoring.mjs';
 /** The horse fields conformation scoring reads (calculateConformationShowScore). */
 export const conformationScoringHorseSelect = {
   id: true,
+  // The owner, for the Monthly leaderboard totals (Equoria-y3nia).
+  userId: true,
   name: true,
   conformationScores: true,
   bondScore: true,

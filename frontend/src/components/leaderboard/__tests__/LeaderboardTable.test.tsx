@@ -62,7 +62,7 @@ const createEntries = (count: number): LeaderboardEntryData[] =>
 describe('LeaderboardTable', () => {
   const defaultProps = {
     entries: createEntries(5),
-    category: 'level' as const,
+    category: 'player-xp' as const,
     currentPage: 1,
     totalPages: 3,
     onPageChange: vi.fn(),

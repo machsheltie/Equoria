@@ -144,7 +144,7 @@ describe('LeaderboardsPage — horse detail modal (Equoria-ffmha, Equoria-b9yi1)
     const user = userEvent.setup();
     // Equoria-pthuj: the level tab ranks players, whose rows have no horse; the
     // prize-money tab is a real horse board.
-    renderPage('?category=prize-money');
+    renderPage('?category=horse-earnings');
     const rows = await screen.findAllByTestId('leaderboard-entry');
     await user.click(rows[0]);
   };

@@ -282,7 +282,7 @@ describe('stable ordering and real counts (Equoria-2y91o, Equoria-4qpqb)', () =>
     const unique = 3 + Math.floor(Math.random() * 1_000_000);
     try {
       for (const path of [
-        `/api/v1/leaderboards/players/level?limit=3&page=${unique}`,
+        `/api/v1/leaderboards/players/xp?limit=3&page=${unique}`,
         `/api/v1/leaderboards/horses/earnings?limit=3&page=${unique}`,
         `/api/v1/leaderboards/horses/performance?limit=3&offset=${unique}`,
         `/api/v1/leaderboards/players/horse-earnings?limit=3&offset=${unique}`,
@@ -299,9 +299,11 @@ describe('stable ordering and real counts (Equoria-2y91o, Equoria-4qpqb)', () =>
       const orderBy = Array.isArray(c.args.orderBy) ? c.args.orderBy : [c.args.orderBy];
       return Object.keys(orderBy[orderBy.length - 1])[0];
     });
-    // user level, horse earnings, performance groupBy, owner-earnings groupBy,
-    // recent winners — each ends in an id-like unique key.
-    expect(ordered.length).toBeGreaterThanOrEqual(5);
+    // horse earnings, performance groupBy, owner-earnings groupBy, recent winners —
+    // each ends in an id-like unique key. (Five until the owner removed the player
+    // level board, Equoria-y3nia; the players/xp read is raw SQL, not a Prisma
+    // orderBy, so it is not in this count.)
+    expect(ordered.length).toBeGreaterThanOrEqual(4);
     for (const key of lastKeys) {
       expect(['id', 'horseId', 'userId']).toContain(key);
     }

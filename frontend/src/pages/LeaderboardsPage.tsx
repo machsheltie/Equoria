@@ -55,8 +55,8 @@ import type { LeaderboardHorseProfile } from '@/lib/api/leaderboards';
 function useLeaderboardUrlState() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const category = (searchParams.get('category') as LeaderboardCategory) || 'level';
-  const period = (searchParams.get('period') as TimePeriod) || 'all-time';
+  const category = (searchParams.get('category') as LeaderboardCategory) || 'player-xp';
+  const period = (searchParams.get('period') as TimePeriod) || 'overall';
   const discipline = searchParams.get('discipline') || undefined;
   const page = parseInt(searchParams.get('page') || '1', 10);
 
@@ -115,24 +115,32 @@ function useLeaderboardUrlState() {
 }
 
 // Boards whose rows are players, not horses: there is no horse to open.
-const playerBoards: ReadonlySet<LeaderboardCategory> = new Set(['level', 'owner']);
+const playerBoards: ReadonlySet<LeaderboardCategory> = new Set([
+  'player-xp',
+  'player-earnings',
+  'player-wins',
+  'player-win-rate',
+]);
 
 // ---------------------------------------------------------------------------
-// Empty-state copy for the lifetime-record boards (Equoria-xxdqh)
+// Empty-state copy: a board can be genuinely empty (a new month, the 100-show
+// minimum), and says why (Equoria-y3nia).
 // ---------------------------------------------------------------------------
 
-/**
- * Owner ruling 2026-10-22: the win-percentage board lists only horses that
- * have entered at least 100 shows; the wins board lists horses that have won.
- * Shown only after a successful, genuinely empty response.
- */
+const winRateEmpty = (who: string) => ({
+  title: `No ${who} has entered 100 shows yet`,
+  description: `A ${who} joins the win-percentage board once ${who === 'horse' ? 'she' : 'they'} have entered 100 shows in the period.`,
+});
+
 const emptyBoardCopy: Partial<Record<LeaderboardCategory, { title: string; description: string }>> =
   {
-    'win-rate': {
-      title: 'No horse has entered 100 shows yet',
-      description: 'A horse joins the win-percentage board once she has entered 100 shows.',
+    'player-win-rate': winRateEmpty('player'),
+    'horse-win-rate': winRateEmpty('horse'),
+    'player-wins': {
+      title: 'No player has won a show yet',
+      description: 'Every player whose horse wins a show joins this board.',
     },
-    wins: {
+    'horse-wins': {
       title: 'No horse has won a show yet',
       description: 'Every horse that wins a show joins this board.',
     },
@@ -177,7 +185,7 @@ function buildHorseDetail(
     breed: profile.breed ?? 'not recorded',
     age: profile.age,
     sex: coerceSex(profile.sex),
-    level: entry.secondaryStats?.level ?? entry.primaryStat,
+    level: entry.secondaryStats?.level,
     stats: { ...profile.stats },
     competitionHistory: {
       // Unknown stays unknown (shown as "—"), never the win count; a real 0 survives `??`
@@ -207,6 +215,12 @@ function buildHorseDetail(
  * LeaderboardsPage integrates all leaderboard sub-components into a single
  * page with URL-driven state, data fetching, and a horse detail modal.
  */
+// The rank summary's categories that are leaderboards.
+const summaryCategoryBoards: Record<string, LeaderboardCategory | undefined> = {
+  xp: 'player-xp',
+  'horse-earnings': 'player-earnings',
+};
+
 const LeaderboardsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -271,7 +285,11 @@ const LeaderboardsPage = () => {
 
   const handleCategoryClickFromDashboard = useCallback(
     (cat: string) => {
-      updateCategory(cat as LeaderboardCategory);
+      // The rank summary names its own categories; only the ones that are boards open one.
+      const board = summaryCategoryBoards[cat];
+      if (board) {
+        updateCategory(board);
+      }
     },
     [updateCategory]
   );
@@ -304,7 +322,7 @@ const LeaderboardsPage = () => {
     <PageContainer variant="wide" padded={false} className="pb-12" data-testid="leaderboards-page">
       <PageHeader
         title="Leaderboards"
-        subtitle="View top performers across all categories — who reigns supreme in Equoria?"
+        subtitle="Players and horses, over the whole game and over this month."
         icon={<Trophy className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
       />
 

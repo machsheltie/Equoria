@@ -23,6 +23,7 @@ import logger from '../../../utils/logger.mjs';
 import { DatabaseError } from '../../../errors/index.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { invalidateCache, invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+import { addHorseMonthlyTotals } from '../../../utils/monthlyTotals.mjs';
 
 /**
  * Horse Points per stat allocation (owner ruling C15; bible 13). The one
@@ -145,6 +146,9 @@ export async function addXpToHorseCore(db, horseId, amount, reason) {
       reason,
     },
   });
+
+  // Equoria-y3nia: the Monthly horse points board, counted on the same client.
+  await addHorseMonthlyTotals(db, horseId, { points: amount });
 
   return {
     name: updated.name,

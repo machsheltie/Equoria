@@ -24,47 +24,41 @@ import {
 // ---------------------------------------------------------------------------
 
 describe('Leaderboard Fixtures', () => {
-  // Test 1: getLeaderboardEntries returns level leaderboard with correct primary stats
-  it('should return level leaderboard entries with decreasing level values', () => {
-    const entries = getLeaderboardEntries('level');
+  // Test 1: getLeaderboardEntries returns the player XP board with correct primary stats
+  it('should return player XP entries with decreasing values', () => {
+    const entries = getLeaderboardEntries('player-xp');
 
-    expect(entries.length).toBe(100);
-    // Rank 1 should have the highest level (20)
+    expect(entries.length).toBe(50);
     expect(entries[0].rank).toBe(1);
-    expect(entries[0].primaryStat).toBe(20);
-    // Each entry should have rank === index + 1
+    expect(entries[0].primaryStat).toBe(5000);
     entries.forEach((entry, idx) => {
       expect(entry.rank).toBe(idx + 1);
     });
-    // Primary stat should be non-increasing
     for (let i = 1; i < entries.length; i++) {
       expect(entries[i].primaryStat).toBeLessThanOrEqual(entries[i - 1].primaryStat);
     }
+    // A player board has no horse.
+    expect(entries[0].horseId).toBeUndefined();
   });
 
-  // Test 2: getLeaderboardEntries returns prize-money leaderboard
-  it('should return prize-money leaderboard entries with decreasing prize values', () => {
-    const entries = getLeaderboardEntries('prize-money');
+  // Test 2: getLeaderboardEntries returns horse earnings
+  it('should return horse-earnings entries with decreasing prize values', () => {
+    const entries = getLeaderboardEntries('horse-earnings');
 
     expect(entries.length).toBe(100);
-    // Rank 1 should have $500,000
     expect(entries[0].primaryStat).toBe(500000);
-    // Rank 2 should have $495,000
     expect(entries[1].primaryStat).toBe(495000);
-    // All values should be >= 0
     entries.forEach((entry) => {
       expect(entry.primaryStat).toBeGreaterThanOrEqual(0);
     });
   });
 
-  // Test 3: getLeaderboardEntries returns win-rate leaderboard
-  it('should return win-rate leaderboard entries with decreasing win rates', () => {
-    const entries = getLeaderboardEntries('win-rate');
+  // Test 3: getLeaderboardEntries returns horse win percentage
+  it('should return horse-win-rate entries with decreasing win rates', () => {
+    const entries = getLeaderboardEntries('horse-win-rate');
 
     expect(entries.length).toBe(100);
-    // Rank 1 should have 100% win rate
     expect(entries[0].primaryStat).toBe(100);
-    // All values should be between 0 and 100
     entries.forEach((entry) => {
       expect(entry.primaryStat).toBeGreaterThanOrEqual(0);
       expect(entry.primaryStat).toBeLessThanOrEqual(100);
@@ -84,12 +78,12 @@ describe('Leaderboard Fixtures', () => {
 
   // Test 5: getLeaderboardEntries returns correct counts for different categories
   it('should return the correct number of entries per category', () => {
-    expect(getLeaderboardEntries('level').length).toBe(100);
-    expect(getLeaderboardEntries('prize-money').length).toBe(100);
-    expect(getLeaderboardEntries('win-rate').length).toBe(100);
+    expect(getLeaderboardEntries('horse-points').length).toBe(100);
+    expect(getLeaderboardEntries('horse-earnings').length).toBe(100);
+    expect(getLeaderboardEntries('horse-win-rate').length).toBe(100);
     expect(getLeaderboardEntries('discipline', 'Dressage').length).toBe(100);
-    expect(getLeaderboardEntries('owner').length).toBe(50);
-    expect(getLeaderboardEntries('recent-winners').length).toBe(20);
+    expect(getLeaderboardEntries('player-xp').length).toBe(50);
+    expect(getLeaderboardEntries('player-win-rate').length).toBe(50);
   });
 
   // Test 6: getUserRankSummary returns data for valid userId
@@ -126,11 +120,11 @@ describe('Leaderboard Fixtures', () => {
       category: (typeof VALID_CATEGORIES)[number];
       discipline?: string;
     }> = [
-      { category: 'level' },
-      { category: 'prize-money' },
-      { category: 'win-rate' },
+      { category: 'player-xp' },
+      { category: 'horse-earnings' },
+      { category: 'horse-win-rate' },
       { category: 'discipline', discipline: 'Dressage' },
-      { category: 'owner' },
+      { category: 'player-earnings' },
     ];
 
     categoriesToCheck.forEach(({ category, discipline }) => {
@@ -142,11 +136,6 @@ describe('Leaderboard Fixtures', () => {
       expect(userEntry!.ownerId).toBe(CURRENT_USER_ID);
       expect(userEntry!.ownerName).toBe(CURRENT_USER_NAME);
     });
-
-    // recent-winners only has 20 entries, so current user at rank 42 is absent
-    const recentEntries = getLeaderboardEntries('recent-winners');
-    const recentUser = recentEntries.find((e) => e.isCurrentUser);
-    expect(recentUser).toBeUndefined();
   });
 });
 
@@ -160,10 +149,10 @@ describe('Leaderboard MSW Handlers', () => {
   // when using the 'error' strategy" because no handler matched.
   const base = 'http://localhost:3000';
 
-  // Test 9: GET /api/v1/leaderboards/level returns leaderboard data
+  // Test 9: GET /api/v1/leaderboards/boards/playerXp returns leaderboard data
   it('should return leaderboard data for a valid category', async () => {
     const response = await fetch(
-      `${base}/api/v1/leaderboards/level?period=all-time&page=1&limit=50`
+      `${base}/api/v1/leaderboards/boards/playerXp?period=overall&page=1&limit=50`
     );
 
     expect(response.status).toBe(200);
@@ -185,12 +174,12 @@ describe('Leaderboard MSW Handlers', () => {
   // Test 10: Pagination returns different entries for page 2
   it('should return different entries when requesting page 2', async () => {
     const page1Res = await fetch(
-      `${base}/api/v1/leaderboards/level?period=all-time&page=1&limit=10`
+      `${base}/api/v1/leaderboards/boards/playerXp?period=overall&page=1&limit=10`
     );
     const page1 = await page1Res.json();
 
     const page2Res = await fetch(
-      `${base}/api/v1/leaderboards/level?period=all-time&page=2&limit=10`
+      `${base}/api/v1/leaderboards/boards/playerXp?period=overall&page=2&limit=10`
     );
     const page2 = await page2Res.json();
 
@@ -206,7 +195,7 @@ describe('Leaderboard MSW Handlers', () => {
   // Test 11: Limit parameter controls entries per page
   it('should respect the limit parameter for entries per page', async () => {
     const response = await fetch(
-      `${base}/api/v1/leaderboards/level?period=all-time&page=1&limit=5`
+      `${base}/api/v1/leaderboards/boards/playerXp?period=overall&page=1&limit=5`
     );
     const json = await response.json();
 
@@ -215,7 +204,7 @@ describe('Leaderboard MSW Handlers', () => {
 
   // Test 12: Returns 404 for invalid category
   it('should return 404 for an invalid leaderboard category', async () => {
-    const response = await fetch(`${base}/api/v1/leaderboards/invalid-category?period=all-time`);
+    const response = await fetch(`${base}/api/v1/leaderboards/boards/invalidBoard?period=overall`);
 
     expect(response.status).toBe(404);
 
@@ -225,7 +214,7 @@ describe('Leaderboard MSW Handlers', () => {
 
   // Test 13: Returns 400 for discipline category without discipline param
   it('should return 400 when discipline category is requested without discipline param', async () => {
-    const response = await fetch(`${base}/api/v1/leaderboards/discipline?period=all-time`);
+    const response = await fetch(`${base}/api/v1/leaderboards/boards/discipline?period=overall`);
 
     expect(response.status).toBe(400);
 

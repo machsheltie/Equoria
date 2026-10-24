@@ -2,6 +2,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { DatabaseError } from '../../../errors/index.mjs';
 import { invalidateCache } from '../../../utils/cacheHelper.mjs';
+import { addPlayerMonthlyTotals } from '../../../utils/monthlyTotals.mjs';
 // Same-module import: avoid routing through the users barrel (index.mjs) to
 // prevent a barrel<->service circular dependency, since the barrel re-exports
 // this very file (userModelService) alongside gdprAccountService (Equoria-kwjav).
@@ -336,6 +337,9 @@ async function addXpToUserCore(db, userId, amount, reason) {
 
   // Audit row on the SAME client — commits or rolls back with the XP write.
   await db.xpEvent.create({ data: { userId, amount, reason } });
+
+  // Equoria-y3nia: the Monthly player XP board, counted on the same client.
+  await addPlayerMonthlyTotals(db, userId, { xp: amount });
 
   return {
     currentXP: newXp,

@@ -1,6 +1,7 @@
 /**
- * Leaderboards — the page shape of the level, prize-money, owner, discipline and
- * recent-winners boards (Equoria-pthuj).
+ * Leaderboards — the page shape of the recent-winners feed (Equoria-pthuj). The
+ * level, prize-money, owner and discipline page routes were replaced by
+ * /boards/:board (Equoria-y3nia; see leaderboardBoards.integration.test.mjs).
  *
  * The LeaderboardsPage reads `{ entries, currentPage, totalPages }` from every
  * tab. Before this fix /level answered `{ users, pagination }`, /prize-money
@@ -145,112 +146,6 @@ afterAll(async () => {
   await invalidateCachePattern('leaderboard:*');
   await cleanup.run();
 }, 60000);
-
-const mine = (entries, key) => {
-  const ids = new Set(Object.values(horse).map(h => h.id));
-  return entries.filter(e => (key === 'horse' ? ids.has(e.horseId) : e.ownerId === user.id));
-};
-
-describe('GET /api/v1/leaderboards/level — page shape (Equoria-pthuj)', () => {
-  it('answers { entries, currentPage, totalPages, totalEntries } with players ranked by level', async () => {
-    const res = await get('/api/v1/leaderboards/level?limit=100');
-
-    expect(res.status).toBe(200);
-    expect(Object.keys(res.body.data).sort()).toEqual(pageKeys);
-    expect(res.body.data.currentPage).toBe(1);
-    expect(res.body.data.totalEntries).toBeGreaterThanOrEqual(2);
-    res.body.data.entries.forEach(expectEntryShape);
-
-    const ranked = res.body.data.entries.filter(e => [user.id, rival.id].includes(e.ownerId));
-    expect(ranked.map(e => e.ownerId)).toEqual([user.id, rival.id]);
-    expect(ranked[0]).toEqual(
-      expect.objectContaining({ ownerName: user.username, primaryStat: 9999, isCurrentUser: true }),
-    );
-    expect(ranked[1].isCurrentUser).toBe(false);
-  });
-
-  it('pages by ?page and reports the real number of pages', async () => {
-    const first = await get('/api/v1/leaderboards/level?limit=1&page=1');
-    const second = await get('/api/v1/leaderboards/level?limit=1&page=2');
-
-    expect(first.body.data.entries).toHaveLength(1);
-    expect(second.body.data.currentPage).toBe(2);
-    expect(second.body.data.entries[0].rank).toBe(2);
-    expect(first.body.data.totalPages).toBe(first.body.data.totalEntries);
-  });
-});
-
-describe('GET /api/v1/leaderboards/prize-money — page shape (Equoria-pthuj)', () => {
-  it('ranks horses by total earnings in the page shape', async () => {
-    const res = await get('/api/v1/leaderboards/prize-money?limit=100');
-
-    expect(res.status).toBe(200);
-    expect(Object.keys(res.body.data).sort()).toEqual(pageKeys);
-    res.body.data.entries.forEach(expectEntryShape);
-
-    const ours = mine(res.body.data.entries, 'horse');
-    expect(ours.map(e => e.horseId)).toEqual([horse.A.id, horse.B.id]);
-    expect(ours[0]).toEqual(
-      expect.objectContaining({
-        horseName: horse.A.name,
-        ownerId: user.id,
-        ownerName: user.username,
-        primaryStat: 2_000_000_002,
-        isCurrentUser: true,
-      }),
-    );
-  });
-});
-
-describe('GET /api/v1/leaderboards/owner — page shape (Equoria-pthuj)', () => {
-  it('ranks owners by the summed earnings of their horses in the page shape', async () => {
-    const res = await get('/api/v1/leaderboards/owner?limit=100');
-
-    expect(res.status).toBe(200);
-    expect(Object.keys(res.body.data).sort()).toEqual(pageKeys);
-    res.body.data.entries.forEach(expectEntryShape);
-
-    const ours = mine(res.body.data.entries, 'owner');
-    expect(ours).toHaveLength(1);
-    expect(ours[0]).toEqual(
-      expect.objectContaining({
-        ownerName: user.username,
-        primaryStat: 4_000_000_003,
-        isCurrentUser: true,
-      }),
-    );
-  });
-});
-
-describe('GET /api/v1/leaderboards/discipline — wins in one discipline (Equoria-pthuj)', () => {
-  it('ranks horses by first places in the requested discipline only', async () => {
-    const res = await get(`/api/v1/leaderboards/discipline?discipline=${encodeURIComponent(DISCIPLINE)}&limit=100`);
-
-    expect(res.status).toBe(200);
-    expect(Object.keys(res.body.data).sort()).toEqual(pageKeys);
-    res.body.data.entries.forEach(expectEntryShape);
-
-    const ours = mine(res.body.data.entries, 'horse');
-    expect(ours.map(e => e.horseId)).toEqual([horse.A.id, horse.B.id]);
-    expect(ours[0]).toEqual(
-      expect.objectContaining({
-        horseName: horse.A.name,
-        primaryStat: 3,
-        secondaryStats: { wins: 3, totalCompetitions: 4 },
-        isCurrentUser: true,
-      }),
-    );
-    expect(ours[1].primaryStat).toBe(1);
-  });
-
-  it('refuses a missing or unknown discipline instead of returning an empty board', async () => {
-    const missing = await get('/api/v1/leaderboards/discipline');
-    const unknown = await get('/api/v1/leaderboards/discipline?discipline=western-pleasure');
-
-    expect(missing.status).toBe(400);
-    expect(unknown.status).toBe(400);
-  });
-});
 
 describe('GET /api/v1/leaderboards/recent-winners — page shape (Equoria-pthuj)', () => {
   it('adds the page shape and keeps the winners list its other readers use', async () => {

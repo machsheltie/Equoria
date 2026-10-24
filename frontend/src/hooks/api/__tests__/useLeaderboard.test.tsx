@@ -6,7 +6,7 @@
  * Network boundary stubbed with MSW per-test `server.use(...)` overrides
  * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
  * real `apiClient` envelope unwrap of `{ success, data }` end-to-end. The
- * underlying GET is /api/v1/leaderboards/:category with querystring params
+ * underlying GET is /api/v1/leaderboards/boards/:board with querystring params
  * (period, optional discipline, page, limit) emitted by `fetchLeaderboard`;
  * captured handlers track both pathname AND search per request so multi-param
  * propagation is asserted at the wire level.
@@ -73,7 +73,7 @@ const mockEntries: LeaderboardEntryData[] = [
 ];
 
 const mockLeaderboardResponse: LeaderboardResponse = {
-  category: 'level',
+  category: 'player-xp',
   period: 'monthly',
   totalEntries: 1254,
   currentPage: 1,
@@ -133,7 +133,7 @@ describe('useLeaderboard', () => {
   // Test 1: Fetches leaderboard data successfully
   it('should fetch leaderboard data when valid parameters are provided', async () => {
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({
           pathname: url.pathname,
@@ -147,7 +147,7 @@ describe('useLeaderboard', () => {
     const { result } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
+          category: 'player-xp',
           period: 'monthly',
         }),
       { wrapper: createWrapper() }
@@ -156,7 +156,7 @@ describe('useLeaderboard', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(captured).toHaveLength(1);
-    expect(captured[0].pathname).toBe('/api/v1/leaderboards/level');
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/boards/playerXp');
     expect(captured[0].query).toMatchObject({
       period: 'monthly',
       page: '1',
@@ -170,7 +170,7 @@ describe('useLeaderboard', () => {
   // Test 2: Returns loading state initially
   it('should return loading state while fetching', () => {
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, async () => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, async () => {
         await delay('infinite');
         return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
       })
@@ -179,7 +179,7 @@ describe('useLeaderboard', () => {
     const { result } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
+          category: 'player-xp',
           period: 'monthly',
         }),
       { wrapper: createWrapper() }
@@ -193,7 +193,7 @@ describe('useLeaderboard', () => {
   // Test 3: Handles API errors correctly
   it('should handle API errors and expose the error object', async () => {
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, () => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, () => {
         return HttpResponse.json({ success: false, message: 'Server error' }, { status: 500 });
       })
     );
@@ -201,8 +201,8 @@ describe('useLeaderboard', () => {
     const { result } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
-          period: 'all-time',
+          category: 'player-xp',
+          period: 'overall',
         }),
       { wrapper: createWrapper() }
     );
@@ -218,7 +218,7 @@ describe('useLeaderboard', () => {
   // Test 4: Uses correct query key with all parameters
   it('should use a query key that includes category, period, discipline, page, and limit', async () => {
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({
           pathname: url.pathname,
@@ -239,7 +239,7 @@ describe('useLeaderboard', () => {
       () =>
         useLeaderboard({
           category: 'discipline',
-          period: 'weekly',
+          period: 'overall',
           discipline: 'dressage',
           page: 3,
           limit: 25,
@@ -251,16 +251,16 @@ describe('useLeaderboard', () => {
 
     // Querystring carries all five fields the hook forwarded to fetchLeaderboard
     expect(captured).toHaveLength(1);
-    expect(captured[0].pathname).toBe('/api/v1/leaderboards/discipline');
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/boards/discipline');
     expect(captured[0].query).toMatchObject({
-      period: 'weekly',
+      period: 'overall',
       discipline: 'dressage',
       page: '3',
       limit: '25',
     });
 
-    const expectedKey = leaderboardQueryKeys.list('discipline', 'weekly', 'dressage', 3, 25);
-    expect(expectedKey).toEqual(['leaderboards', 'discipline', 'weekly', 'dressage', 3, 25]);
+    const expectedKey = leaderboardQueryKeys.list('discipline', 'overall', 'dressage', 3, 25);
+    expect(expectedKey).toEqual(['leaderboards', 'discipline', 'overall', 'dressage', 3, 25]);
 
     const cachedData = queryClient.getQueryData(expectedKey);
     expect(cachedData).toEqual(mockLeaderboardResponse);
@@ -270,7 +270,7 @@ describe('useLeaderboard', () => {
   it('should use 5 minute staleTime to prevent unnecessary refetches', async () => {
     let callCount = 0;
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, () => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, () => {
         callCount += 1;
         return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
       })
@@ -286,7 +286,7 @@ describe('useLeaderboard', () => {
     const { result, unmount } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
+          category: 'player-xp',
           period: 'monthly',
         }),
       { wrapper: createWrapper(queryClient) }
@@ -301,7 +301,7 @@ describe('useLeaderboard', () => {
     const { result: result2 } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
+          category: 'player-xp',
           period: 'monthly',
         }),
       { wrapper: createWrapper(queryClient) }
@@ -317,7 +317,7 @@ describe('useLeaderboard', () => {
   // Test 6: Respects gcTime (10 minutes) - cache entry exists after fetch
   it('should use 10 minute gcTime for cache retention', async () => {
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, () => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, () => {
         return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
       })
     );
@@ -331,7 +331,7 @@ describe('useLeaderboard', () => {
     const { result } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
+          category: 'player-xp',
           period: 'monthly',
         }),
       { wrapper: createWrapper(queryClient) }
@@ -341,7 +341,7 @@ describe('useLeaderboard', () => {
 
     // Verify cache exists after successful fetch
     const cacheEntry = queryClient.getQueryCache().find({
-      queryKey: leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50),
+      queryKey: leaderboardQueryKeys.list('player-xp', 'monthly', undefined, 1, 50),
     });
     expect(cacheEntry).toBeDefined();
     expect(cacheEntry?.state.data).toEqual(mockLeaderboardResponse);
@@ -350,7 +350,7 @@ describe('useLeaderboard', () => {
   // Test 7: Enabled flag prevents fetching when false
   it('should not fetch when enabled is false', () => {
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({
           pathname: url.pathname,
@@ -364,7 +364,7 @@ describe('useLeaderboard', () => {
     const { result } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
+          category: 'player-xp',
           period: 'monthly',
           enabled: false,
         }),
@@ -384,7 +384,7 @@ describe('useLeaderboard', () => {
 
     let callCount = 0;
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, () => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, () => {
         callCount += 1;
         const body = callCount === 1 ? firstResponse : secondResponse;
         return HttpResponse.json({ success: true, data: body });
@@ -400,7 +400,7 @@ describe('useLeaderboard', () => {
     const { result } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
+          category: 'player-xp',
           period: 'monthly',
         }),
       { wrapper: createWrapper(queryClient) }
@@ -421,11 +421,11 @@ describe('useLeaderboard', () => {
     const disciplineResponse: LeaderboardResponse = {
       ...mockLeaderboardResponse,
       category: 'discipline',
-      period: 'weekly',
+      period: 'overall',
     };
 
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({
           pathname: url.pathname,
@@ -440,7 +440,7 @@ describe('useLeaderboard', () => {
       () =>
         useLeaderboard({
           category: 'discipline',
-          period: 'weekly',
+          period: 'overall',
           discipline: 'show-jumping',
         }),
       { wrapper: createWrapper() }
@@ -449,10 +449,10 @@ describe('useLeaderboard', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(captured).toHaveLength(1);
-    expect(captured[0].pathname).toBe('/api/v1/leaderboards/discipline');
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/boards/discipline');
     expect(captured[0].query).toMatchObject({
       discipline: 'show-jumping',
-      period: 'weekly',
+      period: 'overall',
     });
   });
 
@@ -464,7 +464,7 @@ describe('useLeaderboard', () => {
     };
 
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({
           pathname: url.pathname,
@@ -478,8 +478,8 @@ describe('useLeaderboard', () => {
     const { result } = renderHook(
       () =>
         useLeaderboard({
-          category: 'prize-money',
-          period: 'all-time',
+          category: 'horse-earnings',
+          period: 'overall',
           page: 2,
           limit: 100,
         }),
@@ -489,9 +489,9 @@ describe('useLeaderboard', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(captured).toHaveLength(1);
-    expect(captured[0].pathname).toBe('/api/v1/leaderboards/prize-money');
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/boards/horseEarnings');
     expect(captured[0].query).toMatchObject({
-      period: 'all-time',
+      period: 'overall',
       page: '2',
       limit: '100',
     });
@@ -501,7 +501,7 @@ describe('useLeaderboard', () => {
   // Test 11: Default parameter values (page=1, limit=50)
   it('should use default page=1 and limit=50 when not specified', async () => {
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({
           pathname: url.pathname,
@@ -515,8 +515,8 @@ describe('useLeaderboard', () => {
     const { result } = renderHook(
       () =>
         useLeaderboard({
-          category: 'win-rate',
-          period: 'daily',
+          category: 'horse-win-rate',
+          period: 'monthly',
         }),
       { wrapper: createWrapper() }
     );
@@ -524,9 +524,9 @@ describe('useLeaderboard', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(captured).toHaveLength(1);
-    expect(captured[0].pathname).toBe('/api/v1/leaderboards/win-rate');
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/boards/horseWinPercentage');
     expect(captured[0].query).toMatchObject({
-      period: 'daily',
+      period: 'monthly',
       page: '1',
       limit: '50',
     });
@@ -536,21 +536,21 @@ describe('useLeaderboard', () => {
   it('should cache different categories separately with unique query keys', async () => {
     const levelResponse: LeaderboardResponse = {
       ...mockLeaderboardResponse,
-      category: 'level',
+      category: 'player-xp',
     };
     const prizeResponse: LeaderboardResponse = {
       ...mockLeaderboardResponse,
-      category: 'prize-money',
+      category: 'horse-earnings',
       totalEntries: 800,
     };
 
     server.use(
-      http.get(`${base}/api/v1/leaderboards/:category`, ({ params }) => {
-        const category = String(params.category);
-        if (category === 'level') {
+      http.get(`${base}/api/v1/leaderboards/boards/:board`, ({ params }) => {
+        const category = String(params.board);
+        if (category === 'playerXp') {
           return HttpResponse.json({ success: true, data: levelResponse });
         }
-        if (category === 'prize-money') {
+        if (category === 'horseEarnings') {
           return HttpResponse.json({ success: true, data: prizeResponse });
         }
         return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
@@ -567,7 +567,7 @@ describe('useLeaderboard', () => {
     const { result: levelResult } = renderHook(
       () =>
         useLeaderboard({
-          category: 'level',
+          category: 'player-xp',
           period: 'monthly',
         }),
       { wrapper: createWrapper(queryClient) }
@@ -579,7 +579,7 @@ describe('useLeaderboard', () => {
     const { result: prizeResult } = renderHook(
       () =>
         useLeaderboard({
-          category: 'prize-money',
+          category: 'horse-earnings',
           period: 'monthly',
         }),
       { wrapper: createWrapper(queryClient) }
@@ -588,8 +588,8 @@ describe('useLeaderboard', () => {
     await waitFor(() => expect(prizeResult.current.isSuccess).toBe(true));
 
     // Both should be cached separately
-    const levelKey = leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50);
-    const prizeKey = leaderboardQueryKeys.list('prize-money', 'monthly', undefined, 1, 50);
+    const levelKey = leaderboardQueryKeys.list('player-xp', 'monthly', undefined, 1, 50);
+    const prizeKey = leaderboardQueryKeys.list('horse-earnings', 'monthly', undefined, 1, 50);
 
     expect(levelKey).not.toEqual(prizeKey);
     expect(queryClient.getQueryData(levelKey)).toEqual(levelResponse);
@@ -601,9 +601,9 @@ describe('leaderboardQueryKeys', () => {
   it('should export query keys for external use', () => {
     expect(leaderboardQueryKeys).toBeDefined();
     expect(leaderboardQueryKeys.all).toEqual(['leaderboards']);
-    expect(leaderboardQueryKeys.list('level', 'monthly')).toEqual([
+    expect(leaderboardQueryKeys.list('player-xp', 'monthly')).toEqual([
       'leaderboards',
-      'level',
+      'player-xp',
       'monthly',
       undefined,
       undefined,
@@ -612,9 +612,9 @@ describe('leaderboardQueryKeys', () => {
   });
 
   it('should create unique keys for different parameters', () => {
-    const key1 = leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50);
-    const key2 = leaderboardQueryKeys.list('prize-money', 'monthly', undefined, 1, 50);
-    const key3 = leaderboardQueryKeys.list('level', 'weekly', undefined, 1, 50);
+    const key1 = leaderboardQueryKeys.list('player-xp', 'monthly', undefined, 1, 50);
+    const key2 = leaderboardQueryKeys.list('horse-earnings', 'monthly', undefined, 1, 50);
+    const key3 = leaderboardQueryKeys.list('player-xp', 'overall', undefined, 1, 50);
 
     expect(key1).not.toEqual(key2);
     expect(key1).not.toEqual(key3);
