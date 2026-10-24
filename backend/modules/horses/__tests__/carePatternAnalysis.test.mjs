@@ -335,10 +335,12 @@ describe('analyzeNoveltyExposure — || and && branch coverage (line 131, Equori
 
 describe('groupInteractionsByDay — same-day grouping branch (line 263, Equoria-jkht)', () => {
   it('two interactions on the same day group into one bucket (covers if(!groups[day]) false-branch)', () => {
-    const now = Date.now();
+    // Fixed instants at midday Eastern (game days are Eastern), so the test does not
+    // depend on when it runs: "1 h ago" and "2 h ago" straddle Eastern midnight in the
+    // evening window and landed in two buckets.
     const sameDay = [
-      mkInteraction(0, { createdAt: new Date(now - 1 * 60 * 60 * 1000) }), // 1 h ago (today)
-      mkInteraction(0, { createdAt: new Date(now - 2 * 60 * 60 * 1000) }), // 2 h ago (same today)
+      mkInteraction(0, { createdAt: new Date('2026-06-15T17:00:00Z') }), // 1 pm EDT
+      mkInteraction(0, { createdAt: new Date('2026-06-15T16:00:00Z') }), // noon EDT, same game day
     ];
     const r = analyzeConsistentCare(sameDay, 50);
     expect(r.consecutiveDaysWithCare).toBe(1); // both in same day bucket → 1 unique day

@@ -61,7 +61,7 @@ async function expectTotalsMatchResults(show) {
 
 describe('settlement updates the monthly totals (Equoria-y3nia)', () => {
   it('counts every entrant once, in the current Eastern game month', async () => {
-    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 20, entrantCount: 4 });
+    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 100, entrantCount: 4 });
     await executeClosedShows({ body: { showIds: [show.showId] } }, null);
     await expectTotalsMatchResults(show);
     const winner = await prisma.competitionResult.findFirst({ where: { showId: show.showId, placement: 1 } });
@@ -69,7 +69,7 @@ describe('settlement updates the monthly totals (Equoria-y3nia)', () => {
   }, 60000);
 
   it('two executors racing for one show count it once', async () => {
-    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 20, entrantCount: 3 });
+    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 100, entrantCount: 3 });
     await Promise.all([
       executeClosedShows({ body: { showIds: [show.showId] } }, null),
       executeClosedShows({ body: { showIds: [show.showId] } }, null),
@@ -78,7 +78,7 @@ describe('settlement updates the monthly totals (Equoria-y3nia)', () => {
   }, 60000);
 
   it('a settlement that is run again counts nothing more', async () => {
-    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 20, entrantCount: 3 });
+    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 100, entrantCount: 3 });
     await executeClosedShows({ body: { showIds: [show.showId] } }, null);
     await executeClosedShows({ body: { showIds: [show.showId] } }, null);
     await expectTotalsMatchResults(show);
@@ -87,7 +87,7 @@ describe('settlement updates the monthly totals (Equoria-y3nia)', () => {
 
 describe('backfillLeaderboardMonthlyTotals', () => {
   it('fills history by Eastern game month, idempotently, and a dry run writes nothing', async () => {
-    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 20, entrantCount: 3 });
+    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 100, entrantCount: 3 });
     await executeClosedShows({ body: { showIds: [show.showId] } }, null);
     const userIds = show.entrants.map(e => e.owner.id);
     const horseIds = show.entrants.map(e => e.horse.id);

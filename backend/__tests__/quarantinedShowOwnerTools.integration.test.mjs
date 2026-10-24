@@ -38,7 +38,7 @@ import {
 const prefix = 'TestFixture-ehlbj-owner';
 const api = '/api/v1/staff/shows/quarantined';
 const prize = 1000;
-const entryFee = 50;
+const entryFee = prize / 10; // the prize is always 10x the entry fee (owner ruling 2026-10-23)
 const cleanup = createCleanupTracker();
 const userIds = [];
 const horseIds = [];
@@ -94,7 +94,6 @@ async function buildQuarantinedShow({ stagedUserId } = {}) {
         name: `${prefix}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
         entryFee,
-        prize,
         level: 1,
       },
     },
@@ -149,7 +148,7 @@ const auditRows = showId =>
 
 beforeAll(async () => {
   creator = await makeUser(100000, 'creator');
-  entrant = await makeUser(500, 'entrant');
+  entrant = await makeUser(10 * entryFee, 'entrant'); // enough for every show this suite enters
   entrantHorse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
