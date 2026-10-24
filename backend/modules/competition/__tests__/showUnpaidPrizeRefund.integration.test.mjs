@@ -29,7 +29,7 @@ import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { enterShow } from '../shows/showController.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, creditSystemAccount } from '../../economy/index.mjs';
+import { creditSystemAccount } from '../../economy/index.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -120,7 +120,7 @@ async function runShow({ prize, entrantCount, entryFee = 0 }) {
   const closeDate = new Date(openDate.getTime() + 7 * 24 * 60 * 60 * 1000);
   const show = await prisma.$transaction(async tx => {
     await tx.user.update({ where: { id: creator.id }, data: { money: { decrement: prize } } });
-    await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
+    await creditSystemAccount(tx, 'showEscrow', prize, {
       category: 'showCreatePrizeEscrow',
       description: `Prize escrow for pre-ruling show ${PREFIX}`,
       linkedUserId: creator.id,
