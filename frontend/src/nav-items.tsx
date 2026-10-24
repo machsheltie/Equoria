@@ -36,6 +36,7 @@ const VeterinarianPage = lazy(() => import('./pages/VeterinarianPage'));
 const FarrierPage = lazy(() => import('./pages/FarrierPage'));
 const FeedShopPage = lazy(() => import('./pages/FeedShopPage'));
 const TackShopPage = lazy(() => import('./pages/TackShopPage'));
+const PremiumShopPage = lazy(() => import('./pages/PremiumShopPage'));
 // Epic 12 — Stable Management pages
 const BankPage = lazy(() => import('./pages/BankPage'));
 const InventoryPage = lazy(() => import('./pages/InventoryPage'));
@@ -166,6 +167,12 @@ export const navItems = [
     to: '/tack-shop',
     icon: null,
     Page: TackShopPage,
+  },
+  {
+    title: 'Premium Shop',
+    to: '/premium-shop',
+    icon: null,
+    Page: PremiumShopPage,
   },
   {
     title: 'Leathersmith Workshop',

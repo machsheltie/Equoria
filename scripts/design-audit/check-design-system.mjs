@@ -101,6 +101,7 @@ const PAGEHERO_ALLOWLIST = [
   'pages/FarrierPage.tsx',
   'pages/FeedShopPage.tsx',
   'pages/TackShopPage.tsx',
+  'pages/PremiumShopPage.tsx',
   'pages/CraftingPage.tsx',
   'pages/WorldMapPage.tsx',
   'pages/WorldHubPage.tsx',

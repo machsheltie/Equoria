@@ -48,6 +48,7 @@ const ROUTE_LABELS: Record<string, string> = {
   'my-stable': 'Stable Profile',
   'feed-shop': 'Feed Shop',
   'tack-shop': 'Tack Shop',
+  'premium-shop': 'Premium Shop',
   farrier: 'Farrier',
   veterinarian: 'Veterinarian',
   'competition-browser': 'Competitions',

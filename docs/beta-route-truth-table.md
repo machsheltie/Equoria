@@ -44,6 +44,7 @@ Every currently known route is `beta-live`; unknown paths also resolve to `beta-
 | `/farrier`                  | World service       | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/feed-shop`                | World shop          | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/tack-shop`                | World shop          | `betaRouteScope.ts` | `App.tsx`    | beta-live |
+| `/premium-shop`             | World shop          | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/marketplace`              | Marketplace         | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/marketplace/horses`       | Horse marketplace   | `betaRouteScope.ts` | `App.tsx`    | beta-live |
 | `/marketplace/horse-trader` | Horse trader        | `betaRouteScope.ts` | `App.tsx`    | beta-live |

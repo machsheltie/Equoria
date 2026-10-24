@@ -58,6 +58,7 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
   '/farrier': 'beta-live',
   '/feed-shop': 'beta-live',
   '/tack-shop': 'beta-live',
+  '/premium-shop': 'beta-live',
   '/marketplace': 'beta-live',
   '/marketplace/horses': 'beta-live',
   '/marketplace/horse-trader': 'beta-live',

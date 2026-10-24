@@ -1,7 +1,7 @@
 /**
  * World Hub Page — The Realm of Equoria
  *
- * 10 location cards for the game world with atmospheric header.
+ * 11 location cards for the game world with atmospheric header.
  * This is the map screen — exploring the world should feel expansive.
  *
  */
@@ -56,6 +56,15 @@ const worldLocations: LocationCardProps[] = [
       'linear-gradient(160deg, rgba(45,78,10,0.85) 0%, rgba(28,48,5,0.95) 60%, rgba(5,13,26,0.98) 100%)',
     backgroundImage: '/images/feedstore.webp',
     backgroundPosition: '55% 35%',
+  },
+  {
+    id: 'premium-shop',
+    name: 'Premium Shop',
+    description: 'Rare finds and limited-edition goods. Coming soon.',
+    icon: '💎',
+    href: '/premium-shop',
+    paintingGradient:
+      'linear-gradient(160deg, rgba(90,60,12,0.85) 0%, rgba(60,40,8,0.95) 60%, rgba(5,13,26,0.98) 100%)',
   },
   {
     id: 'training-center',
