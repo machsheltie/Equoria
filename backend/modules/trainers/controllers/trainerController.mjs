@@ -74,7 +74,15 @@ export async function getTrainerAssignments(req, res) {
     const assignments = await prisma.trainerAssignment.findMany({
       where: { userId, isActive: true },
       include: {
-        trainer: { select: { id: true, firstName: true, lastName: true } },
+        trainer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            personality: true,
+            sessionRate: true,
+          },
+        },
         horse: { select: { id: true, name: true } },
       },
       orderBy: { startDate: 'desc' },
@@ -86,6 +94,9 @@ export async function getTrainerAssignments(req, res) {
       horseId: a.horseId,
       horseName: a.horse.name,
       trainerName: `${a.trainer.firstName} ${a.trainer.lastName}`,
+      // Equoria-r8a6h: the horse page shows who trains it and the per-session fee.
+      trainerPersonality: a.trainer.personality,
+      trainerSessionRate: a.trainer.sessionRate,
       startDate: a.startDate,
       isActive: a.isActive,
     }));

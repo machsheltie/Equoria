@@ -39,6 +39,7 @@ import {
 } from '@/hooks/api/useTrainers';
 import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 // Equoria-8cnzr — single error-taxonomy mapping point. Turns a thrown transport
 // error into user-safe copy so a raw server body message is never rendered (§3).
 import { userMessageFor } from '@/lib/http/userMessage';
@@ -301,6 +302,27 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                 </div>
               </div>
 
+              {/* Equoria-r8a6h: the trainer's speciality and the one fee a session costs. */}
+              <dl className="grid grid-cols-2 gap-2 mb-4 text-xs">
+                <div>
+                  <dt className="text-[10px] text-role-muted uppercase tracking-wider">
+                    Speciality
+                  </dt>
+                  <dd className="text-role-primary">{trainer.speciality}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] text-role-muted uppercase tracking-wider">
+                    Per session
+                  </dt>
+                  <dd
+                    className="text-role-primary"
+                    data-testid={`trainer-session-fee-${trainer.id}`}
+                  >
+                    <Currency amount={trainer.sessionRate} />
+                  </dd>
+                </div>
+              </dl>
+
               {/* Assignments */}
               <div className="mb-4">
                 <h4 className="text-[10px] font-bold text-role-muted uppercase tracking-wider mb-2">
@@ -332,7 +354,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                 className="w-full mb-3"
                 data-testid={`assign-button-${trainer.id}`}
               >
-                Assign to Horse
+                Assign Trainer
               </Button>
 
               {/* Dismiss (retire) trainer: Equoria-oey96.71. */}

@@ -19,6 +19,7 @@
 
 import { formatDate } from '@/lib/formatDate';
 import { X } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 import {
   GameDialog,
   GameDialogContent,
@@ -70,6 +71,12 @@ export interface TrainingConfirmModalProps {
   cooldownDays: number;
 
   /**
+   * The assigned trainer's per-session fee (Equoria-r8a6h). When above zero the
+   * confirm button reads "Train Horse <price>", the one charge for this session.
+   */
+  trainerFee?: number;
+
+  /**
    * Loading state during training mutation
    */
   isLoading?: boolean;
@@ -101,6 +108,7 @@ const TrainingConfirmModal = ({
   baseScoreGain,
   currentScore,
   cooldownDays,
+  trainerFee = 0,
   isLoading = false,
 }: TrainingConfirmModalProps) => {
   // Calculate derived values
@@ -273,6 +281,10 @@ const TrainingConfirmModal = ({
                   Training...
                 </span>
               </>
+            ) : trainerFee > 0 ? (
+              <span className="inline-flex items-center gap-1.5">
+                Train Horse <Currency amount={trainerFee} />
+              </span>
             ) : (
               'Confirm Training'
             )}

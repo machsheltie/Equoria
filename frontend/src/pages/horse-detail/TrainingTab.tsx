@@ -25,6 +25,8 @@ import { userMessageFor } from '@/lib/http/userMessage';
 import { useTrainHorse, useTrainingOverview } from '../../hooks/api/useTraining';
 import { formatDisciplineName, canTrain, getDisciplineScore } from '../../lib/utils/training-utils';
 import { isBadHealth } from '../../lib/healthWords';
+import { useHorseTrainer } from '../../hooks/api/useTrainers';
+import HorseTrainerPanel from './HorseTrainerPanel';
 import type { Horse } from './HorseDetailPageTypes';
 
 const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
@@ -57,6 +59,8 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     refetch: refetchOverview,
   } = useTrainingOverview(horse.id);
   const trainHorse = useTrainHorse();
+  // Equoria-r8a6h: the assigned trainer's per-session fee is what the button charges.
+  const { fee: trainerFee } = useHorseTrainer(horse.id);
 
   // Check training eligibility
   const eligibility = canTrain({
@@ -211,6 +215,8 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
   return (
     <div className="space-y-6" data-testid="training-tab">
+      <HorseTrainerPanel horseId={horse.id} />
+
       {/* Training Status Section */}
       <div className="bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)] p-6">
         <h3 className="type-section-heading mb-3 flex items-center">
@@ -358,6 +364,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             selectedDiscipline
           )}
           cooldownDays={7}
+          trainerFee={trainerFee}
           isLoading={trainHorse.isPending}
         />
       )}

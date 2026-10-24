@@ -58,6 +58,9 @@ export interface TrainerAssignmentEntry {
   horseId: number;
   horseName: string;
   trainerName: string;
+  /** Equoria-r8a6h: the trainer's personality and per-session fee. */
+  trainerPersonality: string;
+  trainerSessionRate: number;
   startDate: string;
   isActive: boolean;
 }

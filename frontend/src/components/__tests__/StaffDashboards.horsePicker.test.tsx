@@ -81,6 +81,9 @@ function renderWith(node: React.ReactNode) {
 const cases = [
   {
     label: 'MyTrainersDashboard',
+    // Owner ruling 2026-10-23 (Equoria-r8a6h): the trainer card button reads "Assign Trainer"
+    // (it read "Assign to Horse" before, like the riders card).
+    assignLabel: /assign trainer/i,
     node: <MyTrainersDashboard userId={testUserId} />,
     handlers: () => [
       http.get(`${base}/api/v1/trainers/user/${testUserId}`, () => HttpResponse.json(oneTrainer)),
@@ -89,6 +92,7 @@ const cases = [
   },
   {
     label: 'MyRidersDashboard',
+    assignLabel: /assign to horse/i,
     node: <MyRidersDashboard userId={testUserId} onBrowseMarketplace={() => {}} />,
     handlers: () => [
       http.get(`${base}/api/v1/riders/user/${testUserId}`, () => HttpResponse.json(oneRider)),
@@ -97,11 +101,11 @@ const cases = [
   },
 ];
 
-describe.each(cases)('$label — horse picker (Equoria-gpnck)', ({ node, handlers }) => {
+describe.each(cases)('$label — horse picker (Equoria-gpnck)', ({ node, handlers, assignLabel }) => {
   async function openPicker() {
     const user = userEvent.setup();
     renderWith(node);
-    await user.click(await screen.findByRole('button', { name: /assign to horse/i }));
+    await user.click(await screen.findByRole('button', { name: assignLabel }));
     return { user, picker: await screen.findByTestId('horse-picker-modal') };
   }
 

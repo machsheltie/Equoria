@@ -60,6 +60,29 @@ export function useUserTrainers(userId: string | number) {
   });
 }
 
+/**
+ * The trainer assigned to one horse (Equoria-r8a6h), or null when it has none.
+ * The assignment is saved server-side and listed by GET /trainers/assignments,
+ * which carries the trainer's name, personality and per-session fee. `fee` is
+ * the one charge made when the horse trains.
+ */
+export function useHorseTrainer(horseId: number) {
+  const query = useTrainerAssignments();
+  const assignments = Array.isArray(query.data) ? query.data : [];
+  const assignment =
+    assignments.find((a) => a.isActive && Number(a.horseId) === Number(horseId)) ?? null;
+  const fee =
+    assignment && Number(assignment.trainerSessionRate) > 0
+      ? Number(assignment.trainerSessionRate)
+      : 0;
+  return {
+    assignment,
+    fee,
+    isLoading: query.isLoading,
+    isError: query.isError,
+  };
+}
+
 export function useTrainerAssignments() {
   return useQuery<TrainerAssignmentEntry[], ApiError>({
     queryKey: trainerKeys.assignments(),

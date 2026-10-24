@@ -7,6 +7,7 @@ import React from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { healthLabel } from '@/lib/healthWords';
 import { Surface } from '@/components/ui/Surface';
+import HorseTrainerPanel from './HorseTrainerPanel';
 import type { Horse } from './HorseDetailPageTypes';
 
 const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
@@ -14,6 +15,7 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
     <div>
       <h3 className="type-section-heading mb-3">Current Status</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <HorseTrainerPanel horseId={horse.id} />
         <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Health Status</p>
           <p className="fantasy-body text-[var(--text-primary)]">
