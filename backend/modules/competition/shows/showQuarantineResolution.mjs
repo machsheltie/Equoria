@@ -342,7 +342,28 @@ export async function diagnoseQuarantinedShow(showId) {
   const show = await loadQuarantinedShow(prisma, showId);
   const plan = planQuarantinedSettlement(show);
   const [results, cronRuns, ledger, escrowAccount] = await Promise.all([
-    prisma.competitionResult.findMany({ where: { showId }, orderBy: { id: 'asc' } }),
+    // Owner-only export (shows.quarantine.view), so it deliberately names
+    // scoreInputs: the Owner may see score breakdowns (q01, Equoria-4q02c).
+    prisma.competitionResult.findMany({
+      where: { showId },
+      orderBy: { id: 'asc' },
+      select: {
+        id: true,
+        score: true,
+        placement: true,
+        discipline: true,
+        runDate: true,
+        showName: true,
+        prizeWon: true,
+        statGains: true,
+        horsePointsAwarded: true,
+        scoreInputs: true,
+        horseId: true,
+        showId: true,
+        createdAt: true,
+        viewedAt: true,
+      },
+    }),
     prisma.cronRunLog.findMany({
       where: { jobName: { in: showCronJobNames }, status: 'error' },
       orderBy: { startedAt: 'desc' },
