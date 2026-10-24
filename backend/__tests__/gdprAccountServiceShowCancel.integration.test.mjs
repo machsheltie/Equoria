@@ -174,14 +174,13 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     // test's burn delta (a lower bound) rather than a racy absolute balance.
     const burnBefore = await snapBurn();
 
-    // Creator funds a show with prize=1000, entryFee=50.
+    // Creator funds a show with entryFee=100; the prize derives to 1000 (10x, owner ruling 2026-10-23).
     const createReq = {
       user: { id: creator.id },
       body: {
         name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
-        entryFee: 50,
-        prize: 1000,
+        entryFee: 100,
         level: 1,
       },
     };
@@ -191,7 +190,7 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     const showId = createRes.body.data.show.id;
     createdShowIds.push(showId);
 
-    // 3 entrants pay 50 each → feeEscrow = 150, prizeEscrow = 1000.
+    // 3 entrants pay 100 each → feeEscrow = 300, prizeEscrow = 1000.
     for (let i = 0; i < entrants.length; i++) {
       const enterRes = fakeRes();
       await enterShow(
@@ -205,19 +204,19 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
       expect(enterRes.statusCode).toBe(201);
     }
 
-    // Snapshot pre-deletion entrant balances. They have paid 50 each (so
-    // each is now at 450). After cancel+refund they should be back at 500.
+    // Snapshot pre-deletion entrant balances. They have paid 100 each (so
+    // each is now at 400). After cancel+refund they should be back at 500.
     const entrantIds = entrants.map(e => e.id);
     const entrantMoneyPostEntry = await snapMoney(entrantIds);
-    expect(entrantMoneyPostEntry).toBe(3 * 450);
+    expect(entrantMoneyPostEntry).toBe(3 * 400);
 
     // Sanity: THIS show's per-show escrow columns hold exactly the prize (1000)
-    // + the accumulated fees (3 × 50 = 150). These columns belong solely to this
+    // + the accumulated fees (3 × 100 = 300). These columns belong solely to this
     // show row, so they are immune to concurrent sibling activity on the shared
     // SystemAccount[showEscrow] row (Equoria-3n2g4).
     const showMid = await prisma.show.findUnique({ where: { id: showId } });
     expect(showMid.prizeEscrow).toBe(1000);
-    expect(showMid.feeEscrow).toBe(150);
+    expect(showMid.feeEscrow).toBe(300);
 
     // ACT: GDPR-delete the creator. This MUST proactively cancel the show.
     const result = await eraseUserAccount(creator.id);
@@ -260,8 +259,8 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(1000);
 
     // The shared showEscrow row returned to (at least) its baseline for this
-    // show's contribution: this show pushed 1150 in and drained all 1150 back
-    // out (1000→burn, 150→entrants). A concurrent sibling could leave escrow
+    // show's contribution: this show pushed 1300 in and drained all 1300 back
+    // out (1000→burn, 300→entrants). A concurrent sibling could leave escrow
     // elevated, so assert this show's net escrow contribution is zero via its
     // own per-show columns (already asserted prizeEscrow===0 && feeEscrow===0).
   }, 60000);
@@ -276,8 +275,7 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
       body: {
         name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
-        entryFee: 50,
-        prize: 1000,
+        entryFee: 100,
         level: 1,
       },
     };
@@ -335,7 +333,6 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
         name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
         entryFee: 50,
-        prize: 500,
         level: 1,
       },
     };

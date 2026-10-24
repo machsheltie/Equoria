@@ -35,13 +35,17 @@ import { startOfShowWeek, weeklyShowCreationLimit } from '../rules/showHostingLi
 // ── BA-2 / Equoria-nx8t1: Create a 7-day deferred-window show ──────────────────
 //
 // User spec (2026-05-18): the creating player chooses discipline + level, sets
-// the entryFee and prize, and is debited the FULL prize at creation. The show
+// the entryFee, and is debited the FULL prize at creation. The prize is not
+// chosen: owner ruling 2026-10-23 (Equoria-v0ys3) is 'the prize money should be
+// 10 times the entry fee', so the server derives it. A prize sent by the client
+// is ignored (not refused) so an older client that still sends one keeps
+// working, and the 201 response carries the derived prize it was charged. The show
 // auto-runs exactly 7 days after createdAt (the nightly cron picks up
 // closeDate <= now AND status='open'). Entries are UNLIMITED (no cap). Entry
 // fees flow to the creator's balance as horses are entered (see enterShow).
 //
 // Constraints enforced here:
-//   - prize >= 10 * entryFee (e.g. entryFee 10 → prize >= 100)
+//   - prize = 10 * entryFee exactly (e.g. entryFee 10 → prize 100)
 //   - creator must be able to afford the full prize (else 400, no debit)
 
 export async function createShow(req, res) {
@@ -51,7 +55,7 @@ export async function createShow(req, res) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    const { name, discipline, level, entryFee = 0, prize = 0, description } = req.body;
+    const { name, discipline, level, entryFee = 0, description } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return res
@@ -69,16 +73,9 @@ export async function createShow(req, res) {
     ) {
       return res.status(400).json({ success: false, message: 'Entry fee must be 0–100,000' });
     }
-    if (typeof prize !== 'number' || !Number.isInteger(prize) || prize < 0 || prize > 10_000_000) {
-      return res.status(400).json({ success: false, message: 'Prize must be 0–10,000,000' });
-    }
-    // Equoria-nx8t1 R6: prize must be at least 10x the entry fee.
-    if (prize < 10 * entryFee) {
-      return res.status(400).json({
-        success: false,
-        message: `Prize must be at least 10x the entry fee (entry fee ${entryFee} requires a prize of at least ${10 * entryFee})`,
-      });
-    }
+    // Owner ruling 2026-10-23: the prize is exactly 10x the entry fee. entryFee is
+    // capped at 100,000 above, so the prize is at most 1,000,000, an Int.
+    const prize = 10 * entryFee;
 
     // Equoria-nx8t1 R1: the creator chooses a competition level. We persist it
     // as a single-level bracket (levelMin == levelMax == chosen level). When no

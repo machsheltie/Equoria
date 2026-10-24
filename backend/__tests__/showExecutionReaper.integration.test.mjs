@@ -42,7 +42,7 @@ import { reapStaleExecutingShows, STALE_CLAIM_THRESHOLD_MS } from '../services/j
 
 const FIXTURE_PREFIX = 'TestFixture-c7mx0-reaper';
 const PRIZE = 1000; // divisible by the 50/30/20 slots — no floor crumbs
-const ENTRY_FEE = 50;
+const ENTRY_FEE = PRIZE / 10; // the prize is always 10x the entry fee (owner ruling 2026-10-23)
 
 let creator;
 let entrants;
@@ -138,7 +138,6 @@ async function buildFundedShow() {
         name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
         entryFee: ENTRY_FEE,
-        prize: PRIZE,
         level: 1,
       },
     },

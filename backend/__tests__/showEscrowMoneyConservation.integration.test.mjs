@@ -194,8 +194,7 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
       body: {
         name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
-        entryFee: 50,
-        prize: 1000,
+        entryFee: 100, // the prize derives to 1000 (10x, owner ruling 2026-10-23)
         level: 1,
       },
     };
@@ -241,9 +240,9 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
 
   it('SENTINEL: creator deleted mid-show — money STILL conserved + accumulated fees burned with audit', async () => {
     const userIds = [creator.id, ...entrants.map(e => e.id)];
-    const FEE = 50;
+    const FEE = 100;
     const ENTRANT_COUNT = entrants.length;
-    const EXPECTED_BURNED_FEES = FEE * ENTRANT_COUNT; // 150
+    const EXPECTED_BURNED_FEES = FEE * ENTRANT_COUNT; // 300
     // Equoria-3n2g4: suite-scoped conservation. With the creator FK nulled at
     // execute time the accumulated fees go to the SHARED burn account (no
     // creator wallet to receive them). We prove conservation via SUITE-OWNED
@@ -261,8 +260,7 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
       body: {
         name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
-        entryFee: 50,
-        prize: 1000,
+        entryFee: 100, // the prize derives to 1000 (10x, owner ruling 2026-10-23)
         level: 1,
       },
     };
@@ -309,7 +307,7 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
     // The SHARED burn account GAINED at least the accumulated fees. A
     // concurrent money-conservation sibling can only inflate this delta, so we
     // assert the lower bound rather than an exact equality (Equoria-3n2g4).
-    // Pre-si69u this case lost 150 from the economy with no audit row.
+    // Pre-si69u this case lost 300 from the economy with no audit row.
     const burnAfter = await snapBurn();
     expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(EXPECTED_BURNED_FEES);
   });

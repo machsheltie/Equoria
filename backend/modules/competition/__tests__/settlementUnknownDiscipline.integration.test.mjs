@@ -102,7 +102,7 @@ async function createFundedShow(creatorId) {
   await createShow(
     {
       user: { id: creatorId },
-      body: { name: `TestFixture-b3unk-${uid()}`, discipline: 'Dressage', entryFee: 0, prize: PRIZE },
+      body: { name: `TestFixture-b3unk-${uid()}`, discipline: 'Dressage', entryFee: PRIZE / 10 },
     },
     res,
   );

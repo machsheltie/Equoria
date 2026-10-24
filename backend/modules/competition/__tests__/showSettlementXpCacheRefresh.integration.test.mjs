@@ -26,7 +26,7 @@ afterAll(() => fx.cleanup(), 60000);
 
 describe('XP caches after a show settles (Equoria-7vhgr)', () => {
   it("the horse's XP status and history show the new Horse Points straight away", async () => {
-    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 10, entrantCount: 1 });
+    const show = await fx.buildClosedShow({ prize: 1000, entryFee: 100, entrantCount: 1 });
     const [{ owner, horse }] = show.entrants;
     const token = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
     const get = path =>

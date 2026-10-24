@@ -42,6 +42,9 @@ import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/he
 
 const uid = () => randomBytes(5).toString('hex');
 const fixtures = createFundedShowFixtures('TestFixture-k1p62g');
+// The prize is always 10x the entry fee (owner ruling 2026-10-23, Equoria-v0ys3).
+const PRIZE = 1000;
+const ENTRY_FEE = PRIZE / 10;
 const own = createCleanupTracker();
 // Our horses and riders first (results and entries cascade with the horse),
 // then the fixture's shows, transactions and users.
@@ -56,7 +59,7 @@ afterAll(async () => {
  * rider with the given personality and skill level.
  */
 async function makeCompetitor({ stats, traits, training, tack, temperament, health, rider }) {
-  const owner = await fixtures.makeUser(0, 'entrant');
+  const owner = await fixtures.makeUser(ENTRY_FEE, 'entrant');
   const horse = await createTestHorse(prisma, {
     name: `TestFixture-k1p62g-horse-${uid()}`,
     sex: 'Mare',
@@ -78,7 +81,7 @@ async function makeCompetitor({ stats, traits, training, tack, temperament, heal
 
 describe('golden ridden show score: every live factor, settled by the nightly executor (k1p62.3)', () => {
   it('scores, places, pays 50/30/20 and awards Horse Points 10/5/3 exactly', async () => {
-    const { creator, showId } = await fixtures.createFundedShow({ prize: 1000, entryFee: 0 });
+    const { creator, showId } = await fixtures.createFundedShow({ prize: PRIZE, entryFee: ENTRY_FEE });
 
     // A: base 0.5*80 + 0.3*70 + 0.2*60 = 73; three weeks of Dressage +15;
     // Dressage saddle + Dressage bridle +10 -> 98. Luck +6, rider experienced

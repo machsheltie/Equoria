@@ -13,15 +13,23 @@
  * whatever of the escrow the placed shares did not take, so
  * placed shares + refund == prizeEscrow exactly.
  *
- * Real DB, no mocks. Shows are created and entered through the real
- * createShow / enterShow controllers so the prize is escrow-funded, and the
- * executor always runs scoped to this suite's show ids.
+ * Real DB, no mocks. Shows are entered through the real enterShow controller
+ * and the executor always runs scoped to this suite's show ids.
+ *
+ * The shows are built as the game built them BEFORE the owner ruling of
+ * 2026-10-23 (Equoria-v0ys3): a host-chosen prize, even an odd one. createShow
+ * now derives the prize as exactly 10x the entry fee, which can no longer
+ * produce a prize with a rounding remainder, but shows already in the
+ * database still carry host-chosen prizes and must settle and refund exactly.
+ * pre-ruling shows are funded the way createShow funds them: the creator is
+ * debited the prize into SystemAccount[showEscrow] with the show's prizeEscrow.
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createShow, enterShow } from '../shows/showController.mjs';
+import { enterShow } from '../shows/showController.mjs';
+import { SYSTEM_ACCOUNT_SHOW_ESCROW, creditSystemAccount } from '../../economy/index.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -108,16 +116,35 @@ async function makeEntrant(money = 0) {
 /** Create an escrow-funded show, enter `entrantCount` horses, close it. */
 async function runShow({ prize, entrantCount, entryFee = 0 }) {
   const creator = await makeUser(prize, 'creator');
-  const createRes = fakeRes();
-  await createShow(
-    {
-      user: { id: creator.id },
-      body: { name: `${PREFIX}-show-${uid()}`, discipline: 'Dressage', entryFee, prize, level: 1 },
-    },
-    createRes,
-  );
-  expect(createRes.statusCode).toBe(201);
-  const showId = createRes.body.data.show.id;
+  const openDate = new Date();
+  const closeDate = new Date(openDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const show = await prisma.$transaction(async tx => {
+    await tx.user.update({ where: { id: creator.id }, data: { money: { decrement: prize } } });
+    await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
+      category: 'showCreatePrizeEscrow',
+      description: `Prize escrow for pre-ruling show ${PREFIX}`,
+      linkedUserId: creator.id,
+    });
+    return tx.show.create({
+      data: {
+        name: `${PREFIX}-show-${uid()}`,
+        discipline: 'Dressage',
+        entryFee,
+        maxEntries: null,
+        levelMin: 1,
+        levelMax: 1,
+        prize,
+        runDate: closeDate,
+        status: 'open',
+        openDate,
+        closeDate,
+        createdByUserId: creator.id,
+        prizeEscrow: prize,
+        feeEscrow: 0,
+      },
+    });
+  });
+  const showId = show.id;
   showIds.push(showId);
 
   const entrants = [];

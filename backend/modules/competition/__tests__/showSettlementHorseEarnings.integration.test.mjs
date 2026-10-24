@@ -18,7 +18,7 @@ import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { createFundedShowFixtures } from './helpers/fundedShowFixtures.mjs';
 
 const PRIZE = 1000;
-const entryFee = 20;
+const entryFee = PRIZE / 10; // the prize is always 10x the entry fee (owner ruling 2026-10-23, Equoria-v0ys3)
 
 const fx = createFundedShowFixtures('TestFixture-xal4m');
 

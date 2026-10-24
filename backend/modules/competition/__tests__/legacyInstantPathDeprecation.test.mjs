@@ -188,7 +188,6 @@ describe('Equoria-kacla: POST /api/v1/competition/enter is a deferred entry (no 
       discipline: 'Dressage',
       level: 1,
       entryFee: 50,
-      prize: 1000,
     });
     expect(showRes.status).toBe(201);
     const show = showRes.body.data.show;
@@ -301,7 +300,6 @@ describe('Equoria-kacla: canonical /api/v1/shows 7-day path still works (no nx8t
       discipline: 'Dressage',
       level: 1,
       entryFee: 25,
-      prize: 500,
     });
     expect(showRes.status).toBe(201);
     const show = showRes.body.data.show;

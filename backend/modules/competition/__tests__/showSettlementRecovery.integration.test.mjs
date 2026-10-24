@@ -26,7 +26,7 @@ import { findPartiallySettledShowIds } from '../shows/showSettlementRecovery.mjs
 import { createFundedShowFixtures, moneyOf } from './helpers/fundedShowFixtures.mjs';
 
 const PRIZE = 1000;
-const entryFee = 50;
+const entryFee = PRIZE / 10; // the prize is always 10x the entry fee (owner ruling 2026-10-23, Equoria-v0ys3)
 const intMax = 2147483647;
 
 const fx = createFundedShowFixtures('TestFixture-cmw852');

@@ -104,6 +104,11 @@ export function createFundedShowFixtures(prefix) {
 
   /** A creator funded with exactly the prize creates the show; returns ids. */
   async function createFundedShow({ prize, entryFee }) {
+    // createShow derives the prize as 10 x entryFee (owner ruling 2026-10-23,
+    // Equoria-v0ys3), so a fixture asking for any other prize is a wrong fixture.
+    if (prize !== 10 * entryFee) {
+      throw new Error(`fixture prize ${prize} must be 10 x entryFee ${entryFee}`);
+    }
     const creator = await makeUser(prize, 'creator');
     const res = fakeRes();
     await createShow(

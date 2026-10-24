@@ -8,9 +8,12 @@
  *  R2. Show auto-runs exactly 7 days after createdAt (cron picks up
  *      createdAt+7d <= now AND status=open).
  *  R3. Unlimited entries during the window (no entry cap).
- *  R4. Entry fee + prize set by creator at creation.
+ *  R4. Entry fee set by creator at creation; the prize is derived (R6).
  *  R5. Prize charged to creator at creation; 400 if insufficient funds.
- *  R6. prize >= 10 * entryFee or 400 with a clear message.
+ *  R6. prize is exactly 10 * entryFee, derived by the server (owner ruling
+ *      2026-10-23, Equoria-v0ys3). Before that ruling the host chose any prize
+ *      >= 10 * entryFee and a smaller one was a 400. Now a client-sent prize is
+ *      ignored; the stored, debited and returned prize is always 10 * entryFee.
  *  R7. Entry fees credited to the creator as each horse is entered.
  *  R8. At day 7 execution: score all entrants, distribute prize, mark
  *      completed; idempotent re-run does NOT double-pay.
@@ -144,21 +147,20 @@ async function createShowReq(body, token = creatorToken) {
     .send(body);
 }
 
-describe('R1+R4: player creates show with discipline, level, entryFee, prize', () => {
-  it('creates a show storing the chosen level and creator-set entryFee/prize', async () => {
+describe('R1+R4: player creates show with discipline, level, entryFee', () => {
+  it('creates a show storing the chosen level, the creator-set entryFee and the derived prize', async () => {
     const res = await createShowReq({
       name: `TestFixture-nx8-R1-${Date.now()}`,
       discipline: 'Dressage',
       level: 5,
       entryFee: 10,
-      prize: 200,
     });
     expect(res.status).toBe(201);
     const { show } = res.body.data;
     showIds.push(show.id);
     expect(show.discipline).toBe('Dressage');
     expect(show.entryFee).toBe(10);
-    expect(show.prize).toBe(200);
+    expect(show.prize).toBe(100);
     // level chosen by creator must be persisted (levelMin/levelMax bracket it)
     expect(show.levelMin).toBeLessThanOrEqual(5);
     expect(show.levelMax).toBeGreaterThanOrEqual(5);
@@ -196,29 +198,59 @@ describe('R2: executesAt = createdAt + 7 days', () => {
   });
 });
 
-describe('R6: prize must be >= 10 * entryFee', () => {
-  it('rejects creation with 400 when prize < 10 * entryFee', async () => {
-    const res = await createShowReq({
-      name: `TestFixture-nx8-R6bad-${Date.now()}`,
-      discipline: 'Cutting',
-      level: 2,
-      entryFee: 50,
-      prize: 400, // needs >= 500
-    });
-    expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/prize.*(at least|>=|10).*entry fee|10x|10 ?×/i);
-  });
-
-  it('accepts creation when prize == 10 * entryFee', async () => {
+describe('R6: prize is exactly 10 * entryFee (derived, never host-chosen)', () => {
+  it('derives prize = 10 * entryFee when the client sends no prize', async () => {
     const res = await createShowReq({
       name: `TestFixture-nx8-R6ok-${Date.now()}`,
       discipline: 'Roping',
       level: 1,
       entryFee: 50,
-      prize: 500,
     });
     expect(res.status).toBe(201);
     showIds.push(res.body.data.show.id);
+    expect(res.body.data.show.prize).toBe(500);
+    const persisted = await prisma.show.findUnique({
+      where: { id: res.body.data.show.id },
+      select: { prize: true, prizeEscrow: true },
+    });
+    expect(persisted).toEqual({ prize: 500, prizeEscrow: 500 });
+  });
+
+  it('ignores a client-sent prize: a larger or smaller one is neither stored nor debited', async () => {
+    for (const sentPrize of [400, 9000]) {
+      const before = await prisma.user.findUnique({
+        where: { id: creator.id },
+        select: { money: true },
+      });
+      const res = await createShowReq({
+        name: `TestFixture-nx8-R6ignore${sentPrize}-${Date.now()}`,
+        discipline: 'Cutting',
+        level: 2,
+        entryFee: 50,
+        prize: sentPrize,
+      });
+      expect(res.status).toBe(201);
+      showIds.push(res.body.data.show.id);
+      expect(res.body.data.show.prize).toBe(500);
+      const after = await prisma.user.findUnique({
+        where: { id: creator.id },
+        select: { money: true },
+      });
+      expect(after.money).toBe(before.money - 500);
+    }
+  });
+
+  it('a free show (entryFee 0) has a prize of 0 whatever the client sends', async () => {
+    const res = await createShowReq({
+      name: `TestFixture-nx8-R6free-${Date.now()}`,
+      discipline: 'Cutting',
+      level: 1,
+      entryFee: 0,
+      prize: 1000,
+    });
+    expect(res.status).toBe(201);
+    showIds.push(res.body.data.show.id);
+    expect(res.body.data.show.prize).toBe(0);
   });
 });
 
@@ -232,8 +264,7 @@ describe('R5: prize charged to creator at creation; insufficient funds rejected'
       name: `TestFixture-nx8-R5-${Date.now()}`,
       discipline: 'Hunter',
       level: 4,
-      entryFee: 10,
-      prize: 300,
+      entryFee: 30,
     });
     expect(res.status).toBe(201);
     showIds.push(res.body.data.show.id);
@@ -261,8 +292,7 @@ describe('R5: prize charged to creator at creation; insufficient funds rejected'
         name: `TestFixture-nx8-R5poor-${Date.now()}`,
         discipline: 'Eventing',
         level: 1,
-        entryFee: 10,
-        prize: 500,
+        entryFee: 50, // prize derives to 500; the creator holds 100
       },
       poorToken,
     );
@@ -320,7 +350,6 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
       discipline: 'Show Jumping',
       level: 1,
       entryFee: 25,
-      prize: 250,
     });
     expect(res.status).toBe(201);
     showId = res.body.data.show.id;

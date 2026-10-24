@@ -42,7 +42,7 @@ const staffApi = '/api/v1/staff';
 // Older than the reaper's 2h stale-claim threshold, as the crash suite plants.
 const staleClaimAgeMs = 3 * 60 * 60 * 1000;
 const prize = 1000;
-const entryFee = 50;
+const entryFee = prize / 10; // the prize is always 10x the entry fee (owner ruling 2026-10-23)
 const cleanup = createCleanupTracker();
 const userIds = [];
 const horseIds = [];
@@ -95,7 +95,6 @@ async function buildFundedShow() {
         name: `${prefix}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
         entryFee,
-        prize,
         level: 1,
       },
     },

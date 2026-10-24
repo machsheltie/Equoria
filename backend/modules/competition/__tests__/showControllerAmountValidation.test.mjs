@@ -65,7 +65,12 @@ describe('POST /api/v1/shows/create — non-integer amounts rejected at the 400 
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('returns 400 (not 201) for a fractional prize, and the wallet is unchanged', async () => {
+  // Owner ruling 2026-10-23 (Equoria-v0ys3): the prize is derived as 10 x entryFee,
+  // so a client-sent prize no longer exists as an input. This test used to specify
+  // 'a fractional prize is a 400' (it hit the Int column); the prize can no longer
+  // be fractional, so the contract is now: a fractional client prize is ignored and
+  // never reaches the Int column or the wallet (entryFee 0 -> prize 0, no escrow).
+  it('ignores a fractional client prize: the show is created with the derived prize and the wallet is unchanged', async () => {
     const before = await prisma.user.findUnique({
       where: { id: user.id },
       select: { money: true },
@@ -78,15 +83,10 @@ describe('POST /api/v1/shows/create — non-integer amounts rejected at the 400 
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      // entryFee defaults to 0, so prize 100.5 clears the >=10x rule; the ONLY
-      // reason for rejection is the fractional prize hitting the Int column.
       .send({ name: `TestFixture-FracPrize-${Date.now()}`, discipline: 'Dressage', prize: 100.5 });
 
-    // The core sentinel: 400 (actionable validation). Fails on pre-fix code, which
-    // returns 201 — it silently truncates the fractional prize and creates the show.
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toMatch(/prize/i);
+    expect(res.status).toBe(201);
+    expect(res.body.data.show.prize).toBe(0);
 
     const after = await prisma.user.findUnique({
       where: { id: user.id },
@@ -108,9 +108,8 @@ describe('POST /api/v1/shows/create — non-integer amounts rejected at the 400 
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      // prize 200 (integer) satisfies the >=10x rule (10 * 10.5 = 105); the ONLY
-      // reason for rejection is the fractional entryFee hitting the Int column.
-      .send({ name: `TestFixture-FracFee-${Date.now()}`, discipline: 'Dressage', entryFee: 10.5, prize: 200 });
+      // The ONLY reason for rejection is the fractional entryFee hitting the Int column.
+      .send({ name: `TestFixture-FracFee-${Date.now()}`, discipline: 'Dressage', entryFee: 10.5 });
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
