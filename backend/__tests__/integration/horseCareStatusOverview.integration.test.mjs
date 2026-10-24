@@ -100,13 +100,18 @@ describe('overview Current Status verdicts (Equoria-0l0tq)', () => {
 
     const trainedAt = new Date(Date.now() - 2 * dayMs);
     await prisma.trainingLog.create({ data: { horseId: horse.id, discipline: 'Dressage', trainedAt } });
+    // The cooldown is Horse.trainingCooldown, the column the train call claims.
+    await prisma.horse.update({
+      where: { id: horse.id },
+      data: { trainingCooldown: new Date(trainedAt.getTime() + 7 * dayMs) },
+    });
     const data = await overview(horse.id);
     expect(data.canTrainNow).toBe(false);
     expect(new Date(data.lastTrainedAt).getTime()).toBe(trainedAt.getTime());
 
-    await prisma.trainingLog.updateMany({
-      where: { horseId: horse.id },
-      data: { trainedAt: new Date(Date.now() - 8 * dayMs) },
+    await prisma.horse.update({
+      where: { id: horse.id },
+      data: { trainingCooldown: new Date(Date.now() - dayMs) },
     });
     expect((await overview(horse.id)).canTrainNow).toBe(true);
   });
