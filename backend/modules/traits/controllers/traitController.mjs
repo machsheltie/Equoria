@@ -12,7 +12,8 @@ import { getTraitDefinition, getTraitsByType } from '../../../utils/epigeneticTr
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
-import { publicTraitModifiers } from '../../../utils/publicTraitView.mjs';
+import { publicTraitModifiers, visibleTraitKeys } from '../../../utils/publicTraitView.mjs';
+import { markTraitsSeen, seenTraitKeys } from '../services/traitSeenService.mjs';
 
 // TTL constants (in seconds)
 const TRAIT_DEFINITIONS_TTL = 600; // 10 minutes — static reference data
@@ -65,7 +66,19 @@ export async function getHorseTraits(req, res) {
     // Visible traits with definitions; unrevealed hidden traits are a count
     // only, never named, to anyone (Equoria-6dace).
     const traits = publicTraitModifiers(horse.epigeneticModifiers);
-    const withDefinition = trait => ({ name: trait, definition: getTraitDefinition(trait) });
+    // First-view glow (Equoria-lylhb): a revealed trait is `isNew` until this
+    // viewer's private seen marker covers it. Never set for a hidden trait,
+    // which is not in this list at all.
+    const viewer = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { settings: true },
+    });
+    const seen = seenTraitKeys(viewer?.settings, parsedHorseId);
+    const withDefinition = trait => ({
+      name: trait,
+      definition: getTraitDefinition(trait),
+      isNew: !seen.has(trait),
+    });
 
     const enhancedTraits = {
       positive: traits.positive.map(withDefinition),
@@ -96,6 +109,52 @@ export async function getHorseTraits(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve horse traits',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+}
+
+/**
+ * POST /api/traits/horse/:horseId/seen
+ * Record that the owner has now viewed this horse's revealed traits, so each
+ * glows only once (Equoria-lylhb). Writes only the viewer's private marker.
+ */
+export async function markHorseTraitsSeen(req, res) {
+  try {
+    const parsedHorseId = parseInt(req.params.horseId, 10);
+    if (isNaN(parsedHorseId) || parsedHorseId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid horse ID. Must be a positive integer.',
+        data: null,
+      });
+    }
+
+    // Ownership already validated by requireOwnership middleware.
+    const horse = await prisma.horse.findUnique({
+      where: { id: parsedHorseId },
+      select: { epigeneticModifiers: true },
+    });
+    if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found', data: null });
+    }
+
+    const affected = await markTraitsSeen(
+      prisma,
+      req.user.id,
+      parsedHorseId,
+      visibleTraitKeys(horse.epigeneticModifiers),
+    );
+    if (affected === 0) {
+      return res.status(404).json({ success: false, message: 'Player not found', data: null });
+    }
+
+    return res.status(200).json({ success: true, message: 'Traits marked as seen', data: null });
+  } catch (error) {
+    logger.error(`[traitController.markHorseTraitsSeen] Error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to record seen traits',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }

@@ -253,7 +253,9 @@ describe('TraitCard', () => {
       fireEvent.mouseEnter(card);
 
       expect(screen.getByText('Discipline Impact:')).toBeInTheDocument();
-      expect(screen.getByText('racing:')).toBeInTheDocument();
+      // Equoria-bdpvw: the stored key is shown as the discipline's authored name.
+      // Old contract: the raw key ('racing:') was printed.
+      expect(screen.getByText('Racing:')).toBeInTheDocument();
       expect(screen.getByText('+5')).toBeInTheDocument();
     });
 

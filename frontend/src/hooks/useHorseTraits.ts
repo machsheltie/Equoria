@@ -27,7 +27,7 @@
  * (authRouter is mounted on both `/api` and `/api/v1/v1` in backend/app.mjs).
  */
 
-import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type { TraitDiscoveryStatus } from '@/types/traits';
 
@@ -49,6 +49,8 @@ export interface RawTraitDefinition {
 export interface RawEnhancedTrait {
   name?: string;
   definition?: RawTraitDefinition | null;
+  /** True until this viewer has seen the revealed trait once (Equoria-lylhb). */
+  isNew?: boolean;
 }
 
 /** GET /traits/horse/:id → data */
@@ -106,6 +108,8 @@ export interface HorseTrait {
   rarity?: string;
   /** Backend category if present (e.g. 'epigenetic', 'bond'). */
   category?: string;
+  /** The viewer has not seen this revealed trait yet: it glows once (Equoria-lylhb). */
+  isNew?: boolean;
 }
 
 export interface HorseTraitsView {
@@ -155,6 +159,7 @@ function mapBucket(
         description: typeof def?.description === 'string' ? def.description : '',
         rarity: typeof def?.rarity === 'string' ? def.rarity : undefined,
         category: typeof def?.category === 'string' ? def.category : undefined,
+        isNew: r.isNew === true,
       };
     });
 }
@@ -249,6 +254,10 @@ export const horseTraitsApi = {
     const raw = await apiClient.get<RawHorseTraits>(`/api/v1/traits/horse/${horseId}`);
     return mapHorseTraits(raw);
   },
+  /** Record that the owner has now seen the revealed traits (Equoria-lylhb). */
+  markTraitsSeen: async (horseId: number): Promise<void> => {
+    await apiClient.post(`/api/v1/traits/horse/${horseId}/seen`, {});
+  },
   getDiscoveryStatus: async (horseId: number): Promise<TraitDiscoveryStatus> => {
     const raw = await apiClient.get<RawDiscoveryStatus>(
       `/api/v1/traits/discovery-status/${horseId}`
@@ -274,6 +283,30 @@ export function useHorseTraits(
     queryFn: () => horseTraitsApi.getHorseTraits(horseId),
     enabled: options?.enabled !== false && !!horseId,
     staleTime: options?.staleTime ?? 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Records that the owner has now seen the horse's revealed traits, so each
+ * glows only once (Equoria-lylhb). On success the cached view is marked seen
+ * too, so coming back to the tab inside the cache window does not glow again;
+ * the glow already on screen is held by the component that captured it.
+ */
+export function useMarkTraitsSeen(horseId: number) {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, void>({
+    mutationFn: () => horseTraitsApi.markTraitsSeen(horseId),
+    onSuccess: () => {
+      queryClient.setQueryData<HorseTraitsView>(['horse', horseId, 'traits'], (view) =>
+        view
+          ? {
+              ...view,
+              positive: view.positive.map((t) => ({ ...t, isNew: false })),
+              negative: view.negative.map((t) => ({ ...t, isNew: false })),
+            }
+          : view
+      );
+    },
   });
 }
 

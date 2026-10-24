@@ -14,6 +14,7 @@ import { param, query, validationResult } from 'express-validator';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
   getHorseTraits,
+  markHorseTraitsSeen,
   getTraitDefinitions,
   getDiscoveryStatus,
 } from '../controllers/traitController.mjs';
@@ -121,6 +122,18 @@ router.get(
     requireOwnership('horse', { idParam: 'horseId' }),
   ],
   getHorseTraits,
+);
+
+// First-view glow marker (Equoria-lylhb): writes only the viewer's private
+// "seen" list, never a trait.
+router.post(
+  '/horse/:horseId/seen',
+  [
+    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+    handleValidationErrors,
+    requireOwnership('horse', { idParam: 'horseId' }),
+  ],
+  markHorseTraitsSeen,
 );
 
 /**

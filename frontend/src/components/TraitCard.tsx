@@ -17,6 +17,8 @@
 import React, { useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { Sparkles, Info, TrendingUp, TrendingDown } from 'lucide-react';
+import { disciplineLabel } from '@/lib/utils/training-utils';
+import { traitRarityLabel } from '@/lib/traitLabels';
 
 /**
  * Props for the TraitCard component
@@ -45,6 +47,12 @@ export interface TraitCardProps {
    * classification for this trait.
    */
   valence?: 'positive' | 'negative';
+  /**
+   * The owner is seeing this revealed trait for the first time (Equoria-lylhb):
+   * the card holds the strong gold glow, the design system's glow for rare
+   * discoveries. No new pattern, and no motion.
+   */
+  isNew?: boolean;
   /**
    * Invoked on click / Enter / Space (Equoria-vpgmc, Equoria-4o9u4). When
    * provided the card becomes a focusable role=button that opens the trait
@@ -160,6 +168,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
   onViewParent: _onViewParent,
   showTooltip = true,
   valence,
+  isNew = false,
   onSelect,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -187,6 +196,8 @@ export const TraitCard: React.FC<TraitCardProps> = ({
   return (
     <div
       data-testid="trait-card"
+      data-new-trait={isNew ? 'true' : undefined}
+      style={isNew ? { boxShadow: 'var(--glow-gold-strong)' } : undefined}
       role={isInteractive ? 'button' : undefined}
       tabIndex={isInteractive ? 0 : undefined}
       aria-label={isInteractive ? accessibleLabel : undefined}
@@ -208,6 +219,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
           {/* Trait Name */}
           <h4 className={`font-bold text-lg ${colors.text} mb-1`}>
             {trait.name}
+            {isNew && <span className="sr-only"> (newly revealed)</span>}
             {trait.rarity === 'legendary' && (
               <Sparkles className="inline-block ml-2 w-4 h-4 text-[var(--gold-primary)] animate-pulse" />
             )}
@@ -231,7 +243,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
                     : 'bg-[rgba(37,99,235,0.2)] text-slate-400'
               }`}
             >
-              {trait.rarity.charAt(0).toUpperCase() + trait.rarity.slice(1)}
+              {traitRarityLabel(trait.rarity)}
             </span>
 
             {/* Valence Badge (Equoria-6rf97) — backend-authoritative
@@ -346,7 +358,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.disciplines).map(([discipline, value]) => (
                   <div key={discipline} className="flex justify-between text-xs">
-                    <span className="capitalize text-slate-400">{discipline}:</span>
+                    <span className="text-slate-400">{disciplineLabel(discipline)}:</span>
                     <span className={value > 0 ? 'text-emerald-400' : 'text-red-400'}>
                       {value > 0 ? '+' : ''}
                       {value}

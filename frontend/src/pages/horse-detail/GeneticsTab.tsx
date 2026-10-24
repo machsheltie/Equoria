@@ -12,7 +12,7 @@
  * the 600-line page cap.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import TraitCard from '../../components/TraitCard';
 import HiddenTraitIndicator from '../../components/traits/HiddenTraitIndicator';
@@ -26,6 +26,7 @@ import {
 import {
   useHorseTraits,
   useHorseTraitDiscoveryStatus,
+  useMarkTraitsSeen,
   type HorseTrait,
 } from '../../hooks/useHorseTraits';
 import type { Horse } from './HorseDetailPageTypes';
@@ -73,6 +74,22 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // player "Discover Traits" button (Equoria-gu8jk; owner ruling 2026-10-20:
   // players never reveal traits — grooms will, Equoria-09g33).
   const { data: discoveryStatus } = useHorseTraitDiscoveryStatus(horse.id);
+
+  // First-view glow (Equoria-lylhb): a revealed trait glows once, the first time
+  // its owner views it. The new ones are captured the first time the trait list
+  // arrives and held for as long as this tab stays mounted; the server is told
+  // they have been seen so the next visit finds them quiet.
+  const markSeen = useMarkTraitsSeen(horse.id);
+  const capturedGlow = useRef(false);
+  const [glowTokens, setGlowTokens] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    if (!classification || capturedGlow.current) return;
+    capturedGlow.current = true;
+    const fresh = [...classification.positive, ...classification.negative].filter((t) => t.isNew);
+    if (fresh.length === 0) return;
+    setGlowTokens(new Set(fresh.map((t) => normalizeTraitToken(t.key))));
+    markSeen.mutate();
+  }, [classification, markSeen]);
 
   // Detail modal state — Equoria-vpgmc.
   const [selectedTrait, setSelectedTrait] = useState<HorseTrait | null>(null);
@@ -201,6 +218,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                   key={`${trait.name}-${trait.type}`}
                   trait={trait}
                   valence={classified?.valence}
+                  isNew={glowTokens.has(normalizeTraitToken(trait.name))}
                   onSelect={classified ? () => setSelectedTrait(classified) : undefined}
                 />
               );
