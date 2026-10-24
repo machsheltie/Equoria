@@ -1,0 +1,126 @@
+/**
+ * Need Help? (Equoria-vc5x1) — authored CSS over Celestial Night tokens.
+ *
+ * The presence colours live in ONE token pair so the owner's online-colour
+ * ruling (decisions artifact q63) is a one-line change here.
+ */
+
+:root {
+  --presence-online: var(--status-success);
+  --presence-online-glow: var(--success-glow);
+  --presence-offline: var(--status-danger);
+  --presence-offline-glow: var(--error-glow);
+}
+
+.need-help {
+  padding: var(--space-6) 0 var(--space-8);
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.need-help__hero {
+  margin-bottom: var(--space-6);
+  text-align: center;
+}
+
+.need-help__title {
+  margin: 0;
+  color: var(--gold-primary);
+  font-size: var(--text-h1);
+  line-height: 1.18;
+}
+
+.need-help__lede {
+  margin: var(--space-3) auto 0;
+  max-width: 34rem;
+  color: var(--text-secondary);
+}
+
+.need-help__section {
+  margin-top: var(--space-6);
+}
+
+.need-help__heading {
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--gold-light);
+  font-size: var(--text-h3);
+}
+
+.need-help__people {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.need-help__person {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.need-help__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.need-help__name {
+  flex: 1 1 8rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+.need-help__note {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* The glowing circular status mark and its word, always together. */
+.presence {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px var(--space-3) 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 1px solid currentColor;
+  font-size: var(--text-sm);
+  background: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.presence__dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.presence--online {
+  color: var(--presence-online);
+}
+
+.presence--online .presence__dot {
+  box-shadow: var(--presence-online-glow);
+}
+
+.presence--offline {
+  color: var(--presence-offline);
+}
+
+.presence--offline .presence__dot {
+  box-shadow: var(--presence-offline-glow);
+}
+
+.need-help__compose {
+  margin-top: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.need-help__sent {
+  margin: var(--space-3) 0 0;
+  color: var(--gold-light);
+}

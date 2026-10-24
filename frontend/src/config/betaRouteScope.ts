@@ -67,6 +67,8 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
   '/message-board/:threadId': 'beta-live',
   '/clubs': 'beta-live',
   '/messages': 'beta-live',
+  // Equoria-vc5x1: the Need Help? staff page.
+  '/help': 'beta-live',
   '/forgot-password': 'beta-live',
   '/reset-password': 'beta-live',
   '/crafting': 'beta-live',

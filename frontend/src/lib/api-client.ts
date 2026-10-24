@@ -188,6 +188,8 @@ export type {
   CreateThreadRequest,
 } from './api/forum.js';
 export { messagesApi } from './api/messages.js';
+export { helpApi } from './api/help.js';
+export type { HelpStaffMember, HelpStaffSections } from './api/help.js';
 export type {
   DirectMessageUser,
   DirectMessage,

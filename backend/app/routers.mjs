@@ -91,6 +91,7 @@ import feedShopRoutes from '../modules/economy/feedShop/routes/feedShopRoutes.mj
 import inventoryRoutes from '../modules/economy/inventory/routes/inventoryRoutes.mjs';
 import forumRoutes from '../modules/community/routes/forumRoutes.mjs';
 import messageRoutes from '../modules/community/routes/messageRoutes.mjs';
+import helpRoutes from '../modules/community/routes/helpRoutes.mjs';
 import clubRoutes from '../modules/community/routes/clubRoutes.mjs';
 import marketplaceRoutes from '../modules/marketplace/routes/marketplaceRoutes.mjs';
 import bankRoutes from '../modules/bank/routes/bankRoutes.mjs';
@@ -218,6 +219,7 @@ export function buildRouters() {
   authRouter.use('/inventory', inventoryRoutes);
   authRouter.use('/forum', forumRoutes);
   authRouter.use('/messages', messageRoutes);
+  authRouter.use('/help', helpRoutes);
   authRouter.use('/clubs', clubRoutes);
   authRouter.use('/marketplace', marketplaceRoutes);
   authRouter.use('/next-actions', nextActionsRoutes);

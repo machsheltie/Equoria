@@ -126,6 +126,17 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
             )}
           </Link>
 
+          {/* Need Help? (Equoria-vc5x1) */}
+          <Link
+            to="/help"
+            className="w-8 h-8 flex items-center justify-center rounded-full border border-[var(--glass-border)] text-sm font-bold text-[var(--gold-light)] hover:border-[var(--gold-primary)] transition-colors"
+            aria-label="Need Help?"
+            title="Need Help?"
+            data-testid="need-help-button"
+          >
+            <span aria-hidden="true">!</span>
+          </Link>
+
           {/* Avatar */}
           <Link
             to="/settings"

@@ -222,12 +222,21 @@ export async function fetchWithAuth<T>(
     if (response.status === 429) {
       const retryAfterHeader = response.headers.get('Retry-After');
       const retryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
+      // A 429 body may carry a machine-readable code (the Need Help? cooldown,
+      // Equoria-vc5x1) so the caller can show its own authored copy. Never rendered.
+      let limitCode: unknown;
+      try {
+        limitCode = ((await response.json()) as { code?: unknown } | null)?.code;
+      } catch {
+        // swallowed-catch: api-client-internals - an unreadable 429 body only means there is no code to attach; the 429 itself is thrown below
+      }
 
       throw {
         message: 'Too many requests. Please try again later.',
         status: 'error',
         statusCode: 429,
         retryAfter,
+        ...(typeof limitCode === 'string' ? { code: limitCode } : {}),
       } as ApiError;
     }
 

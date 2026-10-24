@@ -55,6 +55,32 @@ export const evictPasswordChangedAtCache = userId => {
 };
 
 /**
+ * Presence (Equoria-vc5x1): stamp User.lastActiveAt at most once a minute per
+ * account so the Need Help? page can show who is online.
+ */
+const lastActiveStampIntervalMs = 60_000;
+const lastActiveStamped = new Map();
+
+const stampLastActive = async (userId, requestId) => {
+  const nowMs = Date.now();
+  const stampedAt = lastActiveStamped.get(userId);
+  if (stampedAt !== undefined && nowMs - stampedAt < lastActiveStampIntervalMs) {
+    return;
+  }
+  lastActiveStamped.set(userId, nowMs);
+  try {
+    // Prisma stores TIMESTAMP(3) as naive UTC; the database clock converted to
+    // UTC matches that regardless of the session time zone (a bound JS Date
+    // would be shifted by it).
+    await prisma.$executeRaw`UPDATE "User" SET "lastActiveAt" = (now() AT TIME ZONE 'UTC') WHERE "id" = ${userId}`;
+  } catch (stampError) {
+    // Presence is a convenience: a failed stamp must never fail authentication.
+    lastActiveStamped.delete(userId);
+    logger.warn(`[auth:${requestId}] lastActiveAt stamp failed: ${stampError.message}`);
+  }
+};
+
+/**
  * Generate a per-request correlation ID for auth log lines (Equoria-dew6i).
  *
  * Uses a CSPRNG (`crypto.randomBytes`) rather than `Math.random()`. The
@@ -247,6 +273,9 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     req.user = user;
+    if (typeof user.id === 'string' && user.id.length > 0) {
+      await stampLastActive(user.id, requestId);
+    }
     // Equoria-lax36: expose the token source for the CSRF session-identifier
     // resolver. 'cookie' → CSRF-able session, bind to user.id; 'header' →
     // not CSRF-able, do NOT bind to user.id (see csrf.mjs resolveSessionIdentifier).

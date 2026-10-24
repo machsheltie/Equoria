@@ -18,6 +18,9 @@ import logger from '../../../utils/logger.mjs';
 // recipient AFTER the DirectMessage row is persisted. Fire-and-forget — bus
 // delivery must never affect the send (the DB row is the source of truth).
 import { publishUserEvent } from '../../../services/eventBus.mjs';
+import { runRetryableTransaction } from '../../../utils/retryableTransaction.mjs';
+import { isStaffRole } from '../../staff/index.mjs';
+import { sendHelpMessageTx } from '../services/helpGuardrails.mjs';
 
 const USER_SELECT = { id: true, username: true };
 
@@ -170,13 +173,42 @@ export async function sendMessage(req, res) {
       return res.status(404).json({ success: false, message: 'Recipient not found' });
     }
 
-    const message = await prisma.directMessage.create({
-      data: { senderId, recipientId, subject, content, tag },
-      include: {
-        sender: { select: USER_SELECT },
-        recipient: { select: USER_SELECT },
-      },
+    // Equoria-vc5x1: a player writing to a staff member is asking for help, and
+    // the Need Help? guardrails apply however the message was composed.
+    const sender = await prisma.user.findUnique({
+      where: { id: senderId },
+      select: { role: true },
     });
+    let message;
+    if (isStaffRole(recipientExists.role) && !isStaffRole(sender?.role)) {
+      const outcome = await runRetryableTransaction(prisma, tx =>
+        sendHelpMessageTx(tx, {
+          senderId,
+          recipient: recipientExists,
+          subject,
+          content,
+          now: new Date(),
+        }),
+      );
+      if (outcome.refused) {
+        const { status, code, message: refusalMessage, retryAfterSeconds } = outcome.refused;
+        return res.status(status).json({
+          success: false,
+          message: refusalMessage,
+          code,
+          ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
+        });
+      }
+      message = outcome.message;
+    } else {
+      message = await prisma.directMessage.create({
+        data: { senderId, recipientId, subject, content, tag },
+        include: {
+          sender: { select: USER_SELECT },
+          recipient: { select: USER_SELECT },
+        },
+      });
+    }
 
     logger.info(`[messageController.sendMessage] ${senderId} → ${recipientId}`);
 
@@ -198,6 +230,9 @@ export async function sendMessage(req, res) {
 
     return res.status(201).json({ success: true, data: { message } });
   } catch (error) {
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     logger.error(`[messageController.sendMessage] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to send message' });
   }
