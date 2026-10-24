@@ -107,8 +107,12 @@ export function useTrainerMarketplace(options: Record<string, unknown> = {}) {
 export function useHireTrainer() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ trainer: TrainerEntry; cost: number }, ApiError, string>({
-    mutationFn: (marketplaceId) => trainersApi.hireTrainer(marketplaceId),
+  return useMutation<
+    { trainer: TrainerEntry; cost: number },
+    ApiError,
+    { marketplaceId: string; horseId?: number }
+  >({
+    mutationFn: ({ marketplaceId, horseId }) => trainersApi.hireTrainer(marketplaceId, horseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: trainerKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });

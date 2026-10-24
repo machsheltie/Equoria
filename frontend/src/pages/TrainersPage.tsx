@@ -14,7 +14,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { GraduationCap, ShoppingBag } from 'lucide-react';
 import TrainerList from '@/components/TrainerList';
 import MyTrainersDashboard from '@/components/MyTrainersDashboard';
@@ -27,7 +27,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 type TrainersTab = 'manage' | 'hire';
 
 const TrainersPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TrainersTab>('manage');
+  // Opened from a horse's page (?horseId=), the listing assigns to that horse.
+  const [searchParams] = useSearchParams();
+  const horseIdParam = Number(searchParams.get('horseId'));
+  const horseId = Number.isInteger(horseIdParam) && horseIdParam > 0 ? horseIdParam : undefined;
+  const [activeTab, setActiveTab] = useState<TrainersTab>(horseId ? 'hire' : 'manage');
   const { user } = useAuth();
 
   return (
@@ -64,7 +68,7 @@ const TrainersPage: React.FC = () => {
             <MyTrainersDashboard userId={user?.id ?? ''} />
           </TabsContent>
           <TabsContent value="hire">
-            <TrainerList userId={user?.id ?? ''} />
+            <TrainerList userId={user?.id ?? ''} horseId={horseId} />
           </TabsContent>
         </Tabs>
       </div>

@@ -22,6 +22,8 @@ import { gameDateKey } from '@/lib/gameTime';
 import { formatHealth } from '@/lib/healthWords';
 import { Backpack, Brush, Dumbbell, Heart, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
+import { useHorseTrainer } from '@/hooks/api/useTrainers';
 import { useFeedHorse } from '../../hooks/api/useFeedHorse';
 import { useDelistHorse } from '@/hooks/api/useMarketplace';
 import type { Horse } from './HorseDetailPageTypes';
@@ -42,6 +44,8 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
   const navigate = useNavigate();
   const feedHorseMutation = useFeedHorse(Number(horse.id));
   const delistHorseMutation = useDelistHorse();
+  // Equoria-1poxi: with a trainer assigned the button names the one session charge.
+  const { fee: trainerFee } = useHorseTrainer(Number(horse.id));
 
   // Hunger is a fill bar (owner ruling 2026-10-23): a horse below Excellent can be
   // fed again today; at Excellent it is fed once per Eastern game day. The level is
@@ -119,7 +123,13 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
           data-testid="action-train"
         >
           <Dumbbell className="w-3.5 h-3.5" />
-          Train
+          {trainerFee > 0 ? (
+            <span className="inline-flex items-center gap-1.5">
+              Train Horse <Currency amount={trainerFee} />
+            </span>
+          ) : (
+            'Train'
+          )}
         </Button>
         <Button
           type="button"

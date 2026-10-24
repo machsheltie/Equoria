@@ -98,10 +98,12 @@ export const trainersApi = {
     apiClient.get<TrainerEntry[]>(`/api/v1/trainers/user/${userId}`),
   getAssignments: () => apiClient.get<TrainerAssignmentEntry[]>('/api/v1/trainers/assignments'),
   getMarketplace: () => apiClient.get<TrainerMarketplaceData>('/api/v1/trainers/marketplace'),
-  hireTrainer: (marketplaceId: string) =>
-    // Hiring is free (owner ruling 2026-10-22, Equoria-3kegj): cost is 0.
+  hireTrainer: (marketplaceId: string, horseId?: number) =>
+    // Hiring is free (owner ruling 2026-10-22, Equoria-3kegj): cost is 0. With a horseId
+    // the server hires and assigns in one transaction (Equoria-1poxi).
     apiClient.post<{ trainer: TrainerEntry; cost: number }>('/api/v1/trainers/marketplace/hire', {
       marketplaceId,
+      ...(horseId === undefined ? {} : { horseId }),
     }),
   refreshMarketplace: (force: boolean = false) =>
     apiClient.post<TrainerMarketplaceData>('/api/v1/trainers/marketplace/refresh', { force }),

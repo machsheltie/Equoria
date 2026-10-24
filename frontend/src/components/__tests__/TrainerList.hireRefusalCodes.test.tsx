@@ -49,7 +49,8 @@ function renderList() {
   return render(
     <QueryClientProvider client={qc}>
       <MockAuthProvider>
-        <TrainerList userId="user-1" />
+        {/* Equoria-1poxi: the listing is opened for a horse, so the hire assigns to it. */}
+        <TrainerList userId="user-1" horseId={1} />
       </MockAuthProvider>
     </QueryClientProvider>
   );

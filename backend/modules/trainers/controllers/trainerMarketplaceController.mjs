@@ -25,12 +25,21 @@ import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
 import { getStableLevel } from '../../users/index.mjs';
 import { RosterCapExceededError, StaleOfferError } from '../../../errors/index.mjs';
 import { staffHireRefusal } from '../../../errors/staffHireRefusalCodes.mjs';
+// Equoria-1poxi: a hire may carry a horseId; the assignment commits with the hire.
+import { assertHorseTakesNewStaffTx } from '../../horses/index.mjs';
 // Equoria-bvddn.19: remove the hired offer INSIDE the hire transaction via a
 // compare-and-swap on the persisted offer list, instead of a post-commit
 // read-filter-write against a pre-transaction snapshot.
 import { removeMarketplaceOfferCas } from '../../../utils/staffMarketplaceOfferCas.mjs';
 
 const STAFF_TYPE = 'trainer';
+
+/** An error the hire's catch block turns into a specific HTTP status. */
+function httpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
 
 /**
  * Load (or auto-generate) the persisted marketplace state for a user.
@@ -220,6 +229,9 @@ export async function hireTrainerFromMarketplace(req, res) {
   try {
     const userId = req.user.id;
     const { marketplaceId } = req.body;
+    // Equoria-1poxi: optional. When present the new trainer is assigned to this horse
+    // inside the hire transaction, so a hire can never be left unassigned.
+    const horseId = req.body.horseId === undefined ? null : Number(req.body.horseId);
 
     if (!marketplaceId) {
       return res
@@ -272,13 +284,25 @@ export async function hireTrainerFromMarketplace(req, res) {
       });
     }
 
-    const newTrainer = await withRetryableTxMapping(
+    const hired = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         // Lock the User row first (lock order User -> staff) so concurrent
         // same-user hires serialize here and the roster re-count below sees
         // every committed sibling. (The hire used to take this lock through
         // its money debit; the hire is free now, so it takes it explicitly.)
         await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+
+        // Equoria-1poxi: lock order User -> Horse -> staff. The owned horse row is
+        // locked before the new trainer row exists, and a retired horse takes no
+        // new trainer (the same guards the assign endpoint applies).
+        if (horseId !== null) {
+          const [horse] = await tx.$queryRaw`
+            SELECT "id" FROM "horses" WHERE "id" = ${horseId} AND "userId" = ${userId} FOR UPDATE`;
+          if (!horse) {
+            throw httpError(404, 'Horse not found');
+          }
+          await assertHorseTakesNewStaffTx(tx, horseId);
+        }
 
         const trainer = await tx.trainer.create({
           data: {
@@ -327,10 +351,22 @@ export async function hireTrainerFromMarketplace(req, res) {
           );
         }
 
-        return trainer;
+        // One trainer per horse: the horse's previous active trainer steps down.
+        let assignment;
+        if (horseId !== null) {
+          await tx.trainerAssignment.updateMany({
+            where: { horseId, isActive: true },
+            data: { isActive: false },
+          });
+          assignment = await tx.trainerAssignment.create({
+            data: { trainerId: trainer.id, horseId, userId, isActive: true },
+          });
+        }
+        return { trainer, assignment };
       }),
       { message: 'The marketplace is busy right now, please retry in a moment.' },
     );
+    const { trainer: newTrainer, assignment: newAssignment } = hired;
 
     logger.info(`[trainerMarketplace] User ${userId} hired trainer ${newTrainer.id} (free)`);
 
@@ -341,9 +377,20 @@ export async function hireTrainerFromMarketplace(req, res) {
         trainer: { ...newTrainer, name: `${newTrainer.firstName} ${newTrainer.lastName}` },
         // Hiring is free (owner ruling 2026-10-22, Equoria-3kegj).
         cost: 0,
+        ...(newAssignment ? { assignment: newAssignment } : {}),
       },
     });
   } catch (error) {
+    // Equoria-1poxi: the horse guards (404 not yours, 400 retired) refuse the whole
+    // hire; the transaction rolled back, so no trainer row remains.
+    if (typeof error?.status === 'number' && error.status !== 503) {
+      return res.status(error.status).json({
+        success: false,
+        message: error.message,
+        ...(error.code ? { code: error.code } : {}),
+        data: null,
+      });
+    }
     // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
     if (error?.status === 503) {
       return res.status(503).json({ success: false, message: error.message, data: null });

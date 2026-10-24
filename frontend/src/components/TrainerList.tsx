@@ -16,6 +16,10 @@
  * overlay), canonical SectionLoading / ErrorState / EmptyState, semantic
  * role tokens (no raw palette / text-white/NN).
  *
+ * "Assign Trainer" (owner ruling q14 2026-10-23, Equoria-1poxi): the card button hires
+ * and assigns in one step, in one server transaction. With a horse in view (horseId)
+ * it assigns to that horse; without one the dialog asks which horse first.
+ *
  * Cost (owner ruling 2026-10-22, Equoria-3kegj): hiring a trainer is free. A
  * trainer's only cost is its advertised per-training fee (sessionRate), charged
  * once each time it trains one of the player's horses (one training per horse
@@ -32,6 +36,7 @@ import {
   type MarketplaceTrainer,
 } from '@/hooks/api/useTrainers';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
 import { Surface } from '@/components/ui/Surface';
@@ -83,15 +88,24 @@ const SKILL_LEVEL_LABELS: Record<
 interface TrainerListProps {
   // Auth user id is a UUID string (Equoria-ai6pw / j2a51), not a numeric DB int.
   userId?: string;
+  // The horse being viewed, when the listing was opened from a horse's page.
+  horseId?: number;
 }
 
-const TrainerList: React.FC<TrainerListProps> = () => {
+const TrainerList: React.FC<TrainerListProps> = ({ horseId }) => {
   const { user } = useAuth();
   const [selectedTrainer, setSelectedTrainer] = useState<MarketplaceTrainer | null>(null);
   const [showHireModal, setShowHireModal] = useState(false);
   const [filterSkillLevel, setFilterSkillLevel] = useState<string>('all');
   const [filterPersonality, setFilterPersonality] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
+  // The horse picked in the dialog when no horse is in view.
+  const [pickedHorseId, setPickedHorseId] = useState<string>('');
+
+  const { data: horses } = useHorses();
+  const assignHorseId = horseId ?? (pickedHorseId ? Number(pickedHorseId) : null);
+  const viewedHorseName =
+    horseId === undefined ? null : horses?.find((h) => h.id === horseId)?.name;
 
   const { data, isLoading, isError, error, refetch } = useTrainerMarketplace();
   const hireMutation = useHireTrainer();
@@ -125,18 +139,22 @@ const TrainerList: React.FC<TrainerListProps> = () => {
   const handleHireClick = (trainer: MarketplaceTrainer) => {
     // A refusal belongs to the attempt that earned it; don't carry it to the next.
     hireMutation.reset();
+    setPickedHorseId('');
     setSelectedTrainer(trainer);
     setShowHireModal(true);
   };
 
   const handleHireConfirm = () => {
-    if (!selectedTrainer) return;
-    hireMutation.mutate(selectedTrainer.marketplaceId, {
-      onSuccess: () => {
-        setShowHireModal(false);
-        setSelectedTrainer(null);
-      },
-    });
+    if (!selectedTrainer || assignHorseId === null) return;
+    hireMutation.mutate(
+      { marketplaceId: selectedTrainer.marketplaceId, horseId: assignHorseId },
+      {
+        onSuccess: () => {
+          setShowHireModal(false);
+          setSelectedTrainer(null);
+        },
+      }
+    );
   };
 
   const handleRefresh = () => {
@@ -361,13 +379,13 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                     onClick={() => handleHireClick(trainer)}
                     disabled={hireMutation.isPending}
                     className="w-full"
-                    aria-label={`Hire ${trainer.firstName} ${trainer.lastName}`}
+                    aria-label={`Assign Trainer ${trainer.firstName} ${trainer.lastName}`}
                     data-testid={`hire-button-${trainer.marketplaceId}`}
                   >
                     {hireMutation.isPending &&
                     selectedTrainer?.marketplaceId === trainer.marketplaceId
-                      ? 'Hiring...'
-                      : 'Hire'}
+                      ? 'Assigning...'
+                      : 'Assign Trainer'}
                   </Button>
                 </Surface>
               );
@@ -387,16 +405,43 @@ const TrainerList: React.FC<TrainerListProps> = () => {
         {selectedTrainer && (
           <GameDialogContent size="sm" data-testid="hire-modal">
             <GameDialogHeader>
-              <GameDialogTitle>Confirm Hire</GameDialogTitle>
+              <GameDialogTitle>Assign Trainer</GameDialogTitle>
             </GameDialogHeader>
             <GameDialogBody>
               <p className="text-[var(--text-secondary)] text-sm mb-5 leading-relaxed">
-                Hire{' '}
+                Assign{' '}
                 <strong className="text-[var(--text-primary)]">
                   {selectedTrainer.firstName} {selectedTrainer.lastName}
                 </strong>
+                {viewedHorseName ? (
+                  <>
+                    {' '}
+                    to <strong className="text-[var(--text-primary)]">{viewedHorseName}</strong>
+                  </>
+                ) : null}
                 ? They will join your training staff. Hiring is free.
               </p>
+
+              {horseId === undefined && (
+                <div className="mb-4">
+                  <label htmlFor="assign-horse-select" className="type-label block mb-1.5">
+                    Which horse?
+                  </label>
+                  <Select
+                    id="assign-horse-select"
+                    value={pickedHorseId}
+                    onChange={(e) => setPickedHorseId(e.target.value)}
+                    className="w-full"
+                  >
+                    <option value="">Choose a horse</option>
+                    {(horses ?? []).map((horse) => (
+                      <option key={horse.id} value={String(horse.id)}>
+                        {horse.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
 
               <Surface variant="subtle" className="p-4 space-y-2 text-sm">
                 <div className="flex justify-between text-[var(--text-secondary)]">
@@ -431,11 +476,11 @@ const TrainerList: React.FC<TrainerListProps> = () => {
               <Button
                 type="button"
                 onClick={handleHireConfirm}
-                disabled={hireMutation.isPending}
+                disabled={hireMutation.isPending || assignHorseId === null}
                 className="flex-1"
                 data-testid="confirm-hire-button"
               >
-                {hireMutation.isPending ? 'Hiring...' : 'Hire Trainer'}
+                {hireMutation.isPending ? 'Assigning...' : 'Assign Trainer'}
               </Button>
             </GameDialogFooter>
           </GameDialogContent>

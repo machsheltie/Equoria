@@ -63,6 +63,7 @@ router.post(
   mutationRateLimiter,
   [
     body('marketplaceId').notEmpty().withMessage('marketplaceId is required'),
+    body('horseId').optional().isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
     handleValidationErrors,
   ],
   hireTrainerFromMarketplace,

@@ -48,11 +48,16 @@ export interface TrainerDiscoveryProfile {
 }
 
 // Category metadata
-const CATEGORY_META: Record<TrainerDiscoveryCategory, { label: string; icon: string }> = {
+const CATEGORY_META: Record<
+  TrainerDiscoveryCategory,
+  { label: string; icon: string; comingSoon?: boolean }
+> = {
   discipline_specialization: { label: 'Discipline Specialization', icon: '🏆' },
   training_method: { label: 'Training Method', icon: '📋' },
-  horse_compatibility: { label: 'Horse Compatibility', icon: '🐴' },
+  horse_compatibility: { label: 'Horse Compatibility', icon: '🐴', comingSoon: true },
 };
+
+const categoryMeta = (category: TrainerDiscoveryCategory) => CATEGORY_META[category];
 
 // Strength metadata
 const STRENGTH_META = {
@@ -82,6 +87,14 @@ export function buildEmptyTrainerDiscoveryProfile(trainerId: number): TrainerDis
 }
 
 const DiscoverySlotBadge: React.FC<{ slot: TrainerDiscoverySlot }> = ({ slot }) => {
+  // Trainer fit is coming soon (owner ruling q14, q34/q61): never a trait or a question mark.
+  if (categoryMeta(slot.category).comingSoon) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] border-dashed">
+        <span className="text-xs text-[var(--text-muted)] italic">Coming soon</span>
+      </div>
+    );
+  }
   if (!slot.discovered || !slot.trait) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] border-dashed">
@@ -131,17 +144,25 @@ const TrainerDiscoveryPanel: React.FC<TrainerDiscoveryPanelProps> = ({
   const getSlotsForCategory = (category: TrainerDiscoveryCategory): TrainerDiscoverySlot[] =>
     profile.slots.filter((s) => s.category === category);
 
+  // The count says what it counts (Equoria-1poxi): the slots that can be revealed today.
+  // Horse Compatibility slots are named separately as coming soon.
+  const comingSoonCount = profile.slots.filter((s) => categoryMeta(s.category).comingSoon).length;
+  const revealableCount = profile.totalSlots - comingSoonCount;
+  const revealedCount = profile.slots.filter(
+    (s) => !categoryMeta(s.category).comingSoon && s.discovered
+  ).length;
   const discoveryPercent =
-    profile.totalSlots > 0 ? Math.round((profile.discoveredCount / profile.totalSlots) * 100) : 0;
+    revealableCount > 0 ? Math.round((revealedCount / revealableCount) * 100) : 0;
+  const countLabel =
+    `${revealedCount} / ${revealableCount} revealed` +
+    (comingSoonCount > 0 ? ` · ${comingSoonCount} coming soon` : '');
 
   return (
     <div className="space-y-4" data-testid="trainer-discovery-panel">
       {/* Discovery Progress Header */}
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-sm font-semibold text-[var(--text-primary)]">Trait Discovery</h3>
-        <span className="text-xs text-[var(--text-muted)]">
-          {profile.discoveredCount} / {profile.totalSlots} revealed
-        </span>
+        <span className="text-xs text-[var(--text-muted)]">{countLabel}</span>
       </div>
 
       {/* Progress Bar */}
@@ -164,7 +185,7 @@ const TrainerDiscoveryPanel: React.FC<TrainerDiscoveryPanelProps> = ({
       )}
 
       {/* Next discovery hint */}
-      {profile.discoveredCount < profile.totalSlots && profile.nextDiscoveryAt && (
+      {revealedCount < revealableCount && profile.nextDiscoveryAt && (
         <p className="text-xs text-[var(--text-muted)] italic">
           ~{profile.nextDiscoveryAt} more training session
           {profile.nextDiscoveryAt !== 1 ? 's' : ''} to reveal the next trait
@@ -173,7 +194,7 @@ const TrainerDiscoveryPanel: React.FC<TrainerDiscoveryPanelProps> = ({
 
       {/* Category Sections */}
       {categories.map((category) => {
-        const meta = CATEGORY_META[category];
+        const meta = categoryMeta(category);
         const slots = getSlotsForCategory(category);
 
         return (

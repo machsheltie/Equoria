@@ -35,7 +35,10 @@ const HorseTrainerPanel: React.FC<{ horseId: number }> = ({ horseId }) => {
       ) : (
         <p className="fantasy-body text-[var(--text-secondary)]">
           No trainer assigned.{' '}
-          <Link to="/trainers" className="text-[var(--gold-400)] hover:underline">
+          <Link
+            to={`/trainers?horseId=${horseId}`}
+            className="text-[var(--gold-400)] hover:underline"
+          >
             Assign Trainer
           </Link>
         </p>
